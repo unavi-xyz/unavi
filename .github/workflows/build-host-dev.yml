@@ -65,4 +65,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Call deploy workflow
-      uses: ./.github/workflows/deploy-host-dev.yml
+        uses: ./.github/workflows/deploy-host-dev.yml

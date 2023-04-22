@@ -73,7 +73,6 @@ export default await defineNextConfig({
   },
   experimental: {
     appDir: true,
-    typedRoutes: true,
     outputFileTracingExcludes: { "**": ["**swc/core**"] },
   },
   images: {

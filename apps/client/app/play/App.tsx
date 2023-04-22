@@ -25,6 +25,11 @@ export default function App({ id, metadata }: Props) {
 
   useHotkeys();
 
+  const host =
+    process.env.NODE_ENV === "development"
+      ? "localhost:4000"
+      : metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST;
+
   return (
     <>
       <Script src="/scripts/draco_decoder.js" onReady={() => setScriptsReady(true)} />
@@ -33,7 +38,7 @@ export default function App({ id, metadata }: Props) {
         {scriptsReady && (
           <Client
             uri={metadata.model}
-            host={metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST}
+            host={host}
             animations="/models"
             defaultAvatar="/models/Robot.vrm"
             ethers={signer ?? provider}

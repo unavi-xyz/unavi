@@ -14,7 +14,7 @@ export const fetchDBSpaceMetadata = cache(async (id: string): Promise<DBSpaceMet
     });
     if (!space || !space.SpaceModel) throw new Error("Space not found");
 
-    const modelURI = cdnURL(S3Path.spaceModel(space.SpaceModel.publicId).model);
+    const modelURI = cdnURL(S3Path.spaceModel(space.SpaceModel.publicId).metadata);
     const metadata = await fetchWorldMetadata(modelURI);
 
     if (!metadata) return { tokenId: space.tokenId, model: "" };

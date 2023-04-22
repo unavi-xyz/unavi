@@ -47,15 +47,8 @@
       ]
     },
     "lint": {},
-    "generate": {
-      "cache": false
-    },
-    "deploy": {
-      "cache": false
-    },
-    "dev": {
-      "cache": false,
-      "persistent": true
-    }
+    "generate": { "cache": false },
+    "deploy": { "cache": false },
+    "dev": { "cache": false, "persistent": true }
   }
 }

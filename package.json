@@ -5,6 +5,7 @@
   "license": "GPL-3.0-or-later",
   "scripts": {
     "build": "turbo build",
+    "ci:publish": "pnpm publish -r && changeset tag && git push --follow-tags",
     "deploy": "turbo deploy",
     "dev": "turbo dev --filter=!tsconfig --filter=!eslint-config-custom --filter=!contracts --filter=!engine",
     "docker:build": "dotenv -e ./apps/client/.env -c -- docker compose -f docker-compose.yml -f docker-compose.prod.yml build",
@@ -14,8 +15,7 @@
     "docker:init": "node -e \"setTimeout(() => process.exit(0), 10000)\" && pnpm run deploy",
     "format": "prettier --write .",
     "generate": "turbo generate",
-    "lint": "turbo lint",
-    "release": "turbo run lint build && changeset publish && git push --follow-tags"
+    "lint": "turbo lint"
   },
   "dependencies": {
     "@changesets/cli": "^2.26.1"

@@ -27,7 +27,7 @@ jobs:
           cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm --prefer-offline --frozen-lockfile
+        run: pnpm install
 
       - name: Run ESLint
         run: pnpm lint

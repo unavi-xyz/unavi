@@ -91,6 +91,7 @@ export default function PublishPage({ project }: Props) {
           info: {
             name: title.trimEnd(),
             description: description.trimEnd(),
+            author: session?.address,
             image: imageURL,
             host: env.NEXT_PUBLIC_DEFAULT_HOST,
           },

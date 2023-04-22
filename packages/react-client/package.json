@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@unavi/gltf-extensions": "workspace:*",
-    "@wired-protocol/types": "^0.0.15",
+    "@wired-protocol/types": "^0.0.16",
     "contracts": "workspace:*",
     "engine": "workspace:*",
     "ethers": "^5.7.2",

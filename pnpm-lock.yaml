@@ -28,8 +28,8 @@ importers:
         specifier: ^2.26.1
         version: 2.26.1
       '@wired-protocol/types':
-        specifier: ^0.0.15
-        version: 0.0.15
+        specifier: ^0.0.16
+        version: 0.0.16
     devDependencies:
       dotenv-cli:
         specifier: ^7.2.1
@@ -119,8 +119,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/react-client
       '@wired-protocol/types':
-        specifier: ^0.0.15
-        version: 0.0.15
+        specifier: ^0.0.16
+        version: 0.0.16
       boring-avatars:
         specifier: ^1.7.0
         version: 1.7.0
@@ -231,8 +231,8 @@ importers:
   apps/host:
     dependencies:
       '@wired-protocol/types':
-        specifier: ^0.0.15
-        version: 0.0.15
+        specifier: ^0.0.16
+        version: 0.0.16
       mediasoup:
         specifier: ^3.11.24
         version: 3.11.24
@@ -436,8 +436,8 @@ importers:
         specifier: workspace:*
         version: link:../gltf-extensions
       '@wired-protocol/types':
-        specifier: ^0.0.15
-        version: 0.0.15
+        specifier: ^0.0.16
+        version: 0.0.16
       contracts:
         specifier: workspace:*
         version: link:../contracts
@@ -6064,8 +6064,8 @@ packages:
       '@webassemblyjs/ast': 1.11.5
       '@xtuc/long': 4.2.2
 
-  /@wired-protocol/types@0.0.15:
-    resolution: {integrity: sha512-irb0o1NRm8wHde+C/SpXZTP/w/oASomaC35q4yHcMYTmiaMJAjhttqsda/rpNYXpqSFk+hasBN858+dAWVccog==}
+  /@wired-protocol/types@0.0.16:
+    resolution: {integrity: sha512-IcYepl0wsFq5r2yNP2XbtGfw/ys0SpmPvUvRBvRuJpgDUWnpSDVOtWMEkFoVTbxm10xWTmUXGYf3TkcO9rcDMg==}
     dependencies:
       zod: 3.21.4
     dev: false

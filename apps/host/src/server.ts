@@ -77,10 +77,10 @@ server.ws<UserData>("/*", {
         break;
       }
 
-      // case "set_address": {
-      //   player.address = data;
-      //   break;
-      // }
+      case "set_address": {
+        player.address = data;
+        break;
+      }
 
       // WebRTC
       case "webrtc_get_router_rtp_capabilities": {

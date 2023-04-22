@@ -1,6 +1,7 @@
 "use client";
 
 import { useConnectModal } from "@rainbow-me/rainbowkit";
+import { ProfileMetadata } from "@wired-protocol/types";
 import { ERC721Metadata, Profile__factory, PROFILE_ADDRESS } from "contracts";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
@@ -21,9 +22,9 @@ interface Props {
 }
 
 export default function Metadata({ profile }: Props) {
-  const [bio, setBio] = useState(profile?.metadata?.description ?? "");
+  const [bio, setBio] = useState(profile?.metadata?.bio ?? "");
   const [profilePicture, setProfilePicture] = useState(profile?.metadata?.image ?? "");
-  const [coverImage, setCoverImage] = useState(profile?.metadata?.animation_url ?? "");
+  const [coverImage, setCoverImage] = useState(profile?.metadata?.background ?? "");
   const [saving, setSaving] = useState(false);
 
   const { data: signer } = useSigner();
@@ -45,12 +46,16 @@ export default function Metadata({ profile }: Props) {
 
       const hexId = toHex(profile.id);
 
-      const metadata: ERC721Metadata = {
+      // We only need ProfileMetadata for The Wired
+      // But also support ERC721Metadata for OpenSea
+      const metadata: ERC721Metadata & ProfileMetadata = {
+        background: coverImage,
         animation_url: coverImage,
+        bio,
         description: bio,
         external_url: `${env.NEXT_PUBLIC_DEPLOYED_URL}/user/${hexId}`,
         image: profilePicture,
-        name: profile.handle?.string ?? "",
+        name: profile.handle?.string,
       };
 
       // Upload profile picture to S3 if it's a new one

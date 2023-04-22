@@ -18,6 +18,7 @@ import {
   getSpaceNFTFileUpload,
 } from "@/app/api/spaces/[id]/nft/files/[file]/helper";
 import { env } from "@/src/env.mjs";
+import { useProfileByAddress } from "@/src/play/hooks/useProfileByAddress";
 
 import { useSession } from "../../../client/auth/useSession";
 import { fetcher } from "../../../play/utils/fetcher";
@@ -41,6 +42,7 @@ export default function PublishPage({ project }: Props) {
   const { engine, title: editorTitle, image } = useEditor();
 
   const { data: session } = useSession();
+  const { profile } = useProfileByAddress(session?.address);
   const { save } = useSave(project);
 
   const [title, setTitle] = useState(editorTitle);
@@ -91,7 +93,14 @@ export default function PublishPage({ project }: Props) {
           info: {
             name: title.trimEnd(),
             description: description.trimEnd(),
-            author: session?.address,
+            authors: session?.address
+              ? [
+                  {
+                    name: profile?.handle?.string,
+                    address: session.address,
+                  },
+                ]
+              : undefined,
             image: imageURL,
             host: env.NEXT_PUBLIC_DEFAULT_HOST,
           },

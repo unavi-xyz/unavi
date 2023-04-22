@@ -31,7 +31,7 @@
     "@unavi/behave-graph-core": "^0.9.20",
     "@unavi/gltf-extensions": "workspace:*",
     "@unavi/react-client": "workspace:*",
-    "@wired-protocol/types": "^0.0.12",
+    "@wired-protocol/types": "^0.0.14",
     "boring-avatars": "^1.7.0",
     "contracts": "workspace:*",
     "engine": "workspace:*",

@@ -1,3 +1,4 @@
+import { ProfileMetadata } from "@wired-protocol/types";
 import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -7,7 +8,6 @@ import { Suspense } from "react";
 import { env } from "@/src/env.mjs";
 import { fetchDBSpaceMetadata } from "@/src/server/helpers/fetchDBSpaceMetadata";
 import { fetchNFTSpaceMetadata } from "@/src/server/helpers/fetchNFTSpaceMetadata";
-import { fetchProfile } from "@/src/server/helpers/fetchProfile";
 import { fetchProfileFromAddress } from "@/src/server/helpers/fetchProfileFromAddress";
 import { fetchSpaceMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
 import { isFromCDN } from "@/src/utils/isFromCDN";
@@ -33,7 +33,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const description = metadata.info?.description || "";
 
-  const author = metadata.info?.author;
+  const authors = metadata.info?.authors
+    ?.map((author) => author.name || author.address)
+    .filter(Boolean) as string[] | undefined;
 
   const image = metadata.info?.image;
 
@@ -43,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title,
       description,
-      creators: author ? [author] : undefined,
+      creators: authors ? authors : undefined,
       images: image ? [{ url: image }] : undefined,
     },
     twitter: {
@@ -76,15 +78,33 @@ export default async function Space({ params }: Props) {
   if (!metadata) notFound();
 
   // Fetch creator profile
-  const author = metadata.info?.author?.split("/").pop();
-  const profileId = author?.startsWith("0x") && author.length < 42 ? author : null;
-  const address = author?.startsWith("0x") && author.length === 42 ? author : null;
+  const authors = metadata.info?.authors;
 
-  const profile = profileId
-    ? await fetchProfile(parseInt(profileId))
-    : address
-    ? await fetchProfileFromAddress(address)
-    : null;
+  const profiles = authors
+    ? await Promise.all(
+        authors.map(
+          async (author): Promise<{ metadata: ProfileMetadata; id: number | undefined }> => {
+            if (author.address) {
+              const profile = await fetchProfileFromAddress(author.address);
+              return {
+                id: profile?.id,
+                metadata: {
+                  ...profile?.metadata,
+                  name: author.name,
+                },
+              };
+            }
+
+            return {
+              id: undefined,
+              metadata: {
+                name: author.name,
+              },
+            };
+          }
+        )
+      )
+    : undefined;
 
   return (
     <div className="flex justify-center">
@@ -121,31 +141,25 @@ export default async function Space({ params }: Props) {
               </div>
 
               <div>
-                {profile ? (
+                {profiles?.length ? (
                   <div className="flex justify-center space-x-1 font-bold md:justify-start">
                     <div className="text-neutral-500">By</div>
 
-                    <Link href={`/user/${toHex(profile.id)}`}>
-                      <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
-                        {profile.handle?.string ? profile.handle.string : profile.owner}
+                    {profiles.map((profile, i) => (
+                      <div key={i}>
+                        {profile.id !== undefined ? (
+                          <Link href={`/user/${toHex(profile.id)}`}>
+                            <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
+                              {profile.metadata.name}
+                            </div>
+                          </Link>
+                        ) : (
+                          <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
+                            {profile.metadata.name}
+                          </div>
+                        )}
                       </div>
-                    </Link>
-                  </div>
-                ) : metadata.info?.author ? (
-                  <div className="flex justify-center space-x-1 font-bold md:justify-start">
-                    <div className="text-neutral-500">By</div>
-
-                    {address ? (
-                      <Link href={`/user/${metadata.info.author}`}>
-                        <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
-                          {metadata.info.author}
-                        </div>
-                      </Link>
-                    ) : (
-                      <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
-                        {metadata.info.author}
-                      </div>
-                    )}
+                    ))}
                   </div>
                 ) : null}
 

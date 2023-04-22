@@ -42,7 +42,9 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
   const description = metadata.info?.description || "";
 
-  const author = metadata.info?.author;
+  const authors = metadata.info?.authors
+    ?.map((author) => author.name || author.address)
+    .filter(Boolean) as string[] | undefined;
 
   const image = metadata.info?.image;
 
@@ -52,7 +54,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     openGraph: {
       title,
       description,
-      creators: author ? [author] : undefined,
+      creators: authors ? authors : undefined,
       images: image ? [{ url: image }] : undefined,
     },
     twitter: {

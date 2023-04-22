@@ -67,4 +67,5 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      uses: ./.github/workflows/deploy-host-main.yml
+      - name: Call deploy workflow
+        uses: ./.github/workflows/deploy-host-main.yml

@@ -4,7 +4,7 @@ import Link from "next/link";
 import Logo from "@/public/images/Logo.png";
 import { env } from "@/src/env.mjs";
 
-import ClientButtons from "./ClientButtons";
+import AccountButton from "./AccountButton";
 import NavbarTab from "./NavbarTab";
 
 export default function NavbarLayout({ children }: { children: React.ReactNode }) {
@@ -17,16 +17,12 @@ export default function NavbarLayout({ children }: { children: React.ReactNode }
         >
           <div className="max-w-content mx-4 flex justify-between lg:grid lg:grid-cols-3">
             <Link href="/" className="flex h-full w-fit items-center">
-              <div className="flex items-center space-x-2">
-                <Image src={Logo} alt="logo" priority width={40} height={40} />
-
-                <div className="hidden whitespace-nowrap text-lg font-black md:block">UNAVI</div>
-              </div>
+              <Image src={Logo} alt="logo" priority width={40} height={40} />
             </Link>
 
-            <div className="flex items-center justify-center space-x-1 lg:space-x-5">
+            <div className="flex items-center justify-center space-x-8 lg:space-x-12">
               <div>
-                <NavbarTab text="Explore" href="/explore" />
+                <NavbarTab text="Home" href="/" />
               </div>
 
               {env.NEXT_PUBLIC_HAS_DATABASE && env.NEXT_PUBLIC_HAS_S3 ? (
@@ -34,10 +30,18 @@ export default function NavbarLayout({ children }: { children: React.ReactNode }
                   <NavbarTab text="Create" href="/create" />
                 </div>
               ) : null}
+
+              <a
+                href={env.NEXT_PUBLIC_DOCS_URL}
+                target="_blank"
+                className="text-lg font-bold text-neutral-400"
+              >
+                About
+              </a>
             </div>
 
             <div className="flex items-center justify-end">
-              <ClientButtons />
+              <AccountButton />
             </div>
           </div>
         </nav>

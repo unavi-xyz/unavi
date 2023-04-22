@@ -43,7 +43,7 @@ export default function Overlay({ id, metadata }: Props) {
                   ? `/space/${id.value}`
                   : id.type === "tokenId"
                   ? `/space/${toHex(id.value)}`
-                  : "/explore"
+                  : "/"
               }
             >
               <div className="-ml-1">

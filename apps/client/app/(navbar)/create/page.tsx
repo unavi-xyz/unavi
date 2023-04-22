@@ -6,19 +6,20 @@ import CreateProjectButton from "./CreateProjectButton";
 import Projects from "./Projects";
 import Published from "./Published";
 
-const TITLE = "Create";
+const title = "Create";
 
 export const metadata: Metadata = {
-  title: TITLE,
+  title,
   openGraph: {
     ...baseMetadata.openGraph,
-    title: TITLE,
+    title,
   },
   twitter: {
     ...baseMetadata.twitter,
-    title: TITLE,
+    title,
   },
 };
+
 export default function Create() {
   return (
     <div className="flex justify-center">

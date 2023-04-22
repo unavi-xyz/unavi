@@ -1,7 +1,7 @@
 import { WorldMetadata } from "@wired-protocol/types";
 import Link from "next/link";
 
-import PlayerCount from "@/app/(navbar)/explore/PlayerCount";
+import PlayerCount from "@/app/(navbar)/PlayerCount";
 
 import { SpaceId } from "../utils/parseSpaceId";
 import { toHex } from "../utils/toHex";

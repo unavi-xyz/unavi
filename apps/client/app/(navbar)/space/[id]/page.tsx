@@ -131,17 +131,23 @@ export default async function Space({ params }: Props) {
                       </div>
                     </Link>
                   </div>
-                ) : (
+                ) : metadata.info?.author ? (
                   <div className="flex justify-center space-x-1 font-bold md:justify-start">
                     <div className="text-neutral-500">By</div>
 
-                    <a href={metadata.info?.author}>
+                    {address ? (
+                      <Link href={`/user/${metadata.info.author}`}>
+                        <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
+                          {metadata.info.author}
+                        </div>
+                      </Link>
+                    ) : (
                       <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
-                        {metadata.info?.author}
+                        {metadata.info.author}
                       </div>
-                    </a>
+                    )}
                   </div>
-                )}
+                ) : null}
 
                 <div className="flex justify-center space-x-1 font-bold md:justify-start">
                   <div className="text-neutral-500">At</div>

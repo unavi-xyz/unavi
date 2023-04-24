@@ -26,16 +26,6 @@
   ],
   "name": "UNAVI",
   "scope": "/",
-  "shortcuts": [
-    {
-      "name": "Home",
-      "url": "/"
-    },
-    {
-      "name": "Explore",
-      "url": "/explore"
-    }
-  ],
   "short_name": "UNAVI",
   "splash_pages": null,
   "start_url": "/",

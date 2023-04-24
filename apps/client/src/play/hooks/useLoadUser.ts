@@ -16,12 +16,12 @@ export function useLoadUser() {
     usePlayStore.setState({ nickname: localName });
 
     // Publish to host
-    send({ subject: "set_name", data: localName });
+    send({ type: "set_name", data: localName });
   }, [send]);
 
   // Publish address on change
   useEffect(() => {
     const address = session?.address ?? null;
-    send({ subject: "set_address", data: address });
+    send({ type: "set_address", data: address });
   }, [session, send]);
 }

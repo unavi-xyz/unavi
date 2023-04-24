@@ -12,21 +12,26 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --onSuccess \"tsc --emitDeclarationOnly\"",
-    "dev": "yarn build -- --watch",
+    "dev": "pnpm build --watch",
     "lint": "cd ../.. && eslint --fix packages/react-client --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
   },
   "dependencies": {
-    "@unavi/protocol": "*",
-    "contracts": "*",
-    "engine": "*",
+    "@unavi/gltf-extensions": "workspace:*",
+    "@wired-protocol/types": "^0.0.16",
+    "contracts": "workspace:*",
+    "engine": "workspace:*",
     "ethers": "^5.7.2",
     "mediasoup-client": "^3.6.84",
-    "nanoid": "^4.0.2"
+    "nanoid": "^4.0.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@types/react": "^18.0.35",
+    "@types/react": "^18.0.37",
     "@types/react-dom": "^18.0.11",
-    "tsconfig": "*",
+    "eslint": "^8.38.0",
+    "eslint-config-custom": "workspace:*",
+    "tsconfig": "workspace:*",
     "tsup": "^6.7.0",
     "typescript": "~5.0.4"
   },

@@ -8,6 +8,10 @@ import { RenderModule } from "./render/RenderModule";
 import { SceneModule } from "./scene/SceneModule";
 import { ControlsType } from "./types";
 
+export interface EngineOptions {
+  useOffscreenCanvas?: boolean;
+}
+
 /**
  * The main engine class.
  *
@@ -15,6 +19,8 @@ import { ControlsType } from "./types";
  * Requires {@link https://web.dev/cross-origin-isolation-guide/ cross-origin isolation} to be enabled.
  */
 export class Engine {
+  readonly useOffscreenCanvas: boolean;
+
   #canvas: HTMLCanvasElement | OffscreenCanvas | null = null;
   #overlayCanvas: HTMLCanvasElement | null = null;
 
@@ -38,7 +44,9 @@ export class Engine {
   #showColliders = false;
   #showBVH = false;
 
-  constructor() {
+  constructor({ useOffscreenCanvas }: EngineOptions = {}) {
+    this.useOffscreenCanvas = useOffscreenCanvas ?? typeof OffscreenCanvas !== "undefined";
+
     this.inputPosition = new Int16Array(new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT * 2));
     this.inputRotation = new Int16Array(new SharedArrayBuffer(Int16Array.BYTES_PER_ELEMENT * 2));
     this.userPosition = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 3));
@@ -63,13 +71,17 @@ export class Engine {
     if (value === this.#canvas) return;
 
     // Convert to OffscreenCanvas if possible
-    if (value instanceof HTMLCanvasElement && typeof OffscreenCanvas === "undefined") {
+    if (
+      this.useOffscreenCanvas &&
+      value instanceof HTMLCanvasElement &&
+      typeof OffscreenCanvas !== "undefined"
+    ) {
       const offscreen = value.transferControlToOffscreen();
       this.#canvas = offscreen;
-      this.render.send({ subject: "set_canvas", data: offscreen }, [offscreen]);
-    } else if (value instanceof OffscreenCanvas) {
+      this.render.send({ subject: "set_canvas", data: offscreen }, { transfer: [offscreen] });
+    } else if (this.useOffscreenCanvas && value instanceof OffscreenCanvas) {
       this.#canvas = value;
-      this.render.send({ subject: "set_canvas", data: value }, [value]);
+      this.render.send({ subject: "set_canvas", data: value }, { transfer: [value] });
     } else {
       this.#canvas = value;
       if (this.render.renderThread) this.render.renderThread.canvas = value;

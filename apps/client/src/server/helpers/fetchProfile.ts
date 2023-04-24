@@ -1,18 +1,17 @@
+import { ProfileMetadata } from "@wired-protocol/types";
+
 import { fetchProfileHandle } from "./fetchProfileHandle";
 import { fetchProfileMetadata } from "./fetchProfileMetadata";
-import { fetchProfileOwner } from "./fetchProfileOwner";
 
 export async function fetchProfile(id: number): Promise<Profile | null> {
   try {
-    const [owner, handle, metadata] = await Promise.all([
-      fetchProfileOwner(id),
+    const [handle, metadata] = await Promise.all([
       fetchProfileHandle(id),
       fetchProfileMetadata(id),
     ]);
 
     return {
       id,
-      owner,
       handle,
       metadata,
     };
@@ -23,7 +22,6 @@ export async function fetchProfile(id: number): Promise<Profile | null> {
 
 export type Profile = {
   id: number;
-  owner: Awaited<ReturnType<typeof fetchProfileOwner>>;
   handle: Awaited<ReturnType<typeof fetchProfileHandle>>;
-  metadata: Awaited<ReturnType<typeof fetchProfileMetadata>>;
+  metadata: ProfileMetadata | null;
 };

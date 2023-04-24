@@ -1,17 +1,17 @@
 import { useClient } from "@unavi/react-client";
+import { WorldMetadata } from "@wired-protocol/types";
 import { useEffect } from "react";
 
 import Overlay from "@/app/play/Overlay";
 import { useLoadUser } from "@/src/play/hooks/useLoadUser";
 import LoadingScreen from "@/src/play/ui/LoadingScreen";
-import { SpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
 
 import FileDrop from "./FileDrop";
 import { SpaceUriId } from "./types";
 
 interface Props {
   id: SpaceUriId;
-  metadata: SpaceMetadata;
+  metadata: WorldMetadata;
 }
 
 export default function ClientApp({ id, metadata }: Props) {
@@ -37,8 +37,8 @@ export default function ClientApp({ id, metadata }: Props) {
       <FileDrop />
 
       <LoadingScreen
-        text={metadata.title}
-        image={metadata.image}
+        text={metadata.info?.name}
+        image={metadata.info?.image}
         loadingProgress={loadingProgress}
         loadingText={loadingText}
       />

@@ -1,3 +1,4 @@
+import { WorldMetadataSchema } from "@wired-protocol/types";
 import { useEffect, useState } from "react";
 
 import { useClient } from "./useClient";
@@ -16,8 +17,14 @@ export function useScene(uri: string | null) {
       if (!engine || !uri) return;
 
       try {
-        const res = await fetch(uri);
-        const buffer = await res.arrayBuffer();
+        // Fetch world metadata
+        const metadataRes = await fetch(uri);
+        const json = await metadataRes.json();
+        const metadata = WorldMetadataSchema.parse(json);
+
+        // Fetch model
+        const modelRes = await fetch(metadata.model);
+        const buffer = await modelRes.arrayBuffer();
         const array = new Uint8Array(buffer);
 
         setIsDownloaded(true);

@@ -1,13 +1,10 @@
 import { Metadata } from "next";
 import { cookies } from "next/headers";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import React from "react";
 import { z } from "zod";
 
-import { fetchDBSpaceMetadata } from "@/src/server/helpers/fetchDBSpaceMetadata";
-import { fetchNFTSpaceMetadata } from "@/src/server/helpers/fetchNFTSpaceMetadata";
 import { fetchSpaceMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
-import { readSpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
 import { toHex } from "@/src/utils/toHex";
 
 import RainbowkitWrapper from "../(navbar)/RainbowkitWrapper";
@@ -24,19 +21,23 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const params = searchParamsSchema.safeParse(searchParams);
   if (!params.success) return {};
 
-  const id = readSpaceId(params.data);
+  const id = parseParams(params.data);
+  const space = await fetchSpaceMetadata(id);
+  if (!space) return {};
 
-  let metadata;
+  const metadata = space.metadata;
 
-  if (id.type === "uri") {
-    metadata = await readSpaceMetadata(id.value);
-  } else {
-    metadata = await fetchSpaceMetadata(id);
-  }
+  const value = id.value;
+  const displayId = typeof value === "number" ? toHex(value) : value;
+  const title = metadata.info?.name || `Space ${displayId}`;
 
-  if (!metadata) return {};
+  const description = metadata.info?.description || "";
 
-  const { title, description, creator, image } = metadata;
+  const authors = metadata.info?.authors
+    ?.map((author) => author.name || author.address)
+    .filter(Boolean) as string[] | undefined;
+
+  const image = metadata.info?.image;
 
   return {
     title,
@@ -44,12 +45,13 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     openGraph: {
       title,
       description,
-      creators: creator ? [creator] : undefined,
+      creators: authors ? authors : undefined,
       images: image ? [{ url: image }] : undefined,
     },
     twitter: {
       title,
       description,
+      creator: authors ? authors[0] : undefined,
       images: image ? [image] : undefined,
       card: image ? "summary_large_image" : "summary",
     },
@@ -64,40 +66,24 @@ export default async function Play({ searchParams }: Props) {
   const params = searchParamsSchema.safeParse(searchParams);
   if (!params.success) return notFound();
 
-  const id = readSpaceId(params.data);
+  const id = parseParams(params.data);
+  const space = await fetchSpaceMetadata(id);
 
-  let metadata;
-
-  if (id.type === "tokenId") {
-    metadata = await fetchNFTSpaceMetadata(id.value);
-  } else if (id.type === "id") {
-    metadata = await fetchDBSpaceMetadata(id.value);
-
-    // If space has a token, redirect to the token page
-    if (metadata && metadata.tokenId !== null) redirect(`/play?tokenId=${toHex(metadata.tokenId)}`);
-  } else {
-    metadata = await readSpaceMetadata(id.value);
-  }
-
-  if (!metadata) notFound();
+  if (!space) notFound();
 
   return (
     <SessionProvider>
       <RainbowkitWrapper>
-        <App id={id} metadata={metadata} />
+        <App id={id} uri={space.uri} metadata={space.metadata} />
       </RainbowkitWrapper>
     </SessionProvider>
   );
 }
 
-function readSpaceId(params: Params): SpaceUriId {
-  if ("id" in params) {
-    return { type: "id", value: params.id };
-  } else if ("tokenId" in params) {
-    return { type: "tokenId", value: parseInt(params.tokenId) };
-  } else {
-    return { type: "uri", value: params.uri };
-  }
+function parseParams(params: Params): SpaceUriId {
+  if ("id" in params) return { type: "id", value: params.id };
+  else if ("tokenId" in params) return { type: "tokenId", value: parseInt(params.tokenId) };
+  else return { type: "uri", value: params.uri };
 }
 
 const httpsSchema = z.string().refine((param) => param.startsWith("https://"));

@@ -89,7 +89,7 @@ export default function EditorCanvas({ setResize }: Props) {
         {mode === "play" ? <Crosshair /> : null}
 
         <canvas ref={canvasRef} className="h-full w-full" />
-        <canvas ref={overlayRef} className="absolute top-0 left-0 z-10 h-full w-full" />
+        <canvas ref={overlayRef} className="absolute left-0 top-0 z-10 h-full w-full" />
       </div>
     </div>
   );

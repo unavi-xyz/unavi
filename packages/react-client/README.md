@@ -5,7 +5,7 @@ React components and hooks for running a Wired client.
 ## Installation
 
 ```bash
-yarn install @unavi/react-client
+pnpm install @unavi/react-client
 ```
 
 ## Usage

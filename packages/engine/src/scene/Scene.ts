@@ -1,11 +1,10 @@
-import { Document } from "@gltf-transform/core";
+import { Document, Node } from "@gltf-transform/core";
 import { KHRXMP } from "@gltf-transform/extensions";
 import {
   AudioExtension,
   AvatarExtension,
   BehaviorExtension,
   ColliderExtension,
-  SpaceExtension,
   SPAWN_TITLE,
   SpawnPoint,
   SpawnPointExtension,
@@ -34,7 +33,6 @@ export class Scene {
     avatar: this.doc.createExtension(AvatarExtension),
     behavior: this.doc.createExtension(BehaviorExtension),
     collider: this.doc.createExtension(ColliderExtension),
-    space: this.doc.createExtension(SpaceExtension),
     spawn: this.doc.createExtension(SpawnPointExtension),
     xmp: this.doc.createExtension(KHRXMP),
   };
@@ -86,7 +84,7 @@ export class Scene {
     this.animation.processChanges();
   }
 
-  getSpawn(title: (typeof SPAWN_TITLE)[keyof typeof SPAWN_TITLE] = "Default") {
+  getSpawn(title: (typeof SPAWN_TITLE)[keyof typeof SPAWN_TITLE] = "Default"): Node | undefined {
     return this.doc
       .getRoot()
       .listNodes()

@@ -1,4 +1,4 @@
-import { MessageSchema } from "@unavi/protocol";
+import { ResponseMessageSchema } from "@wired-protocol/types";
 import { Consumer } from "mediasoup-client/lib/Consumer";
 import { Transport } from "mediasoup-client/lib/Transport";
 import { useEffect, useState } from "react";
@@ -19,17 +19,17 @@ export function useConsumer(transport: Transport | null) {
     if (!engine || !ws || !transport) return;
 
     const onMessage = async (event: MessageEvent) => {
-      const parsed = MessageSchema.fromHost.safeParse(JSON.parse(event.data));
+      const parsed = ResponseMessageSchema.safeParse(JSON.parse(event.data));
 
       if (!parsed.success) {
         console.warn(parsed.error);
         return;
       }
 
-      const { subject, data } = parsed.data;
+      const { type, data } = parsed.data;
 
-      switch (subject) {
-        case "create_consumer": {
+      switch (type) {
+        case "webrtc_create_consumer": {
           const consumer = await transport.consume({
             id: data.consumerId,
             producerId: data.producerId,
@@ -40,7 +40,7 @@ export function useConsumer(transport: Transport | null) {
           setConsumer(consumer);
 
           // Start receiving audio
-          sendMessage(ws, { subject: "resume_audio", data: null });
+          sendMessage(ws, { type: "pause_audio", data: false });
           await consumer.resume();
 
           // Create audio stream

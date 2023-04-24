@@ -1,6 +1,7 @@
 "use client";
 
 import { useConnectModal } from "@rainbow-me/rainbowkit";
+import { WorldMetadata } from "@wired-protocol/types";
 import { ERC721Metadata, Space__factory, SPACE_ADDRESS } from "contracts";
 import { nanoid } from "nanoid";
 import { useState } from "react";
@@ -13,7 +14,6 @@ import { getSpaceNFTFileUpload } from "@/app/api/spaces/[id]/nft/files/[file]/he
 import { useSession } from "@/src/client/auth/useSession";
 import { parseError } from "@/src/editor/utils/parseError";
 import { env } from "@/src/env.mjs";
-import { SpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
 import Button from "@/src/ui/Button";
 import { SpaceDBId } from "@/src/utils/parseSpaceId";
 import { cdnURL, S3Path } from "@/src/utils/s3Paths";
@@ -21,7 +21,7 @@ import { toHex } from "@/src/utils/toHex";
 
 interface Props {
   id: SpaceDBId;
-  metadata: SpaceMetadata;
+  metadata: WorldMetadata;
 }
 
 export default function Mint({ id, metadata }: Props) {
@@ -45,13 +45,13 @@ export default function Mint({ id, metadata }: Props) {
 
     async function uploadMetadata(tokenId: number | undefined) {
       const erc721metadata: ERC721Metadata = {
-        animation_url: metadata.uri,
-        description: metadata.description,
+        animation_url: metadata.model,
+        description: metadata.info?.description,
         external_url: tokenId
           ? `${env.NEXT_PUBLIC_DEPLOYED_URL}/space/${toHex(tokenId)}`
           : undefined,
-        image: metadata.image,
-        name: metadata.title,
+        image: metadata.info?.image,
+        name: metadata.info?.name || `Space ${id.value.slice(0, 6)}`,
       };
 
       // Upload to S3

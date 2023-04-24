@@ -84,7 +84,7 @@ export default function EditorNavbar({ project }: Props) {
               />
             ) : null}
 
-            <div className="flex items-center pt-0.5 pl-2">
+            <div className="flex items-center pl-2 pt-0.5">
               {saving ? (
                 <div className="text-sm text-neutral-500">Saving...</div>
               ) : loaded ? (

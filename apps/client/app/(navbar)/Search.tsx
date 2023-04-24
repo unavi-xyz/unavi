@@ -15,9 +15,7 @@ export default function Search() {
         name="filter"
         placeholder="Search"
         value={filter}
-        onChange={(e) => {
-          useExploreStore.setState({ filter: e.target.value });
-        }}
+        onChange={(e) => useExploreStore.setState({ filter: e.target.value })}
         className="pl-10"
       />
 

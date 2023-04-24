@@ -9,6 +9,7 @@ import { z } from "zod";
 import { ethersProvider } from "@/src/server/ethers";
 import { fetchProfile } from "@/src/server/helpers/fetchProfile";
 import { fetchProfileFromAddress } from "@/src/server/helpers/fetchProfileFromAddress";
+import { fetchProfileOwner } from "@/src/server/helpers/fetchProfileOwner";
 import { getServerSession } from "@/src/server/helpers/getServerSession";
 import Avatar from "@/src/ui/Avatar";
 import Card from "@/src/ui/Card";
@@ -53,7 +54,7 @@ export async function generateMetadata({ params: { id } }: { params: Params }): 
   if (!profile) return {};
 
   const title = profile.handle?.string ?? `User ${toHex(profile.id)}`;
-  const description = profile.metadata?.description ?? "";
+  const description = profile.metadata?.bio ?? "";
 
   return {
     title,
@@ -87,17 +88,19 @@ export default async function User({ params: { id } }: { params: Params }) {
     if (profileId !== 0) redirect(`/user/${toHex(profileId)}`);
   }
 
+  const ownerPromie = await fetchProfileOwner(parseInt(id));
   const profile = isAddress ? null : await fetchProfile(parseInt(id));
 
   if (!isAddress && !profile) notFound();
 
   const session = await getServerSession();
+  const owner = await ownerPromie;
 
   const isUser = !session?.address
     ? false
     : isAddress
     ? session.address === id
-    : session.address === profile?.owner;
+    : session.address === owner;
 
   return (
     <>
@@ -105,10 +108,10 @@ export default async function User({ params: { id } }: { params: Params }) {
         <div className="max-w-content">
           <div className="h-40 w-full bg-neutral-200 md:h-72 xl:rounded-2xl">
             <div className="relative h-full w-full object-cover">
-              {profile?.metadata?.animation_url ? (
-                isFromCDN(profile.metadata.animation_url) ? (
+              {profile?.metadata?.background ? (
+                isFromCDN(profile.metadata.background) ? (
                   <Image
-                    src={profile.metadata.animation_url}
+                    src={profile.metadata.background}
                     priority
                     fill
                     sizes="100vw"
@@ -117,7 +120,7 @@ export default async function User({ params: { id } }: { params: Params }) {
                   />
                 ) : (
                   <img
-                    src={profile.metadata.animation_url}
+                    src={profile.metadata.background}
                     sizes="100vw"
                     alt=""
                     className="h-full w-full object-cover xl:rounded-2xl"
@@ -150,14 +153,12 @@ export default async function User({ params: { id } }: { params: Params }) {
                 ) : null}
 
                 <div className="w-full overflow-x-hidden text-ellipsis text-center text-neutral-400">
-                  {isAddress ? id : profile?.owner}
+                  {isAddress ? id : owner}
                 </div>
               </div>
 
-              {profile?.metadata?.description && (
-                <div className="w-full whitespace-pre-line text-center">
-                  {profile.metadata.description}
-                </div>
+              {profile?.metadata?.bio && (
+                <div className="w-full whitespace-pre-line text-center">{profile.metadata.bio}</div>
               )}
 
               {isUser && (
@@ -173,7 +174,7 @@ export default async function User({ params: { id } }: { params: Params }) {
         </div>
       </div>
 
-      <div className="flex justify-center pt-4 pb-8">
+      <div className="flex justify-center pb-8 pt-4">
         <div className="max-w-content mx-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <Suspense
             fallback={Array.from({ length: 3 }).map((_, i) => (

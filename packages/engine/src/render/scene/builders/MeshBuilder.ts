@@ -1,4 +1,5 @@
-import { Event, Mesh, Object3D } from "three";
+import { Mesh } from "@gltf-transform/core";
+import { Event, Mesh as ThreeMesh, Object3D } from "three";
 
 import { MeshJSON } from "../../../scene";
 import { subscribe } from "../../../utils/subscribe";
@@ -8,7 +9,7 @@ import { Builder } from "./Builder";
  * @internal
  * Handles the conversion of meshes to Three.js objects.
  */
-export class MeshBuilder extends Builder<MeshJSON, Object3D> {
+export class MeshBuilder extends Builder<Mesh, MeshJSON, Object3D> {
   objectClones = new Map<string, Object3D[]>();
   primitiveClones = new Map<string, Object3D[]>();
 
@@ -139,7 +140,7 @@ export class MeshBuilder extends Builder<MeshJSON, Object3D> {
           value.forEach((weight, i) => {
             this.#updateObject(id, (obj) => {
               obj.traverse((child) => {
-                if (child instanceof Mesh) {
+                if (child instanceof ThreeMesh) {
                   if ("morphTargetInfluences" in child) {
                     if (child.morphTargetInfluences) child.morphTargetInfluences[i] = weight;
                   }

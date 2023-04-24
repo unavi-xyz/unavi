@@ -19,7 +19,7 @@ export default function AvatarBrowser({ setPage, onClose }: Props) {
     <div>
       <button
         onClick={() => setPage("Settings")}
-        className="absolute top-[30px] left-8 rounded-full p-2 text-2xl transition hover:bg-neutral-200 active:bg-neutral-300"
+        className="absolute left-8 top-[30px] rounded-full p-2 text-2xl transition hover:bg-neutral-200 active:bg-neutral-300"
       >
         <MdArrowBack />
       </button>

@@ -1,7 +1,6 @@
 import { EventDispatcher } from "property-graph";
 
 import { Engine } from "../Engine";
-import { Transferable } from "../types";
 import { FakeWorker } from "../utils/FakeWorker";
 import { RenderEvent } from "./events";
 import { FromRenderMessage, RenderStats, ToRenderMessage } from "./messages";
@@ -20,7 +19,7 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
   renderThread: RenderThread | null = null;
 
   ready = false;
-  messageQueue: Array<{ message: ToRenderMessage; transferables?: Transferable[] }> = [];
+  messageQueue: Array<{ message: ToRenderMessage; options?: StructuredSerializeOptions }> = [];
 
   stats: RenderStats | null = null;
 
@@ -29,8 +28,9 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
 
     this.engine = engine;
 
-    // If canvas is an OffscreenCanvas, render in a web worker
-    if (engine.canvas instanceof OffscreenCanvas) {
+    // If using OffscreenCanvas, render in a web worker
+    // Otherwise, render in the main thread
+    if (engine.useOffscreenCanvas) {
       this.#worker = new Worker(new URL("./worker.ts", import.meta.url), {
         type: "module",
         name: "render",
@@ -74,8 +74,8 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
         this.ready = true;
 
         // Send queued messages
-        this.messageQueue.forEach(({ message, transferables }) => {
-          this.#worker?.postMessage(message, transferables);
+        this.messageQueue.forEach(({ message, options }) => {
+          this.#worker?.postMessage(message, options);
         });
 
         this.messageQueue = [];
@@ -136,17 +136,15 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
 
   /**
    * Sends a message to the render worker.
-   * @param message The message to send.
-   * @param transferables Transferable objects to send with the message.
    */
-  send(message: ToRenderMessage, transferables?: Transferable[]) {
+  send(message: ToRenderMessage, options?: StructuredSerializeOptions) {
     // If not ready, queue message
     if (!this.ready) {
-      this.messageQueue.push({ message, transferables });
+      this.messageQueue.push({ message, options });
       return;
     }
 
-    this.#worker?.postMessage(message, transferables);
+    this.#worker?.postMessage(message, options);
   }
 
   destroy() {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useConnectModal } from "@rainbow-me/rainbowkit";
+import { ProfileMetadata } from "@wired-protocol/types";
 import { ERC721Metadata, Profile__factory, PROFILE_ADDRESS } from "contracts";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
@@ -21,9 +22,9 @@ interface Props {
 }
 
 export default function Metadata({ profile }: Props) {
-  const [bio, setBio] = useState(profile?.metadata?.description ?? "");
-  const [profilePicture, setProfilePicture] = useState(profile?.metadata?.image ?? "");
-  const [coverImage, setCoverImage] = useState(profile?.metadata?.animation_url ?? "");
+  const [bio, setBio] = useState<string | undefined>(profile?.metadata?.bio);
+  const [image, setImage] = useState<string | undefined>(profile?.metadata?.image);
+  const [background, setBackground] = useState<string | undefined>(profile?.metadata?.background);
   const [saving, setSaving] = useState(false);
 
   const { data: signer } = useSigner();
@@ -39,27 +40,16 @@ export default function Metadata({ profile }: Props) {
       return;
     }
 
-    async function saveMetadata() {
+    async function uploadImage() {
       if (!profile) throw new Error("No profile found");
-      if (!signer) throw new Error("No signer found");
 
-      const hexId = toHex(profile.id);
+      // Upload image to S3 if it's a new one
+      if (image?.startsWith("blob:")) {
+        const uploadURL = await getProfileFileUpload(profile.id, "image");
 
-      const metadata: ERC721Metadata = {
-        animation_url: coverImage,
-        description: bio,
-        external_url: `${env.NEXT_PUBLIC_DEPLOYED_URL}/user/${hexId}`,
-        image: profilePicture,
-        name: profile.handle?.string ?? "",
-      };
+        const body = await fetch(image).then((res) => res.blob());
 
-      // Upload profile picture to S3 if it's a new one
-      if (profilePicture.startsWith("blob:")) {
-        const imageUrl = await getProfileFileUpload(profile.id, "image");
-
-        const body = await fetch(profilePicture).then((res) => res.blob());
-
-        const imageResponse = await fetch(imageUrl, {
+        const imageResponse = await fetch(uploadURL, {
           method: "PUT",
           body,
           headers: {
@@ -68,31 +58,59 @@ export default function Metadata({ profile }: Props) {
           },
         });
 
-        if (!imageResponse.ok) throw new Error("Failed to upload profile picture");
+        if (!imageResponse.ok) throw new Error("Failed to upload image");
 
-        metadata.image = cdnURL(S3Path.profile(profile.id).image);
+        return cdnURL(S3Path.profile(profile.id).image);
+      } else {
+        return image;
       }
+    }
 
-      // Upload cover image to S3 if it's a new one
-      const isCoverBlob = coverImage.startsWith("blob:");
-      if (isCoverBlob) {
-        const coverImageUrl = await getProfileFileUpload(profile.id, "cover");
+    async function uploadBackground() {
+      if (!profile) throw new Error("No profile found");
 
-        const coverBody = await fetch(coverImage).then((res) => res.blob());
+      // Upload background to S3 if it's a new one
+      if (background?.startsWith("blob:")) {
+        const uploadURL = await getProfileFileUpload(profile.id, "background");
 
-        const coverImageResponse = await fetch(coverImageUrl, {
+        const body = await fetch(background).then((res) => res.blob());
+
+        const imageResponse = await fetch(uploadURL, {
           method: "PUT",
-          body: coverBody,
+          body,
           headers: {
             "Content-Type": "image/png",
             "x-amz-acl": "public-read",
           },
         });
 
-        if (!coverImageResponse.ok) throw new Error("Failed to upload cover image");
+        if (!imageResponse.ok) throw new Error("Failed to upload background");
 
-        metadata.animation_url = cdnURL(S3Path.profile(profile.id).cover);
+        return cdnURL(S3Path.profile(profile.id).background);
+      } else {
+        return background;
       }
+    }
+
+    const [imageURL, backgroundURL] = await Promise.all([uploadImage(), uploadBackground()]);
+
+    async function saveMetadata() {
+      if (!profile) throw new Error("No profile found");
+      if (!signer) throw new Error("No signer found");
+
+      const hexId = toHex(profile.id);
+
+      // We only need ProfileMetadata for The Wired
+      // But also support ERC721Metadata for OpenSea
+      const metadata: ERC721Metadata & ProfileMetadata = {
+        name: profile.handle?.string,
+        bio,
+        description: bio,
+        image: imageURL,
+        background: backgroundURL,
+        animation_url: backgroundURL,
+        external_url: `${env.NEXT_PUBLIC_DEPLOYED_URL}/user/${hexId}`,
+      };
 
       // Upload metadata to S3
       const url = await getProfileFileUpload(profile.id, "metadata");
@@ -147,7 +165,7 @@ export default function Metadata({ profile }: Props) {
 
           <ImageInput
             name="Profile Picture"
-            src={profilePicture}
+            src={image}
             disabled={saving}
             onChange={async (e) => {
               if (!e.target.files) return;
@@ -161,14 +179,14 @@ export default function Metadata({ profile }: Props) {
               const croppedFile = await cropImage(url, 1);
               const croppedUrl = URL.createObjectURL(croppedFile);
 
-              setProfilePicture(croppedUrl);
+              setImage(croppedUrl);
             }}
             className="h-48 w-48 rounded-full object-cover"
           />
 
           <ImageInput
-            name="Cover Picture"
-            src={coverImage}
+            name="Background"
+            src={background}
             disabled={saving}
             onChange={async (e) => {
               if (!e.target.files) return;
@@ -182,7 +200,7 @@ export default function Metadata({ profile }: Props) {
               const croppedFile = await cropImage(url, 4);
               const croppedUrl = URL.createObjectURL(croppedFile);
 
-              setCoverImage(croppedUrl);
+              setBackground(croppedUrl);
             }}
             className="h-40 w-full rounded-xl object-cover"
           />

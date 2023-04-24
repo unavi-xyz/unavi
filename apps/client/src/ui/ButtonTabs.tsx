@@ -1,7 +1,7 @@
 "use client";
 
 import * as Tabs from "@radix-ui/react-tabs";
-import { useState } from "react";
+import { ForwardRefExoticComponent, RefAttributes, useState } from "react";
 
 interface Props {
   titles: string[];
@@ -39,4 +39,6 @@ export default function ButtonTabs({ titles, children }: Props) {
   );
 }
 
-export const TabContent = Tabs.Content;
+export const TabContent: ForwardRefExoticComponent<
+  Tabs.TabsContentProps & RefAttributes<HTMLDivElement>
+> = Tabs.Content;

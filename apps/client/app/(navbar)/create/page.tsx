@@ -1,23 +1,25 @@
 import { Metadata } from "next";
+import { Suspense } from "react";
 
 import { metadata as baseMetadata } from "../../layout";
 import CreateProjectButton from "./CreateProjectButton";
 import Projects from "./Projects";
 import Published from "./Published";
 
-const TITLE = "Create";
+const title = "Create";
 
 export const metadata: Metadata = {
-  title: TITLE,
+  title,
   openGraph: {
     ...baseMetadata.openGraph,
-    title: TITLE,
+    title,
   },
   twitter: {
     ...baseMetadata.twitter,
-    title: TITLE,
+    title,
   },
 };
+
 export default function Create() {
   return (
     <div className="flex justify-center">
@@ -31,11 +33,15 @@ export default function Create() {
           <CreateProjectButton />
         </div>
 
-        {/* @ts-expect-error Server Component */}
-        <Projects />
+        <Suspense fallback={null}>
+          {/* @ts-expect-error Server Component */}
+          <Projects />
+        </Suspense>
 
-        {/* @ts-expect-error Server Component */}
-        <Published />
+        <Suspense fallback={null}>
+          {/* @ts-expect-error Server Component */}
+          <Published />
+        </Suspense>
       </div>
     </div>
   );

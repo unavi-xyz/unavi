@@ -1,6 +1,6 @@
-import { ToHostMessage } from "@unavi/protocol";
+import { RequestMessage } from "@wired-protocol/types";
 import { ERC721Metadata, getHostFromMetadata } from "contracts";
-import { Engine } from "engine";
+import { Engine, EngineOptions } from "engine";
 import { providers, Signer } from "ethers";
 import {
   createContext,
@@ -51,7 +51,7 @@ export interface IClientContext {
 
   ws: WebSocket | null;
   setWs: Dispatch<SetStateAction<WebSocket | null>>;
-  send: (message: ToHostMessage) => void;
+  send: (message: RequestMessage) => void;
 
   playerId: number | null;
   setPlayerId: Dispatch<SetStateAction<number | null>>;
@@ -120,6 +120,7 @@ interface Props {
   skybox?: string;
   uri?: string;
   metadata?: ERC721Metadata;
+  engineOptions?: EngineOptions;
 }
 
 /**
@@ -129,6 +130,7 @@ export function Client({
   animations,
   children,
   defaultAvatar,
+  engineOptions,
   ethers,
   host,
   metadata,
@@ -137,7 +139,7 @@ export function Client({
 }: Props) {
   const [avatar, setAvatar] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [engine, setEngine] = useState<Engine | null>(defaultContext.engine);
+  const [engine, setEngine] = useState<Engine | null>(null);
   const [ethersProvider, setEthersProvider] = useState<providers.Provider | Signer | null>(
     defaultContext.ethersProvider
   );
@@ -156,7 +158,7 @@ export function Client({
   const usedHost = host || spaceHost;
 
   const send = useCallback(
-    (message: ToHostMessage) => {
+    (message: RequestMessage) => {
       if (!ws || ws.readyState !== ws.OPEN) return;
       ws.send(JSON.stringify(message));
     },
@@ -174,16 +176,18 @@ export function Client({
   }, [ethers]);
 
   useEffect(() => {
-    const newEngine = new Engine();
+    const newEngine = new Engine(engineOptions);
+
     newEngine.render.send({ subject: "toggle_animations", data: true });
     newEngine.start();
+
     setEngine(newEngine);
 
     return () => {
       newEngine.destroy();
       setEngine(null);
     };
-  }, []);
+  }, [engineOptions]);
 
   useEffect(() => {
     if (!engine) return;
@@ -204,7 +208,7 @@ export function Client({
     if (!engine) return;
 
     // Send to host
-    send({ subject: "set_avatar", data: avatar });
+    send({ type: "set_avatar", data: avatar ?? "" });
 
     // Send to engine
     engine.render.send({ subject: "set_user_avatar", data: avatar });

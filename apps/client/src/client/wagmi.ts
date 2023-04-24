@@ -18,7 +18,7 @@ const providers: ChainProviderFn<typeof sepolia>[] = [publicProvider()];
 const apiKey = env.NEXT_PUBLIC_ALCHEMY_ID;
 if (apiKey) providers.unshift(alchemyProvider({ apiKey }));
 
-export const { chains, provider } = configureChains([sepolia], providers);
+export const { chains, provider } = configureChains([sepolia], providers) as any;
 
 const needsInjectedWalletFallback =
   typeof window !== "undefined" &&
@@ -42,4 +42,4 @@ const connectors = connectorsForWallets([
   },
 ]);
 
-export const wagmiClient = createClient({ connectors, provider, autoConnect: true });
+export const wagmiClient = createClient({ connectors, provider, autoConnect: true }) as any;

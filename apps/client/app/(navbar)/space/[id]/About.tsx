@@ -1,21 +1,21 @@
+import { WorldMetadata } from "@wired-protocol/types";
 import { SPACE_ADDRESS } from "contracts";
 
-import { SpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
 import { SpaceId } from "@/src/utils/parseSpaceId";
 
 interface Props {
   id: SpaceId;
-  metadata: SpaceMetadata;
+  metadata: WorldMetadata;
 }
 
 export default async function About({ id, metadata }: Props) {
   return (
     <div className="space-y-12">
-      {metadata.description && (
+      {metadata.info?.description && (
         <div>
           <div className="text-lg font-semibold">Description</div>
 
-          <div className="whitespace-pre-line text-neutral-800">{metadata.description}</div>
+          <div className="whitespace-pre-line text-neutral-800">{metadata.info.description}</div>
         </div>
       )}
 

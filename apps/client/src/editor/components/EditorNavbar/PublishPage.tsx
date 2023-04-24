@@ -1,4 +1,4 @@
-import { Space } from "@unavi/gltf-extensions";
+import { WorldMetadata } from "@wired-protocol/types";
 import { ERC721Metadata, ERC721MetadataSchema } from "contracts";
 import { nanoid } from "nanoid";
 import Link from "next/link";
@@ -17,6 +17,8 @@ import {
   getSpaceNFTFileDownload,
   getSpaceNFTFileUpload,
 } from "@/app/api/spaces/[id]/nft/files/[file]/helper";
+import { env } from "@/src/env.mjs";
+import { useProfileByAddress } from "@/src/play/hooks/useProfileByAddress";
 
 import { useSession } from "../../../client/auth/useSession";
 import { fetcher } from "../../../play/utils/fetcher";
@@ -40,6 +42,7 @@ export default function PublishPage({ project }: Props) {
   const { engine, title: editorTitle, image } = useEditor();
 
   const { data: session } = useSession();
+  const { profile } = useProfileByAddress(session?.address);
   const { save } = useSave(project);
 
   const [title, setTitle] = useState(editorTitle);
@@ -80,21 +83,46 @@ export default function PublishPage({ project }: Props) {
       // Publish project
       const { spaceId, nftId } = await publishProject(project.id);
 
-      // Create published model
+      // Create space model
       const { modelId } = await createSpaceModel(spaceId);
       const imageURL = cdnURL(S3Path.spaceModel(modelId).image);
       const modelURL = cdnURL(S3Path.spaceModel(modelId).model);
 
-      // Update space image metadata
-      const space = engine.scene.doc.getRoot().getExtension<Space>(Space.EXTENSION_NAME);
-      if (!space) throw new Error("Space extension not found");
+      async function uploadWorldMetadata() {
+        const metadata: WorldMetadata = {
+          info: {
+            name: title.trimEnd(),
+            description: description.trimEnd(),
+            authors: session?.address
+              ? [
+                  {
+                    name: profile?.handle?.string,
+                    address: session.address,
+                  },
+                ]
+              : undefined,
+            image: imageURL,
+            host: env.NEXT_PUBLIC_DEFAULT_HOST,
+          },
+          model: modelURL,
+        };
 
-      space.setImage(imageURL);
+        const url = await getSpaceModelFileUpload(spaceId, "metadata");
 
-      await savePromise;
+        const response = await fetch(url, {
+          method: "PUT",
+          body: JSON.stringify(metadata),
+          headers: { "Content-Type": "application/json", "x-amz-acl": "public-read" },
+        });
+
+        if (!response.ok) throw new Error("Failed to upload metadata");
+      }
 
       async function uploadModel() {
         if (!engine) throw new Error("Engine not found");
+
+        // Finish saving
+        await savePromise;
 
         const [url, optimizedModel] = await Promise.all([
           getSpaceModelFileUpload(spaceId, "model"),
@@ -104,10 +132,7 @@ export default function PublishPage({ project }: Props) {
         const response = await fetch(url, {
           method: "PUT",
           body: optimizedModel,
-          headers: {
-            "Content-Type": "model/gltf-binary",
-            "x-amz-acl": "public-read",
-          },
+          headers: { "Content-Type": "model/gltf-binary", "x-amz-acl": "public-read" },
         });
 
         if (!response.ok) throw new Error("Failed to upload model");
@@ -120,18 +145,15 @@ export default function PublishPage({ project }: Props) {
 
         // Get image
         const res = await fetch(URL.createObjectURL(imageFile));
-        const body = await res.blob();
+        const imageBlob = await res.blob();
 
         // Upload to S3
         const url = await getSpaceModelFileUpload(spaceId, "image");
 
         const response = await fetch(url, {
           method: "PUT",
-          body,
-          headers: {
-            "Content-Type": "image/jpeg",
-            "x-amz-acl": "public-read",
-          },
+          body: imageBlob,
+          headers: { "Content-Type": "image/jpeg", "x-amz-acl": "public-read" },
         });
 
         if (!response.ok) throw new Error("Failed to upload image");
@@ -172,6 +194,7 @@ export default function PublishPage({ project }: Props) {
 
       await Promise.all([
         copyProjectToModel(spaceId, { projectId: project.id }),
+        uploadWorldMetadata(),
         uploadModel(),
         uploadImage(),
         uploadNftMetadata(),

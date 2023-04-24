@@ -1,11 +1,10 @@
-import { Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
 import { isFromCDN } from "../utils/isFromCDN";
 
-interface Props<T extends string> {
-  href?: Route<T>;
+interface Props {
+  href?: string;
   image?: string | null;
   text?: string | null;
   sizes?: string;
@@ -14,7 +13,7 @@ interface Props<T extends string> {
   children?: React.ReactNode;
 }
 
-export default function Card<T extends string>({
+export default function Card({
   href,
   image,
   text,
@@ -22,7 +21,7 @@ export default function Card<T extends string>({
   loading,
   loadingAnimation,
   children,
-}: Props<T>) {
+}: Props) {
   return (
     <div>
       {href ? (
@@ -53,7 +52,7 @@ export default function Card<T extends string>({
 }
 
 export function CardText({ text }: { text?: string | null }) {
-  return <div className="pt-2.5 pb-1 text-xl font-bold text-neutral-900">{text}</div>;
+  return <div className="pb-1 pt-2.5 text-xl font-bold text-neutral-900">{text}</div>;
 }
 
 interface CardImageProps {

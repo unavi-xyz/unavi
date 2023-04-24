@@ -27,7 +27,7 @@ import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from "three-
 
 import { DEFAULT_CONTROLS } from "../constants";
 import { isSceneMessage } from "../scene/messages";
-import { ControlsType, PostMessage, Transferable } from "../types";
+import { ControlsType, PostMessage } from "../types";
 import { OrbitControls } from "./controls/OrbitControls";
 import { PlayerControls } from "./controls/PlayerControls";
 import { RaycastControls } from "./controls/RaycastControls";
@@ -396,7 +396,7 @@ export class RenderThread {
     this.composer.render();
   }
 
-  toMainThread(message: FromRenderMessage, transfer?: Transferable[]) {
-    this.postMessage(message, transfer);
+  toMainThread(message: FromRenderMessage, options?: StructuredSerializeOptions) {
+    this.postMessage(message, options);
   }
 }

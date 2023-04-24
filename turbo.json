@@ -47,18 +47,8 @@
       ]
     },
     "lint": {},
-    "generate": {
-      "cache": false
-    },
-    "client#generate": {
-      "inputs": ["prisma/schema.prisma"]
-    },
-    "deploy": {
-      "cache": false
-    },
-    "dev": {
-      "cache": false,
-      "persistent": true
-    }
+    "generate": { "cache": false },
+    "deploy": { "cache": false },
+    "dev": { "cache": false, "persistent": true }
   }
 }

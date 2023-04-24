@@ -1,4 +1,4 @@
-import { MessageSchema } from "@unavi/protocol";
+import { ResponseMessageSchema } from "@wired-protocol/types";
 import { Device } from "mediasoup-client";
 import { DataConsumer } from "mediasoup-client/lib/DataConsumer";
 import { Transport } from "mediasoup-client/lib/Transport";
@@ -33,22 +33,22 @@ export function useTransports(device: Device | null) {
     let localConsumerTransport: Transport | null = null;
 
     const onMessage = async (event: MessageEvent) => {
-      const parsed = MessageSchema.fromHost.safeParse(JSON.parse(event.data));
+      const parsed = ResponseMessageSchema.safeParse(JSON.parse(event.data));
 
       if (!parsed.success) {
         console.warn(parsed.error);
         return;
       }
 
-      const { subject, data } = parsed.data;
+      const { type, data } = parsed.data;
 
-      switch (subject) {
-        case "transport_created": {
+      switch (type) {
+        case "webrtc_transport_created": {
           // Create local transport
           const transport =
             data.type === "producer"
-              ? device.createSendTransport(data.options as any)
-              : device.createRecvTransport(data.options as any);
+              ? device.createSendTransport(data.options)
+              : device.createRecvTransport(data.options);
 
           if (data.type === "consumer") {
             localConsumerTransport = transport;
@@ -59,7 +59,7 @@ export function useTransports(device: Device | null) {
 
           transport.on("connect", ({ dtlsParameters }, callback) => {
             sendMessage(ws, {
-              subject: "connect_transport",
+              type: "webrtc_connect_transport",
               data: { dtlsParameters, type: data.type },
             });
             callback();
@@ -71,11 +71,11 @@ export function useTransports(device: Device | null) {
           break;
         }
 
-        case "create_data_consumer": {
+        case "webrtc_create_data_consumer": {
           if (!localConsumerTransport) throw new Error("No consumer transport");
 
           const newDataConsumer = await localConsumerTransport.consumeData({
-            id: data.consumerId,
+            id: data.dataConsumerId,
             dataProducerId: data.dataProducerId,
             sctpStreamParameters: data.sctpStreamParameters,
           });

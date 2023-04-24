@@ -11,7 +11,7 @@ export class S3Path {
   static profile = (profileId: number) => {
     const hexId = toHex(profileId);
     return {
-      cover: `profiles/${hexId}/cover.jpg`,
+      background: `profiles/${hexId}/background.jpg`,
       image: `profiles/${hexId}/image.jpg`,
       metadata: `profiles/${hexId}/metadata.json`,
     } as const;
@@ -29,6 +29,7 @@ export class S3Path {
   static spaceModel = (modelId: string) =>
     ({
       directory: `spaces/${modelId}`,
+      metadata: `spaces/${modelId}/metadata.json`,
       model: `spaces/${modelId}/model.glb`,
       image: `spaces/${modelId}/image.jpg`,
       asset: (assetId: string) => `spaces/${modelId}/assets/${assetId}` as const,
@@ -41,11 +42,18 @@ export class S3Path {
 
 type PublicPath =
   | ReturnType<typeof S3Path.spaceNFT>[keyof ReturnType<typeof S3Path.spaceNFT>]
-  | ReturnType<typeof S3Path.spaceModel>["model" | "image"]
+  | ReturnType<typeof S3Path.spaceModel>["metadata" | "model" | "image"]
   | ReturnType<ReturnType<typeof S3Path.spaceModel>["asset"]>
   | ReturnType<typeof S3Path.profile>[keyof ReturnType<typeof S3Path.profile>]
   | ReturnType<typeof S3Path.temp>;
 
 export function cdnURL(path: PublicPath) {
-  return `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/${path}`;
+  // Use http on localhost
+  const http =
+    env.NEXT_PUBLIC_CDN_ENDPOINT?.startsWith("localhost") ||
+    env.NEXT_PUBLIC_CDN_ENDPOINT?.startsWith("127.0.0.1")
+      ? "http"
+      : "https";
+
+  return `${http}://${env.NEXT_PUBLIC_CDN_ENDPOINT}/${path}`;
 }

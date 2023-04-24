@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["jsonProtocol"]
 }
 
 datasource db {
@@ -58,7 +59,6 @@ model Project {
 
   owner String @db.Char(42)
 
-  name        String @default("") @db.VarChar(80) // Deprecated, use title
   title       String @default("") @db.VarChar(80)
   description String @default("") @db.VarChar(1200)
 

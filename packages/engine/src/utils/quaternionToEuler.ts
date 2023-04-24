@@ -1,4 +1,4 @@
-import { Vec3, Vec4 } from "engine";
+import { Vec3, Vec4 } from "../types";
 
 export function quaternionToEuler([x, y, z, w]: Vec4): Vec3 {
   // Rotate Matrix4

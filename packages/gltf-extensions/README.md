@@ -17,7 +17,7 @@ Also contains partial implementations of the following extensions:
 ## Installation
 
 ```bash
-yarn install @unavi/gltf-extensions
+pnpm install @unavi/gltf-extensions
 ```
 
 ## Usage

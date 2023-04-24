@@ -13,10 +13,10 @@ type EventData = BuilderEvent["data"];
  * @internal
  * Base class for converting gltf data to Three.js objects.
  */
-export abstract class Builder<T, O> extends EventEmitter<BuilderEvent> {
+export abstract class Builder<TProperty, TJson, TObject> extends EventEmitter<BuilderEvent> {
   protected scene: RenderScene;
 
-  #objects = new Map<string, O>();
+  #objects = new Map<string, TObject>();
 
   constructor(scene: RenderScene) {
     super();
@@ -32,7 +32,7 @@ export abstract class Builder<T, O> extends EventEmitter<BuilderEvent> {
     return Array.from(this.#objects.entries());
   }
 
-  setObject(id: string, object: O | null) {
+  setObject(id: string, object: TObject | null) {
     if (object) this.#objects.set(id, object);
     else this.#objects.delete(id);
 
@@ -65,7 +65,7 @@ export abstract class Builder<T, O> extends EventEmitter<BuilderEvent> {
    * @param fn The function to call when the object changes. The function may return a cleanup function.
    * @returns A function to unsubscribe.
    */
-  subscribeToObject(id: string, fn: (data: O | undefined) => (() => void) | void) {
+  subscribeToObject(id: string, fn: (data: TObject | undefined) => (() => void) | void) {
     let cleanup: (() => void) | void;
 
     const onChange = (changedId: string) => {
@@ -85,9 +85,9 @@ export abstract class Builder<T, O> extends EventEmitter<BuilderEvent> {
     return this.subscribe("objectChange", onChange);
   }
 
-  abstract add(json: Partial<T>, id: string): void;
+  abstract add(json: Partial<TJson>, id: string): TProperty;
 
   abstract remove(id: string): void;
 
-  abstract update(json: Partial<T>, id: string): void;
+  abstract update(json: Partial<TJson>, id: string): void;
 }

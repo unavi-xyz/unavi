@@ -9,7 +9,7 @@ import ProfileButton from "./ProfileButton";
 import SessionProvider from "./SessionProvider";
 import SignInButton from "./SignInButton";
 
-export default function ClientButtons() {
+export default function AccountButton() {
   return (
     <SessionProvider>
       <Buttons />

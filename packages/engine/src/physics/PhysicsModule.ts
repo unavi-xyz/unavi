@@ -1,7 +1,6 @@
 import { EventDispatcher } from "property-graph";
 
 import { Engine } from "../Engine";
-import { Transferable } from "../types";
 import { FakeWorker } from "../utils/FakeWorker";
 import { PhysicsEvent } from "./events";
 import { FromPhysicsMessage, ToPhysicsMessage } from "./messages";
@@ -17,7 +16,7 @@ export class PhysicsModule extends EventDispatcher<PhysicsEvent> {
   #worker: Worker | FakeWorker | null = null;
 
   ready = false;
-  messageQueue: Array<{ message: ToPhysicsMessage; transferables?: Transferable[] }> = [];
+  messageQueue: Array<{ message: ToPhysicsMessage; options?: StructuredSerializeOptions }> = [];
 
   constructor(engine: Engine) {
     super();
@@ -72,9 +71,9 @@ export class PhysicsModule extends EventDispatcher<PhysicsEvent> {
         this.ready = true;
 
         // Send queued messages
-        this.messageQueue.forEach(({ message, transferables }) => {
+        this.messageQueue.forEach(({ message, options }) => {
           if (!this.#worker) throw new Error("Worker not found");
-          this.#worker.postMessage(message, transferables);
+          this.#worker.postMessage(message, options);
         });
 
         this.messageQueue = [];
@@ -96,18 +95,15 @@ export class PhysicsModule extends EventDispatcher<PhysicsEvent> {
 
   /**
    * Sends a message to the physics worker.
-   *
-   * @param message The message to send
-   * @param transferables Transferable objects to send with the message
    */
-  send(message: ToPhysicsMessage, transferables?: Transferable[]) {
+  send(message: ToPhysicsMessage, options?: StructuredSerializeOptions) {
     // If not ready, queue message
     if (!this.ready) {
-      this.messageQueue.push({ message, transferables });
+      this.messageQueue.push({ message, options });
       return;
     }
 
-    this.#worker?.postMessage(message, transferables);
+    this.#worker?.postMessage(message, options);
   }
 
   /**

@@ -1,12 +1,12 @@
+import { ProfileMetadata } from "@wired-protocol/types";
 import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 
-import { fetchDBSpaceMetadata } from "@/src/server/helpers/fetchDBSpaceMetadata";
-import { fetchNFTSpaceMetadata } from "@/src/server/helpers/fetchNFTSpaceMetadata";
-import { fetchProfile } from "@/src/server/helpers/fetchProfile";
+import { env } from "@/src/env.mjs";
+import { fetchDBSpaceURI } from "@/src/server/helpers/fetchDBSpaceURI";
 import { fetchProfileFromAddress } from "@/src/server/helpers/fetchProfileFromAddress";
 import { fetchSpaceMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
 import { isFromCDN } from "@/src/utils/isFromCDN";
@@ -23,10 +23,22 @@ export const revalidate = 60;
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const id = parseSpaceId(params.id);
 
-  const metadata = await fetchSpaceMetadata(id);
-  if (!metadata) return {};
+  const space = await fetchSpaceMetadata(id);
+  if (!space) return {};
 
-  const { title, description, creator, image } = metadata;
+  const metadata = space.metadata;
+
+  const value = id.value;
+  const displayId = typeof value === "number" ? toHex(value) : value.slice(0, 6);
+  const title = metadata.info?.name || `Space ${displayId}`;
+
+  const description = metadata.info?.description || "";
+
+  const authors = metadata.info?.authors
+    ?.map((author) => author.name || author.address)
+    .filter(Boolean) as string[] | undefined;
+
+  const image = metadata.info?.image;
 
   return {
     title,
@@ -34,7 +46,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title,
       description,
-      creators: creator ? [creator] : undefined,
+      creators: authors ? authors : undefined,
       images: image ? [{ url: image }] : undefined,
     },
     twitter: {
@@ -53,40 +65,59 @@ interface Props {
 export default async function Space({ params }: Props) {
   const id = parseSpaceId(params.id);
 
-  let metadata;
+  // Don't allow uri spaces
+  if (id.type === "uri") notFound();
 
-  if (id.type === "tokenId") {
-    metadata = await fetchNFTSpaceMetadata(id.value);
-  } else {
-    metadata = await fetchDBSpaceMetadata(id.value);
-
-    // If space has a token, redirect to the token page
-    if (metadata && metadata.tokenId !== null) redirect(`/space/${toHex(metadata.tokenId)}`);
+  // If db space has a token, redirect to the token page
+  if (id.type === "id") {
+    const res = await fetchDBSpaceURI(id.value);
+    if (res && res.tokenId !== null) redirect(`/space/${toHex(res.tokenId)}`);
   }
 
-  if (!metadata) notFound();
+  const space = await fetchSpaceMetadata(id);
+  if (!space) notFound();
 
-  // Fetch creator profile
-  const creator = metadata.creator.split("/").pop();
-  const profileId = creator?.startsWith("0x") && creator.length < 42 ? creator : null;
-  const address = creator?.startsWith("0x") && creator.length === 42 ? creator : null;
+  const metadata = space.metadata;
 
-  const profile = profileId
-    ? await fetchProfile(parseInt(profileId))
-    : address
-    ? await fetchProfileFromAddress(address)
-    : null;
+  // Fetch author profiles
+  const authors = metadata.info?.authors;
+
+  const profiles = authors
+    ? await Promise.all(
+        authors.map(
+          async (author): Promise<{ metadata: ProfileMetadata; id: number | undefined }> => {
+            if (author.address) {
+              const profile = await fetchProfileFromAddress(author.address);
+              return {
+                id: profile?.id,
+                metadata: {
+                  ...profile?.metadata,
+                  name: author.name,
+                },
+              };
+            }
+
+            return {
+              id: undefined,
+              metadata: {
+                name: author.name,
+              },
+            };
+          }
+        )
+      )
+    : undefined;
 
   return (
     <div className="flex justify-center">
       <div className="max-w-content mx-4 space-y-8 py-8">
-        <div className="flex flex-col space-y-8 md:flex-row md:space-y-0 md:space-x-8">
+        <div className="flex flex-col space-y-8 md:flex-row md:space-x-8 md:space-y-0">
           <div className="aspect-card h-full w-full rounded-3xl bg-neutral-200">
             <div className="relative h-full w-full object-cover">
-              {metadata.image &&
-                (isFromCDN(metadata.image) ? (
+              {metadata.info?.image &&
+                (isFromCDN(metadata.info.image) ? (
                   <Image
-                    src={metadata.image}
+                    src={metadata.info.image}
                     priority
                     fill
                     sizes="(min-width: 768px) 60vw, 100vw"
@@ -95,7 +126,7 @@ export default async function Space({ params }: Props) {
                   />
                 ) : (
                   <img
-                    src={metadata.image}
+                    src={metadata.info.image}
                     sizes="(min-width: 768px) 60vw, 100vw"
                     alt=""
                     className="h-full w-full rounded-3xl object-cover"
@@ -108,35 +139,35 @@ export default async function Space({ params }: Props) {
           <div className="flex flex-col justify-between space-y-8 md:w-2/3">
             <div className="space-y-4">
               <div className="text-center text-3xl font-black">
-                {metadata.title || `Space ${params.id}`}
+                {metadata.info?.name || `Space ${params.id}`}
               </div>
 
               <div>
-                {profile ? (
+                {profiles?.length ? (
                   <div className="flex justify-center space-x-1 font-bold md:justify-start">
                     <div className="text-neutral-500">By</div>
 
-                    <Link href={`/user/${toHex(profile.id)}`}>
-                      <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
-                        {profile.handle?.string ? profile.handle.string : profile.owner}
+                    {profiles.map((profile, i) => (
+                      <div key={i}>
+                        {profile.id !== undefined ? (
+                          <Link href={`/user/${toHex(profile.id)}`}>
+                            <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
+                              {profile.metadata.name}
+                            </div>
+                          </Link>
+                        ) : (
+                          <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
+                            {profile.metadata.name}
+                          </div>
+                        )}
                       </div>
-                    </Link>
+                    ))}
                   </div>
-                ) : (
-                  <div className="flex justify-center space-x-1 font-bold md:justify-start">
-                    <div className="text-neutral-500">By</div>
-
-                    <a href={metadata.creator}>
-                      <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
-                        {metadata.creator.split("/").pop()}
-                      </div>
-                    </a>
-                  </div>
-                )}
+                ) : null}
 
                 <div className="flex justify-center space-x-1 font-bold md:justify-start">
                   <div className="text-neutral-500">At</div>
-                  <div>{metadata.host}</div>
+                  <div>{metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST}</div>
                 </div>
 
                 <Suspense fallback={null}>

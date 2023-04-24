@@ -1,5 +1,6 @@
+import { WorldMetadata } from "@wired-protocol/types";
+
 import { getServerSession } from "@/src/server/helpers/getServerSession";
-import { SpaceMetadata } from "@/src/server/helpers/readSpaceMetadata";
 import { SpaceId } from "@/src/utils/parseSpaceId";
 
 import RainbowkitWrapper from "../../RainbowkitWrapper";
@@ -9,7 +10,7 @@ import Mint from "./Mint";
 
 interface Props {
   id: SpaceId;
-  metadata: SpaceMetadata;
+  metadata: WorldMetadata;
 }
 
 export default async function Settings({ id, metadata }: Props) {

@@ -1,13 +1,20 @@
-FROM node:18 AS builder
+FROM node:18-alpine AS builder
 WORKDIR /app
 
+# Install global dependencies
+RUN npm i -g npm@latest; \
+ npm install -g pnpm turbo
+
 # Prune files
-RUN yarn global add turbo
 COPY . .
-RUN turbo prune --scope=host --docker
+RUN pnpm turbo prune --scope=host --docker
 
 FROM node:18 AS installer
 WORKDIR /app
+
+# Install global dependencies
+RUN npm i -g npm@latest; \
+ npm install -g pnpm turbo
 
 # Install mediasoup dependencies
 RUN \
@@ -18,13 +25,13 @@ RUN \
 # Install NPM dependencies
 COPY .gitignore .gitignore
 COPY --from=builder /app/out/json/ .
-COPY --from=builder /app/out/yarn.lock ./yarn.lock
-RUN yarn install
+COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN pnpm install
 
 # Build the project and its dependencies
 COPY --from=builder /app/out/full/ .
 COPY turbo.json turbo.json
-RUN yarn turbo build --filter=host...
+RUN pnpm turbo build --filter=host...
 
 FROM node:18 AS runner
 WORKDIR /app

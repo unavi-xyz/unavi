@@ -1,4 +1,4 @@
-import { Accessor } from "@gltf-transform/core";
+import { Accessor, Primitive } from "@gltf-transform/core";
 import { BufferAttribute, Mesh, MeshStandardMaterial, SkinnedMesh } from "three";
 
 import { PrimitiveJSON } from "../../../scene";
@@ -12,7 +12,7 @@ export const DEFAULT_MATERIAL = new MeshStandardMaterial();
  * @internal
  * Handles the conversion of primitives to Three.js objects.
  */
-export class PrimitiveBuilder extends Builder<PrimitiveJSON, Mesh | SkinnedMesh> {
+export class PrimitiveBuilder extends Builder<Primitive, PrimitiveJSON, Mesh | SkinnedMesh> {
   objectClones = new Map<string, Mesh[]>();
   #setObjectTimeouts = new Map<string, NodeJS.Timeout>();
 

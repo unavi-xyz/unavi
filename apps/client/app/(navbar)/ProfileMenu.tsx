@@ -23,7 +23,7 @@ export default function ProfileMenu({ profile, session }: Props) {
         <Link
           href={`/user/${profile?.id ? toHex(profile.id) : session?.address}`}
           draggable={false}
-          className="flex w-full cursor-pointer items-center whitespace-nowrap py-1 px-4 font-bold outline-none focus:bg-neutral-200 active:opacity-80"
+          className="flex w-full cursor-pointer items-center whitespace-nowrap px-4 py-1 font-bold outline-none focus:bg-neutral-200 active:opacity-80"
         >
           <MdOutlinePersonOutline className="mr-2 text-xl" />
           <div>Your profile</div>
@@ -34,7 +34,7 @@ export default function ProfileMenu({ profile, session }: Props) {
         <Link
           href="/settings"
           draggable={false}
-          className="flex w-full cursor-pointer items-center whitespace-nowrap py-1 px-4 font-bold outline-none focus:bg-neutral-200 active:opacity-80"
+          className="flex w-full cursor-pointer items-center whitespace-nowrap px-4 py-1 font-bold outline-none focus:bg-neutral-200 active:opacity-80"
         >
           <MdOutlineSettings className="mr-2 text-xl" />
           <div>Settings</div>
@@ -43,7 +43,7 @@ export default function ProfileMenu({ profile, session }: Props) {
 
       <DropdownItem
         onClick={logout}
-        className="flex w-full cursor-pointer items-center whitespace-nowrap py-1 px-4 font-bold outline-none focus:bg-neutral-200 active:opacity-80"
+        className="flex w-full cursor-pointer items-center whitespace-nowrap px-4 py-1 font-bold outline-none focus:bg-neutral-200 active:opacity-80"
       >
         <MdLogout className="mr-2 text-xl" />
         <div>Sign out</div>

@@ -65,7 +65,7 @@ export class AudioSource extends ExtensionProperty<IAudioSource> {
     return this;
   }
 
-  getAudio() {
+  getAudio(): AudioData | null {
     return this.getRef("audio");
   }
 

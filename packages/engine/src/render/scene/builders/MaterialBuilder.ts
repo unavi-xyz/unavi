@@ -1,4 +1,4 @@
-import { TextureInfo } from "@gltf-transform/core";
+import { Material, TextureInfo } from "@gltf-transform/core";
 import { Transform } from "@gltf-transform/extensions";
 import {
   ClampToEdgeWrapping,
@@ -26,7 +26,7 @@ import { Builder } from "./Builder";
  * @internal
  * Handles the conversion of materials to Three.js objects.
  */
-export class MaterialBuilder extends Builder<MaterialJSON, MeshStandardMaterial> {
+export class MaterialBuilder extends Builder<Material, MaterialJSON, MeshStandardMaterial> {
   add(json: Partial<MaterialJSON>, id: string) {
     const previousObject = this.getObject(id);
     if (previousObject) throw new Error(`Material with id ${id} already exists.`);

@@ -1,4 +1,4 @@
-import { Node } from "@gltf-transform/core";
+import { Node, Skin } from "@gltf-transform/core";
 import { Bone, Matrix4, Object3D, Skeleton } from "three";
 
 import { SkinJSON } from "../../../scene";
@@ -9,7 +9,7 @@ import { Builder } from "./Builder";
  * @internal
  * Handles the conversion of skins to Three.js objects.
  */
-export class SkinBuilder extends Builder<SkinJSON, Skeleton> {
+export class SkinBuilder extends Builder<Skin, SkinJSON, Skeleton> {
   add(json: Partial<SkinJSON>, id: string) {
     const { object: skin } = this.scene.skin.create(json, id);
 

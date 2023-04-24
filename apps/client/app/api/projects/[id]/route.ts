@@ -76,12 +76,14 @@ export async function DELETE(request: NextRequest, { params }: Params) {
 
   await Promise.all([
     // Delete objects from S3
-    s3Client.send(
-      new DeleteObjectsCommand({
-        Bucket: env.S3_BUCKET,
-        Delete: { Objects: allObjects.map(({ Key }) => ({ Key })) },
-      })
-    ),
+    allObjects.length > 0
+      ? s3Client.send(
+          new DeleteObjectsCommand({
+            Bucket: env.S3_BUCKET,
+            Delete: { Objects: allObjects.map(({ Key }) => ({ Key })) },
+          })
+        )
+      : null,
 
     // Delete project from database
     prisma.project.delete({ where: { publicId: id } }),

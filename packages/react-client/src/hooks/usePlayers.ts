@@ -1,4 +1,4 @@
-import { MessageSchema } from "@unavi/protocol";
+import { ResponseMessageSchema } from "@wired-protocol/types";
 import { nanoid } from "nanoid";
 import { useEffect } from "react";
 
@@ -21,46 +21,44 @@ export function usePlayers() {
     const localPlayers: Player[] = [];
 
     const onMessage = async (event: MessageEvent) => {
-      const parsed = MessageSchema.fromHost.safeParse(JSON.parse(event.data));
+      const parsed = ResponseMessageSchema.safeParse(JSON.parse(event.data));
 
       if (!parsed.success) {
         console.warn(parsed.error);
         return;
       }
 
-      const { subject, data } = parsed.data;
+      const { type, data } = parsed.data;
 
-      switch (subject) {
-        case "player_joined": {
+      switch (type) {
+        case "player_join": {
           console.info("👋 Player", toHex(data.playerId), "joined");
 
           const player = new Player(data.playerId);
-          player.name = data.name;
-          player.avatar = data.avatar;
-          player.address = data.address;
+          player.name = data.name ?? null;
+          player.avatar = data.avatar ?? null;
+          player.address = data.address ?? null;
           localPlayers.push(player);
           setPlayers((players) => [...players, player]);
 
-          if (!data.beforeYou) {
-            setChatMessages((messages) => [
-              ...messages,
-              {
-                type: "system",
-                variant: "player_joined",
-                playerId: data.playerId,
-                id: nanoid(),
-                timestamp: Date.now(),
-              },
-            ]);
-          }
+          setChatMessages((messages) => [
+            ...messages,
+            {
+              type: "system",
+              variant: "player_joined",
+              playerId: data.playerId,
+              id: nanoid(),
+              timestamp: Date.now(),
+            },
+          ]);
 
           break;
         }
 
-        case "player_left": {
-          console.info("👋 Player", toHex(data.playerId), "left");
+        case "player_leave": {
+          console.info("👋 Player", toHex(data), "left");
 
-          const player = localPlayers.find((player) => player.id === data.playerId);
+          const player = localPlayers.find((player) => player.id === data);
 
           if (player) {
             player.remove();
@@ -74,7 +72,7 @@ export function usePlayers() {
               {
                 type: "system",
                 variant: "player_left",
-                playerId: data.playerId,
+                playerId: data,
                 id: nanoid(),
                 timestamp: Date.now(),
               },
@@ -113,15 +111,15 @@ export function usePlayers() {
           break;
         }
 
-        case "player_chat": {
+        case "chat_message": {
           setChatMessages((messages) => [
             ...messages,
             {
               type: "player",
-              text: data.text,
+              text: data.message,
               playerId: data.playerId,
               id: nanoid(),
-              timestamp: data.timestamp,
+              timestamp: Date.now(),
             },
           ]);
 

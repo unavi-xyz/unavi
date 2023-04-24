@@ -36,7 +36,7 @@ export default function Overlay({ id, metadata }: Props) {
 
       {!isPointerLocked && (
         <div className="fixed left-5 top-4 z-20">
-          <div className="flex items-center space-x-3 rounded-full bg-white/80 pr-10 backdrop-blur-lg">
+          <div className="flex h-[52px] items-center space-x-3 rounded-full bg-black/50 pr-8 text-white backdrop-blur-xl">
             <Link
               href={
                 id.type === "id"
@@ -47,13 +47,13 @@ export default function Overlay({ id, metadata }: Props) {
               }
             >
               <div className="-ml-1">
-                <Image src={Logo} alt="Logo" width={48} height={48} draggable={false} />
+                <Image src={Logo} alt="Logo" width={52} height={52} draggable={false} />
               </div>
             </Link>
 
             <div>
               <div className="text-lg font-bold leading-6">{metadata.info?.name}</div>
-              <div className="text-sm leading-4 text-neutral-700">{host}</div>
+              <div className="text-sm leading-4 text-white/70">{host}</div>
             </div>
           </div>
         </div>
@@ -65,19 +65,17 @@ export default function Overlay({ id, metadata }: Props) {
 
       <Crosshair />
 
-      <div className="fixed right-0 top-0 z-20 space-x-2 p-4">
-        <MicButton className="rounded-full bg-white/70 p-3 text-2xl text-neutral-900 shadow backdrop-blur-lg transition hover:bg-white/90 hover:shadow-md active:scale-95">
-          {micEnabled ? <MdMic /> : <MdMicOff className="text-red-700" />}
+      <div className="fixed bottom-0 left-1/2 z-20 -translate-x-1/2 space-x-2 pb-4">
+        <MicButton className="h-[52px] w-[52px] rounded-full bg-black/50 text-2xl text-white backdrop-blur-lg transition hover:bg-black/70 active:scale-95">
+          {micEnabled ? <MdMic className="w-full" /> : <MdMicOff className="w-full" />}
         </MicButton>
 
-        {!isPointerLocked && (
-          <button
-            onClick={() => setOpenSettings(true)}
-            className="rounded-full bg-white/70 p-3 text-2xl text-neutral-900 shadow backdrop-blur-lg transition hover:bg-white/90 hover:shadow-md active:scale-95"
-          >
-            <IoMdSettings />
-          </button>
-        )}
+        <button
+          onClick={() => setOpenSettings(true)}
+          className="h-[52px] w-[52px] rounded-full bg-black/50 text-2xl text-white backdrop-blur-lg transition hover:bg-black/70 active:scale-95"
+        >
+          <IoMdSettings className="w-full" />
+        </button>
       </div>
 
       <div className="fixed bottom-0 left-0 z-20 p-4">

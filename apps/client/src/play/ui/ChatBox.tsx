@@ -47,7 +47,7 @@ export default function ChatBox({ alwaysShow }: Props) {
           ))}
       </div>
 
-      <div className="h-9">
+      <div className="h-12">
         <input
           ref={inputRef}
           onKeyDown={(e) => {
@@ -68,8 +68,9 @@ export default function ChatBox({ alwaysShow }: Props) {
           onFocus={() => usePlayStore.setState({ chatBoxFocused: true })}
           onBlur={() => usePlayStore.setState({ chatBoxFocused: false })}
           type="text"
-          placeholder="Send a message..."
-          className="h-full w-full rounded-lg bg-neutral-800/40 px-4 text-white outline-none backdrop-blur-xl transition placeholder:text-white/90 hover:bg-neutral-800/50 focus:bg-neutral-800 focus:placeholder:text-white/75"
+          maxLength={100}
+          placeholder={chatBoxFocused ? "Send a message..." : "Press ENTER to chat"}
+          className="h-full w-full rounded-lg bg-black/50 px-4 text-white outline-none transition placeholder:text-white/80 hover:bg-black/60 focus:bg-black/70 focus:backdrop-blur-lg focus:placeholder:text-white/75"
         />
       </div>
     </div>

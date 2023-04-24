@@ -1,5 +1,13 @@
 # @unavi/react-client
 
+## 0.5.1
+
+### Patch Changes
+
+- Updated dependencies [fb0120a9]
+  - @unavi/gltf-extensions@0.6.0
+  - engine@0.2.1
+
 ## 0.5.0
 
 ### Minor Changes

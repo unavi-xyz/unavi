@@ -1,6 +1,6 @@
 # React Client
 
-React components and hooks for running a Wired client.
+React components and hooks for running a UNAVI client.
 
 ## Installation
 

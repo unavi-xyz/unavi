@@ -1,6 +1,6 @@
 import { RequestMessage } from "@wired-protocol/types";
 import { ERC721Metadata, getHostFromMetadata } from "contracts";
-import { Engine } from "engine";
+import { Engine, EngineOptions } from "engine";
 import { providers, Signer } from "ethers";
 import {
   createContext,
@@ -120,6 +120,7 @@ interface Props {
   skybox?: string;
   uri?: string;
   metadata?: ERC721Metadata;
+  engineOptions?: EngineOptions;
 }
 
 /**
@@ -129,6 +130,7 @@ export function Client({
   animations,
   children,
   defaultAvatar,
+  engineOptions,
   ethers,
   host,
   metadata,
@@ -137,7 +139,7 @@ export function Client({
 }: Props) {
   const [avatar, setAvatar] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [engine, setEngine] = useState<Engine | null>(defaultContext.engine);
+  const [engine, setEngine] = useState<Engine | null>(null);
   const [ethersProvider, setEthersProvider] = useState<providers.Provider | Signer | null>(
     defaultContext.ethersProvider
   );
@@ -174,16 +176,18 @@ export function Client({
   }, [ethers]);
 
   useEffect(() => {
-    const newEngine = new Engine();
+    const newEngine = new Engine(engineOptions);
+
     newEngine.render.send({ subject: "toggle_animations", data: true });
     newEngine.start();
+
     setEngine(newEngine);
 
     return () => {
       newEngine.destroy();
       setEngine(null);
     };
-  }, []);
+  }, [engineOptions]);
 
   useEffect(() => {
     if (!engine) return;

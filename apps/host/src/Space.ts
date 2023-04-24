@@ -89,7 +89,7 @@ export class Space {
     if (player.producer) this.setProducer(player, player.producer);
     if (player.dataProducer) this.setDataProducer(player, player.dataProducer);
 
-    console.info(`👋 Player ${toHex(playerId)} joined space ${this.uri}.`);
+    console.info(`👋 Player ${toHex(playerId)} joined space ${this.uri}`);
   }
 
   leave(player: Player) {
@@ -116,7 +116,7 @@ export class Space {
 
     this.#publish({ type: "player_leave", data: playerId });
 
-    console.info(`👋 Player ${toHex(playerId)} left space ${this.uri}.`);
+    console.info(`👋 Player ${toHex(playerId)} left space ${this.uri}`);
 
     if (this.playerCount === 0) this.#registry.removeSpace(this.uri);
   }

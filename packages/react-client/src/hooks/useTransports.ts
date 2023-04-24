@@ -47,8 +47,8 @@ export function useTransports(device: Device | null) {
           // Create local transport
           const transport =
             data.type === "producer"
-              ? device.createSendTransport(data.options as any)
-              : device.createRecvTransport(data.options as any);
+              ? device.createSendTransport(data.options)
+              : device.createRecvTransport(data.options);
 
           if (data.type === "consumer") {
             localConsumerTransport = transport;

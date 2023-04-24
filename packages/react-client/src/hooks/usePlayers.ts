@@ -41,18 +41,16 @@ export function usePlayers() {
           localPlayers.push(player);
           setPlayers((players) => [...players, player]);
 
-          // if (!data.beforeYou) {
-          //   setChatMessages((messages) => [
-          //     ...messages,
-          //     {
-          //       type: "system",
-          //       variant: "player_joined",
-          //       playerId: data.playerId,
-          //       id: nanoid(),
-          //       timestamp: Date.now(),
-          //     },
-          //   ]);
-          // }
+          setChatMessages((messages) => [
+            ...messages,
+            {
+              type: "system",
+              variant: "player_joined",
+              playerId: data.playerId,
+              id: nanoid(),
+              timestamp: Date.now(),
+            },
+          ]);
 
           break;
         }

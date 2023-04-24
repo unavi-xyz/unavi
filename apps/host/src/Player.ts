@@ -213,6 +213,8 @@ export class Player {
     try {
       const dataConsumer = await this.consumerTransport.consumeData({
         dataProducerId: dataProducer.id,
+        maxRetransmits: 0,
+        ordered: false,
       });
       if (!dataConsumer.sctpStreamParameters) return;
 

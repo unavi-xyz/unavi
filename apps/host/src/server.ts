@@ -1,5 +1,4 @@
 import { RequestMessageSchema } from "@wired-protocol/types";
-import { SctpStreamParameters } from "mediasoup/node/lib/SctpParameters";
 import uWS from "uWebSockets.js";
 
 import { createMediasoupWorker, createWebRtcTransport } from "./mediasoup";
@@ -127,7 +126,12 @@ server.ws<UserData>("/*", {
           break;
         }
 
-        player.produceData(data as SctpStreamParameters);
+        player.produceData({
+          streamId: data.streamId,
+          maxPacketLifeTime: data.maxPacketLifeTime,
+          maxRetransmits: data.maxRetransmits,
+          ordered: data.ordered,
+        });
         break;
       }
 

@@ -44,6 +44,7 @@ export default function App({ id, metadata, uri }: Props) {
             defaultAvatar="/models/Robot.vrm"
             ethers={signer ?? provider}
             skybox="/images/Skybox.jpg"
+            engineOptions={{ useOffscreenCanvas: process.env.NODE_ENV === "production" }}
           >
             <ClientApp id={id} metadata={metadata} />
           </Client>

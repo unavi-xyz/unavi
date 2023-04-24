@@ -22,7 +22,7 @@ export class AudioModule {
   }
 
   async start() {
-    this.context.resume();
+    if (this.context.state !== "closed") this.context.resume();
 
     // Try to play audio now
     this.#playAudio();

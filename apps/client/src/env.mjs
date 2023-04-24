@@ -31,7 +31,6 @@ const server = z.object({
  * built with invalid env vars. To expose them to the client, prefix them with `NEXT_PUBLIC_`.
  */
 const client = z.object({
-  NEXT_PUBLIC_ALCHEMY_ID: z.string().optional(),
   NEXT_PUBLIC_AXIOM_INGEST_ENDPOINT: z.string().optional(),
   NEXT_PUBLIC_CDN_ENDPOINT: z.string().optional(),
   NEXT_PUBLIC_CRYPTOAVATARS_API_KEY: z.string().optional(),
@@ -60,7 +59,6 @@ const processEnv = {
   S3_ENDPOINT: process.env.S3_ENDPOINT,
   S3_REGION: process.env.S3_REGION,
   S3_SECRET: process.env.S3_SECRET,
-  NEXT_PUBLIC_ALCHEMY_ID: process.env.NEXT_PUBLIC_ALCHEMY_ID,
   NEXT_PUBLIC_AXIOM_INGEST_ENDPOINT: process.env.NEXT_PUBLIC_AXIOM_INGEST_ENDPOINT,
   NEXT_PUBLIC_CDN_ENDPOINT: process.env.NEXT_PUBLIC_CDN_ENDPOINT,
   NEXT_PUBLIC_CRYPTOAVATARS_API_KEY: process.env.NEXT_PUBLIC_CRYPTOAVATARS_API_KEY,

@@ -31,6 +31,9 @@ export default function App({ id, metadata, uri }: Props) {
       ? "localhost:4000"
       : metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST;
 
+  const useOffscreenCanvas =
+    typeof OffscreenCanvas !== "undefined" && process.env.NODE_ENV !== "development";
+
   return (
     <>
       <Script src="/scripts/draco_decoder.js" onReady={() => setScriptsReady(true)} />
@@ -44,7 +47,7 @@ export default function App({ id, metadata, uri }: Props) {
             defaultAvatar="/models/Robot.vrm"
             ethers={signer ?? provider}
             skybox="/images/Skybox.jpg"
-            engineOptions={{ useOffscreenCanvas: process.env.NODE_ENV === "production" }}
+            engineOptions={{ useOffscreenCanvas }}
           >
             <ClientApp id={id} metadata={metadata} />
           </Client>

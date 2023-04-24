@@ -187,7 +187,8 @@ export function Client({
       newEngine.destroy();
       setEngine(null);
     };
-  }, [engineOptions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!engine) return;

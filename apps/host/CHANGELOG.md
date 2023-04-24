@@ -1,5 +1,11 @@
 # host
 
+## 0.4.0
+
+### Minor Changes
+
+- fb0120a9: migrate to the [Wired Protocol](https://github.com/wired-protocol/spec).
+
 ## 0.3.0
 
 ### Minor Changes

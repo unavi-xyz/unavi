@@ -1,5 +1,11 @@
 # @unavi/gltf-extensions
 
+## 0.6.0
+
+### Minor Changes
+
+- fb0120a9: remove Space extension. Spaces are now defined using a metadata.json file, according to the [Wired Protocol](https://github.com/wired-protocol/spec).
+
 ## 0.5.0
 
 ### Minor Changes

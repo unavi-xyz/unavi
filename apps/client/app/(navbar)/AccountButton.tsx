@@ -1,24 +1,17 @@
-"use client";
-
-import AuthProvider, { useAuth } from "@/src/client/AuthProvider";
+import AuthProvider from "@/src/client/AuthProvider";
+import { getUserSession } from "@/src/server/auth/getUserSession";
+import { fetchProfileFromAddress } from "@/src/server/helpers/fetchProfileFromAddress";
 
 import ProfileButton from "./ProfileButton";
 import SignInButton from "./SignInButton";
 
-export default function AccountButton() {
+export default async function AccountButton() {
+  const session = await getUserSession();
+  const profile = session ? await fetchProfileFromAddress(session.user.address) : null;
+
   return (
     <AuthProvider>
-      <Buttons />
+      {session ? <ProfileButton user={session.user} profile={profile} /> : <SignInButton />}
     </AuthProvider>
-  );
-}
-
-function Buttons() {
-  const { status, loading } = useAuth();
-
-  return status === "authenticated" ? (
-    <ProfileButton loading={loading} />
-  ) : (
-    <SignInButton loading={loading || status === "loading"} />
   );
 }

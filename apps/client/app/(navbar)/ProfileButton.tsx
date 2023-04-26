@@ -1,41 +1,28 @@
 "use client";
 
+import { User } from "lucia-auth";
 import { useState } from "react";
 
-import { useAuth } from "@/src/client/AuthProvider";
-import { useProfileByAddress } from "@/src/play/hooks/useProfileByAddress";
+import { Profile } from "@/src/server/helpers/fetchProfile";
 import Avatar from "@/src/ui/Avatar";
 import { DropdownContent, DropdownMenu, DropdownTrigger } from "@/src/ui/DropdownMenu";
 
 import ProfileMenu from "./ProfileMenu";
 
 interface Props {
-  loading?: boolean;
+  user: User;
+  profile: Profile | null;
 }
 
-export default function ProfileButton({ loading: loadingAuth }: Props) {
-  const { user } = useAuth();
-  const { profile, isLoading: loadingProfile } = useProfileByAddress(user?.address);
-
+export default function ProfileButton({ user, profile }: Props) {
   const [open, setOpen] = useState(false);
 
-  const loading = loadingAuth || loadingProfile;
-
   return (
-    <DropdownMenu
-      open={open}
-      onOpenChange={(value) => {
-        if (loading && value) return;
-        setOpen(value);
-      }}
-    >
-      <DropdownTrigger
-        className={`rounded-full transition ${loading ? "cursor-default" : "hover:opacity-90"}`}
-      >
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownTrigger className="rounded-full transition hover:opacity-90">
         <Avatar
           src={profile?.metadata?.image}
-          uniqueKey={profile?.handle?.full ?? user?.address ?? ""}
-          loading={loading}
+          uniqueKey={profile?.handle?.full ?? user.address}
           circle
           size={40}
         />

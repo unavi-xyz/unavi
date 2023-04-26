@@ -2,12 +2,12 @@ import { useClient } from "@unavi/react-client";
 import { useEffect } from "react";
 
 import { usePlayStore } from "@/app/play/store";
+import { useAuth } from "@/src/client/AuthProvider";
 
-import { useSession } from "../../client/auth/useSession";
 import { LocalStorageKey } from "../constants";
 
 export function useLoadUser() {
-  const { data: session } = useSession();
+  const { user } = useAuth();
   const { send } = useClient();
 
   // Load nickname from local storage on initial load
@@ -21,7 +21,7 @@ export function useLoadUser() {
 
   // Publish address on change
   useEffect(() => {
-    const address = session?.address ?? null;
+    const address = user?.address ?? null;
     send({ type: "set_address", data: address });
-  }, [session, send]);
+  }, [user, send]);
 }

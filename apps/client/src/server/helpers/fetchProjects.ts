@@ -2,15 +2,15 @@ import { cache } from "react";
 
 import { getProjectDownloadURL } from "@/app/api/projects/[id]/files/[file]/files";
 
+import { getUserSession } from "../auth/getUserSession";
 import { prisma } from "../prisma";
-import { getServerSession } from "./getServerSession";
 
 export const fetchProjects = cache(async (): Promise<Project[]> => {
-  const session = await getServerSession();
+  const session = await getUserSession();
   if (!session) throw new Error("Unauthorized");
 
   const projects = await prisma.project.findMany({
-    where: { owner: session.address },
+    where: { owner: session.user.address },
     orderBy: { updatedAt: "desc" },
   });
 

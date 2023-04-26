@@ -3,13 +3,11 @@
 import "@rainbow-me/rainbowkit/styles.css";
 
 import { lightTheme, RainbowKitProvider } from "@rainbow-me/rainbowkit";
-import {
-  GetSiweMessageOptions,
-  RainbowKitSiweNextAuthProvider,
-} from "@rainbow-me/rainbowkit-siwe-next-auth";
 import { WagmiConfig } from "wagmi";
 
 import { chains, wagmiClient } from "@/src/client/wagmi";
+
+import { RainbowKitAuthProvider } from "./RainbowkitAuthProvider";
 
 const theme = lightTheme({
   accentColor: "#191919",
@@ -19,10 +17,6 @@ const theme = lightTheme({
   overlayBlur: "small",
 });
 
-const getSiweMessageOptions: GetSiweMessageOptions = () => ({
-  statement: "Sign in to UNAVI 🌐",
-});
-
 interface Props {
   children: React.ReactNode;
 }
@@ -30,11 +24,11 @@ interface Props {
 export default function RainbowkitWrapper({ children }: Props) {
   return (
     <WagmiConfig client={wagmiClient}>
-      <RainbowKitSiweNextAuthProvider getSiweMessageOptions={getSiweMessageOptions}>
+      <RainbowKitAuthProvider>
         <RainbowKitProvider theme={theme} chains={chains}>
           {children}
         </RainbowKitProvider>
-      </RainbowKitSiweNextAuthProvider>
+      </RainbowKitAuthProvider>
     </WagmiConfig>
   );
 }

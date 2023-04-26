@@ -5,7 +5,7 @@ import { useConnectModal } from "@rainbow-me/rainbowkit";
 import RainbowkitWrapper from "./RainbowkitWrapper";
 
 interface Props {
-  isLoading?: boolean;
+  loading?: boolean;
 }
 
 export default function SignInButton(props: Props) {
@@ -16,15 +16,15 @@ export default function SignInButton(props: Props) {
   );
 }
 
-export function ClientSignInButton({ isLoading }: Props) {
+export function ClientSignInButton({ loading }: Props) {
   const { openConnectModal } = useConnectModal();
 
   return (
     <button
       className={`rounded-full bg-neutral-900 px-6 py-1.5 font-bold text-white outline-neutral-400 transition active:scale-100 ${
-        isLoading ? "opacity-70" : "hover:scale-105"
+        loading ? "opacity-70" : "hover:scale-105"
       }`}
-      disabled={isLoading}
+      disabled={loading}
       onClick={openConnectModal}
     >
       Sign in

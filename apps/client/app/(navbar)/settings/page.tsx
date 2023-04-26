@@ -1,12 +1,12 @@
 import { Metadata as NextMetadata } from "next";
 
+import AuthProvider from "@/src/client/AuthProvider";
 import { env } from "@/src/env.mjs";
+import { getUserSession } from "@/src/server/auth/getUserSession";
 import { fetchProfileFromAddress } from "@/src/server/helpers/fetchProfileFromAddress";
-import { getServerSession } from "@/src/server/helpers/getServerSession";
 
 import { metadata as baseMetadata } from "../../layout";
 import RainbowkitWrapper from "../RainbowkitWrapper";
-import SessionProvider from "../SessionProvider";
 import Handle from "./Handle";
 import Metadata from "./Metadata";
 
@@ -25,14 +25,14 @@ export const metadata: NextMetadata = {
 };
 
 export default async function Settings() {
-  const session = await getServerSession();
+  const session = await getUserSession();
 
-  if (!session || !session.address) return <div className="pt-10 text-center">Not signed in.</div>;
+  if (!session || !session.user) return <div className="pt-10 text-center">Not signed in.</div>;
 
-  const profile = await fetchProfileFromAddress(session.address);
+  const profile = await fetchProfileFromAddress(session.user.address);
 
   return (
-    <SessionProvider>
+    <AuthProvider>
       <RainbowkitWrapper>
         <div className="flex w-full justify-center">
           <div className="mx-4 w-full max-w-lg space-y-4 py-8">
@@ -42,6 +42,6 @@ export default async function Settings() {
           </div>
         </div>
       </RainbowkitWrapper>
-    </SessionProvider>
+    </AuthProvider>
   );
 }

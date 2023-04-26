@@ -3,7 +3,7 @@ import { useCallback, useState } from "react";
 
 import { getProjectFileUpload } from "@/app/api/projects/[id]/files/[file]/helper";
 import { updateProject } from "@/app/api/projects/[id]/helper";
-import { useSession } from "@/src/client/auth/useSession";
+import { useAuth } from "@/src/client/AuthProvider";
 import { env } from "@/src/env.mjs";
 import { useProfileByAddress } from "@/src/play/hooks/useProfileByAddress";
 import { Project } from "@/src/server/helpers/fetchProject";
@@ -13,8 +13,8 @@ import { useEditor } from "../components/Editor";
 
 export function useSave(project: Project) {
   const { engine, canvasRef, title, setImage, changeMode } = useEditor();
-  const { data: session } = useSession();
-  const { profile } = useProfileByAddress(session?.address);
+  const { user } = useAuth();
+  const { profile } = useProfileByAddress(user?.address);
 
   const [saving, setSaving] = useState(false);
 
@@ -57,8 +57,8 @@ export function useSave(project: Project) {
 
     const creator = profile
       ? `${env.NEXT_PUBLIC_DEPLOYED_URL}/user/${toHex(profile.id)}`
-      : session?.address
-      ? `${env.NEXT_PUBLIC_DEPLOYED_URL}/user/${session.address}`
+      : user?.address
+      ? `${env.NEXT_PUBLIC_DEPLOYED_URL}/user/${user.address}`
       : "";
 
     const date = new Date().toISOString();
@@ -81,7 +81,7 @@ export function useSave(project: Project) {
     });
 
     if (!res.ok) throw new Error("Failed to upload model");
-  }, [project, engine, profile, session, title]);
+  }, [project, engine, profile, user, title]);
 
   const saveMetadata = useCallback(async () => {
     await updateProject(project.id, { title, description: project.description });

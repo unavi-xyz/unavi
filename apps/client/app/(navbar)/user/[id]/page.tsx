@@ -6,11 +6,11 @@ import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
 
+import { getUserSession } from "@/src/server/auth/getUserSession";
 import { ethersProvider } from "@/src/server/ethers";
 import { fetchProfile } from "@/src/server/helpers/fetchProfile";
 import { fetchProfileFromAddress } from "@/src/server/helpers/fetchProfileFromAddress";
 import { fetchProfileOwner } from "@/src/server/helpers/fetchProfileOwner";
-import { getServerSession } from "@/src/server/helpers/getServerSession";
 import Avatar from "@/src/ui/Avatar";
 import Card from "@/src/ui/Card";
 import { isFromCDN } from "@/src/utils/isFromCDN";
@@ -93,14 +93,14 @@ export default async function User({ params: { id } }: { params: Params }) {
 
   if (!isAddress && !profile) notFound();
 
-  const session = await getServerSession();
+  const session = await getUserSession();
   const owner = await ownerPromie;
 
-  const isUser = !session?.address
+  const isUser = !session?.user.address
     ? false
     : isAddress
-    ? session.address === id
-    : session.address === owner;
+    ? session.user.address === id
+    : session.user.address === owner;
 
   return (
     <>

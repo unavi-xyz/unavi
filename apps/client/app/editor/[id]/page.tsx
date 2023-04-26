@@ -1,12 +1,12 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import AuthProvider from "@/src/client/AuthProvider";
 import { Editor } from "@/src/editor/components/Editor";
 import EditorUI from "@/src/editor/components/EditorUI";
 import { fetchProject } from "@/src/server/helpers/fetchProject";
 
 import RainbowkitWrapper from "../../(navbar)/RainbowkitWrapper";
-import SessionProvider from "../../(navbar)/SessionProvider";
 
 type Params = {
   id: string;
@@ -29,7 +29,7 @@ export default async function Page({ params: { id } }: { params: Params }) {
   if (!project) notFound();
 
   return (
-    <SessionProvider>
+    <AuthProvider>
       <RainbowkitWrapper>
         <Editor
           project={project}
@@ -40,6 +40,6 @@ export default async function Page({ params: { id } }: { params: Params }) {
           <EditorUI project={project} />
         </Editor>
       </RainbowkitWrapper>
-    </SessionProvider>
+    </AuthProvider>
   );
 }

@@ -2,7 +2,7 @@ import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { NextRequest, NextResponse } from "next/server";
 
 import { env } from "@/src/env.mjs";
-import { getServerSession } from "@/src/server/helpers/getServerSession";
+import { getUserSession } from "@/src/server/auth/getUserSession";
 import { listObjectsRecursive } from "@/src/server/helpers/listObjectsRecursive";
 import { prisma } from "@/src/server/prisma";
 import { s3Client } from "@/src/server/s3";
@@ -12,14 +12,14 @@ import { Params, paramsSchema, patchSchema } from "./types";
 
 // Get project
 export async function GET(request: NextRequest, { params }: Params) {
-  const session = await getServerSession();
-  if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
+  const session = await getUserSession();
+  if (!session || !session.user.address) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
 
   // Verify user owns the project
   const project = await prisma.project.findFirst({
-    where: { publicId: id, owner: session.address },
+    where: { publicId: id, owner: session.user.address },
     include: { Space: true },
   });
   if (!project) return new Response("Project not found", { status: 404 });
@@ -29,20 +29,22 @@ export async function GET(request: NextRequest, { params }: Params) {
 
 // Update project
 export async function PATCH(request: NextRequest, { params }: Params) {
-  const session = await getServerSession();
-  if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
+  const session = await getUserSession();
+  if (!session || !session.user.address) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
   const { title, description, spaceId } = patchSchema.parse(await request.json());
 
   // Verify user owns the project
-  const found = await prisma.project.findFirst({ where: { publicId: id, owner: session.address } });
+  const found = await prisma.project.findFirst({
+    where: { publicId: id, owner: session.user.address },
+  });
   if (!found) return new Response("Project not found", { status: 404 });
 
   // Verify user owns the space, if provided
   const space = spaceId
     ? await prisma.space.findFirst({
-        where: { publicId: spaceId, owner: session.address },
+        where: { publicId: spaceId, owner: session.user.address },
       })
     : null;
   if (spaceId && !space) return new Response("Space not found", { status: 404 });
@@ -62,13 +64,15 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
 // Delete project
 export async function DELETE(request: NextRequest, { params }: Params) {
-  const session = await getServerSession();
-  if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
+  const session = await getUserSession();
+  if (!session || !session.user.address) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
 
   // Verify user owns the project
-  const found = await prisma.project.findFirst({ where: { publicId: id, owner: session.address } });
+  const found = await prisma.project.findFirst({
+    where: { publicId: id, owner: session.user.address },
+  });
   if (!found) return new Response("Project not found", { status: 404 });
 
   // Get objects from S3

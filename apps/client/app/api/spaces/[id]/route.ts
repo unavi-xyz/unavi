@@ -2,7 +2,7 @@ import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { NextRequest, NextResponse } from "next/server";
 
 import { env } from "@/src/env.mjs";
-import { getServerSession } from "@/src/server/helpers/getServerSession";
+import { getUserSession } from "@/src/server/auth/getUserSession";
 import { listObjectsRecursive } from "@/src/server/helpers/listObjectsRecursive";
 import { prisma } from "@/src/server/prisma";
 import { s3Client } from "@/src/server/s3";
@@ -33,14 +33,14 @@ export async function GET(request: NextRequest, { params }: Params) {
 
 // Update space
 export async function PATCH(request: NextRequest, { params }: Params) {
-  const session = await getServerSession();
-  if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
+  const session = await getUserSession();
+  if (!session || !session.user.address) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
 
   // Verify user owns the space
   const found = await prisma.space.findFirst({
-    where: { publicId: id, owner: session.address },
+    where: { publicId: id, owner: session.user.address },
     include: { SpaceModel: true },
   });
   if (!found) return new Response("Space not found", { status: 404 });
@@ -55,14 +55,14 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
 // Delete space
 export async function DELETE(request: NextRequest, { params }: Params) {
-  const session = await getServerSession();
-  if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
+  const session = await getUserSession();
+  if (!session || !session.user.address) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
 
   // Verify user owns the space
   const found = await prisma.space.findFirst({
-    where: { publicId: id, owner: session.address },
+    where: { publicId: id, owner: session.user.address },
     include: { SpaceModel: true, SpaceNFT: true },
   });
   if (!found) return new Response("Space not found", { status: 404 });

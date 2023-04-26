@@ -1,9 +1,8 @@
 import { MdLogout } from "react-icons/md";
 
 import { ClientSignInButton } from "@/app/(navbar)/SignInButton";
+import { useAuth } from "@/src/client/AuthProvider";
 
-import { useLogout } from "../../../client/auth/useLogout";
-import { useSession } from "../../../client/auth/useSession";
 import Avatar from "../../../ui/Avatar";
 import Tooltip from "../../../ui/Tooltip";
 import { useProfileByAddress } from "../../hooks/useProfileByAddress";
@@ -13,20 +12,19 @@ interface Props {
 }
 
 export default function AccountSettings({ onClose }: Props) {
-  const { logout } = useLogout();
-  const { data: session } = useSession();
-  const { profile, isLoading: isLoadingProfile } = useProfileByAddress(session?.address);
+  const { user, logout } = useAuth();
+  const { profile, isLoading: isLoadingProfile } = useProfileByAddress(user?.address);
 
   return (
     <section className="space-y-1">
       <div className="text-xl font-bold">Account</div>
 
-      {session?.address ? (
+      {user?.address ? (
         <div className="flex items-center space-x-4 pt-2">
           <div className="overflow-hidden">
             <Avatar
               src={profile?.metadata?.image}
-              uniqueKey={profile?.handle?.full ?? session.address}
+              uniqueKey={profile?.handle?.full ?? user.address}
               loading={isLoadingProfile}
               size={48}
             />

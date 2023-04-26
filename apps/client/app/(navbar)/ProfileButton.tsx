@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { useSession } from "@/src/client/auth/useSession";
+import { useAuth } from "@/src/client/AuthProvider";
 import { useProfileByAddress } from "@/src/play/hooks/useProfileByAddress";
 import Avatar from "@/src/ui/Avatar";
 import { DropdownContent, DropdownMenu, DropdownTrigger } from "@/src/ui/DropdownMenu";
@@ -10,40 +10,40 @@ import { DropdownContent, DropdownMenu, DropdownTrigger } from "@/src/ui/Dropdow
 import ProfileMenu from "./ProfileMenu";
 
 interface Props {
-  isLoading?: boolean;
+  loading?: boolean;
 }
 
-export default function ProfileButton({ isLoading: isLoadingAuth }: Props) {
-  const { data: session } = useSession();
-  const { profile, isLoading: isLoadingProfile } = useProfileByAddress(session?.address);
+export default function ProfileButton({ loading: loadingAuth }: Props) {
+  const { user } = useAuth();
+  const { profile, isLoading: loadingProfile } = useProfileByAddress(user?.address);
 
   const [open, setOpen] = useState(false);
 
-  const isLoading = isLoadingAuth || isLoadingProfile;
+  const loading = loadingAuth || loadingProfile;
 
   return (
     <DropdownMenu
       open={open}
       onOpenChange={(value) => {
-        if (isLoading && value) return;
+        if (loading && value) return;
         setOpen(value);
       }}
     >
       <DropdownTrigger
-        className={`rounded-full transition ${isLoading ? "cursor-default" : "hover:opacity-90"}`}
+        className={`rounded-full transition ${loading ? "cursor-default" : "hover:opacity-90"}`}
       >
         <Avatar
           src={profile?.metadata?.image}
-          uniqueKey={profile?.handle?.full ?? session?.address ?? ""}
-          loading={isLoading}
+          uniqueKey={profile?.handle?.full ?? user?.address ?? ""}
+          loading={loading}
           circle
           size={40}
         />
       </DropdownTrigger>
 
       <DropdownContent>
-        {profile !== undefined && session?.address ? (
-          <ProfileMenu profile={profile} session={session} />
+        {profile !== undefined && user?.address ? (
+          <ProfileMenu profile={profile} user={user} />
         ) : null}
       </DropdownContent>
     </DropdownMenu>

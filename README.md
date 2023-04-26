@@ -26,7 +26,7 @@
 
 ## 🔥 Features
 
-- Decentralized identity + content distribution over [Ethereum](https://github.com/unavi-xyz/contracts)
+- Built upon open standards, using the [Wired Protocol](https://github.com/wired-protocol/spec)
 - Open backend, anyone can run their own servers
 - Custom multi-threaded, [glTF](https://github.com/KhronosGroup/glTF)-based game engine
 - [VRM](https://vrm.dev/) avatar support

@@ -13,6 +13,10 @@ export async function getSession() {
   // TODO: Add CSRF protection?
   // https://lucia-auth.com/basics/sessions#get-session-from-requests
 
-  const session = await auth.validateSession(cookie.value);
-  return session;
+  try {
+    const session = await auth.validateSession(cookie.value);
+    return session;
+  } catch {
+    return null;
+  }
 }

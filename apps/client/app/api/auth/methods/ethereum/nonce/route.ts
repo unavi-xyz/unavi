@@ -7,6 +7,8 @@ import { prisma } from "@/src/server/prisma";
 import { ETH_SESSION_COOKIE } from "./constants";
 import { GetNonceResponse } from "./types";
 
+export const dynamic = true;
+
 /**
  * Generate a new nonce for the user to sign.
  * Uses an "ethereum session id" to keep track of the nonce.

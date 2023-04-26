@@ -7,7 +7,7 @@ import { prisma } from "@/src/server/prisma";
 import { ETH_SESSION_COOKIE } from "./constants";
 import { GetNonceResponse } from "./types";
 
-export const dynamic = true;
+export const dynamic = "force-dynamic";
 
 /**
  * Generate a new nonce for the user to sign.

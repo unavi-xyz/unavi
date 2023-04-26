@@ -11,8 +11,10 @@ export async function validateEthereumAuth(request: NextRequest, data: AuthData)
   // Validate the signature
   const siwe = new SiweMessage(JSON.parse(data.message));
 
-  const domain = new URL(env.NEXTAUTH_URL).host;
-  if (siwe.domain !== domain) {
+  const domain = new URL(env.NEXT_PUBLIC_DEPLOYED_URL).host;
+  const vercelDomain = env.VERCEL_URL; // Automatically set by Vercel
+
+  if (siwe.domain !== domain && (!vercelDomain || siwe.domain !== vercelDomain)) {
     console.warn(`Domain mismatch: ${siwe.domain} !== ${domain}`);
     return null;
   }

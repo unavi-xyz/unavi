@@ -19,12 +19,12 @@ export default function AccountSettings({ onClose }: Props) {
     <section className="space-y-1">
       <div className="text-xl font-bold">Account</div>
 
-      {user?.address ? (
+      {user ? (
         <div className="flex items-center space-x-4 pt-2">
-          <div className="overflow-hidden">
+          <div className="overflow-hidden rounded-xl">
             <Avatar
               src={profile?.metadata?.image}
-              uniqueKey={user.userId}
+              uniqueKey={user.username}
               loading={isLoadingProfile}
               size={48}
             />
@@ -35,7 +35,7 @@ export default function AccountSettings({ onClose }: Props) {
           ) : (
             <div>
               <span className="text-xl font-bold">{profile?.metadata?.name}</span>
-              <span className="text-lg text-neutral-400">@{profile?.username}</span>
+              <span className="text-lg font-bold text-neutral-800">@{user.username}</span>
             </div>
           )}
 

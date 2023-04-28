@@ -40,7 +40,7 @@
     "lucia-auth": "^1.4.0",
     "mediasoup-client": "^3.6.84",
     "nanoid": "^4.0.2",
-    "next": "13.3.1-canary.17",
+    "next": "13.3.1",
     "next-axiom": "^0.17.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

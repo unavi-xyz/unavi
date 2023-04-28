@@ -41,6 +41,9 @@ export default function EditProfileButton({ username, bio }: Props) {
     try {
       await updateProfile({ username: usernameElement.value || username, bio: bioElement.value });
 
+      // Refresh the page
+      router.refresh();
+
       // Redirect to the new username
       router.push(`/@${usernameElement.value || username}`);
 

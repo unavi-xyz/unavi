@@ -104,9 +104,9 @@ export default async function Handle({ params }: Props) {
                   <EditProfileButton
                     userId={user.id}
                     username={user.username}
-                    bio={user.Profile?.bio ?? ""}
-                    image={user.Profile?.image ?? ""}
-                    background={user.Profile?.background ?? ""}
+                    bio={user.Profile?.bio ?? undefined}
+                    image={user.Profile?.image ?? undefined}
+                    background={user.Profile?.background ?? undefined}
                   />
                 </AuthProvider>
               </div>

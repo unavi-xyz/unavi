@@ -29,6 +29,7 @@
     "@radix-ui/react-toggle-group": "^1.0.3",
     "@radix-ui/react-tooltip": "^1.0.5",
     "@rainbow-me/rainbowkit": "^0.12.9",
+    "@t3-oss/env-nextjs": "^0.2.2",
     "@unavi/behave-graph-core": "^0.9.20",
     "@unavi/gltf-extensions": "workspace:*",
     "@unavi/react-client": "workspace:*",

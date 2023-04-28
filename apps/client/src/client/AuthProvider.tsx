@@ -3,19 +3,13 @@
 import { AuthenticationStatus } from "@rainbow-me/rainbowkit";
 import { User } from "lucia-auth";
 import { useRouter } from "next/navigation";
-import {
-  Context,
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  useTransition,
-} from "react";
+import { Context, createContext, useCallback, useContext, useEffect, useTransition } from "react";
 
 import { LoginResponse } from "@/app/api/auth/login/types";
 import { getAuthStatus } from "@/app/api/auth/status/helper";
 import { AuthData } from "@/src/server/auth/types";
+
+import { useAuthStore } from "./authStore";
 
 export type AuthContextValue = {
   status: AuthenticationStatus;
@@ -26,9 +20,9 @@ export type AuthContextValue = {
 };
 
 export const AuthContext: Context<AuthContextValue> = createContext<AuthContextValue>({
-  status: "unauthenticated",
+  status: useAuthStore.getState().status,
   loading: false,
-  user: null,
+  user: useAuthStore.getState().user,
   login: async () => {},
   logout: async () => {},
 });
@@ -41,8 +35,10 @@ interface Props {
  * A context provider for authentication
  */
 export default function AuthProvider({ children }: Props) {
-  const [status, setStatus] = useState<AuthenticationStatus>("loading");
-  const [user, setUser] = useState<User | null>(null);
+  const status = useAuthStore((state) => state.status);
+  const setStatus = useAuthStore((state) => state.setStatus);
+  const user = useAuthStore((state) => state.user);
+  const setUser = useAuthStore((state) => state.setUser);
 
   const [loading, startTransition] = useTransition();
 
@@ -75,7 +71,7 @@ export default function AuthProvider({ children }: Props) {
         throw err;
       }
     },
-    [status, setStatus, router]
+    [status, setStatus, setUser, router]
   );
 
   const logout = useCallback(async () => {
@@ -96,7 +92,7 @@ export default function AuthProvider({ children }: Props) {
       setStatus("authenticated");
       throw err;
     }
-  }, [status, setStatus, router]);
+  }, [status, setStatus, setUser, router]);
 
   // Get the initial authentication status
   useEffect(() => {
@@ -113,7 +109,7 @@ export default function AuthProvider({ children }: Props) {
         setStatus("unauthenticated");
         setUser(null);
       });
-  }, []);
+  }, [setStatus, setUser]);
 
   return (
     <AuthContext.Provider value={{ status, loading, user, login, logout }}>

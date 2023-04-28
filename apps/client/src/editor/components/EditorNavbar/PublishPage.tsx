@@ -91,7 +91,7 @@ export default function PublishPage({ project }: Props) {
             name: title.trimEnd(),
             description: description.trimEnd(),
             authors: user?.username
-              ? [`${user.username}@${env.NEXT_PUBLIC_DEFAULT_HOST}`]
+              ? [`${user.username}@${env.NEXT_PUBLIC_DEPLOYED_URL}`]
               : undefined,
             image: imageURL,
             host: env.NEXT_PUBLIC_DEFAULT_HOST,

@@ -11,13 +11,13 @@ import { Params } from "./types";
 // Get new asset upload URL
 export async function POST(request: NextRequest, { params }: Params) {
   const session = await getUserSession();
-  if (!session || !session.user.address) return new Response("Unauthorized", { status: 401 });
+  if (!session) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
 
   // Verify user owns the project
   const found = await prisma.project.findFirst({
-    where: { publicId: id, owner: session.user.address },
+    where: { publicId: id, ownerId: session.user.userId },
   });
   if (!found) return new Response("Project not found", { status: 404 });
 

@@ -48,7 +48,7 @@ export default function Connect({ id, owner, connectedSpaceId }: Props) {
       const space = await getSpace(newSpaceId);
 
       // Check if space is owned by user
-      if (owner !== space.owner) throw new Error("You do not own this space");
+      if (owner !== space.ownerId) throw new Error("You do not own this space");
 
       // Link project to space
       await linkProject(id, { spaceId: newSpaceId });

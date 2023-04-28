@@ -10,13 +10,13 @@ import { GetFileDownloadResponse, GetFileUploadResponse, paramsSchema } from "./
 // Get file download URL
 export async function GET(request: NextRequest, { params }: Params) {
   const session = await getUserSession();
-  if (!session || !session.user.address) return new Response("Unauthorized", { status: 401 });
+  if (!session) return new Response("Unauthorized", { status: 401 });
 
   const { id, file } = paramsSchema.parse(params);
 
   // Verify user owns the project
   const found = await prisma.project.findFirst({
-    where: { publicId: id, owner: session.user.address },
+    where: { publicId: id, ownerId: session.user.userId },
   });
   if (!found) return new Response("Project not found", { status: 404 });
 
@@ -29,13 +29,13 @@ export async function GET(request: NextRequest, { params }: Params) {
 // Get file upload URL
 export async function PUT(request: NextRequest, { params }: Params) {
   const session = await getUserSession();
-  if (!session || !session.user.address) return new Response("Unauthorized", { status: 401 });
+  if (!session) return new Response("Unauthorized", { status: 401 });
 
   const { id, file } = paramsSchema.parse(params);
 
   // Verify user owns the project
   const found = await prisma.project.findFirst({
-    where: { publicId: id, owner: session.user.address },
+    where: { publicId: id, ownerId: session.user.userId },
   });
   if (!found) return new Response("Project not found", { status: 404 });
 

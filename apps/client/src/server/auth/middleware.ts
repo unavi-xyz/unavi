@@ -6,10 +6,10 @@ import { NextRequest, NextResponse } from "next/server";
  * {@see https://github.com/pilcrowOnPaper/lucia/discussions/548}
  */
 export function edge(): Middleware<[NextRequest, NextResponse | undefined]> {
-  return (incoming, outgoing, env) => {
+  return (incoming, outgoing) => {
     const requestContext = {
       request: {
-        url: getUrl(incoming, env),
+        url: incoming.url,
         method: incoming.method,
         headers: {
           origin: incoming.headers.get("origin"),
@@ -23,14 +23,4 @@ export function edge(): Middleware<[NextRequest, NextResponse | undefined]> {
 
     return requestContext;
   };
-}
-
-function getUrl(incoming: NextRequest, env: "DEV" | "PROD") {
-  if (!incoming.headers.get("host")) return "";
-
-  const protocol = env === "DEV" ? "http:" : "https:";
-  const host = incoming.headers.get("host");
-  const pathname = incoming.url;
-
-  return `${protocol}//${host}${pathname}`;
 }

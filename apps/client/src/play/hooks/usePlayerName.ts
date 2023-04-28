@@ -1,7 +1,6 @@
 import { ClientContext } from "@unavi/react-client";
 import { useContext, useEffect, useState } from "react";
 
-import { getProfileByAddress } from "@/app/api/profiles/by-address/[address]/helper";
 import { usePlayStore } from "@/app/play/store";
 import { useAuth } from "@/src/client/AuthProvider";
 
@@ -29,12 +28,12 @@ export function usePlayerName(playerId: number | null) {
       if (playerId === userId) {
         const address = user?.address ?? null;
 
-        if (address) {
-          const profile = await getProfileByAddress(address);
+        // if (address) {
+        //   const profile = await getProfileByAddress(address);
 
-          if (profile?.handle) displayName = profile.handle.string;
-          else if (!userNickname) displayName = address.substring(0, 6);
-        }
+        //   if (profile?.handle) displayName = profile.handle.string;
+        //   else if (!userNickname) displayName = address.substring(0, 6);
+        // }
 
         if (!displayName && userNickname) displayName = userNickname;
         if (!displayName) displayName = `Guest ${toHex(playerId)}`;

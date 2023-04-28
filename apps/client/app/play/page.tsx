@@ -32,10 +32,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const title = metadata.info?.name || `Space ${displayId}`;
 
   const description = metadata.info?.description || "";
-
-  const authors = metadata.info?.authors
-    ?.map((author) => author.name || author.address)
-    .filter(Boolean) as string[] | undefined;
+  const authors = metadata.info?.authors;
 
   const image = metadata.info?.image;
 

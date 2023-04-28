@@ -5,16 +5,13 @@ import { getProjectFileUpload } from "@/app/api/projects/[id]/files/[file]/helpe
 import { updateProject } from "@/app/api/projects/[id]/helper";
 import { useAuth } from "@/src/client/AuthProvider";
 import { env } from "@/src/env.mjs";
-import { useProfileByAddress } from "@/src/play/hooks/useProfileByAddress";
 import { Project } from "@/src/server/helpers/fetchProject";
-import { toHex } from "@/src/utils/toHex";
 
 import { useEditor } from "../components/Editor";
 
 export function useSave(project: Project) {
   const { engine, canvasRef, title, setImage, changeMode } = useEditor();
   const { user } = useAuth();
-  const { profile } = useProfileByAddress(user?.address);
 
   const [saving, setSaving] = useState(false);
 
@@ -55,18 +52,13 @@ export function useSave(project: Project) {
       engine.scene.doc.getRoot().setExtension(xmpPacket.extensionName, xmpPacket);
     }
 
-    const creator = profile
-      ? `${env.NEXT_PUBLIC_DEPLOYED_URL}/user/${toHex(profile.id)}`
-      : user?.address
-      ? `${env.NEXT_PUBLIC_DEPLOYED_URL}/user/${user.address}`
-      : "";
-
+    const creator = user?.username ? `${user.username}@${env.NEXT_PUBLIC_DEPLOYED_URL}` : undefined;
     const date = new Date().toISOString();
 
     xmpPacket.setProperty("dc:title", title.trimEnd());
-    xmpPacket.setProperty("dc:creator", creator);
     xmpPacket.setProperty("dc:date", date);
     xmpPacket.setProperty("dc:description", project.description.trimEnd());
+    if (creator) xmpPacket.setProperty("dc:creator", creator);
 
     // Export to GLB
     const glb = await engine.scene.export({ log: process.env.NODE_ENV === "development" });
@@ -81,7 +73,7 @@ export function useSave(project: Project) {
     });
 
     if (!res.ok) throw new Error("Failed to upload model");
-  }, [project, engine, profile, user, title]);
+  }, [project, engine, user, title]);
 
   const saveMetadata = useCallback(async () => {
     await updateProject(project.id, { title, description: project.description });

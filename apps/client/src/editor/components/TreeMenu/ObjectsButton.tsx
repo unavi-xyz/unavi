@@ -26,7 +26,7 @@ export default function ObjectsButton() {
         </IconButton>
       </DropdownTrigger>
 
-      <DropdownContent open={open}>
+      <DropdownContent>
         <ObjectsMenu />
       </DropdownContent>
     </DropdownMenu>

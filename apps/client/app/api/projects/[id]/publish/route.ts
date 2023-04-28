@@ -13,11 +13,11 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   // Verify user is authenticated
   const session = await getUserSession();
-  if (!session || !session.user.address) return new Response("Unauthorized", { status: 401 });
+  if (!session) return new Response("Unauthorized", { status: 401 });
 
   // Verify user owns the project
   const found = await prisma.project.findFirst({
-    where: { publicId: id, owner: session.user.address },
+    where: { publicId: id, ownerId: session.user.userId },
     include: { Space: { include: { SpaceNFT: true } } },
   });
   if (!found) return new Response("Project not found", { status: 404 });
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     const publicId = nanoidShort();
 
     const newSpace = await prisma.space.create({
-      data: { publicId, owner: session.user.address },
+      data: { publicId, ownerId: session.user.userId },
       select: { id: true },
     });
 

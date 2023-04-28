@@ -10,13 +10,13 @@ import { PostMintResponse } from "./types";
 // Create new space NFT
 export async function POST(request: NextRequest, { params }: Params) {
   const session = await getUserSession();
-  if (!session || !session.user.address) return new Response("Unauthorized", { status: 401 });
+  if (!session) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
 
   // Verify user owns the space
   const found = await prisma.space.findFirst({
-    where: { publicId: id, owner: session.user.address },
+    where: { publicId: id, ownerId: session.user.userId },
     include: { SpaceModel: true, SpaceNFT: true },
   });
   if (!found) return new Response("Space not found", { status: 404 });

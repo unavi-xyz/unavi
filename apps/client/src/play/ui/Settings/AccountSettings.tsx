@@ -5,7 +5,7 @@ import { useAuth } from "@/src/client/AuthProvider";
 
 import Avatar from "../../../ui/Avatar";
 import Tooltip from "../../../ui/Tooltip";
-import { useProfileByAddress } from "../../hooks/useProfileByAddress";
+import { useProfile } from "../../hooks/useProfile";
 
 interface Props {
   onClose: () => void;
@@ -13,7 +13,7 @@ interface Props {
 
 export default function AccountSettings({ onClose }: Props) {
   const { user, logout } = useAuth();
-  const { profile, isLoading: isLoadingProfile } = useProfileByAddress(user?.address);
+  const { profile, isLoading: isLoadingProfile } = useProfile();
 
   return (
     <section className="space-y-1">
@@ -24,7 +24,7 @@ export default function AccountSettings({ onClose }: Props) {
           <div className="overflow-hidden">
             <Avatar
               src={profile?.metadata?.image}
-              uniqueKey={profile?.handle?.full ?? user.address}
+              uniqueKey={user.userId}
               loading={isLoadingProfile}
               size={48}
             />
@@ -34,10 +34,8 @@ export default function AccountSettings({ onClose }: Props) {
             <div className="h-5 w-40 animate-pulse rounded-md bg-neutral-300" />
           ) : (
             <div>
-              <span className="text-xl font-bold">{profile?.handle?.string}</span>
-              <span className="text-lg text-neutral-400">
-                #{profile?.handle?.id.toString().padStart(4, "0")}
-              </span>
+              <span className="text-xl font-bold">{profile?.metadata?.name}</span>
+              <span className="text-lg text-neutral-400">@{profile?.username}</span>
             </div>
           )}
 

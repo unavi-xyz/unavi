@@ -12,11 +12,12 @@ datasource db {
 // A published space
 model Space {
   id        Int      @id @default(autoincrement())
-  publicId  String   @unique @db.Char(14)
+  publicId  String   @unique @db.Char(12)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  owner String @db.Char(42)
+  Owner   AuthUser @relation(fields: [ownerId], references: [id])
+  ownerId String
 
   // The token id of the NFT, if it exists
   tokenId Int?
@@ -24,13 +25,15 @@ model Space {
   Project    Project[]
   SpaceModel SpaceModel?
   SpaceNFT   SpaceNFT?
+
+  @@index([ownerId])
 }
 
 // A model that has been published to S3
 // It has a unique id and is immutable, to help with caching
 model SpaceModel {
   id        Int      @id @default(autoincrement())
-  publicId  String   @unique @db.Char(14)
+  publicId  String   @unique @db.Char(12)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -42,7 +45,7 @@ model SpaceModel {
 // It is linked to a space, so that it's metadata can be updated when the space is updated
 model SpaceNFT {
   id        Int      @id @default(autoincrement())
-  publicId  String   @unique @db.Char(14)
+  publicId  String   @unique @db.Char(12)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -53,11 +56,12 @@ model SpaceNFT {
 // A project within the editor
 model Project {
   id        Int      @id @default(autoincrement())
-  publicId  String   @unique @db.Char(14)
+  publicId  String   @unique @db.Char(12)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  owner String @db.Char(42)
+  Owner   AuthUser @relation(fields: [ownerId], references: [id])
+  ownerId String
 
   title       String @default("") @db.VarChar(80)
   description String @default("") @db.VarChar(1200)
@@ -67,6 +71,21 @@ model Project {
   spaceId Int?
 
   @@index([spaceId])
+  @@index([ownerId])
+}
+
+// A user's profile
+model Profile {
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  User   AuthUser @relation(fields: [userId], references: [id])
+  userId String   @id @unique
+
+  name       String? @db.VarChar(50)
+  bio        String? @db.VarChar(160)
+  image      String?
+  background String?
 }
 
 // Auth (https://lucia-auth.com/database/prisma)
@@ -76,9 +95,15 @@ model AuthUser {
   auth_key     AuthKey[]
 
   // The user's ethereum address
-  address  String? @unique @db.Char(42)
+  address String? @unique @db.Char(42)
+
   // The part of their handle that comes before the @
-  username String  @unique @db.VarChar(15)
+  username String @unique @db.VarChar(15)
+
+  Profile Profile?
+
+  Space   Space[]
+  Project Project[]
 
   @@map("auth_user")
 }

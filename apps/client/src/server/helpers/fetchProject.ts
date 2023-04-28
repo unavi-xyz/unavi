@@ -15,7 +15,7 @@ export const fetchProject = cache(async (id: string): Promise<Project | null> =>
 
     // Verify user owns the project
     const project = await prisma.project.findFirst({
-      where: { publicId: id, owner: session.user.address },
+      where: { publicId: id, ownerId: session.user.userId },
       include: { Space: true },
     });
     if (!project) throw new Error("Not found");
@@ -25,7 +25,7 @@ export const fetchProject = cache(async (id: string): Promise<Project | null> =>
       title: project.title,
       description: project.description,
       spaceId: project.Space ? project.Space.publicId : null,
-      owner: project.owner,
+      ownerId: project.ownerId,
       image: await imagePromise,
       model: await modelPromise,
     };
@@ -39,7 +39,7 @@ export type Project = {
   title: string;
   description: string;
   spaceId: string | null;
-  owner: string;
+  ownerId: string;
   image: string;
   model: string;
 };

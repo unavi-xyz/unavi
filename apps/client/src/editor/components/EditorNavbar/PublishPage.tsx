@@ -19,7 +19,6 @@ import {
 } from "@/app/api/spaces/[id]/nft/files/[file]/helper";
 import { useAuth } from "@/src/client/AuthProvider";
 import { env } from "@/src/env.mjs";
-import { useProfileByAddress } from "@/src/play/hooks/useProfileByAddress";
 
 import { fetcher } from "../../../play/utils/fetcher";
 import { Project } from "../../../server/helpers/fetchProject";
@@ -42,13 +41,11 @@ export default function PublishPage({ project }: Props) {
   const { engine, title: editorTitle, image } = useEditor();
 
   const { user } = useAuth();
-  const { profile } = useProfileByAddress(user?.address);
   const { save } = useSave(project);
 
   const [title, setTitle] = useState(editorTitle);
   const [description, setDescription] = useState(project.description);
 
-  // const { profile } = useProfileByAddress(user?.address);
   const { data: imageDownload } = useSWR<GetFileDownloadResponse>(
     () => `/api/projects/${project.id}/files/image`,
     fetcher,
@@ -93,13 +90,8 @@ export default function PublishPage({ project }: Props) {
           info: {
             name: title.trimEnd(),
             description: description.trimEnd(),
-            authors: user?.address
-              ? [
-                  {
-                    name: profile?.handle?.string,
-                    address: user.address,
-                  },
-                ]
+            authors: user?.username
+              ? [`${user.username}@${env.NEXT_PUBLIC_DEFAULT_HOST}`]
               : undefined,
             image: imageURL,
             host: env.NEXT_PUBLIC_DEFAULT_HOST,

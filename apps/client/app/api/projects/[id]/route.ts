@@ -13,13 +13,13 @@ import { Params, paramsSchema, patchSchema } from "./types";
 // Get project
 export async function GET(request: NextRequest, { params }: Params) {
   const session = await getUserSession();
-  if (!session || !session.user.address) return new Response("Unauthorized", { status: 401 });
+  if (!session) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
 
   // Verify user owns the project
   const project = await prisma.project.findFirst({
-    where: { publicId: id, owner: session.user.address },
+    where: { publicId: id, ownerId: session.user.userId },
     include: { Space: true },
   });
   if (!project) return new Response("Project not found", { status: 404 });
@@ -30,21 +30,21 @@ export async function GET(request: NextRequest, { params }: Params) {
 // Update project
 export async function PATCH(request: NextRequest, { params }: Params) {
   const session = await getUserSession();
-  if (!session || !session.user.address) return new Response("Unauthorized", { status: 401 });
+  if (!session) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
   const { title, description, spaceId } = patchSchema.parse(await request.json());
 
   // Verify user owns the project
   const found = await prisma.project.findFirst({
-    where: { publicId: id, owner: session.user.address },
+    where: { publicId: id, ownerId: session.user.userId },
   });
   if (!found) return new Response("Project not found", { status: 404 });
 
   // Verify user owns the space, if provided
   const space = spaceId
     ? await prisma.space.findFirst({
-        where: { publicId: spaceId, owner: session.user.address },
+        where: { publicId: spaceId, ownerId: session.user.userId },
       })
     : null;
   if (spaceId && !space) return new Response("Space not found", { status: 404 });
@@ -65,13 +65,13 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 // Delete project
 export async function DELETE(request: NextRequest, { params }: Params) {
   const session = await getUserSession();
-  if (!session || !session.user.address) return new Response("Unauthorized", { status: 401 });
+  if (!session) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
 
   // Verify user owns the project
   const found = await prisma.project.findFirst({
-    where: { publicId: id, owner: session.user.address },
+    where: { publicId: id, ownerId: session.user.userId },
   });
   if (!found) return new Response("Project not found", { status: 404 });
 

@@ -1,14 +1,14 @@
-import { ProfileMetadata } from "@wired-protocol/types";
 import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { env } from "@/src/env.mjs";
 import { fetchDBSpaceURI } from "@/src/server/helpers/fetchDBSpaceURI";
-import { fetchProfileFromAddress } from "@/src/server/helpers/fetchProfileFromAddress";
 import { fetchSpaceMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
+import { fetchUserProfile, UserProfile } from "@/src/server/helpers/fetchUserProfile";
+import { fetchWorldMetadata } from "@/src/server/helpers/fetchWorldMetadata";
 import { isFromCDN } from "@/src/utils/isFromCDN";
 import { parseSpaceId } from "@/src/utils/parseSpaceId";
 import { toHex } from "@/src/utils/toHex";
@@ -16,9 +16,9 @@ import { toHex } from "@/src/utils/toHex";
 import PlayerCount from "./PlayerCount";
 import Tabs from "./Tabs";
 
-type Params = { id: string };
-
 export const revalidate = 60;
+
+type Params = { id: string };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const id = parseSpaceId(params.id);
@@ -33,11 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = metadata.info?.name || `Space ${displayId}`;
 
   const description = metadata.info?.description || "";
-
-  const authors = metadata.info?.authors
-    ?.map((author) => author.name || author.address)
-    .filter(Boolean) as string[] | undefined;
-
+  const authors = metadata.info?.authors;
   const image = metadata.info?.image;
 
   return {
@@ -63,50 +59,29 @@ interface Props {
 }
 
 export default async function Space({ params }: Props) {
-  const id = parseSpaceId(params.id);
+  const uri = await fetchDBSpaceURI(params.id);
+  if (!uri) notFound();
 
-  // Don't allow uri spaces
-  if (id.type === "uri") notFound();
+  const res = await fetchWorldMetadata(uri.uri);
+  if (!res) notFound();
 
-  // If db space has a token, redirect to the token page
-  if (id.type === "id") {
-    const res = await fetchDBSpaceURI(id.value);
-    if (res && res.tokenId !== null) redirect(`/space/${toHex(res.tokenId)}`);
+  const metadata = res.metadata;
+  const profiles: UserProfile[] = [];
+
+  if (metadata.info?.authors) {
+    await Promise.all(
+      metadata.info.authors.map(async (author) => {
+        const profile = await fetchUserProfile(author);
+
+        if (!profile) {
+          profiles.push({ username: "", domain: "", metadata: { name: author } });
+          return;
+        }
+
+        profiles.push(profile);
+      })
+    );
   }
-
-  const space = await fetchSpaceMetadata(id);
-  if (!space) notFound();
-
-  const metadata = space.metadata;
-
-  // Fetch author profiles
-  const authors = metadata.info?.authors;
-
-  const profiles = authors
-    ? await Promise.all(
-        authors.map(
-          async (author): Promise<{ metadata: ProfileMetadata; id: number | undefined }> => {
-            if (author.address) {
-              const profile = await fetchProfileFromAddress(author.address);
-              return {
-                id: profile?.id,
-                metadata: {
-                  ...profile?.metadata,
-                  name: author.name,
-                },
-              };
-            }
-
-            return {
-              id: undefined,
-              metadata: {
-                name: author.name,
-              },
-            };
-          }
-        )
-      )
-    : undefined;
 
   return (
     <div className="flex justify-center">
@@ -149,10 +124,10 @@ export default async function Space({ params }: Props) {
 
                     {profiles.map((profile, i) => (
                       <div key={i}>
-                        {profile.id !== undefined ? (
-                          <Link href={`/user/${toHex(profile.id)}`}>
+                        {profile.domain === env.NEXT_PUBLIC_DEPLOYED_URL ? (
+                          <Link href={`/@${profile.username}`}>
                             <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
-                              {profile.metadata.name}
+                              {profile.metadata.name || `@${profile.username}`}
                             </div>
                           </Link>
                         ) : (
@@ -178,7 +153,7 @@ export default async function Space({ params }: Props) {
             </div>
 
             <Link
-              href={id.type === "id" ? `/play?id=${id.value}` : `/play?tokenId=${toHex(id.value)}`}
+              href={`/play?id=${params.id}`}
               className="rounded-full bg-neutral-900 py-3 text-center text-lg font-bold text-white outline-neutral-400 transition hover:scale-105"
             >
               Play
@@ -188,7 +163,7 @@ export default async function Space({ params }: Props) {
 
         <Suspense fallback={null}>
           {/* @ts-expect-error Server Component */}
-          <Tabs id={id} metadata={metadata} />
+          <Tabs id={{ type: "id", value: params.id }} metadata={metadata} />
         </Suspense>
       </div>
     </div>

@@ -15,6 +15,6 @@ export const patchSchema = z.object({
 export type PatchSpaceRequest = z.infer<typeof patchSchema>;
 
 export type GetSpaceResponse = {
-  owner: string;
+  ownerId: string;
   uri: string | null;
 };

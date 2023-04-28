@@ -10,12 +10,12 @@ import { GetNftSpaceResponse } from "./types";
 // Get nft space
 export async function GET(request: NextRequest, { params }: Params) {
   const session = await getUserSession();
-  if (!session || !session.user.address) return new Response("Unauthorized", { status: 401 });
+  if (!session) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
 
   const spaceNft = await prisma.spaceNFT.findFirst({
-    where: { publicId: id, Space: { owner: session.user.address } },
+    where: { publicId: id, Space: { ownerId: session.user.userId } },
     include: { Space: true },
   });
   if (!spaceNft) return new Response("Space NFT not found", { status: 404 });

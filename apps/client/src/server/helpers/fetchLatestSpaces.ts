@@ -44,12 +44,12 @@ async function fetchNFTSpaces(limit: number, owner?: string) {
   }
 }
 
-async function fetchDatabaseSpaces(limit: number, owner?: string) {
+export async function fetchDatabaseSpaces(limit: number, owner?: string) {
   if (!env.NEXT_PUBLIC_HAS_DATABASE) return [];
 
   try {
     const spaces = await prisma.space.findMany({
-      where: { owner, SpaceModel: { isNot: null }, tokenId: null },
+      where: { Owner: { username: owner }, SpaceModel: { isNot: null }, tokenId: null },
       include: { SpaceModel: true },
       orderBy: { updatedAt: "desc" },
       take: limit,

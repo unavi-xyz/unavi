@@ -9,13 +9,13 @@ import { GetFileDownloadResponse, GetFileUploadResponse, Params, paramsSchema } 
 // Get file download URL
 export async function GET(request: NextRequest, { params }: Params) {
   const session = await getUserSession();
-  if (!session || !session.user.address) return new Response("Unauthorized", { status: 401 });
+  if (!session) return new Response("Unauthorized", { status: 401 });
 
   const { id, file } = paramsSchema.parse(params);
 
   // Verify user owns the space
   const found = await prisma.space.findFirst({
-    where: { publicId: id, owner: session.user.address },
+    where: { publicId: id, ownerId: session.user.userId },
     include: { SpaceNFT: true },
   });
   if (!found?.SpaceNFT) return new Response("Space not found", { status: 404 });
@@ -29,13 +29,13 @@ export async function GET(request: NextRequest, { params }: Params) {
 // Get file upload URL
 export async function PUT(request: NextRequest, { params }: Params) {
   const session = await getUserSession();
-  if (!session || !session.user.address) return new Response("Unauthorized", { status: 401 });
+  if (!session) return new Response("Unauthorized", { status: 401 });
 
   const { id, file } = paramsSchema.parse(params);
 
   // Verify user owns the space
   const found = await prisma.space.findFirst({
-    where: { publicId: id, owner: session.user.address },
+    where: { publicId: id, ownerId: session.user.userId },
     include: { SpaceNFT: true },
   });
   if (!found?.SpaceNFT) return new Response("Space not found", { status: 404 });

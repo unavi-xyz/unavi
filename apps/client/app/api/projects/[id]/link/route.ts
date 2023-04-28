@@ -9,20 +9,20 @@ import { putSchema } from "./types";
 // Link project to space
 export async function PUT(request: NextRequest, { params }: Params) {
   const session = await getUserSession();
-  if (!session || !session.user.address) return new Response("Unauthorized", { status: 401 });
+  if (!session) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
   const { spaceId } = putSchema.parse(await request.json());
 
   // Verify user owns the project
   const found = await prisma.project.findFirst({
-    where: { publicId: id, owner: session.user.address },
+    where: { publicId: id, ownerId: session.user.userId },
   });
   if (!found) return new Response("Project not found", { status: 404 });
 
   // Verify user owns the space
   const space = await prisma.space.findFirst({
-    where: { publicId: spaceId, owner: session.user.address },
+    where: { publicId: spaceId, ownerId: session.user.userId },
   });
   if (!space) return new Response("Space not found", { status: 404 });
 

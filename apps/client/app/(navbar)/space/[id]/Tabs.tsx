@@ -20,7 +20,8 @@ export default async function Tabs({ id, metadata }: Props) {
   const owner =
     id.type === "tokenId" ? await fetchNFTSpaceOwner(id.value) : await fetchSpaceDBOwner(id.value);
 
-  const isOwner = owner ? session?.user.address === owner : false;
+  const isOwner =
+    id.type === "tokenId" ? session?.user.address === owner : session?.user.userId === owner;
 
   return (
     <>
@@ -46,8 +47,8 @@ export default async function Tabs({ id, metadata }: Props) {
 async function fetchSpaceDBOwner(id: string) {
   const space = await prisma.space.findFirst({
     where: { publicId: id },
-    select: { owner: true },
+    select: { ownerId: true },
   });
 
-  return space?.owner;
+  return space?.ownerId;
 }

@@ -54,6 +54,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function Handle({ params }: Props) {
   const username = params.handle.split("%40")[1]; // Remove the @ from the handle
+  if (!username) notFound();
 
   const [spaces, user] = await Promise.all([
     fetchDatabaseSpaces(20, username),

@@ -10,7 +10,7 @@ import { Project } from "@/src/server/helpers/fetchProject";
 import { useEditor } from "../components/Editor";
 
 export function useSave(project: Project) {
-  const { engine, canvasRef, title, setImage, changeMode } = useEditor();
+  const { engine, canvasRef, title, description, setImage, changeMode } = useEditor();
   const { user } = useAuth();
 
   const [saving, setSaving] = useState(false);
@@ -57,7 +57,7 @@ export function useSave(project: Project) {
 
     xmpPacket.setProperty("dc:title", title.trimEnd());
     xmpPacket.setProperty("dc:date", date);
-    xmpPacket.setProperty("dc:description", project.description.trimEnd());
+    xmpPacket.setProperty("dc:description", description.trimEnd());
     if (creator) xmpPacket.setProperty("dc:creator", creator);
 
     // Export to GLB
@@ -73,11 +73,11 @@ export function useSave(project: Project) {
     });
 
     if (!res.ok) throw new Error("Failed to upload model");
-  }, [project, engine, user, title]);
+  }, [project, description, engine, user, title]);
 
   const saveMetadata = useCallback(async () => {
-    await updateProject(project.id, { title, description: project.description });
-  }, [project, title]);
+    await updateProject(project.id, { title, description });
+  }, [project, title, description]);
 
   const save = useCallback(async () => {
     setSaving(true);

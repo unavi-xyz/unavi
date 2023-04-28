@@ -38,13 +38,10 @@ interface Props {
 }
 
 export default function PublishPage({ project }: Props) {
-  const { engine, title: editorTitle, image } = useEditor();
+  const { engine, title, setTitle, description, setDescription, image } = useEditor();
 
   const { user } = useAuth();
   const { save } = useSave(project);
-
-  const [title, setTitle] = useState(editorTitle);
-  const [description, setDescription] = useState(project.description);
 
   const { data: imageDownload } = useSWR<GetFileDownloadResponse>(
     () => `/api/projects/${project.id}/files/image`,

@@ -54,10 +54,7 @@ export default function EditorNavbar({ project }: Props) {
   return (
     <>
       <DialogRoot open={openPublishDialog} onOpenChange={setOpenPublishDialog}>
-        <DialogContent
-          open={openPublishDialog}
-          title={isPublished ? "Update Space" : "Publish Space"}
-        >
+        <DialogContent title={isPublished ? "Update Space" : "Publish Space"}>
           <PublishPage project={project} />
         </DialogContent>
       </DialogRoot>

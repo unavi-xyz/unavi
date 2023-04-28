@@ -20,7 +20,7 @@ export default function ProfileMenu({ user }: Props) {
         <Link
           href={`/@${user.username}`}
           draggable={false}
-          className="mb-2 flex w-full cursor-pointer items-center whitespace-nowrap py-1 pl-4 pr-6 outline-none focus:bg-neutral-200 active:opacity-80"
+          className="mb-2 flex w-full cursor-pointer items-center whitespace-nowrap px-4 py-1 outline-none focus:bg-neutral-200 active:opacity-80"
         >
           @{user.username}
         </Link>
@@ -30,7 +30,7 @@ export default function ProfileMenu({ user }: Props) {
 
       <DropdownItem
         onClick={logout}
-        className="flex w-full cursor-pointer items-center whitespace-nowrap py-1 pl-4 pr-6 outline-none focus:bg-neutral-200 active:opacity-80"
+        className="flex w-full cursor-pointer items-center whitespace-nowrap py-1 pl-4 pr-5 outline-none focus:bg-neutral-200 active:opacity-80"
       >
         <MdLogout className="mr-2 text-xl" />
         <div>Sign out</div>

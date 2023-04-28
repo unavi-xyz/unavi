@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       },
       attributes: {
         address: result.data.address,
-        username: nanoidShort(), // User can change this later
+        username: nanoidShort(),
       },
     });
   }

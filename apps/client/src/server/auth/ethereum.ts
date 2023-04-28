@@ -1,11 +1,12 @@
 import { NextRequest } from "next/server";
 import { SiweMessage } from "siwe";
 
-import { ETH_SESSION_COOKIE } from "@/app/api/auth/methods/ethereum/nonce/constants";
 import { env } from "@/src/env.mjs";
 
 import { prisma } from "../prisma";
 import { AuthData } from "./types";
+
+export const ETH_SESSION_COOKIE = "eth_nonce_session";
 
 export async function validateEthereumAuth(request: NextRequest, data: AuthData) {
   // Validate the signature

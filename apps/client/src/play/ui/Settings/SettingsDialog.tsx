@@ -56,7 +56,6 @@ export default function SettingsDialog({ open, setOpen }: Props) {
       }}
     >
       <DialogContent
-        open={open}
         autoFocus={false}
         title={page}
         size={page === "Browse Avatars" ? "large" : "normal"}

@@ -76,6 +76,9 @@ importers:
       '@lucia-auth/adapter-prisma':
         specifier: ^2.0.0
         version: 2.0.0(@prisma/client@4.13.0)(lucia-auth@1.4.0)
+      '@lucia-auth/oauth':
+        specifier: ^1.0.1
+        version: 1.0.1(lucia-auth@1.4.0)
       '@prisma/client':
         specifier: ^4.13.0
         version: 4.13.0(prisma@4.13.0)
@@ -3575,6 +3578,14 @@ packages:
       lucia-auth: ^1.3.0
     dependencies:
       '@prisma/client': 4.13.0(prisma@4.13.0)
+      lucia-auth: 1.4.0
+    dev: false
+
+  /@lucia-auth/oauth@1.0.1(lucia-auth@1.4.0):
+    resolution: {integrity: sha512-OBadkPRrigO66M5eJ2c9OtPokqVrcuitc5cMeDK333o7iic9fjga3w2/EXLc5UnrxlpJtgtlE2sfS0q2uO/M2Q==}
+    peerDependencies:
+      lucia-auth: 1.x
+    dependencies:
       lucia-auth: 1.4.0
     dev: false
 

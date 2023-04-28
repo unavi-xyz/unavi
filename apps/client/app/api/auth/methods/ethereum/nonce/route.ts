@@ -2,9 +2,9 @@ import { nanoid } from "nanoid";
 import { NextRequest, NextResponse } from "next/server";
 import { generateNonce } from "siwe";
 
+import { ETH_SESSION_COOKIE } from "@/src/server/auth/ethereum";
 import { prisma } from "@/src/server/prisma";
 
-import { ETH_SESSION_COOKIE } from "./constants";
 import { GetNonceResponse } from "./types";
 
 export const dynamic = "force-dynamic";

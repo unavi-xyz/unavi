@@ -43,7 +43,7 @@ export default function NavbarLayout({ children }: { children: React.ReactNode }
             </div>
 
             <div className="flex items-center justify-end">
-              <Suspense fallback={<SignInButton />}>
+              <Suspense fallback={<SignInButton loading />}>
                 {/* @ts-expect-error Server Component */}
                 <AccountButton />
               </Suspense>

@@ -9,11 +9,6 @@ import Spaces from "./Spaces";
 
 export const revalidate = 60;
 
-// https://github.com/vercel/next.js/issues/48865
-export function generateStaticParams() {
-  return [];
-}
-
 const title = "Home";
 
 export const metadata: Metadata = {

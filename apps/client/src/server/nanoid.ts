@@ -2,16 +2,16 @@ import { customAlphabet } from "nanoid";
 
 export const NANOID_SHORT_LENGTH = 12;
 
-const nanoid = customAlphabet(
-  "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+export const nanoidLowercase = customAlphabet(
+  "0123456789abcdefghijklmnopqrstuvwxyz",
   NANOID_SHORT_LENGTH
 );
 
 /**
- * Generate a nanoid that does not start with 0x
+ * Generate a short nanoid that does not start with 0x
  */
 export const nanoidShort = (): string => {
-  const id = nanoid();
+  const id = nanoidLowercase();
   if (id.startsWith("0x")) return nanoidShort();
   return id;
 };

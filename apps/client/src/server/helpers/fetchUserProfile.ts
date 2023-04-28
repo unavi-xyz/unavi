@@ -46,8 +46,7 @@ export async function fetchUserProfileDB(username: string): Promise<UserProfile 
         background: profile.background ?? undefined,
       },
     };
-  } catch (e) {
-    console.error(e);
+  } catch {
     return null;
   }
 }
@@ -74,8 +73,7 @@ export async function fetchUserProfileWired(
       domain,
       metadata: parsed.data,
     };
-  } catch (e) {
-    console.warn(e);
+  } catch {
     return null;
   }
 }

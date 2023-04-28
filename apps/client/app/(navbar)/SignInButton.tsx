@@ -1,6 +1,7 @@
 "use client";
 
 import { useConnectModal } from "@rainbow-me/rainbowkit";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 
@@ -26,10 +27,37 @@ export function ClientSignInButton({ loading }: Props) {
   const [open, setOpen] = useState(false);
 
   const { openConnectModal } = useConnectModal();
+  const router = useRouter();
 
-  async function handleWalletLogin() {
+  function handleWalletLogin() {
     setOpen(false);
     if (openConnectModal) openConnectModal();
+  }
+
+  function handleGoogleLogin() {
+    // Open popup in center of screen
+    const w = 500;
+    const h = 600;
+    const x = window.screenX + (window.innerWidth - w) / 2;
+    const y = window.screenY + (window.innerHeight - h) / 2;
+
+    const popup = window.open(
+      "/api/auth/methods/google",
+      "popup",
+      `toolbar=no, menubar=no, width=${w}, height=${h}, left=${x}, top=${y}`
+    );
+    if (!popup) return;
+
+    popup.focus();
+
+    // Refresh page when popup is closed
+    const interval = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(interval);
+        router.refresh();
+        setOpen(false);
+      }
+    }, 50);
   }
 
   return (
@@ -53,13 +81,12 @@ export function ClientSignInButton({ loading }: Props) {
                 </span>
                 <hr className="w-full border-neutral-300" />
               </div>
-              <a
-                href="/api/auth/methods/google"
-                about="Sign in with Google"
+              <button
+                onClick={handleGoogleLogin}
                 className="aspect-square rounded-full border border-neutral-400 p-2.5 text-2xl transition hover:bg-neutral-100"
               >
                 <FcGoogle />
-              </a>{" "}
+              </button>
             </>
           ) : null}
         </div>

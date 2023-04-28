@@ -18,16 +18,16 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const handle = params.handle.split("%40")[1]; // Remove the @ from the handle
+  const username = params.handle.split("%40")[1]; // Remove the @ from the handle
 
   const user = await prisma.authUser.findUnique({
-    where: { username: handle },
+    where: { username },
     include: { Profile: true },
   });
 
   if (!user) return {};
 
-  const title = `@${user.username}`;
+  const title = `@${username}`;
   const description = user?.Profile?.bio ?? "";
   const image = user?.Profile?.image;
 
@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: "profile",
       title,
       description,
-      username: user.username,
+      username,
       firstName: user?.Profile?.name,
       images: image ? [{ url: image }] : undefined,
     },

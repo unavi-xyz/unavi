@@ -97,11 +97,15 @@ export default async function Handle({ params }: Props) {
 
           <section className="flex justify-center px-4 md:px-0">
             <div className="flex w-full flex-col items-center space-y-2">
-              <div className="relative z-10 mt-[-72px] flex w-36 rounded-full ring-4 ring-white">
-                <Avatar src={user?.Profile?.image} circle uniqueKey={username} size={144} />
+              <div className="relative z-10 -mt-16 flex w-32 rounded-full ring-4 ring-white">
+                <Avatar src={user?.Profile?.image} circle uniqueKey={username} size={128} />
 
                 {session?.userId == user.id && (
-                  <EditProfileButton username={user.username} bio={user.Profile?.bio ?? ""} />
+                  <EditProfileButton
+                    userId={session.userId}
+                    username={user.username}
+                    bio={user.Profile?.bio ?? ""}
+                  />
                 )}
               </div>
 

@@ -86,6 +86,10 @@ model Profile {
   bio        String? @db.VarChar(160)
   image      String?
   background String?
+
+  // Files stored in S3
+  imageId      String? @db.Char(12)
+  backgroundId String? @db.Char(12)
 }
 
 // Auth (https://lucia-auth.com/database/prisma)

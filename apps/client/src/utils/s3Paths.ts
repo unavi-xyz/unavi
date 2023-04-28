@@ -1,5 +1,4 @@
 import { env } from "../env.mjs";
-import { toHex } from "./toHex";
 
 export class S3Path {
   static spaceNFT = (nftId: string) =>
@@ -8,12 +7,10 @@ export class S3Path {
       metadata: `nfts/${nftId}/metadata.json`,
     } as const);
 
-  static profile = (profileId: number) => {
-    const hexId = toHex(profileId);
+  static profile = (userId: string) => {
     return {
-      background: `profiles/${hexId}/background.jpg`,
-      image: `profiles/${hexId}/image.jpg`,
-      metadata: `profiles/${hexId}/metadata.json`,
+      background: (fileId: string) => `profiles/${userId}/background/${fileId}` as const,
+      image: (fileId: string) => `profiles/${userId}/image/${fileId}` as const,
     } as const;
   };
 
@@ -22,7 +19,7 @@ export class S3Path {
       asset: (assetId: string) => `projects/${projectId}/assets/${assetId}` as const,
       assets: `projects/${projectId}/assets`,
       directory: `projects/${projectId}`,
-      image: `projects/${projectId}/image.jpg`,
+      image: `projects/${projectId}/image`,
       model: `projects/${projectId}/model.glb`,
     } as const);
 
@@ -31,7 +28,7 @@ export class S3Path {
       directory: `spaces/${modelId}`,
       metadata: `spaces/${modelId}/metadata.json`,
       model: `spaces/${modelId}/model.glb`,
-      image: `spaces/${modelId}/image.jpg`,
+      image: `spaces/${modelId}/image`,
       asset: (assetId: string) => `spaces/${modelId}/assets/${assetId}` as const,
     } as const);
 
@@ -44,7 +41,8 @@ type PublicPath =
   | ReturnType<typeof S3Path.spaceNFT>[keyof ReturnType<typeof S3Path.spaceNFT>]
   | ReturnType<typeof S3Path.spaceModel>["metadata" | "model" | "image"]
   | ReturnType<ReturnType<typeof S3Path.spaceModel>["asset"]>
-  | ReturnType<typeof S3Path.profile>[keyof ReturnType<typeof S3Path.profile>]
+  | ReturnType<ReturnType<typeof S3Path.profile>["background"]>
+  | ReturnType<ReturnType<typeof S3Path.profile>["image"]>
   | ReturnType<typeof S3Path.temp>;
 
 export function cdnURL(path: PublicPath) {

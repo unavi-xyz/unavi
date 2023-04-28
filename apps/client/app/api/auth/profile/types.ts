@@ -7,6 +7,7 @@ export const UpdateProfileSchema = z.object({
   name: z.string().max(MAX_PROFILE_NAME_LENGTH).optional(),
   bio: z.string().max(MAX_PROFILE_NAME_LENGTH).optional(),
   image: z.string().url().optional(),
+  background: z.string().url().optional(),
 });
 
 export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;

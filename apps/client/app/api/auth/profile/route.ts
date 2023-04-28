@@ -17,7 +17,6 @@ export async function GET(request: NextRequest) {
   const profile = await prisma.profile.findUnique({
     where: { userId: session.userId },
   });
-
   if (!profile) return new Response(null, { status: 404 });
 
   const json: ProfileMetadata = {
@@ -43,13 +42,13 @@ export async function PATCH(request: NextRequest) {
   const { session, user } = await authRequest.validateUser();
   if (!session) return new Response(null, { status: 401 });
 
-  const { username, name, bio, image } = parsed.data;
+  const { username, name, bio, image, background } = parsed.data;
 
   // Create or update profile
   await prisma.profile.upsert({
     where: { userId: session.userId },
-    create: { userId: session.userId, name, bio, image },
-    update: { name, bio, image },
+    create: { userId: session.userId, name, bio, image, background },
+    update: { name, bio, image, background },
   });
 
   // Update username

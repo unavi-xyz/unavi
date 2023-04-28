@@ -5,18 +5,15 @@ interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 const TextField = React.forwardRef<HTMLInputElement, Props>(
-  ({ label, className, disabled, ...rest }, ref) => {
+  ({ label, className, ...rest }, ref) => {
     return (
-      <label className="block">
-        {label && <div className="pb-1 text-lg font-bold">{label}</div>}
+      <label className="block space-y-1">
+        {label && <div className="font-bold text-neutral-700">{label}</div>}
 
         <input
           ref={ref}
           type="text"
-          disabled={disabled}
-          className={`h-full w-full rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900 placeholder:text-neutral-400 ${
-            disabled ? "" : "hover:border-neutral-400"
-          } ${className}`}
+          className={`w-full rounded-lg border border-neutral-200 px-3 py-2 ${className}`}
           {...rest}
         />
       </label>

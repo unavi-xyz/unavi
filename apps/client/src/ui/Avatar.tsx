@@ -56,9 +56,11 @@ export default function Avatar({
           name={uniqueKey}
           square={!circle}
           variant="beam"
-          colors={["#38bdf8", "#FCECC9", "#FCB0B3", "#F93943", "#445E93"]}
+          colors={BORING_AVATAR_COLORS}
         />
       )}
     </div>
   );
 }
+
+export const BORING_AVATAR_COLORS = ["#38bdf8", "#FCECC9", "#FCB0B3", "#F93943", "#445E93"];

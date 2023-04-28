@@ -19,6 +19,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const username = params.handle.split("%40")[1]; // Remove the @ from the handle
+  if (!username) return {};
 
   const user = await prisma.authUser.findUnique({
     where: { username },

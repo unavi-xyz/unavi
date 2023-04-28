@@ -106,6 +106,7 @@ export default async function Handle({ params }: Props) {
                     username={user.username}
                     bio={user.Profile?.bio ?? ""}
                     image={user.Profile?.image ?? ""}
+                    background={user.Profile?.background ?? ""}
                   />
                 )}
               </div>

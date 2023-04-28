@@ -11,6 +11,6 @@ export const googleAuth =
     ? google(auth, {
         clientId: env.GOOGLE_CLIENT_ID,
         clientSecret: env.GOOGLE_CLIENT_SECRET,
-        redirectUri: "/auth/methods/google/callback",
+        redirectUri: `${env.NEXT_PUBLIC_DEPLOYED_URL}/auth/methods/google/callback`,
       })
     : null;

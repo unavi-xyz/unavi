@@ -27,13 +27,16 @@ interface Props {
   username: string;
   bio?: string;
   image?: string;
+  background?: string;
 }
 
-export default function EditProfileButton({ userId, username, bio, image }: Props) {
+export default function EditProfileButton({ userId, username, bio, image, background }: Props) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageDisplay, setImageDisplay] = useState<string | null>(null);
+  const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
+  const [backgroundDisplay, setBackgroundDisplay] = useState<string | null>(null);
 
   const router = useRouter();
 
@@ -43,8 +46,8 @@ export default function EditProfileButton({ userId, username, bio, image }: Prop
     if (loading) return;
 
     const form = e.currentTarget;
-    const usernameElement = form.elements[1] as HTMLInputElement;
-    const bioElement = form.elements[2] as HTMLTextAreaElement;
+    const usernameElement = form.elements[2] as HTMLInputElement;
+    const bioElement = form.elements[3] as HTMLTextAreaElement;
 
     async function uploadImage() {
       if (!imageFile) return image;
@@ -70,15 +73,40 @@ export default function EditProfileButton({ userId, username, bio, image }: Prop
       }
     }
 
+    async function uploadBackground() {
+      if (!backgroundFile) return background;
+
+      try {
+        // Get S3 URL
+        const { url, fileId } = await getProfileUploadURL(ProfileFile.background);
+
+        // Upload image
+        const res = await fetch(url, {
+          method: "PUT",
+          body: backgroundFile,
+          headers: { "Content-Type": backgroundFile.type },
+        });
+
+        if (!res.ok) throw new Error("Failed to upload background");
+
+        return cdnURL(S3Path.profile(userId).background(fileId));
+      } catch (e) {
+        console.error(e);
+        const message = parseError(e);
+        toast.error(message);
+      }
+    }
+
     setLoading(true);
 
     try {
-      const imageUrl = await uploadImage();
+      const [imageUrl, backgroundUrl] = await Promise.all([uploadImage(), uploadBackground()]);
 
       await updateProfile({
         username: usernameElement.value || username,
         bio: bioElement.value,
         image: imageUrl,
+        background: backgroundUrl,
       });
 
       // Refresh the page
@@ -102,25 +130,47 @@ export default function EditProfileButton({ userId, username, bio, image }: Prop
     <DialogRoot open={open} onOpenChange={setOpen}>
       <DialogContent title="Edit Profile">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex w-full justify-center">
+          <div className="w-full">
             <ImageInput
               disabled={loading}
-              src={imageDisplay || image}
-              fallbackKey={username}
-              fallbackSize={128}
+              src={backgroundDisplay || background}
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
 
                 const fileUrl = URL.createObjectURL(file);
-                setImageDisplay(fileUrl);
+                setBackgroundDisplay(fileUrl);
 
                 // Crop image
-                const croppedFile = await cropImage(fileUrl, 1);
-                setImageFile(croppedFile);
+                const croppedFile = await cropImage(fileUrl, 4.4444);
+                setBackgroundFile(croppedFile);
               }}
-              className="flex h-32 w-32 justify-center rounded-full object-cover"
+              className="h-28 w-full rounded-lg object-cover"
             />
+          </div>
+
+          <div className="flex w-full justify-center">
+            <div className="z-10 -mt-16 h-32 w-32 rounded-full bg-neutral-200 ring-4 ring-white">
+              <ImageInput
+                disabled={loading}
+                src={imageDisplay || image}
+                fallbackKey={username}
+                fallbackSize={128}
+                size={128}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+
+                  const fileUrl = URL.createObjectURL(file);
+                  setImageDisplay(fileUrl);
+
+                  // Crop image
+                  const croppedFile = await cropImage(fileUrl, 1);
+                  setImageFile(croppedFile);
+                }}
+                className="h-32 w-32 rounded-full object-cover"
+              />
+            </div>
           </div>
 
           <label className="block space-y-1">

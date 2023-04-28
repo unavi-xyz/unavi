@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { env } from "@/src/env.mjs";
 import { googleAuth } from "@/src/server/auth/google";
 import { GOOGLE_OAUTH_STATE_COOKIE } from "@/src/server/auth/google";
 import { auth } from "@/src/server/auth/lucia";
@@ -36,7 +35,7 @@ export async function GET(request: NextRequest) {
     }));
 
   // Redirect the user to the home page
-  const response = NextResponse.redirect(env.NEXT_PUBLIC_DEPLOYED_URL);
+  const response = NextResponse.redirect(new URL("/", request.url));
 
   // Create auth session
   const session = await auth.createSession(user.userId);

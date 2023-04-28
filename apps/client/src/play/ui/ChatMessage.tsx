@@ -48,7 +48,7 @@ export default function ChatMessage({ message, alwaysShow }: Props) {
           <span className="text-white/90">{message.text}</span>
         </div>
       ) : message.type === "system" ? (
-        <span className="text-neutral-500">
+        <span className="text-white/70">
           <span>{name}</span>
           {message.variant === "player_joined"
             ? " joined"

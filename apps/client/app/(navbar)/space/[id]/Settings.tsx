@@ -22,7 +22,7 @@ export default async function Settings({ id, metadata }: Props) {
       <RainbowkitWrapper>
         <div className="space-y-8">
           {id.type === "id" ? <Mint id={id} metadata={metadata} /> : null}
-          <Delete id={id} address={session.user.address} />
+          <Delete id={id} />
         </div>
       </RainbowkitWrapper>
     </AuthProvider>

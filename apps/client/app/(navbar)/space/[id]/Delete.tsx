@@ -10,6 +10,7 @@ import { useSigner } from "wagmi";
 
 import { getNFTSpace } from "@/app/api/nfts/[id]/space/helper";
 import { deleteSpace } from "@/app/api/spaces/[id]/helper";
+import { useAuth } from "@/src/client/AuthProvider";
 import { parseError } from "@/src/editor/utils/parseError";
 import { env } from "@/src/env.mjs";
 import Button from "@/src/ui/Button";
@@ -17,10 +18,10 @@ import { SpaceId } from "@/src/utils/parseSpaceId";
 
 interface Props {
   id: SpaceId;
-  address: string;
 }
 
-export default function Delete({ id, address }: Props) {
+export default function Delete({ id }: Props) {
+  const { user } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -75,7 +76,7 @@ export default function Delete({ id, address }: Props) {
       await handleDelete();
       toast.success("Space deleted.", { id: toastId });
 
-      router.push(`/user/${address}`);
+      router.push(`/@${user?.username}`);
     } catch (err) {
       console.error(err);
       toast.error(parseError(err, "Failed to delete space."), { id: toastId });

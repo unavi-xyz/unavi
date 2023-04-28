@@ -44,14 +44,19 @@ export function ClientSignInButton({ loading }: Props) {
     const popup = window.open(
       "/api/auth/methods/google",
       "popup",
-      `toolbar=no, menubar=no, width=${w}, height=${h}, left=${x}, top=${y}`
+      `popup=true, width=${w}, height=${h}, left=${x}, top=${y}`
     );
     if (!popup) return;
 
     popup.focus();
 
-    // Refresh page when popup is closed
     const interval = setInterval(() => {
+      // Close popup when redirected back to our site
+      if (popup.window.location.href.includes(env.NEXT_PUBLIC_DEPLOYED_URL)) {
+        popup.close();
+      }
+
+      // Refresh page when popup is closed
       if (popup.closed) {
         clearInterval(interval);
         router.refresh();

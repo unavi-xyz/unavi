@@ -131,7 +131,7 @@ export default async function Space({ params }: Props) {
                             </div>
                           </Link>
                         ) : (
-                          <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
+                          <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis md:max-w-md">
                             {profile.metadata.name}
                           </div>
                         )}

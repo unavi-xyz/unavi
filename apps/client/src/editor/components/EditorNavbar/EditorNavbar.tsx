@@ -23,9 +23,8 @@ interface Props {
 
 export default function EditorNavbar({ project }: Props) {
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
-  const [title, setTitle] = useState(project.title);
 
-  const { loaded, changeMode } = useEditor();
+  const { title, setTitle, loaded, changeMode } = useEditor();
   const { saving, save, saveImage } = useSave(project);
   const { status } = useAuth();
   const router = useRouter();

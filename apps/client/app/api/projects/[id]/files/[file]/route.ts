@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getServerSession } from "@/src/server/helpers/getServerSession";
+import { getUserSession } from "@/src/server/auth/getUserSession";
 import { prisma } from "@/src/server/prisma";
 
 import { Params } from "../../types";
@@ -9,13 +9,15 @@ import { GetFileDownloadResponse, GetFileUploadResponse, paramsSchema } from "./
 
 // Get file download URL
 export async function GET(request: NextRequest, { params }: Params) {
-  const session = await getServerSession();
-  if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
+  const session = await getUserSession();
+  if (!session) return new Response("Unauthorized", { status: 401 });
 
   const { id, file } = paramsSchema.parse(params);
 
   // Verify user owns the project
-  const found = await prisma.project.findFirst({ where: { publicId: id, owner: session.address } });
+  const found = await prisma.project.findFirst({
+    where: { publicId: id, ownerId: session.user.userId },
+  });
   if (!found) return new Response("Project not found", { status: 404 });
 
   const url = await getProjectDownloadURL(id, file);
@@ -26,13 +28,15 @@ export async function GET(request: NextRequest, { params }: Params) {
 
 // Get file upload URL
 export async function PUT(request: NextRequest, { params }: Params) {
-  const session = await getServerSession();
-  if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
+  const session = await getUserSession();
+  if (!session) return new Response("Unauthorized", { status: 401 });
 
   const { id, file } = paramsSchema.parse(params);
 
   // Verify user owns the project
-  const found = await prisma.project.findFirst({ where: { publicId: id, owner: session.address } });
+  const found = await prisma.project.findFirst({
+    where: { publicId: id, ownerId: session.user.userId },
+  });
   if (!found) return new Response("Project not found", { status: 404 });
 
   const url = await getProjectUploadURL(id, file);

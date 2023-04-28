@@ -2,7 +2,7 @@ import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { NextRequest, NextResponse } from "next/server";
 
 import { env } from "@/src/env.mjs";
-import { getServerSession } from "@/src/server/helpers/getServerSession";
+import { getUserSession } from "@/src/server/auth/getUserSession";
 import { listObjectsRecursive } from "@/src/server/helpers/listObjectsRecursive";
 import { nanoidShort } from "@/src/server/nanoid";
 import { prisma } from "@/src/server/prisma";
@@ -14,14 +14,14 @@ import { PostSpaceModelResponse } from "./types";
 
 // Create new space model
 export async function POST(request: NextRequest, { params }: Params) {
-  const session = await getServerSession();
-  if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
+  const session = await getUserSession();
+  if (!session) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
 
   // Verify user owns the space
   const found = await prisma.space.findFirst({
-    where: { publicId: id, owner: session.address },
+    where: { publicId: id, ownerId: session.user.userId },
     include: { SpaceModel: true },
   });
   if (!found) return new Response("Space not found", { status: 404 });

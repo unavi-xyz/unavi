@@ -4,8 +4,8 @@ import { MdArrowBackIosNew } from "react-icons/md";
 
 import SignInButton from "@/app/(navbar)/SignInButton";
 import { MAX_TITLE_LENGTH } from "@/app/api/projects/constants";
+import { useAuth } from "@/src/client/AuthProvider";
 
-import { useSession } from "../../../client/auth/useSession";
 import { Project } from "../../../server/helpers/fetchProject";
 import Button from "../../../ui/Button";
 import DialogContent, { DialogRoot } from "../../../ui/Dialog";
@@ -27,7 +27,7 @@ export default function EditorNavbar({ project }: Props) {
 
   const { loaded, changeMode } = useEditor();
   const { saving, save, saveImage } = useSave(project);
-  const { status } = useSession();
+  const { status } = useAuth();
   const router = useRouter();
 
   const isPublished = Boolean(project?.spaceId);

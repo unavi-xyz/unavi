@@ -3,7 +3,7 @@
 import * as DropdownPrimitive from "@radix-ui/react-dropdown-menu";
 import React from "react";
 
-type Props = DropdownPrimitive.DropdownMenuProps;
+type Props = DropdownPrimitive.DropdownMenuContentProps;
 
 export const DropdownContent = React.forwardRef<HTMLDivElement, Props>(
   ({ children, ...rest }, ref) => {
@@ -13,7 +13,7 @@ export const DropdownContent = React.forwardRef<HTMLDivElement, Props>(
           ref={ref}
           sideOffset={4}
           onCloseAutoFocus={(event) => event.preventDefault()}
-          className="z-50 animate-scaleIn rounded-xl bg-neutral-50 shadow-md"
+          className="z-50 animate-scaleIn rounded-xl bg-white shadow-dark"
           {...rest}
         >
           {children}
@@ -37,7 +37,7 @@ export const DropdownSubContent = React.forwardRef<HTMLDivElement, Props>(
       <DropdownPrimitive.SubContent
         ref={ref}
         sideOffset={4}
-        className="rounded-xl bg-neutral-50 shadow-md"
+        className="rounded-xl bg-white shadow-dark"
         {...rest}
       >
         {children}

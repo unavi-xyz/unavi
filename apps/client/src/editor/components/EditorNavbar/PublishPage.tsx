@@ -17,10 +17,9 @@ import {
   getSpaceNFTFileDownload,
   getSpaceNFTFileUpload,
 } from "@/app/api/spaces/[id]/nft/files/[file]/helper";
+import { useAuth } from "@/src/client/AuthProvider";
 import { env } from "@/src/env.mjs";
-import { useProfileByAddress } from "@/src/play/hooks/useProfileByAddress";
 
-import { useSession } from "../../../client/auth/useSession";
 import { fetcher } from "../../../play/utils/fetcher";
 import { Project } from "../../../server/helpers/fetchProject";
 import Button from "../../../ui/Button";
@@ -41,14 +40,12 @@ interface Props {
 export default function PublishPage({ project }: Props) {
   const { engine, title: editorTitle, image } = useEditor();
 
-  const { data: session } = useSession();
-  const { profile } = useProfileByAddress(session?.address);
+  const { user } = useAuth();
   const { save } = useSave(project);
 
   const [title, setTitle] = useState(editorTitle);
   const [description, setDescription] = useState(project.description);
 
-  // const { profile } = useProfileByAddress(session?.address);
   const { data: imageDownload } = useSWR<GetFileDownloadResponse>(
     () => `/api/projects/${project.id}/files/image`,
     fetcher,
@@ -67,13 +64,13 @@ export default function PublishPage({ project }: Props) {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (loading || !engine || !session) return;
+    if (loading || !engine || !user) return;
 
     const toastId = nanoid();
 
     async function publish() {
       if (!engine) throw new Error("Engine not found");
-      if (!session) throw new Error("Session not found");
+      if (!user) throw new Error("Session not found");
 
       toast.loading("Preparing space...", { id: toastId });
 
@@ -93,13 +90,8 @@ export default function PublishPage({ project }: Props) {
           info: {
             name: title.trimEnd(),
             description: description.trimEnd(),
-            authors: session?.address
-              ? [
-                  {
-                    name: profile?.handle?.string,
-                    address: session.address,
-                  },
-                ]
+            authors: user?.username
+              ? [`${user.username}@${env.NEXT_PUBLIC_DEFAULT_HOST}`]
               : undefined,
             image: imageURL,
             host: env.NEXT_PUBLIC_DEFAULT_HOST,

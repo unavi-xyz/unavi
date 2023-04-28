@@ -1,8 +1,6 @@
 import { Engine } from "engine";
 import { providers, Signer } from "ethers";
 
-import { fetchDefaultProfileId } from "../helpers/fetchDefaultProfile";
-import { fetchProfileHandle } from "../helpers/fetchProfileHandle";
 import { toHex } from "../utils/toHex";
 
 /**
@@ -104,16 +102,16 @@ export class Player {
   async #updateDisplayName() {
     let newDisplayName = "";
 
-    if (this.address && this.ethersProvider) {
-      const profileId = await fetchDefaultProfileId(this.address, this.ethersProvider);
+    // if (this.address && this.ethersProvider) {
+    //   const profileId = await fetchDefaultProfileId(this.address, this.ethersProvider);
 
-      if (profileId !== null) {
-        const handle = await fetchProfileHandle(profileId, this.ethersProvider);
+    //   if (profileId !== null) {
+    //     const handle = await fetchProfileHandle(profileId, this.ethersProvider);
 
-        if (handle) newDisplayName = handle.string;
-        else if (!this.name) newDisplayName = this.address.substring(0, 6);
-      }
-    }
+    //     if (handle) newDisplayName = handle.string;
+    //     else if (!this.name) newDisplayName = this.address.substring(0, 6);
+    //   }
+    // }
 
     if (!newDisplayName && this.name) newDisplayName = this.name;
     if (!newDisplayName) newDisplayName = `Guest ${toHex(this.id)}`;

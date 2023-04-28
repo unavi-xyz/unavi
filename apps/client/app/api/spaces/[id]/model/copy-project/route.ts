@@ -7,7 +7,7 @@ import {
 import { NextRequest } from "next/server";
 
 import { env } from "@/src/env.mjs";
-import { getServerSession } from "@/src/server/helpers/getServerSession";
+import { getUserSession } from "@/src/server/auth/getUserSession";
 import { getUsedAssets } from "@/src/server/helpers/getUsedAssets";
 import { nanoidShort } from "@/src/server/nanoid";
 import { prisma } from "@/src/server/prisma";
@@ -26,21 +26,21 @@ export async function POST(request: NextRequest, { params }: Params) {
   const modelPromise = fetchModel(projectId);
   const assetsPromise = fetchAssets(projectId);
 
-  const session = await getServerSession();
-  if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
+  const session = await getUserSession();
+  if (!session) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
 
   // Verify user owns the space
   const foundSpace = await prisma.space.findFirst({
-    where: { publicId: id, owner: session.address },
+    where: { publicId: id, ownerId: session.user.userId },
     include: { SpaceModel: true },
   });
   if (!foundSpace) return new Response("Space not found", { status: 404 });
 
   // Verify user owns the project
   const foundProject = await prisma.project.findFirst({
-    where: { publicId: projectId, owner: session.address },
+    where: { publicId: projectId, ownerId: session.user.userId },
   });
   if (!foundProject) return new Response("Project not found", { status: 404 });
 

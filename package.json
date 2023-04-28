@@ -18,8 +18,7 @@
     "lint": "turbo lint"
   },
   "dependencies": {
-    "@changesets/cli": "^2.26.1",
-    "@wired-protocol/types": "^0.0.16"
+    "@changesets/cli": "^2.26.1"
   },
   "devDependencies": {
     "dotenv-cli": "^7.2.1",

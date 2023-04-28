@@ -1,10 +1,10 @@
 import { customAlphabet } from "nanoid";
 
-export const NANOID_LENGTH = 12;
+export const NANOID_SHORT_LENGTH = 12;
 
 const nanoid = customAlphabet(
   "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
-  NANOID_LENGTH
+  NANOID_SHORT_LENGTH
 );
 
 /**

@@ -14,7 +14,7 @@ export default async function Settings({ params: { id } }: { params: { id: strin
   return (
     <div className="space-y-12">
       <Download id={id} projectName={project.title} />
-      <Connect id={id} owner={project.owner} connectedSpaceId={project.spaceId} />
+      <Connect id={id} owner={project.ownerId} connectedSpaceId={project.spaceId} />
       <Delete id={id} />
     </div>
   );

@@ -1,32 +1,30 @@
 import { MdLogout } from "react-icons/md";
 
 import { ClientSignInButton } from "@/app/(navbar)/SignInButton";
+import { useAuth } from "@/src/client/AuthProvider";
 
-import { useLogout } from "../../../client/auth/useLogout";
-import { useSession } from "../../../client/auth/useSession";
 import Avatar from "../../../ui/Avatar";
 import Tooltip from "../../../ui/Tooltip";
-import { useProfileByAddress } from "../../hooks/useProfileByAddress";
+import { useProfile } from "../../hooks/useProfile";
 
 interface Props {
   onClose: () => void;
 }
 
 export default function AccountSettings({ onClose }: Props) {
-  const { logout } = useLogout();
-  const { data: session } = useSession();
-  const { profile, isLoading: isLoadingProfile } = useProfileByAddress(session?.address);
+  const { user, logout } = useAuth();
+  const { profile, isLoading: isLoadingProfile } = useProfile();
 
   return (
     <section className="space-y-1">
       <div className="text-xl font-bold">Account</div>
 
-      {session?.address ? (
+      {user?.address ? (
         <div className="flex items-center space-x-4 pt-2">
           <div className="overflow-hidden">
             <Avatar
               src={profile?.metadata?.image}
-              uniqueKey={profile?.handle?.full ?? session.address}
+              uniqueKey={user.userId}
               loading={isLoadingProfile}
               size={48}
             />
@@ -36,10 +34,8 @@ export default function AccountSettings({ onClose }: Props) {
             <div className="h-5 w-40 animate-pulse rounded-md bg-neutral-300" />
           ) : (
             <div>
-              <span className="text-xl font-bold">{profile?.handle?.string}</span>
-              <span className="text-lg text-neutral-400">
-                #{profile?.handle?.id.toString().padStart(4, "0")}
-              </span>
+              <span className="text-xl font-bold">{profile?.metadata?.name}</span>
+              <span className="text-lg text-neutral-400">@{profile?.username}</span>
             </div>
           )}
 

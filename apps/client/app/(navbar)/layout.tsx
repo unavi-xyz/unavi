@@ -41,6 +41,7 @@ export default function NavbarLayout({ children }: { children: React.ReactNode }
             </div>
 
             <div className="flex items-center justify-end">
+              {/* @ts-expect-error Server Component */}
               <AccountButton />
             </div>
           </div>

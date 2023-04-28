@@ -4,11 +4,11 @@ import { notFound } from "next/navigation";
 import React from "react";
 import { z } from "zod";
 
+import AuthProvider from "@/src/client/AuthProvider";
 import { fetchSpaceMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
 import { toHex } from "@/src/utils/toHex";
 
 import RainbowkitWrapper from "../(navbar)/RainbowkitWrapper";
-import SessionProvider from "../(navbar)/SessionProvider";
 import { SPACE_ID_LENGTH } from "../api/projects/constants";
 import App from "./App";
 import { SpaceUriId } from "./types";
@@ -32,10 +32,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const title = metadata.info?.name || `Space ${displayId}`;
 
   const description = metadata.info?.description || "";
-
-  const authors = metadata.info?.authors
-    ?.map((author) => author.name || author.address)
-    .filter(Boolean) as string[] | undefined;
+  const authors = metadata.info?.authors;
 
   const image = metadata.info?.image;
 
@@ -72,11 +69,11 @@ export default async function Play({ searchParams }: Props) {
   if (!space) notFound();
 
   return (
-    <SessionProvider>
+    <AuthProvider>
       <RainbowkitWrapper>
         <App id={id} uri={space.uri} metadata={space.metadata} />
       </RainbowkitWrapper>
-    </SessionProvider>
+    </AuthProvider>
   );
 }
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getServerSession } from "@/src/server/helpers/getServerSession";
+import { getUserSession } from "@/src/server/auth/getUserSession";
 import { nanoidShort } from "@/src/server/nanoid";
 import { prisma } from "@/src/server/prisma";
 
@@ -12,12 +12,12 @@ export async function POST(request: NextRequest, { params }: Params) {
   const { id } = paramsSchema.parse(params);
 
   // Verify user is authenticated
-  const session = await getServerSession();
-  if (!session || !session.address) return new Response("Unauthorized", { status: 401 });
+  const session = await getUserSession();
+  if (!session) return new Response("Unauthorized", { status: 401 });
 
   // Verify user owns the project
   const found = await prisma.project.findFirst({
-    where: { publicId: id, owner: session.address },
+    where: { publicId: id, ownerId: session.user.userId },
     include: { Space: { include: { SpaceNFT: true } } },
   });
   if (!found) return new Response("Project not found", { status: 404 });
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     const publicId = nanoidShort();
 
     const newSpace = await prisma.space.create({
-      data: { publicId, owner: session.address },
+      data: { publicId, ownerId: session.user.userId },
       select: { id: true },
     });
 

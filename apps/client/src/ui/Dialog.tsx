@@ -32,9 +32,11 @@ const DialogContent = React.forwardRef<HTMLDivElement, Props>(
           } ${size === "normal" ? "max-w-xl" : "max-w-4xl"}`}
           {...rest}
         >
-          <DialogPrimitive.Title className="text-center text-3xl font-bold">
-            {title}
-          </DialogPrimitive.Title>
+          {title && (
+            <DialogPrimitive.Title className="text-center text-3xl font-bold">
+              {title}
+            </DialogPrimitive.Title>
+          )}
 
           {description && (
             <DialogPrimitive.Description className="pt-2 text-center text-lg text-neutral-500">

@@ -52,12 +52,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function Handle({ params }: Props) {
-  const handle = params.handle.split("%40")[1]; // Remove the @ from the handle
+  const username = params.handle.split("%40")[1]; // Remove the @ from the handle
 
   const [spaces, user, session] = await Promise.all([
-    fetchDatabaseSpaces(20, handle),
+    fetchDatabaseSpaces(20, username),
     prisma.authUser.findUnique({
-      where: { username: handle },
+      where: { username },
       include: { Profile: true },
     }),
     getSession(),
@@ -97,7 +97,7 @@ export default async function Handle({ params }: Props) {
           <section className="flex justify-center px-4 md:px-0">
             <div className="flex w-full flex-col items-center space-y-2">
               <div className="relative z-10 mt-[-72px] flex w-36 rounded-full ring-4 ring-white">
-                <Avatar src={user?.Profile?.image} circle uniqueKey={handle} size={144} />
+                <Avatar src={user?.Profile?.image} circle uniqueKey={username} size={144} />
 
                 {session?.userId == user.id && (
                   <EditProfileButton username={user.username} bio={user.Profile?.bio ?? ""} />
@@ -105,7 +105,7 @@ export default async function Handle({ params }: Props) {
               </div>
 
               <div className="flex w-full flex-col items-center space-y-2">
-                <div className="text-2xl font-bold">@{handle}</div>
+                <div className="text-2xl font-bold">@{username}</div>
                 <div className="w-full overflow-x-hidden text-ellipsis text-center text-neutral-400">
                   {user?.address}
                 </div>
@@ -121,10 +121,11 @@ export default async function Handle({ params }: Props) {
 
       <div className="flex justify-center pb-8 pt-4">
         <div className="max-w-content mx-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {spaces.map(({ id, metadata }) => (
+          {spaces.map(({ id, uri, metadata }) => (
             <SpaceCard
               key={id.value}
               id={id}
+              uri={uri}
               metadata={metadata}
               sizes="(min-width: 1320px) 33vw, (min-width: 768px) 50vw, 100vw"
             />

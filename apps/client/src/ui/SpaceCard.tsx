@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import PlayerCount from "@/app/(navbar)/PlayerCount";
 
+import { env } from "../env.mjs";
 import { SpaceId } from "../utils/parseSpaceId";
 import { toHex } from "../utils/toHex";
 import { CardImage } from "./Card";
@@ -10,6 +11,7 @@ import Tooltip from "./Tooltip";
 
 interface Props {
   id: SpaceId;
+  uri: string;
   metadata: WorldMetadata;
   tokenId?: number;
   sizes?: string;
@@ -18,7 +20,7 @@ interface Props {
 /**
  * Wrapper around {@link Card} that links to the space page, and shows the player count.
  */
-export default function SpaceCard({ id, metadata, tokenId, sizes }: Props) {
+export default function SpaceCard({ id, uri, metadata, tokenId, sizes }: Props) {
   return (
     <div>
       <div className="group relative">
@@ -27,7 +29,7 @@ export default function SpaceCard({ id, metadata, tokenId, sizes }: Props) {
           className="rounded-3xl"
         >
           <CardImage group image={metadata.info?.image} sizes={sizes}>
-            <PlayerCount metadata={metadata} />
+            <PlayerCount uri={uri} host={metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST} />
           </CardImage>
 
           <div className="absolute bottom-0 z-10 h-full w-full rounded-b-3xl bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 transition duration-100 ease-out group-hover:scale-105 group-hover:opacity-100" />

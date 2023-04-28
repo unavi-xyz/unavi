@@ -1,13 +1,20 @@
-import { fetchPlayerCount } from "@/src/server/helpers/fetchPlayerCount";
+"use client";
+
+import { usePlayerCount } from "@/app/api/player-count/helper";
 
 interface Props {
   uri: string;
+  host: string;
 }
 
-export default async function PlayerCount({ uri }: Props) {
-  const playerCount = await fetchPlayerCount(uri);
+/**
+ * Fetches the player count client side and displays it.
+ * For use within the space page.
+ */
+export default function PlayerCount({ uri, host }: Props) {
+  const { playerCount } = usePlayerCount({ uri, host });
 
-  if (playerCount === 0) return null;
+  if (!playerCount) return null;
 
   return (
     <div className="flex justify-center space-x-1 font-bold md:justify-start">

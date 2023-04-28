@@ -65,7 +65,11 @@ export async function fetchDatabaseSpaces(limit: number, owner?: string) {
         const world = await fetchWorldMetadata(uri);
         if (!world) return;
 
-        validSpaces.push({ id: { type: "id", value: space.publicId }, metadata: world.metadata });
+        validSpaces.push({
+          id: { type: "id", value: space.publicId },
+          uri,
+          metadata: world.metadata,
+        });
       })
     );
 

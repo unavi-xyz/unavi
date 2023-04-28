@@ -23,12 +23,16 @@ export async function validateSpaceNFT(
     const world = await fetchWorldMetadata(uri);
     if (!world) throw new Error("Invalid world metadata");
 
-    return { id: { type: "tokenId", value: tokenId }, metadata: world.metadata };
+    return {
+      id: { type: "tokenId", value: tokenId },
+      uri,
+      metadata: world.metadata,
+    };
   } catch {
     return null;
   }
 }
 
-export type ValidNFTSpace = { id: SpaceNFTId; metadata: WorldMetadata };
-export type ValidDBSpace = { id: SpaceDBId; metadata: WorldMetadata };
+export type ValidNFTSpace = { id: SpaceNFTId; uri: string; metadata: WorldMetadata };
+export type ValidDBSpace = { id: SpaceDBId; uri: string; metadata: WorldMetadata };
 export type ValidSpace = ValidNFTSpace | ValidDBSpace;

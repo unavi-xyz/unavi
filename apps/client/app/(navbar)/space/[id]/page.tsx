@@ -145,10 +145,10 @@ export default async function Space({ params }: Props) {
                   <div>{metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST}</div>
                 </div>
 
-                <Suspense fallback={null}>
-                  {/* @ts-expect-error Server Component */}
-                  <PlayerCount uri={metadata.uri} />
-                </Suspense>
+                <PlayerCount
+                  uri={uri.uri}
+                  host={metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST}
+                />
               </div>
             </div>
 

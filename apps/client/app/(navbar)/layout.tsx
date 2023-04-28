@@ -1,11 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
 
 import Logo from "@/public/images/Logo.png";
 import { env } from "@/src/env.mjs";
 
 import AccountButton from "./AccountButton";
 import NavbarTab from "./NavbarTab";
+import SignInButton from "./SignInButton";
 
 export default function NavbarLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -41,8 +43,10 @@ export default function NavbarLayout({ children }: { children: React.ReactNode }
             </div>
 
             <div className="flex items-center justify-end">
-              {/* @ts-expect-error Server Component */}
-              <AccountButton />
+              <Suspense fallback={<SignInButton />}>
+                {/* @ts-expect-error Server Component */}
+                <AccountButton />
+              </Suspense>
             </div>
           </div>
         </nav>

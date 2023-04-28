@@ -52,7 +52,7 @@ export function ClientSignInButton({ loading }: Props) {
 
     const interval = setInterval(() => {
       // Close popup when redirected back to our site
-      if (popup.window.location.href.includes(env.NEXT_PUBLIC_DEPLOYED_URL)) {
+      if (popup.location.origin === window.location.origin) {
         popup.close();
       }
 
@@ -62,7 +62,7 @@ export function ClientSignInButton({ loading }: Props) {
         router.refresh();
         setOpen(false);
       }
-    }, 50);
+    }, 100);
   }
 
   return (

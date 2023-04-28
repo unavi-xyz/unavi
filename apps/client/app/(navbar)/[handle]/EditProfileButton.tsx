@@ -13,6 +13,7 @@ import {
 import { updateProfile } from "@/app/api/auth/profile/helper";
 import { getProfileUploadURL } from "@/app/api/auth/profile/upload/[file]/helper";
 import { ProfileFile } from "@/app/api/auth/profile/upload/[file]/types";
+import { useAuth } from "@/src/client/AuthProvider";
 import { cropImage } from "@/src/editor/utils/cropImage";
 import { parseError } from "@/src/editor/utils/parseError";
 import { env } from "@/src/env.mjs";
@@ -38,6 +39,7 @@ export default function EditProfileButton({ userId, username, bio, image, backgr
   const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
   const [backgroundDisplay, setBackgroundDisplay] = useState<string | null>(null);
 
+  const { user } = useAuth();
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -131,6 +133,9 @@ export default function EditProfileButton({ userId, username, bio, image, backgr
 
     setLoading(false);
   }
+
+  // Only show the button if the user is viewing their own profile
+  if (user?.userId !== userId) return null;
 
   return (
     <DialogRoot open={open} onOpenChange={setOpen}>

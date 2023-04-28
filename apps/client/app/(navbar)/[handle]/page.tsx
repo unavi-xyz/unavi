@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
-import { getSession } from "@/src/server/auth/getSession";
+import AuthProvider from "@/src/client/AuthProvider";
 import { fetchDatabaseSpaces } from "@/src/server/helpers/fetchLatestSpaces";
 import { prisma } from "@/src/server/prisma";
 import Avatar from "@/src/ui/Avatar";
@@ -55,13 +55,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Handle({ params }: Props) {
   const username = params.handle.split("%40")[1]; // Remove the @ from the handle
 
-  const [spaces, user, session] = await Promise.all([
+  const [spaces, user] = await Promise.all([
     fetchDatabaseSpaces(20, username),
     prisma.authUser.findUnique({
       where: { username },
       include: { Profile: true },
     }),
-    getSession(),
   ]);
 
   if (!user) notFound();
@@ -100,15 +99,15 @@ export default async function Handle({ params }: Props) {
               <div className="relative z-10 -mt-16 flex w-32 rounded-full ring-4 ring-white">
                 <Avatar src={user?.Profile?.image} circle uniqueKey={username} size={128} />
 
-                {session?.userId == user.id && (
+                <AuthProvider>
                   <EditProfileButton
-                    userId={session.userId}
+                    userId={user.id}
                     username={user.username}
                     bio={user.Profile?.bio ?? ""}
                     image={user.Profile?.image ?? ""}
                     background={user.Profile?.background ?? ""}
                   />
-                )}
+                </AuthProvider>
               </div>
 
               <div className="flex w-full flex-col items-center space-y-2">

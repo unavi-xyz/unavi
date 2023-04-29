@@ -1,5 +1,19 @@
 # client
 
+## 0.7.0
+
+### Minor Changes
+
+- 114862f0: upgrade to the latest version of the wired protocol
+- bc2bdc71: move away from profile NFTs. use the new Wired Protocol identity system.
+- 9b66bdbb: add pagination to avatar browser
+
+### Patch Changes
+
+- Updated dependencies [114862f0]
+- Updated dependencies [bc2bdc71]
+  - @unavi/react-client@0.6.0
+
 ## 0.6.0
 
 ### Minor Changes

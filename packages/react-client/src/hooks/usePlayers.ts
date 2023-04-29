@@ -13,7 +13,7 @@ import { useClient } from "./useClient";
  * @returns List of players and chat messages
  */
 export function usePlayers() {
-  const { engine, ws, players, setPlayers, setChatMessages } = useClient();
+  const { engine, ws, baseHomeServer, players, setPlayers, setChatMessages } = useClient();
 
   useEffect(() => {
     if (!ws) return;
@@ -35,6 +35,7 @@ export function usePlayers() {
           console.info("👋 Player", toHex(data.playerId), "joined");
 
           const player = new Player(data.playerId);
+          player.baseHomeServer = baseHomeServer;
           player.avatar = data.avatar ?? null;
           player.handle = data.handle ?? null;
           player.name = data.name ?? null;
@@ -135,7 +136,7 @@ export function usePlayers() {
       localPlayers.forEach((player) => player.remove());
       setPlayers([]);
     };
-  }, [ws, setPlayers, setChatMessages]);
+  }, [ws, baseHomeServer, setPlayers, setChatMessages]);
 
   useEffect(() => {
     players.forEach((player) => {

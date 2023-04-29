@@ -9,6 +9,7 @@ import { toHex } from "../utils/toHex";
 export class Player {
   readonly id: number;
   #engine: Engine | null = null;
+  #baseHomeServer: string | null = null;
 
   #avatar: string | null = null;
   #handle: string | null = null;
@@ -41,6 +42,14 @@ export class Player {
       const player = this.#engine.player.getPlayer(this.id);
       if (player) player.avatar = avatar;
     }
+  }
+
+  get baseHomeServer() {
+    return this.#baseHomeServer;
+  }
+
+  set baseHomeServer(baseHomeServer: string | null) {
+    this.#baseHomeServer = baseHomeServer;
   }
 
   get displayName() {
@@ -91,8 +100,12 @@ export class Player {
   async #updateDisplayName() {
     let newDisplayName = "";
 
-    if (this.handle) newDisplayName = this.handle;
-    else if (this.name) newDisplayName = this.name;
+    if (this.handle) {
+      // If from the same server, just use the username
+      const [username, domain] = this.handle.split("@");
+      if (domain === this.#baseHomeServer) newDisplayName = `@${username}`;
+      else newDisplayName = this.handle;
+    } else if (this.name) newDisplayName = this.name;
     else newDisplayName = `Guest ${toHex(this.id)}`;
 
     this.#displayName = newDisplayName;

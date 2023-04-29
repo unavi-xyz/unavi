@@ -42,6 +42,7 @@ export default function App({ id, metadata, uri }: Props) {
             animations="/models"
             defaultAvatar="/models/Robot.vrm"
             skybox="/images/Skybox.jpg"
+            baseHomeServer={env.NEXT_PUBLIC_DEPLOYED_URL}
             engineOptions={{ useOffscreenCanvas }}
           >
             <ClientApp id={id} metadata={metadata} />

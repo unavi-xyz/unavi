@@ -26,17 +26,9 @@ export function usePlayerName(playerId: number | null) {
 
       // If this is the current user
       if (playerId === userId) {
-        const address = user?.address ?? null;
-
-        // if (address) {
-        //   const profile = await getProfileByAddress(address);
-
-        //   if (profile?.handle) displayName = profile.handle.string;
-        //   else if (!userNickname) displayName = address.substring(0, 6);
-        // }
-
-        if (!displayName && userNickname) displayName = userNickname;
-        if (!displayName) displayName = `Guest ${toHex(playerId)}`;
+        if (user?.username) displayName = `@${user.username}`;
+        else if (userNickname) displayName = userNickname;
+        else displayName = `Guest ${toHex(playerId)}`;
 
         setName(displayName);
         return;

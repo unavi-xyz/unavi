@@ -40,6 +40,7 @@ export type HoverState = null | "equip_avatar" | "avatar_equipped";
 export interface IClientContext {
   host: string | null;
   uri: string | null;
+  baseHomeServer: string | null;
 
   engine: Engine | null;
 
@@ -74,6 +75,7 @@ export interface IClientContext {
 const defaultContext: IClientContext = {
   host: null,
   uri: null,
+  baseHomeServer: null,
 
   engine: null,
 
@@ -114,6 +116,7 @@ interface Props {
   host?: string;
   skybox?: string;
   uri?: string;
+  baseHomeServer?: string;
   metadata?: WorldMetadata;
   engineOptions?: EngineOptions;
 }
@@ -124,6 +127,7 @@ interface Props {
 export function Client({
   animations,
   children,
+  baseHomeServer,
   defaultAvatar,
   engineOptions,
   host,
@@ -212,6 +216,7 @@ export function Client({
       host: usedHost || null,
       uri: uri || null,
       engine,
+      baseHomeServer: baseHomeServer || null,
       hoverState,
       setHoverState,
       ws,
@@ -237,6 +242,7 @@ export function Client({
     [
       usedHost,
       uri,
+      baseHomeServer,
       engine,
       hoverState,
       ws,

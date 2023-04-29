@@ -16,13 +16,17 @@ export function useLoadUser() {
     const localName = localStorage.getItem(LocalStorageKey.Name);
     usePlayStore.setState({ nickname: localName });
 
-    // Publish to host
+    // Send to host
     send({ id: "xyz.unavi.world.user.name", data: localName });
   }, [send]);
 
   // Publish handle on change
   useEffect(() => {
-    const handle = user?.username ? `${user.username}@${env.NEXT_PUBLIC_DEPLOYED_URL}` : null;
+    const handle = user?.username
+      ? `${user.username}@${new URL(env.NEXT_PUBLIC_DEPLOYED_URL).origin}`
+      : null;
+
+    // Send to host
     send({ id: "xyz.unavi.world.user.handle", data: handle });
   }, [user, send]);
 }

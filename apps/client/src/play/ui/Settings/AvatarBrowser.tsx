@@ -1,5 +1,6 @@
 import { useClient } from "@unavi/react-client";
-import { MdArrowBack } from "react-icons/md";
+import { useState } from "react";
+import { MdArrowBack, MdSkipNext, MdSkipPrevious } from "react-icons/md";
 import useSWR from "swr";
 
 import { avatarFetcher } from "./avatarFetcher";
@@ -8,6 +9,8 @@ import { SettingsPage } from "./SettingsDialog";
 
 const CHAIN_ID = 1;
 const COLLECTION_ADDRESS = "0xc1def47cf1e15ee8c2a92f4e0e968372880d18d1";
+const FIRST_PAGE = 4;
+const MAX_PAGE = 10;
 
 interface Props {
   setPage: (page: SettingsPage) => void;
@@ -15,6 +18,8 @@ interface Props {
 }
 
 export default function AvatarBrowser({ setPage, onClose }: Props) {
+  const [page, setPageNumber] = useState(0);
+
   return (
     <div>
       <button
@@ -24,22 +29,67 @@ export default function AvatarBrowser({ setPage, onClose }: Props) {
         <MdArrowBack />
       </button>
 
-      <Avatars onClose={onClose} />
+      <div className="-mt-2 flex items-center justify-center space-x-2 pb-2">
+        <button
+          onClick={() => {
+            setPageNumber((prev) => Math.max(prev - 1, 0));
+          }}
+          disabled={page === 0}
+          className={`rounded-full p-1 text-2xl ${
+            page === 0 ? "opacity-50" : "hover:bg-neutral-200"
+          }`}
+        >
+          <MdSkipPrevious />
+        </button>
+
+        <div className="text-lg font-bold">{page + 1}</div>
+
+        <button
+          onClick={() => {
+            setPageNumber((prev) => Math.min(prev + 1, MAX_PAGE - 1));
+          }}
+          disabled={page === MAX_PAGE - 1}
+          className={`rounded-full p-1 text-2xl ${
+            page === MAX_PAGE - 1 ? "opacity-50" : "hover:bg-neutral-200"
+          }`}
+        >
+          <MdSkipNext />
+        </button>
+      </div>
+
+      <Avatars onClose={onClose} page={page} />
     </div>
   );
 }
 
 interface AvatarsProps {
   onClose: () => void;
+  page: number;
 }
 
-function Avatars({ onClose }: AvatarsProps) {
+function Avatars({ onClose, page }: AvatarsProps) {
+  const caPage = (page + FIRST_PAGE) % MAX_PAGE;
+
   const { data, isLoading, error } = useSWR(
-    `https://api.cryptoavatars.io/v1/nfts/avatars?license=CC0&chainId=${CHAIN_ID}&collectionAddress=${COLLECTION_ADDRESS}`,
+    `https://api.cryptoavatars.io/v1/nfts/avatars?license=CC0&chainId=${CHAIN_ID}&collectionAddress=${COLLECTION_ADDRESS}&skip=${
+      caPage * 24 + 4
+    }`,
     avatarFetcher
   );
 
-  if (isLoading) return <div className="text-center">Loading...</div>;
+  if (isLoading)
+    return (
+      <div className="grid max-h-[700px] grid-cols-4 gap-3 overflow-y-auto p-2">
+        {Array.from({ length: 24 }).map((_, i) => {
+          return (
+            <div
+              key={i}
+              className="relative aspect-[7/10] animate-pulse rounded-xl bg-neutral-200 transition duration-100 ease-out hover:scale-105"
+            />
+          );
+        })}
+      </div>
+    );
 
   if (error) {
     console.error(error);

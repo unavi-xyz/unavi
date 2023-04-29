@@ -35,7 +35,7 @@ export default function SpaceCard({ id, uri, metadata, tokenId, sizes }: Props) 
           <div className="absolute bottom-0 z-10 h-full w-full rounded-b-3xl bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 transition duration-100 ease-out group-hover:scale-105 group-hover:opacity-100" />
         </Link>
 
-        <div className="absolute bottom-0 left-0 z-20 hidden animate-fadeIn pb-4 pl-3 group-hover:block">
+        <div className="absolute bottom-0 left-0 z-20 mb-4 ml-3 hidden animate-fadeIn group-hover:block">
           <Link
             href={
               id.type === "tokenId" ? `/play?tokenId=${toHex(id.value)}` : `/play?id=${id.value}`

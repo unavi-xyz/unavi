@@ -1,6 +1,6 @@
 import { MdLogout } from "react-icons/md";
 
-import { ClientSignInButton } from "@/app/(navbar)/SignInButton";
+import { SignInPage } from "@/app/(navbar)/SignInButton";
 import { useAuth } from "@/src/client/AuthProvider";
 
 import Avatar from "../../../ui/Avatar";
@@ -17,7 +17,7 @@ export default function AccountSettings({ onClose }: Props) {
 
   return (
     <section className="space-y-1">
-      <div className="text-xl font-bold">Account</div>
+      <div className="font-bold text-neutral-700">Account</div>
 
       {user ? (
         <div className="flex items-center space-x-4 pt-2">
@@ -39,7 +39,13 @@ export default function AccountSettings({ onClose }: Props) {
           {!isLoading && (
             <Tooltip text="Sign out" side="bottom">
               <button
-                onClick={logout}
+                onClick={() => {
+                  logout();
+                  // There is a bug in Rainbowkit that prevents the dialog from closing
+                  // when you logout after logging in. This somewhat fixes it.
+                  // A dialog will still appear, but it can be closed.
+                  onClose();
+                }}
                 className="flex h-12 w-12 items-center justify-center rounded-lg text-xl transition hover:bg-red-100 active:opacity-90"
               >
                 <MdLogout />
@@ -48,11 +54,7 @@ export default function AccountSettings({ onClose }: Props) {
           )}
         </div>
       ) : (
-        <div className="flex justify-center">
-          <div onClick={onClose}>
-            <ClientSignInButton />
-          </div>
-        </div>
+        <SignInPage setOpen={onClose} />
       )}
     </section>
   );

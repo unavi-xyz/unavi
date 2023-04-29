@@ -25,44 +25,10 @@ export default function SignInButton(props: Props) {
 export function ClientSignInButton({ loading }: Props) {
   const [open, setOpen] = useState(false);
 
-  const { openConnectModal } = useConnectModal();
-
-  async function handleWalletLogin() {
-    setOpen(false);
-    if (openConnectModal) openConnectModal();
-  }
-
   return (
     <DialogRoot open={open} onOpenChange={setOpen}>
       <DialogContent title="Sign in to UNAVI">
-        <div className="flex flex-col items-center space-y-2">
-          <div className="flex w-full items-center pt-4">
-            <hr className="w-full border-neutral-300" />
-            <span className="w-fit whitespace-nowrap px-4 font-bold text-neutral-700">Web3</span>
-            <hr className="w-full border-neutral-300" />
-          </div>
-
-          <Button onClick={handleWalletLogin}>Connect Wallet</Button>
-
-          {env.NEXT_PUBLIC_HAS_GOOGLE_OAUTH ? (
-            <>
-              <div className="flex w-full items-center pt-8">
-                <hr className="w-full border-neutral-300" />
-                <span className="w-fit whitespace-nowrap px-4 font-bold text-neutral-700">
-                  Socials
-                </span>
-                <hr className="w-full border-neutral-300" />
-              </div>
-              <a
-                href="/api/auth/methods/google"
-                about="Sign in with Google"
-                className="aspect-square rounded-full border border-neutral-400 p-2.5 text-2xl transition hover:bg-neutral-100"
-              >
-                <FcGoogle />
-              </a>
-            </>
-          ) : null}
-        </div>
+        <SignInPage setOpen={setOpen} />
       </DialogContent>
 
       <DialogTrigger asChild>
@@ -76,5 +42,43 @@ export function ClientSignInButton({ loading }: Props) {
         </button>
       </DialogTrigger>
     </DialogRoot>
+  );
+}
+
+export function SignInPage({ setOpen }: { setOpen?: (open: boolean) => void }) {
+  const { openConnectModal } = useConnectModal();
+
+  async function handleWalletLogin() {
+    if (setOpen) setOpen(false);
+    if (openConnectModal) openConnectModal();
+  }
+
+  return (
+    <div className="flex flex-col items-center space-y-2">
+      <div className="flex w-full items-center pt-4">
+        <hr className="w-full border-neutral-300" />
+        <span className="w-fit whitespace-nowrap px-4 font-bold text-neutral-700">Web3</span>
+        <hr className="w-full border-neutral-300" />
+      </div>
+
+      <Button onClick={handleWalletLogin}>Connect Wallet</Button>
+
+      {env.NEXT_PUBLIC_HAS_GOOGLE_OAUTH ? (
+        <>
+          <div className="flex w-full items-center pt-8">
+            <hr className="w-full border-neutral-300" />
+            <span className="w-fit whitespace-nowrap px-4 font-bold text-neutral-700">Socials</span>
+            <hr className="w-full border-neutral-300" />
+          </div>
+          <a
+            href="/api/auth/methods/google"
+            about="Sign in with Google"
+            className="aspect-square rounded-full border border-neutral-400 p-2.5 text-2xl transition hover:bg-neutral-100"
+          >
+            <FcGoogle />
+          </a>
+        </>
+      ) : null}
+    </div>
   );
 }

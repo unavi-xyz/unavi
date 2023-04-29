@@ -21,7 +21,7 @@ export class Player {
 
   #grounded = true;
   #name: string | null = null;
-  #address: string | null = null;
+  #handle: string | null = null;
   #avatar: string | null = null;
 
   #producer: Producer | null = null;
@@ -58,13 +58,13 @@ export class Player {
     this.spaces.forEach((space) => space.setGrounded(this, grounded));
   }
 
-  get address() {
-    return this.#address;
+  get handle() {
+    return this.#handle;
   }
 
-  set address(address: string | null) {
-    this.#address = address;
-    this.spaces.forEach((space) => space.setAddress(this, address));
+  set handle(handle: string | null) {
+    this.#handle = handle;
+    this.spaces.forEach((space) => space.setHandle(this, handle));
   }
 
   get avatar() {
@@ -115,7 +115,7 @@ export class Player {
 
     this.ws?.subscribe(space.topic);
 
-    this.send({ type: "join_success", data: playerId });
+    this.send({ id: "xyz.unavi.world.joined", data: playerId });
   }
 
   leave(uri: string) {
@@ -158,7 +158,7 @@ export class Player {
 
     try {
       this.producer = await this.producerTransport.produce({ kind: "audio", rtpParameters });
-      this.send({ type: "webrtc_producer_id", data: this.producer.id });
+      this.send({ id: "xyz.unavi.webrtc.producer.id", data: this.producer.id });
     } catch (err) {
       console.warn(err);
     }
@@ -169,7 +169,7 @@ export class Player {
 
     try {
       this.dataProducer = await this.producerTransport.produceData({ sctpStreamParameters });
-      this.send({ type: "webrtc_data_producer_id", data: this.dataProducer.id });
+      this.send({ id: "xyz.unavi.webrtc.dataProducer.id", data: this.dataProducer.id });
     } catch (err) {
       console.warn(err);
     }
@@ -194,7 +194,7 @@ export class Player {
       consumers.set(playerId, consumer);
 
       this.send({
-        type: "webrtc_create_consumer",
+        id: "xyz.unavi.webrtc.consumer.create",
         data: {
           playerId,
           consumerId: consumer.id,
@@ -227,7 +227,7 @@ export class Player {
       dataConsumers.set(playerId, dataConsumer);
 
       this.send({
-        type: "webrtc_create_data_consumer",
+        id: "xyz.unavi.webrtc.dataConsumer.create",
         data: {
           playerId,
           dataConsumerId: dataConsumer.id,

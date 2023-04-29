@@ -1,5 +1,4 @@
 import { Engine } from "engine";
-import { providers, Signer } from "ethers";
 
 import { toHex } from "../utils/toHex";
 
@@ -9,13 +8,12 @@ import { toHex } from "../utils/toHex";
  */
 export class Player {
   readonly id: number;
-
-  #address: string | null = null;
-  #avatar: string | null = null;
   #engine: Engine | null = null;
-  #ethersProvider: providers.Provider | Signer | null = null;
-  #grounded = false;
+
+  #avatar: string | null = null;
+  #handle: string | null = null;
   #name: string | null = null;
+  #grounded = false;
 
   #displayName = "";
 
@@ -23,12 +21,12 @@ export class Player {
     this.id = id;
   }
 
-  get address() {
-    return this.#address;
+  get handle() {
+    return this.#handle;
   }
 
-  set address(address: string | null) {
-    this.#address = address;
+  set handle(handle: string | null) {
+    this.#handle = handle;
     this.#updateDisplayName();
   }
 
@@ -64,15 +62,6 @@ export class Player {
     player.grounded = this.grounded;
   }
 
-  get ethersProvider() {
-    return this.#ethersProvider;
-  }
-
-  set ethersProvider(ethersProvider: providers.Provider | Signer | null) {
-    this.#ethersProvider = ethersProvider;
-    this.#updateDisplayName();
-  }
-
   get grounded() {
     return this.#grounded;
   }
@@ -102,21 +91,9 @@ export class Player {
   async #updateDisplayName() {
     let newDisplayName = "";
 
-    // if (this.address && this.ethersProvider) {
-    //   const profileId = await fetchDefaultProfileId(this.address, this.ethersProvider);
-
-    //   if (profileId !== null) {
-    //     const handle = await fetchProfileHandle(profileId, this.ethersProvider);
-
-    //     if (handle) newDisplayName = handle.string;
-    //     else if (!this.name) newDisplayName = this.address.substring(0, 6);
-    //   }
-    // }
-
-    if (!newDisplayName && this.name) newDisplayName = this.name;
-    if (!newDisplayName) newDisplayName = `Guest ${toHex(this.id)}`;
-
-    if (newDisplayName === this.#displayName) return;
+    if (this.handle) newDisplayName = this.handle;
+    else if (this.name) newDisplayName = this.name;
+    else newDisplayName = `Guest ${toHex(this.id)}`;
 
     this.#displayName = newDisplayName;
 

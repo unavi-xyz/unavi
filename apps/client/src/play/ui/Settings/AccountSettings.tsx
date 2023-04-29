@@ -12,8 +12,10 @@ interface Props {
 }
 
 export default function AccountSettings({ onClose }: Props) {
-  const { user, logout } = useAuth();
-  const { profile, isLoading } = useProfile();
+  const { status, user, loading: loadingTransition, logout } = useAuth();
+  const { profile, loading: loadingProfile } = useProfile();
+
+  const loading = status === "loading" || loadingTransition || loadingProfile;
 
   return (
     <section className="space-y-1">
@@ -22,10 +24,10 @@ export default function AccountSettings({ onClose }: Props) {
       {user ? (
         <div className="flex items-center space-x-4 pt-2">
           <div className="overflow-hidden rounded-xl">
-            <Avatar src={profile?.image} uniqueKey={user.username} loading={isLoading} size={48} />
+            <Avatar src={profile?.image} uniqueKey={user.username} loading={loading} size={48} />
           </div>
 
-          {isLoading ? (
+          {loading ? (
             <div className="h-5 w-40 animate-pulse rounded-md bg-neutral-300" />
           ) : (
             <div>
@@ -36,7 +38,7 @@ export default function AccountSettings({ onClose }: Props) {
 
           <div className="grow" />
 
-          {!isLoading && (
+          {!loading && (
             <Tooltip text="Sign out" side="bottom">
               <button
                 onClick={() => {

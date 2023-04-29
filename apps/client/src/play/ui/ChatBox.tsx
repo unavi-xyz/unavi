@@ -62,7 +62,7 @@ export default function ChatBox({ alwaysShow }: Props) {
               e.currentTarget.value = "";
 
               // Send message to server
-              send({ type: "send_chat_message", data: text });
+              send({ id: "xyz.unavi.world.chat.send", data: text });
             }
           }}
           onFocus={() => usePlayStore.setState({ chatBoxFocused: true })}

@@ -40,10 +40,10 @@ export function useTransports(device: Device | null) {
         return;
       }
 
-      const { type, data } = parsed.data;
+      const { id, data } = parsed.data;
 
-      switch (type) {
-        case "webrtc_transport_created": {
+      switch (id) {
+        case "xyz.unavi.webrtc.transport.created": {
           // Create local transport
           const transport =
             data.type === "producer"
@@ -59,7 +59,7 @@ export function useTransports(device: Device | null) {
 
           transport.on("connect", ({ dtlsParameters }, callback) => {
             sendMessage(ws, {
-              type: "webrtc_connect_transport",
+              id: "xyz.unavi.webrtc.transport.connect",
               data: { dtlsParameters, type: data.type },
             });
             callback();
@@ -71,7 +71,7 @@ export function useTransports(device: Device | null) {
           break;
         }
 
-        case "webrtc_create_data_consumer": {
+        case "xyz.unavi.webrtc.dataConsumer.create": {
           if (!localConsumerTransport) throw new Error("No consumer transport");
 
           const newDataConsumer = await localConsumerTransport.consumeData({

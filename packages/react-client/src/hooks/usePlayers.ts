@@ -13,7 +13,7 @@ import { useClient } from "./useClient";
  * @returns List of players and chat messages
  */
 export function usePlayers() {
-  const { engine, ws, ethersProvider, players, setPlayers, setChatMessages } = useClient();
+  const { engine, ws, players, setPlayers, setChatMessages } = useClient();
 
   useEffect(() => {
     if (!ws) return;
@@ -28,16 +28,16 @@ export function usePlayers() {
         return;
       }
 
-      const { type, data } = parsed.data;
+      const { id, data } = parsed.data;
 
-      switch (type) {
-        case "player_join": {
+      switch (id) {
+        case "xyz.unavi.world.player.join": {
           console.info("👋 Player", toHex(data.playerId), "joined");
 
           const player = new Player(data.playerId);
-          player.name = data.name ?? null;
           player.avatar = data.avatar ?? null;
-          player.address = data.address ?? null;
+          player.handle = data.handle ?? null;
+          player.name = data.name ?? null;
           localPlayers.push(player);
           setPlayers((players) => [...players, player]);
 
@@ -55,7 +55,7 @@ export function usePlayers() {
           break;
         }
 
-        case "player_leave": {
+        case "xyz.unavi.world.player.leave": {
           console.info("👋 Player", toHex(data), "left");
 
           const player = localPlayers.find((player) => player.id === data);
@@ -80,29 +80,22 @@ export function usePlayers() {
           }
           break;
         }
-
-        case "player_address": {
-          const player = localPlayers.find((player) => player.id === data.playerId);
-          if (player) {
-            player.address = data.address;
-            setPlayers((players) => [...players]);
-          }
-          break;
-        }
-
-        case "player_avatar": {
+        case "xyz.unavi.world.player.avatar": {
           const player = localPlayers.find((player) => player.id === data.playerId);
           if (player) player.avatar = data.avatar;
           break;
         }
 
-        case "player_grounded": {
+        case "xyz.unavi.world.player.handle": {
           const player = localPlayers.find((player) => player.id === data.playerId);
-          if (player) player.grounded = data.grounded;
+          if (player) {
+            player.handle = data.handle;
+            setPlayers((players) => [...players]);
+          }
           break;
         }
 
-        case "player_name": {
+        case "xyz.unavi.world.player.name": {
           const player = localPlayers.find((player) => player.id === data.playerId);
           if (player) {
             player.name = data.name;
@@ -111,7 +104,13 @@ export function usePlayers() {
           break;
         }
 
-        case "chat_message": {
+        case "xyz.unavi.world.player.grounded": {
+          const player = localPlayers.find((player) => player.id === data.playerId);
+          if (player) player.grounded = data.grounded;
+          break;
+        }
+
+        case "xyz.unavi.world.chat.message": {
           setChatMessages((messages) => [
             ...messages,
             {
@@ -143,10 +142,4 @@ export function usePlayers() {
       if (player.engine !== engine) player.engine = engine;
     });
   }, [players, engine]);
-
-  useEffect(() => {
-    players.forEach((player) => {
-      if (player.ethersProvider !== ethersProvider) player.ethersProvider = ethersProvider;
-    });
-  }, [players, ethersProvider]);
 }

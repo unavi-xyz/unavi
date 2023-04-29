@@ -32,12 +32,12 @@ export function useProducer(transport: Transport | null) {
     transport.on("produce", async ({ kind, rtpParameters }, callback) => {
       if (kind === "video") throw new Error("Video not supported");
       setProducerIdCallback((id: string) => callback({ id }));
-      sendMessage(ws, { type: "webrtc_produce", data: rtpParameters });
+      sendMessage(ws, { id: "xyz.unavi.webrtc.produce", data: rtpParameters });
     });
 
     transport.on("producedata", async ({ sctpStreamParameters }, callback) => {
       setDataProducerIdCallback((id: string) => callback({ id }));
-      sendMessage(ws, { type: "webrtc_produce_data", data: sctpStreamParameters });
+      sendMessage(ws, { id: "xyz.unavi.webrtc.produceData", data: sctpStreamParameters });
     });
 
     return () => {
@@ -57,15 +57,15 @@ export function useProducer(transport: Transport | null) {
         return;
       }
 
-      const { type, data } = parsed.data;
+      const { id, data } = parsed.data;
 
-      switch (type) {
-        case "webrtc_producer_id": {
+      switch (id) {
+        case "xyz.unavi.webrtc.producer.id": {
           if (producerIdCallback) producerIdCallback(data);
           break;
         }
 
-        case "webrtc_data_producer_id": {
+        case "xyz.unavi.webrtc.dataProducer.id": {
           if (dataProducerIdCallback) dataProducerIdCallback(data);
           break;
         }

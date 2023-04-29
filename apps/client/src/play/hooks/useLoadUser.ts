@@ -3,6 +3,7 @@ import { useEffect } from "react";
 
 import { usePlayStore } from "@/app/play/store";
 import { useAuth } from "@/src/client/AuthProvider";
+import { env } from "@/src/env.mjs";
 
 import { LocalStorageKey } from "../constants";
 
@@ -16,12 +17,12 @@ export function useLoadUser() {
     usePlayStore.setState({ nickname: localName });
 
     // Publish to host
-    send({ type: "set_name", data: localName });
+    send({ id: "xyz.unavi.world.user.name", data: localName });
   }, [send]);
 
-  // Publish address on change
+  // Publish handle on change
   useEffect(() => {
-    const address = user?.address ?? null;
-    send({ type: "set_address", data: address });
+    const handle = user?.username ? `${user.username}@${env.NEXT_PUBLIC_DEPLOYED_URL}` : null;
+    send({ id: "xyz.unavi.world.user.handle", data: handle });
   }, [user, send]);
 }

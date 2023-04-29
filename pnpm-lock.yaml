@@ -119,8 +119,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/react-client
       '@wired-protocol/types':
-        specifier: ^0.0.19
-        version: 0.0.19
+        specifier: ^0.0.20
+        version: 0.0.20
       boring-avatars:
         specifier: ^1.7.0
         version: 1.7.0
@@ -231,8 +231,8 @@ importers:
   apps/host:
     dependencies:
       '@wired-protocol/types':
-        specifier: ^0.0.19
-        version: 0.0.19
+        specifier: ^0.0.20
+        version: 0.0.20
       mediasoup:
         specifier: ^3.11.24
         version: 3.11.24
@@ -436,17 +436,11 @@ importers:
         specifier: workspace:*
         version: link:../gltf-extensions
       '@wired-protocol/types':
-        specifier: ^0.0.19
-        version: 0.0.19
-      contracts:
-        specifier: workspace:*
-        version: link:../contracts
+        specifier: ^0.0.20
+        version: 0.0.20
       engine:
         specifier: workspace:*
         version: link:../engine
-      ethers:
-        specifier: ^5.7.2
-        version: 5.7.2
       mediasoup-client:
         specifier: ^3.6.84
         version: 3.6.84
@@ -6085,8 +6079,8 @@ packages:
       '@webassemblyjs/ast': 1.11.5
       '@xtuc/long': 4.2.2
 
-  /@wired-protocol/types@0.0.19:
-    resolution: {integrity: sha512-DOAPV9Ik9KHGeSHtjnAi0NnhJMyrSD+WNW1HuCm3s7DlEOooKW+2iQ7zKm+0HdUYehAzlnxgKDjTPS5ZGvNBBw==}
+  /@wired-protocol/types@0.0.20:
+    resolution: {integrity: sha512-03FK390AX8baoz7+DBplaspXTki3VEk3MeNMatRQcKkeVdvUY1jiGy/BGfZEj6zTTofHs2Qz+l4dXe4W69IE3A==}
     dependencies:
       zod: 3.21.4
     dev: false

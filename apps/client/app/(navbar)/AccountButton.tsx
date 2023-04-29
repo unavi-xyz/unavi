@@ -1,20 +1,22 @@
-import AuthProvider from "@/src/client/AuthProvider";
-import { getUserSession } from "@/src/server/auth/getUserSession";
-import { prisma } from "@/src/server/prisma";
+"use client";
+
+import AuthProvider, { useAuth } from "@/src/client/AuthProvider";
+import { useProfile } from "@/src/play/hooks/useProfile";
 
 import ProfileButton from "./ProfileButton";
 import SignInButton from "./SignInButton";
 
 export default async function AccountButton() {
-  const session = await getUserSession();
-
-  const profile = session
-    ? await prisma.profile.findUnique({ where: { userId: session.user.userId } })
-    : null;
-
   return (
     <AuthProvider>
-      {session ? <ProfileButton user={session.user} image={profile?.image} /> : <SignInButton />}
+      <ClientAccountButton />
     </AuthProvider>
   );
+}
+
+function ClientAccountButton() {
+  const { user } = useAuth();
+  const { profile } = useProfile();
+
+  return user ? <ProfileButton user={user} image={profile?.image} /> : <SignInButton />;
 }

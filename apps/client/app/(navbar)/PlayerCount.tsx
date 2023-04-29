@@ -1,20 +1,20 @@
 "use client";
 
-import { WorldMetadata } from "@wired-protocol/types";
 import { MdPeople } from "react-icons/md";
 
 import { usePlayerCount } from "@/app/api/player-count/helper";
-import { env } from "@/src/env.mjs";
 
 interface Props {
-  metadata: WorldMetadata;
+  uri: string;
+  host: string;
 }
 
-export default function PlayerCount({ metadata }: Props) {
-  const { playerCount } = usePlayerCount({
-    host: metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST,
-    uri: metadata.model,
-  });
+/**
+ * Fetches the player count client side and displays it.
+ * For use within a {@link CardImage}.
+ */
+export default function PlayerCount({ uri, host }: Props) {
+  const { playerCount } = usePlayerCount({ uri, host });
 
   if (!playerCount) return null;
 

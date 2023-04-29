@@ -17,10 +17,8 @@
   },
   "dependencies": {
     "@unavi/gltf-extensions": "workspace:*",
-    "@wired-protocol/types": "^0.0.16",
-    "contracts": "workspace:*",
+    "@wired-protocol/types": "^0.0.20",
     "engine": "workspace:*",
-    "ethers": "^5.7.2",
     "mediasoup-client": "^3.6.84",
     "nanoid": "^4.0.2",
     "react": "^18.2.0",

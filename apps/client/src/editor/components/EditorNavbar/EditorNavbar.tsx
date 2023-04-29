@@ -4,8 +4,8 @@ import { MdArrowBackIosNew } from "react-icons/md";
 
 import SignInButton from "@/app/(navbar)/SignInButton";
 import { MAX_TITLE_LENGTH } from "@/app/api/projects/constants";
+import { useAuth } from "@/src/client/AuthProvider";
 
-import { useSession } from "../../../client/auth/useSession";
 import { Project } from "../../../server/helpers/fetchProject";
 import Button from "../../../ui/Button";
 import DialogContent, { DialogRoot } from "../../../ui/Dialog";
@@ -23,11 +23,10 @@ interface Props {
 
 export default function EditorNavbar({ project }: Props) {
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
-  const [title, setTitle] = useState(project.title);
 
-  const { loaded, changeMode } = useEditor();
+  const { title, setTitle, loaded, changeMode } = useEditor();
   const { saving, save, saveImage } = useSave(project);
-  const { status } = useSession();
+  const { status } = useAuth();
   const router = useRouter();
 
   const isPublished = Boolean(project?.spaceId);
@@ -55,10 +54,7 @@ export default function EditorNavbar({ project }: Props) {
   return (
     <>
       <DialogRoot open={openPublishDialog} onOpenChange={setOpenPublishDialog}>
-        <DialogContent
-          open={openPublishDialog}
-          title={isPublished ? "Update Space" : "Publish Space"}
-        >
+        <DialogContent title={isPublished ? "Update Space" : "Publish Space"}>
           <PublishPage project={project} />
         </DialogContent>
       </DialogRoot>

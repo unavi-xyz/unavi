@@ -51,7 +51,7 @@ export default function AddComponentButton({ availableComponents, node, extras }
           </Button>
         </DropdownTrigger>
 
-        <DropdownContent open={open}>
+        <DropdownContent>
           <div className="py-2">
             {availableComponents.includes(COMPONENT_TYPE.Audio) && (
               <ComponentButton

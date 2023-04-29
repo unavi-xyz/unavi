@@ -26,7 +26,7 @@ export default function SpecialsButton() {
         </IconButton>
       </DropdownTrigger>
 
-      <DropdownContent open={open}>
+      <DropdownContent>
         <SpecialsMenu />
       </DropdownContent>
     </DropdownMenu>

@@ -1,8 +1,5 @@
 import { Engine } from "engine";
-import { providers, Signer } from "ethers";
 
-import { fetchDefaultProfileId } from "../helpers/fetchDefaultProfile";
-import { fetchProfileHandle } from "../helpers/fetchProfileHandle";
 import { toHex } from "../utils/toHex";
 
 /**
@@ -11,13 +8,13 @@ import { toHex } from "../utils/toHex";
  */
 export class Player {
   readonly id: number;
-
-  #address: string | null = null;
-  #avatar: string | null = null;
   #engine: Engine | null = null;
-  #ethersProvider: providers.Provider | Signer | null = null;
-  #grounded = false;
+  #baseHomeServer: string | null = null;
+
+  #avatar: string | null = null;
+  #handle: string | null = null;
   #name: string | null = null;
+  #grounded = false;
 
   #displayName = "";
 
@@ -25,12 +22,12 @@ export class Player {
     this.id = id;
   }
 
-  get address() {
-    return this.#address;
+  get handle() {
+    return this.#handle;
   }
 
-  set address(address: string | null) {
-    this.#address = address;
+  set handle(handle: string | null) {
+    this.#handle = handle;
     this.#updateDisplayName();
   }
 
@@ -45,6 +42,14 @@ export class Player {
       const player = this.#engine.player.getPlayer(this.id);
       if (player) player.avatar = avatar;
     }
+  }
+
+  get baseHomeServer() {
+    return this.#baseHomeServer;
+  }
+
+  set baseHomeServer(baseHomeServer: string | null) {
+    this.#baseHomeServer = baseHomeServer;
   }
 
   get displayName() {
@@ -64,15 +69,6 @@ export class Player {
     player.name = this.displayName;
     player.avatar = this.avatar;
     player.grounded = this.grounded;
-  }
-
-  get ethersProvider() {
-    return this.#ethersProvider;
-  }
-
-  set ethersProvider(ethersProvider: providers.Provider | Signer | null) {
-    this.#ethersProvider = ethersProvider;
-    this.#updateDisplayName();
   }
 
   get grounded() {
@@ -104,21 +100,13 @@ export class Player {
   async #updateDisplayName() {
     let newDisplayName = "";
 
-    if (this.address && this.ethersProvider) {
-      const profileId = await fetchDefaultProfileId(this.address, this.ethersProvider);
-
-      if (profileId !== null) {
-        const handle = await fetchProfileHandle(profileId, this.ethersProvider);
-
-        if (handle) newDisplayName = handle.string;
-        else if (!this.name) newDisplayName = this.address.substring(0, 6);
-      }
-    }
-
-    if (!newDisplayName && this.name) newDisplayName = this.name;
-    if (!newDisplayName) newDisplayName = `Guest ${toHex(this.id)}`;
-
-    if (newDisplayName === this.#displayName) return;
+    if (this.handle) {
+      // If from the same server, just use the username
+      const [username, domain] = this.handle.split("@");
+      if (domain === this.#baseHomeServer) newDisplayName = `@${username}`;
+      else newDisplayName = this.handle;
+    } else if (this.name) newDisplayName = this.name;
+    else newDisplayName = `Guest ${toHex(this.id)}`;
 
     this.#displayName = newDisplayName;
 

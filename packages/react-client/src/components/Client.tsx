@@ -1,7 +1,5 @@
-import { RequestMessage } from "@wired-protocol/types";
-import { ERC721Metadata, getHostFromMetadata } from "contracts";
+import { RequestMessage, WorldMetadata } from "@wired-protocol/types";
 import { Engine, EngineOptions } from "engine";
-import { providers, Signer } from "ethers";
 import {
   createContext,
   Dispatch,
@@ -40,9 +38,9 @@ export type ChatMessage = SystemMessage | PlayerMessage;
 export type HoverState = null | "equip_avatar" | "avatar_equipped";
 
 export interface IClientContext {
-  ethersProvider: providers.Provider | Signer | null;
   host: string | null;
   uri: string | null;
+  baseHomeServer: string | null;
 
   engine: Engine | null;
 
@@ -75,9 +73,9 @@ export interface IClientContext {
 }
 
 const defaultContext: IClientContext = {
-  ethersProvider: null,
   host: null,
   uri: null,
+  baseHomeServer: null,
 
   engine: null,
 
@@ -115,11 +113,11 @@ interface Props {
   animations?: string;
   children?: React.ReactNode;
   defaultAvatar?: string;
-  ethers?: providers.Provider | Signer;
   host?: string;
   skybox?: string;
   uri?: string;
-  metadata?: ERC721Metadata;
+  baseHomeServer?: string;
+  metadata?: WorldMetadata;
   engineOptions?: EngineOptions;
 }
 
@@ -129,9 +127,9 @@ interface Props {
 export function Client({
   animations,
   children,
+  baseHomeServer,
   defaultAvatar,
   engineOptions,
-  ethers,
   host,
   metadata,
   skybox,
@@ -140,9 +138,6 @@ export function Client({
   const [avatar, setAvatar] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [engine, setEngine] = useState<Engine | null>(null);
-  const [ethersProvider, setEthersProvider] = useState<providers.Provider | Signer | null>(
-    defaultContext.ethersProvider
-  );
   const [hoverState, setHoverState] = useState<HoverState>(defaultContext.hoverState);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingText, setLoadingText] = useState("");
@@ -154,8 +149,8 @@ export function Client({
 
   useAvatarEquip(engine, avatar, setAvatar, setHoverState);
 
-  const spaceHost = metadata ? getHostFromMetadata(metadata) : "";
-  const usedHost = host || spaceHost;
+  const worldHost = metadata?.info?.host;
+  const usedHost = host || worldHost;
 
   const send = useCallback(
     (message: RequestMessage) => {
@@ -165,15 +160,6 @@ export function Client({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [ws, ws?.readyState]
   );
-
-  useEffect(() => {
-    if (!ethers) {
-      setEthersProvider(null);
-      return;
-    }
-
-    setEthersProvider(ethers);
-  }, [ethers]);
 
   useEffect(() => {
     const newEngine = new Engine(engineOptions);
@@ -209,7 +195,7 @@ export function Client({
     if (!engine) return;
 
     // Send to host
-    send({ type: "set_avatar", data: avatar ?? "" });
+    send({ id: "xyz.unavi.world.user.avatar", data: avatar });
 
     // Send to engine
     engine.render.send({ subject: "set_user_avatar", data: avatar });
@@ -227,10 +213,10 @@ export function Client({
 
   const value = useMemo(
     () => ({
-      ethersProvider,
       host: usedHost || null,
       uri: uri || null,
       engine,
+      baseHomeServer: baseHomeServer || null,
       hoverState,
       setHoverState,
       ws,
@@ -254,9 +240,9 @@ export function Client({
       setChatMessages,
     }),
     [
-      ethersProvider,
       usedHost,
       uri,
+      baseHomeServer,
       engine,
       hoverState,
       ws,

@@ -1,13 +1,16 @@
 import { useClient } from "@unavi/react-client";
 import { useEffect, useState } from "react";
 
+import RainbowkitWrapper from "@/app/(navbar)/RainbowkitWrapper";
 import { usePlayStore } from "@/app/play/store";
 
 import DialogContent, { DialogRoot } from "../../../ui/Dialog";
 import { LocalStorageKey } from "../../constants";
 import { useSetAvatar } from "../../hooks/useSetAvatar";
+import AccountSettings from "./AccountSettings";
 import AvatarBrowser from "./AvatarBrowser";
-import Settings from "./Settings";
+import AvatarSettings from "./AvatarSettings";
+import NameSettings from "./NameSettings";
 
 export type SettingsPage = "Settings" | "Browse Avatars";
 
@@ -42,31 +45,36 @@ export default function SettingsDialog({ open, setOpen }: Props) {
       else localStorage.removeItem(LocalStorageKey.Name);
 
       // Publish name change
-      send({ type: "set_name", data: nickname });
+      send({ id: "xyz.unavi.world.user.name", data: nickname });
     }
 
     if (didChangeAvatar) setAvatar(avatar);
   }
 
   return (
-    <DialogRoot
-      open={open}
-      onOpenChange={(value) => {
-        if (!value) handleClose();
-      }}
-    >
-      <DialogContent
+    <RainbowkitWrapper>
+      <DialogRoot
         open={open}
-        autoFocus={false}
-        title={page}
-        size={page === "Browse Avatars" ? "large" : "normal"}
+        onOpenChange={(value) => {
+          if (!value) handleClose();
+        }}
       >
-        {page === "Browse Avatars" ? (
-          <AvatarBrowser setPage={setPage} onClose={handleClose} />
-        ) : (
-          <Settings setPage={setPage} onClose={handleClose} />
-        )}
-      </DialogContent>
-    </DialogRoot>
+        <DialogContent
+          autoFocus={false}
+          title={page}
+          size={page === "Browse Avatars" ? "large" : "normal"}
+        >
+          {page === "Browse Avatars" ? (
+            <AvatarBrowser setPage={setPage} onClose={handleClose} />
+          ) : (
+            <div className="space-y-4">
+              <NameSettings />
+              <AvatarSettings setPage={setPage} />
+              <AccountSettings onClose={handleClose} />
+            </div>
+          )}
+        </DialogContent>
+      </DialogRoot>
+    </RainbowkitWrapper>
   );
 }

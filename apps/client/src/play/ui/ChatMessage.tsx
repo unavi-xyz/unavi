@@ -40,15 +40,15 @@ export default function ChatMessage({ message, alwaysShow }: Props) {
 
   return (
     <div
-      className={`my-0.5 w-fit max-w-full rounded-lg bg-white px-4 py-1 transition duration-500 ${hiddenClass} ${fadeClass}`}
+      className={`my-0.5 w-fit max-w-full rounded-lg bg-black/50 px-4 py-2 text-white backdrop-blur-lg transition duration-500 ${hiddenClass} ${fadeClass}`}
     >
       {message.type === "player" ? (
         <div className="whitespace-pre-wrap break-words">
-          <span className="font-semibold">{name}</span>:{" "}
-          <span className="text-neutral-800">{message.text}</span>
+          <span className="font-bold">{name}</span>:{" "}
+          <span className="text-white/90">{message.text}</span>
         </div>
       ) : message.type === "system" ? (
-        <span className="text-neutral-500">
+        <span className="text-white/70">
           <span>{name}</span>
           {message.variant === "player_joined"
             ? " joined"

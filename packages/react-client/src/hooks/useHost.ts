@@ -51,13 +51,13 @@ export function useHost(uri: string | null, host: string | null) {
       console.info("WebSocket - ✅ Connected to host");
 
       // Initiate WebRTC connection
-      send({ type: "webrtc_get_router_rtp_capabilities", data: null });
+      send({ id: "xyz.unavi.webrtc.router.rtpCapabilities.get", data: null });
 
       // Join space
-      send({ type: "join", data: uri });
+      send({ id: "xyz.unavi.world.join", data: uri });
 
       engine.physics.addEventListener("user_grounded", (event) => {
-        send({ type: "set_grounded", data: event.data });
+        send({ id: "xyz.unavi.world.user.grounded", data: event.data });
       });
     };
 
@@ -76,10 +76,10 @@ export function useHost(uri: string | null, host: string | null) {
         return;
       }
 
-      const { type, data } = parsed.data;
+      const { id, data } = parsed.data;
 
-      switch (type) {
-        case "join_success": {
+      switch (id) {
+        case "xyz.unavi.world.joined": {
           console.info(`🌏 Joined space as player ${toHex(data)}`);
 
           setIsConnected(true);
@@ -87,19 +87,19 @@ export function useHost(uri: string | null, host: string | null) {
           break;
         }
 
-        case "webrtc_rtp_capabilities": {
+        case "xyz.unavi.webrtc.router.rtpCapabilities": {
           if (newDevice.loaded) break;
 
           // Create device
           await newDevice.load({ routerRtpCapabilities: data });
 
           // Create transports
-          send({ type: "webrtc_create_transport", data: "producer" });
-          send({ type: "webrtc_create_transport", data: "consumer" });
+          send({ id: "xyz.unavi.webrtc.transport.create", data: "producer" });
+          send({ id: "xyz.unavi.webrtc.transport.create", data: "consumer" });
 
           // Set rtp capabilities
           send({
-            type: "set_rtp_capabilities",
+            id: "xyz.unavi.webrtc.rtpCapabilities.set",
             data: {
               codecs: newDevice.rtpCapabilities.codecs ?? [],
               headerExtensions: newDevice.rtpCapabilities.headerExtensions ?? [],

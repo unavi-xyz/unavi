@@ -43,62 +43,65 @@ server.ws<UserData>("/*", {
       return;
     }
 
-    const { type, data } = parsed.data;
+    const { id, data } = parsed.data;
 
-    switch (type) {
-      case "join": {
+    switch (id) {
+      case "xyz.unavi.world.join": {
         player.join(data);
         break;
       }
 
-      case "leave": {
+      case "xyz.unavi.world.leave": {
         player.leave(data);
         break;
       }
 
-      case "send_chat_message": {
+      case "xyz.unavi.world.chat.send": {
         player.chat(data);
         break;
       }
 
-      case "set_grounded": {
+      case "xyz.unavi.world.user.grounded": {
         player.grounded = data;
         break;
       }
 
-      case "set_name": {
+      case "xyz.unavi.world.user.name": {
         player.name = data;
         break;
       }
 
-      case "set_avatar": {
+      case "xyz.unavi.world.user.avatar": {
         player.avatar = data;
         break;
       }
 
-      case "set_address": {
-        player.address = data;
+      case "xyz.unavi.world.user.handle": {
+        player.handle = data;
         break;
       }
 
       // WebRTC
-      case "webrtc_get_router_rtp_capabilities": {
-        player.send({ type: "webrtc_rtp_capabilities", data: router.rtpCapabilities });
+      case "xyz.unavi.webrtc.router.rtpCapabilities.get": {
+        player.send({
+          id: "xyz.unavi.webrtc.router.rtpCapabilities",
+          data: router.rtpCapabilities,
+        });
         break;
       }
 
-      case "pause_audio": {
+      case "xyz.unavi.webrtc.audio.pause": {
         player.setPaused(data);
         break;
       }
 
-      case "webrtc_create_transport": {
+      case "xyz.unavi.webrtc.transport.create": {
         createWebRtcTransport(router, webRtcServer)
           .then(({ transport, params }) => {
             player.setTransport(data, transport);
 
             player.send({
-              type: "webrtc_transport_created",
+              id: "xyz.unavi.webrtc.transport.created",
               data: { type: data, options: params },
             });
           })
@@ -106,7 +109,7 @@ server.ws<UserData>("/*", {
         break;
       }
 
-      case "webrtc_connect_transport": {
+      case "xyz.unavi.webrtc.transport.connect": {
         const transport =
           data.type === "producer" ? player.producerTransport : player.consumerTransport;
         if (!transport) break;
@@ -115,12 +118,12 @@ server.ws<UserData>("/*", {
         break;
       }
 
-      case "webrtc_produce": {
+      case "xyz.unavi.webrtc.produce": {
         player.produce(data);
         break;
       }
 
-      case "webrtc_produce_data": {
+      case "xyz.unavi.webrtc.produceData": {
         if (data.streamId === undefined) {
           console.warn("Stream ID is undefined");
           break;
@@ -135,7 +138,7 @@ server.ws<UserData>("/*", {
         break;
       }
 
-      case "set_rtp_capabilities": {
+      case "xyz.unavi.webrtc.rtpCapabilities.set": {
         player.rtpCapabilities = data;
         break;
       }

@@ -1,10 +1,10 @@
+import { getSession } from "@/src/server/auth/getSession";
 import { fetchProjects } from "@/src/server/helpers/fetchProjects";
-import { getServerSession } from "@/src/server/helpers/getServerSession";
 import Card from "@/src/ui/Card";
 import CardGrid from "@/src/ui/CardGrid";
 
 export default async function Projects() {
-  const session = await getServerSession();
+  const session = await getSession();
 
   if (!session) {
     return <div className="text-neutral-500">You must be signed in to create a project.</div>;

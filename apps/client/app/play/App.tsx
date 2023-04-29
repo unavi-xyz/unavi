@@ -4,7 +4,6 @@ import { Client } from "@unavi/react-client";
 import { WorldMetadata } from "@wired-protocol/types";
 import Script from "next/script";
 import { useState } from "react";
-import { useProvider, useSigner } from "wagmi";
 
 import { env } from "@/src/env.mjs";
 import { useHotkeys } from "@/src/play/hooks/useHotkeys";
@@ -20,9 +19,6 @@ interface Props {
 
 export default function App({ id, metadata, uri }: Props) {
   const [scriptsReady, setScriptsReady] = useState(false);
-
-  const provider = useProvider();
-  const { data: signer } = useSigner();
 
   useHotkeys();
 
@@ -45,8 +41,8 @@ export default function App({ id, metadata, uri }: Props) {
             host={host}
             animations="/models"
             defaultAvatar="/models/Robot.vrm"
-            ethers={signer ?? provider}
             skybox="/images/Skybox.jpg"
+            baseHomeServer={env.NEXT_PUBLIC_DEPLOYED_URL}
             engineOptions={{ useOffscreenCanvas }}
           >
             <ClientApp id={id} metadata={metadata} />

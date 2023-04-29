@@ -56,12 +56,12 @@ export class Space {
     this.players.set(playerId, player);
 
     this.#publish({
-      type: "player_join",
+      id: "xyz.unavi.world.player.join",
       data: {
         playerId,
         name: player.name || undefined,
         avatar: player.avatar || undefined,
-        address: player.address || undefined,
+        handle: player.handle || undefined,
       },
     });
 
@@ -70,12 +70,12 @@ export class Space {
       if (otherPlayer === player) return;
 
       player.send({
-        type: "player_join",
+        id: "xyz.unavi.world.player.join",
         data: {
           playerId: otherPlayerId,
           name: otherPlayer.name || undefined,
           avatar: otherPlayer.avatar || undefined,
-          address: otherPlayer.address || undefined,
+          handle: otherPlayer.handle || undefined,
         },
       });
 
@@ -114,7 +114,7 @@ export class Space {
 
     this.players.delete(playerId);
 
-    this.#publish({ type: "player_leave", data: playerId });
+    this.#publish({ id: "xyz.unavi.world.player.leave", data: playerId });
 
     console.info(`👋 Player ${toHex(playerId)} left space ${this.uri}`);
 
@@ -125,41 +125,35 @@ export class Space {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
-    this.#publish({ type: "chat_message", data: { playerId, message } });
+    this.#publish({ id: "xyz.unavi.world.chat.message", data: { playerId, message } });
   }
 
   setGrounded(player: Player, grounded: boolean) {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
-    this.#publish({ type: "player_grounded", data: { playerId, grounded } });
+    this.#publish({ id: "xyz.unavi.world.player.grounded", data: { playerId, grounded } });
   }
 
   setName(player: Player, name: string | null) {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
-    this.#publish({
-      type: "player_name",
-      data: { playerId, name: name },
-    });
+    this.#publish({ id: "xyz.unavi.world.player.name", data: { playerId, name: name } });
   }
 
-  setAddress(player: Player, address: string | null) {
+  setHandle(player: Player, handle: string | null) {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
-    this.#publish({ type: "player_address", data: { playerId, address } });
+    this.#publish({ id: "xyz.unavi.world.player.handle", data: { playerId, handle } });
   }
 
   setAvatar(player: Player, avatar: string | null) {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
-    this.#publish({
-      type: "player_avatar",
-      data: { playerId, avatar: avatar },
-    });
+    this.#publish({ id: "xyz.unavi.world.player.avatar", data: { playerId, avatar: avatar } });
   }
 
   setProducer(player: Player, producer: Producer) {

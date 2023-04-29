@@ -4,7 +4,6 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import React from "react";
 
 interface Props extends DialogPrimitive.DialogContentProps {
-  open?: boolean;
   title?: string;
   description?: string;
   autoFocus?: boolean;
@@ -12,29 +11,24 @@ interface Props extends DialogPrimitive.DialogContentProps {
 }
 
 const DialogContent = React.forwardRef<HTMLDivElement, Props>(
-  (
-    { open = true, autoFocus = true, title, description, size = "normal", children, ...rest },
-    ref
-  ) => {
+  ({ autoFocus = true, title, description, size = "normal", children, ...rest }, ref) => {
     return (
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay
-          className={`fixed inset-0 z-40 h-full w-full bg-neutral-900/40 backdrop-blur-sm ${
-            open ? "animate-fadeIn" : "animate-fadeOut"
-          }`}
-        />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-40 h-full w-full animate-fadeIn bg-neutral-900/40 backdrop-blur-sm" />
 
         <DialogPrimitive.Content
           ref={ref}
           onOpenAutoFocus={autoFocus ? undefined : (e) => e.preventDefault()}
-          className={`fixed inset-0 z-50 m-auto h-fit max-h-screen w-full rounded-3xl bg-white px-10 py-8 shadow-md ${
-            open ? "animate-scaleIn" : "animate-scaleOut"
-          } ${size === "normal" ? "max-w-xl" : "max-w-4xl"}`}
+          className={`fixed inset-0 z-50 m-auto h-fit max-h-screen w-full animate-scaleIn rounded-3xl bg-white p-8 shadow-md ${
+            size === "normal" ? "max-w-lg" : "max-w-4xl"
+          }`}
           {...rest}
         >
-          <DialogPrimitive.Title className="text-center text-3xl font-bold">
-            {title}
-          </DialogPrimitive.Title>
+          {title && (
+            <DialogPrimitive.Title className="text-center text-2xl font-black">
+              {title}
+            </DialogPrimitive.Title>
+          )}
 
           {description && (
             <DialogPrimitive.Description className="pt-2 text-center text-lg text-neutral-500">

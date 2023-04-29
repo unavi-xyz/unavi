@@ -1,10 +1,10 @@
 import { WorldMetadata } from "@wired-protocol/types";
 
-import { getServerSession } from "@/src/server/helpers/getServerSession";
+import AuthProvider from "@/src/client/AuthProvider";
+import { getUserSession } from "@/src/server/auth/getUserSession";
 import { SpaceId } from "@/src/utils/parseSpaceId";
 
 import RainbowkitWrapper from "../../RainbowkitWrapper";
-import SessionProvider from "../../SessionProvider";
 import Delete from "./Delete";
 import Mint from "./Mint";
 
@@ -14,17 +14,17 @@ interface Props {
 }
 
 export default async function Settings({ id, metadata }: Props) {
-  const session = await getServerSession();
-  if (!session?.address) return null;
+  const session = await getUserSession();
+  if (!session?.user.address) return null;
 
   return (
-    <SessionProvider>
+    <AuthProvider>
       <RainbowkitWrapper>
         <div className="space-y-8">
           {id.type === "id" ? <Mint id={id} metadata={metadata} /> : null}
-          <Delete id={id} address={session.address} />
+          <Delete id={id} />
         </div>
       </RainbowkitWrapper>
-    </SessionProvider>
+    </AuthProvider>
   );
 }

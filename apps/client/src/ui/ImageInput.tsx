@@ -1,31 +1,30 @@
-type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "children">;
+import BoringAvatar from "boring-avatars";
+
+import { BORING_AVATAR_COLORS } from "./Avatar";
+
+interface Props extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "children"> {
+  fallbackKey?: string;
+  fallbackSize?: number;
+}
 
 export default function ImageInput({
   src,
   disabled,
-  name,
+  fallbackKey,
+  fallbackSize,
   className = "w-full h-full",
   ...rest
 }: Props) {
   return (
     <div className="relative">
       <label>
-        {name && <div className="pb-1 text-xl font-bold">{name}</div>}
-
         <div
           className={`absolute cursor-pointer rounded-2xl transition ${
             disabled ? "" : "hover:bg-black/30 active:bg-black/20"
           } ${className}`}
         />
 
-        <input
-          name={name}
-          disabled={disabled}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          {...rest}
-        />
+        <input disabled={disabled} type="file" accept="image/*" className="hidden" {...rest} />
       </label>
 
       {src ? (
@@ -36,6 +35,13 @@ export default function ImageInput({
           className={`rounded-2xl transition ${
             disabled ? "cursor-default opacity-70" : ""
           } ${className}`}
+        />
+      ) : fallbackKey ? (
+        <BoringAvatar
+          size={fallbackSize}
+          name={fallbackKey}
+          variant="beam"
+          colors={BORING_AVATAR_COLORS}
         />
       ) : (
         <div

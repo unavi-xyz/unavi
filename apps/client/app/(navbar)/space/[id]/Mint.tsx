@@ -11,7 +11,7 @@ import { useSigner } from "wagmi";
 import { updateSpace } from "@/app/api/spaces/[id]/helper";
 import { mintSpace } from "@/app/api/spaces/[id]/mint/helper";
 import { getSpaceNFTFileUpload } from "@/app/api/spaces/[id]/nft/files/[file]/helper";
-import { useSession } from "@/src/client/auth/useSession";
+import { useAuth } from "@/src/client/AuthProvider";
 import { parseError } from "@/src/editor/utils/parseError";
 import { env } from "@/src/env.mjs";
 import Button from "@/src/ui/Button";
@@ -29,7 +29,7 @@ export default function Mint({ id, metadata }: Props) {
 
   const { data: signer } = useSigner();
   const { openConnectModal } = useConnectModal();
-  const { data: session } = useSession();
+  const { user } = useAuth();
 
   async function handleMint() {
     if (!signer) {
@@ -37,7 +37,7 @@ export default function Mint({ id, metadata }: Props) {
       return;
     }
 
-    if (!session?.address) return;
+    if (!user) return;
 
     setLoading(true);
 
@@ -98,7 +98,7 @@ export default function Mint({ id, metadata }: Props) {
           const nextId = count - i;
 
           const owner = await contract.ownerOf(nextId);
-          if (owner !== session.address) continue;
+          if (owner !== user.address) continue;
 
           const uri = await contract.tokenURI(nextId);
           if (uri !== metadataURI) continue;
@@ -139,7 +139,7 @@ export default function Mint({ id, metadata }: Props) {
         Mint the space as an NFT, making it easier for others to discover.
       </div>
 
-      <Button disabled={loading || !session} onClick={handleMint} className="rounded-xl bg-sky-700">
+      <Button disabled={loading || !user} onClick={handleMint} className="rounded-xl bg-sky-700">
         Mint
       </Button>
     </div>

@@ -1,54 +1,53 @@
 import { MdLogout } from "react-icons/md";
 
-import { ClientSignInButton } from "@/app/(navbar)/SignInButton";
+import { SignInPage } from "@/app/(navbar)/SignInButton";
+import { useAuth } from "@/src/client/AuthProvider";
 
-import { useLogout } from "../../../client/auth/useLogout";
-import { useSession } from "../../../client/auth/useSession";
 import Avatar from "../../../ui/Avatar";
 import Tooltip from "../../../ui/Tooltip";
-import { useProfileByAddress } from "../../hooks/useProfileByAddress";
+import { useProfile } from "../../hooks/useProfile";
 
 interface Props {
   onClose: () => void;
 }
 
 export default function AccountSettings({ onClose }: Props) {
-  const { logout } = useLogout();
-  const { data: session } = useSession();
-  const { profile, isLoading: isLoadingProfile } = useProfileByAddress(session?.address);
+  const { status, user, loading: loadingTransition, logout } = useAuth();
+  const { profile, loading: loadingProfile } = useProfile();
+
+  const loading = status === "loading" || loadingTransition || loadingProfile;
 
   return (
     <section className="space-y-1">
-      <div className="text-xl font-bold">Account</div>
+      <div className="font-bold text-neutral-700">Account</div>
 
-      {session?.address ? (
+      {user ? (
         <div className="flex items-center space-x-4 pt-2">
-          <div className="overflow-hidden">
-            <Avatar
-              src={profile?.metadata?.image}
-              uniqueKey={profile?.handle?.full ?? session.address}
-              loading={isLoadingProfile}
-              size={48}
-            />
+          <div className="overflow-hidden rounded-xl">
+            <Avatar src={profile?.image} uniqueKey={user.username} loading={loading} size={48} />
           </div>
 
-          {isLoadingProfile ? (
+          {loading ? (
             <div className="h-5 w-40 animate-pulse rounded-md bg-neutral-300" />
           ) : (
             <div>
-              <span className="text-xl font-bold">{profile?.handle?.string}</span>
-              <span className="text-lg text-neutral-400">
-                #{profile?.handle?.id.toString().padStart(4, "0")}
-              </span>
+              <span className="text-xl font-bold">{profile?.name}</span>
+              <span className="text-lg font-bold text-neutral-800">@{user.username}</span>
             </div>
           )}
 
           <div className="grow" />
 
-          {!isLoadingProfile && (
+          {!loading && (
             <Tooltip text="Sign out" side="bottom">
               <button
-                onClick={logout}
+                onClick={() => {
+                  logout();
+                  // There is a bug in Rainbowkit that prevents the dialog from closing
+                  // when you logout after logging in. This somewhat fixes it.
+                  // A dialog will still appear, but it can be closed.
+                  onClose();
+                }}
                 className="flex h-12 w-12 items-center justify-center rounded-lg text-xl transition hover:bg-red-100 active:opacity-90"
               >
                 <MdLogout />
@@ -57,11 +56,7 @@ export default function AccountSettings({ onClose }: Props) {
           )}
         </div>
       ) : (
-        <div className="flex justify-center">
-          <div onClick={onClose}>
-            <ClientSignInButton />
-          </div>
-        </div>
+        <SignInPage setOpen={onClose} />
       )}
     </section>
   );

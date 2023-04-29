@@ -25,6 +25,7 @@ export type Tool = "translate" | "rotate" | "scale";
 interface EditorContextType {
   canvasRef: React.RefObject<HTMLCanvasElement>;
   changeMode: (value: EditorMode) => Promise<void>;
+  description: string;
   engine: Engine | null;
   error: string | null;
   image: string | null;
@@ -32,6 +33,7 @@ interface EditorContextType {
   mode: EditorMode;
   scriptId: string | null;
   selectedId: string | null;
+  setDescription: Dispatch<SetStateAction<string>>;
   setImage: Dispatch<SetStateAction<string | null>>;
   setScriptId: Dispatch<SetStateAction<string | null>>;
   setSelectedId: Dispatch<SetStateAction<string | null>>;
@@ -44,6 +46,7 @@ interface EditorContextType {
 const defaultContext: EditorContextType = {
   canvasRef: React.createRef(),
   changeMode: async () => {},
+  description: "",
   engine: null,
   error: null,
   image: null,
@@ -51,6 +54,7 @@ const defaultContext: EditorContextType = {
   mode: "edit",
   scriptId: null,
   selectedId: null,
+  setDescription: () => {},
   setImage: () => {},
   setScriptId: () => {},
   setSelectedId: () => {},
@@ -86,6 +90,7 @@ export function Editor({ project, animationPath, defaultAvatar, skybox, children
   const [scriptsReady, setScriptsReady] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [title, setTitle] = useState(project.title);
+  const [description, setDescription] = useState(project.description);
   const [tool, setTool] = useState<Tool>("translate");
 
   const { error, loaded, load } = useLoad(engine);
@@ -169,6 +174,7 @@ export function Editor({ project, animationPath, defaultAvatar, skybox, children
     () => ({
       canvasRef,
       changeMode,
+      description,
       engine,
       error,
       image,
@@ -176,6 +182,7 @@ export function Editor({ project, animationPath, defaultAvatar, skybox, children
       mode,
       scriptId,
       selectedId,
+      setDescription,
       setImage,
       setScriptId,
       setSelectedId,
@@ -184,7 +191,20 @@ export function Editor({ project, animationPath, defaultAvatar, skybox, children
       title,
       tool,
     }),
-    [canvasRef, changeMode, engine, error, image, loaded, mode, scriptId, selectedId, title, tool]
+    [
+      canvasRef,
+      changeMode,
+      description,
+      engine,
+      error,
+      image,
+      loaded,
+      mode,
+      scriptId,
+      selectedId,
+      title,
+      tool,
+    ]
   );
 
   return (

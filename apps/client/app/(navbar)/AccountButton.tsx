@@ -1,40 +1,28 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useTransition } from "react";
-
-import { useSession } from "@/src/client/auth/useSession";
+import AuthProvider, { useAuth } from "@/src/client/AuthProvider";
+import { useProfile } from "@/src/play/hooks/useProfile";
 
 import ProfileButton from "./ProfileButton";
-import SessionProvider from "./SessionProvider";
 import SignInButton from "./SignInButton";
 
-export default function AccountButton() {
+export default async function AccountButton() {
   return (
-    <SessionProvider>
-      <Buttons />
-    </SessionProvider>
+    <AuthProvider>
+      <ClientAccountButton />
+    </AuthProvider>
   );
 }
 
-function Buttons() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const [transitionLoading, startTransition] = useTransition();
+function ClientAccountButton() {
+  const { status, loading: transitionLoading, user } = useAuth();
+  const { profile, loading: profileLoading } = useProfile();
 
-  useEffect(() => {
-    if (status === "loading") return;
+  const loading = status === "loading" || transitionLoading || profileLoading;
 
-    startTransition(() => {
-      router.refresh();
-    });
-  }, [status, router, startTransition]);
-
-  const isLoading = transitionLoading || status === "loading";
-
-  return session?.address ? (
-    <ProfileButton isLoading={isLoading} />
+  return user ? (
+    <ProfileButton user={user} image={profile?.image} loading={loading} />
   ) : (
-    <SignInButton isLoading={isLoading} />
+    <SignInButton loading={loading} />
   );
 }

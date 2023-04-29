@@ -1,11 +1,10 @@
+import { getSession } from "@/src/server/auth/getSession";
 import { fetchProjects } from "@/src/server/helpers/fetchProjects";
-import { getServerSession } from "@/src/server/helpers/getServerSession";
 import Card from "@/src/ui/Card";
 import CardGrid from "@/src/ui/CardGrid";
 
 export default async function Published() {
-  const session = await getServerSession();
-
+  const session = await getSession();
   if (!session) return null;
 
   const projects = await fetchProjects();

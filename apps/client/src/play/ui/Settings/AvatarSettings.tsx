@@ -53,7 +53,7 @@ export default function AvatarSettings({ setPage }: Props) {
 
   return (
     <section className="space-y-1">
-      <div className="text-xl font-bold">Avatar</div>
+      <div className="font-bold text-neutral-700">Avatar</div>
 
       {showStats && avatar ? (
         statsError ? (

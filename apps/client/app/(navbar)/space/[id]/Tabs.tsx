@@ -1,7 +1,7 @@
 import { WorldMetadata } from "@wired-protocol/types";
 
+import { getUserSession } from "@/src/server/auth/getUserSession";
 import { fetchNFTSpaceOwner } from "@/src/server/helpers/fetchNFTSpaceOwner";
-import { getServerSession } from "@/src/server/helpers/getServerSession";
 import { prisma } from "@/src/server/prisma";
 import ButtonTabs, { TabContent } from "@/src/ui/ButtonTabs";
 import { SpaceId } from "@/src/utils/parseSpaceId";
@@ -15,12 +15,13 @@ interface Props {
 }
 
 export default async function Tabs({ id, metadata }: Props) {
-  const session = await getServerSession();
+  const session = await getUserSession();
 
   const owner =
     id.type === "tokenId" ? await fetchNFTSpaceOwner(id.value) : await fetchSpaceDBOwner(id.value);
 
-  const isOwner = owner ? session?.address === owner : false;
+  const isOwner =
+    id.type === "tokenId" ? session?.user.address === owner : session?.user.userId === owner;
 
   return (
     <>
@@ -46,8 +47,8 @@ export default async function Tabs({ id, metadata }: Props) {
 async function fetchSpaceDBOwner(id: string) {
   const space = await prisma.space.findFirst({
     where: { publicId: id },
-    select: { owner: true },
+    select: { ownerId: true },
   });
 
-  return space?.owner;
+  return space?.ownerId;
 }

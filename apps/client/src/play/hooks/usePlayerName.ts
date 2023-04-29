@@ -1,10 +1,9 @@
 import { ClientContext } from "@unavi/react-client";
 import { useContext, useEffect, useState } from "react";
 
-import { getProfileByAddress } from "@/app/api/profiles/by-address/[address]/helper";
 import { usePlayStore } from "@/app/play/store";
+import { useAuth } from "@/src/client/AuthProvider";
 
-import { useSession } from "../../client/auth/useSession";
 import { toHex } from "../../utils/toHex";
 
 export function usePlayerName(playerId: number | null) {
@@ -12,7 +11,7 @@ export function usePlayerName(playerId: number | null) {
   const { players, playerId: userId } = useContext(ClientContext);
 
   const userNickname = usePlayStore((state) => state.nickname);
-  const { data: session } = useSession();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (playerId === null) {
@@ -27,17 +26,9 @@ export function usePlayerName(playerId: number | null) {
 
       // If this is the current user
       if (playerId === userId) {
-        const address = session?.address ?? null;
-
-        if (address) {
-          const profile = await getProfileByAddress(address);
-
-          if (profile?.handle) displayName = profile.handle.string;
-          else if (!userNickname) displayName = address.substring(0, 6);
-        }
-
-        if (!displayName && userNickname) displayName = userNickname;
-        if (!displayName) displayName = `Guest ${toHex(playerId)}`;
+        if (user?.username) displayName = `@${user.username}`;
+        else if (userNickname) displayName = userNickname;
+        else displayName = `Guest ${toHex(playerId)}`;
 
         setName(displayName);
         return;
@@ -49,7 +40,7 @@ export function usePlayerName(playerId: number | null) {
     }
 
     getName();
-  }, [playerId, players, session, userId, userNickname]);
+  }, [playerId, players, user, userId, userNickname]);
 
   return name;
 }

@@ -5,7 +5,6 @@
     "noEmit": true,
     "jsx": "preserve"
   },
-  "plugins": [{ "name": "next" }],
   "display": "Next.js",
   "extends": "./base.json",
   "include": ["src", "next-env.d.ts"],

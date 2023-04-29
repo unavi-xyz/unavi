@@ -15,12 +15,14 @@ export default async function AccountButton() {
 }
 
 function ClientAccountButton() {
-  const { status, loading, user } = useAuth();
-  const { profile } = useProfile();
+  const { status, loading: transitionLoading, user } = useAuth();
+  const { profile, loading: profileLoading } = useProfile();
+
+  const loading = status === "loading" || transitionLoading || profileLoading;
 
   return user ? (
-    <ProfileButton user={user} image={profile?.image} />
+    <ProfileButton user={user} image={profile?.image} loading={loading} />
   ) : (
-    <SignInButton loading={loading || status === "loading"} />
+    <SignInButton loading={loading} />
   );
 }

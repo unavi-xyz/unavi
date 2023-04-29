@@ -11,15 +11,16 @@ import ProfileMenu from "./ProfileMenu";
 interface Props {
   user: User;
   image?: string | null;
+  loading?: boolean;
 }
 
-export default function ProfileButton({ user, image }: Props) {
+export default function ProfileButton({ user, image, loading }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownTrigger className="rounded-full transition hover:opacity-90">
-        <Avatar src={image} uniqueKey={user.username} circle size={40} />
+        <Avatar src={image} uniqueKey={user.username} circle size={40} loading={loading} />
       </DropdownTrigger>
 
       <DropdownContent>

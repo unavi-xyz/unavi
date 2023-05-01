@@ -6,7 +6,7 @@ import { useProfile } from "@/src/play/hooks/useProfile";
 import ProfileButton from "./ProfileButton";
 import SignInButton from "./SignInButton";
 
-export default async function AccountButton() {
+export default function AccountButton() {
   return (
     <AuthProvider>
       <ClientAccountButton />

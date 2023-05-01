@@ -26,7 +26,7 @@ export function useLoad(engine: Engine | null) {
         await engine.scene.addBinary(array);
 
         // Wait to let scene to load
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 3000));
 
         setLoaded(true);
       } catch (err) {

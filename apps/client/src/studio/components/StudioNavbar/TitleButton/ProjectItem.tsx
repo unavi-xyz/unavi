@@ -8,16 +8,16 @@ import { DropdownItem } from "@/src/ui/DropdownMenu";
 interface Props {
   children: React.ReactNode;
   projectId: string;
-  currentProject?: boolean;
+  currentProjectId: string;
 }
 
-export default function ProjectItem({ children, projectId, currentProject = false }: Props) {
-  const { save } = useSave(projectId);
+export default function ProjectItem({ children, projectId, currentProjectId }: Props) {
+  const { save } = useSave(currentProjectId);
   const router = useRouter();
 
   async function handleClick() {
     // If current project, do nothing
-    if (currentProject) return;
+    if (projectId === currentProjectId) return;
 
     // Save the current project
     await save();

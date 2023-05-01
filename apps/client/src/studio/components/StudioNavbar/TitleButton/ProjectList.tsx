@@ -27,7 +27,7 @@ export default async function ProjectList({ projectId }: Props) {
           <ProjectItem
             key={project.publicId}
             projectId={project.publicId}
-            currentProject={project.publicId === projectId}
+            currentProjectId={projectId}
           >
             <div className="group flex w-full cursor-pointer items-center space-x-4">
               <div className="rounded-lg bg-neutral-200">

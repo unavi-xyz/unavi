@@ -107,6 +107,9 @@ export function Studio({ project, animationPath, defaultAvatar, skybox, children
     setDescription(project.description);
     setImage(project.image);
     setTitle(project.title);
+    setScriptId(null);
+    setSelectedId(null);
+    setMode("edit");
   }, [project]);
 
   // Write the title to the document
@@ -117,6 +120,8 @@ export function Studio({ project, animationPath, defaultAvatar, skybox, children
 
   // Create engine
   useEffect(() => {
+    if (!scriptsReady) return;
+
     const newEngine = new Engine();
     setEngine(newEngine);
 
@@ -126,7 +131,7 @@ export function Studio({ project, animationPath, defaultAvatar, skybox, children
     return () => {
       newEngine.destroy();
     };
-  }, []);
+  }, [scriptsReady]);
 
   useEffect(() => {
     if (!engine) return;
@@ -144,14 +149,14 @@ export function Studio({ project, animationPath, defaultAvatar, skybox, children
   }, [engine, skybox]);
 
   useEffect(() => {
-    if (!engine || !scriptsReady) return;
+    if (!engine) return;
 
     load(project);
 
     return () => {
       engine.scene.clear();
     };
-  }, [engine, scriptsReady, load, project]);
+  }, [engine, load, project]);
 
   const changeMode = useCallback(
     async (value: StudioMode) => {

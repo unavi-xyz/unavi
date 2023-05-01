@@ -86,15 +86,6 @@ export default await defineNextConfig({
       },
     ];
   },
-  async redirects() {
-    return [
-      {
-        source: "/editor",
-        destination: "/create",
-        permanent: false,
-      },
-    ];
-  },
   webpack: function (config) {
     config.experiments = {
       ...config.experiments,

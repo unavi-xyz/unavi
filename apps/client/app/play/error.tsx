@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-import { parseError } from "@/src/editor/utils/parseError";
+import { parseError } from "@/src/studio/utils/parseError";
 
 export default function Error({ error, reset }: { error: Error; reset: () => void }) {
   useEffect(() => {

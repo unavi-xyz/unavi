@@ -8,7 +8,7 @@ import { toast } from "react-hot-toast";
 import { updateProject } from "@/app/api/projects/[id]/helper";
 import { linkProject } from "@/app/api/projects/[id]/link/helper";
 import { getSpace } from "@/app/api/spaces/[id]/helper";
-import { parseError } from "@/src/editor/utils/parseError";
+import { parseError } from "@/src/studio/utils/parseError";
 import Button from "@/src/ui/Button";
 
 interface Props {

@@ -13,7 +13,7 @@ export const DropdownContent = React.forwardRef<HTMLDivElement, Props>(
           ref={ref}
           sideOffset={4}
           onCloseAutoFocus={(event) => event.preventDefault()}
-          className="z-50 animate-scaleIn rounded-xl bg-white shadow-dark"
+          className="z-50 mx-4 animate-scaleIn rounded-xl bg-white shadow-dark"
           {...rest}
         >
           {children}

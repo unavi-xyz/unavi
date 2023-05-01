@@ -1,7 +1,5 @@
-import Link from "next/link";
-import { MdArrowBackIos } from "react-icons/md";
-
 import { Project } from "../../../server/helpers/fetchProject";
+import BackButton from "./BackButton";
 import PlayButton from "./PlayButton";
 import PublishButton from "./PublishButton";
 import SaveButton from "./SaveButton";
@@ -17,10 +15,7 @@ export default function StudioNavbar({ project }: Props) {
   return (
     <div className="flex h-12 items-center justify-between border-b px-4 py-1">
       <div className="flex w-full items-center space-x-4">
-        <Link href="/" className="flex h-8 w-fit items-center text-neutral-600 hover:text-black">
-          <MdArrowBackIos />
-        </Link>
-
+        <BackButton projectId={project.id} />
         <TitleButton projectId={project.id} />
         <SaveButton projectId={project.id} />
       </div>
@@ -30,7 +25,6 @@ export default function StudioNavbar({ project }: Props) {
       <div className="flex h-full w-full items-center justify-end space-x-2">
         <PlayButton />
         <VisualsButton />
-
         <PublishButton project={project} />
       </div>
     </div>

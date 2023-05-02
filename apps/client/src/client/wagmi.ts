@@ -26,7 +26,7 @@ const connectors = connectorsForWallets([
     wallets: [
       metaMaskWallet({ chains }),
       rainbowWallet({ chains }),
-      coinbaseWallet({ chains, appName: "UNAVI" }),
+      coinbaseWallet({ appName: "UNAVI", chains }),
       ...(needsInjectedWalletFallback ? [injectedWallet({ chains })] : []),
     ],
   },
@@ -36,4 +36,4 @@ const connectors = connectorsForWallets([
   },
 ]);
 
-export const wagmiClient = createClient({ connectors, provider, autoConnect: true }) as any;
+export const wagmiClient = createClient({ autoConnect: true, connectors, provider }) as any;

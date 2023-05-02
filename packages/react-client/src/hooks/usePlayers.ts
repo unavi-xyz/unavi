@@ -45,11 +45,11 @@ export function usePlayers() {
           setChatMessages((messages) => [
             ...messages,
             {
+              id: nanoid(),
+              playerId: data.playerId,
+              timestamp: Date.now(),
               type: "system",
               variant: "player_joined",
-              playerId: data.playerId,
-              id: nanoid(),
-              timestamp: Date.now(),
             },
           ]);
 
@@ -71,11 +71,11 @@ export function usePlayers() {
             setChatMessages((messages) => [
               ...messages,
               {
+                id: nanoid(),
+                playerId: data,
+                timestamp: Date.now(),
                 type: "system",
                 variant: "player_left",
-                playerId: data,
-                id: nanoid(),
-                timestamp: Date.now(),
               },
             ]);
           }
@@ -115,11 +115,11 @@ export function usePlayers() {
           setChatMessages((messages) => [
             ...messages,
             {
-              type: "player",
-              text: data.message,
-              playerId: data.playerId,
               id: nanoid(),
+              playerId: data.playerId,
+              text: data.message,
               timestamp: Date.now(),
+              type: "player",
             },
           ]);
 

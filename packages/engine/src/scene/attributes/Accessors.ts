@@ -99,10 +99,10 @@ export class Accessors extends Attribute<Accessor, AccessorJSON> {
 
     return {
       array: accessor.getArray(),
-      type: accessor.getType(),
+      buffer: bufferId,
       componentType: accessor.getComponentType(),
       normalized: accessor.getNormalized(),
-      buffer: bufferId,
+      type: accessor.getType(),
     };
   }
 }

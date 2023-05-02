@@ -38,7 +38,7 @@ export class Avatar {
 
   mixer: AnimationMixer | null = null;
   animations = new Map<keyof typeof ANIMATION_NAME, AnimationAction>();
-  weights = { left: 0, right: 0, walk: 0, sprint: 0, fall: 0 };
+  weights = { fall: 0, left: 0, right: 0, sprint: 0, walk: 0 };
 
   #quat = new Quaternion();
   #quatb = new Quaternion();

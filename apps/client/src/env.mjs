@@ -2,20 +2,6 @@ import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
 export const env = createEnv({
-  server: {
-    DATABASE_URL: z.string().url().optional(),
-    DISABLE_PWA: z.string().optional(),
-    ETH_PROVIDER: z.string().url(),
-    GOOGLE_CLIENT_ID: z.string().optional(),
-    GOOGLE_CLIENT_SECRET: z.string().optional(),
-    NODE_ENV: z.enum(["development", "test", "production"]),
-    S3_ACCESS_KEY_ID: z.string().optional(),
-    S3_BUCKET: z.string().optional(),
-    S3_ENDPOINT: z.string().optional(),
-    S3_REGION: z.string().optional(),
-    S3_SECRET: z.string().optional(),
-    VERCEL_URL: z.string().optional(),
-  },
   client: {
     NEXT_PUBLIC_AXIOM_INGEST_ENDPOINT: z.string().optional(),
     NEXT_PUBLIC_CDN_ENDPOINT: z.string().optional(),
@@ -49,5 +35,19 @@ export const env = createEnv({
     S3_REGION: process.env.S3_REGION,
     S3_SECRET: process.env.S3_SECRET,
     VERCEL_URL: process.env.VERCEL_URL,
+  },
+  server: {
+    DATABASE_URL: z.string().url().optional(),
+    DISABLE_PWA: z.string().optional(),
+    ETH_PROVIDER: z.string().url(),
+    GOOGLE_CLIENT_ID: z.string().optional(),
+    GOOGLE_CLIENT_SECRET: z.string().optional(),
+    NODE_ENV: z.enum(["development", "test", "production"]),
+    S3_ACCESS_KEY_ID: z.string().optional(),
+    S3_BUCKET: z.string().optional(),
+    S3_ENDPOINT: z.string().optional(),
+    S3_REGION: z.string().optional(),
+    S3_SECRET: z.string().optional(),
+    VERCEL_URL: z.string().optional(),
   },
 });

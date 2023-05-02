@@ -29,9 +29,9 @@ export function useSave(projectId: string) {
     const url = await getProjectFileUpload(projectId, "image");
 
     const res = await fetch(url, {
-      method: "PUT",
       body: blob,
       headers: { "Content-Type": "image/jpeg" },
+      method: "PUT",
     });
 
     if (!res.ok) throw new Error("Failed to upload image");
@@ -66,16 +66,16 @@ export function useSave(projectId: string) {
     const url = await getProjectFileUpload(projectId, "model");
 
     const res = await fetch(url, {
-      method: "PUT",
       body: glb,
       headers: { "Content-Type": "model/gltf-binary" },
+      method: "PUT",
     });
 
     if (!res.ok) throw new Error("Failed to upload model");
   }, [projectId, description, engine, user, title]);
 
   const saveMetadata = useCallback(async () => {
-    await updateProject(projectId, { title, description });
+    await updateProject(projectId, { description, title });
   }, [projectId, title, description]);
 
   const save = useCallback(async () => {
@@ -92,5 +92,5 @@ export function useSave(projectId: string) {
     setSaving(false);
   }, [saveImage, saveMetadata, saveModel, changeMode]);
 
-  return { saving, save, saveImage, saveMetadata, saveModel };
+  return { save, saveImage, saveMetadata, saveModel, saving };
 }

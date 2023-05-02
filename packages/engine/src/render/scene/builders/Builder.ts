@@ -36,7 +36,7 @@ export abstract class Builder<TProperty, TJson, TObject> extends EventEmitter<Bu
     if (object) this.#objects.set(id, object);
     else this.#objects.delete(id);
 
-    this.emit({ type: "objectChange", data: id });
+    this.emit({ data: id, type: "objectChange" });
   }
 
   /**

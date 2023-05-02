@@ -28,13 +28,13 @@ export class RenderScene extends Scene {
   #animationActions = new Map<string, AnimationAction>();
 
   builders = {
-    texture: new TextureBuilder(this),
+    animation: new AnimationBuilder(this),
     material: new MaterialBuilder(this),
-    primitive: new PrimitiveBuilder(this),
     mesh: new MeshBuilder(this),
     node: new NodeBuilder(this),
+    primitive: new PrimitiveBuilder(this),
     skin: new SkinBuilder(this),
-    animation: new AnimationBuilder(this),
+    texture: new TextureBuilder(this),
   };
 
   get csm() {

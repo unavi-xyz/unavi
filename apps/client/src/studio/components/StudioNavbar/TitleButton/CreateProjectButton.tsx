@@ -48,9 +48,9 @@ async function uploadDefaultImage(id: string) {
   ]);
 
   await fetch(url, {
-    method: "PUT",
     body: blob,
     headers: { "Content-Type": "image/jpeg" },
+    method: "PUT",
   });
 }
 
@@ -61,8 +61,8 @@ async function uploadDefaultModel(id: string) {
   ]);
 
   await fetch(url, {
-    method: "PUT",
     body: blob,
     headers: { "Content-Type": "model/gltf-binary" },
+    method: "PUT",
   });
 }

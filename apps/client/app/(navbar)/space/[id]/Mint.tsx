@@ -58,12 +58,12 @@ export default function Mint({ id, metadata }: Props) {
       const url = await getSpaceNFTFileUpload(id.value, "metadata");
 
       const response = await fetch(url, {
-        method: "PUT",
         body: JSON.stringify(erc721metadata),
         headers: {
           "Content-Type": "application/json",
           "x-amz-acl": "public-read",
         },
+        method: "PUT",
       });
 
       if (!response.ok) throw new Error("Failed to upload metadata");

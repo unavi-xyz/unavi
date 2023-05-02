@@ -53,8 +53,8 @@ export function RainbowKitAuthProvider({ children, enabled }: RainbowKitAuthProv
 
         verify: async ({ message, signature }) => {
           await login({
-            method: AuthMethod.Ethereum,
             message: JSON.stringify(message),
+            method: AuthMethod.Ethereum,
             signature,
           });
 

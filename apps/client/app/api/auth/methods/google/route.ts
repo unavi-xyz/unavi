@@ -17,9 +17,9 @@ export async function GET() {
 
   // Set the state cookie
   response.cookies.set(GOOGLE_OAUTH_STATE_COOKIE, state, {
-    path: "/",
     httpOnly: true,
-    maxAge: 60 * 60, // 1 hour
+    maxAge: 60 * 60,
+    path: "/", // 1 hour
   });
 
   return response;

@@ -12,8 +12,8 @@ import { RainbowKitAuthProvider } from "./RainbowkitAuthProvider";
 const theme = lightTheme({
   accentColor: "#191919",
   accentColorForeground: "#ffffff",
-  fontStack: "system",
   borderRadius: "large",
+  fontStack: "system",
   overlayBlur: "small",
 });
 

@@ -8,52 +8,52 @@ const glTFid = z.number().min(0);
 
 export const colliderSchema = z
   .object({
-    type: colliderTypeSchema,
-    isTrigger: z.boolean().default(false),
-    size: z.array(z.number()).length(3).optional(),
-    radius: z.number().optional(),
     height: z.number().optional(),
+    isTrigger: z.boolean().default(false),
     mesh: glTFid.optional(),
+    radius: z.number().optional(),
+    size: z.array(z.number()).length(3).optional(),
+    type: colliderTypeSchema,
   })
   .refine((obj) => {
     try {
       switch (obj.type) {
         case "box":
           z.object({
-            type: z.literal("box"),
             size: z.array(z.number()).length(3),
+            type: z.literal("box"),
           }).parse(obj);
           break;
         case "sphere":
           z.object({
-            type: z.literal("sphere"),
             radius: z.number(),
+            type: z.literal("sphere"),
           }).parse(obj);
           break;
         case "capsule":
           z.object({
-            type: z.literal("capsule"),
-            radius: z.number(),
             height: z.number(),
+            radius: z.number(),
+            type: z.literal("capsule"),
           }).parse(obj);
           break;
         case "cylinder":
           z.object({
-            type: z.literal("cylinder"),
-            radius: z.number(),
             height: z.number(),
+            radius: z.number(),
+            type: z.literal("cylinder"),
           }).parse(obj);
           break;
         case "hull":
           z.object({
-            type: z.literal("hull"),
             mesh: glTFid,
+            type: z.literal("hull"),
           }).parse(obj);
           break;
         case "trimesh":
           z.object({
-            type: z.literal("trimesh"),
             mesh: glTFid,
+            type: z.literal("trimesh"),
           }).parse(obj);
           break;
         default:

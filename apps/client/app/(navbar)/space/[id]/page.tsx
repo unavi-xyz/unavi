@@ -37,19 +37,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const image = metadata.info?.image;
 
   return {
-    title,
     description,
     openGraph: {
-      title,
-      description,
       creators: authors ? authors : undefined,
+      description,
       images: image ? [{ url: image }] : undefined,
-    },
-    twitter: {
       title,
+    },
+    title,
+    twitter: {
+      card: image ? "summary_large_image" : "summary",
       description,
       images: image ? [image] : undefined,
-      card: image ? "summary_large_image" : "summary",
+      title,
     },
   };
 }
@@ -74,7 +74,7 @@ export default async function Space({ params }: Props) {
         const profile = await fetchUserProfile(author);
 
         if (!profile) {
-          profiles.push({ username: "", domain: "", metadata: { name: author } });
+          profiles.push({ domain: "", metadata: { name: author }, username: "" });
           return;
         }
 

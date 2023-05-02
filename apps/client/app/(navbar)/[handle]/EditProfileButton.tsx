@@ -60,12 +60,12 @@ export default function EditProfileButton({ userId, username, bio, image, backgr
 
         // Upload image
         const res = await fetch(url, {
-          method: "PUT",
           body: imageFile,
           headers: {
             "Content-Type": imageFile.type,
             "x-amz-acl": "public-read",
           },
+          method: "PUT",
         });
 
         if (!res.ok) throw new Error("Failed to upload image");
@@ -87,12 +87,12 @@ export default function EditProfileButton({ userId, username, bio, image, backgr
 
         // Upload image
         const res = await fetch(url, {
-          method: "PUT",
           body: backgroundFile,
           headers: {
             "Content-Type": backgroundFile.type,
             "x-amz-acl": "public-read",
           },
+          method: "PUT",
         });
 
         if (!res.ok) throw new Error("Failed to upload background");
@@ -111,10 +111,10 @@ export default function EditProfileButton({ userId, username, bio, image, backgr
       const [imageUrl, backgroundUrl] = await Promise.all([uploadImage(), uploadBackground()]);
 
       await updateProfile({
-        username: usernameElement.value || username,
+        background: backgroundUrl,
         bio: bioElement.value,
         image: imageUrl,
-        background: backgroundUrl,
+        username: usernameElement.value || username,
       });
 
       // Refresh the page

@@ -56,8 +56,8 @@ export class RaycastControls {
       this.#hoveredWithinDistance = withinDistance;
 
       this.#renderThread.postMessage({
+        data: { distance: intersection?.distance ?? null, isAvatar, nodeId },
         subject: "hovered_node",
-        data: { nodeId, isAvatar, distance: intersection?.distance ?? null },
       });
 
       if (this.#renderThread.outlinePass) {
@@ -97,8 +97,8 @@ export class RaycastControls {
     const { intersection, nodeId, isAvatar } = this.#findIntersection(intersections);
 
     this.#renderThread.postMessage({
+      data: { distance: intersection?.distance ?? null, isAvatar, nodeId },
       subject: "clicked_node",
-      data: { nodeId, isAvatar, distance: intersection?.distance ?? null },
     });
   }
 
@@ -124,6 +124,6 @@ export class RaycastControls {
       return false;
     });
 
-    return { intersection, nodeId, isAvatar };
+    return { intersection, isAvatar, nodeId };
   }
 }

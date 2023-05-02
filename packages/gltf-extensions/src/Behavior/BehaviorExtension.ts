@@ -157,16 +157,16 @@ export class BehaviorExtension extends Extension {
     const variables = this.listVariables().filter((variable) => variable.listParents().length > 0);
 
     const variableDefs: VariableDef[] = variables.map((variable) => ({
-      type: variable.type,
-      name: variable.getName(),
       initialValue: variable.initialValue,
+      name: variable.getName(),
+      type: variable.type,
     }));
 
     // Write behavior nodes
     const behaviorNodes = this.listBehaviorNodes();
     const behaviorNodeDefs: BehaviorNodeDef[] = behaviorNodes.map((behaviorNode) => {
       const extras = behaviorNode.getExtras() as BehaviorNodeExtras;
-      return { type: behaviorNode.getType(), name: behaviorNode.getName(), extras };
+      return { extras, name: behaviorNode.getName(), type: behaviorNode.getType() };
     });
 
     behaviorNodeDefs.forEach((behaviorNodeDef, i) => {
@@ -256,10 +256,10 @@ export class BehaviorExtension extends Extension {
 
     const variableJSON: VariableJSON[] = variables.map((variable, i) => ({
       id: String(i),
-      name: variable.getName(),
-      label: variable.getName(),
-      valueTypeName: variable.type,
       initialValue: variable.initialValue,
+      label: variable.getName(),
+      name: variable.getName(),
+      valueTypeName: variable.type,
     }));
 
     const nodes: NodeJSON[] = behaviorNodes.map((behaviorNode, i) => {

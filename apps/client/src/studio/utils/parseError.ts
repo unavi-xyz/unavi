@@ -1,6 +1,6 @@
 export const ERROR_MESSAGE = {
-  USER_REJECTED_TRANSACTION: "User rejected transaction.",
   UNAUTHORIZED: "Unauthorized.",
+  USER_REJECTED_TRANSACTION: "User rejected transaction.",
 } as const;
 
 /**

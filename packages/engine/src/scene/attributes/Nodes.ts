@@ -130,7 +130,7 @@ export class Nodes extends Attribute<Node, NodeJSON> {
       .map((node) => {
         const depth = getDepth(node);
         if (depth === undefined) throw new Error("Depth not found");
-        return { node, depth };
+        return { depth, node };
       })
       .sort((a, b) => b.depth - a.depth);
 
@@ -275,8 +275,8 @@ export class Nodes extends Attribute<Node, NodeJSON> {
     const avatar = node.getExtension<Avatar>(AvatarExtension.EXTENSION_NAME);
     if (avatar) {
       extensions[AvatarExtension.EXTENSION_NAME] = {
-        name: avatar.getName(),
         equippable: avatar.getEquippable(),
+        name: avatar.getName(),
         uri: avatar.getURI(),
       };
     }
@@ -288,11 +288,11 @@ export class Nodes extends Attribute<Node, NodeJSON> {
       if (meshId === undefined) throw new Error("Mesh not found");
 
       extensions[ColliderExtension.EXTENSION_NAME] = {
-        type: collider.getType(),
-        size: collider.getSize(),
         height: collider.getHeight(),
-        radius: collider.getRadius(),
         mesh: meshId,
+        radius: collider.getRadius(),
+        size: collider.getSize(),
+        type: collider.getType(),
       };
     }
 
@@ -304,15 +304,15 @@ export class Nodes extends Attribute<Node, NodeJSON> {
     }
 
     return {
-      name: node.getName(),
-      translation: node.getTranslation(),
-      rotation: node.getRotation(),
-      scale: node.getScale(),
-      mesh: meshId,
-      skin: skinId,
       children: childrenIds,
       extensions,
       extras: node.getExtras() as NodeExtras,
+      mesh: meshId,
+      name: node.getName(),
+      rotation: node.getRotation(),
+      scale: node.getScale(),
+      skin: skinId,
+      translation: node.getTranslation(),
     };
   }
 }

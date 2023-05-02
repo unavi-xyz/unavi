@@ -49,10 +49,10 @@ export async function fetchDatabaseSpaces(limit: number, owner?: string) {
 
   try {
     const spaces = await prisma.space.findMany({
-      where: { Owner: { username: owner }, SpaceModel: { isNot: null }, tokenId: null },
       include: { SpaceModel: true },
       orderBy: { updatedAt: "desc" },
       take: limit,
+      where: { Owner: { username: owner }, SpaceModel: { isNot: null }, tokenId: null },
     });
 
     const validSpaces: ValidDBSpace[] = [];
@@ -67,8 +67,8 @@ export async function fetchDatabaseSpaces(limit: number, owner?: string) {
 
         validSpaces.push({
           id: { type: "id", value: space.publicId },
-          uri,
           metadata: world.metadata,
+          uri,
         });
       })
     );

@@ -18,5 +18,5 @@ export function useSpace(uri: string | null, host: string | null) {
 
   const loadingProgress = !isDownloaded ? 0.1 : !isLoaded ? 0.4 : !isConnected ? 0.75 : 1;
 
-  return { loadingText, loadingProgress };
+  return { loadingProgress, loadingText };
 }

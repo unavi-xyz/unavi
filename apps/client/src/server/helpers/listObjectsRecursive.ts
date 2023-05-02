@@ -14,8 +14,8 @@ export async function listObjectsRecursive(
   const listObjects = await s3Client.send(
     new ListObjectsV2Command({
       Bucket: env.S3_BUCKET,
-      Prefix,
       ContinuationToken,
+      Prefix,
     })
   );
 

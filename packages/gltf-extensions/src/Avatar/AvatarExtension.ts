@@ -69,8 +69,8 @@ export class AvatarExtension extends Extension {
         nodeDef.extensions ??= {};
 
         const avatarDef: AvatarDef = {
-          name: avatar.getName(),
           equippable: avatar.getEquippable(),
+          name: avatar.getName(),
           uri: avatar.getURI(),
         };
         nodeDef.extensions[this.extensionName] = avatarDef;

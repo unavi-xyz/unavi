@@ -46,8 +46,8 @@ export default async function Tabs({ id, metadata }: Props) {
 
 async function fetchSpaceDBOwner(id: string) {
   const space = await prisma.space.findFirst({
-    where: { publicId: id },
     select: { ownerId: true },
+    where: { publicId: id },
   });
 
   return space?.ownerId;

@@ -7,8 +7,8 @@ import { SPACE_NFT_FILE } from "./files";
 export type Params = { params: { id: string; file: string } };
 
 export const paramsSchema = z.object({
-  id: z.string().length(SPACE_ID_LENGTH),
   file: z.literal(SPACE_NFT_FILE.metadata),
+  id: z.string().length(SPACE_ID_LENGTH),
 });
 
 export type GetFileDownloadResponse = { url: string };

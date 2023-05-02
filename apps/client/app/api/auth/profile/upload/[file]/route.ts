@@ -23,8 +23,8 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
   // Get user profile
   const user = await prisma.authUser.findUnique({
-    where: { id: session.userId },
     select: { Profile: true },
+    where: { id: session.userId },
   });
   if (!user || !user.Profile) return new Response(null, { status: 404 });
 
@@ -37,8 +37,8 @@ export async function PUT(request: NextRequest, { params }: Params) {
   const getUploadURL = async () => {
     const command = new PutObjectCommand({
       Bucket: env.S3_BUCKET,
-      Key: S3Path.profile(session.userId)[file](fileId),
       ContentType: "image/*",
+      Key: S3Path.profile(session.userId)[file](fileId),
     });
     const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
     return url;
@@ -61,9 +61,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
   const [url] = await Promise.all([
     getUploadURL(),
     removePreviousFile(),
-    prisma.profile.update({ where: { userId: session.userId }, data: { [idName]: fileId } }),
+    prisma.profile.update({ data: { [idName]: fileId }, where: { userId: session.userId } }),
   ]);
 
-  const json: GetFileUploadResponse = { url, fileId };
+  const json: GetFileUploadResponse = { fileId, url };
   return NextResponse.json(json);
 }

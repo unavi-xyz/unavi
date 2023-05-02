@@ -32,12 +32,12 @@ export function useProducer(transport: Transport | null) {
     transport.on("produce", async ({ kind, rtpParameters }, callback) => {
       if (kind === "video") throw new Error("Video not supported");
       setProducerIdCallback((id: string) => callback({ id }));
-      sendMessage(ws, { id: "xyz.unavi.webrtc.produce", data: rtpParameters });
+      sendMessage(ws, { data: rtpParameters, id: "xyz.unavi.webrtc.produce" });
     });
 
     transport.on("producedata", async ({ sctpStreamParameters }, callback) => {
       setDataProducerIdCallback((id: string) => callback({ id }));
-      sendMessage(ws, { id: "xyz.unavi.webrtc.produceData", data: sctpStreamParameters });
+      sendMessage(ws, { data: sctpStreamParameters, id: "xyz.unavi.webrtc.produceData" });
     });
 
     return () => {

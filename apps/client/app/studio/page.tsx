@@ -10,19 +10,19 @@ export default async function Page() {
 
   // Get the user's most recent project
   let dbProject = await prisma.project.findFirst({
-    where: { ownerId: session.userId },
     orderBy: { updatedAt: "desc" },
     select: { publicId: true },
+    where: { ownerId: session.userId },
   });
 
   // If they don't have any projects, create a new one
   if (!dbProject) {
     dbProject = await prisma.project.create({
       data: {
+        description: "A space for you to create and share.",
         ownerId: session.userId,
         publicId: nanoidShort(),
         title: "New Space",
-        description: "A space for you to create and share.",
       },
       select: { publicId: true },
     });

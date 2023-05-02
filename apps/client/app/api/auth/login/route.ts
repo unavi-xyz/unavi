@@ -29,14 +29,14 @@ export async function POST(request: NextRequest) {
   } catch {
     // Create user if it doesn't exist
     user = await auth.createUser({
-      primaryKey: {
-        providerId: parsedInput.data.method,
-        providerUserId: result.data.address,
-        password: null,
-      },
       attributes: {
         address: result.data.address,
         username: nanoidShort(),
+      },
+      primaryKey: {
+        password: null,
+        providerId: parsedInput.data.method,
+        providerUserId: result.data.address,
       },
     });
   }

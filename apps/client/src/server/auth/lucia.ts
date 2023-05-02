@@ -14,9 +14,9 @@ export const auth = lucia({
   middleware: edge(),
   transformDatabaseUser: (userData) => {
     return {
+      address: userData.address,
       userId: userData.id,
       username: userData.username,
-      address: userData.address,
     };
   },
 });

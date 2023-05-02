@@ -45,7 +45,7 @@ export default function SettingsDialog({ open, setOpen }: Props) {
       else localStorage.removeItem(LocalStorageKey.Name);
 
       // Publish name change
-      send({ id: "xyz.unavi.world.user.name", data: nickname });
+      send({ data: nickname, id: "xyz.unavi.world.user.name" });
     }
 
     if (didChangeAvatar) setAvatar(avatar);

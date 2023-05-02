@@ -45,11 +45,11 @@ export async function getModelStats(doc: Document, array: Uint8Array): Promise<M
     }, 0);
 
   return {
+    boneCount,
     fileSize: array.byteLength,
     materialCount,
     meshCount,
     skinCount,
-    boneCount,
     triangleCount,
   };
 }

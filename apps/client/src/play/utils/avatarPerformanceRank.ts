@@ -7,35 +7,35 @@ type AvatarStats = Omit<ModelStats, "fileSize">;
 
 const thresholds: Record<WithoutVeryPoor, AvatarStats> = {
   Excellent: {
-    triangleCount: 7_500,
+    boneCount: 75,
     materialCount: 1,
     meshCount: 1,
     skinCount: 1,
-    boneCount: 75,
+    triangleCount: 7_500,
   },
 
   Good: {
-    triangleCount: 10_000,
+    boneCount: 90,
     materialCount: 1,
     meshCount: 1,
     skinCount: 1,
-    boneCount: 90,
+    triangleCount: 10_000,
   },
 
   Medium: {
-    triangleCount: 15_000,
+    boneCount: 150,
     materialCount: 2,
     meshCount: 2,
     skinCount: 2,
-    boneCount: 150,
+    triangleCount: 15_000,
   },
 
   Poor: {
-    triangleCount: 20_000,
+    boneCount: 150,
     materialCount: 4,
     meshCount: 2,
     skinCount: 2,
-    boneCount: 150,
+    triangleCount: 20_000,
   },
 };
 

@@ -12,7 +12,7 @@ interface Props {
  * For use within the space page.
  */
 export default function PlayerCount({ uri, host }: Props) {
-  const { playerCount } = usePlayerCount({ uri, host });
+  const { playerCount } = usePlayerCount({ host, uri });
 
   if (!playerCount) return null;
 

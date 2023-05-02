@@ -9,12 +9,12 @@ export function edge(): Middleware<[NextRequest, NextResponse | undefined]> {
   return (incoming, outgoing) => {
     const requestContext = {
       request: {
-        url: incoming.url,
-        method: incoming.method,
         headers: {
-          origin: incoming.headers.get("origin"),
           cookie: incoming.headers.get("cookie"),
+          origin: incoming.headers.get("origin"),
         },
+        method: incoming.method,
+        url: incoming.url,
       },
       setCookie: (cookie) => {
         outgoing?.cookies.set(cookie.name, cookie.value, cookie);

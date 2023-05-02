@@ -28,8 +28,8 @@ export async function fetchUserProfile(handle: string): Promise<UserProfile | nu
 export async function fetchUserProfileDB(username: string): Promise<UserProfile | null> {
   try {
     const user = await prisma.authUser.findUnique({
-      where: { username },
       include: { Profile: true },
+      where: { username },
     });
     if (!user) return null;
 
@@ -37,14 +37,14 @@ export async function fetchUserProfileDB(username: string): Promise<UserProfile 
     if (!profile) return null;
 
     return {
-      username: user.username,
       domain: env.NEXT_PUBLIC_DEPLOYED_URL,
       metadata: {
-        name: profile.name ?? undefined,
+        background: profile.background ?? undefined,
         bio: profile.bio ?? undefined,
         image: profile.image ?? undefined,
-        background: profile.background ?? undefined,
+        name: profile.name ?? undefined,
       },
+      username: user.username,
     };
   } catch {
     return null;
@@ -69,9 +69,9 @@ export async function fetchUserProfileWired(
     if (!parsed.success) return null;
 
     return {
-      username,
       domain,
       metadata: parsed.data,
+      username,
     };
   } catch {
     return null;

@@ -78,17 +78,17 @@ export class Engine {
     ) {
       const offscreen = value.transferControlToOffscreen();
       this.#canvas = offscreen;
-      this.render.send({ subject: "set_canvas", data: offscreen }, { transfer: [offscreen] });
+      this.render.send({ data: offscreen, subject: "set_canvas" }, { transfer: [offscreen] });
     } else if (this.useOffscreenCanvas && value instanceof OffscreenCanvas) {
       this.#canvas = value;
-      this.render.send({ subject: "set_canvas", data: value }, { transfer: [value] });
+      this.render.send({ data: value, subject: "set_canvas" }, { transfer: [value] });
     } else {
       this.#canvas = value;
       if (this.render.renderThread) this.render.renderThread.canvas = value;
     }
 
     if (value) {
-      this.render.send({ subject: "set_size", data: { width: value.width, height: value.height } });
+      this.render.send({ data: { height: value.height, width: value.width }, subject: "set_size" });
     }
   }
 
@@ -110,8 +110,8 @@ export class Engine {
     if (value === this.#controls) return;
     this.#controls = value;
     this.input.keyboard.controls = value;
-    this.render.send({ subject: "set_controls", data: value });
-    this.physics.send({ subject: "set_controls", data: value });
+    this.render.send({ data: value, subject: "set_controls" });
+    this.physics.send({ data: value, subject: "set_controls" });
   }
 
   get showColliders() {
@@ -121,8 +121,8 @@ export class Engine {
   set showColliders(value: boolean) {
     if (value === this.#showColliders) return;
     this.#showColliders = value;
-    this.render.send({ subject: "toggle_collider_visuals", data: value });
-    this.physics.send({ subject: "toggle_collider_visuals", data: value });
+    this.render.send({ data: value, subject: "toggle_collider_visuals" });
+    this.physics.send({ data: value, subject: "toggle_collider_visuals" });
   }
 
   get showBVH() {
@@ -132,7 +132,7 @@ export class Engine {
   set showBVH(value: boolean) {
     if (value === this.#showBVH) return;
     this.#showBVH = value;
-    this.render.send({ subject: "toggle_bvh_visuals", data: value });
+    this.render.send({ data: value, subject: "toggle_bvh_visuals" });
   }
 
   get isPlaying() {
@@ -142,13 +142,13 @@ export class Engine {
   start() {
     if (this.#isPlaying) return;
     this.#isPlaying = true;
-    this.physics.send({ subject: "start", data: null });
+    this.physics.send({ data: null, subject: "start" });
   }
 
   stop() {
     if (!this.#isPlaying) return;
     this.#isPlaying = false;
-    this.physics.send({ subject: "stop", data: null });
+    this.physics.send({ data: null, subject: "stop" });
   }
 
   /**
@@ -161,8 +161,8 @@ export class Engine {
     this.stop();
 
     this.render.send({
+      data: { attach: false, nodeId: null },
       subject: "set_transform_controls_target",
-      data: { nodeId: null, attach: false },
     });
 
     this.scene.clear();

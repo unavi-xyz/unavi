@@ -9,7 +9,7 @@ export const fetchWorldMetadata = cache(
 
       const metadata = WorldMetadataSchema.parse(json);
 
-      return { uri, metadata };
+      return { metadata, uri };
     } catch {
       return null;
     }

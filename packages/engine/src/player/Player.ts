@@ -33,8 +33,8 @@ export class Player {
     this.setRotation(spawnRotation[0], spawnRotation[1], spawnRotation[2], spawnRotation[3]);
 
     engine.render.send({
-      subject: "add_player",
       data: { id, position: this.position, rotation: this.rotation },
+      subject: "add_player",
     });
   }
 
@@ -47,8 +47,8 @@ export class Player {
     this.#name = value;
 
     this.engine.render.send({
+      data: { name: value, playerId: this.id },
       subject: "set_player_name",
-      data: { playerId: this.id, name: value },
     });
   }
 
@@ -61,8 +61,8 @@ export class Player {
     this.#grounded = value;
 
     this.engine.render.send({
+      data: { grounded: value, playerId: this.id },
       subject: "set_player_grounded",
-      data: { playerId: this.id, grounded: value },
     });
   }
 
@@ -75,8 +75,8 @@ export class Player {
     this.#avatar = value;
 
     this.engine.render.send({
-      subject: "set_player_avatar",
       data: { playerId: this.id, uri: value },
+      subject: "set_player_avatar",
     });
   }
 

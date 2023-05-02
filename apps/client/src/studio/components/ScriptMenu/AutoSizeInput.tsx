@@ -5,13 +5,13 @@ interface Props extends HTMLProps<HTMLInputElement> {
 }
 
 const baseStyles: CSSProperties = {
+  height: 0,
+  left: 0,
   position: "absolute",
   top: 0,
-  left: 0,
   visibility: "hidden",
-  height: 0,
-  width: "auto",
   whiteSpace: "pre",
+  width: "auto",
 };
 
 export default function AutoSizeInput({ minWidth = 40, ...props }: Props) {

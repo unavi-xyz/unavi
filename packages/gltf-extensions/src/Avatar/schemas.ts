@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 export const avatarSchema = z.object({
-  name: z.string().optional(),
   equippable: z.boolean().optional(),
+  name: z.string().optional(),
   uri: z.string(),
 });
 

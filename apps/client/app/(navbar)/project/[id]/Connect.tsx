@@ -34,9 +34,9 @@ export default function Connect({ id, owner, connectedSpaceId }: Props) {
       setLoading(true);
 
       await toast.promise(updateProject(id, { spaceId: null }), {
+        error: "Failed to disconnect project",
         loading: "Disconnecting project...",
         success: "Project disconnected",
-        error: "Failed to disconnect project",
       });
 
       setLoading(false);

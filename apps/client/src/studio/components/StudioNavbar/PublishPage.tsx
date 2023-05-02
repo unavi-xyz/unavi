@@ -85,13 +85,13 @@ export default function PublishPage({ project }: Props) {
       async function uploadWorldMetadata() {
         const metadata: WorldMetadata = {
           info: {
-            name: title.trimEnd(),
-            description: description.trimEnd(),
             authors: user?.username
               ? [`${user.username}@${env.NEXT_PUBLIC_DEPLOYED_URL}`]
               : undefined,
-            image: imageURL,
+            description: description.trimEnd(),
             host: env.NEXT_PUBLIC_DEFAULT_HOST,
+            image: imageURL,
+            name: title.trimEnd(),
           },
           model: modelURL,
         };
@@ -99,9 +99,9 @@ export default function PublishPage({ project }: Props) {
         const url = await getSpaceModelFileUpload(spaceId, "metadata");
 
         const response = await fetch(url, {
-          method: "PUT",
           body: JSON.stringify(metadata),
           headers: { "Content-Type": "application/json", "x-amz-acl": "public-read" },
+          method: "PUT",
         });
 
         if (!response.ok) throw new Error("Failed to upload metadata");
@@ -119,9 +119,9 @@ export default function PublishPage({ project }: Props) {
         ]);
 
         const response = await fetch(url, {
-          method: "PUT",
           body: optimizedModel,
           headers: { "Content-Type": "model/gltf-binary", "x-amz-acl": "public-read" },
+          method: "PUT",
         });
 
         if (!response.ok) throw new Error("Failed to upload model");
@@ -140,9 +140,9 @@ export default function PublishPage({ project }: Props) {
         const url = await getSpaceModelFileUpload(spaceId, "image");
 
         const response = await fetch(url, {
-          method: "PUT",
           body: imageBlob,
           headers: { "Content-Type": "image/jpeg", "x-amz-acl": "public-read" },
+          method: "PUT",
         });
 
         if (!response.ok) throw new Error("Failed to upload image");
@@ -158,22 +158,22 @@ export default function PublishPage({ project }: Props) {
 
         const erc721metadata: ERC721Metadata = {
           ...currentMetadata,
-          name: title.trimEnd(),
+          animation_url: modelURL,
           description: description.trimEnd(),
           image: imageURL,
-          animation_url: modelURL,
+          name: title.trimEnd(),
         };
 
         // Upload to S3
         const url = await getSpaceNFTFileUpload(spaceId, "metadata");
 
         const response = await fetch(url, {
-          method: "PUT",
           body: JSON.stringify(erc721metadata),
           headers: {
             "Content-Type": "application/json",
             "x-amz-acl": "public-read",
           },
+          method: "PUT",
         });
 
         if (!response.ok) throw new Error("Failed to upload image");
@@ -204,7 +204,7 @@ export default function PublishPage({ project }: Props) {
             </Link>
           </span>
         ),
-        { id: toastId, duration: 20000 }
+        { duration: 20000, id: toastId }
       );
     }
 

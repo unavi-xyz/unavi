@@ -37,27 +37,27 @@ export default function ClientCanvas({ engine }: Props) {
     <div
       ref={containerRef}
       style={{
-        position: "relative",
-        width: "100%",
         height: "100%",
         overflow: "hidden",
+        position: "relative",
+        width: "100%",
       }}
     >
       <canvas
         ref={canvasRef}
         style={{
-          width: "100%",
           height: "100%",
+          width: "100%",
         }}
       />
       <canvas
         ref={overlayRef}
         style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: 10,
-          width: "100%",
           height: "100%",
+          inset: 0,
+          position: "absolute",
+          width: "100%",
+          zIndex: 10,
         }}
       />
     </div>

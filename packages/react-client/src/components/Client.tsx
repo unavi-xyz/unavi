@@ -73,38 +73,38 @@ export interface IClientContext {
 }
 
 const defaultContext: IClientContext = {
-  host: null,
-  uri: null,
+  avatar: null,
   baseHomeServer: null,
+  chatMessages: [],
 
   engine: null,
 
+  host: null,
   hoverState: null,
-  setHoverState: () => {},
-
-  ws: null,
-  setWs: () => {},
-  send: () => {},
-
-  playerId: null,
-  setPlayerId: () => {},
-  avatar: null,
-  setAvatar: () => {},
 
   loadingProgress: 0,
-  setLoadingProgress: () => {},
   loadingText: "",
-  setLoadingText: () => {},
-
-  players: [],
-  setPlayers: () => {},
-  chatMessages: [],
-  setChatMessages: () => {},
+  micEnabled: false,
 
   micTrack: null,
-  setMicTrack: () => {},
-  micEnabled: false,
+  playerId: null,
+  players: [],
+  send: () => {},
+
+  setAvatar: () => {},
+  setChatMessages: () => {},
+  setHoverState: () => {},
+  setLoadingProgress: () => {},
+
+  setLoadingText: () => {},
   setMicEnabled: () => {},
+  setMicTrack: () => {},
+  setPlayerId: () => {},
+
+  setPlayers: () => {},
+  setWs: () => {},
+  uri: null,
+  ws: null,
 };
 
 export const ClientContext = createContext<IClientContext>(defaultContext);
@@ -164,7 +164,7 @@ export function Client({
   useEffect(() => {
     const newEngine = new Engine(engineOptions);
 
-    newEngine.render.send({ subject: "toggle_animations", data: true });
+    newEngine.render.send({ data: true, subject: "toggle_animations" });
     newEngine.start();
 
     setEngine(newEngine);
@@ -178,27 +178,27 @@ export function Client({
 
   useEffect(() => {
     if (!engine) return;
-    engine.render.send({ subject: "set_animations_path", data: animations ?? null });
+    engine.render.send({ data: animations ?? null, subject: "set_animations_path" });
   }, [engine, animations]);
 
   useEffect(() => {
     if (!engine) return;
-    engine.render.send({ subject: "set_default_avatar", data: defaultAvatar ?? null });
+    engine.render.send({ data: defaultAvatar ?? null, subject: "set_default_avatar" });
   }, [engine, defaultAvatar]);
 
   useEffect(() => {
     if (!engine) return;
-    engine.render.send({ subject: "set_skybox", data: skybox ?? null });
+    engine.render.send({ data: skybox ?? null, subject: "set_skybox" });
   }, [engine, skybox]);
 
   useEffect(() => {
     if (!engine) return;
 
     // Send to host
-    send({ id: "xyz.unavi.world.user.avatar", data: avatar });
+    send({ data: avatar, id: "xyz.unavi.world.user.avatar" });
 
     // Send to engine
-    engine.render.send({ subject: "set_user_avatar", data: avatar });
+    engine.render.send({ data: avatar, subject: "set_user_avatar" });
 
     // Save to local storage
     if (avatar) localStorage.setItem(LocalStorageKey.Avatar, avatar);
@@ -213,31 +213,31 @@ export function Client({
 
   const value = useMemo(
     () => ({
-      host: usedHost || null,
-      uri: uri || null,
-      engine,
-      baseHomeServer: baseHomeServer || null,
-      hoverState,
-      setHoverState,
-      ws,
-      setWs,
-      send,
-      playerId,
-      setPlayerId,
       avatar,
-      setAvatar,
-      micTrack,
-      setMicTrack,
-      micEnabled,
-      setMicEnabled,
-      loadingProgress,
-      setLoadingProgress,
-      loadingText,
-      setLoadingText,
-      players,
-      setPlayers,
+      baseHomeServer: baseHomeServer || null,
       chatMessages,
+      engine,
+      host: usedHost || null,
+      hoverState,
+      loadingProgress,
+      loadingText,
+      micEnabled,
+      micTrack,
+      playerId,
+      players,
+      send,
+      setAvatar,
       setChatMessages,
+      setHoverState,
+      setLoadingProgress,
+      setLoadingText,
+      setMicEnabled,
+      setMicTrack,
+      setPlayerId,
+      setPlayers,
+      setWs,
+      uri: uri || null,
+      ws,
     }),
     [
       usedHost,

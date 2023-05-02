@@ -22,8 +22,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!username) return {};
 
   const user = await prisma.authUser.findUnique({
-    where: { username },
     include: { Profile: true },
+    where: { username },
   });
 
   if (!user) return {};
@@ -33,21 +33,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const image = user?.Profile?.image;
 
   return {
-    title,
     description,
     openGraph: {
-      type: "profile",
-      title,
       description,
-      username,
       firstName: user?.Profile?.name,
       images: image ? [{ url: image }] : undefined,
-    },
-    twitter: {
       title,
+      type: "profile",
+      username,
+    },
+    title,
+    twitter: {
+      card: image ? "summary_large_image" : "summary",
       description,
       images: image ? [image] : undefined,
-      card: image ? "summary_large_image" : "summary",
+      title,
     },
   };
 }
@@ -59,8 +59,8 @@ export default async function Handle({ params }: Props) {
   const [spaces, user] = await Promise.all([
     fetchDatabaseSpaces(20, username),
     prisma.authUser.findUnique({
-      where: { username },
       include: { Profile: true },
+      where: { username },
     }),
   ]);
 

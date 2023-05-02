@@ -37,20 +37,20 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const image = metadata.info?.image;
 
   return {
-    title,
     description,
     openGraph: {
-      title,
-      description,
       creators: authors ? authors : undefined,
-      images: image ? [{ url: image }] : undefined,
-    },
-    twitter: {
-      title,
       description,
-      creator: authors ? authors[0] : undefined,
-      images: image ? [image] : undefined,
+      images: image ? [{ url: image }] : undefined,
+      title,
+    },
+    title,
+    twitter: {
       card: image ? "summary_large_image" : "summary",
+      creator: authors ? authors[0] : undefined,
+      description,
+      images: image ? [image] : undefined,
+      title,
     },
   };
 }

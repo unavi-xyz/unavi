@@ -34,8 +34,8 @@ export const isValidConnection = (
   if (
     targetSocket.valueType !== "flow" &&
     isHandleConnected(edges, targetNode.id, targetSocket.name, "target", {
-      sourceId: sourceNode.id,
       sourceHandle: sourceSocket.name,
+      sourceId: sourceNode.id,
     })
   ) {
     return false;

@@ -24,8 +24,8 @@ export function useTransformControls(
     if (!engine) return;
 
     engine.render.send({
+      data: { attach: mode === "edit", nodeId: selectedId },
       subject: "set_transform_controls_target",
-      data: { nodeId: selectedId, attach: mode === "edit" },
     });
   }, [engine, selectedId, mode]);
 
@@ -34,8 +34,8 @@ export function useTransformControls(
     if (!engine) return;
 
     engine.render.send({
-      subject: "set_transform_controls_mode",
       data: tool,
+      subject: "set_transform_controls_mode",
     });
   }, [engine, tool]);
 }

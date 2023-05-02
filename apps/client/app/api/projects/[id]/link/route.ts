@@ -16,18 +16,18 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
   // Verify user owns the project
   const found = await prisma.project.findFirst({
-    where: { publicId: id, ownerId: session.user.userId },
+    where: { ownerId: session.user.userId, publicId: id },
   });
   if (!found) return new Response("Project not found", { status: 404 });
 
   // Verify user owns the space
   const space = await prisma.space.findFirst({
-    where: { publicId: spaceId, ownerId: session.user.userId },
+    where: { ownerId: session.user.userId, publicId: spaceId },
   });
   if (!space) return new Response("Space not found", { status: 404 });
 
   // Link project to space
-  await prisma.project.update({ where: { publicId: id }, data: { spaceId: space.id } });
+  await prisma.project.update({ data: { spaceId: space.id }, where: { publicId: id } });
 
   return NextResponse.json({ success: true });
 }

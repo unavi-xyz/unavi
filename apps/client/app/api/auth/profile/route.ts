@@ -20,10 +20,10 @@ export async function GET(request: NextRequest) {
   if (!profile) return new Response(null, { status: 404 });
 
   const json: ProfileMetadata = {
-    name: profile.name ?? undefined,
+    background: profile.background ?? undefined,
     bio: profile.bio ?? undefined,
     image: profile.image ?? undefined,
-    background: profile.background ?? undefined,
+    name: profile.name ?? undefined,
   };
 
   return NextResponse.json(json);
@@ -46,9 +46,9 @@ export async function PATCH(request: NextRequest) {
 
   // Create or update profile
   await prisma.profile.upsert({
+    create: { background, bio, image, name, userId: session.userId },
+    update: { background, bio, image, name },
     where: { userId: session.userId },
-    create: { userId: session.userId, name, bio, image, background },
-    update: { name, bio, image, background },
   });
 
   // Update username
@@ -58,8 +58,8 @@ export async function PATCH(request: NextRequest) {
     if (existingUser) return new Response(null, { status: 409 });
 
     await prisma.authUser.update({
-      where: { id: session.userId },
       data: { username },
+      where: { id: session.userId },
     });
   }
 

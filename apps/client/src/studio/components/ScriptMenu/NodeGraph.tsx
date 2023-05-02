@@ -83,7 +83,7 @@ export default function NodeGraph({ scriptId }: Props) {
 
   const addNode = useCallback(
     (type: string, position: XYPosition) =>
-      onNodesChange([{ type: "add", item: { id: nanoid(), type, position, data: {} } }]),
+      onNodesChange([{ item: { data: {}, id: nanoid(), position, type }, type: "add" }]),
     [onNodesChange]
   );
 
@@ -92,7 +92,7 @@ export default function NodeGraph({ scriptId }: Props) {
       // Remove all edges connected to the node
       setEdges((edges) => edges.filter((edge) => edge.source !== id && edge.target !== id));
       // Remove the node
-      onNodesChange([{ type: "remove", id }]);
+      onNodesChange([{ id, type: "remove" }]);
     },
     [onNodesChange, setEdges]
   );

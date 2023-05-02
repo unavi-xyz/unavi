@@ -15,8 +15,8 @@ export async function GET(request: NextRequest, { params }: Params) {
   const { id } = paramsSchema.parse(params);
 
   const spaceNft = await prisma.spaceNFT.findFirst({
-    where: { publicId: id, Space: { ownerId: session.user.userId } },
     include: { Space: true },
+    where: { Space: { ownerId: session.user.userId }, publicId: id },
   });
   if (!spaceNft) return new Response("Space NFT not found", { status: 404 });
 

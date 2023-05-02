@@ -47,5 +47,5 @@ export function getCustomMeshData(json: CustomMesh) {
     throw new Error("Positions are not a buffer attribute");
   if (normals instanceof GLBufferAttribute) throw new Error("Normals are not a buffer attribute");
 
-  return { positions: positions.array, normals: normals.array, indices: indices.array };
+  return { indices: indices.array, normals: normals.array, positions: positions.array };
 }

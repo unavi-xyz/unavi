@@ -19,8 +19,8 @@ export const COMPONENT_TYPE = {
   Avatar: "Avatar",
   Mesh: "Mesh",
   Physics: "Physics",
-  SpawnPoint: "Spawn Point",
   Script: "Script",
+  SpawnPoint: "Spawn Point",
 } as const;
 
 export type ComponentType = (typeof COMPONENT_TYPE)[keyof typeof COMPONENT_TYPE];
@@ -99,10 +99,10 @@ export default function AddComponentButton({ availableComponents, node, extras }
                   const { object: mesh } = engine.scene.mesh.create({
                     extras: {
                       customMesh: {
+                        depth: 1,
+                        height: 1,
                         type: "Box",
                         width: 1,
-                        height: 1,
-                        depth: 1,
                       },
                     },
                   });

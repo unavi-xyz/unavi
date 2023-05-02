@@ -5,18 +5,18 @@ import { VRMDef, VRMMetadataDef } from "./types";
 import { VRM } from "./VRM";
 
 const defaultMeta: VRMMetadataDef = {
-  name: "",
-  authors: [],
-  licenseUrl: "",
-  avatarPermission: "onlyAuthor",
-  allowExcessivelyViolentUsage: false,
-  allowExcessivelySexualUsage: false,
-  commercialUsage: "personalNonProfit",
-  allowPoliticalOrReligiousUsage: false,
   allowAntisocialOrHateUsage: false,
-  creditNotation: "required",
+  allowExcessivelySexualUsage: false,
+  allowExcessivelyViolentUsage: false,
+  allowPoliticalOrReligiousUsage: false,
   allowRedistribution: false,
+  authors: [],
+  avatarPermission: "onlyAuthor",
+  commercialUsage: "personalNonProfit",
+  creditNotation: "required",
+  licenseUrl: "",
   modification: "prohibited",
+  name: "",
 };
 
 /**

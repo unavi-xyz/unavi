@@ -124,8 +124,8 @@ export class Skins extends Attribute<Skin, SkinJSON> {
     const skeletonId = skeleton ? this.#node.getId(skeleton) ?? null : null;
 
     return {
-      jointIds,
       inverseBindMatricesId,
+      jointIds,
       skeletonId,
     };
   }

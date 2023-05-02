@@ -16,8 +16,8 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   // Verify user owns the space
   const found = await prisma.space.findFirst({
-    where: { publicId: id, ownerId: session.user.userId },
     include: { SpaceModel: true, SpaceNFT: true },
+    where: { ownerId: session.user.userId, publicId: id },
   });
   if (!found) return new Response("Space not found", { status: 404 });
 

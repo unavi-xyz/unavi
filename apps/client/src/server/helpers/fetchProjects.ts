@@ -10,8 +10,8 @@ export const fetchProjects = cache(async (): Promise<Project[]> => {
   if (!session) throw new Error("Unauthorized");
 
   const projects = await prisma.project.findMany({
-    where: { ownerId: session.user.userId },
     orderBy: { updatedAt: "desc" },
+    where: { ownerId: session.user.userId },
   });
 
   const images = await Promise.all(
@@ -22,10 +22,10 @@ export const fetchProjects = cache(async (): Promise<Project[]> => {
     createdAt: project.createdAt,
     description: project.description,
     image: images[index],
-    title: project.title,
     ownerId: project.ownerId,
     publicId: project.publicId,
     spaceId: project.spaceId,
+    title: project.title,
     updatedAt: project.updatedAt,
   }));
 

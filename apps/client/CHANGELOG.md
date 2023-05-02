@@ -1,5 +1,11 @@
 # client
 
+## 0.8.0
+
+### Minor Changes
+
+- d3218932: move editor to /studio
+
 ## 0.7.0
 
 ### Minor Changes

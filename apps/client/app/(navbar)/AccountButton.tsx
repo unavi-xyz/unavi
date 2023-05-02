@@ -1,20 +1,12 @@
 "use client";
 
-import AuthProvider, { useAuth } from "@/src/client/AuthProvider";
+import { useAuth } from "@/src/client/AuthProvider";
 import { useProfile } from "@/src/play/hooks/useProfile";
 
 import ProfileButton from "./ProfileButton";
 import SignInButton from "./SignInButton";
 
-export default async function AccountButton() {
-  return (
-    <AuthProvider>
-      <ClientAccountButton />
-    </AuthProvider>
-  );
-}
-
-function ClientAccountButton() {
+export default function AccountButton() {
   const { status, loading: transitionLoading, user } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
 

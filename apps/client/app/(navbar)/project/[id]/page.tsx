@@ -67,10 +67,10 @@ export default async function Project({ params }: Props) {
             </div>
 
             <Link
-              href={`/editor/${id}`}
+              href={`/studio/${id}`}
               className="rounded-full bg-neutral-900 py-3 text-center text-lg font-bold text-white transition hover:scale-105 active:opacity-90"
             >
-              Open Editor
+              Open Studio
             </Link>
           </div>
         </div>

@@ -11,8 +11,8 @@ import { useSigner } from "wagmi";
 import { getNFTSpace } from "@/app/api/nfts/[id]/space/helper";
 import { deleteSpace } from "@/app/api/spaces/[id]/helper";
 import { useAuth } from "@/src/client/AuthProvider";
-import { parseError } from "@/src/editor/utils/parseError";
 import { env } from "@/src/env.mjs";
+import { parseError } from "@/src/studio/utils/parseError";
 import Button from "@/src/ui/Button";
 import { SpaceId } from "@/src/utils/parseSpaceId";
 

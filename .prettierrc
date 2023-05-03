@@ -1,3 +1,4 @@
 {
+  "plugins": ["prettier-plugin-packagejson", "prettier-plugin-prisma"],
   "printWidth": 100
 }

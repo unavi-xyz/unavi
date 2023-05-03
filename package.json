@@ -10,9 +10,9 @@
     "dev": "turbo dev --filter=!tsconfig --filter=!eslint-config-custom --filter=!contracts --filter=!engine",
     "docker:build": "dotenv -e ./apps/client/.env -c -- docker compose -f docker-compose.yml -f docker-compose.prod.yml build",
     "docker:dev": "pnpm docker:stop && dotenv -e ./apps/client/.env -c -- docker compose up --build -d && pnpm docker:init && pnpm dev",
+    "docker:init": "node -e \"setTimeout(() => process.exit(0), 10000)\" && pnpm run deploy",
     "docker:prod": "pnpm docker:stop && dotenv -e ./apps/client/.env -c -- docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d && pnpm docker:init",
     "docker:stop": "dotenv -e ./apps/client/.env -c -- docker compose -f docker-compose.yml -f docker-compose.prod.yml down",
-    "docker:init": "node -e \"setTimeout(() => process.exit(0), 10000)\" && pnpm run deploy",
     "format": "prettier --write .",
     "generate": "turbo generate",
     "lint": "turbo lint"

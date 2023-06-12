@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Dispatch, SetStateAction, useContext, useMemo, useState } from "react";
+import { createContext, Dispatch, SetStateAction, useContext, useMemo, useState } from "react";
 
 export type TreeContextType = {
   draggingId: string | null;
@@ -20,7 +20,7 @@ const defaultContext: TreeContextType = {
   treeIds: [],
 };
 
-const TreeContext = React.createContext<TreeContextType>(defaultContext);
+const TreeContext = createContext<TreeContextType>(defaultContext);
 
 export function useTree() {
   return useContext(TreeContext);

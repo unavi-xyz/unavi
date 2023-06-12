@@ -17,7 +17,7 @@ export default function StudioUI({ project }: Props) {
     <GlobalFileDrop>
       <StudioNavbar project={project} />
 
-      <div className="fixed h-full w-full animate-fadeInDelayed">
+      <div className="animate-fadeInDelayed fixed h-full w-full">
         <PanelGroup autoSaveId="studio-script" direction="vertical">
           <Panel collapsible minSize={20}>
             <PanelGroup autoSaveId="studio-inspect" direction="horizontal">

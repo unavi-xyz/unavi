@@ -2,7 +2,7 @@ import {
   createAuthenticationAdapter,
   RainbowKitAuthenticationProvider,
 } from "@rainbow-me/rainbowkit";
-import React, { ReactNode, useMemo } from "react";
+import { ReactNode, useMemo } from "react";
 import { SiweMessage } from "siwe";
 
 import { useAuth } from "@/src/client/AuthProvider";

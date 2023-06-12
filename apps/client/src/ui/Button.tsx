@@ -1,8 +1,8 @@
-import React from "react";
+import { forwardRef } from "react";
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement>;
 
-const Button = React.forwardRef<HTMLButtonElement, Props>(
+const Button = forwardRef<HTMLButtonElement, Props>(
   ({ className, disabled, children, ...rest }, ref) => {
     return (
       <button

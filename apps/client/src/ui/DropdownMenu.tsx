@@ -1,27 +1,25 @@
 "use client";
 
 import * as DropdownPrimitive from "@radix-ui/react-dropdown-menu";
-import React from "react";
+import { forwardRef } from "react";
 
 type Props = DropdownPrimitive.DropdownMenuContentProps;
 
-export const DropdownContent = React.forwardRef<HTMLDivElement, Props>(
-  ({ children, ...rest }, ref) => {
-    return (
-      <DropdownPrimitive.DropdownMenuPortal>
-        <DropdownPrimitive.Content
-          ref={ref}
-          sideOffset={4}
-          onCloseAutoFocus={(event) => event.preventDefault()}
-          className="z-50 mx-4 animate-scaleIn rounded-xl bg-white shadow-dark"
-          {...rest}
-        >
-          {children}
-        </DropdownPrimitive.Content>
-      </DropdownPrimitive.DropdownMenuPortal>
-    );
-  }
-);
+export const DropdownContent = forwardRef<HTMLDivElement, Props>(({ children, ...rest }, ref) => {
+  return (
+    <DropdownPrimitive.DropdownMenuPortal>
+      <DropdownPrimitive.Content
+        ref={ref}
+        sideOffset={4}
+        onCloseAutoFocus={(event) => event.preventDefault()}
+        className="animate-scaleIn shadow-dark z-50 mx-4 rounded-xl bg-white"
+        {...rest}
+      >
+        {children}
+      </DropdownPrimitive.Content>
+    </DropdownPrimitive.DropdownMenuPortal>
+  );
+});
 
 DropdownContent.displayName = "DropdownContent";
 
@@ -31,13 +29,13 @@ export const DropdownItem = DropdownPrimitive.Item;
 export const DropdownSub = DropdownPrimitive.Sub;
 export const DropdownSubTrigger = DropdownPrimitive.SubTrigger;
 
-export const DropdownSubContent = React.forwardRef<HTMLDivElement, Props>(
+export const DropdownSubContent = forwardRef<HTMLDivElement, Props>(
   ({ children, ...rest }, ref) => {
     return (
       <DropdownPrimitive.SubContent
         ref={ref}
         sideOffset={4}
-        className="rounded-xl bg-white shadow-dark"
+        className="shadow-dark rounded-xl bg-white"
         {...rest}
       >
         {children}

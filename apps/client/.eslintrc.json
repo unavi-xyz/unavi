@@ -1,6 +1,6 @@
 {
-  "root": true,
   "extends": ["custom"],
+  "root": true,
   "rules": {
     "@next/next/no-html-link-for-pages": "error"
   },

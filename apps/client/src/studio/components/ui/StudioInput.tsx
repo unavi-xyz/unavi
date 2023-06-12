@@ -1,8 +1,8 @@
-import React from "react";
+import { forwardRef } from "react";
 
 import { useStudio } from "../Studio";
 
-const StudioInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
+const StudioInput = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   ({ disabled, ...rest }, ref) => {
     const { mode } = useStudio();
 

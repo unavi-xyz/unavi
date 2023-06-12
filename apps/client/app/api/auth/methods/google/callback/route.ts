@@ -1,8 +1,7 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-import { googleAuth } from "@/src/server/auth/google";
-import { GOOGLE_OAUTH_STATE_COOKIE } from "@/src/server/auth/google";
+import { GOOGLE_OAUTH_STATE_COOKIE, googleAuth } from "@/src/server/auth/google";
 import { auth } from "@/src/server/auth/lucia";
 import { nanoidShort } from "@/src/server/nanoid";
 

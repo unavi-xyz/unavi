@@ -3,12 +3,13 @@ import "reactflow/dist/style.css";
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import { nanoid } from "nanoid";
 import { MouseEvent, useCallback, useEffect, useRef, useState } from "react";
-import ReactFlow, {
+import {
   addEdge,
   Background,
   Connection,
   Controls,
   Edge,
+  ReactFlow,
   updateEdge,
   useEdgesState,
   useNodesState,

@@ -1,7 +1,7 @@
 "use client";
 
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
-import React, { useEffect, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 
 interface Props {
   text: string;
@@ -10,7 +10,7 @@ interface Props {
   children: React.ReactNode;
 }
 
-const Tooltip = React.forwardRef<HTMLDivElement, Props>(
+const Tooltip = forwardRef<HTMLDivElement, Props>(
   ({ text, delayDuration = 400, side = "bottom", children }, ref) => {
     const [open, setOpen] = useState(false);
     const [visible, setVisible] = useState(false);

@@ -3,8 +3,7 @@ import { useClient } from "@unavi/react-client";
 import { getTempUpload } from "@/app/api/temp/helper";
 import { usePlayStore } from "@/app/play/store";
 
-import { cdnURL } from "../../utils/s3Paths";
-import { S3Path } from "../../utils/s3Paths";
+import { cdnURL, S3Path } from "../../utils/s3Paths";
 
 /**
  * Wraps around the client's setAvatar function to support uploading avatars to S3.

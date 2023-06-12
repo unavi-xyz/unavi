@@ -1,7 +1,6 @@
 import { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
-import React from "react";
 import { z } from "zod";
 
 import AuthProvider from "@/src/client/AuthProvider";

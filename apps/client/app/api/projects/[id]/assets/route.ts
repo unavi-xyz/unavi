@@ -5,8 +5,7 @@ import { nanoidShort } from "@/src/server/nanoid";
 import { prisma } from "@/src/server/prisma";
 
 import { getAssetUpload } from "./s3";
-import { paramsSchema, PostAssetsResponse } from "./types";
-import { Params } from "./types";
+import { Params, paramsSchema, PostAssetsResponse } from "./types";
 
 // Get new asset upload URL
 export async function POST(request: NextRequest, { params }: Params) {

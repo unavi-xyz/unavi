@@ -2,11 +2,13 @@
 
 import { Engine } from "engine";
 import Script from "next/script";
-import React, {
+import {
   createContext,
+  createRef,
   Dispatch,
   SetStateAction,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -46,7 +48,7 @@ interface StudioContextType {
 }
 
 const defaultContext: StudioContextType = {
-  canvasRef: React.createRef(),
+  canvasRef: createRef(),
   changeMode: async () => {},
   description: "",
   engine: null,
@@ -71,7 +73,7 @@ const defaultContext: StudioContextType = {
 export const StudioContext = createContext<StudioContextType>(defaultContext);
 
 export function useStudio() {
-  return React.useContext(StudioContext);
+  return useContext(StudioContext);
 }
 
 interface Props {

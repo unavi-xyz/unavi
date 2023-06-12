@@ -13,7 +13,7 @@
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --onSuccess \"tsc --emitDeclarationOnly\"",
     "dev": "pnpm build --watch",
-    "lint": "cd ../.. && eslint --fix packages/gltf-extensions --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
+    "lint": "cd ../.. && eslint --fix packages/gltf-extensions --ext .ts,.tsx,.mjs,.json --ignore-path .gitignore --ignore-path .prettierignore --ignore-pattern package.json"
   },
   "dependencies": {
     "@gltf-transform/core": "^3.4.0",

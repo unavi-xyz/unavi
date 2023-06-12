@@ -11,7 +11,7 @@
     "docker:clean": "pnpm docker:stop || docker rmi unavi-host",
     "docker:start": "pnpm docker:stop || docker run --rm -e RTC_MIN_PORT=20000 -e RTC_MAX_PORT=20020 -e MEDIASOUP_ANNOUNCED_IP=127.0.0.1 -p 4000:4000 -p 20000-20020:20000-20020/tcp -p 20000-20020:20000-20020/udp --name wired-host unavi-host",
     "docker:stop": "docker stop wired-host",
-    "lint": "cd ../.. && eslint --fix apps/host --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore",
+    "lint": "cd ../.. && eslint --fix apps/host --ext .ts,.tsx,.mjs,.json --ignore-path .gitignore --ignore-path .prettierignore --ignore-pattern package.json",
     "start": "node --experimental-specifier-resolution=node ./dist/server.js"
   },
   "dependencies": {

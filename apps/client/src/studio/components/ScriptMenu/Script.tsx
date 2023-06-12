@@ -1,5 +1,5 @@
 import { BehaviorVariable } from "@unavi/gltf-extensions";
-import React, { Dispatch, SetStateAction, useContext, useMemo, useState } from "react";
+import { createContext, Dispatch, SetStateAction, useContext, useMemo, useState } from "react";
 import { ReactFlowInstance, XYPosition } from "reactflow";
 
 export type AddNode = (type: string, position: XYPosition) => void;
@@ -26,7 +26,7 @@ const defaultContext: ScriptContextType = {
   variables: [],
 };
 
-const ScriptContext = React.createContext<ScriptContextType>(defaultContext);
+const ScriptContext = createContext<ScriptContextType>(defaultContext);
 
 export function useScript() {
   return useContext(ScriptContext);

@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
-    "rootDir": "./src",
-    "outDir": "./dist",
     "composite": false,
     "incremental": false,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "outDir": "./dist",
+    "rootDir": "./src"
   },
   "extends": "tsconfig/base.json",
   "include": ["src"]

@@ -1,7 +1,7 @@
 "use client";
 
 import { useResizeCanvas } from "@unavi/react-client";
-import React, { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import SignInButton from "@/app/(navbar)/SignInButton";
 import Crosshair from "@/src/play/Crosshair";

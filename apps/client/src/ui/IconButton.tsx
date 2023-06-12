@@ -1,4 +1,4 @@
-import React, { ButtonHTMLAttributes } from "react";
+import { ButtonHTMLAttributes, forwardRef } from "react";
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   selected?: boolean;
@@ -6,7 +6,7 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   cursor?: "pointer" | "default";
 }
 
-const IconButton = React.forwardRef<HTMLButtonElement, Props>(
+const IconButton = forwardRef<HTMLButtonElement, Props>(
   ({ selected, disabled, rounded = "small", cursor = "default", children, ...rest }, ref) => {
     const selectedClass = selected ? "bg-neutral-200 hover:bg-neutral-300" : "hover:bg-neutral-200";
     const roundedClass = rounded === "full" ? "rounded-full" : "rounded-lg";

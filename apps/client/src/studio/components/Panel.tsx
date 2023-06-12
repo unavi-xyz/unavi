@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import { forwardRef } from "react";
 import {
   Panel as RpPanel,
   PanelGroup as RpPanelGroup,
@@ -18,7 +18,7 @@ interface Props extends PanelProps {
  * Wrapper around react-resizable-panels that manages the onResize callback.
  * Also marks these components as client side.
  */
-export const Panel = React.forwardRef<any, Props>(({ children, ...rest }, ref) => {
+export const Panel = forwardRef<any, Props>(({ children, ...rest }, ref) => {
   const { resize } = useStudio();
 
   return (

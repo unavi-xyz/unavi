@@ -1,7 +1,6 @@
 "use client";
 
 import * as ToggleGroup from "@radix-ui/react-toggle-group";
-import React from "react";
 import { BiMove } from "react-icons/bi";
 import { CgArrowsExpandUpRight } from "react-icons/cg";
 import { MdSync } from "react-icons/md";

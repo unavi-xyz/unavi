@@ -1,7 +1,7 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import React from "react";
+import { forwardRef } from "react";
 
 interface Props extends DialogPrimitive.DialogContentProps {
   title?: string;
@@ -10,16 +10,16 @@ interface Props extends DialogPrimitive.DialogContentProps {
   size?: "normal" | "large";
 }
 
-const DialogContent = React.forwardRef<HTMLDivElement, Props>(
+const DialogContent = forwardRef<HTMLDivElement, Props>(
   ({ autoFocus = true, title, description, size = "normal", children, ...rest }, ref) => {
     return (
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-40 h-full w-full animate-fadeIn bg-neutral-900/40 backdrop-blur-sm" />
+        <DialogPrimitive.Overlay className="animate-fadeIn fixed inset-0 z-40 h-full w-full bg-neutral-900/40 backdrop-blur-sm" />
 
         <DialogPrimitive.Content
           ref={ref}
           onOpenAutoFocus={autoFocus ? undefined : (e) => e.preventDefault()}
-          className={`fixed inset-0 z-50 m-auto h-fit max-h-screen w-full animate-scaleIn rounded-3xl bg-white p-8 shadow-md ${
+          className={`animate-scaleIn fixed inset-0 z-50 m-auto h-fit max-h-screen w-full rounded-3xl bg-white p-8 shadow-md ${
             size === "normal" ? "max-w-lg" : "max-w-4xl"
           }`}
           {...rest}

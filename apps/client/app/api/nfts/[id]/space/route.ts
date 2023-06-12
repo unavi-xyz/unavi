@@ -3,8 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserSession } from "@/src/server/auth/getUserSession";
 import { prisma } from "@/src/server/prisma";
 
-import { paramsSchema } from "../types";
-import { Params } from "../types";
+import { Params, paramsSchema } from "../types";
 import { GetNftSpaceResponse } from "./types";
 
 // Get nft space

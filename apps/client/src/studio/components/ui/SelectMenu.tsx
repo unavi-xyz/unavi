@@ -12,7 +12,7 @@ export default function SelectMenu({ options, disabled, ...rest }: Props) {
   return (
     <select
       disabled={isDisabled}
-      className={`w-full appearance-none rounded-md border border-neutral-200 bg-arrow bg-right bg-no-repeat bg-origin-content pl-1.5 pr-1 capitalize ${
+      className={`bg-arrow w-full appearance-none rounded-md border border-neutral-200 bg-right bg-no-repeat bg-origin-content pl-1.5 pr-1 capitalize ${
         isDisabled ? "" : "hover:bg-neutral-100 focus:bg-neutral-100"
       }`}
       {...rest}

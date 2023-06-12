@@ -1,10 +1,10 @@
-import React from "react";
+import { forwardRef } from "react";
 
 interface Props extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
 }
 
-const TextArea = React.forwardRef<HTMLTextAreaElement, Props>(({ label, ...rest }, ref) => {
+const TextArea = forwardRef<HTMLTextAreaElement, Props>(({ label, ...rest }, ref) => {
   return (
     <label className="block space-y-1">
       {label && <div className="font-bold text-neutral-700">{label}</div>}

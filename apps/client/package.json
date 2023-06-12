@@ -8,7 +8,7 @@
     "deploy": "dotenv -c -- prisma db push --accept-data-loss",
     "dev": "next dev",
     "generate": "prisma generate",
-    "lint": "cd ../.. && eslint --fix apps/client --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore",
+    "lint": "eslint --fix . --ext .ts,.tsx,.mjs,.json --ignore-path ../../.gitignore --ignore-path ../../.prettierignore --ignore-pattern package.json",
     "start": "next start"
   },
   "dependencies": {

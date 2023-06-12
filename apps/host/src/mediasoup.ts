@@ -1,9 +1,9 @@
-import mediasoup from "mediasoup";
+import { createWorker } from "mediasoup";
 import { Router } from "mediasoup/node/lib/Router";
 import { WebRtcServer } from "mediasoup/node/lib/WebRtcServer";
 
 export async function createMediasoupWorker() {
-  const worker = await mediasoup.createWorker({
+  const worker = await createWorker({
     rtcMaxPort: parseInt(process.env.RTC_MAX_PORT || "20020"),
     rtcMinPort: parseInt(process.env.RTC_MIN_PORT || "20000"),
   });

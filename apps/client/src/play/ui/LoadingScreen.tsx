@@ -41,7 +41,7 @@ export default function LoadingScreen({ text, image, loadingProgress, loadingTex
         entered ? "scale-110 opacity-0" : "scale-100 opacity-100"
       }`}
     >
-      <div className="flex h-full animate-floatInSlow flex-col items-center justify-center">
+      <div className="animate-floatInSlow flex h-full flex-col items-center justify-center">
         <div className="max-w-content space-y-8">
           <div className="flex w-full min-w-fit flex-col justify-between">
             <div className="space-y-4">

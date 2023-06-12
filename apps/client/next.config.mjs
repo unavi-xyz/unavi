@@ -85,12 +85,13 @@ export default await defineNextConfig({
   outputFileTracing: true,
   productionBrowserSourceMaps: true,
   reactStrictMode: true,
-  transpilePackages: ["engine", "contracts"],
+  transpilePackages: ["engine"],
   webpack: function (config) {
     config.experiments = {
       ...config.experiments,
       asyncWebAssembly: true,
     };
+    config.resolve.fallback = { fs: false, net: false, tls: false };
     return config;
   },
 });

@@ -1,4 +1,4 @@
-import { ERC721Metadata } from "contracts";
+import { ERC721Metadata } from "@/src/contracts/erc721";
 
 import { fetchNFTSpaceOwner } from "./fetchNFTSpaceOwner";
 import { fetchNFTSpaceTokenMetadata } from "./fetchNFTSpaceTokenMetadata";

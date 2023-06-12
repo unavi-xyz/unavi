@@ -1,5 +1,4 @@
 import { WorldMetadata } from "@wired-protocol/types";
-import { ERC721Metadata, ERC721MetadataSchema } from "contracts";
 import { nanoid } from "nanoid";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -18,6 +17,7 @@ import {
   getSpaceNFTFileUpload,
 } from "@/app/api/spaces/[id]/nft/files/[file]/helper";
 import { useAuth } from "@/src/client/AuthProvider";
+import { ERC721Metadata, ERC721MetadataSchema } from "@/src/contracts/erc721";
 import { env } from "@/src/env.mjs";
 
 import { fetcher } from "../../../play/utils/fetcher";

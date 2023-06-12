@@ -6,13 +6,23 @@ import {
   rainbowWallet,
   walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
-import { ChainProviderFn, configureChains, createClient } from "wagmi";
+import { Chain, Config, configureChains, createConfig } from "wagmi";
 import { sepolia } from "wagmi/chains";
 import { publicProvider } from "wagmi/providers/public";
 
-const providers: ChainProviderFn<typeof sepolia>[] = [publicProvider()];
+declare global {
+  interface Window {
+    ethereum: any;
+  }
+}
 
-export const { chains, provider } = configureChains([sepolia], providers) as any;
+export const {
+  chains,
+  publicClient,
+}: {
+  chains: Chain[];
+  publicClient: any;
+} = configureChains([sepolia], [publicProvider()]);
 
 const needsInjectedWalletFallback =
   typeof window !== "undefined" &&
@@ -36,4 +46,4 @@ const connectors = connectorsForWallets([
   },
 ]);
 
-export const wagmiClient = createClient({ autoConnect: true, connectors, provider }) as any;
+export const config: Config = createConfig({ autoConnect: true, connectors, publicClient });

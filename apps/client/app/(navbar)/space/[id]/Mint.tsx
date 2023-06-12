@@ -2,16 +2,19 @@
 
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { WorldMetadata } from "@wired-protocol/types";
-import { ERC721Metadata, Space__factory, SPACE_ADDRESS } from "contracts";
 import { nanoid } from "nanoid";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
-import { useSigner } from "wagmi";
+import { useContractWrite, useWalletClient } from "wagmi";
+import { readContract } from "wagmi/actions";
 
 import { updateSpace } from "@/app/api/spaces/[id]/helper";
 import { mintSpace } from "@/app/api/spaces/[id]/mint/helper";
 import { getSpaceNFTFileUpload } from "@/app/api/spaces/[id]/nft/files/[file]/helper";
 import { useAuth } from "@/src/client/AuthProvider";
+import { SPACE_ADDRESS } from "@/src/contracts/addresses";
+import { ERC721Metadata } from "@/src/contracts/erc721";
+import { SPACE_ABI } from "@/src/contracts/SpaceAbi";
 import { env } from "@/src/env.mjs";
 import { parseError } from "@/src/studio/utils/parseError";
 import Button from "@/src/ui/Button";
@@ -27,12 +30,18 @@ interface Props {
 export default function Mint({ id, metadata }: Props) {
   const [loading, setLoading] = useState(false);
 
-  const { data: signer } = useSigner();
+  const { writeAsync: mintWithTokenURI } = useContractWrite({
+    abi: SPACE_ABI,
+    address: SPACE_ADDRESS,
+    functionName: "mintWithTokenURI",
+  });
+
+  const { data: wallet } = useWalletClient();
   const { openConnectModal } = useConnectModal();
   const { user } = useAuth();
 
   async function handleMint() {
-    if (!signer) {
+    if (!wallet) {
       if (openConnectModal) openConnectModal();
       return;
     }
@@ -76,11 +85,9 @@ export default function Mint({ id, metadata }: Props) {
       // Mint space NFT
       toast.loading("Waiting for signature...", { id: toastId });
       const metadataURI = cdnURL(S3Path.spaceNFT(nftId).metadata);
-      const contract = Space__factory.connect(SPACE_ADDRESS, signer);
-      const tx = await contract.mintWithTokenURI(metadataURI);
+      await mintWithTokenURI({ args: [metadataURI] });
 
       toast.loading("Minting space...", { id: toastId });
-      await tx.wait();
 
       // Wait for token to be indexed
       await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -89,7 +96,10 @@ export default function Mint({ id, metadata }: Props) {
 
       const findTokenId = async (): Promise<number> => {
         // Loop backwards through past 10 tokens to find the one we just minted
-        const count = (await contract.count()).toNumber();
+        const count = Number(
+          await readContract({ abi: SPACE_ABI, address: SPACE_ADDRESS, functionName: "count" })
+        );
+
         const max = Math.min(count, 10);
         let i = 0;
 
@@ -97,10 +107,22 @@ export default function Mint({ id, metadata }: Props) {
           i++;
           const nextId = count - i;
 
-          const owner = await contract.ownerOf(nextId);
+          const owner = await readContract({
+            abi: SPACE_ABI,
+            address: SPACE_ADDRESS,
+            args: [BigInt(nextId)],
+            functionName: "ownerOf",
+          });
+
           if (owner !== user.address) continue;
 
-          const uri = await contract.tokenURI(nextId);
+          const uri = await readContract({
+            abi: SPACE_ABI,
+            address: SPACE_ADDRESS,
+            args: [BigInt(nextId)],
+            functionName: "tokenURI",
+          });
+
           if (uri !== metadataURI) continue;
 
           return nextId;

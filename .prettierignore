@@ -34,7 +34,6 @@ out/
 generated
 apps/docs/docs/packages/*
 !apps/docs/docs/packages/index.md
-packages/contracts/contracts
 
 # client
 apps/client/public/**/*.js

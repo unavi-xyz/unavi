@@ -162,7 +162,6 @@ export default async function Space({ params }: Props) {
         </div>
 
         <Suspense fallback={null}>
-          {/* @ts-expect-error Server Component */}
           <Tabs id={{ type: "id", value: params.id }} metadata={metadata} />
         </Suspense>
       </div>

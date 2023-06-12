@@ -77,11 +77,9 @@ export default async function Project({ params }: Props) {
 
         <ButtonTabs titles={["About", "Settings"]}>
           <TabContent value="About">
-            {/* @ts-expect-error Server Component */}
             <About params={params} />
           </TabContent>
           <TabContent value="Settings">
-            {/* @ts-expect-error Server Component */}
             <Settings params={params} />
           </TabContent>
         </ButtonTabs>

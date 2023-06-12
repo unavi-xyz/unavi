@@ -17,6 +17,6 @@
     "eslint-plugin-sort-keys-fix": "^1.1.2",
     "eslint-plugin-tailwindcss": "^3.11.0",
     "eslint-plugin-unused-imports": "^2.0.0",
-    "typescript": "~5.0.4"
+    "typescript": "~5.1.3"
   }
 }

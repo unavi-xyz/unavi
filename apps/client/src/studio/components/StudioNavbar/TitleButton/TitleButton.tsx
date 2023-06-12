@@ -15,7 +15,6 @@ export default function TitleButton({ projectId }: Props) {
       </DropdownTrigger>
 
       <DropdownContent>
-        {/* @ts-expect-error Server Component */}
         <ProjectList projectId={projectId} />
       </DropdownContent>
     </DropdownMenu>

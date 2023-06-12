@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 import { googleAuth } from "@/src/server/auth/google";
@@ -34,14 +35,12 @@ export async function GET(request: NextRequest) {
       username: nanoidShort(),
     }));
 
-  // Redirect the user to the home page
-  const response = NextResponse.redirect(new URL("/", request.url));
-
   // Create auth session
   const session = await auth.createSession(user.userId);
 
-  const authRequest = auth.handleRequest(request, response);
+  const authRequest = auth.handleRequest({ cookies, request });
   authRequest.setSession(session);
 
-  return response;
+  // Redirect the user to the home page
+  return NextResponse.redirect(new URL("/", request.url));
 }

@@ -1,5 +1,6 @@
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 import { env } from "@/src/env.mjs";
@@ -17,7 +18,7 @@ type Params = { params: { file: string } };
  * Get S3 upload URL
  */
 export async function PUT(request: NextRequest, { params }: Params) {
-  const authRequest = auth.handleRequest(request, undefined);
+  const authRequest = auth.handleRequest({ cookies, request });
   const { session } = await authRequest.validateUser();
   if (!session) return new Response(null, { status: 401 });
 

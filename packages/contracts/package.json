@@ -17,12 +17,12 @@
     "@ethersproject/abi": "^5.7.0",
     "@ethersproject/bytes": "^5.7.0",
     "@ethersproject/providers": "^5.7.2",
-    "@typechain/ethers-v5": "^10.2.0",
-    "eslint": "^8.38.0",
+    "@typechain/ethers-v5": "^10.2.1",
+    "eslint": "^8.42.0",
     "eslint-config-custom": "workspace:*",
     "ethers": "^5.7.2",
     "tsconfig": "workspace:*",
-    "typechain": "^8.1.1",
+    "typechain": "^8.2.0",
     "typescript": "~5.0.4"
   }
 }

@@ -1,4 +1,5 @@
 import { ProfileMetadata } from "@wired-protocol/types";
+import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 import { auth } from "@/src/server/auth/lucia";
@@ -10,7 +11,7 @@ import { UpdateProfileSchema } from "./types";
  * Get user's profile
  */
 export async function GET(request: NextRequest) {
-  const authRequest = auth.handleRequest(request, undefined);
+  const authRequest = auth.handleRequest({ cookies, request });
   const { session } = await authRequest.validateUser();
   if (!session) return new Response(null, { status: 401 });
 
@@ -36,9 +37,7 @@ export async function PATCH(request: NextRequest) {
   const parsed = UpdateProfileSchema.safeParse(await request.json());
   if (!parsed.success) return new Response(JSON.stringify(parsed.error), { status: 400 });
 
-  const res = new NextResponse();
-
-  const authRequest = auth.handleRequest(request, res);
+  const authRequest = auth.handleRequest({ cookies, request });
   const { session, user } = await authRequest.validateUser();
   if (!session) return new Response(null, { status: 401 });
 
@@ -63,5 +62,5 @@ export async function PATCH(request: NextRequest) {
     });
   }
 
-  return res;
+  return new Response(null, { status: 200 });
 }

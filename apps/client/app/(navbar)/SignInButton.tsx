@@ -55,11 +55,13 @@ export function SignInPage({ setOpen }: { setOpen?: (open: boolean) => void }) {
 
   return (
     <div className="flex flex-col items-center space-y-2">
-      <div className="flex w-full items-center pt-4">
-        <hr className="w-full border-neutral-300" />
-        <span className="w-fit whitespace-nowrap px-4 font-bold text-neutral-700">Web3</span>
-        <hr className="w-full border-neutral-300" />
-      </div>
+      {env.NEXT_PUBLIC_HAS_GOOGLE_OAUTH ? (
+        <div className="flex w-full items-center pt-4">
+          <hr className="w-full border-neutral-300" />
+          <span className="w-fit whitespace-nowrap px-4 font-bold text-neutral-700">Web3</span>
+          <hr className="w-full border-neutral-300" />
+        </div>
+      ) : null}
 
       <Button onClick={handleWalletLogin}>Connect Wallet</Button>
 

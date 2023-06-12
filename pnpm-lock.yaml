@@ -233,18 +233,18 @@ importers:
         specifier: ^4.0.2
         version: 4.0.2
       uWebSockets.js:
-        specifier: github:uNetworking/uWebSockets.js#v20.20.0
-        version: github.com/uNetworking/uWebSockets.js/70291680f6052af5306191b6ed88bceb58e49aa2
+        specifier: github:uNetworking/uWebSockets.js#v20.30.0
+        version: github.com/uNetworking/uWebSockets.js/d39d4181daf5b670d44cbc1b18f8c28c85fd4142
       zod:
         specifier: ^3.21.4
         version: 3.21.4
     devDependencies:
       '@types/node':
-        specifier: ^18.15.13
-        version: 18.15.13
+        specifier: ^18.16.17
+        version: 18.16.17
       eslint:
-        specifier: ^8.38.0
-        version: 8.38.0
+        specifier: ^8.42.0
+        version: 8.42.0
       eslint-config-custom:
         specifier: workspace:*
         version: link:../../packages/eslint-config-custom
@@ -5604,10 +5604,6 @@ packages:
 
   /@types/node@12.20.55:
     resolution: {integrity: sha512-J8xLz7q2OFulZ2cyGTLE1TbbZcjpno7FaN6zdJNrgAdrJ+DZzh/uFR6YrTb4C+nXakvud8Q4+rbhoIWlYQbUFQ==}
-
-  /@types/node@18.15.13:
-    resolution: {integrity: sha512-N+0kuo9KgrUQ1Sn/ifDXsvg0TTleP7rIy4zOBGECxAljqvqfqpTfzx0Q1NUedOixRMBfe2Whhb056a42cWs26Q==}
-    dev: true
 
   /@types/node@18.16.17:
     resolution: {integrity: sha512-QAkjjRA1N7gPJeAP4WLXZtYv6+eMXFNviqktCDt4GLcmCugMr5BcRHfkOjCQzvCsnMp+L79a54zBkbw356xv9Q==}
@@ -12874,8 +12870,8 @@ packages:
       use-sync-external-store: 1.2.0(react@18.2.0)
     dev: false
 
-  github.com/uNetworking/uWebSockets.js/70291680f6052af5306191b6ed88bceb58e49aa2:
-    resolution: {tarball: https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/70291680f6052af5306191b6ed88bceb58e49aa2}
+  github.com/uNetworking/uWebSockets.js/d39d4181daf5b670d44cbc1b18f8c28c85fd4142:
+    resolution: {tarball: https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/d39d4181daf5b670d44cbc1b18f8c28c85fd4142}
     name: uWebSockets.js
-    version: 20.20.0
+    version: 20.30.0
     dev: false

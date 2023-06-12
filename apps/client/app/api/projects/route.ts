@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   const { title } = schema.parse(await request.json());
 
   const publicId = nanoidShort();
-  await prisma.project.create({ data: { publicId, ownerId: session.user.userId, title } });
+  await prisma.project.create({ data: { ownerId: session.user.userId, publicId, title } });
 
   const json: CreateProjectResponse = { id: publicId };
   return NextResponse.json(json);

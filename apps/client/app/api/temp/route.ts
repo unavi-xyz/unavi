@@ -18,13 +18,13 @@ export async function POST() {
   const fileId = nanoidShort();
 
   const command = new PutObjectCommand({
+    ACL: "public-read",
     Bucket: env.S3_BUCKET,
     Key: S3Path.temp(fileId),
-    ACL: "public-read",
   });
 
   const url = await getSignedUrl(s3Client, command, { expiresIn });
 
-  const json: GetTempResponse = { url, fileId };
+  const json: GetTempResponse = { fileId, url };
   return NextResponse.json(json);
 }

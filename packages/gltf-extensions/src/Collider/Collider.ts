@@ -27,10 +27,10 @@ export class Collider extends ExtensionProperty<ICollider> {
 
   static Type: Record<string, ColliderType> = {
     BOX: "box",
-    SPHERE: "sphere",
-    CYLINDER: "cylinder",
     CAPSULE: "capsule",
+    CYLINDER: "cylinder",
     HULL: "hull",
+    SPHERE: "sphere",
     TRIMESH: "trimesh",
   };
 
@@ -42,12 +42,12 @@ export class Collider extends ExtensionProperty<ICollider> {
 
   protected override getDefaults(): Nullable<ICollider> {
     return Object.assign(super.getDefaults(), {
-      type: null,
-      isTrigger: false,
-      size: null,
-      radius: null,
       height: null,
+      isTrigger: false,
       mesh: null,
+      radius: null,
+      size: null,
+      type: null,
     });
   }
 

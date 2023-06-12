@@ -28,16 +28,13 @@ export default async function Tabs({ id, metadata }: Props) {
       {isOwner ? (
         <ButtonTabs titles={["About", "Settings"]}>
           <TabContent value="About">
-            {/* @ts-expect-error Server Component */}
             <About id={id} metadata={metadata} />
           </TabContent>
           <TabContent value="Settings">
-            {/* @ts-expect-error Server Component */}
             <Settings id={id} metadata={metadata} />
           </TabContent>
         </ButtonTabs>
       ) : (
-        // @ts-expect-error Server Component
         <About id={id} metadata={metadata} />
       )}
     </>
@@ -46,8 +43,8 @@ export default async function Tabs({ id, metadata }: Props) {
 
 async function fetchSpaceDBOwner(id: string) {
   const space = await prisma.space.findFirst({
-    where: { publicId: id },
     select: { ownerId: true },
+    where: { publicId: id },
   });
 
   return space?.ownerId;

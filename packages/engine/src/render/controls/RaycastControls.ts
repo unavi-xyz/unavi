@@ -1,4 +1,4 @@
-import { Intersection, Object3D, Raycaster } from "three";
+import { Intersection, Object3D, Raycaster, Vector2 } from "three";
 
 import { MAX_AVATAR_EQUIP_DISTANCE } from "../../constants";
 import { PointerData } from "../../input/messages";
@@ -9,6 +9,7 @@ export class RaycastControls {
   #renderThread: RenderThread;
 
   #raycaster = new Raycaster();
+  #vec2 = new Vector2();
 
   #startMoveTime = 0;
   #moveCount = 0;
@@ -42,7 +43,8 @@ export class RaycastControls {
 
   update() {
     // Set raycaster to middle of camera position
-    this.#raycaster.setFromCamera({ x: 0, y: 0 }, this.#renderThread.camera);
+    this.#vec2.set(0, 0);
+    this.#raycaster.setFromCamera(this.#vec2, this.#renderThread.camera);
 
     const intersections = this.#raycaster.intersectObject(this.#renderThread.renderScene.root);
     const { intersection, isAvatar, nodeId } = this.#findIntersection(intersections);
@@ -56,8 +58,8 @@ export class RaycastControls {
       this.#hoveredWithinDistance = withinDistance;
 
       this.#renderThread.postMessage({
+        data: { distance: intersection?.distance ?? null, isAvatar, nodeId },
         subject: "hovered_node",
-        data: { nodeId, isAvatar, distance: intersection?.distance ?? null },
       });
 
       if (this.#renderThread.outlinePass) {
@@ -85,20 +87,21 @@ export class RaycastControls {
     }
 
     // Move raycaster to camera position
-    this.#raycaster.setFromCamera(
-      this.#renderThread.controls === "orbit"
-        ? { x: data.pointer.x, y: data.pointer.y }
-        : { x: 0, y: 0 },
-      this.#renderThread.camera
-    );
+    if (this.#renderThread.controls === "orbit") {
+      this.#vec2.set(data.pointer.x, data.pointer.y);
+    } else {
+      this.#vec2.set(0, 0);
+    }
+
+    this.#raycaster.setFromCamera(this.#vec2, this.#renderThread.camera);
 
     // Get intersected object
     const intersections = this.#raycaster.intersectObject(this.#renderThread.renderScene.root);
     const { intersection, nodeId, isAvatar } = this.#findIntersection(intersections);
 
     this.#renderThread.postMessage({
+      data: { distance: intersection?.distance ?? null, isAvatar, nodeId },
       subject: "clicked_node",
-      data: { nodeId, isAvatar, distance: intersection?.distance ?? null },
     });
   }
 
@@ -124,6 +127,6 @@ export class RaycastControls {
       return false;
     });
 
-    return { intersection, nodeId, isAvatar };
+    return { intersection, isAvatar, nodeId };
   }
 }

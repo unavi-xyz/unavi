@@ -21,9 +21,9 @@ export default function Delete({ id }: Props) {
 
     try {
       await toast.promise(deleteProject(id), {
+        error: "Failed to delete project",
         loading: "Deleting project...",
         success: "Project deleted",
-        error: "Failed to delete project",
       });
 
       router.push("/create");

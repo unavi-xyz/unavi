@@ -4,10 +4,10 @@ import { PostPlayerCountArgs, PostPlayerCountResponse } from "./types";
 
 export async function getPlayerCount(args: PostPlayerCountArgs) {
   const res = await fetch("/api/player-count", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    cache: "no-store",
     body: JSON.stringify(args),
+    cache: "no-store",
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
   });
   if (!res.ok) throw new Error("Failed to fetch player count");
 
@@ -25,8 +25,8 @@ export function usePlayerCount(args: PostPlayerCountArgs) {
   );
 
   return {
-    playerCount: data?.count,
-    isLoading: !error && !data,
     isError: error,
+    isLoading: !error && !data,
+    playerCount: data?.count,
   };
 }

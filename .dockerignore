@@ -34,7 +34,6 @@ yarn-error.log*
 
 # codegen
 generated
-packages/contracts/contracts
 
 # client
 .vercel

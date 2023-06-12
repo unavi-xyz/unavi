@@ -5,9 +5,9 @@ import { useStudio } from "../Studio";
 
 const OBJECT_NAME = {
   Box: "Box",
-  Sphere: "Sphere",
   Cylinder: "Cylinder",
   Empty: "Empty",
+  Sphere: "Sphere",
 } as const;
 
 type ObjectName = (typeof OBJECT_NAME)[keyof typeof OBJECT_NAME];
@@ -51,10 +51,10 @@ function createNode(name: ObjectName, engine: Engine) {
 
       const extras: MeshExtras = {
         customMesh: {
+          depth: 1,
+          height: 1,
           type: "Box",
           width: 1,
-          height: 1,
-          depth: 1,
         },
       };
 
@@ -68,10 +68,10 @@ function createNode(name: ObjectName, engine: Engine) {
 
       const extras: MeshExtras = {
         customMesh: {
-          type: "Sphere",
-          radius: 0.5,
-          widthSegments: 32,
           heightSegments: 32,
+          radius: 0.5,
+          type: "Sphere",
+          widthSegments: 32,
         },
       };
 
@@ -85,11 +85,11 @@ function createNode(name: ObjectName, engine: Engine) {
 
       const extras: MeshExtras = {
         customMesh: {
-          type: "Cylinder",
-          radiusTop: 0.5,
-          radiusBottom: 0.5,
           height: 1,
           radialSegments: 32,
+          radiusBottom: 0.5,
+          radiusTop: 0.5,
+          type: "Cylinder",
         },
       };
 

@@ -32,8 +32,8 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
     // Otherwise, render in the main thread
     if (engine.useOffscreenCanvas) {
       this.#worker = new Worker(new URL("./worker.ts", import.meta.url), {
-        type: "module",
         name: "render",
+        type: "module",
       });
 
       this.#worker.onmessage = this.onmessage.bind(this);
@@ -51,18 +51,18 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
       });
     }
 
-    this.send({ subject: "set_pixel_ratio", data: window.devicePixelRatio });
+    this.send({ data: window.devicePixelRatio, subject: "set_pixel_ratio" });
 
     this.send({
-      subject: "set_user_arrays",
       data: {
+        cameraPosition: engine.cameraPosition,
+        cameraYaw: engine.cameraYaw,
         inputPosition: engine.inputPosition,
         inputRotation: engine.inputRotation,
         userPosition: engine.userPosition,
         userRotation: engine.userRotation,
-        cameraPosition: engine.cameraPosition,
-        cameraYaw: engine.cameraYaw,
       },
+      subject: "set_user_arrays",
     });
   }
 
@@ -84,7 +84,7 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
 
       case "hovered_node":
       case "clicked_node": {
-        this.dispatchEvent({ type: subject, data });
+        this.dispatchEvent({ data, type: subject });
         break;
       }
 
@@ -151,7 +151,7 @@ export class RenderModule extends EventDispatcher<RenderEvent> {
     this.ready = false;
 
     if (this.#worker instanceof FakeWorker) {
-      this.#worker.postMessage({ subject: "destroy", data: null });
+      this.#worker.postMessage({ data: null, subject: "destroy" });
     }
 
     this.#worker?.terminate();

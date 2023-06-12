@@ -13,52 +13,52 @@ const DESCRIPTION = "An open metaverse platform";
 const HERO = "/images/Hero.png";
 
 export const metadata: Metadata = {
+  appleWebApp: {
+    capable: true,
+    startupImage: {
+      url: "/images/Icon-512.png",
+    },
+    title: APP_NAME,
+  },
   applicationName: APP_NAME,
   colorScheme: "light",
   description: DESCRIPTION,
-  keywords: ["Metaverse", "WebXR", "Web3"],
-  manifest: "/manifest.json",
-  themeColor: "#191919",
-  title: { default: APP_NAME, template: `%s / ${APP_NAME}` },
   formatDetection: {
     telephone: false,
   },
   icons: {
-    shortcut: "/images/Icon-512.png",
-    icon: "/images/Icon-512.png",
     apple: [
       {
-        url: "/images/Icon-192.png",
         sizes: "192x192",
+        url: "/images/Icon-192.png",
       },
     ],
+    icon: "/images/Icon-512.png",
+    shortcut: "/images/Icon-512.png",
   },
+  keywords: ["Metaverse", "WebXR", "Web3"],
+  manifest: "/manifest.json",
   openGraph: {
     description: DESCRIPTION,
+    images: [
+      {
+        height: 500,
+        url: HERO,
+        width: 888,
+      },
+    ],
     siteName: APP_NAME,
     title: APP_NAME,
     type: "website",
-    images: [
-      {
-        url: HERO,
-        width: 888,
-        height: 500,
-      },
-    ],
   },
+  themeColor: "#191919",
+  title: { default: APP_NAME, template: `%s / ${APP_NAME}` },
   twitter: {
     card: "summary_large_image",
     description: DESCRIPTION,
     images: [HERO],
     site: "@unavi_xyz",
     title: APP_NAME,
-  },
-  appleWebApp: {
-    capable: true,
-    title: APP_NAME,
-    startupImage: {
-      url: "/images/Icon-512.png",
-    },
   },
 };
 

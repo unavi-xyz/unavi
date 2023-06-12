@@ -1,4 +1,4 @@
-import { ERC721Metadata } from "contracts";
+import { ERC721Metadata } from "@/src/contracts/erc721";
 
 import { fetchNFTSpaceOwner } from "./fetchNFTSpaceOwner";
 import { fetchNFTSpaceTokenMetadata } from "./fetchNFTSpaceTokenMetadata";
@@ -11,8 +11,8 @@ export async function fetchNFTSpace(id: number): Promise<Space | null> {
 
     return {
       id,
-      owner,
       metadata,
+      owner,
     };
   } catch {
     return null;

@@ -5,8 +5,8 @@ export enum AuthMethod {
 }
 
 export const EthereumAuthSchema = z.object({
-  method: z.literal(AuthMethod.Ethereum),
   message: z.string(),
+  method: z.literal(AuthMethod.Ethereum),
   signature: z.string(),
 });
 

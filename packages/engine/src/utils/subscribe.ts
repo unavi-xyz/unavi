@@ -86,7 +86,7 @@ export function subscribe<P extends Property, Key extends SubscribeValues<P>>(
   };
 
   // Get initial value
-  onChange({ type: "change", target: property, attribute: attribute.toLowerCase() });
+  onChange({ attribute: attribute.toLowerCase(), target: property, type: "change" });
 
   // Listen for changes
   property.addEventListener("change", onChange);

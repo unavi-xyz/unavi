@@ -135,17 +135,17 @@ export function Studio({ project, animationPath, defaultAvatar, skybox, children
 
   useEffect(() => {
     if (!engine) return;
-    engine.render.send({ subject: "set_animations_path", data: animationPath ?? null });
+    engine.render.send({ data: animationPath ?? null, subject: "set_animations_path" });
   }, [engine, animationPath]);
 
   useEffect(() => {
     if (!engine) return;
-    engine.render.send({ subject: "set_default_avatar", data: defaultAvatar ?? null });
+    engine.render.send({ data: defaultAvatar ?? null, subject: "set_default_avatar" });
   }, [engine, defaultAvatar]);
 
   useEffect(() => {
     if (!engine) return;
-    engine.render.send({ subject: "set_skybox", data: skybox ?? null });
+    engine.render.send({ data: skybox ?? null, subject: "set_skybox" });
   }, [engine, skybox]);
 
   useEffect(() => {
@@ -167,7 +167,7 @@ export function Studio({ project, animationPath, defaultAvatar, skybox, children
         engine.audio.stop();
         engine.behavior.stop();
         engine.controls = "orbit";
-        engine.render.send({ subject: "toggle_animations", data: false });
+        engine.render.send({ data: false, subject: "toggle_animations" });
 
         // Load scene
         if (hasSceneRef.current) {
@@ -183,8 +183,8 @@ export function Studio({ project, animationPath, defaultAvatar, skybox, children
 
         // Enter play mode
         engine.controls = "player";
-        engine.physics.send({ subject: "respawn", data: null });
-        engine.render.send({ subject: "toggle_animations", data: true });
+        engine.physics.send({ data: null, subject: "respawn" });
+        engine.render.send({ data: true, subject: "toggle_animations" });
         engine.behavior.start();
         await engine.audio.start();
       }

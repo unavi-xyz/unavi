@@ -1,7 +1,7 @@
 import { User } from "lucia-auth";
-import { NextRequest } from "next/server";
+import { cookies } from "next/headers";
+import { NextRequest, NextResponse } from "next/server";
 
-import { authJsonResponse } from "@/src/server/auth/authJsonResponse";
 import { validateEthereumAuth } from "@/src/server/auth/ethereum";
 import { auth } from "@/src/server/auth/lucia";
 import { AuthMethod, AuthSchema } from "@/src/server/auth/types";
@@ -29,23 +29,23 @@ export async function POST(request: NextRequest) {
   } catch {
     // Create user if it doesn't exist
     user = await auth.createUser({
-      primaryKey: {
-        providerId: parsedInput.data.method,
-        providerUserId: result.data.address,
-        password: null,
-      },
       attributes: {
         address: result.data.address,
         username: nanoidShort(),
+      },
+      primaryKey: {
+        password: null,
+        providerId: parsedInput.data.method,
+        providerUserId: result.data.address,
       },
     });
   }
 
   // Create auth session
-  const authRequest = auth.handleRequest(request, undefined);
+  const authRequest = auth.handleRequest({ cookies, request });
   const session = await auth.createSession(user.userId);
   authRequest.setSession(session);
 
   const json: LoginResponse = { user };
-  return authJsonResponse(json, authRequest);
+  return NextResponse.json(json);
 }

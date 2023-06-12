@@ -29,7 +29,7 @@ function StatsMenu() {
     if (!engine) return;
 
     const getStats = () => {
-      engine.render.send({ subject: "get_stats", data: null });
+      engine.render.send({ data: null, subject: "get_stats" });
       if (!engine.render.stats) return;
 
       setRenderStats(engine.render.stats);

@@ -16,7 +16,7 @@ export function useResizeCanvas(engine: Engine | null) {
         engine.canvas.height = height;
       }
 
-      engine.render.send({ subject: "set_size", data: { width, height } });
+      engine.render.send({ data: { height, width }, subject: "set_size" });
     },
     [engine]
   );

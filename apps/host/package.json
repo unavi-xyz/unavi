@@ -18,16 +18,16 @@
     "@wired-protocol/types": "^0.0.20",
     "mediasoup": "^3.11.24",
     "nanoid": "^4.0.2",
-    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.20.0",
+    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.30.0",
     "zod": "^3.21.4"
   },
   "devDependencies": {
-    "@types/node": "^18.15.13",
-    "eslint": "^8.38.0",
+    "@types/node": "^18.16.17",
+    "eslint": "^8.42.0",
     "eslint-config-custom": "workspace:*",
     "nodemon": "^2.0.22",
     "tsconfig": "workspace:*",
     "tsup": "^6.7.0",
-    "typescript": "~5.0.4"
+    "typescript": "~5.1.3"
   }
 }

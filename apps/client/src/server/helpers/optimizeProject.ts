@@ -28,7 +28,7 @@ export async function optimizeModel(model: Uint8Array) {
   // Compress model
   try {
     await doc.transform(
-      textureCompress({ encoder: sharp, targetFormat: "webp", resize: [4096, 4096] }),
+      textureCompress({ encoder: sharp, resize: [4096, 4096], targetFormat: "webp" }),
       draco()
     );
   } catch (e) {

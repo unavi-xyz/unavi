@@ -1,5 +1,6 @@
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 import { env } from "@/src/env.mjs";
@@ -17,14 +18,14 @@ type Params = { params: { file: string } };
  * Get S3 upload URL
  */
 export async function PUT(request: NextRequest, { params }: Params) {
-  const authRequest = auth.handleRequest(request, undefined);
+  const authRequest = auth.handleRequest({ cookies, request });
   const { session } = await authRequest.validateUser();
   if (!session) return new Response(null, { status: 401 });
 
   // Get user profile
   const user = await prisma.authUser.findUnique({
-    where: { id: session.userId },
     select: { Profile: true },
+    where: { id: session.userId },
   });
   if (!user || !user.Profile) return new Response(null, { status: 404 });
 
@@ -37,8 +38,8 @@ export async function PUT(request: NextRequest, { params }: Params) {
   const getUploadURL = async () => {
     const command = new PutObjectCommand({
       Bucket: env.S3_BUCKET,
-      Key: S3Path.profile(session.userId)[file](fileId),
       ContentType: "image/*",
+      Key: S3Path.profile(session.userId)[file](fileId),
     });
     const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
     return url;
@@ -61,9 +62,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
   const [url] = await Promise.all([
     getUploadURL(),
     removePreviousFile(),
-    prisma.profile.update({ where: { userId: session.userId }, data: { [idName]: fileId } }),
+    prisma.profile.update({ data: { [idName]: fileId }, where: { userId: session.userId } }),
   ]);
 
-  const json: GetFileUploadResponse = { url, fileId };
+  const json: GetFileUploadResponse = { fileId, url };
   return NextResponse.json(json);
 }

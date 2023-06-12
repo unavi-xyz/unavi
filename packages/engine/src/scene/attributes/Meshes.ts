@@ -138,9 +138,9 @@ export class Meshes extends Attribute<Mesh, MeshJSON> {
     });
 
     return {
+      extras: mesh.getExtras() as MeshExtras,
       primitives: primitiveIds,
       weights: mesh.getWeights(),
-      extras: mesh.getExtras() as MeshExtras,
     };
   }
 }

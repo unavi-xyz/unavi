@@ -25,11 +25,11 @@ export class S3Path {
 
   static spaceModel = (modelId: string) =>
     ({
+      asset: (assetId: string) => `spaces/${modelId}/assets/${assetId}` as const,
       directory: `spaces/${modelId}`,
+      image: `spaces/${modelId}/image`,
       metadata: `spaces/${modelId}/metadata.json`,
       model: `spaces/${modelId}/model.glb`,
-      image: `spaces/${modelId}/image`,
-      asset: (assetId: string) => `spaces/${modelId}/assets/${assetId}` as const,
     } as const);
 
   static temp(fileId: string) {

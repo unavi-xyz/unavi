@@ -74,7 +74,7 @@ export class Player {
     if (value === this.#isGrounded) return;
     this.#isGrounded = value;
     this.#groundedChanged = true;
-    this.#postMessage({ subject: "set_grounded", data: value });
+    this.#postMessage({ data: value, subject: "set_grounded" });
   }
 
   get enabled() {

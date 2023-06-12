@@ -19,6 +19,6 @@ export abstract class Attribute<T, JSON> extends EventDispatcher<AttributeEvent>
   abstract toJSON(t: T): JSON;
 
   emitCreate(id: string) {
-    this.dispatchEvent({ type: "create", data: { id } });
+    this.dispatchEvent({ data: { id }, type: "create" });
   }
 }

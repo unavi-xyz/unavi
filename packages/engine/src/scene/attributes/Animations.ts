@@ -142,7 +142,7 @@ export class Animations extends Attribute<Animation, AnimationJSON> {
       const id = nanoid();
       samperIds.set(sampler, id);
 
-      samplers.push({ id, inputId, outputId, interpolation });
+      samplers.push({ id, inputId, interpolation, outputId });
     });
 
     animation.listChannels().forEach((channel) => {
@@ -154,7 +154,7 @@ export class Animations extends Attribute<Animation, AnimationJSON> {
 
       const targetPath = channel.getTargetPath() ?? "translation";
 
-      channels.push({ targetNodeId, targetPath, samplerId });
+      channels.push({ samplerId, targetNodeId, targetPath });
     });
 
     return { channels, samplers };

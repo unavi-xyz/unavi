@@ -5,15 +5,15 @@ import "@rainbow-me/rainbowkit/styles.css";
 import { lightTheme, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { WagmiConfig } from "wagmi";
 
-import { chains, wagmiClient } from "@/src/client/wagmi";
+import { chains, config } from "@/src/client/wagmi";
 
 import { RainbowKitAuthProvider } from "./RainbowkitAuthProvider";
 
 const theme = lightTheme({
   accentColor: "#191919",
   accentColorForeground: "#ffffff",
-  fontStack: "system",
   borderRadius: "large",
+  fontStack: "system",
   overlayBlur: "small",
 });
 
@@ -23,7 +23,7 @@ interface Props {
 
 export default function RainbowkitWrapper({ children }: Props) {
   return (
-    <WagmiConfig client={wagmiClient}>
+    <WagmiConfig config={config}>
       <RainbowKitAuthProvider>
         <RainbowKitProvider theme={theme} chains={chains}>
           {children}

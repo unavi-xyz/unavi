@@ -2,7 +2,6 @@ import { z } from "zod";
 
 const nftSchema = z.object({
   _id: z.string(),
-  nftId: z.string(),
   collectionAddress: z.string(),
   collectionName: z.string(),
   collectionType: z.string(),
@@ -29,8 +28,8 @@ const nftSchema = z.object({
     image: z.string().optional(),
     licenses: z
       .object({
-        author: z.string().optional(),
         allowedUser: z.string(),
+        author: z.string().optional(),
         commercialUsage: z.string(),
         derivativeWorks: z.string().optional(),
         modification: z.string().optional(),
@@ -42,6 +41,7 @@ const nftSchema = z.object({
       .optional(),
     name: z.string().optional(),
   }),
+  nftId: z.string(),
   nftURI: z.string().optional(),
   owner: z.string(),
   owners: z.number(),
@@ -54,9 +54,9 @@ const nftSchema = z.object({
 export type Nft = z.infer<typeof nftSchema>;
 
 export const nftsResponseSchema = z.object({
-  nfts: z.array(nftSchema),
-  next: z.string().optional(),
   currentPage: z.number().optional(),
-  totalPages: z.number(),
+  next: z.string().optional(),
+  nfts: z.array(nftSchema),
   totalItemsCount: z.number(),
+  totalPages: z.number(),
 });

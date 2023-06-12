@@ -53,10 +53,10 @@ export function loadFlow(engine: Engine, scriptId: string) {
     }
 
     nodes.push({
-      id: behaviorNode.getName(),
-      type: behaviorNode.getType(),
       data,
+      id: behaviorNode.getName(),
       position: extras.position ?? { x: 0, y: 0 },
+      type: behaviorNode.getType(),
     });
 
     if (behaviorNode.listFlowKeys().length > 0) {
@@ -127,5 +127,5 @@ export function loadFlow(engine: Engine, scriptId: string) {
     }
   });
 
-  return { nodes, edges };
+  return { edges, nodes };
 }

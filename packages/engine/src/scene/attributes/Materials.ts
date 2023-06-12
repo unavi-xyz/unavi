@@ -218,17 +218,21 @@ export class Materials extends Attribute<Material, MaterialJSON> {
       : null;
 
     return {
-      alphaMode: material.getAlphaMode(),
       alphaCutoff: material.getAlphaCutoff(),
-      doubleSided: material.getDoubleSided(),
-
+      alphaMode: material.getAlphaMode(),
       baseColorFactor: material.getBaseColorFactor(),
+
       baseColorTexture: baseColorTextureId,
       baseColorTextureInfo: baseColorInfoJSON,
+      doubleSided: material.getDoubleSided(),
 
       emissiveFactor: material.getEmissiveFactor(),
       emissiveTexture: emissiveTextureId,
       emissiveTextureInfo: emissiveInfoJSON,
+
+      metallicFactor: material.getMetallicFactor(),
+      metallicRoughnessTexture: metallicRoughnessTextureId,
+      metallicRoughnessTextureInfo: metallicRoughnessInfoJSON,
 
       normalScale: material.getNormalScale(),
       normalTexture: normalTextureId,
@@ -237,11 +241,7 @@ export class Materials extends Attribute<Material, MaterialJSON> {
       occlusionStrength: material.getOcclusionStrength(),
       occlusionTexture: occlusionTextureId,
       occlusionTextureInfo: occlusionInfoJSON,
-
       roughnessFactor: material.getRoughnessFactor(),
-      metallicFactor: material.getMetallicFactor(),
-      metallicRoughnessTexture: metallicRoughnessTextureId,
-      metallicRoughnessTextureInfo: metallicRoughnessInfoJSON,
     };
   }
 }

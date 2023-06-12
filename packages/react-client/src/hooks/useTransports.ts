@@ -59,8 +59,8 @@ export function useTransports(device: Device | null) {
 
           transport.on("connect", ({ dtlsParameters }, callback) => {
             sendMessage(ws, {
-              id: "xyz.unavi.webrtc.transport.connect",
               data: { dtlsParameters, type: data.type },
+              id: "xyz.unavi.webrtc.transport.connect",
             });
             callback();
           });
@@ -75,8 +75,8 @@ export function useTransports(device: Device | null) {
           if (!localConsumerTransport) throw new Error("No consumer transport");
 
           const newDataConsumer = await localConsumerTransport.consumeData({
-            id: data.dataConsumerId,
             dataProducerId: data.dataProducerId,
+            id: data.dataConsumerId,
             sctpStreamParameters: data.sctpStreamParameters,
           });
 
@@ -109,5 +109,5 @@ export function useTransports(device: Device | null) {
     };
   }, [producerTransport]);
 
-  return { consumerTransport, producerTransport, producer, dataProducer };
+  return { consumerTransport, dataProducer, producer, producerTransport };
 }

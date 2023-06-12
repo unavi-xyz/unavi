@@ -1,12 +1,12 @@
-import { NextRequest } from "next/server";
+import { cookies } from "next/headers";
+import { NextRequest, NextResponse } from "next/server";
 
-import { authJsonResponse } from "@/src/server/auth/authJsonResponse";
 import { auth } from "@/src/server/auth/lucia";
 
 import { GetAuthStatusResponse } from "./types";
 
 export async function GET(request: NextRequest) {
-  const authRequest = auth.handleRequest(request, undefined);
+  const authRequest = auth.handleRequest({ cookies, request });
 
   try {
     // Check if user has a valid session
@@ -15,10 +15,10 @@ export async function GET(request: NextRequest) {
 
     // User has a valid session
     const json: GetAuthStatusResponse = { status: "authenticated", user };
-    return authJsonResponse(json, authRequest);
+    return NextResponse.json(json);
   } catch {
     // User does not have a valid session
     const json: GetAuthStatusResponse = { status: "unauthenticated" };
-    return authJsonResponse(json, authRequest);
+    return NextResponse.json(json);
   }
 }

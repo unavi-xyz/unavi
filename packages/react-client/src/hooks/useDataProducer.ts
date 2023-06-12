@@ -8,7 +8,7 @@ export function useDataProducer(transport: Transport | null) {
   useEffect(() => {
     if (!transport) return;
 
-    transport.produceData({ ordered: false, maxRetransmits: 0 }).then(setDataProducer);
+    transport.produceData({ maxRetransmits: 0, ordered: false }).then(setDataProducer);
   }, [transport]);
 
   useEffect(() => {

@@ -223,8 +223,8 @@ export class AudioExtension extends Extension {
   write(context: WriterContext) {
     const rootDef: AudioExtensionDef = {
       audio: [],
-      sources: [],
       emitters: [],
+      sources: [],
     };
 
     const audioDataIndexMap = new Map<AudioData, number>();
@@ -233,8 +233,8 @@ export class AudioExtension extends Extension {
 
     this.listAudioDatas().forEach((audioData) => {
       const audioDataDef: AudioDataDef = {
-        uri: audioData.getURI(),
         mimeType: audioData.getMimeType(),
+        uri: audioData.getURI(),
       };
 
       const data = audioData.getData();
@@ -260,11 +260,11 @@ export class AudioExtension extends Extension {
       if (audioDataIndex === undefined) throw new Error("Audio data index not found");
 
       const audioSourceDef: AudioSourceDef = {
+        audio: audioDataIndex,
         autoPlay: audioSource.getAutoPlay(),
         gain: audioSource.getGain(),
         loop: audioSource.getLoop(),
         name: audioSource.getName(),
-        audio: audioDataIndex,
       };
 
       audioSourceIndexMap.set(audioSource, rootDef.sources.length);
@@ -273,10 +273,10 @@ export class AudioExtension extends Extension {
 
     this.listAudioEmitters().forEach((audioEmitter) => {
       const audioEmitterDef: AudioEmitterDef = {
-        name: audioEmitter.getName(),
-        type: audioEmitter.getType(),
         gain: audioEmitter.getGain(),
+        name: audioEmitter.getName(),
         sources: [],
+        type: audioEmitter.getType(),
       };
 
       audioEmitter.listSources().forEach((audioSource) => {

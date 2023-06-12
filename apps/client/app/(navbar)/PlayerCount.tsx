@@ -14,7 +14,7 @@ interface Props {
  * For use within a {@link CardImage}.
  */
 export default function PlayerCount({ uri, host }: Props) {
-  const { playerCount } = usePlayerCount({ uri, host });
+  const { playerCount } = usePlayerCount({ host, uri });
 
   if (!playerCount) return null;
 

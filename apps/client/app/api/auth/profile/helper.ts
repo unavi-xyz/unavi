@@ -4,9 +4,9 @@ export const ERR_USERNAME_TAKEN = "Username is taken";
 
 export async function updateProfile(args: UpdateProfileInput) {
   const res = await fetch("/api/auth/profile", {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(args),
+    headers: { "Content-Type": "application/json" },
+    method: "PATCH",
   });
 
   if (!res.ok) {

@@ -7,28 +7,26 @@
     "build": "turbo build",
     "ci:publish": "pnpm publish -r && changeset tag && git push --follow-tags",
     "deploy": "turbo deploy",
-    "dev": "turbo dev --filter=!tsconfig --filter=!eslint-config-custom --filter=!contracts --filter=!engine",
+    "dev": "turbo dev --filter=!tsconfig --filter=!eslint-config-custom --filter=!engine",
     "docker:build": "dotenv -e ./apps/client/.env -c -- docker compose -f docker-compose.yml -f docker-compose.prod.yml build",
     "docker:dev": "pnpm docker:stop && dotenv -e ./apps/client/.env -c -- docker compose up --build -d && pnpm docker:init && pnpm dev",
+    "docker:init": "node -e \"setTimeout(() => process.exit(0), 10000)\" && pnpm run deploy",
     "docker:prod": "pnpm docker:stop && dotenv -e ./apps/client/.env -c -- docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d && pnpm docker:init",
     "docker:stop": "dotenv -e ./apps/client/.env -c -- docker compose -f docker-compose.yml -f docker-compose.prod.yml down",
-    "docker:init": "node -e \"setTimeout(() => process.exit(0), 10000)\" && pnpm run deploy",
     "format": "prettier --write .",
     "generate": "turbo generate",
     "lint": "turbo lint"
   },
-  "dependencies": {
-    "@changesets/cli": "^2.26.1"
-  },
   "devDependencies": {
+    "@changesets/cli": "^2.26.1",
     "dotenv-cli": "^7.2.1",
-    "eslint": "^8.38.0",
+    "eslint": "^8.42.0",
     "eslint-config-custom": "workspace:*",
     "postinstall-postinstall": "^2.1.0",
-    "prettier": "^2.8.7",
+    "prettier": "^2.8.8",
     "prettier-plugin-packagejson": "^2.4.3",
-    "prettier-plugin-prisma": "^4.12.0",
-    "turbo": "^1.9.3"
+    "prettier-plugin-prisma": "^4.13.0",
+    "turbo": "^1.10.3"
   },
   "packageManager": "pnpm@8.3.1",
   "engines": {
@@ -39,9 +37,7 @@
     "patchedDependencies": {
       "@aws-sdk/signature-v4-multi-region@3.282.0": "patches/@aws-sdk__signature-v4-multi-region@3.282.0.patch",
       "@aws-sdk/util-user-agent-node@3.282.0": "patches/@aws-sdk__util-user-agent-node@3.282.0.patch",
-      "@walletconnect/keyvaluestorage@1.0.2": "patches/@walletconnect__keyvaluestorage@1.0.2.patch",
-      "node-fetch@2.6.7": "patches/node-fetch@2.6.7.patch",
-      "pino@7.11.0": "patches/pino@7.11.0.patch",
+      "node-fetch@2.6.11": "patches/node-fetch@2.6.11.patch",
       "debug@4.3.4": "patches/debug@4.3.4.patch"
     }
   }

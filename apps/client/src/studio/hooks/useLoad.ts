@@ -37,5 +37,5 @@ export function useLoad(engine: Engine | null) {
     [engine]
   );
 
-  return { error, loaded, load };
+  return { error, load, loaded };
 }

@@ -39,14 +39,14 @@ export class TextureInfoUtils {
 
   static toJSON(info: TextureInfo): TextureInfoJSON {
     const json: TextureInfoJSON = {
-      texCoord: info.getTexCoord(),
       magFilter: info.getMagFilter(),
       minFilter: info.getMinFilter(),
-      wrapS: info.getWrapS(),
-      wrapT: info.getWrapT(),
       offset: null,
       rotation: null,
       scale: null,
+      texCoord: info.getTexCoord(),
+      wrapS: info.getWrapS(),
+      wrapT: info.getWrapT(),
     };
 
     // Texture transform

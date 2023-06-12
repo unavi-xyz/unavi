@@ -163,10 +163,10 @@ export class Primitives extends Attribute<Primitive, PrimitiveJSON> {
     });
 
     const json: PrimitiveJSON = {
-      mode: primitive.getMode(),
-      material: materialId,
-      indices: indicesId,
       attributes: {},
+      indices: indicesId,
+      material: materialId,
+      mode: primitive.getMode(),
       targets,
     };
 

@@ -36,9 +36,9 @@ export class AudioEmitter extends ExtensionProperty<IAudioEmitter> {
   };
 
   static DistanceModel: Record<string, AudioEmitterDistanceModel> = {
+    EXPONENTIAL: "exponential",
     INVERSE: "inverse",
     LINEAR: "linear",
-    EXPONENTIAL: "exponential",
   };
 
   protected init() {
@@ -49,16 +49,16 @@ export class AudioEmitter extends ExtensionProperty<IAudioEmitter> {
 
   protected override getDefaults(): Nullable<IAudioEmitter> {
     return Object.assign(super.getDefaults() as IProperty, {
-      type: "global" as const,
-      gain: 1,
-      sources: [],
       coneInnerAngle: Math.PI * 2,
       coneOuterAngle: Math.PI * 2,
       coneOuterGain: 0,
       distanceModel: "inverse" as const,
+      gain: 1,
       maxDistance: 10000,
       refDistance: 1,
       rolloffFactor: 1,
+      sources: [],
+      type: "global" as const,
     });
   }
 

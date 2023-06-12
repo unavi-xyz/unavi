@@ -101,8 +101,8 @@ export class ColliderExtension extends Extension {
     for (const property of this.properties) {
       if (property instanceof Collider) {
         const colliderDef: ColliderDef = {
-          type: property.getType(),
           isTrigger: property.getIsTrigger(),
+          type: property.getType(),
         };
 
         switch (property.getType()) {

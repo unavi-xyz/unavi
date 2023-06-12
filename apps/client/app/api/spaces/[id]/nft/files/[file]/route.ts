@@ -15,8 +15,8 @@ export async function GET(request: NextRequest, { params }: Params) {
 
   // Verify user owns the space
   const found = await prisma.space.findFirst({
-    where: { publicId: id, ownerId: session.user.userId },
     include: { SpaceNFT: true },
+    where: { ownerId: session.user.userId, publicId: id },
   });
   if (!found?.SpaceNFT) return new Response("Space not found", { status: 404 });
 
@@ -35,8 +35,8 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
   // Verify user owns the space
   const found = await prisma.space.findFirst({
-    where: { publicId: id, ownerId: session.user.userId },
     include: { SpaceNFT: true },
+    where: { ownerId: session.user.userId, publicId: id },
   });
   if (!found?.SpaceNFT) return new Response("Space not found", { status: 404 });
 

@@ -115,7 +115,7 @@ export class Player {
 
     this.ws?.subscribe(space.topic);
 
-    this.send({ id: "xyz.unavi.world.joined", data: playerId });
+    this.send({ data: playerId, id: "xyz.unavi.world.joined" });
   }
 
   leave(uri: string) {
@@ -158,7 +158,7 @@ export class Player {
 
     try {
       this.producer = await this.producerTransport.produce({ kind: "audio", rtpParameters });
-      this.send({ id: "xyz.unavi.webrtc.producer.id", data: this.producer.id });
+      this.send({ data: this.producer.id, id: "xyz.unavi.webrtc.producer.id" });
     } catch (err) {
       console.warn(err);
     }
@@ -169,7 +169,7 @@ export class Player {
 
     try {
       this.dataProducer = await this.producerTransport.produceData({ sctpStreamParameters });
-      this.send({ id: "xyz.unavi.webrtc.dataProducer.id", data: this.dataProducer.id });
+      this.send({ data: this.dataProducer.id, id: "xyz.unavi.webrtc.dataProducer.id" });
     } catch (err) {
       console.warn(err);
     }
@@ -180,9 +180,9 @@ export class Player {
 
     try {
       const consumer = await this.consumerTransport.consume({
+        paused: true,
         producerId: producer.id,
         rtpCapabilities: this.rtpCapabilities,
-        paused: true,
       });
 
       const space = this.#registry.getSpace(spaceURI);
@@ -194,13 +194,13 @@ export class Player {
       consumers.set(playerId, consumer);
 
       this.send({
-        id: "xyz.unavi.webrtc.consumer.create",
         data: {
-          playerId,
           consumerId: consumer.id,
+          playerId,
           producerId: producer.id,
           rtpParameters: consumer.rtpParameters,
         },
+        id: "xyz.unavi.webrtc.consumer.create",
       });
     } catch (err) {
       console.warn(err);
@@ -227,13 +227,13 @@ export class Player {
       dataConsumers.set(playerId, dataConsumer);
 
       this.send({
-        id: "xyz.unavi.webrtc.dataConsumer.create",
         data: {
-          playerId,
           dataConsumerId: dataConsumer.id,
           dataProducerId: dataProducer.id,
+          playerId,
           sctpStreamParameters: dataConsumer.sctpStreamParameters,
         },
+        id: "xyz.unavi.webrtc.dataConsumer.create",
       });
     } catch (err) {
       console.warn(err);

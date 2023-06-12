@@ -68,12 +68,12 @@ export default function AudioComponent({ node, projectId }: Props) {
             const { url, assetId } = await getNewProjectAssetUpload(projectId);
 
             const res = await fetch(url, {
-              method: "PUT",
               body: file,
               headers: {
                 "Content-Type": file.type,
                 "x-amz-acl": "public-read",
               },
+              method: "PUT",
             });
             if (!res.ok) return;
 

@@ -12,11 +12,11 @@ export const revalidate = 60;
 const title = "Home";
 
 export const metadata: Metadata = {
-  title,
   openGraph: {
     ...baseMetadata.openGraph,
     title,
   },
+  title,
   twitter: {
     ...baseMetadata.twitter,
     title,

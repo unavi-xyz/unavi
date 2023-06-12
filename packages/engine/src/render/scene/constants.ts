@@ -1,10 +1,10 @@
 export const THREE_ATTRIBUTE_NAMES = {
-  POSITION: "position",
+  COLOR_0: "color",
+  JOINTS_0: "skinIndex",
   NORMAL: "normal",
+  POSITION: "position",
   TANGENT: "tangent",
   TEXCOORD_0: "uv",
   TEXCOORD_1: "uv2",
-  COLOR_0: "color",
-  JOINTS_0: "skinIndex",
   WEIGHTS_0: "skinWeight",
 };

@@ -8,9 +8,9 @@ export async function getSpace(id: string) {
 
 export function updateSpace(id: string, data: PatchSpaceRequest) {
   return fetch(`/api/spaces/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
+    headers: { "Content-Type": "application/json" },
+    method: "PATCH",
   });
 }
 

@@ -14,14 +14,14 @@ export class KeyboardInput {
   isLocked = false;
 
   keys = {
-    w: false,
     a: false,
-    s: false,
     d: false,
-    up: false,
-    left: false,
     down: false,
+    left: false,
     right: false,
+    s: false,
+    up: false,
+    w: false,
   };
 
   #jumpInterval: NodeJS.Timeout | null = null;
@@ -94,8 +94,8 @@ export class KeyboardInput {
     if (!this.isLocked) return;
 
     this.#module.engine.render.send({
-      subject: "mousemove",
       data: { x: event.movementX, y: event.movementY },
+      subject: "mousemove",
     });
   };
 
@@ -103,8 +103,8 @@ export class KeyboardInput {
     event.preventDefault();
 
     this.#module.engine.render.send({
-      subject: "wheel",
       data: { deltaY: event.deltaY },
+      subject: "wheel",
     });
   };
 
@@ -112,8 +112,8 @@ export class KeyboardInput {
     const key = event.key.toLowerCase();
 
     if (event.shiftKey) {
-      this.#module.engine.render.send({ subject: "set_sprinting", data: true });
-      this.#module.engine.physics.send({ subject: "set_sprinting", data: true });
+      this.#module.engine.render.send({ data: true, subject: "set_sprinting" });
+      this.#module.engine.physics.send({ data: true, subject: "set_sprinting" });
     }
 
     switch (key) {
@@ -160,11 +160,11 @@ export class KeyboardInput {
       case " ": {
         if (!this.#jumpInterval) {
           // Jump now
-          this.#module.engine.physics.send({ subject: "jump", data: null });
+          this.#module.engine.physics.send({ data: null, subject: "jump" });
 
           // Send a jump command on an interval while the spacebar is held down
           this.#jumpInterval = setInterval(() => {
-            this.#module.engine.physics.send({ subject: "jump", data: null });
+            this.#module.engine.physics.send({ data: null, subject: "jump" });
           }, 100);
         }
         break;
@@ -178,8 +178,8 @@ export class KeyboardInput {
     const key = event.key.toLowerCase();
 
     if (!event.shiftKey) {
-      this.#module.engine.render.send({ subject: "set_sprinting", data: false });
-      this.#module.engine.physics.send({ subject: "set_sprinting", data: false });
+      this.#module.engine.render.send({ data: false, subject: "set_sprinting" });
+      this.#module.engine.physics.send({ data: false, subject: "set_sprinting" });
     }
 
     switch (key) {
@@ -238,8 +238,8 @@ export class KeyboardInput {
   #onPointerMove = (event: PointerEvent) => {
     if (!this.canvas) return;
     this.#module.engine.render.send({
-      subject: "pointermove",
       data: getPointerData(event, this.canvas),
+      subject: "pointermove",
     });
   };
 
@@ -250,8 +250,8 @@ export class KeyboardInput {
     this.canvas.releasePointerCapture(event.pointerId);
 
     this.#module.engine.render.send({
-      subject: "pointerup",
       data: getPointerData(event, this.canvas),
+      subject: "pointerup",
     });
   };
 
@@ -265,8 +265,8 @@ export class KeyboardInput {
     this.canvas.setPointerCapture(event.pointerId);
 
     this.#module.engine.render.send({
-      subject: "pointerdown",
       data: getPointerData(event, this.canvas),
+      subject: "pointerdown",
     });
   };
 
@@ -277,8 +277,8 @@ export class KeyboardInput {
     this.canvas.releasePointerCapture(event.pointerId);
 
     this.#module.engine.render.send({
-      subject: "pointercancel",
       data: getPointerData(event, this.canvas),
+      subject: "pointercancel",
     });
   };
 
@@ -295,8 +295,8 @@ export class KeyboardInput {
 
     this.#updateVelocity();
 
-    this.#module.engine.render.send({ subject: "set_sprinting", data: false });
-    this.#module.engine.physics.send({ subject: "set_sprinting", data: false });
+    this.#module.engine.render.send({ data: false, subject: "set_sprinting" });
+    this.#module.engine.physics.send({ data: false, subject: "set_sprinting" });
 
     if (this.#jumpInterval !== null) {
       clearInterval(this.#jumpInterval);
@@ -329,27 +329,27 @@ function getPointerData(event: PointerEvent, canvas: HTMLCanvasElement): Pointer
   let pointer;
 
   if (canvas.ownerDocument.pointerLockElement) {
-    pointer = { x: 0, y: 0, button: event.button };
+    pointer = { button: event.button, x: 0, y: 0 };
   } else {
     const rect = canvas.getBoundingClientRect();
     pointer = {
+      button: event.button,
       x: ((event.clientX - rect.left) / rect.width) * 2 - 1,
       y: (-(event.clientY - rect.top) / rect.height) * 2 + 1,
-      button: event.button,
     };
   }
 
   return {
-    pointerId: event.pointerId,
-    pointerType: event.pointerType,
+    button: event.button,
     clientX: event.clientX,
     clientY: event.clientY,
+    ctrlKey: event.ctrlKey,
+    metaKey: event.metaKey,
     pageX: event.pageX,
     pageY: event.pageY,
-    button: event.button,
-    ctrlKey: event.ctrlKey,
-    shiftKey: event.shiftKey,
-    metaKey: event.metaKey,
     pointer,
+    pointerId: event.pointerId,
+    pointerType: event.pointerType,
+    shiftKey: event.shiftKey,
   };
 }

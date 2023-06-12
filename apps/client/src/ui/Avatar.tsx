@@ -25,7 +25,7 @@ export default function Avatar({
       className={`${loading ? "animate-pulse bg-neutral-300" : "bg-neutral-200"} ${
         circle ? "rounded-full" : "rounded-lg"
       }`}
-      style={{ width: size, height: size }}
+      style={{ height: size, width: size }}
     >
       {loading ? null : src ? (
         isFromCDN(src) ? (
@@ -46,7 +46,7 @@ export default function Avatar({
             alt=""
             draggable={draggable}
             className={`${circle ? "rounded-full" : "rounded-lg"}`}
-            style={{ width: size, height: size }}
+            style={{ height: size, width: size }}
             crossOrigin="anonymous"
           />
         )

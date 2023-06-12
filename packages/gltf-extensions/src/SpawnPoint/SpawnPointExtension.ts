@@ -67,9 +67,9 @@ export class SpawnPointExtension extends Extension {
         nodeDef.extensions ??= {};
 
         const spawnPointDef: SpawnPointDef = {
-          title: spawnPoint.getTitle(),
-          team: spawnPoint.getTeam(),
           group: spawnPoint.getGroup(),
+          team: spawnPoint.getTeam(),
+          title: spawnPoint.getTitle(),
         };
 
         nodeDef.extensions[this.extensionName] = spawnPointDef;

@@ -12,12 +12,12 @@ export interface PlayStore {
 }
 
 export const usePlayStore = create<PlayStore>(() => ({
-  nickname: null,
   avatar: null,
-
-  didChangeName: false,
-  didChangeAvatar: false,
   chatBoxFocused: false,
 
+  didChangeAvatar: false,
+  didChangeName: false,
   errorLoading: null,
+
+  nickname: null,
 }));

@@ -14,9 +14,9 @@ export const paramsSchema = z.object({
 });
 
 export const patchSchema = z.object({
-  title: z.string().max(MAX_TITLE_LENGTH).optional(),
   description: z.string().max(MAX_DESCRIPTION_LENGTH).optional(),
   spaceId: z.string().length(SPACE_ID_LENGTH).nullable().optional(),
+  title: z.string().max(MAX_TITLE_LENGTH).optional(),
 });
 
 export type PatchSchema = z.infer<typeof patchSchema>;

@@ -32,15 +32,15 @@ export function useConsumer(transport: Transport | null) {
         case "xyz.unavi.webrtc.consumer.create": {
           const consumer = await transport.consume({
             id: data.consumerId,
+            kind: "audio",
             producerId: data.producerId,
             rtpParameters: data.rtpParameters,
-            kind: "audio",
           });
 
           setConsumer(consumer);
 
           // Start receiving audio
-          sendMessage(ws, { id: "xyz.unavi.webrtc.audio.pause", data: false });
+          sendMessage(ws, { data: false, id: "xyz.unavi.webrtc.audio.pause" });
           await consumer.resume();
 
           // Create audio stream

@@ -22,9 +22,6 @@
   ],
   "references": [
     {
-      "path": "../../packages/contracts"
-    },
-    {
       "path": "../../packages/engine"
     }
   ]

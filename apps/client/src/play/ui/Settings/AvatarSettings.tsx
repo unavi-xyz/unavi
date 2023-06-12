@@ -111,7 +111,7 @@ export default function AvatarSettings({ setPage }: Props) {
                 onClick={() => {
                   setAvatarName(undefined);
                   setShowStats(false);
-                  usePlayStore.setState({ didChangeAvatar: true, avatar: null });
+                  usePlayStore.setState({ avatar: null, didChangeAvatar: true });
                 }}
                 className="flex h-11 w-11 items-center justify-center rounded-lg text-xl transition hover:bg-red-100 active:opacity-90"
               >
@@ -144,7 +144,7 @@ export default function AvatarSettings({ setPage }: Props) {
                   if (!file) return;
 
                   const url = URL.createObjectURL(file);
-                  usePlayStore.setState({ didChangeAvatar: true, avatar: url });
+                  usePlayStore.setState({ avatar: url, didChangeAvatar: true });
                   setAvatarName(file.name);
                   setUploadedAvatar(url);
                 }}

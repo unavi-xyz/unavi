@@ -6,8 +6,8 @@ import { useSpawn } from "../../hooks/useSpawn";
 import { useStudio } from "../Studio";
 
 const OBJECT_NAME = {
-  Spawn: "Spawn",
   GLTF: "Import glTF",
+  Spawn: "Spawn",
 } as const;
 
 type ObjectName = (typeof OBJECT_NAME)[keyof typeof OBJECT_NAME];

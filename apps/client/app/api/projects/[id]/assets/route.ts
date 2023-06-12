@@ -17,7 +17,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   // Verify user owns the project
   const found = await prisma.project.findFirst({
-    where: { publicId: id, ownerId: session.user.userId },
+    where: { ownerId: session.user.userId, publicId: id },
   });
   if (!found) return new Response("Project not found", { status: 404 });
 
@@ -25,6 +25,6 @@ export async function POST(request: NextRequest, { params }: Params) {
   const assetId = nanoidShort();
   const url = await getAssetUpload(id, assetId);
 
-  const json: PostAssetsResponse = { url, assetId };
+  const json: PostAssetsResponse = { assetId, url };
   return NextResponse.json(json);
 }

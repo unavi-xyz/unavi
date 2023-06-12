@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     await prisma.authEthereumSession.create({ data: { id, nonce } });
   } else {
     // Otherwise, update the existing nonce
-    await prisma.authEthereumSession.update({ where: { id }, data: { nonce } });
+    await prisma.authEthereumSession.update({ data: { nonce }, where: { id } });
   }
 
   const json: GetNonceResponse = { nonce };

@@ -28,8 +28,8 @@ export class BehaviorVariable extends ExtensionProperty<IBehaviorVariable> {
 
   protected override getDefaults(): Nullable<IBehaviorVariable> {
     return Object.assign(super.getDefaults(), {
-      type: ValueType.string,
       initialValue: "",
+      type: ValueType.string,
     });
   }
 
@@ -74,7 +74,7 @@ export class BehaviorVariable extends ExtensionProperty<IBehaviorVariable> {
 
       case ValueType.quat:
       case ValueType.vec4: {
-        this.initialValue = { x: 0, y: 0, z: 0, w: 0 };
+        this.initialValue = { w: 0, x: 0, y: 0, z: 0 };
         break;
       }
     }

@@ -1,5 +1,5 @@
 diff --git a/lib/index.es.js b/lib/index.es.js
-index 4852f7cbac354d002a601212332187487deb3afa..a813786e3c9bfb36b64d0f75fbd064f3882bffce 100644
+index 79d717be9ae56d455f7f5c7890178bc4bb65da9c..6acc11733872938c4410faaf98f98afde6975fe1 100644
 --- a/lib/index.es.js
 +++ b/lib/index.es.js
 @@ -155,9 +155,7 @@ FetchError.prototype.constructor = FetchError;
@@ -14,7 +14,7 @@ index 4852f7cbac354d002a601212332187487deb3afa..a813786e3c9bfb36b64d0f75fbd064f3
  const INTERNALS = Symbol('Body internals');
  
 diff --git a/lib/index.js b/lib/index.js
-index e5b04f107f765db04265c7635d3ca1d86b146fb8..934eb00f3f186d38b95076893883a20258d88c1c 100644
+index 337d6e52e5fc62c26f1f46ac115505fa8e327b5c..53184f792c50c07de66f4516ae9ace72dbabbb7b 100644
 --- a/lib/index.js
 +++ b/lib/index.js
 @@ -159,9 +159,7 @@ FetchError.prototype.constructor = FetchError;
@@ -29,7 +29,7 @@ index e5b04f107f765db04265c7635d3ca1d86b146fb8..934eb00f3f186d38b95076893883a202
  const INTERNALS = Symbol('Body internals');
  
 diff --git a/lib/index.mjs b/lib/index.mjs
-index 49ee05ecf06d31a5168795ced5d795c93a0226e3..5cb6549e516c098260406cae78ddb6828be97164 100644
+index ace669fd0fee2f3a0e6ca0d34e46c60377da7c78..a3288be005f0c7b242c6986299995a0f34c66765 100644
 --- a/lib/index.mjs
 +++ b/lib/index.mjs
 @@ -153,9 +153,7 @@ FetchError.prototype.constructor = FetchError;

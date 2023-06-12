@@ -86,8 +86,8 @@ export default function InputSocket({
             isValidConnection(connection, instance, variables)
           }
           style={{
-            borderColor: valueColorsMap[valueType],
             backgroundColor: connected ? "#262626" : "#ffffff",
+            borderColor: valueColorsMap[valueType],
           }}
         />
       )}

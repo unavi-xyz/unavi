@@ -25,12 +25,12 @@ export class VRM extends ExtensionProperty<IVRM> {
 
   protected override getDefaults(): Nullable<IVRM> {
     return Object.assign(super.getDefaults(), {
-      specVersion: "1.0",
-      humanoid: {},
-      meta: {},
-      firstPerson: {},
       expression: {},
+      firstPerson: {},
+      humanoid: {},
       lookAt: {},
+      meta: {},
+      specVersion: "1.0",
     });
   }
 

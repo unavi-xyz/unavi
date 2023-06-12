@@ -33,14 +33,14 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   // Verify user owns the space
   const foundSpace = await prisma.space.findFirst({
-    where: { publicId: id, ownerId: session.user.userId },
     include: { SpaceModel: true },
+    where: { ownerId: session.user.userId, publicId: id },
   });
   if (!foundSpace) return new Response("Space not found", { status: 404 });
 
   // Verify user owns the project
   const foundProject = await prisma.project.findFirst({
-    where: { publicId: projectId, ownerId: session.user.userId },
+    where: { ownerId: session.user.userId, publicId: projectId },
   });
   if (!foundProject) return new Response("Project not found", { status: 404 });
 
@@ -79,10 +79,10 @@ export async function POST(request: NextRequest, { params }: Params) {
 
       return s3Client.send(
         new CopyObjectCommand({
+          ACL: "public-read",
           Bucket: env.S3_BUCKET,
           CopySource: `${env.S3_BUCKET}/${S3Path.project(projectId).asset(asset)}`,
           Key: S3Path.spaceModel(spaceModelId).asset(asset),
-          ACL: "public-read",
         })
       );
     }),

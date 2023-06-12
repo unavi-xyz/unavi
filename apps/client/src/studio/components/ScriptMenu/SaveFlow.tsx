@@ -46,8 +46,8 @@ export default function SaveFlow({ scriptId, loaded, setEdges, nodes, edges }: P
         const valid = isValidConnection(
           {
             source: edge.source,
-            target: edge.target,
             sourceHandle: edge.sourceHandle,
+            target: edge.target,
             targetHandle: edge.targetHandle,
           },
           instance,

@@ -28,9 +28,9 @@ export function useSetAvatar() {
 
         // Upload to S3
         const res = await fetch(url, {
-          method: "PUT",
           body: blob,
           headers: { "Content-Type": blob.type, "x-amz-acl": "public-read" },
+          method: "PUT",
         });
         if (!res.ok) throw new Error("Failed to upload avatar");
 

@@ -61,10 +61,10 @@ export class ThreeOrbitControls extends EventDispatcher {
   _domElementKeyEvents: EventTarget | null;
 
   keys = {
-    LEFT: "ArrowLeft",
-    UP: "ArrowUp",
-    RIGHT: "ArrowRight",
     BOTTOM: "ArrowDown",
+    LEFT: "ArrowLeft",
+    RIGHT: "ArrowRight",
+    UP: "ArrowUp",
   };
   mouseButtons = { LEFT: MOUSE.ROTATE, MIDDLE: MOUSE.DOLLY, RIGHT: MOUSE.PAN };
   touches = { ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN };
@@ -338,14 +338,14 @@ export class ThreeOrbitControls extends EventDispatcher {
     const scope = this;
 
     const STATE = {
-      NONE: -1,
-      ROTATE: 0,
       DOLLY: 1,
+      NONE: -1,
       PAN: 2,
-      TOUCH_ROTATE: 3,
-      TOUCH_PAN: 4,
+      ROTATE: 0,
       TOUCH_DOLLY_PAN: 5,
       TOUCH_DOLLY_ROTATE: 6,
+      TOUCH_PAN: 4,
+      TOUCH_ROTATE: 3,
     };
 
     let state = STATE.NONE;

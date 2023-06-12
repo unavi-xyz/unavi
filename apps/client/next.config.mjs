@@ -71,26 +71,27 @@ export default await defineNextConfig({
     appDir: true,
     outputFileTracingExcludes: { "**": ["**swc/core**"] },
   },
+  async headers() {
+    return [
+      {
+        headers: [...securityHeaders, ...isolationHeaders],
+        source: "/:path*",
+      },
+    ];
+  },
   images: {
     domains: [env.NEXT_PUBLIC_CDN_ENDPOINT],
   },
   outputFileTracing: true,
   productionBrowserSourceMaps: true,
   reactStrictMode: true,
-  transpilePackages: ["engine", "contracts"],
-  async headers() {
-    return [
-      {
-        source: "/:path*",
-        headers: [...securityHeaders, ...isolationHeaders],
-      },
-    ];
-  },
+  transpilePackages: ["engine"],
   webpack: function (config) {
     config.experiments = {
       ...config.experiments,
       asyncWebAssembly: true,
     };
+    config.resolve.fallback = { fs: false, net: false, tls: false };
     return config;
   },
 });

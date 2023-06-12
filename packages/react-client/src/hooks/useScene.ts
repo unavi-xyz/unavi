@@ -32,7 +32,7 @@ export function useScene(uri: string | null) {
         engine.scene.baseURI = uri.split("/").slice(0, -1).join("/");
         await engine.scene.addBinary(array);
 
-        engine.physics.send({ subject: "respawn", data: null });
+        engine.physics.send({ data: null, subject: "respawn" });
 
         // Add delay to allow scene to load
         const mbs = Math.max(Math.round(array.byteLength / 1000 / 1000), 5);
@@ -44,7 +44,7 @@ export function useScene(uri: string | null) {
 
         // Respawn player again to ensure they are in the correct position
         // (sometimes would fall through the floor while scene loads due to lag)
-        engine.physics.send({ subject: "respawn", data: null });
+        engine.physics.send({ data: null, subject: "respawn" });
 
         setIsLoaded(true);
       } catch (err) {

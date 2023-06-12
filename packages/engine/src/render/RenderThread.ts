@@ -64,7 +64,7 @@ export class RenderThread {
   scene = new Scene();
 
   renderer: WebGLRenderer | null = null;
-  size = { width: 0, height: 0 };
+  size = { height: 0, width: 0 };
   pixelRatio = 1;
   camera = new PerspectiveCamera(75, 1, CAMERA_NEAR, CAMERA_FAR);
   clock = new Clock();
@@ -114,7 +114,7 @@ export class RenderThread {
     this.clock.start();
     this.render();
 
-    postMessage({ subject: "ready", data: null });
+    postMessage({ data: null, subject: "ready" });
   }
 
   onmessage = (event: MessageEvent<ToRenderMessage>) => {
@@ -147,12 +147,12 @@ export class RenderThread {
         if (!info) break;
 
         this.postMessage({
-          subject: "stats",
           data: {
+            fps: 1 / this.#delta,
             memory: info.memory,
             render: info.render,
-            fps: 1 / this.#delta,
           },
+          subject: "stats",
         });
         break;
       }
@@ -292,8 +292,8 @@ export class RenderThread {
 
     // Renderer
     this.renderer = new WebGLRenderer({
-      canvas: this.#canvas,
       antialias: true,
+      canvas: this.#canvas,
       powerPreference: "high-performance",
       preserveDrawingBuffer: true,
     });
@@ -311,14 +311,14 @@ export class RenderThread {
 
     // Cascading shadow maps
     this.csm = new CSM({
-      maxFar: 40,
-      cascades: SHADOW_CASCADES,
-      lightIntensity: (TOTAL_LIGHT_INTENSITY - AMBIENT_LIGHT_INTENSITY) / SHADOW_CASCADES,
-      lightDirection: new Vector3(0.2, -1, 0.4).normalize(),
-      shadowMapSize: 2048,
       camera: this.camera,
+      cascades: SHADOW_CASCADES,
+      lightDirection: new Vector3(0.2, -1, 0.4).normalize(),
+      lightIntensity: (TOTAL_LIGHT_INTENSITY - AMBIENT_LIGHT_INTENSITY) / SHADOW_CASCADES,
+      maxFar: 40,
       parent: this.scene,
       shadowBias: SHADOW_BIAS,
+      shadowMapSize: 2048,
     });
     this.csm.fade = true;
     this.csm.setupMaterial(DEFAULT_MATERIAL);

@@ -29,8 +29,8 @@ export default function OutputSocket({ connected, valueType, name }: OutputSocke
           isValidConnection(connection, instance, variables)
         }
         style={{
-          borderColor: valueColorsMap[valueType],
           backgroundColor: connected ? "#262626" : "#ffffff",
+          borderColor: valueColorsMap[valueType],
         }}
       />
     </div>

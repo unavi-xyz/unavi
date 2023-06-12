@@ -14,7 +14,7 @@ const key_file_name = process.env.SSL_KEY;
 // Create WebSocket server
 // Use SSL if cert and key are provided
 const server =
-  cert_file_name && key_file_name ? uWS.SSLApp({ key_file_name, cert_file_name }) : uWS.App();
+  cert_file_name && key_file_name ? uWS.SSLApp({ cert_file_name, key_file_name }) : uWS.App();
 
 // Create Mediasoup router
 const { router, webRtcServer } = await createMediasoupWorker();
@@ -24,12 +24,14 @@ const players = new Map<uWebSocket, Player>();
 
 // Handle WebSocket connections
 server.ws<UserData>("/*", {
-  compression: uWS.SHARED_COMPRESSOR,
-  idleTimeout: 60,
-
-  open: (ws) => {
-    players.set(ws, new Player(ws, spaces));
+  close: (ws) => {
+    const player = players.get(ws);
+    if (player) player.close();
+    players.delete(ws);
   },
+  compression: uWS.SHARED_COMPRESSOR,
+
+  idleTimeout: 60,
 
   message: (ws, buffer) => {
     const player = players.get(ws);
@@ -84,8 +86,8 @@ server.ws<UserData>("/*", {
       // WebRTC
       case "xyz.unavi.webrtc.router.rtpCapabilities.get": {
         player.send({
-          id: "xyz.unavi.webrtc.router.rtpCapabilities",
           data: router.rtpCapabilities,
+          id: "xyz.unavi.webrtc.router.rtpCapabilities",
         });
         break;
       }
@@ -101,8 +103,8 @@ server.ws<UserData>("/*", {
             player.setTransport(data, transport);
 
             player.send({
+              data: { options: params, type: data },
               id: "xyz.unavi.webrtc.transport.created",
-              data: { type: data, options: params },
             });
           })
           .catch((err) => console.warn(err));
@@ -130,10 +132,10 @@ server.ws<UserData>("/*", {
         }
 
         player.produceData({
-          streamId: data.streamId,
           maxPacketLifeTime: data.maxPacketLifeTime,
           maxRetransmits: data.maxRetransmits,
           ordered: data.ordered,
+          streamId: data.streamId,
         });
         break;
       }
@@ -145,10 +147,8 @@ server.ws<UserData>("/*", {
     }
   },
 
-  close: (ws) => {
-    const player = players.get(ws);
-    if (player) player.close();
-    players.delete(ws);
+  open: (ws) => {
+    players.set(ws, new Player(ws, spaces));
   },
 });
 

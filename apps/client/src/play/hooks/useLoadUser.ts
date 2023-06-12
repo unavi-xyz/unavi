@@ -17,7 +17,7 @@ export function useLoadUser() {
     usePlayStore.setState({ nickname: localName });
 
     // Send to host
-    send({ id: "xyz.unavi.world.user.name", data: localName });
+    send({ data: localName, id: "xyz.unavi.world.user.name" });
   }, [send]);
 
   // Publish handle on change
@@ -27,6 +27,6 @@ export function useLoadUser() {
       : null;
 
     // Send to host
-    send({ id: "xyz.unavi.world.user.handle", data: handle });
+    send({ data: handle, id: "xyz.unavi.world.user.handle" });
   }, [user, send]);
 }

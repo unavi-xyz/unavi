@@ -1,12 +1,16 @@
-import { Space__factory, SPACE_ADDRESS } from "contracts";
 import { cache } from "react";
+import { readContract } from "wagmi/actions";
 
-import { ethersProvider } from "../ethers";
+import { SPACE_ADDRESS } from "@/src/contracts/addresses";
+import { SPACE_ABI } from "@/src/contracts/SpaceAbi";
 
 export const fetchNFTSpaceOwner = cache(async (spaceId: number) => {
-  const contract = Space__factory.connect(SPACE_ADDRESS, ethersProvider);
-
-  const address = await contract.ownerOf(spaceId);
+  const address = await readContract({
+    abi: SPACE_ABI,
+    address: SPACE_ADDRESS,
+    args: [BigInt(spaceId)],
+    functionName: "ownerOf",
+  });
 
   return address;
 });

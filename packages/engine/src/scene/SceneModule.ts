@@ -83,7 +83,7 @@ export class SceneModule extends Scene {
       if (!id) throw new Error("Id not found");
 
       const json = this.node.toJSON(node);
-      this.#publish({ subject: "change_node", data: { id, json } });
+      this.#publish({ data: { id, json }, subject: "change_node" });
     });
   }
 
@@ -94,7 +94,7 @@ export class SceneModule extends Scene {
   set baseURI(value: string) {
     if (value === this.#baseURI) return;
     this.#baseURI = value;
-    this.#engine.render.send({ subject: "set_base_uri", data: value });
+    this.#engine.render.send({ data: value, subject: "set_base_uri" });
   }
 
   async #createIO() {
@@ -298,10 +298,10 @@ export class SceneModule extends Scene {
       if (!id) throw new Error("Id not found");
       const json = this.buffer.toJSON(buffer);
 
-      this.#publish({ subject: "create_buffer", data: { id, json } });
+      this.#publish({ data: { id, json }, subject: "create_buffer" });
 
       buffer.addEventListener("dispose", () => {
-        this.#publish({ subject: "dispose_buffer", data: id });
+        this.#publish({ data: id, subject: "dispose_buffer" });
       });
     });
 
@@ -314,10 +314,10 @@ export class SceneModule extends Scene {
       if (!id) throw new Error("Id not found");
       const json = this.texture.toJSON(texture);
 
-      this.#engine.render.send({ subject: "create_texture", data: { id, json } });
+      this.#engine.render.send({ data: { id, json }, subject: "create_texture" });
 
       texture.addEventListener("dispose", () => {
-        this.#engine.render.send({ subject: "dispose_texture", data: id });
+        this.#engine.render.send({ data: id, subject: "dispose_texture" });
       });
     });
 
@@ -326,7 +326,7 @@ export class SceneModule extends Scene {
       if (!id) throw new Error("Id not found");
       const json = this.material.toJSON(material);
 
-      this.#engine.render.send({ subject: "create_material", data: { id, json } });
+      this.#engine.render.send({ data: { id, json }, subject: "create_material" });
 
       material.addEventListener("change", (e) => {
         const attribute = e.attribute as keyof MaterialJSON;
@@ -334,13 +334,13 @@ export class SceneModule extends Scene {
         const value = json[attribute];
 
         this.#engine.render.send({
-          subject: "change_material",
           data: { id, json: { [attribute]: value } },
+          subject: "change_material",
         });
       });
 
       material.addEventListener("dispose", () => {
-        this.#engine.render.send({ subject: "dispose_material", data: id });
+        this.#engine.render.send({ data: id, subject: "dispose_material" });
       });
     });
 
@@ -366,10 +366,10 @@ export class SceneModule extends Scene {
       if (!id) throw new Error("Id not found");
 
       const json = this.skin.toJSON(skin);
-      this.#engine.render.send({ subject: "create_skin", data: { id, json } });
+      this.#engine.render.send({ data: { id, json }, subject: "create_skin" });
 
       skin.addEventListener("dispose", () => {
-        this.#engine.render.send({ subject: "dispose_skin", data: id });
+        this.#engine.render.send({ data: id, subject: "dispose_skin" });
       });
     });
 
@@ -378,7 +378,7 @@ export class SceneModule extends Scene {
       if (!id) throw new Error("Id not found");
 
       const json = this.node.toJSON(node);
-      this.#publish({ subject: "change_node", data: { id, json } });
+      this.#publish({ data: { id, json }, subject: "change_node" });
     });
 
     this.animation.processChanges().forEach((animation) => {
@@ -386,18 +386,18 @@ export class SceneModule extends Scene {
       if (!id) throw new Error("Id not found");
 
       const json = this.animation.toJSON(animation);
-      this.#publish({ subject: "create_animation", data: { id, json } });
+      this.#publish({ data: { id, json }, subject: "create_animation" });
 
       animation.addEventListener("change", (e) => {
         const attribute = e.attribute as keyof AnimationJSON;
         const json = this.animation.toJSON(animation);
         const value = json[attribute];
 
-        this.#publish({ subject: "change_animation", data: { id, json: { [attribute]: value } } });
+        this.#publish({ data: { id, json: { [attribute]: value } }, subject: "change_animation" });
       });
 
       animation.addEventListener("dispose", () => {
-        this.#publish({ subject: "dispose_animation", data: id });
+        this.#publish({ data: id, subject: "dispose_animation" });
       });
     });
   }
@@ -407,10 +407,10 @@ export class SceneModule extends Scene {
     if (!id) throw new Error("Id not found");
 
     const json = this.accessor.toJSON(accessor);
-    this.#publish({ subject: "create_accessor", data: { id, json } });
+    this.#publish({ data: { id, json }, subject: "create_accessor" });
 
     accessor.addEventListener("dispose", () => {
-      this.#publish({ subject: "dispose_accessor", data: id });
+      this.#publish({ data: id, subject: "dispose_accessor" });
     });
   }
 
@@ -418,7 +418,7 @@ export class SceneModule extends Scene {
     const id = this.node.getId(node);
     if (!id) throw new Error("Id not found");
 
-    this.#publish({ subject: "create_node", data: { id, json: {} } });
+    this.#publish({ data: { id, json: {} }, subject: "create_node" });
 
     let extensionListeners: Array<{ extension: ExtensionProperty; listener: () => void }> = [];
 
@@ -610,7 +610,7 @@ export class SceneModule extends Scene {
           const json = this.node.toJSON(node);
           const value = json.extensions;
 
-          this.#publish({ subject: "change_node", data: { id, json: { extensions: value } } });
+          this.#publish({ data: { id, json: { extensions: value } }, subject: "change_node" });
         };
 
         extension.addEventListener("change", listener);
@@ -634,7 +634,7 @@ export class SceneModule extends Scene {
       const json = this.node.toJSON(node);
       const value = json[attribute];
 
-      this.#publish({ subject: "change_node", data: { id, json: { [attribute]: value } } });
+      this.#publish({ data: { id, json: { [attribute]: value } }, subject: "change_node" });
 
       if (attribute === "mesh") {
         // Update mesh collider
@@ -659,7 +659,7 @@ export class SceneModule extends Scene {
     });
 
     node.addEventListener("dispose", () => {
-      this.#publish({ subject: "dispose_node", data: id });
+      this.#publish({ data: id, subject: "dispose_node" });
     });
   }
 
@@ -668,18 +668,18 @@ export class SceneModule extends Scene {
     if (!id) throw new Error("Id not found");
 
     const json = this.mesh.toJSON(mesh);
-    this.#publish({ subject: "create_mesh", data: { id, json } });
+    this.#publish({ data: { id, json }, subject: "create_mesh" });
 
     mesh.addEventListener("change", (e) => {
       const attribute = e.attribute as keyof MeshJSON;
       const json = this.mesh.toJSON(mesh);
       const value = json[attribute];
 
-      this.#publish({ subject: "change_mesh", data: { id, json: { [attribute]: value } } });
+      this.#publish({ data: { id, json: { [attribute]: value } }, subject: "change_mesh" });
     });
 
     mesh.addEventListener("dispose", () => {
-      this.#publish({ subject: "dispose_mesh", data: id });
+      this.#publish({ data: id, subject: "dispose_mesh" });
     });
 
     // Create custom mesh
@@ -704,25 +704,25 @@ export class SceneModule extends Scene {
 
       const { id: positionsId, object: position } = this.accessor.create({
         array: new Float32Array(positions),
-        type: "VEC3",
         componentType: 5126,
+        type: "VEC3",
       });
 
       const { id: normalsId, object: normal } = this.accessor.create({
         array: new Float32Array(normals),
-        type: "VEC3",
         componentType: 5126,
+        type: "VEC3",
       });
 
       const { id: indicesId, object: index } = this.accessor.create({
         array: new Uint16Array(indices),
-        type: "SCALAR",
         componentType: 5121,
+        type: "SCALAR",
       });
 
       // Create new primitive
       const { object: primitive } = this.primitive.create({
-        attributes: { POSITION: positionsId, NORMAL: normalsId },
+        attributes: { NORMAL: normalsId, POSITION: positionsId },
         indices: indicesId,
       });
 
@@ -745,18 +745,18 @@ export class SceneModule extends Scene {
     if (!id) throw new Error("Id not found");
 
     const json = this.primitive.toJSON(primitive);
-    this.#publish({ subject: "create_primitive", data: { id, json } });
+    this.#publish({ data: { id, json }, subject: "create_primitive" });
 
     primitive.addEventListener("change", (e) => {
       const attribute = e.attribute as keyof PrimitiveJSON;
       const json = this.primitive.toJSON(primitive);
       const value = json[attribute];
 
-      this.#publish({ subject: "change_primitive", data: { id, json: { [attribute]: value } } });
+      this.#publish({ data: { id, json: { [attribute]: value } }, subject: "change_primitive" });
     });
 
     primitive.addEventListener("dispose", () => {
-      this.#publish({ subject: "dispose_primitive", data: id });
+      this.#publish({ data: id, subject: "dispose_primitive" });
     });
   }
 

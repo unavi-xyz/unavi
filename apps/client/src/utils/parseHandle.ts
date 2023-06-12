@@ -6,5 +6,5 @@
  */
 export function parseHandle(handle: string) {
   const [username, domain] = handle.split("@");
-  return { username, domain };
+  return { domain, username };
 }

@@ -115,13 +115,13 @@ export class ThreeOutlinePass extends Pass {
     this.copyUniforms["opacity"].value = 1.0;
 
     this.materialCopy = new ShaderMaterial({
-      uniforms: this.copyUniforms,
-      vertexShader: copyShader.vertexShader,
-      fragmentShader: copyShader.fragmentShader,
       blending: NoBlending,
       depthTest: false,
       depthWrite: false,
+      fragmentShader: copyShader.fragmentShader,
       transparent: true,
+      uniforms: this.copyUniforms,
+      vertexShader: copyShader.vertexShader,
     });
 
     this.enabled = true;
@@ -421,9 +421,24 @@ export class ThreeOutlinePass extends Pass {
 
   getPrepareMaskMaterial() {
     return new ShaderMaterial({
+      fragmentShader: `#include <packing>
+				varying vec4 vPosition;
+				varying vec4 projTexCoord;
+				uniform sampler2D depthTexture;
+				uniform vec2 cameraNearFar;
+
+				void main() {
+
+					float depth = unpackRGBAToDepth(texture2DProj( depthTexture, projTexCoord ));
+					float viewZ = - DEPTH_TO_VIEW_Z( depth, cameraNearFar.x, cameraNearFar.y );
+					float depthTest = (-vPosition.z > viewZ) ? 1.0 : 0.0;
+					gl_FragColor = vec4(0.0, depthTest, 1.0, 1.0);
+
+				}`,
+
       uniforms: {
-        depthTexture: { value: null },
         cameraNearFar: { value: new Vector2(0.5, 0.5) },
+        depthTexture: { value: null },
         textureMatrix: { value: null },
       },
 
@@ -457,40 +472,11 @@ export class ThreeOutlinePass extends Pass {
 					projTexCoord = textureMatrix * worldPosition;
 
 				}`,
-
-      fragmentShader: `#include <packing>
-				varying vec4 vPosition;
-				varying vec4 projTexCoord;
-				uniform sampler2D depthTexture;
-				uniform vec2 cameraNearFar;
-
-				void main() {
-
-					float depth = unpackRGBAToDepth(texture2DProj( depthTexture, projTexCoord ));
-					float viewZ = - DEPTH_TO_VIEW_Z( depth, cameraNearFar.x, cameraNearFar.y );
-					float depthTest = (-vPosition.z > viewZ) ? 1.0 : 0.0;
-					gl_FragColor = vec4(0.0, depthTest, 1.0, 1.0);
-
-				}`,
     });
   }
 
   getEdgeDetectionMaterial() {
     return new ShaderMaterial({
-      uniforms: {
-        maskTexture: { value: null },
-        texSize: { value: new Vector2(0.5, 0.5) },
-        visibleEdgeColor: { value: new Vector3(1.0, 1.0, 1.0) },
-        hiddenEdgeColor: { value: new Vector3(1.0, 1.0, 1.0) },
-      },
-
-      vertexShader: `varying vec2 vUv;
-
-				void main() {
-					vUv = uv;
-					gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-				}`,
-
       fragmentShader: `varying vec2 vUv;
 
 				uniform sampler2D maskTexture;
@@ -514,20 +500,12 @@ export class ThreeOutlinePass extends Pass {
 					vec3 edgeColor = 1.0 - visibilityFactor > 0.001 ? visibleEdgeColor : hiddenEdgeColor;
 					gl_FragColor = vec4(edgeColor, 1.0) * vec4(d);
 				}`,
-    });
-  }
-
-  getSeperableBlurMaterial(maxRadius) {
-    return new ShaderMaterial({
-      defines: {
-        MAX_RADIUS: maxRadius,
-      },
 
       uniforms: {
-        colorTexture: { value: null },
+        hiddenEdgeColor: { value: new Vector3(1.0, 1.0, 1.0) },
+        maskTexture: { value: null },
         texSize: { value: new Vector2(0.5, 0.5) },
-        direction: { value: new Vector2(0.5, 0.5) },
-        kernelRadius: { value: 1.0 },
+        visibleEdgeColor: { value: new Vector3(1.0, 1.0, 1.0) },
       },
 
       vertexShader: `varying vec2 vUv;
@@ -536,6 +514,14 @@ export class ThreeOutlinePass extends Pass {
 					vUv = uv;
 					gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
 				}`,
+    });
+  }
+
+  getSeperableBlurMaterial(maxRadius) {
+    return new ShaderMaterial({
+      defines: {
+        MAX_RADIUS: maxRadius,
+      },
 
       fragmentShader: `#include <common>
 				varying vec2 vUv;
@@ -566,19 +552,12 @@ export class ThreeOutlinePass extends Pass {
 					}
 					gl_FragColor = diffuseSum/weightSum;
 				}`,
-    });
-  }
 
-  getOverlayMaterial() {
-    return new ShaderMaterial({
       uniforms: {
-        maskTexture: { value: null },
-        edgeTexture1: { value: null },
-        edgeTexture2: { value: null },
-        patternTexture: { value: null },
-        edgeStrength: { value: 1.0 },
-        edgeGlow: { value: 1.0 },
-        usePatternTexture: { value: 0.0 },
+        colorTexture: { value: null },
+        direction: { value: new Vector2(0.5, 0.5) },
+        kernelRadius: { value: 1.0 },
+        texSize: { value: new Vector2(0.5, 0.5) },
       },
 
       vertexShader: `varying vec2 vUv;
@@ -587,7 +566,16 @@ export class ThreeOutlinePass extends Pass {
 					vUv = uv;
 					gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
 				}`,
+    });
+  }
 
+  getOverlayMaterial() {
+    return new ShaderMaterial({
+      blending: AdditiveBlending,
+
+      depthTest: false,
+
+      depthWrite: false,
       fragmentShader: `varying vec2 vUv;
 
 				uniform sampler2D maskTexture;
@@ -610,10 +598,22 @@ export class ThreeOutlinePass extends Pass {
 						finalColor += + visibilityFactor * (1.0 - maskColor.r) * (1.0 - patternColor.r);
 					gl_FragColor = finalColor;
 				}`,
-      blending: AdditiveBlending,
-      depthTest: false,
-      depthWrite: false,
       transparent: true,
+      uniforms: {
+        edgeGlow: { value: 1.0 },
+        edgeStrength: { value: 1.0 },
+        edgeTexture1: { value: null },
+        edgeTexture2: { value: null },
+        maskTexture: { value: null },
+        patternTexture: { value: null },
+        usePatternTexture: { value: 0.0 },
+      },
+      vertexShader: `varying vec2 vUv;
+
+				void main() {
+					vUv = uv;
+					gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+				}`,
     });
   }
 }

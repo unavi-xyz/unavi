@@ -33,7 +33,7 @@ export class PhysicsThread {
 
     this.player = new Player(this.world, this.scene, postMessage);
 
-    postMessage({ subject: "ready", data: null });
+    postMessage({ data: null, subject: "ready" });
   }
 
   onmessage = (event: MessageEvent<ToPhysicsMessage>) => {
@@ -142,8 +142,8 @@ export class PhysicsThread {
 
         if (didChange) {
           this.#postMessage({
+            data: { colors: this.#debugColors, vertices: this.#debugVertices },
             subject: "set_debug_buffers",
-            data: { vertices: this.#debugVertices, colors: this.#debugColors },
           });
         }
 

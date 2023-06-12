@@ -4,8 +4,8 @@ import { WebRtcServer } from "mediasoup/node/lib/WebRtcServer";
 
 export async function createMediasoupWorker() {
   const worker = await mediasoup.createWorker({
-    rtcMinPort: parseInt(process.env.RTC_MIN_PORT || "20000"),
     rtcMaxPort: parseInt(process.env.RTC_MAX_PORT || "20020"),
+    rtcMinPort: parseInt(process.env.RTC_MIN_PORT || "20000"),
   });
 
   worker.on("died", () => {
@@ -17,14 +17,14 @@ export async function createMediasoupWorker() {
   const webRtcServer = await worker.createWebRtcServer({
     listenInfos: [
       {
-        protocol: "udp",
-        ip: process.env.MEDIASOUP_LISTEN_IP || "0.0.0.0",
         announcedIp: process.env.MEDIASOUP_ANNOUNCED_IP || "127.0.0.1",
+        ip: process.env.MEDIASOUP_LISTEN_IP || "0.0.0.0",
+        protocol: "udp",
       },
       {
-        protocol: "tcp",
-        ip: process.env.MEDIASOUP_LISTEN_IP || "0.0.0.0",
         announcedIp: process.env.MEDIASOUP_ANNOUNCED_IP || "127.0.0.1",
+        ip: process.env.MEDIASOUP_LISTEN_IP || "0.0.0.0",
+        protocol: "tcp",
       },
     ],
   });
@@ -32,10 +32,10 @@ export async function createMediasoupWorker() {
   const router = await worker.createRouter({
     mediaCodecs: [
       {
+        channels: 2,
+        clockRate: 48000,
         kind: "audio",
         mimeType: "audio/opus",
-        clockRate: 48000,
-        channels: 2,
       },
     ],
   });
@@ -45,20 +45,20 @@ export async function createMediasoupWorker() {
 
 export async function createWebRtcTransport(router: Router, webRtcServer: WebRtcServer) {
   const transport = await router.createWebRtcTransport({
-    enableUdp: true,
-    enableTcp: true,
     enableSctp: true,
+    enableTcp: true,
+    enableUdp: true,
     webRtcServer,
   });
 
   return {
-    transport,
     params: {
-      id: transport.id,
-      iceParameters: transport.iceParameters,
-      iceCandidates: transport.iceCandidates,
       dtlsParameters: transport.dtlsParameters,
+      iceCandidates: transport.iceCandidates,
+      iceParameters: transport.iceParameters,
+      id: transport.id,
       sctpParameters: transport.sctpParameters,
     },
+    transport,
   };
 }

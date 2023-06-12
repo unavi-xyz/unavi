@@ -10,8 +10,8 @@ export interface AuthStore {
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
-  status: "loading",
   setStatus: (status: AuthenticationStatus) => set({ status }),
-  user: null,
   setUser: (user: User | null) => set({ user }),
+  status: "loading",
+  user: null,
 }));

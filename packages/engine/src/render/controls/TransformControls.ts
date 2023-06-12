@@ -46,13 +46,13 @@ export class TransformControls {
 
       // Send to main thread
       this.#renderThread.postMessage({
-        subject: "set_node_transform",
         data: {
           nodeId,
-          translation: object.position.toArray(),
           rotation: object.quaternion.toArray() as Vec4,
           scale: object.scale.toArray(),
+          translation: object.position.toArray(),
         },
+        subject: "set_node_transform",
       });
     });
   }

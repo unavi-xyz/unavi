@@ -17,5 +17,5 @@ export function parseJSONPath(jsonPath: string) {
 
   const index = parseInt(indexString);
 
-  return { resource, index, property };
+  return { index, property, resource };
 }

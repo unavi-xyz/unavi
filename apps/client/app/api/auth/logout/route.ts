@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { NextRequest } from "next/server";
 
 import { auth } from "@/src/server/auth/lucia";
 
@@ -6,10 +7,8 @@ import { auth } from "@/src/server/auth/lucia";
  * User logout
  */
 export async function GET(request: NextRequest) {
-  const res = new NextResponse();
-
   // Validate auth session
-  const authRequest = auth.handleRequest(request, res);
+  const authRequest = auth.handleRequest({ cookies, request });
   const session = await authRequest.validate();
   if (!session) return new Response("Unauthorized", { status: 401 });
 
@@ -17,5 +16,5 @@ export async function GET(request: NextRequest) {
   await auth.invalidateSession(session.sessionId);
   authRequest.setSession(null);
 
-  return res;
+  return new Response(null, { status: 200 });
 }

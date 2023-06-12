@@ -43,10 +43,10 @@ export class BehaviorScene implements IScene {
             const rotation = node.getRotation();
 
             return {
+              w: rotation[3],
               x: rotation[0],
               y: rotation[1],
               z: rotation[2],
-              w: rotation[3],
             };
           }
 

@@ -15,8 +15,8 @@ export async function GET(request: NextRequest, { params }: Params) {
   const { id } = paramsSchema.parse(params);
 
   const space = await prisma.space.findFirst({
-    where: { publicId: id },
     include: { SpaceModel: true },
+    where: { publicId: id },
   });
   if (!space) return new Response("Space not found", { status: 404 });
 
@@ -37,15 +37,15 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
   // Verify user owns the space
   const found = await prisma.space.findFirst({
-    where: { publicId: id, ownerId: session.user.userId },
     include: { SpaceModel: true },
+    where: { ownerId: session.user.userId, publicId: id },
   });
   if (!found) return new Response("Space not found", { status: 404 });
 
   const { tokenId } = patchSchema.parse(await request.json());
 
   // Update space
-  await prisma.space.update({ where: { id: found.id }, data: { tokenId } });
+  await prisma.space.update({ data: { tokenId }, where: { id: found.id } });
 
   return NextResponse.json({ success: true });
 }
@@ -59,8 +59,8 @@ export async function DELETE(request: NextRequest, { params }: Params) {
 
   // Verify user owns the space
   const found = await prisma.space.findFirst({
-    where: { publicId: id, ownerId: session.user.userId },
     include: { SpaceModel: true, SpaceNFT: true },
+    where: { ownerId: session.user.userId, publicId: id },
   });
   if (!found) return new Response("Space not found", { status: 404 });
 
@@ -89,7 +89,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     found.SpaceModel ? prisma.spaceModel.delete({ where: { id: found.SpaceModel.id } }) : null,
     found.SpaceNFT ? prisma.spaceNFT.delete({ where: { id: found.SpaceNFT.id } }) : null,
     // Disconnect projects from space
-    prisma.project.updateMany({ where: { spaceId: found.id }, data: { spaceId: null } }),
+    prisma.project.updateMany({ data: { spaceId: null }, where: { spaceId: found.id } }),
   ]);
 
   // Delete space from database

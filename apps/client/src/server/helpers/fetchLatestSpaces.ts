@@ -1,9 +1,10 @@
-import { Space__factory, SPACE_ADDRESS } from "contracts";
+import { readContract } from "wagmi/actions";
 
+import { SPACE_ADDRESS } from "@/src/contracts/addresses";
+import { SPACE_ABI } from "@/src/contracts/SpaceAbi";
 import { env } from "@/src/env.mjs";
 import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
-import { ethersProvider } from "../ethers";
 import { prisma } from "../prisma";
 import { fetchWorldMetadata } from "./fetchWorldMetadata";
 import { validateSpaceNFT, ValidDBSpace, ValidNFTSpace } from "./validateSpaceNFT";
@@ -19,9 +20,13 @@ export async function fetchLatestSpaces(limit: number, owner?: string) {
 
 async function fetchNFTSpaces(limit: number, owner?: string) {
   try {
-    const spaceContract = Space__factory.connect(SPACE_ADDRESS, ethersProvider);
-
-    const count = (await spaceContract.count()).toNumber();
+    const count = Number(
+      await readContract({
+        abi: SPACE_ABI,
+        address: SPACE_ADDRESS,
+        functionName: "count",
+      })
+    );
 
     const spaces: ValidNFTSpace[] = [];
     const length = Math.min(limit, count);
@@ -49,10 +54,10 @@ export async function fetchDatabaseSpaces(limit: number, owner?: string) {
 
   try {
     const spaces = await prisma.space.findMany({
-      where: { Owner: { username: owner }, SpaceModel: { isNot: null }, tokenId: null },
       include: { SpaceModel: true },
       orderBy: { updatedAt: "desc" },
       take: limit,
+      where: { Owner: { username: owner }, SpaceModel: { isNot: null }, tokenId: null },
     });
 
     const validSpaces: ValidDBSpace[] = [];
@@ -67,8 +72,8 @@ export async function fetchDatabaseSpaces(limit: number, owner?: string) {
 
         validSpaces.push({
           id: { type: "id", value: space.publicId },
-          uri,
           metadata: world.metadata,
+          uri,
         });
       })
     );

@@ -15,13 +15,13 @@ function constructCollisionGroups(membership: number, filter: number): number {
 }
 
 export const COLLISION_GROUP = {
-  static: constructCollisionGroups(
-    CollisionGroup.Static,
-    CollisionGroup.Dynamic | CollisionGroup.Player
-  ),
-
   player: constructCollisionGroups(
     CollisionGroup.Player,
     CollisionGroup.Static | CollisionGroup.Dynamic
+  ),
+
+  static: constructCollisionGroups(
+    CollisionGroup.Static,
+    CollisionGroup.Dynamic | CollisionGroup.Player
   ),
 } as const;

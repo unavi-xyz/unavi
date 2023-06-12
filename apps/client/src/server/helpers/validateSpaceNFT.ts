@@ -25,8 +25,8 @@ export async function validateSpaceNFT(
 
     return {
       id: { type: "tokenId", value: tokenId },
-      uri,
       metadata: world.metadata,
+      uri,
     };
   } catch {
     return null;

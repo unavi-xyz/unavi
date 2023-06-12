@@ -17,7 +17,7 @@ export type ProjectFile = (typeof PROJECT_FILE)[keyof typeof PROJECT_FILE];
 export async function getProjectUploadURL(id: string, type: ProjectFile) {
   const Key = S3Path.project(id)[type];
   const ContentType = getContentType(type);
-  const command = new PutObjectCommand({ Bucket: env.S3_BUCKET, Key, ContentType });
+  const command = new PutObjectCommand({ Bucket: env.S3_BUCKET, ContentType, Key });
   const url = await getSignedUrl(s3Client, command, { expiresIn });
   return url;
 }

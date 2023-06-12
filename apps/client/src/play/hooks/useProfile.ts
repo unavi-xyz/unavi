@@ -17,8 +17,8 @@ export function useProfile() {
   );
 
   return {
-    profile: data,
-    loading: isLoading,
     error,
+    loading: isLoading,
+    profile: data,
   };
 }

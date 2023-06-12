@@ -1,6 +1,6 @@
 import { WorldMetadata } from "@wired-protocol/types";
-import { SPACE_ADDRESS } from "contracts";
 
+import { SPACE_ADDRESS } from "@/src/contracts/addresses";
 import { SpaceId } from "@/src/utils/parseSpaceId";
 
 interface Props {

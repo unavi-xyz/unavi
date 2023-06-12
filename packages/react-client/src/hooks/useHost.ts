@@ -51,13 +51,13 @@ export function useHost(uri: string | null, host: string | null) {
       console.info("WebSocket - ✅ Connected to host");
 
       // Initiate WebRTC connection
-      send({ id: "xyz.unavi.webrtc.router.rtpCapabilities.get", data: null });
+      send({ data: null, id: "xyz.unavi.webrtc.router.rtpCapabilities.get" });
 
       // Join space
-      send({ id: "xyz.unavi.world.join", data: uri });
+      send({ data: uri, id: "xyz.unavi.world.join" });
 
       engine.physics.addEventListener("user_grounded", (event) => {
-        send({ id: "xyz.unavi.world.user.grounded", data: event.data });
+        send({ data: event.data, id: "xyz.unavi.world.user.grounded" });
       });
     };
 
@@ -94,16 +94,16 @@ export function useHost(uri: string | null, host: string | null) {
           await newDevice.load({ routerRtpCapabilities: data });
 
           // Create transports
-          send({ id: "xyz.unavi.webrtc.transport.create", data: "producer" });
-          send({ id: "xyz.unavi.webrtc.transport.create", data: "consumer" });
+          send({ data: "producer", id: "xyz.unavi.webrtc.transport.create" });
+          send({ data: "consumer", id: "xyz.unavi.webrtc.transport.create" });
 
           // Set rtp capabilities
           send({
-            id: "xyz.unavi.webrtc.rtpCapabilities.set",
             data: {
               codecs: newDevice.rtpCapabilities.codecs ?? [],
               headerExtensions: newDevice.rtpCapabilities.headerExtensions ?? [],
             },
+            id: "xyz.unavi.webrtc.rtpCapabilities.set",
           });
           break;
         }

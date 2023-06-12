@@ -17,10 +17,10 @@ export async function getSpaceNFTUploadURL(id: string, type: SpaceNFTFile) {
   const Key = S3Path.spaceNFT(id)[type];
   const ContentType = getContentType(type);
   const command = new PutObjectCommand({
-    Bucket: env.S3_BUCKET,
-    Key,
-    ContentType,
     ACL: "public-read",
+    Bucket: env.S3_BUCKET,
+    ContentType,
+    Key,
   });
   const url = await getSignedUrl(s3Client, command, { expiresIn });
   return url;

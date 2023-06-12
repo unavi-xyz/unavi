@@ -43,24 +43,24 @@ export class PhysicsModule extends EventDispatcher<PhysicsEvent> {
       });
     } else {
       this.#worker = new Worker(new URL("./worker.ts", import.meta.url), {
-        type: "module",
         name: "physics",
+        type: "module",
       });
       this.#worker.onmessage = this.onmessage;
     }
 
     this.send({
-      subject: "set_user_arrays",
       data: {
+        cameraYaw: this.engine.cameraYaw,
         input: this.engine.inputPosition,
         userPosition: this.engine.userPosition,
-        cameraYaw: this.engine.cameraYaw,
       },
+      subject: "set_user_arrays",
     });
 
-    this.send({ subject: "set_controls", data: this.engine.controls });
-    this.send({ subject: "toggle_collider_visuals", data: this.engine.showColliders });
-    if (this.engine.isPlaying) this.send({ subject: "start", data: this.engine.showColliders });
+    this.send({ data: this.engine.controls, subject: "set_controls" });
+    this.send({ data: this.engine.showColliders, subject: "toggle_collider_visuals" });
+    if (this.engine.isPlaying) this.send({ data: this.engine.showColliders, subject: "start" });
   }
 
   onmessage = (event: MessageEvent<FromPhysicsMessage>) => {
@@ -81,13 +81,13 @@ export class PhysicsModule extends EventDispatcher<PhysicsEvent> {
       }
 
       case "set_grounded": {
-        this.engine.render.send({ subject: "set_grounded", data });
-        this.dispatchEvent({ type: "user_grounded", data });
+        this.engine.render.send({ data, subject: "set_grounded" });
+        this.dispatchEvent({ data, type: "user_grounded" });
         break;
       }
 
       case "set_debug_buffers": {
-        this.engine.render.send({ subject: "set_debug_buffers", data });
+        this.engine.render.send({ data, subject: "set_debug_buffers" });
         break;
       }
     }
@@ -118,7 +118,7 @@ export class PhysicsModule extends EventDispatcher<PhysicsEvent> {
     this.ready = false;
 
     if (this.#worker instanceof FakeWorker) {
-      this.#worker.postMessage({ subject: "destroy", data: null });
+      this.#worker.postMessage({ data: null, subject: "destroy" });
     }
 
     this.#worker?.terminate();

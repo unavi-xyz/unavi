@@ -17,8 +17,8 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   // Verify user owns the project
   const found = await prisma.project.findFirst({
-    where: { publicId: id, ownerId: session.user.userId },
     include: { Space: { include: { SpaceNFT: true } } },
+    where: { ownerId: session.user.userId, publicId: id },
   });
   if (!found) return new Response("Project not found", { status: 404 });
 
@@ -30,16 +30,16 @@ export async function POST(request: NextRequest, { params }: Params) {
     const publicId = nanoidShort();
 
     const newSpace = await prisma.space.create({
-      data: { publicId, ownerId: session.user.userId },
+      data: { ownerId: session.user.userId, publicId },
       select: { id: true },
     });
 
     // Link project to space
-    await prisma.project.update({ where: { publicId: id }, data: { spaceId: newSpace.id } });
+    await prisma.project.update({ data: { spaceId: newSpace.id }, where: { publicId: id } });
 
     spaceId = publicId;
   }
 
-  const json: PublishProjectResponse = { spaceId, nftId };
+  const json: PublishProjectResponse = { nftId, spaceId };
   return NextResponse.json(json);
 }

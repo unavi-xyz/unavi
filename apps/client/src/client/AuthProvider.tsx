@@ -20,11 +20,11 @@ export type AuthContextValue = {
 };
 
 export const AuthContext: Context<AuthContextValue> = createContext<AuthContextValue>({
-  status: useAuthStore.getState().status,
   loading: false,
-  user: useAuthStore.getState().user,
   login: async () => {},
   logout: async () => {},
+  status: useAuthStore.getState().status,
+  user: useAuthStore.getState().user,
 });
 
 interface Props {
@@ -52,9 +52,9 @@ export default function AuthProvider({ children }: Props) {
 
       try {
         const res = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(args),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         });
         if (!res.ok) throw new Error("Login failed");
 
@@ -112,7 +112,7 @@ export default function AuthProvider({ children }: Props) {
   }, [setStatus, setUser]);
 
   return (
-    <AuthContext.Provider value={{ status, loading, user, login, logout }}>
+    <AuthContext.Provider value={{ loading, login, logout, status, user }}>
       {children}
     </AuthContext.Provider>
   );

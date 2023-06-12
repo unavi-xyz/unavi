@@ -19,8 +19,8 @@ export async function GET(request: NextRequest, { params }: Params) {
 
   // Verify user owns the project
   const project = await prisma.project.findFirst({
-    where: { publicId: id, ownerId: session.user.userId },
     include: { Space: true },
+    where: { ownerId: session.user.userId, publicId: id },
   });
   if (!project) return new Response("Project not found", { status: 404 });
 
@@ -37,26 +37,26 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
   // Verify user owns the project
   const found = await prisma.project.findFirst({
-    where: { publicId: id, ownerId: session.user.userId },
+    where: { ownerId: session.user.userId, publicId: id },
   });
   if (!found) return new Response("Project not found", { status: 404 });
 
   // Verify user owns the space, if provided
   const space = spaceId
     ? await prisma.space.findFirst({
-        where: { publicId: spaceId, ownerId: session.user.userId },
+        where: { ownerId: session.user.userId, publicId: spaceId },
       })
     : null;
   if (spaceId && !space) return new Response("Space not found", { status: 404 });
 
   // Update project
   await prisma.project.update({
-    where: { publicId: id },
     data: {
-      title,
       description,
       spaceId: spaceId === undefined ? undefined : space ? space.id : null,
+      title,
     },
+    where: { publicId: id },
   });
 
   return NextResponse.json({ success: true });
@@ -71,7 +71,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
 
   // Verify user owns the project
   const found = await prisma.project.findFirst({
-    where: { publicId: id, ownerId: session.user.userId },
+    where: { ownerId: session.user.userId, publicId: id },
   });
   if (!found) return new Response("Project not found", { status: 404 });
 

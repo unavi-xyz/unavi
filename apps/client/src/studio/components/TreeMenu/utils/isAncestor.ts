@@ -1,4 +1,4 @@
-import { Engine } from "engine";
+import { Engine } from "@unavi/engine";
 
 /**
  * Checks if the target node is an ancestor of another node

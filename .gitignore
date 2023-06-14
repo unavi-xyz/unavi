@@ -1,7 +1,7 @@
 # dependencies
-node_modules
 .pnp
 .pnp.js
+node_modules
 
 # build
 build/
@@ -13,20 +13,22 @@ dist/
 
 # misc
 .DS_Store
-*.pem
 .npmrc
+*.pem
 
 # debug
+.pnpm-debug.log*
 npm-debug.log*
+vite.config.*.timestamp*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
 
-# local env files
-.env.local
+# local files
 .env.development.local
-.env.test.local
+.env.local
 .env.production.local
+.env.test.local
+*.local.*
 
 # typescript
 *.tsbuildinfo

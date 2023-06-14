@@ -1,5 +1,5 @@
 import { Node } from "@gltf-transform/core";
-import { eulerToQuaternion, quaternionToEuler, Vec3 } from "engine";
+import { eulerToQuaternion, quaternionToEuler, Vec3 } from "@unavi/engine";
 import { useEffect, useRef, useState } from "react";
 
 import { useSubscribe } from "../../hooks/useSubscribe";

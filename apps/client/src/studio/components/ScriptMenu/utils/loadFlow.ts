@@ -1,3 +1,4 @@
+import { Engine, pathRefToString } from "@unavi/engine";
 import {
   BehaviorNode,
   BehaviorNodeExtras,
@@ -5,7 +6,6 @@ import {
   isLink,
   isVariableConfig,
 } from "@unavi/gltf-extensions";
-import { Engine, pathRefToString } from "engine";
 import { nanoid } from "nanoid";
 import { Edge, Node } from "reactflow";
 

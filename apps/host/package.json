@@ -1,33 +1,75 @@
 {
-  "name": "host",
-  "version": "0.5.0",
-  "private": true,
-  "license": "GPL-3.0-or-later",
-  "type": "module",
-  "scripts": {
-    "build": "tsup src/server.ts --format esm --dts",
-    "dev": "nodemon --watch src --ext ts --exec \"pnpm build && pnpm start\"",
-    "docker:build": "pnpm docker:clean || cd ../.. && docker build -t unavi-host -f apps/host/Dockerfile .",
-    "docker:clean": "pnpm docker:stop || docker rmi unavi-host",
-    "docker:start": "pnpm docker:stop || docker run --rm -e RTC_MIN_PORT=20000 -e RTC_MAX_PORT=20020 -e MEDIASOUP_ANNOUNCED_IP=127.0.0.1 -p 4000:4000 -p 20000-20020:20000-20020/tcp -p 20000-20020:20000-20020/udp --name wired-host unavi-host",
-    "docker:stop": "docker stop wired-host",
-    "lint": "cd ../.. && eslint --fix apps/host --ext .ts,.tsx,.mjs,.json --ignore-path .gitignore --ignore-path .prettierignore --ignore-pattern package.json",
-    "start": "node --experimental-specifier-resolution=node ./dist/server.js"
-  },
-  "dependencies": {
-    "@wired-protocol/types": "^0.0.20",
-    "mediasoup": "^3.11.24",
-    "nanoid": "^4.0.2",
-    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.30.0",
-    "zod": "^3.21.4"
-  },
-  "devDependencies": {
-    "@types/node": "^18.16.17",
-    "eslint": "^8.42.0",
-    "eslint-config-custom": "workspace:*",
-    "nodemon": "^2.0.22",
-    "tsconfig": "workspace:*",
-    "tsup": "^6.7.0",
-    "typescript": "~5.1.3"
+  "0": {
+    "buildIndex": 1,
+    "manifest": {
+      "name": "@unavi/host",
+      "version": "0.5.0",
+      "private": true,
+      "license": "GPL-3.0-or-later",
+      "type": "module",
+      "scripts": {
+        "build": "tsup src/server.ts --format esm --dts",
+        "dev": "nodemon --watch src --ext ts --exec \"pnpm build && pnpm start\"",
+        "docker:build": "pnpm docker:clean || cd ../.. && docker build -t unavi-host -f apps/host/Dockerfile .",
+        "docker:clean": "pnpm docker:stop || docker rmi unavi-host",
+        "docker:start": "pnpm docker:stop || docker run --rm -e RTC_MIN_PORT=20000 -e RTC_MAX_PORT=20020 -e MEDIASOUP_ANNOUNCED_IP=127.0.0.1 -p 4000:4000 -p 20000-20020:20000-20020/tcp -p 20000-20020:20000-20020/udp --name wired-host unavi-host",
+        "docker:stop": "docker stop wired-host",
+        "lint": "cd ../.. && eslint --fix apps/host --ext .ts,.tsx,.mjs,.json --ignore-path .gitignore --ignore-path .prettierignore --ignore-pattern package.json",
+        "start": "node --experimental-specifier-resolution=node ./dist/server.js"
+      },
+      "dependencies": {
+        "@wired-protocol/types": "^0.0.20",
+        "mediasoup": "^3.11.24",
+        "nanoid": "^4.0.2",
+        "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.30.0",
+        "zod": "^3.21.4"
+      },
+      "devDependencies": {
+        "@types/node": "^18.16.17",
+        "eslint": "^8.42.0",
+        "eslint-config-custom": "workspace:^",
+        "nodemon": "^2.0.22",
+        "tsconfig": "workspace:^",
+        "tsup": "^6.7.0",
+        "typescript": "~5.1.3"
+      }
+    },
+    "rootDir": "C:\\Users\\Lain\\Projects\\unavi-xyz\\unavi\\apps\\host",
+    "binsDir": "C:\\Users\\Lain\\Projects\\unavi-xyz\\unavi\\apps\\host\\node_modules\\.bin",
+    "id": "apps/host",
+    "modulesDir": "C:\\Users\\Lain\\Projects\\unavi-xyz\\unavi\\apps\\host\\node_modules",
+    "originalManifest": {
+      "name": "@unavi/host",
+      "version": "0.5.0",
+      "private": true,
+      "license": "GPL-3.0-or-later",
+      "type": "module",
+      "scripts": {
+        "build": "tsup src/server.ts --format esm --dts",
+        "dev": "nodemon --watch src --ext ts --exec \"pnpm build && pnpm start\"",
+        "docker:build": "pnpm docker:clean || cd ../.. && docker build -t unavi-host -f apps/host/Dockerfile .",
+        "docker:clean": "pnpm docker:stop || docker rmi unavi-host",
+        "docker:start": "pnpm docker:stop || docker run --rm -e RTC_MIN_PORT=20000 -e RTC_MAX_PORT=20020 -e MEDIASOUP_ANNOUNCED_IP=127.0.0.1 -p 4000:4000 -p 20000-20020:20000-20020/tcp -p 20000-20020:20000-20020/udp --name wired-host unavi-host",
+        "docker:stop": "docker stop wired-host",
+        "lint": "cd ../.. && eslint --fix apps/host --ext .ts,.tsx,.mjs,.json --ignore-path .gitignore --ignore-path .prettierignore --ignore-pattern package.json",
+        "start": "node --experimental-specifier-resolution=node ./dist/server.js"
+      },
+      "dependencies": {
+        "@wired-protocol/types": "^0.0.20",
+        "mediasoup": "^3.11.24",
+        "nanoid": "^4.0.2",
+        "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.30.0",
+        "zod": "^3.21.4"
+      },
+      "devDependencies": {
+        "@types/node": "^18.16.17",
+        "eslint": "^8.42.0",
+        "eslint-config-custom": "workspace:^",
+        "nodemon": "^2.0.22",
+        "tsconfig": "workspace:^",
+        "tsup": "^6.7.0",
+        "typescript": "~5.1.3"
+      }
+    }
   }
 }

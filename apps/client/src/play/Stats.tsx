@@ -1,5 +1,5 @@
+import { RenderStats } from "@unavi/engine";
 import { useClient } from "@unavi/react-client";
-import { RenderStats } from "engine";
 import { useEffect, useState } from "react";
 
 export default function Stats() {

@@ -1,4 +1,4 @@
-import { Engine } from "engine";
+import { Engine } from "@unavi/engine";
 import { useCallback, useState } from "react";
 
 import { Project } from "../../server/helpers/fetchProject";

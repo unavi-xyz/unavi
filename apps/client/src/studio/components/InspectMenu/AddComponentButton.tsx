@@ -1,6 +1,6 @@
 import { Node } from "@gltf-transform/core";
+import { NodeExtras } from "@unavi/engine";
 import { SPAWN_TITLE } from "@unavi/gltf-extensions";
-import { NodeExtras } from "engine";
 import { nanoid } from "nanoid";
 import { useState } from "react";
 

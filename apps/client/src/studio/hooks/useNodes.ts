@@ -1,5 +1,5 @@
 import { Node } from "@gltf-transform/core";
-import { subscribe } from "engine";
+import { subscribe } from "@unavi/engine";
 import { useEffect, useState } from "react";
 
 import { useStudio } from "../components/Studio";

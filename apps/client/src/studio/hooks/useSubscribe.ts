@@ -1,5 +1,5 @@
 import { ExtensibleProperty, ExtensionProperty } from "@gltf-transform/core";
-import { subscribe, SubscribeReturnValues, SubscribeValues } from "engine";
+import { subscribe, SubscribeReturnValues, SubscribeValues } from "@unavi/engine";
 import { useEffect, useState } from "react";
 
 type NotNull<T> = T extends null ? never : T;

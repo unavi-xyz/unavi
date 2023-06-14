@@ -19,6 +19,7 @@
     "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,
+    "experimentalDecorators": true,
     "target": "ESNext"
   },
   "display": "Default",

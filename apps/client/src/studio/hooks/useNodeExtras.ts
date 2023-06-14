@@ -1,5 +1,5 @@
 import { Node } from "@gltf-transform/core";
-import { NodeExtras } from "engine";
+import { NodeExtras } from "@unavi/engine";
 
 import { useSubscribe } from "./useSubscribe";
 

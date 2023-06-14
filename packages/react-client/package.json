@@ -1,6 +1,7 @@
 {
   "name": "@unavi/react-client",
   "version": "0.6.0",
+  "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/unavi-xyz/unavi.git",
@@ -10,34 +11,35 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --onSuccess \"tsc --emitDeclarationOnly\"",
-    "dev": "pnpm build --watch",
+    "build": "vite build --emptyOutDir",
+    "dev": "vite build --watch",
     "lint": "cd ../.. && eslint --fix packages/react-client --ext .ts,.tsx,.mjs,.json --ignore-path .gitignore --ignore-path .prettierignore --ignore-pattern package.json"
   },
   "dependencies": {
-    "@unavi/gltf-extensions": "workspace:*",
+    "@unavi/engine": "workspace:^",
     "@wired-protocol/types": "^0.0.20",
-    "engine": "workspace:*",
+    "lattice-engine": "^0.2.3",
     "mediasoup-client": "^3.6.84",
     "nanoid": "^4.0.2",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "thyseus": "^0.12.1"
   },
   "devDependencies": {
+    "@thyseus/transformer-rollup": "^0.12.0",
     "@types/react": "^18.2.11",
     "@types/react-dom": "^18.2.4",
     "eslint": "^8.42.0",
-    "eslint-config-custom": "workspace:*",
-    "tsconfig": "workspace:*",
-    "tsup": "^6.7.0",
-    "typescript": "~5.1.3"
+    "eslint-config-custom": "workspace:^",
+    "tsconfig": "workspace:^",
+    "typescript": "~5.1.3",
+    "vite": "^4.3.8",
+    "vite-plugin-dts": "^2.3.0"
   },
   "peerDependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
-  },
-  "publishConfig": {
-    "access": "public"
   }
 }

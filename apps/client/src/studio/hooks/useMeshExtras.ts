@@ -1,5 +1,5 @@
 import { Mesh } from "@gltf-transform/core";
-import { MeshExtras } from "engine";
+import { MeshExtras } from "@unavi/engine";
 
 import { useSubscribe } from "./useSubscribe";
 

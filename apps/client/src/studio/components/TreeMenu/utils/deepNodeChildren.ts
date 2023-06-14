@@ -1,5 +1,5 @@
 import { Node } from "@gltf-transform/core";
-import { Engine } from "engine";
+import { Engine } from "@unavi/engine";
 
 export function deepNodeChildren(node: Node, engine: Engine): Node[] {
   return node.listChildren().reduce((acc, child) => {

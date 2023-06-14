@@ -1,4 +1,4 @@
-import { Engine, MeshExtras } from "engine";
+import { Engine, MeshExtras } from "@unavi/engine";
 
 import { DropdownItem } from "../../../ui/DropdownMenu";
 import { useStudio } from "../Studio";

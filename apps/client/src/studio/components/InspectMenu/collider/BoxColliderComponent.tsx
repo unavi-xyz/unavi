@@ -1,5 +1,5 @@
 import { Node } from "@gltf-transform/core";
-import { Vec3 } from "engine";
+import { Vec3 } from "@unavi/engine";
 
 import { useCollider } from "../../../hooks/useExtension";
 import { useSubscribe } from "../../../hooks/useSubscribe";

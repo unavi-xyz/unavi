@@ -1,4 +1,4 @@
-import { NodeExtras } from "engine";
+import { NodeExtras } from "@unavi/engine";
 
 import { useNodeExtras } from "./useNodeExtras";
 import { useNodes } from "./useNodes";

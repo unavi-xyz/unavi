@@ -1,6 +1,6 @@
 import { NodeIO } from "@gltf-transform/core";
+import { extensions } from "@unavi/engine";
 import { AudioEmitter, Avatar } from "@unavi/gltf-extensions";
-import { extensions } from "engine";
 
 /**
  * Gets the assets used by a model

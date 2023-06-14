@@ -1,10 +1,10 @@
+import { Engine } from "@unavi/engine";
 import {
   BehaviorNode,
   BehaviorNodeExtras,
   BehaviorNodeParameters,
   parseJSONPath,
 } from "@unavi/gltf-extensions";
-import { Engine } from "engine";
 import { Edge, Node as FlowNode } from "reactflow";
 
 import { FlowNodeData } from "../types";

@@ -1,5 +1,5 @@
 import * as ContextMenu from "@radix-ui/react-context-menu";
-import { deepDisposeNode } from "engine";
+import { deepDisposeNode } from "@unavi/engine";
 import { MdClose } from "react-icons/md";
 
 import { useStudio } from "../Studio";

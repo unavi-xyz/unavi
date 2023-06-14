@@ -1,6 +1,6 @@
 "use client";
 
-import { Engine } from "engine";
+import { Engine } from "@unavi/engine";
 import Script from "next/script";
 import {
   createContext,

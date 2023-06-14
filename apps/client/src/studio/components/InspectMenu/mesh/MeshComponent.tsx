@@ -1,5 +1,5 @@
 import { Mesh, Node } from "@gltf-transform/core";
-import { MeshExtras } from "engine";
+import { MeshExtras } from "@unavi/engine";
 
 import { useMeshExtras } from "../../../hooks/useMeshExtras";
 import { useStudio } from "../../Studio";

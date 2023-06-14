@@ -1,4 +1,4 @@
-import { Engine } from "engine";
+import { Engine } from "@unavi/engine";
 import { Dispatch, SetStateAction, useEffect } from "react";
 
 import { StudioMode, Tool } from "../components/Studio";

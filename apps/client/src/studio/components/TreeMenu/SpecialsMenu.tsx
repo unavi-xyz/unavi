@@ -1,5 +1,5 @@
+import { Engine } from "@unavi/engine";
 import { SPAWN_TITLE } from "@unavi/gltf-extensions";
-import { Engine } from "engine";
 
 import { DropdownItem } from "../../../ui/DropdownMenu";
 import { useSpawn } from "../../hooks/useSpawn";

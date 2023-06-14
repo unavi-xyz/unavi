@@ -1,6 +1,6 @@
 import { NodeIO } from "@gltf-transform/core";
 import { draco, textureCompress } from "@gltf-transform/functions";
-import { extensions, optimizeDocument } from "engine";
+import { extensions, optimizeDocument } from "@unavi/engine";
 import sharp from "sharp";
 
 import createEncoderModule from "@/public/scripts/draco_encoder";

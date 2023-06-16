@@ -20,7 +20,7 @@
     "lint": "cd ../.. && eslint --fix packages/react-client --ext .ts,.tsx,.mjs,.json --ignore-path .gitignore --ignore-path .prettierignore --ignore-pattern package.json"
   },
   "dependencies": {
-    "lattice-engine": "^0.2.3",
+    "lattice-engine": "^0.2.4",
     "mediasoup-client": "^3.6.84"
   },
   "devDependencies": {

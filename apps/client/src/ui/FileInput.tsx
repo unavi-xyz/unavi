@@ -33,8 +33,14 @@ export default function FileInput({
             : "cursor-pointer hover:bg-neutral-300 active:opacity-80"
         }`}
       >
-        <div className="select-none border-r border-neutral-400 pr-4">Choose File</div>
-        <div className={`select-none break-all pl-4 ${fileName ? "" : "text-neutral-600"}`}>
+        <div className="select-none border-r border-neutral-400 pr-4">
+          Choose File
+        </div>
+        <div
+          className={`select-none break-all pl-4 ${
+            fileName ? "" : "text-neutral-600"
+          }`}
+        >
           {fileName ?? placeholder}
         </div>
       </div>

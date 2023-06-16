@@ -7,7 +7,10 @@ import { Suspense } from "react";
 import { env } from "@/src/env.mjs";
 import { fetchDBSpaceURI } from "@/src/server/helpers/fetchDBSpaceURI";
 import { fetchSpaceMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
-import { fetchUserProfile, UserProfile } from "@/src/server/helpers/fetchUserProfile";
+import {
+  fetchUserProfile,
+  UserProfile,
+} from "@/src/server/helpers/fetchUserProfile";
 import { fetchWorldMetadata } from "@/src/server/helpers/fetchWorldMetadata";
 import { isFromCDN } from "@/src/utils/isFromCDN";
 import { parseSpaceId } from "@/src/utils/parseSpaceId";
@@ -29,7 +32,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const metadata = space.metadata;
 
   const value = id.value;
-  const displayId = typeof value === "number" ? toHex(value) : value.slice(0, 6);
+  const displayId =
+    typeof value === "number" ? toHex(value) : value.slice(0, 6);
   const title = metadata.info?.name || `Space ${displayId}`;
 
   const description = metadata.info?.description || "";
@@ -74,7 +78,11 @@ export default async function Space({ params }: Props) {
         const profile = await fetchUserProfile(author);
 
         if (!profile) {
-          profiles.push({ domain: "", metadata: { name: author }, username: "" });
+          profiles.push({
+            domain: "",
+            metadata: { name: author },
+            username: "",
+          });
           return;
         }
 
@@ -142,7 +150,9 @@ export default async function Space({ params }: Props) {
 
                 <div className="flex justify-center space-x-1 font-bold md:justify-start">
                   <div className="text-neutral-500">At</div>
-                  <div>{metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST}</div>
+                  <div>
+                    {metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST}
+                  </div>
                 </div>
 
                 <PlayerCount

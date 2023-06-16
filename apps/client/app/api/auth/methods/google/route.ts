@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { GOOGLE_OAUTH_STATE_COOKIE, googleAuth } from "@/src/server/auth/google";
+import {
+  GOOGLE_OAUTH_STATE_COOKIE,
+  googleAuth,
+} from "@/src/server/auth/google";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +11,8 @@ export const dynamic = "force-dynamic";
  * Redirects the user to the Google OAuth page
  */
 export async function GET() {
-  if (!googleAuth) return new Response("Google OAuth is not supported", { status: 500 });
+  if (!googleAuth)
+    return new Response("Google OAuth is not supported", { status: 500 });
 
   const [url, state] = await googleAuth.getAuthorizationUrl();
 

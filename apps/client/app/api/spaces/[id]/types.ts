@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { SPACE_ID_LENGTH } from "../../projects/constants";
+import { SPACE_ID_LENGTH } from "../constants";
 
 export type Params = { params: { id: string } };
 

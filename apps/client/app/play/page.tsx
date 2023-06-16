@@ -8,7 +8,7 @@ import { fetchSpaceMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
 import { toHex } from "@/src/utils/toHex";
 
 import RainbowkitWrapper from "../(navbar)/RainbowkitWrapper";
-import { SPACE_ID_LENGTH } from "../api/projects/constants";
+import { SPACE_ID_LENGTH } from "../api/spaces/constants";
 import App from "./App";
 import { SpaceUriId } from "./types";
 
@@ -16,7 +16,9 @@ interface Props {
   searchParams?: { [key: string]: string | string[] | undefined };
 }
 
-export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+export async function generateMetadata({
+  searchParams,
+}: Props): Promise<Metadata> {
   const params = searchParamsSchema.safeParse(searchParams);
   if (!params.success) return {};
 
@@ -78,7 +80,8 @@ export default async function Play({ searchParams }: Props) {
 
 function parseParams(params: Params): SpaceUriId {
   if ("id" in params) return { type: "id", value: params.id };
-  else if ("tokenId" in params) return { type: "tokenId", value: parseInt(params.tokenId) };
+  else if ("tokenId" in params)
+    return { type: "tokenId", value: parseInt(params.tokenId) };
   else return { type: "uri", value: params.uri };
 }
 

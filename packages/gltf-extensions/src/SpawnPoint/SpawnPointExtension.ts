@@ -22,12 +22,15 @@ export class SpawnPointExtension extends Extension {
 
     // Add spawn points to nodes
     nodeDefs.forEach((nodeDef, nodeIndex) => {
-      if (!nodeDef.extensions || !nodeDef.extensions[this.extensionName]) return;
+      if (!nodeDef.extensions || !nodeDef.extensions[this.extensionName])
+        return;
 
       const node = context.nodes[nodeIndex];
       if (!node) throw new Error("Node not found");
 
-      const parsed = spawnPointSchema.safeParse(nodeDef.extensions[this.extensionName]);
+      const parsed = spawnPointSchema.safeParse(
+        nodeDef.extensions[this.extensionName]
+      );
 
       if (!parsed.success) {
         console.warn(parsed.error);

@@ -22,7 +22,6 @@ model Space {
   // The token id of the NFT, if it exists
   tokenId Int?
 
-  Project    Project[]
   SpaceModel SpaceModel?
   SpaceNFT   SpaceNFT?
 
@@ -51,27 +50,6 @@ model SpaceNFT {
 
   Space   Space @relation(fields: [spaceId], references: [id])
   spaceId Int   @unique
-}
-
-// A project within the studio
-model Project {
-  id        Int      @id @default(autoincrement())
-  publicId  String   @unique @db.Char(12)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  Owner   AuthUser @relation(fields: [ownerId], references: [id])
-  ownerId String
-
-  title       String @default("") @db.VarChar(80)
-  description String @default("") @db.VarChar(1200)
-
-  // A project can be linked to a space, allowing the user to push updates to it
-  Space   Space? @relation(fields: [spaceId], references: [id])
-  spaceId Int?
-
-  @@index([spaceId])
-  @@index([ownerId])
 }
 
 // A user's profile
@@ -106,8 +84,7 @@ model AuthUser {
 
   Profile Profile?
 
-  Space   Space[]
-  Project Project[]
+  Space Space[]
 
   @@map("auth_user")
 }

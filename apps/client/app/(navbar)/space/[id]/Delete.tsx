@@ -14,8 +14,8 @@ import { useAuth } from "@/src/client/AuthProvider";
 import { SPACE_ADDRESS } from "@/src/contracts/addresses";
 import { SPACE_ABI } from "@/src/contracts/SpaceAbi";
 import { env } from "@/src/env.mjs";
-import { parseError } from "@/src/studio/utils/parseError";
 import Button from "@/src/ui/Button";
+import { parseError } from "@/src/utils/parseError";
 import { SpaceId } from "@/src/utils/parseSpaceId";
 
 interface Props {
@@ -70,7 +70,9 @@ export default function Delete({ id }: Props) {
 
         if (tokenURI.startsWith(nftsPath)) {
           // Get database nft id from token URI
-          const nftId = tokenURI.replace(nftsPath, "").replace("/metadata.json", "");
+          const nftId = tokenURI
+            .replace(nftsPath, "")
+            .replace("/metadata.json", "");
 
           // Get space id
           const { spaceId } = await getNFTSpace(nftId);
@@ -97,9 +99,15 @@ export default function Delete({ id }: Props) {
   return (
     <div className="space-y-2 rounded-2xl bg-red-100 px-8 py-6 text-red-900 ring-2 ring-inset ring-red-900/20">
       <div className="text-2xl font-bold">Danger Zone</div>
-      <div className="pb-1 text-lg">Deleting a space is permanent and cannot be undone.</div>
+      <div className="pb-1 text-lg">
+        Deleting a space is permanent and cannot be undone.
+      </div>
 
-      <Button disabled={loading} onClick={handleDelete} className="rounded-xl bg-red-700">
+      <Button
+        disabled={loading}
+        onClick={handleDelete}
+        className="rounded-xl bg-red-700"
+      >
         Delete Space
       </Button>
     </div>

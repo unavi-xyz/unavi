@@ -9,7 +9,10 @@ export interface ModelStats {
   triangleCount: number;
 }
 
-export async function getModelStats(doc: Document, array: Uint8Array): Promise<ModelStats> {
+export async function getModelStats(
+  doc: Document,
+  array: Uint8Array
+): Promise<ModelStats> {
   // Get stats
   const materialCount = doc.getRoot().listMaterials().length;
   const meshCount = doc.getRoot().listMeshes().length;

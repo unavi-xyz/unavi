@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { SPACE_ID_LENGTH } from "@/app/api/projects/constants";
+import { SPACE_ID_LENGTH } from "@/app/api/spaces/constants";
 
 import { SPACE_NFT_FILE } from "./files";
 

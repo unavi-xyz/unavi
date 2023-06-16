@@ -22,5 +22,10 @@ export default function Canvas() {
     };
   }, [canvas]);
 
-  return <canvas ref={canvas} style={{ flex: 1, touchAction: "none", width: "100%" }} />;
+  return (
+    <canvas
+      ref={canvas}
+      style={{ flex: 1, touchAction: "none", width: "100%" }}
+    />
+  );
 }

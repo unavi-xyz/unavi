@@ -26,7 +26,9 @@ export class Space {
   }
 
   playerId(player: Player) {
-    return Array.from(this.players.keys()).find((id) => this.players.get(id) === player);
+    return Array.from(this.players.keys()).find(
+      (id) => this.players.get(id) === player
+    );
   }
 
   join(player: Player) {
@@ -80,7 +82,8 @@ export class Space {
       });
 
       // Consume current players
-      if (otherPlayer.producer) player.consume(otherPlayer.producer, this.uri, otherPlayerId);
+      if (otherPlayer.producer)
+        player.consume(otherPlayer.producer, this.uri, otherPlayerId);
       if (otherPlayer.dataProducer)
         player.consumeData(otherPlayer.dataProducer, this.uri, otherPlayerId);
     });
@@ -125,35 +128,50 @@ export class Space {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
-    this.#publish({ data: { message, playerId }, id: "xyz.unavi.world.chat.message" });
+    this.#publish({
+      data: { message, playerId },
+      id: "xyz.unavi.world.chat.message",
+    });
   }
 
   setGrounded(player: Player, grounded: boolean) {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
-    this.#publish({ data: { grounded, playerId }, id: "xyz.unavi.world.player.grounded" });
+    this.#publish({
+      data: { grounded, playerId },
+      id: "xyz.unavi.world.player.grounded",
+    });
   }
 
   setName(player: Player, name: string | null) {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
-    this.#publish({ data: { name: name, playerId }, id: "xyz.unavi.world.player.name" });
+    this.#publish({
+      data: { name: name, playerId },
+      id: "xyz.unavi.world.player.name",
+    });
   }
 
   setHandle(player: Player, handle: string | null) {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
-    this.#publish({ data: { handle, playerId }, id: "xyz.unavi.world.player.handle" });
+    this.#publish({
+      data: { handle, playerId },
+      id: "xyz.unavi.world.player.handle",
+    });
   }
 
   setAvatar(player: Player, avatar: string | null) {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
-    this.#publish({ data: { avatar: avatar, playerId }, id: "xyz.unavi.world.player.avatar" });
+    this.#publish({
+      data: { avatar: avatar, playerId },
+      id: "xyz.unavi.world.player.avatar",
+    });
   }
 
   setProducer(player: Player, producer: Producer) {

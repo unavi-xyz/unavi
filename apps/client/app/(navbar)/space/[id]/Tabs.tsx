@@ -18,10 +18,14 @@ export default async function Tabs({ id, metadata }: Props) {
   const session = await getUserSession();
 
   const owner =
-    id.type === "tokenId" ? await fetchNFTSpaceOwner(id.value) : await fetchSpaceDBOwner(id.value);
+    id.type === "tokenId"
+      ? await fetchNFTSpaceOwner(id.value)
+      : await fetchSpaceDBOwner(id.value);
 
   const isOwner =
-    id.type === "tokenId" ? session?.user.address === owner : session?.user.userId === owner;
+    id.type === "tokenId"
+      ? session?.user.address === owner
+      : session?.user.userId === owner;
 
   return (
     <>

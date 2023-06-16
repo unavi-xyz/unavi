@@ -47,12 +47,20 @@ export default function Overlay({ id, metadata }: Props) {
               }
             >
               <div className="-ml-1">
-                <Image src={Logo} alt="Logo" width={52} height={52} draggable={false} />
+                <Image
+                  src={Logo}
+                  alt="Logo"
+                  width={52}
+                  height={52}
+                  draggable={false}
+                />
               </div>
             </Link>
 
             <div>
-              <div className="text-lg font-bold leading-6">{metadata.info?.name}</div>
+              <div className="text-lg font-bold leading-6">
+                {metadata.info?.name}
+              </div>
               <div className="text-sm leading-4 text-white/70">{host}</div>
             </div>
           </div>
@@ -67,7 +75,11 @@ export default function Overlay({ id, metadata }: Props) {
 
       <div className="fixed bottom-0 left-1/2 z-20 -translate-x-1/2 space-x-2 pb-4">
         <MicButton className="h-[52px] w-[52px] rounded-full bg-black/50 text-2xl text-white backdrop-blur-lg transition hover:bg-black/70 active:scale-95">
-          {micEnabled ? <MdMic className="w-full" /> : <MdMicOff className="w-full" />}
+          {micEnabled ? (
+            <MdMic className="w-full" />
+          ) : (
+            <MdMicOff className="w-full" />
+          )}
         </MicButton>
 
         <button

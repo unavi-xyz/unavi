@@ -4,7 +4,12 @@ import { getUserSession } from "@/src/server/auth/getUserSession";
 import { prisma } from "@/src/server/prisma";
 
 import { getSpaceModelDownloadURL, getSpaceModelUploadURL } from "./files";
-import { GetFileDownloadResponse, GetFileUploadResponse, Params, paramsSchema } from "./types";
+import {
+  GetFileDownloadResponse,
+  GetFileUploadResponse,
+  Params,
+  paramsSchema,
+} from "./types";
 
 // Get file download URL
 export async function GET(request: NextRequest, { params }: Params) {
@@ -18,7 +23,8 @@ export async function GET(request: NextRequest, { params }: Params) {
     include: { SpaceModel: true },
     where: { ownerId: session.user.userId, publicId: id },
   });
-  if (!found?.SpaceModel) return new Response("Space not found", { status: 404 });
+  if (!found?.SpaceModel)
+    return new Response("Space not found", { status: 404 });
 
   const url = await getSpaceModelDownloadURL(found.SpaceModel.publicId, file);
 
@@ -38,7 +44,8 @@ export async function PUT(request: NextRequest, { params }: Params) {
     include: { SpaceModel: true },
     where: { ownerId: session.user.userId, publicId: id },
   });
-  if (!found?.SpaceModel) return new Response("Space not found", { status: 404 });
+  if (!found?.SpaceModel)
+    return new Response("Space not found", { status: 404 });
 
   const url = await getSpaceModelUploadURL(found.SpaceModel.publicId, file);
 

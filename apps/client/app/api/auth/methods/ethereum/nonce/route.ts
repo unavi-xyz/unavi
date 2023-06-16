@@ -24,7 +24,9 @@ export async function GET(request: NextRequest) {
 
   // Check if ethereum session exists in database
   let ethSessionExists = false;
-  if (id) ethSessionExists = (await prisma.authEthereumSession.count({ where: { id } })) > 0;
+  if (id)
+    ethSessionExists =
+      (await prisma.authEthereumSession.count({ where: { id } })) > 0;
 
   if (!ethSessionExists) {
     // If no ethereum session, create a new one

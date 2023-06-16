@@ -30,7 +30,8 @@ export default function ChatBox({ alwaysShow }: Props) {
   useEffect(() => {
     if (chatBoxFocused || !isPointerLocked) {
       // Scroll to bottom of chat
-      if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
+      if (chatRef.current)
+        chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
   }, [chatBoxFocused, isPointerLocked]);
 
@@ -43,7 +44,11 @@ export default function ChatBox({ alwaysShow }: Props) {
         {chatMessages
           .sort((a, b) => b.timestamp - a.timestamp)
           .map((message) => (
-            <ChatMessage key={message.id} message={message} alwaysShow={alwaysShow} />
+            <ChatMessage
+              key={message.id}
+              message={message}
+              alwaysShow={alwaysShow}
+            />
           ))}
       </div>
 
@@ -69,7 +74,9 @@ export default function ChatBox({ alwaysShow }: Props) {
           onBlur={() => usePlayStore.setState({ chatBoxFocused: false })}
           type="text"
           maxLength={100}
-          placeholder={chatBoxFocused ? "Send a message..." : "Press ENTER to chat"}
+          placeholder={
+            chatBoxFocused ? "Send a message..." : "Press ENTER to chat"
+          }
           className="h-full w-full rounded-lg bg-black/50 px-4 text-white outline-none transition placeholder:text-white/80 hover:bg-black/60 focus:bg-black/70 focus:backdrop-blur-lg focus:placeholder:text-white/75"
         />
       </div>

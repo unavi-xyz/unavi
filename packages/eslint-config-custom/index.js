@@ -15,7 +15,12 @@ module.exports = {
     "turbo",
   ],
   parser: "@typescript-eslint/parser",
-  plugins: ["@typescript-eslint", "simple-import-sort", "sort-keys-fix", "unused-imports"],
+  plugins: [
+    "@typescript-eslint",
+    "simple-import-sort",
+    "sort-keys-fix",
+    "unused-imports",
+  ],
   rules: {
     "@next/next/no-html-link-for-pages": "off",
     "@next/next/no-img-element": "off",

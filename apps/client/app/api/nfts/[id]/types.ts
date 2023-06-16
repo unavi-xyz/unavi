@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { SPACE_NFT_ID_LENGTH } from "../../projects/constants";
+import { SPACE_NFT_ID_LENGTH } from "../../spaces/constants";
 
 export type Params = { params: { id: string } };
 

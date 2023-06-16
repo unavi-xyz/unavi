@@ -58,7 +58,9 @@ export function SignInPage({ setOpen }: { setOpen?: (open: boolean) => void }) {
       {env.NEXT_PUBLIC_HAS_GOOGLE_OAUTH ? (
         <div className="flex w-full items-center pt-4">
           <hr className="w-full border-neutral-300" />
-          <span className="w-fit whitespace-nowrap px-4 font-bold text-neutral-700">Web3</span>
+          <span className="w-fit whitespace-nowrap px-4 font-bold text-neutral-700">
+            Web3
+          </span>
           <hr className="w-full border-neutral-300" />
         </div>
       ) : null}
@@ -69,7 +71,9 @@ export function SignInPage({ setOpen }: { setOpen?: (open: boolean) => void }) {
         <>
           <div className="flex w-full items-center pt-8">
             <hr className="w-full border-neutral-300" />
-            <span className="w-fit whitespace-nowrap px-4 font-bold text-neutral-700">Socials</span>
+            <span className="w-fit whitespace-nowrap px-4 font-bold text-neutral-700">
+              Socials
+            </span>
             <hr className="w-full border-neutral-300" />
           </div>
           <a

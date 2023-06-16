@@ -4,7 +4,12 @@ import { getUserSession } from "@/src/server/auth/getUserSession";
 import { prisma } from "@/src/server/prisma";
 
 import { getSpaceNFTDownloadURL, getSpaceNFTUploadURL } from "./files";
-import { GetFileDownloadResponse, GetFileUploadResponse, Params, paramsSchema } from "./types";
+import {
+  GetFileDownloadResponse,
+  GetFileUploadResponse,
+  Params,
+  paramsSchema,
+} from "./types";
 
 // Get file download URL
 export async function GET(request: NextRequest, { params }: Params) {

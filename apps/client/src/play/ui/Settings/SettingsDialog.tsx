@@ -35,7 +35,8 @@ export default function SettingsDialog({ open, setOpen }: Props) {
 
     if (!engine) return;
 
-    const { didChangeName, didChangeAvatar, nickname, avatar } = usePlayStore.getState();
+    const { didChangeName, didChangeAvatar, nickname, avatar } =
+      usePlayStore.getState();
 
     if (didChangeName) {
       usePlayStore.setState({ didChangeName: false });

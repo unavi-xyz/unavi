@@ -62,7 +62,10 @@ export async function PUT(request: NextRequest, { params }: Params) {
   const [url] = await Promise.all([
     getUploadURL(),
     removePreviousFile(),
-    prisma.profile.update({ data: { [idName]: fileId }, where: { userId: session.userId } }),
+    prisma.profile.update({
+      data: { [idName]: fileId },
+      where: { userId: session.userId },
+    }),
   ]);
 
   const json: GetFileUploadResponse = { fileId, url };

@@ -1,6 +1,11 @@
 import { ModelStats } from "./getModelStats";
 
-export type AvatarPerformanceRank = "Excellent" | "Good" | "Medium" | "Poor" | "Very Poor";
+export type AvatarPerformanceRank =
+  | "Excellent"
+  | "Good"
+  | "Medium"
+  | "Poor"
+  | "Very Poor";
 
 type WithoutVeryPoor = Exclude<AvatarPerformanceRank, "Very Poor">;
 type AvatarStats = Omit<ModelStats, "fileSize">;
@@ -39,7 +44,9 @@ const thresholds: Record<WithoutVeryPoor, AvatarStats> = {
   },
 };
 
-export function avatarPerformanceRank(stats: ModelStats): AvatarPerformanceRank {
+export function avatarPerformanceRank(
+  stats: ModelStats
+): AvatarPerformanceRank {
   const keys = Object.keys(thresholds) as WithoutVeryPoor[];
 
   for (let i = 0; i < keys.length; i++) {

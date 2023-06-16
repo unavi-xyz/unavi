@@ -93,7 +93,9 @@ function Avatars({ onClose, page }: AvatarsProps) {
 
   if (error) {
     console.error(error);
-    return <div className="text-center text-red-900">Error fetching avatars</div>;
+    return (
+      <div className="text-center text-red-900">Error fetching avatars</div>
+    );
   }
 
   const parsed = nftsResponseSchema.safeParse(data);

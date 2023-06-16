@@ -1,1 +1,1 @@
-export * from "./components/LatticeClient";
+export * from "./components/Client";

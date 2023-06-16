@@ -20,12 +20,8 @@
     "lint": "cd ../.. && eslint --fix packages/react-client --ext .ts,.tsx,.mjs,.json --ignore-path .gitignore --ignore-path .prettierignore --ignore-pattern package.json"
   },
   "dependencies": {
-    "@unavi/engine": "workspace:^",
-    "@wired-protocol/types": "^0.0.20",
     "lattice-engine": "^0.2.3",
-    "mediasoup-client": "^3.6.84",
-    "nanoid": "^4.0.2",
-    "thyseus": "^0.12.1"
+    "mediasoup-client": "^3.6.84"
   },
   "devDependencies": {
     "@thyseus/transformer-rollup": "^0.12.0",
@@ -39,7 +35,10 @@
     "vite-plugin-dts": "^2.3.0"
   },
   "peerDependencies": {
+    "@wired-protocol/types": "^0.0.20",
+    "nanoid": "^4.0.2",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "thyseus": "^0.12.1"
   }
 }

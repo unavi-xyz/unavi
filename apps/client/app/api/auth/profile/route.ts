@@ -35,7 +35,8 @@ export async function GET(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   const parsed = UpdateProfileSchema.safeParse(await request.json());
-  if (!parsed.success) return new Response(JSON.stringify(parsed.error), { status: 400 });
+  if (!parsed.success)
+    return new Response(JSON.stringify(parsed.error), { status: 400 });
 
   const authRequest = auth.handleRequest({ cookies, request });
   const { session, user } = await authRequest.validateUser();
@@ -53,7 +54,9 @@ export async function PATCH(request: NextRequest) {
   // Update username
   if (username && username !== user.username) {
     // Check if username is taken
-    const existingUser = await prisma.authUser.findUnique({ where: { username } });
+    const existingUser = await prisma.authUser.findUnique({
+      where: { username },
+    });
     if (existingUser) return new Response(null, { status: 409 });
 
     await prisma.authUser.update({

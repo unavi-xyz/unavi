@@ -49,7 +49,12 @@ export default function AvatarSettings({ setPage }: Props) {
 
   const rank = stats ? avatarPerformanceRank(stats) : null;
 
-  if (!env.NEXT_PUBLIC_HAS_S3 && !env.NEXT_PUBLIC_CRYPTOAVATARS_API_KEY && !avatar) return null;
+  if (
+    !env.NEXT_PUBLIC_HAS_S3 &&
+    !env.NEXT_PUBLIC_CRYPTOAVATARS_API_KEY &&
+    !avatar
+  )
+    return null;
 
   return (
     <section className="space-y-1">
@@ -64,7 +69,9 @@ export default function AvatarSettings({ setPage }: Props) {
           <div className="flex items-center rounded-xl px-4 py-3 ring-1 ring-inset ring-neutral-300">
             <div className="flex h-full items-stretch space-x-4">
               <div className="flex w-1/3 min-w-fit flex-col justify-between">
-                {stats && !stats.name ? null : <div className="text-neutral-700">Name</div>}
+                {stats && !stats.name ? null : (
+                  <div className="text-neutral-700">Name</div>
+                )}
                 <div className="text-neutral-700">Performance</div>
                 <div className="text-neutral-700">Size</div>
               </div>
@@ -97,7 +104,9 @@ export default function AvatarSettings({ setPage }: Props) {
                 )}
 
                 {stats ? (
-                  <div className="font-medium">{bytesToDisplay(stats.fileSize)}</div>
+                  <div className="font-medium">
+                    {bytesToDisplay(stats.fileSize)}
+                  </div>
                 ) : (
                   <div className="h-5 w-24 animate-pulse rounded-md bg-neutral-200" />
                 )}
@@ -111,7 +120,10 @@ export default function AvatarSettings({ setPage }: Props) {
                 onClick={() => {
                   setAvatarName(undefined);
                   setShowStats(false);
-                  usePlayStore.setState({ avatar: null, didChangeAvatar: true });
+                  usePlayStore.setState({
+                    avatar: null,
+                    didChangeAvatar: true,
+                  });
                 }}
                 className="flex h-11 w-11 items-center justify-center rounded-lg text-xl transition hover:bg-red-100 active:opacity-90"
               >

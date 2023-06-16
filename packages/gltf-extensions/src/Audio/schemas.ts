@@ -47,11 +47,21 @@ const audioEmitterDistanceModelSchema = z.union([
   z.literal("exponential"),
 ]);
 
-export type AudioEmitterDistanceModel = z.infer<typeof audioEmitterDistanceModelSchema>;
+export type AudioEmitterDistanceModel = z.infer<
+  typeof audioEmitterDistanceModelSchema
+>;
 
 const positionalEmitterSchema = z.object({
-  coneInnerAngle: z.number().min(0.0).max(6.283185307179586).default(6.283185307179586),
-  coneOuterAngle: z.number().min(0.0).max(6.283185307179586).default(6.283185307179586),
+  coneInnerAngle: z
+    .number()
+    .min(0.0)
+    .max(6.283185307179586)
+    .default(6.283185307179586),
+  coneOuterAngle: z
+    .number()
+    .min(0.0)
+    .max(6.283185307179586)
+    .default(6.283185307179586),
   coneOuterGain: z.number().min(0.0).max(1.0).default(0.0),
   distanceModel: audioEmitterDistanceModelSchema.default("inverse"),
   extensions: z.unknown().optional(),
@@ -61,9 +71,14 @@ const positionalEmitterSchema = z.object({
   rolloffFactor: z.number().min(0.0).default(1.0),
 });
 
-export type AudioEmitterPositionalDef = Partial<z.infer<typeof positionalEmitterSchema>>;
+export type AudioEmitterPositionalDef = Partial<
+  z.infer<typeof positionalEmitterSchema>
+>;
 
-const audioEmitterTypeSchema = z.union([z.literal("positional"), z.literal("global")]);
+const audioEmitterTypeSchema = z.union([
+  z.literal("positional"),
+  z.literal("global"),
+]);
 
 export type AudioEmitterType = z.infer<typeof audioEmitterTypeSchema>;
 
@@ -82,7 +97,8 @@ export const audioEmitterSchema = z
       return !(obj.type === "positional" && !obj.positional);
     },
     {
-      message: "Positional audio emitter must have 'positional' property defined",
+      message:
+        "Positional audio emitter must have 'positional' property defined",
     }
   );
 

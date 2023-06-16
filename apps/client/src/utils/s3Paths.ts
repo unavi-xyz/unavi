@@ -9,14 +9,16 @@ export class S3Path {
 
   static profile = (userId: string) => {
     return {
-      background: (fileId: string) => `profiles/${userId}/background/${fileId}` as const,
+      background: (fileId: string) =>
+        `profiles/${userId}/background/${fileId}` as const,
       image: (fileId: string) => `profiles/${userId}/image/${fileId}` as const,
     } as const;
   };
 
   static project = (projectId: string) =>
     ({
-      asset: (assetId: string) => `projects/${projectId}/assets/${assetId}` as const,
+      asset: (assetId: string) =>
+        `projects/${projectId}/assets/${assetId}` as const,
       assets: `projects/${projectId}/assets`,
       directory: `projects/${projectId}`,
       image: `projects/${projectId}/image`,
@@ -25,7 +27,8 @@ export class S3Path {
 
   static spaceModel = (modelId: string) =>
     ({
-      asset: (assetId: string) => `spaces/${modelId}/assets/${assetId}` as const,
+      asset: (assetId: string) =>
+        `spaces/${modelId}/assets/${assetId}` as const,
       directory: `spaces/${modelId}`,
       image: `spaces/${modelId}/image`,
       metadata: `spaces/${modelId}/metadata.json`,

@@ -16,8 +16,8 @@ import { SPACE_ADDRESS } from "@/src/contracts/addresses";
 import { ERC721Metadata } from "@/src/contracts/erc721";
 import { SPACE_ABI } from "@/src/contracts/SpaceAbi";
 import { env } from "@/src/env.mjs";
-import { parseError } from "@/src/studio/utils/parseError";
 import Button from "@/src/ui/Button";
+import { parseError } from "@/src/utils/parseError";
 import { SpaceDBId } from "@/src/utils/parseSpaceId";
 import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 import { toHex } from "@/src/utils/toHex";
@@ -97,7 +97,11 @@ export default function Mint({ id, metadata }: Props) {
       const findTokenId = async (): Promise<number> => {
         // Loop backwards through past 10 tokens to find the one we just minted
         const count = Number(
-          await readContract({ abi: SPACE_ABI, address: SPACE_ADDRESS, functionName: "count" })
+          await readContract({
+            abi: SPACE_ABI,
+            address: SPACE_ADDRESS,
+            functionName: "count",
+          })
         );
 
         const max = Math.min(count, 10);
@@ -131,7 +135,9 @@ export default function Mint({ id, metadata }: Props) {
         attempts++;
         if (attempts > 4) throw new Error("Failed to find token ID");
 
-        return new Promise((resolve) => setTimeout(() => resolve(findTokenId()), 1000));
+        return new Promise((resolve) =>
+          setTimeout(() => resolve(findTokenId()), 1000)
+        );
       };
 
       const tokenId = await findTokenId();
@@ -161,7 +167,11 @@ export default function Mint({ id, metadata }: Props) {
         Mint the space as an NFT, making it easier for others to discover.
       </div>
 
-      <Button disabled={loading || !user} onClick={handleMint} className="rounded-xl bg-sky-700">
+      <Button
+        disabled={loading || !user}
+        onClick={handleMint}
+        className="rounded-xl bg-sky-700"
+      >
         Mint
       </Button>
     </div>

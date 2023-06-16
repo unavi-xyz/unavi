@@ -4,20 +4,22 @@ interface Props extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
 }
 
-const TextField = forwardRef<HTMLInputElement, Props>(({ label, className, ...rest }, ref) => {
-  return (
-    <label className="block space-y-1">
-      {label && <div className="font-bold text-neutral-700">{label}</div>}
+const TextField = forwardRef<HTMLInputElement, Props>(
+  ({ label, className, ...rest }, ref) => {
+    return (
+      <label className="block space-y-1">
+        {label && <div className="font-bold text-neutral-700">{label}</div>}
 
-      <input
-        ref={ref}
-        type="text"
-        className={`w-full rounded-lg border border-neutral-200 px-3 py-2 ${className}`}
-        {...rest}
-      />
-    </label>
-  );
-});
+        <input
+          ref={ref}
+          type="text"
+          className={`w-full rounded-lg border border-neutral-200 px-3 py-2 ${className}`}
+          {...rest}
+        />
+      </label>
+    );
+  }
+);
 
 TextField.displayName = "TextField";
 

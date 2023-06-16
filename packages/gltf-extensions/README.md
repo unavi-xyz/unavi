@@ -23,7 +23,10 @@ import { NodeIO } from "@gltf-transform/core";
 import { ColliderExtension, SpawnPointExtension } from "@unavi/gltf-extensions";
 
 // Register extensions
-const io = new NodeIO().registerExtensions([ColliderExtension, SpawnPointExtension]);
+const io = new NodeIO().registerExtensions([
+  ColliderExtension,
+  SpawnPointExtension,
+]);
 
 // Read from URL
 const document = await io.read("path/to/model.glb");

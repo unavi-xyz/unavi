@@ -14,7 +14,8 @@ import { LoginResponse } from "./types";
  */
 export async function POST(request: NextRequest) {
   const parsedInput = AuthSchema.safeParse(await request.json());
-  if (!parsedInput.success) return new Response(JSON.stringify(parsedInput.error), { status: 400 });
+  if (!parsedInput.success)
+    return new Response(JSON.stringify(parsedInput.error), { status: 400 });
 
   // Validate signature
   const result = await validateEthereumAuth(request, parsedInput.data);
@@ -24,7 +25,11 @@ export async function POST(request: NextRequest) {
 
   try {
     // Get user
-    const key = await auth.useKey(AuthMethod.Ethereum, result.data.address, null);
+    const key = await auth.useKey(
+      AuthMethod.Ethereum,
+      result.data.address,
+      null
+    );
     user = await auth.getUser(key.userId);
   } catch {
     // Create user if it doesn't exist

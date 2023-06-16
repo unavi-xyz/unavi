@@ -14,7 +14,9 @@ const key_file_name = process.env.SSL_KEY;
 // Create WebSocket server
 // Use SSL if cert and key are provided
 const server =
-  cert_file_name && key_file_name ? uWS.SSLApp({ cert_file_name, key_file_name }) : uWS.App();
+  cert_file_name && key_file_name
+    ? uWS.SSLApp({ cert_file_name, key_file_name })
+    : uWS.App();
 
 // Create Mediasoup router
 const { router, webRtcServer } = await createMediasoupWorker();
@@ -113,7 +115,9 @@ server.ws<UserData>("/*", {
 
       case "xyz.unavi.webrtc.transport.connect": {
         const transport =
-          data.type === "producer" ? player.producerTransport : player.consumerTransport;
+          data.type === "producer"
+            ? player.producerTransport
+            : player.consumerTransport;
         if (!transport) break;
 
         transport.connect({ dtlsParameters: data.dtlsParameters });

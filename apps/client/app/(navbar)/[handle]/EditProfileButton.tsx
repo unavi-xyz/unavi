@@ -15,12 +15,12 @@ import { getProfileUploadURL } from "@/app/api/auth/profile/upload/[file]/helper
 import { ProfileFile } from "@/app/api/auth/profile/upload/[file]/types";
 import { useAuth } from "@/src/client/AuthProvider";
 import { env } from "@/src/env.mjs";
-import { cropImage } from "@/src/studio/utils/cropImage";
-import { parseError } from "@/src/studio/utils/parseError";
 import Button from "@/src/ui/Button";
 import DialogContent, { DialogRoot, DialogTrigger } from "@/src/ui/Dialog";
 import ImageInput from "@/src/ui/ImageInput";
 import TextArea from "@/src/ui/TextArea";
+import { cropImage } from "@/src/utils/cropImage";
+import { parseError } from "@/src/utils/parseError";
 import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
 interface Props {
@@ -31,13 +31,21 @@ interface Props {
   background?: string;
 }
 
-export default function EditProfileButton({ userId, username, bio, image, background }: Props) {
+export default function EditProfileButton({
+  userId,
+  username,
+  bio,
+  image,
+  background,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageDisplay, setImageDisplay] = useState<string | null>(null);
   const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
-  const [backgroundDisplay, setBackgroundDisplay] = useState<string | null>(null);
+  const [backgroundDisplay, setBackgroundDisplay] = useState<string | null>(
+    null
+  );
 
   const { user } = useAuth();
   const router = useRouter();
@@ -83,7 +91,9 @@ export default function EditProfileButton({ userId, username, bio, image, backgr
 
       try {
         // Get S3 URL
-        const { url, fileId } = await getProfileUploadURL(ProfileFile.background);
+        const { url, fileId } = await getProfileUploadURL(
+          ProfileFile.background
+        );
 
         // Upload image
         const res = await fetch(url, {
@@ -108,7 +118,10 @@ export default function EditProfileButton({ userId, username, bio, image, backgr
     setLoading(true);
 
     try {
-      const [imageUrl, backgroundUrl] = await Promise.all([uploadImage(), uploadBackground()]);
+      const [imageUrl, backgroundUrl] = await Promise.all([
+        uploadImage(),
+        uploadBackground(),
+      ]);
 
       await updateProfile({
         background: backgroundUrl,
@@ -198,7 +211,9 @@ export default function EditProfileButton({ userId, username, bio, image, backgr
                 placeholder={username}
                 minLength={MIN_USERNAME_LENGTH}
                 maxLength={MAX_USERNAME_LENGTH}
-                className={`w-full rounded-r-lg bg-white px-4 ${loading ? "opacity-70" : ""}`}
+                className={`w-full rounded-r-lg bg-white px-4 ${
+                  loading ? "opacity-70" : ""
+                }`}
               />
             </div>
           </label>

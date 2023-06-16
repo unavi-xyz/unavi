@@ -33,6 +33,14 @@ export async function validateSpaceNFT(
   }
 }
 
-export type ValidNFTSpace = { id: SpaceNFTId; uri: string; metadata: WorldMetadata };
-export type ValidDBSpace = { id: SpaceDBId; uri: string; metadata: WorldMetadata };
+export type ValidNFTSpace = {
+  id: SpaceNFTId;
+  uri: string;
+  metadata: WorldMetadata;
+};
+export type ValidDBSpace = {
+  id: SpaceDBId;
+  uri: string;
+  metadata: WorldMetadata;
+};
 export type ValidSpace = ValidNFTSpace | ValidDBSpace;

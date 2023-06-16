@@ -98,7 +98,12 @@ export default async function Handle({ params }: Props) {
           <section className="flex justify-center px-4 md:px-0">
             <div className="flex w-full flex-col items-center space-y-2">
               <div className="relative z-10 -mt-16 flex w-32 rounded-full ring-4 ring-white">
-                <Avatar src={user?.Profile?.image} circle uniqueKey={username} size={128} />
+                <Avatar
+                  src={user?.Profile?.image}
+                  circle
+                  uniqueKey={username}
+                  size={128}
+                />
 
                 <AuthProvider>
                   <EditProfileButton
@@ -119,7 +124,9 @@ export default async function Handle({ params }: Props) {
               </div>
 
               {user?.Profile?.bio && (
-                <div className="w-full whitespace-pre-line text-center">{user.Profile.bio}</div>
+                <div className="w-full whitespace-pre-line text-center">
+                  {user.Profile.bio}
+                </div>
               )}
             </div>
           </section>

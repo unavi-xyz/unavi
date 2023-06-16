@@ -15,7 +15,9 @@ export default async function About({ id, metadata }: Props) {
         <div>
           <div className="text-lg font-semibold">Description</div>
 
-          <div className="whitespace-pre-line text-neutral-800">{metadata.info.description}</div>
+          <div className="whitespace-pre-line text-neutral-800">
+            {metadata.info.description}
+          </div>
         </div>
       )}
 
@@ -30,7 +32,10 @@ export default async function About({ id, metadata }: Props) {
             </div>
 
             <div className="flex w-full flex-col justify-between">
-              <a href={`https://sepolia.etherscan.io/address/${SPACE_ADDRESS}`} target="_blank">
+              <a
+                href={`https://sepolia.etherscan.io/address/${SPACE_ADDRESS}`}
+                target="_blank"
+              >
                 {SPACE_ADDRESS.slice(0, 16)}...
               </a>
 

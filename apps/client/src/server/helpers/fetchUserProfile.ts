@@ -14,18 +14,23 @@ export type UserProfile = {
 /**
  * Fetches a user's profile given their handle
  */
-export async function fetchUserProfile(handle: string): Promise<UserProfile | null> {
+export async function fetchUserProfile(
+  handle: string
+): Promise<UserProfile | null> {
   const { username, domain } = parseHandle(handle);
   if (!username || !domain) return null;
 
-  if (domain === env.NEXT_PUBLIC_DEPLOYED_URL) return await fetchUserProfileDB(username);
+  if (domain === env.NEXT_PUBLIC_DEPLOYED_URL)
+    return await fetchUserProfileDB(username);
   else return await fetchUserProfileWired(username, domain);
 }
 
 /**
  * Fetches a user's profile from the database
  */
-export async function fetchUserProfileDB(username: string): Promise<UserProfile | null> {
+export async function fetchUserProfileDB(
+  username: string
+): Promise<UserProfile | null> {
   try {
     const user = await prisma.authUser.findUnique({
       include: { Profile: true },

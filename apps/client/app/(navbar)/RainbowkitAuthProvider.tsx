@@ -24,14 +24,21 @@ interface RainbowKitAuthProviderProps {
 /**
  * A wrapper for the RainbowKit authentication provider that uses our auth context
  */
-export function RainbowKitAuthProvider({ children, enabled }: RainbowKitAuthProviderProps) {
+export function RainbowKitAuthProvider({
+  children,
+  enabled,
+}: RainbowKitAuthProviderProps) {
   const { status, login, logout } = useAuth();
 
   const adapter = useMemo(
     () =>
       createAuthenticationAdapter({
         createMessage: ({ address, chainId, nonce }) => {
-          const unconfigurableOptions: UnconfigurableMessageOptions = { address, chainId, nonce };
+          const unconfigurableOptions: UnconfigurableMessageOptions = {
+            address,
+            chainId,
+            nonce,
+          };
 
           return new SiweMessage({
             domain: window.location.host,
@@ -65,7 +72,11 @@ export function RainbowKitAuthProvider({ children, enabled }: RainbowKitAuthProv
   );
 
   return (
-    <RainbowKitAuthenticationProvider adapter={adapter} enabled={enabled} status={status}>
+    <RainbowKitAuthenticationProvider
+      adapter={adapter}
+      enabled={enabled}
+      status={status}
+    >
       {children}
     </RainbowKitAuthenticationProvider>
   );

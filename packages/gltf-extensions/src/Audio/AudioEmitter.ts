@@ -1,4 +1,9 @@
-import { ExtensionProperty, IProperty, Nullable, PropertyType } from "@gltf-transform/core";
+import {
+  ExtensionProperty,
+  IProperty,
+  Nullable,
+  PropertyType,
+} from "@gltf-transform/core";
 
 import { EXTENSION_NAME } from "../constants";
 import { AudioSource } from "./AudioSource";
@@ -28,7 +33,10 @@ export class AudioEmitter extends ExtensionProperty<IAudioEmitter> {
   static override readonly EXTENSION_NAME = EXTENSION_NAME.Audio;
   declare extensionName: typeof EXTENSION_NAME.Audio;
   declare propertyType: typeof AudioPropertyType.AudioEmitter;
-  declare parentTypes: [PropertyType.NODE, AudioPropertyType.SceneAudioEmitters];
+  declare parentTypes: [
+    PropertyType.NODE,
+    AudioPropertyType.SceneAudioEmitters
+  ];
 
   static Type: Record<string, AudioEmitterType> = {
     GLOBAL: "global",
@@ -44,7 +52,10 @@ export class AudioEmitter extends ExtensionProperty<IAudioEmitter> {
   protected init() {
     this.extensionName = EXTENSION_NAME.Audio;
     this.propertyType = AudioPropertyType.AudioEmitter;
-    this.parentTypes = [PropertyType.NODE, AudioPropertyType.SceneAudioEmitters];
+    this.parentTypes = [
+      PropertyType.NODE,
+      AudioPropertyType.SceneAudioEmitters,
+    ];
   }
 
   protected override getDefaults(): Nullable<IAudioEmitter> {

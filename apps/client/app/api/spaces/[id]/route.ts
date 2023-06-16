@@ -67,10 +67,14 @@ export async function DELETE(request: NextRequest, { params }: Params) {
   // Delete files from S3
   const objectsPromise = Promise.all([
     found.SpaceModel
-      ? await listObjectsRecursive(S3Path.spaceModel(found.SpaceModel.publicId).directory)
+      ? await listObjectsRecursive(
+          S3Path.spaceModel(found.SpaceModel.publicId).directory
+        )
       : [],
     found.SpaceNFT
-      ? await listObjectsRecursive(S3Path.spaceNFT(found.SpaceNFT.publicId).directory)
+      ? await listObjectsRecursive(
+          S3Path.spaceNFT(found.SpaceNFT.publicId).directory
+        )
       : [],
   ])
     .then((results) => results.flat())
@@ -86,10 +90,12 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     );
 
   await Promise.all([
-    found.SpaceModel ? prisma.spaceModel.delete({ where: { id: found.SpaceModel.id } }) : null,
-    found.SpaceNFT ? prisma.spaceNFT.delete({ where: { id: found.SpaceNFT.id } }) : null,
-    // Disconnect projects from space
-    prisma.project.updateMany({ data: { spaceId: null }, where: { spaceId: found.id } }),
+    found.SpaceModel
+      ? prisma.spaceModel.delete({ where: { id: found.SpaceModel.id } })
+      : null,
+    found.SpaceNFT
+      ? prisma.spaceNFT.delete({ where: { id: found.SpaceNFT.id } })
+      : null,
   ]);
 
   // Delete space from database

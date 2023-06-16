@@ -3,7 +3,10 @@ import { Consumer } from "mediasoup/node/lib/Consumer";
 import { DataConsumer } from "mediasoup/node/lib/DataConsumer";
 import { DataProducer } from "mediasoup/node/lib/DataProducer";
 import { Producer } from "mediasoup/node/lib/Producer";
-import { RtpCapabilities, RtpParameters } from "mediasoup/node/lib/RtpParameters";
+import {
+  RtpCapabilities,
+  RtpParameters,
+} from "mediasoup/node/lib/RtpParameters";
 import { SctpStreamParameters } from "mediasoup/node/lib/SctpParameters";
 import { Transport } from "mediasoup/node/lib/Transport";
 
@@ -91,7 +94,8 @@ export class Player {
 
   set producer(producer: Producer | null) {
     this.#producer = producer;
-    if (producer) this.spaces.forEach((space) => space.setProducer(this, producer));
+    if (producer)
+      this.spaces.forEach((space) => space.setProducer(this, producer));
   }
 
   get dataProducer() {
@@ -100,7 +104,8 @@ export class Player {
 
   set dataProducer(dataProducer: DataProducer | null) {
     this.#dataProducer = dataProducer;
-    if (dataProducer) this.spaces.forEach((space) => space.setDataProducer(this, dataProducer));
+    if (dataProducer)
+      this.spaces.forEach((space) => space.setDataProducer(this, dataProducer));
   }
 
   join(uri: string) {
@@ -157,7 +162,10 @@ export class Player {
     if (!this.producerTransport) return;
 
     try {
-      this.producer = await this.producerTransport.produce({ kind: "audio", rtpParameters });
+      this.producer = await this.producerTransport.produce({
+        kind: "audio",
+        rtpParameters,
+      });
       this.send({ data: this.producer.id, id: "xyz.unavi.webrtc.producer.id" });
     } catch (err) {
       console.warn(err);
@@ -168,8 +176,13 @@ export class Player {
     if (!this.producerTransport) return;
 
     try {
-      this.dataProducer = await this.producerTransport.produceData({ sctpStreamParameters });
-      this.send({ data: this.dataProducer.id, id: "xyz.unavi.webrtc.dataProducer.id" });
+      this.dataProducer = await this.producerTransport.produceData({
+        sctpStreamParameters,
+      });
+      this.send({
+        data: this.dataProducer.id,
+        id: "xyz.unavi.webrtc.dataProducer.id",
+      });
     } catch (err) {
       console.warn(err);
     }
@@ -207,7 +220,11 @@ export class Player {
     }
   }
 
-  async consumeData(dataProducer: DataProducer, spaceURI: string, playerId: number) {
+  async consumeData(
+    dataProducer: DataProducer,
+    spaceURI: string,
+    playerId: number
+  ) {
     if (!this.consumerTransport) return;
 
     try {
@@ -255,7 +272,8 @@ export class Player {
     // Consume all other players
     this.spaces.forEach((space) =>
       space.players.forEach((otherPlayer, otherPlayerId) => {
-        if (otherPlayer.producer) this.consume(otherPlayer.producer, space.uri, otherPlayerId);
+        if (otherPlayer.producer)
+          this.consume(otherPlayer.producer, space.uri, otherPlayerId);
         if (otherPlayer.dataProducer)
           this.consumeData(otherPlayer.dataProducer, space.uri, otherPlayerId);
       })

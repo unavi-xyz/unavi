@@ -7,9 +7,12 @@ import { env } from "@/src/env.mjs";
 
 import AccountButton from "./AccountButton";
 import NavbarTab from "./NavbarTab";
-import StudioButton from "./StudioButton";
 
-export default function NavbarLayout({ children }: { children: React.ReactNode }) {
+export default function NavbarLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <div>
       <div className="sticky top-0 z-20 h-14 w-full">
@@ -37,8 +40,7 @@ export default function NavbarLayout({ children }: { children: React.ReactNode }
                 </a>
               </div>
 
-              <div className="flex items-center justify-end space-x-8">
-                <StudioButton />
+              <div className="flex items-center justify-end">
                 <AccountButton />
               </div>
             </div>

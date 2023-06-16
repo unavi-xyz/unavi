@@ -14,7 +14,8 @@ export default function Spaces({ spaces }: Props) {
 
   const filteredSpaces = spaces.filter(
     (space) =>
-      filter === "" || space.metadata.info?.name?.toLowerCase().includes(filter.toLowerCase())
+      filter === "" ||
+      space.metadata.info?.name?.toLowerCase().includes(filter.toLowerCase())
   );
 
   return (

@@ -43,9 +43,9 @@ This [turborepo](https://turborepo.org/) uses [pnpm](https://pnpm.io/) as a pack
 
 ### Packages
 
-- [engine](packages/engine): the game engine, built upon [Lattice](https://github.com/lattice-engine/lattice)
 - [eslint-config-custom](packages/eslint-config-custom): custom eslint config used throughout the repo
-- [react-client](packages/react-client): React components and hooks used by the client
+- [gltf-extension](packages/gltf-extension): [glTF-Transform](https://github.com/donmccurdy/glTF-Transform) extensions used by the client
+- [react-client](packages/react-client): React components and hooks used by the client engine
 - [tsconfig](packages/tsconfig): tsconfigs used throughout the repo
 
 ### Utilities

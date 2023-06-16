@@ -54,7 +54,8 @@ function StatsMenu() {
 
   if (!renderStats) return null;
 
-  const averageFPS = fpsSamplesBuffer.reduce((a, b) => a + b, 0) / fpsSamplesBuffer.length;
+  const averageFPS =
+    fpsSamplesBuffer.reduce((a, b) => a + b, 0) / fpsSamplesBuffer.length;
 
   return (
     <div className="space-y-2 rounded-xl bg-white/70 px-4 py-2 shadow backdrop-blur-lg">

@@ -28,7 +28,11 @@ export async function optimizeModel(model: Uint8Array) {
   // Compress model
   try {
     await doc.transform(
-      textureCompress({ encoder: sharp, resize: [4096, 4096], targetFormat: "webp" }),
+      textureCompress({
+        encoder: sharp,
+        resize: [4096, 4096],
+        targetFormat: "webp",
+      }),
       draco()
     );
   } catch (e) {
@@ -49,7 +53,9 @@ export async function optimizeModel(model: Uint8Array) {
     bytesToDisplay(model.byteLength),
     "->",
     bytesToDisplay(optimizedModel.byteLength),
-    `(-${Math.round((1 - optimizedModel.byteLength / model.byteLength) * 100)}%)`,
+    `(-${Math.round(
+      (1 - optimizedModel.byteLength / model.byteLength) * 100
+    )}%)`,
     `(${Math.round(performance.now() - start)}ms)`
   );
 

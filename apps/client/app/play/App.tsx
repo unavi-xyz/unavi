@@ -10,9 +10,12 @@ import { useHotkeys } from "@/src/play/hooks/useHotkeys";
 
 import { SpaceUriId } from "./types";
 
-const LatticeClient = dynamic(() => import("@unavi/react-client").then((m) => m.LatticeClient), {
-  ssr: false,
-});
+const Client = dynamic(
+  () => import("@unavi/react-client").then((m) => m.Client),
+  {
+    ssr: false,
+  }
+);
 
 interface Props {
   id: SpaceUriId;
@@ -32,11 +35,14 @@ export default function App({ id, metadata, uri }: Props) {
 
   return (
     <>
-      <Script src="/scripts/draco_wasm_wrapper_gltf.js" onReady={() => setScriptsReady(true)} />
+      <Script
+        src="/scripts/draco_wasm_wrapper_gltf.js"
+        onReady={() => setScriptsReady(true)}
+      />
 
       <div className="fixed h-screen w-screen">
         {scriptsReady && (
-          <LatticeClient
+          <Client
             uri={uri}
             host={host}
             animations="/models"

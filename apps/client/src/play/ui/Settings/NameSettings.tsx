@@ -13,7 +13,9 @@ export default function NameSettings() {
   const { playerId } = useContext(ClientContext);
 
   const guestName =
-    playerId == null || playerId === undefined ? "Guest" : `Guest ${toHex(playerId)}`;
+    playerId == null || playerId === undefined
+      ? "Guest"
+      : `Guest ${toHex(playerId)}`;
 
   if (user?.address) return null;
 
@@ -24,7 +26,10 @@ export default function NameSettings() {
       placeholder={guestName}
       value={nickname ?? ""}
       onChange={(e) => {
-        usePlayStore.setState({ didChangeName: true, nickname: e.target.value });
+        usePlayStore.setState({
+          didChangeName: true,
+          nickname: e.target.value,
+        });
       }}
       className="text-center"
     />

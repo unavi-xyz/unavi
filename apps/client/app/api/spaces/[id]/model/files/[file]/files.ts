@@ -13,7 +13,8 @@ export const SPACE_MODEL_FILE = {
   MODEL: "model",
 } as const;
 
-export type SpaceModelFile = (typeof SPACE_MODEL_FILE)[keyof typeof SPACE_MODEL_FILE];
+export type SpaceModelFile =
+  (typeof SPACE_MODEL_FILE)[keyof typeof SPACE_MODEL_FILE];
 
 export async function getSpaceModelUploadURL(id: string, type: SpaceModelFile) {
   const Key = S3Path.spaceModel(id)[type];
@@ -28,7 +29,10 @@ export async function getSpaceModelUploadURL(id: string, type: SpaceModelFile) {
   return url;
 }
 
-export async function getSpaceModelDownloadURL(id: string, type: SpaceModelFile) {
+export async function getSpaceModelDownloadURL(
+  id: string,
+  type: SpaceModelFile
+) {
   const Key = S3Path.spaceModel(id)[type];
   const command = new GetObjectCommand({ Bucket: env.S3_BUCKET, Key });
   const url = await getSignedUrl(s3Client, command, { expiresIn });

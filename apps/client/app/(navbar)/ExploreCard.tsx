@@ -9,7 +9,7 @@ export default async function ExploreCard() {
 
   return (
     <section className="space-y-4">
-      <h2 className="text-center text-2xl font-bold">🌏 Explore</h2>
+      <h2 className="text-center text-3xl font-bold">🌏 Explore</h2>
 
       <div className="flex w-full justify-center">
         <Search />

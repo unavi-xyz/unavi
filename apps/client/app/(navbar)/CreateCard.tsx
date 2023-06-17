@@ -20,12 +20,12 @@ export default function CreateCard() {
   }
 
   return (
-    <section className="relative w-full overflow-hidden rounded-3xl bg-gradient-to-tl from-red-300 to-amber-200 p-6">
-      <div className="absolute -bottom-4 -left-12 -rotate-12 select-none text-8xl opacity-40 md:text-9xl lg:left-[8%]">
+    <section className="relative w-full overflow-hidden rounded-3xl bg-gradient-to-tl from-orange-300 to-yellow-200 p-8">
+      <div className="absolute -bottom-4 -left-12 -rotate-12 select-none text-8xl opacity-50 md:text-9xl">
         🏗️
       </div>
 
-      <div className="flex flex-col items-center justify-center space-y-4">
+      <div className="flex h-full flex-col items-center justify-center space-y-2">
         <h2 className="z-10 text-center text-3xl font-bold">
           Create your world. <br /> Share it with others.
         </h2>

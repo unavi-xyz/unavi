@@ -1,8 +1,7 @@
 import { Metadata } from "next";
 
-import AuthProvider from "@/src/client/AuthProvider";
-
 import { metadata as baseMetadata } from "../layout";
+import CommunityCard from "./CommunityCard";
 import CreateCard from "./CreateCard";
 import ExploreCard from "./ExploreCard";
 
@@ -25,12 +24,13 @@ export const metadata: Metadata = {
 export default async function Home() {
   return (
     <div className="flex justify-center">
-      <main className="max-w-content mx-4 flex flex-col items-center space-y-8 py-8">
+      <main className="max-w-content mx-4 flex flex-col items-center space-y-12 py-8">
         <h1 className="text-4xl font-black">Welcome to UNAVI</h1>
 
-        <AuthProvider>
+        <div className="flex w-full flex-col space-y-8 md:flex-row md:space-x-8 md:space-y-0">
+          <CommunityCard />
           <CreateCard />
-        </AuthProvider>
+        </div>
 
         <ExploreCard />
       </main>

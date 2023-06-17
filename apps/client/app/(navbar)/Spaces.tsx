@@ -3,7 +3,7 @@
 import { ValidSpace } from "@/src/server/helpers/validateSpaceNFT";
 import SpaceCard from "@/src/ui/SpaceCard";
 
-import { useExploreStore } from "./store";
+import { useExploreStore } from "./exploreStore";
 
 interface Props {
   spaces: ValidSpace[];

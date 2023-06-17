@@ -48,7 +48,7 @@ export default function SpaceCard({
           <div className="absolute bottom-0 z-10 h-full w-full rounded-b-3xl bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 transition duration-100 ease-out group-hover:scale-105 group-hover:opacity-100" />
         </Link>
 
-        <div className="animate-fadeIn absolute bottom-0 left-0 z-20 mb-4 ml-3 hidden group-hover:block">
+        <div className="absolute bottom-0 left-0 z-20 mb-4 ml-3 hidden group-hover:block">
           <Link
             href={
               id.type === "tokenId"

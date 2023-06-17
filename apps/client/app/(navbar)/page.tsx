@@ -1,11 +1,10 @@
 import { Metadata } from "next";
 
-import { fetchLatestSpaces } from "@/src/server/helpers/fetchLatestSpaces";
-import CardGrid from "@/src/ui/CardGrid";
+import AuthProvider from "@/src/client/AuthProvider";
 
 import { metadata as baseMetadata } from "../layout";
-import Search from "./Search";
-import Spaces from "./Spaces";
+import CreateCard from "./CreateCard";
+import ExploreCard from "./ExploreCard";
 
 export const revalidate = 60;
 
@@ -24,21 +23,17 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const spaces = await fetchLatestSpaces(40);
-
   return (
     <div className="flex justify-center">
-      <div className="max-w-content mx-4 flex flex-col items-center py-8">
-        <div className="text-center text-3xl font-black">Welcome to UNAVI</div>
+      <main className="max-w-content mx-4 flex flex-col items-center space-y-8 py-8">
+        <h1 className="text-4xl font-black">Welcome to UNAVI</h1>
 
-        <div className="flex w-full justify-center pb-8 pt-6">
-          <Search />
-        </div>
+        <AuthProvider>
+          <CreateCard />
+        </AuthProvider>
 
-        <CardGrid>
-          <Spaces spaces={spaces} />
-        </CardGrid>
-      </div>
+        <ExploreCard />
+      </main>
     </div>
   );
 }

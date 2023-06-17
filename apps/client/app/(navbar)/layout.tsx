@@ -15,7 +15,7 @@ export default function NavbarLayout({
 }) {
   return (
     <div>
-      <div className="sticky top-0 z-20 h-14 w-full">
+      <div className="sticky top-0 z-20 h-16 w-full">
         <nav
           className="flex h-full w-full justify-center bg-white backdrop-blur-lg"
           style={{ paddingLeft: "calc(100vw - 100%)" }}

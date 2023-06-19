@@ -13,9 +13,9 @@ export default function Worlds({ worlds }: Props) {
   const filter = useExploreStore((state) => state.filter);
 
   const filtered = worlds.filter(
-    (space) =>
+    (world) =>
       filter === "" ||
-      space.metadata.info?.name?.toLowerCase().includes(filter.toLowerCase())
+      world.metadata.info?.name?.toLowerCase().includes(filter.toLowerCase())
   );
 
   return (

@@ -7,10 +7,10 @@ import { useLoadUser } from "@/src/play/hooks/useLoadUser";
 import LoadingScreen from "@/src/play/ui/LoadingScreen";
 
 import FileDrop from "./FileDrop";
-import { SpaceUriId } from "./types";
+import { WorldUriId } from "./types";
 
 interface Props {
-  id: SpaceUriId;
+  id: WorldUriId;
   metadata: WorldMetadata;
 }
 

@@ -3,22 +3,22 @@ import { DataProducer } from "mediasoup/node/lib/DataProducer";
 import { Producer } from "mediasoup/node/lib/Producer";
 
 import { Player } from "./Player";
-import { SpaceRegistry } from "./SpaceRegistry";
 import { toHex } from "./utils/toHex";
+import { WorldRegistry } from "./WorldRegistry";
 
-export class Space {
+export class World {
   readonly uri: string;
-  #registry: SpaceRegistry;
+  #registry: WorldRegistry;
 
   players = new Map<number, Player>();
 
-  constructor(uri: string, registry: SpaceRegistry) {
+  constructor(uri: string, registry: WorldRegistry) {
     this.uri = uri;
     this.#registry = registry;
   }
 
   get topic() {
-    return `space/${this.uri}`;
+    return `world/${this.uri}`;
   }
 
   get playerCount() {
@@ -92,7 +92,7 @@ export class Space {
     if (player.producer) this.setProducer(player, player.producer);
     if (player.dataProducer) this.setDataProducer(player, player.dataProducer);
 
-    console.info(`👋 Player ${toHex(playerId)} joined space ${this.uri}`);
+    console.info(`👋 Player ${toHex(playerId)} joined world ${this.uri}`);
   }
 
   leave(player: Player) {
@@ -119,9 +119,9 @@ export class Space {
 
     this.#publish({ data: playerId, id: "xyz.unavi.world.player.leave" });
 
-    console.info(`👋 Player ${toHex(playerId)} left space ${this.uri}`);
+    console.info(`👋 Player ${toHex(playerId)} left world ${this.uri}`);
 
-    if (this.playerCount === 0) this.#registry.removeSpace(this.uri);
+    if (this.playerCount === 0) this.#registry.removeWorld(this.uri);
   }
 
   chat(player: Player, message: string) {

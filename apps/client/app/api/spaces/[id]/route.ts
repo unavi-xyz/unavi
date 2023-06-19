@@ -12,7 +12,7 @@ import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
 import { GetResponse, Params, paramsSchema } from "./types";
 
-// Get space
+// Get world
 export async function GET(request: NextRequest, { params }: Params) {
   const { id } = paramsSchema.parse(params);
 
@@ -28,14 +28,14 @@ export async function GET(request: NextRequest, { params }: Params) {
   return NextResponse.json(json);
 }
 
-// Delete space
+// Delete world
 export async function DELETE(request: NextRequest, { params }: Params) {
   const session = await getUserSession();
   if (!session) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
 
-  // Verify user owns the space
+  // Verify user owns the world
   const found = await db.query.world.findFirst({
     where: (row, { eq }) =>
       eq(row.ownerId, session.user.userId) && eq(row.publicId, id),

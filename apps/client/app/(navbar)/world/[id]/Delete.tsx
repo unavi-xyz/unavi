@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 
-import { deleteSpace } from "@/app/api/spaces/[id]/helper";
+import { deleteWorld } from "@/app/api/spaces/[id]/helper";
 import { useAuth } from "@/src/client/AuthProvider";
 import Button from "@/src/ui/Button";
 import { parseError } from "@/src/utils/parseError";
@@ -29,19 +29,19 @@ export default function Delete({ id }: Props) {
 
     async function handleDelete() {
       if (id.type === "id") {
-        toast.loading("Deleting space...", { id: toastId });
-        await deleteSpace(id.value);
+        toast.loading("Deleting world...", { id: toastId });
+        await deleteWorld(id.value);
       }
     }
 
     try {
       await handleDelete();
-      toast.success("Space deleted.", { id: toastId });
+      toast.success("World deleted.", { id: toastId });
 
       router.push(`/@${user?.username}`);
     } catch (err) {
       console.error(err);
-      toast.error(parseError(err, "Failed to delete space."), { id: toastId });
+      toast.error(parseError(err, "Failed to delete world."), { id: toastId });
     }
 
     setLoading(false);
@@ -51,7 +51,7 @@ export default function Delete({ id }: Props) {
     <div className="space-y-2 rounded-2xl bg-red-100 px-8 py-6 text-red-900 ring-2 ring-inset ring-red-900/20">
       <div className="text-2xl font-bold">Danger Zone</div>
       <div className="pb-1 text-lg">
-        Deleting a space is permanent and cannot be undone.
+        Deleting a world is permanent and cannot be undone.
       </div>
 
       <Button
@@ -59,7 +59,7 @@ export default function Delete({ id }: Props) {
         onClick={handleDelete}
         className="rounded-xl bg-red-700"
       >
-        Delete Space
+        Delete World
       </Button>
     </div>
   );

@@ -1,11 +1,11 @@
 import { GetResponse } from "./types";
 
-export async function getSpace(id: string) {
-  const response = await fetch(`/api/spaces/${id}`, { method: "GET" });
-  const space = (await response.json()) as GetResponse;
-  return space;
+export async function getWorld(id: string) {
+  const response = await fetch(`/api/worlds/${id}`, { method: "GET" });
+  const world = (await response.json()) as GetResponse;
+  return world;
 }
 
-export function deleteSpace(id: string) {
-  return fetch(`/api/spaces/${id}`, { method: "DELETE" });
+export function deleteWorld(id: string) {
+  return fetch(`/api/worlds/${id}`, { method: "DELETE" });
 }

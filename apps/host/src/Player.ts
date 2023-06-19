@@ -10,17 +10,17 @@ import {
 import { SctpStreamParameters } from "mediasoup/node/lib/SctpParameters";
 import { Transport } from "mediasoup/node/lib/Transport";
 
-import { Space } from "./Space";
-import { SpaceRegistry } from "./SpaceRegistry";
 import { uWebSocket } from "./types";
+import { World } from "./World";
+import { WorldRegistry } from "./WorldRegistry";
 
 export class Player {
   ws: uWebSocket | null = null;
-  #registry: SpaceRegistry;
+  #registry: WorldRegistry;
 
-  spaces = new Set<Space>();
-  consumers = new Map<Space, Map<number, Consumer>>();
-  dataConsumers = new Map<Space, Map<number, DataConsumer>>();
+  worlds = new Set<World>();
+  consumers = new Map<World, Map<number, Consumer>>();
+  dataConsumers = new Map<World, Map<number, DataConsumer>>();
 
   #grounded = true;
   #name: string | null = null;
@@ -34,7 +34,7 @@ export class Player {
   consumerTransport: Transport | null = null;
   producerTransport: Transport | null = null;
 
-  constructor(ws: uWebSocket, registry: SpaceRegistry) {
+  constructor(ws: uWebSocket, registry: WorldRegistry) {
     this.ws = ws;
     this.#registry = registry;
   }
@@ -49,7 +49,7 @@ export class Player {
 
   set name(name: string | null) {
     this.#name = name;
-    this.spaces.forEach((space) => space.setName(this, name));
+    this.worlds.forEach((world) => world.setName(this, name));
   }
 
   get grounded() {
@@ -58,7 +58,7 @@ export class Player {
 
   set grounded(grounded: boolean) {
     this.#grounded = grounded;
-    this.spaces.forEach((space) => space.setGrounded(this, grounded));
+    this.worlds.forEach((world) => world.setGrounded(this, grounded));
   }
 
   get handle() {
@@ -67,7 +67,7 @@ export class Player {
 
   set handle(handle: string | null) {
     this.#handle = handle;
-    this.spaces.forEach((space) => space.setHandle(this, handle));
+    this.worlds.forEach((world) => world.setHandle(this, handle));
   }
 
   get avatar() {
@@ -76,7 +76,7 @@ export class Player {
 
   set avatar(avatar: string | null) {
     this.#avatar = avatar;
-    this.spaces.forEach((space) => space.setAvatar(this, avatar));
+    this.worlds.forEach((world) => world.setAvatar(this, avatar));
   }
 
   get rtpCapabilities() {
@@ -95,7 +95,7 @@ export class Player {
   set producer(producer: Producer | null) {
     this.#producer = producer;
     if (producer)
-      this.spaces.forEach((space) => space.setProducer(this, producer));
+      this.worlds.forEach((world) => world.setProducer(this, producer));
   }
 
   get dataProducer() {
@@ -105,48 +105,48 @@ export class Player {
   set dataProducer(dataProducer: DataProducer | null) {
     this.#dataProducer = dataProducer;
     if (dataProducer)
-      this.spaces.forEach((space) => space.setDataProducer(this, dataProducer));
+      this.worlds.forEach((world) => world.setDataProducer(this, dataProducer));
   }
 
   join(uri: string) {
-    const space = this.#registry.getOrCreateSpace(uri);
-    if (this.spaces.has(space)) return;
+    const world = this.#registry.getOrCreateWorld(uri);
+    if (this.worlds.has(world)) return;
 
-    space.join(this);
-    this.spaces.add(space);
+    world.join(this);
+    this.worlds.add(world);
 
-    const playerId = space.playerId(this);
+    const playerId = world.playerId(this);
     if (playerId === undefined) return;
 
-    this.ws?.subscribe(space.topic);
+    this.ws?.subscribe(world.topic);
 
     this.send({ data: playerId, id: "xyz.unavi.world.joined" });
   }
 
   leave(uri: string) {
-    const space = this.#registry.getSpace(uri);
-    if (!space) return;
+    const world = this.#registry.getWorld(uri);
+    if (!world) return;
 
-    this.ws?.unsubscribe(space.topic);
+    this.ws?.unsubscribe(world.topic);
 
-    space.leave(this);
-    this.spaces.delete(space);
+    world.leave(this);
+    this.worlds.delete(world);
 
-    const consumers = this.consumers.get(space);
+    const consumers = this.consumers.get(world);
     if (consumers) {
       consumers.forEach((consumer) => consumer.close());
-      this.consumers.delete(space);
+      this.consumers.delete(world);
     }
 
-    const dataConsumers = this.dataConsumers.get(space);
+    const dataConsumers = this.dataConsumers.get(world);
     if (dataConsumers) {
       dataConsumers.forEach((dataConsumer) => dataConsumer.close());
-      this.dataConsumers.delete(space);
+      this.dataConsumers.delete(world);
     }
   }
 
   chat(message: string) {
-    this.spaces.forEach((space) => space.chat(this, message));
+    this.worlds.forEach((world) => world.chat(this, message));
   }
 
   setTransport(type: "producer" | "consumer", transport: Transport) {
@@ -198,11 +198,11 @@ export class Player {
         rtpCapabilities: this.rtpCapabilities,
       });
 
-      const space = this.#registry.getSpace(spaceURI);
-      if (!space) return;
+      const world = this.#registry.getWorld(spaceURI);
+      if (!world) return;
 
-      const consumers = this.consumers.get(space) ?? new Map();
-      this.consumers.set(space, consumers);
+      const consumers = this.consumers.get(world) ?? new Map();
+      this.consumers.set(world, consumers);
 
       consumers.set(playerId, consumer);
 
@@ -235,11 +235,11 @@ export class Player {
       });
       if (!dataConsumer.sctpStreamParameters) return;
 
-      const space = this.#registry.getSpace(spaceURI);
-      if (!space) return;
+      const world = this.#registry.getWorld(spaceURI);
+      if (!world) return;
 
-      const dataConsumers = this.dataConsumers.get(space) ?? new Map();
-      this.dataConsumers.set(space, dataConsumers);
+      const dataConsumers = this.dataConsumers.get(world) ?? new Map();
+      this.dataConsumers.set(world, dataConsumers);
 
       dataConsumers.set(playerId, dataConsumer);
 
@@ -270,19 +270,19 @@ export class Player {
 
   #startConsuming() {
     // Consume all other players
-    this.spaces.forEach((space) =>
-      space.players.forEach((otherPlayer, otherPlayerId) => {
+    this.worlds.forEach((world) =>
+      world.players.forEach((otherPlayer, otherPlayerId) => {
         if (otherPlayer.producer)
-          this.consume(otherPlayer.producer, space.uri, otherPlayerId);
+          this.consume(otherPlayer.producer, world.uri, otherPlayerId);
         if (otherPlayer.dataProducer)
-          this.consumeData(otherPlayer.dataProducer, space.uri, otherPlayerId);
+          this.consumeData(otherPlayer.dataProducer, world.uri, otherPlayerId);
       })
     );
   }
 
   close() {
     this.ws = null;
-    this.spaces.forEach((space) => this.leave(space.uri));
+    this.worlds.forEach((world) => this.leave(world.uri));
     this.consumerTransport?.close();
     this.producerTransport?.close();
   }

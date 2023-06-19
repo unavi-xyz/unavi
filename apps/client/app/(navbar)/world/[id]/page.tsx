@@ -13,7 +13,7 @@ import {
 } from "@/src/server/helpers/fetchUserProfile";
 import { fetchWorldMetadata } from "@/src/server/helpers/fetchWorldMetadata";
 import { isFromCDN } from "@/src/utils/isFromCDN";
-import { parseSpaceId } from "@/src/utils/parseSpaceId";
+import { parseWorldId } from "@/src/utils/parseSpaceId";
 import { toHex } from "@/src/utils/toHex";
 
 import PlayerCount from "./PlayerCount";
@@ -24,17 +24,17 @@ export const revalidate = 60;
 type Params = { id: string };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const id = parseSpaceId(params.id);
+  const id = parseWorldId(params.id);
 
-  const space = await fetchSpaceMetadata(id);
-  if (!space) return {};
+  const world = await fetchSpaceMetadata(id);
+  if (!world) return {};
 
-  const metadata = space.metadata;
+  const metadata = world.metadata;
 
   const value = id.value;
   const displayId =
     typeof value === "number" ? toHex(value) : value.slice(0, 6);
-  const title = metadata.info?.name || `Space ${displayId}`;
+  const title = metadata.info?.name || `World ${displayId}`;
 
   const description = metadata.info?.description || "";
   const authors = metadata.info?.authors;
@@ -62,7 +62,7 @@ interface Props {
   params: Params;
 }
 
-export default async function Space({ params }: Props) {
+export default async function World({ params }: Props) {
   const uri = await fetchDBSpaceURI(params.id);
   if (!uri) notFound();
 
@@ -122,7 +122,7 @@ export default async function Space({ params }: Props) {
           <div className="flex flex-col justify-between space-y-8 md:w-2/3">
             <div className="space-y-4">
               <div className="text-center text-3xl font-black">
-                {metadata.info?.name || `Space ${params.id}`}
+                {metadata.info?.name || `World ${params.id}`}
               </div>
 
               <div>

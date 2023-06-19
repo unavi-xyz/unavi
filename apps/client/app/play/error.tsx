@@ -17,7 +17,7 @@ export default function Error({
 
   return (
     <div className="space-y-2 pt-10 text-center">
-      <h2>Error loading space. {parseError(error)}</h2>
+      <h2>Error loading world. {parseError(error)}</h2>
 
       <button
         onClick={() => reset()}

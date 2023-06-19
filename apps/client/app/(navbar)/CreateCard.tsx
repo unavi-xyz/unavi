@@ -25,7 +25,7 @@ export async function createWorld() {
     return;
   }
 
-  redirect(`/space/${publicId}`);
+  redirect(`/world/${publicId}`);
 }
 
 export default function CreateCard() {

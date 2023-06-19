@@ -9,7 +9,6 @@ interface Props {
 
 /**
  * Fetches the player count client side and displays it.
- * For use within the space page.
  */
 export default function PlayerCount({ uri, host }: Props) {
   const { playerCount } = usePlayerCount({ host, uri });

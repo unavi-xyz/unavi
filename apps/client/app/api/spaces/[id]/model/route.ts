@@ -14,22 +14,22 @@ import { S3Path } from "@/src/utils/s3Paths";
 import { Params, paramsSchema } from "../types";
 import { PostSpaceModelResponse } from "./types";
 
-// Create new space model
+// Create new world model
 export async function POST(request: NextRequest, { params }: Params) {
   const session = await getUserSession();
   if (!session) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
 
-  // Verify user owns the space
+  // Verify user owns the world
   const found = await db.query.world.findFirst({
     where: (row, { eq }) =>
       eq(row.ownerId, session.user.userId) && eq(row.publicId, id),
     with: { model: true },
   });
-  if (!found) return new Response("Space not found", { status: 404 });
+  if (!found) return new Response("World not found", { status: 404 });
 
-  // Remove existing space model
+  // Remove existing world model
   const allObjects = await listObjectsRecursive(
     S3Path.worldModel(found.model.key).directory
   );
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     db.delete(worldModel).where(eq(worldModel.id, found.model.id)).execute(),
   ]);
 
-  // Create new space model
+  // Create new world model
   const modelId = nanoidShort();
 
   await db

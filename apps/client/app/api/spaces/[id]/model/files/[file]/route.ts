@@ -18,7 +18,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 
   const { id, file } = paramsSchema.parse(params);
 
-  // Verify user owns the space
+  // Verify user owns the world
   const found = await db.query.world.findFirst({
     where: (row, { eq }) =>
       eq(row.ownerId, session.user.userId) && eq(row.publicId, id),
@@ -39,7 +39,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
   const { id, file } = paramsSchema.parse(params);
 
-  // Verify user owns the space
+  // Verify user owns the world
   const found = await db.query.world.findFirst({
     where: (row, { eq }) =>
       eq(row.ownerId, session.user.userId) && eq(row.publicId, id),

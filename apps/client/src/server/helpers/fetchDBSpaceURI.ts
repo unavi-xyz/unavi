@@ -10,7 +10,7 @@ export const fetchDBSpaceURI = cache(async (id: string) => {
       where: (row, { eq }) => eq(row.publicId, id),
       with: { model: { columns: { key: true } } },
     });
-    if (!found) throw new Error("Space not found");
+    if (!found) throw new Error("World not found");
 
     const uri = cdnURL(S3Path.worldModel(found.model.key).metadata);
 

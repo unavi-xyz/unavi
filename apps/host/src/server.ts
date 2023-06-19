@@ -3,8 +3,8 @@ import uWS from "uWebSockets.js";
 
 import { createMediasoupWorker, createWebRtcTransport } from "./mediasoup";
 import { Player } from "./Player";
-import { SpaceRegistry } from "./SpaceRegistry";
 import { UserData, uWebSocket } from "./types";
+import { WorldRegistry } from "./WorldRegistry";
 
 const textDecoder = new TextDecoder();
 const PORT = 4000;
@@ -21,7 +21,7 @@ const server =
 // Create Mediasoup router
 const { router, webRtcServer } = await createMediasoupWorker();
 
-const spaces = new SpaceRegistry(server);
+const spaces = new WorldRegistry(server);
 const players = new Map<uWebSocket, Player>();
 
 // Handle WebSocket connections
@@ -160,8 +160,8 @@ server.ws<UserData>("/*", {
 server.get("/player-count/*:uri", (res, req) => {
   const uri = req.getUrl().slice(14);
 
-  const space = spaces.getSpace(uri);
-  const playerCount = space ? space.playerCount : 0;
+  const world = spaces.getWorld(uri);
+  const playerCount = world ? world.playerCount : 0;
 
   console.info(`/player-count/${uri}: ${playerCount}`);
 

@@ -8,7 +8,7 @@ import { useState } from "react";
 import { env } from "@/src/env.mjs";
 import { useHotkeys } from "@/src/play/hooks/useHotkeys";
 
-import { SpaceUriId } from "./types";
+import { WorldUriId } from "./types";
 
 const Client = dynamic(
   () => import("@unavi/react-client").then((m) => m.Client),
@@ -18,7 +18,7 @@ const Client = dynamic(
 );
 
 interface Props {
-  id: SpaceUriId;
+  id: WorldUriId;
   metadata: WorldMetadata;
   uri: string;
 }

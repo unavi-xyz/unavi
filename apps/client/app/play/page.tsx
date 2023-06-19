@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 
 import AuthProvider from "@/src/client/AuthProvider";
-import { fetchWorldMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
+import { fetchWorld } from "@/src/server/helpers/fetchWorld";
 import { toHex } from "@/src/utils/toHex";
 
 import RainbowkitWrapper from "../(navbar)/RainbowkitWrapper";
@@ -23,7 +23,7 @@ export async function generateMetadata({
   if (!params.success) return {};
 
   const id = parseParams(params.data);
-  const world = await fetchWorldMetadata(id);
+  const world = await fetchWorld(id);
   if (!world) return {};
 
   const metadata = world.metadata;
@@ -65,7 +65,7 @@ export default async function Play({ searchParams }: Props) {
   if (!params.success) return notFound();
 
   const id = parseParams(params.data);
-  const world = await fetchWorldMetadata(id);
+  const world = await fetchWorld(id);
 
   if (!world) notFound();
 

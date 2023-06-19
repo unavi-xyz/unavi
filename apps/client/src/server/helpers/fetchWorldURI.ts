@@ -4,7 +4,7 @@ import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
 import { db } from "../db/drizzle";
 
-export const fetchDBSpaceURI = cache(async (id: string) => {
+export const fetchWorldURI = cache(async (id: string) => {
   try {
     const found = await db.query.world.findFirst({
       where: (row, { eq }) => eq(row.publicId, id),

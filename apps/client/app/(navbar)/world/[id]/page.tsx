@@ -5,12 +5,11 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { env } from "@/src/env.mjs";
-import { fetchDBSpaceURI } from "@/src/server/helpers/fetchDBSpaceURI";
-import { fetchWorldMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
 import {
   fetchUserProfile,
   UserProfile,
 } from "@/src/server/helpers/fetchUserProfile";
+import { fetchWorld } from "@/src/server/helpers/fetchWorld";
 import { isFromCDN } from "@/src/utils/isFromCDN";
 import { parseWorldId } from "@/src/utils/parseSpaceId";
 import { toHex } from "@/src/utils/toHex";
@@ -25,10 +24,10 @@ type Params = { id: string };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const id = parseWorldId(params.id);
 
-  const world = await fetchWorldMetadata(id);
-  if (!world) return {};
+  const found = await fetchWorld(id);
+  if (!found) return {};
 
-  const metadata = world.metadata;
+  const metadata = found.metadata;
 
   const value = id.value;
   const displayId =
@@ -62,13 +61,12 @@ interface Props {
 }
 
 export default async function World({ params }: Props) {
-  const found = await fetchDBSpaceURI(params.id);
+  const id = parseWorldId(params.id);
+
+  const found = await fetchWorld(id);
   if (!found) notFound();
 
-  const res = await fetchWorldMetadata({ type: "uri", value: found.uri });
-  if (!res) notFound();
-
-  const metadata = res.metadata;
+  const metadata = found.metadata;
   const profiles: UserProfile[] = [];
 
   if (metadata.info?.authors) {

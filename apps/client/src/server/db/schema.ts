@@ -95,9 +95,7 @@ export const session = mysqlTable("auth_session", {
   activeExpires: bigint("active_expires", { mode: "number" }).notNull(),
   id: varchar("id", { length: 128 }).primaryKey(),
   idleExpires: bigint("idle_expires", { mode: "number" }).notNull(),
-  userId: varchar("user_id", { length: USER_ID_LENGTH })
-    .notNull()
-    .references(() => user.id),
+  userId: varchar("user_id", { length: USER_ID_LENGTH }).notNull(),
 });
 
 export const key = mysqlTable("auth_key", {
@@ -105,9 +103,7 @@ export const key = mysqlTable("auth_key", {
   hashedPassword: varchar("hashed_password", { length: 255 }),
   id: varchar("id", { length: 255 }).primaryKey(),
   primaryKey: boolean("primary_key").notNull(),
-  userId: varchar("user_id", { length: USER_ID_LENGTH })
-    .notNull()
-    .references(() => user.id),
+  userId: varchar("user_id", { length: USER_ID_LENGTH }).notNull(),
 });
 
 export const ethereumSession = mysqlTable(

@@ -4,7 +4,6 @@ import { eq } from "drizzle-orm";
 import { getUserSession } from "@/src/server/auth/getUserSession";
 import { db } from "@/src/server/db/drizzle";
 import { world } from "@/src/server/db/schema";
-import { fetchNFTSpaceOwner } from "@/src/server/helpers/fetchNFTSpaceOwner";
 import ButtonTabs, { TabContent } from "@/src/ui/ButtonTabs";
 import { SpaceId } from "@/src/utils/parseSpaceId";
 
@@ -19,15 +18,9 @@ interface Props {
 export default async function Tabs({ id, metadata }: Props) {
   const session = await getUserSession();
 
-  const owner =
-    id.type === "tokenId"
-      ? await fetchNFTSpaceOwner(id.value)
-      : await fetchSpaceDBOwner(id.value);
+  const owner = await fetchSpaceDBOwner(id.value);
 
-  const isOwner =
-    id.type === "tokenId"
-      ? session?.user.address === owner
-      : session?.user.userId === owner;
+  const isOwner = session?.user.userId === owner;
 
   return (
     <>

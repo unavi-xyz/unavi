@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 
 import AuthProvider from "@/src/client/AuthProvider";
-import { fetchSpaceMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
+import { fetchWorldMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
 import { toHex } from "@/src/utils/toHex";
 
 import RainbowkitWrapper from "../(navbar)/RainbowkitWrapper";
@@ -23,7 +23,7 @@ export async function generateMetadata({
   if (!params.success) return {};
 
   const id = parseParams(params.data);
-  const world = await fetchSpaceMetadata(id);
+  const world = await fetchWorldMetadata(id);
   if (!world) return {};
 
   const metadata = world.metadata;
@@ -65,7 +65,7 @@ export default async function Play({ searchParams }: Props) {
   if (!params.success) return notFound();
 
   const id = parseParams(params.data);
-  const world = await fetchSpaceMetadata(id);
+  const world = await fetchWorldMetadata(id);
 
   if (!world) notFound();
 
@@ -80,8 +80,6 @@ export default async function Play({ searchParams }: Props) {
 
 function parseParams(params: Params): WorldUriId {
   if ("id" in params) return { type: "id", value: params.id };
-  else if ("tokenId" in params)
-    return { type: "tokenId", value: parseInt(params.tokenId) };
   else return { type: "uri", value: params.uri };
 }
 
@@ -97,7 +95,6 @@ const tokenIdSchema = z.string().refine((param) => {
 
 const searchParamsSchema = z.union([
   z.object({ id: idSchema }),
-  z.object({ tokenId: tokenIdSchema }),
   z.object({ uri: httpsSchema }),
 ]);
 

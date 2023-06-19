@@ -6,12 +6,11 @@ import { Suspense } from "react";
 
 import { env } from "@/src/env.mjs";
 import { fetchDBSpaceURI } from "@/src/server/helpers/fetchDBSpaceURI";
-import { fetchSpaceMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
+import { fetchWorldMetadata } from "@/src/server/helpers/fetchSpaceMetadata";
 import {
   fetchUserProfile,
   UserProfile,
 } from "@/src/server/helpers/fetchUserProfile";
-import { fetchWorldMetadata } from "@/src/server/helpers/fetchWorldMetadata";
 import { isFromCDN } from "@/src/utils/isFromCDN";
 import { parseWorldId } from "@/src/utils/parseSpaceId";
 import { toHex } from "@/src/utils/toHex";
@@ -26,7 +25,7 @@ type Params = { id: string };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const id = parseWorldId(params.id);
 
-  const world = await fetchSpaceMetadata(id);
+  const world = await fetchWorldMetadata(id);
   if (!world) return {};
 
   const metadata = world.metadata;
@@ -63,10 +62,10 @@ interface Props {
 }
 
 export default async function World({ params }: Props) {
-  const uri = await fetchDBSpaceURI(params.id);
-  if (!uri) notFound();
+  const found = await fetchDBSpaceURI(params.id);
+  if (!found) notFound();
 
-  const res = await fetchWorldMetadata(uri.uri);
+  const res = await fetchWorldMetadata({ type: "uri", value: found.uri });
   if (!res) notFound();
 
   const metadata = res.metadata;
@@ -156,7 +155,7 @@ export default async function World({ params }: Props) {
                 </div>
 
                 <PlayerCount
-                  uri={uri.uri}
+                  uri={found.uri}
                   host={metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST}
                 />
               </div>

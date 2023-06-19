@@ -6,9 +6,9 @@ import { notFound } from "next/navigation";
 import AuthProvider from "@/src/client/AuthProvider";
 import { db } from "@/src/server/db/drizzle";
 import { user } from "@/src/server/db/schema";
-import { fetchDatabaseWorlds } from "@/src/server/helpers/fetchLatestWorlds";
+import { fetchLatestWorlds } from "@/src/server/helpers/fetchLatestWorlds";
 import Avatar from "@/src/ui/Avatar";
-import SpaceCard from "@/src/ui/SpaceCard";
+import WorldCard from "@/src/ui/WorldCard";
 import { isFromCDN } from "@/src/utils/isFromCDN";
 import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
@@ -59,7 +59,7 @@ export default async function Handle({ params }: Props) {
   if (!username) notFound();
 
   const [worlds, foundUser] = await Promise.all([
-    fetchDatabaseWorlds(20, username),
+    fetchLatestWorlds(20, username),
     db.query.user.findFirst({
       where: eq(user.username, username),
       with: { profile: true },
@@ -142,8 +142,8 @@ export default async function Handle({ params }: Props) {
       <div className="flex justify-center pb-8 pt-4">
         <div className="max-w-content mx-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {worlds.map(({ id, uri, metadata }) => (
-            <SpaceCard
-              key={id.value}
+            <WorldCard
+              key={id}
               id={id}
               uri={uri}
               metadata={metadata}

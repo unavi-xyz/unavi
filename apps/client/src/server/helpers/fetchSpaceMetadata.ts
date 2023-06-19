@@ -1,15 +1,13 @@
+import { WorldMetadataSchema } from "@wired-protocol/types";
+
 import { SpaceId } from "@/src/utils/parseSpaceId";
 
 import { fetchDBSpaceURI } from "./fetchDBSpaceURI";
-import { fetchNFTSpaceURI } from "./fetchNFTSpaceURI";
-import { fetchWorldMetadata } from "./fetchWorldMetadata";
 
-export async function fetchSpaceMetadata(id: SpaceId) {
+export async function fetchWorldMetadata(id: SpaceId) {
   let uri: string | null = null;
 
-  if (id.type === "tokenId") {
-    uri = await fetchNFTSpaceURI(id.value);
-  } else if (id.type === "id") {
+  if (id.type === "id") {
     const res = await fetchDBSpaceURI(id.value);
     if (res) uri = res.uri;
   } else if (id.type === "uri") {
@@ -18,5 +16,14 @@ export async function fetchSpaceMetadata(id: SpaceId) {
 
   if (!uri) return null;
 
-  return fetchWorldMetadata(uri);
+  try {
+    const res = await fetch(uri);
+    const json = await res.json();
+
+    const metadata = WorldMetadataSchema.parse(json);
+
+    return { metadata, uri };
+  } catch {
+    return null;
+  }
 }

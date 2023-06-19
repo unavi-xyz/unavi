@@ -4,12 +4,10 @@ import Link from "next/link";
 import PlayerCount from "@/app/(navbar)/PlayerCount";
 
 import { env } from "../env.mjs";
-import { SpaceId } from "../utils/parseSpaceId";
 import { CardImage } from "./Card";
-import Tooltip from "./Tooltip";
 
 interface Props {
-  id: SpaceId;
+  id: string;
   uri: string;
   metadata: WorldMetadata;
   tokenId?: number;
@@ -19,17 +17,17 @@ interface Props {
 /**
  * Wrapper around {@link Card} that links to the world page, and shows the player count.
  */
-export default function SpaceCard({
+export default function WorldCard({
   id,
   uri,
   metadata,
-  tokenId,
+
   sizes,
 }: Props) {
   return (
     <div>
       <div className="group relative">
-        <Link href={`/world/${id.value}`} className="rounded-3xl">
+        <Link href={`/world/${id}`} className="rounded-3xl">
           <CardImage group image={metadata.info?.image} sizes={sizes}>
             <PlayerCount
               uri={uri}
@@ -42,7 +40,7 @@ export default function SpaceCard({
 
         <div className="absolute bottom-0 left-0 z-20 mb-4 ml-3 hidden group-hover:block">
           <Link
-            href={`/play?id=${id.value}`}
+            href={`/play?id=${id}`}
             className="rounded-xl bg-white px-4 py-1.5 text-xl font-bold shadow transition hover:bg-neutral-200 hover:shadow-md active:bg-neutral-300"
           >
             Play
@@ -51,17 +49,6 @@ export default function SpaceCard({
       </div>
 
       <div className="space-x-2 pb-1 pt-2.5">
-        {tokenId !== undefined ? (
-          <Tooltip
-            text="World is published to the blockchain as an NFT"
-            delayDuration={200}
-          >
-            <span className="w-fit cursor-default rounded-full border border-sky-700/40 bg-sky-100 px-2 text-sm text-sky-700">
-              NFT
-            </span>
-          </Tooltip>
-        ) : null}
-
         <span className="text-xl font-bold text-neutral-900">
           {metadata.info?.name}
         </span>

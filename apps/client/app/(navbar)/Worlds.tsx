@@ -1,12 +1,12 @@
 "use client";
 
-import { ValidWorld } from "@/src/server/helpers/validateWorldNFT";
-import SpaceCard from "@/src/ui/SpaceCard";
+import { FetchedWorld } from "@/src/server/helpers/fetchLatestWorlds";
+import WorldCard from "@/src/ui/WorldCard";
 
 import { useExploreStore } from "./exploreStore";
 
 interface Props {
-  worlds: ValidWorld[];
+  worlds: FetchedWorld[];
 }
 
 export default function Worlds({ worlds }: Props) {
@@ -18,17 +18,7 @@ export default function Worlds({ worlds }: Props) {
       world.metadata.info?.name?.toLowerCase().includes(filter.toLowerCase())
   );
 
-  return (
-    <>
-      {filtered.map(({ id, uri, metadata }) => (
-        <SpaceCard
-          key={id.value}
-          id={id}
-          uri={uri}
-          metadata={metadata}
-          tokenId={id.type === "tokenId" ? id.value : undefined}
-        />
-      ))}
-    </>
-  );
+  return filtered.map(({ id, uri, metadata }) => (
+    <WorldCard key={id} id={id} uri={uri} metadata={metadata} />
+  ));
 }

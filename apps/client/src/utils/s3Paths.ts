@@ -1,12 +1,6 @@
 import { env } from "../env.mjs";
 
 export class S3Path {
-  static worldNFT = (nftKey: string) =>
-    ({
-      directory: `nfts/${nftKey}`,
-      metadata: `nfts/${nftKey}/metadata.json`,
-    } as const);
-
   static profile = (userKey: string) => {
     return {
       background: (fileKey: string) =>
@@ -42,7 +36,6 @@ export class S3Path {
 }
 
 type PublicPath =
-  | ReturnType<typeof S3Path.worldNFT>[keyof ReturnType<typeof S3Path.worldNFT>]
   | ReturnType<typeof S3Path.worldModel>["metadata" | "model" | "image"]
   | ReturnType<ReturnType<typeof S3Path.worldModel>["asset"]>
   | ReturnType<ReturnType<typeof S3Path.profile>["background"]>

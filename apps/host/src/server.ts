@@ -21,7 +21,7 @@ const server =
 // Create Mediasoup router
 const { router, webRtcServer } = await createMediasoupWorker();
 
-const spaces = new WorldRegistry(server);
+const worlds = new WorldRegistry(server);
 const players = new Map<uWebSocket, Player>();
 
 // Handle WebSocket connections
@@ -152,7 +152,7 @@ server.ws<UserData>("/*", {
   },
 
   open: (ws) => {
-    players.set(ws, new Player(ws, spaces));
+    players.set(ws, new Player(ws, worlds));
   },
 });
 
@@ -160,7 +160,7 @@ server.ws<UserData>("/*", {
 server.get("/player-count/*:uri", (res, req) => {
   const uri = req.getUrl().slice(14);
 
-  const world = spaces.getWorld(uri);
+  const world = worlds.getWorld(uri);
   const playerCount = world ? world.playerCount : 0;
 
   console.info(`/player-count/${uri}: ${playerCount}`);

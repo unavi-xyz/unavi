@@ -1,22 +1,22 @@
-import { SpaceModelFile } from "./files";
+import { WorldModelFile } from "./files";
 import { GetFileDownloadResponse, GetFileUploadResponse } from "./types";
 
-export async function getSpaceModelFileDownload(
+export async function getWorldModelFileDownload(
   id: string,
-  file: SpaceModelFile
+  file: WorldModelFile
 ) {
-  const response = await fetch(`/api/spaces/${id}/model/files/${file}`, {
+  const response = await fetch(`/api/worlds/${id}/model/files/${file}`, {
     method: "GET",
   });
   const { url } = (await response.json()) as GetFileDownloadResponse;
   return url;
 }
 
-export async function getSpaceModelFileUpload(
+export async function getWorldModelFileUpload(
   id: string,
-  file: SpaceModelFile
+  file: WorldModelFile
 ) {
-  const response = await fetch(`/api/spaces/${id}/model/files/${file}`, {
+  const response = await fetch(`/api/worlds/${id}/model/files/${file}`, {
     method: "PUT",
   });
   const { url } = (await response.json()) as GetFileUploadResponse;

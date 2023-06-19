@@ -5,20 +5,20 @@ import { getUserSession } from "@/src/server/auth/getUserSession";
 import { db } from "@/src/server/db/drizzle";
 import { world } from "@/src/server/db/schema";
 import ButtonTabs, { TabContent } from "@/src/ui/ButtonTabs";
-import { SpaceId } from "@/src/utils/parseSpaceId";
+import { WorldId } from "@/src/utils/parseWorldId";
 
 import About from "./About";
 import Settings from "./Settings";
 
 interface Props {
-  id: SpaceId;
+  id: WorldId;
   metadata: WorldMetadata;
 }
 
 export default async function Tabs({ id, metadata }: Props) {
   const session = await getUserSession();
 
-  const owner = await fetchSpaceDBOwner(id.value);
+  const owner = await fetchWorldOwner(id.value);
 
   const isOwner = session?.user.userId === owner;
 
@@ -40,7 +40,7 @@ export default async function Tabs({ id, metadata }: Props) {
   );
 }
 
-async function fetchSpaceDBOwner(id: string) {
+async function fetchWorldOwner(id: string) {
   const found = await db.query.world.findFirst({
     columns: { ownerId: true },
     where: eq(world.publicId, id),

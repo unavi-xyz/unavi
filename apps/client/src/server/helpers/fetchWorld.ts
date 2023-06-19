@@ -1,11 +1,11 @@
 import { cache } from "react";
 
-import { SpaceId } from "@/src/utils/parseSpaceId";
+import { WorldId } from "@/src/utils/parseWorldId";
 
 import { fetchWorldMetadata } from "./fetchWorldMetadata";
 import { fetchWorldURI } from "./fetchWorldURI";
 
-export const fetchWorld = cache(async (id: SpaceId) => {
+export const fetchWorld = cache(async (id: WorldId) => {
   let uri: string | null = null;
 
   if (id.type === "id") {

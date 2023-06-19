@@ -12,7 +12,7 @@ import { s3Client } from "@/src/server/s3";
 import { S3Path } from "@/src/utils/s3Paths";
 
 import { Params, paramsSchema } from "../types";
-import { PostSpaceModelResponse } from "./types";
+import { PostWorldModelResponse } from "./types";
 
 // Create new world model
 export async function POST(request: NextRequest, { params }: Params) {
@@ -57,6 +57,6 @@ export async function POST(request: NextRequest, { params }: Params) {
     .values({ key: modelId, worldId: found.id })
     .execute();
 
-  const json: PostSpaceModelResponse = { modelId };
+  const json: PostWorldModelResponse = { modelId };
   return NextResponse.json(json);
 }

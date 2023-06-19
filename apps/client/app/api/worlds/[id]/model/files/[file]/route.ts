@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserSession } from "@/src/server/auth/getUserSession";
 import { db } from "@/src/server/db/drizzle";
 
-import { getSpaceModelDownloadURL, getSpaceModelUploadURL } from "./files";
+import { getWorldModelDownloadURL, getWorldModelUploadURL } from "./files";
 import {
   GetFileDownloadResponse,
   GetFileUploadResponse,
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest, { params }: Params) {
   });
   if (!found) return new Response("world not found", { status: 404 });
 
-  const url = await getSpaceModelDownloadURL(found.model.key, file);
+  const url = await getWorldModelDownloadURL(found.model.key, file);
 
   const json: GetFileDownloadResponse = { url };
   return NextResponse.json(json);
@@ -47,7 +47,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
   });
   if (!found) return new Response("world not found", { status: 404 });
 
-  const url = await getSpaceModelUploadURL(found.model.key, file);
+  const url = await getWorldModelUploadURL(found.model.key, file);
 
   const json: GetFileUploadResponse = { url };
   return NextResponse.json(json);

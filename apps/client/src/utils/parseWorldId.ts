@@ -1,4 +1,4 @@
-export function parseWorldId(id: string): SpaceId {
+export function parseWorldId(id: string): WorldId {
   // If no protocol, assume it's a db id
   if (!id.match("^[a-z]+://")) return { type: "id", value: id };
   // Otherwise, assume it's a uri
@@ -8,4 +8,4 @@ export function parseWorldId(id: string): SpaceId {
 export type WorldDBId = { type: "id"; value: string };
 export type WorldURIId = { type: "uri"; value: string };
 
-export type SpaceId = WorldDBId | WorldURIId;
+export type WorldId = WorldDBId | WorldURIId;

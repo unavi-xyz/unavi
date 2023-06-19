@@ -11,8 +11,7 @@ import {
 } from "@/src/server/helpers/fetchUserProfile";
 import { fetchWorld } from "@/src/server/helpers/fetchWorld";
 import { isFromCDN } from "@/src/utils/isFromCDN";
-import { parseWorldId } from "@/src/utils/parseSpaceId";
-import { toHex } from "@/src/utils/toHex";
+import { parseWorldId } from "@/src/utils/parseWorldId";
 
 import PlayerCount from "./PlayerCount";
 import Tabs from "./Tabs";
@@ -29,9 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const metadata = found.metadata;
 
-  const value = id.value;
-  const displayId =
-    typeof value === "number" ? toHex(value) : value.slice(0, 6);
+  const displayId = id.value.slice(0, 6);
   const title = metadata.info?.name || `World ${displayId}`;
 
   const description = metadata.info?.description || "";

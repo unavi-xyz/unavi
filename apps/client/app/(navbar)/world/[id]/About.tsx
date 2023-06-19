@@ -1,9 +1,9 @@
 import { WorldMetadata } from "@wired-protocol/types";
 
-import { SpaceId } from "@/src/utils/parseSpaceId";
+import { WorldId } from "@/src/utils/parseWorldId";
 
 interface Props {
-  id: SpaceId;
+  id: WorldId;
   metadata: WorldMetadata;
 }
 

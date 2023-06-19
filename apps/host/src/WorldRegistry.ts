@@ -19,9 +19,9 @@ export class WorldRegistry {
     const world = this.#store.get(uri);
     if (world) return world;
 
-    const newSpace = new World(uri, this);
-    this.#store.set(uri, newSpace);
-    return newSpace;
+    const newWorld = new World(uri, this);
+    this.#store.set(uri, newWorld);
+    return newWorld;
   }
 
   removeWorld(uri: string) {

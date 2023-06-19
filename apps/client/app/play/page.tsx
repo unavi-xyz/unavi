@@ -4,11 +4,11 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 
 import AuthProvider from "@/src/client/AuthProvider";
+import { WORLD_ID_LENGTH } from "@/src/server/db/constants";
 import { fetchWorld } from "@/src/server/helpers/fetchWorld";
 import { toHex } from "@/src/utils/toHex";
 
 import RainbowkitWrapper from "../(navbar)/RainbowkitWrapper";
-import { SPACE_ID_LENGTH } from "../api/spaces/constants";
 import App from "./App";
 import { WorldUriId } from "./types";
 
@@ -86,11 +86,7 @@ function parseParams(params: Params): WorldUriId {
 const httpsSchema = z.string().refine((param) => param.startsWith("https://"));
 
 const idSchema = z.string().refine((param) => {
-  return param.length === SPACE_ID_LENGTH;
-});
-
-const tokenIdSchema = z.string().refine((param) => {
-  return param.startsWith("0x");
+  return param.length === WORLD_ID_LENGTH;
 });
 
 const searchParamsSchema = z.union([

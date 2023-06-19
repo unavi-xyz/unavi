@@ -24,14 +24,6 @@
   </a>
 </div>
 
-## 🔥 Features
-
-- Built upon open standards, using the [Wired Protocol](https://github.com/wired-protocol/spec)
-- Open backend, anyone can run their own servers
-- Custom multi-threaded, [glTF](https://github.com/KhronosGroup/glTF)-based game engine
-- [VRM](https://vrm.dev/) avatar support
-- Visual editor for creating spaces
-
 ## 📦 What's inside?
 
 This [turborepo](https://turborepo.org/) uses [pnpm](https://pnpm.io/) as a package manager. It includes the following apps / packages:
@@ -39,7 +31,7 @@ This [turborepo](https://turborepo.org/) uses [pnpm](https://pnpm.io/) as a pack
 ### Apps
 
 - [client](apps/client): the main website used to access UNAVI
-- [host](apps/host): dockerized server for hosting spaces
+- [host](apps/host): dockerized server for hosting multiplayer worlds
 
 ### Packages
 

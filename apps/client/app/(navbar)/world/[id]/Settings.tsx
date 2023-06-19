@@ -2,13 +2,13 @@ import { WorldMetadata } from "@wired-protocol/types";
 
 import AuthProvider from "@/src/client/AuthProvider";
 import { getUserSession } from "@/src/server/auth/getUserSession";
-import { SpaceId } from "@/src/utils/parseSpaceId";
+import { WorldId } from "@/src/utils/parseWorldId";
 
 import RainbowkitWrapper from "../../RainbowkitWrapper";
 import Delete from "./Delete";
 
 interface Props {
-  id: SpaceId;
+  id: WorldId;
   metadata: WorldMetadata;
 }
 

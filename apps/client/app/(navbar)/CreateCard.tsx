@@ -1,10 +1,15 @@
+import { WorldMetadata } from "@wired-protocol/types";
 import { redirect } from "next/navigation";
 
+import { env } from "@/src/env.mjs";
 import { getUserSession } from "@/src/server/auth/getUserSession";
 import { db } from "@/src/server/db/drizzle";
-import * as schema from "@/src/server/db/schema";
+import { world, worldModel } from "@/src/server/db/schema";
 import { nanoidShort } from "@/src/server/nanoid";
+import { s3Client } from "@/src/server/s3";
+import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
+import { getWorldModelFileUploadCommand } from "../api/worlds/[id]/model/files/[file]/files";
 import CreateCardButton from "./CreateCardButton";
 
 export async function createWorld() {
@@ -16,16 +21,76 @@ export async function createWorld() {
   const publicId = nanoidShort();
 
   try {
+    // Create world
     await db
-      .insert(schema.world)
+      .insert(world)
       .values({ ownerId: session.user.userId, publicId })
       .execute();
+
+    const found = await db.query.world.findFirst({
+      columns: { id: true },
+      where: (row, { eq }) => eq(row.publicId, publicId),
+    });
+    if (!found) return;
+
+    // Create world model
+    const modelKey = nanoidShort();
+
+    await Promise.all([
+      db
+        .insert(worldModel)
+        .values({ key: modelKey, worldId: found.id })
+        .execute(),
+      createMetadata(modelKey),
+      uploadDefaultImage(modelKey),
+      uploadDefaultModel(modelKey),
+    ]);
   } catch (error) {
     console.error(error);
     return;
   }
 
   redirect(`/world/${publicId}`);
+}
+
+async function createMetadata(publicId: string) {
+  const json: WorldMetadata = {
+    info: {
+      host: env.NEXT_PUBLIC_DEFAULT_HOST,
+      image: cdnURL(S3Path.worldModel(publicId).image),
+      name: "New World",
+    },
+    model: cdnURL(S3Path.worldModel(publicId).model),
+  };
+
+  const blob = new Blob([JSON.stringify(json)], { type: "application/json" });
+  const buffer = await blob.arrayBuffer();
+  const array = new Uint8Array(buffer);
+
+  const command = getWorldModelFileUploadCommand(publicId, "metadata", array);
+  await s3Client.send(command);
+}
+
+async function uploadDefaultImage(publicId: string) {
+  const res = await fetch(
+    `${env.NEXT_PUBLIC_DEPLOYED_URL}/images/Default-World.jpg`
+  );
+  const buffer = await res.arrayBuffer();
+  const array = new Uint8Array(buffer);
+
+  const command = getWorldModelFileUploadCommand(publicId, "image", array);
+  await s3Client.send(command);
+}
+
+async function uploadDefaultModel(publicId: string) {
+  const res = await fetch(
+    `${env.NEXT_PUBLIC_DEPLOYED_URL}/models/Default-World.glb`
+  );
+  const buffer = await res.arrayBuffer();
+  const array = new Uint8Array(buffer);
+
+  const command = getWorldModelFileUploadCommand(publicId, "model", array);
+  await s3Client.send(command);
 }
 
 export default function CreateCard() {

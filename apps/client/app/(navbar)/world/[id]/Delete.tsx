@@ -5,14 +5,14 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 
-import { deleteWorld } from "@/app/api/spaces/[id]/helper";
+import { deleteWorld } from "@/app/api/worlds/[id]/helper";
 import { useAuth } from "@/src/client/AuthProvider";
 import Button from "@/src/ui/Button";
 import { parseError } from "@/src/utils/parseError";
-import { SpaceId } from "@/src/utils/parseSpaceId";
+import { WorldId } from "@/src/utils/parseWorldId";
 
 interface Props {
-  id: SpaceId;
+  id: WorldId;
 }
 
 export default function Delete({ id }: Props) {

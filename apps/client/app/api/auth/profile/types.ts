@@ -11,7 +11,6 @@ export const UpdateProfileSchema = z.object({
   backgroundKey: z.string().length(FILE_KEY_LENGTH).optional(),
   bio: z.string().max(MAX_PROFILE_NAME_LENGTH).optional(),
   imageKey: z.string().length(FILE_KEY_LENGTH).optional(),
-  name: z.string().max(MAX_PROFILE_NAME_LENGTH).optional(),
   username: z
     .string()
     .min(MIN_USERNAME_LENGTH)

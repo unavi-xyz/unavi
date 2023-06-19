@@ -52,7 +52,6 @@ export async function fetchUserProfileDB(
         background,
         bio: user.profile.bio ?? undefined,
         image,
-        name: user.profile.name ?? undefined,
       },
       username: user.username,
     };

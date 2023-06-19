@@ -39,7 +39,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description,
     openGraph: {
       description,
-      firstName: foundUser?.profile.name,
       images: image ? [{ url: image }] : undefined,
       title,
       type: "profile",

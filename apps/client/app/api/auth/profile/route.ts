@@ -26,7 +26,6 @@ export async function GET(request: NextRequest) {
     background: found.backgroundKey ?? undefined,
     bio: found.bio ?? undefined,
     image: found.imageKey ?? undefined,
-    name: found.name ?? undefined,
   };
 
   return NextResponse.json(json);
@@ -44,7 +43,7 @@ export async function PATCH(request: NextRequest) {
   const { session, user } = await authRequest.validateUser();
   if (!session) return new Response(null, { status: 401 });
 
-  const { username, name, bio, imageKey, backgroundKey } = parsed.data;
+  const { username, bio, imageKey, backgroundKey } = parsed.data;
 
   // Create or update profile
   await db
@@ -53,7 +52,6 @@ export async function PATCH(request: NextRequest) {
       backgroundKey,
       bio,
       imageKey,
-      name,
       userId: session.userId,
       username: user.username,
     })
@@ -62,7 +60,6 @@ export async function PATCH(request: NextRequest) {
         backgroundKey,
         bio,
         imageKey,
-        name,
       },
     });
 

@@ -6,10 +6,10 @@ import { fetchNFTSpaceOwner } from "./fetchNFTSpaceOwner";
 import { fetchNFTSpaceURI } from "./fetchNFTSpaceURI";
 import { fetchWorldMetadata } from "./fetchWorldMetadata";
 
-export async function validateSpaceNFT(
+export async function validateWorldNFT(
   tokenId: number,
   owner?: string
-): Promise<ValidNFTSpace | null> {
+): Promise<ValidNFTWorld | null> {
   try {
     // Check if owned by owner
     if (owner) {
@@ -33,14 +33,16 @@ export async function validateSpaceNFT(
   }
 }
 
-export type ValidNFTSpace = {
+export type ValidNFTWorld = {
   id: SpaceNFTId;
   uri: string;
   metadata: WorldMetadata;
 };
-export type ValidDBSpace = {
+
+export type ValidDBWorld = {
   id: SpaceDBId;
   uri: string;
   metadata: WorldMetadata;
 };
-export type ValidSpace = ValidNFTSpace | ValidDBSpace;
+
+export type ValidWorld = ValidNFTWorld | ValidDBWorld;

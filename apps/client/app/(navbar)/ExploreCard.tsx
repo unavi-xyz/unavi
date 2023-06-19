@@ -1,22 +1,22 @@
-import { fetchLatestSpaces } from "@/src/server/helpers/fetchLatestSpaces";
+import { fetchLatestWorlds } from "@/src/server/helpers/fetchLatestWorlds";
 import CardGrid from "@/src/ui/CardGrid";
 
 import Search from "./Search";
-import Spaces from "./Spaces";
+import Worlds from "./Worlds";
 
 export default async function ExploreCard() {
-  const spaces = await fetchLatestSpaces(40);
+  const worlds = await fetchLatestWorlds(40);
 
   return (
-    <section className="space-y-4">
+    <section className="w-full space-y-4">
       <h2 className="text-center text-3xl font-bold">🌏 Explore</h2>
 
-      <div className="flex w-full justify-center">
+      <div className="flex justify-center">
         <Search />
       </div>
 
       <CardGrid>
-        <Spaces spaces={spaces} />
+        <Worlds worlds={worlds} />
       </CardGrid>
     </section>
   );

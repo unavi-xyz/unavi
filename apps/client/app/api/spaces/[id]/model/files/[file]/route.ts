@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getUserSession } from "@/src/server/auth/getUserSession";
-import { prisma } from "@/src/server/prisma";
+import { db } from "@/src/server/db/drizzle";
 
 import { getSpaceModelDownloadURL, getSpaceModelUploadURL } from "./files";
 import {
@@ -19,14 +19,14 @@ export async function GET(request: NextRequest, { params }: Params) {
   const { id, file } = paramsSchema.parse(params);
 
   // Verify user owns the space
-  const found = await prisma.space.findFirst({
-    include: { SpaceModel: true },
-    where: { ownerId: session.user.userId, publicId: id },
+  const found = await db.query.world.findFirst({
+    where: (row, { eq }) =>
+      eq(row.ownerId, session.user.userId) && eq(row.publicId, id),
+    with: { model: true },
   });
-  if (!found?.SpaceModel)
-    return new Response("Space not found", { status: 404 });
+  if (!found) return new Response("world not found", { status: 404 });
 
-  const url = await getSpaceModelDownloadURL(found.SpaceModel.publicId, file);
+  const url = await getSpaceModelDownloadURL(found.model.key, file);
 
   const json: GetFileDownloadResponse = { url };
   return NextResponse.json(json);
@@ -40,14 +40,14 @@ export async function PUT(request: NextRequest, { params }: Params) {
   const { id, file } = paramsSchema.parse(params);
 
   // Verify user owns the space
-  const found = await prisma.space.findFirst({
-    include: { SpaceModel: true },
-    where: { ownerId: session.user.userId, publicId: id },
+  const found = await db.query.world.findFirst({
+    where: (row, { eq }) =>
+      eq(row.ownerId, session.user.userId) && eq(row.publicId, id),
+    with: { model: true },
   });
-  if (!found?.SpaceModel)
-    return new Response("Space not found", { status: 404 });
+  if (!found) return new Response("world not found", { status: 404 });
 
-  const url = await getSpaceModelUploadURL(found.SpaceModel.publicId, file);
+  const url = await getSpaceModelUploadURL(found.model.key, file);
 
   const json: GetFileUploadResponse = { url };
   return NextResponse.json(json);

@@ -1,8 +1,10 @@
 import { WorldMetadata } from "@wired-protocol/types";
+import { eq } from "drizzle-orm";
 
 import { getUserSession } from "@/src/server/auth/getUserSession";
+import { db } from "@/src/server/db/drizzle";
+import { world } from "@/src/server/db/schema";
 import { fetchNFTSpaceOwner } from "@/src/server/helpers/fetchNFTSpaceOwner";
-import { prisma } from "@/src/server/prisma";
 import ButtonTabs, { TabContent } from "@/src/ui/ButtonTabs";
 import { SpaceId } from "@/src/utils/parseSpaceId";
 
@@ -46,10 +48,10 @@ export default async function Tabs({ id, metadata }: Props) {
 }
 
 async function fetchSpaceDBOwner(id: string) {
-  const space = await prisma.space.findFirst({
-    select: { ownerId: true },
-    where: { publicId: id },
+  const found = await db.query.world.findFirst({
+    columns: { ownerId: true },
+    where: eq(world.publicId, id),
   });
 
-  return space?.ownerId;
+  return found?.ownerId;
 }

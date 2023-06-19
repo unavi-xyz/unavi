@@ -1,19 +1,12 @@
 "use client";
 
-import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
-import { useContractWrite, useWalletClient } from "wagmi";
-import { readContract } from "wagmi/actions";
 
-import { getNFTSpace } from "@/app/api/nfts/[id]/space/helper";
 import { deleteSpace } from "@/app/api/spaces/[id]/helper";
 import { useAuth } from "@/src/client/AuthProvider";
-import { SPACE_ADDRESS } from "@/src/contracts/addresses";
-import { SPACE_ABI } from "@/src/contracts/SpaceAbi";
-import { env } from "@/src/env.mjs";
 import Button from "@/src/ui/Button";
 import { parseError } from "@/src/utils/parseError";
 import { SpaceId } from "@/src/utils/parseSpaceId";
@@ -27,15 +20,6 @@ export default function Delete({ id }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  const { writeAsync: burn } = useContractWrite({
-    abi: SPACE_ABI,
-    address: SPACE_ADDRESS,
-    functionName: "burn",
-  });
-
-  const { data: wallet } = useWalletClient();
-  const { openConnectModal } = useConnectModal();
-
   async function handleDelete() {
     if (loading) return;
 
@@ -47,39 +31,6 @@ export default function Delete({ id }: Props) {
       if (id.type === "id") {
         toast.loading("Deleting space...", { id: toastId });
         await deleteSpace(id.value);
-      } else {
-        if (!wallet) {
-          if (openConnectModal) openConnectModal();
-          return;
-        }
-
-        const tokenURI = await readContract({
-          abi: SPACE_ABI,
-          address: SPACE_ADDRESS,
-          args: [BigInt(id.value)],
-          functionName: "tokenURI",
-        });
-
-        const nftsPath = `https://${env.NEXT_PUBLIC_CDN_ENDPOINT}/nfts/`;
-
-        // Delete space NFT
-        toast.loading("Waiting for signature...", { id: toastId });
-        await burn({ args: [BigInt(id.value)] });
-
-        toast.loading("Deleting space...", { id: toastId });
-
-        if (tokenURI.startsWith(nftsPath)) {
-          // Get database nft id from token URI
-          const nftId = tokenURI
-            .replace(nftsPath, "")
-            .replace("/metadata.json", "");
-
-          // Get space id
-          const { spaceId } = await getNFTSpace(nftId);
-
-          // Delete space from database
-          await deleteSpace(spaceId);
-        }
       }
     }
 

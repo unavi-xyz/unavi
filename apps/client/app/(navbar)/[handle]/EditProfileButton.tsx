@@ -5,23 +5,22 @@ import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { MdEdit } from "react-icons/md";
 
-import {
-  MAX_PROFILE_BIO_LENGTH,
-  MAX_USERNAME_LENGTH,
-  MIN_USERNAME_LENGTH,
-} from "@/app/api/auth/profile/constants";
 import { updateProfile } from "@/app/api/auth/profile/helper";
 import { getProfileUploadURL } from "@/app/api/auth/profile/upload/[file]/helper";
 import { ProfileFile } from "@/app/api/auth/profile/upload/[file]/types";
 import { useAuth } from "@/src/client/AuthProvider";
 import { env } from "@/src/env.mjs";
+import {
+  MAX_PROFILE_BIO_LENGTH,
+  MAX_USERNAME_LENGTH,
+  MIN_USERNAME_LENGTH,
+} from "@/src/server/db/constants";
 import Button from "@/src/ui/Button";
 import DialogContent, { DialogRoot, DialogTrigger } from "@/src/ui/Dialog";
 import ImageInput from "@/src/ui/ImageInput";
 import TextArea from "@/src/ui/TextArea";
 import { cropImage } from "@/src/utils/cropImage";
 import { parseError } from "@/src/utils/parseError";
-import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
 interface Props {
   userId: string;
@@ -78,7 +77,7 @@ export default function EditProfileButton({
 
         if (!res.ok) throw new Error("Failed to upload image");
 
-        return cdnURL(S3Path.profile(userId).image(fileId));
+        return fileId;
       } catch (e) {
         console.error(e);
         const message = parseError(e);
@@ -107,7 +106,7 @@ export default function EditProfileButton({
 
         if (!res.ok) throw new Error("Failed to upload background");
 
-        return cdnURL(S3Path.profile(userId).background(fileId));
+        return fileId;
       } catch (e) {
         console.error(e);
         const message = parseError(e);
@@ -118,15 +117,15 @@ export default function EditProfileButton({
     setLoading(true);
 
     try {
-      const [imageUrl, backgroundUrl] = await Promise.all([
+      const [imageKey, backgroundKey] = await Promise.all([
         uploadImage(),
         uploadBackground(),
       ]);
 
       await updateProfile({
-        background: backgroundUrl,
+        backgroundKey,
         bio: bioElement.value,
-        image: imageUrl,
+        imageKey,
         username: usernameElement.value || username,
       });
 

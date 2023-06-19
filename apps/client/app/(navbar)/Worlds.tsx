@@ -1,18 +1,18 @@
 "use client";
 
-import { ValidSpace } from "@/src/server/helpers/validateSpaceNFT";
+import { ValidWorld } from "@/src/server/helpers/validateWorldNFT";
 import SpaceCard from "@/src/ui/SpaceCard";
 
 import { useExploreStore } from "./exploreStore";
 
 interface Props {
-  spaces: ValidSpace[];
+  worlds: ValidWorld[];
 }
 
-export default function Spaces({ spaces }: Props) {
+export default function Worlds({ worlds }: Props) {
   const filter = useExploreStore((state) => state.filter);
 
-  const filteredSpaces = spaces.filter(
+  const filtered = worlds.filter(
     (space) =>
       filter === "" ||
       space.metadata.info?.name?.toLowerCase().includes(filter.toLowerCase())
@@ -20,7 +20,7 @@ export default function Spaces({ spaces }: Props) {
 
   return (
     <>
-      {filteredSpaces.map(({ id, uri, metadata }) => (
+      {filtered.map(({ id, uri, metadata }) => (
         <SpaceCard
           key={id.value}
           id={id}

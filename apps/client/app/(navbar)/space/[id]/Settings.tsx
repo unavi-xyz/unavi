@@ -6,7 +6,6 @@ import { SpaceId } from "@/src/utils/parseSpaceId";
 
 import RainbowkitWrapper from "../../RainbowkitWrapper";
 import Delete from "./Delete";
-import Mint from "./Mint";
 
 interface Props {
   id: SpaceId;
@@ -20,10 +19,7 @@ export default async function Settings({ id, metadata }: Props) {
   return (
     <AuthProvider>
       <RainbowkitWrapper>
-        <div className="space-y-8">
-          {id.type === "id" ? <Mint id={id} metadata={metadata} /> : null}
-          <Delete id={id} />
-        </div>
+        <Delete id={id} />
       </RainbowkitWrapper>
     </AuthProvider>
   );

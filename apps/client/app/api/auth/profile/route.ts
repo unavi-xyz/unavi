@@ -1,9 +1,11 @@
 import { ProfileMetadata } from "@wired-protocol/types";
+import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 import { auth } from "@/src/server/auth/lucia";
-import { prisma } from "@/src/server/prisma";
+import { db } from "@/src/server/db/drizzle";
+import { profile, user as userTable } from "@/src/server/db/schema";
 
 import { UpdateProfileSchema } from "./types";
 
@@ -15,16 +17,16 @@ export async function GET(request: NextRequest) {
   const { session } = await authRequest.validateUser();
   if (!session) return new Response(null, { status: 401 });
 
-  const profile = await prisma.profile.findUnique({
-    where: { userId: session.userId },
+  const found = await db.query.profile.findFirst({
+    where: eq(profile.userId, session.userId),
   });
-  if (!profile) return new Response(null, { status: 404 });
+  if (!found) return new Response(null, { status: 404 });
 
   const json: ProfileMetadata = {
-    background: profile.background ?? undefined,
-    bio: profile.bio ?? undefined,
-    image: profile.image ?? undefined,
-    name: profile.name ?? undefined,
+    background: found.backgroundKey ?? undefined,
+    bio: found.bio ?? undefined,
+    image: found.imageKey ?? undefined,
+    name: found.name ?? undefined,
   };
 
   return NextResponse.json(json);
@@ -42,27 +44,41 @@ export async function PATCH(request: NextRequest) {
   const { session, user } = await authRequest.validateUser();
   if (!session) return new Response(null, { status: 401 });
 
-  const { username, name, bio, image, background } = parsed.data;
+  const { username, name, bio, imageKey, backgroundKey } = parsed.data;
 
   // Create or update profile
-  await prisma.profile.upsert({
-    create: { background, bio, image, name, userId: session.userId },
-    update: { background, bio, image, name },
-    where: { userId: session.userId },
-  });
+  await db
+    .insert(profile)
+    .values({
+      backgroundKey,
+      bio,
+      imageKey,
+      name,
+      userId: session.userId,
+      username: user.username,
+    })
+    .onDuplicateKeyUpdate({
+      set: {
+        backgroundKey,
+        bio,
+        imageKey,
+        name,
+      },
+    });
 
   // Update username
   if (username && username !== user.username) {
     // Check if username is taken
-    const existingUser = await prisma.authUser.findUnique({
-      where: { username },
+    const existingUser = await db.query.user.findFirst({
+      where: (row, { eq }) => eq(row.username, username),
     });
     if (existingUser) return new Response(null, { status: 409 });
 
-    await prisma.authUser.update({
-      data: { username },
-      where: { id: session.userId },
-    });
+    // Update username
+    await db
+      .update(userTable)
+      .set({ username })
+      .where(eq(userTable.id, session.userId));
   }
 
   return new Response(null, { status: 200 });

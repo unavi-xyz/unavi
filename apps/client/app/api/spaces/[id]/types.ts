@@ -8,13 +8,7 @@ export const paramsSchema = z.object({
   id: z.string().length(SPACE_ID_LENGTH),
 });
 
-export const patchSchema = z.object({
-  tokenId: z.number().int().min(0),
-});
-
-export type PatchSpaceRequest = z.infer<typeof patchSchema>;
-
-export type GetSpaceResponse = {
+export type GetResponse = {
   ownerId: string;
   uri: string | null;
 };

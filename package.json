@@ -6,11 +6,10 @@
   "scripts": {
     "build": "turbo build",
     "ci:publish": "pnpm publish -r && changeset tag && git push --follow-tags",
-    "deploy": "turbo deploy",
     "dev": "turbo dev --filter=!tsconfig --filter=!eslint-config-custom --filter=!engine",
     "docker:build": "dotenv -e ./apps/client/.env -c -- docker compose -f docker-compose.yml -f docker-compose.prod.yml build",
     "docker:dev": "pnpm docker:stop && dotenv -e ./apps/client/.env -c -- docker compose up --build -d && pnpm docker:init && pnpm dev",
-    "docker:init": "node -e \"setTimeout(() => process.exit(0), 10000)\" && pnpm run deploy",
+    "docker:init": "node -e \"setTimeout(() => process.exit(0), 10000)\" && pnpm run --filter @unavi/client db:push",
     "docker:prod": "pnpm docker:stop && dotenv -e ./apps/client/.env -c -- docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d && pnpm docker:init",
     "docker:stop": "dotenv -e ./apps/client/.env -c -- docker compose -f docker-compose.yml -f docker-compose.prod.yml down",
     "format": "prettier --write .",
@@ -25,7 +24,6 @@
     "postinstall-postinstall": "^2.1.0",
     "prettier": "^2.8.8",
     "prettier-plugin-packagejson": "^2.4.3",
-    "prettier-plugin-prisma": "^4.13.0",
     "turbo": "^1.10.3"
   },
   "packageManager": "pnpm@8.3.1",

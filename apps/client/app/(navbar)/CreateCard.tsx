@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 
 import { getUserSession } from "@/src/server/auth/getUserSession";
+import { db } from "@/src/server/db/drizzle";
+import * as schema from "@/src/server/db/schema";
 import { nanoidShort } from "@/src/server/nanoid";
-import { prisma } from "@/src/server/prisma";
 
 import CreateCardButton from "./CreateCardButton";
 
@@ -14,12 +15,15 @@ export async function createWorld() {
 
   const publicId = nanoidShort();
 
-  await prisma.space.create({
-    data: {
-      ownerId: session.user.userId,
-      publicId,
-    },
-  });
+  try {
+    await db
+      .insert(schema.world)
+      .values({ ownerId: session.user.userId, publicId })
+      .execute();
+  } catch (error) {
+    console.error(error);
+    return;
+  }
 
   redirect(`/space/${publicId}`);
 }

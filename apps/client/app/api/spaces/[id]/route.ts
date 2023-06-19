@@ -1,53 +1,31 @@
 import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
+import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
 import { env } from "@/src/env.mjs";
 import { getUserSession } from "@/src/server/auth/getUserSession";
+import { db } from "@/src/server/db/drizzle";
+import { world, worldModel } from "@/src/server/db/schema";
 import { listObjectsRecursive } from "@/src/server/helpers/listObjectsRecursive";
-import { prisma } from "@/src/server/prisma";
 import { s3Client } from "@/src/server/s3";
 import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
-import { GetSpaceResponse, Params, paramsSchema, patchSchema } from "./types";
+import { GetResponse, Params, paramsSchema } from "./types";
 
 // Get space
 export async function GET(request: NextRequest, { params }: Params) {
   const { id } = paramsSchema.parse(params);
 
-  const space = await prisma.space.findFirst({
-    include: { SpaceModel: true },
-    where: { publicId: id },
+  const found = await db.query.world.findFirst({
+    where: (row, { eq }) => eq(row.publicId, id),
+    with: { model: true },
   });
-  if (!space) return new Response("Space not found", { status: 404 });
+  if (!found) return new Response("World not found", { status: 404 });
 
-  const modelURI = space.SpaceModel
-    ? cdnURL(S3Path.spaceModel(space.SpaceModel.publicId).model)
-    : null;
+  const modelURI = cdnURL(S3Path.worldModel(found.model.key).model);
 
-  const json: GetSpaceResponse = { ownerId: space.ownerId, uri: modelURI };
+  const json: GetResponse = { ownerId: found.ownerId, uri: modelURI };
   return NextResponse.json(json);
-}
-
-// Update space
-export async function PATCH(request: NextRequest, { params }: Params) {
-  const session = await getUserSession();
-  if (!session) return new Response("Unauthorized", { status: 401 });
-
-  const { id } = paramsSchema.parse(params);
-
-  // Verify user owns the space
-  const found = await prisma.space.findFirst({
-    include: { SpaceModel: true },
-    where: { ownerId: session.user.userId, publicId: id },
-  });
-  if (!found) return new Response("Space not found", { status: 404 });
-
-  const { tokenId } = patchSchema.parse(await request.json());
-
-  // Update space
-  await prisma.space.update({ data: { tokenId }, where: { id: found.id } });
-
-  return NextResponse.json({ success: true });
 }
 
 // Delete space
@@ -58,48 +36,33 @@ export async function DELETE(request: NextRequest, { params }: Params) {
   const { id } = paramsSchema.parse(params);
 
   // Verify user owns the space
-  const found = await prisma.space.findFirst({
-    include: { SpaceModel: true, SpaceNFT: true },
-    where: { ownerId: session.user.userId, publicId: id },
+  const found = await db.query.world.findFirst({
+    where: (row, { eq }) =>
+      eq(row.ownerId, session.user.userId) && eq(row.publicId, id),
+    with: { model: true },
   });
-  if (!found) return new Response("Space not found", { status: 404 });
+  if (!found) return new Response("World not found", { status: 404 });
 
   // Delete files from S3
-  const objectsPromise = Promise.all([
-    found.SpaceModel
-      ? await listObjectsRecursive(
-          S3Path.spaceModel(found.SpaceModel.publicId).directory
+  const objectsPromise = listObjectsRecursive(
+    S3Path.worldModel(found.model.key).directory
+  ).then((objs) =>
+    objs.length > 0
+      ? s3Client.send(
+          new DeleteObjectsCommand({
+            Bucket: env.S3_BUCKET,
+            Delete: { Objects: objs.map(({ Key }) => ({ Key })) },
+          })
         )
-      : [],
-    found.SpaceNFT
-      ? await listObjectsRecursive(
-          S3Path.spaceNFT(found.SpaceNFT.publicId).directory
-        )
-      : [],
-  ])
-    .then((results) => results.flat())
-    .then((objs) =>
-      objs.length > 0
-        ? s3Client.send(
-            new DeleteObjectsCommand({
-              Bucket: env.S3_BUCKET,
-              Delete: { Objects: objs.map(({ Key }) => ({ Key })) },
-            })
-          )
-        : null
-    );
+      : null
+  );
 
-  await Promise.all([
-    found.SpaceModel
-      ? prisma.spaceModel.delete({ where: { id: found.SpaceModel.id } })
-      : null,
-    found.SpaceNFT
-      ? prisma.spaceNFT.delete({ where: { id: found.SpaceNFT.id } })
-      : null,
-  ]);
+  await db
+    .delete(worldModel)
+    .where(eq(worldModel.key, found.model.key))
+    .execute();
 
-  // Delete space from database
-  await prisma.space.delete({ where: { id: found.id } });
+  await db.delete(world).where(eq(world.publicId, id)).execute();
 
   await objectsPromise;
 

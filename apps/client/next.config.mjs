@@ -70,6 +70,7 @@ export default await defineNextConfig({
   experimental: {
     outputFileTracingExcludes: { "**": ["**swc/core**"] },
     serverActions: true,
+    serverComponentsExternalPackages: ["mysql2"],
   },
   async headers() {
     return [

@@ -1,9 +1,11 @@
+import { eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
 import { SiweMessage } from "siwe";
 
 import { env } from "@/src/env.mjs";
 
-import { prisma } from "../prisma";
+import { db } from "../db/drizzle";
+import { ethereumSession } from "../db/schema";
 import { AuthData } from "./types";
 
 export const ETH_SESSION_COOKIE = "eth_nonce_session";
@@ -36,8 +38,8 @@ export async function validateEthereumAuth(
   }
 
   // Fetch nonce from database
-  const ethSession = await prisma.authEthereumSession.findUnique({
-    where: { id: ethSessionId },
+  const ethSession = await db.query.ethereumSession.findFirst({
+    where: eq(ethereumSession.publicId, ethSessionId),
   });
   if (!ethSession) {
     console.warn(`No ethereum session found for id: ${ethSessionId}`);

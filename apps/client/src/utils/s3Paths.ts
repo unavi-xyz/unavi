@@ -1,60 +1,60 @@
 import { env } from "../env.mjs";
 
 export class S3Path {
-  static spaceNFT = (nftId: string) =>
+  static worldNFT = (nftKey: string) =>
     ({
-      directory: `nfts/${nftId}`,
-      metadata: `nfts/${nftId}/metadata.json`,
+      directory: `nfts/${nftKey}`,
+      metadata: `nfts/${nftKey}/metadata.json`,
     } as const);
 
-  static profile = (userId: string) => {
+  static profile = (userKey: string) => {
     return {
-      background: (fileId: string) =>
-        `profiles/${userId}/background/${fileId}` as const,
-      image: (fileId: string) => `profiles/${userId}/image/${fileId}` as const,
+      background: (fileKey: string) =>
+        `profiles/${userKey}/background/${fileKey}` as const,
+      image: (fileKey: string) =>
+        `profiles/${userKey}/image/${fileKey}` as const,
     } as const;
   };
 
-  static project = (projectId: string) =>
+  static project = (projectKey: string) =>
     ({
-      asset: (assetId: string) =>
-        `projects/${projectId}/assets/${assetId}` as const,
-      assets: `projects/${projectId}/assets`,
-      directory: `projects/${projectId}`,
-      image: `projects/${projectId}/image`,
-      model: `projects/${projectId}/model.glb`,
+      asset: (assetKey: string) =>
+        `projects/${projectKey}/assets/${assetKey}` as const,
+      assets: `projects/${projectKey}/assets`,
+      directory: `projects/${projectKey}`,
+      image: `projects/${projectKey}/image`,
+      model: `projects/${projectKey}/model.glb`,
     } as const);
 
-  static spaceModel = (modelId: string) =>
+  static worldModel = (modelKey: string) =>
     ({
-      asset: (assetId: string) =>
-        `spaces/${modelId}/assets/${assetId}` as const,
-      directory: `spaces/${modelId}`,
-      image: `spaces/${modelId}/image`,
-      metadata: `spaces/${modelId}/metadata.json`,
-      model: `spaces/${modelId}/model.glb`,
+      asset: (assetKey: string) =>
+        `worlds/${modelKey}/assets/${assetKey}` as const,
+      directory: `worlds/${modelKey}`,
+      image: `worlds/${modelKey}/image`,
+      metadata: `worlds/${modelKey}/metadata.json`,
+      model: `worlds/${modelKey}/model.glb`,
     } as const);
 
-  static temp(fileId: string) {
-    return `temp/${fileId}` as const;
+  static temp(fileKey: string) {
+    return `temp/${fileKey}` as const;
   }
 }
 
 type PublicPath =
-  | ReturnType<typeof S3Path.spaceNFT>[keyof ReturnType<typeof S3Path.spaceNFT>]
-  | ReturnType<typeof S3Path.spaceModel>["metadata" | "model" | "image"]
-  | ReturnType<ReturnType<typeof S3Path.spaceModel>["asset"]>
+  | ReturnType<typeof S3Path.worldNFT>[keyof ReturnType<typeof S3Path.worldNFT>]
+  | ReturnType<typeof S3Path.worldModel>["metadata" | "model" | "image"]
+  | ReturnType<ReturnType<typeof S3Path.worldModel>["asset"]>
   | ReturnType<ReturnType<typeof S3Path.profile>["background"]>
   | ReturnType<ReturnType<typeof S3Path.profile>["image"]>
   | ReturnType<typeof S3Path.temp>;
 
-export function cdnURL(path: PublicPath) {
-  // Use http on localhost
-  const http =
-    env.NEXT_PUBLIC_CDN_ENDPOINT?.startsWith("localhost") ||
-    env.NEXT_PUBLIC_CDN_ENDPOINT?.startsWith("127.0.0.1")
-      ? "http"
-      : "https";
+const http =
+  env.NEXT_PUBLIC_CDN_ENDPOINT?.startsWith("localhost") ||
+  env.NEXT_PUBLIC_CDN_ENDPOINT?.startsWith("127.0.0.1")
+    ? "http"
+    : "https";
 
+export function cdnURL(path: PublicPath) {
   return `${http}://${env.NEXT_PUBLIC_CDN_ENDPOINT}/${path}`;
 }

@@ -2,8 +2,9 @@ import { ProfileMetadata, ProfileMetadataSchema } from "@wired-protocol/types";
 
 import { env } from "@/src/env.mjs";
 import { parseHandle } from "@/src/utils/parseHandle";
+import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
-import { prisma } from "../prisma";
+import { db } from "../db/drizzle";
 
 export type UserProfile = {
   username: string;
@@ -32,22 +33,26 @@ export async function fetchUserProfileDB(
   username: string
 ): Promise<UserProfile | null> {
   try {
-    const user = await prisma.authUser.findUnique({
-      include: { Profile: true },
-      where: { username },
+    const user = await db.query.user.findFirst({
+      where: (row, { eq }) => eq(row.username, username),
+      with: { profile: true },
     });
     if (!user) return null;
 
-    const profile = user.Profile;
-    if (!profile) return null;
+    const background = user.profile.backgroundKey
+      ? cdnURL(S3Path.profile(user.id).background(user.profile.backgroundKey))
+      : undefined;
+    const image = user.profile.imageKey
+      ? cdnURL(S3Path.profile(user.id).image(user.profile.imageKey))
+      : undefined;
 
     return {
       domain: env.NEXT_PUBLIC_DEPLOYED_URL,
       metadata: {
-        background: profile.background ?? undefined,
-        bio: profile.bio ?? undefined,
-        image: profile.image ?? undefined,
-        name: profile.name ?? undefined,
+        background,
+        bio: user.profile.bio ?? undefined,
+        image,
+        name: user.profile.name ?? undefined,
       },
       username: user.username,
     };

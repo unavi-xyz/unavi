@@ -2,19 +2,19 @@ import { cache } from "react";
 
 import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
-import { prisma } from "../prisma";
+import { db } from "../db/drizzle";
 
 export const fetchDBSpaceURI = cache(async (id: string) => {
   try {
-    const space = await prisma.space.findFirst({
-      select: { SpaceModel: { select: { publicId: true } }, tokenId: true },
-      where: { publicId: id },
+    const found = await db.query.world.findFirst({
+      where: (row, { eq }) => eq(row.publicId, id),
+      with: { model: { columns: { key: true } } },
     });
-    if (!space || !space.SpaceModel) throw new Error("Space not found");
+    if (!found) throw new Error("Space not found");
 
-    const uri = cdnURL(S3Path.spaceModel(space.SpaceModel.publicId).metadata);
+    const uri = cdnURL(S3Path.worldModel(found.model.key).metadata);
 
-    return { tokenId: space.tokenId, uri };
+    return { uri };
   } catch {
     return null;
   }

@@ -1,9 +1,9 @@
-import { corePlugin, LatticeSchedules } from "lattice-engine/core";
+import { LatticeSchedules } from "lattice-engine/core";
 import { gltfPlugin } from "lattice-engine/gltf";
-import { inputPlugin } from "lattice-engine/input";
 import { orbitPlugin } from "lattice-engine/orbit";
-import { renderPlugin } from "lattice-engine/render";
-import { scenePlugin } from "lattice-engine/scene";
+import { playerPlugin } from "lattice-engine/player";
+import { defaultPlugin } from "lattice-engine/utils";
+import { vrmPlugin } from "lattice-engine/vrm";
 import { WorldBuilder } from "thyseus";
 
 import { initApp } from "./systems/initApp";
@@ -13,11 +13,10 @@ import { setWorld } from "./systems/setWorld";
 
 export function clientPlugin(builder: WorldBuilder) {
   builder
-    .addPlugin(corePlugin)
-    .addPlugin(renderPlugin)
-    .addPlugin(scenePlugin)
-    .addPlugin(inputPlugin)
+    .addPlugin(defaultPlugin)
     .addPlugin(orbitPlugin)
+    .addPlugin(playerPlugin)
+    .addPlugin(vrmPlugin)
     .addPlugin(gltfPlugin)
     .addSystemsToSchedule(LatticeSchedules.Startup, initApp)
     .addSystems(loadWorldModels, setSkybox, setWorld);

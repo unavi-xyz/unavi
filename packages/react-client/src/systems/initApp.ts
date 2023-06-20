@@ -1,4 +1,6 @@
 import { Asset, CoreStore } from "lattice-engine/core";
+import { InputStruct } from "lattice-engine/input";
+import { PhysicsConfig } from "lattice-engine/physics";
 import {
   GlobalTransform,
   Parent,
@@ -8,19 +10,23 @@ import {
 import { Commands, dropStruct, Mut, Res } from "thyseus";
 
 import { WorldJson } from "../components";
-import { createOrbitControls } from "../utils/createOrbitControls";
+import { createPlayerControls } from "../utils/createPlayerControls";
 import { createScene } from "../utils/createScene";
 
 export function initApp(
   commands: Commands,
   coreStore: Res<Mut<CoreStore>>,
-  sceneStruct: Res<Mut<SceneStruct>>
+  sceneStruct: Res<Mut<SceneStruct>>,
+  inputStruct: Res<Mut<InputStruct>>,
+  physicsConfig: Res<Mut<PhysicsConfig>>
 ) {
+  physicsConfig.debug = true;
+
   coreStore.canvas = document.querySelector("canvas");
 
-  createOrbitControls(commands, sceneStruct);
-
   const { root } = createScene(commands, sceneStruct);
+
+  createPlayerControls(root, commands, sceneStruct, inputStruct);
 
   const parent = new Parent(root);
 

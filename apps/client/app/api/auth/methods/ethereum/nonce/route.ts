@@ -39,10 +39,10 @@ export async function GET(request: NextRequest) {
   if (!ethSessionExists) {
     // If no ethereum session, create a new one
     publicId = nanoid();
-    await db.insert(ethereumSession).values({ nonce, publicId }).execute();
+    await db.insert(ethereumSession).values({ nonce, publicId });
   } else {
     // Otherwise, update the existing nonce
-    await db.update(ethereumSession).set({ nonce }).execute();
+    await db.update(ethereumSession).set({ nonce });
   }
 
   const json: GetNonceResponse = { nonce };

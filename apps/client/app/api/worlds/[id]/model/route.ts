@@ -49,16 +49,13 @@ export async function POST(request: NextRequest, { params }: Params) {
       : null,
 
     // Remove from database
-    db.delete(worldModel).where(eq(worldModel.id, found.model.id)).execute(),
+    db.delete(worldModel).where(eq(worldModel.id, found.model.id)),
   ]);
 
   // Create new world model
   const modelId = nanoidShort();
 
-  await db
-    .insert(worldModel)
-    .values({ key: modelId, worldId: found.id })
-    .execute();
+  await db.insert(worldModel).values({ key: modelId, worldId: found.id });
 
   const json: PostWorldModelResponse = { modelId };
   return NextResponse.json(json);

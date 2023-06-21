@@ -26,10 +26,7 @@ export async function createWorld() {
 
   try {
     // Create world
-    await db
-      .insert(world)
-      .values({ ownerId: session.user.userId, publicId })
-      .execute();
+    await db.insert(world).values({ ownerId: session.user.userId, publicId });
 
     const found = await db.query.world.findFirst({
       columns: { id: true },
@@ -41,10 +38,7 @@ export async function createWorld() {
     const modelKey = nanoidShort();
 
     await Promise.all([
-      db
-        .insert(worldModel)
-        .values({ key: modelKey, worldId: found.id })
-        .execute(),
+      db.insert(worldModel).values({ key: modelKey, worldId: found.id }),
       createMetadata(modelKey, `${session.user.username}@${HOME_SERVER}`),
       uploadDefaultImage(modelKey),
       uploadDefaultModel(modelKey),

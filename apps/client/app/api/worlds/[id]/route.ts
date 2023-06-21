@@ -62,12 +62,9 @@ export async function DELETE(request: NextRequest, { params }: Params) {
       : null
   );
 
-  await db
-    .delete(worldModel)
-    .where(eq(worldModel.key, found.model.key))
-    .execute();
+  await db.delete(worldModel).where(eq(worldModel.key, found.model.key));
 
-  await db.delete(world).where(eq(world.publicId, id)).execute();
+  await db.delete(world).where(eq(world.publicId, id));
 
   await objectsPromise;
 

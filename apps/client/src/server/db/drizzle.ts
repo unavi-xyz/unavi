@@ -8,6 +8,7 @@ import { env } from "@/src/env.mjs";
 import * as schema from "./schema";
 
 const PLANETSCALE = false;
+const LOG = env.NODE_ENV === "development";
 
 export let planetscaleConnection: Connection;
 export let mysql2Connection: Pool;
@@ -21,11 +22,11 @@ if (PLANETSCALE) {
   const { drizzle } = await import("drizzle-orm/planetscale-serverless");
 
   planetscaleConnection = connect({ url: env.DATABASE_URL });
-  db = drizzle(planetscaleConnection, { schema });
+  db = drizzle(planetscaleConnection, { logger: LOG, schema });
 } else {
   const { createPool } = await import("mysql2/promise");
   const { drizzle } = await import("drizzle-orm/mysql2");
 
   mysql2Connection = createPool({ uri: env.DATABASE_URL });
-  db = drizzle(mysql2Connection, { schema });
+  db = drizzle(mysql2Connection, { logger: LOG, schema });
 }

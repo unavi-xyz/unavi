@@ -17,8 +17,6 @@ import { parseWorldId } from "@/src/utils/parseWorldId";
 import PlayerCount from "./PlayerCount";
 import Tabs from "./Tabs";
 
-export const runtime = "edge";
-export const preferredRegion = "iad1";
 export const revalidate = 60;
 
 type Params = { id: string };

@@ -4,6 +4,9 @@ import { fetchPlayerCount } from "@/src/server/helpers/fetchPlayerCount";
 
 import { PostPlayerCountResponse, postPlayerCountSchema } from "./types";
 
+export const runtime = "edge";
+export const preferredRegion = "iad1";
+
 // Get world player count
 export async function POST(request: NextRequest) {
   const { host, uri } = postPlayerCountSchema.parse(await request.json());

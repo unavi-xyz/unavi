@@ -4,13 +4,14 @@ import { env } from "@/src/env.mjs";
 import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
 import { db } from "../db/drizzle";
+import { FixWith } from "../db/types";
 import { fetchWorldMetadata } from "./fetchWorldMetadata";
 
 export async function fetchLatestWorlds(limit: number, ownerId?: string) {
   if (!env.NEXT_PUBLIC_HAS_DATABASE) return [];
 
   try {
-    const worlds = await db.query.world.findMany({
+    const _worlds = await db.query.world.findMany({
       columns: { publicId: true },
       limit,
       where: ownerId ? (row, { eq }) => eq(row.ownerId, ownerId) : undefined,
@@ -22,10 +23,13 @@ export async function fetchLatestWorlds(limit: number, ownerId?: string) {
         },
       },
     });
+    const worlds: FixWith<(typeof _worlds)[0], "model">[] = _worlds;
 
     const fetched: FetchedWorld[] = [];
 
     const fetchWorld = async (world: (typeof worlds)[0]) => {
+      if (!world.model) return;
+
       const uri = cdnURL(S3Path.worldModel(world.model.key).metadata);
 
       const json = await fetchWorldMetadata(uri);

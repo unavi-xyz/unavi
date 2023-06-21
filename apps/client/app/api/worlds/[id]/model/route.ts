@@ -6,6 +6,7 @@ import { env } from "@/src/env.mjs";
 import { getUserSession } from "@/src/server/auth/getUserSession";
 import { db } from "@/src/server/db/drizzle";
 import { worldModel } from "@/src/server/db/schema";
+import { FixWith } from "@/src/server/db/types";
 import { listObjectsRecursive } from "@/src/server/helpers/listObjectsRecursive";
 import { nanoidShort } from "@/src/server/nanoid";
 import { s3Client } from "@/src/server/s3";
@@ -22,12 +23,14 @@ export async function POST(request: NextRequest, { params }: Params) {
   const { id } = paramsSchema.parse(params);
 
   // Verify user owns the world
-  const found = await db.query.world.findFirst({
+  const _found = await db.query.world.findFirst({
     where: (row, { eq }) =>
       eq(row.ownerId, session.user.userId) && eq(row.publicId, id),
     with: { model: true },
   });
-  if (!found) return new Response("World not found", { status: 404 });
+  if (!_found) return new Response("World not found", { status: 404 });
+  const found: FixWith<typeof _found, "model"> = _found;
+  if (!found.model) return new Response("World not found", { status: 404 });
 
   // Remove existing world model
   const allObjects = await listObjectsRecursive(

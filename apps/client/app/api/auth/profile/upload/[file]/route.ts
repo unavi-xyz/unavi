@@ -8,6 +8,7 @@ import { env } from "@/src/env.mjs";
 import { auth } from "@/src/server/auth/lucia";
 import { db } from "@/src/server/db/drizzle";
 import { profile } from "@/src/server/db/schema";
+import { FixWith } from "@/src/server/db/types";
 import { nanoidShort } from "@/src/server/nanoid";
 import { s3Client } from "@/src/server/s3";
 import { S3Path } from "@/src/utils/s3Paths";
@@ -25,11 +26,13 @@ export async function PUT(request: NextRequest, { params }: Params) {
   if (!session) return new Response(null, { status: 401 });
 
   // Get user profile
-  const user = await db.query.user.findFirst({
+  const _foundUser = await db.query.user.findFirst({
     where: (row, { eq }) => eq(row.id, session.userId),
     with: { profile: true },
   });
-  if (!user || !user.profile) return new Response(null, { status: 404 });
+  if (!_foundUser) return new Response(null, { status: 404 });
+  const foundUser: FixWith<typeof _foundUser, "profile"> = _foundUser;
+  if (!foundUser.profile) return new Response(null, { status: 404 });
 
   const { file } = paramsSchema.parse(params);
   const idName = file === ProfileFile.image ? "imageKey" : "backgroundKey";
@@ -48,9 +51,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
   };
 
   const removePreviousFile = async () => {
-    if (!user.profile) return;
+    if (!foundUser.profile) return;
 
-    const prevId = user.profile[idName];
+    const prevId = foundUser.profile[idName];
     if (!prevId) return;
 
     const command = new DeleteObjectCommand({

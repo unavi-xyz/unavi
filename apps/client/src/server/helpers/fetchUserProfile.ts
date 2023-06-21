@@ -5,6 +5,7 @@ import { parseHandle } from "@/src/utils/parseHandle";
 import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
 import { db } from "../db/drizzle";
+import { FixWith } from "../db/types";
 
 export type UserProfile = {
   username: string;
@@ -33,27 +34,33 @@ export async function fetchUserProfileDB(
   username: string
 ): Promise<UserProfile | null> {
   try {
-    const user = await db.query.user.findFirst({
+    const _foundUser = await db.query.user.findFirst({
       where: (row, { eq }) => eq(row.username, username),
       with: { profile: true },
     });
-    if (!user) return null;
+    if (!_foundUser) return null;
+    const foundUser: FixWith<typeof _foundUser, "profile"> = _foundUser;
+    if (!foundUser.profile) return null;
 
-    const background = user.profile.backgroundKey
-      ? cdnURL(S3Path.profile(user.id).background(user.profile.backgroundKey))
+    const background = foundUser.profile.backgroundKey
+      ? cdnURL(
+          S3Path.profile(foundUser.id).background(
+            foundUser.profile.backgroundKey
+          )
+        )
       : undefined;
-    const image = user.profile.imageKey
-      ? cdnURL(S3Path.profile(user.id).image(user.profile.imageKey))
+    const image = foundUser.profile.imageKey
+      ? cdnURL(S3Path.profile(foundUser.id).image(foundUser.profile.imageKey))
       : undefined;
 
     return {
       domain: env.NEXT_PUBLIC_DEPLOYED_URL,
       metadata: {
         background,
-        bio: user.profile.bio ?? undefined,
+        bio: foundUser.profile.bio ?? undefined,
         image,
       },
-      username: user.username,
+      username: foundUser.username,
     };
   } catch {
     return null;

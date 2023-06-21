@@ -6,6 +6,7 @@ import { env } from "@/src/env.mjs";
 import { getUserSession } from "@/src/server/auth/getUserSession";
 import { db } from "@/src/server/db/drizzle";
 import { world, worldModel } from "@/src/server/db/schema";
+import { FixWith } from "@/src/server/db/types";
 import { listObjectsRecursive } from "@/src/server/helpers/listObjectsRecursive";
 import { s3Client } from "@/src/server/s3";
 import { cdnURL, S3Path } from "@/src/utils/s3Paths";
@@ -16,11 +17,13 @@ import { GetResponse, Params, paramsSchema } from "./types";
 export async function GET(request: NextRequest, { params }: Params) {
   const { id } = paramsSchema.parse(params);
 
-  const found = await db.query.world.findFirst({
+  const _found = await db.query.world.findFirst({
     where: (row, { eq }) => eq(row.publicId, id),
     with: { model: true },
   });
-  if (!found) return new Response("World not found", { status: 404 });
+  if (!_found) return new Response("World not found", { status: 404 });
+  const found: FixWith<typeof _found, "model"> = _found;
+  if (!found.model) return new Response("World not found", { status: 404 });
 
   const modelURI = cdnURL(S3Path.worldModel(found.model.key).model);
 
@@ -36,12 +39,14 @@ export async function DELETE(request: NextRequest, { params }: Params) {
   const { id } = paramsSchema.parse(params);
 
   // Verify user owns the world
-  const found = await db.query.world.findFirst({
+  const _found = await db.query.world.findFirst({
     where: (row, { eq }) =>
       eq(row.ownerId, session.user.userId) && eq(row.publicId, id),
     with: { model: true },
   });
-  if (!found) return new Response("World not found", { status: 404 });
+  if (!_found) return new Response("World not found", { status: 404 });
+  const found: FixWith<typeof _found, "model"> = _found;
+  if (!found.model) return new Response("World not found", { status: 404 });
 
   // Delete files from S3
   const objectsPromise = listObjectsRecursive(

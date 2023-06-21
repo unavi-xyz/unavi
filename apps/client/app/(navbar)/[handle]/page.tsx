@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import AuthProvider from "@/src/client/AuthProvider";
 import { db } from "@/src/server/db/drizzle";
 import { user } from "@/src/server/db/schema";
+import { FixWith } from "@/src/server/db/types";
 import { fetchLatestWorlds } from "@/src/server/helpers/fetchLatestWorlds";
 import Avatar from "@/src/ui/Avatar";
 import WorldCard from "@/src/ui/WorldCard";
@@ -20,20 +21,28 @@ interface Props {
   params: Params;
 }
 
+async function queryUser(username: string) {
+  const _foundUser = await db.query.user.findFirst({
+    columns: { address: true, id: true },
+    where: eq(user.username, username),
+    with: { profile: true },
+  });
+  if (!_foundUser) return null;
+  const foundUser: FixWith<typeof _foundUser, "profile"> = _foundUser;
+
+  return foundUser;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const username = params.handle.split("%40")[1]; // Remove the @ from the handle
   if (!username) return {};
 
-  const foundUser = await db.query.user.findFirst({
-    where: eq(user.username, username),
-    with: { profile: true },
-  });
-
+  const foundUser = await queryUser(username);
   if (!foundUser) return {};
 
   const title = `@${username}`;
-  const description = foundUser?.profile.bio ?? "";
-  const image = foundUser.profile.imageKey
+  const description = foundUser.profile?.bio ?? "";
+  const image = foundUser.profile?.imageKey
     ? cdnURL(S3Path.profile(foundUser.id).image(foundUser.profile.imageKey))
     : undefined;
 
@@ -58,23 +67,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function Handle({ params }: Props) {
   const username = params.handle.split("%40")[1]; // Remove the @ from the handle
-  if (!username) notFound();
+  if (!username) return notFound();
 
-  const foundUser = await db.query.user.findFirst({
-    columns: { address: true, id: true },
-    where: eq(user.username, username),
-    with: { profile: true },
-  });
-  if (!foundUser) notFound();
+  const foundUser = await queryUser(username);
+  if (!foundUser) return notFound();
 
   const worlds = await fetchLatestWorlds(20, foundUser.id);
 
-  const background = foundUser.profile.backgroundKey
+  const background = foundUser.profile?.backgroundKey
     ? cdnURL(
         S3Path.profile(foundUser.id).background(foundUser.profile.backgroundKey)
       )
     : undefined;
-  const image = foundUser.profile.imageKey
+
+  const image = foundUser.profile?.imageKey
     ? cdnURL(S3Path.profile(foundUser.id).image(foundUser.profile.imageKey))
     : undefined;
 
@@ -116,7 +122,7 @@ export default async function Handle({ params }: Props) {
                   <EditProfileButton
                     userId={foundUser.id}
                     username={username}
-                    bio={foundUser.profile.bio ?? undefined}
+                    bio={foundUser.profile?.bio ?? undefined}
                     image={image}
                     background={background}
                   />
@@ -130,7 +136,7 @@ export default async function Handle({ params }: Props) {
                 </div>
               </div>
 
-              {foundUser?.profile.bio && (
+              {foundUser.profile?.bio && (
                 <div className="w-full whitespace-pre-line text-center">
                   {foundUser.profile.bio}
                 </div>

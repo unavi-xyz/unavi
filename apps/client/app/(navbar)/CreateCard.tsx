@@ -13,7 +13,7 @@ import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 import { getWorldModelFileUploadCommand } from "../api/worlds/[id]/model/files/[file]/files";
 import CreateCardButton from "./CreateCardButton";
 
-export const runtime = env.PLANETSCALE ? "edge" : "nodejs";
+export const runtime = "edge";
 
 export async function createWorld() {
   "use server";

@@ -1,11 +1,10 @@
-import { env } from "@/src/env.mjs";
 import { fetchLatestWorlds } from "@/src/server/helpers/fetchLatestWorlds";
 import CardGrid from "@/src/ui/CardGrid";
 
 import Search from "./Search";
 import Worlds from "./Worlds";
 
-export const runtime = env.PLANETSCALE ? "edge" : "nodejs";
+export const runtime = "edge";
 
 export default async function ExploreCard() {
   const worlds = await fetchLatestWorlds(40);

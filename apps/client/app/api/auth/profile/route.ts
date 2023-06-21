@@ -3,14 +3,13 @@ import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-import { env } from "@/src/env.mjs";
 import { auth } from "@/src/server/auth/lucia";
 import { db } from "@/src/server/db/drizzle";
 import { profile, user as userTable } from "@/src/server/db/schema";
 
 import { UpdateProfileSchema } from "./types";
 
-export const runtime = env.PLANETSCALE ? "edge" : "nodejs";
+export const runtime = "edge";
 
 /**
  * Get user's profile

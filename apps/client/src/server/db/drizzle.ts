@@ -7,7 +7,6 @@ import { env } from "@/src/env.mjs";
 
 import * as schema from "./schema";
 
-const PLANETSCALE = false;
 const LOG = env.NODE_ENV === "development";
 
 export let planetscaleConnection: Connection;
@@ -17,7 +16,7 @@ export let db:
   | PlanetScaleDatabase<typeof schema>
   | MySql2Database<typeof schema>;
 
-if (PLANETSCALE) {
+if (env.PLANETSCALE) {
   const { connect } = await import("@planetscale/database");
   const { drizzle } = await import("drizzle-orm/planetscale-serverless");
 

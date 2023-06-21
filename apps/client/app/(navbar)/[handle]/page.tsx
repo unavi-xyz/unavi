@@ -33,7 +33,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = `@${username}`;
   const description = foundUser?.profile.bio ?? "";
-  const image = undefined; // TODO: Add image
+  const image = foundUser.profile.imageKey
+    ? cdnURL(S3Path.profile(foundUser.id).image(foundUser.profile.imageKey))
+    : undefined;
 
   return {
     description,

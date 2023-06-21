@@ -17,6 +17,7 @@ import { parseWorldId } from "@/src/utils/parseWorldId";
 import PlayerCount from "./PlayerCount";
 import Tabs from "./Tabs";
 
+export const runtime = env.PLANETSCALE ? "edge" : "nodejs";
 export const revalidate = 60;
 
 type Params = { id: string };

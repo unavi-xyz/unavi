@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
+import { env } from "@/src/env.mjs";
 import { db } from "@/src/server/db/drizzle";
 import { user } from "@/src/server/db/schema";
 import { FixWith } from "@/src/server/db/types";
@@ -13,6 +14,8 @@ import { isFromCDN } from "@/src/utils/isFromCDN";
 import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
 import EditProfileButton from "./EditProfileButton";
+
+export const runtime = env.PLANETSCALE ? "edge" : "nodejs";
 
 type Params = { handle: string };
 

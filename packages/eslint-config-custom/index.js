@@ -15,7 +15,12 @@ module.exports = {
     "turbo",
   ],
   parser: "@typescript-eslint/parser",
-  plugins: ["@typescript-eslint", "simple-import-sort", "sort-keys-fix", "unused-imports"],
+  plugins: [
+    "@typescript-eslint",
+    "simple-import-sort",
+    "sort-keys-fix",
+    "unused-imports",
+  ],
   rules: {
     "@next/next/no-html-link-for-pages": "off",
     "@next/next/no-img-element": "off",
@@ -27,6 +32,7 @@ module.exports = {
     "@typescript-eslint/no-unused-imports": "off",
     "@typescript-eslint/no-unused-vars": "off",
     "@typescript-eslint/no-var-requires": "off",
+    "import/no-unresolved": "off",
     "simple-import-sort/exports": "warn",
     "simple-import-sort/imports": "warn",
     "sort-keys-fix/sort-keys-fix": ["warn", "asc", { natural: true }],

@@ -37,7 +37,9 @@ const Tooltip = forwardRef<HTMLDivElement, Props>(
             }
           }}
         >
-          <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
+          <TooltipPrimitive.Trigger asChild>
+            {children}
+          </TooltipPrimitive.Trigger>
 
           <TooltipPrimitive.Portal>
             <TooltipPrimitive.Content

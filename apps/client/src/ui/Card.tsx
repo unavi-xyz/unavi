@@ -52,7 +52,9 @@ export default function Card({
 }
 
 export function CardText({ text }: { text?: string | null }) {
-  return <div className="pb-1 pt-2.5 text-xl font-bold text-neutral-900">{text}</div>;
+  return (
+    <div className="pb-1 pt-2.5 text-xl font-bold text-neutral-900">{text}</div>
+  );
 }
 
 interface CardImageProps {

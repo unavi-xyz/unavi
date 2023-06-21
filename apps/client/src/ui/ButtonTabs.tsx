@@ -25,7 +25,9 @@ export default function ButtonTabs({ titles, children }: Props) {
               key={title}
               value={title}
               className={`flex-1 rounded-xl py-1 text-lg font-bold transition active:opacity-80 ${
-                value === title ? "bg-neutral-200 hover:bg-neutral-300" : " hover:bg-neutral-200"
+                value === title
+                  ? "bg-neutral-200 hover:bg-neutral-300"
+                  : " hover:bg-neutral-200"
               }`}
             >
               {title}

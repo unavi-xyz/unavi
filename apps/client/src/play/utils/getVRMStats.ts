@@ -1,6 +1,11 @@
 import { NodeIO } from "@gltf-transform/core";
-import { VRM, VRM0, VRM0MetadataExtension, VRMMetadataExtension } from "@unavi/gltf-extensions";
-import { extensions } from "engine";
+import { KHRDracoMeshCompression } from "@gltf-transform/extensions";
+import {
+  VRM,
+  VRM0,
+  VRM0MetadataExtension,
+  VRMMetadataExtension,
+} from "@unavi/gltf-extensions";
 
 import { getModelStats, ModelStats } from "./getModelStats";
 
@@ -16,7 +21,7 @@ export async function getVRMStats(url: string): Promise<VRMStats> {
 
   // Read model
   const io = new NodeIO().registerExtensions([
-    ...extensions,
+    KHRDracoMeshCompression,
     VRMMetadataExtension,
     VRM0MetadataExtension,
   ]);

@@ -2,7 +2,8 @@ import BoringAvatar from "boring-avatars";
 
 import { BORING_AVATAR_COLORS } from "./Avatar";
 
-interface Props extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "children"> {
+interface Props
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "children"> {
   fallbackKey?: string;
   fallbackSize?: number;
 }
@@ -24,7 +25,13 @@ export default function ImageInput({
           } ${className}`}
         />
 
-        <input disabled={disabled} type="file" accept="image/*" className="hidden" {...rest} />
+        <input
+          disabled={disabled}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          {...rest}
+        />
       </label>
 
       {src ? (

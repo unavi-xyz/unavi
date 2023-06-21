@@ -12,7 +12,12 @@ interface Props {
   loadingText: string;
 }
 
-export default function LoadingScreen({ text, image, loadingProgress, loadingText }: Props) {
+export default function LoadingScreen({
+  text,
+  image,
+  loadingProgress,
+  loadingText,
+}: Props) {
   const [entered, setEntered] = useState(false);
   const [enterTransitionFinished, setEnterTransitionFinished] = useState(false);
 
@@ -45,7 +50,9 @@ export default function LoadingScreen({ text, image, loadingProgress, loadingTex
         <div className="max-w-content space-y-8">
           <div className="flex w-full min-w-fit flex-col justify-between">
             <div className="space-y-4">
-              <div className="flex justify-center text-3xl font-black">{text}</div>
+              <div className="flex justify-center text-3xl font-black">
+                {text}
+              </div>
 
               <div className="mx-auto px-8 md:w-1/2">
                 <div className="aspect-card h-full w-full rounded-3xl bg-neutral-200">
@@ -78,7 +85,9 @@ export default function LoadingScreen({ text, image, loadingProgress, loadingTex
           <div className="flex w-full justify-center">
             {errorLoading ? (
               <div className="space-y-2 text-center text-lg">
-                <div className="text-red-900">Error loading space. {errorLoading}</div>
+                <div className="text-red-900">
+                  Error loading space. {errorLoading}
+                </div>
                 <button
                   onClick={() => window.location.reload()}
                   className="rounded-lg border border-neutral-500 px-4 py-1 hover:bg-neutral-100 active:bg-neutral-200"

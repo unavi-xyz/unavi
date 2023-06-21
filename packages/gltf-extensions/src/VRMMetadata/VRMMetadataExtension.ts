@@ -33,10 +33,15 @@ export class VRMMetadataExtension extends Extension {
   }
 
   public read(context: ReaderContext) {
-    if (!context.jsonDoc.json.extensions || !context.jsonDoc.json.extensions[this.extensionName])
+    if (
+      !context.jsonDoc.json.extensions ||
+      !context.jsonDoc.json.extensions[this.extensionName]
+    )
       return this;
 
-    const rootDef = context.jsonDoc.json.extensions[this.extensionName] as VRMDef;
+    const rootDef = context.jsonDoc.json.extensions[
+      this.extensionName
+    ] as VRMDef;
 
     const vrm = this.createVRM();
     const meta = Object.assign({}, defaultMeta, rootDef.meta);

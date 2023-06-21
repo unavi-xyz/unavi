@@ -7,10 +7,23 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const IconButton = forwardRef<HTMLButtonElement, Props>(
-  ({ selected, disabled, rounded = "small", cursor = "default", children, ...rest }, ref) => {
-    const selectedClass = selected ? "bg-neutral-200 hover:bg-neutral-300" : "hover:bg-neutral-200";
+  (
+    {
+      selected,
+      disabled,
+      rounded = "small",
+      cursor = "default",
+      children,
+      ...rest
+    },
+    ref
+  ) => {
+    const selectedClass = selected
+      ? "bg-neutral-200 hover:bg-neutral-300"
+      : "hover:bg-neutral-200";
     const roundedClass = rounded === "full" ? "rounded-full" : "rounded-lg";
-    const cursorClass = cursor === "pointer" ? "cursor-pointer" : "cursor-default";
+    const cursorClass =
+      cursor === "pointer" ? "cursor-pointer" : "cursor-default";
 
     return (
       <button

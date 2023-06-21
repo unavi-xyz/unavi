@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     icon: "/images/Icon-512.png",
     shortcut: "/images/Icon-512.png",
   },
-  keywords: ["Metaverse", "WebXR", "Web3"],
+  keywords: ["Metaverse", "WebXR", "Gaming"],
   manifest: "/manifest.json",
   openGraph: {
     description: DESCRIPTION,
@@ -62,7 +62,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body className={font.className}>

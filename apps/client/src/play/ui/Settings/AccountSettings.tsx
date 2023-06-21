@@ -24,7 +24,12 @@ export default function AccountSettings({ onClose }: Props) {
       {user ? (
         <div className="flex items-center space-x-4 pt-2">
           <div className="overflow-hidden rounded-xl">
-            <Avatar src={profile?.image} uniqueKey={user.username} loading={loading} size={48} />
+            <Avatar
+              src={profile?.image}
+              uniqueKey={user.username}
+              loading={loading}
+              size={48}
+            />
           </div>
 
           {loading ? (
@@ -32,7 +37,9 @@ export default function AccountSettings({ onClose }: Props) {
           ) : (
             <div>
               <span className="text-xl font-bold">{profile?.name}</span>
-              <span className="text-lg font-bold text-neutral-800">@{user.username}</span>
+              <span className="text-lg font-bold text-neutral-800">
+                @{user.username}
+              </span>
             </div>
           )}
 
@@ -56,7 +63,7 @@ export default function AccountSettings({ onClose }: Props) {
           )}
         </div>
       ) : (
-        <SignInPage setOpen={onClose} />
+        <SignInPage />
       )}
     </section>
   );

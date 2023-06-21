@@ -23,18 +23,27 @@ export async function listObjectsRecursive(
 
   // Recurive call to get sub prefixes
   if (listObjects.CommonPrefixes) {
-    const deepFilesPromises = listObjects.CommonPrefixes.flatMap(({ Prefix }) => {
-      if (!Prefix) return [];
-      return listObjectsRecursive(Prefix);
-    });
+    const deepFilesPromises = listObjects.CommonPrefixes.flatMap(
+      ({ Prefix }) => {
+        if (!Prefix) return [];
+        return listObjectsRecursive(Prefix);
+      }
+    );
 
     deepFiles = (await Promise.all(deepFilesPromises)).flatMap((t) => t);
   }
 
   // If we must paginate
   if (listObjects.IsTruncated) {
-    nextFiles = await listObjectsRecursive(Prefix, listObjects.NextContinuationToken);
+    nextFiles = await listObjectsRecursive(
+      Prefix,
+      listObjects.NextContinuationToken
+    );
   }
 
-  return [...(listObjects.Contents || []), ...(deepFiles || []), ...(nextFiles || [])];
+  return [
+    ...(listObjects.Contents || []),
+    ...(deepFiles || []),
+    ...(nextFiles || []),
+  ];
 }

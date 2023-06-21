@@ -22,14 +22,17 @@ export class AvatarExtension extends Extension {
 
     // Add avatars to nodes
     nodeDefs.forEach((nodeDef, nodeIndex) => {
-      if (!nodeDef.extensions || !nodeDef.extensions[this.extensionName]) return;
+      if (!nodeDef.extensions || !nodeDef.extensions[this.extensionName])
+        return;
 
       const node = context.nodes[nodeIndex];
       if (!node) throw new Error(`Node ${nodeIndex} not found.`);
 
       const avatar = this.createAvatar();
 
-      const parsedAvatarDef = avatarSchema.safeParse(nodeDef.extensions[this.extensionName]);
+      const parsedAvatarDef = avatarSchema.safeParse(
+        nodeDef.extensions[this.extensionName]
+      );
 
       if (!parsedAvatarDef.success) {
         console.warn(parsedAvatarDef.error);
@@ -41,7 +44,8 @@ export class AvatarExtension extends Extension {
       avatar.setURI(avatarDef.uri);
 
       if (avatarDef.name) avatar.setName(avatarDef.name);
-      if (avatarDef.equippable !== undefined) avatar.setEquippable(avatarDef.equippable);
+      if (avatarDef.equippable !== undefined)
+        avatar.setEquippable(avatarDef.equippable);
 
       node.setExtension(this.extensionName, avatar);
     });

@@ -1,5 +1,4 @@
-import { ClientContext } from "@unavi/react-client";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { MdClose } from "react-icons/md";
 
 import { usePlayStore } from "@/app/play/store";
@@ -23,15 +22,13 @@ export default function AvatarSettings({ setPage }: Props) {
   const [showStats, setShowStats] = useState(true);
   const [uploadedAvatar, setUploadedAvatar] = useState<string | null>(null);
 
-  const { avatar } = useContext(ClientContext);
-
   useEffect(() => {
     setShowStats(true);
     setStatsError(false);
     setStats(null);
 
     async function getStats() {
-      const usedAvatar = uploadedAvatar ?? avatar;
+      const usedAvatar = uploadedAvatar;
       if (!usedAvatar) return;
 
       try {
@@ -45,17 +42,18 @@ export default function AvatarSettings({ setPage }: Props) {
     }
 
     getStats();
-  }, [avatar, uploadedAvatar]);
+  }, [uploadedAvatar]);
 
   const rank = stats ? avatarPerformanceRank(stats) : null;
 
-  if (!env.NEXT_PUBLIC_HAS_S3 && !env.NEXT_PUBLIC_CRYPTOAVATARS_API_KEY && !avatar) return null;
+  if (!env.NEXT_PUBLIC_HAS_S3 && !env.NEXT_PUBLIC_CRYPTOAVATARS_API_KEY)
+    return null;
 
   return (
     <section className="space-y-1">
       <div className="font-bold text-neutral-700">Avatar</div>
 
-      {showStats && avatar ? (
+      {showStats ? (
         statsError ? (
           <div className="rounded-xl bg-red-100 px-4 py-2.5 text-red-900">
             Failed to load avatar information
@@ -64,7 +62,9 @@ export default function AvatarSettings({ setPage }: Props) {
           <div className="flex items-center rounded-xl px-4 py-3 ring-1 ring-inset ring-neutral-300">
             <div className="flex h-full items-stretch space-x-4">
               <div className="flex w-1/3 min-w-fit flex-col justify-between">
-                {stats && !stats.name ? null : <div className="text-neutral-700">Name</div>}
+                {stats && !stats.name ? null : (
+                  <div className="text-neutral-700">Name</div>
+                )}
                 <div className="text-neutral-700">Performance</div>
                 <div className="text-neutral-700">Size</div>
               </div>
@@ -97,7 +97,9 @@ export default function AvatarSettings({ setPage }: Props) {
                 )}
 
                 {stats ? (
-                  <div className="font-medium">{bytesToDisplay(stats.fileSize)}</div>
+                  <div className="font-medium">
+                    {bytesToDisplay(stats.fileSize)}
+                  </div>
                 ) : (
                   <div className="h-5 w-24 animate-pulse rounded-md bg-neutral-200" />
                 )}
@@ -111,7 +113,10 @@ export default function AvatarSettings({ setPage }: Props) {
                 onClick={() => {
                   setAvatarName(undefined);
                   setShowStats(false);
-                  usePlayStore.setState({ avatar: null, didChangeAvatar: true });
+                  usePlayStore.setState({
+                    avatar: null,
+                    didChangeAvatar: true,
+                  });
                 }}
                 className="flex h-11 w-11 items-center justify-center rounded-lg text-xl transition hover:bg-red-100 active:opacity-90"
               >

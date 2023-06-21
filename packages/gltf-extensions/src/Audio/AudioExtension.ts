@@ -53,7 +53,9 @@ export class AudioExtension extends Extension {
 
     if (!json.extensions || !json.extensions[this.extensionName]) return this;
 
-    const parsedRootDef = audioExtensionSchema.safeParse(json.extensions[this.extensionName]);
+    const parsedRootDef = audioExtensionSchema.safeParse(
+      json.extensions[this.extensionName]
+    );
 
     if (!parsedRootDef.success) {
       console.warn(parsedRootDef.error);
@@ -77,7 +79,9 @@ export class AudioExtension extends Extension {
         const bufferDef = json.buffers[bufferViewDef.buffer];
         if (!bufferDef) throw new Error("Buffer not found");
 
-        const bufferData = bufferDef.uri ? resources[bufferDef.uri] : resources["@glb.bin"];
+        const bufferData = bufferDef.uri
+          ? resources[bufferDef.uri]
+          : resources["@glb.bin"];
         if (!bufferData) throw new Error("Buffer data not found");
 
         const byteOffset = bufferViewDef.byteOffset || 0;
@@ -141,7 +145,8 @@ export class AudioExtension extends Extension {
     const sceneDefs = json.scenes || [];
 
     sceneDefs.forEach((sceneDef, sceneIndex) => {
-      if (!sceneDef.extensions || !sceneDef.extensions[this.extensionName]) return;
+      if (!sceneDef.extensions || !sceneDef.extensions[this.extensionName])
+        return;
 
       const parsedSceneEmitterDef = sceneAudioSchema.safeParse(
         sceneDef.extensions[this.extensionName]
@@ -163,13 +168,17 @@ export class AudioExtension extends Extension {
         sceneAudioEmitters.addEmitter(audioEmitter);
       }
 
-      context.scenes[sceneIndex]?.setExtension(this.extensionName, sceneAudioEmitters);
+      context.scenes[sceneIndex]?.setExtension(
+        this.extensionName,
+        sceneAudioEmitters
+      );
     });
 
     const nodeDefs = json.nodes || [];
 
     nodeDefs.forEach((nodeDef, nodeIndex) => {
-      if (!nodeDef.extensions || !nodeDef.extensions[this.extensionName]) return;
+      if (!nodeDef.extensions || !nodeDef.extensions[this.extensionName])
+        return;
 
       const parsedNodeEmitterDef = nodeAudioSchema.safeParse(
         nodeDef.extensions[this.extensionName]
@@ -257,7 +266,8 @@ export class AudioExtension extends Extension {
       if (!audioData) throw new Error("Audio data not found");
 
       const audioDataIndex = audioDataIndexMap.get(audioData);
-      if (audioDataIndex === undefined) throw new Error("Audio data index not found");
+      if (audioDataIndex === undefined)
+        throw new Error("Audio data index not found");
 
       const audioSourceDef: AudioSourceDef = {
         audio: audioDataIndex,
@@ -281,7 +291,8 @@ export class AudioExtension extends Extension {
 
       audioEmitter.listSources().forEach((audioSource) => {
         const index = audioSourceIndexMap.get(audioSource);
-        if (index === undefined) throw new Error("Audio source index not found");
+        if (index === undefined)
+          throw new Error("Audio source index not found");
 
         audioEmitterDef.sources.push(index);
       });
@@ -342,11 +353,14 @@ export class AudioExtension extends Extension {
       .getRoot()
       .listScenes()
       .forEach((scene) => {
-        const audioEmitters = scene.getExtension<SceneAudioEmitters>(this.extensionName);
+        const audioEmitters = scene.getExtension<SceneAudioEmitters>(
+          this.extensionName
+        );
 
         if (audioEmitters) {
           const sceneIndex = context.sceneIndexMap.get(scene);
-          if (sceneIndex === undefined) throw new Error("Scene index not found");
+          if (sceneIndex === undefined)
+            throw new Error("Scene index not found");
           if (!context.jsonDoc.json.scenes) throw new Error("Scenes not found");
 
           const sceneDef = context.jsonDoc.json.scenes[sceneIndex];
@@ -368,7 +382,9 @@ export class AudioExtension extends Extension {
       .getRoot()
       .listNodes()
       .forEach((node) => {
-        const audioEmitter = node.getExtension<AudioEmitter>(this.extensionName);
+        const audioEmitter = node.getExtension<AudioEmitter>(
+          this.extensionName
+        );
 
         if (audioEmitter) {
           const nodeIndex = context.nodeIndexMap.get(node);
@@ -385,7 +401,11 @@ export class AudioExtension extends Extension {
         }
       });
 
-    if (rootDef.audio.length || rootDef.sources.length || rootDef.emitters.length) {
+    if (
+      rootDef.audio.length ||
+      rootDef.sources.length ||
+      rootDef.emitters.length
+    ) {
       context.jsonDoc.json.extensions = context.jsonDoc.json.extensions || {};
       context.jsonDoc.json.extensions[this.extensionName] = rootDef;
     }

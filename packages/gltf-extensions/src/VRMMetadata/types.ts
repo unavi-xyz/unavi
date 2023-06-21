@@ -16,7 +16,10 @@ export type VRMMetadataDef = {
   allowAntisocialOrHateUsage?: boolean;
   creditNotation?: "required" | "unnecessary";
   allowRedistribution?: boolean;
-  modification?: "prohibited" | "allowModification" | "allowModificationRedistribution";
+  modification?:
+    | "prohibited"
+    | "allowModification"
+    | "allowModificationRedistribution";
   otherLicenseUrl?: string;
 };
 

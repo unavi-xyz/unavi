@@ -4,7 +4,7 @@ import { fetchPlayerCount } from "@/src/server/helpers/fetchPlayerCount";
 
 import { PostPlayerCountResponse, postPlayerCountSchema } from "./types";
 
-// Get space player count
+// Get world player count
 export async function POST(request: NextRequest) {
   const { host, uri } = postPlayerCountSchema.parse(await request.json());
 

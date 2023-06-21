@@ -5,21 +5,23 @@ import { forwardRef } from "react";
 
 type Props = DropdownPrimitive.DropdownMenuContentProps;
 
-export const DropdownContent = forwardRef<HTMLDivElement, Props>(({ children, ...rest }, ref) => {
-  return (
-    <DropdownPrimitive.DropdownMenuPortal>
-      <DropdownPrimitive.Content
-        ref={ref}
-        sideOffset={4}
-        onCloseAutoFocus={(event) => event.preventDefault()}
-        className="animate-scaleIn shadow-dark z-50 mx-4 rounded-xl bg-white"
-        {...rest}
-      >
-        {children}
-      </DropdownPrimitive.Content>
-    </DropdownPrimitive.DropdownMenuPortal>
-  );
-});
+export const DropdownContent = forwardRef<HTMLDivElement, Props>(
+  ({ children, ...rest }, ref) => {
+    return (
+      <DropdownPrimitive.DropdownMenuPortal>
+        <DropdownPrimitive.Content
+          ref={ref}
+          sideOffset={4}
+          onCloseAutoFocus={(event) => event.preventDefault()}
+          className="animate-scaleIn shadow-dark z-50 mx-4 rounded-xl bg-white"
+          {...rest}
+        >
+          {children}
+        </DropdownPrimitive.Content>
+      </DropdownPrimitive.DropdownMenuPortal>
+    );
+  }
+);
 
 DropdownContent.displayName = "DropdownContent";
 

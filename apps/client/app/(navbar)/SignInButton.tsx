@@ -1,7 +1,6 @@
 "use client";
 
 import { useConnectModal } from "@rainbow-me/rainbowkit";
-import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 
 import { env } from "@/src/env.mjs";
@@ -9,6 +8,7 @@ import Button from "@/src/ui/Button";
 import DialogContent, { DialogRoot, DialogTrigger } from "@/src/ui/Dialog";
 
 import RainbowkitWrapper from "./RainbowkitWrapper";
+import { useSignInStore } from "./signInStore";
 
 interface Props {
   loading?: boolean;
@@ -23,12 +23,15 @@ export default function SignInButton(props: Props) {
 }
 
 export function ClientSignInButton({ loading }: Props) {
-  const [open, setOpen] = useState(false);
+  const open = useSignInStore((state) => state.open);
 
   return (
-    <DialogRoot open={open} onOpenChange={setOpen}>
+    <DialogRoot
+      open={open}
+      onOpenChange={(value) => useSignInStore.setState({ open: value })}
+    >
       <DialogContent title="Sign in to UNAVI">
-        <SignInPage setOpen={setOpen} />
+        <SignInPage />
       </DialogContent>
 
       <DialogTrigger asChild>
@@ -45,11 +48,11 @@ export function ClientSignInButton({ loading }: Props) {
   );
 }
 
-export function SignInPage({ setOpen }: { setOpen?: (open: boolean) => void }) {
+export function SignInPage() {
   const { openConnectModal } = useConnectModal();
 
   async function handleWalletLogin() {
-    if (setOpen) setOpen(false);
+    useSignInStore.setState({ open: false });
     if (openConnectModal) openConnectModal();
   }
 
@@ -58,7 +61,9 @@ export function SignInPage({ setOpen }: { setOpen?: (open: boolean) => void }) {
       {env.NEXT_PUBLIC_HAS_GOOGLE_OAUTH ? (
         <div className="flex w-full items-center pt-4">
           <hr className="w-full border-neutral-300" />
-          <span className="w-fit whitespace-nowrap px-4 font-bold text-neutral-700">Web3</span>
+          <span className="w-fit whitespace-nowrap px-4 font-bold text-neutral-700">
+            Web3
+          </span>
           <hr className="w-full border-neutral-300" />
         </div>
       ) : null}
@@ -69,7 +74,9 @@ export function SignInPage({ setOpen }: { setOpen?: (open: boolean) => void }) {
         <>
           <div className="flex w-full items-center pt-8">
             <hr className="w-full border-neutral-300" />
-            <span className="w-fit whitespace-nowrap px-4 font-bold text-neutral-700">Socials</span>
+            <span className="w-fit whitespace-nowrap px-4 font-bold text-neutral-700">
+              Socials
+            </span>
             <hr className="w-full border-neutral-300" />
           </div>
           <a

@@ -2,7 +2,8 @@
   "extends": ["custom"],
   "root": true,
   "rules": {
-    "@next/next/no-html-link-for-pages": "error"
+    "@next/next/no-html-link-for-pages": "error",
+    "import/no-unresolved": "off"
   },
   "settings": {
     "next": {

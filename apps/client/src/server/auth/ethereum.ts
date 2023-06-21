@@ -1,21 +1,29 @@
+import { eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
 import { SiweMessage } from "siwe";
 
 import { env } from "@/src/env.mjs";
 
-import { prisma } from "../prisma";
+import { db } from "../db/drizzle";
+import { ethereumSession } from "../db/schema";
 import { AuthData } from "./types";
 
 export const ETH_SESSION_COOKIE = "eth_nonce_session";
 
-export async function validateEthereumAuth(request: NextRequest, data: AuthData) {
+export async function validateEthereumAuth(
+  request: NextRequest,
+  data: AuthData
+) {
   // Validate the signature
   const siwe = new SiweMessage(JSON.parse(data.message));
 
   const domain = new URL(env.NEXT_PUBLIC_DEPLOYED_URL).host;
   const vercelDomain = env.VERCEL_URL; // Automatically set by Vercel
 
-  if (siwe.domain !== domain && (!vercelDomain || siwe.domain !== vercelDomain)) {
+  if (
+    siwe.domain !== domain &&
+    (!vercelDomain || siwe.domain !== vercelDomain)
+  ) {
     console.warn(`Domain mismatch: ${siwe.domain} !== ${domain}`);
     return null;
   }
@@ -30,7 +38,9 @@ export async function validateEthereumAuth(request: NextRequest, data: AuthData)
   }
 
   // Fetch nonce from database
-  const ethSession = await prisma.authEthereumSession.findUnique({ where: { id: ethSessionId } });
+  const ethSession = await db.query.ethereumSession.findFirst({
+    where: eq(ethereumSession.publicId, ethSessionId),
+  });
   if (!ethSession) {
     console.warn(`No ethereum session found for id: ${ethSessionId}`);
     return null;

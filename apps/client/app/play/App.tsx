@@ -1,18 +1,24 @@
 "use client";
 
-import { Client } from "@unavi/react-client";
 import { WorldMetadata } from "@wired-protocol/types";
+import dynamic from "next/dynamic";
 import Script from "next/script";
 import { useState } from "react";
 
 import { env } from "@/src/env.mjs";
 import { useHotkeys } from "@/src/play/hooks/useHotkeys";
 
-import ClientApp from "./ClientApp";
-import { SpaceUriId } from "./types";
+import { WorldUriId } from "./types";
+
+const Client = dynamic(
+  () => import("@unavi/react-client").then((m) => m.Client),
+  {
+    ssr: false,
+  }
+);
 
 interface Props {
-  id: SpaceUriId;
+  id: WorldUriId;
   metadata: WorldMetadata;
   uri: string;
 }
@@ -27,12 +33,12 @@ export default function App({ id, metadata, uri }: Props) {
       ? "localhost:4000"
       : metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST;
 
-  const useOffscreenCanvas =
-    typeof OffscreenCanvas !== "undefined" && process.env.NODE_ENV !== "development";
-
   return (
     <>
-      <Script src="/scripts/draco_decoder.js" onReady={() => setScriptsReady(true)} />
+      <Script
+        src="/scripts/draco_wasm_wrapper_gltf.js"
+        onReady={() => setScriptsReady(true)}
+      />
 
       <div className="fixed h-screen w-screen">
         {scriptsReady && (
@@ -43,10 +49,7 @@ export default function App({ id, metadata, uri }: Props) {
             defaultAvatar="/models/Robot.vrm"
             skybox="/images/Skybox.jpg"
             baseHomeServer={env.NEXT_PUBLIC_DEPLOYED_URL}
-            engineOptions={{ useOffscreenCanvas }}
-          >
-            <ClientApp id={id} metadata={metadata} />
-          </Client>
+          />
         )}
       </div>
     </>

@@ -3,8 +3,8 @@ import uWS from "uWebSockets.js";
 
 import { createMediasoupWorker, createWebRtcTransport } from "./mediasoup";
 import { Player } from "./Player";
-import { SpaceRegistry } from "./SpaceRegistry";
 import { UserData, uWebSocket } from "./types";
+import { WorldRegistry } from "./WorldRegistry";
 
 const textDecoder = new TextDecoder();
 const PORT = 4000;
@@ -14,12 +14,14 @@ const key_file_name = process.env.SSL_KEY;
 // Create WebSocket server
 // Use SSL if cert and key are provided
 const server =
-  cert_file_name && key_file_name ? uWS.SSLApp({ cert_file_name, key_file_name }) : uWS.App();
+  cert_file_name && key_file_name
+    ? uWS.SSLApp({ cert_file_name, key_file_name })
+    : uWS.App();
 
 // Create Mediasoup router
 const { router, webRtcServer } = await createMediasoupWorker();
 
-const spaces = new SpaceRegistry(server);
+const worlds = new WorldRegistry(server);
 const players = new Map<uWebSocket, Player>();
 
 // Handle WebSocket connections
@@ -113,7 +115,9 @@ server.ws<UserData>("/*", {
 
       case "xyz.unavi.webrtc.transport.connect": {
         const transport =
-          data.type === "producer" ? player.producerTransport : player.consumerTransport;
+          data.type === "producer"
+            ? player.producerTransport
+            : player.consumerTransport;
         if (!transport) break;
 
         transport.connect({ dtlsParameters: data.dtlsParameters });
@@ -148,7 +152,7 @@ server.ws<UserData>("/*", {
   },
 
   open: (ws) => {
-    players.set(ws, new Player(ws, spaces));
+    players.set(ws, new Player(ws, worlds));
   },
 });
 
@@ -156,8 +160,8 @@ server.ws<UserData>("/*", {
 server.get("/player-count/*:uri", (res, req) => {
   const uri = req.getUrl().slice(14);
 
-  const space = spaces.getSpace(uri);
-  const playerCount = space ? space.playerCount : 0;
+  const world = worlds.getWorld(uri);
+  const playerCount = world ? world.playerCount : 0;
 
   console.info(`/player-count/${uri}: ${playerCount}`);
 

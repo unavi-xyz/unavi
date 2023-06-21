@@ -1,5 +1,5 @@
 {
-  "name": "host",
+  "name": "@unavi/host",
   "version": "0.5.0",
   "private": true,
   "license": "GPL-3.0-or-later",
@@ -24,9 +24,9 @@
   "devDependencies": {
     "@types/node": "^18.16.17",
     "eslint": "^8.42.0",
-    "eslint-config-custom": "workspace:*",
+    "eslint-config-custom": "workspace:^",
     "nodemon": "^2.0.22",
-    "tsconfig": "workspace:*",
+    "tsconfig": "workspace:^",
     "tsup": "^6.7.0",
     "typescript": "~5.1.3"
   }

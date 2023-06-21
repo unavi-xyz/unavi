@@ -11,7 +11,17 @@ interface Props extends DialogPrimitive.DialogContentProps {
 }
 
 const DialogContent = forwardRef<HTMLDivElement, Props>(
-  ({ autoFocus = true, title, description, size = "normal", children, ...rest }, ref) => {
+  (
+    {
+      autoFocus = true,
+      title,
+      description,
+      size = "normal",
+      children,
+      ...rest
+    },
+    ref
+  ) => {
     return (
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="animate-fadeIn fixed inset-0 z-40 h-full w-full bg-neutral-900/40 backdrop-blur-sm" />

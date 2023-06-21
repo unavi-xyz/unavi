@@ -22,9 +22,9 @@ export default function Avatar({
 }: Props) {
   return (
     <div
-      className={`${loading ? "animate-pulse bg-neutral-300" : "bg-neutral-200"} ${
-        circle ? "rounded-full" : "rounded-lg"
-      }`}
+      className={`${
+        loading ? "animate-pulse bg-neutral-300" : "bg-neutral-200"
+      } ${circle ? "rounded-full" : "rounded-lg"}`}
       style={{ height: size, width: size }}
     >
       {loading ? null : src ? (
@@ -63,4 +63,10 @@ export default function Avatar({
   );
 }
 
-export const BORING_AVATAR_COLORS = ["#38bdf8", "#FCECC9", "#FCB0B3", "#F93943", "#445E93"];
+export const BORING_AVATAR_COLORS = [
+  "#38bdf8",
+  "#FCECC9",
+  "#FCB0B3",
+  "#F93943",
+  "#445E93",
+];

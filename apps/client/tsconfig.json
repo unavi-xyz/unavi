@@ -19,10 +19,5 @@
     "**/*.tsx",
     "next-env.d.ts",
     "src/**/*.json"
-  ],
-  "references": [
-    {
-      "path": "../../packages/engine"
-    }
   ]
 }

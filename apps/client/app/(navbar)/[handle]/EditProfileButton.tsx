@@ -5,23 +5,22 @@ import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { MdEdit } from "react-icons/md";
 
-import {
-  MAX_PROFILE_BIO_LENGTH,
-  MAX_USERNAME_LENGTH,
-  MIN_USERNAME_LENGTH,
-} from "@/app/api/auth/profile/constants";
 import { updateProfile } from "@/app/api/auth/profile/helper";
 import { getProfileUploadURL } from "@/app/api/auth/profile/upload/[file]/helper";
 import { ProfileFile } from "@/app/api/auth/profile/upload/[file]/types";
 import { useAuth } from "@/src/client/AuthProvider";
-import { env } from "@/src/env.mjs";
-import { cropImage } from "@/src/studio/utils/cropImage";
-import { parseError } from "@/src/studio/utils/parseError";
+import {
+  MAX_PROFILE_BIO_LENGTH,
+  MAX_USERNAME_LENGTH,
+  MIN_USERNAME_LENGTH,
+} from "@/src/server/db/constants";
 import Button from "@/src/ui/Button";
 import DialogContent, { DialogRoot, DialogTrigger } from "@/src/ui/Dialog";
 import ImageInput from "@/src/ui/ImageInput";
 import TextArea from "@/src/ui/TextArea";
-import { cdnURL, S3Path } from "@/src/utils/s3Paths";
+import TextField from "@/src/ui/TextField";
+import { cropImage } from "@/src/utils/cropImage";
+import { parseError } from "@/src/utils/parseError";
 
 interface Props {
   userId: string;
@@ -31,13 +30,21 @@ interface Props {
   background?: string;
 }
 
-export default function EditProfileButton({ userId, username, bio, image, background }: Props) {
+export default function EditProfileButton({
+  userId,
+  username,
+  bio,
+  image,
+  background,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageDisplay, setImageDisplay] = useState<string | null>(null);
   const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
-  const [backgroundDisplay, setBackgroundDisplay] = useState<string | null>(null);
+  const [backgroundDisplay, setBackgroundDisplay] = useState<string | null>(
+    null
+  );
 
   const { user } = useAuth();
   const router = useRouter();
@@ -70,7 +77,7 @@ export default function EditProfileButton({ userId, username, bio, image, backgr
 
         if (!res.ok) throw new Error("Failed to upload image");
 
-        return cdnURL(S3Path.profile(userId).image(fileId));
+        return fileId;
       } catch (e) {
         console.error(e);
         const message = parseError(e);
@@ -83,7 +90,9 @@ export default function EditProfileButton({ userId, username, bio, image, backgr
 
       try {
         // Get S3 URL
-        const { url, fileId } = await getProfileUploadURL(ProfileFile.background);
+        const { url, fileId } = await getProfileUploadURL(
+          ProfileFile.background
+        );
 
         // Upload image
         const res = await fetch(url, {
@@ -97,7 +106,7 @@ export default function EditProfileButton({ userId, username, bio, image, backgr
 
         if (!res.ok) throw new Error("Failed to upload background");
 
-        return cdnURL(S3Path.profile(userId).background(fileId));
+        return fileId;
       } catch (e) {
         console.error(e);
         const message = parseError(e);
@@ -108,12 +117,15 @@ export default function EditProfileButton({ userId, username, bio, image, backgr
     setLoading(true);
 
     try {
-      const [imageUrl, backgroundUrl] = await Promise.all([uploadImage(), uploadBackground()]);
+      const [imageKey, backgroundKey] = await Promise.all([
+        uploadImage(),
+        uploadBackground(),
+      ]);
 
       await updateProfile({
-        background: backgroundUrl,
+        backgroundKey,
         bio: bioElement.value,
-        image: imageUrl,
+        imageKey,
         username: usernameElement.value || username,
       });
 
@@ -184,28 +196,25 @@ export default function EditProfileButton({ userId, username, bio, image, backgr
             </div>
           </div>
 
-          <label className="block space-y-1">
-            <div className="font-bold text-neutral-700">Username</div>
-
-            <div className="flex rounded-lg border border-neutral-200 bg-neutral-100">
-              <div className="px-4 py-2 font-bold">
-                {new URL(env.NEXT_PUBLIC_DEPLOYED_URL).host}/@
-              </div>
-              <input
-                name="username"
-                disabled={loading}
-                defaultValue={username}
-                placeholder={username}
-                minLength={MIN_USERNAME_LENGTH}
-                maxLength={MAX_USERNAME_LENGTH}
-                className={`w-full rounded-r-lg bg-white px-4 ${loading ? "opacity-70" : ""}`}
-              />
+          <TextField
+            label="Username"
+            name="Username"
+            autoComplete="off"
+            disabled={loading}
+            defaultValue={username}
+            placeholder={username}
+            minLength={MIN_USERNAME_LENGTH}
+            maxLength={MAX_USERNAME_LENGTH}
+            className="pl-8"
+          >
+            <div className="absolute inset-y-0 left-3 flex select-none items-center pr-3">
+              @
             </div>
-          </label>
+          </TextField>
 
           <TextArea
-            name="Bio"
             label="Bio"
+            name="Bio"
             disabled={loading}
             defaultValue={bio}
             placeholder="Say something about yourself..."

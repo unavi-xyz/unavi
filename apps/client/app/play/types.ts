@@ -1,3 +1,3 @@
-import { SpaceId } from "@/src/utils/parseSpaceId";
+import { WorldId } from "@/src/utils/parseWorldId";
 
-export type SpaceUriId = SpaceId | { type: "uri"; value: string };
+export type WorldUriId = WorldId | { type: "uri"; value: string };

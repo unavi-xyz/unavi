@@ -11,10 +11,7 @@ export async function fetchLatestWorlds(limit: number, ownerId?: string) {
 
   try {
     const worlds = await db.query.world.findMany({
-      columns: {
-        name: true,
-        publicId: true,
-      },
+      columns: { publicId: true },
       limit,
       where: ownerId ? (row, { eq }) => eq(row.ownerId, ownerId) : undefined,
       with: {

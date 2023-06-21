@@ -18,9 +18,7 @@ import {
   MAX_PROFILE_BIO_LENGTH,
   MAX_USERNAME_LENGTH,
   USER_ID_LENGTH,
-  WORLD_DESCRIPTION_LENGTH,
   WORLD_ID_LENGTH,
-  WORLD_TITLE_LENGTH,
 } from "./constants";
 
 // A glTF model located in S3.
@@ -44,15 +42,16 @@ export const world = mysqlTable(
   "world",
   {
     createdAt: timestamp("created_at").defaultNow().notNull(),
-    description: varchar("description", { length: WORLD_DESCRIPTION_LENGTH }),
     id: serial("id").primaryKey(),
-    name: varchar("name", { length: WORLD_TITLE_LENGTH }),
     ownerId: varchar("owner_id", { length: USER_ID_LENGTH }).notNull(),
     publicId: char("public_id", { length: WORLD_ID_LENGTH }).notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },
   (table) => ({
-    publicIdIndex: uniqueIndex("public_id_idx").on(table.publicId),
+    publicIdName: uniqueIndex("publicId_ownerId").on(
+      table.publicId,
+      table.ownerId
+    ),
   })
 );
 
@@ -71,7 +70,6 @@ export const profile = mysqlTable("profile", {
   imageKey: char("image_key", { length: FILE_KEY_LENGTH }),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   userId: varchar("user_id", { length: 15 }).notNull(),
-  username: varchar("username", { length: MAX_USERNAME_LENGTH }).notNull(),
 });
 
 // Auth

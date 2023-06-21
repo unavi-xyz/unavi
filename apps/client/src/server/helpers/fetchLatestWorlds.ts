@@ -41,14 +41,11 @@ export async function fetchLatestWorlds(limit: number, ownerId?: string) {
       });
     };
 
-    try {
-      await Promise.all(worlds.map(fetchWorld));
-    } catch (e) {
-      console.error(e);
-    }
+    await Promise.all(worlds.map(fetchWorld));
 
     return fetched;
-  } catch {
+  } catch (e) {
+    console.error(e);
     return [];
   }
 }

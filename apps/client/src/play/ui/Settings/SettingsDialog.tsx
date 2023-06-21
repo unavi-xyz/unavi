@@ -1,4 +1,3 @@
-import { useClient } from "@unavi/react-client";
 import { useEffect, useState } from "react";
 
 import RainbowkitWrapper from "@/app/(navbar)/RainbowkitWrapper";
@@ -23,7 +22,6 @@ export default function SettingsDialog({ open, setOpen }: Props) {
   const [page, setPage] = useState<SettingsPage>("Settings");
 
   const setAvatar = useSetAvatar();
-  const { engine, send } = useClient();
 
   useEffect(() => {
     if (!open) return;
@@ -33,7 +31,7 @@ export default function SettingsDialog({ open, setOpen }: Props) {
   async function handleClose() {
     setOpen(false);
 
-    if (!engine) return;
+    // if (!engine) return;
 
     const { didChangeName, didChangeAvatar, nickname, avatar } =
       usePlayStore.getState();
@@ -46,7 +44,7 @@ export default function SettingsDialog({ open, setOpen }: Props) {
       else localStorage.removeItem(LocalStorageKey.Name);
 
       // Publish name change
-      send({ data: nickname, id: "xyz.unavi.world.user.name" });
+      // send({ data: nickname, id: "xyz.unavi.world.user.name" });
     }
 
     if (didChangeAvatar) setAvatar(avatar);

@@ -1,4 +1,3 @@
-import { ChatMessage as IChatMessage } from "@unavi/react-client";
 import { useEffect, useState } from "react";
 
 import { usePlayStore } from "@/app/play/store";
@@ -7,7 +6,7 @@ import { usePlayerName } from "../hooks/usePlayerName";
 import { usePointerLocked } from "../hooks/usePointerLocked";
 
 interface Props {
-  message: IChatMessage;
+  message: any;
   alwaysShow?: boolean;
 }
 

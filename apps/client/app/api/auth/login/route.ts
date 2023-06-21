@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Create profile
-    await db.insert(profile).values({ userId: user.userId, username });
+    await db.insert(profile).values({ userId: user.userId });
   }
 
   // Create auth session

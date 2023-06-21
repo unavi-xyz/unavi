@@ -45,38 +45,30 @@ export async function PATCH(request: NextRequest) {
 
   const { username, bio, imageKey, backgroundKey } = parsed.data;
 
-  // Create or update profile
-  await db
-    .insert(profile)
-    .values({
-      backgroundKey,
-      bio,
-      imageKey,
-      userId: session.userId,
-      username: user.username,
-    })
-    .onDuplicateKeyUpdate({
-      set: {
+  await db.transaction(async (tx) => {
+    await tx
+      .insert(profile)
+      .values({
         backgroundKey,
         bio,
         imageKey,
-      },
-    });
+        userId: session.userId,
+      })
+      .onDuplicateKeyUpdate({
+        set: {
+          backgroundKey,
+          bio,
+          imageKey,
+        },
+      });
 
-  // Update username
-  if (username && username !== user.username) {
-    // Check if username is taken
-    const existingUser = await db.query.user.findFirst({
-      where: (row, { eq }) => eq(row.username, username),
-    });
-    if (existingUser) return new Response(null, { status: 409 });
-
-    // Update username
-    await db
-      .update(userTable)
-      .set({ username })
-      .where(eq(userTable.id, session.userId));
-  }
+    if (username) {
+      await tx
+        .update(userTable)
+        .set({ username })
+        .where(eq(userTable.id, session.userId));
+    }
+  });
 
   return new Response(null, { status: 200 });
 }

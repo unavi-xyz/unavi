@@ -1,5 +1,4 @@
-import { ClientContext } from "@unavi/react-client";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { MdClose } from "react-icons/md";
 
 import { usePlayStore } from "@/app/play/store";
@@ -23,15 +22,13 @@ export default function AvatarSettings({ setPage }: Props) {
   const [showStats, setShowStats] = useState(true);
   const [uploadedAvatar, setUploadedAvatar] = useState<string | null>(null);
 
-  const { avatar } = useContext(ClientContext);
-
   useEffect(() => {
     setShowStats(true);
     setStatsError(false);
     setStats(null);
 
     async function getStats() {
-      const usedAvatar = uploadedAvatar ?? avatar;
+      const usedAvatar = uploadedAvatar;
       if (!usedAvatar) return;
 
       try {
@@ -45,22 +42,18 @@ export default function AvatarSettings({ setPage }: Props) {
     }
 
     getStats();
-  }, [avatar, uploadedAvatar]);
+  }, [uploadedAvatar]);
 
   const rank = stats ? avatarPerformanceRank(stats) : null;
 
-  if (
-    !env.NEXT_PUBLIC_HAS_S3 &&
-    !env.NEXT_PUBLIC_CRYPTOAVATARS_API_KEY &&
-    !avatar
-  )
+  if (!env.NEXT_PUBLIC_HAS_S3 && !env.NEXT_PUBLIC_CRYPTOAVATARS_API_KEY)
     return null;
 
   return (
     <section className="space-y-1">
       <div className="font-bold text-neutral-700">Avatar</div>
 
-      {showStats && avatar ? (
+      {showStats ? (
         statsError ? (
           <div className="rounded-xl bg-red-100 px-4 py-2.5 text-red-900">
             Failed to load avatar information

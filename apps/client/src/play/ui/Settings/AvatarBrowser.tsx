@@ -1,4 +1,3 @@
-import { useClient } from "@unavi/react-client";
 import { useState } from "react";
 import { MdArrowBack, MdSkipNext, MdSkipPrevious } from "react-icons/md";
 import useSWR from "swr";
@@ -130,8 +129,6 @@ interface NftCardProps {
 }
 
 function NftCard({ nft, onClose }: NftCardProps) {
-  const { setAvatar } = useClient();
-
   const asset = nft.metadata.asset;
   const image = nft.metadata.image;
 
@@ -140,7 +137,7 @@ function NftCard({ nft, onClose }: NftCardProps) {
   return (
     <button
       onClick={() => {
-        setAvatar(asset);
+        // setAvatar(asset);
         onClose();
       }}
       className="relative aspect-[7/10] rounded-xl bg-neutral-200 transition duration-100 ease-out hover:scale-105"

@@ -40,7 +40,7 @@ export async function PATCH(request: NextRequest) {
     return new Response(JSON.stringify(parsed.error), { status: 400 });
 
   const authRequest = auth.handleRequest({ cookies, request });
-  const { session, user } = await authRequest.validateUser();
+  const { session } = await authRequest.validateUser();
   if (!session) return new Response(null, { status: 401 });
 
   const { username, bio, imageKey, backgroundKey } = parsed.data;

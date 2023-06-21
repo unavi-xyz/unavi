@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 import { usePlayStore } from "@/app/play/store";
 import { useAuth } from "@/src/client/AuthProvider";
-import { env } from "@/src/env.mjs";
+import { HOME_SERVER } from "@/src/constants";
 
 import { LocalStorageKey } from "../constants";
 
@@ -20,9 +20,7 @@ export function useLoadUser() {
 
   // Publish handle on change
   useEffect(() => {
-    const handle = user?.username
-      ? `${user.username}@${new URL(env.NEXT_PUBLIC_DEPLOYED_URL).origin}`
-      : null;
+    const handle = user?.username ? `${user.username}@${HOME_SERVER}` : null;
 
     // Send to host
     // send({ data: handle, id: "xyz.unavi.world.user.handle" });

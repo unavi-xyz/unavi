@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Script from "next/script";
 import { useState } from "react";
 
+import { HOME_SERVER } from "@/src/constants";
 import { env } from "@/src/env.mjs";
 import { useHotkeys } from "@/src/play/hooks/useHotkeys";
 
@@ -48,7 +49,7 @@ export default function App({ id, metadata, uri }: Props) {
             animations="/models"
             defaultAvatar="/models/Robot.vrm"
             skybox="/images/Skybox.jpg"
-            baseHomeServer={env.NEXT_PUBLIC_DEPLOYED_URL}
+            baseHomeServer={HOME_SERVER}
           />
         )}
       </div>

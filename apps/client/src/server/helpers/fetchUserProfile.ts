@@ -1,6 +1,6 @@
 import { ProfileMetadata, ProfileMetadataSchema } from "@wired-protocol/types";
 
-import { env } from "@/src/env.mjs";
+import { HOME_SERVER } from "@/src/constants";
 import { parseHandle } from "@/src/utils/parseHandle";
 import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
@@ -9,7 +9,7 @@ import { FixWith } from "../db/types";
 
 export type UserProfile = {
   username: string;
-  domain: string;
+  home: string;
   metadata: ProfileMetadata;
 };
 
@@ -19,12 +19,11 @@ export type UserProfile = {
 export async function fetchUserProfile(
   handle: string
 ): Promise<UserProfile | null> {
-  const { username, domain } = parseHandle(handle);
-  if (!username || !domain) return null;
+  const { username, home } = parseHandle(handle);
+  if (!username || !home) return null;
 
-  if (domain === env.NEXT_PUBLIC_DEPLOYED_URL)
-    return await fetchUserProfileDB(username);
-  else return await fetchUserProfileWired(username, domain);
+  if (home === HOME_SERVER) return await fetchUserProfileDB(username);
+  else return await fetchUserProfileWired(username, home);
 }
 
 /**
@@ -49,12 +48,13 @@ export async function fetchUserProfileDB(
           )
         )
       : undefined;
+
     const image = foundUser.profile.imageKey
       ? cdnURL(S3Path.profile(foundUser.id).image(foundUser.profile.imageKey))
       : undefined;
 
     return {
-      domain: env.NEXT_PUBLIC_DEPLOYED_URL,
+      home: HOME_SERVER,
       metadata: {
         background,
         bio: foundUser.profile.bio ?? undefined,
@@ -72,21 +72,20 @@ export async function fetchUserProfileDB(
  */
 export async function fetchUserProfileWired(
   username: string,
-  domain: string
+  home: string
 ): Promise<UserProfile | null> {
   try {
-    const res = await fetch(`${domain}/.wired-protocol/v1/users/${username}`, {
+    const res = await fetch(`${home}/.wired-protocol/v1/users/${username}`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return null;
 
-    const parsed = ProfileMetadataSchema.safeParse(await res.json());
-
-    if (!parsed.success) return null;
+    const json = await res.json();
+    const metadata = ProfileMetadataSchema.parse(json);
 
     return {
-      domain,
-      metadata: parsed.data,
+      home,
+      metadata,
       username,
     };
   } catch {

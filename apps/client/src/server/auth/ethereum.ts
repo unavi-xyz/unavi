@@ -17,7 +17,7 @@ export async function validateEthereumAuth(
   // Validate the signature
   const siwe = new SiweMessage(JSON.parse(data.message));
 
-  const domain = new URL(env.NEXT_PUBLIC_DEPLOYED_URL).host;
+  const domain = new URL(env.NEXT_PUBLIC_DEPLOYED_URL).hostname;
   const vercelDomain = env.VERCEL_URL; // Automatically set by Vercel
 
   if (

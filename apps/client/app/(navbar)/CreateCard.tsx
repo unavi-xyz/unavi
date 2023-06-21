@@ -1,6 +1,7 @@
 import { WorldMetadata } from "@wired-protocol/types";
 import { redirect } from "next/navigation";
 
+import { HOME_SERVER } from "@/src/constants";
 import { env } from "@/src/env.mjs";
 import { getUserSession } from "@/src/server/auth/getUserSession";
 import { db } from "@/src/server/db/drizzle";
@@ -41,10 +42,7 @@ export async function createWorld() {
         .insert(worldModel)
         .values({ key: modelKey, worldId: found.id })
         .execute(),
-      createMetadata(
-        modelKey,
-        `${session.user.username}@${env.NEXT_PUBLIC_DEPLOYED_URL}`
-      ),
+      createMetadata(modelKey, `${session.user.username}@${HOME_SERVER}`),
       uploadDefaultImage(modelKey),
       uploadDefaultModel(modelKey),
     ]);

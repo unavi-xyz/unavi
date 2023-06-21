@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
+import { HOME_SERVER } from "@/src/constants";
 import { env } from "@/src/env.mjs";
 import {
   fetchUserProfile,
@@ -73,7 +74,7 @@ export default async function World({ params }: Props) {
 
         if (!profile) {
           profiles.push({
-            domain: "",
+            home: "",
             metadata: { name: author },
             username: "",
           });
@@ -126,7 +127,7 @@ export default async function World({ params }: Props) {
 
                     {profiles.map((profile, i) => (
                       <div key={i}>
-                        {profile.domain === env.NEXT_PUBLIC_DEPLOYED_URL ? (
+                        {profile.home === HOME_SERVER ? (
                           <Link href={`/@${profile.username}`}>
                             <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
                               {profile.metadata.name || `@${profile.username}`}

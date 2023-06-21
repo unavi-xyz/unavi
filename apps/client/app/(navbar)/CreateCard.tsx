@@ -41,7 +41,10 @@ export async function createWorld() {
         .insert(worldModel)
         .values({ key: modelKey, worldId: found.id })
         .execute(),
-      createMetadata(modelKey),
+      createMetadata(
+        modelKey,
+        `${session.user.username}@${env.NEXT_PUBLIC_DEPLOYED_URL}`
+      ),
       uploadDefaultImage(modelKey),
       uploadDefaultModel(modelKey),
     ]);
@@ -53,9 +56,10 @@ export async function createWorld() {
   redirect(`/world/${publicId}`);
 }
 
-async function createMetadata(publicId: string) {
+async function createMetadata(publicId: string, author: string) {
   const json: WorldMetadata = {
     info: {
+      authors: [author],
       host: env.NEXT_PUBLIC_DEFAULT_HOST,
       image: cdnURL(S3Path.worldModel(publicId).image),
       name: "New World",

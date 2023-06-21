@@ -58,15 +58,14 @@ export default async function Handle({ params }: Props) {
   const username = params.handle.split("%40")[1]; // Remove the @ from the handle
   if (!username) notFound();
 
-  const [worlds, foundUser] = await Promise.all([
-    fetchLatestWorlds(20, username),
-    db.query.user.findFirst({
-      where: eq(user.username, username),
-      with: { profile: true },
-    }),
-  ]);
-
+  const foundUser = await db.query.user.findFirst({
+    columns: { address: true, id: true },
+    where: eq(user.username, username),
+    with: { profile: true },
+  });
   if (!foundUser) notFound();
+
+  const worlds = await fetchLatestWorlds(20, foundUser.id);
 
   const background = foundUser.profile.backgroundKey
     ? cdnURL(
@@ -114,7 +113,7 @@ export default async function Handle({ params }: Props) {
                 <AuthProvider>
                   <EditProfileButton
                     userId={foundUser.id}
-                    username={foundUser.username}
+                    username={username}
                     bio={foundUser.profile.bio ?? undefined}
                     image={image}
                     background={background}

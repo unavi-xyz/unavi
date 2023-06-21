@@ -1,11 +1,9 @@
 import { WorldMetadata } from "@wired-protocol/types";
-import { eq } from "drizzle-orm";
 
 import { env } from "@/src/env.mjs";
 import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
 import { db } from "../db/drizzle";
-import { world } from "../db/schema";
 import { fetchWorldMetadata } from "./fetchWorldMetadata";
 
 export async function fetchLatestWorlds(limit: number, ownerId?: string) {
@@ -18,7 +16,7 @@ export async function fetchLatestWorlds(limit: number, ownerId?: string) {
         publicId: true,
       },
       limit,
-      where: ownerId ? eq(world.ownerId, ownerId) : undefined,
+      where: ownerId ? (row, { eq }) => eq(row.ownerId, ownerId) : undefined,
       with: {
         model: {
           columns: {
@@ -43,7 +41,11 @@ export async function fetchLatestWorlds(limit: number, ownerId?: string) {
       });
     };
 
-    await Promise.all(worlds.map(fetchWorld));
+    try {
+      await Promise.all(worlds.map(fetchWorld));
+    } catch (e) {
+      console.error(e);
+    }
 
     return fetched;
   } catch {

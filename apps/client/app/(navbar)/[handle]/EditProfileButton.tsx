@@ -9,7 +9,6 @@ import { updateProfile } from "@/app/api/auth/profile/helper";
 import { getProfileUploadURL } from "@/app/api/auth/profile/upload/[file]/helper";
 import { ProfileFile } from "@/app/api/auth/profile/upload/[file]/types";
 import { useAuth } from "@/src/client/AuthProvider";
-import { env } from "@/src/env.mjs";
 import {
   MAX_PROFILE_BIO_LENGTH,
   MAX_USERNAME_LENGTH,
@@ -19,6 +18,7 @@ import Button from "@/src/ui/Button";
 import DialogContent, { DialogRoot, DialogTrigger } from "@/src/ui/Dialog";
 import ImageInput from "@/src/ui/ImageInput";
 import TextArea from "@/src/ui/TextArea";
+import TextField from "@/src/ui/TextField";
 import { cropImage } from "@/src/utils/cropImage";
 import { parseError } from "@/src/utils/parseError";
 
@@ -196,30 +196,25 @@ export default function EditProfileButton({
             </div>
           </div>
 
-          <label className="block space-y-1">
-            <div className="font-bold text-neutral-700">Username</div>
-
-            <div className="flex rounded-lg border border-neutral-200 bg-neutral-100">
-              <div className="px-4 py-2 font-bold">
-                {new URL(env.NEXT_PUBLIC_DEPLOYED_URL).host}/@
-              </div>
-              <input
-                name="username"
-                disabled={loading}
-                defaultValue={username}
-                placeholder={username}
-                minLength={MIN_USERNAME_LENGTH}
-                maxLength={MAX_USERNAME_LENGTH}
-                className={`w-full rounded-r-lg bg-white px-4 ${
-                  loading ? "opacity-70" : ""
-                }`}
-              />
+          <TextField
+            label="Username"
+            name="Username"
+            autoComplete="off"
+            disabled={loading}
+            defaultValue={username}
+            placeholder={username}
+            minLength={MIN_USERNAME_LENGTH}
+            maxLength={MAX_USERNAME_LENGTH}
+            className="pl-8"
+          >
+            <div className="absolute inset-y-0 left-3 flex select-none items-center pr-3">
+              @
             </div>
-          </label>
+          </TextField>
 
           <TextArea
-            name="Bio"
             label="Bio"
+            name="Bio"
             disabled={loading}
             defaultValue={bio}
             placeholder="Say something about yourself..."

@@ -1,13 +1,10 @@
 import { WorldMetadata } from "@wired-protocol/types";
 
-import { WorldId } from "@/src/utils/parseWorldId";
-
 interface Props {
-  id: WorldId;
   metadata: WorldMetadata;
 }
 
-export default async function About({ id, metadata }: Props) {
+export default async function About({ metadata }: Props) {
   return (
     <div className="space-y-12">
       {metadata.info?.description && (

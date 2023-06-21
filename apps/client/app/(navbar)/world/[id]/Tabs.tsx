@@ -27,14 +27,14 @@ export default async function Tabs({ id, metadata }: Props) {
       {isOwner ? (
         <ButtonTabs titles={["About", "Settings"]}>
           <TabContent value="About">
-            <About id={id} metadata={metadata} />
+            <About metadata={metadata} />
           </TabContent>
           <TabContent value="Settings">
-            <Settings id={id} metadata={metadata} />
+            <Settings id={id} />
           </TabContent>
         </ButtonTabs>
       ) : (
-        <About id={id} metadata={metadata} />
+        <About metadata={metadata} />
       )}
     </>
   );

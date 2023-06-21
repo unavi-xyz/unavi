@@ -8,6 +8,7 @@ import { db } from "@/src/server/db/drizzle";
 import { world, worldModel } from "@/src/server/db/schema";
 import { nanoidShort } from "@/src/server/nanoid";
 import { s3Client } from "@/src/server/s3";
+import { getInsertId } from "@/src/utils/getInsertId";
 import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
 import { getWorldModelFileUploadCommand } from "../api/worlds/[id]/model/files/[file]/files";
@@ -26,19 +27,17 @@ export async function createWorld() {
 
   try {
     // Create world
-    await db.insert(world).values({ ownerId: session.user.userId, publicId });
+    const result = await db
+      .insert(world)
+      .values({ ownerId: session.user.userId, publicId });
 
-    const found = await db.query.world.findFirst({
-      columns: { id: true },
-      where: (row, { eq }) => eq(row.publicId, publicId),
-    });
-    if (!found) return;
+    const worldId = getInsertId(result);
 
     // Create world model
     const modelKey = nanoidShort();
 
     await Promise.all([
-      db.insert(worldModel).values({ key: modelKey, worldId: found.id }),
+      db.insert(worldModel).values({ key: modelKey, worldId }),
       createMetadata(modelKey, `${session.user.username}@${HOME_SERVER}`),
       uploadDefaultImage(modelKey),
       uploadDefaultModel(modelKey),

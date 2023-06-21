@@ -7,7 +7,7 @@ interface Props extends InputHTMLAttributes<HTMLInputElement> {
 const TextField = forwardRef<HTMLInputElement, Props>(
   ({ label, className, children, ...rest }, ref) => {
     return (
-      <label className="block">
+      <label className="block space-y-1">
         {label && <div className="font-bold text-neutral-700">{label}</div>}
 
         <div className="relative">

@@ -16,6 +16,9 @@ export let db:
   | PlanetScaleDatabase<typeof schema>
   | MySql2Database<typeof schema>;
 
+const dbUrl = env.DATABASE_URL;
+dbUrl?.replace("?sslaccept=strict", `?ssl={"rejectUnauthorized":true}`);
+
 if (env.PLANETSCALE) {
   const { connect } = await import("@planetscale/database");
   const { drizzle } = await import("drizzle-orm/planetscale-serverless");

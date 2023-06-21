@@ -10,6 +10,7 @@ import { profile, user as userTable } from "@/src/server/db/schema";
 import { UpdateProfileSchema } from "./types";
 
 export const runtime = "edge";
+export const preferredRegion = "iad1";
 
 /**
  * Get user's profile

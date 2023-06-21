@@ -14,6 +14,7 @@ import { getWorldModelFileUploadCommand } from "../api/worlds/[id]/model/files/[
 import CreateCardButton from "./CreateCardButton";
 
 export const runtime = "edge";
+export const preferredRegion = "iad1";
 
 export async function createWorld() {
   "use server";

@@ -10,6 +10,7 @@ import { S3Path } from "@/src/utils/s3Paths";
 import { GetTempResponse } from "./types";
 
 export const runtime = "edge";
+export const preferredRegion = "iad1";
 
 const expiresIn = 600; // 10 minutes
 

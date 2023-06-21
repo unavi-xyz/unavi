@@ -15,6 +15,7 @@ import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 import EditProfileButton from "./EditProfileButton";
 
 export const runtime = "edge";
+export const preferredRegion = "iad1";
 
 type Params = { handle: string };
 

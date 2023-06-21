@@ -3,7 +3,6 @@ import { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
-import AuthProvider from "@/src/client/AuthProvider";
 import { db } from "@/src/server/db/drizzle";
 import { user } from "@/src/server/db/schema";
 import { FixWith } from "@/src/server/db/types";
@@ -118,15 +117,13 @@ export default async function Handle({ params }: Props) {
               <div className="relative z-10 -mt-16 flex w-32 rounded-full ring-4 ring-white">
                 <Avatar src={image} circle uniqueKey={username} size={128} />
 
-                <AuthProvider>
-                  <EditProfileButton
-                    userId={foundUser.id}
-                    username={username}
-                    bio={foundUser.profile?.bio ?? undefined}
-                    image={image}
-                    background={background}
-                  />
-                </AuthProvider>
+                <EditProfileButton
+                  userId={foundUser.id}
+                  username={username}
+                  bio={foundUser.profile?.bio ?? undefined}
+                  image={image}
+                  background={background}
+                />
               </div>
 
               <div className="flex w-full flex-col items-center space-y-2">

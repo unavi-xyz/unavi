@@ -3,12 +3,10 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 
-import AuthProvider from "@/src/client/AuthProvider";
 import { WORLD_ID_LENGTH } from "@/src/server/db/constants";
 import { fetchWorld } from "@/src/server/helpers/fetchWorld";
 import { toHex } from "@/src/utils/toHex";
 
-import RainbowkitWrapper from "../(navbar)/RainbowkitWrapper";
 import App from "./App";
 import { WorldUriId } from "./types";
 
@@ -69,13 +67,7 @@ export default async function Play({ searchParams }: Props) {
 
   if (!world) notFound();
 
-  return (
-    <AuthProvider>
-      <RainbowkitWrapper>
-        <App id={id} uri={world.uri} metadata={world.metadata} />
-      </RainbowkitWrapper>
-    </AuthProvider>
-  );
+  return <App id={id} uri={world.uri} metadata={world.metadata} />;
 }
 
 function parseParams(params: Params): WorldUriId {

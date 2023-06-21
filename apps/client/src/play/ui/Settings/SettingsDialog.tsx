@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 
-import RainbowkitWrapper from "@/app/(navbar)/RainbowkitWrapper";
 import { usePlayStore } from "@/app/play/store";
 
 import DialogContent, { DialogRoot } from "../../../ui/Dialog";
@@ -51,29 +50,27 @@ export default function SettingsDialog({ open, setOpen }: Props) {
   }
 
   return (
-    <RainbowkitWrapper>
-      <DialogRoot
-        open={open}
-        onOpenChange={(value) => {
-          if (!value) handleClose();
-        }}
+    <DialogRoot
+      open={open}
+      onOpenChange={(value) => {
+        if (!value) handleClose();
+      }}
+    >
+      <DialogContent
+        autoFocus={false}
+        title={page}
+        size={page === "Browse Avatars" ? "large" : "normal"}
       >
-        <DialogContent
-          autoFocus={false}
-          title={page}
-          size={page === "Browse Avatars" ? "large" : "normal"}
-        >
-          {page === "Browse Avatars" ? (
-            <AvatarBrowser setPage={setPage} onClose={handleClose} />
-          ) : (
-            <div className="space-y-4">
-              <NameSettings />
-              <AvatarSettings setPage={setPage} />
-              <AccountSettings onClose={handleClose} />
-            </div>
-          )}
-        </DialogContent>
-      </DialogRoot>
-    </RainbowkitWrapper>
+        {page === "Browse Avatars" ? (
+          <AvatarBrowser setPage={setPage} onClose={handleClose} />
+        ) : (
+          <div className="space-y-4">
+            <NameSettings />
+            <AvatarSettings setPage={setPage} />
+            <AccountSettings onClose={handleClose} />
+          </div>
+        )}
+      </DialogContent>
+    </DialogRoot>
   );
 }

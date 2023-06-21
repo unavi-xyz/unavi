@@ -8,7 +8,7 @@ import { SiweMessage } from "siwe";
 import { useAuth } from "@/src/client/AuthProvider";
 import { AuthMethod } from "@/src/server/auth/types";
 
-import { getNonce } from "../api/auth/methods/ethereum/nonce/helper";
+import { getNonce } from "./api/auth/methods/ethereum/nonce/helper";
 
 type UnconfigurableMessageOptions = {
   address: string;

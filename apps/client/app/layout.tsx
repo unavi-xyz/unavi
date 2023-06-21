@@ -4,6 +4,7 @@ import { Metadata } from "next";
 import { Nunito } from "next/font/google";
 import { Suspense } from "react";
 
+import ClientWrapper from "./ClientWrapper";
 import Toast from "./Toast";
 
 const font = Nunito({ subsets: ["latin"] });
@@ -70,7 +71,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={font.className}>
-        {children}
+        <ClientWrapper>{children}</ClientWrapper>
 
         <Suspense>
           <Toast />

@@ -5,6 +5,7 @@ import "@rainbow-me/rainbowkit/styles.css";
 import { lightTheme, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { WagmiConfig } from "wagmi";
 
+import AuthProvider from "@/src/client/AuthProvider";
 import { chains, config } from "@/src/client/wagmi";
 
 import { RainbowKitAuthProvider } from "./RainbowkitAuthProvider";
@@ -23,12 +24,14 @@ interface Props {
 
 export default function RainbowkitWrapper({ children }: Props) {
   return (
-    <WagmiConfig config={config}>
-      <RainbowKitAuthProvider>
-        <RainbowKitProvider theme={theme} chains={chains}>
-          {children}
-        </RainbowKitProvider>
-      </RainbowKitAuthProvider>
-    </WagmiConfig>
+    <AuthProvider>
+      <WagmiConfig config={config}>
+        <RainbowKitAuthProvider>
+          <RainbowKitProvider theme={theme} chains={chains}>
+            {children}
+          </RainbowKitProvider>
+        </RainbowKitAuthProvider>
+      </WagmiConfig>
+    </AuthProvider>
   );
 }

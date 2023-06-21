@@ -1,5 +1,3 @@
-"use client";
-
 import { AuthenticationStatus } from "@rainbow-me/rainbowkit";
 import { User } from "lucia-auth";
 import { useRouter } from "next/navigation";

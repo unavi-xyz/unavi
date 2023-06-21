@@ -7,22 +7,13 @@ import { env } from "@/src/env.mjs";
 import Button from "@/src/ui/Button";
 import DialogContent, { DialogRoot, DialogTrigger } from "@/src/ui/Dialog";
 
-import RainbowkitWrapper from "./RainbowkitWrapper";
 import { useSignInStore } from "./signInStore";
 
 interface Props {
   loading?: boolean;
 }
 
-export default function SignInButton(props: Props) {
-  return (
-    <RainbowkitWrapper>
-      <ClientSignInButton {...props} />
-    </RainbowkitWrapper>
-  );
-}
-
-export function ClientSignInButton({ loading }: Props) {
+export default function SignInButton({ loading }: Props) {
   const open = useSignInStore((state) => state.open);
 
   return (

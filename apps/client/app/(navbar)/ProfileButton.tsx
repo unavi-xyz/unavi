@@ -1,8 +1,3 @@
-"use client";
-
-import { User } from "lucia-auth";
-import { useState } from "react";
-
 import Avatar from "@/src/ui/Avatar";
 import {
   DropdownContent,
@@ -13,20 +8,18 @@ import {
 import ProfileMenu from "./ProfileMenu";
 
 interface Props {
-  user: User;
+  username: string;
   image?: string | null;
   loading?: boolean;
 }
 
-export default function ProfileButton({ user, image, loading }: Props) {
-  const [open, setOpen] = useState(false);
-
+export default function ProfileButton({ username, image, loading }: Props) {
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu>
       <DropdownTrigger className="rounded-full transition hover:opacity-90">
         <Avatar
           src={image}
-          uniqueKey={user.username}
+          uniqueKey={username}
           circle
           size={40}
           loading={loading}
@@ -34,7 +27,7 @@ export default function ProfileButton({ user, image, loading }: Props) {
       </DropdownTrigger>
 
       <DropdownContent>
-        <ProfileMenu user={user} />
+        <ProfileMenu username={username} />
       </DropdownContent>
     </DropdownMenu>
   );

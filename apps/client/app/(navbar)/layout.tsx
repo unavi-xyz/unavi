@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 
 import Logo from "@/public/images/Logo.png";
-import AuthProvider from "@/src/client/AuthProvider";
 import { env } from "@/src/env.mjs";
 
 import AccountButton from "./AccountButton";
@@ -14,7 +13,7 @@ export default function NavbarLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AuthProvider>
+    <>
       <div className="sticky top-0 z-20 h-16 w-full">
         <nav
           className="flex h-full w-full justify-center bg-white backdrop-blur-lg"
@@ -47,6 +46,6 @@ export default function NavbarLayout({
       </div>
 
       <div className="h-full">{children}</div>
-    </AuthProvider>
+    </>
   );
 }

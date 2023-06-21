@@ -17,20 +17,23 @@ export let db:
   | MySql2Database<typeof schema>;
 
 const dbUrl = env.DATABASE_URL;
-dbUrl?.replace("?sslaccept=strict", `?ssl={"rejectUnauthorized":true}`);
+const secureUrl = dbUrl?.replace(
+  "?sslaccept=strict",
+  `?ssl={"rejectUnauthorized":true}`
+);
 
 if (env.PLANETSCALE) {
   const { connect } = await import("@planetscale/database");
   const { drizzle } = await import("drizzle-orm/planetscale-serverless");
 
-  planetscaleConnection = connect({ url: env.DATABASE_URL });
+  planetscaleConnection = connect({ url: secureUrl });
 
   db = drizzle(planetscaleConnection, { logger: LOG, schema });
 } else {
   const { createPool } = await import("mysql2/promise");
   const { drizzle } = await import("drizzle-orm/mysql2");
 
-  mysql2Connection = createPool({ uri: env.DATABASE_URL });
+  mysql2Connection = createPool({ uri: secureUrl });
 
   db = drizzle(mysql2Connection, { logger: LOG, schema });
 }

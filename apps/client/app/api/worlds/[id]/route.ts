@@ -62,9 +62,12 @@ export async function DELETE(request: NextRequest, { params }: Params) {
       : null
   );
 
-  await db.delete(worldModel).where(eq(worldModel.key, found.model.key));
+  await db.transaction(async (tx) => {
+    if (!found.model) throw new Error("World model not found");
 
-  await db.delete(world).where(eq(world.publicId, id));
+    await tx.delete(worldModel).where(eq(worldModel.key, found.model.key));
+    await tx.delete(world).where(eq(world.publicId, id));
+  });
 
   await objectsPromise;
 

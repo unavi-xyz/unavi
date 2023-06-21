@@ -11,7 +11,7 @@
     <img src="https://img.shields.io/badge/docs-read-informational" alt="Docs" />
   </a>
   <a href="https://unavi.xyz">
-    <img src="https://therealsujitk-vercel-badge.vercel.app/?app=client-wired" alt="Vercel" />
+    <img src="https://therealsujitk-vercel-badge.vercel.app/?app=client-unavi" alt="Vercel" />
   </a>
   <a href="https://github.com/unavi-xyz/unavi/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/unavi-xyz/unavi" alt="License" />

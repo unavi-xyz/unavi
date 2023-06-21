@@ -6,6 +6,5 @@ if (!process.env.DATABASE_URL) {
 
 export default {
   connectionString: process.env.DATABASE_URL,
-  out: "./db/migrations",
   schema: "./src/server/db/schema.ts",
 } satisfies Config;

@@ -24,31 +24,25 @@ import {
 // A glTF model located in S3.
 // A world can only have a single model.
 // World models are immutable, to help with caching.
-export const worldModel = mysqlTable(
-  "world_model",
-  {
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    id: serial("id").primaryKey(),
-    key: varchar("key", { length: 255 }).notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-    worldId: bigint("world_id", { mode: "number" }).notNull(),
-  },
-  (table) => ({
-    worldIdIndex: uniqueIndex("world_id_idx").on(table.worldId),
-  })
-);
+export const worldModel = mysqlTable("world_model", {
+  createdAt: timestamp("created_at").defaultNow(),
+  id: serial("id").primaryKey(),
+  key: varchar("key", { length: 255 }).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+  worldId: bigint("world_id", { mode: "number" }).notNull(),
+});
 
 export const world = mysqlTable(
   "world",
   {
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
     id: serial("id").primaryKey(),
     ownerId: varchar("owner_id", { length: USER_ID_LENGTH }).notNull(),
     publicId: char("public_id", { length: WORLD_ID_LENGTH }).notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
   },
   (table) => ({
-    publicIdName: uniqueIndex("publicId_ownerId").on(
+    publicIdNameIndex: uniqueIndex("publicId_ownerId").on(
       table.publicId,
       table.ownerId
     ),
@@ -65,10 +59,10 @@ export const worldRelations = relations(world, ({ one }) => ({
 export const profile = mysqlTable("profile", {
   backgroundKey: char("background_key", { length: FILE_KEY_LENGTH }),
   bio: varchar("bio", { length: MAX_PROFILE_BIO_LENGTH }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
   id: serial("id").primaryKey(),
   imageKey: char("image_key", { length: FILE_KEY_LENGTH }),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
   userId: varchar("user_id", { length: 15 }).notNull(),
 });
 
@@ -105,13 +99,13 @@ export const key = mysqlTable("auth_key", {
 export const ethereumSession = mysqlTable(
   "auth_ethereum_session",
   {
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
     id: serial("id").primaryKey(),
     nonce: char("nonce", { length: ETH_AUTH_NONCE_LENGTH }).notNull(),
     publicId: char("public_id", { length: ETH_AUTH_ID_LENGTH }).notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
   },
   (table) => ({
-    publicIdIndex: uniqueIndex("public_id_idx").on(table.publicId),
+    publicIdIndex: uniqueIndex("publicId").on(table.publicId),
   })
 );

@@ -21,17 +21,17 @@
         "NEXT_PUBLIC_DEPLOYED_URL",
         "NEXT_PUBLIC_DOCS_URL",
         "NEXT_PUBLIC_HAS_DATABASE",
-        "NEXT_PUBLIC_HAS_S3",
         "NEXT_PUBLIC_HAS_GOOGLE_OAUTH",
+        "NEXT_PUBLIC_HAS_S3",
         "NODE_ENV",
+        "PLANETSCALE",
         "S3_ACCESS_KEY_ID",
         "S3_BUCKET",
         "S3_ENDPOINT",
         "S3_REGION",
         "S3_SECRET",
-        "PLANETSCALE",
-        "VERCEL",
-        "VERCEL_URL"
+        "VERCEL_URL",
+        "VERCEL"
       ]
     },
     "host#build": {

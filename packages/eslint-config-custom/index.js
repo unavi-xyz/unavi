@@ -22,7 +22,6 @@ module.exports = {
     "unused-imports",
   ],
   rules: {
-    "@next/next/no-html-link-for-pages": "off",
     "@next/next/no-img-element": "off",
     "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/explicit-function-return-type": "off",

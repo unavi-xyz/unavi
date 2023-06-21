@@ -121,7 +121,9 @@ export default async function Handle({ params }: Props) {
                   userId={foundUser.id}
                   username={username}
                   bio={foundUser.profile?.bio ?? undefined}
+                  imageKey={foundUser.profile?.imageKey ?? undefined}
                   image={image}
+                  backgroundKey={foundUser.profile?.backgroundKey ?? undefined}
                   background={background}
                 />
               </div>

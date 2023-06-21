@@ -4,11 +4,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { MdEdit } from "react-icons/md";
+import { useSWRConfig } from "swr";
 
 import { updateProfile } from "@/app/api/auth/profile/helper";
 import { getProfileUploadURL } from "@/app/api/auth/profile/upload/[file]/helper";
 import { ProfileFile } from "@/app/api/auth/profile/upload/[file]/types";
 import { useAuth } from "@/src/client/AuthProvider";
+import { useAuthStore } from "@/src/client/authStore";
 import {
   MAX_PROFILE_BIO_LENGTH,
   MAX_USERNAME_LENGTH,
@@ -26,7 +28,9 @@ interface Props {
   userId: string;
   username: string;
   bio?: string;
+  imageKey?: string;
   image?: string;
+  backgroundKey?: string;
   background?: string;
 }
 
@@ -34,7 +38,9 @@ export default function EditProfileButton({
   userId,
   username,
   bio,
+  imageKey,
   image,
+  backgroundKey,
   background,
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -47,6 +53,7 @@ export default function EditProfileButton({
   );
 
   const { user } = useAuth();
+  const { mutate } = useSWRConfig();
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -59,7 +66,7 @@ export default function EditProfileButton({
     const bioElement = form.elements[3] as HTMLTextAreaElement;
 
     async function uploadImage() {
-      if (!imageFile) return image;
+      if (!imageFile) return imageKey;
 
       try {
         // Get S3 URL
@@ -86,7 +93,7 @@ export default function EditProfileButton({
     }
 
     async function uploadBackground() {
-      if (!backgroundFile) return background;
+      if (!backgroundFile) return backgroundKey;
 
       try {
         // Get S3 URL
@@ -122,18 +129,26 @@ export default function EditProfileButton({
         uploadBackground(),
       ]);
 
+      const newUsername = usernameElement.value || username;
+
       await updateProfile({
         backgroundKey,
         bio: bioElement.value,
         imageKey,
-        username: usernameElement.value || username,
+        username: newUsername,
       });
+
+      // Update the username in the store
+      useAuthStore.getState().setUsername(newUsername);
+
+      // Mark the profile as stale
+      mutate("/api/auth/profile");
 
       // Refresh the page
       router.refresh();
 
       // Redirect to the new username
-      router.push(`/@${usernameElement.value || username}`);
+      router.push(`/@${newUsername}`);
 
       // Close the dialog
       setOpen(false);

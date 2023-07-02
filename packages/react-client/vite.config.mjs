@@ -13,7 +13,16 @@ export default defineConfig({
     },
     minify: false,
     rollupOptions: {
-      external: ["@wired-protocol/types", "react-dom", "react", "thyseus"],
+      external: [
+        "@wired-protocol/types",
+        "lattice-engine",
+        "mediasoup-client",
+        "nanoid",
+        "react",
+        "react-dom",
+        "thyseus",
+        "zustand",
+      ],
     },
     target: "esnext",
   },

@@ -19,12 +19,6 @@
     "dev": "vite build --watch",
     "lint": "cd ../.. && eslint --fix packages/react-client --ext .ts,.tsx,.mjs,.json --ignore-path .gitignore --ignore-path .prettierignore --ignore-pattern package.json"
   },
-  "dependencies": {
-    "lattice-engine": "^0.3.1",
-    "mediasoup-client": "^3.6.84",
-    "nanoid": "^4.0.2",
-    "zustand": "^4.3.8"
-  },
   "devDependencies": {
     "@thyseus/transformer-rollup": "^0.13.0",
     "@types/node": "^18.16.17",
@@ -39,8 +33,12 @@
   },
   "peerDependencies": {
     "@wired-protocol/types": "^0.0.20",
+    "lattice-engine": "^0.3.1",
+    "mediasoup-client": "^3.6.84",
+    "nanoid": "^4.0.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "thyseus": "^0.13.1"
+    "thyseus": "^0.13.1",
+    "zustand": "^4.3.8"
   }
 }

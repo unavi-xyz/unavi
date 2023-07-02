@@ -47,7 +47,7 @@ export async function createWorld() {
     return;
   }
 
-  redirect(`/world/${publicId}`);
+  redirect(`/play?id=${publicId}`);
 }
 
 async function createMetadata(publicId: string, author: string) {

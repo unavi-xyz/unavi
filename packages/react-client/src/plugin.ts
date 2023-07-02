@@ -25,7 +25,6 @@ export function clientPlugin(builder: WorldBuilder) {
     .addPlugin(vrmPlugin)
     .addSystemsToSchedule(LatticeSchedules.Startup, initApp)
     .addSystemsToSchedule(LatticeSchedules.PostFixedUpdate, publishLocation)
-    .addSystemsToSchedule(ClientSchedules.JoinWorld, joinWorld)
     .addSystemsToSchedule(ClientSchedules.ConnectToHost, connectToHost)
-    .addSystems(parseWorld, setSkybox);
+    .addSystems(parseWorld, joinWorld, setSkybox);
 }

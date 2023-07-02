@@ -9,6 +9,5 @@ export function joinWorld(worlds: Query<Mut<Asset>, With<WorldJson>>) {
 
   for (const asset of worlds) {
     asset.uri = uri;
-    console.log("🥺", asset.uri, uri);
   }
 }

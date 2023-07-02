@@ -20,7 +20,9 @@ export function initApp(
   inputStruct: Res<Mut<InputStruct>>,
   physicsConfig: Res<Mut<PhysicsConfig>>
 ) {
-  physicsConfig.debug = true;
+  if (process.env.NODE_ENV === "development") {
+    physicsConfig.debug = true;
+  }
 
   coreStore.canvas = document.querySelector("canvas");
 

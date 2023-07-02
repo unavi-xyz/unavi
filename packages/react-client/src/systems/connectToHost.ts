@@ -14,6 +14,8 @@ import { useClientStore } from "../store";
 import { deserializeLocation } from "../utils/deserializeLocation";
 import { toHex } from "../utils/toHex";
 
+let chatId = 0;
+
 class LocalRes {
   host = "";
 }
@@ -116,6 +118,37 @@ export function connectToHost(
           console.info(`🌏 Joined world as player ${toHex(data)}`);
 
           useClientStore.setState({ playerId: data });
+          break;
+        }
+
+        case "xyz.unavi.world.chat.message": {
+          useClientStore.getState().addChatMessage({
+            id: chatId++,
+            sender: toHex(data.playerId),
+            text: data.message,
+            timestamp: Date.now(),
+            type: "player",
+          });
+          break;
+        }
+
+        case "xyz.unavi.world.player.join": {
+          useClientStore.getState().addChatMessage({
+            id: chatId++,
+            text: `${toHex(data.playerId)} joined the world`,
+            timestamp: Date.now(),
+            type: "system",
+          });
+          break;
+        }
+
+        case "xyz.unavi.world.player.leave": {
+          useClientStore.getState().addChatMessage({
+            id: chatId++,
+            text: `${toHex(data)} left the world`,
+            timestamp: Date.now(),
+            type: "system",
+          });
           break;
         }
 

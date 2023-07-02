@@ -1,12 +1,12 @@
+import { ChatMessage as IChatMessage } from "@unavi/react-client";
 import { useEffect, useState } from "react";
 
 import { usePlayStore } from "@/app/play/store";
 
-import { usePlayerName } from "../hooks/usePlayerName";
 import { usePointerLocked } from "../hooks/usePointerLocked";
 
 interface Props {
-  message: any;
+  message: IChatMessage;
   alwaysShow?: boolean;
 }
 
@@ -15,7 +15,7 @@ export default function ChatMessage({ message, alwaysShow }: Props) {
   const [visible, setVisible] = useState(false);
   const [hidden, setHidden] = useState(false);
 
-  const name = usePlayerName(message.playerId);
+  // const name = usePlayerName(message.sender);
   const isPointerLocked = usePointerLocked();
 
   useEffect(() => {
@@ -43,18 +43,11 @@ export default function ChatMessage({ message, alwaysShow }: Props) {
     >
       {message.type === "player" ? (
         <div className="whitespace-pre-wrap break-words">
-          <span className="font-bold">{name}</span>:{" "}
+          <span className="font-bold">{message.sender}</span>:{" "}
           <span className="text-white/90">{message.text}</span>
         </div>
       ) : message.type === "system" ? (
-        <span className="text-white/70">
-          <span>{name}</span>
-          {message.variant === "player_joined"
-            ? " joined"
-            : message.variant === "player_left"
-            ? " left"
-            : null}
-        </span>
+        <span className="text-white/70">{message.text}</span>
       ) : null}
     </div>
   );

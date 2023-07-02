@@ -1,8 +1,10 @@
+import { useClientStore } from "@unavi/react-client";
 import { useEffect, useRef } from "react";
 
 import { usePlayStore } from "@/app/play/store";
 
 import { usePointerLocked } from "../hooks/usePointerLocked";
+import ChatMessage from "./ChatMessage";
 
 interface Props {
   alwaysShow?: boolean;
@@ -12,6 +14,7 @@ export default function ChatBox({ alwaysShow }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
   const chatBoxFocused = usePlayStore((state) => state.chatBoxFocused);
+  const chatMessages = useClientStore((state) => state.chatMessages);
 
   const isPointerLocked = usePointerLocked();
 
@@ -38,7 +41,7 @@ export default function ChatBox({ alwaysShow }: Props) {
         ref={chatRef}
         className="flex max-h-[30vh] w-full flex-col-reverse overflow-hidden hover:overflow-y-scroll"
       >
-        {/* {chatMessages
+        {chatMessages
           .sort((a, b) => b.timestamp - a.timestamp)
           .map((message) => (
             <ChatMessage
@@ -46,7 +49,7 @@ export default function ChatBox({ alwaysShow }: Props) {
               message={message}
               alwaysShow={alwaysShow}
             />
-          ))} */}
+          ))}
       </div>
 
       <div className="h-12">
@@ -56,15 +59,15 @@ export default function ChatBox({ alwaysShow }: Props) {
             if (e.key === "Enter") {
               e.preventDefault();
 
-              // if (playerId === null) return;
+              const { playerId, sendWebSockets } = useClientStore.getState();
+              if (playerId === null) return;
 
               const text = e.currentTarget.value;
               if (!text) return;
 
               e.currentTarget.value = "";
 
-              // Send message to server
-              // send({ data: text, id: "xyz.unavi.world.chat.send" });
+              sendWebSockets({ data: text, id: "xyz.unavi.world.chat.send" });
             }
           }}
           onFocus={() => usePlayStore.setState({ chatBoxFocused: true })}

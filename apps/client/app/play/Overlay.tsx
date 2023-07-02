@@ -48,7 +48,9 @@ export default function Overlay({ id, metadata }: Props) {
               <div className="text-lg font-bold leading-6">
                 {metadata.info?.name}
               </div>
-              {/* <div className="text-sm leading-4 text-white/70">{host}</div> */}
+              <div className="text-sm leading-4 text-white/70">
+                {metadata.info?.host}
+              </div>
             </div>
           </div>
         </div>

@@ -1,3 +1,3 @@
 export function toHex(num: number) {
-  return num.toString(16).padStart(2, "0");
+  return num.toString(16).padStart(4, "0x");
 }

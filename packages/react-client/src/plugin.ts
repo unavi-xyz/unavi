@@ -12,6 +12,7 @@ import { connectToHost } from "./systems/connectToHost";
 import { initApp } from "./systems/initApp";
 import { joinWorld } from "./systems/joinWorld";
 import { parseWorld } from "./systems/parseWorld";
+import { publishLocation } from "./systems/publishLocation";
 import { setSkybox } from "./systems/setSkybox";
 
 export function clientPlugin(builder: WorldBuilder) {
@@ -23,6 +24,7 @@ export function clientPlugin(builder: WorldBuilder) {
     .addPlugin(playerPlugin)
     .addPlugin(vrmPlugin)
     .addSystemsToSchedule(LatticeSchedules.Startup, initApp)
+    .addSystemsToSchedule(LatticeSchedules.PostFixedUpdate, publishLocation)
     .addSystemsToSchedule(ClientSchedules.JoinWorld, joinWorld)
     .addSystemsToSchedule(ClientSchedules.ConnectToHost, connectToHost)
     .addSystems(parseWorld, setSkybox);

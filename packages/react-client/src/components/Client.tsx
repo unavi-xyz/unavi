@@ -31,5 +31,11 @@ export function Client({ skybox, uri }: Props) {
     if (engine) engine.queueSchedule(ClientSchedules.JoinWorld);
   }, [engine, uri]);
 
+  useEffect(() => {
+    return () => {
+      useClientStore.getState().cleanupConnection();
+    };
+  }, []);
+
   return <Canvas />;
 }

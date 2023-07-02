@@ -7,10 +7,12 @@ import { defaultPlugin } from "lattice-engine/utils";
 import { vrmPlugin } from "lattice-engine/vrm";
 import { WorldBuilder } from "thyseus";
 
+import { ClientSchedules } from "./constants";
+import { connectToHost } from "./systems/connectToHost";
 import { initApp } from "./systems/initApp";
-import { loadWorldModels } from "./systems/loadWorldModels";
+import { joinWorld } from "./systems/joinWorld";
+import { parseWorld } from "./systems/parseWorld";
 import { setSkybox } from "./systems/setSkybox";
-import { setWorld } from "./systems/setWorld";
 
 export function clientPlugin(builder: WorldBuilder) {
   builder
@@ -21,5 +23,7 @@ export function clientPlugin(builder: WorldBuilder) {
     .addPlugin(playerPlugin)
     .addPlugin(vrmPlugin)
     .addSystemsToSchedule(LatticeSchedules.Startup, initApp)
-    .addSystems(loadWorldModels, setSkybox, setWorld);
+    .addSystemsToSchedule(ClientSchedules.JoinWorld, joinWorld)
+    .addSystemsToSchedule(ClientSchedules.ConnectToHost, connectToHost)
+    .addSystems(parseWorld, setSkybox);
 }

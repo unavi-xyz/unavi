@@ -5,22 +5,25 @@ import {
   Commands,
   dropStruct,
   Entity,
+  Mut,
   Query,
   Res,
-  With,
   Without,
+  World,
 } from "thyseus";
 
 import { WorldJson } from "../components";
+import { ClientSchedules } from "../constants";
 
 const decoder = new TextDecoder();
 
-export function loadWorldModels(
+export async function parseWorld(
+  world: World,
   commands: Commands,
   warehouse: Res<Warehouse>,
-  worlds: Query<[Entity, Asset], [With<WorldJson>, Without<Gltf>]>
+  worlds: Query<[Entity, Asset, Mut<WorldJson>], Without<Gltf>>
 ) {
-  for (const [entity, asset] of worlds) {
+  for (const [entity, asset, json] of worlds) {
     const buffer = asset.data.read(warehouse);
     if (!buffer || buffer.byteLength === 0) continue;
 
@@ -35,8 +38,13 @@ export function loadWorldModels(
       continue;
     }
 
+    // Load model
     const gltf = new Gltf(parsed.data.model);
     commands.getById(entity.id).add(gltf);
     dropStruct(gltf);
+
+    // Connect to host
+    json.host = parsed.data.info?.host ?? "";
+    await world.runSchedule(ClientSchedules.ConnectToHost);
   }
 }

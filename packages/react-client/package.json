@@ -22,7 +22,8 @@
   "dependencies": {
     "lattice-engine": "^0.3.1",
     "mediasoup-client": "^3.6.84",
-    "nanoid": "^4.0.2"
+    "nanoid": "^4.0.2",
+    "zustand": "^4.3.8"
   },
   "devDependencies": {
     "@thyseus/transformer-rollup": "^0.13.0",

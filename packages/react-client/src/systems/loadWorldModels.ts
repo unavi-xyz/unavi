@@ -27,17 +27,16 @@ export function loadWorldModels(
     const text = decoder.decode(buffer);
     const parsed = WorldMetadataSchema.safeParse(JSON.parse(text));
 
-    const gltf = new Gltf();
-
-    if (parsed.success) gltf.uri = parsed.data.model;
-    else
+    if (!parsed.success) {
       console.warn(
         `Failed to parse world metadata ${asset.uri}:`,
         parsed.error
       );
+      continue;
+    }
 
+    const gltf = new Gltf(parsed.data.model);
     commands.getById(entity.id).add(gltf);
-
     dropStruct(gltf);
   }
 }

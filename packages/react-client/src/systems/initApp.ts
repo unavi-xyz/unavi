@@ -26,12 +26,12 @@ export function initApp(
 
   const { rootId } = createScene(commands, coreStore, sceneStruct);
 
-  createPlayerControls([0, 1, 0], rootId, commands, sceneStruct, inputStruct);
+  createPlayerControls([0, 2, 0], rootId, commands, sceneStruct, inputStruct);
 
   const parent = new Parent(rootId);
 
   commands
-    .spawn()
+    .spawn(true)
     .add(parent)
     .addType(Transform)
     .addType(GlobalTransform)

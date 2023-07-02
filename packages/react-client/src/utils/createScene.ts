@@ -22,13 +22,7 @@ export function createScene(
   const canvas = document.querySelector("canvas");
   coreStore.canvas = canvas;
 
-  const asset = new Asset("/images/Skybox.jpg", "image/jpeg");
-  const image = new Image(true);
-
-  const skyboxId = commands.spawn().add(asset).add(image).id;
-
-  dropStruct(asset);
-  dropStruct(image);
+  const skyboxId = commands.spawn(true).addType(Asset).addType(Image).id;
 
   const rootId = commands
     .spawn(true)

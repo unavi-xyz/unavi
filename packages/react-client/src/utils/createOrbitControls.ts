@@ -15,7 +15,7 @@ export function createOrbitControls(
   const transform = new Transform(translation);
 
   const camera = commands
-    .spawn()
+    .spawn(true)
     .add(transform)
     .addType(GlobalTransform)
     .addType(PerspectiveCamera)

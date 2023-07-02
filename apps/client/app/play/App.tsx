@@ -9,6 +9,7 @@ import { HOME_SERVER } from "@/src/constants";
 import { env } from "@/src/env.mjs";
 import { useHotkeys } from "@/src/play/hooks/useHotkeys";
 
+import Overlay from "./Overlay";
 import { WorldUriId } from "./types";
 
 const Client = dynamic(
@@ -40,6 +41,8 @@ export default function App({ id, metadata, uri }: Props) {
         src="/scripts/draco_wasm_wrapper_gltf.js"
         onReady={() => setScriptsReady(true)}
       />
+
+      <Overlay id={id} metadata={metadata} />
 
       <div className="fixed h-screen w-screen">
         {scriptsReady && (

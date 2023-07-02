@@ -2,6 +2,7 @@ import { MdLogout } from "react-icons/md";
 
 import { SignInPage } from "@/app/(navbar)/SignInButton";
 import { useAuth } from "@/src/client/AuthProvider";
+import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
 import Avatar from "../../../ui/Avatar";
 import Tooltip from "../../../ui/Tooltip";
@@ -17,6 +18,11 @@ export default function AccountSettings({ onClose }: Props) {
 
   const loading = status === "loading" || loadingTransition || loadingProfile;
 
+  const image =
+    user?.userId && profile?.image
+      ? cdnURL(S3Path.profile(user.userId).image(profile.image))
+      : undefined;
+
   return (
     <section className="space-y-1">
       <div className="font-bold text-neutral-700">Account</div>
@@ -25,7 +31,7 @@ export default function AccountSettings({ onClose }: Props) {
         <div className="flex items-center space-x-4 pt-2">
           <div className="overflow-hidden rounded-xl">
             <Avatar
-              src={profile?.image}
+              src={image}
               uniqueKey={user.username}
               loading={loading}
               size={48}

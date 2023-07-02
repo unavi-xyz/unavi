@@ -20,7 +20,6 @@ export default function Avatar({
   uniqueKey,
   size,
 }: Props) {
-  console.log("👨‍🎨", src);
   return (
     <div
       className={`${

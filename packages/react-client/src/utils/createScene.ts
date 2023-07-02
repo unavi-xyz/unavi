@@ -1,4 +1,4 @@
-import { Asset } from "lattice-engine/core";
+import { Asset, CoreStore } from "lattice-engine/core";
 import {
   AmbientLight,
   DirectionalLight,
@@ -14,42 +14,58 @@ import { Commands, dropStruct } from "thyseus";
 
 export function createScene(
   commands: Commands,
+  coreStore: CoreStore,
   sceneStruct: SceneStruct,
   shadowResolution = 2048,
   shadowArea = 8
 ) {
-  // Scene
-  const skybox = commands.spawn().addType(Asset).addType(Image);
-  const root = commands.spawn().addType(Transform).addType(GlobalTransform);
+  const canvas = document.querySelector("canvas");
+  coreStore.canvas = canvas;
 
-  const sceneComponent = new Scene(root, skybox);
-  const scene = commands.spawn().add(sceneComponent);
+  const asset = new Asset("/Skybox.jpg", "image/jpeg");
+  const image = new Image(true);
+
+  const skyboxId = commands.spawn().add(asset).add(image).id;
+
+  dropStruct(asset);
+  dropStruct(image);
+
+  const rootId = commands
+    .spawn(true)
+    .addType(Transform)
+    .addType(GlobalTransform).id;
+
+  const sceneComponent = new Scene();
+  sceneComponent.skyboxId = skyboxId;
+  sceneComponent.rootId = rootId;
+
+  const sceneId = commands.spawn(true).add(sceneComponent).id;
+
   dropStruct(sceneComponent);
 
-  sceneStruct.activeScene = scene.id;
+  sceneStruct.activeScene = sceneId;
 
-  const parent = new Parent(scene);
-  root.add(parent);
+  const parent = new Parent(sceneId);
+  commands.getById(rootId).add(parent);
 
-  // Lights
   const ambient = new AmbientLight([1, 1, 1], 0.25);
   commands
-    .spawn()
+    .spawn(true)
     .add(ambient)
     .addType(Transform)
     .addType(GlobalTransform)
     .add(parent);
   dropStruct(ambient);
 
-  const transform = new Transform([0, 30, 0]);
   const directionalComponent = new DirectionalLight([1, 1, 1], 0.75);
+  const transform = new Transform([0, 30, 0]);
 
   const directional = commands
-    .spawn()
-    .add(parent)
+    .spawn(true)
+    .add(directionalComponent)
     .add(transform)
     .addType(GlobalTransform)
-    .add(directionalComponent);
+    .add(parent);
 
   dropStruct(transform);
   dropStruct(directionalComponent);
@@ -69,5 +85,5 @@ export function createScene(
     dropStruct(shadowMap);
   }
 
-  return { root, scene };
+  return { rootId, sceneId };
 }

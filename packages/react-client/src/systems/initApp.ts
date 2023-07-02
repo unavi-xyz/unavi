@@ -24,11 +24,11 @@ export function initApp(
 
   coreStore.canvas = document.querySelector("canvas");
 
-  const { root } = createScene(commands, sceneStruct);
+  const { rootId } = createScene(commands, coreStore, sceneStruct);
 
-  createPlayerControls(root, commands, sceneStruct, inputStruct);
+  createPlayerControls([0, 1, 0], rootId, commands, sceneStruct, inputStruct);
 
-  const parent = new Parent(root);
+  const parent = new Parent(rootId);
 
   commands
     .spawn()

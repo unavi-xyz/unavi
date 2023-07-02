@@ -1,13 +1,22 @@
 import { WorldMetadataSchema } from "@wired-protocol/types";
 import { Asset, Warehouse } from "lattice-engine/core";
 import { Gltf } from "lattice-engine/gltf";
-import { dropStruct, Entity, Query, Res, With, Without } from "thyseus";
+import {
+  Commands,
+  dropStruct,
+  Entity,
+  Query,
+  Res,
+  With,
+  Without,
+} from "thyseus";
 
 import { WorldJson } from "../components";
 
 const decoder = new TextDecoder();
 
 export function loadWorldModels(
+  commands: Commands,
   warehouse: Res<Warehouse>,
   worlds: Query<[Entity, Asset], [With<WorldJson>, Without<Gltf>]>
 ) {
@@ -27,7 +36,7 @@ export function loadWorldModels(
         parsed.error
       );
 
-    entity.add(gltf);
+    commands.getById(entity.id).add(gltf);
 
     dropStruct(gltf);
   }

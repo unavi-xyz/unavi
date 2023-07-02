@@ -13,13 +13,7 @@ export default defineConfig({
     },
     minify: false,
     rollupOptions: {
-      external: [
-        "@wired-protocol/types",
-        "nanoid",
-        "react-dom",
-        "react",
-        "thyseus",
-      ],
+      external: ["@wired-protocol/types", "react-dom", "react", "thyseus"],
     },
     target: "esnext",
   },

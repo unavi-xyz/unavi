@@ -24,17 +24,17 @@ import {
   Transform,
 } from "lattice-engine/scene";
 import { Vrm } from "lattice-engine/vrm";
-import { Commands, dropStruct, EntityCommands } from "thyseus";
+import { Commands, dropStruct } from "thyseus";
 
 const PLAYER_HEIGHT = 1.6;
 const PLAYER_WIDTH = 0.4;
 
 export function createPlayerControls(
-  root: EntityCommands,
+  spawn: [number, number, number],
+  rootId: bigint,
   commands: Commands,
   sceneStruct: SceneStruct,
-  inputStruct: InputStruct,
-  spawn: [number, number, number] = [0, 2, 0]
+  inputStruct: InputStruct
 ) {
   const parent = new Parent();
   const transform = new Transform();
@@ -48,9 +48,9 @@ export function createPlayerControls(
     PLAYER_HEIGHT - PLAYER_WIDTH * 2
   );
 
-  const body = commands
-    .spawn()
-    .add(parent.setEntity(root))
+  const bodyId = commands
+    .spawn(true)
+    .add(parent.setId(rootId))
     .add(transform.set(spawn))
     .add(targetTransform.set(spawn))
     .addType(GlobalTransform)
@@ -58,7 +58,7 @@ export function createPlayerControls(
     .add(capsuleCollider)
     .addType(KinematicBody)
     .addType(CharacterController)
-    .add(player);
+    .add(player).id;
 
   dropStruct(player);
   dropStruct(targetTransform);
@@ -76,11 +76,11 @@ export function createPlayerControls(
   const vrm = new Vrm("/models/Robot.vrm", true);
 
   commands
-    .spawn()
+    .spawn(true)
     .add(transform.set([0, -PLAYER_HEIGHT / 2, 0]))
     .addType(GlobalTransform)
     .add(targetRotation.set(0, 0, 0, 1))
-    .add(parent.setEntity(body))
+    .add(parent.setId(bodyId))
     .add(vrm)
     .add(playerAvatar);
 
@@ -92,22 +92,22 @@ export function createPlayerControls(
     PlayerCameraView.ThirdPerson
   );
 
-  const camera = commands
-    .spawn()
+  const cameraId = commands
+    .spawn(true)
     .addType(Transform)
     .addType(GlobalTransform)
     .addType(TargetPosition)
     .add(targetRotation.set(0, 0, 0, 1))
-    .add(parent.setEntity(body))
+    .add(parent.setId(bodyId))
     .addType(PerspectiveCamera)
     .add(playerCamera)
-    .addType(Raycast);
+    .addType(Raycast).id;
 
   dropStruct(parent);
   dropStruct(transform);
   dropStruct(playerCamera);
   dropStruct(targetRotation);
 
-  sceneStruct.activeCamera = camera.id;
+  sceneStruct.activeCamera = cameraId;
   inputStruct.enablePointerLock = true;
 }

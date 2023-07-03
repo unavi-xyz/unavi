@@ -7,7 +7,7 @@ import { useClientStore } from "../store";
 
 const grounded = useClientStore.getState().grounded;
 
-export function setPlayerAirTime(
+export function setPlayersAirTime(
   time: Res<Time>,
   players: Query<[OtherPlayer, Mut<PlayerBody>]>
 ) {

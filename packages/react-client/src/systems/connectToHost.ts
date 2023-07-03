@@ -90,6 +90,16 @@ export function connectToHost(
       // Initiate WebRTC connection
       send({ data: null, id: "xyz.unavi.webrtc.router.rtpCapabilities.get" });
 
+      // Send user data
+      send({
+        data: useClientStore.getState().avatar,
+        id: "xyz.unavi.world.user.avatar",
+      });
+      send({
+        data: useClientStore.getState().name,
+        id: "xyz.unavi.world.user.name",
+      });
+
       // Join world
       const uri = useClientStore.getState().worldUri;
       send({ data: uri, id: "xyz.unavi.world.join" });
@@ -135,6 +145,14 @@ export function connectToHost(
         case "xyz.unavi.world.player.join": {
           useClientStore.getState().events.push(parsed.data);
 
+          // TODO: Clean this up, make an avatar event or sum
+          const avatars = useClientStore.getState().avatars;
+          if (data.avatar) {
+            avatars.set(data.playerId, data.avatar);
+          } else {
+            avatars.delete(data.playerId);
+          }
+
           useClientStore.getState().addChatMessage({
             id: chatId++,
             text: `${toHex(data.playerId)} joined the world`,
@@ -153,11 +171,25 @@ export function connectToHost(
             timestamp: Date.now(),
             type: "system",
           });
+
+          useClientStore.getState().locations.delete(data);
+          useClientStore.getState().grounded.delete(data);
+          useClientStore.getState().avatars.delete(data);
           break;
         }
 
         case "xyz.unavi.world.player.grounded": {
           useClientStore.getState().grounded.set(data.playerId, data.grounded);
+          break;
+        }
+
+        case "xyz.unavi.world.player.avatar": {
+          const avatars = useClientStore.getState().avatars;
+          if (data.avatar) {
+            avatars.set(data.playerId, data.avatar);
+          } else {
+            avatars.delete(data.playerId);
+          }
           break;
         }
 

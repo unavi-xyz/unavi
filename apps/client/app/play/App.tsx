@@ -8,6 +8,7 @@ import { useState } from "react";
 import { HOME_SERVER } from "@/src/constants";
 import { env } from "@/src/env.mjs";
 import { useHotkeys } from "@/src/play/hooks/useHotkeys";
+import { useLoadUser } from "@/src/play/hooks/useLoadUser";
 
 import Overlay from "./Overlay";
 import { WorldUriId } from "./types";
@@ -29,6 +30,7 @@ export default function App({ id, metadata, uri }: Props) {
   const [scriptsReady, setScriptsReady] = useState(false);
 
   useHotkeys();
+  useLoadUser();
 
   const host =
     process.env.NODE_ENV === "development"

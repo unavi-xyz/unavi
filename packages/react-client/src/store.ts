@@ -9,16 +9,20 @@ export interface IClientStore {
   sendWebSockets: (message: RequestMessage) => void;
   cleanupConnection: () => void;
   addChatMessage: (message: ChatMessage) => void;
-  worldUri: string;
-  skybox: string;
+  avatar: string;
+  avatars: Map<number, string>;
+  chatMessages: ChatMessage[];
   defaultAvatar: string;
   engine: Engine | null;
   events: EcsEvent[];
-  locations: Map<number, number[]>;
-  lastLocationUpdates: Map<number, number>;
   grounded: Map<number, boolean>;
+  handle: string;
+  lastLocationUpdates: Map<number, number>;
+  locations: Map<number, number[]>;
+  name: string;
   playerId: number | null;
-  chatMessages: ChatMessage[];
+  skybox: string;
+  worldUri: string;
 }
 
 export const useClientStore = create<IClientStore>((set, get) => ({
@@ -28,14 +32,18 @@ export const useClientStore = create<IClientStore>((set, get) => ({
     if (chatMessages.length > 100) chatMessages.shift();
     set({ chatMessages: [...chatMessages] });
   },
+  avatar: "",
+  avatars: new Map(),
   chatMessages: [],
   cleanupConnection: () => {},
   defaultAvatar: "",
   engine: null,
   events: [],
   grounded: new Map(),
+  handle: "",
   lastLocationUpdates: new Map(),
   locations: new Map(),
+  name: "",
   playerId: null,
   sendWebRTC: () => {},
   sendWebSockets: () => {},

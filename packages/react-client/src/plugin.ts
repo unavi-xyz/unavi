@@ -18,8 +18,10 @@ import { parseWorld } from "./systems/parseWorld";
 import { publishLocation } from "./systems/publishLocation";
 import { sendEvents } from "./systems/sendEvents";
 import { setLocationUpdateTime } from "./systems/setLocationUpdateTime";
-import { setPlayerAirTime } from "./systems/setPlayerAirTime";
+import { setPlayersAirTime } from "./systems/setPlayersAirTime";
+import { setPlayersAvatar } from "./systems/setPlayersAvatars";
 import { setSkybox } from "./systems/setSkybox";
+import { setUserAvatar } from "./systems/setUserAvatar";
 import { spawnPlayers } from "./systems/spawnPlayers";
 
 export function clientPlugin(builder: WorldBuilder) {
@@ -38,7 +40,9 @@ export function clientPlugin(builder: WorldBuilder) {
       joinWorld,
       movePlayers,
       parseWorld,
-      setPlayerAirTime,
+      setPlayersAirTime,
+      setPlayersAvatar,
+      setUserAvatar,
       setSkybox,
       spawnPlayers,
       ...run.chain(setLocationUpdateTime, lerpTransforms, [

@@ -76,7 +76,6 @@ export function spawnPlayers(
     for (const [entity, player] of players) {
       if (player.id === event.playerId) {
         commands.despawn(entity);
-        useClientStore.getState().locations.delete(player.id);
       }
     }
   }

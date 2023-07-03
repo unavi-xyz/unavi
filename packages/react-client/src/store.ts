@@ -16,6 +16,7 @@ export interface IClientStore {
   events: EcsEvent[];
   locations: Map<number, number[]>;
   lastLocationUpdates: Map<number, number>;
+  grounded: Map<number, boolean>;
   playerId: number | null;
   chatMessages: ChatMessage[];
 }
@@ -32,6 +33,7 @@ export const useClientStore = create<IClientStore>((set, get) => ({
   defaultAvatar: "",
   engine: null,
   events: [],
+  grounded: new Map(),
   lastLocationUpdates: new Map(),
   locations: new Map(),
   playerId: null,

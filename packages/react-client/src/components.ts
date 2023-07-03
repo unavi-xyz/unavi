@@ -17,3 +17,10 @@ export class NetworkTransform {
 
   @struct.f32 declare lastUpdate: number;
 }
+
+@struct
+export class PrevTranslation {
+  @struct.f32 declare x: number;
+  @struct.f32 declare y: number;
+  @struct.f32 declare z: number;
+}

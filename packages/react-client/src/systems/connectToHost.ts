@@ -156,6 +156,11 @@ export function connectToHost(
           break;
         }
 
+        case "xyz.unavi.world.player.grounded": {
+          useClientStore.getState().grounded.set(data.playerId, data.grounded);
+          break;
+        }
+
         case "xyz.unavi.webrtc.router.rtpCapabilities": {
           try {
             // Initialize device

@@ -8,6 +8,7 @@ import { vrmPlugin } from "lattice-engine/vrm";
 import { run, WorldBuilder } from "thyseus";
 
 import { ClientSchedules } from "./constants";
+import { calcPlayerVelocity } from "./systems/calcPlayerVelocity";
 import { connectToHost } from "./systems/connectToHost";
 import { initApp } from "./systems/initApp";
 import { joinWorld } from "./systems/joinWorld";
@@ -17,6 +18,7 @@ import { parseWorld } from "./systems/parseWorld";
 import { publishLocation } from "./systems/publishLocation";
 import { sendEvents } from "./systems/sendEvents";
 import { setLocationUpdateTime } from "./systems/setLocationUpdateTime";
+import { setPlayerAirTime } from "./systems/setPlayerAirTime";
 import { setSkybox } from "./systems/setSkybox";
 import { spawnPlayers } from "./systems/spawnPlayers";
 
@@ -36,8 +38,12 @@ export function clientPlugin(builder: WorldBuilder) {
       joinWorld,
       movePlayers,
       parseWorld,
+      setPlayerAirTime,
       setSkybox,
       spawnPlayers,
-      ...run.chain(setLocationUpdateTime, lerpTransforms, movePlayers)
+      ...run.chain(setLocationUpdateTime, lerpTransforms, [
+        calcPlayerVelocity,
+        movePlayers,
+      ])
     );
 }

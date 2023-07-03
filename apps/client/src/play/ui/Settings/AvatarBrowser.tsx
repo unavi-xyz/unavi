@@ -2,6 +2,7 @@ import { useState } from "react";
 import { MdArrowBack, MdSkipNext, MdSkipPrevious } from "react-icons/md";
 import useSWR from "swr";
 
+import { useSetAvatar } from "../../hooks/useSetAvatar";
 import { avatarFetcher } from "./avatarFetcher";
 import { Nft, nftsResponseSchema } from "./schemas";
 import { SettingsPage } from "./SettingsDialog";
@@ -129,6 +130,8 @@ interface NftCardProps {
 }
 
 function NftCard({ nft, onClose }: NftCardProps) {
+  const setAvatar = useSetAvatar();
+
   const asset = nft.metadata.asset;
   const image = nft.metadata.image;
 
@@ -137,7 +140,7 @@ function NftCard({ nft, onClose }: NftCardProps) {
   return (
     <button
       onClick={() => {
-        // setAvatar(asset);
+        setAvatar(asset);
         onClose();
       }}
       className="relative aspect-[7/10] rounded-xl bg-neutral-200 transition duration-100 ease-out hover:scale-105"

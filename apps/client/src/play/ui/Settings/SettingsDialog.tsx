@@ -1,3 +1,4 @@
+import { useClientStore } from "@unavi/react-client";
 import { useEffect, useState } from "react";
 
 import { usePlayStore } from "@/app/play/store";
@@ -30,8 +31,6 @@ export default function SettingsDialog({ open, setOpen }: Props) {
   async function handleClose() {
     setOpen(false);
 
-    // if (!engine) return;
-
     const { didChangeName, didChangeAvatar, nickname, avatar } =
       usePlayStore.getState();
 
@@ -43,7 +42,9 @@ export default function SettingsDialog({ open, setOpen }: Props) {
       else localStorage.removeItem(LocalStorageKey.Name);
 
       // Publish name change
-      // send({ data: nickname, id: "xyz.unavi.world.user.name" });
+      useClientStore
+        .getState()
+        .sendWebSockets({ data: nickname, id: "xyz.unavi.world.user.name" });
     }
 
     if (didChangeAvatar) setAvatar(avatar);

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { BsFillGridFill } from "react-icons/bs";
 import { MdClose } from "react-icons/md";
 
 import { usePlayStore } from "@/app/play/store";
@@ -21,6 +22,9 @@ export default function AvatarSettings({ setPage }: Props) {
   const [statsError, setStatsError] = useState(false);
   const [showStats, setShowStats] = useState(true);
   const [uploadedAvatar, setUploadedAvatar] = useState<string | null>(null);
+  const avatar = usePlayStore((state) => state.avatar);
+
+  const displayedAvatar = uploadedAvatar ?? avatar;
 
   useEffect(() => {
     setShowStats(true);
@@ -28,11 +32,13 @@ export default function AvatarSettings({ setPage }: Props) {
     setStats(null);
 
     async function getStats() {
-      const usedAvatar = uploadedAvatar;
-      if (!usedAvatar) return;
+      if (!displayedAvatar) {
+        setShowStats(false);
+        return;
+      }
 
       try {
-        const stats = await getVRMStats(usedAvatar);
+        const stats = await getVRMStats(displayedAvatar);
         setStats(stats);
       } catch (e) {
         console.error(e);
@@ -42,7 +48,7 @@ export default function AvatarSettings({ setPage }: Props) {
     }
 
     getStats();
-  }, [uploadedAvatar]);
+  }, [displayedAvatar]);
 
   const rank = stats ? avatarPerformanceRank(stats) : null;
 
@@ -59,8 +65,8 @@ export default function AvatarSettings({ setPage }: Props) {
             Failed to load avatar information
           </div>
         ) : (
-          <div className="flex items-center rounded-xl px-4 py-3 ring-1 ring-inset ring-neutral-300">
-            <div className="flex h-full items-stretch space-x-4">
+          <div className="flex items-center rounded-xl bg-neutral-100 px-4 py-3">
+            <div className="flex h-full items-stretch space-x-6">
               <div className="flex w-1/3 min-w-fit flex-col justify-between">
                 {stats && !stats.name ? null : (
                   <div className="text-neutral-700">Name</div>
@@ -105,57 +111,54 @@ export default function AvatarSettings({ setPage }: Props) {
                 )}
               </div>
             </div>
-
-            <div className="grow" />
-
-            <Tooltip text="Unequip Avatar" side="bottom">
-              <button
-                onClick={() => {
-                  setAvatarName(undefined);
-                  setShowStats(false);
-                  usePlayStore.setState({
-                    avatar: null,
-                    didChangeAvatar: true,
-                  });
-                }}
-                className="flex h-11 w-11 items-center justify-center rounded-lg text-xl transition hover:bg-red-100 active:opacity-90"
-              >
-                <MdClose />
-              </button>
-            </Tooltip>
           </div>
         )
       ) : null}
 
       <div className="flex items-center space-x-2 pt-1">
         {env.NEXT_PUBLIC_CRYPTOAVATARS_API_KEY ? (
-          <button
-            onClick={() => setPage("Browse Avatars")}
-            className="w-1/3 rounded-xl bg-neutral-200/70 py-2.5 transition hover:bg-neutral-300 active:opacity-80"
-          >
-            Browse
-          </button>
+          <Tooltip text="Browse">
+            <button
+              onClick={() => setPage("Browse Avatars")}
+              className="flex aspect-square h-11 w-11 items-center justify-center rounded-lg text-xl transition hover:bg-neutral-200 active:opacity-80"
+            >
+              <BsFillGridFill />
+            </button>
+          </Tooltip>
         ) : null}
 
         {env.NEXT_PUBLIC_HAS_S3 ? (
-          <div className="flex w-full space-x-1">
-            <div className="grow">
-              <FileInput
-                displayName={avatarName ?? null}
-                placeholder="Upload VRM File"
-                accept=".vrm"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
+          <div className="grow">
+            <FileInput
+              displayName={avatarName ?? null}
+              placeholder="Upload VRM File"
+              accept=".vrm"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
 
-                  const url = URL.createObjectURL(file);
-                  usePlayStore.setState({ avatar: url, didChangeAvatar: true });
-                  setAvatarName(file.name);
-                  setUploadedAvatar(url);
-                }}
-              />
-            </div>
+                const url = URL.createObjectURL(file);
+                usePlayStore.setState({ avatar: url, didChangeAvatar: true });
+                setAvatarName(file.name);
+                setUploadedAvatar(url);
+              }}
+            />
           </div>
+        ) : null}
+
+        {avatar ? (
+          <Tooltip text="Unequip" side="bottom">
+            <button
+              onClick={() => {
+                setAvatarName(undefined);
+                setShowStats(false);
+                usePlayStore.setState({ avatar: null, didChangeAvatar: true });
+              }}
+              className="flex h-11 w-11 items-center justify-center rounded-lg text-xl transition hover:bg-red-100 active:opacity-90"
+            >
+              <MdClose />
+            </button>
+          </Tooltip>
         ) : null}
       </div>
     </section>

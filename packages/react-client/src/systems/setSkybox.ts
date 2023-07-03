@@ -2,7 +2,7 @@ import { Asset } from "lattice-engine/core";
 import { Image, Scene } from "lattice-engine/scene";
 import { Entity, Mut, Query } from "thyseus";
 
-import { config } from "../config";
+import { useClientStore } from "../store";
 
 export function setSkybox(
   images: Query<[Entity, Mut<Asset>, Mut<Image>]>,
@@ -11,9 +11,11 @@ export function setSkybox(
   for (const scene of scenes) {
     for (const [entity, asset, image] of images) {
       if (scene.skyboxId !== entity.id) continue;
-      if (asset.uri === config.skyboxUri) continue;
 
-      asset.uri = config.skyboxUri;
+      const skybox = useClientStore.getState().skybox;
+      if (asset.uri === skybox) continue;
+
+      asset.uri = skybox;
       image.flipY = true;
 
       const fileExt = asset.uri.split(".").pop();

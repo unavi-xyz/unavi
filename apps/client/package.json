@@ -32,7 +32,7 @@
     "@unavi/behave-graph-core": "^0.9.20",
     "@unavi/gltf-extensions": "workspace:^",
     "@unavi/react-client": "workspace:^",
-    "@wired-protocol/types": "^0.0.20",
+    "@wired-protocol/types": "^0.1.0",
     "boring-avatars": "^1.10.0",
     "drizzle-orm": "^0.26.5",
     "ethers": "^5.7.2",

@@ -1,22 +1,8 @@
 import { RequestMessage } from "@wired-protocol/types";
+import { Engine } from "lattice-engine/core";
 import { create } from "zustand";
 
-export type PlayerMessage = {
-  type: "player";
-  id: number;
-  timestamp: number;
-  text: string;
-  sender: string;
-};
-
-export type SystemMessage = {
-  type: "system";
-  id: number;
-  timestamp: number;
-  text: string;
-};
-
-export type ChatMessage = PlayerMessage | SystemMessage;
+import { ChatMessage, EcsEvent } from "./types";
 
 export interface IClientStore {
   sendWebRTC: (message: ArrayBuffer) => void;
@@ -24,6 +10,12 @@ export interface IClientStore {
   cleanupConnection: () => void;
   addChatMessage: (message: ChatMessage) => void;
   worldUri: string;
+  skybox: string;
+  defaultAvatar: string;
+  engine: Engine | null;
+  events: EcsEvent[];
+  locations: Map<number, number[]>;
+  lastLocationUpdates: Map<number, number>;
   playerId: number | null;
   chatMessages: ChatMessage[];
 }
@@ -37,8 +29,14 @@ export const useClientStore = create<IClientStore>((set, get) => ({
   },
   chatMessages: [],
   cleanupConnection: () => {},
+  defaultAvatar: "",
+  engine: null,
+  events: [],
+  lastLocationUpdates: new Map(),
+  locations: new Map(),
   playerId: null,
   sendWebRTC: () => {},
   sendWebSockets: () => {},
+  skybox: "",
   worldUri: "",
 }));

@@ -3,10 +3,9 @@ import { PlayerAvatar, PlayerBody } from "lattice-engine/player";
 import { Parent, Transform } from "lattice-engine/scene";
 import { Entity, Query, Res, struct, SystemRes, With } from "thyseus";
 
+import { NETWORK_UPDATE_HZ } from "../constants";
 import { useClientStore } from "../store";
 import { serializeLocation } from "../utils/serializeLocation";
-
-const PUBLISH_HZ = 16;
 
 @struct
 class LocalRes {
@@ -20,7 +19,7 @@ export function publishLocation(
   avatars: Query<[Transform, Parent], With<PlayerAvatar>>
 ) {
   const now = time.fixedTime;
-  if (now - localRes.lastPublish < 1000 / PUBLISH_HZ) return;
+  if (now - localRes.lastPublish < 1000 / NETWORK_UPDATE_HZ) return;
 
   localRes.lastPublish = now;
 
@@ -31,10 +30,14 @@ export function publishLocation(
     for (const [avatarTr, parent] of avatars) {
       if (parent.id !== bodyEnt.id) continue;
 
+      // TODO: Remove hardcoded player height
+      // Define player height within PlayerBody component or something
+      const adjustedHeight = bodyTr.translation.y - 0.8;
+
       const buffer = serializeLocation(
         playerId,
         bodyTr.translation.x,
-        bodyTr.translation.y,
+        adjustedHeight,
         bodyTr.translation.z,
         avatarTr.rotation.x,
         avatarTr.rotation.y,

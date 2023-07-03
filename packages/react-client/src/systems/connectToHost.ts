@@ -10,8 +10,8 @@ import {
 import { Query, SystemRes } from "thyseus";
 
 import { WorldJson } from "../components";
+import { LOCATION_ROUNDING } from "../constants";
 import { useClientStore } from "../store";
-import { deserializeLocation } from "../utils/deserializeLocation";
 import { toHex } from "../utils/toHex";
 
 let chatId = 0;
@@ -133,6 +133,8 @@ export function connectToHost(
         }
 
         case "xyz.unavi.world.player.join": {
+          useClientStore.getState().events.push(parsed.data);
+
           useClientStore.getState().addChatMessage({
             id: chatId++,
             text: `${toHex(data.playerId)} joined the world`,
@@ -143,6 +145,8 @@ export function connectToHost(
         }
 
         case "xyz.unavi.world.player.leave": {
+          useClientStore.getState().events.push(parsed.data);
+
           useClientStore.getState().addChatMessage({
             id: chatId++,
             text: `${toHex(data)} left the world`,
@@ -323,6 +327,10 @@ export function connectToHost(
               sctpStreamParameters: data.sctpStreamParameters,
             });
 
+            const locations = useClientStore.getState().locations;
+            const lastLocationUpdates =
+              useClientStore.getState().lastLocationUpdates;
+
             // Listen for data
             dataConsumer.on("message", async (message: ArrayBuffer | Blob) => {
               const buffer =
@@ -330,7 +338,31 @@ export function connectToHost(
                   ? message
                   : await message.arrayBuffer();
 
-              const data = deserializeLocation(buffer);
+              const view = new DataView(buffer);
+
+              const playerId = view.getUint8(0);
+
+              const posX = view.getInt32(1) / LOCATION_ROUNDING.POSITION;
+              const posY = view.getInt32(5) / LOCATION_ROUNDING.POSITION;
+              const posZ = view.getInt32(9) / LOCATION_ROUNDING.POSITION;
+
+              const rotX = view.getInt16(13) / LOCATION_ROUNDING.ROTATION;
+              const rotY = view.getInt16(15) / LOCATION_ROUNDING.ROTATION;
+              const rotZ = view.getInt16(17) / LOCATION_ROUNDING.ROTATION;
+              const rotW = view.getInt16(19) / LOCATION_ROUNDING.ROTATION;
+
+              const location = locations.get(playerId) ?? [];
+
+              location[0] = posX;
+              location[1] = posY;
+              location[2] = posZ;
+              location[3] = rotX;
+              location[4] = rotY;
+              location[5] = rotZ;
+              location[6] = rotW;
+
+              locations.set(playerId, location);
+              lastLocationUpdates.set(playerId, performance.now());
             });
           } catch (error) {
             console.error("Error consuming data", error);

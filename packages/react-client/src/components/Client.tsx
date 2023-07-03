@@ -1,7 +1,7 @@
 import { WorldMetadata } from "@wired-protocol/types";
+import { Engine } from "lattice-engine/core";
 import { useEffect } from "react";
 
-import { useEngine } from "../hooks/useEngine";
 import { useWorld } from "../hooks/useWorld";
 import { useClientStore } from "../store";
 import Canvas from "./Canvas";
@@ -17,17 +17,34 @@ interface Props {
   metadata?: WorldMetadata;
 }
 
-export function Client({ skybox, uri }: Props) {
+export function Client({ skybox, defaultAvatar, uri }: Props) {
   const world = useWorld();
-  useEngine(world);
 
   useEffect(() => {
-    import("../config").then(({ config }) => (config.skyboxUri = skybox ?? ""));
+    if (!world) return;
+
+    const engine = new Engine(world);
+    useClientStore.setState({ engine });
+
+    engine.start();
+
+    return () => {
+      engine.destroy();
+      useClientStore.setState({ engine: null });
+    };
+  }, [world]);
+
+  useEffect(() => {
+    useClientStore.setState({ skybox });
   }, [skybox]);
 
   useEffect(() => {
     useClientStore.setState({ worldUri: uri });
   }, [uri]);
+
+  useEffect(() => {
+    useClientStore.setState({ defaultAvatar });
+  }, [defaultAvatar]);
 
   useEffect(() => {
     return () => {

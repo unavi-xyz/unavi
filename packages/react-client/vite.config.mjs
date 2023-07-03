@@ -15,6 +15,7 @@ export default defineConfig({
     rollupOptions: {
       external: [
         "@wired-protocol/types",
+        "gl-matrix",
         "lattice-engine",
         "mediasoup-client",
         "nanoid",

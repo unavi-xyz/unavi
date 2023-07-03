@@ -10,11 +10,13 @@ import { LocalStorageKey } from "../constants";
 export function useLoadUser() {
   const { user } = useAuth();
 
-  // Load nickname from local storage on initial load
+  // Load from local storage on initial load
   useEffect(() => {
-    const localName = localStorage.getItem(LocalStorageKey.Name) ?? "";
-    usePlayStore.setState({ nickname: localName });
-    useClientStore.setState({ name: localName });
+    const name = localStorage.getItem(LocalStorageKey.Name) ?? "";
+    const avatar = localStorage.getItem(LocalStorageKey.Avatar) ?? "";
+
+    usePlayStore.setState({ avatar, nickname: name });
+    useClientStore.setState({ avatar, name });
   }, []);
 
   // Set handle on change

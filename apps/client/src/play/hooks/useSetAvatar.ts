@@ -4,6 +4,7 @@ import { getTempUpload } from "@/app/api/temp/helper";
 import { usePlayStore } from "@/app/play/store";
 
 import { cdnURL, S3Path } from "../../utils/s3Paths";
+import { LocalStorageKey } from "../constants";
 
 /**
  * Wraps around the client's setAvatar function to support uploading avatars to S3.
@@ -36,6 +37,7 @@ export function useSetAvatar() {
     // Set avatar
     usePlayStore.setState({ avatar });
     useClientStore.setState({ avatar });
+    localStorage.setItem(LocalStorageKey.Avatar, avatar);
   }
 
   return setAvatar;

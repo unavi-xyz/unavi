@@ -44,9 +44,9 @@ export default function App({ id, metadata, uri }: Props) {
         onReady={() => setScriptsReady(true)}
       />
 
-      <Overlay id={id} metadata={metadata} />
+      <LoadingScreen metadata={metadata} />
 
-      <LoadingScreen />
+      <Overlay id={id} metadata={metadata} />
 
       <div className="fixed h-screen w-screen">
         {scriptsReady && (

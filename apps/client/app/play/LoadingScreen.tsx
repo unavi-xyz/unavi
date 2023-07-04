@@ -1,14 +1,24 @@
 import { useClientStore, useLoadingStore } from "@unavi/react-client";
+import { WorldMetadata } from "@wired-protocol/types";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
-const LOADING_DELAY = 1000;
-const FADE_DURATION = 1000;
+import { HOME_SERVER } from "@/src/constants";
+import { env } from "@/src/env.mjs";
+import { isFromCDN } from "@/src/utils/isFromCDN";
+import { parseHandle } from "@/src/utils/parseHandle";
 
-export default function LoadingScreen() {
+const LOADING_DELAY = 1000;
+const FADE_DURATION = 700;
+
+interface Props {
+  metadata: WorldMetadata;
+}
+
+export default function LoadingScreen({ metadata }: Props) {
   const loading = useLoadingStore((state) => state.loading);
   const loaded = useLoadingStore((state) => state.loaded);
   const total = useLoadingStore((state) => state.total);
-  const message = useLoadingStore((state) => state.message);
   const playerId = useClientStore((state) => state.playerId);
 
   const [doneLoading, setDoneLoading] = useState(false);
@@ -41,19 +51,103 @@ export default function LoadingScreen() {
 
   if (hideScreen) return null;
 
-  const defaultMessage = playerId === null ? "Connecting..." : "Loading...";
+  const isConnecting = playerId === null;
+  const loadingMessage = isConnecting ? "Connecting" : "Loading world";
+  const progress = isConnecting ? 0.1 : loaded / total;
+
+  const image = metadata.info?.image;
+  const host = metadata.info?.host ?? env.NEXT_PUBLIC_DEFAULT_HOST;
+  const authors = metadata.info?.authors ?? [];
 
   return (
     <div
-      className={`fixed z-50 flex h-screen w-screen flex-col items-center justify-center bg-neutral-800 text-white transition duration-1000 ${
-        doneLoading ? "pointer-events-none opacity-0" : ""
-      }`}
+      className={`fixed z-50 flex h-screen w-screen flex-col items-center justify-center text-white transition duration-700 ${
+        image ? "bg-black" : "bg-neutral-800"
+      } ${doneLoading ? "pointer-events-none opacity-0" : ""}`}
     >
-      <div>{message || defaultMessage}</div>
-      {total === 0 ? null : (
-        <div>
-          {loaded} / {total}
+      {image ? <BackgroundImage src={image} /> : null}
+
+      <div className="absolute bottom-0 left-0 p-4">
+        <div className="flex h-full items-stretch space-x-6">
+          <div className="flex w-1/3 min-w-fit flex-col justify-between text-white/50">
+            {authors.length > 0 ? <div>By</div> : null}
+            <div>Host</div>
+          </div>
+
+          <div className="flex w-full flex-col justify-between text-white/70">
+            <div>
+              {authors.map((author, i) => {
+                const { username, home } = parseHandle(author);
+
+                if (username && home === HOME_SERVER) {
+                  return (
+                    <a key={i} href={`/@${username}`} target="_blank">
+                      @{username}
+                    </a>
+                  );
+                }
+
+                return <div key={i}>{author}</div>;
+              })}
+            </div>
+            <div>{host}</div>
+          </div>
         </div>
+      </div>
+
+      <div className="z-20 flex flex-col items-center justify-center">
+        <h1 className="text-4xl font-bold">{metadata.info?.name}</h1>
+        <div className="space-y-3 pt-6">
+          <LoadingBar progress={progress} />
+
+          <div className="space-x-2 text-center text-white/70">
+            <span>{loadingMessage}</span>
+
+            {total === 0 ? null : (
+              <span>
+                ({loaded}/{total})
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LoadingBar({ progress }: { progress: number }) {
+  return (
+    <div className="relative h-1 w-48 rounded-full bg-neutral-900 outline outline-2 outline-offset-2 outline-white/20">
+      <div
+        className="absolute left-0 top-0 h-full animate-backgroundScroll rounded-full bg-gradient-to-r from-amber-400 via-lime-500 to-sky-500 transition-all duration-300"
+        style={{ width: `${progress * 100}%` }}
+      />
+    </div>
+  );
+}
+
+function BackgroundImage({ src }: { src: string }) {
+  return (
+    <div className="absolute inset-0 select-none opacity-30 blur-2xl">
+      {isFromCDN(src) ? (
+        <Image
+          src={src}
+          draggable={false}
+          priority
+          fill
+          sizes="100vw"
+          alt=""
+          className="object-cover"
+        />
+      ) : (
+        <img
+          src={src}
+          draggable={false}
+          sizes="100vw"
+          alt=""
+          className="h-full w-full object-cover"
+          crossOrigin="anonymous"
+        />
       )}
     </div>
   );

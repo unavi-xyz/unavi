@@ -11,7 +11,10 @@ node_modules
 # next.js
 .next/
 out/
+
+# build
 build
+dist
 
 # other
 .turbo

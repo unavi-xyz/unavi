@@ -7,7 +7,7 @@ RUN npm i -g npm@latest; \
 
 # Prune files
 COPY . .
-RUN pnpm turbo prune --scope=host --docker
+RUN pnpm turbo prune --scope=@unavi/host --docker
 
 FROM node:18 AS installer
 WORKDIR /app
@@ -31,7 +31,7 @@ RUN pnpm install
 # Build the project and its dependencies
 COPY --from=builder /app/out/full/ .
 COPY turbo.json turbo.json
-RUN pnpm turbo build --filter=host...
+RUN pnpm turbo build --filter=@unavi/host...
 
 FROM node:18 AS runner
 WORKDIR /app

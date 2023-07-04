@@ -41,12 +41,18 @@ export default function AccountSettings({ onClose }: Props) {
           {loading ? (
             <div className="h-5 w-40 animate-pulse rounded-md bg-neutral-300" />
           ) : (
-            <div>
-              <span className="text-xl font-bold">{profile?.name}</span>
-              <span className="text-lg font-bold text-neutral-800">
-                @{user.username}
-              </span>
-            </div>
+            <a
+              href={`/@${user.username}`}
+              target="_blank"
+              className="flex items-center justify-center rounded-lg px-3 py-1 text-xl transition hover:bg-neutral-200 active:opacity-90"
+            >
+              <div>
+                <span className="text-xl font-bold">{profile?.name}</span>
+                <span className="text-lg font-bold text-neutral-800">
+                  @{user.username}
+                </span>
+              </div>
+            </a>
           )}
 
           <div className="grow" />

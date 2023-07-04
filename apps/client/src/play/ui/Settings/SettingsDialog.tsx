@@ -5,7 +5,7 @@ import { usePlayStore } from "@/app/play/store";
 
 import DialogContent, { DialogRoot } from "../../../ui/Dialog";
 import { LocalStorageKey } from "../../constants";
-import { useSetAvatar } from "../../hooks/useSetAvatar";
+import { setAvatar } from "../../utils/setAvatar";
 import AccountSettings from "./AccountSettings";
 import AvatarBrowser from "./AvatarBrowser";
 import AvatarSettings from "./AvatarSettings";
@@ -21,8 +21,6 @@ interface Props {
 export default function SettingsDialog({ open, setOpen }: Props) {
   const [page, setPage] = useState<SettingsPage>("Settings");
 
-  const setAvatar = useSetAvatar();
-
   useEffect(() => {
     if (!open) return;
     setPage("Settings");
@@ -31,23 +29,19 @@ export default function SettingsDialog({ open, setOpen }: Props) {
   async function handleClose() {
     setOpen(false);
 
-    const { didChangeName, didChangeAvatar, nickname, avatar } =
-      usePlayStore.getState();
+    const { name, avatar } = usePlayStore.getState();
 
-    if (didChangeName) {
-      usePlayStore.setState({ didChangeName: false });
+    setAvatar(avatar);
 
-      // Save to local storage
-      if (nickname) localStorage.setItem(LocalStorageKey.Name, nickname);
-      else localStorage.removeItem(LocalStorageKey.Name);
-
-      // Publish name change
-      useClientStore
-        .getState()
-        .sendWebSockets({ data: nickname, id: "xyz.unavi.world.user.name" });
+    // Save name to local storage
+    if (name) {
+      localStorage.setItem(LocalStorageKey.Name, name);
+    } else {
+      localStorage.removeItem(LocalStorageKey.Name);
     }
 
-    if (didChangeAvatar) setAvatar(avatar);
+    // Set name
+    useClientStore.setState({ name });
   }
 
   return (
@@ -65,9 +59,9 @@ export default function SettingsDialog({ open, setOpen }: Props) {
         {page === "Browse Avatars" ? (
           <AvatarBrowser setPage={setPage} onClose={handleClose} />
         ) : (
-          <div className="space-y-4">
-            <NameSettings />
+          <div className="space-y-6">
             <AvatarSettings setPage={setPage} />
+            <NameSettings />
             <AccountSettings onClose={handleClose} />
           </div>
         )}

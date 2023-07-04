@@ -15,7 +15,7 @@ export function useLoadUser() {
     const name = localStorage.getItem(LocalStorageKey.Name) ?? "";
     const avatar = localStorage.getItem(LocalStorageKey.Avatar) ?? "";
 
-    usePlayStore.setState({ avatar, nickname: name });
+    usePlayStore.setState({ avatar, name });
     useClientStore.setState({ avatar, name });
   }, []);
 

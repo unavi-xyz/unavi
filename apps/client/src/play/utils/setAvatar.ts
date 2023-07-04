@@ -1,6 +1,7 @@
 import { useClientStore } from "@unavi/react-client";
 
 import { getTempUpload } from "@/app/api/temp/helper";
+import { usePlayStore } from "@/app/play/store";
 import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
 import { LocalStorageKey } from "../constants";
@@ -30,6 +31,7 @@ export async function setAvatar(value: string | null) {
   }
 
   // Set avatar
+  usePlayStore.setState({ avatar });
   useClientStore.setState({ avatar });
   localStorage.setItem(LocalStorageKey.Avatar, avatar);
 }

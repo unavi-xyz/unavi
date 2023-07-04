@@ -6,7 +6,6 @@ import { IoMdSettings } from "react-icons/io";
 
 import Logo from "@/public/images/Logo.png";
 
-import Crosshair from "../../src/play/Crosshair";
 import { usePointerLocked } from "../../src/play/hooks/usePointerLocked";
 import ChatBox from "../../src/play/ui/ChatBox";
 import MobileChatBox from "../../src/play/ui/MobileChatBox";
@@ -55,8 +54,6 @@ export default function Overlay({ id, metadata }: Props) {
           </div>
         </div>
       )}
-
-      <Crosshair />
 
       <div className="fixed bottom-0 left-1/2 z-20 -translate-x-1/2 space-x-2 pb-4">
         <button

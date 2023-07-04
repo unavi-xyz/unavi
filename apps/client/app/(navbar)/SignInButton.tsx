@@ -39,12 +39,15 @@ export default function SignInButton({ loading }: Props) {
   );
 }
 
-export function SignInPage() {
+export function SignInPage({ beforeOpen }: { beforeOpen?: () => void }) {
   const { openConnectModal } = useConnectModal();
 
-  async function handleWalletLogin() {
-    useSignInStore.setState({ open: false });
-    if (openConnectModal) openConnectModal();
+  function handleWalletLogin() {
+    if (openConnectModal) {
+      useSignInStore.setState({ open: false });
+      if (beforeOpen) beforeOpen();
+      openConnectModal();
+    }
   }
 
   return (

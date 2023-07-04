@@ -69,7 +69,7 @@ export default function AccountSettings({ onClose }: Props) {
           )}
         </div>
       ) : (
-        <SignInPage />
+        <SignInPage beforeOpen={onClose} />
       )}
     </section>
   );

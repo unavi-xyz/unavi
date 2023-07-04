@@ -3,7 +3,7 @@
 import { WorldMetadata } from "@wired-protocol/types";
 import dynamic from "next/dynamic";
 import Script from "next/script";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { HOME_SERVER } from "@/src/constants";
 import { env } from "@/src/env.mjs";
@@ -11,6 +11,7 @@ import { useHotkeys } from "@/src/play/hooks/useHotkeys";
 import { useLoadUser } from "@/src/play/hooks/useLoadUser";
 
 import LoadingScreen from "./LoadingScreen";
+import { usePlayStore } from "./store";
 import { WorldUriId } from "./types";
 
 const Client = dynamic(
@@ -31,6 +32,14 @@ export default function App({ id, metadata, uri }: Props) {
 
   useHotkeys();
   useLoadUser();
+
+  useEffect(() => {
+    usePlayStore.setState({ metadata });
+  }, [metadata]);
+
+  useEffect(() => {
+    usePlayStore.setState({ worldId: id });
+  }, [id]);
 
   const host =
     process.env.NODE_ENV === "development"

@@ -4,12 +4,14 @@ import { BORING_AVATAR_COLORS } from "./Avatar";
 
 interface Props
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "children"> {
+  dark?: boolean;
   fallbackKey?: string;
   fallbackSize?: number;
 }
 
 export default function ImageInput({
   src,
+  dark,
   disabled,
   fallbackKey,
   fallbackSize,
@@ -52,9 +54,9 @@ export default function ImageInput({
         />
       ) : (
         <div
-          className={`rounded-2xl bg-neutral-200 transition ${
-            disabled ? "cursor-default opacity-70" : ""
-          } ${className}`}
+          className={`rounded-2xl transition ${
+            dark ? "bg-neutral-800" : "bg-neutral-200"
+          } ${disabled ? "cursor-default opacity-70" : ""} ${className}`}
         />
       )}
     </div>

@@ -1,17 +1,17 @@
 import { WorldMetadata } from "@wired-protocol/types";
-import Image from "next/image";
-import Link from "next/link";
-import { useState } from "react";
-import { IoMdSettings } from "react-icons/io";
+import { MdConstruction } from "react-icons/md";
 
-import Logo from "@/public/images/Logo.png";
+import { useAuth } from "@/src/client/AuthProvider";
+import { HOME_SERVER } from "@/src/constants";
+import Tooltip from "@/src/ui/Tooltip";
 
-import { usePointerLocked } from "../../src/play/hooks/usePointerLocked";
 import ChatBox from "../../src/play/ui/ChatBox";
 import MobileChatBox from "../../src/play/ui/MobileChatBox";
-import SettingsDialog from "../../src/play/ui/Settings/SettingsDialog";
 import { useIsMobile } from "../../src/utils/useIsMobile";
-import { WorldUriId } from "./types";
+import BuildOverlay from "./BuildOverlay";
+import PlayOverlay from "./PlayOverlay";
+import { usePlayStore } from "./store";
+import { PlayMode, WorldUriId } from "./types";
 
 interface Props {
   id: WorldUriId;
@@ -19,56 +19,53 @@ interface Props {
 }
 
 export default function Overlay({ id, metadata }: Props) {
-  const [openSettings, setOpenSettings] = useState(false);
+  const mode = usePlayStore((state) => state.mode);
 
   const isMobile = useIsMobile();
-  const isPointerLocked = usePointerLocked();
+  const { user } = useAuth();
+
+  const isAuthor = Boolean(
+    metadata.info?.authors &&
+      user?.username &&
+      metadata.info.authors.includes(`@${user.username}:${HOME_SERVER}`)
+  );
 
   return (
     <>
-      <SettingsDialog open={openSettings} setOpen={setOpenSettings} />
-
-      {!isPointerLocked && (
-        <div className="fixed left-5 top-4 z-20">
-          <div className="flex h-[52px] items-center space-x-3 rounded-full bg-black/50 pr-8 text-white backdrop-blur-xl">
-            <Link href={id.type === "id" ? `/world/${id.value}` : "/"}>
-              <div className="-ml-1">
-                <Image
-                  src={Logo}
-                  alt="Logo"
-                  width={52}
-                  height={52}
-                  draggable={false}
-                />
-              </div>
-            </Link>
-
-            <div>
-              <div className="text-lg font-bold leading-6">
-                {metadata.info?.name}
-              </div>
-              <div className="text-sm leading-4 text-white/70">
-                {metadata.info?.host}
-              </div>
-            </div>
-          </div>
-        </div>
+      {mode === PlayMode.Play ? (
+        <PlayOverlay id={id} metadata={metadata} />
+      ) : (
+        <BuildOverlay />
       )}
 
-      <div className="fixed bottom-0 left-1/2 z-20 -translate-x-1/2 space-x-2 pb-4">
-        <button
-          onClick={() => setOpenSettings(true)}
-          className="h-[52px] w-[52px] rounded-full bg-black/50 text-2xl text-white backdrop-blur-lg transition hover:bg-black/70 active:scale-95"
-        >
-          <IoMdSettings className="w-full" />
-        </button>
-      </div>
+      {isAuthor ? (
+        <div className="fixed bottom-0 right-0 z-20 space-x-2 p-4">
+          <Tooltip text="Toggle Build Mode" side="left">
+            <button
+              onClick={() => {
+                if (mode === PlayMode.Play) {
+                  usePlayStore.setState({ mode: PlayMode.Build });
+                } else {
+                  usePlayStore.setState({ mode: PlayMode.Play });
+                }
+              }}
+              className={`h-[52px] w-[52px] rounded-full text-2xl backdrop-blur-lg transition active:scale-95 ${
+                mode === PlayMode.Build
+                  ? "bg-white text-black hover:bg-white/90"
+                  : "bg-black/50 text-white hover:bg-black/70"
+              }`}
+            >
+              <MdConstruction className="w-full" />
+            </button>
+          </Tooltip>
+        </div>
+      ) : null}
 
       <div className="fixed bottom-0 left-0 z-20 p-4">
         {isMobile ? (
           <MobileChatBox />
         ) : (
-          <div className="w-96">
+          <div className="w-80">
             <ChatBox />
           </div>
         )}

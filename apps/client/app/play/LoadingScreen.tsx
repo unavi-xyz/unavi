@@ -74,7 +74,7 @@ export default function LoadingScreen({ metadata }: Props) {
             <div>Host</div>
           </div>
 
-          <div className="flex w-full flex-col justify-between text-white/70">
+          <div className="flex w-full flex-col justify-between whitespace-nowrap text-white/70">
             <div>
               {authors.map((author, i) => {
                 const { username, home } = parseHandle(author);

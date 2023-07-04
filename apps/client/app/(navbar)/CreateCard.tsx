@@ -38,7 +38,7 @@ export async function createWorld() {
 
     await Promise.all([
       db.insert(worldModel).values({ key: modelKey, worldId }),
-      createMetadata(modelKey, `${session.user.username}@${HOME_SERVER}`),
+      createMetadata(modelKey, `@${session.user.username}:${HOME_SERVER}`),
       uploadDefaultImage(modelKey),
       uploadDefaultModel(modelKey),
     ]);

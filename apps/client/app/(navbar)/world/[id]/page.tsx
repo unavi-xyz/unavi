@@ -144,7 +144,7 @@ export default async function World({ params }: Props) {
                 ) : null}
 
                 <div className="flex justify-center space-x-1 font-bold md:justify-start">
-                  <div className="text-neutral-500">At</div>
+                  <div className="text-neutral-500">Host</div>
                   <div>
                     {metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST}
                   </div>

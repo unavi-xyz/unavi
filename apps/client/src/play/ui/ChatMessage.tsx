@@ -5,6 +5,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { usePlayStore } from "@/app/play/store";
+import Tooltip from "@/src/ui/Tooltip";
 
 import { usePointerLocked } from "../hooks/usePointerLocked";
 
@@ -57,5 +58,22 @@ export default function ChatMessage({ message, alwaysShow }: Props) {
 
 function PlayerName({ playerId }: { playerId: number }) {
   const [name] = useState(useClientStore.getState().getDisplayName(playerId));
-  return <span className="font-bold">{name}</span>;
+
+  const isHandle = name.startsWith("@");
+
+  if (isHandle) {
+    const parts = name.split(":");
+    const username = parts[0]?.slice(1);
+    const home = parts[1];
+
+    if (username && home) {
+      return (
+        <Tooltip text={name} side="right">
+          <span className="font-bold">@{username}</span>
+        </Tooltip>
+      );
+    }
+  }
+
+  return <span>{name}</span>;
 }

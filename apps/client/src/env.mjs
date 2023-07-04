@@ -12,7 +12,7 @@ export const env = createEnv({
     NEXT_PUBLIC_HAS_DATABASE: z.boolean(),
     NEXT_PUBLIC_HAS_GOOGLE_OAUTH: z.boolean(),
     NEXT_PUBLIC_HAS_S3: z.boolean(),
-    NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: z.string().optional(),
+    NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: z.string(),
   },
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,

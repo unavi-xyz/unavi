@@ -18,7 +18,7 @@ declare global {
   }
 }
 
-const projectId = env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "";
+const projectId = env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
 
 export const {
   chains,

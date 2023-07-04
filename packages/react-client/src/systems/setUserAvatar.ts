@@ -22,11 +22,6 @@ export function setUserAvatar(
         if (vrm.uri === usedAvatar) continue;
 
         vrm.uri = usedAvatar;
-
-        useClientStore.getState().sendWebSockets({
-          data: avatar,
-          id: "xyz.unavi.world.user.avatar",
-        });
       }
     }
   }

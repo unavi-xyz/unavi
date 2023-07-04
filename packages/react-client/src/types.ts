@@ -5,7 +5,7 @@ export type PlayerMessage = {
   id: number;
   timestamp: number;
   text: string;
-  sender: string;
+  playerId: number;
 };
 
 export type SystemMessage = {

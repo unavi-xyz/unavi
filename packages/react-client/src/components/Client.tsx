@@ -19,6 +19,10 @@ interface Props {
 
 export function Client({ skybox, defaultAvatar, uri }: Props) {
   const world = useWorld();
+  const sendWebSockets = useClientStore((state) => state.sendWebSockets);
+  const avatar = useClientStore((state) => state.avatar);
+  const handle = useClientStore((state) => state.handle);
+  const name = useClientStore((state) => state.name);
 
   useEffect(() => {
     if (!world) return;
@@ -51,6 +55,27 @@ export function Client({ skybox, defaultAvatar, uri }: Props) {
       useClientStore.getState().cleanupConnection();
     };
   }, []);
+
+  useEffect(() => {
+    sendWebSockets({
+      data: avatar,
+      id: "xyz.unavi.world.user.avatar",
+    });
+  }, [sendWebSockets, avatar]);
+
+  useEffect(() => {
+    sendWebSockets({
+      data: handle,
+      id: "xyz.unavi.world.user.handle",
+    });
+  }, [sendWebSockets, handle]);
+
+  useEffect(() => {
+    sendWebSockets({
+      data: name,
+      id: "xyz.unavi.world.user.name",
+    });
+  }, [sendWebSockets, name]);
 
   return <Canvas />;
 }

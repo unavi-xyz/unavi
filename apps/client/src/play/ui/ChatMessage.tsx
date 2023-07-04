@@ -1,4 +1,7 @@
-import { ChatMessage as IChatMessage } from "@unavi/react-client";
+import {
+  ChatMessage as IChatMessage,
+  useClientStore,
+} from "@unavi/react-client";
 import { useEffect, useState } from "react";
 
 import { usePlayStore } from "@/app/play/store";
@@ -15,7 +18,6 @@ export default function ChatMessage({ message, alwaysShow }: Props) {
   const [visible, setVisible] = useState(false);
   const [hidden, setHidden] = useState(false);
 
-  // const name = usePlayerName(message.sender);
   const isPointerLocked = usePointerLocked();
 
   useEffect(() => {
@@ -43,7 +45,7 @@ export default function ChatMessage({ message, alwaysShow }: Props) {
     >
       {message.type === "player" ? (
         <div className="whitespace-pre-wrap break-words">
-          <span className="font-bold">{message.sender}</span>:{" "}
+          <PlayerName playerId={message.playerId} />:{" "}
           <span className="text-white/90">{message.text}</span>
         </div>
       ) : message.type === "system" ? (
@@ -51,4 +53,9 @@ export default function ChatMessage({ message, alwaysShow }: Props) {
       ) : null}
     </div>
   );
+}
+
+function PlayerName({ playerId }: { playerId: number }) {
+  const [name] = useState(useClientStore.getState().getDisplayName(playerId));
+  return <span className="font-bold">{name}</span>;
 }

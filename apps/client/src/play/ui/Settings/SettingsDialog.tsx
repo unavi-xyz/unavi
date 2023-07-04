@@ -41,7 +41,7 @@ export default function SettingsDialog({ open, setOpen }: Props) {
     }
 
     // Set name
-    useClientStore.setState({ name });
+    useClientStore.getState().setName(name);
   }
 
   return (

@@ -16,12 +16,13 @@ export function useLoadUser() {
     const avatar = localStorage.getItem(LocalStorageKey.Avatar) ?? "";
 
     usePlayStore.setState({ avatar, name });
-    useClientStore.setState({ avatar, name });
+    useClientStore.getState().setAvatar(avatar);
+    useClientStore.getState().setName(name);
   }, []);
 
   // Set handle on change
   useEffect(() => {
-    const handle = user?.username ? `${user.username}@${HOME_SERVER}` : "";
-    useClientStore.setState({ handle });
+    const handle = user?.username ? `@${user.username}:${HOME_SERVER}` : "";
+    useClientStore.getState().setHandle(handle);
   }, [user]);
 }

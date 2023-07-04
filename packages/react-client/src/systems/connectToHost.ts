@@ -90,16 +90,6 @@ export function connectToHost(
       // Initiate WebRTC connection
       send({ data: null, id: "xyz.unavi.webrtc.router.rtpCapabilities.get" });
 
-      // Send user data
-      send({
-        data: useClientStore.getState().avatar,
-        id: "xyz.unavi.world.user.avatar",
-      });
-      send({
-        data: useClientStore.getState().name,
-        id: "xyz.unavi.world.user.name",
-      });
-
       // Join world
       const uri = useClientStore.getState().worldUri;
       send({ data: uri, id: "xyz.unavi.world.join" });
@@ -127,14 +117,14 @@ export function connectToHost(
         case "xyz.unavi.world.joined": {
           console.info(`🌏 Joined world as player ${toHex(data)}`);
 
-          useClientStore.setState({ playerId: data });
+          useClientStore.getState().setPlayerId(data);
           break;
         }
 
         case "xyz.unavi.world.chat.message": {
           useClientStore.getState().addChatMessage({
             id: chatId++,
-            sender: toHex(data.playerId),
+            playerId: data.playerId,
             text: data.message,
             timestamp: Date.now(),
             type: "player",
@@ -146,16 +136,33 @@ export function connectToHost(
           useClientStore.getState().events.push(parsed.data);
 
           // TODO: Clean this up, make an avatar event or sum
-          const avatars = useClientStore.getState().avatars;
+          const { avatars, names, handles } = useClientStore.getState();
+
           if (data.avatar) {
             avatars.set(data.playerId, data.avatar);
           } else {
             avatars.delete(data.playerId);
           }
 
+          if (data.name) {
+            names.set(data.playerId, data.name);
+          } else {
+            names.delete(data.playerId);
+          }
+
+          if (data.handle) {
+            handles.set(data.playerId, data.handle);
+          } else {
+            handles.delete(data.playerId);
+          }
+
+          const displayName = useClientStore
+            .getState()
+            .getDisplayName(data.playerId);
+
           useClientStore.getState().addChatMessage({
             id: chatId++,
-            text: `${toHex(data.playerId)} joined the world`,
+            text: `${displayName} joined the world`,
             timestamp: Date.now(),
             type: "system",
           });
@@ -165,21 +172,37 @@ export function connectToHost(
         case "xyz.unavi.world.player.leave": {
           useClientStore.getState().events.push(parsed.data);
 
+          const displayName = useClientStore.getState().getDisplayName(data);
+
           useClientStore.getState().addChatMessage({
             id: chatId++,
-            text: `${toHex(data)} left the world`,
+            text: `${displayName} left the world`,
             timestamp: Date.now(),
             type: "system",
           });
 
-          useClientStore.getState().locations.delete(data);
-          useClientStore.getState().grounded.delete(data);
           useClientStore.getState().avatars.delete(data);
+          useClientStore.getState().grounded.delete(data);
+          useClientStore.getState().handles.delete(data);
+          useClientStore.getState().locations.delete(data);
+          useClientStore.getState().names.delete(data);
           break;
         }
 
         case "xyz.unavi.world.player.grounded": {
           useClientStore.getState().grounded.set(data.playerId, data.grounded);
+          break;
+        }
+
+        case "xyz.unavi.world.player.name": {
+          useClientStore.getState().names.set(data.playerId, data.name ?? "");
+          break;
+        }
+
+        case "xyz.unavi.world.player.handle": {
+          useClientStore
+            .getState()
+            .handles.set(data.playerId, data.handle ?? "");
           break;
         }
 

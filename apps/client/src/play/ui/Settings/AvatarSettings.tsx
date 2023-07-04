@@ -61,11 +61,11 @@ export default function AvatarSettings({ setPage }: Props) {
 
       {showStats ? (
         statsError ? (
-          <div className="rounded-xl bg-red-100 px-4 py-2.5 text-red-900">
+          <div className="rounded-lg bg-red-100 px-4 py-2.5 text-red-900">
             Failed to load avatar information
           </div>
         ) : (
-          <div className="flex items-center rounded-xl bg-neutral-100 px-4 py-3">
+          <div className="flex items-center rounded-lg bg-neutral-100 px-4 py-3">
             <div className="flex h-full items-stretch space-x-6">
               <div className="flex w-1/3 min-w-fit flex-col justify-between">
                 {stats && !stats.name ? null : (
@@ -138,7 +138,7 @@ export default function AvatarSettings({ setPage }: Props) {
                 if (!file) return;
 
                 const url = URL.createObjectURL(file);
-                usePlayStore.setState({ avatar: url, didChangeAvatar: true });
+                usePlayStore.setState({ avatar: url });
                 setAvatarName(file.name);
                 setUploadedAvatar(url);
               }}
@@ -152,7 +152,7 @@ export default function AvatarSettings({ setPage }: Props) {
               onClick={() => {
                 setAvatarName(undefined);
                 setShowStats(false);
-                usePlayStore.setState({ avatar: null, didChangeAvatar: true });
+                usePlayStore.setState({ avatar: "" });
               }}
               className="flex h-11 w-11 items-center justify-center rounded-lg text-xl transition hover:bg-red-100 active:opacity-90"
             >

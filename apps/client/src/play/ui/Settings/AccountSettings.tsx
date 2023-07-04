@@ -24,8 +24,8 @@ export default function AccountSettings({ onClose }: Props) {
       : undefined;
 
   return (
-    <section className="space-y-1">
-      <div className="font-bold text-neutral-700">Account</div>
+    <section className="space-y-1.5">
+      <div className="font-bold text-neutral-700">Sign in</div>
 
       {user ? (
         <div className="flex items-center space-x-4 pt-2">

@@ -27,7 +27,7 @@ export default function FileInput({
   return (
     <label>
       <div
-        className={`flex items-center rounded-xl px-4 py-2.5 transition ${
+        className={`flex items-center rounded-lg px-4 py-2.5 transition ${
           disabled
             ? "cursor-default opacity-80"
             : "cursor-pointer hover:bg-neutral-200 active:opacity-80"

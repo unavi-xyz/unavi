@@ -13,7 +13,7 @@ const TextArea = forwardRef<HTMLTextAreaElement, Props>(
         <div className="relative">
           <textarea
             ref={ref}
-            className={`max-h-64 w-full rounded-lg border border-neutral-200 p-4 py-2 placeholder:text-neutral-400 ${className}`}
+            className={`max-h-64 w-full rounded-lg border border-neutral-300 p-4 py-2 placeholder:text-neutral-400 ${className}`}
             {...rest}
           />
 

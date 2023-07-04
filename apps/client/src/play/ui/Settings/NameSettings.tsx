@@ -7,7 +7,7 @@ import { toHex } from "@/src/utils/toHex";
 import TextField from "../../../ui/TextField";
 
 export default function NameSettings() {
-  const nickname = usePlayStore((state) => state.name);
+  const nickname = usePlayStore((state) => state.uiName);
   const playerId = useClientStore((state) => state.playerId);
   const { user } = useAuth();
 
@@ -24,7 +24,7 @@ export default function NameSettings() {
       name="name"
       placeholder={guestName}
       value={nickname ?? ""}
-      onChange={(e) => usePlayStore.setState({ name: e.target.value })}
+      onChange={(e) => usePlayStore.setState({ uiName: e.target.value })}
       className="text-center"
     />
   );

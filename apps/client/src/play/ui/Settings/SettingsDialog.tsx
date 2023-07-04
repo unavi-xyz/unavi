@@ -29,7 +29,7 @@ export default function SettingsDialog({ open, setOpen }: Props) {
   async function handleClose() {
     setOpen(false);
 
-    const { name, avatar } = usePlayStore.getState();
+    const { uiName: name, uiAvatar: avatar } = usePlayStore.getState();
 
     setAvatar(avatar);
 

@@ -10,6 +10,7 @@ import { run, WorldBuilder } from "thyseus";
 import { ClientSchedules } from "./constants";
 import { calcPlayerVelocity } from "./systems/calcPlayerVelocity";
 import { connectToHost } from "./systems/connectToHost";
+import { exportLoadingInfo } from "./systems/exportLoadingInfo";
 import { initApp } from "./systems/initApp";
 import { joinWorld } from "./systems/joinWorld";
 import { lerpTransforms } from "./systems/lerpTransforms";
@@ -37,6 +38,7 @@ export function clientPlugin(builder: WorldBuilder) {
     .addSystemsToSchedule(LatticeSchedules.PostFixedUpdate, publishLocation)
     .addSystemsToSchedule(ClientSchedules.ConnectToHost, connectToHost)
     .addSystems(
+      exportLoadingInfo,
       joinWorld,
       movePlayers,
       parseWorld,

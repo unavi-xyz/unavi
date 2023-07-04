@@ -10,15 +10,15 @@ import { env } from "@/src/env.mjs";
 import { useHotkeys } from "@/src/play/hooks/useHotkeys";
 import { useLoadUser } from "@/src/play/hooks/useLoadUser";
 
-import Overlay from "./Overlay";
+import LoadingScreen from "./LoadingScreen";
 import { WorldUriId } from "./types";
 
 const Client = dynamic(
   () => import("@unavi/react-client").then((m) => m.Client),
-  {
-    ssr: false,
-  }
+  { ssr: false }
 );
+
+const Overlay = dynamic(() => import("./Overlay"), { ssr: false });
 
 interface Props {
   id: WorldUriId;
@@ -45,6 +45,8 @@ export default function App({ id, metadata, uri }: Props) {
       />
 
       <Overlay id={id} metadata={metadata} />
+
+      <LoadingScreen />
 
       <div className="fixed h-screen w-screen">
         {scriptsReady && (

@@ -22,7 +22,7 @@ export default function AvatarSettings({ setPage }: Props) {
   const [statsError, setStatsError] = useState(false);
   const [showStats, setShowStats] = useState(true);
   const [uploadedAvatar, setUploadedAvatar] = useState<string | null>(null);
-  const avatar = usePlayStore((state) => state.avatar);
+  const avatar = usePlayStore((state) => state.uiAvatar);
 
   const displayedAvatar = uploadedAvatar ?? avatar;
 
@@ -138,7 +138,7 @@ export default function AvatarSettings({ setPage }: Props) {
                 if (!file) return;
 
                 const url = URL.createObjectURL(file);
-                usePlayStore.setState({ avatar: url });
+                usePlayStore.setState({ uiAvatar: url });
                 setAvatarName(file.name);
                 setUploadedAvatar(url);
               }}
@@ -152,7 +152,7 @@ export default function AvatarSettings({ setPage }: Props) {
               onClick={() => {
                 setAvatarName(undefined);
                 setShowStats(false);
-                usePlayStore.setState({ avatar: "" });
+                usePlayStore.setState({ uiAvatar: "" });
               }}
               className="flex h-11 w-11 items-center justify-center rounded-lg text-xl transition hover:bg-red-100 active:opacity-90"
             >

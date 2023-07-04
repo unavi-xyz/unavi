@@ -1,15 +1,13 @@
 import { create } from "zustand";
 
 export interface PlayStore {
-  avatar: string;
+  uiAvatar: string;
   chatBoxFocused: boolean;
-  errorLoading: string | null;
-  name: string;
+  uiName: string;
 }
 
 export const usePlayStore = create<PlayStore>(() => ({
-  avatar: "",
   chatBoxFocused: false,
-  errorLoading: null,
-  name: "",
+  uiAvatar: "",
+  uiName: "",
 }));

@@ -31,7 +31,7 @@ export async function setAvatar(value: string | null) {
   }
 
   // Set avatar
-  usePlayStore.setState({ avatar });
+  usePlayStore.setState({ uiAvatar: avatar });
   useClientStore.getState().setAvatar(avatar);
   localStorage.setItem(LocalStorageKey.Avatar, avatar);
 }

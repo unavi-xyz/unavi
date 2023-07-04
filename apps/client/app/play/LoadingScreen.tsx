@@ -24,6 +24,13 @@ export default function LoadingScreen({ metadata }: Props) {
   const [doneLoading, setDoneLoading] = useState(false);
   const [hideScreen, setHideScreen] = useState(false);
 
+  // Reset loading state when we unmount
+  useEffect(() => {
+    return () => {
+      useLoadingStore.getState().reset();
+    };
+  }, []);
+
   // If nothing is loading after a delay, we're done loading
   useEffect(() => {
     // Wait for us to connect to the server

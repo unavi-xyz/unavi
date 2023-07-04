@@ -12,7 +12,7 @@ export function setPlayersAirTime(
   players: Query<[OtherPlayer, Mut<PlayerBody>]>
 ) {
   for (const [player, body] of players) {
-    const isFalling = falling.get(player.id) ?? true;
+    const isFalling = falling.get(player.id) ?? false;
 
     if (isFalling) {
       body.airTime += time.mainDelta;

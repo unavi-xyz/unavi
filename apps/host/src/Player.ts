@@ -22,7 +22,7 @@ export class Player {
   consumers = new Map<World, Map<number, Consumer>>();
   dataConsumers = new Map<World, Map<number, DataConsumer>>();
 
-  #falling = true;
+  #falling = false;
   #name: string | null = null;
   #handle: string | null = null;
   #avatar: string | null = null;

@@ -182,15 +182,15 @@ export function connectToHost(
           });
 
           useClientStore.getState().avatars.delete(data);
-          useClientStore.getState().grounded.delete(data);
+          useClientStore.getState().falling.delete(data);
           useClientStore.getState().handles.delete(data);
           useClientStore.getState().locations.delete(data);
           useClientStore.getState().names.delete(data);
           break;
         }
 
-        case "xyz.unavi.world.player.grounded": {
-          useClientStore.getState().grounded.set(data.playerId, data.grounded);
+        case "xyz.unavi.world.player.falling": {
+          useClientStore.getState().falling.set(data.playerId, data.falling);
           break;
         }
 

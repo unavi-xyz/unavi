@@ -22,7 +22,7 @@ export class Player {
   consumers = new Map<World, Map<number, Consumer>>();
   dataConsumers = new Map<World, Map<number, DataConsumer>>();
 
-  #grounded = true;
+  #falling = true;
   #name: string | null = null;
   #handle: string | null = null;
   #avatar: string | null = null;
@@ -52,13 +52,13 @@ export class Player {
     this.worlds.forEach((world) => world.setName(this, name));
   }
 
-  get grounded() {
-    return this.#grounded;
+  get falling() {
+    return this.#falling;
   }
 
-  set grounded(grounded: boolean) {
-    this.#grounded = grounded;
-    this.worlds.forEach((world) => world.setGrounded(this, grounded));
+  set falling(falling: boolean) {
+    this.#falling = falling;
+    this.worlds.forEach((world) => world.setFalling(this, falling));
   }
 
   get handle() {

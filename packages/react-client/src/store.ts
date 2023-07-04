@@ -22,7 +22,7 @@ export interface IClientStore {
   defaultAvatar: string;
   engine: Engine | null;
   events: EcsEvent[];
-  grounded: Map<number, boolean>;
+  falling: Map<number, boolean>;
   handle: string;
   handles: Map<number, string>;
   lastLocationUpdates: Map<number, number>;
@@ -47,6 +47,7 @@ export const useClientStore = create<IClientStore>((set, get) => ({
   defaultAvatar: "",
   engine: null,
   events: [],
+  falling: new Map(),
   getDisplayName: (playerId: number) => {
     const handle = get().handles.get(playerId);
     if (handle) return handle;
@@ -56,7 +57,6 @@ export const useClientStore = create<IClientStore>((set, get) => ({
 
     return `Guest ${toHex(playerId)}`;
   },
-  grounded: new Map(),
   handle: "",
   handles: new Map(),
   lastLocationUpdates: new Map(),

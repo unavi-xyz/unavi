@@ -65,8 +65,8 @@ server.ws<UserData>("/*", {
         break;
       }
 
-      case "xyz.unavi.world.user.grounded": {
-        player.grounded = data;
+      case "xyz.unavi.world.user.falling": {
+        player.falling = data;
         break;
       }
 

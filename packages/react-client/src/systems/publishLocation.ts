@@ -12,7 +12,7 @@ const FALL_THRESHOLD_SECONDS = 0.35;
 @struct
 class LocalRes {
   @struct.f32 declare lastPublish: number;
-  @struct.bool declare isGrounded: boolean;
+  @struct.bool declare isFalling: boolean;
 }
 
 export function publishLocation(
@@ -36,17 +36,16 @@ export function publishLocation(
       // Which is the one with a PlayerCamera
       if (parent.id !== bodyEnt.id) continue;
 
-      // Publish grounded state
-      // TODO: Change this to falling state
-      const isFalling = body.airTime > FALL_THRESHOLD_SECONDS;
+      // Publish falling state
+      const longAirtime = body.airTime > FALL_THRESHOLD_SECONDS;
       const isJumping = body.jumpTime > 0 && body.airTime !== 0;
-      const isGrounded = !isFalling && !isJumping;
+      const isFalling = longAirtime || isJumping;
 
-      if (isGrounded !== localRes.isGrounded) {
-        localRes.isGrounded = isGrounded;
+      if (isFalling !== localRes.isFalling) {
+        localRes.isFalling = isFalling;
         useClientStore.getState().sendWebSockets({
-          data: isGrounded,
-          id: "xyz.unavi.world.user.grounded",
+          data: isFalling,
+          id: "xyz.unavi.world.user.falling",
         });
       }
 

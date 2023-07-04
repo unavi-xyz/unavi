@@ -134,13 +134,13 @@ export class World {
     });
   }
 
-  setGrounded(player: Player, grounded: boolean) {
+  setFalling(player: Player, falling: boolean) {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
     this.#publish({
-      data: { grounded, playerId },
-      id: "xyz.unavi.world.player.grounded",
+      data: { falling, playerId },
+      id: "xyz.unavi.world.player.falling",
     });
   }
 

@@ -50,7 +50,7 @@ export default function WorldCard({
 
       <div className="space-x-2 pb-1 pt-2.5">
         <span className="text-xl font-bold text-neutral-900">
-          {metadata.info?.name}
+          {metadata.info?.title}
         </span>
       </div>
     </div>

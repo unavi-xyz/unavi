@@ -7,27 +7,20 @@ import { getUserSession } from "@/src/server/auth/getUserSession";
 import { db } from "@/src/server/db/drizzle";
 import { world, worldModel } from "@/src/server/db/schema";
 import { FixWith } from "@/src/server/db/types";
+import { getWorldJson } from "@/src/server/helpers/getWorldJson";
 import { listObjectsRecursive } from "@/src/server/helpers/listObjectsRecursive";
 import { s3Client } from "@/src/server/s3";
-import { cdnURL, S3Path } from "@/src/utils/s3Paths";
+import { S3Path } from "@/src/utils/s3Paths";
 
-import { GetResponse, Params, paramsSchema } from "./types";
+import { Params, paramsSchema } from "./types";
 
 // Get world
 export async function GET(request: NextRequest, { params }: Params) {
   const { id } = paramsSchema.parse(params);
 
-  const _found = await db.query.world.findFirst({
-    where: (row, { eq }) => eq(row.publicId, id),
-    with: { model: true },
-  });
-  if (!_found) return new Response("World not found", { status: 404 });
-  const found: FixWith<typeof _found, "model"> = _found;
-  if (!found.model) return new Response("World not found", { status: 404 });
+  const json = await getWorldJson(id);
+  if (!json) return new Response("World not found", { status: 404 });
 
-  const modelURI = cdnURL(S3Path.worldModel(found.model.key).model);
-
-  const json: GetResponse = { ownerId: found.ownerId, uri: modelURI };
   return NextResponse.json(json);
 }
 

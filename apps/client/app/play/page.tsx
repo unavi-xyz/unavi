@@ -22,13 +22,13 @@ export async function generateMetadata({
 
   const id = parseParams(params.data);
   const world = await fetchWorld(id);
-  if (!world) return {};
+  if (!world?.metadata) return {};
 
   const metadata = world.metadata;
 
   const value = id.value;
   const displayId = typeof value === "number" ? toHex(value) : value;
-  const title = metadata.info?.name || `World ${displayId}`;
+  const title = metadata.info?.title || `World ${displayId}`;
 
   const description = metadata.info?.description || "";
   const authors = metadata.info?.authors;
@@ -65,7 +65,7 @@ export default async function Play({ searchParams }: Props) {
   const id = parseParams(params.data);
   const world = await fetchWorld(id);
 
-  if (!world) notFound();
+  if (!world?.metadata) notFound();
 
   return <App id={id} uri={world.uri} metadata={world.metadata} />;
 }

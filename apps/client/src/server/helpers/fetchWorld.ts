@@ -1,21 +1,21 @@
 import { cache } from "react";
 
+import { env } from "@/src/env.mjs";
 import { WorldId } from "@/src/utils/parseWorldId";
 
 import { fetchWorldMetadata } from "./fetchWorldMetadata";
-import { fetchWorldURI } from "./fetchWorldURI";
+import { getWorldJson } from "./getWorldJson";
 
 export const fetchWorld = cache(async (id: WorldId) => {
   let uri: string | null = null;
 
   if (id.type === "id") {
-    const res = await fetchWorldURI(id.value);
-    if (res) uri = res.uri;
+    uri = `${env.NEXT_PUBLIC_DEPLOYED_URL}/api/worlds/${id.value}`;
+    const metadata = await getWorldJson(id.value);
+    return { metadata, uri };
   } else if (id.type === "uri") {
-    uri = id.value;
+    return await fetchWorldMetadata(id.value);
   }
 
-  if (!uri) return null;
-
-  return await fetchWorldMetadata(uri);
+  return null;
 });

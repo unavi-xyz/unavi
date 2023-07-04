@@ -103,7 +103,7 @@ export default function LoadingScreen({ metadata }: Props) {
       </div>
 
       <div className="z-20 flex flex-col items-center justify-center">
-        <h1 className="text-4xl font-bold">{metadata.info?.name}</h1>
+        <h1 className="text-4xl font-bold">{metadata.info?.title}</h1>
         <div className="space-y-3 pt-6">
           <LoadingBar progress={progress} />
 
@@ -126,7 +126,7 @@ function LoadingBar({ progress }: { progress: number }) {
   return (
     <div className="relative h-1 w-48 rounded-full bg-neutral-900 outline outline-2 outline-offset-2 outline-white/20">
       <div
-        className="absolute left-0 top-0 h-full animate-backgroundScroll rounded-full bg-gradient-to-r from-amber-400 via-lime-500 to-sky-500 transition-all duration-300"
+        className="animate-backgroundScroll absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-amber-400 via-lime-500 to-sky-500 transition-all duration-300"
         style={{ width: `${progress * 100}%` }}
       />
     </div>

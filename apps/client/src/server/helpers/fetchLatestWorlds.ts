@@ -1,11 +1,10 @@
 import { WorldMetadata } from "@wired-protocol/types";
 
 import { env } from "@/src/env.mjs";
-import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
 import { db } from "../db/drizzle";
 import { FixWith } from "../db/types";
-import { fetchWorldMetadata } from "./fetchWorldMetadata";
+import { getWorldJson } from "./getWorldJson";
 
 export async function fetchLatestWorlds(limit: number, ownerId?: string) {
   if (!env.NEXT_PUBLIC_HAS_DATABASE) return [];
@@ -27,22 +26,20 @@ export async function fetchLatestWorlds(limit: number, ownerId?: string) {
 
     const fetched: FetchedWorld[] = [];
 
-    const fetchWorld = async (world: (typeof worlds)[0]) => {
-      if (!world.model) return;
+    await Promise.all(
+      worlds.map(async (world) => {
+        if (!world.model) return;
 
-      const uri = cdnURL(S3Path.worldModel(world.model.key).metadata);
+        const metadata = await getWorldJson(world.publicId);
+        if (!metadata) return;
 
-      const json = await fetchWorldMetadata(uri);
-      if (!json) return;
-
-      fetched.push({
-        id: world.publicId,
-        metadata: json.metadata,
-        uri: json.uri,
-      });
-    };
-
-    await Promise.all(worlds.map(fetchWorld));
+        fetched.push({
+          id: world.publicId,
+          metadata,
+          uri: `${env.NEXT_PUBLIC_DEPLOYED_URL}/api/worlds/${world.publicId}`,
+        });
+      })
+    );
 
     return fetched;
   } catch (e) {

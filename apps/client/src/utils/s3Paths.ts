@@ -26,7 +26,6 @@ export class S3Path {
         `worlds/${modelKey}/assets/${assetKey}` as const,
       directory: `worlds/${modelKey}`,
       image: `worlds/${modelKey}/image`,
-      metadata: `worlds/${modelKey}/metadata.json`,
       model: `worlds/${modelKey}/model.glb`,
     } as const);
 
@@ -36,7 +35,7 @@ export class S3Path {
 }
 
 type PublicPath =
-  | ReturnType<typeof S3Path.worldModel>["metadata" | "model" | "image"]
+  | ReturnType<typeof S3Path.worldModel>["model" | "image"]
   | ReturnType<ReturnType<typeof S3Path.worldModel>["asset"]>
   | ReturnType<ReturnType<typeof S3Path.profile>["background"]>
   | ReturnType<ReturnType<typeof S3Path.profile>["image"]>

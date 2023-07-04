@@ -25,12 +25,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const id = parseWorldId(params.id);
 
   const found = await fetchWorld(id);
-  if (!found) return {};
+  if (!found?.metadata) return {};
 
   const metadata = found.metadata;
 
   const displayId = id.value.slice(0, 6);
-  const title = metadata.info?.name || `World ${displayId}`;
+  const title = metadata.info?.title || `World ${displayId}`;
 
   const description = metadata.info?.description || "";
   const authors = metadata.info?.authors;
@@ -62,7 +62,7 @@ export default async function World({ params }: Props) {
   const id = parseWorldId(params.id);
 
   const found = await fetchWorld(id);
-  if (!found) notFound();
+  if (!found?.metadata) notFound();
 
   const metadata = found.metadata;
   const profiles: UserProfile[] = [];
@@ -117,7 +117,7 @@ export default async function World({ params }: Props) {
           <div className="flex flex-col justify-between space-y-8 md:w-2/3">
             <div className="space-y-4">
               <div className="text-center text-3xl font-black">
-                {metadata.info?.name || `World ${params.id}`}
+                {metadata.info?.title || `World ${params.id}`}
               </div>
 
               <div>

@@ -18,7 +18,10 @@ import {
   MAX_PROFILE_BIO_LENGTH,
   MAX_USERNAME_LENGTH,
   USER_ID_LENGTH,
+  WORLD_DESCRIPTION_LENGTH,
+  WORLD_HOST_LENGTH,
   WORLD_ID_LENGTH,
+  WORLD_TITLE_LENGTH,
 } from "./constants";
 
 // A glTF model located in S3.
@@ -36,9 +39,14 @@ export const world = mysqlTable(
   "world",
   {
     createdAt: timestamp("created_at").defaultNow(),
+    description: varchar("description", {
+      length: WORLD_DESCRIPTION_LENGTH,
+    }),
+    host: varchar("host", { length: WORLD_HOST_LENGTH }),
     id: serial("id").primaryKey(),
     ownerId: varchar("owner_id", { length: USER_ID_LENGTH }).notNull(),
     publicId: char("public_id", { length: WORLD_ID_LENGTH }).notNull(),
+    title: varchar("title", { length: WORLD_TITLE_LENGTH }),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
   },
   (table) => ({

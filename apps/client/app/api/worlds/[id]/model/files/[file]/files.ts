@@ -13,7 +13,6 @@ const expiresIn = 600; // 10 minutes
 
 export const WORLD_MODEL_FILE = {
   IMAGE: "image",
-  METADATA: "metadata",
   MODEL: "model",
 } as const;
 
@@ -60,10 +59,6 @@ function getContentType(type: WorldModelFile) {
   switch (type) {
     case WORLD_MODEL_FILE.IMAGE: {
       return "image/jpeg";
-    }
-
-    case WORLD_MODEL_FILE.METADATA: {
-      return "application/json";
     }
 
     case WORLD_MODEL_FILE.MODEL: {

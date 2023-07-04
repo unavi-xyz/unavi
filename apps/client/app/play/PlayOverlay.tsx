@@ -39,7 +39,7 @@ export default function PlayOverlay({ id, metadata }: Props) {
 
             <div>
               <div className="text-lg font-bold leading-6">
-                {metadata.info?.name}
+                {metadata.info?.title}
               </div>
               <div className="text-sm leading-4 text-white/70">
                 {metadata.info?.host}

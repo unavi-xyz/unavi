@@ -8,7 +8,7 @@ import { useSave } from "../../hooks/useSave";
 export default function WorldPage() {
   const worldId = usePlayStore((state) => state.worldId);
   const image = usePlayStore((state) => state.metadata.info?.image);
-  const name = usePlayStore((state) => state.metadata.info?.name);
+  const title = usePlayStore((state) => state.metadata.info?.title);
   const description = usePlayStore((state) => state.metadata.info?.description);
 
   const save = useSave();
@@ -48,10 +48,10 @@ export default function WorldPage() {
         />
 
         <TextFieldDark
-          label="Name"
-          name="name"
+          label="Title"
+          name="title"
           placeholder={placeholder}
-          value={name}
+          value={title}
           onChange={(e) => {
             usePlayStore.setState((prev) => ({
               metadata: {

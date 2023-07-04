@@ -1,7 +1,5 @@
-import { WorldMetadata } from "@wired-protocol/types";
 import { redirect } from "next/navigation";
 
-import { HOME_SERVER } from "@/src/constants";
 import { env } from "@/src/env.mjs";
 import { getUserSession } from "@/src/server/auth/getUserSession";
 import { db } from "@/src/server/db/drizzle";
@@ -9,7 +7,6 @@ import { world, worldModel } from "@/src/server/db/schema";
 import { nanoidShort } from "@/src/server/nanoid";
 import { s3Client } from "@/src/server/s3";
 import { getInsertId } from "@/src/utils/getInsertId";
-import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
 import { getWorldModelFileUploadCommand } from "../api/worlds/[id]/model/files/[file]/files";
 import CreateCardButton from "./CreateCardButton";
@@ -27,9 +24,12 @@ export async function createWorld() {
 
   try {
     // Create world
-    const result = await db
-      .insert(world)
-      .values({ ownerId: session.user.userId, publicId });
+    const result = await db.insert(world).values({
+      host: env.NEXT_PUBLIC_DEFAULT_HOST,
+      ownerId: session.user.userId,
+      publicId,
+      title: "New World",
+    });
 
     const worldId = getInsertId(result);
 
@@ -38,7 +38,6 @@ export async function createWorld() {
 
     await Promise.all([
       db.insert(worldModel).values({ key: modelKey, worldId }),
-      createMetadata(modelKey, `@${session.user.username}:${HOME_SERVER}`),
       uploadDefaultImage(modelKey),
       uploadDefaultModel(modelKey),
     ]);
@@ -48,25 +47,6 @@ export async function createWorld() {
   }
 
   redirect(`/play?id=${publicId}`);
-}
-
-async function createMetadata(publicId: string, author: string) {
-  const json: WorldMetadata = {
-    info: {
-      authors: [author],
-      host: env.NEXT_PUBLIC_DEFAULT_HOST,
-      image: cdnURL(S3Path.worldModel(publicId).image),
-      name: "New World",
-    },
-    model: cdnURL(S3Path.worldModel(publicId).model),
-  };
-
-  const blob = new Blob([JSON.stringify(json)], { type: "application/json" });
-  const buffer = await blob.arrayBuffer();
-  const array = new Uint8Array(buffer);
-
-  const command = getWorldModelFileUploadCommand(publicId, "metadata", array);
-  await s3Client.send(command);
 }
 
 async function uploadDefaultImage(publicId: string) {

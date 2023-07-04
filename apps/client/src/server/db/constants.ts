@@ -3,6 +3,7 @@ import { NANOID_LENGTH, NANOID_SHORT_LENGTH } from "../nanoid";
 export const WORLD_ID_LENGTH = NANOID_SHORT_LENGTH;
 export const WORLD_TITLE_LENGTH = 80;
 export const WORLD_DESCRIPTION_LENGTH = 1200;
+export const WORLD_HOST_LENGTH = 255;
 
 export const FILE_KEY_LENGTH = NANOID_SHORT_LENGTH;
 

@@ -12,6 +12,7 @@ export const env = createEnv({
     NEXT_PUBLIC_HAS_DATABASE: z.boolean(),
     NEXT_PUBLIC_HAS_GOOGLE_OAUTH: z.boolean(),
     NEXT_PUBLIC_HAS_S3: z.boolean(),
+    NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: z.string().optional(),
   },
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
@@ -31,6 +32,8 @@ export const env = createEnv({
     NEXT_PUBLIC_HAS_GOOGLE_OAUTH:
       process.env.NEXT_PUBLIC_HAS_GOOGLE_OAUTH === "true",
     NEXT_PUBLIC_HAS_S3: process.env.NEXT_PUBLIC_HAS_S3 === "true",
+    NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID:
+      process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
     NODE_ENV: process.env.NODE_ENV,
     PLANETSCALE: process.env.PLANETSCALE === "true",
     S3_ACCESS_KEY_ID: process.env.S3_ACCESS_KEY_ID,

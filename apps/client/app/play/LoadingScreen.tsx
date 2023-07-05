@@ -60,7 +60,7 @@ export default function LoadingScreen({ metadata }: Props) {
 
   const isConnecting = playerId === null;
   const loadingMessage =
-    isConnecting && loaded !== total ? "Connecting" : "Loading world";
+    isConnecting && total === 0 ? "Connecting" : "Loading world";
   const progress = isConnecting ? 0.1 : loaded / total;
 
   const image = metadata.info?.image;

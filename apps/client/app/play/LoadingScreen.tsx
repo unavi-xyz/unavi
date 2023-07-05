@@ -59,7 +59,8 @@ export default function LoadingScreen({ metadata }: Props) {
   if (hideScreen) return null;
 
   const isConnecting = playerId === null;
-  const loadingMessage = isConnecting ? "Connecting" : "Loading world";
+  const loadingMessage =
+    isConnecting && loaded !== total ? "Connecting" : "Loading world";
   const progress = isConnecting ? 0.1 : loaded / total;
 
   const image = metadata.info?.image;
@@ -126,7 +127,7 @@ function LoadingBar({ progress }: { progress: number }) {
   return (
     <div className="relative h-1 w-48 rounded-full bg-neutral-900 outline outline-2 outline-offset-2 outline-white/20">
       <div
-        className="animate-backgroundScroll absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-amber-400 via-lime-500 to-sky-500 transition-all duration-300"
+        className="absolute left-0 top-0 h-full animate-backgroundScroll rounded-full bg-gradient-to-r from-amber-400 via-lime-500 to-sky-500 transition-all duration-300"
         style={{ width: `${progress * 100}%` }}
       />
     </div>

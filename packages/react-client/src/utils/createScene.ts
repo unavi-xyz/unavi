@@ -4,6 +4,7 @@ import {
   DirectionalLight,
   GlobalTransform,
   Image,
+  Name,
   Parent,
   Scene,
   SceneStruct,
@@ -24,10 +25,15 @@ export function createScene(
 
   const skyboxId = commands.spawn(true).addType(Asset).addType(Image).id;
 
+  const name = new Name("root");
+
   const rootId = commands
     .spawn(true)
+    .add(name)
     .addType(Transform)
     .addType(GlobalTransform).id;
+
+  dropStruct(name);
 
   const sceneComponent = new Scene();
   sceneComponent.skyboxId = skyboxId;

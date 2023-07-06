@@ -10,7 +10,7 @@
   "license": "GPL-3.0-or-later",
   "type": "module",
   "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/packages/react-client/src/index.d.ts",
   "files": [
     "dist"
   ],
@@ -32,13 +32,15 @@
     "vite-plugin-dts": "^2.3.0"
   },
   "peerDependencies": {
-    "@wired-protocol/types": "^0.3.0",
+    "@unavi/protocol": "workspace:^",
+    "@wired-protocol/types": "^0.5.0",
     "gl-matrix": "^4.0.0-beta.1",
-    "lattice-engine": "^0.3.2",
+    "lattice-engine": "^0.3.3",
     "mediasoup-client": "^3.6.84",
     "nanoid": "^4.0.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "three": "~0.153.0",
     "thyseus": "^0.13.1",
     "zustand": "^4.3.8"
   }

@@ -16,3 +16,7 @@ export enum Tool {
 export enum RightPanelPage {
   World = "world",
 }
+
+export enum LeftPanelPage {
+  Add = "add",
+}

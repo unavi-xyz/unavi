@@ -4,9 +4,9 @@ import uWS from "uWebSockets.js";
 import { createMediasoupWorker, createWebRtcTransport } from "./mediasoup";
 import { Player } from "./Player";
 import { UserData, uWebSocket } from "./types";
+import { parseMessage } from "./utils/parseMessage";
 import { WorldRegistry } from "./WorldRegistry";
 
-const textDecoder = new TextDecoder();
 const PORT = 4000;
 const cert_file_name = process.env.SSL_CERT;
 const key_file_name = process.env.SSL_KEY;
@@ -26,94 +26,107 @@ const players = new Map<uWebSocket, Player>();
 
 // Handle WebSocket connections
 server.ws<UserData>("/*", {
-  close: (ws) => {
+  close: (ws, code) => {
+    console.info("Closing connection", code);
+
     const player = players.get(ws);
     if (player) player.close();
     players.delete(ws);
   },
-  compression: uWS.SHARED_COMPRESSOR,
 
+  compression: uWS.SHARED_COMPRESSOR,
   idleTimeout: 60,
+  maxPayloadLength: 16 * 1024 * 1024, // 16 MB
 
   message: (ws, buffer) => {
     const player = players.get(ws);
     if (!player) return;
 
-    const text = textDecoder.decode(buffer);
-    const parsed = RequestMessageSchema.safeParse(JSON.parse(text));
+    const message = parseMessage(buffer);
+    if (!message) return;
 
-    if (!parsed.success) {
-      console.warn(parsed.error);
+    // Relay client messages to other players in the same world
+    if (message.target === "client") {
+      console.log("relaying len", buffer.byteLength);
+      player.worlds.forEach((world) => {
+        ws.publish(world.topic, buffer);
+      });
       return;
     }
 
-    const { id, data } = parsed.data;
+    const request = RequestMessageSchema.safeParse(message);
+
+    if (!request.success) {
+      console.warn(request.error);
+      return;
+    }
+
+    const { data, id } = request.data;
 
     switch (id) {
-      case "xyz.unavi.world.join": {
+      case "com.wired-protocol.world.join": {
         player.join(data);
         break;
       }
 
-      case "xyz.unavi.world.leave": {
+      case "com.wired-protocol.world.leave": {
         player.leave(data);
         break;
       }
 
-      case "xyz.unavi.world.chat.send": {
+      case "com.wired-protocol.world.chat.send": {
         player.chat(data);
         break;
       }
 
-      case "xyz.unavi.world.user.falling": {
+      case "com.wired-protocol.world.user.falling": {
         player.falling = data;
         break;
       }
 
-      case "xyz.unavi.world.user.name": {
+      case "com.wired-protocol.world.user.name": {
         player.name = data;
         break;
       }
 
-      case "xyz.unavi.world.user.avatar": {
+      case "com.wired-protocol.world.user.avatar": {
         player.avatar = data;
         break;
       }
 
-      case "xyz.unavi.world.user.handle": {
+      case "com.wired-protocol.world.user.handle": {
         player.handle = data;
         break;
       }
 
-      // WebRTC
-      case "xyz.unavi.webrtc.router.rtpCapabilities.get": {
+      case "com.wired-protocol.webrtc.router.rtpCapabilities.get": {
         player.send({
           data: router.rtpCapabilities,
-          id: "xyz.unavi.webrtc.router.rtpCapabilities",
+          id: "com.wired-protocol.webrtc.router.rtpCapabilities",
         });
         break;
       }
 
-      case "xyz.unavi.webrtc.audio.pause": {
+      case "com.wired-protocol.webrtc.audio.pause": {
         player.setPaused(data);
         break;
       }
 
-      case "xyz.unavi.webrtc.transport.create": {
+      case "com.wired-protocol.webrtc.transport.create": {
         createWebRtcTransport(router, webRtcServer)
           .then(({ transport, params }) => {
             player.setTransport(data, transport);
 
             player.send({
               data: { options: params, type: data },
-              id: "xyz.unavi.webrtc.transport.created",
+              id: "com.wired-protocol.webrtc.transport.created",
             });
           })
           .catch((err) => console.warn(err));
         break;
       }
 
-      case "xyz.unavi.webrtc.transport.connect": {
+      case "com.wired-protocol.webrtc.transport.connect": {
         const transport =
           data.type === "producer"
             ? player.producerTransport
@@ -124,12 +137,12 @@ server.ws<UserData>("/*", {
         break;
       }
 
-      case "xyz.unavi.webrtc.produce": {
+      case "com.wired-protocol.webrtc.produce": {
         player.produce(data);
         break;
       }
 
-      case "xyz.unavi.webrtc.produceData": {
+      case "com.wired-protocol.webrtc.produceData": {
         if (data.streamId === undefined) {
           console.warn("Stream ID is undefined");
           break;
@@ -144,7 +157,7 @@ server.ws<UserData>("/*", {
         break;
       }
 
-      case "xyz.unavi.webrtc.rtpCapabilities.set": {
+      case "com.wired-protocol.webrtc.rtpCapabilities.set": {
         player.rtpCapabilities = data;
         break;
       }

@@ -1,10 +1,17 @@
 import { WorldMetadata } from "@wired-protocol/types";
 import { create } from "zustand";
 
-import { PlayMode, RightPanelPage, Tool, WorldUriId } from "./types";
+import {
+  LeftPanelPage,
+  PlayMode,
+  RightPanelPage,
+  Tool,
+  WorldUriId,
+} from "./types";
 
 export interface PlayStore {
   chatBoxFocused: boolean;
+  leftPage: LeftPanelPage;
   mode: PlayMode;
   rightPage: RightPanelPage;
   tool: Tool;
@@ -16,6 +23,7 @@ export interface PlayStore {
 
 export const usePlayStore = create<PlayStore>(() => ({
   chatBoxFocused: false,
+  leftPage: LeftPanelPage.Add,
   metadata: { model: "" },
   mode: PlayMode.Play,
   rightPage: RightPanelPage.World,

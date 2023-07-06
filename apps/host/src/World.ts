@@ -64,7 +64,7 @@ export class World {
         name: player.name || undefined,
         playerId,
       },
-      id: "xyz.unavi.world.player.join",
+      id: "com.wired-protocol.world.player.join",
     });
 
     // Tell new player about current players
@@ -78,7 +78,7 @@ export class World {
           name: otherPlayer.name || undefined,
           playerId: otherPlayerId,
         },
-        id: "xyz.unavi.world.player.join",
+        id: "com.wired-protocol.world.player.join",
       });
 
       // Consume current players
@@ -117,7 +117,10 @@ export class World {
 
     this.players.delete(playerId);
 
-    this.#publish({ data: playerId, id: "xyz.unavi.world.player.leave" });
+    this.#publish({
+      data: playerId,
+      id: "com.wired-protocol.world.player.leave",
+    });
 
     console.info(`👋 Player ${toHex(playerId)} left world ${this.uri}`);
 
@@ -130,7 +133,7 @@ export class World {
 
     this.#publish({
       data: { message, playerId },
-      id: "xyz.unavi.world.chat.message",
+      id: "com.wired-protocol.world.chat.message",
     });
   }
 
@@ -140,7 +143,7 @@ export class World {
 
     this.#publish({
       data: { falling, playerId },
-      id: "xyz.unavi.world.player.falling",
+      id: "com.wired-protocol.world.player.falling",
     });
   }
 
@@ -150,7 +153,7 @@ export class World {
 
     this.#publish({
       data: { name: name, playerId },
-      id: "xyz.unavi.world.player.name",
+      id: "com.wired-protocol.world.player.name",
     });
   }
 
@@ -160,7 +163,7 @@ export class World {
 
     this.#publish({
       data: { handle, playerId },
-      id: "xyz.unavi.world.player.handle",
+      id: "com.wired-protocol.world.player.handle",
     });
   }
 
@@ -170,7 +173,7 @@ export class World {
 
     this.#publish({
       data: { avatar: avatar, playerId },
-      id: "xyz.unavi.world.player.avatar",
+      id: "com.wired-protocol.world.player.avatar",
     });
   }
 

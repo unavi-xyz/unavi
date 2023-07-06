@@ -67,7 +67,10 @@ export default function ChatBox({ alwaysShow }: Props) {
 
               e.currentTarget.value = "";
 
-              sendWebSockets({ data: text, id: "xyz.unavi.world.chat.send" });
+              sendWebSockets({
+                data: text,
+                id: "com.wired-protocol.world.chat.send",
+              });
             }
           }}
           onFocus={() => usePlayStore.setState({ chatBoxFocused: true })}

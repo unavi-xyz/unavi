@@ -59,21 +59,21 @@ export function Client({ skybox, defaultAvatar, uri }: Props) {
   useEffect(() => {
     sendWebSockets({
       data: avatar,
-      id: "xyz.unavi.world.user.avatar",
+      id: "com.wired-protocol.world.user.avatar",
     });
   }, [sendWebSockets, avatar]);
 
   useEffect(() => {
     sendWebSockets({
       data: handle,
-      id: "xyz.unavi.world.user.handle",
+      id: "com.wired-protocol.world.user.handle",
     });
   }, [sendWebSockets, handle]);
 
   useEffect(() => {
     sendWebSockets({
       data: name,
-      id: "xyz.unavi.world.user.name",
+      id: "com.wired-protocol.world.user.name",
     });
   }, [sendWebSockets, name]);
 

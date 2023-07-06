@@ -87,7 +87,7 @@ export default function WorldPage() {
 
       <button
         onClick={save}
-        className="rounded-full bg-neutral-800 py-2 font-bold transition hover:bg-neutral-700 active:opacity-90"
+        className="rounded-full bg-neutral-800 py-2 font-bold transition hover:scale-105 hover:bg-neutral-700 active:scale-100 active:opacity-90"
       >
         Save
       </button>

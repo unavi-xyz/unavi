@@ -10,6 +10,8 @@ import { run, WorldBuilder } from "thyseus";
 import { ClientSchedules } from "./constants";
 import { calcPlayerVelocity } from "./systems/calcPlayerVelocity";
 import { connectToHost } from "./systems/connectToHost";
+import { addMeshes } from "./systems/editor/addMeshes";
+import { addNodes } from "./systems/editor/addNodes";
 import { exportLoadingInfo } from "./systems/exportLoadingInfo";
 import { initApp } from "./systems/initApp";
 import { joinWorld } from "./systems/joinWorld";
@@ -21,6 +23,7 @@ import { sendEvents } from "./systems/sendEvents";
 import { setLocationUpdateTime } from "./systems/setLocationUpdateTime";
 import { setPlayersAirTime } from "./systems/setPlayersAirTime";
 import { setPlayersAvatar } from "./systems/setPlayersAvatars";
+import { setRootName } from "./systems/setRootName";
 import { setSkybox } from "./systems/setSkybox";
 import { setUserAvatar } from "./systems/setUserAvatar";
 import { spawnPlayers } from "./systems/spawnPlayers";
@@ -44,9 +47,12 @@ export function clientPlugin(builder: WorldBuilder) {
       parseWorld,
       setPlayersAirTime,
       setPlayersAvatar,
-      setUserAvatar,
+      setRootName,
       setSkybox,
+      setUserAvatar,
       spawnPlayers,
+      addMeshes,
+      addNodes,
       ...run.chain(setLocationUpdateTime, lerpTransforms, [
         calcPlayerVelocity,
         movePlayers,

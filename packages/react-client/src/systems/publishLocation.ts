@@ -45,7 +45,7 @@ export function publishLocation(
         localRes.isFalling = isFalling;
         useClientStore.getState().sendWebSockets({
           data: isFalling,
-          id: "xyz.unavi.world.user.falling",
+          id: "com.wired-protocol.world.user.falling",
         });
       }
 

@@ -120,7 +120,7 @@ export class Player {
 
     this.ws?.subscribe(world.topic);
 
-    this.send({ data: playerId, id: "xyz.unavi.world.joined" });
+    this.send({ data: playerId, id: "com.wired-protocol.world.joined" });
   }
 
   leave(uri: string) {
@@ -166,7 +166,10 @@ export class Player {
         kind: "audio",
         rtpParameters,
       });
-      this.send({ data: this.producer.id, id: "xyz.unavi.webrtc.producer.id" });
+      this.send({
+        data: this.producer.id,
+        id: "com.wired-protocol.webrtc.producer.id",
+      });
     } catch (err) {
       console.warn(err);
     }
@@ -181,7 +184,7 @@ export class Player {
       });
       this.send({
         data: this.dataProducer.id,
-        id: "xyz.unavi.webrtc.dataProducer.id",
+        id: "com.wired-protocol.webrtc.dataProducer.id",
       });
     } catch (err) {
       console.warn(err);
@@ -213,7 +216,7 @@ export class Player {
           producerId: producer.id,
           rtpParameters: consumer.rtpParameters,
         },
-        id: "xyz.unavi.webrtc.consumer.create",
+        id: "com.wired-protocol.webrtc.consumer.create",
       });
     } catch (err) {
       console.warn(err);
@@ -250,7 +253,7 @@ export class Player {
           playerId,
           sctpStreamParameters: dataConsumer.sctpStreamParameters,
         },
-        id: "xyz.unavi.webrtc.dataConsumer.create",
+        id: "com.wired-protocol.webrtc.dataConsumer.create",
       });
     } catch (err) {
       console.warn(err);

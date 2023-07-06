@@ -1,8 +1,7 @@
-import { RequestMessage } from "@wired-protocol/types";
 import { Engine } from "lattice-engine/core";
 import { create } from "zustand";
 
-import { ChatMessage, EcsEvent } from "./types";
+import { ChatMessage, EcsEvent, ValidSendMessage } from "./types";
 import { toHex } from "./utils/toHex";
 
 export interface IClientStore {
@@ -10,11 +9,12 @@ export interface IClientStore {
   cleanupConnection: () => void;
   getDisplayName: (playerId: number) => string;
   sendWebRTC: (message: ArrayBuffer) => void;
-  sendWebSockets: (message: RequestMessage) => void;
+  sendWebSockets: (message: ValidSendMessage) => void;
   setAvatar: (avatar: string) => void;
   setHandle: (handle: string) => void;
   setName: (name: string) => void;
   setPlayerId: (playerId: number | null) => void;
+  mirrorEvent: (event: EcsEvent & ValidSendMessage) => void;
   names: Map<number, string>;
   avatar: string;
   avatars: Map<number, string>;
@@ -29,6 +29,7 @@ export interface IClientStore {
   locations: Map<number, number[]>;
   name: string;
   playerId: number | null;
+  rootName: string;
   skybox: string;
   worldUri: string;
 }
@@ -61,9 +62,18 @@ export const useClientStore = create<IClientStore>((set, get) => ({
   handles: new Map(),
   lastLocationUpdates: new Map(),
   locations: new Map(),
+  mirrorEvent: (event: EcsEvent & ValidSendMessage) => {
+    // Send to ourselves
+    const events = get().events;
+    events.push(event);
+
+    // Send to others
+    get().sendWebSockets(event);
+  },
   name: "",
   names: new Map(),
   playerId: null,
+  rootName: "",
   sendWebRTC: () => {},
   sendWebSockets: () => {},
   setAvatar(avatar: string) {

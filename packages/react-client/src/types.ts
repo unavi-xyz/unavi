@@ -1,4 +1,11 @@
-import { WorldPlayerJoin, WorldPlayerLeave } from "@wired-protocol/types";
+import { EditorMessage } from "@unavi/protocol";
+import {
+  RequestMessage,
+  WorldPlayerJoin,
+  WorldPlayerLeave,
+} from "@wired-protocol/types";
+
+export type ValidSendMessage = RequestMessage | EditorMessage;
 
 export type PlayerMessage = {
   type: "player";
@@ -17,4 +24,4 @@ export type SystemMessage = {
 
 export type ChatMessage = PlayerMessage | SystemMessage;
 
-export type EcsEvent = WorldPlayerJoin | WorldPlayerLeave;
+export type EcsEvent = WorldPlayerJoin | WorldPlayerLeave | EditorMessage;

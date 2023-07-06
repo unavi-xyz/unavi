@@ -1,4 +1,5 @@
-import { RequestMessage, ResponseMessageSchema } from "@wired-protocol/types";
+import { EditorMessageSchema } from "@unavi/protocol";
+import { ResponseMessageSchema } from "@wired-protocol/types";
 import { Device } from "mediasoup-client";
 import {
   Consumer,
@@ -12,6 +13,7 @@ import { Query, SystemRes } from "thyseus";
 import { WorldJson } from "../components";
 import { LOCATION_ROUNDING } from "../constants";
 import { useClientStore } from "../store";
+import { ValidSendMessage } from "../types";
 import { toHex } from "../utils/toHex";
 
 let chatId = 0;
@@ -34,9 +36,9 @@ export function connectToHost(
     const prefix = world.host.startsWith("localhost") ? "ws://" : "wss://";
     const ws = new WebSocket(`${prefix}${world.host}`);
 
-    const sendQueue: RequestMessage[] = [];
+    const sendQueue: ValidSendMessage[] = [];
 
-    const send = (message: RequestMessage) => {
+    const send = (message: ValidSendMessage) => {
       if (ws.readyState === ws.OPEN) {
         ws.send(JSON.stringify(message));
       } else {
@@ -88,11 +90,14 @@ export function connectToHost(
       sendQueue.length = 0;
 
       // Initiate WebRTC connection
-      send({ data: null, id: "xyz.unavi.webrtc.router.rtpCapabilities.get" });
+      send({
+        data: null,
+        id: "com.wired-protocol.webrtc.router.rtpCapabilities.get",
+      });
 
       // Join world
       const uri = useClientStore.getState().worldUri;
-      send({ data: uri, id: "xyz.unavi.world.join" });
+      send({ data: uri, id: "com.wired-protocol.world.join" });
     };
 
     ws.onclose = () => {
@@ -104,24 +109,31 @@ export function connectToHost(
     };
 
     ws.onmessage = async (event) => {
-      const parsed = ResponseMessageSchema.safeParse(JSON.parse(event.data));
+      const editor = EditorMessageSchema.safeParse(JSON.parse(event.data));
 
-      if (!parsed.success) {
-        console.warn(parsed.error);
+      if (editor.success) {
+        useClientStore.getState().events.push(editor.data);
         return;
       }
 
-      const { data, id } = parsed.data;
+      const response = ResponseMessageSchema.safeParse(JSON.parse(event.data));
+
+      if (!response.success) {
+        console.warn(response.error);
+        return;
+      }
+
+      const { data, id } = response.data;
 
       switch (id) {
-        case "xyz.unavi.world.joined": {
+        case "com.wired-protocol.world.joined": {
           console.info(`🌏 Joined world as player ${toHex(data)}`);
 
           useClientStore.getState().setPlayerId(data);
           break;
         }
 
-        case "xyz.unavi.world.chat.message": {
+        case "com.wired-protocol.world.chat.message": {
           useClientStore.getState().addChatMessage({
             id: chatId++,
             playerId: data.playerId,
@@ -132,8 +144,8 @@ export function connectToHost(
           break;
         }
 
-        case "xyz.unavi.world.player.join": {
-          useClientStore.getState().events.push(parsed.data);
+        case "com.wired-protocol.world.player.join": {
+          useClientStore.getState().events.push(response.data);
 
           // TODO: Clean this up, make an avatar event or sum
           const { avatars, names, handles } = useClientStore.getState();
@@ -169,8 +181,8 @@ export function connectToHost(
           break;
         }
 
-        case "xyz.unavi.world.player.leave": {
-          useClientStore.getState().events.push(parsed.data);
+        case "com.wired-protocol.world.player.leave": {
+          useClientStore.getState().events.push(response.data);
 
           const displayName = useClientStore.getState().getDisplayName(data);
 
@@ -189,24 +201,24 @@ export function connectToHost(
           break;
         }
 
-        case "xyz.unavi.world.player.falling": {
+        case "com.wired-protocol.world.player.falling": {
           useClientStore.getState().falling.set(data.playerId, data.falling);
           break;
         }
 
-        case "xyz.unavi.world.player.name": {
+        case "com.wired-protocol.world.player.name": {
           useClientStore.getState().names.set(data.playerId, data.name ?? "");
           break;
         }
 
-        case "xyz.unavi.world.player.handle": {
+        case "com.wired-protocol.world.player.handle": {
           useClientStore
             .getState()
             .handles.set(data.playerId, data.handle ?? "");
           break;
         }
 
-        case "xyz.unavi.world.player.avatar": {
+        case "com.wired-protocol.world.player.avatar": {
           const avatars = useClientStore.getState().avatars;
           if (data.avatar) {
             avatars.set(data.playerId, data.avatar);
@@ -216,7 +228,7 @@ export function connectToHost(
           break;
         }
 
-        case "xyz.unavi.webrtc.router.rtpCapabilities": {
+        case "com.wired-protocol.webrtc.router.rtpCapabilities": {
           try {
             // Initialize device
             await device.load({ routerRtpCapabilities: data });
@@ -224,11 +236,11 @@ export function connectToHost(
             // Create transports
             send({
               data: "producer",
-              id: "xyz.unavi.webrtc.transport.create",
+              id: "com.wired-protocol.webrtc.transport.create",
             });
             send({
               data: "consumer",
-              id: "xyz.unavi.webrtc.transport.create",
+              id: "com.wired-protocol.webrtc.transport.create",
             });
 
             // Set rtp capabilities
@@ -237,7 +249,7 @@ export function connectToHost(
                 codecs: device.rtpCapabilities.codecs ?? [],
                 headerExtensions: device.rtpCapabilities.headerExtensions ?? [],
               },
-              id: "xyz.unavi.webrtc.rtpCapabilities.set",
+              id: "com.wired-protocol.webrtc.rtpCapabilities.set",
             });
           } catch (error) {
             console.error("Error loading device", error);
@@ -246,7 +258,7 @@ export function connectToHost(
           break;
         }
 
-        case "xyz.unavi.webrtc.transport.created": {
+        case "com.wired-protocol.webrtc.transport.created": {
           // Create transport
           const transport =
             data.type === "producer"
@@ -257,7 +269,7 @@ export function connectToHost(
           transport.on("connect", ({ dtlsParameters }, callback) => {
             send({
               data: { dtlsParameters, type: data.type },
-              id: "xyz.unavi.webrtc.transport.connect",
+              id: "com.wired-protocol.webrtc.transport.connect",
             });
             callback();
           });
@@ -278,7 +290,10 @@ export function connectToHost(
               }
 
               producerIdCallback = (id: string) => callback({ id });
-              send({ data: rtpParameters, id: "xyz.unavi.webrtc.produce" });
+              send({
+                data: rtpParameters,
+                id: "com.wired-protocol.webrtc.produce",
+              });
             });
 
             // producer = await transport.produce({ track });
@@ -289,7 +304,7 @@ export function connectToHost(
                 dataProducerIdCallback = (id: string) => callback({ id });
                 send({
                   data: sctpStreamParameters,
-                  id: "xyz.unavi.webrtc.produceData",
+                  id: "com.wired-protocol.webrtc.produceData",
                 });
               }
             );
@@ -311,17 +326,17 @@ export function connectToHost(
           break;
         }
 
-        case "xyz.unavi.webrtc.producer.id": {
+        case "com.wired-protocol.webrtc.producer.id": {
           if (producerIdCallback) producerIdCallback(data);
           break;
         }
 
-        case "xyz.unavi.webrtc.dataProducer.id": {
+        case "com.wired-protocol.webrtc.dataProducer.id": {
           if (dataProducerIdCallback) dataProducerIdCallback(data);
           break;
         }
 
-        case "xyz.unavi.webrtc.consumer.create": {
+        case "com.wired-protocol.webrtc.consumer.create": {
           if (!consumerTransport) {
             console.warn("Consumer transport not initialized");
             return;
@@ -335,7 +350,7 @@ export function connectToHost(
           });
 
           // Start receiving audio
-          send({ data: false, id: "xyz.unavi.webrtc.audio.pause" });
+          send({ data: false, id: "com.wired-protocol.webrtc.audio.pause" });
           await consumer.resume();
 
           // Create audio stream
@@ -373,7 +388,7 @@ export function connectToHost(
           break;
         }
 
-        case "xyz.unavi.webrtc.dataConsumer.create": {
+        case "com.wired-protocol.webrtc.dataConsumer.create": {
           if (!consumerTransport) {
             console.warn("No consumer transport");
             break;

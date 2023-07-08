@@ -7,7 +7,7 @@
     "build": "next build",
     "db:push": "dotenv -c -- drizzle-kit push:mysql",
     "dev": "next dev",
-    "lint": "eslint --fix . --ext .ts,.tsx,.mjs,.json --ignore-path ../../.gitignore --ignore-path ../../.prettierignore --ignore-pattern package.json",
+    "lint": "cd ../.. && eslint --fix \"apps/client/**/*.{ts,tsx,cjs,mjs,json}\" --ignore-path .gitignore --ignore-path .prettierignore --ignore-pattern package.json",
     "start": "next start"
   },
   "dependencies": {
@@ -65,7 +65,7 @@
     "@types/three": "~0.153.0",
     "autoprefixer": "^10.4.14",
     "drizzle-kit": "^0.18.0",
-    "eslint": "^8.42.0",
+    "eslint": "^8.44.0",
     "eslint-config-custom": "workspace:^",
     "postcss": "^8.4.24",
     "tailwindcss": "^3.3.2",

@@ -19,7 +19,7 @@
   "devDependencies": {
     "@changesets/cli": "^2.26.1",
     "dotenv-cli": "^7.2.1",
-    "eslint": "^8.42.0",
+    "eslint": "^8.44.0",
     "eslint-config-custom": "workspace:^",
     "postinstall-postinstall": "^2.1.0",
     "prettier": "^2.8.8",

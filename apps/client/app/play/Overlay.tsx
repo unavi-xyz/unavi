@@ -1,9 +1,8 @@
 import { WorldMetadata } from "@wired-protocol/types";
-import { MdConstruction } from "react-icons/md";
 
 import { useAuth } from "@/src/client/AuthProvider";
 import { HOME_SERVER } from "@/src/constants";
-import Tooltip from "@/src/ui/Tooltip";
+import EditModeButton from "@/src/play/ui/editor/EditModeButton";
 
 import ChatBox from "../../src/play/ui/ChatBox";
 import MobileChatBox from "../../src/play/ui/MobileChatBox";
@@ -38,28 +37,7 @@ export default function Overlay({ id, metadata }: Props) {
         <BuildOverlay />
       )}
 
-      {isAuthor ? (
-        <div className="fixed bottom-0 right-0 z-20 space-x-2 p-4">
-          <Tooltip text="Toggle Build Mode" side="left">
-            <button
-              onClick={() => {
-                if (mode === PlayMode.Play) {
-                  usePlayStore.setState({ mode: PlayMode.Build });
-                } else {
-                  usePlayStore.setState({ mode: PlayMode.Play });
-                }
-              }}
-              className={`h-[52px] w-[52px] rounded-full text-2xl backdrop-blur-lg transition active:scale-95 ${
-                mode === PlayMode.Build
-                  ? "bg-white text-black hover:bg-white/90"
-                  : "bg-black/50 text-white hover:bg-black/70"
-              }`}
-            >
-              <MdConstruction className="w-full" />
-            </button>
-          </Tooltip>
-        </div>
-      ) : null}
+      {isAuthor ? <EditModeButton /> : null}
 
       <div className="fixed bottom-0 left-0 z-20 p-4">
         {isMobile ? (

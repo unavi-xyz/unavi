@@ -1,6 +1,5 @@
 import { Asset, CoreStore } from "lattice-engine/core";
 import { InputStruct } from "lattice-engine/input";
-import { PhysicsConfig } from "lattice-engine/physics";
 import {
   GlobalTransform,
   Parent,
@@ -17,13 +16,8 @@ export function initApp(
   commands: Commands,
   coreStore: Res<Mut<CoreStore>>,
   sceneStruct: Res<Mut<SceneStruct>>,
-  inputStruct: Res<Mut<InputStruct>>,
-  physicsConfig: Res<Mut<PhysicsConfig>>
+  inputStruct: Res<Mut<InputStruct>>
 ) {
-  if (process.env.NODE_ENV === "development") {
-    physicsConfig.debug = true;
-  }
-
   coreStore.canvas = document.querySelector("canvas");
 
   const { rootId } = createScene(commands, coreStore, sceneStruct);

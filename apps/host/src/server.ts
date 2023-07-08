@@ -47,7 +47,6 @@ server.ws<UserData>("/*", {
 
     // Relay client messages to other players in the same world
     if (message.target === "client") {
-      console.log("relaying len", buffer.byteLength);
       player.worlds.forEach((world) => {
         ws.publish(world.topic, buffer);
       });

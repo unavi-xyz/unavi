@@ -4,7 +4,7 @@ export type WorldUriId = WorldId | { type: "uri"; value: string };
 
 export enum PlayMode {
   Play = "play",
-  Build = "build",
+  Edit = "edit",
 }
 
 export enum Tool {

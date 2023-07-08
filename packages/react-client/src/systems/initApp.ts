@@ -28,7 +28,7 @@ export function initApp(
 
   const { rootId } = createScene(commands, coreStore, sceneStruct);
 
-  createPlayerControls([0, 2, 0], rootId, commands, sceneStruct, inputStruct);
+  createPlayerControls([0, 4, 0], rootId, commands, sceneStruct, inputStruct);
 
   const parent = new Parent(rootId);
 

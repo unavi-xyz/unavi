@@ -1,5 +1,7 @@
 export const ClientSchedules = {
   ConnectToHost: Symbol("ConnectToHost"),
+  EnterEditMode: Symbol("EnterEditMode"),
+  ExitEditMode: Symbol("ExitEditMode"),
 };
 
 export const LOCATION_ROUNDING = {

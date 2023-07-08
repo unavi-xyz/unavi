@@ -5,8 +5,8 @@ import { usePlayStore } from "@/app/play/store";
 export function useHotkeys() {
   useEffect(() => {
     async function handleKeyDown(e: KeyboardEvent) {
-      const isPointerLocked = document.pointerLockElement !== null;
-      if (!isPointerLocked) {
+      const chatBoxFocused = usePlayStore.getState().chatBoxFocused;
+      if (chatBoxFocused) {
         e.stopImmediatePropagation();
         return;
       }

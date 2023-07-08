@@ -1,4 +1,5 @@
 import { Asset, CoreStore } from "lattice-engine/core";
+import { OutlinePass } from "lattice-engine/postprocessing";
 import {
   AmbientLight,
   DirectionalLight,
@@ -39,7 +40,10 @@ export function createScene(
   sceneComponent.skyboxId = skyboxId;
   sceneComponent.rootId = rootId;
 
-  const sceneId = commands.spawn(true).add(sceneComponent).id;
+  const sceneId = commands
+    .spawn(true)
+    .add(sceneComponent)
+    .addType(OutlinePass).id;
 
   dropStruct(sceneComponent);
 

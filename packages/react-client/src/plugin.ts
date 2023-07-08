@@ -3,6 +3,9 @@ import { gltfPlugin } from "lattice-engine/gltf";
 import { orbitPlugin } from "lattice-engine/orbit";
 import { physicsPlugin } from "lattice-engine/physics";
 import { playerPlugin } from "lattice-engine/player";
+import { postprocessingPlugin } from "lattice-engine/postprocessing";
+import { textPlugin } from "lattice-engine/text";
+import { transformPlugin } from "lattice-engine/transform";
 import { defaultPlugin } from "lattice-engine/utils";
 import { vrmPlugin } from "lattice-engine/vrm";
 import { run, WorldBuilder } from "thyseus";
@@ -12,6 +15,8 @@ import { calcPlayerVelocity } from "./systems/calcPlayerVelocity";
 import { connectToHost } from "./systems/connectToHost";
 import { addMeshes } from "./systems/editor/addMeshes";
 import { addNodes } from "./systems/editor/addNodes";
+import { enterEditMode } from "./systems/editor/enterEditMode";
+import { exitEditMode } from "./systems/editor/exitEditMode";
 import { exportLoadingInfo } from "./systems/exportLoadingInfo";
 import { initApp } from "./systems/initApp";
 import { joinWorld } from "./systems/joinWorld";
@@ -35,11 +40,16 @@ export function clientPlugin(builder: WorldBuilder) {
     .addPlugin(orbitPlugin)
     .addPlugin(physicsPlugin)
     .addPlugin(playerPlugin)
+    .addPlugin(postprocessingPlugin)
+    .addPlugin(textPlugin)
+    .addPlugin(transformPlugin)
     .addPlugin(vrmPlugin)
     .addSystemsToSchedule(LatticeSchedules.Startup, initApp)
     .addSystemsToSchedule(LatticeSchedules.PreUpdate, sendEvents)
     .addSystemsToSchedule(LatticeSchedules.PostFixedUpdate, publishLocation)
     .addSystemsToSchedule(ClientSchedules.ConnectToHost, connectToHost)
+    .addSystemsToSchedule(ClientSchedules.EnterEditMode, enterEditMode)
+    .addSystemsToSchedule(ClientSchedules.ExitEditMode, exitEditMode)
     .addSystems(
       exportLoadingInfo,
       joinWorld,

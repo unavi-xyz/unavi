@@ -13,8 +13,8 @@ import {
   PlayerCamera,
   PlayerCameraMode,
   PlayerCameraView,
-  TargetPosition,
   TargetRotation,
+  TargetTranslation,
 } from "lattice-engine/player";
 import {
   GlobalTransform,
@@ -96,7 +96,7 @@ export function createPlayerControls(
     .spawn(true)
     .addType(Transform)
     .addType(GlobalTransform)
-    .addType(TargetPosition)
+    .addType(TargetTranslation)
     .add(targetRotation.set(0, 0, 0, 1))
     .add(parent.setId(bodyId))
     .addType(PerspectiveCamera)

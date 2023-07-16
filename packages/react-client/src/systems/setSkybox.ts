@@ -1,21 +1,22 @@
 import { Asset } from "lattice-engine/core";
-import { Image, Scene } from "lattice-engine/scene";
+import { Image, Skybox } from "lattice-engine/scene";
 import { Entity, Mut, Query } from "thyseus";
 
 import { useClientStore } from "../store";
 
 export function setSkybox(
-  images: Query<[Entity, Mut<Asset>, Mut<Image>]>,
-  scenes: Query<Scene>
+  skyboxes: Query<Skybox>,
+  images: Query<[Entity, Mut<Asset>, Mut<Image>]>
 ) {
-  for (const scene of scenes) {
+  for (const skybox of skyboxes) {
     for (const [entity, asset, image] of images) {
-      if (scene.skyboxId !== entity.id) continue;
+      if (skybox.imageId !== entity.id) continue;
 
-      const skybox = useClientStore.getState().skybox;
-      if (asset.uri === skybox) continue;
+      const skyboxUri = useClientStore.getState().skybox;
+      if (asset.uri === skyboxUri) continue;
 
-      asset.uri = skybox;
+      // TODO: Add back in, is causing error
+      // asset.uri = skyboxUri;
       image.flipY = true;
 
       const fileExt = asset.uri.split(".").pop();

@@ -10,6 +10,7 @@ import {
   Scene,
   SceneStruct,
   ShadowMap,
+  Skybox,
   Transform,
 } from "lattice-engine/scene";
 import { Commands, dropStruct } from "thyseus";
@@ -24,8 +25,6 @@ export function createScene(
   const canvas = document.querySelector("canvas");
   coreStore.canvas = canvas;
 
-  const skyboxId = commands.spawn(true).addType(Asset).addType(Image).id;
-
   const name = new Name("root");
 
   const rootId = commands
@@ -36,16 +35,21 @@ export function createScene(
 
   dropStruct(name);
 
+  const skyboxId = commands.spawn(true).addType(Asset).addType(Image).id;
+  const skybox = new Skybox();
+  skybox.imageId = skyboxId;
+
   const sceneComponent = new Scene();
-  sceneComponent.skyboxId = skyboxId;
   sceneComponent.rootId = rootId;
 
   const sceneId = commands
     .spawn(true)
     .add(sceneComponent)
+    .add(skybox)
     .addType(OutlinePass).id;
 
   dropStruct(sceneComponent);
+  dropStruct(skybox);
 
   sceneStruct.activeScene = sceneId;
 

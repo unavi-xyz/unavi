@@ -17,7 +17,13 @@ export const useLoadingStore = create<LoadingStore>((set) => ({
   loading: 0,
   message: "",
   reset: () => {
-    set({ loading: 0, message: "", total: 0 });
+    set({
+      entityIds: new Set(),
+      loaded: 0,
+      loading: 0,
+      message: "",
+      total: 0,
+    });
   },
   total: 0,
 }));

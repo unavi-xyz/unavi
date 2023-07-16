@@ -1,6 +1,5 @@
 import { Asset, CoreStore } from "lattice-engine/core";
 import { InputStruct } from "lattice-engine/input";
-import { PhysicsConfig } from "lattice-engine/physics";
 import {
   GlobalTransform,
   Parent,
@@ -17,12 +16,8 @@ export function initApp(
   commands: Commands,
   coreStore: Res<Mut<CoreStore>>,
   sceneStruct: Res<Mut<SceneStruct>>,
-  inputStruct: Res<Mut<InputStruct>>,
-  physicsConfig: Res<Mut<PhysicsConfig>>
+  inputStruct: Res<Mut<InputStruct>>
 ) {
-  // TODO: Remove this (causing crashes when removed, prolly some underlying bug)
-  physicsConfig.debug = true;
-
   coreStore.canvas = document.querySelector("canvas");
 
   const { rootId } = createScene(commands, coreStore, sceneStruct);

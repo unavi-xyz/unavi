@@ -68,7 +68,7 @@ function PlayerName({ playerId }: { playerId: number }) {
 
     if (username && home) {
       return (
-        <Tooltip text={name} side="right">
+        <Tooltip text={name} side="right" capitalize={false}>
           <span className="font-bold">@{username}</span>
         </Tooltip>
       );

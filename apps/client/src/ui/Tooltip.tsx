@@ -7,11 +7,15 @@ interface Props {
   text: string;
   delayDuration?: number;
   side?: "left" | "right" | "bottom" | "top";
+  capitalize?: boolean;
   children: React.ReactNode;
 }
 
 const Tooltip = forwardRef<HTMLDivElement, Props>(
-  ({ text, delayDuration = 400, side = "bottom", children }, ref) => {
+  (
+    { text, delayDuration = 400, side = "bottom", capitalize = true, children },
+    ref
+  ) => {
     const [open, setOpen] = useState(false);
     const [visible, setVisible] = useState(false);
 
@@ -46,9 +50,9 @@ const Tooltip = forwardRef<HTMLDivElement, Props>(
               ref={ref}
               side={side}
               sideOffset={10}
-              className={`z-50 rounded-lg bg-black/90 px-3 py-1.5 text-xs font-semibold capitalize text-white shadow-lg backdrop-blur transition ${
-                visible ? "animate-scaleInFull" : "animate-scaleOutFull"
-              }`}
+              className={`z-50 rounded-lg bg-black/90 px-3 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur transition ${
+                capitalize ? "capitalize" : ""
+              } ${visible ? "animate-scaleInFull" : "animate-scaleOutFull"}`}
             >
               {text}
             </TooltipPrimitive.Content>

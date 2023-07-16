@@ -122,11 +122,11 @@ export default async function World({ params }: Props) {
 
               <div>
                 {profiles?.length ? (
-                  <div className="flex justify-center space-x-1 font-bold md:justify-start">
-                    <div className="text-neutral-500">By</div>
+                  <div className="flex justify-center space-x-1 md:justify-start">
+                    <div className="font-semibold text-neutral-500">By</div>
 
                     {profiles.map((profile, i) => (
-                      <div key={i}>
+                      <div key={i} className="font-bold">
                         {profile.home === HOME_SERVER ? (
                           <Link href={`/@${profile.username}`}>
                             <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
@@ -143,9 +143,9 @@ export default async function World({ params }: Props) {
                   </div>
                 ) : null}
 
-                <div className="flex justify-center space-x-1 font-bold md:justify-start">
-                  <div className="text-neutral-500">Host</div>
-                  <div>
+                <div className="flex justify-center space-x-1 md:justify-start">
+                  <div className="font-semibold text-neutral-500">Host</div>
+                  <div className="font-bold">
                     {metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST}
                   </div>
                 </div>

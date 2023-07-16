@@ -1,4 +1,5 @@
 import { LatticeSchedules } from "lattice-engine/core";
+import { csmPlugin } from "lattice-engine/csm";
 import { gltfPlugin } from "lattice-engine/gltf";
 import { orbitPlugin } from "lattice-engine/orbit";
 import { physicsPlugin } from "lattice-engine/physics";
@@ -36,6 +37,7 @@ import { spawnPlayers } from "./systems/spawnPlayers";
 export function clientPlugin(builder: WorldBuilder) {
   builder
     .addPlugin(defaultPlugin)
+    .addPlugin(csmPlugin)
     .addPlugin(gltfPlugin)
     .addPlugin(orbitPlugin)
     .addPlugin(physicsPlugin)

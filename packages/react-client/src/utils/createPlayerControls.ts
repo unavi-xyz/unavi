@@ -110,4 +110,6 @@ export function createPlayerControls(
 
   sceneStruct.activeCamera = cameraId;
   inputStruct.enablePointerLock = true;
+
+  return cameraId;
 }

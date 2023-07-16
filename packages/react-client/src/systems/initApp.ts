@@ -1,4 +1,5 @@
 import { Asset, CoreStore } from "lattice-engine/core";
+import { CascadingShadowMaps } from "lattice-engine/csm";
 import { InputStruct } from "lattice-engine/input";
 import {
   GlobalTransform,
@@ -21,8 +22,19 @@ export function initApp(
   coreStore.canvas = document.querySelector("canvas");
 
   const { rootId } = createScene(commands, coreStore, sceneStruct);
+  const cameraId = createPlayerControls(
+    [0, 8, 0],
+    rootId,
+    commands,
+    sceneStruct,
+    inputStruct
+  );
 
-  createPlayerControls([0, 4, 0], rootId, commands, sceneStruct, inputStruct);
+  const csm = new CascadingShadowMaps();
+  csm.shadowMapSize = 4096;
+  csm.far = 40;
+  commands.getById(cameraId).add(csm);
+  dropStruct(csm);
 
   const parent = new Parent(rootId);
 

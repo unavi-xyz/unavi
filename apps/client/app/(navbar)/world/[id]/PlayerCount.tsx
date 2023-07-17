@@ -16,9 +16,9 @@ export default function PlayerCount({ uri, host }: Props) {
   if (!playerCount) return null;
 
   return (
-    <div className="flex justify-center space-x-1 font-bold md:justify-start">
-      <div>{playerCount}</div>
-      <div className="text-neutral-500">
+    <div className="flex justify-center space-x-1 md:justify-start">
+      <div className="font-bold">{playerCount}</div>
+      <div className="font-semibold text-neutral-500">
         connected player{playerCount === 1 ? null : "s"}
       </div>
     </div>

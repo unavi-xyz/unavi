@@ -43,9 +43,5 @@ apps/light-client/public/**/*.js
 draco_encoder_wrapper.js
 draco_wasm_wrapper_gltf.js
 
-# docs
-apps/docs/docs-api/engine
-apps/docs/docs-api/gltf-extensions
-
 # engine
 font.json

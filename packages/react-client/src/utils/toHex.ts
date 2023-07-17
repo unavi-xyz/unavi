@@ -1,4 +1,3 @@
-export function toHex(number: number): string {
-  const str = number.toString(16).padStart(2, "0");
-  return `0x${str}`;
+export function toHex(num: number) {
+  return num.toString(16).padStart(4, "0x");
 }

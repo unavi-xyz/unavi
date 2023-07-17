@@ -1,7 +1,7 @@
 # dependencies
-node_modules
 .pnp
 .pnp.js
+node_modules
 pnpm-lock.yaml
 
 # build
@@ -13,8 +13,8 @@ dist/
 out/
 
 # other
-.turbo
 .docusaurus
+.turbo
 .vscode
 
 # misc
@@ -22,29 +22,26 @@ out/
 *.pem
 
 # local env files
-.env.local
 .env.development.local
-.env.test.local
+.env.local
 .env.production.local
+.env.test.local
 
 # typescript
 *.tsbuildinfo
 
 # codegen
-generated
-apps/docs/docs/packages/*
 !apps/docs/docs/packages/index.md
+apps/docs/docs/packages/*
+generated
 
 # client
-apps/client/public/**/*.js
-apps/light-client/public/**/*.js
-apps/client/public/**/*.svg
 .vercel
-
-# docs
-apps/docs/docs-api/engine
-apps/docs/docs-api/gltf-extensions
+apps/client/public/**/*.js
+apps/client/public/**/*.svg
+apps/light-client/public/**/*.js
+draco_encoder_wrapper.js
+draco_wasm_wrapper_gltf.js
 
 # engine
-draco_decoder_gltf.js
 font.json

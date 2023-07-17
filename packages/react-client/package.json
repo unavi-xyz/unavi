@@ -1,6 +1,7 @@
 {
   "name": "@unavi/react-client",
   "version": "0.6.0",
+  "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/unavi-xyz/unavi.git",
@@ -9,35 +10,39 @@
   "license": "GPL-3.0-or-later",
   "type": "module",
   "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/packages/react-client/src/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --onSuccess \"tsc --emitDeclarationOnly\"",
-    "dev": "pnpm build --watch",
-    "lint": "cd ../.. && eslint --fix packages/react-client --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
+    "build": "vite build --emptyOutDir",
+    "dev": "vite build --watch",
+    "lint": "cd ../.. && eslint --fix packages/react-client --ext .ts,.tsx,.mjs,.json --ignore-path .gitignore --ignore-path .prettierignore --ignore-pattern package.json"
   },
-  "dependencies": {
-    "@unavi/gltf-extensions": "workspace:*",
-    "@wired-protocol/types": "^0.0.20",
-    "engine": "workspace:*",
+  "devDependencies": {
+    "@thyseus/transformer-rollup": "^0.13.0",
+    "@types/node": "^18.16.17",
+    "@types/react": "^18.2.11",
+    "@types/react-dom": "^18.2.4",
+    "eslint": "^8.44.0",
+    "eslint-config-custom": "workspace:^",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
+    "tsconfig": "workspace:^",
+    "typescript": "~5.1.3",
+    "vite": "^4.3.8",
+    "vite-plugin-dts": "^2.3.0"
+  },
+  "peerDependencies": {
+    "@unavi/protocol": "workspace:^",
+    "@wired-protocol/types": "^0.5.0",
+    "gl-matrix": "^4.0.0-beta.1",
+    "lattice-engine": "^0.3.9",
     "mediasoup-client": "^3.6.84",
     "nanoid": "^4.0.2",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
-  },
-  "devDependencies": {
-    "@types/react": "^18.2.11",
-    "@types/react-dom": "^18.2.4",
-    "eslint": "^8.42.0",
-    "eslint-config-custom": "workspace:*",
-    "tsconfig": "workspace:*",
-    "tsup": "^6.7.0",
-    "typescript": "~5.1.3"
-  },
-  "peerDependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
-  },
-  "publishConfig": {
-    "access": "public"
+    "react-dom": "^18.2.0",
+    "three": "~0.153.0",
+    "thyseus": "^0.13.5",
+    "zustand": "^4.3.8"
   }
 }

@@ -51,7 +51,10 @@ export class AudioData extends ExtensionProperty<IAudio> {
   }
 
   public getMimeType(): string {
-    return this.get("mimeType") || extensionToMimeType(FileUtils.extension(this.getURI()));
+    return (
+      this.get("mimeType") ||
+      extensionToMimeType(FileUtils.extension(this.getURI()))
+    );
   }
 
   public setMimeType(mimeType: string): this {

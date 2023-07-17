@@ -21,7 +21,10 @@ export default function NavbarTab({ href, text, exact = false }: Props) {
       : false;
 
   return (
-    <Link href={href} className={`text-lg font-bold ${isSelected ? "" : "text-neutral-400"}`}>
+    <Link
+      href={href}
+      className={`text-lg font-bold ${isSelected ? "" : "text-neutral-400"}`}
+    >
       {text}
     </Link>
   );

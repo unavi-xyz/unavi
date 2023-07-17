@@ -1,0 +1,15 @@
+{
+  "extends": ["custom"],
+  "root": true,
+  "rules": {
+    "import/no-unresolved": "off"
+  },
+  "settings": {
+    "next": {
+      "rootDir": "apps/client"
+    },
+    "tailwindcss": {
+      "config": "apps/client/tailwind.config.cjs"
+    }
+  }
+}

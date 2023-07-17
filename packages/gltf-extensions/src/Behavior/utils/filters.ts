@@ -21,10 +21,17 @@ export function isLinkJSON(param?: ParameterJSON): param is ParamLinkJSON {
 }
 
 export function isJsonPath(param?: Parameter): param is ParamJsonPath {
-  return typeof param === "object" && "isJsonPath" in param && param.isJsonPath === true;
+  return (
+    typeof param === "object" &&
+    "isJsonPath" in param &&
+    param.isJsonPath === true
+  );
 }
 
-export function isJsonPathJSON(key: string, param?: ParameterJSON): param is Value<string> {
+export function isJsonPathJSON(
+  key: string,
+  param?: ParameterJSON
+): param is Value<string> {
   return (
     key === "jsonPath" &&
     typeof param === "object" &&
@@ -34,7 +41,9 @@ export function isJsonPathJSON(key: string, param?: ParameterJSON): param is Val
 }
 
 // Configuration
-export function isVariableConfig(config?: BehaviorNodeConfiguration): config is VariableConfig {
+export function isVariableConfig(
+  config?: BehaviorNodeConfiguration
+): config is VariableConfig {
   return typeof config === "object" && "isVariable" in config;
 }
 

@@ -16,7 +16,9 @@ export const fetchPlayerCount = cache(async (uri: string, host?: string) => {
     }
 
     const http =
-      worldHost.startsWith("localhost") || worldHost.startsWith("127.0.0.1") ? "http" : "https";
+      worldHost.startsWith("localhost") || worldHost.startsWith("127.0.0.1")
+        ? "http"
+        : "https";
 
     const res = await fetch(`${http}://${worldHost}/player-count/${uri}`, {
       cache: "no-store",

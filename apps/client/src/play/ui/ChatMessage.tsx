@@ -1,9 +1,12 @@
-import { ChatMessage as IChatMessage } from "@unavi/react-client";
+import {
+  ChatMessage as IChatMessage,
+  useClientStore,
+} from "@unavi/react-client";
 import { useEffect, useState } from "react";
 
 import { usePlayStore } from "@/app/play/store";
+import Tooltip from "@/src/ui/Tooltip";
 
-import { usePlayerName } from "../hooks/usePlayerName";
 import { usePointerLocked } from "../hooks/usePointerLocked";
 
 interface Props {
@@ -16,7 +19,6 @@ export default function ChatMessage({ message, alwaysShow }: Props) {
   const [visible, setVisible] = useState(false);
   const [hidden, setHidden] = useState(false);
 
-  const name = usePlayerName(message.playerId);
   const isPointerLocked = usePointerLocked();
 
   useEffect(() => {
@@ -44,19 +46,34 @@ export default function ChatMessage({ message, alwaysShow }: Props) {
     >
       {message.type === "player" ? (
         <div className="whitespace-pre-wrap break-words">
-          <span className="font-bold">{name}</span>:{" "}
+          <PlayerName playerId={message.playerId} />:{" "}
           <span className="text-white/90">{message.text}</span>
         </div>
       ) : message.type === "system" ? (
-        <span className="text-white/70">
-          <span>{name}</span>
-          {message.variant === "player_joined"
-            ? " joined"
-            : message.variant === "player_left"
-            ? " left"
-            : null}
-        </span>
+        <span className="text-white/70">{message.text}</span>
       ) : null}
     </div>
   );
+}
+
+function PlayerName({ playerId }: { playerId: number }) {
+  const [name] = useState(useClientStore.getState().getDisplayName(playerId));
+
+  const isHandle = name.startsWith("@");
+
+  if (isHandle) {
+    const parts = name.split(":");
+    const username = parts[0]?.slice(1);
+    const home = parts[1];
+
+    if (username && home) {
+      return (
+        <Tooltip text={name} side="right" capitalize={false}>
+          <span className="font-bold">@{username}</span>
+        </Tooltip>
+      );
+    }
+  }
+
+  return <span>{name}</span>;
 }

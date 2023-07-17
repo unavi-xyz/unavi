@@ -1,3 +1,23 @@
-import { SpaceId } from "@/src/utils/parseSpaceId";
+import { WorldId } from "@/src/utils/parseWorldId";
 
-export type SpaceUriId = SpaceId | { type: "uri"; value: string };
+export type WorldUriId = WorldId | { type: "uri"; value: string };
+
+export enum PlayMode {
+  Play = "play",
+  Edit = "edit",
+}
+
+export enum Tool {
+  Translate = "translate",
+  Rotate = "rotate",
+  Scale = "scale",
+}
+
+export enum RightPanelPage {
+  World = "world",
+}
+
+export enum LeftPanelPage {
+  Add = "add",
+  Scene = "scene",
+}

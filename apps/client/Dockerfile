@@ -12,7 +12,7 @@ RUN npm i -g npm@latest; \
 
 # Prune files
 COPY . .
-RUN turbo prune --scope=client --docker
+RUN turbo prune --scope=@unavi/client --docker
 
 # Add lockfile and package.json's of isolated subworkspace
 FROM node:18-alpine AS installer
@@ -41,7 +41,7 @@ COPY turbo.json turbo.json
 # ARG TURBO_TOKEN
 # ENV TURBO_TOKEN=$TURBO_TOKEN
 
-RUN pnpm turbo run build --filter=client...
+RUN pnpm turbo run build --filter=@unavi/client...
 
 FROM node:18-alpine AS runner
 WORKDIR /app

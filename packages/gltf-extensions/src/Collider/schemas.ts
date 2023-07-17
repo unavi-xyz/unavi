@@ -1,6 +1,13 @@
 import { z } from "zod";
 
-const colliderTypeSchema = z.enum(["box", "sphere", "capsule", "cylinder", "hull", "trimesh"]);
+const colliderTypeSchema = z.enum([
+  "box",
+  "sphere",
+  "capsule",
+  "cylinder",
+  "hull",
+  "trimesh",
+]);
 
 export type ColliderType = z.infer<typeof colliderTypeSchema>;
 

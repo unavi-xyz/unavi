@@ -1,6 +1,6 @@
 # Host
 
-A dockerized Node.js server for hosting spaces over WebSockets and WebRTC.
+A dockerized Node.js server for running multiplayer over WebSockets and WebRTC.
 
 ## Deployment
 

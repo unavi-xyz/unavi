@@ -4,9 +4,9 @@ The UNAVI client, used to access The Wired.
 
 ## Tech Stack
 
-- [Next.js](https://nextjs.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Prisma](https://www.prisma.io/)
+- [Drizzle](https://orm.drizzle.team/)
 - [Lucia](https://github.com/pilcrowOnPaper/lucia)
+- [Next.js](https://nextjs.org/)
+- [RainbowKit](https://www.rainbowkit.com/)
+- [Tailwind](https://tailwindcss.com/)
 - [Wagmi](https://wagmi.sh/)
-- [Rainbow Kit](https://www.rainbowkit.com/)

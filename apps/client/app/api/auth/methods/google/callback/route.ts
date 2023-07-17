@@ -1,8 +1,10 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-import { googleAuth } from "@/src/server/auth/google";
-import { GOOGLE_OAUTH_STATE_COOKIE } from "@/src/server/auth/google";
+import {
+  GOOGLE_OAUTH_STATE_COOKIE,
+  googleAuth,
+} from "@/src/server/auth/google";
 import { auth } from "@/src/server/auth/lucia";
 import { nanoidShort } from "@/src/server/nanoid";
 
@@ -12,7 +14,8 @@ export const dynamic = "force-dynamic";
  * Callback for Google OAuth
  */
 export async function GET(request: NextRequest) {
-  if (!googleAuth) return new Response("Google OAuth is not supported", { status: 500 });
+  if (!googleAuth)
+    return new Response("Google OAuth is not supported", { status: 500 });
 
   // Get code and state params from url
   const url = new URL(request.url);

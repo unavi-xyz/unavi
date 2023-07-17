@@ -1,9 +1,14 @@
-"use client";
-
 import { AuthenticationStatus } from "@rainbow-me/rainbowkit";
 import { User } from "lucia-auth";
 import { useRouter } from "next/navigation";
-import { Context, createContext, useCallback, useContext, useEffect, useTransition } from "react";
+import {
+  Context,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useTransition,
+} from "react";
 
 import { LoginResponse } from "@/app/api/auth/login/types";
 import { getAuthStatus } from "@/app/api/auth/status/helper";
@@ -19,13 +24,14 @@ export type AuthContextValue = {
   logout: () => Promise<void>;
 };
 
-export const AuthContext: Context<AuthContextValue> = createContext<AuthContextValue>({
-  loading: false,
-  login: async () => {},
-  logout: async () => {},
-  status: useAuthStore.getState().status,
-  user: useAuthStore.getState().user,
-});
+export const AuthContext: Context<AuthContextValue> =
+  createContext<AuthContextValue>({
+    loading: false,
+    login: async () => {},
+    logout: async () => {},
+    status: useAuthStore.getState().status,
+    user: useAuthStore.getState().user,
+  });
 
 interface Props {
   children: React.ReactNode;

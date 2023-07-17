@@ -1,19 +1,20 @@
-import { ClientContext } from "@unavi/react-client";
-import { useContext } from "react";
+import { useClientStore } from "@unavi/react-client";
 
 import { usePlayStore } from "@/app/play/store";
 import { useAuth } from "@/src/client/AuthProvider";
+import { toHex } from "@/src/utils/toHex";
 
 import TextField from "../../../ui/TextField";
-import { toHex } from "../../../utils/toHex";
 
 export default function NameSettings() {
-  const nickname = usePlayStore((state) => state.nickname);
+  const nickname = usePlayStore((state) => state.uiName);
+  const playerId = useClientStore((state) => state.playerId);
   const { user } = useAuth();
-  const { playerId } = useContext(ClientContext);
 
   const guestName =
-    playerId == null || playerId === undefined ? "Guest" : `Guest ${toHex(playerId)}`;
+    playerId == null || playerId === undefined
+      ? "Guest"
+      : `Guest ${toHex(playerId)}`;
 
   if (user?.address) return null;
 
@@ -23,9 +24,7 @@ export default function NameSettings() {
       name="name"
       placeholder={guestName}
       value={nickname ?? ""}
-      onChange={(e) => {
-        usePlayStore.setState({ didChangeName: true, nickname: e.target.value });
-      }}
+      onChange={(e) => usePlayStore.setState({ uiName: e.target.value })}
       className="text-center"
     />
   );

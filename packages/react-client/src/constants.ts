@@ -1,3 +1,13 @@
-export enum LocalStorageKey {
-  Avatar = "wired/avatar",
-}
+export const ClientSchedules = {
+  ConnectToHost: Symbol("ConnectToHost"),
+  EnterEditMode: Symbol("EnterEditMode"),
+  ExitEditMode: Symbol("ExitEditMode"),
+  Export: Symbol("Export"),
+};
+
+export const LOCATION_ROUNDING = {
+  POSITION: 100000,
+  ROTATION: 10000,
+};
+
+export const NETWORK_UPDATE_HZ = 20;

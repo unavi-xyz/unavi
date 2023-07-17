@@ -6,22 +6,22 @@
   "display": "minimal-ui",
   "icons": [
     {
+      "purpose": "maskable",
+      "sizes": "512x512",
       "src": "images/Icon-Maskable.png",
-      "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "maskable"
+      "type": "image/png"
     },
     {
+      "purpose": "any",
+      "sizes": "512x512",
       "src": "images/Icon-512.png",
-      "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "any"
+      "type": "image/png"
     },
     {
-      "src": "images/Icon-192.png",
-      "type": "image/png",
+      "purpose": "any",
       "sizes": "192x192",
-      "purpose": "any"
+      "src": "images/Icon-192.png",
+      "type": "image/png"
     }
   ],
   "name": "UNAVI",

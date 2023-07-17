@@ -1,10 +1,11 @@
 /**
- * Parses a handle into a username and domain
+ * Parses a handle into a username and home server
  *
  * @example
- * parseHandle("alice@unavi.xyz") // { username: "alice", domain: "unavi.xyz" }
+ * parseHandle("@alice:unavi.xyz") // { home: "unavi.xyz", username: "alice" }
  */
 export function parseHandle(handle: string) {
-  const [username, domain] = handle.split("@");
-  return { domain, username };
+  const [front, home] = handle.split(":");
+  const username = front?.slice(1);
+  return { home, username };
 }

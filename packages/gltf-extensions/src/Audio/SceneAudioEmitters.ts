@@ -1,4 +1,9 @@
-import { ExtensionProperty, IProperty, Nullable, PropertyType } from "@gltf-transform/core";
+import {
+  ExtensionProperty,
+  IProperty,
+  Nullable,
+  PropertyType,
+} from "@gltf-transform/core";
 
 import { EXTENSION_NAME } from "../constants";
 import { AudioEmitter } from "./AudioEmitter";

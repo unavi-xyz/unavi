@@ -1,12 +1,15 @@
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 import { env } from "@/src/env.mjs";
 import { auth } from "@/src/server/auth/lucia";
+import { db } from "@/src/server/db/drizzle";
+import { profile } from "@/src/server/db/schema";
+import { FixWith } from "@/src/server/db/types";
 import { nanoidShort } from "@/src/server/nanoid";
-import { prisma } from "@/src/server/prisma";
 import { s3Client } from "@/src/server/s3";
 import { S3Path } from "@/src/utils/s3Paths";
 
@@ -23,14 +26,16 @@ export async function PUT(request: NextRequest, { params }: Params) {
   if (!session) return new Response(null, { status: 401 });
 
   // Get user profile
-  const user = await prisma.authUser.findUnique({
-    select: { Profile: true },
-    where: { id: session.userId },
+  const _foundUser = await db.query.user.findFirst({
+    where: (row, { eq }) => eq(row.id, session.userId),
+    with: { profile: true },
   });
-  if (!user || !user.Profile) return new Response(null, { status: 404 });
+  if (!_foundUser) return new Response(null, { status: 404 });
+  const foundUser: FixWith<typeof _foundUser, "profile"> = _foundUser;
+  if (!foundUser.profile) return new Response(null, { status: 404 });
 
   const { file } = paramsSchema.parse(params);
-  const idName = file === ProfileFile.image ? "imageId" : "backgroundId";
+  const idName = file === ProfileFile.image ? "imageKey" : "backgroundKey";
 
   // Generate file ID
   const fileId = nanoidShort();
@@ -46,9 +51,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
   };
 
   const removePreviousFile = async () => {
-    if (!user.Profile) return;
+    if (!foundUser.profile) return;
 
-    const prevId = user.Profile[idName];
+    const prevId = foundUser.profile[idName];
     if (!prevId) return;
 
     const command = new DeleteObjectCommand({
@@ -62,7 +67,10 @@ export async function PUT(request: NextRequest, { params }: Params) {
   const [url] = await Promise.all([
     getUploadURL(),
     removePreviousFile(),
-    prisma.profile.update({ data: { [idName]: fileId }, where: { userId: session.userId } }),
+    db
+      .update(profile)
+      .set({ [idName]: fileId })
+      .where(eq(profile.userId, session.userId)),
   ]);
 
   const json: GetFileUploadResponse = { fileId, url };

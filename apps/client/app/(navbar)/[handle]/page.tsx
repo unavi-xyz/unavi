@@ -1,13 +1,16 @@
+import { eq } from "drizzle-orm";
 import { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
-import AuthProvider from "@/src/client/AuthProvider";
-import { fetchDatabaseSpaces } from "@/src/server/helpers/fetchLatestSpaces";
-import { prisma } from "@/src/server/prisma";
+import { db } from "@/src/server/db/drizzle";
+import { user } from "@/src/server/db/schema";
+import { FixWith } from "@/src/server/db/types";
+import { fetchLatestWorlds } from "@/src/server/helpers/fetchLatestWorlds";
 import Avatar from "@/src/ui/Avatar";
-import SpaceCard from "@/src/ui/SpaceCard";
+import WorldCard from "@/src/ui/WorldCard";
 import { isFromCDN } from "@/src/utils/isFromCDN";
+import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
 import EditProfileButton from "./EditProfileButton";
 
@@ -17,26 +20,35 @@ interface Props {
   params: Params;
 }
 
+async function queryUser(username: string) {
+  const _foundUser = await db.query.user.findFirst({
+    columns: { address: true, id: true },
+    where: eq(user.username, username),
+    with: { profile: true },
+  });
+  if (!_foundUser) return null;
+  const foundUser: FixWith<typeof _foundUser, "profile"> = _foundUser;
+
+  return foundUser;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const username = params.handle.split("%40")[1]; // Remove the @ from the handle
   if (!username) return {};
 
-  const user = await prisma.authUser.findUnique({
-    include: { Profile: true },
-    where: { username },
-  });
-
-  if (!user) return {};
+  const foundUser = await queryUser(username);
+  if (!foundUser) return {};
 
   const title = `@${username}`;
-  const description = user?.Profile?.bio ?? "";
-  const image = user?.Profile?.image;
+  const description = foundUser.profile?.bio ?? "";
+  const image = foundUser.profile?.imageKey
+    ? cdnURL(S3Path.profile(foundUser.id).image(foundUser.profile.imageKey))
+    : undefined;
 
   return {
     description,
     openGraph: {
       description,
-      firstName: user?.Profile?.name,
       images: image ? [{ url: image }] : undefined,
       title,
       type: "profile",
@@ -54,17 +66,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function Handle({ params }: Props) {
   const username = params.handle.split("%40")[1]; // Remove the @ from the handle
-  if (!username) notFound();
+  if (!username) return notFound();
 
-  const [spaces, user] = await Promise.all([
-    fetchDatabaseSpaces(20, username),
-    prisma.authUser.findUnique({
-      include: { Profile: true },
-      where: { username },
-    }),
-  ]);
+  const foundUser = await queryUser(username);
+  if (!foundUser) return notFound();
 
-  if (!user) notFound();
+  const worlds = await fetchLatestWorlds(20, foundUser.id);
+
+  const background = foundUser.profile?.backgroundKey
+    ? cdnURL(
+        S3Path.profile(foundUser.id).background(foundUser.profile.backgroundKey)
+      )
+    : undefined;
+
+  const image = foundUser.profile?.imageKey
+    ? cdnURL(S3Path.profile(foundUser.id).image(foundUser.profile.imageKey))
+    : undefined;
 
   return (
     <>
@@ -72,10 +89,10 @@ export default async function Handle({ params }: Props) {
         <div className="max-w-content">
           <div className="h-40 w-full bg-neutral-200 md:h-72 xl:rounded-2xl">
             <div className="relative h-full w-full object-cover">
-              {user?.Profile?.background ? (
-                isFromCDN(user.Profile.background) ? (
+              {background ? (
+                isFromCDN(background) ? (
                   <Image
-                    src={user.Profile.background}
+                    src={background}
                     priority
                     fill
                     sizes="100vw"
@@ -84,7 +101,7 @@ export default async function Handle({ params }: Props) {
                   />
                 ) : (
                   <img
-                    src={user.Profile.background}
+                    src={background}
                     sizes="100vw"
                     alt=""
                     className="h-full w-full object-cover xl:rounded-2xl"
@@ -98,28 +115,30 @@ export default async function Handle({ params }: Props) {
           <section className="flex justify-center px-4 md:px-0">
             <div className="flex w-full flex-col items-center space-y-2">
               <div className="relative z-10 -mt-16 flex w-32 rounded-full ring-4 ring-white">
-                <Avatar src={user?.Profile?.image} circle uniqueKey={username} size={128} />
+                <Avatar src={image} circle uniqueKey={username} size={128} />
 
-                <AuthProvider>
-                  <EditProfileButton
-                    userId={user.id}
-                    username={user.username}
-                    bio={user.Profile?.bio ?? undefined}
-                    image={user.Profile?.image ?? undefined}
-                    background={user.Profile?.background ?? undefined}
-                  />
-                </AuthProvider>
+                <EditProfileButton
+                  userId={foundUser.id}
+                  username={username}
+                  bio={foundUser.profile?.bio ?? undefined}
+                  imageKey={foundUser.profile?.imageKey ?? undefined}
+                  image={image}
+                  backgroundKey={foundUser.profile?.backgroundKey ?? undefined}
+                  background={background}
+                />
               </div>
 
               <div className="flex w-full flex-col items-center space-y-2">
                 <div className="text-2xl font-bold">@{username}</div>
                 <div className="w-full overflow-x-hidden text-ellipsis text-center text-neutral-400">
-                  {user?.address}
+                  {foundUser?.address}
                 </div>
               </div>
 
-              {user?.Profile?.bio && (
-                <div className="w-full whitespace-pre-line text-center">{user.Profile.bio}</div>
+              {foundUser.profile?.bio && (
+                <div className="w-full whitespace-pre-line text-center">
+                  {foundUser.profile.bio}
+                </div>
               )}
             </div>
           </section>
@@ -128,9 +147,9 @@ export default async function Handle({ params }: Props) {
 
       <div className="flex justify-center pb-8 pt-4">
         <div className="max-w-content mx-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {spaces.map(({ id, uri, metadata }) => (
-            <SpaceCard
-              key={id.value}
+          {worlds.map(({ id, uri, metadata }) => (
+            <WorldCard
+              key={id}
               id={id}
               uri={uri}
               metadata={metadata}

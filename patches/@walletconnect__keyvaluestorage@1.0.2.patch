@@ -1,0 +1,71 @@
+diff --git a/dist/cjs/node-js/db.js b/dist/cjs/node-js/db.js
+index 3401cafada0dba0d8a0424faad7fdb0bb8d1e9c5..c6de5693652403255190f5f50d56da6e150e21bb 100644
+--- a/dist/cjs/node-js/db.js
++++ b/dist/cjs/node-js/db.js
+@@ -1,39 +1,37 @@
+ "use strict";
+ Object.defineProperty(exports, "__esModule", { value: true });
+-function importLokijs() {
+-    try {
+-        return require("lokijs");
+-    }
+-    catch (e) {
+-        throw new Error(`To use WalletConnect server side, you'll need to install the "lokijs" dependency. If you are seeing this error during a build / in an SSR environment, you can add "lokijs" as a devDependency to make this error go away.`);
+-    }
+-}
++function importLokijs() {}
+ let Lokijs;
+ class Db {
+-    constructor(opts) {
+-        if (!Lokijs) {
+-            Lokijs = importLokijs();
+-        }
+-        if ((opts === null || opts === void 0 ? void 0 : opts.db) === ":memory:") {
+-            this.database = new Lokijs(opts === null || opts === void 0 ? void 0 : opts.db, {});
+-        }
+-        else {
+-            this.database = new Lokijs(opts === null || opts === void 0 ? void 0 : opts.db, {
+-                autoload: true,
+-                autoloadCallback: opts.callback,
+-            });
+-        }
++  constructor(opts) {
++    if (!Lokijs) {
++      Lokijs = importLokijs();
+     }
+-    static create(opts) {
+-        const db = opts.db;
+-        if (db === ":memory:") {
+-            return new Db(opts);
+-        }
+-        if (!Db.instances[db]) {
+-            Db.instances[db] = new Db(opts);
++    if ((opts === null || opts === void 0 ? void 0 : opts.db) === ":memory:") {
++      this.database = new Lokijs(
++        opts === null || opts === void 0 ? void 0 : opts.db,
++        {}
++      );
++    } else {
++      this.database = new Lokijs(
++        opts === null || opts === void 0 ? void 0 : opts.db,
++        {
++          autoload: true,
++          autoloadCallback: opts.callback,
+         }
+-        return Db.instances[db];
++      );
++    }
++  }
++  static create(opts) {
++    const db = opts.db;
++    if (db === ":memory:") {
++      return new Db(opts);
++    }
++    if (!Db.instances[db]) {
++      Db.instances[db] = new Db(opts);
+     }
++    return Db.instances[db];
++  }
+ }
+ exports.default = Db;
+ Db.instances = {};

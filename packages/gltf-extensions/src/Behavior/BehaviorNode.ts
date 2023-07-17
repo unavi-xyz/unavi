@@ -1,4 +1,9 @@
-import { ExtensionProperty, IProperty, Node, Nullable } from "@gltf-transform/core";
+import {
+  ExtensionProperty,
+  IProperty,
+  Node,
+  Nullable,
+} from "@gltf-transform/core";
 
 import { EXTENSION_NAME } from "../constants";
 import { BehaviorVariable } from "./BehaviorVariable";

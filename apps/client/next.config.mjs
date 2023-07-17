@@ -68,8 +68,9 @@ export default await defineNextConfig({
     ignoreDuringBuilds: true,
   },
   experimental: {
-    appDir: true,
     outputFileTracingExcludes: { "**": ["**swc/core**"] },
+    serverActions: true,
+    serverComponentsExternalPackages: ["mysql2"],
   },
   async headers() {
     return [

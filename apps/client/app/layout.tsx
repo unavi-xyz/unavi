@@ -1,9 +1,10 @@
-import "../styles/globals.css";
+import "./globals.css";
 
 import { Metadata } from "next";
 import { Nunito } from "next/font/google";
 import { Suspense } from "react";
 
+import ClientWrapper from "./ClientWrapper";
 import Toast from "./Toast";
 
 const font = Nunito({ subsets: ["latin"] });
@@ -36,7 +37,7 @@ export const metadata: Metadata = {
     icon: "/images/Icon-512.png",
     shortcut: "/images/Icon-512.png",
   },
-  keywords: ["Metaverse", "WebXR", "Web3"],
+  keywords: ["Metaverse", "WebXR", "Gaming"],
   manifest: "/manifest.json",
   openGraph: {
     description: DESCRIPTION,
@@ -62,11 +63,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body className={font.className}>
-        {children}
+        <ClientWrapper>{children}</ClientWrapper>
 
         <Suspense>
           <Toast />

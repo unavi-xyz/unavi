@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 
-import { useSetAvatar } from "@/src/play/hooks/useSetAvatar";
+import { setAvatar } from "@/src/play/utils/setAvatar";
 
 export default function FileDrop() {
   const [isDragging, setIsDragging] = useState(false);
-
-  const setAvatar = useSetAvatar();
 
   useEffect(() => {
     const onDragOver = (e: DragEvent) => {
@@ -41,7 +39,7 @@ export default function FileDrop() {
       document.body.removeEventListener("dragleave", onDragLeave);
       document.body.removeEventListener("drop", onDrop);
     };
-  }, [setAvatar]);
+  }, []);
 
   if (!isDragging) return null;
 

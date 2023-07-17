@@ -1,12 +1,11 @@
-import { useClient } from "@unavi/react-client";
+import { useClientStore } from "@unavi/react-client";
 import { useEffect, useState } from "react";
 
-import RainbowkitWrapper from "@/app/(navbar)/RainbowkitWrapper";
 import { usePlayStore } from "@/app/play/store";
 
 import DialogContent, { DialogRoot } from "../../../ui/Dialog";
 import { LocalStorageKey } from "../../constants";
-import { useSetAvatar } from "../../hooks/useSetAvatar";
+import { setAvatar } from "../../utils/setAvatar";
 import AccountSettings from "./AccountSettings";
 import AvatarBrowser from "./AvatarBrowser";
 import AvatarSettings from "./AvatarSettings";
@@ -22,9 +21,6 @@ interface Props {
 export default function SettingsDialog({ open, setOpen }: Props) {
   const [page, setPage] = useState<SettingsPage>("Settings");
 
-  const setAvatar = useSetAvatar();
-  const { engine, send } = useClient();
-
   useEffect(() => {
     if (!open) return;
     setPage("Settings");
@@ -33,48 +29,43 @@ export default function SettingsDialog({ open, setOpen }: Props) {
   async function handleClose() {
     setOpen(false);
 
-    if (!engine) return;
+    const { uiName: name, uiAvatar: avatar } = usePlayStore.getState();
 
-    const { didChangeName, didChangeAvatar, nickname, avatar } = usePlayStore.getState();
+    setAvatar(avatar);
 
-    if (didChangeName) {
-      usePlayStore.setState({ didChangeName: false });
-
-      // Save to local storage
-      if (nickname) localStorage.setItem(LocalStorageKey.Name, nickname);
-      else localStorage.removeItem(LocalStorageKey.Name);
-
-      // Publish name change
-      send({ data: nickname, id: "xyz.unavi.world.user.name" });
+    // Save name to local storage
+    if (name) {
+      localStorage.setItem(LocalStorageKey.Name, name);
+    } else {
+      localStorage.removeItem(LocalStorageKey.Name);
     }
 
-    if (didChangeAvatar) setAvatar(avatar);
+    // Set name
+    useClientStore.getState().setName(name);
   }
 
   return (
-    <RainbowkitWrapper>
-      <DialogRoot
-        open={open}
-        onOpenChange={(value) => {
-          if (!value) handleClose();
-        }}
+    <DialogRoot
+      open={open}
+      onOpenChange={(value) => {
+        if (!value) handleClose();
+      }}
+    >
+      <DialogContent
+        autoFocus={false}
+        title={page}
+        size={page === "Browse Avatars" ? "large" : "normal"}
       >
-        <DialogContent
-          autoFocus={false}
-          title={page}
-          size={page === "Browse Avatars" ? "large" : "normal"}
-        >
-          {page === "Browse Avatars" ? (
-            <AvatarBrowser setPage={setPage} onClose={handleClose} />
-          ) : (
-            <div className="space-y-4">
-              <NameSettings />
-              <AvatarSettings setPage={setPage} />
-              <AccountSettings onClose={handleClose} />
-            </div>
-          )}
-        </DialogContent>
-      </DialogRoot>
-    </RainbowkitWrapper>
+        {page === "Browse Avatars" ? (
+          <AvatarBrowser setPage={setPage} onClose={handleClose} />
+        ) : (
+          <div className="space-y-6">
+            <AvatarSettings setPage={setPage} />
+            <NameSettings />
+            <AccountSettings onClose={handleClose} />
+          </div>
+        )}
+      </DialogContent>
+    </DialogRoot>
   );
 }

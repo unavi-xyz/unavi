@@ -1,11 +1,11 @@
 "use client";
 
 import * as DropdownPrimitive from "@radix-ui/react-dropdown-menu";
-import React from "react";
+import { forwardRef } from "react";
 
 type Props = DropdownPrimitive.DropdownMenuContentProps;
 
-export const DropdownContent = React.forwardRef<HTMLDivElement, Props>(
+export const DropdownContent = forwardRef<HTMLDivElement, Props>(
   ({ children, ...rest }, ref) => {
     return (
       <DropdownPrimitive.DropdownMenuPortal>
@@ -31,7 +31,7 @@ export const DropdownItem = DropdownPrimitive.Item;
 export const DropdownSub = DropdownPrimitive.Sub;
 export const DropdownSubTrigger = DropdownPrimitive.SubTrigger;
 
-export const DropdownSubContent = React.forwardRef<HTMLDivElement, Props>(
+export const DropdownSubContent = forwardRef<HTMLDivElement, Props>(
   ({ children, ...rest }, ref) => {
     return (
       <DropdownPrimitive.SubContent

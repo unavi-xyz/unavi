@@ -1,50 +1,66 @@
 import { ProfileMetadata, ProfileMetadataSchema } from "@wired-protocol/types";
 
-import { env } from "@/src/env.mjs";
+import { HOME_SERVER } from "@/src/constants";
 import { parseHandle } from "@/src/utils/parseHandle";
+import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
-import { prisma } from "../prisma";
+import { db } from "../db/drizzle";
+import { FixWith } from "../db/types";
 
 export type UserProfile = {
   username: string;
-  domain: string;
+  home: string;
   metadata: ProfileMetadata;
 };
 
 /**
  * Fetches a user's profile given their handle
  */
-export async function fetchUserProfile(handle: string): Promise<UserProfile | null> {
-  const { username, domain } = parseHandle(handle);
-  if (!username || !domain) return null;
+export async function fetchUserProfile(
+  handle: string
+): Promise<UserProfile | null> {
+  const { username, home } = parseHandle(handle);
+  if (!username || !home) return null;
 
-  if (domain === env.NEXT_PUBLIC_DEPLOYED_URL) return await fetchUserProfileDB(username);
-  else return await fetchUserProfileWired(username, domain);
+  if (home === HOME_SERVER) return await fetchUserProfileDB(username);
+  else return await fetchUserProfileWired(username, home);
 }
 
 /**
  * Fetches a user's profile from the database
  */
-export async function fetchUserProfileDB(username: string): Promise<UserProfile | null> {
+export async function fetchUserProfileDB(
+  username: string
+): Promise<UserProfile | null> {
   try {
-    const user = await prisma.authUser.findUnique({
-      include: { Profile: true },
-      where: { username },
+    const _foundUser = await db.query.user.findFirst({
+      where: (row, { eq }) => eq(row.username, username),
+      with: { profile: true },
     });
-    if (!user) return null;
+    if (!_foundUser) return null;
+    const foundUser: FixWith<typeof _foundUser, "profile"> = _foundUser;
+    if (!foundUser.profile) return null;
 
-    const profile = user.Profile;
-    if (!profile) return null;
+    const background = foundUser.profile.backgroundKey
+      ? cdnURL(
+          S3Path.profile(foundUser.id).background(
+            foundUser.profile.backgroundKey
+          )
+        )
+      : undefined;
+
+    const image = foundUser.profile.imageKey
+      ? cdnURL(S3Path.profile(foundUser.id).image(foundUser.profile.imageKey))
+      : undefined;
 
     return {
-      domain: env.NEXT_PUBLIC_DEPLOYED_URL,
+      home: HOME_SERVER,
       metadata: {
-        background: profile.background ?? undefined,
-        bio: profile.bio ?? undefined,
-        image: profile.image ?? undefined,
-        name: profile.name ?? undefined,
+        background,
+        bio: foundUser.profile.bio ?? undefined,
+        image,
       },
-      username: user.username,
+      username: foundUser.username,
     };
   } catch {
     return null;
@@ -56,21 +72,20 @@ export async function fetchUserProfileDB(username: string): Promise<UserProfile 
  */
 export async function fetchUserProfileWired(
   username: string,
-  domain: string
+  home: string
 ): Promise<UserProfile | null> {
   try {
-    const res = await fetch(`${domain}/.wired-protocol/v1/users/${username}`, {
+    const res = await fetch(`${home}/.wired-protocol/v1/users/${username}`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return null;
 
-    const parsed = ProfileMetadataSchema.safeParse(await res.json());
-
-    if (!parsed.success) return null;
+    const json = await res.json();
+    const metadata = ProfileMetadataSchema.parse(json);
 
     return {
-      domain,
-      metadata: parsed.data,
+      home,
+      metadata,
       username,
     };
   } catch {

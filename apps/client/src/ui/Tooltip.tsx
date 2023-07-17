@@ -1,17 +1,21 @@
 "use client";
 
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
-import React, { useEffect, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 
 interface Props {
   text: string;
   delayDuration?: number;
   side?: "left" | "right" | "bottom" | "top";
+  capitalize?: boolean;
   children: React.ReactNode;
 }
 
-const Tooltip = React.forwardRef<HTMLDivElement, Props>(
-  ({ text, delayDuration = 400, side = "bottom", children }, ref) => {
+const Tooltip = forwardRef<HTMLDivElement, Props>(
+  (
+    { text, delayDuration = 400, side = "bottom", capitalize = true, children },
+    ref
+  ) => {
     const [open, setOpen] = useState(false);
     const [visible, setVisible] = useState(false);
 
@@ -37,7 +41,9 @@ const Tooltip = React.forwardRef<HTMLDivElement, Props>(
             }
           }}
         >
-          <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
+          <TooltipPrimitive.Trigger asChild>
+            {children}
+          </TooltipPrimitive.Trigger>
 
           <TooltipPrimitive.Portal>
             <TooltipPrimitive.Content
@@ -45,8 +51,8 @@ const Tooltip = React.forwardRef<HTMLDivElement, Props>(
               side={side}
               sideOffset={10}
               className={`z-50 rounded-lg bg-black/90 px-3 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur transition ${
-                visible ? "animate-scaleInFull" : "animate-scaleOutFull"
-              }`}
+                capitalize ? "capitalize" : ""
+              } ${visible ? "animate-scaleInFull" : "animate-scaleOutFull"}`}
             >
               {text}
             </TooltipPrimitive.Content>

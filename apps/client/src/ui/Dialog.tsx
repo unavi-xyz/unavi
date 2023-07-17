@@ -1,7 +1,7 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import React from "react";
+import { forwardRef } from "react";
 
 interface Props extends DialogPrimitive.DialogContentProps {
   title?: string;
@@ -10,8 +10,18 @@ interface Props extends DialogPrimitive.DialogContentProps {
   size?: "normal" | "large";
 }
 
-const DialogContent = React.forwardRef<HTMLDivElement, Props>(
-  ({ autoFocus = true, title, description, size = "normal", children, ...rest }, ref) => {
+const DialogContent = forwardRef<HTMLDivElement, Props>(
+  (
+    {
+      autoFocus = true,
+      title,
+      description,
+      size = "normal",
+      children,
+      ...rest
+    },
+    ref
+  ) => {
     return (
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-40 h-full w-full animate-fadeIn bg-neutral-900/40 backdrop-blur-sm" />

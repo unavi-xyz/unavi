@@ -14,12 +14,6 @@ Also contains partial implementations of the following extensions:
 - [VRMC_vrm](https://github.com/vrm-c/vrm-specification/tree/master/specification/VRMC_vrm-1.0)
 - [VRM 0.0](https://github.com/vrm-c/vrm-specification/tree/master/specification/0.0)
 
-## Installation
-
-```bash
-pnpm install @unavi/gltf-extensions
-```
-
 ## Usage
 
 Simply register the extensions you want with your glTF-Transform `io` instance:
@@ -29,7 +23,10 @@ import { NodeIO } from "@gltf-transform/core";
 import { ColliderExtension, SpawnPointExtension } from "@unavi/gltf-extensions";
 
 // Register extensions
-const io = new NodeIO().registerExtensions([ColliderExtension, SpawnPointExtension]);
+const io = new NodeIO().registerExtensions([
+  ColliderExtension,
+  SpawnPointExtension,
+]);
 
 // Read from URL
 const document = await io.read("path/to/model.glb");

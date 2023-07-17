@@ -1,8 +1,8 @@
-import { useClient } from "@unavi/react-client";
 import { useState } from "react";
 import { MdArrowBack, MdSkipNext, MdSkipPrevious } from "react-icons/md";
 import useSWR from "swr";
 
+import { setAvatar } from "../../utils/setAvatar";
 import { avatarFetcher } from "./avatarFetcher";
 import { Nft, nftsResponseSchema } from "./schemas";
 import { SettingsPage } from "./SettingsDialog";
@@ -93,7 +93,9 @@ function Avatars({ onClose, page }: AvatarsProps) {
 
   if (error) {
     console.error(error);
-    return <div className="text-center text-red-900">Error fetching avatars</div>;
+    return (
+      <div className="text-center text-red-900">Error fetching avatars</div>
+    );
   }
 
   const parsed = nftsResponseSchema.safeParse(data);
@@ -128,8 +130,6 @@ interface NftCardProps {
 }
 
 function NftCard({ nft, onClose }: NftCardProps) {
-  const { setAvatar } = useClient();
-
   const asset = nft.metadata.asset;
   const image = nft.metadata.image;
 

@@ -8,12 +8,10 @@
   },
   "license": "GPL-3.0-or-later",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --onSuccess \"tsc --emitDeclarationOnly\"",
-    "dev": "pnpm build --watch",
-    "lint": "cd ../.. && eslint --fix packages/gltf-extensions --ext .js,.cjs,.mjs,.jsx,.ts,.tsx,.json --ignore-path .prettierignore"
+    "lint": "cd ../.. && eslint --fix packages/gltf-extensions --ext .ts,.tsx,.mjs,.json --ignore-path .gitignore --ignore-path .prettierignore --ignore-pattern package.json"
   },
   "dependencies": {
     "@gltf-transform/core": "^3.4.0",
@@ -21,9 +19,9 @@
     "zod": "^3.21.4"
   },
   "devDependencies": {
-    "eslint": "^8.42.0",
-    "eslint-config-custom": "workspace:*",
-    "tsconfig": "workspace:*",
+    "eslint": "^8.44.0",
+    "eslint-config-custom": "workspace:^",
+    "tsconfig": "workspace:^",
     "tsup": "^6.7.0",
     "typescript": "~5.1.3"
   },

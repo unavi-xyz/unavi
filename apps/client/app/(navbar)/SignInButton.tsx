@@ -1,34 +1,28 @@
 "use client";
 
 import { useConnectModal } from "@rainbow-me/rainbowkit";
-import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 
 import { env } from "@/src/env.mjs";
 import Button from "@/src/ui/Button";
 import DialogContent, { DialogRoot, DialogTrigger } from "@/src/ui/Dialog";
 
-import RainbowkitWrapper from "./RainbowkitWrapper";
+import { useSignInStore } from "./signInStore";
 
 interface Props {
   loading?: boolean;
 }
 
-export default function SignInButton(props: Props) {
-  return (
-    <RainbowkitWrapper>
-      <ClientSignInButton {...props} />
-    </RainbowkitWrapper>
-  );
-}
-
-export function ClientSignInButton({ loading }: Props) {
-  const [open, setOpen] = useState(false);
+export default function SignInButton({ loading }: Props) {
+  const open = useSignInStore((state) => state.open);
 
   return (
-    <DialogRoot open={open} onOpenChange={setOpen}>
+    <DialogRoot
+      open={open}
+      onOpenChange={(value) => useSignInStore.setState({ open: value })}
+    >
       <DialogContent title="Sign in to UNAVI">
-        <SignInPage setOpen={setOpen} />
+        <SignInPage />
       </DialogContent>
 
       <DialogTrigger asChild>
@@ -45,41 +39,32 @@ export function ClientSignInButton({ loading }: Props) {
   );
 }
 
-export function SignInPage({ setOpen }: { setOpen?: (open: boolean) => void }) {
+export function SignInPage({ beforeOpen }: { beforeOpen?: () => void }) {
   const { openConnectModal } = useConnectModal();
 
-  async function handleWalletLogin() {
-    if (setOpen) setOpen(false);
-    if (openConnectModal) openConnectModal();
+  function handleWalletLogin() {
+    if (openConnectModal) {
+      useSignInStore.setState({ open: false });
+      if (beforeOpen) beforeOpen();
+      openConnectModal();
+    }
   }
 
   return (
-    <div className="flex flex-col items-center space-y-2">
-      {env.NEXT_PUBLIC_HAS_GOOGLE_OAUTH ? (
-        <div className="flex w-full items-center pt-4">
-          <hr className="w-full border-neutral-300" />
-          <span className="w-fit whitespace-nowrap px-4 font-bold text-neutral-700">Web3</span>
-          <hr className="w-full border-neutral-300" />
-        </div>
-      ) : null}
-
-      <Button onClick={handleWalletLogin}>Connect Wallet</Button>
+    <div className="flex items-stretch justify-between space-x-2">
+      <Button onClick={handleWalletLogin} className="h-11 w-full rounded-lg">
+        Connect Wallet
+      </Button>
 
       {env.NEXT_PUBLIC_HAS_GOOGLE_OAUTH ? (
-        <>
-          <div className="flex w-full items-center pt-8">
-            <hr className="w-full border-neutral-300" />
-            <span className="w-fit whitespace-nowrap px-4 font-bold text-neutral-700">Socials</span>
-            <hr className="w-full border-neutral-300" />
-          </div>
-          <a
-            href="/api/auth/methods/google"
-            about="Sign in with Google"
-            className="aspect-square rounded-full border border-neutral-400 p-2.5 text-2xl transition hover:bg-neutral-100"
-          >
-            <FcGoogle />
-          </a>
-        </>
+        <a
+          href="/api/auth/methods/google"
+          about="Sign in with Google"
+          className="flex h-11 w-full items-center justify-center space-x-2 rounded-lg border border-neutral-400 px-2 transition hover:bg-neutral-100"
+        >
+          <FcGoogle className="text-2xl" />
+          <span className="font-bold">Sign in with Google</span>
+        </a>
       ) : null}
     </div>
   );

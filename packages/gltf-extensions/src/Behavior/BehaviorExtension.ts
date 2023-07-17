@@ -40,7 +40,11 @@ type BehaviorExtensionDef = {
 };
 
 export type BehaviorEvent = {
-  type: "node-created" | "node-removed" | "variable-created" | "variable-removed";
+  type:
+    | "node-created"
+    | "node-removed"
+    | "variable-created"
+    | "variable-removed";
 };
 
 /**
@@ -61,10 +65,15 @@ export class BehaviorExtension extends Extension {
   }
 
   read(context: ReaderContext) {
-    if (!context.jsonDoc.json.extensions || !context.jsonDoc.json.extensions[this.extensionName])
+    if (
+      !context.jsonDoc.json.extensions ||
+      !context.jsonDoc.json.extensions[this.extensionName]
+    )
       return this;
 
-    const rootDef = context.jsonDoc.json.extensions[this.extensionName] as BehaviorExtensionDef;
+    const rootDef = context.jsonDoc.json.extensions[
+      this.extensionName
+    ] as BehaviorExtensionDef;
 
     // Read variables
     const variables = rootDef.variables.map((variableDef) => {
@@ -80,7 +89,8 @@ export class BehaviorExtension extends Extension {
       const behaviorNode = this.createBehaviorNode();
       behaviorNode.setType(behaviorNodeDef.type);
       behaviorNode.setName(behaviorNodeDef.name);
-      if (behaviorNodeDef.extras) behaviorNode.setExtras(behaviorNodeDef.extras);
+      if (behaviorNodeDef.extras)
+        behaviorNode.setExtras(behaviorNodeDef.extras);
       return behaviorNode;
     });
 
@@ -90,7 +100,9 @@ export class BehaviorExtension extends Extension {
 
       if (configuration) {
         if (isVariableConfigJSON(configuration)) {
-          const variable = variables.find((_, i) => i === configuration.variableId);
+          const variable = variables.find(
+            (_, i) => i === configuration.variableId
+          );
           if (variable) {
             behaviorNode.setConfiguration({ isVariable: true });
             behaviorNode.setVariable(variable);
@@ -154,7 +166,9 @@ export class BehaviorExtension extends Extension {
   write(context: WriterContext) {
     // Write variables
     // Filter out unused variables
-    const variables = this.listVariables().filter((variable) => variable.listParents().length > 0);
+    const variables = this.listVariables().filter(
+      (variable) => variable.listParents().length > 0
+    );
 
     const variableDefs: VariableDef[] = variables.map((variable) => ({
       initialValue: variable.initialValue,
@@ -164,10 +178,16 @@ export class BehaviorExtension extends Extension {
 
     // Write behavior nodes
     const behaviorNodes = this.listBehaviorNodes();
-    const behaviorNodeDefs: BehaviorNodeDef[] = behaviorNodes.map((behaviorNode) => {
-      const extras = behaviorNode.getExtras() as BehaviorNodeExtras;
-      return { extras, name: behaviorNode.getName(), type: behaviorNode.getType() };
-    });
+    const behaviorNodeDefs: BehaviorNodeDef[] = behaviorNodes.map(
+      (behaviorNode) => {
+        const extras = behaviorNode.getExtras() as BehaviorNodeExtras;
+        return {
+          extras,
+          name: behaviorNode.getName(),
+          type: behaviorNode.getType(),
+        };
+      }
+    );
 
     behaviorNodeDefs.forEach((behaviorNodeDef, i) => {
       const behaviorNode = behaviorNodes[i];
@@ -181,7 +201,8 @@ export class BehaviorExtension extends Extension {
           if (!variable) throw new Error("Invalid variable reference");
 
           const variableIndex = variables.indexOf(variable);
-          if (variableIndex === -1) throw new Error("Invalid variable reference");
+          if (variableIndex === -1)
+            throw new Error("Invalid variable reference");
 
           behaviorNodeDef.configuration = { variableId: variableIndex };
         } else {
@@ -200,7 +221,8 @@ export class BehaviorExtension extends Extension {
             if (!linkedNode) throw new Error("Invalid behavior node reference");
 
             const linkIndex = behaviorNodes.indexOf(linkedNode);
-            if (linkIndex === -1) throw new Error("Invalid behavior node reference");
+            if (linkIndex === -1)
+              throw new Error("Invalid behavior node reference");
 
             behaviorNodeDef.parameters[key] = {
               link: { nodeId: linkIndex, socket: value.link.socket },
@@ -211,7 +233,9 @@ export class BehaviorExtension extends Extension {
 
             const index = context.nodeIndexMap.get(jsonNode);
             if (index === undefined) throw new Error("Invalid node reference");
-            behaviorNodeDef.parameters[key] = { value: `/nodes/${index}/${value.property}` };
+            behaviorNodeDef.parameters[key] = {
+              value: `/nodes/${index}/${value.property}`,
+            };
           } else {
             behaviorNodeDef.parameters[key] = value;
           }
@@ -226,7 +250,8 @@ export class BehaviorExtension extends Extension {
           if (!behaviorNodeDef.flow) behaviorNodeDef.flow = {};
 
           const flowIndex = behaviorNodes.indexOf(value);
-          if (flowIndex === -1) throw new Error("Invalid behavior node reference");
+          if (flowIndex === -1)
+            throw new Error("Invalid behavior node reference");
 
           behaviorNodeDef.flow[key] = flowIndex;
         });
@@ -239,7 +264,8 @@ export class BehaviorExtension extends Extension {
         variables: variableDefs,
       };
 
-      if (!context.jsonDoc.json.extensions) context.jsonDoc.json.extensions = {};
+      if (!context.jsonDoc.json.extensions)
+        context.jsonDoc.json.extensions = {};
       context.jsonDoc.json.extensions[this.extensionName] = rootDef;
     }
 
@@ -280,7 +306,8 @@ export class BehaviorExtension extends Extension {
           if (!value) throw new Error("Invalid behavior node reference");
 
           const targetNodeIndex = behaviorNodes.indexOf(value);
-          if (targetNodeIndex === -1) throw new Error("Invalid behavior node reference");
+          if (targetNodeIndex === -1)
+            throw new Error("Invalid behavior node reference");
 
           const targetNode = nodes[targetNodeIndex];
           if (!targetNode) throw new Error("Invalid behavior node reference");
@@ -298,7 +325,8 @@ export class BehaviorExtension extends Extension {
           if (!variable) throw new Error("Invalid variable reference");
 
           const variableIndex = variables.indexOf(variable);
-          if (variableIndex === -1) throw new Error("Invalid variable reference");
+          if (variableIndex === -1)
+            throw new Error("Invalid variable reference");
 
           node.configuration = { variableId: variableIndex };
         } else {
@@ -317,12 +345,15 @@ export class BehaviorExtension extends Extension {
             if (!linkedNode) throw new Error("Invalid behavior node reference");
 
             const targetNodeIndex = behaviorNodes.indexOf(linkedNode);
-            if (targetNodeIndex === -1) throw new Error("Invalid behavior node reference");
+            if (targetNodeIndex === -1)
+              throw new Error("Invalid behavior node reference");
 
             const targetNode = nodes[targetNodeIndex];
             if (!targetNode) throw new Error("Invalid behavior node reference");
 
-            node.parameters[key] = { link: { nodeId: targetNode.id, socket: value.link.socket } };
+            node.parameters[key] = {
+              link: { nodeId: targetNode.id, socket: value.link.socket },
+            };
           } else if (isJsonPath(value)) {
             const nodes = this.document.getRoot().listNodes();
 
@@ -332,7 +363,9 @@ export class BehaviorExtension extends Extension {
             const index = nodes.indexOf(jsonNode);
             if (index === -1) throw new Error("Invalid node reference");
 
-            node.parameters[key] = { value: `/nodes/${index}/${value.property}` };
+            node.parameters[key] = {
+              value: `/nodes/${index}/${value.property}`,
+            };
           } else {
             node.parameters[key] = value;
           }
@@ -351,7 +384,8 @@ export class BehaviorExtension extends Extension {
 
   listVariables(): BehaviorVariable[] {
     return this.listProperties().filter(
-      (property): property is BehaviorVariable => property instanceof BehaviorVariable
+      (property): property is BehaviorVariable =>
+        property instanceof BehaviorVariable
     );
   }
 }

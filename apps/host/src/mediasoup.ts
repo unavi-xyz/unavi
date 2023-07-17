@@ -1,15 +1,18 @@
-import mediasoup from "mediasoup";
+import { createWorker } from "mediasoup";
 import { Router } from "mediasoup/node/lib/Router";
 import { WebRtcServer } from "mediasoup/node/lib/WebRtcServer";
 
 export async function createMediasoupWorker() {
-  const worker = await mediasoup.createWorker({
+  const worker = await createWorker({
     rtcMaxPort: parseInt(process.env.RTC_MAX_PORT || "20020"),
     rtcMinPort: parseInt(process.env.RTC_MIN_PORT || "20000"),
   });
 
   worker.on("died", () => {
-    console.error("mediasoup Worker died, exiting  in 2 seconds... [pid:%d]", worker.pid);
+    console.error(
+      "mediasoup Worker died, exiting  in 2 seconds... [pid:%d]",
+      worker.pid
+    );
 
     setTimeout(() => process.exit(1), 2000);
   });
@@ -43,7 +46,10 @@ export async function createMediasoupWorker() {
   return { router, webRtcServer };
 }
 
-export async function createWebRtcTransport(router: Router, webRtcServer: WebRtcServer) {
+export async function createWebRtcTransport(
+  router: Router,
+  webRtcServer: WebRtcServer
+) {
   const transport = await router.createWebRtcTransport({
     enableSctp: true,
     enableTcp: true,

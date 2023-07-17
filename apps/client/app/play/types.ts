@@ -19,4 +19,5 @@ export enum RightPanelPage {
 
 export enum LeftPanelPage {
   Add = "add",
+  Scene = "scene",
 }

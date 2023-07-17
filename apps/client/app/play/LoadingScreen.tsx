@@ -69,9 +69,9 @@ export default function LoadingScreen({ metadata }: Props) {
 
   return (
     <div
-      className={`fixed z-50 flex h-screen w-screen flex-col items-center justify-center text-white transition duration-700 ${
-        image ? "bg-black" : "bg-neutral-800"
-      } ${doneLoading ? "pointer-events-none opacity-0" : ""}`}
+      className={`fixed z-50 flex h-screen w-screen flex-col items-center justify-center bg-neutral-900 text-white transition duration-700 ${
+        doneLoading ? "pointer-events-none opacity-0" : ""
+      }`}
     >
       {image ? <BackgroundImage src={image} /> : null}
 
@@ -125,7 +125,7 @@ export default function LoadingScreen({ metadata }: Props) {
 
 function LoadingBar({ progress }: { progress: number }) {
   return (
-    <div className="relative h-1 w-48 rounded-full bg-neutral-900 outline outline-2 outline-offset-2 outline-white/20">
+    <div className="relative h-1 w-48 rounded-full outline outline-2 outline-offset-2 outline-white/20">
       <div
         className="absolute left-0 top-0 h-full animate-backgroundScroll rounded-full bg-gradient-to-r from-amber-400 via-lime-500 to-sky-500 transition-all duration-300"
         style={{ width: `${progress * 100}%` }}
@@ -136,7 +136,7 @@ function LoadingBar({ progress }: { progress: number }) {
 
 function BackgroundImage({ src }: { src: string }) {
   return (
-    <div className="absolute inset-0 select-none opacity-30 blur-2xl">
+    <div className="absolute inset-0 select-none opacity-20 blur-2xl">
       {isFromCDN(src) ? (
         <Image
           src={src}

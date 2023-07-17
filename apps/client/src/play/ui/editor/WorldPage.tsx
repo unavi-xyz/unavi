@@ -4,6 +4,7 @@ import TextAreaDark from "@/src/ui/TextAreaDark";
 import TextFieldDark from "@/src/ui/TextFieldDark";
 
 import { useSave } from "../../hooks/useSave";
+import PanelPage from "./PanelPage";
 
 export default function WorldPage() {
   const worldId = usePlayStore((state) => state.worldId);
@@ -18,7 +19,7 @@ export default function WorldPage() {
 
   return (
     <div className="flex h-full flex-col justify-between">
-      <div className="space-y-4">
+      <PanelPage title="World">
         <ImageInput
           src={image}
           onChange={(e) => {
@@ -83,7 +84,7 @@ export default function WorldPage() {
           }}
           className="max-h-40"
         />
-      </div>
+      </PanelPage>
 
       <button
         onClick={save}

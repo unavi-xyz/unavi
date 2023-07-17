@@ -7,15 +7,16 @@ import {
   BiText,
 } from "react-icons/bi";
 
+import { LeftPanelPage } from "@/app/play/types";
+
 import { addBox } from "../../actions/addBox";
 import { addCylinder } from "../../actions/addCylinder";
 import { addSphere } from "../../actions/addSphere";
+import PanelPage from "./PanelPage";
 
 export default function AddPage() {
   return (
-    <div className="space-y-4">
-      <h1 className="text-center text-xl">Add</h1>
-
+    <PanelPage title="Add" side="left" parentPage={LeftPanelPage.Scene}>
       <ButtonGroup title="Primitives">
         <ItemButton text="Image">
           <BiImage />
@@ -39,7 +40,7 @@ export default function AddPage() {
           <BiCylinder />
         </ItemButton>
       </ButtonGroup>
-    </div>
+    </PanelPage>
   );
 }
 

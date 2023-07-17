@@ -31,11 +31,7 @@ export default function Overlay({ id, metadata }: Props) {
 
   return (
     <>
-      {mode === PlayMode.Play ? (
-        <PlayOverlay id={id} metadata={metadata} />
-      ) : (
-        <BuildOverlay />
-      )}
+      {mode === PlayMode.Play ? <PlayOverlay id={id} /> : <BuildOverlay />}
 
       {isAuthor ? <EditModeButton /> : null}
 

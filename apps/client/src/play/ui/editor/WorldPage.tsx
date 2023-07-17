@@ -11,7 +11,7 @@ export default function WorldPage() {
   const title = usePlayStore((state) => state.metadata.info?.title);
   const description = usePlayStore((state) => state.metadata.info?.description);
 
-  const save = useSave();
+  const { save, saving } = useSave();
 
   const placeholder =
     worldId.type === "id" ? `World ${worldId.value.slice(0, 6)}` : "";
@@ -58,7 +58,7 @@ export default function WorldPage() {
                 ...prev.metadata,
                 info: {
                   ...prev.metadata.info,
-                  name: e.target.value,
+                  title: e.target.value,
                 },
               },
             }));
@@ -87,7 +87,12 @@ export default function WorldPage() {
 
       <button
         onClick={save}
-        className="rounded-full bg-neutral-800 py-2 font-bold transition hover:scale-105 hover:bg-neutral-700 active:scale-100 active:opacity-90"
+        disabled={saving}
+        className={`rounded-full bg-neutral-800 py-2 font-bold transition ${
+          saving
+            ? "cursor-not-allowed opacity-50"
+            : "hover:scale-105 hover:bg-neutral-700 active:scale-100 active:opacity-90"
+        }`}
       >
         Save
       </button>

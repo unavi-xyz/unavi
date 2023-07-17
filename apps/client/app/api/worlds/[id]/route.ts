@@ -12,7 +12,7 @@ import { listObjectsRecursive } from "@/src/server/helpers/listObjectsRecursive"
 import { s3Client } from "@/src/server/s3";
 import { S3Path } from "@/src/utils/s3Paths";
 
-import { Params, paramsSchema } from "./types";
+import { Params, paramsSchema, patchBodySchema } from "./types";
 
 // Get world
 export async function GET(request: NextRequest, { params }: Params) {
@@ -22,6 +22,36 @@ export async function GET(request: NextRequest, { params }: Params) {
   if (!json) return new Response("World not found", { status: 404 });
 
   return NextResponse.json(json);
+}
+
+// Update world
+export async function PATCH(request: NextRequest, { params }: Params) {
+  const session = await getUserSession();
+  if (!session) return new Response("Unauthorized", { status: 401 });
+
+  const { id } = paramsSchema.parse(params);
+
+  // Verify user owns the world
+  const _found = await db.query.world.findFirst({
+    where: (row, { eq }) =>
+      eq(row.ownerId, session.user.userId) && eq(row.publicId, id),
+    with: { model: true },
+  });
+  if (!_found) return new Response("World not found", { status: 404 });
+  const found: FixWith<typeof _found, "model"> = _found;
+  if (!found.model) return new Response("World not found", { status: 404 });
+
+  if (!request.body) return new Response("Missing body", { status: 400 });
+
+  const json = await request.json();
+  const { title, description } = patchBodySchema.parse(json);
+
+  await db
+    .update(world)
+    .set({ description, title })
+    .where(eq(world.publicId, id));
+
+  return NextResponse.json({ success: true });
 }
 
 // Delete world

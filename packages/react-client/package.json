@@ -36,13 +36,13 @@
     "@unavi/protocol": "workspace:^",
     "@wired-protocol/types": "^0.5.0",
     "gl-matrix": "^4.0.0-beta.1",
-    "lattice-engine": "^0.3.8",
+    "lattice-engine": "^0.3.9",
     "mediasoup-client": "^3.6.84",
     "nanoid": "^4.0.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "three": "~0.153.0",
-    "thyseus": "^0.13.4",
+    "thyseus": "^0.13.5",
     "zustand": "^4.3.8"
   }
 }

@@ -377,8 +377,8 @@ importers:
         specifier: ^4.0.0-beta.1
         version: 4.0.0-beta.1
       lattice-engine:
-        specifier: ^0.3.8
-        version: 0.3.8(@types/three@0.152.1)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.4)
+        specifier: ^0.3.9
+        version: 0.3.9(@types/three@0.152.1)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.5)
       mediasoup-client:
         specifier: ^3.6.84
         version: 3.6.84
@@ -395,15 +395,15 @@ importers:
         specifier: ~0.153.0
         version: 0.153.0
       thyseus:
-        specifier: ^0.13.4
-        version: 0.13.4
+        specifier: ^0.13.5
+        version: 0.13.5
       zustand:
         specifier: ^4.3.8
         version: 4.3.8(react@18.2.0)
     devDependencies:
       '@thyseus/transformer-rollup':
         specifier: ^0.13.0
-        version: 0.13.0(rollup@3.25.1)(thyseus@0.13.4)
+        version: 0.13.0(rollup@3.25.1)(thyseus@0.13.5)
       '@types/node':
         specifier: ^18.16.17
         version: 18.16.17
@@ -3639,248 +3639,248 @@ packages:
       '@jridgewell/resolve-uri': 3.1.0
       '@jridgewell/sourcemap-codec': 1.4.14
 
-  /@lattice-engine/core@0.2.3(thyseus@0.13.4):
-    resolution: {integrity: sha512-8xJ0QUWVFcHxV5yjBjvv0bHxwdxE7EnJ3iRQdij1UcJ0guEVe9nwwDuKIk3KXeypMBA8fKSLny2gjOD2//VrVQ==}
+  /@lattice-engine/core@0.2.4(thyseus@0.13.5):
+    resolution: {integrity: sha512-Re52KWmi8pThD0yIaYgYBrmi/03VI3+itDmjnBp/8wwDDWh4DJakYc0t/UJCae2Q+Njgqyk0W1jI5bav8Z8eSQ==}
     peerDependencies:
-      thyseus: ^0.13.4
+      thyseus: ^0.13.5
     dependencies:
-      thyseus: 0.13.4
+      thyseus: 0.13.5
     dev: false
 
-  /@lattice-engine/csm@2.0.0(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(three@0.153.0)(thyseus@0.13.4):
-    resolution: {integrity: sha512-224grpduAOHgxaqfqhwbe5gnu8A7UeE7Gy43HrGFJ+twsSrdiHKT5TOt7aZYpqWPGgfp/mM07qSZ8fGx6p/ZQg==}
+  /@lattice-engine/csm@2.0.1(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(three@0.153.0)(thyseus@0.13.5):
+    resolution: {integrity: sha512-lLnA0WJ65pbqNC2eioV+Tog5MRxyFafbLDWLAYcRwnhF62ZORvP+R7WMFV/W06a6/gRUpPRIXKfkP7WLp+pIPA==}
     peerDependencies:
-      '@lattice-engine/render': ^3.0.0
-      '@lattice-engine/scene': ^0.6.0
+      '@lattice-engine/render': ^3.0.1
+      '@lattice-engine/scene': ^0.6.1
       three: ~0.153.0
-      thyseus: ^0.13.4
+      thyseus: ^0.13.5
     dependencies:
-      '@lattice-engine/render': 3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/scene@0.6.0)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.4)
-      '@lattice-engine/scene': 0.6.0(@lattice-engine/core@0.2.3)(thyseus@0.13.4)
+      '@lattice-engine/render': 3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/scene@0.6.1)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.5)
+      '@lattice-engine/scene': 0.6.1(@lattice-engine/core@0.2.4)(thyseus@0.13.5)
       three: 0.153.0
-      thyseus: 0.13.4
+      thyseus: 0.13.5
     dev: false
 
-  /@lattice-engine/gltf@4.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/physics@3.0.0)(@lattice-engine/scene@0.6.0)(@lattice-engine/text@3.0.0)(thyseus@0.13.4):
-    resolution: {integrity: sha512-Hl+0QE1L6QWpsobb67N0FJDBVlQ9AQlX46591CofSEoOOt8xe2u7V7IdRo1wzQyY2C2PhDIWOodTmzz+0cSFZg==}
+  /@lattice-engine/gltf@4.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/physics@3.0.1)(@lattice-engine/scene@0.6.1)(@lattice-engine/text@3.0.1)(thyseus@0.13.5):
+    resolution: {integrity: sha512-vUGmOdMM/6lymRoCT7Q3AMS3ZnboXF2MfQY8Vu1GKZjXIlOxeo1h4sHnHR+4wcYSkTdUyyIySo5PENxKvPG/pg==}
     peerDependencies:
-      '@lattice-engine/core': ^0.2.3
-      '@lattice-engine/physics': ^3.0.0
-      '@lattice-engine/scene': ^0.6.0
-      '@lattice-engine/text': ^3.0.0
-      thyseus: ^0.13.4
+      '@lattice-engine/core': ^0.2.4
+      '@lattice-engine/physics': ^3.0.1
+      '@lattice-engine/scene': ^0.6.1
+      '@lattice-engine/text': ^3.0.1
+      thyseus: ^0.13.5
     dependencies:
       '@gltf-transform/core': 3.4.8
       '@gltf-transform/extensions': 3.4.8
       '@gltf-transform/functions': 3.4.8
-      '@lattice-engine/core': 0.2.3(thyseus@0.13.4)
-      '@lattice-engine/physics': 3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/scene@0.6.0)(thyseus@0.13.4)
-      '@lattice-engine/scene': 0.6.0(@lattice-engine/core@0.2.3)(thyseus@0.13.4)
-      '@lattice-engine/text': 3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(three@0.153.0)(thyseus@0.13.4)
-      thyseus: 0.13.4
+      '@lattice-engine/core': 0.2.4(thyseus@0.13.5)
+      '@lattice-engine/physics': 3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/scene@0.6.1)(thyseus@0.13.5)
+      '@lattice-engine/scene': 0.6.1(@lattice-engine/core@0.2.4)(thyseus@0.13.5)
+      '@lattice-engine/text': 3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(three@0.153.0)(thyseus@0.13.5)
+      thyseus: 0.13.5
       zod: 3.21.4
     dev: false
 
-  /@lattice-engine/input@0.3.2(@lattice-engine/core@0.2.3)(thyseus@0.13.4):
-    resolution: {integrity: sha512-HivBJ++j3Xw1AYPAEG87r340KvGRatKe8PcFV0rFk4qP1Esv2yarA7Y0ZO41ONnhzI7MOOLLeMUohV8Ejoqm9A==}
+  /@lattice-engine/input@0.3.3(@lattice-engine/core@0.2.4)(thyseus@0.13.5):
+    resolution: {integrity: sha512-2cV3dMzZ5A9O8W1rR+djxc72ppqN66ryysBBlK2/rnyhti6BQzAVjKt50J5y7WQEzhP4fwCrCY3/MM2p4YgCAw==}
     peerDependencies:
-      '@lattice-engine/core': ^0.2.3
-      thyseus: ^0.13.4
+      '@lattice-engine/core': ^0.2.4
+      thyseus: ^0.13.5
     dependencies:
-      '@lattice-engine/core': 0.2.3(thyseus@0.13.4)
-      thyseus: 0.13.4
+      '@lattice-engine/core': 0.2.4(thyseus@0.13.5)
+      thyseus: 0.13.5
     dev: false
 
-  /@lattice-engine/orbit@4.0.0(@lattice-engine/input@0.3.2)(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(three@0.153.0)(thyseus@0.13.4):
-    resolution: {integrity: sha512-ZXq/IXBaEGCmn62jFMOZB6sWrNKovOWcRSZftkt9US9irNEjpK7gLtnCmM3YAXEqCRQx0l93k75ywVk+S4wIKQ==}
+  /@lattice-engine/orbit@4.0.1(@lattice-engine/input@0.3.3)(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(three@0.153.0)(thyseus@0.13.5):
+    resolution: {integrity: sha512-mh3z6pmkle/WeUcCZ+jhZ/0Z2sNiIVxJBGhUWj3O7aS0KZGaYr1nS+deyM8bWR7v78696fxk0okPV5hu3EKi9A==}
     peerDependencies:
-      '@lattice-engine/input': ^0.3.2
-      '@lattice-engine/render': ^3.0.0
-      '@lattice-engine/scene': ^0.6.0
+      '@lattice-engine/input': ^0.3.3
+      '@lattice-engine/render': ^3.0.1
+      '@lattice-engine/scene': ^0.6.1
       three: ~0.153.0
-      thyseus: ^0.13.4
+      thyseus: ^0.13.5
     dependencies:
-      '@lattice-engine/input': 0.3.2(@lattice-engine/core@0.2.3)(thyseus@0.13.4)
-      '@lattice-engine/render': 3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/scene@0.6.0)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.4)
-      '@lattice-engine/scene': 0.6.0(@lattice-engine/core@0.2.3)(thyseus@0.13.4)
+      '@lattice-engine/input': 0.3.3(@lattice-engine/core@0.2.4)(thyseus@0.13.5)
+      '@lattice-engine/render': 3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/scene@0.6.1)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.5)
+      '@lattice-engine/scene': 0.6.1(@lattice-engine/core@0.2.4)(thyseus@0.13.5)
       three: 0.153.0
-      thyseus: 0.13.4
+      thyseus: 0.13.5
     dev: false
 
-  /@lattice-engine/physics@3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/scene@0.6.0)(thyseus@0.13.4):
-    resolution: {integrity: sha512-vQwWwyenhTmqWNnHv6hWk2ydXvYh7d52kuG51qxGCTJP9krfNUPEBvGGGo+EXhbWcfT489yZ6XRwYY+86nV3WQ==}
+  /@lattice-engine/physics@3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/scene@0.6.1)(thyseus@0.13.5):
+    resolution: {integrity: sha512-Q2gIy1x4bxCen1bkINIzSYQFufKKOg47EBFx7mZ3ywd2uMrntW7NdmZv1AkrkSFD/641UGs9mz0xRa1R8RmOGQ==}
     peerDependencies:
-      '@lattice-engine/core': ^0.2.3
-      '@lattice-engine/scene': ^0.6.0
-      thyseus: ^0.13.4
+      '@lattice-engine/core': ^0.2.4
+      '@lattice-engine/scene': ^0.6.1
+      thyseus: ^0.13.5
     dependencies:
       '@dimforge/rapier3d': 0.11.2
-      '@lattice-engine/core': 0.2.3(thyseus@0.13.4)
-      '@lattice-engine/scene': 0.6.0(@lattice-engine/core@0.2.3)(thyseus@0.13.4)
+      '@lattice-engine/core': 0.2.4(thyseus@0.13.5)
+      '@lattice-engine/scene': 0.6.1(@lattice-engine/core@0.2.4)(thyseus@0.13.5)
       gl-matrix: 4.0.0-beta.1
-      thyseus: 0.13.4
+      thyseus: 0.13.5
     dev: false
 
-  /@lattice-engine/player@4.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/input@0.3.2)(@lattice-engine/physics@3.0.0)(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(@lattice-engine/vrm@3.0.0)(three@0.153.0)(thyseus@0.13.4):
-    resolution: {integrity: sha512-YVeKQwVa9uGZLN+vNkitVV74XELE6vkgufspExBtvnipDOLf6X8AtszHcW4zRVcECUVqrAGqIuEv5N74PyhXmg==}
+  /@lattice-engine/player@4.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/input@0.3.3)(@lattice-engine/physics@3.0.1)(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(@lattice-engine/vrm@3.0.1)(three@0.153.0)(thyseus@0.13.5):
+    resolution: {integrity: sha512-XbwI8uUsjbCZWQHaQqKeRZm8v4LSoDeMWBSmSbADWE69MDyFtNIi+ig74/IgVyRoLadZ6ndlk7zeIcuYxbLJVw==}
     peerDependencies:
-      '@lattice-engine/core': ^0.2.3
-      '@lattice-engine/input': ^0.3.2
-      '@lattice-engine/physics': ^3.0.0
-      '@lattice-engine/render': ^3.0.0
-      '@lattice-engine/scene': ^0.6.0
-      '@lattice-engine/vrm': ^3.0.0
+      '@lattice-engine/core': ^0.2.4
+      '@lattice-engine/input': ^0.3.3
+      '@lattice-engine/physics': ^3.0.1
+      '@lattice-engine/render': ^3.0.1
+      '@lattice-engine/scene': ^0.6.1
+      '@lattice-engine/vrm': ^3.0.1
       three: ~0.153.0
-      thyseus: ^0.13.4
+      thyseus: ^0.13.5
     dependencies:
-      '@lattice-engine/core': 0.2.3(thyseus@0.13.4)
-      '@lattice-engine/input': 0.3.2(@lattice-engine/core@0.2.3)(thyseus@0.13.4)
-      '@lattice-engine/physics': 3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/scene@0.6.0)(thyseus@0.13.4)
-      '@lattice-engine/render': 3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/scene@0.6.0)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.4)
-      '@lattice-engine/scene': 0.6.0(@lattice-engine/core@0.2.3)(thyseus@0.13.4)
-      '@lattice-engine/vrm': 3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(@types/three@0.152.1)(three@0.153.0)(thyseus@0.13.4)
+      '@lattice-engine/core': 0.2.4(thyseus@0.13.5)
+      '@lattice-engine/input': 0.3.3(@lattice-engine/core@0.2.4)(thyseus@0.13.5)
+      '@lattice-engine/physics': 3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/scene@0.6.1)(thyseus@0.13.5)
+      '@lattice-engine/render': 3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/scene@0.6.1)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.5)
+      '@lattice-engine/scene': 0.6.1(@lattice-engine/core@0.2.4)(thyseus@0.13.5)
+      '@lattice-engine/vrm': 3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(@types/three@0.152.1)(three@0.153.0)(thyseus@0.13.5)
       three: 0.153.0
-      thyseus: 0.13.4
+      thyseus: 0.13.5
     dev: false
 
-  /@lattice-engine/portal@3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/physics@3.0.0)(@lattice-engine/player@4.0.0)(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.4):
-    resolution: {integrity: sha512-9Wta0sqvKiNB2ipfIYtHn/ilv/ZDwCSPHlVRbShWVSK9QvS1CtTEBG1p9b763YuemI0ZMgv4jLA8iVC7VG4bQA==}
+  /@lattice-engine/portal@3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/physics@3.0.1)(@lattice-engine/player@4.0.1)(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.5):
+    resolution: {integrity: sha512-rKSZHmEWXje56ippBr6Fl1mvN+X4vOjxRYzKkfizw5ahxbuO31N4HK50aBHbU3Fqpm4/g09LeDLcQ8/bdht3ug==}
     peerDependencies:
-      '@lattice-engine/core': ^0.2.3
-      '@lattice-engine/physics': ^3.0.0
-      '@lattice-engine/player': ^4.0.0
-      '@lattice-engine/render': ^3.0.0
-      '@lattice-engine/scene': ^0.6.0
+      '@lattice-engine/core': ^0.2.4
+      '@lattice-engine/physics': ^3.0.1
+      '@lattice-engine/player': ^4.0.1
+      '@lattice-engine/render': ^3.0.1
+      '@lattice-engine/scene': ^0.6.1
       postprocessing: ^6.32.2
       three: ~0.153.0
-      thyseus: ^0.13.4
+      thyseus: ^0.13.5
     dependencies:
-      '@lattice-engine/core': 0.2.3(thyseus@0.13.4)
-      '@lattice-engine/physics': 3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/scene@0.6.0)(thyseus@0.13.4)
-      '@lattice-engine/player': 4.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/input@0.3.2)(@lattice-engine/physics@3.0.0)(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(@lattice-engine/vrm@3.0.0)(three@0.153.0)(thyseus@0.13.4)
-      '@lattice-engine/render': 3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/scene@0.6.0)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.4)
-      '@lattice-engine/scene': 0.6.0(@lattice-engine/core@0.2.3)(thyseus@0.13.4)
+      '@lattice-engine/core': 0.2.4(thyseus@0.13.5)
+      '@lattice-engine/physics': 3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/scene@0.6.1)(thyseus@0.13.5)
+      '@lattice-engine/player': 4.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/input@0.3.3)(@lattice-engine/physics@3.0.1)(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(@lattice-engine/vrm@3.0.1)(three@0.153.0)(thyseus@0.13.5)
+      '@lattice-engine/render': 3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/scene@0.6.1)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.5)
+      '@lattice-engine/scene': 0.6.1(@lattice-engine/core@0.2.4)(thyseus@0.13.5)
       postprocessing: 6.32.2(three@0.153.0)
       three: 0.153.0
-      thyseus: 0.13.4
+      thyseus: 0.13.5
     dev: false
 
-  /@lattice-engine/postprocessing@2.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.4):
-    resolution: {integrity: sha512-VWZvnSvzIeC7RBpKCsx3bnVeFGcbPCS5+dWhHw46Ux7AbpySTyTR+6sLanyQqlqzVdxmDF8PuYoaFFmeyunwbg==}
+  /@lattice-engine/postprocessing@2.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.5):
+    resolution: {integrity: sha512-P96PZSyw6F5z7ZQPFGZfKDPMNLpXVT0HZhjhZuz7TJFGMoykSxU7/98hP6NTqRvRPEBmNYanhcd/ZO+0Qp6Msg==}
     peerDependencies:
-      '@lattice-engine/core': ^0.2.3
-      '@lattice-engine/render': ^3.0.0
-      '@lattice-engine/scene': ^0.6.0
+      '@lattice-engine/core': ^0.2.4
+      '@lattice-engine/render': ^3.0.1
+      '@lattice-engine/scene': ^0.6.1
       postprocessing: ^6.32.2
       three: ~0.153.0
-      thyseus: ^0.13.4
+      thyseus: ^0.13.5
     dependencies:
-      '@lattice-engine/core': 0.2.3(thyseus@0.13.4)
-      '@lattice-engine/render': 3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/scene@0.6.0)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.4)
-      '@lattice-engine/scene': 0.6.0(@lattice-engine/core@0.2.3)(thyseus@0.13.4)
+      '@lattice-engine/core': 0.2.4(thyseus@0.13.5)
+      '@lattice-engine/render': 3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/scene@0.6.1)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.5)
+      '@lattice-engine/scene': 0.6.1(@lattice-engine/core@0.2.4)(thyseus@0.13.5)
       n8ao: 1.6.7(postprocessing@6.32.2)(three@0.153.0)
       postprocessing: 6.32.2(three@0.153.0)
       three: 0.153.0
-      thyseus: 0.13.4
+      thyseus: 0.13.5
     dev: false
 
-  /@lattice-engine/render@3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/scene@0.6.0)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.4):
-    resolution: {integrity: sha512-akvRwOoV2cp+WdneKs4oM6I/IfIgJorWG6h1hfdA3lskuZRZZgoFtd0obYOrDXbkoMxOn3pAmTmFOnZDmSO6Cg==}
+  /@lattice-engine/render@3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/scene@0.6.1)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.5):
+    resolution: {integrity: sha512-KY2R167oa5u+es7AxXBnyGsG3sQ0IO6dsY6pUj9piykdzWHfrzRTOAGTseNrYo7Ok0bSUjD7I8UbItag1N8hSQ==}
     peerDependencies:
-      '@lattice-engine/core': ^0.2.3
-      '@lattice-engine/scene': ^0.6.0
+      '@lattice-engine/core': ^0.2.4
+      '@lattice-engine/scene': ^0.6.1
       postprocessing: ^6.32.2
       three: ~0.153.0
-      thyseus: ^0.13.4
+      thyseus: ^0.13.5
     dependencies:
-      '@lattice-engine/core': 0.2.3(thyseus@0.13.4)
-      '@lattice-engine/scene': 0.6.0(@lattice-engine/core@0.2.3)(thyseus@0.13.4)
+      '@lattice-engine/core': 0.2.4(thyseus@0.13.5)
+      '@lattice-engine/scene': 0.6.1(@lattice-engine/core@0.2.4)(thyseus@0.13.5)
       postprocessing: 6.32.2(three@0.153.0)
       three: 0.153.0
-      thyseus: 0.13.4
+      thyseus: 0.13.5
     dev: false
 
-  /@lattice-engine/scene@0.6.0(@lattice-engine/core@0.2.3)(thyseus@0.13.4):
-    resolution: {integrity: sha512-jOZj1O2UeceVDi0ZIMKwnZphIUQdSUgDQfesx4wvYh3Mx4rWc5++TC4P7wNV7SvnW7SvCdLjNmxL425Su7Snww==}
+  /@lattice-engine/scene@0.6.1(@lattice-engine/core@0.2.4)(thyseus@0.13.5):
+    resolution: {integrity: sha512-7l+13DAraQYbMXdme/MBDHIql4D9hy3Ru0QD1PWI2iehiGDMoDsjvHfUgynTbYR3h/wFvgfXv3x0S4eAVDPJRQ==}
     peerDependencies:
-      '@lattice-engine/core': ^0.2.3
-      thyseus: ^0.13.4
+      '@lattice-engine/core': ^0.2.4
+      thyseus: ^0.13.5
     dependencies:
-      '@lattice-engine/core': 0.2.3(thyseus@0.13.4)
+      '@lattice-engine/core': 0.2.4(thyseus@0.13.5)
       gl-matrix: 4.0.0-beta.1
-      thyseus: 0.13.4
+      thyseus: 0.13.5
     dev: false
 
-  /@lattice-engine/text@3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(three@0.153.0)(thyseus@0.13.4):
-    resolution: {integrity: sha512-yHaukCOgkyut1M0Fz/q5M9elMxKwROqnuGMJz1zi+Dp9O9+xEUDp+7KKt+JoVl2hihXfjZNa0bjLZvYNbNVp5g==}
+  /@lattice-engine/text@3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(three@0.153.0)(thyseus@0.13.5):
+    resolution: {integrity: sha512-/Y2UnyNFbFfCW7gLjNwJMX5+cJvkUV20ujaQOvlGYtzIPyo3yzo7wHPRGLkeuCM+fovZq3P3O4p3z4CI4lVzjQ==}
     peerDependencies:
-      '@lattice-engine/core': ^0.2.3
-      '@lattice-engine/render': ^3.0.0
-      '@lattice-engine/scene': ^0.6.0
+      '@lattice-engine/core': ^0.2.4
+      '@lattice-engine/render': ^3.0.1
+      '@lattice-engine/scene': ^0.6.1
       three: ~0.153.0
-      thyseus: ^0.13.4
+      thyseus: ^0.13.5
     dependencies:
-      '@lattice-engine/core': 0.2.3(thyseus@0.13.4)
-      '@lattice-engine/render': 3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/scene@0.6.0)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.4)
-      '@lattice-engine/scene': 0.6.0(@lattice-engine/core@0.2.3)(thyseus@0.13.4)
+      '@lattice-engine/core': 0.2.4(thyseus@0.13.5)
+      '@lattice-engine/render': 3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/scene@0.6.1)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.5)
+      '@lattice-engine/scene': 0.6.1(@lattice-engine/core@0.2.4)(thyseus@0.13.5)
       three: 0.153.0
-      thyseus: 0.13.4
+      thyseus: 0.13.5
       troika-three-text: 0.47.2(three@0.153.0)
     dev: false
 
-  /@lattice-engine/transform@4.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/input@0.3.2)(@lattice-engine/orbit@4.0.0)(@lattice-engine/postprocessing@2.0.0)(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(three@0.153.0)(thyseus@0.13.4):
-    resolution: {integrity: sha512-BfBrdvqCqP/pdRaxYPzJyO1KkpTs7KAkyI7LZU4d+IPnilij70DebGMOIhXu+EffZvICurxyE69WVT11kTJAtg==}
+  /@lattice-engine/transform@4.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/input@0.3.3)(@lattice-engine/orbit@4.0.1)(@lattice-engine/postprocessing@2.0.1)(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(three@0.153.0)(thyseus@0.13.5):
+    resolution: {integrity: sha512-m3AZMH3Zi8PGAuFTcpa7n4N3u/FAgOggDOrzZeqyKMCANLRcU6ynpPWTtnduRN6cHu2SD/aUM+1eyFyeIBk+6g==}
     peerDependencies:
-      '@lattice-engine/core': ^0.2.3
-      '@lattice-engine/input': ^0.3.2
-      '@lattice-engine/orbit': ^4.0.0
-      '@lattice-engine/postprocessing': ^2.0.0
-      '@lattice-engine/render': ^3.0.0
-      '@lattice-engine/scene': ^0.6.0
+      '@lattice-engine/core': ^0.2.4
+      '@lattice-engine/input': ^0.3.3
+      '@lattice-engine/orbit': ^4.0.1
+      '@lattice-engine/postprocessing': ^2.0.1
+      '@lattice-engine/render': ^3.0.1
+      '@lattice-engine/scene': ^0.6.1
       three: ~0.153.0
-      thyseus: ^0.13.4
+      thyseus: ^0.13.5
     dependencies:
-      '@lattice-engine/core': 0.2.3(thyseus@0.13.4)
-      '@lattice-engine/input': 0.3.2(@lattice-engine/core@0.2.3)(thyseus@0.13.4)
-      '@lattice-engine/orbit': 4.0.0(@lattice-engine/input@0.3.2)(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(three@0.153.0)(thyseus@0.13.4)
-      '@lattice-engine/postprocessing': 2.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.4)
-      '@lattice-engine/render': 3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/scene@0.6.0)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.4)
-      '@lattice-engine/scene': 0.6.0(@lattice-engine/core@0.2.3)(thyseus@0.13.4)
+      '@lattice-engine/core': 0.2.4(thyseus@0.13.5)
+      '@lattice-engine/input': 0.3.3(@lattice-engine/core@0.2.4)(thyseus@0.13.5)
+      '@lattice-engine/orbit': 4.0.1(@lattice-engine/input@0.3.3)(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(three@0.153.0)(thyseus@0.13.5)
+      '@lattice-engine/postprocessing': 2.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.5)
+      '@lattice-engine/render': 3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/scene@0.6.1)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.5)
+      '@lattice-engine/scene': 0.6.1(@lattice-engine/core@0.2.4)(thyseus@0.13.5)
       three: 0.153.0
-      thyseus: 0.13.4
+      thyseus: 0.13.5
     dev: false
 
-  /@lattice-engine/utils@4.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/input@0.3.2)(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(thyseus@0.13.4):
-    resolution: {integrity: sha512-dZSYnU5MtAuvTQJE/3BdE1cCiTOWcjarou6tr1aXDyH31ya2t7qRzgSF2NfbuWinmMam2o5IcK4KPpcU3XPAIQ==}
+  /@lattice-engine/utils@4.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/input@0.3.3)(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(thyseus@0.13.5):
+    resolution: {integrity: sha512-qZjVwSOS7qSfxcnA9NH1EWalkKbUeRF+X8nCdYfvnbFckVShTZqHuKP312/2pB5N7onEJw5mtTFrraYNgKJ+Gg==}
     peerDependencies:
-      '@lattice-engine/core': ^0.2.3
-      '@lattice-engine/input': ^0.3.2
-      '@lattice-engine/render': ^3.0.0
-      '@lattice-engine/scene': ^0.6.0
-      thyseus: ^0.13.4
+      '@lattice-engine/core': ^0.2.4
+      '@lattice-engine/input': ^0.3.3
+      '@lattice-engine/render': ^3.0.1
+      '@lattice-engine/scene': ^0.6.1
+      thyseus: ^0.13.5
     dependencies:
-      '@lattice-engine/core': 0.2.3(thyseus@0.13.4)
-      '@lattice-engine/input': 0.3.2(@lattice-engine/core@0.2.3)(thyseus@0.13.4)
-      '@lattice-engine/render': 3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/scene@0.6.0)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.4)
-      '@lattice-engine/scene': 0.6.0(@lattice-engine/core@0.2.3)(thyseus@0.13.4)
-      thyseus: 0.13.4
+      '@lattice-engine/core': 0.2.4(thyseus@0.13.5)
+      '@lattice-engine/input': 0.3.3(@lattice-engine/core@0.2.4)(thyseus@0.13.5)
+      '@lattice-engine/render': 3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/scene@0.6.1)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.5)
+      '@lattice-engine/scene': 0.6.1(@lattice-engine/core@0.2.4)(thyseus@0.13.5)
+      thyseus: 0.13.5
     dev: false
 
-  /@lattice-engine/vrm@3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(@types/three@0.152.1)(three@0.153.0)(thyseus@0.13.4):
-    resolution: {integrity: sha512-yD/fmn8bOIpoEzZqs5sct8rmNr2vSvqSREEZFP3Xo4Yqcu1ec4/jqRRJi5SnImfrTE55JBlfz1pniNxr6gu5ow==}
+  /@lattice-engine/vrm@3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(@types/three@0.152.1)(three@0.153.0)(thyseus@0.13.5):
+    resolution: {integrity: sha512-/yoijM5KpxXVJ8m04Uh0NYX9XTW0p1bFybn28uOFzS0c4erMyMtEAbEdu6eD95sXfeZLTsY/mhFZ3ufm+a/iDg==}
     peerDependencies:
-      '@lattice-engine/core': ^0.2.3
-      '@lattice-engine/render': ^3.0.0
-      '@lattice-engine/scene': ^0.6.0
+      '@lattice-engine/core': ^0.2.4
+      '@lattice-engine/render': ^3.0.1
+      '@lattice-engine/scene': ^0.6.1
       three: ~0.153.0
-      thyseus: ^0.13.4
+      thyseus: ^0.13.5
     dependencies:
-      '@lattice-engine/core': 0.2.3(thyseus@0.13.4)
-      '@lattice-engine/render': 3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/scene@0.6.0)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.4)
-      '@lattice-engine/scene': 0.6.0(@lattice-engine/core@0.2.3)(thyseus@0.13.4)
+      '@lattice-engine/core': 0.2.4(thyseus@0.13.5)
+      '@lattice-engine/render': 3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/scene@0.6.1)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.5)
+      '@lattice-engine/scene': 0.6.1(@lattice-engine/core@0.2.4)(thyseus@0.13.5)
       '@pixiv/three-vrm': 2.0.0(@types/three@0.152.1)(three@0.153.0)
       three: 0.153.0
-      thyseus: 0.13.4
+      thyseus: 0.13.5
     transitivePeerDependencies:
       - '@types/three'
     dev: false
@@ -5457,14 +5457,14 @@ packages:
       use-sync-external-store: 1.2.0(react@18.2.0)
     dev: false
 
-  /@thyseus/transformer-rollup@0.13.0(rollup@3.25.1)(thyseus@0.13.4):
+  /@thyseus/transformer-rollup@0.13.0(rollup@3.25.1)(thyseus@0.13.5):
     resolution: {integrity: sha512-uEKoGsHjjO38/Jr1IRT/lY/khnyNHhKn8Q3VfLKDUG6QFRg05mm07vy7Af6OFMvGuwnT7e2u9U7Pl3d4VnoTNA==}
     peerDependencies:
       thyseus: ~0.13
     dependencies:
       '@rollup/pluginutils': 5.0.2(rollup@3.25.1)
       '@thyseus/typescript-transformer': 0.12.0-beta.7
-      thyseus: 0.13.4
+      thyseus: 0.13.5
     transitivePeerDependencies:
       - rollup
     dev: true
@@ -9924,31 +9924,31 @@ packages:
       language-subtag-registry: 0.3.22
     dev: true
 
-  /lattice-engine@0.3.8(@types/three@0.152.1)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.4):
-    resolution: {integrity: sha512-O5nlx2db8YclodnsSffwBUVlW3PTjr93ZCPByu+wEEh4+x26tt4T8zL9vHKALasNB0cypp/kTDEOgCc8SS8gWQ==}
+  /lattice-engine@0.3.9(@types/three@0.152.1)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.5):
+    resolution: {integrity: sha512-LzQpkVyrn3ciDyId6iLLaj/4RfdKAfEKjpNXIv7rqtLsfYG2vpinB+qS8gLsHVoNZz8SmWTzvW8KEMhn2rlb7Q==}
     peerDependencies:
       postprocessing: ^6.32.2
       three: ~0.153.0
-      thyseus: ^0.13.4
+      thyseus: ^0.13.5
     dependencies:
-      '@lattice-engine/core': 0.2.3(thyseus@0.13.4)
-      '@lattice-engine/csm': 2.0.0(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(three@0.153.0)(thyseus@0.13.4)
-      '@lattice-engine/gltf': 4.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/physics@3.0.0)(@lattice-engine/scene@0.6.0)(@lattice-engine/text@3.0.0)(thyseus@0.13.4)
-      '@lattice-engine/input': 0.3.2(@lattice-engine/core@0.2.3)(thyseus@0.13.4)
-      '@lattice-engine/orbit': 4.0.0(@lattice-engine/input@0.3.2)(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(three@0.153.0)(thyseus@0.13.4)
-      '@lattice-engine/physics': 3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/scene@0.6.0)(thyseus@0.13.4)
-      '@lattice-engine/player': 4.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/input@0.3.2)(@lattice-engine/physics@3.0.0)(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(@lattice-engine/vrm@3.0.0)(three@0.153.0)(thyseus@0.13.4)
-      '@lattice-engine/portal': 3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/physics@3.0.0)(@lattice-engine/player@4.0.0)(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.4)
-      '@lattice-engine/postprocessing': 2.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.4)
-      '@lattice-engine/render': 3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/scene@0.6.0)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.4)
-      '@lattice-engine/scene': 0.6.0(@lattice-engine/core@0.2.3)(thyseus@0.13.4)
-      '@lattice-engine/text': 3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(three@0.153.0)(thyseus@0.13.4)
-      '@lattice-engine/transform': 4.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/input@0.3.2)(@lattice-engine/orbit@4.0.0)(@lattice-engine/postprocessing@2.0.0)(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(three@0.153.0)(thyseus@0.13.4)
-      '@lattice-engine/utils': 4.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/input@0.3.2)(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(thyseus@0.13.4)
-      '@lattice-engine/vrm': 3.0.0(@lattice-engine/core@0.2.3)(@lattice-engine/render@3.0.0)(@lattice-engine/scene@0.6.0)(@types/three@0.152.1)(three@0.153.0)(thyseus@0.13.4)
+      '@lattice-engine/core': 0.2.4(thyseus@0.13.5)
+      '@lattice-engine/csm': 2.0.1(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(three@0.153.0)(thyseus@0.13.5)
+      '@lattice-engine/gltf': 4.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/physics@3.0.1)(@lattice-engine/scene@0.6.1)(@lattice-engine/text@3.0.1)(thyseus@0.13.5)
+      '@lattice-engine/input': 0.3.3(@lattice-engine/core@0.2.4)(thyseus@0.13.5)
+      '@lattice-engine/orbit': 4.0.1(@lattice-engine/input@0.3.3)(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(three@0.153.0)(thyseus@0.13.5)
+      '@lattice-engine/physics': 3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/scene@0.6.1)(thyseus@0.13.5)
+      '@lattice-engine/player': 4.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/input@0.3.3)(@lattice-engine/physics@3.0.1)(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(@lattice-engine/vrm@3.0.1)(three@0.153.0)(thyseus@0.13.5)
+      '@lattice-engine/portal': 3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/physics@3.0.1)(@lattice-engine/player@4.0.1)(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.5)
+      '@lattice-engine/postprocessing': 2.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.5)
+      '@lattice-engine/render': 3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/scene@0.6.1)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.5)
+      '@lattice-engine/scene': 0.6.1(@lattice-engine/core@0.2.4)(thyseus@0.13.5)
+      '@lattice-engine/text': 3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(three@0.153.0)(thyseus@0.13.5)
+      '@lattice-engine/transform': 4.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/input@0.3.3)(@lattice-engine/orbit@4.0.1)(@lattice-engine/postprocessing@2.0.1)(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(three@0.153.0)(thyseus@0.13.5)
+      '@lattice-engine/utils': 4.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/input@0.3.3)(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(thyseus@0.13.5)
+      '@lattice-engine/vrm': 3.0.1(@lattice-engine/core@0.2.4)(@lattice-engine/render@3.0.1)(@lattice-engine/scene@0.6.1)(@types/three@0.152.1)(three@0.153.0)(thyseus@0.13.5)
       postprocessing: 6.32.2(three@0.153.0)
       three: 0.153.0
-      thyseus: 0.13.4
+      thyseus: 0.13.5
     transitivePeerDependencies:
       - '@types/three'
     dev: false
@@ -12376,8 +12376,8 @@ packages:
       esm-env: 1.0.0
     dev: false
 
-  /thyseus@0.13.4:
-    resolution: {integrity: sha512-ayFCWvuR8KsyREhQE2ys4XZgDFHxzH6ZEzSQk3hZxSLKZrGsBd90Kp9Crp7H3PpdSfNqkb3OkEzOSPWatpL3Rw==}
+  /thyseus@0.13.5:
+    resolution: {integrity: sha512-UnO94weyONkiA4SCCw+FwCALRjQ6fOdaObwJTaKup+B/vUEPA9+usgmrQBLuQVT2Sz2oM6fyDG3EgADZHuAf7g==}
     dependencies:
       esm-env: 1.0.0
 

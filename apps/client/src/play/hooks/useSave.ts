@@ -52,7 +52,10 @@ export function useSave() {
       if (imageBlob) {
         await fetch(imageUploadURL, {
           body: imageBlob,
-          headers: { "Content-Type": "image/jpeg" },
+          headers: {
+            "Content-Type": "image/jpeg",
+            "x-amz-acl": "public-read",
+          },
           method: "PUT",
         });
       }
@@ -74,7 +77,10 @@ export function useSave() {
 
       await fetch(modelUploadURL, {
         body: modelBlob,
-        headers: { "Content-Type": "application/gltf+binary" },
+        headers: {
+          "Content-Type": "application/gltf+binary",
+          "x-amz-acl": "public-read",
+        },
         method: "PUT",
       });
 

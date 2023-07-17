@@ -22,6 +22,7 @@ export interface IClientStore {
   defaultAvatar: string;
   engine: Engine | null;
   events: EcsEvent[];
+  exportedModel: Blob | null;
   falling: Map<number, boolean>;
   handle: string;
   handles: Map<number, string>;
@@ -48,6 +49,7 @@ export const useClientStore = create<IClientStore>((set, get) => ({
   defaultAvatar: "",
   engine: null,
   events: [],
+  exportedModel: null,
   falling: new Map(),
   getDisplayName: (playerId: number) => {
     const handle = get().handles.get(playerId);

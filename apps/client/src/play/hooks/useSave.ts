@@ -3,7 +3,11 @@ import { useCallback, useState } from "react";
 import { toast } from "react-hot-toast";
 
 import { updateWorld } from "@/app/api/worlds/[id]/helper";
+import { getWorldModelFileUpload } from "@/app/api/worlds/[id]/model/files/[file]/helper";
+import { createWorldModel } from "@/app/api/worlds/[id]/model/helper";
 import { usePlayStore } from "@/app/play/store";
+
+const toastId = "world-save";
 
 export function useSave() {
   const [saving, setSaving] = useState(false);
@@ -19,8 +23,9 @@ export function useSave() {
 
     setSaving(true);
 
-    const toastId = "world-save";
     toast.loading("Saving...", { id: toastId, position: "top-right" });
+
+    engine.queueSchedule(ClientSchedules.Export);
 
     try {
       // Save metadata
@@ -29,10 +34,51 @@ export function useSave() {
         title: metadata.info?.title,
       });
 
-      // TODO: Export model
-      engine.queueSchedule(ClientSchedules.Export);
+      const image = metadata.info?.image;
+      const imageBlob = image
+        ? await fetch(image).then((res) => res.blob())
+        : null;
 
-      toast.success("Saved!", { id: toastId });
+      // Create new world model
+      await createWorldModel(worldId.value);
+
+      // Get upload URLs
+      const [imageUploadURL, modelUploadURL] = await Promise.all([
+        getWorldModelFileUpload(worldId.value, "image"),
+        getWorldModelFileUpload(worldId.value, "model"),
+      ]);
+
+      // Upload image
+      if (imageBlob) {
+        await fetch(imageUploadURL, {
+          body: imageBlob,
+          headers: { "Content-Type": "image/jpeg" },
+          method: "PUT",
+        });
+      }
+
+      // Wait for export
+      await new Promise<void>((resolve) => {
+        const interval = setInterval(() => {
+          const model = useClientStore.getState().exportedModel;
+          if (model) {
+            clearInterval(interval);
+            resolve();
+          }
+        }, 200);
+      });
+
+      // Upload model
+      const modelBlob = useClientStore.getState().exportedModel;
+      if (!modelBlob) throw new Error("No model to save");
+
+      await fetch(modelUploadURL, {
+        body: modelBlob,
+        headers: { "Content-Type": "application/gltf+binary" },
+        method: "PUT",
+      });
+
+      toast.success("Saved world", { id: toastId });
     } catch {
       toast.error("Failed to save world", { id: toastId });
     } finally {

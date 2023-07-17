@@ -18,6 +18,7 @@ import { addMeshes } from "./systems/editor/addMeshes";
 import { addNodes } from "./systems/editor/addNodes";
 import { enterEditMode } from "./systems/editor/enterEditMode";
 import { exitEditMode } from "./systems/editor/exitEditMode";
+import { sendExportEvent } from "./systems/editor/sendExportEvent";
 import { exportLoadingInfo } from "./systems/exportLoadingInfo";
 import { initApp } from "./systems/initApp";
 import { joinWorld } from "./systems/joinWorld";
@@ -25,6 +26,7 @@ import { lerpTransforms } from "./systems/lerpTransforms";
 import { movePlayers } from "./systems/movePlayers";
 import { parseWorld } from "./systems/parseWorld";
 import { publishLocation } from "./systems/publishLocation";
+import { saveExport } from "./systems/saveExport";
 import { sendEvents } from "./systems/sendEvents";
 import { setLocationUpdateTime } from "./systems/setLocationUpdateTime";
 import { setPlayersAirTime } from "./systems/setPlayersAirTime";
@@ -52,19 +54,21 @@ export function clientPlugin(builder: WorldBuilder) {
     .addSystemsToSchedule(ClientSchedules.ConnectToHost, connectToHost)
     .addSystemsToSchedule(ClientSchedules.EnterEditMode, enterEditMode)
     .addSystemsToSchedule(ClientSchedules.ExitEditMode, exitEditMode)
+    .addSystemsToSchedule(ClientSchedules.Export, sendExportEvent)
     .addSystems(
+      addMeshes,
+      addNodes,
       exportLoadingInfo,
       joinWorld,
       movePlayers,
       parseWorld,
+      saveExport,
       setPlayersAirTime,
       setPlayersAvatar,
       setRootName,
       setSkybox,
       setUserAvatar,
       spawnPlayers,
-      addMeshes,
-      addNodes,
       ...run.chain(setLocationUpdateTime, lerpTransforms, [
         calcPlayerVelocity,
         movePlayers,

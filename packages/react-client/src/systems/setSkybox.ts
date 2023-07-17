@@ -15,8 +15,7 @@ export function setSkybox(
       const skyboxUri = useClientStore.getState().skybox;
       if (asset.uri === skyboxUri) continue;
 
-      // TODO: Add back in, is causing error
-      // asset.uri = skyboxUri;
+      asset.uri = skyboxUri;
       image.flipY = true;
 
       const fileExt = asset.uri.split(".").pop();

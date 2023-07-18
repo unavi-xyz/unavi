@@ -1,5 +1,16 @@
 # @unavi/react-client
 
+## 1.0.0
+
+### Major Changes
+
+- e59c8fd6: New engine!
+
+### Patch Changes
+
+- Updated dependencies [e59c8fd6]
+  - @unavi/protocol@0.2.0
+
 ## 0.6.0
 
 ### Minor Changes

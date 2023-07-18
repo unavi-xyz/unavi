@@ -1,5 +1,11 @@
 # host
 
+## 0.6.0
+
+### Minor Changes
+
+- e59c8fd6: update wired protocol
+
 ## 0.5.0
 
 ### Minor Changes

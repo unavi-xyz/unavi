@@ -63,7 +63,7 @@ export function SignInPage({ beforeOpen }: { beforeOpen?: () => void }) {
           className="flex h-11 w-full items-center justify-center space-x-2 rounded-lg border border-neutral-400 px-2 transition hover:bg-neutral-100"
         >
           <FcGoogle className="text-2xl" />
-          <span className="font-bold">Sign in with Google</span>
+          <span className="font-bold">Google</span>
         </a>
       ) : null}
     </div>

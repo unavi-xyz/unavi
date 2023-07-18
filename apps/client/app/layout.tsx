@@ -4,6 +4,8 @@ import { Metadata } from "next";
 import { Nunito } from "next/font/google";
 import { Suspense } from "react";
 
+import { env } from "@/src/env.mjs";
+
 import ClientWrapper from "./ClientWrapper";
 import Toast from "./Toast";
 
@@ -39,6 +41,7 @@ export const metadata: Metadata = {
   },
   keywords: ["Metaverse", "WebXR", "Gaming"],
   manifest: "/manifest.json",
+  metadataBase: new URL(env.NEXT_PUBLIC_DEPLOYED_URL),
   openGraph: {
     description: DESCRIPTION,
     images: [

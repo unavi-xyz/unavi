@@ -80,6 +80,21 @@ export class TreeItem {
     this.childrenIds.length = 0;
   }
 
+  sortChildren() {
+    this.childrenIds.sort((a, b) => {
+      const aItem = useSceneStore.getState().items.get(a);
+      const bItem = useSceneStore.getState().items.get(b);
+
+      if (aItem?.childrenIds?.length && !bItem?.childrenIds?.length) {
+        return 1;
+      } else if (!aItem?.childrenIds?.length && bItem?.childrenIds?.length) {
+        return -1;
+      } else {
+        return aItem?.name?.localeCompare(bItem?.name || "") || 0;
+      }
+    });
+  }
+
   destroy() {
     this.parent?.removeChild(this);
     this.clearChildren();

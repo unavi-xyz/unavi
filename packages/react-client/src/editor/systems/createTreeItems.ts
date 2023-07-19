@@ -5,7 +5,7 @@ import {
   SceneStruct,
   Transform,
 } from "lattice-engine/scene";
-import { Entity, Query, Res, With } from "thyseus";
+import { Entity, Query, Res } from "thyseus";
 
 import { TreeItem } from "../classes/TreeItem";
 import { useSceneStore } from "../sceneStore";
@@ -15,30 +15,23 @@ import { useSceneStore } from "../sceneStore";
  */
 export function createTreeItems(
   nodes: Query<[Entity, Transform, Parent]>,
-  scenes: Query<Entity, With<Scene>>,
+  scenes: Query<[Entity, Scene]>,
   names: Query<[Entity, Name]>,
   sceneStruct: Res<SceneStruct>
 ) {
   const { enabled, items } = useSceneStore.getState();
   if (!enabled) return;
 
-  const ids: bigint[] = [];
-
-  for (const entity of scenes) {
-    ids.push(entity.id);
-
-    let item = items.get(entity.id);
-
-    if (!item) {
-      item = new TreeItem(entity.id);
-      items.set(entity.id, item);
-    }
-
+  // Set root id
+  for (const [entity, scene] of scenes) {
     if (sceneStruct.activeScene === entity.id) {
-      useSceneStore.setState({ rootId: entity.id });
+      useSceneStore.setState({ rootId: scene.rootId });
     }
   }
 
+  const ids: bigint[] = [];
+
+  // Create or update items
   for (const [entity, transform, parent] of nodes) {
     ids.push(entity.id);
 

@@ -6,6 +6,7 @@ import { LeftPanelPage, RightPanelPage } from "@/app/play/types";
 interface PropsBase {
   children: React.ReactNode;
   title: string;
+  onBack?: () => void;
 }
 
 interface PropsNone extends PropsBase {
@@ -30,8 +31,13 @@ export default function PanelPage({
   title,
   side,
   parentPage,
+  onBack,
 }: Props) {
   function handleBack() {
+    if (onBack) {
+      onBack();
+    }
+
     if (!side) return;
 
     if (side === "left") {
@@ -41,21 +47,28 @@ export default function PanelPage({
     }
   }
 
+  const showBack = side !== undefined || onBack !== undefined;
+
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-3">
-        {!side ? (
-          <div></div>
-        ) : (
-          <button
-            onClick={handleBack}
-            className="aspect-square w-min rounded-full p-1 text-xl transition hover:bg-white/10 active:opacity-80"
-          >
-            <MdArrowBack />
-          </button>
-        )}
+      <div className="grid grid-cols-5">
+        <div className="col-span-1">
+          {showBack ? (
+            <button
+              onClick={handleBack}
+              className="flex aspect-square h-full w-min items-center justify-center rounded-full text-xl transition hover:bg-white/10 active:opacity-80"
+            >
+              <MdArrowBack />
+            </button>
+          ) : null}
+        </div>
 
-        <h1 className="whitespace-nowrap text-center text-xl">{title}</h1>
+        <h1
+          title={title}
+          className="col-span-3 overflow-hidden text-ellipsis text-center text-xl"
+        >
+          {title}
+        </h1>
       </div>
 
       {children}

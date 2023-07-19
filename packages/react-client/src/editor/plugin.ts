@@ -7,11 +7,12 @@ import { createTreeItems } from "./systems/createTreeItems";
 import { enterEditMode } from "./systems/enterEditMode";
 import { exitEditMode } from "./systems/exitEditMode";
 import { sendExportEvent } from "./systems/sendExportEvent";
+import { syncTransformTarget } from "./systems/syncTransformTarget";
 
 export function editorPlugin(builder: WorldBuilder) {
   builder
     .addSystemsToSchedule(ClientSchedules.EnterEditMode, enterEditMode)
     .addSystemsToSchedule(ClientSchedules.ExitEditMode, exitEditMode)
     .addSystemsToSchedule(ClientSchedules.Export, sendExportEvent)
-    .addSystems(addMeshes, addNodes, createTreeItems);
+    .addSystems(addMeshes, addNodes, createTreeItems, syncTransformTarget);
 }

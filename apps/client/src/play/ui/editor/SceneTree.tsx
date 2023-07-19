@@ -1,11 +1,22 @@
-import { useSceneStore } from "@unavi/react-client";
-
+import { useTreeItem } from "./hooks/useTreeItem";
 import TreeItem from "./TreeItem";
 
-export default function SceneTree() {
-  const rootId = useSceneStore((state) => state.rootId);
+interface Props {
+  rootId: bigint;
+}
 
-  if (!rootId) return null;
+export default function SceneTree({ rootId }: Props) {
+  const rootItem = useTreeItem(rootId);
 
-  return <TreeItem id={rootId} />;
+  if (!rootItem) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-1">
+      {rootItem.childrenIds.map((id) => (
+        <TreeItem key={id.toString()} id={id} />
+      ))}
+    </div>
+  );
 }

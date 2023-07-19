@@ -1,6 +1,6 @@
 import { useSceneStore } from "@unavi/react-client";
 
-import { useTreeItem } from "../../hooks/useTreeItem";
+import { useTreeValue } from "../../hooks/useTreeValue";
 import TreeItem from "./TreeItem";
 
 interface Props {
@@ -8,11 +8,7 @@ interface Props {
 }
 
 export default function SceneTree({ rootId }: Props) {
-  const rootItem = useTreeItem(rootId);
-
-  if (!rootItem) {
-    return null;
-  }
+  const childrenIds = useTreeValue(rootId, "childrenIds");
 
   function clearSelected() {
     useSceneStore.setState({ selectedId: undefined });
@@ -20,7 +16,7 @@ export default function SceneTree({ rootId }: Props) {
 
   return (
     <div onClick={clearSelected} className="h-full space-y-1">
-      {rootItem.childrenIds.map((id) => (
+      {childrenIds?.map((id) => (
         <TreeItem key={id.toString()} id={id} />
       ))}
     </div>

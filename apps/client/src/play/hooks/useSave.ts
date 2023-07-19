@@ -6,6 +6,7 @@ import { updateWorld } from "@/app/api/worlds/[id]/helper";
 import { getWorldModelFileUpload } from "@/app/api/worlds/[id]/model/files/[file]/helper";
 import { createWorldModel } from "@/app/api/worlds/[id]/model/helper";
 import { usePlayStore } from "@/app/play/playStore";
+import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
 const toastId = "world-save";
 
@@ -40,7 +41,7 @@ export function useSave() {
         : null;
 
       // Create new world model
-      await createWorldModel(worldId.value);
+      const { modelId } = await createWorldModel(worldId.value);
 
       // Get upload URLs
       const [imageUploadURL, modelUploadURL] = await Promise.all([
@@ -57,6 +58,16 @@ export function useSave() {
             "x-amz-acl": "public-read",
           },
           method: "PUT",
+        });
+
+        usePlayStore.setState({
+          metadata: {
+            ...metadata,
+            info: {
+              ...metadata.info,
+              image: cdnURL(S3Path.worldModel(modelId).image),
+            },
+          },
         });
       }
 

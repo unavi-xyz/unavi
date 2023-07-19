@@ -3,8 +3,8 @@ import ImageInput from "@/src/ui/ImageInput";
 import TextAreaDark from "@/src/ui/TextAreaDark";
 import TextFieldDark from "@/src/ui/TextFieldDark";
 
-import { useSave } from "../../hooks/useSave";
-import PanelPage from "./PanelPage";
+import { useSave } from "../../../../hooks/useSave";
+import PanelPage from "../PanelPage";
 
 export default function WorldPage() {
   const worldId = usePlayStore((state) => state.worldId);

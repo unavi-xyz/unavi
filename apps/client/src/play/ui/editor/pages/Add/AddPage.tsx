@@ -9,10 +9,10 @@ import {
 
 import { LeftPanelPage } from "@/app/play/types";
 
-import { addBox } from "../../actions/addBox";
-import { addCylinder } from "../../actions/addCylinder";
-import { addSphere } from "../../actions/addSphere";
-import PanelPage from "./PanelPage";
+import { addBox } from "../../../../actions/addBox";
+import { addCylinder } from "../../../../actions/addCylinder";
+import { addSphere } from "../../../../actions/addSphere";
+import PanelPage from "../PanelPage";
 
 export default function AddPage() {
   return (

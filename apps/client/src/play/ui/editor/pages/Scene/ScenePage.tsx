@@ -3,8 +3,8 @@ import { useSceneStore } from "@unavi/react-client";
 import { usePlayStore } from "@/app/play/playStore";
 import { LeftPanelPage } from "@/app/play/types";
 
-import { useTreeItem } from "./hooks/useTreeItem";
-import PanelPage from "./PanelPage";
+import { useTreeItem } from "../../hooks/useTreeItem";
+import PanelPage from "../PanelPage";
 import SceneTree from "./SceneTree";
 
 export default function ScenePage() {

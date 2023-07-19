@@ -1,4 +1,4 @@
-import { useTreeItem } from "./hooks/useTreeItem";
+import { useTreeItem } from "../../hooks/useTreeItem";
 import TreeItem from "./TreeItem";
 
 interface Props {

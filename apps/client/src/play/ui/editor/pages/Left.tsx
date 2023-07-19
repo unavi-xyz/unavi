@@ -1,8 +1,8 @@
 import { usePlayStore } from "@/app/play/playStore";
 import { LeftPanelPage } from "@/app/play/types";
 
-import AddPage from "./AddPage";
-import ScenePage from "./ScenePage";
+import AddPage from "./Add/AddPage";
+import ScenePage from "./Scene/ScenePage";
 
 export default function Left() {
   const page = usePlayStore((state) => state.leftPage);

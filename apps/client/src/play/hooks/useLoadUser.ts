@@ -1,7 +1,7 @@
 import { useClientStore } from "@unavi/react-client";
 import { useEffect } from "react";
 
-import { usePlayStore } from "@/app/play/store";
+import { usePlayStore } from "@/app/play/playStore";
 import { useAuth } from "@/src/client/AuthProvider";
 import { HOME_SERVER } from "@/src/constants";
 

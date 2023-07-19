@@ -5,7 +5,7 @@ import { toast } from "react-hot-toast";
 import { updateWorld } from "@/app/api/worlds/[id]/helper";
 import { getWorldModelFileUpload } from "@/app/api/worlds/[id]/model/files/[file]/helper";
 import { createWorldModel } from "@/app/api/worlds/[id]/model/helper";
-import { usePlayStore } from "@/app/play/store";
+import { usePlayStore } from "@/app/play/playStore";
 
 const toastId = "world-save";
 

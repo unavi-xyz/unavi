@@ -2,7 +2,7 @@ import { Warehouse } from "lattice-engine/core";
 import { Geometry, Mesh, Name } from "lattice-engine/scene";
 import { Commands, dropStruct, Entity, EventReader, Query, Res } from "thyseus";
 
-import { AddMesh } from "../../events";
+import { AddMesh } from "../events";
 
 export function addMeshes(
   commands: Commands,

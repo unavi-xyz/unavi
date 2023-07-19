@@ -23,7 +23,7 @@ export interface PlayStore {
 
 export const usePlayStore = create<PlayStore>(() => ({
   chatBoxFocused: false,
-  leftPage: LeftPanelPage.Add,
+  leftPage: LeftPanelPage.Scene,
   metadata: { model: "" },
   mode: PlayMode.Play,
   rightPage: RightPanelPage.World,

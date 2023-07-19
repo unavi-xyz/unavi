@@ -1,7 +1,8 @@
-import { usePlayStore } from "@/app/play/store";
+import { usePlayStore } from "@/app/play/playStore";
 import { LeftPanelPage } from "@/app/play/types";
 
 import PanelPage from "./PanelPage";
+import SceneTree from "./SceneTree";
 
 export default function ScenePage() {
   return (
@@ -12,6 +13,8 @@ export default function ScenePage() {
       >
         Add
       </button>
+
+      <SceneTree />
     </PanelPage>
   );
 }

@@ -2,8 +2,8 @@ import { WorldMetadata } from "@wired-protocol/types";
 import { Engine } from "lattice-engine/core";
 import { useEffect } from "react";
 
+import { useClientStore } from "../clientStore";
 import { useWorld } from "../hooks/useWorld";
-import { useClientStore } from "../store";
 import Canvas from "./Canvas";
 
 interface Props {

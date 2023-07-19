@@ -3,8 +3,8 @@ import { PlayerAvatar, PlayerBody, PlayerCamera } from "lattice-engine/player";
 import { Parent, Transform } from "lattice-engine/scene";
 import { Entity, Query, Res, struct, SystemRes, With } from "thyseus";
 
+import { useClientStore } from "../clientStore";
 import { NETWORK_UPDATE_HZ } from "../constants";
-import { useClientStore } from "../store";
 import { serializeLocation } from "../utils/serializeLocation";
 
 const FALL_THRESHOLD_SECONDS = 0.35;

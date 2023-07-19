@@ -7,7 +7,7 @@ import {
 } from "lattice-engine/scene";
 import { Commands, dropStruct, Entity, EventReader, Mut, Query } from "thyseus";
 
-import { AddNode } from "../../events";
+import { AddNode } from "../events";
 
 export function addNodes(
   commands: Commands,

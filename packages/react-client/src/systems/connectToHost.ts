@@ -10,9 +10,9 @@ import {
 } from "mediasoup-client/lib/types";
 import { Query, SystemRes } from "thyseus";
 
+import { useClientStore } from "../clientStore";
 import { WorldJson } from "../components";
 import { LOCATION_ROUNDING } from "../constants";
-import { useClientStore } from "../store";
 import { ValidSendMessage } from "../types";
 import { toHex } from "../utils/toHex";
 

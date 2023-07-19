@@ -7,7 +7,7 @@ import Logo from "@/public/images/Logo.png";
 import { usePointerLocked } from "@/src/play/hooks/usePointerLocked";
 import SettingsDialog from "@/src/play/ui/Settings/SettingsDialog";
 
-import { usePlayStore } from "./store";
+import { usePlayStore } from "./playStore";
 import { WorldUriId } from "./types";
 
 interface Props {

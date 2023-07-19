@@ -1,4 +1,4 @@
-import { usePlayStore } from "@/app/play/store";
+import { usePlayStore } from "@/app/play/playStore";
 import ImageInput from "@/src/ui/ImageInput";
 import TextAreaDark from "@/src/ui/TextAreaDark";
 import TextFieldDark from "@/src/ui/TextFieldDark";

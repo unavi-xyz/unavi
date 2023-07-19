@@ -3,8 +3,8 @@ import { Parent } from "lattice-engine/scene";
 import { Vrm } from "lattice-engine/vrm";
 import { Entity, Mut, Query, With } from "thyseus";
 
+import { useClientStore } from "../clientStore";
 import { OtherPlayer } from "../components";
-import { useClientStore } from "../store";
 
 export function setPlayersAvatar(
   players: Query<[Entity, OtherPlayer]>,

@@ -2,7 +2,7 @@ import { Asset } from "lattice-engine/core";
 import { Image, Skybox } from "lattice-engine/scene";
 import { Entity, Mut, Query } from "thyseus";
 
-import { useClientStore } from "../store";
+import { useClientStore } from "../clientStore";
 
 export function setSkybox(
   skyboxes: Query<Skybox>,

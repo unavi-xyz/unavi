@@ -1,4 +1,4 @@
-import { usePlayStore } from "@/app/play/store";
+import { usePlayStore } from "@/app/play/playStore";
 import { LeftPanelPage } from "@/app/play/types";
 
 import AddPage from "./AddPage";

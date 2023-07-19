@@ -60,10 +60,9 @@ export function SignInPage({ beforeOpen }: { beforeOpen?: () => void }) {
         <a
           href="/api/auth/methods/google"
           about="Sign in with Google"
-          className="flex h-11 w-full items-center justify-center space-x-2 rounded-lg border border-neutral-400 px-2 transition hover:bg-neutral-100"
+          className="flex h-11 w-full items-center justify-center rounded-lg border border-neutral-400 px-2 transition hover:bg-neutral-100"
         >
           <FcGoogle className="text-2xl" />
-          <span className="font-bold">Google</span>
         </a>
       ) : null}
     </div>

@@ -2,8 +2,8 @@ import { Time } from "lattice-engine/core";
 import { PlayerBody } from "lattice-engine/player";
 import { Mut, Query, Res } from "thyseus";
 
+import { useClientStore } from "../clientStore";
 import { OtherPlayer } from "../components";
-import { useClientStore } from "../store";
 
 const falling = useClientStore.getState().falling;
 

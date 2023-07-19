@@ -10,9 +10,9 @@ import {
 import { Vrm } from "lattice-engine/vrm";
 import { Commands, dropStruct, Entity, EventReader, Query, Res } from "thyseus";
 
+import { useClientStore } from "../clientStore";
 import { NetworkTransform, OtherPlayer, PrevTranslation } from "../components";
 import { PlayerJoin, PlayerLeave } from "../events";
-import { useClientStore } from "../store";
 
 export function spawnPlayers(
   commands: Commands,

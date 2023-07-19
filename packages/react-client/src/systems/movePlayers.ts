@@ -1,7 +1,7 @@
 import { Mut, Query } from "thyseus";
 
+import { useClientStore } from "../clientStore";
 import { NetworkTransform, OtherPlayer } from "../components";
-import { useClientStore } from "../store";
 
 const locations = useClientStore.getState().locations;
 

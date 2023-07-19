@@ -1,6 +1,6 @@
 import { MdArrowBack } from "react-icons/md";
 
-import { usePlayStore } from "@/app/play/store";
+import { usePlayStore } from "@/app/play/playStore";
 import { LeftPanelPage, RightPanelPage } from "@/app/play/types";
 
 interface PropsBase {

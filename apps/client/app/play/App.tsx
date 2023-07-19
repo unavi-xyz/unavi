@@ -11,7 +11,7 @@ import { useHotkeys } from "@/src/play/hooks/useHotkeys";
 import { useLoadUser } from "@/src/play/hooks/useLoadUser";
 
 import LoadingScreen from "./LoadingScreen";
-import { usePlayStore } from "./store";
+import { usePlayStore } from "./playStore";
 import { WorldUriId } from "./types";
 
 const Client = dynamic(

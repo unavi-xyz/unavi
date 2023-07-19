@@ -1,4 +1,4 @@
-import { usePlayStore } from "@/app/play/store";
+import { usePlayStore } from "@/app/play/playStore";
 import { RightPanelPage } from "@/app/play/types";
 
 import WorldPage from "./WorldPage";

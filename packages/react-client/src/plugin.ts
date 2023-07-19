@@ -12,13 +12,9 @@ import { vrmPlugin } from "lattice-engine/vrm";
 import { run, WorldBuilder } from "thyseus";
 
 import { ClientSchedules } from "./constants";
+import { editorPlugin } from "./editor/plugin";
 import { calcPlayerVelocity } from "./systems/calcPlayerVelocity";
 import { connectToHost } from "./systems/connectToHost";
-import { addMeshes } from "./systems/editor/addMeshes";
-import { addNodes } from "./systems/editor/addNodes";
-import { enterEditMode } from "./systems/editor/enterEditMode";
-import { exitEditMode } from "./systems/editor/exitEditMode";
-import { sendExportEvent } from "./systems/editor/sendExportEvent";
 import { exportLoadingInfo } from "./systems/exportLoadingInfo";
 import { initApp } from "./systems/initApp";
 import { joinWorld } from "./systems/joinWorld";
@@ -48,16 +44,12 @@ export function clientPlugin(builder: WorldBuilder) {
     .addPlugin(textPlugin)
     .addPlugin(transformPlugin)
     .addPlugin(vrmPlugin)
+    .addPlugin(editorPlugin)
     .addSystemsToSchedule(LatticeSchedules.Startup, initApp)
     .addSystemsToSchedule(LatticeSchedules.PreUpdate, sendEvents)
     .addSystemsToSchedule(LatticeSchedules.PostFixedUpdate, publishLocation)
     .addSystemsToSchedule(ClientSchedules.ConnectToHost, connectToHost)
-    .addSystemsToSchedule(ClientSchedules.EnterEditMode, enterEditMode)
-    .addSystemsToSchedule(ClientSchedules.ExitEditMode, exitEditMode)
-    .addSystemsToSchedule(ClientSchedules.Export, sendExportEvent)
     .addSystems(
-      addMeshes,
-      addNodes,
       exportLoadingInfo,
       joinWorld,
       movePlayers,

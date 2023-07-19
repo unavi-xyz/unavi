@@ -1,7 +1,7 @@
 import { Name, Scene, SceneStruct } from "lattice-engine/scene";
 import { Entity, Query, Res } from "thyseus";
 
-import { useClientStore } from "../store";
+import { useClientStore } from "../clientStore";
 
 export function setRootName(
   sceneStruct: Res<SceneStruct>,

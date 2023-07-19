@@ -1,7 +1,7 @@
 import { ExportedGltf } from "lattice-engine/gltf";
 import { EventReader } from "thyseus";
 
-import { useClientStore } from "../store";
+import { useClientStore } from "../clientStore";
 
 export function saveExport(reader: EventReader<ExportedGltf>) {
   if (reader.length === 0) return;

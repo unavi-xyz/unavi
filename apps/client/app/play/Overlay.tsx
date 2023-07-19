@@ -9,7 +9,7 @@ import MobileChatBox from "../../src/play/ui/MobileChatBox";
 import { useIsMobile } from "../../src/utils/useIsMobile";
 import BuildOverlay from "./BuildOverlay";
 import PlayOverlay from "./PlayOverlay";
-import { usePlayStore } from "./store";
+import { usePlayStore } from "./playStore";
 import { PlayMode, WorldUriId } from "./types";
 
 interface Props {

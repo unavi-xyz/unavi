@@ -1,23 +1,19 @@
-import { useSceneStore } from "@unavi/react-client";
-
 import { editNode } from "@/src/play/actions/editNode";
 import TextFieldDark from "@/src/ui/TextFieldDark";
 
-import { useTreeItem } from "../../hooks/useTreeItem";
+import { useTreeValue } from "../../hooks/useTreeValue";
 import { getDisplayName } from "../../utils/getDisplayName";
 import PanelPage from "../PanelPage";
+import Rotation from "./Rotation";
+import Scale from "./Scale";
+import Translation from "./Translation";
 
 interface Props {
   id: bigint;
 }
 
 export default function InspectPage({ id }: Props) {
-  const name = useSceneStore((state) => state.items.get(id)?.name);
-  const item = useTreeItem(id);
-
-  if (!item) {
-    return null;
-  }
+  const name = useTreeValue(id, "name");
 
   const displayName = getDisplayName(name, id);
 
@@ -38,6 +34,10 @@ export default function InspectPage({ id }: Props) {
           });
         }}
       />
+
+      <Translation id={id} />
+      <Rotation id={id} />
+      <Scale id={id} />
     </PanelPage>
   );
 }

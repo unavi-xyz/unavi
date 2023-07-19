@@ -1,4 +1,5 @@
 import { Resource } from "lattice-engine/core";
+import { Transform } from "lattice-engine/scene";
 import { struct } from "thyseus";
 
 @struct
@@ -13,6 +14,11 @@ export class EditNode {
   @struct.string declare name: string;
   @struct.string declare meshName: string;
   @struct.string declare parentName: string;
+
+  @struct.bool declare translation: boolean;
+  @struct.bool declare rotation: boolean;
+  @struct.bool declare scale: boolean;
+  @struct.substruct(Transform) declare transform: Transform;
 }
 
 @struct

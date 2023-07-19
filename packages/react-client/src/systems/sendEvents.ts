@@ -52,6 +52,35 @@ export function sendEvents(
       e.name = event.data.name ?? "";
       e.meshName = event.data.mesh ?? "";
       e.parentName = event.data.parent ?? "";
+
+      if (event.data.translation) {
+        e.translation = true;
+        e.transform.translation.set(
+          event.data.translation[0] ?? 0,
+          event.data.translation[1] ?? 0,
+          event.data.translation[2] ?? 0
+        );
+      }
+
+      if (event.data.rotation) {
+        e.rotation = true;
+        e.transform.rotation.set(
+          event.data.rotation[0] ?? 0,
+          event.data.rotation[1] ?? 0,
+          event.data.rotation[2] ?? 0,
+          event.data.rotation[3] ?? 0
+        );
+      }
+
+      if (event.data.scale) {
+        e.scale = true;
+        e.transform.scale.set(
+          event.data.scale[0] ?? 0,
+          event.data.scale[1] ?? 0,
+          event.data.scale[2] ?? 0
+        );
+      }
+
       break;
     }
 

@@ -1,8 +1,9 @@
 import { useClientStore } from "@unavi/react-client";
-import { nanoid } from "nanoid";
 import { BufferAttribute, BufferGeometry } from "three";
 
-export function addThreeGeometry(geometry: BufferGeometry) {
+import { addMesh } from "../addMesh";
+
+export function addThreeMesh(geometry: BufferGeometry) {
   const positionsAttr = geometry.getAttribute("position") as BufferAttribute;
   const normalsAttr = geometry.getAttribute("normal") as BufferAttribute;
   const uvsAttr = geometry.getAttribute("uv") as BufferAttribute;
@@ -19,17 +20,17 @@ export function addThreeGeometry(geometry: BufferGeometry) {
     indices32[i] = indices[i] ?? 0;
   }
 
-  const name = nanoid();
+  const name = addMesh();
 
   useClientStore.getState().mirrorEvent({
     data: {
       indices: Array.from(indices32),
-      name,
       normals: Array.from(normals),
       positions: Array.from(positions),
+      target: name,
       uv: Array.from(uvs),
     },
-    id: "xyz.unavi.editor.add.mesh",
+    id: "xyz.unavi.editor.edit.mesh",
     target: "client",
   });
 

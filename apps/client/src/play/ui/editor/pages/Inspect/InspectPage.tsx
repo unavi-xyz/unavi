@@ -1,5 +1,6 @@
 import { useSceneStore } from "@unavi/react-client";
 
+import { editNode } from "@/src/play/actions/editNode";
 import TextFieldDark from "@/src/ui/TextFieldDark";
 
 import { useTreeItem } from "../../hooks/useTreeItem";
@@ -27,7 +28,14 @@ export default function InspectPage({ id }: Props) {
         value={name}
         placeholder={displayName}
         onChange={(e) => {
-          item.name = e.target.value;
+          if (!name) {
+            return;
+          }
+
+          editNode({
+            name: e.target.value,
+            target: name,
+          });
         }}
       />
     </PanelPage>

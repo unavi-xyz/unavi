@@ -4,12 +4,26 @@ import { struct } from "thyseus";
 @struct
 export class AddNode {
   @struct.string declare name: string;
+}
+
+@struct
+export class EditNode {
+  @struct.string declare target: string;
+
+  @struct.string declare name: string;
   @struct.string declare meshName: string;
   @struct.string declare parentName: string;
 }
 
 @struct
 export class AddMesh {
+  @struct.string declare name: string;
+}
+
+@struct
+export class EditMesh {
+  @struct.string declare target: string;
+
   @struct.string declare name: string;
   @struct.string declare materialName: string;
 

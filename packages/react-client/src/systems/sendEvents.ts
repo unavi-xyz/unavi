@@ -2,7 +2,7 @@ import { Warehouse } from "lattice-engine/core";
 import { EventWriter, Res } from "thyseus";
 
 import { useClientStore } from "../clientStore";
-import { AddMesh, AddNode } from "../editor/events";
+import { AddMesh, AddNode, EditMesh, EditNode } from "../editor/events";
 import { PlayerJoin, PlayerLeave } from "../events";
 
 export function sendEvents(
@@ -10,7 +10,9 @@ export function sendEvents(
   playerJoin: EventWriter<PlayerJoin>,
   playerLeave: EventWriter<PlayerLeave>,
   addNode: EventWriter<AddNode>,
-  addMesh: EventWriter<AddMesh>
+  addMesh: EventWriter<AddMesh>,
+  editNode: EventWriter<EditNode>,
+  editMesh: EventWriter<EditMesh>
 ) {
   const events = useClientStore.getState().events;
 
@@ -34,15 +36,30 @@ export function sendEvents(
     case "xyz.unavi.editor.add.node": {
       const e = addNode.create();
       e.name = event.data.name;
-      e.meshName = event.data.mesh ?? "";
-      e.parentName = event.data.parent ?? "";
       break;
     }
 
     case "xyz.unavi.editor.add.mesh": {
       const e = addMesh.create();
-
       e.name = event.data.name;
+      break;
+    }
+
+    case "xyz.unavi.editor.edit.node": {
+      const e = editNode.create();
+      e.target = event.data.target;
+
+      e.name = event.data.name ?? "";
+      e.meshName = event.data.mesh ?? "";
+      e.parentName = event.data.parent ?? "";
+      break;
+    }
+
+    case "xyz.unavi.editor.edit.mesh": {
+      const e = editMesh.create();
+      e.target = event.data.target;
+
+      e.name = event.data.name ?? "";
       e.materialName = event.data.material ?? "";
 
       const indices = new Uint32Array(event.data.indices?.length ?? 0);

@@ -19,7 +19,11 @@ export default function ScenePage() {
   }
 
   const handleBack = item?.parentId
-    ? () => useSceneStore.setState({ sceneTreeId: item.parentId })
+    ? () =>
+        useSceneStore.setState({
+          sceneTreeId: item.parentId,
+          selectedId: usedId,
+        })
     : undefined;
 
   const name =

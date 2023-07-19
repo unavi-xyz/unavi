@@ -9,11 +9,13 @@ export default function TreeItem({ id }: Props) {
   const name = useSceneStore((state) => state.items.get(id)?.name);
   const selectedId = useSceneStore((state) => state.selectedId);
 
-  function select() {
+  function select(e: React.MouseEvent) {
+    e.stopPropagation();
     useSceneStore.setState({ selectedId: id });
   }
 
-  function expand() {
+  function expand(e: React.MouseEvent) {
+    e.stopPropagation();
     useSceneStore.setState({ sceneTreeId: id, selectedId: id });
   }
 

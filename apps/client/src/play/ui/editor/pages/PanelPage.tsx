@@ -50,7 +50,7 @@ export default function PanelPage({
   const showBack = side !== undefined || onBack !== undefined;
 
   return (
-    <div className="h-full space-y-4 overflow-hidden p-4">
+    <div className="relative h-full space-y-4 overflow-hidden p-4">
       <div className="grid grid-cols-5">
         <div className="col-span-1">
           {showBack ? (

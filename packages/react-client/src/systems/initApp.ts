@@ -21,10 +21,10 @@ export function initApp(
 ) {
   coreStore.canvas = document.querySelector("canvas");
 
-  const { rootId } = createScene(commands, coreStore, sceneStruct);
+  const { rootId, sceneId } = createScene(commands, coreStore, sceneStruct);
   const cameraId = createPlayerControls(
     [0, 8, 0],
-    rootId,
+    sceneId,
     commands,
     sceneStruct,
     inputStruct

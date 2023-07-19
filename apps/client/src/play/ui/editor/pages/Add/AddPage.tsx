@@ -7,12 +7,20 @@ import {
   BiText,
 } from "react-icons/bi";
 
+import { usePlayStore } from "@/app/play/playStore";
 import { LeftPanelPage } from "@/app/play/types";
 
 import { addBox } from "../../../../actions/addBox";
 import { addCylinder } from "../../../../actions/addCylinder";
 import { addSphere } from "../../../../actions/addSphere";
 import PanelPage from "../PanelPage";
+
+function wrapAdd(fn: () => void) {
+  return () => {
+    fn();
+    usePlayStore.setState({ leftPage: LeftPanelPage.Scene });
+  };
+}
 
 export default function AddPage() {
   return (
@@ -30,13 +38,13 @@ export default function AddPage() {
       </ButtonGroup>
 
       <ButtonGroup title="Shapes">
-        <ItemButton onClick={addBox} text="Box">
+        <ItemButton onClick={wrapAdd(addBox)} text="Box">
           <BiCube />
         </ItemButton>
-        <ItemButton onClick={addSphere} text="Sphere">
+        <ItemButton onClick={wrapAdd(addSphere)} text="Sphere">
           <BiCircle />
         </ItemButton>
-        <ItemButton onClick={addCylinder} text="Cylinder">
+        <ItemButton onClick={wrapAdd(addCylinder)} text="Cylinder">
           <BiCylinder />
         </ItemButton>
       </ButtonGroup>

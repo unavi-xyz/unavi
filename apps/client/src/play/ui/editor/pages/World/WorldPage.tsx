@@ -2,6 +2,7 @@ import { usePlayStore } from "@/app/play/playStore";
 import ImageInput from "@/src/ui/ImageInput";
 import TextAreaDark from "@/src/ui/TextAreaDark";
 import TextFieldDark from "@/src/ui/TextFieldDark";
+import { cropImage } from "@/src/utils/cropImage";
 
 import { useSave } from "../../../../hooks/useSave";
 import PanelPage from "../PanelPage";
@@ -21,27 +22,25 @@ export default function WorldPage() {
     <PanelPage title="World">
       <ImageInput
         src={image}
-        onChange={(e) => {
+        onChange={async (e) => {
           const file = e.target.files?.[0];
           if (!file) return;
 
-          const reader = new FileReader();
+          const fileURL = URL.createObjectURL(file);
+          const cropped = await cropImage(fileURL);
+          const croppedURL = URL.createObjectURL(cropped);
 
-          reader.onload = (e) => {
-            const image = e.target?.result as string;
-
-            usePlayStore.setState((prev) => ({
-              metadata: {
-                ...prev.metadata,
-                info: {
-                  ...prev.metadata.info,
-                  image,
-                },
+          usePlayStore.setState((prev) => ({
+            metadata: {
+              ...prev.metadata,
+              info: {
+                ...prev.metadata.info,
+                image: croppedURL,
               },
-            }));
-          };
+            },
+          }));
 
-          reader.readAsDataURL(file);
+          URL.revokeObjectURL(fileURL);
         }}
         dark
         className="h-40 w-full rounded-lg object-cover"

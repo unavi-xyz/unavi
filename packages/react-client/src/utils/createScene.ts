@@ -3,7 +3,6 @@ import { OutlinePass } from "lattice-engine/postprocessing";
 import {
   GlobalTransform,
   Image,
-  Name,
   Parent,
   Scene,
   SceneStruct,
@@ -20,15 +19,10 @@ export function createScene(
   const canvas = document.querySelector("canvas");
   coreStore.canvas = canvas;
 
-  const name = new Name("root");
-
   const rootId = commands
     .spawn(true)
-    .add(name)
     .addType(Transform)
     .addType(GlobalTransform).id;
-
-  dropStruct(name);
 
   const skyboxId = commands.spawn(true).addType(Asset).addType(Image).id;
   const skybox = new Skybox();

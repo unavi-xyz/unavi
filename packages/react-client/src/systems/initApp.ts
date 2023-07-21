@@ -1,12 +1,7 @@
 import { Asset, CoreStore } from "lattice-engine/core";
 import { CascadingShadowMaps } from "lattice-engine/csm";
 import { InputStruct } from "lattice-engine/input";
-import {
-  GlobalTransform,
-  Parent,
-  SceneStruct,
-  Transform,
-} from "lattice-engine/scene";
+import { SceneStruct } from "lattice-engine/scene";
 import { Commands, dropStruct, Mut, Res } from "thyseus";
 
 import { WorldJson } from "../components";
@@ -36,15 +31,5 @@ export function initApp(
   commands.getById(cameraId).add(csm);
   dropStruct(csm);
 
-  const parent = new Parent(rootId);
-
-  commands
-    .spawn(true)
-    .add(parent)
-    .addType(Transform)
-    .addType(GlobalTransform)
-    .addType(Asset)
-    .addType(WorldJson);
-
-  dropStruct(parent);
+  commands.getById(rootId).addType(Asset).addType(WorldJson);
 }

@@ -51,7 +51,7 @@ export function useSave() {
 
       // Upload image
       if (imageBlob) {
-        await fetch(imageUploadURL, {
+        const res = await fetch(imageUploadURL, {
           body: imageBlob,
           headers: {
             "Content-Type": "image/jpeg",
@@ -60,15 +60,17 @@ export function useSave() {
           method: "PUT",
         });
 
-        usePlayStore.setState({
-          metadata: {
-            ...metadata,
-            info: {
-              ...metadata.info,
-              image: cdnURL(S3Path.worldModel(modelId).image),
+        if (res.ok) {
+          usePlayStore.setState({
+            metadata: {
+              ...metadata,
+              info: {
+                ...metadata.info,
+                image: cdnURL(S3Path.worldModel(modelId).image),
+              },
             },
-          },
-        });
+          });
+        }
       }
 
       // Wait for export

@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { WORLD_ID_LENGTH } from "@/src/server/db/constants";
 import { fetchWorld } from "@/src/server/helpers/fetchWorld";
-import { toHex } from "@/src/utils/toHex";
+import { generateWorldMetadata } from "@/src/server/helpers/generateWorldMetadata";
 
 import App from "./App";
 import { WorldUriId } from "./types";
@@ -21,37 +21,8 @@ export async function generateMetadata({
   if (!params.success) return {};
 
   const id = parseParams(params.data);
-  const world = await fetchWorld(id);
-  if (!world?.metadata) return {};
 
-  const metadata = world.metadata;
-
-  const value = id.value;
-  const displayId = typeof value === "number" ? toHex(value) : value;
-  const title = metadata.info?.title || `World ${displayId}`;
-
-  const description = metadata.info?.description || "";
-  const authors = metadata.info?.authors;
-
-  const image = metadata.info?.image;
-
-  return {
-    description,
-    openGraph: {
-      creators: authors ? authors : undefined,
-      description,
-      images: image ? [{ url: image }] : undefined,
-      title,
-    },
-    title,
-    twitter: {
-      card: image ? "summary_large_image" : "summary",
-      creator: authors ? authors[0] : undefined,
-      description,
-      images: image ? [image] : undefined,
-      title,
-    },
-  };
+  return await generateWorldMetadata(id.value);
 }
 
 export default async function Play({ searchParams }: Props) {

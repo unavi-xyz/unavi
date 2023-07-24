@@ -1,7 +1,7 @@
 import { Asset, CoreStore } from "lattice-engine/core";
 import { CascadingShadowMaps } from "lattice-engine/csm";
 import { InputStruct } from "lattice-engine/input";
-import { SceneStruct } from "lattice-engine/scene";
+import { Name, SceneStruct } from "lattice-engine/scene";
 import { Commands, dropStruct, Mut, Res } from "thyseus";
 
 import { WorldJson } from "../components";
@@ -31,5 +31,7 @@ export function initApp(
   commands.getById(cameraId).add(csm);
   dropStruct(csm);
 
-  commands.getById(rootId).addType(Asset).addType(WorldJson);
+  const name = new Name("root");
+  commands.getById(rootId).add(name).addType(Asset).addType(WorldJson);
+  dropStruct(name);
 }

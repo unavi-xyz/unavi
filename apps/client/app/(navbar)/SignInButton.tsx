@@ -27,7 +27,7 @@ export default function SignInButton({ loading }: Props) {
 
       <DialogTrigger asChild>
         <button
-          className={`rounded-full bg-neutral-900 px-6 py-1.5 font-bold text-white outline-neutral-400 transition active:scale-100 ${
+          className={`rounded-full bg-neutral-900 px-6 py-1.5 font-bold text-white outline-2 outline-offset-4 transition active:scale-100 ${
             loading ? "opacity-70" : "hover:scale-105"
           }`}
           disabled={loading}

@@ -110,7 +110,7 @@ export default async function World({ params }: Props) {
 
             <Link
               href={`/play?id=${params.id}`}
-              className="rounded-full bg-neutral-900 py-3 text-center text-lg font-bold text-white outline-neutral-400 transition hover:scale-105"
+              className="rounded-full bg-neutral-900 py-3 text-center text-lg font-bold text-white outline-2 outline-offset-4 transition hover:scale-105"
             >
               Play
             </Link>

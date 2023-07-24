@@ -20,9 +20,14 @@ export default function NavbarLayout({
           style={{ paddingLeft: "calc(100vw - 100%)" }}
         >
           <div className="max-w-content mx-4 flex justify-between lg:grid lg:grid-cols-3">
-            <Link href="/" className="flex h-full w-fit items-center">
-              <Image src={Logo} alt="logo" priority width={40} height={40} />
-            </Link>
+            <div className="flex h-full items-center">
+              <Link
+                href="/"
+                className="rounded-full outline-2 outline-offset-4"
+              >
+                <Image src={Logo} alt="logo" priority width={40} height={40} />
+              </Link>
+            </div>
 
             <div className="flex items-center justify-center space-x-8 lg:space-x-12">
               <div>

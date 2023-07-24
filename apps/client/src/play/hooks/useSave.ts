@@ -61,15 +61,17 @@ export function useSave() {
         });
 
         if (res.ok) {
-          usePlayStore.setState({
-            metadata: {
-              ...metadata,
-              info: {
-                ...metadata.info,
-                image: cdnURL(S3Path.worldModel(modelId).image),
+          setTimeout(() => {
+            usePlayStore.setState({
+              metadata: {
+                ...metadata,
+                info: {
+                  ...metadata.info,
+                  image: cdnURL(S3Path.worldModel(modelId).image),
+                },
               },
-            },
-          });
+            });
+          }, 1000);
         }
       }
 

@@ -25,7 +25,7 @@ export default function Card({
   return (
     <div>
       {href ? (
-        <Link href={href} className="block">
+        <Link href={href} className="block outline-2 outline-offset-4">
           <CardImage
             image={image}
             sizes={sizes}

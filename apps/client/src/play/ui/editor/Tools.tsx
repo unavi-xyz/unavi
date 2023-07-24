@@ -3,7 +3,7 @@ import { BiMove } from "react-icons/bi";
 import { CgArrowsExpandUpRight } from "react-icons/cg";
 import { MdSync } from "react-icons/md";
 
-import { usePlayStore } from "@/app/play/store";
+import { usePlayStore } from "@/app/play/playStore";
 import { Tool } from "@/app/play/types";
 import Tooltip from "@/src/ui/Tooltip";
 

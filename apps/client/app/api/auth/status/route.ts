@@ -10,11 +10,14 @@ export async function GET(request: NextRequest) {
 
   try {
     // Check if user has a valid session
-    const { session, user } = await authRequest.validateUser();
-    if (!session || !user) throw new Error("No valid session found");
+    const session = await authRequest.validate();
+    if (!session) throw new Error("No valid session found");
 
     // User has a valid session
-    const json: GetAuthStatusResponse = { status: "authenticated", user };
+    const json: GetAuthStatusResponse = {
+      status: "authenticated",
+      user: session.user,
+    };
     return NextResponse.json(json);
   } catch {
     // User does not have a valid session

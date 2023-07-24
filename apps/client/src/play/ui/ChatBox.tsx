@@ -1,7 +1,7 @@
-import { useClientStore } from "@unavi/react-client";
+import { useClientStore } from "@unavi/engine";
 import { useEffect, useRef } from "react";
 
-import { usePlayStore } from "@/app/play/store";
+import { usePlayStore } from "@/app/play/playStore";
 
 import { usePointerLocked } from "../hooks/usePointerLocked";
 import ChatMessage from "./ChatMessage";

@@ -86,7 +86,7 @@ export default await defineNextConfig({
   outputFileTracing: true,
   productionBrowserSourceMaps: true,
   reactStrictMode: true,
-  transpilePackages: ["engine"],
+  transpilePackages: ["@unavi/engine"],
   webpack: function (config) {
     config.experiments = {
       ...config.experiments,

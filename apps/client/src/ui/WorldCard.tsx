@@ -27,7 +27,10 @@ export default function WorldCard({
   return (
     <div>
       <div className="group relative">
-        <Link href={`/world/${id}`} className="rounded-3xl">
+        <Link
+          href={`/world/${id}`}
+          className="rounded-3xl outline-2 outline-offset-4"
+        >
           <CardImage group image={metadata.info?.image} sizes={sizes}>
             <PlayerCount
               uri={uri}

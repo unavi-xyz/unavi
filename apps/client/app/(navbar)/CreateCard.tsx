@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { env } from "@/src/env.mjs";
-import { getUserSession } from "@/src/server/auth/getUserSession";
+import { getSession } from "@/src/server/auth/getSession";
 import { db } from "@/src/server/db/drizzle";
 import { world, worldModel } from "@/src/server/db/schema";
 import { nanoidShort } from "@/src/server/nanoid";
@@ -17,7 +17,7 @@ export const preferredRegion = "iad1";
 export async function createWorld() {
   "use server";
 
-  const session = await getUserSession();
+  const session = await getSession();
   if (!session) return;
 
   const publicId = nanoidShort();

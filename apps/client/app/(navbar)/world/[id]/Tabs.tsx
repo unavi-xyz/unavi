@@ -1,7 +1,7 @@
 import { WorldMetadata } from "@wired-protocol/types";
 import { eq } from "drizzle-orm";
 
-import { getUserSession } from "@/src/server/auth/getUserSession";
+import { getSession } from "@/src/server/auth/getSession";
 import { db } from "@/src/server/db/drizzle";
 import { world } from "@/src/server/db/schema";
 import ButtonTabs, { TabContent } from "@/src/ui/ButtonTabs";
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export default async function Tabs({ id, metadata }: Props) {
-  const session = await getUserSession();
+  const session = await getSession();
 
   const owner = await fetchWorldOwner(id.value);
 

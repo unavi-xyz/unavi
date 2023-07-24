@@ -1,11 +1,12 @@
-import { ClientSchedules, useClientStore } from "@unavi/react-client";
+import { EngineSchedules, useClientStore } from "@unavi/engine";
 import { useCallback, useState } from "react";
 import { toast } from "react-hot-toast";
 
 import { updateWorld } from "@/app/api/worlds/[id]/helper";
 import { getWorldModelFileUpload } from "@/app/api/worlds/[id]/model/files/[file]/helper";
 import { createWorldModel } from "@/app/api/worlds/[id]/model/helper";
-import { usePlayStore } from "@/app/play/store";
+import { usePlayStore } from "@/app/play/playStore";
+import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
 const toastId = "world-save";
 
@@ -25,7 +26,7 @@ export function useSave() {
 
     toast.loading("Saving...", { id: toastId, position: "top-right" });
 
-    engine.queueSchedule(ClientSchedules.Export);
+    engine.queueSchedule(EngineSchedules.Export);
 
     try {
       // Save metadata
@@ -40,7 +41,7 @@ export function useSave() {
         : null;
 
       // Create new world model
-      await createWorldModel(worldId.value);
+      const { modelId } = await createWorldModel(worldId.value);
 
       // Get upload URLs
       const [imageUploadURL, modelUploadURL] = await Promise.all([
@@ -50,7 +51,7 @@ export function useSave() {
 
       // Upload image
       if (imageBlob) {
-        await fetch(imageUploadURL, {
+        const res = await fetch(imageUploadURL, {
           body: imageBlob,
           headers: {
             "Content-Type": "image/jpeg",
@@ -58,6 +59,20 @@ export function useSave() {
           },
           method: "PUT",
         });
+
+        if (res.ok) {
+          setTimeout(() => {
+            usePlayStore.setState({
+              metadata: {
+                ...metadata,
+                info: {
+                  ...metadata.info,
+                  image: cdnURL(S3Path.worldModel(modelId).image),
+                },
+              },
+            });
+          }, 1000);
+        }
       }
 
       // Wait for export

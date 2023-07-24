@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
+import { baseMetadata } from "@/app/metadata";
 import { db } from "@/src/server/db/drizzle";
 import { user } from "@/src/server/db/schema";
 import { FixWith } from "@/src/server/db/types";
@@ -48,6 +49,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     description,
     openGraph: {
+      ...baseMetadata.openGraph,
       description,
       images: image ? [{ url: image }] : undefined,
       title,
@@ -56,6 +58,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     title,
     twitter: {
+      ...baseMetadata.twitter,
       card: image ? "summary_large_image" : "summary",
       description,
       images: image ? [image] : undefined,

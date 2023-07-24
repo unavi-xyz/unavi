@@ -5,7 +5,7 @@ interface Props extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 const TextFieldDark = forwardRef<HTMLInputElement, Props>(
-  ({ label, className, children, ...rest }, ref) => {
+  ({ label, className, disabled, children, ...rest }, ref) => {
     return (
       <label className="block space-y-1">
         {label && <div className="font-bold text-neutral-400">{label}</div>}
@@ -14,7 +14,10 @@ const TextFieldDark = forwardRef<HTMLInputElement, Props>(
           <input
             ref={ref}
             type="text"
-            className={`w-full rounded-lg bg-neutral-800 px-3 py-2 text-white placeholder:text-neutral-400 ${className}`}
+            disabled={disabled}
+            className={`w-full rounded-lg bg-neutral-800 px-3 py-2 text-white placeholder:text-neutral-400 ${
+              disabled ? "cursor-not-allowed text-opacity-50" : ""
+            } ${className}`}
             {...rest}
           />
 

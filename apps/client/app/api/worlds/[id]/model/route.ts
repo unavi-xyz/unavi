@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
 import { env } from "@/src/env.mjs";
-import { getUserSession } from "@/src/server/auth/getUserSession";
+import { getSession } from "@/src/server/auth/getSession";
 import { db } from "@/src/server/db/drizzle";
 import { worldModel } from "@/src/server/db/schema";
 import { FixWith } from "@/src/server/db/types";
@@ -17,7 +17,7 @@ import { PostWorldModelResponse } from "./types";
 
 // Create new world model
 export async function POST(request: NextRequest, { params }: Params) {
-  const session = await getUserSession();
+  const session = await getSession();
   if (!session) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);

@@ -27,7 +27,7 @@ export default function SignInButton({ loading }: Props) {
 
       <DialogTrigger asChild>
         <button
-          className={`rounded-full bg-neutral-900 px-6 py-1.5 font-bold text-white outline-neutral-400 transition active:scale-100 ${
+          className={`rounded-full bg-neutral-900 px-6 py-1.5 font-bold text-white outline-2 outline-offset-4 transition active:scale-100 ${
             loading ? "opacity-70" : "hover:scale-105"
           }`}
           disabled={loading}
@@ -60,10 +60,9 @@ export function SignInPage({ beforeOpen }: { beforeOpen?: () => void }) {
         <a
           href="/api/auth/methods/google"
           about="Sign in with Google"
-          className="flex h-11 w-full items-center justify-center space-x-2 rounded-lg border border-neutral-400 px-2 transition hover:bg-neutral-100"
+          className="flex h-11 w-full items-center justify-center rounded-lg border border-neutral-400 px-2 transition hover:bg-neutral-100"
         >
           <FcGoogle className="text-2xl" />
-          <span className="font-bold">Sign in with Google</span>
         </a>
       ) : null}
     </div>

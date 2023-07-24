@@ -1,3 +1,3 @@
-import { User } from "lucia-auth";
+import { User } from "lucia";
 
 export type LoginResponse = { user: User };

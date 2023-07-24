@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
 import { env } from "@/src/env.mjs";
-import { getUserSession } from "@/src/server/auth/getUserSession";
+import { getSession } from "@/src/server/auth/getSession";
 import { db } from "@/src/server/db/drizzle";
 import { world, worldModel } from "@/src/server/db/schema";
 import { FixWith } from "@/src/server/db/types";
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 
 // Update world
 export async function PATCH(request: NextRequest, { params }: Params) {
-  const session = await getUserSession();
+  const session = await getSession();
   if (!session) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);
@@ -56,7 +56,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
 // Delete world
 export async function DELETE(request: NextRequest, { params }: Params) {
-  const session = await getUserSession();
+  const session = await getSession();
   if (!session) return new Response("Unauthorized", { status: 401 });
 
   const { id } = paramsSchema.parse(params);

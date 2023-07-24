@@ -1,6 +1,6 @@
-import { useClientStore } from "@unavi/react-client";
+import { useClientStore } from "@unavi/engine";
 
-import { usePlayStore } from "@/app/play/store";
+import { usePlayStore } from "@/app/play/playStore";
 import { useAuth } from "@/src/client/AuthProvider";
 import { toHex } from "@/src/utils/toHex";
 

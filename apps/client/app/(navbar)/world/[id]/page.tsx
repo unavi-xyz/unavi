@@ -6,11 +6,9 @@ import { Suspense } from "react";
 
 import { HOME_SERVER } from "@/src/constants";
 import { env } from "@/src/env.mjs";
-import {
-  fetchUserProfile,
-  UserProfile,
-} from "@/src/server/helpers/fetchUserProfile";
+import { fetchAuthors } from "@/src/server/helpers/fetchAuthors";
 import { fetchWorld } from "@/src/server/helpers/fetchWorld";
+import { generateWorldMetadata } from "@/src/server/helpers/generateWorldMetadata";
 import { isFromCDN } from "@/src/utils/isFromCDN";
 import { parseWorldId } from "@/src/utils/parseWorldId";
 
@@ -21,37 +19,8 @@ export const revalidate = 60;
 
 type Params = { id: string };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const id = parseWorldId(params.id);
-
-  const found = await fetchWorld(id);
-  if (!found?.metadata) return {};
-
-  const metadata = found.metadata;
-
-  const displayId = id.value.slice(0, 6);
-  const title = metadata.info?.title || `World ${displayId}`;
-
-  const description = metadata.info?.description || "";
-  const authors = metadata.info?.authors;
-  const image = metadata.info?.image;
-
-  return {
-    description,
-    openGraph: {
-      creators: authors ? authors : undefined,
-      description,
-      images: image ? [{ url: image }] : undefined,
-      title,
-    },
-    title,
-    twitter: {
-      card: image ? "summary_large_image" : "summary",
-      description,
-      images: image ? [image] : undefined,
-      title,
-    },
-  };
+export function generateMetadata({ params }: Props): Promise<Metadata> {
+  return generateWorldMetadata(params.id);
 }
 
 interface Props {
@@ -65,26 +34,8 @@ export default async function World({ params }: Props) {
   if (!found?.metadata) notFound();
 
   const metadata = found.metadata;
-  const profiles: UserProfile[] = [];
 
-  if (metadata.info?.authors) {
-    await Promise.all(
-      metadata.info.authors.map(async (author) => {
-        const profile = await fetchUserProfile(author);
-
-        if (!profile) {
-          profiles.push({
-            home: "",
-            metadata: { name: author },
-            username: "",
-          });
-          return;
-        }
-
-        profiles.push(profile);
-      })
-    );
-  }
+  const profiles = await fetchAuthors(metadata);
 
   return (
     <div className="flex justify-center">
@@ -159,7 +110,7 @@ export default async function World({ params }: Props) {
 
             <Link
               href={`/play?id=${params.id}`}
-              className="rounded-full bg-neutral-900 py-3 text-center text-lg font-bold text-white outline-neutral-400 transition hover:scale-105"
+              className="rounded-full bg-neutral-900 py-3 text-center text-lg font-bold text-white outline-2 outline-offset-4 transition hover:scale-105"
             >
               Play
             </Link>

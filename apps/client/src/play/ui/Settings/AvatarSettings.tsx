@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { BsFillGridFill } from "react-icons/bs";
 import { MdClose } from "react-icons/md";
 
-import { usePlayStore } from "@/app/play/store";
+import { usePlayStore } from "@/app/play/playStore";
 
 import { env } from "../../../env.mjs";
 import FileInput from "../../../ui/FileInput";

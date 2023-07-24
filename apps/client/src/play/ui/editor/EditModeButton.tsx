@@ -1,8 +1,8 @@
-import { ClientSchedules, useClientStore } from "@unavi/react-client";
+import { EngineSchedules, useClientStore, useSceneStore } from "@unavi/engine";
 import { useEffect } from "react";
 import { MdConstruction } from "react-icons/md";
 
-import { usePlayStore } from "@/app/play/store";
+import { usePlayStore } from "@/app/play/playStore";
 import { PlayMode } from "@/app/play/types";
 import Tooltip from "@/src/ui/Tooltip";
 
@@ -14,9 +14,9 @@ export default function EditModeButton() {
     if (!engine) return;
 
     if (mode === PlayMode.Edit) {
-      engine.queueSchedule(ClientSchedules.EnterEditMode);
+      engine.queueSchedule(EngineSchedules.EnterEditMode);
     } else {
-      engine.queueSchedule(ClientSchedules.ExitEditMode);
+      engine.queueSchedule(EngineSchedules.ExitEditMode);
     }
   }, [mode, engine]);
 
@@ -26,8 +26,10 @@ export default function EditModeButton() {
         <button
           onClick={() => {
             if (mode === PlayMode.Play) {
+              useSceneStore.setState({ enabled: true });
               usePlayStore.setState({ mode: PlayMode.Edit });
             } else {
+              useSceneStore.setState({ enabled: false });
               usePlayStore.setState({ mode: PlayMode.Play });
             }
           }}

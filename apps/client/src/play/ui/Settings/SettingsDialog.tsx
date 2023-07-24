@@ -1,7 +1,7 @@
-import { useClientStore } from "@unavi/react-client";
+import { useClientStore } from "@unavi/engine";
 import { useEffect, useState } from "react";
 
-import { usePlayStore } from "@/app/play/store";
+import { usePlayStore } from "@/app/play/playStore";
 
 import DialogContent, { DialogRoot } from "../../../ui/Dialog";
 import { LocalStorageKey } from "../../constants";

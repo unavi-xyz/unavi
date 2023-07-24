@@ -6,7 +6,9 @@ import {
   googleAuth,
 } from "@/src/server/auth/google";
 import { auth } from "@/src/server/auth/lucia";
-import { nanoidShort } from "@/src/server/nanoid";
+import { db } from "@/src/server/db/drizzle";
+import { profile } from "@/src/server/db/schema";
+import { genUsername } from "@/src/server/helpers/genUsername";
 
 export const dynamic = "force-dynamic";
 
@@ -32,14 +34,20 @@ export async function GET(request: NextRequest) {
   // Log in the user, or create a new user if they don't exist
   const { existingUser, createUser } = await googleAuth.validateCallback(code);
 
-  const user =
-    existingUser ||
-    (await createUser({
-      username: nanoidShort(),
-    }));
+  let user = existingUser;
+
+  if (!user) {
+    user = await createUser({ attributes: { username: genUsername() } });
+
+    // Create profile
+    await db.insert(profile).values({ userId: user.userId });
+  }
 
   // Create auth session
-  const session = await auth.createSession(user.userId);
+  const session = await auth.createSession({
+    attributes: {},
+    userId: user.userId,
+  });
 
   const authRequest = auth.handleRequest({ cookies, request });
   authRequest.setSession(session);

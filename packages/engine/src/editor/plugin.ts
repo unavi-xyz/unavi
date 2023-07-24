@@ -4,6 +4,7 @@ import { EngineSchedules } from "../constants";
 import { addMeshes } from "./systems/addMeshes";
 import { addNodes } from "./systems/addNodes";
 import { createTreeItems } from "./systems/createTreeItems";
+import { editExtras } from "./systems/editExtras";
 import { editMeshes } from "./systems/editMeshes";
 import { editNodes } from "./systems/editNodes";
 import { enterEditMode } from "./systems/enterEditMode";
@@ -20,6 +21,7 @@ export function editorPlugin(builder: WorldBuilder) {
       addMeshes,
       addNodes,
       createTreeItems,
+      editExtras,
       editMeshes,
       editNodes,
       syncTransformTarget

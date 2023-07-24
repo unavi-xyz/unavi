@@ -8,6 +8,8 @@ export class TreeItem {
   rotation: [number, number, number, number] = [0, 0, 0, 1];
   scale: [number, number, number] = [1, 1, 1];
 
+  locked = false;
+
   #parentId?: bigint;
   #childrenIds: bigint[] = [];
 

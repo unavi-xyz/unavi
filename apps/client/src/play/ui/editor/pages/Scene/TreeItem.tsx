@@ -1,13 +1,19 @@
 import { useSceneStore } from "@unavi/engine";
-import { IoMdExpand } from "react-icons/io";
+import { IoMdExpand, IoMdLock, IoMdUnlock } from "react-icons/io";
+
+import { editNode } from "@/src/play/actions/editNode";
+import Tooltip from "@/src/ui/Tooltip";
+
+import { useTreeValue } from "../../hooks/useTreeValue";
 
 interface Props {
   id: bigint;
 }
 
 export default function TreeItem({ id }: Props) {
-  const name = useSceneStore((state) => state.items.get(id)?.name);
   const selectedId = useSceneStore((state) => state.selectedId);
+  const name = useTreeValue(id, "name");
+  const locked = useTreeValue(id, "locked");
 
   function select(e: React.MouseEvent) {
     e.stopPropagation();
@@ -17,6 +23,12 @@ export default function TreeItem({ id }: Props) {
   function expand(e: React.MouseEvent) {
     e.stopPropagation();
     useSceneStore.setState({ sceneTreeId: id, selectedId: id });
+  }
+
+  function toggleLock(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!name) return;
+    editNode({ extras: { locked: !locked }, target: name });
   }
 
   const isSelected = selectedId === id;
@@ -34,12 +46,27 @@ export default function TreeItem({ id }: Props) {
         {name || `(${id.toString()})`}
       </button>
 
-      <button
-        onClick={expand}
-        className="absolute inset-y-0 right-0 hidden w-8 items-center justify-center rounded text-lg hover:opacity-70 active:opacity-60 group-hover:flex"
-      >
-        <IoMdExpand />
-      </button>
+      <div className="absolute inset-y-0 right-0 flex items-center space-x-1 pr-1">
+        <Tooltip text="Expand" side="top">
+          <button
+            onClick={expand}
+            className="hidden rounded text-lg hover:opacity-70 active:opacity-60 group-hover:block"
+          >
+            <IoMdExpand />
+          </button>
+        </Tooltip>
+
+        <Tooltip text={locked ? "Unlock" : "Lock"} side="top">
+          <button
+            onClick={toggleLock}
+            className={`rounded text-lg hover:opacity-70 active:opacity-60 ${
+              locked ? "text-neutral-500" : "hidden group-hover:block"
+            }`}
+          >
+            {locked ? <IoMdLock /> : <IoMdUnlock />}
+          </button>
+        </Tooltip>
+      </div>
     </div>
   );
 }

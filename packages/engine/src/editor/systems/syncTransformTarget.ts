@@ -11,9 +11,12 @@ export function syncTransformTarget(
   for (const transformControl of transformControls) {
     const targetId = transformControl.targetId;
 
+    const { sceneTreeId, rootId, items } = useSceneStore.getState();
+
+    // Set UI from transform controls
     if (targetId !== lastTransformTarget) {
-      // Set UI from transform controls
-      const { sceneTreeId, rootId, items } = useSceneStore.getState();
+      lastTransformTarget = targetId;
+
       const usedId = sceneTreeId ?? rootId;
       if (!usedId) continue;
 
@@ -32,12 +35,24 @@ export function syncTransformTarget(
         currentId = parentId;
       }
 
+      // Ignore if currentId is locked
+      // if (items.get(currentId)?.locked) {
+      //   useSceneStore.setState({ selectedId: undefined });
+      //   transformControl.targetId = 0n;
+      //   continue;
+      // }
+
       useSceneStore.setState({ selectedId: currentId });
+      transformControl.targetId = currentId;
     } else {
       // Set transform controls from UI
-      transformControl.targetId = useSceneStore.getState().selectedId ?? 0n;
-    }
+      const newTarget = useSceneStore.getState().selectedId ?? 0n;
+      transformControl.targetId = newTarget;
+      lastTransformTarget = newTarget;
 
-    lastTransformTarget = targetId;
+      // Disable transform controls if target is locked
+      const locked = items.get(newTarget)?.locked;
+      transformControl.enabled = !locked;
+    }
   }
 }

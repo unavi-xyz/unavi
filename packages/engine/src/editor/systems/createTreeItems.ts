@@ -1,3 +1,4 @@
+import { Extra } from "lattice-engine/gltf";
 import {
   Name,
   Parent,
@@ -17,6 +18,7 @@ export function createTreeItems(
   nodes: Query<[Entity, Transform, Parent]>,
   scenes: Query<[Entity, Scene]>,
   names: Query<[Entity, Name]>,
+  extras: Query<Extra>,
   sceneStruct: Res<SceneStruct>
 ) {
   const { enabled, items } = useSceneStore.getState();
@@ -67,6 +69,19 @@ export function createTreeItems(
     if (!item) continue;
 
     item.name = name.value;
+  }
+
+  for (const extra of extras) {
+    try {
+      const item = items.get(extra.target);
+      if (!item) continue;
+
+      if (extra.key === "locked") {
+        item.locked = JSON.parse(extra.value);
+      }
+    } catch {
+      // Ignore invalid JSON
+    }
   }
 
   // Destroy items that no longer exist

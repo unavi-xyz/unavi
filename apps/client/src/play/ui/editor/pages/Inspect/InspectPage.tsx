@@ -14,6 +14,7 @@ interface Props {
 
 export default function InspectPage({ id }: Props) {
   const name = useTreeValue(id, "name");
+  const locked = useTreeValue(id, "locked");
 
   const displayName = getDisplayName(name, id);
 
@@ -22,6 +23,7 @@ export default function InspectPage({ id }: Props) {
       <TextFieldDark
         label="Name"
         value={name}
+        disabled={locked}
         placeholder={displayName}
         onChange={(e) => {
           if (!name) {

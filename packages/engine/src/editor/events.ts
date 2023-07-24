@@ -22,6 +22,14 @@ export class EditNode {
 }
 
 @struct
+export class EditExtra {
+  @struct.string declare target: string;
+
+  @struct.string declare key: string;
+  @struct.string declare value: string;
+}
+
+@struct
 export class AddMesh {
   @struct.string declare name: string;
 }

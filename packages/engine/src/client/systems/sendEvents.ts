@@ -1,10 +1,19 @@
 import { Warehouse } from "lattice-engine/core";
 import { EventWriter, Res } from "thyseus";
 
-import { AddMesh, AddNode, EditMesh, EditNode } from "../../editor/events";
+import {
+  AddMesh,
+  AddNode,
+  EditExtra,
+  EditMesh,
+  EditNode,
+} from "../../editor/events";
 import { useClientStore } from "../clientStore";
 import { PlayerJoin, PlayerLeave } from "../events";
 
+/**
+ * Converts networked events into ECS events
+ */
 export function sendEvents(
   warehouse: Res<Warehouse>,
   playerJoin: EventWriter<PlayerJoin>,
@@ -12,7 +21,8 @@ export function sendEvents(
   addNode: EventWriter<AddNode>,
   addMesh: EventWriter<AddMesh>,
   editNode: EventWriter<EditNode>,
-  editMesh: EventWriter<EditMesh>
+  editMesh: EventWriter<EditMesh>,
+  editExta: EventWriter<EditExtra>
 ) {
   const events = useClientStore.getState().events;
 
@@ -79,6 +89,15 @@ export function sendEvents(
           event.data.scale[1] ?? 0,
           event.data.scale[2] ?? 0
         );
+      }
+
+      if (event.data.extras) {
+        for (const [key, value] of Object.entries(event.data.extras)) {
+          const extra = editExta.create();
+          extra.target = event.data.target;
+          extra.key = key;
+          extra.value = JSON.stringify(value);
+        }
       }
 
       break;

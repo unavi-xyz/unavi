@@ -17,6 +17,7 @@ interface Props {
 
 export default function Rotation({ id }: Props) {
   const name = useTreeValue(id, "name");
+  const locked = useTreeValue(id, "locked");
   const rawX = useTreeArrayValue(id, "rotation", 0);
   const rawY = useTreeArrayValue(id, "rotation", 1);
   const rawZ = useTreeArrayValue(id, "rotation", 2);
@@ -48,6 +49,7 @@ export default function Rotation({ id }: Props) {
           type="number"
           step={STEP}
           placeholder="X"
+          disabled={locked}
           onChange={(e) => {
             quat.setFromEuler(
               euler.set(
@@ -68,6 +70,7 @@ export default function Rotation({ id }: Props) {
           type="number"
           step={STEP}
           placeholder="Y"
+          disabled={locked}
           onChange={(e) => {
             quat.setFromEuler(
               euler.set(
@@ -88,6 +91,7 @@ export default function Rotation({ id }: Props) {
           type="number"
           step={STEP}
           placeholder="Z"
+          disabled={locked}
           onChange={(e) => {
             quat.setFromEuler(
               euler.set(

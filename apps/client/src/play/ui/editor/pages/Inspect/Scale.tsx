@@ -12,6 +12,7 @@ interface Props {
 
 export default function Scale({ id }: Props) {
   const name = useTreeValue(id, "name");
+  const locked = useTreeValue(id, "locked");
   const rawX = useTreeArrayValue(id, "scale", 0);
   const rawY = useTreeArrayValue(id, "scale", 1);
   const rawZ = useTreeArrayValue(id, "scale", 2);
@@ -34,6 +35,7 @@ export default function Scale({ id }: Props) {
           type="number"
           step={STEP}
           placeholder="X"
+          disabled={locked}
           onChange={(e) => {
             editNode({
               scale: [Number(e.target.value), y, z],
@@ -46,6 +48,7 @@ export default function Scale({ id }: Props) {
           type="number"
           step={STEP}
           placeholder="Y"
+          disabled={locked}
           onChange={(e) => {
             editNode({
               scale: [x, Number(e.target.value), z],
@@ -58,6 +61,7 @@ export default function Scale({ id }: Props) {
           type="number"
           step={STEP}
           placeholder="Z"
+          disabled={locked}
           onChange={(e) => {
             editNode({
               scale: [x, y, Number(e.target.value)],

@@ -2,6 +2,12 @@ import { z } from "zod";
 
 export const EditNodeSchema = z.object({
   data: z.object({
+    extras: z
+      .object({
+        locked: z.boolean(),
+      })
+      .partial()
+      .optional(),
     mesh: z.string().nullable().optional(),
     name: z.string().optional(),
     parent: z.string().nullable().optional(),

@@ -12,6 +12,7 @@ interface Props {
 
 export default function Translation({ id }: Props) {
   const name = useTreeValue(id, "name");
+  const locked = useTreeValue(id, "locked");
   const rawX = useTreeArrayValue(id, "translation", 0);
   const rawY = useTreeArrayValue(id, "translation", 1);
   const rawZ = useTreeArrayValue(id, "translation", 2);
@@ -34,6 +35,7 @@ export default function Translation({ id }: Props) {
           type="number"
           step={STEP}
           placeholder="X"
+          disabled={locked}
           onChange={(e) => {
             editNode({
               target: name,
@@ -46,6 +48,7 @@ export default function Translation({ id }: Props) {
           type="number"
           step={STEP}
           placeholder="Y"
+          disabled={locked}
           onChange={(e) => {
             editNode({
               target: name,
@@ -58,6 +61,7 @@ export default function Translation({ id }: Props) {
           type="number"
           step={STEP}
           placeholder="Z"
+          disabled={locked}
           onChange={(e) => {
             editNode({
               target: name,

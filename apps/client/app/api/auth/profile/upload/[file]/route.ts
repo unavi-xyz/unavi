@@ -22,12 +22,12 @@ type Params = { params: { file: string } };
  */
 export async function PUT(request: NextRequest, { params }: Params) {
   const authRequest = auth.handleRequest({ cookies, request });
-  const { session } = await authRequest.validateUser();
+  const session = await authRequest.validate();
   if (!session) return new Response(null, { status: 401 });
 
   // Get user profile
   const _foundUser = await db.query.user.findFirst({
-    where: (row, { eq }) => eq(row.id, session.userId),
+    where: (row, { eq }) => eq(row.id, session.user.userId),
     with: { profile: true },
   });
   if (!_foundUser) return new Response(null, { status: 404 });
@@ -44,7 +44,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     const command = new PutObjectCommand({
       Bucket: env.S3_BUCKET,
       ContentType: "image/*",
-      Key: S3Path.profile(session.userId)[file](fileId),
+      Key: S3Path.profile(session.user.userId)[file](fileId),
     });
     const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
     return url;
@@ -58,7 +58,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     const command = new DeleteObjectCommand({
       Bucket: env.S3_BUCKET,
-      Key: S3Path.profile(session.userId)[file](prevId),
+      Key: S3Path.profile(session.user.userId)[file](prevId),
     });
 
     await s3Client.send(command);
@@ -70,7 +70,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     db
       .update(profile)
       .set({ [idName]: fileId })
-      .where(eq(profile.userId, session.userId)),
+      .where(eq(profile.userId, session.user.userId)),
   ]);
 
   const json: GetFileUploadResponse = { fileId, url };

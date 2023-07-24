@@ -1,5 +1,5 @@
 import { AuthenticationStatus } from "@rainbow-me/rainbowkit";
-import { User } from "lucia-auth";
+import { User } from "lucia";
 import { create } from "zustand";
 
 export interface AuthStore {

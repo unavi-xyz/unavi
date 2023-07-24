@@ -70,11 +70,11 @@ importers:
         specifier: ^3.4.0
         version: 3.4.0
       '@lucia-auth/adapter-mysql':
-        specifier: ^1.1.1
-        version: 1.1.1(@planetscale/database@1.7.0)(lucia-auth@1.8.0)(mysql2@3.3.5)
+        specifier: 2.0.0-beta.8
+        version: 2.0.0-beta.8(@planetscale/database@1.7.0)(lucia@2.0.0-beta.7)(mysql2@3.3.5)
       '@lucia-auth/oauth':
-        specifier: ^1.2.1
-        version: 1.2.1(lucia-auth@1.8.0)
+        specifier: 2.0.0-beta.8
+        version: 2.0.0-beta.8(lucia@2.0.0-beta.7)
       '@planetscale/database':
         specifier: ^1.7.0
         version: 1.7.0
@@ -132,9 +132,9 @@ importers:
       lattice-engine:
         specifier: ^0.3.12
         version: 0.3.12(@types/three@0.153.0)(postprocessing@6.32.2)(three@0.153.0)(thyseus@0.13.5)
-      lucia-auth:
-        specifier: ^1.8.0
-        version: 1.8.0
+      lucia:
+        specifier: 2.0.0-beta.7
+        version: 2.0.0-beta.7
       mysql2:
         specifier: ^3.3.5
         version: 3.3.5
@@ -3902,11 +3902,11 @@ packages:
       '@lit-labs/ssr-dom-shim': 1.1.1
     dev: false
 
-  /@lucia-auth/adapter-mysql@1.1.1(@planetscale/database@1.7.0)(lucia-auth@1.8.0)(mysql2@3.3.5):
-    resolution: {integrity: sha512-br+/OBDNJ+eRc6RrZnnC20ef+2VEMrXFxNYvsbryPw64ito7vg40STblpENdjJF0o4R10mjWTO43wQ+56jyXLA==}
+  /@lucia-auth/adapter-mysql@2.0.0-beta.8(@planetscale/database@1.7.0)(lucia@2.0.0-beta.7)(mysql2@3.3.5):
+    resolution: {integrity: sha512-zaxyQLCuFLURDMGaMVJHDq+efU5KspoTtyYyE/czdEOCWCYYgAWgaahq/Cbdevauhs7butsL+W8vgSdCuK5Wgw==}
     peerDependencies:
       '@planetscale/database': ^1.0.0
-      lucia-auth: ^1.4.0
+      lucia: 2.0.0-beta.7
       mysql2: ^3.0.0
     peerDependenciesMeta:
       '@planetscale/database':
@@ -3915,16 +3915,16 @@ packages:
         optional: true
     dependencies:
       '@planetscale/database': 1.7.0
-      lucia-auth: 1.8.0
+      lucia: 2.0.0-beta.7
       mysql2: 3.3.5
     dev: false
 
-  /@lucia-auth/oauth@1.2.1(lucia-auth@1.8.0):
-    resolution: {integrity: sha512-z6LOdDmh9Bmu1Jv1RkcSiGes8Qjk3uNZc/7S08wCMICtZ31m8KXnkhQjsV1HvSZXv6tkmG4Y9NLjpH2V/su38w==}
+  /@lucia-auth/oauth@2.0.0-beta.8(lucia@2.0.0-beta.7):
+    resolution: {integrity: sha512-xUVkFPn6zps4+10cYTeYQuR3UjNHu0rwmIoAQDNeijw4/Ywc4/ETMv8w/NMtnHnhJmesuGImqo4Wo9Mggs2P/Q==}
     peerDependencies:
-      lucia-auth: 1.x
+      lucia: 2.0.0-beta.7
     dependencies:
-      lucia-auth: 1.8.0
+      lucia: 2.0.0-beta.7
     dev: false
 
   /@manypkg/find-root@1.1.0:
@@ -10098,8 +10098,8 @@ packages:
       es5-ext: 0.10.62
     dev: true
 
-  /lucia-auth@1.8.0:
-    resolution: {integrity: sha512-zI8gT2AOpxTPIxYzToEdgoht+GOflrduZiHPsOEmg4/2pThOyCW3o3lXh+Uwh20tJ9QoXwQe9/Omn6PlUG6efw==}
+  /lucia@2.0.0-beta.7:
+    resolution: {integrity: sha512-L6bNRuC9rKs1wVO6xjfOH52YBWwej28YtvF4vfaapvgQtenPU6zfjWPRKnGD/f8nkG0xEXq7wEz+i67rfkQqAA==}
     dev: false
 
   /magic-string@0.25.9:

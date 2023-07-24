@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export enum AuthMethod {
-  Ethereum = "Ethereum",
+  Ethereum = "ethereum",
 }
 
 export const EthereumAuthSchema = z.object({

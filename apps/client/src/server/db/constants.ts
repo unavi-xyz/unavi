@@ -1,5 +1,9 @@
 import { NANOID_LENGTH, NANOID_SHORT_LENGTH } from "../nanoid";
 
+export const AUTH_USER_TABLE_NAME = "auth_user";
+export const AUTH_KEY_TABLE_NAME = "auth_key";
+export const AUTH_SESSION_TABLE_NAME = "auth_session";
+
 export const WORLD_ID_LENGTH = NANOID_SHORT_LENGTH;
 export const WORLD_TITLE_LENGTH = 80;
 export const WORLD_DESCRIPTION_LENGTH = 1200;

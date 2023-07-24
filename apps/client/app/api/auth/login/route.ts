@@ -1,4 +1,4 @@
-import { User } from "lucia-auth";
+import { User } from "lucia";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -7,7 +7,7 @@ import { auth } from "@/src/server/auth/lucia";
 import { AuthMethod, AuthSchema } from "@/src/server/auth/types";
 import { db } from "@/src/server/db/drizzle";
 import { profile } from "@/src/server/db/schema";
-import { nanoidShort } from "@/src/server/nanoid";
+import { genUsername } from "@/src/server/helpers/genUsername";
 
 import { LoginResponse } from "./types";
 
@@ -16,17 +16,20 @@ import { LoginResponse } from "./types";
  */
 export async function POST(request: NextRequest) {
   const parsedInput = AuthSchema.safeParse(await request.json());
-  if (!parsedInput.success)
-    return new Response(JSON.stringify(parsedInput.error), { status: 400 });
+  if (!parsedInput.success) {
+    return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+  }
 
   // Validate signature
   const result = await validateEthereumAuth(request, parsedInput.data);
-  if (!result) return new Response("Invalid signature", { status: 400 });
+  if (!result) {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+  }
 
   let user: User;
 
   try {
-    // Get user
+    // Try to get existing user
     const key = await auth.useKey(
       AuthMethod.Ethereum,
       result.data.address,
@@ -34,15 +37,13 @@ export async function POST(request: NextRequest) {
     );
     user = await auth.getUser(key.userId);
   } catch {
-    // Create user if it doesn't exist
-    const username = nanoidShort();
-
+    // Create new user if it doesn't exist
     user = await auth.createUser({
       attributes: {
         address: result.data.address,
-        username,
+        username: genUsername(),
       },
-      primaryKey: {
+      key: {
         password: null,
         providerId: parsedInput.data.method,
         providerUserId: result.data.address,
@@ -55,7 +56,10 @@ export async function POST(request: NextRequest) {
 
   // Create auth session
   const authRequest = auth.handleRequest({ cookies, request });
-  const session = await auth.createSession(user.userId);
+  const session = await auth.createSession({
+    attributes: {},
+    userId: user.userId,
+  });
   authRequest.setSession(session);
 
   const json: LoginResponse = { user };

@@ -1,7 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
   bigint,
-  boolean,
   char,
   mysqlTable,
   serial,
@@ -11,6 +10,9 @@ import {
 } from "drizzle-orm/mysql-core";
 
 import {
+  AUTH_KEY_TABLE_NAME,
+  AUTH_SESSION_TABLE_NAME,
+  AUTH_USER_TABLE_NAME,
   ETH_ADDRESS_LENGTH,
   ETH_AUTH_ID_LENGTH,
   ETH_AUTH_NONCE_LENGTH,
@@ -75,11 +77,18 @@ export const profile = mysqlTable("profile", {
 });
 
 // Auth
-export const user = mysqlTable("auth_user", {
-  address: char("address", { length: ETH_ADDRESS_LENGTH }),
-  id: varchar("id", { length: USER_ID_LENGTH }).primaryKey(),
-  username: varchar("username", { length: MAX_USERNAME_LENGTH }).notNull(),
-});
+export const user = mysqlTable(
+  AUTH_USER_TABLE_NAME,
+  {
+    address: char("address", { length: ETH_ADDRESS_LENGTH }),
+    id: varchar("id", { length: USER_ID_LENGTH }).primaryKey(),
+    username: varchar("username", { length: MAX_USERNAME_LENGTH }).notNull(),
+  },
+  (table) => ({
+    addressIndex: uniqueIndex("address").on(table.address),
+    usernameIndex: uniqueIndex("username").on(table.username),
+  })
+);
 
 export const userRelations = relations(user, ({ one, many }) => ({
   profile: one(profile, {
@@ -89,18 +98,16 @@ export const userRelations = relations(user, ({ one, many }) => ({
   worlds: many(world),
 }));
 
-export const session = mysqlTable("auth_session", {
+export const session = mysqlTable(AUTH_SESSION_TABLE_NAME, {
   activeExpires: bigint("active_expires", { mode: "number" }).notNull(),
   id: varchar("id", { length: 128 }).primaryKey(),
   idleExpires: bigint("idle_expires", { mode: "number" }).notNull(),
   userId: varchar("user_id", { length: USER_ID_LENGTH }).notNull(),
 });
 
-export const key = mysqlTable("auth_key", {
-  expires: bigint("expires", { mode: "number" }),
+export const key = mysqlTable(AUTH_KEY_TABLE_NAME, {
   hashedPassword: varchar("hashed_password", { length: 255 }),
   id: varchar("id", { length: 255 }).primaryKey(),
-  primaryKey: boolean("primary_key").notNull(),
   userId: varchar("user_id", { length: USER_ID_LENGTH }).notNull(),
 });
 

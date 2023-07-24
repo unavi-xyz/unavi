@@ -1,12 +1,11 @@
 import { LatticeSchedules } from "lattice-engine/core";
 import { csmPlugin } from "lattice-engine/csm";
 import { gltfPlugin } from "lattice-engine/gltf";
-import { orbitPlugin } from "lattice-engine/orbit";
 import { physicsPlugin } from "lattice-engine/physics";
 import { playerPlugin } from "lattice-engine/player";
 import { postprocessingPlugin } from "lattice-engine/postprocessing";
 import { textPlugin } from "lattice-engine/text";
-import { transformPlugin } from "lattice-engine/transform";
+import { getTransformPlugin } from "lattice-engine/transform";
 import { defaultPlugin } from "lattice-engine/utils";
 import { vrmPlugin } from "lattice-engine/vrm";
 import { run, WorldBuilder } from "thyseus";
@@ -36,12 +35,11 @@ export function clientPlugin(builder: WorldBuilder) {
     .addPlugin(defaultPlugin)
     .addPlugin(csmPlugin)
     .addPlugin(gltfPlugin)
-    .addPlugin(orbitPlugin)
     .addPlugin(physicsPlugin)
     .addPlugin(playerPlugin)
     .addPlugin(postprocessingPlugin)
+    .addPlugin(getTransformPlugin({ playerControls: true }))
     .addPlugin(textPlugin)
-    .addPlugin(transformPlugin)
     .addPlugin(vrmPlugin)
     .addSystemsToSchedule(LatticeSchedules.Startup, initApp)
     .addSystemsToSchedule(LatticeSchedules.PreUpdate, sendEvents)

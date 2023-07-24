@@ -1,13 +1,6 @@
-export const ClientSchedules = {
+export const EngineSchedules = {
   ConnectToHost: Symbol("ConnectToHost"),
   EnterEditMode: Symbol("EnterEditMode"),
   ExitEditMode: Symbol("ExitEditMode"),
   Export: Symbol("Export"),
 };
-
-export const LOCATION_ROUNDING = {
-  POSITION: 100000,
-  ROTATION: 10000,
-};
-
-export const NETWORK_UPDATE_HZ = 20;

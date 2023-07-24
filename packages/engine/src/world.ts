@@ -1,7 +1,7 @@
 import { Engine } from "lattice-engine/core";
 import { World } from "thyseus";
 
-import { clientPlugin } from "./plugin";
+import { clientPlugin } from "./client/plugin";
 
 export let world: World | undefined;
 

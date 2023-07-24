@@ -1,4 +1,4 @@
-import { useSceneStore } from "@unavi/react-client";
+import { useSceneStore } from "@unavi/engine";
 import { IoMdExpand } from "react-icons/io";
 
 interface Props {

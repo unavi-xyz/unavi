@@ -1,8 +1,4 @@
-import {
-  ClientSchedules,
-  useClientStore,
-  useSceneStore,
-} from "@unavi/react-client";
+import { EngineSchedules, useClientStore, useSceneStore } from "@unavi/engine";
 import { useEffect } from "react";
 import { MdConstruction } from "react-icons/md";
 
@@ -18,9 +14,9 @@ export default function EditModeButton() {
     if (!engine) return;
 
     if (mode === PlayMode.Edit) {
-      engine.queueSchedule(ClientSchedules.EnterEditMode);
+      engine.queueSchedule(EngineSchedules.EnterEditMode);
     } else {
-      engine.queueSchedule(ClientSchedules.ExitEditMode);
+      engine.queueSchedule(EngineSchedules.ExitEditMode);
     }
   }, [mode, engine]);
 

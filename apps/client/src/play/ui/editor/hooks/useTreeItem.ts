@@ -1,4 +1,4 @@
-import { useSceneStore } from "@unavi/react-client";
+import { useSceneStore } from "@unavi/engine";
 import { useMemo } from "react";
 
 export function useTreeItem(id: bigint | undefined) {

@@ -1,4 +1,4 @@
-import { useClientStore } from "@unavi/react-client";
+import { useClientStore } from "@unavi/engine";
 
 import { genName } from "./utils/genName";
 

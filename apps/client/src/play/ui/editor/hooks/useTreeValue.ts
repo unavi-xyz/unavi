@@ -1,4 +1,4 @@
-import { TreeItem, useSceneStore } from "@unavi/react-client";
+import { TreeItem, useSceneStore } from "@unavi/engine";
 
 export function useTreeValue<T extends keyof TreeItem>(
   id: bigint | undefined,

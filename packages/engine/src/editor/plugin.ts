@@ -1,6 +1,6 @@
 import { WorldBuilder } from "thyseus";
 
-import { ClientSchedules } from "../constants";
+import { EngineSchedules } from "../constants";
 import { addMeshes } from "./systems/addMeshes";
 import { addNodes } from "./systems/addNodes";
 import { createTreeItems } from "./systems/createTreeItems";
@@ -13,9 +13,9 @@ import { syncTransformTarget } from "./systems/syncTransformTarget";
 
 export function editorPlugin(builder: WorldBuilder) {
   builder
-    .addSystemsToSchedule(ClientSchedules.EnterEditMode, enterEditMode)
-    .addSystemsToSchedule(ClientSchedules.ExitEditMode, exitEditMode)
-    .addSystemsToSchedule(ClientSchedules.Export, sendExportEvent)
+    .addSystemsToSchedule(EngineSchedules.EnterEditMode, enterEditMode)
+    .addSystemsToSchedule(EngineSchedules.ExitEditMode, exitEditMode)
+    .addSystemsToSchedule(EngineSchedules.Export, sendExportEvent)
     .addSystems(
       addMeshes,
       addNodes,

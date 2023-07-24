@@ -1,23 +1,23 @@
 {
-  "name": "@unavi/react-client",
+  "name": "@unavi/engine",
   "version": "0.6.0",
   "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/unavi-xyz/unavi.git",
-    "directory": "packages/react-client"
+    "directory": "packages/engine"
   },
   "license": "GPL-3.0-or-later",
   "type": "module",
   "main": "./dist/index.js",
-  "types": "./dist/packages/react-client/src/index.d.ts",
+  "types": "./dist/packages/engine/src/index.d.ts",
   "files": [
     "dist"
   ],
   "scripts": {
     "build": "vite build --emptyOutDir",
     "dev": "vite build --watch",
-    "lint": "cd ../.. && eslint --fix packages/react-client --ext .ts,.tsx,.mjs,.json --ignore-path .gitignore --ignore-path .prettierignore --ignore-pattern package.json"
+    "lint": "cd ../.. && eslint --fix packages/engine --ext .ts,.tsx,.mjs,.json --ignore-path .gitignore --ignore-path .prettierignore --ignore-pattern package.json"
   },
   "devDependencies": {
     "@thyseus/transformer-rollup": "^0.13.0",
@@ -36,7 +36,7 @@
     "@unavi/protocol": "workspace:^",
     "@wired-protocol/types": "^0.5.0",
     "gl-matrix": "^4.0.0-beta.1",
-    "lattice-engine": "^0.3.9",
+    "lattice-engine": "^0.3.10",
     "mediasoup-client": "^3.6.84",
     "nanoid": "^4.0.2",
     "react": "^18.2.0",

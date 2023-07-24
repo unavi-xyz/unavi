@@ -1,5 +1,5 @@
 ---
-"@unavi/react-client": major
+"@unavi/engine": major
 "@unavi/client": major
 ---
 

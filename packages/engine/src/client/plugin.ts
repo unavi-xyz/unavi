@@ -11,8 +11,7 @@ import { defaultPlugin } from "lattice-engine/utils";
 import { vrmPlugin } from "lattice-engine/vrm";
 import { run, WorldBuilder } from "thyseus";
 
-import { ClientSchedules } from "./constants";
-import { editorPlugin } from "./editor/plugin";
+import { EngineSchedules } from "../constants";
 import { calcPlayerVelocity } from "./systems/calcPlayerVelocity";
 import { connectToHost } from "./systems/connectToHost";
 import { exportLoadingInfo } from "./systems/exportLoadingInfo";
@@ -44,11 +43,10 @@ export function clientPlugin(builder: WorldBuilder) {
     .addPlugin(textPlugin)
     .addPlugin(transformPlugin)
     .addPlugin(vrmPlugin)
-    .addPlugin(editorPlugin)
     .addSystemsToSchedule(LatticeSchedules.Startup, initApp)
     .addSystemsToSchedule(LatticeSchedules.PreUpdate, sendEvents)
     .addSystemsToSchedule(LatticeSchedules.PostFixedUpdate, publishLocation)
-    .addSystemsToSchedule(ClientSchedules.ConnectToHost, connectToHost)
+    .addSystemsToSchedule(EngineSchedules.ConnectToHost, connectToHost)
     .addSystems(
       exportLoadingInfo,
       joinWorld,

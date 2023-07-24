@@ -1,4 +1,4 @@
-import { useClientStore, useLoadingStore } from "@unavi/react-client";
+import { useClientStore, useLoadingStore } from "@unavi/engine";
 import { WorldMetadata } from "@wired-protocol/types";
 import Image from "next/image";
 import { useEffect, useState } from "react";

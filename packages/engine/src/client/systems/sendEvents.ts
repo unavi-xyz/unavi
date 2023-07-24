@@ -1,8 +1,8 @@
 import { Warehouse } from "lattice-engine/core";
 import { EventWriter, Res } from "thyseus";
 
+import { AddMesh, AddNode, EditMesh, EditNode } from "../../editor/events";
 import { useClientStore } from "../clientStore";
-import { AddMesh, AddNode, EditMesh, EditNode } from "../editor/events";
 import { PlayerJoin, PlayerLeave } from "../events";
 
 export function sendEvents(

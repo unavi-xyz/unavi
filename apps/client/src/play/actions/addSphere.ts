@@ -1,4 +1,4 @@
-import { useClientStore } from "@unavi/react-client";
+import { useClientStore } from "@unavi/engine";
 import { SphereGeometry } from "three";
 
 import { addNode } from "./addNode";

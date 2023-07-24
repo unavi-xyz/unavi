@@ -12,8 +12,8 @@ import {
   World,
 } from "thyseus";
 
+import { EngineSchedules } from "../../constants";
 import { WorldJson } from "../components";
-import { ClientSchedules } from "../constants";
 
 const decoder = new TextDecoder();
 
@@ -45,6 +45,6 @@ export async function parseWorld(
 
     // Connect to host
     json.host = parsed.data.info?.host ?? "";
-    await world.runSchedule(ClientSchedules.ConnectToHost);
+    await world.runSchedule(EngineSchedules.ConnectToHost);
   }
 }

@@ -1,7 +1,4 @@
-import {
-  ChatMessage as IChatMessage,
-  useClientStore,
-} from "@unavi/react-client";
+import { ChatMessage as IChatMessage, useClientStore } from "@unavi/engine";
 import { useEffect, useState } from "react";
 
 import { usePlayStore } from "@/app/play/playStore";

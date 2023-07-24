@@ -1,4 +1,4 @@
-import { TreeItem, useSceneStore } from "@unavi/react-client";
+import { TreeItem, useSceneStore } from "@unavi/engine";
 
 type ArrayKey<T extends keyof TreeItem> = Exclude<
   T,

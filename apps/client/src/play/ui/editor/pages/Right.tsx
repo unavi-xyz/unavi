@@ -1,4 +1,4 @@
-import { useSceneStore } from "@unavi/react-client";
+import { useSceneStore } from "@unavi/engine";
 
 import InspectPage from "./Inspect/InspectPage";
 import WorldPage from "./World/WorldPage";

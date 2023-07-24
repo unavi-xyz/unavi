@@ -1,4 +1,4 @@
-import { useClientStore } from "@unavi/react-client";
+import { useClientStore } from "@unavi/engine";
 import { BufferAttribute, BufferGeometry } from "three";
 
 import { addMesh } from "../addMesh";

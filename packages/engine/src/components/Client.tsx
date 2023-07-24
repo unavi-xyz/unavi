@@ -2,7 +2,7 @@ import { WorldMetadata } from "@wired-protocol/types";
 import { Engine } from "lattice-engine/core";
 import { useEffect } from "react";
 
-import { useClientStore } from "../clientStore";
+import { useClientStore } from "../client/clientStore";
 import { useWorld } from "../hooks/useWorld";
 import Canvas from "./Canvas";
 

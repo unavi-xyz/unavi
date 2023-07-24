@@ -1,4 +1,4 @@
-import { useSceneStore } from "@unavi/react-client";
+import { useSceneStore } from "@unavi/engine";
 
 import { usePlayStore } from "@/app/play/playStore";
 import { LeftPanelPage } from "@/app/play/types";

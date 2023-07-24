@@ -53,10 +53,19 @@ export const useClientStore = create<IClientStore>((set, get) => ({
   falling: new Map(),
   getDisplayName: (playerId: number) => {
     const handle = get().handles.get(playerId);
-    if (handle) return handle;
+    if (handle) {
+      const parts = handle.split(":");
+      const username = parts[0]?.slice(1);
+
+      if (username) {
+        return `@${username}`;
+      }
+    }
 
     const name = get().names.get(playerId);
-    if (name) return name;
+    if (name) {
+      return name;
+    }
 
     return `Guest ${toHex(playerId)}`;
   },

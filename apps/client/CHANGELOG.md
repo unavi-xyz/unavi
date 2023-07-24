@@ -1,5 +1,12 @@
 # client
 
+## 1.0.1
+
+### Patch Changes
+
+- Updated dependencies [d857490f]
+  - @unavi/engine@1.0.0
+
 ## 1.0.0
 
 ### Major Changes

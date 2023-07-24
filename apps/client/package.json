@@ -37,7 +37,7 @@
     "boring-avatars": "^1.10.1",
     "drizzle-orm": "^0.26.5",
     "ethers": "^5.7.2",
-    "lattice-engine": "^0.3.13",
+    "lattice-engine": "^0.3.14",
     "lucia": "2.0.0-beta.7",
     "mysql2": "^3.3.5",
     "nanoid": "^4.0.2",

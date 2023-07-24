@@ -10,7 +10,7 @@ import { editNodes } from "./systems/editNodes";
 import { enterEditMode } from "./systems/enterEditMode";
 import { exitEditMode } from "./systems/exitEditMode";
 import { sendExportEvent } from "./systems/sendExportEvent";
-import { syncTransformTarget } from "./systems/syncTransformTarget";
+import { syncTransformControls } from "./systems/syncTransformControls";
 
 export function editorPlugin(builder: WorldBuilder) {
   builder
@@ -24,6 +24,6 @@ export function editorPlugin(builder: WorldBuilder) {
       editExtras,
       editMeshes,
       editNodes,
-      syncTransformTarget
+      syncTransformControls
     );
 }

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 import { TreeItem } from "./classes/TreeItem";
+import { Tool } from "./types";
 
 export interface SceneStore {
   enabled: boolean;
@@ -8,6 +9,7 @@ export interface SceneStore {
   rootId?: bigint;
   sceneTreeId?: bigint;
   selectedId?: bigint;
+  tool: Tool;
 }
 
 export const useSceneStore = create<SceneStore>(() => ({
@@ -16,4 +18,5 @@ export const useSceneStore = create<SceneStore>(() => ({
   rootId: undefined,
   sceneTreeId: undefined,
   selectedId: undefined,
+  tool: Tool.Translate,
 }));

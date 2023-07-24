@@ -22,7 +22,7 @@ export default function TreeItem({ id }: Props) {
 
   function expand(e: React.MouseEvent) {
     e.stopPropagation();
-    useSceneStore.setState({ sceneTreeId: id, selectedId: id });
+    useSceneStore.setState({ sceneTreeId: id });
   }
 
   function toggleLock(e: React.MouseEvent) {

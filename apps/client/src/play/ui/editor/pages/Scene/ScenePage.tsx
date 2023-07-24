@@ -21,11 +21,7 @@ export default function ScenePage() {
   }
 
   const handleBack = parentId
-    ? () =>
-        useSceneStore.setState({
-          sceneTreeId: parentId,
-          selectedId: usedId,
-        })
+    ? () => useSceneStore.setState({ sceneTreeId: parentId })
     : undefined;
 
   const displayName =

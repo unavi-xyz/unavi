@@ -26,6 +26,8 @@ import {
 import { Vrm } from "lattice-engine/vrm";
 import { Commands, dropStruct } from "thyseus";
 
+import { ENABLE_POINTER_LOCK } from "../../constants";
+
 const PLAYER_HEIGHT = 1.6;
 const PLAYER_WIDTH = 0.4;
 
@@ -108,8 +110,8 @@ export function createPlayerControls(
   dropStruct(playerCamera);
   dropStruct(targetRotation);
 
+  inputStruct.enablePointerLock = ENABLE_POINTER_LOCK;
   sceneStruct.activeCamera = cameraId;
-  inputStruct.enablePointerLock = true;
 
   return cameraId;
 }

@@ -3,6 +3,8 @@ import { PhysicsConfig } from "lattice-engine/physics";
 import { TransformControls } from "lattice-engine/transform";
 import { Commands, Entity, Mut, Query, Res, With } from "thyseus";
 
+import { ENABLE_POINTER_LOCK } from "../../constants";
+
 export function exitEditMode(
   commands: Commands,
   inputStruct: Res<Mut<InputStruct>>,
@@ -14,5 +16,5 @@ export function exitEditMode(
   }
 
   physicsConfig.debug = false;
-  inputStruct.enablePointerLock = true;
+  inputStruct.enablePointerLock = ENABLE_POINTER_LOCK;
 }

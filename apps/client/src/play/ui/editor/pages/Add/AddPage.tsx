@@ -1,3 +1,4 @@
+import { useSceneStore } from "@unavi/engine";
 import {
   BiBox,
   BiCircle,
@@ -15,10 +16,22 @@ import { addCylinder } from "../../../../actions/addCylinder";
 import { addSphere } from "../../../../actions/addSphere";
 import PanelPage from "../PanelPage";
 
-function wrapAdd(fn: () => void) {
+function wrapAdd(fn: () => string) {
   return () => {
-    fn();
-    usePlayStore.setState({ leftPage: LeftPanelPage.Scene });
+    const name = fn();
+
+    setTimeout(() => {
+      const { items } = useSceneStore.getState();
+
+      for (const [, item] of items) {
+        if (item.name === name) {
+          useSceneStore.setState({ selectedId: item.id });
+          break;
+        }
+      }
+
+      usePlayStore.setState({ leftPage: LeftPanelPage.Scene });
+    }, 40);
   };
 }
 

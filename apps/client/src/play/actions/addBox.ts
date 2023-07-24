@@ -19,4 +19,6 @@ export function addBox() {
     id: "xyz.unavi.editor.edit.node",
     target: "client",
   });
+
+  return name;
 }

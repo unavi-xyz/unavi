@@ -8,23 +8,25 @@ let lastTransformTarget: bigint | undefined;
 export function syncTransformTarget(
   transformControls: Query<Mut<TransformControls>>
 ) {
-  for (const transformControl of transformControls) {
-    const targetId = transformControl.targetId;
+  for (const controls of transformControls) {
+    const targetId = controls.targetId;
 
-    const { sceneTreeId, rootId, items } = useSceneStore.getState();
+    const { sceneTreeId, selectedId, rootId, items } = useSceneStore.getState();
 
-    // Set UI from transform controls
+    const uiId = selectedId ?? 0n;
+
     if (targetId !== lastTransformTarget) {
+      // Set UI from transform controls
       lastTransformTarget = targetId;
 
       const usedId = sceneTreeId ?? rootId;
       if (!usedId) continue;
 
       // Continue up tree until we reach a child of usedId
-      let currentId = targetId;
+      let newTargetId = targetId;
 
-      while (currentId !== usedId) {
-        const parentId: bigint | undefined = items.get(currentId)?.parentId;
+      while (newTargetId !== usedId) {
+        const parentId: bigint | undefined = items.get(newTargetId)?.parentId;
         if (!parentId) break;
 
         if (parentId === usedId) {
@@ -32,27 +34,32 @@ export function syncTransformTarget(
           break;
         }
 
-        currentId = parentId;
+        newTargetId = parentId;
       }
 
-      // Ignore if currentId is locked
-      // if (items.get(currentId)?.locked) {
-      //   useSceneStore.setState({ selectedId: undefined });
-      //   transformControl.targetId = 0n;
-      //   continue;
-      // }
+      // If locked, do not select it
+      if (items.get(newTargetId)?.locked) {
+        newTargetId = 0n;
+      }
 
-      useSceneStore.setState({ selectedId: currentId });
-      transformControl.targetId = currentId;
-    } else {
+      setTransformTarget(controls, newTargetId);
+    } else if (targetId !== uiId) {
       // Set transform controls from UI
-      const newTarget = useSceneStore.getState().selectedId ?? 0n;
-      transformControl.targetId = newTarget;
-      lastTransformTarget = newTarget;
-
-      // Disable transform controls if target is locked
-      const locked = items.get(newTarget)?.locked;
-      transformControl.enabled = !locked;
+      lastTransformTarget = uiId;
+      setTransformTarget(controls, uiId);
     }
   }
+}
+
+function setTransformTarget(controls: TransformControls, targetId: bigint) {
+  const { items } = useSceneStore.getState();
+
+  controls.targetId = targetId;
+
+  const selectedId = targetId === 0n ? undefined : targetId;
+  useSceneStore.setState({ selectedId });
+
+  // Disable transform controls if target is locked
+  const locked = items.get(targetId)?.locked;
+  controls.enabled = !locked;
 }

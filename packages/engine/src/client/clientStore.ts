@@ -2,6 +2,7 @@ import { Engine } from "lattice-engine/core";
 import { create } from "zustand";
 
 import { ChatMessage, EcsEvent, ValidSendMessage } from "./types";
+import { splitHandle } from "./utils/splitHandle";
 import { toHex } from "./utils/toHex";
 
 export interface IClientStore {
@@ -54,8 +55,7 @@ export const useClientStore = create<IClientStore>((set, get) => ({
   getDisplayName: (playerId: number) => {
     const handle = get().handles.get(playerId);
     if (handle) {
-      const parts = handle.split(":");
-      const username = parts[0]?.slice(1);
+      const { username } = splitHandle(handle);
 
       if (username) {
         return `@${username}`;

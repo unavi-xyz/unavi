@@ -8,11 +8,11 @@ import { useClientStore } from "../clientStore";
 export function setUserAvatar(
   bodies: Query<Entity, With<PlayerBody>>,
   avatars: Query<[Parent, Mut<Vrm>], With<PlayerAvatar>>,
-  cameras: Query<Parent, With<PlayerCamera>>
+  cameras: Query<PlayerCamera>
 ) {
-  for (const entity of bodies) {
-    for (const camParent of cameras) {
-      if (camParent.id !== entity.id) continue;
+  for (const camera of cameras) {
+    for (const entity of bodies) {
+      if (camera.bodyId !== entity.id) continue;
 
       for (const [avatarParent, vrm] of avatars) {
         if (avatarParent.id !== entity.id) continue;

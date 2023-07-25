@@ -4,6 +4,7 @@ import { run, WorldBuilder } from "thyseus";
 import { EngineSchedules } from "../constants";
 import { addMeshes } from "./systems/addMeshes";
 import { addNodes } from "./systems/addNodes";
+import { createTreeItemsPhysics } from "./systems/createTreeItemPhysics";
 import { createTreeItems } from "./systems/createTreeItems";
 import { editExtras } from "./systems/editExtras";
 import { editMeshes } from "./systems/editMeshes";
@@ -22,6 +23,7 @@ export function editorPlugin(builder: WorldBuilder) {
       addMeshes,
       addNodes,
       createTreeItems,
+      createTreeItemsPhysics,
       editExtras,
       editMeshes,
       editNodes,

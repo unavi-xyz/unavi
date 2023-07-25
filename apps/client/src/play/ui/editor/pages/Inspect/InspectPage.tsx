@@ -4,9 +4,8 @@ import TextFieldDark from "@/src/ui/TextFieldDark";
 import { useTreeValue } from "../../hooks/useTreeValue";
 import { getDisplayName } from "../../utils/getDisplayName";
 import PanelPage from "../PanelPage";
-import Rotation from "./Rotation";
-import Scale from "./Scale";
-import Translation from "./Translation";
+import Physics from "./Physics";
+import Transform from "./Transform";
 
 interface Props {
   id: bigint;
@@ -37,9 +36,8 @@ export default function InspectPage({ id }: Props) {
         }}
       />
 
-      <Translation id={id} />
-      <Rotation id={id} />
-      <Scale id={id} />
+      <Transform id={id} />
+      <Physics id={id} />
     </PanelPage>
   );
 }

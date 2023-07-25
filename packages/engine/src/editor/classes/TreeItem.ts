@@ -1,4 +1,5 @@
 import { useSceneStore } from "../sceneStore";
+import { ColliderType, RigidBodyType } from "../types";
 
 export class TreeItem {
   readonly id: bigint;
@@ -9,6 +10,16 @@ export class TreeItem {
   scale: [number, number, number] = [1, 1, 1];
 
   locked = false;
+
+  colliderType?: ColliderType;
+  rigidBodyType?: RigidBodyType;
+
+  collider = {
+    height: 1,
+    meshId: 0n,
+    radius: 1,
+    size: [1, 1, 1],
+  };
 
   #parentId?: bigint;
   #childrenIds: bigint[] = [];

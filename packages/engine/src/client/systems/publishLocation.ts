@@ -1,7 +1,7 @@
 import { Time } from "lattice-engine/core";
-import { PlayerAvatar, PlayerBody, PlayerCamera } from "lattice-engine/player";
-import { Parent, Transform } from "lattice-engine/scene";
-import { Entity, Query, Res, struct, SystemRes, With } from "thyseus";
+import { PlayerBody, PlayerCamera } from "lattice-engine/player";
+import { Transform } from "lattice-engine/scene";
+import { Entity, Query, Res, struct, SystemRes } from "thyseus";
 
 import { useClientStore } from "../clientStore";
 import { NETWORK_UPDATE_HZ } from "../constants";
@@ -19,8 +19,7 @@ export function publishLocation(
   time: Res<Time>,
   localRes: SystemRes<LocalRes>,
   bodies: Query<[Entity, Transform, PlayerBody]>,
-  avatars: Query<[Transform, Parent], With<PlayerAvatar>>,
-  cameras: Query<Parent, With<PlayerCamera>>
+  cameras: Query<PlayerCamera>
 ) {
   const now = time.fixedTime;
   if (now - localRes.lastPublish < 1000 / NETWORK_UPDATE_HZ) return;
@@ -30,11 +29,11 @@ export function publishLocation(
   const playerId = useClientStore.getState().playerId;
   if (playerId === null) return;
 
-  for (const [bodyEnt, bodyTr, body] of bodies) {
-    for (const parent of cameras) {
+  for (const [bodyEnt, transform, body] of bodies) {
+    for (const camera of cameras) {
       // Ensure we are only grabbing the user's player body
       // Which is the one with a PlayerCamera
-      if (parent.id !== bodyEnt.id) continue;
+      if (camera.bodyId !== bodyEnt.id) continue;
 
       // Publish falling state
       const longAirtime = body.airTime > FALL_THRESHOLD_SECONDS;
@@ -49,26 +48,22 @@ export function publishLocation(
         });
       }
 
-      for (const [avatarTr, parent] of avatars) {
-        if (parent.id !== bodyEnt.id) continue;
+      // TODO: Remove hardcoded player height
+      // Define player height within PlayerBody component or something
+      const adjustedHeight = transform.translation.y - 0.8;
 
-        // TODO: Remove hardcoded player height
-        // Define player height within PlayerBody component or something
-        const adjustedHeight = bodyTr.translation.y - 0.8;
+      const buffer = serializeLocation(
+        playerId,
+        transform.translation.x,
+        adjustedHeight,
+        transform.translation.z,
+        transform.rotation.x,
+        transform.rotation.y,
+        transform.rotation.z,
+        transform.rotation.w
+      );
 
-        const buffer = serializeLocation(
-          playerId,
-          bodyTr.translation.x,
-          adjustedHeight,
-          bodyTr.translation.z,
-          avatarTr.rotation.x,
-          avatarTr.rotation.y,
-          avatarTr.rotation.z,
-          avatarTr.rotation.w
-        );
-
-        useClientStore.getState().sendWebRTC(buffer);
-      }
+      useClientStore.getState().sendWebRTC(buffer);
     }
   }
 }

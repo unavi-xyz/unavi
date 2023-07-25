@@ -351,7 +351,7 @@ export function connectToHost(
 
           // Start receiving audio
           send({ data: false, id: "com.wired-protocol.webrtc.audio.pause" });
-          await consumer.resume();
+          consumer.resume();
 
           // Create audio stream
           const stream = new MediaStream([consumer.track.clone()]);
@@ -402,9 +402,8 @@ export function connectToHost(
               sctpStreamParameters: data.sctpStreamParameters,
             });
 
-            const locations = useClientStore.getState().locations;
-            const lastLocationUpdates =
-              useClientStore.getState().lastLocationUpdates;
+            const { locations, lastLocationUpdates } =
+              useClientStore.getState();
 
             // Listen for data
             dataConsumer.on("message", async (message: ArrayBuffer | Blob) => {

@@ -21,7 +21,7 @@ export function initApp(
 
   const { rootId, sceneId } = createScene(commands, coreStore, sceneStruct);
   const cameraId = createPlayerControls(
-    [0, 8, 0],
+    [0.01, 4, 0],
     sceneId,
     commands,
     sceneStruct

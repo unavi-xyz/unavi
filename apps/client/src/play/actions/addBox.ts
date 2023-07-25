@@ -3,6 +3,7 @@ import { BoxGeometry } from "three";
 
 import { addNode } from "./addNode";
 import { addThreeMesh } from "./utils/addThreeMesh";
+import { getAddParent } from "./utils/getAddParent";
 
 export function addBox() {
   const geometry = new BoxGeometry();
@@ -10,10 +11,12 @@ export function addBox() {
   const mesh = addThreeMesh(geometry);
   const name = addNode("Box");
 
+  const parent = getAddParent();
+
   useClientStore.getState().mirrorEvent({
     data: {
       mesh,
-      parent: useClientStore.getState().rootName,
+      parent,
       target: name,
     },
     id: "xyz.unavi.editor.edit.node",

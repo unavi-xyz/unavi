@@ -29,12 +29,13 @@ export default function Translation({ id }: Props) {
     <div>
       <div className="font-bold text-neutral-400">Translation</div>
 
-      <div className="flex space-x-2">
+      <div className="flex space-x-1">
         <TextFieldDark
           value={x}
           type="number"
           step={STEP}
           placeholder="X"
+          padding="thin"
           disabled={locked}
           onChange={(e) => {
             editNode({
@@ -48,6 +49,7 @@ export default function Translation({ id }: Props) {
           type="number"
           step={STEP}
           placeholder="Y"
+          padding="thin"
           disabled={locked}
           onChange={(e) => {
             editNode({
@@ -61,6 +63,7 @@ export default function Translation({ id }: Props) {
           type="number"
           step={STEP}
           placeholder="Z"
+          padding="thin"
           disabled={locked}
           onChange={(e) => {
             editNode({

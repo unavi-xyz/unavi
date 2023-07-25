@@ -2,10 +2,14 @@ import { forwardRef, InputHTMLAttributes } from "react";
 
 interface Props extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
+  padding?: "normal" | "thin";
 }
 
 const TextFieldDark = forwardRef<HTMLInputElement, Props>(
-  ({ label, className, disabled, children, ...rest }, ref) => {
+  (
+    { label, className, disabled, padding = "normal", children, ...rest },
+    ref
+  ) => {
     return (
       <label className="block space-y-1">
         {label && <div className="font-bold text-neutral-400">{label}</div>}
@@ -15,9 +19,9 @@ const TextFieldDark = forwardRef<HTMLInputElement, Props>(
             ref={ref}
             type="text"
             disabled={disabled}
-            className={`w-full rounded-lg bg-neutral-800 px-3 py-2 text-white placeholder:text-neutral-400 ${
+            className={`w-full rounded-lg bg-neutral-800 text-white placeholder:text-neutral-400 ${
               disabled ? "cursor-not-allowed text-opacity-50" : ""
-            } ${className}`}
+            } ${padding === "normal" ? "px-3 py-2" : "px-2 py-1"} ${className}`}
             {...rest}
           />
 

@@ -89,6 +89,9 @@ const NumberInput = forwardRef<HTMLInputElement, Props>(
           // If didn't move much, focus the input
           if (moveCount < 5) {
             target.focus();
+            target.type = "text";
+            target.setSelectionRange(0, target.value.length);
+            target.type = "number";
           }
 
           target.releasePointerCapture(event.pointerId);

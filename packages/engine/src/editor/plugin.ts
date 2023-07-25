@@ -1,4 +1,5 @@
-import { WorldBuilder } from "thyseus";
+import { createControls, selectTarget } from "lattice-engine/transform";
+import { run, WorldBuilder } from "thyseus";
 
 import { EngineSchedules } from "../constants";
 import { addMeshes } from "./systems/addMeshes";
@@ -24,6 +25,6 @@ export function editorPlugin(builder: WorldBuilder) {
       editExtras,
       editMeshes,
       editNodes,
-      syncTransformControls
+      run(syncTransformControls).after(selectTarget).before(createControls)
     );
 }

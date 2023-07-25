@@ -71,7 +71,10 @@ const NumberInput = forwardRef<HTMLInputElement, Props>(
         const onPointerMove = (e: PointerEvent) => {
           moveCount++;
 
-          totalDiff += e.movementX;
+          // Sometimes the movement is huge, so we need to clamp it
+          const movement = Math.max(Math.min(e.movementX, 10), -10);
+          totalDiff += movement;
+
           const percentDiff = totalDiff / window.innerWidth;
 
           const newDisplayed = round(

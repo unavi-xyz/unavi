@@ -1,5 +1,6 @@
 import { connectorsForWallets } from "@rainbow-me/rainbowkit";
 import {
+  braveWallet,
   coinbaseWallet,
   injectedWallet,
   metaMaskWallet,
@@ -46,7 +47,10 @@ const connectors = connectorsForWallets([
   },
   {
     groupName: "Other",
-    wallets: [walletConnectWallet({ chains, projectId })],
+    wallets: [
+      braveWallet({ chains }),
+      walletConnectWallet({ chains, projectId }),
+    ],
   },
 ]);
 

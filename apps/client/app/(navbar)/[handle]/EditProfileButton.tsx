@@ -24,7 +24,7 @@ import TextField from "@/src/ui/TextField";
 import { cropImage } from "@/src/utils/cropImage";
 import { parseError } from "@/src/utils/parseError";
 
-const HEADER_IMAGE_RATIO = 4.4444;
+const HEADER_IMAGE_RATIO = 3;
 
 interface Props {
   userId: string;
@@ -51,7 +51,7 @@ export default function EditProfileButton({
   const [imageDisplay, setImageDisplay] = useState<string | null>(null);
   const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
   const [backgroundDisplay, setBackgroundDisplay] = useState<string | null>(
-    null
+    null,
   );
 
   const { user } = useAuth();
@@ -100,7 +100,7 @@ export default function EditProfileButton({
       try {
         // Get S3 URL
         const { url, fileId } = await getProfileUploadURL(
-          ProfileFile.background
+          ProfileFile.background,
         );
 
         // Upload image
@@ -184,11 +184,11 @@ export default function EditProfileButton({
                 // Crop image
                 const croppedFile = await cropImage(
                   fileUrl,
-                  HEADER_IMAGE_RATIO
+                  HEADER_IMAGE_RATIO,
                 );
                 setBackgroundFile(croppedFile);
               }}
-              className="h-28 w-full rounded-lg object-cover"
+              className="aspect-[3/1] w-full rounded-lg object-cover"
             />
           </div>
 

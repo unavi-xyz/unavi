@@ -7,7 +7,7 @@ html {
 }
 
 .max-w-content {
-  @apply w-full max-w-screen-xl;
+  @apply w-full max-w-screen-lg;
 }
 
 /* Scrollbar */

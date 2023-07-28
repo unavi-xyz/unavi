@@ -27,6 +27,6 @@ export function editorPlugin(builder: WorldBuilder) {
       editExtras,
       editMeshes,
       editNodes,
-      run(syncTransformControls).after(selectTarget).before(createControls)
+      run(syncTransformControls).after(selectTarget).before(createControls),
     );
 }

@@ -1,3 +1,4 @@
+import { ColliderType, RigidBodyType } from "@unavi/protocol";
 import { Resource } from "lattice-engine/core";
 import { Transform } from "lattice-engine/scene";
 import { struct } from "thyseus";
@@ -27,6 +28,22 @@ export class EditExtra {
 
   @struct.string declare key: string;
   @struct.string declare value: string;
+}
+
+@struct
+export class EditRigidBody {
+  @struct.string declare target: string;
+  @struct.string declare type: RigidBodyType | "none";
+}
+
+@struct
+export class EditCollider {
+  @struct.string declare target: string;
+  @struct.string declare type: ColliderType | "none";
+  @struct.array({ length: 3, type: "f32" }) declare size: Float32Array;
+  @struct.f32 declare height: number;
+  @struct.f32 declare radius: number;
+  @struct.f32 declare meshName: string;
 }
 
 @struct

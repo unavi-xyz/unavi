@@ -2,8 +2,8 @@ import { Euler, Quaternion } from "three";
 
 import { editNode } from "@/src/play/actions/editNode";
 
-import { useTreeArrayValue } from "../../hooks/useTreeArrayValue";
 import { useTreeValue } from "../../hooks/useTreeValue";
+import { useTreeValueKey } from "../../hooks/useTreeValueKey";
 import NumberInput from "./NumberInput";
 
 const euler = new Euler();
@@ -16,10 +16,10 @@ interface Props {
 export default function Rotation({ id }: Props) {
   const name = useTreeValue(id, "name");
   const locked = useTreeValue(id, "locked");
-  const rawX = useTreeArrayValue(id, "rotation", 0);
-  const rawY = useTreeArrayValue(id, "rotation", 1);
-  const rawZ = useTreeArrayValue(id, "rotation", 2);
-  const rawW = useTreeArrayValue(id, "rotation", 3);
+  const rawX = useTreeValueKey(id, "rotation", 0);
+  const rawY = useTreeValueKey(id, "rotation", 1);
+  const rawZ = useTreeValueKey(id, "rotation", 2);
+  const rawW = useTreeValueKey(id, "rotation", 3);
 
   if (
     !name ||
@@ -47,13 +47,9 @@ export default function Rotation({ id }: Props) {
         placeholder="X"
         disabled={locked}
         sensitivity={360}
-        onChange={(e) => {
+        onValueChange={(val) => {
           quat.setFromEuler(
-            euler.set(
-              toRadians(Number(e.target.value)),
-              toRadians(y),
-              toRadians(z)
-            )
+            euler.set(toRadians(val), toRadians(y), toRadians(z)),
           );
 
           editNode({
@@ -68,13 +64,9 @@ export default function Rotation({ id }: Props) {
         placeholder="Y"
         disabled={locked}
         sensitivity={360}
-        onChange={(e) => {
+        onValueChange={(val) => {
           quat.setFromEuler(
-            euler.set(
-              toRadians(x),
-              toRadians(Number(e.target.value)),
-              toRadians(z)
-            )
+            euler.set(toRadians(x), toRadians(val), toRadians(z)),
           );
 
           editNode({
@@ -89,13 +81,9 @@ export default function Rotation({ id }: Props) {
         placeholder="Z"
         disabled={locked}
         sensitivity={360}
-        onChange={(e) => {
+        onValueChange={(val) => {
           quat.setFromEuler(
-            euler.set(
-              toRadians(x),
-              toRadians(y),
-              toRadians(Number(e.target.value))
-            )
+            euler.set(toRadians(x), toRadians(y), toRadians(val)),
           );
 
           editNode({

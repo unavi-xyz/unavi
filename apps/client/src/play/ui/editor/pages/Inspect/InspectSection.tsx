@@ -5,9 +5,9 @@ interface Props {
 
 export default function InspectSection({ title, children }: Props) {
   return (
-    <div>
-      <div className="font-bold text-neutral-400">{title}</div>
-      <div>{children}</div>
+    <div className="space-y-2">
+      <div className="text-center font-bold text-neutral-400">{title}</div>
+      <div className="space-y-1">{children}</div>
     </div>
   );
 }

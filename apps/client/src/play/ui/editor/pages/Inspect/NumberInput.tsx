@@ -28,7 +28,7 @@ const NumberInput = forwardRef<HTMLInputElement, Props>(
       disabled,
       min,
       sensitivity = 50,
-      updateInterval = 10,
+      updateInterval = 15,
       precision = 100,
       onValueChange,
       onChange,

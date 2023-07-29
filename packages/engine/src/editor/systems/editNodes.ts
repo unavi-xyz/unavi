@@ -7,7 +7,7 @@ export function editNodes(
   events: EventReader<EditNode>,
   named: Query<[Entity, Name]>,
   nodes: Query<[Entity, Mut<Name>, Mut<Parent>, Mut<Transform>]>,
-  meshes: Query<[Name, Mut<Mesh>]>
+  meshes: Query<[Name, Mut<Mesh>]>,
 ) {
   if (events.length === 0) return;
 

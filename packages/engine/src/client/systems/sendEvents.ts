@@ -4,9 +4,11 @@ import { EventWriter, Res } from "thyseus";
 import {
   AddMesh,
   AddNode,
+  EditCollider,
   EditExtra,
   EditMesh,
   EditNode,
+  EditRigidBody,
 } from "../../editor/events";
 import { useClientStore } from "../clientStore";
 import { PlayerJoin, PlayerLeave } from "../events";
@@ -22,7 +24,9 @@ export function sendEvents(
   addMesh: EventWriter<AddMesh>,
   editNode: EventWriter<EditNode>,
   editMesh: EventWriter<EditMesh>,
-  editExta: EventWriter<EditExtra>
+  editExta: EventWriter<EditExtra>,
+  rigidBody: EventWriter<EditRigidBody>,
+  collider: EventWriter<EditCollider>,
 ) {
   const events = useClientStore.getState().events;
 
@@ -68,7 +72,7 @@ export function sendEvents(
         e.transform.translation.set(
           event.data.translation[0] ?? 0,
           event.data.translation[1] ?? 0,
-          event.data.translation[2] ?? 0
+          event.data.translation[2] ?? 0,
         );
       }
 
@@ -78,7 +82,7 @@ export function sendEvents(
           event.data.rotation[0] ?? 0,
           event.data.rotation[1] ?? 0,
           event.data.rotation[2] ?? 0,
-          event.data.rotation[3] ?? 0
+          event.data.rotation[3] ?? 0,
         );
       }
 
@@ -87,7 +91,7 @@ export function sendEvents(
         e.transform.scale.set(
           event.data.scale[0] ?? 0,
           event.data.scale[1] ?? 0,
-          event.data.scale[2] ?? 0
+          event.data.scale[2] ?? 0,
         );
       }
 
@@ -97,6 +101,44 @@ export function sendEvents(
           extra.target = event.data.target;
           extra.key = key;
           extra.value = JSON.stringify(value);
+        }
+      }
+
+      if (event.data.rigidBodyType !== undefined) {
+        const rigidBodyEvent = rigidBody.create();
+        rigidBodyEvent.target = event.data.target;
+
+        if (event.data.rigidBodyType) {
+          rigidBodyEvent.type = event.data.rigidBodyType;
+        } else {
+          rigidBodyEvent.type = "none";
+        }
+      }
+
+      if (event.data.collider !== undefined) {
+        const colliderEvent = collider.create();
+        colliderEvent.target = event.data.target;
+
+        if (event.data.collider.type) {
+          colliderEvent.type = event.data.collider.type;
+        } else {
+          colliderEvent.type = "none";
+        }
+
+        if (event.data.collider.size !== undefined) {
+          colliderEvent.size.set(event.data.collider.size);
+        }
+
+        if (event.data.collider.height !== undefined) {
+          colliderEvent.height = event.data.collider.height;
+        }
+
+        if (event.data.collider.radius !== undefined) {
+          colliderEvent.radius = event.data.collider.radius;
+        }
+
+        if (event.data.collider.mesh !== undefined) {
+          colliderEvent.meshName = event.data.collider.mesh;
         }
       }
 

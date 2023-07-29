@@ -1,7 +1,7 @@
 import { editNode } from "@/src/play/actions/editNode";
 
-import { useTreeArrayValue } from "../../hooks/useTreeArrayValue";
 import { useTreeValue } from "../../hooks/useTreeValue";
+import { useTreeValueKey } from "../../hooks/useTreeValueKey";
 import NumberInput from "./NumberInput";
 
 interface Props {
@@ -11,9 +11,9 @@ interface Props {
 export default function Translation({ id }: Props) {
   const name = useTreeValue(id, "name");
   const locked = useTreeValue(id, "locked");
-  const rawX = useTreeArrayValue(id, "translation", 0);
-  const rawY = useTreeArrayValue(id, "translation", 1);
-  const rawZ = useTreeArrayValue(id, "translation", 2);
+  const rawX = useTreeValueKey(id, "translation", 0);
+  const rawY = useTreeValueKey(id, "translation", 1);
+  const rawZ = useTreeValueKey(id, "translation", 2);
 
   if (!name || rawX === undefined || rawY === undefined || rawZ === undefined) {
     return null;
@@ -32,10 +32,10 @@ export default function Translation({ id }: Props) {
         label="X"
         placeholder="X"
         disabled={locked}
-        onChange={(e) => {
+        onValueChange={(val) => {
           editNode({
             target: name,
-            translation: [Number(e.target.value), y, z],
+            translation: [val, y, z],
           });
         }}
       />
@@ -44,10 +44,10 @@ export default function Translation({ id }: Props) {
         label="Y"
         placeholder="Y"
         disabled={locked}
-        onChange={(e) => {
+        onValueChange={(val) => {
           editNode({
             target: name,
-            translation: [x, Number(e.target.value), z],
+            translation: [x, val, z],
           });
         }}
       />
@@ -56,10 +56,10 @@ export default function Translation({ id }: Props) {
         label="Z"
         placeholder="Z"
         disabled={locked}
-        onChange={(e) => {
+        onValueChange={(val) => {
           editNode({
             target: name,
-            translation: [x, y, Number(e.target.value)],
+            translation: [x, y, val],
           });
         }}
       />

@@ -1,3 +1,4 @@
+import { ColliderType, RigidBodyType } from "@unavi/protocol";
 import {
   BoxCollider,
   CapsuleCollider,
@@ -11,7 +12,6 @@ import {
 import { Entity, Query, With } from "thyseus";
 
 import { useSceneStore } from "../sceneStore";
-import { ColliderType, RigidBodyType } from "../types";
 
 export function createTreeItemsPhysics(
   boxColliders: Query<[Entity, BoxCollider]>,
@@ -21,7 +21,7 @@ export function createTreeItemsPhysics(
   meshColliders: Query<[Entity, MeshCollider]>,
   hullColliders: Query<[Entity, HullCollider]>,
   staticBodies: Query<Entity, With<StaticBody>>,
-  dynamicBodies: Query<Entity, With<DynamicBody>>
+  dynamicBodies: Query<Entity, With<DynamicBody>>,
 ) {
   const { enabled, items } = useSceneStore.getState();
   if (!enabled) return;

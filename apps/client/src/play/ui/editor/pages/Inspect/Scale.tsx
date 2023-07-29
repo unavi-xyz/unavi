@@ -1,7 +1,7 @@
 import { editNode } from "@/src/play/actions/editNode";
 
-import { useTreeArrayValue } from "../../hooks/useTreeArrayValue";
 import { useTreeValue } from "../../hooks/useTreeValue";
+import { useTreeValueKey } from "../../hooks/useTreeValueKey";
 import NumberInput from "./NumberInput";
 
 interface Props {
@@ -11,9 +11,9 @@ interface Props {
 export default function Scale({ id }: Props) {
   const name = useTreeValue(id, "name");
   const locked = useTreeValue(id, "locked");
-  const rawX = useTreeArrayValue(id, "scale", 0);
-  const rawY = useTreeArrayValue(id, "scale", 1);
-  const rawZ = useTreeArrayValue(id, "scale", 2);
+  const rawX = useTreeValueKey(id, "scale", 0);
+  const rawY = useTreeValueKey(id, "scale", 1);
+  const rawZ = useTreeValueKey(id, "scale", 2);
 
   if (!name || rawX === undefined || rawY === undefined || rawZ === undefined) {
     return null;
@@ -32,9 +32,9 @@ export default function Scale({ id }: Props) {
         label="X"
         placeholder="X"
         disabled={locked}
-        onChange={(e) => {
+        onValueChange={(val) => {
           editNode({
-            scale: [Number(e.target.value), y, z],
+            scale: [val, y, z],
             target: name,
           });
         }}
@@ -44,9 +44,9 @@ export default function Scale({ id }: Props) {
         label="Y"
         placeholder="Y"
         disabled={locked}
-        onChange={(e) => {
+        onValueChange={(val) => {
           editNode({
-            scale: [x, Number(e.target.value), z],
+            scale: [x, val, z],
             target: name,
           });
         }}
@@ -56,9 +56,9 @@ export default function Scale({ id }: Props) {
         label="Z"
         placeholder="Z"
         disabled={locked}
-        onChange={(e) => {
+        onValueChange={(val) => {
           editNode({
-            scale: [x, y, Number(e.target.value)],
+            scale: [x, y, val],
             target: name,
           });
         }}

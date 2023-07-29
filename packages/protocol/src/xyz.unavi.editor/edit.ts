@@ -1,7 +1,27 @@
 import { z } from "zod";
 
+import { ColliderType, RigidBodyType } from "./types";
+
 export const EditNodeSchema = z.object({
   data: z.object({
+    collider: z
+      .object({
+        height: z.number().optional(),
+        mesh: z.string().optional(),
+        radius: z.number().optional(),
+        size: z.array(z.number()).length(3).optional(),
+        type: z
+          .enum([
+            ColliderType.Box,
+            ColliderType.Sphere,
+            ColliderType.Capsule,
+            ColliderType.Cylinder,
+            ColliderType.Mesh,
+            ColliderType.Hull,
+          ])
+          .nullable(),
+      })
+      .optional(),
     extras: z
       .object({
         locked: z.boolean(),
@@ -11,6 +31,10 @@ export const EditNodeSchema = z.object({
     mesh: z.string().nullable().optional(),
     name: z.string().optional(),
     parent: z.string().nullable().optional(),
+    rigidBodyType: z
+      .enum([RigidBodyType.Dynamic, RigidBodyType.Static])
+      .nullable()
+      .optional(),
     rotation: z.array(z.number()).length(4).nullable().optional(),
     scale: z.array(z.number()).length(3).nullable().optional(),
     target: z.string(),

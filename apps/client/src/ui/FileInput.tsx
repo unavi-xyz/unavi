@@ -27,19 +27,17 @@ export default function FileInput({
   return (
     <label>
       <div
-        className={`flex items-center rounded-lg px-4 py-2.5 transition ${
-          disabled
+        className={`flex items-center rounded-lg px-4 py-2.5 transition ${disabled
             ? "cursor-default opacity-80"
             : "cursor-pointer hover:bg-neutral-200 active:opacity-80"
-        }`}
+          }`}
       >
         <div className="select-none border-r border-neutral-400 pr-4">
           Choose File
         </div>
         <div
-          className={`select-none break-all pl-4 ${
-            fileName ? "" : "text-neutral-600"
-          }`}
+          className={`select-none break-all pl-4 ${fileName ? "" : "text-neutral-600"
+            }`}
         >
           {fileName ?? placeholder}
         </div>
@@ -55,4 +53,4 @@ export default function FileInput({
       />
     </label>
   );
-}
+} 

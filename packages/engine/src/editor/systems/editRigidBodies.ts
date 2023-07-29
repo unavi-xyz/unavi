@@ -1,6 +1,6 @@
 import { DynamicBody, StaticBody } from "lattice-engine/physics";
 import { Name } from "lattice-engine/scene";
-import { Commands, Entity, EventReader, Query } from "thyseus";
+import { Commands, Entity, EventReader, Query, With } from "thyseus";
 
 import { EditRigidBody } from "../events";
 
@@ -8,6 +8,8 @@ export function editRigidBodies(
   commands: Commands,
   events: EventReader<EditRigidBody>,
   names: Query<[Entity, Name]>,
+  dynamicBodies: Query<Entity, With<DynamicBody>>,
+  staticBodies: Query<Entity, With<StaticBody>>,
 ) {
   if (events.length === 0) return;
 
@@ -15,19 +17,24 @@ export function editRigidBodies(
     for (const [entity, name] of names) {
       if (name.value !== e.target) continue;
 
-      if (e.type === "none") {
-        commands.get(entity).remove(DynamicBody).remove(StaticBody);
-        break;
+      // Remove the old rigid body
+      for (const rigidBodyEntity of dynamicBodies) {
+        if (rigidBodyEntity.id !== entity.id) continue;
+        commands.get(entity).remove(DynamicBody);
+      }
+
+      for (const rigidBodyEntity of staticBodies) {
+        if (rigidBodyEntity.id !== entity.id) continue;
+        commands.get(entity).remove(StaticBody);
+      }
+
+      // Add the new rigid body
+      if (e.type === "dynamic") {
+        commands.get(entity).addType(DynamicBody);
       }
 
       if (e.type === "static") {
-        commands.get(entity).remove(DynamicBody).addType(StaticBody);
-        break;
-      }
-
-      if (e.type === "dynamic") {
-        commands.get(entity).remove(StaticBody).addType(DynamicBody);
-        break;
+        commands.get(entity).addType(StaticBody);
       }
     }
   }

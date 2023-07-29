@@ -22,16 +22,15 @@ export default function AddComponent({ id }: Props) {
   const options: AddOption[] = [];
 
   const name = useTreeValue(id, "name");
+  const locked = useTreeValue(id, "locked");
   const rigidBodyType = useTreeValue(id, "rigidBodyType");
   const colliderType = useTreeValue(id, "colliderType");
 
-  console.log(rigidBodyType, colliderType);
-
-  if (!rigidBodyType) {
+  if (!rigidBodyType || !colliderType) {
     options.push(AddOption.Physics);
   }
 
-  if (!name || options.length === 0) {
+  if (!name || locked || options.length === 0) {
     return null;
   }
 

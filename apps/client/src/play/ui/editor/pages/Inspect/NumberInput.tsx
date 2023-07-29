@@ -16,6 +16,7 @@ interface Props extends InputHTMLAttributes<HTMLInputElement> {
   sensitivity?: number;
   updateInterval?: number;
   precision?: number;
+  onValueChange?: (value: number) => void;
 }
 
 const NumberInput = forwardRef<HTMLInputElement, Props>(
@@ -24,14 +25,16 @@ const NumberInput = forwardRef<HTMLInputElement, Props>(
       label,
       className,
       value,
-      onChange,
       disabled,
+      min,
       sensitivity = 50,
       updateInterval = 10,
       precision = 100,
+      onValueChange,
+      onChange,
       ...rest
     },
-    ref
+    ref,
   ) => {
     const displayedRef = useRef(value);
     const [displayed, setDisplayed] = useState(value);
@@ -55,13 +58,13 @@ const NumberInput = forwardRef<HTMLInputElement, Props>(
         target.setPointerCapture(event.pointerId);
         target.requestPointerLock();
 
-        const callOnChange = () => {
-          if (onChange) {
-            onChange({ target: { value: displayedRef.current } } as any);
+        const callValueChange = () => {
+          if (onValueChange) {
+            onValueChange(displayedRef.current);
           }
         };
 
-        const interval = setInterval(callOnChange, updateInterval);
+        const interval = setInterval(callValueChange, updateInterval);
 
         const startDisplayed = displayedRef.current;
 
@@ -77,10 +80,14 @@ const NumberInput = forwardRef<HTMLInputElement, Props>(
 
           const percentDiff = totalDiff / window.innerWidth;
 
-          const newDisplayed = round(
+          let newDisplayed = round(
             startDisplayed + percentDiff * sensitivity,
-            precision
+            precision,
           );
+
+          if (min !== undefined && newDisplayed < Number(min)) {
+            newDisplayed = Number(min);
+          }
 
           displayedRef.current = newDisplayed;
           setDisplayed(newDisplayed);
@@ -102,7 +109,7 @@ const NumberInput = forwardRef<HTMLInputElement, Props>(
 
           setMouseDown(false);
 
-          callOnChange();
+          callValueChange();
           clearInterval(interval);
 
           target.removeEventListener("pointermove", onPointerMove);
@@ -112,7 +119,7 @@ const NumberInput = forwardRef<HTMLInputElement, Props>(
         target.addEventListener("pointermove", onPointerMove);
         target.addEventListener("pointerup", onPointerUp);
       },
-      [disabled, updateInterval, onChange, sensitivity, precision]
+      [disabled, updateInterval, onValueChange, sensitivity, min, precision],
     );
 
     return (
@@ -122,18 +129,29 @@ const NumberInput = forwardRef<HTMLInputElement, Props>(
         <input
           ref={ref}
           type="number"
+          min={min}
           value={displayed}
           disabled={disabled}
           onPointerDown={onPointerDown}
-          onChange={onChange}
-          className={`w-full cursor-ew-resize rounded bg-inherit px-1.5 py-1 text-neutral-200 placeholder:text-neutral-400 ${
-            disabled ? "cursor-not-allowed text-opacity-50" : ""
-          } ${mouseDown ? "cursor-none" : ""} ${DISABLE_ARROWS} ${className}`}
+          onChange={(e) => {
+            // If focused, call onValueChange
+            // We don't want to call it if dragging, it will spam too much
+            if (document.activeElement === e.currentTarget) {
+              const value = e.currentTarget.value;
+              onValueChange?.(Number(value));
+              setDisplayed(Number(value));
+              displayedRef.current = Number(value);
+            }
+
+            onChange?.(e);
+          }}
+          className={`w-full rounded bg-inherit px-1.5 py-1 text-neutral-200 placeholder:text-neutral-400 ${disabled ? "cursor-default text-opacity-50" : "cursor-ew-resize"
+            } ${mouseDown ? "cursor-none" : ""} ${DISABLE_ARROWS} ${className}`}
           {...rest}
         />
       </label>
     );
-  }
+  },
 );
 
 NumberInput.displayName = "NumberInput";

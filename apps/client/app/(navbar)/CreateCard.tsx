@@ -51,7 +51,7 @@ export async function createWorld() {
 
 async function uploadDefaultImage(publicId: string) {
   const res = await fetch(
-    `${env.NEXT_PUBLIC_DEPLOYED_URL}/images/Default-World.jpg`
+    `${env.NEXT_PUBLIC_DEPLOYED_URL}/images/Default-World.jpg`,
   );
   const buffer = await res.arrayBuffer();
   const array = new Uint8Array(buffer);
@@ -62,7 +62,7 @@ async function uploadDefaultImage(publicId: string) {
 
 async function uploadDefaultModel(publicId: string) {
   const res = await fetch(
-    `${env.NEXT_PUBLIC_DEPLOYED_URL}/models/Default-World.glb`
+    `${env.NEXT_PUBLIC_DEPLOYED_URL}/models/Default-World.glb`,
   );
   const buffer = await res.arrayBuffer();
   const array = new Uint8Array(buffer);
@@ -73,7 +73,7 @@ async function uploadDefaultModel(publicId: string) {
 
 export default function CreateCard() {
   return (
-    <section className="relative w-full overflow-hidden rounded-3xl bg-gradient-to-tl from-orange-300 to-yellow-200 p-8">
+    <section className="relative hidden w-full overflow-hidden rounded-3xl bg-gradient-to-tl from-orange-300 to-yellow-200 p-8 md:block">
       <div className="absolute -bottom-4 -left-8 -rotate-12 select-none text-8xl opacity-50 md:text-9xl">
         🏗️
       </div>

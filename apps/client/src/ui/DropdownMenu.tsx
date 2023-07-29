@@ -13,14 +13,14 @@ export const DropdownContent = forwardRef<HTMLDivElement, Props>(
           ref={ref}
           sideOffset={4}
           onCloseAutoFocus={(event) => event.preventDefault()}
-          className="z-50 mx-4 animate-scaleIn rounded-xl bg-white shadow-dark"
+          className="z-50 mx-4 animate-scaleIn rounded-xl bg-inherit shadow-dark"
           {...rest}
         >
           {children}
         </DropdownPrimitive.Content>
       </DropdownPrimitive.DropdownMenuPortal>
     );
-  }
+  },
 );
 
 DropdownContent.displayName = "DropdownContent";
@@ -37,13 +37,13 @@ export const DropdownSubContent = forwardRef<HTMLDivElement, Props>(
       <DropdownPrimitive.SubContent
         ref={ref}
         sideOffset={4}
-        className="rounded-xl bg-white shadow-dark"
+        className="rounded-xl bg-inherit shadow-dark"
         {...rest}
       >
         {children}
       </DropdownPrimitive.SubContent>
     );
-  }
+  },
 );
 
 DropdownSubContent.displayName = "DropdownSubContent";

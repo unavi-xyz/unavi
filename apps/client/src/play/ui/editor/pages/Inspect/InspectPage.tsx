@@ -1,7 +1,8 @@
 import { useTreeValue } from "../../hooks/useTreeValue";
 import { getDisplayName } from "../../utils/getDisplayName";
 import PanelPage from "../PanelPage";
-import { Name } from "./Name";
+import AddComponent from "./AddComponent";
+import Name from "./Name";
 import Physics from "./Physics";
 import Transform from "./Transform";
 
@@ -19,6 +20,7 @@ export default function InspectPage({ id }: Props) {
       <Name id={id} />
       <Transform id={id} />
       <Physics id={id} />
+      <AddComponent id={id} />
     </PanelPage>
   );
 }

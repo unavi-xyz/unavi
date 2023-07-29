@@ -8,7 +8,7 @@ interface Props {
   id: bigint;
 }
 
-export function Name({ id }: Props) {
+export default function Name({ id }: Props) {
   const name = useTreeValue(id, "name");
   const locked = useTreeValue(id, "locked");
 

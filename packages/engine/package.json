@@ -36,7 +36,7 @@
     "@unavi/protocol": "workspace:^",
     "@wired-protocol/types": "^0.5.0",
     "gl-matrix": "^4.0.0-beta.1",
-    "lattice-engine": "^0.3.17",
+    "lattice-engine": "^0.3.18",
     "mediasoup-client": "^3.6.84",
     "nanoid": "^4.0.2",
     "react": "^18.2.0",

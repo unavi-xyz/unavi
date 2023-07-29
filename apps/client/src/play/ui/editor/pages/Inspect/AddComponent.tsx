@@ -23,6 +23,9 @@ export default function AddComponent({ id }: Props) {
 
   const name = useTreeValue(id, "name");
   const rigidBodyType = useTreeValue(id, "rigidBodyType");
+  const colliderType = useTreeValue(id, "colliderType");
+
+  console.log(rigidBodyType, colliderType);
 
   if (!rigidBodyType) {
     options.push(AddOption.Physics);

@@ -26,8 +26,20 @@ export default function Physics({ id }: Props) {
     return null;
   }
 
+  const handleRemove = locked
+    ? undefined
+    : () => {
+      editNode({
+        collider: {
+          type: null,
+        },
+        rigidBodyType: null,
+        target: name,
+      });
+    };
+
   return (
-    <InspectSection title="Physics">
+    <InspectSection title="Physics" onRemove={handleRemove}>
       <SelectInput
         label="Type"
         disabled={locked}

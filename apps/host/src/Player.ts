@@ -3,8 +3,8 @@ import {
   CreateDataConsumer,
   DataProducerId,
   JoinSuccess,
-  Message,
   ProducerId,
+  Response,
   TransportType,
 } from "@wired-protocol/types";
 import { Consumer } from "mediasoup/node/lib/Consumer";
@@ -18,7 +18,6 @@ import {
 import { SctpStreamParameters } from "mediasoup/node/lib/SctpParameters";
 import { Transport } from "mediasoup/node/lib/Transport";
 
-import { RES_WEBRTC, RES_WORLD } from "./constants";
 import { uWebSocket } from "./types";
 import { World } from "./World";
 import { WorldRegistry } from "./WorldRegistry";
@@ -32,9 +31,9 @@ export class Player {
   dataConsumers = new Map<World, Map<number, DataConsumer>>();
 
   #falling = false;
-  #name: string | null = null;
-  #handle: string | null = null;
-  #avatar: string | null = null;
+  #name = "";
+  #handle = "";
+  #avatar = "";
 
   #producer: Producer | null = null;
   #dataProducer: DataProducer | null = null;
@@ -48,16 +47,16 @@ export class Player {
     this.#registry = registry;
   }
 
-  send(data: Partial<Message>) {
-    const message = Message.create(data);
-    this.ws?.send(Message.toBinary(message), true);
+  send(data: Response["response"]) {
+    const message = Response.create({ response: data });
+    this.ws?.send(Response.toBinary(message), true);
   }
 
   get name() {
     return this.#name;
   }
 
-  set name(name: string | null) {
+  set name(name: string) {
     this.#name = name;
     this.worlds.forEach((world) => world.setName(this, name));
   }
@@ -75,7 +74,7 @@ export class Player {
     return this.#handle;
   }
 
-  set handle(handle: string | null) {
+  set handle(handle: string) {
     this.#handle = handle;
     this.worlds.forEach((world) => world.setHandle(this, handle));
   }
@@ -84,7 +83,7 @@ export class Player {
     return this.#avatar;
   }
 
-  set avatar(avatar: string | null) {
+  set avatar(avatar: string) {
     this.#avatar = avatar;
     this.worlds.forEach((world) => world.setAvatar(this, avatar));
   }
@@ -136,8 +135,8 @@ export class Player {
     });
 
     this.send({
-      data: JoinSuccess.toBinary(joinSuccess),
-      type: `${RES_WORLD}.JoinSuccess`,
+      joinSuccess,
+      oneofKind: "joinSuccess",
     });
   }
 
@@ -194,8 +193,8 @@ export class Player {
       });
 
       this.send({
-        data: ProducerId.toBinary(producerId),
-        type: `${RES_WEBRTC}.ProducerId`,
+        oneofKind: "producerId",
+        producerId,
       });
     } catch (err) {
       console.warn(err);
@@ -215,8 +214,8 @@ export class Player {
       });
 
       this.send({
-        data: DataProducerId.toBinary(dataProducerId),
-        type: `${RES_WEBRTC}.DataProducerId`,
+        dataProducerId,
+        oneofKind: "dataProducerId",
       });
     } catch (err) {
       console.warn(err);
@@ -249,8 +248,8 @@ export class Player {
       });
 
       this.send({
-        data: CreateConsumer.toBinary(createConsumer),
-        type: `${RES_WEBRTC}.CreateConsumer`,
+        createConsumer,
+        oneofKind: "createConsumer",
       });
     } catch (err) {
       console.warn(err);
@@ -288,8 +287,8 @@ export class Player {
       });
 
       this.send({
-        data: CreateDataConsumer.toBinary(createDataConsumer),
-        type: `${RES_WEBRTC}.CreateDataConsumer`,
+        createDataConsumer,
+        oneofKind: "createDataConsumer",
       });
     } catch (err) {
       console.warn(err);

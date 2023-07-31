@@ -1,17 +1,16 @@
 import {
   ChatMessage,
-  Message,
   PlayerAvatar,
   PlayerFalling,
   PlayerHandle,
   PlayerJoined,
   PlayerLeft,
   PlayerNickname,
+  Response,
 } from "@wired-protocol/types";
 import { DataProducer } from "mediasoup/node/lib/DataProducer";
 import { Producer } from "mediasoup/node/lib/Producer";
 
-import { RES_WORLD } from "./constants";
 import { Player } from "./Player";
 import { toHex } from "./utils/toHex";
 import { WorldRegistry } from "./WorldRegistry";
@@ -75,8 +74,8 @@ export class World {
     });
 
     this.#publish({
-      data: PlayerJoined.toBinary(playerJoined),
-      type: `${RES_WORLD}.PlayerJoined`,
+      oneofKind: "playerJoined",
+      playerJoined,
     });
 
     // Tell new player about current players
@@ -91,8 +90,8 @@ export class World {
       });
 
       player.send({
-        data: PlayerJoined.toBinary(otherPlayerJoined),
-        type: `${RES_WORLD}.PlayerJoined`,
+        oneofKind: "playerJoined",
+        playerJoined: otherPlayerJoined,
       });
 
       // Consume current players
@@ -134,8 +133,8 @@ export class World {
     const playerLeft = PlayerLeft.create({ playerId });
 
     this.#publish({
-      data: PlayerLeft.toBinary(playerLeft),
-      type: `${RES_WORLD}.PlayerLeft`,
+      oneofKind: "playerLeft",
+      playerLeft,
     });
 
     console.info(`👋 Player ${toHex(playerId)} left world ${this.uri}`);
@@ -150,8 +149,8 @@ export class World {
     const chatMessage = ChatMessage.create({ message, playerId });
 
     this.#publish({
-      data: ChatMessage.toBinary(chatMessage),
-      type: `${RES_WORLD}.ChatMessage`,
+      chatMessage,
+      oneofKind: "chatMessage",
     });
   }
 
@@ -162,8 +161,8 @@ export class World {
     const playerFalling = PlayerFalling.create({ falling, playerId });
 
     this.#publish({
-      data: PlayerFalling.toBinary(playerFalling),
-      type: `${RES_WORLD}.PlayerFalling`,
+      oneofKind: "playerFalling",
+      playerFalling,
     });
   }
 
@@ -174,8 +173,8 @@ export class World {
     const playerNickname = PlayerNickname.create({ nickname, playerId });
 
     this.#publish({
-      data: PlayerNickname.toBinary(playerNickname),
-      type: `${RES_WORLD}.PlayerNickname`,
+      oneofKind: "playerNickname",
+      playerNickname,
     });
   }
 
@@ -186,8 +185,8 @@ export class World {
     const playerHandle = PlayerHandle.create({ handle, playerId });
 
     this.#publish({
-      data: PlayerHandle.toBinary(playerHandle),
-      type: `${RES_WORLD}.PlayerHandle`,
+      oneofKind: "playerHandle",
+      playerHandle,
     });
   }
 
@@ -198,8 +197,8 @@ export class World {
     const playerAvatar = PlayerAvatar.create({ avatar, playerId });
 
     this.#publish({
-      data: PlayerAvatar.toBinary(playerAvatar),
-      type: `${RES_WORLD}.PlayerAvatar`,
+      oneofKind: "playerAvatar",
+      playerAvatar,
     });
   }
 
@@ -225,8 +224,8 @@ export class World {
     });
   }
 
-  #publish(data: Partial<Message>) {
-    const message = Message.create(data);
-    this.#registry.server.publish(this.topic, Message.toBinary(message), true);
+  #publish(data: Response["response"]) {
+    const message = Response.create({ response: data });
+    this.#registry.server.publish(this.topic, Response.toBinary(message), true);
   }
 }

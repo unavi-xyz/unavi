@@ -1,25 +1,6 @@
-import {
-  ConnectTrannsport,
-  CreateTransport,
-  Join,
-  Leave,
-  Message,
-  PauseAudio,
-  Produce,
-  ProduceData,
-  RouterRtpCapabilities,
-  SendChatMessage,
-  SetAvatar,
-  SetFalling,
-  SetHandle,
-  SetNickname,
-  SetRtpCapabilities,
-  TransportCreated,
-  TransportType,
-} from "@wired-protocol/types";
+import { Request, TransportType } from "@wired-protocol/types";
 import uWS from "uWebSockets.js";
 
-import { REQ_WEBRTC, REQ_WORLD, RES_WEBRTC } from "./constants";
 import { createMediasoupWorker } from "./mediasoup";
 import { Player } from "./Player";
 import { UserData, uWebSocket } from "./types";
@@ -66,126 +47,116 @@ server.ws<UserData>("/*", {
     if (!player) return;
 
     const array = new Uint8Array(buffer);
-    const msg = Message.fromBinary(array);
+    const req = Request.fromBinary(array);
 
-    switch (msg.type) {
-      case `${REQ_WORLD}.Join`: {
-        const data = Join.fromBinary(msg.data);
-        player.join(data.world);
+    switch (req.message.oneofKind) {
+      case "join": {
+        player.join(req.message.join.world);
         break;
       }
 
-      case `${REQ_WORLD}.Leave`: {
-        const data = Leave.fromBinary(msg.data);
-        player.leave(data.world);
+      case "leave": {
+        player.leave(req.message.leave.world);
         break;
       }
 
-      case `${REQ_WORLD}.SendChatMessage`: {
-        const data = SendChatMessage.fromBinary(msg.data);
-        player.chat(data.message);
+      case "sendChatMessage": {
+        player.chat(req.message.sendChatMessage.message);
         break;
       }
 
-      case `${REQ_WORLD}.SetFalling`: {
-        const data = SetFalling.fromBinary(msg.data);
-        player.falling = data.falling;
+      case "setFalling": {
+        player.falling = req.message.setFalling.falling;
         break;
       }
 
-      case `${REQ_WORLD}.SetNickname`: {
-        const data = SetNickname.fromBinary(msg.data);
-        player.name = data.nickname;
+      case "setNickname": {
+        player.name = req.message.setNickname.nickname;
         break;
       }
 
-      case `${REQ_WORLD}.SetAvatar`: {
-        const data = SetAvatar.fromBinary(msg.data);
-        player.avatar = data.avatar;
+      case "setAvatar": {
+        player.avatar = req.message.setAvatar.avatar;
         break;
       }
 
-      case `${REQ_WORLD}.SetHandle`: {
-        const data = SetHandle.fromBinary(msg.data);
-        player.handle = data.handle;
+      case "setHandle": {
+        player.handle = req.message.setHandle.handle;
         break;
       }
 
-      case `${REQ_WEBRTC}.GetRouterRtpCapabilities`: {
-        const rtpCapabilities = createRouterRtpCapabilities(router);
+      case "getRouterRtpCapabilities": {
+        const routerRtpCapabilities = createRouterRtpCapabilities(router);
         player.send({
-          data: RouterRtpCapabilities.toBinary(rtpCapabilities),
-          type: `${REQ_WEBRTC}.RouterRtpCapabilities`,
+          oneofKind: "routerRtpCapabilities",
+          routerRtpCapabilities,
         });
         break;
       }
 
-      case `${REQ_WEBRTC}.PauseAudio`: {
-        const data = PauseAudio.fromBinary(msg.data);
-        player.setPaused(data.paused);
+      case "pauseAudio": {
+        player.setPaused(req.message.pauseAudio.paused);
         break;
       }
 
-      case `${REQ_WEBRTC}.CreateTransport`: {
-        const data = CreateTransport.fromBinary(msg.data);
+      case "createTransport": {
+        const type = req.message.createTransport.type;
 
-        createTransport(data.type, router, webRtcServer)
+        createTransport(type, router, webRtcServer)
           .then(({ transport, message }) => {
-            player.setTransport(data.type, transport);
+            player.setTransport(type, transport);
             player.send({
-              data: TransportCreated.toBinary(message),
-              type: `${RES_WEBRTC}.TransportCreated`,
+              oneofKind: "transportCreated",
+              transportCreated: message,
             });
           })
           .catch((err) => console.warn(err));
         break;
       }
 
-      case `${REQ_WEBRTC}.ConnectTransport`: {
-        const data = ConnectTrannsport.fromBinary(msg.data);
-
+      case "connectTransport": {
         const transport =
-          data.type === TransportType.PRODUCER
+          req.message.connectTransport.type === TransportType.PRODUCER
             ? player.producerTransport
             : player.consumerTransport;
         if (!transport) break;
 
-        transport.connect({ dtlsParameters: data.dtlsParameters });
+        transport.connect({
+          dtlsParameters: req.message.connectTransport.dtlsParameters,
+        });
         break;
       }
 
-      case `${REQ_WEBRTC}.Produce`: {
-        const data = Produce.fromBinary(msg.data);
-        if (!data.rtpParameters) break;
-
-        player.produce(data.rtpParameters);
+      case "produce": {
+        if (!req.message.produce.rtpParameters) break;
+        player.produce(req.message.produce.rtpParameters);
         break;
       }
 
-      case "com.wired-protocol.webrtc.produceData": {
-        const data = ProduceData.fromBinary(msg.data);
-        if (!data.sctpStreamParameters) break;
+      case "produceData": {
+        if (!req.message.produceData.sctpStreamParameters) break;
 
-        if (data.sctpStreamParameters.streamId === undefined) {
+        if (!req.message.produceData.sctpStreamParameters.streamId) {
           console.warn("Stream ID is undefined");
           break;
         }
 
         player.produceData({
-          maxPacketLifeTime: data.sctpStreamParameters.maxPacketLifeTime,
-          maxRetransmits: data.sctpStreamParameters.maxRetransmits,
-          ordered: data.sctpStreamParameters.ordered,
-          streamId: data.sctpStreamParameters.streamId,
+          maxPacketLifeTime:
+            req.message.produceData.sctpStreamParameters.maxPacketLifeTime,
+          maxRetransmits:
+            req.message.produceData.sctpStreamParameters.maxRetransmits,
+          ordered: req.message.produceData.sctpStreamParameters.ordered,
+          streamId: req.message.produceData.sctpStreamParameters.streamId,
         });
         break;
       }
 
-      case `${REQ_WEBRTC}.SetRtpCapabilities`: {
-        const data = SetRtpCapabilities.fromBinary(msg.data);
-        if (!data.rtpCapabilities) break;
+      case "setRtpCapabilities": {
+        if (!req.message.setRtpCapabilities.rtpCapabilities) break;
 
         const rtpCapabilities = createMediasoupRtpCapabilities(
-          data.rtpCapabilities,
+          req.message.setRtpCapabilities.rtpCapabilities,
         );
         player.rtpCapabilities = rtpCapabilities;
         break;

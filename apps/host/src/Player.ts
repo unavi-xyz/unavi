@@ -30,10 +30,7 @@ export class Player {
   consumers = new Map<World, Map<number, Consumer>>();
   dataConsumers = new Map<World, Map<number, DataConsumer>>();
 
-  #falling = false;
-  #name = "";
-  #handle = "";
-  #avatar = "";
+  playerData: Record<string, string> = {};
 
   #producer: Producer | null = null;
   #dataProducer: DataProducer | null = null;
@@ -50,42 +47,6 @@ export class Player {
   send(data: Response["response"]) {
     const message = Response.create({ response: data });
     this.ws?.send(Response.toBinary(message), true);
-  }
-
-  get name() {
-    return this.#name;
-  }
-
-  set name(name: string) {
-    this.#name = name;
-    this.worlds.forEach((world) => world.setName(this, name));
-  }
-
-  get falling() {
-    return this.#falling;
-  }
-
-  set falling(falling: boolean) {
-    this.#falling = falling;
-    this.worlds.forEach((world) => world.setFalling(this, falling));
-  }
-
-  get handle() {
-    return this.#handle;
-  }
-
-  set handle(handle: string) {
-    this.#handle = handle;
-    this.worlds.forEach((world) => world.setHandle(this, handle));
-  }
-
-  get avatar() {
-    return this.#avatar;
-  }
-
-  set avatar(avatar: string) {
-    this.#avatar = avatar;
-    this.worlds.forEach((world) => world.setAvatar(this, avatar));
   }
 
   get rtpCapabilities() {
@@ -115,6 +76,11 @@ export class Player {
     this.#dataProducer = dataProducer;
     if (dataProducer)
       this.worlds.forEach((world) => world.setDataProducer(this, dataProducer));
+  }
+
+  setPlayerData(key: string, value: string) {
+    this.playerData[key] = value;
+    this.worlds.forEach((world) => world.setPlayerData(this, key, value));
   }
 
   join(uri: string) {

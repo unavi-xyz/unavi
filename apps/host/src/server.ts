@@ -65,23 +65,12 @@ server.ws<UserData>("/*", {
         break;
       }
 
-      case "setFalling": {
-        player.falling = req.message.setFalling.falling;
-        break;
-      }
-
-      case "setNickname": {
-        player.name = req.message.setNickname.nickname;
-        break;
-      }
-
-      case "setAvatar": {
-        player.avatar = req.message.setAvatar.avatar;
-        break;
-      }
-
-      case "setHandle": {
-        player.handle = req.message.setHandle.handle;
+      case "setPlayerData": {
+        for (const [key, value] of Object.entries(
+          req.message.setPlayerData.data,
+        )) {
+          player.setPlayerData(key, value);
+        }
         break;
       }
 

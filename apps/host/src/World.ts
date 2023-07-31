@@ -1,11 +1,8 @@
 import {
   ChatMessage,
-  PlayerAvatar,
-  PlayerFalling,
-  PlayerHandle,
+  PlayerData,
   PlayerJoined,
   PlayerLeft,
-  PlayerNickname,
   Response,
 } from "@wired-protocol/types";
 import { DataProducer } from "mediasoup/node/lib/DataProducer";
@@ -67,9 +64,7 @@ export class World {
     this.players.set(playerId, player);
 
     const playerJoined = PlayerJoined.create({
-      avatar: player.avatar || undefined,
-      handle: player.handle || undefined,
-      nickname: player.name || undefined,
+      data: player.playerData,
       playerId,
     });
 
@@ -83,9 +78,7 @@ export class World {
       if (otherPlayer === player) return;
 
       const otherPlayerJoined = PlayerJoined.create({
-        avatar: otherPlayer.avatar || undefined,
-        handle: otherPlayer.handle || undefined,
-        nickname: otherPlayer.name || undefined,
+        data: otherPlayer.playerData,
         playerId: otherPlayerId,
       });
 
@@ -154,51 +147,15 @@ export class World {
     });
   }
 
-  setFalling(player: Player, falling: boolean) {
+  setPlayerData(player: Player, key: string, value: string) {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
-    const playerFalling = PlayerFalling.create({ falling, playerId });
+    const playerData = PlayerData.create({ key, playerId, value });
 
     this.#publish({
-      oneofKind: "playerFalling",
-      playerFalling,
-    });
-  }
-
-  setName(player: Player, nickname: string) {
-    const playerId = this.playerId(player);
-    if (playerId === undefined) return;
-
-    const playerNickname = PlayerNickname.create({ nickname, playerId });
-
-    this.#publish({
-      oneofKind: "playerNickname",
-      playerNickname,
-    });
-  }
-
-  setHandle(player: Player, handle: string) {
-    const playerId = this.playerId(player);
-    if (playerId === undefined) return;
-
-    const playerHandle = PlayerHandle.create({ handle, playerId });
-
-    this.#publish({
-      oneofKind: "playerHandle",
-      playerHandle,
-    });
-  }
-
-  setAvatar(player: Player, avatar: string) {
-    const playerId = this.playerId(player);
-    if (playerId === undefined) return;
-
-    const playerAvatar = PlayerAvatar.create({ avatar, playerId });
-
-    this.#publish({
-      oneofKind: "playerAvatar",
-      playerAvatar,
+      oneofKind: "playerData",
+      playerData,
     });
   }
 

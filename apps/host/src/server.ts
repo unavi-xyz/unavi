@@ -24,7 +24,10 @@ import { createMediasoupWorker } from "./mediasoup";
 import { Player } from "./Player";
 import { UserData, uWebSocket } from "./types";
 import { createTransport } from "./utils/createTransport";
-import { createMediasoupRtpCapabilities } from "./utils/rtpCapabilities";
+import {
+  createMediasoupRtpCapabilities,
+  createRouterRtpCapabilities,
+} from "./utils/rtpCapabilities";
 import { WorldRegistry } from "./WorldRegistry";
 
 const PORT = 4000;

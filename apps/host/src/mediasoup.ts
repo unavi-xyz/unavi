@@ -1,6 +1,4 @@
 import { createWorker } from "mediasoup";
-import { Router } from "mediasoup/node/lib/Router";
-import { WebRtcServer } from "mediasoup/node/lib/WebRtcServer";
 
 export async function createMediasoupWorker() {
   const worker = await createWorker({
@@ -11,7 +9,7 @@ export async function createMediasoupWorker() {
   worker.on("died", () => {
     console.error(
       "mediasoup Worker died, exiting  in 2 seconds... [pid:%d]",
-      worker.pid
+      worker.pid,
     );
 
     setTimeout(() => process.exit(1), 2000);
@@ -44,27 +42,4 @@ export async function createMediasoupWorker() {
   });
 
   return { router, webRtcServer };
-}
-
-export async function createWebRtcTransport(
-  router: Router,
-  webRtcServer: WebRtcServer
-) {
-  const transport = await router.createWebRtcTransport({
-    enableSctp: true,
-    enableTcp: true,
-    enableUdp: true,
-    webRtcServer,
-  });
-
-  return {
-    params: {
-      dtlsParameters: transport.dtlsParameters,
-      iceCandidates: transport.iceCandidates,
-      iceParameters: transport.iceParameters,
-      id: transport.id,
-      sctpParameters: transport.sctpParameters,
-    },
-    transport,
-  };
 }

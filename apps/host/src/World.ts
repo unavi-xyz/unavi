@@ -1,7 +1,17 @@
-import { ResponseMessage } from "@wired-protocol/types";
+import {
+  ChatMessage,
+  Message,
+  PlayerAvatar,
+  PlayerFalling,
+  PlayerHandle,
+  PlayerJoined,
+  PlayerLeft,
+  PlayerNickname,
+} from "@wired-protocol/types";
 import { DataProducer } from "mediasoup/node/lib/DataProducer";
 import { Producer } from "mediasoup/node/lib/Producer";
 
+import { RES_WORLD } from "./constants";
 import { Player } from "./Player";
 import { toHex } from "./utils/toHex";
 import { WorldRegistry } from "./WorldRegistry";
@@ -27,7 +37,7 @@ export class World {
 
   playerId(player: Player) {
     return Array.from(this.players.keys()).find(
-      (id) => this.players.get(id) === player
+      (id) => this.players.get(id) === player,
     );
   }
 
@@ -57,28 +67,32 @@ export class World {
 
     this.players.set(playerId, player);
 
+    const playerJoined = PlayerJoined.create({
+      avatar: player.avatar || undefined,
+      handle: player.handle || undefined,
+      nickname: player.name || undefined,
+      playerId,
+    });
+
     this.#publish({
-      data: {
-        avatar: player.avatar || undefined,
-        handle: player.handle || undefined,
-        name: player.name || undefined,
-        playerId,
-      },
-      id: "com.wired-protocol.world.player.join",
+      data: PlayerJoined.toBinary(playerJoined),
+      type: `${RES_WORLD}.PlayerJoined`,
     });
 
     // Tell new player about current players
     this.players.forEach((otherPlayer, otherPlayerId) => {
       if (otherPlayer === player) return;
 
+      const otherPlayerJoined = PlayerJoined.create({
+        avatar: otherPlayer.avatar || undefined,
+        handle: otherPlayer.handle || undefined,
+        nickname: otherPlayer.name || undefined,
+        playerId: otherPlayerId,
+      });
+
       player.send({
-        data: {
-          avatar: otherPlayer.avatar || undefined,
-          handle: otherPlayer.handle || undefined,
-          name: otherPlayer.name || undefined,
-          playerId: otherPlayerId,
-        },
-        id: "com.wired-protocol.world.player.join",
+        data: PlayerJoined.toBinary(otherPlayerJoined),
+        type: `${RES_WORLD}.PlayerJoined`,
       });
 
       // Consume current players
@@ -117,9 +131,11 @@ export class World {
 
     this.players.delete(playerId);
 
+    const playerLeft = PlayerLeft.create({ playerId });
+
     this.#publish({
-      data: playerId,
-      id: "com.wired-protocol.world.player.leave",
+      data: PlayerLeft.toBinary(playerLeft),
+      type: `${RES_WORLD}.PlayerLeft`,
     });
 
     console.info(`👋 Player ${toHex(playerId)} left world ${this.uri}`);
@@ -131,9 +147,11 @@ export class World {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
+    const chatMessage = ChatMessage.create({ message, playerId });
+
     this.#publish({
-      data: { message, playerId },
-      id: "com.wired-protocol.world.chat.message",
+      data: ChatMessage.toBinary(chatMessage),
+      type: `${RES_WORLD}.ChatMessage`,
     });
   }
 
@@ -141,39 +159,47 @@ export class World {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
+    const playerFalling = PlayerFalling.create({ falling, playerId });
+
     this.#publish({
-      data: { falling, playerId },
-      id: "com.wired-protocol.world.player.falling",
+      data: PlayerFalling.toBinary(playerFalling),
+      type: `${RES_WORLD}.PlayerFalling`,
     });
   }
 
-  setName(player: Player, name: string | null) {
+  setName(player: Player, nickname: string) {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
+    const playerNickname = PlayerNickname.create({ nickname, playerId });
+
     this.#publish({
-      data: { name: name, playerId },
-      id: "com.wired-protocol.world.player.name",
+      data: PlayerNickname.toBinary(playerNickname),
+      type: `${RES_WORLD}.PlayerNickname`,
     });
   }
 
-  setHandle(player: Player, handle: string | null) {
+  setHandle(player: Player, handle: string) {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
+    const playerHandle = PlayerHandle.create({ handle, playerId });
+
     this.#publish({
-      data: { handle, playerId },
-      id: "com.wired-protocol.world.player.handle",
+      data: PlayerHandle.toBinary(playerHandle),
+      type: `${RES_WORLD}.PlayerHandle`,
     });
   }
 
-  setAvatar(player: Player, avatar: string | null) {
+  setAvatar(player: Player, avatar: string) {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
+    const playerAvatar = PlayerAvatar.create({ avatar, playerId });
+
     this.#publish({
-      data: { avatar: avatar, playerId },
-      id: "com.wired-protocol.world.player.avatar",
+      data: PlayerAvatar.toBinary(playerAvatar),
+      type: `${RES_WORLD}.PlayerAvatar`,
     });
   }
 
@@ -199,7 +225,8 @@ export class World {
     });
   }
 
-  #publish(message: ResponseMessage) {
-    this.#registry.server.publish(this.topic, JSON.stringify(message));
+  #publish(data: Partial<Message>) {
+    const message = Message.create(data);
+    this.#registry.server.publish(this.topic, Message.toBinary(message), true);
   }
 }

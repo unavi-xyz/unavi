@@ -39,4 +39,4 @@ export default function InspectSection({ title, onRemove, children }: Props) {
       <div className="space-y-1">{children}</div>
     </div>
   );
-}
+} 

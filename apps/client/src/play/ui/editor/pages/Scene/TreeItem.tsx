@@ -38,8 +38,8 @@ export default function TreeItem({ id }: Props) {
       <button
         onClick={select}
         className={`w-full rounded px-2 py-0.5 text-start active:opacity-90 ${isSelected
-            ? "bg-white/10 group-hover:bg-white/20"
-            : "group-hover:bg-white/10"
+          ? "bg-white/10 group-hover:bg-white/20"
+          : "group-hover:bg-white/10"
           }`}
       >
         {name || `(${id.toString()})`}
@@ -67,4 +67,4 @@ export default function TreeItem({ id }: Props) {
       </div>
     </div>
   );
-}
+} 

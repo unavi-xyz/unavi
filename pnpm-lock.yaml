@@ -123,7 +123,7 @@ importers:
         version: link:../../packages/protocol
       '@wired-protocol/types':
         specifier: ^0.5.0
-        version: 0.5.0(zod@3.21.4)
+        version: link:../../../spec/packages/ts
       boring-avatars:
         specifier: ^1.10.1
         version: 1.10.1
@@ -241,7 +241,7 @@ importers:
     dependencies:
       '@wired-protocol/types':
         specifier: ^0.5.0
-        version: 0.5.0(zod@3.21.4)
+        version: link:../../../spec/packages/ts
       mediasoup:
         specifier: ^3.11.24
         version: 3.11.24
@@ -282,9 +282,6 @@ importers:
       '@unavi/protocol':
         specifier: workspace:^
         version: link:../protocol
-      '@wired-protocol/types':
-        specifier: ^0.5.0
-        version: 0.5.0(zod@3.21.4)
       gl-matrix:
         specifier: ^4.0.0-beta.1
         version: 4.0.0-beta.1
@@ -424,7 +421,7 @@ importers:
     dependencies:
       '@wired-protocol/types':
         specifier: ^0.5.0
-        version: 0.5.0(zod@3.21.4)
+        version: link:../../../spec/packages/ts
       zod:
         specifier: ^3.21.4
         version: 3.21.4
@@ -6364,14 +6361,6 @@ packages:
     dependencies:
       '@webassemblyjs/ast': 1.11.6
       '@xtuc/long': 4.2.2
-
-  /@wired-protocol/types@0.5.0(zod@3.21.4):
-    resolution: {integrity: sha512-22gzOmEZ2Js8eibkv26iH4fDp+gRwV1rNwg9oqN0ZqzkAHrnuBs7TKW/SGngm6XRyz2IOnMZ8XvoqPLtCEXfLw==}
-    peerDependencies:
-      zod: ^3.21.4
-    dependencies:
-      zod: 3.21.4
-    dev: false
 
   /@xtuc/ieee754@1.2.0:
     resolution: {integrity: sha512-DX8nKgqcGwsc0eJSqYt5lwP4DH5FlHnmuWWBRy7X0NcaGR0ZtuyeESgMwTYVEtxmsNGY+qit4QYT/MIYTOTPeA==}

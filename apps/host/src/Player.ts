@@ -1,4 +1,12 @@
-import { ResponseMessage } from "@wired-protocol/types";
+import {
+  CreateConsumer,
+  CreateDataConsumer,
+  DataProducerId,
+  JoinSuccess,
+  Message,
+  ProducerId,
+  TransportType,
+} from "@wired-protocol/types";
 import { Consumer } from "mediasoup/node/lib/Consumer";
 import { DataConsumer } from "mediasoup/node/lib/DataConsumer";
 import { DataProducer } from "mediasoup/node/lib/DataProducer";
@@ -10,6 +18,7 @@ import {
 import { SctpStreamParameters } from "mediasoup/node/lib/SctpParameters";
 import { Transport } from "mediasoup/node/lib/Transport";
 
+import { RES_WEBRTC, RES_WORLD } from "./constants";
 import { uWebSocket } from "./types";
 import { World } from "./World";
 import { WorldRegistry } from "./WorldRegistry";
@@ -39,8 +48,9 @@ export class Player {
     this.#registry = registry;
   }
 
-  send(message: ResponseMessage) {
-    this.ws?.send(JSON.stringify(message));
+  send(data: Partial<Message>) {
+    const message = Message.create(data);
+    this.ws?.send(Message.toBinary(message), true);
   }
 
   get name() {
@@ -120,7 +130,15 @@ export class Player {
 
     this.ws?.subscribe(world.topic);
 
-    this.send({ data: playerId, id: "com.wired-protocol.world.joined" });
+    const joinSuccess = JoinSuccess.create({
+      playerId,
+      world: world.uri,
+    });
+
+    this.send({
+      data: JoinSuccess.toBinary(joinSuccess),
+      type: `${RES_WORLD}.JoinSuccess`,
+    });
   }
 
   leave(uri: string) {
@@ -149,12 +167,16 @@ export class Player {
     this.worlds.forEach((world) => world.chat(this, message));
   }
 
-  setTransport(type: "producer" | "consumer", transport: Transport) {
-    if (type === "producer") {
+  setTransport(type: TransportType, transport: Transport) {
+    if (type === TransportType.PRODUCER) {
       this.producerTransport = transport;
-    } else {
-      this.consumerTransport = transport;
-      if (this.rtpCapabilities) this.#startConsuming();
+      return;
+    }
+
+    this.consumerTransport = transport;
+
+    if (this.rtpCapabilities) {
+      this.#startConsuming();
     }
   }
 
@@ -166,9 +188,14 @@ export class Player {
         kind: "audio",
         rtpParameters,
       });
+
+      const producerId = ProducerId.create({
+        producerId: this.producer.id,
+      });
+
       this.send({
-        data: this.producer.id,
-        id: "com.wired-protocol.webrtc.producer.id",
+        data: ProducerId.toBinary(producerId),
+        type: `${RES_WEBRTC}.ProducerId`,
       });
     } catch (err) {
       console.warn(err);
@@ -182,9 +209,14 @@ export class Player {
       this.dataProducer = await this.producerTransport.produceData({
         sctpStreamParameters,
       });
+
+      const dataProducerId = DataProducerId.create({
+        dataProducerId: this.dataProducer.id,
+      });
+
       this.send({
-        data: this.dataProducer.id,
-        id: "com.wired-protocol.webrtc.dataProducer.id",
+        data: DataProducerId.toBinary(dataProducerId),
+        type: `${RES_WEBRTC}.DataProducerId`,
       });
     } catch (err) {
       console.warn(err);
@@ -209,14 +241,16 @@ export class Player {
 
       consumers.set(playerId, consumer);
 
+      const createConsumer = CreateConsumer.create({
+        consumerId: consumer.id,
+        playerId,
+        producerId: producer.id,
+        rtpParameters: consumer.rtpParameters,
+      });
+
       this.send({
-        data: {
-          consumerId: consumer.id,
-          playerId,
-          producerId: producer.id,
-          rtpParameters: consumer.rtpParameters,
-        },
-        id: "com.wired-protocol.webrtc.consumer.create",
+        data: CreateConsumer.toBinary(createConsumer),
+        type: `${RES_WEBRTC}.CreateConsumer`,
       });
     } catch (err) {
       console.warn(err);
@@ -226,7 +260,7 @@ export class Player {
   async consumeData(
     dataProducer: DataProducer,
     spaceURI: string,
-    playerId: number
+    playerId: number,
   ) {
     if (!this.consumerTransport) return;
 
@@ -246,14 +280,16 @@ export class Player {
 
       dataConsumers.set(playerId, dataConsumer);
 
+      const createDataConsumer = CreateDataConsumer.create({
+        dataConsumerId: dataConsumer.id,
+        dataProducerId: dataProducer.id,
+        playerId,
+        sctpStreamParameters: dataConsumer.sctpStreamParameters,
+      });
+
       this.send({
-        data: {
-          dataConsumerId: dataConsumer.id,
-          dataProducerId: dataProducer.id,
-          playerId,
-          sctpStreamParameters: dataConsumer.sctpStreamParameters,
-        },
-        id: "com.wired-protocol.webrtc.dataConsumer.create",
+        data: CreateDataConsumer.toBinary(createDataConsumer),
+        type: `${RES_WEBRTC}.CreateDataConsumer`,
       });
     } catch (err) {
       console.warn(err);
@@ -279,7 +315,7 @@ export class Player {
           this.consume(otherPlayer.producer, world.uri, otherPlayerId);
         if (otherPlayer.dataProducer)
           this.consumeData(otherPlayer.dataProducer, world.uri, otherPlayerId);
-      })
+      }),
     );
   }
 

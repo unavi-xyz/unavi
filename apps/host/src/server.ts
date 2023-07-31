@@ -1,10 +1,30 @@
-import { RequestMessageSchema } from "@wired-protocol/types";
+import {
+  ConnectTrannsport,
+  CreateTransport,
+  Join,
+  Leave,
+  Message,
+  PauseAudio,
+  Produce,
+  ProduceData,
+  RouterRtpCapabilities,
+  SendChatMessage,
+  SetAvatar,
+  SetFalling,
+  SetHandle,
+  SetNickname,
+  SetRtpCapabilities,
+  TransportCreated,
+  TransportType,
+} from "@wired-protocol/types";
 import uWS from "uWebSockets.js";
 
-import { createMediasoupWorker, createWebRtcTransport } from "./mediasoup";
+import { REQ_WEBRTC, REQ_WORLD, RES_WEBRTC } from "./constants";
+import { createMediasoupWorker } from "./mediasoup";
 import { Player } from "./Player";
 import { UserData, uWebSocket } from "./types";
-import { parseMessage } from "./utils/parseMessage";
+import { createTransport } from "./utils/createTransport";
+import { createMediasoupRtpCapabilities } from "./utils/rtpCapabilities";
 import { WorldRegistry } from "./WorldRegistry";
 
 const PORT = 4000;
@@ -42,92 +62,87 @@ server.ws<UserData>("/*", {
     const player = players.get(ws);
     if (!player) return;
 
-    const message = parseMessage(buffer);
-    if (!message) return;
+    const array = new Uint8Array(buffer);
+    const msg = Message.fromBinary(array);
 
-    // Relay client messages to other players in the same world
-    if (message.target === "client") {
-      player.worlds.forEach((world) => {
-        ws.publish(world.topic, buffer);
-      });
-      return;
-    }
-
-    const request = RequestMessageSchema.safeParse(message);
-
-    if (!request.success) {
-      console.warn(request.error);
-      return;
-    }
-
-    const { data, id } = request.data;
-
-    switch (id) {
-      case "com.wired-protocol.world.join": {
-        player.join(data);
+    switch (msg.type) {
+      case `${REQ_WORLD}.Join`: {
+        const data = Join.fromBinary(msg.data);
+        player.join(data.world);
         break;
       }
 
-      case "com.wired-protocol.world.leave": {
-        player.leave(data);
+      case `${REQ_WORLD}.Leave`: {
+        const data = Leave.fromBinary(msg.data);
+        player.leave(data.world);
         break;
       }
 
-      case "com.wired-protocol.world.chat.send": {
-        player.chat(data);
+      case `${REQ_WORLD}.SendChatMessage`: {
+        const data = SendChatMessage.fromBinary(msg.data);
+        player.chat(data.message);
         break;
       }
 
-      case "com.wired-protocol.world.user.falling": {
-        player.falling = data;
+      case `${REQ_WORLD}.SetFalling`: {
+        const data = SetFalling.fromBinary(msg.data);
+        player.falling = data.falling;
         break;
       }
 
-      case "com.wired-protocol.world.user.name": {
-        player.name = data;
+      case `${REQ_WORLD}.SetNickname`: {
+        const data = SetNickname.fromBinary(msg.data);
+        player.name = data.nickname;
         break;
       }
 
-      case "com.wired-protocol.world.user.avatar": {
-        player.avatar = data;
+      case `${REQ_WORLD}.SetAvatar`: {
+        const data = SetAvatar.fromBinary(msg.data);
+        player.avatar = data.avatar;
         break;
       }
 
-      case "com.wired-protocol.world.user.handle": {
-        player.handle = data;
+      case `${REQ_WORLD}.SetHandle`: {
+        const data = SetHandle.fromBinary(msg.data);
+        player.handle = data.handle;
         break;
       }
 
-      case "com.wired-protocol.webrtc.router.rtpCapabilities.get": {
+      case `${REQ_WEBRTC}.GetRouterRtpCapabilities`: {
+        const rtpCapabilities = createRouterRtpCapabilities(router);
         player.send({
-          data: router.rtpCapabilities,
-          id: "com.wired-protocol.webrtc.router.rtpCapabilities",
+          data: RouterRtpCapabilities.toBinary(rtpCapabilities),
+          type: `${REQ_WEBRTC}.RouterRtpCapabilities`,
         });
         break;
       }
 
-      case "com.wired-protocol.webrtc.audio.pause": {
-        player.setPaused(data);
+      case `${REQ_WEBRTC}.PauseAudio`: {
+        const data = PauseAudio.fromBinary(msg.data);
+        player.setPaused(data.paused);
         break;
       }
 
-      case "com.wired-protocol.webrtc.transport.create": {
-        createWebRtcTransport(router, webRtcServer)
-          .then(({ transport, params }) => {
-            player.setTransport(data, transport);
+      case `${REQ_WEBRTC}.CreateTransport`: {
+        const data = CreateTransport.fromBinary(msg.data);
 
+        createTransport(data.type, router, webRtcServer)
+          .then(({ transport, message }) => {
+            player.setTransport(data.type, transport);
             player.send({
-              data: { options: params, type: data },
-              id: "com.wired-protocol.webrtc.transport.created",
+              data: TransportCreated.toBinary(message),
+              type: `${RES_WEBRTC}.TransportCreated`,
             });
           })
           .catch((err) => console.warn(err));
         break;
       }
 
-      case "com.wired-protocol.webrtc.transport.connect": {
+      case `${REQ_WEBRTC}.ConnectTransport`: {
+        const data = ConnectTrannsport.fromBinary(msg.data);
+
         const transport =
-          data.type === "producer"
+          data.type === TransportType.PRODUCER
             ? player.producerTransport
             : player.consumerTransport;
         if (!transport) break;
@@ -136,28 +151,40 @@ server.ws<UserData>("/*", {
         break;
       }
 
-      case "com.wired-protocol.webrtc.produce": {
-        player.produce(data);
+      case `${REQ_WEBRTC}.Produce`: {
+        const data = Produce.fromBinary(msg.data);
+        if (!data.rtpParameters) break;
+
+        player.produce(data.rtpParameters);
         break;
       }
 
       case "com.wired-protocol.webrtc.produceData": {
-        if (data.streamId === undefined) {
+        const data = ProduceData.fromBinary(msg.data);
+        if (!data.sctpStreamParameters) break;
+
+        if (data.sctpStreamParameters.streamId === undefined) {
           console.warn("Stream ID is undefined");
           break;
         }
 
         player.produceData({
-          maxPacketLifeTime: data.maxPacketLifeTime,
-          maxRetransmits: data.maxRetransmits,
-          ordered: data.ordered,
-          streamId: data.streamId,
+          maxPacketLifeTime: data.sctpStreamParameters.maxPacketLifeTime,
+          maxRetransmits: data.sctpStreamParameters.maxRetransmits,
+          ordered: data.sctpStreamParameters.ordered,
+          streamId: data.sctpStreamParameters.streamId,
         });
         break;
       }
 
-      case "com.wired-protocol.webrtc.rtpCapabilities.set": {
-        player.rtpCapabilities = data;
+      case `${REQ_WEBRTC}.SetRtpCapabilities`: {
+        const data = SetRtpCapabilities.fromBinary(msg.data);
+        if (!data.rtpCapabilities) break;
+
+        const rtpCapabilities = createMediasoupRtpCapabilities(
+          data.rtpCapabilities,
+        );
+        player.rtpCapabilities = rtpCapabilities;
         break;
       }
     }

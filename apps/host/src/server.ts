@@ -74,6 +74,11 @@ server.ws<UserData>("/*", {
         break;
       }
 
+      case "sendEvent": {
+        player.sendEvent(req.message.sendEvent.data);
+        break;
+      }
+
       case "getRouterRtpCapabilities": {
         const routerRtpCapabilities = createRouterRtpCapabilities(router);
         player.send({

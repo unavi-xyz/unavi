@@ -135,6 +135,16 @@ export class World {
     if (this.playerCount === 0) this.#registry.removeWorld(this.uri);
   }
 
+  sendEvent(player: Player, data: Uint8Array) {
+    const playerId = this.playerId(player);
+    if (playerId === undefined) return;
+
+    this.#publish({
+      event: { data, playerId },
+      oneofKind: "event",
+    });
+  }
+
   chat(player: Player, message: string) {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;

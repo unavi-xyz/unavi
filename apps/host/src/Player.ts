@@ -128,6 +128,10 @@ export class Player {
     }
   }
 
+  sendEvent(data: Uint8Array) {
+    this.worlds.forEach((world) => world.sendEvent(this, data));
+  }
+
   chat(message: string) {
     this.worlds.forEach((world) => world.chat(this, message));
   }

@@ -1,1 +1,3 @@
-export * from "./xyz.unavi.editor";
+export * from "./generated/editor/add";
+export * from "./generated/editor/edit";
+export * from "./generated/editor/remove";

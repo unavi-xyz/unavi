@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package xyz.unavi.editor.remove;
+
+message RemoveNode {
+  string target = 1;
+}
+
+message RemoveMesh {
+  string target = 1;
+}

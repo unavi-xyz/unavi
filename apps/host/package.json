@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@unavi/utils": "workspace:^",
-    "@wired-protocol/types": "^0.5.0",
+    "@wired-protocol/types": "^0.7.0",
     "mediasoup": "^3.11.24",
     "nanoid": "^4.0.2",
     "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.30.0",

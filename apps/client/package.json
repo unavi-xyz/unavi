@@ -33,7 +33,7 @@
     "@unavi/engine": "workspace:^",
     "@unavi/gltf-extensions": "workspace:^",
     "@unavi/protocol": "workspace:^",
-    "@wired-protocol/types": "^0.5.0",
+    "@wired-protocol/types": "^0.7.0",
     "boring-avatars": "^1.10.1",
     "drizzle-orm": "^0.26.5",
     "ethers": "^5.7.2",

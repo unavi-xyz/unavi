@@ -1,4 +1,4 @@
-import { WorldMetadataSchema } from "@wired-protocol/types";
+import { World as WorldSchema } from "@wired-protocol/types";
 import { Asset, Warehouse } from "lattice-engine/core";
 import { Gltf } from "lattice-engine/gltf";
 import {
@@ -28,23 +28,15 @@ export async function parseWorld(
     if (!buffer || buffer.byteLength === 0) continue;
 
     const text = decoder.decode(buffer);
-    const parsed = WorldMetadataSchema.safeParse(JSON.parse(text));
-
-    if (!parsed.success) {
-      console.warn(
-        `Failed to parse world metadata ${asset.uri}:`,
-        parsed.error
-      );
-      continue;
-    }
+    const parsed = WorldSchema.fromJsonString(text);
 
     // Load model
-    const gltf = new Gltf(parsed.data.model);
+    const gltf = new Gltf(parsed.model);
     commands.getById(entity.id).add(gltf);
     dropStruct(gltf);
 
     // Connect to host
-    json.host = parsed.data.info?.host ?? "";
+    json.host = parsed.host ?? "";
     await world.runSchedule(EngineSchedules.ConnectToHost);
   }
 }

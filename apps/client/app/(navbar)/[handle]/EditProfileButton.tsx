@@ -51,7 +51,7 @@ export default function EditProfileButton({
   const [imageDisplay, setImageDisplay] = useState<string | null>(null);
   const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
   const [backgroundDisplay, setBackgroundDisplay] = useState<string | null>(
-    null,
+    null
   );
 
   const { user } = useAuth();
@@ -100,7 +100,7 @@ export default function EditProfileButton({
       try {
         // Get S3 URL
         const { url, fileId } = await getProfileUploadURL(
-          ProfileFile.background,
+          ProfileFile.background
         );
 
         // Upload image
@@ -184,7 +184,7 @@ export default function EditProfileButton({
                 // Crop image
                 const croppedFile = await cropImage(
                   fileUrl,
-                  HEADER_IMAGE_RATIO,
+                  HEADER_IMAGE_RATIO
                 );
                 setBackgroundFile(croppedFile);
               }}

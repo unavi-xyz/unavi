@@ -1,4 +1,7 @@
-import { ColliderType, RigidBodyType } from "@unavi/protocol";
+import {
+  EditNode_Collider_Type,
+  EditNode_RigidBody_Type,
+} from "@unavi/protocol";
 import {
   BoxCollider,
   CapsuleCollider,
@@ -21,7 +24,7 @@ export function createTreeItemsPhysics(
   meshColliders: Query<[Entity, MeshCollider]>,
   hullColliders: Query<[Entity, HullCollider]>,
   staticBodies: Query<Entity, With<StaticBody>>,
-  dynamicBodies: Query<Entity, With<DynamicBody>>,
+  dynamicBodies: Query<Entity, With<DynamicBody>>
 ) {
   const { enabled, items } = useSceneStore.getState();
   if (!enabled) return;
@@ -34,7 +37,7 @@ export function createTreeItemsPhysics(
 
     colliderIds.push(entity.id);
 
-    item.colliderType = ColliderType.Box;
+    item.colliderType = EditNode_Collider_Type.BOX;
     item.collider.size[0] = boxCollider.size.x;
     item.collider.size[1] = boxCollider.size.y;
     item.collider.size[2] = boxCollider.size.z;
@@ -46,7 +49,7 @@ export function createTreeItemsPhysics(
 
     colliderIds.push(entity.id);
 
-    item.colliderType = ColliderType.Sphere;
+    item.colliderType = EditNode_Collider_Type.SPHERE;
     item.collider.radius = sphereCollider.radius;
   }
 
@@ -56,7 +59,7 @@ export function createTreeItemsPhysics(
 
     colliderIds.push(entity.id);
 
-    item.colliderType = ColliderType.Capsule;
+    item.colliderType = EditNode_Collider_Type.CAPSULE;
     item.collider.radius = capsuleCollider.radius;
     item.collider.height = capsuleCollider.height;
   }
@@ -67,7 +70,7 @@ export function createTreeItemsPhysics(
 
     colliderIds.push(entity.id);
 
-    item.colliderType = ColliderType.Cylinder;
+    item.colliderType = EditNode_Collider_Type.CYLINDER;
     item.collider.radius = cylinderCollider.radius;
     item.collider.height = cylinderCollider.height;
   }
@@ -78,7 +81,7 @@ export function createTreeItemsPhysics(
 
     colliderIds.push(entity.id);
 
-    item.colliderType = ColliderType.Mesh;
+    item.colliderType = EditNode_Collider_Type.MESH;
     item.collider.meshId = meshCollider.meshId;
   }
 
@@ -88,7 +91,7 @@ export function createTreeItemsPhysics(
 
     colliderIds.push(entity.id);
 
-    item.colliderType = ColliderType.Hull;
+    item.colliderType = EditNode_Collider_Type.HULL;
     item.collider.meshId = hullCollider.meshId;
   }
 
@@ -100,7 +103,7 @@ export function createTreeItemsPhysics(
 
     bodyIds.push(entity.id);
 
-    item.rigidBodyType = RigidBodyType.Static;
+    item.rigidBodyType = EditNode_RigidBody_Type.STATIC;
   }
 
   for (const entity of dynamicBodies) {
@@ -109,7 +112,7 @@ export function createTreeItemsPhysics(
 
     bodyIds.push(entity.id);
 
-    item.rigidBodyType = RigidBodyType.Dynamic;
+    item.rigidBodyType = EditNode_RigidBody_Type.DYNAMIC;
   }
 
   // Remove old data

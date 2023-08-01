@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package xyz.unavi.editor.edit;
+
+message EditNode {
+  string target = 1;
+
+  optional string name = 2;
+  optional string parent = 3;
+  
+  repeated int32 translation = 4;
+  repeated int32 rotation = 5;
+  repeated int32 scale = 6;
+
+  optional string mesh = 7;
+
+  message Extras {
+    bool locked = 1;
+  }
+
+  optional Extras extras = 8;
+
+  message Collider {
+    enum Type {
+      NONE = 0;
+      BOX = 1;
+      SPHERE = 2;
+      CAPSULE = 3;
+      CYLINDER = 4;
+      MESH = 5;
+      HULL = 6;
+    }
+
+    Type type = 1;
+    optional uint32 height = 2;
+    optional uint32 radius = 3;
+    repeated uint32 size = 4;
+    optional string mesh = 5;
+  }
+
+  optional Collider collider = 9;
+
+  message RigidBody {
+    enum Type {
+      NONE = 0;
+      STATIC = 1;
+      KINEMATIC = 2;
+      CHARACTER = 3;
+      DYNAMIC = 4;
+      VEHICLE = 5;
+      TRIGGER = 6;
+    }
+
+    Type type = 1;
+    optional uint32 mass = 2;
+    repeated int32 linear_velocity = 3;
+    repeated int32 angular_velocity = 4;
+    repeated int32 center_of_mass = 5;
+    repeated int32 inertiaTensor = 6;
+  }
+
+  optional RigidBody rigid_body = 10;
+}
+
+message EditMesh {
+  string target = 1;
+
+  optional string name = 2;
+  optional string material = 3;
+
+  repeated int32 position = 4;
+  repeated int32 normal = 5;
+  repeated int32 indices = 6;
+  repeated int32 color = 7;
+  repeated int32 weights = 8;
+  repeated int32 joints = 9;
+  repeated int32 uv = 10;
+  repeated int32 uv1 = 11;
+  repeated int32 uv2 = 12;
+  repeated int32 uv3 = 13;
+}

@@ -12,10 +12,10 @@ type Keys = ArrayKey<keyof TreeItem>;
 export function useTreeValueKey<T extends Keys, U extends keyof TreeItem[T]>(
   id: bigint | undefined,
   key: T,
-  index: U,
+  index: U
 ): TreeItem[T][U] | undefined {
   const value = useSceneStore((state) =>
-    id ? state.items.get(id)?.[key][index] : undefined,
+    id ? state.items.get(id)?.[key][index] : undefined
   );
 
   return value;

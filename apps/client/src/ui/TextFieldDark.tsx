@@ -8,7 +8,7 @@ interface Props extends InputHTMLAttributes<HTMLInputElement> {
 const TextFieldDark = forwardRef<HTMLInputElement, Props>(
   (
     { label, className, disabled, padding = "normal", children, ...rest },
-    ref,
+    ref
   ) => {
     return (
       <label className="block space-y-1">
@@ -19,8 +19,9 @@ const TextFieldDark = forwardRef<HTMLInputElement, Props>(
             ref={ref}
             type="text"
             disabled={disabled}
-            className={`w-full rounded-lg bg-neutral-800 text-white placeholder:text-neutral-400 ${disabled ? "text-opacity-50" : ""
-              } ${padding === "normal" ? "px-3 py-2" : "px-2 py-1"} ${className}`}
+            className={`w-full rounded-lg bg-neutral-800 text-white placeholder:text-neutral-400 ${
+              disabled ? "text-opacity-50" : ""
+            } ${padding === "normal" ? "px-3 py-2" : "px-2 py-1"} ${className}`}
             {...rest}
           />
 
@@ -28,7 +29,7 @@ const TextFieldDark = forwardRef<HTMLInputElement, Props>(
         </div>
       </label>
     );
-  },
+  }
 );
 
 TextFieldDark.displayName = "TextFieldDark";

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package xyz.unavi.editor.add;
+
+message AddNode {
+  string id = 1;
+}
+
+message AddMesh {
+  string id = 1;
+}

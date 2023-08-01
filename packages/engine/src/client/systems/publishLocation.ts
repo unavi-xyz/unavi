@@ -1,3 +1,4 @@
+import { SetPlayerData } from "@wired-protocol/types";
 import { Time } from "lattice-engine/core";
 import { PlayerBody, PlayerCamera } from "lattice-engine/player";
 import { Transform } from "lattice-engine/scene";
@@ -42,10 +43,16 @@ export function publishLocation(
 
       if (isFalling !== localRes.isFalling) {
         localRes.isFalling = isFalling;
-        useClientStore.getState().sendWebSockets({
-          data: isFalling,
-          id: "com.wired-protocol.world.user.falling",
+
+        const setPlayerData = SetPlayerData.create({
+          data: {
+            falling: isFalling.toString(),
+          },
         });
+
+        useClientStore
+          .getState()
+          .sendWebSockets({ oneofKind: "setPlayerData", setPlayerData });
       }
 
       // TODO: Remove hardcoded player height

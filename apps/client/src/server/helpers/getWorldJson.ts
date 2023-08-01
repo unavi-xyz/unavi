@@ -1,4 +1,4 @@
-import { WorldMetadata } from "@wired-protocol/types";
+import { World } from "@wired-protocol/types";
 
 import { HOME_SERVER } from "@/src/constants";
 import { cdnURL, S3Path } from "@/src/utils/s3Paths";
@@ -32,15 +32,13 @@ export async function getWorldJson(publicId: string) {
   const image = cdnURL(S3Path.worldModel(found.model.key).image);
   const model = cdnURL(S3Path.worldModel(found.model.key).model);
 
-  const json: WorldMetadata = {
-    info: {
-      authors: [handle],
-      description: found.description || undefined,
-      host: found.host || undefined,
-      image,
-      title: found.title || undefined,
-    },
+  const json: World = {
+    authors: [handle],
+    description: found.description || undefined,
+    host: found.host || undefined,
+    image,
     model,
+    title: found.title || undefined,
   };
 
   return json;

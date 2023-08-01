@@ -31,6 +31,6 @@ export function editorPlugin(builder: WorldBuilder) {
       editNodes,
       editRigidBodies,
       editColliders,
-      run(syncTransformControls).after(selectTarget).before(createControls),
+      run(syncTransformControls).after(selectTarget).before(createControls)
     );
 }

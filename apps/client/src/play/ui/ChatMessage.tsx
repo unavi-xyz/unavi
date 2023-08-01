@@ -60,7 +60,9 @@ export default function ChatMessage({ message, alwaysShow }: Props) {
 
 function PlayerName({ playerId }: { playerId: number }) {
   const [name] = useState(useClientStore.getState().getDisplayName(playerId));
-  const [handle] = useState(useClientStore.getState().handles.get(playerId));
+  const [handle] = useState(
+    useClientStore.getState().playerData.get(playerId)?.handle
+  );
 
   if (handle) {
     const { username, server } = splitHandle(handle);

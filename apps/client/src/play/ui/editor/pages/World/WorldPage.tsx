@@ -9,9 +9,9 @@ import PanelPage from "../PanelPage";
 
 export default function WorldPage() {
   const worldId = usePlayStore((state) => state.worldId);
-  const image = usePlayStore((state) => state.metadata.info?.image);
-  const title = usePlayStore((state) => state.metadata.info?.title);
-  const description = usePlayStore((state) => state.metadata.info?.description);
+  const image = usePlayStore((state) => state.metadata?.image);
+  const title = usePlayStore((state) => state.metadata?.title);
+  const description = usePlayStore((state) => state.metadata?.description);
 
   const { save, saving } = useSave();
 
@@ -33,10 +33,7 @@ export default function WorldPage() {
           usePlayStore.setState((prev) => ({
             metadata: {
               ...prev.metadata,
-              info: {
-                ...prev.metadata.info,
-                image: croppedURL,
-              },
+              image: croppedURL,
             },
           }));
 
@@ -55,10 +52,7 @@ export default function WorldPage() {
           usePlayStore.setState((prev) => ({
             metadata: {
               ...prev.metadata,
-              info: {
-                ...prev.metadata.info,
-                title: e.target.value,
-              },
+              title: e.target.value,
             },
           }));
         }}
@@ -73,10 +67,7 @@ export default function WorldPage() {
           usePlayStore.setState((prev) => ({
             metadata: {
               ...prev.metadata,
-              info: {
-                ...prev.metadata.info,
-                description: e.target.value,
-              },
+              description: e.target.value,
             },
           }));
         }}
@@ -87,10 +78,11 @@ export default function WorldPage() {
         <button
           onClick={save}
           disabled={saving}
-          className={`w-full rounded-full bg-neutral-800 py-2 font-bold transition ${saving
+          className={`w-full rounded-full bg-neutral-800 py-2 font-bold transition ${
+            saving
               ? "opacity-50"
               : "hover:scale-105 hover:bg-neutral-700 active:scale-100 active:opacity-90"
-            }`}
+          }`}
         >
           Save
         </button>

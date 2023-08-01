@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    "noImplicitOverride": false,
+    "noUncheckedIndexedAccess": false,
     "outDir": "./dist",
     "rootDir": "./src"
   },

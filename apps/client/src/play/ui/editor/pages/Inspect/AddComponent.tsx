@@ -1,4 +1,7 @@
-import { ColliderType, RigidBodyType } from "@unavi/protocol";
+import {
+  EditNode_Collider_Type,
+  EditNode_RigidBody_Type,
+} from "@unavi/protocol";
 
 import { editNode } from "@/src/play/actions/editNode";
 import {
@@ -22,16 +25,15 @@ export default function AddComponent({ id }: Props) {
   const options: AddOption[] = [];
 
   const name = useTreeValue(id, "name");
+  const locked = useTreeValue(id, "locked");
   const rigidBodyType = useTreeValue(id, "rigidBodyType");
   const colliderType = useTreeValue(id, "colliderType");
 
-  console.log(rigidBodyType, colliderType);
-
-  if (!rigidBodyType) {
+  if (!rigidBodyType || !colliderType) {
     options.push(AddOption.Physics);
   }
 
-  if (!name || options.length === 0) {
+  if (!name || locked || options.length === 0) {
     return null;
   }
 
@@ -45,9 +47,11 @@ export default function AddComponent({ id }: Props) {
         editNode({
           collider: {
             size: [1, 1, 1],
-            type: ColliderType.Box,
+            type: EditNode_Collider_Type.BOX,
           },
-          rigidBodyType: RigidBodyType.Static,
+          rigidBody: {
+            type: EditNode_RigidBody_Type.STATIC,
+          },
           target: name,
         });
         break;

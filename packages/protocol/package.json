@@ -9,18 +9,22 @@
   },
   "license": "GPL-3.0-or-later",
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
+    "clean": "rm -rf src/generated/*",
     "dev": "tsc -w",
+    "generate": "pnpm clean && protoc --ts_out src/generated --proto_path protos protos/**/*.proto",
     "lint": "cd ../.. && eslint --fix packages/protocol --ext .ts,.tsx,.mjs,.json --ignore-path .gitignore --ignore-path .prettierignore --ignore-pattern package.json"
   },
   "dependencies": {
-    "@wired-protocol/types": "^0.5.0",
+    "@protobuf-ts/runtime": "^2.9.1",
+    "@wired-protocol/types": "^0.7.0",
     "zod": "^3.21.4"
   },
   "devDependencies": {
+    "@protobuf-ts/plugin": "^2.9.1",
     "eslint": "^8.44.0",
     "eslint-config-custom": "workspace:^",
     "tsconfig": "workspace:^",

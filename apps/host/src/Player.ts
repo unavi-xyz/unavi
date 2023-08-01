@@ -1,4 +1,12 @@
-import { ResponseMessage } from "@wired-protocol/types";
+import {
+  CreateConsumer,
+  CreateDataConsumer,
+  DataProducerId,
+  JoinSuccess,
+  ProducerId,
+  Response,
+  TransportType,
+} from "@wired-protocol/types";
 import { Consumer } from "mediasoup/node/lib/Consumer";
 import { DataConsumer } from "mediasoup/node/lib/DataConsumer";
 import { DataProducer } from "mediasoup/node/lib/DataProducer";
@@ -22,10 +30,7 @@ export class Player {
   consumers = new Map<World, Map<number, Consumer>>();
   dataConsumers = new Map<World, Map<number, DataConsumer>>();
 
-  #falling = false;
-  #name: string | null = null;
-  #handle: string | null = null;
-  #avatar: string | null = null;
+  playerData: Record<string, string> = {};
 
   #producer: Producer | null = null;
   #dataProducer: DataProducer | null = null;
@@ -39,44 +44,9 @@ export class Player {
     this.#registry = registry;
   }
 
-  send(message: ResponseMessage) {
-    this.ws?.send(JSON.stringify(message));
-  }
-
-  get name() {
-    return this.#name;
-  }
-
-  set name(name: string | null) {
-    this.#name = name;
-    this.worlds.forEach((world) => world.setName(this, name));
-  }
-
-  get falling() {
-    return this.#falling;
-  }
-
-  set falling(falling: boolean) {
-    this.#falling = falling;
-    this.worlds.forEach((world) => world.setFalling(this, falling));
-  }
-
-  get handle() {
-    return this.#handle;
-  }
-
-  set handle(handle: string | null) {
-    this.#handle = handle;
-    this.worlds.forEach((world) => world.setHandle(this, handle));
-  }
-
-  get avatar() {
-    return this.#avatar;
-  }
-
-  set avatar(avatar: string | null) {
-    this.#avatar = avatar;
-    this.worlds.forEach((world) => world.setAvatar(this, avatar));
+  send(data: Response["response"]) {
+    const message = Response.create({ response: data });
+    this.ws?.send(Response.toBinary(message), true);
   }
 
   get rtpCapabilities() {
@@ -108,6 +78,11 @@ export class Player {
       this.worlds.forEach((world) => world.setDataProducer(this, dataProducer));
   }
 
+  setPlayerData(key: string, value: string) {
+    this.playerData[key] = value;
+    this.worlds.forEach((world) => world.setPlayerData(this, key, value));
+  }
+
   join(uri: string) {
     const world = this.#registry.getOrCreateWorld(uri);
     if (this.worlds.has(world)) return;
@@ -120,7 +95,15 @@ export class Player {
 
     this.ws?.subscribe(world.topic);
 
-    this.send({ data: playerId, id: "com.wired-protocol.world.joined" });
+    const joinSuccess = JoinSuccess.create({
+      playerId,
+      world: world.uri,
+    });
+
+    this.send({
+      joinSuccess,
+      oneofKind: "joinSuccess",
+    });
   }
 
   leave(uri: string) {
@@ -145,16 +128,24 @@ export class Player {
     }
   }
 
+  sendEvent(data: Uint8Array) {
+    this.worlds.forEach((world) => world.sendEvent(this, data));
+  }
+
   chat(message: string) {
     this.worlds.forEach((world) => world.chat(this, message));
   }
 
-  setTransport(type: "producer" | "consumer", transport: Transport) {
-    if (type === "producer") {
+  setTransport(type: TransportType, transport: Transport) {
+    if (type === TransportType.PRODUCER) {
       this.producerTransport = transport;
-    } else {
-      this.consumerTransport = transport;
-      if (this.rtpCapabilities) this.#startConsuming();
+      return;
+    }
+
+    this.consumerTransport = transport;
+
+    if (this.rtpCapabilities) {
+      this.#startConsuming();
     }
   }
 
@@ -166,9 +157,14 @@ export class Player {
         kind: "audio",
         rtpParameters,
       });
+
+      const producerId = ProducerId.create({
+        producerId: this.producer.id,
+      });
+
       this.send({
-        data: this.producer.id,
-        id: "com.wired-protocol.webrtc.producer.id",
+        oneofKind: "producerId",
+        producerId,
       });
     } catch (err) {
       console.warn(err);
@@ -182,9 +178,14 @@ export class Player {
       this.dataProducer = await this.producerTransport.produceData({
         sctpStreamParameters,
       });
+
+      const dataProducerId = DataProducerId.create({
+        dataProducerId: this.dataProducer.id,
+      });
+
       this.send({
-        data: this.dataProducer.id,
-        id: "com.wired-protocol.webrtc.dataProducer.id",
+        dataProducerId,
+        oneofKind: "dataProducerId",
       });
     } catch (err) {
       console.warn(err);
@@ -209,14 +210,16 @@ export class Player {
 
       consumers.set(playerId, consumer);
 
+      const createConsumer = CreateConsumer.create({
+        consumerId: consumer.id,
+        playerId,
+        producerId: producer.id,
+        rtpParameters: consumer.rtpParameters,
+      });
+
       this.send({
-        data: {
-          consumerId: consumer.id,
-          playerId,
-          producerId: producer.id,
-          rtpParameters: consumer.rtpParameters,
-        },
-        id: "com.wired-protocol.webrtc.consumer.create",
+        createConsumer,
+        oneofKind: "createConsumer",
       });
     } catch (err) {
       console.warn(err);
@@ -246,14 +249,16 @@ export class Player {
 
       dataConsumers.set(playerId, dataConsumer);
 
+      const createDataConsumer = CreateDataConsumer.create({
+        dataConsumerId: dataConsumer.id,
+        dataProducerId: dataProducer.id,
+        playerId,
+        sctpStreamParameters: dataConsumer.sctpStreamParameters,
+      });
+
       this.send({
-        data: {
-          dataConsumerId: dataConsumer.id,
-          dataProducerId: dataProducer.id,
-          playerId,
-          sctpStreamParameters: dataConsumer.sctpStreamParameters,
-        },
-        id: "com.wired-protocol.webrtc.dataConsumer.create",
+        createDataConsumer,
+        oneofKind: "createDataConsumer",
       });
     } catch (err) {
       console.warn(err);

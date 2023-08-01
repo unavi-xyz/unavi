@@ -1,10 +1,19 @@
-import { RequestMessageSchema } from "@wired-protocol/types";
+import {
+  fromMediasoupRtpCapabilities,
+  toMediasoupDtlsParameters,
+  toMediasoupRtpCapabilities,
+} from "@unavi/utils";
+import {
+  Request,
+  RouterRtpCapabilities,
+  TransportType,
+} from "@wired-protocol/types";
 import uWS from "uWebSockets.js";
 
-import { createMediasoupWorker, createWebRtcTransport } from "./mediasoup";
+import { createMediasoupWorker } from "./mediasoup";
 import { Player } from "./Player";
 import { UserData, uWebSocket } from "./types";
-import { parseMessage } from "./utils/parseMessage";
+import { createTransport } from "./utils/createTransport";
 import { WorldRegistry } from "./WorldRegistry";
 
 const PORT = 4000;
@@ -39,127 +48,142 @@ server.ws<UserData>("/*", {
   maxPayloadLength: 16 * 1024 * 1024, // 16 MB
 
   message: (ws, buffer) => {
-    const player = players.get(ws);
-    if (!player) return;
+    try {
+      const player = players.get(ws);
+      if (!player) return;
 
-    const message = parseMessage(buffer);
-    if (!message) return;
-
-    // Relay client messages to other players in the same world
-    if (message.target === "client") {
-      player.worlds.forEach((world) => {
-        ws.publish(world.topic, buffer);
-      });
-      return;
-    }
-
-    const request = RequestMessageSchema.safeParse(message);
-
-    if (!request.success) {
-      console.warn(request.error);
-      return;
-    }
-
-    const { data, id } = request.data;
-
-    switch (id) {
-      case "com.wired-protocol.world.join": {
-        player.join(data);
-        break;
+      if (buffer.byteLength === 0) {
+        console.warn("Received empty message");
+        return;
       }
 
-      case "com.wired-protocol.world.leave": {
-        player.leave(data);
-        break;
+      let req;
+
+      try {
+        const array = new Uint8Array(buffer);
+        req = Request.fromBinary(array);
+      } catch (err) {
+        const text = Buffer.from(buffer).toString();
+        console.log("Received text message", text);
+        req = Request.fromJsonString(text);
       }
 
-      case "com.wired-protocol.world.chat.send": {
-        player.chat(data);
-        break;
-      }
-
-      case "com.wired-protocol.world.user.falling": {
-        player.falling = data;
-        break;
-      }
-
-      case "com.wired-protocol.world.user.name": {
-        player.name = data;
-        break;
-      }
-
-      case "com.wired-protocol.world.user.avatar": {
-        player.avatar = data;
-        break;
-      }
-
-      case "com.wired-protocol.world.user.handle": {
-        player.handle = data;
-        break;
-      }
-
-      case "com.wired-protocol.webrtc.router.rtpCapabilities.get": {
-        player.send({
-          data: router.rtpCapabilities,
-          id: "com.wired-protocol.webrtc.router.rtpCapabilities",
-        });
-        break;
-      }
-
-      case "com.wired-protocol.webrtc.audio.pause": {
-        player.setPaused(data);
-        break;
-      }
-
-      case "com.wired-protocol.webrtc.transport.create": {
-        createWebRtcTransport(router, webRtcServer)
-          .then(({ transport, params }) => {
-            player.setTransport(data, transport);
-
-            player.send({
-              data: { options: params, type: data },
-              id: "com.wired-protocol.webrtc.transport.created",
-            });
-          })
-          .catch((err) => console.warn(err));
-        break;
-      }
-
-      case "com.wired-protocol.webrtc.transport.connect": {
-        const transport =
-          data.type === "producer"
-            ? player.producerTransport
-            : player.consumerTransport;
-        if (!transport) break;
-
-        transport.connect({ dtlsParameters: data.dtlsParameters });
-        break;
-      }
-
-      case "com.wired-protocol.webrtc.produce": {
-        player.produce(data);
-        break;
-      }
-
-      case "com.wired-protocol.webrtc.produceData": {
-        if (data.streamId === undefined) {
-          console.warn("Stream ID is undefined");
+      switch (req.message.oneofKind) {
+        case "join": {
+          player.join(req.message.join.world);
           break;
         }
 
-        player.produceData({
-          maxPacketLifeTime: data.maxPacketLifeTime,
-          maxRetransmits: data.maxRetransmits,
-          ordered: data.ordered,
-          streamId: data.streamId,
-        });
-        break;
-      }
+        case "leave": {
+          player.leave(req.message.leave.world);
+          break;
+        }
 
-      case "com.wired-protocol.webrtc.rtpCapabilities.set": {
-        player.rtpCapabilities = data;
-        break;
+        case "sendChatMessage": {
+          player.chat(req.message.sendChatMessage.message);
+          break;
+        }
+
+        case "setPlayerData": {
+          for (const [key, value] of Object.entries(
+            req.message.setPlayerData.data
+          )) {
+            player.setPlayerData(key, value);
+          }
+          break;
+        }
+
+        case "sendEvent": {
+          player.sendEvent(req.message.sendEvent.data);
+          break;
+        }
+
+        case "getRouterRtpCapabilities": {
+          const rtpCapabilities = fromMediasoupRtpCapabilities(
+            router.rtpCapabilities
+          );
+          const routerRtpCapabilities = RouterRtpCapabilities.create({
+            rtpCapabilities,
+          });
+          player.send({
+            oneofKind: "routerRtpCapabilities",
+            routerRtpCapabilities,
+          });
+          break;
+        }
+
+        case "pauseAudio": {
+          player.setPaused(req.message.pauseAudio.paused);
+          break;
+        }
+
+        case "createTransport": {
+          const type = req.message.createTransport.type;
+
+          createTransport(type, router, webRtcServer)
+            .then(({ transport, message }) => {
+              player.setTransport(type, transport);
+              player.send({
+                oneofKind: "transportCreated",
+                transportCreated: message,
+              });
+            })
+            .catch((err) => console.warn(err));
+          break;
+        }
+
+        case "connectTransport": {
+          const transport =
+            req.message.connectTransport.type === TransportType.PRODUCER
+              ? player.producerTransport
+              : player.consumerTransport;
+          if (!transport || !req.message.connectTransport.dtlsParameters) break;
+
+          transport.connect({
+            dtlsParameters: toMediasoupDtlsParameters(
+              req.message.connectTransport.dtlsParameters
+            ),
+          });
+          break;
+        }
+
+        case "produce": {
+          if (!req.message.produce.rtpParameters) break;
+          player.produce(req.message.produce.rtpParameters);
+          break;
+        }
+
+        case "produceData": {
+          if (!req.message.produceData.sctpStreamParameters) break;
+
+          if (!req.message.produceData.sctpStreamParameters.streamId) {
+            console.warn("Stream ID is undefined");
+            break;
+          }
+
+          player.produceData({
+            maxPacketLifeTime:
+              req.message.produceData.sctpStreamParameters.maxPacketLifeTime,
+            maxRetransmits:
+              req.message.produceData.sctpStreamParameters.maxRetransmits,
+            ordered: req.message.produceData.sctpStreamParameters.ordered,
+            streamId: req.message.produceData.sctpStreamParameters.streamId,
+          });
+          break;
+        }
+
+        case "setRtpCapabilities": {
+          if (!req.message.setRtpCapabilities.rtpCapabilities) break;
+
+          const rtpCapabilities = toMediasoupRtpCapabilities(
+            req.message.setRtpCapabilities.rtpCapabilities
+          );
+          player.rtpCapabilities = rtpCapabilities;
+          break;
+        }
       }
+    } catch (err) {
+      console.warn(err);
     }
   },
 

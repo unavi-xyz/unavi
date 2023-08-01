@@ -1,7 +1,8 @@
+import { Event, Request, Response, SendEvent } from "@wired-protocol/types";
 import { Engine } from "lattice-engine/core";
 import { create } from "zustand";
 
-import { ChatMessage, EcsEvent, ValidSendMessage } from "./types";
+import { ChatMessage } from "./types";
 import { splitHandle } from "./utils/splitHandle";
 import { toHex } from "./utils/toHex";
 
@@ -10,26 +11,24 @@ export interface IClientStore {
   cleanupConnection: () => void;
   getDisplayName: (playerId: number) => string;
   sendWebRTC: (message: ArrayBuffer) => void;
-  sendWebSockets: (message: ValidSendMessage) => void;
+  sendWebSockets: (message: Request["message"]) => void;
   setAvatar: (avatar: string) => void;
   setHandle: (handle: string) => void;
   setName: (name: string) => void;
+  setPlayerData: (playerId: number, key: string, value: string) => void;
   setPlayerId: (playerId: number | null) => void;
-  mirrorEvent: (event: EcsEvent & ValidSendMessage) => void;
-  names: Map<number, string>;
+  mirrorEvent: (data: Uint8Array) => void;
   avatar: string;
-  avatars: Map<number, string>;
   chatMessages: ChatMessage[];
   defaultAvatar: string;
   engine: Engine | null;
-  events: EcsEvent[];
+  ecsIncoming: Response[];
   exportedModel: Blob | null;
-  falling: Map<number, boolean>;
+  playerData: Map<number, Record<string, string>>;
   handle: string;
-  handles: Map<number, string>;
   lastLocationUpdates: Map<number, number>;
   locations: Map<number, number[]>;
-  name: string;
+  nickname: string;
   playerId: number | null;
   rootName: string;
   skybox: string;
@@ -44,16 +43,18 @@ export const useClientStore = create<IClientStore>((set, get) => ({
     set({ chatMessages: [...chatMessages] });
   },
   avatar: "",
-  avatars: new Map(),
   chatMessages: [],
   cleanupConnection: () => {},
   defaultAvatar: "",
+  ecsIncoming: [],
   engine: null,
-  events: [],
   exportedModel: null,
-  falling: new Map(),
   getDisplayName: (playerId: number) => {
-    const handle = get().handles.get(playerId);
+    const playerData = get().playerData.get(playerId);
+
+    const handle = playerData?.handle;
+    const nickname = playerData?.nickname;
+
     if (handle) {
       const { username } = splitHandle(handle);
 
@@ -62,27 +63,33 @@ export const useClientStore = create<IClientStore>((set, get) => ({
       }
     }
 
-    const name = get().names.get(playerId);
-    if (name) {
-      return name;
+    if (nickname) {
+      return nickname;
     }
 
     return `Guest ${toHex(playerId)}`;
   },
   handle: "",
-  handles: new Map(),
   lastLocationUpdates: new Map(),
   locations: new Map(),
-  mirrorEvent: (event: EcsEvent & ValidSendMessage) => {
-    // Send to ourselves
-    const events = get().events;
-    events.push(event);
+  mirrorEvent: (data: Uint8Array) => {
+    // Send to self
+    const playerId = get().playerId;
+    if (playerId === null) return;
+
+    const event = Event.create({ data, playerId });
+    const response = Response.create({
+      response: { event, oneofKind: "event" },
+    });
+    const events = get().ecsIncoming;
+    events.push(response);
 
     // Send to others
-    get().sendWebSockets(event);
+    const sendEvent = SendEvent.create({ data });
+    get().sendWebSockets({ oneofKind: "sendEvent", sendEvent });
   },
-  name: "",
-  names: new Map(),
+  nickname: "",
+  playerData: new Map(),
   playerId: null,
   rootName: "",
   sendWebRTC: () => {},
@@ -90,27 +97,31 @@ export const useClientStore = create<IClientStore>((set, get) => ({
   setAvatar(avatar: string) {
     set({ avatar });
 
-    // Update avatars map
     const playerId = get().playerId;
     if (playerId === null) return;
-    get().avatars.set(playerId, avatar);
+
+    get().setPlayerData(playerId, "avatar", avatar);
   },
   setHandle(handle: string) {
     set({ handle });
 
-    // Update handles map
     const playerId = get().playerId;
     if (playerId === null) return;
-    get().handles.set(playerId, handle);
-  },
-  setName(name: string) {
-    set({ name });
 
-    // Update names map
+    get().setPlayerData(playerId, "handle", handle);
+  },
+  setName(nickname: string) {
+    set({ nickname });
+
     const playerId = get().playerId;
-    if (playerId !== null) {
-      get().names.set(playerId, name);
-    }
+    if (playerId === null) return;
+
+    get().setPlayerData(playerId, "nickname", nickname);
+  },
+  setPlayerData(playerId: number, key: string, value: string) {
+    const playerData = get().playerData.get(playerId) || {};
+    playerData[key] = value;
+    get().playerData.set(playerId, playerData);
   },
   setPlayerId(playerId: number | null) {
     const oldPlayerId = get().playerId;
@@ -118,15 +129,13 @@ export const useClientStore = create<IClientStore>((set, get) => ({
     if (oldPlayerId === playerId) return;
 
     if (oldPlayerId !== null) {
-      get().avatars.delete(oldPlayerId);
-      get().handles.delete(oldPlayerId);
-      get().names.delete(oldPlayerId);
+      get().playerData.delete(oldPlayerId);
     }
 
     if (playerId !== null) {
-      get().avatars.set(playerId, get().avatar);
-      get().handles.set(playerId, get().handle);
-      get().names.set(playerId, get().name);
+      get().setPlayerData(playerId, "nickname", get().nickname);
+      get().setPlayerData(playerId, "handle", get().handle);
+      get().setPlayerData(playerId, "avatar", get().avatar);
     }
 
     set({ playerId });

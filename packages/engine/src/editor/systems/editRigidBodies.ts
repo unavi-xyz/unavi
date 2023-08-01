@@ -1,3 +1,4 @@
+import { EditNode_RigidBody_Type } from "@unavi/protocol";
 import { DynamicBody, StaticBody } from "lattice-engine/physics";
 import { Name } from "lattice-engine/scene";
 import { Commands, Entity, EventReader, Query, With } from "thyseus";
@@ -9,7 +10,7 @@ export function editRigidBodies(
   events: EventReader<EditRigidBody>,
   names: Query<[Entity, Name]>,
   dynamicBodies: Query<Entity, With<DynamicBody>>,
-  staticBodies: Query<Entity, With<StaticBody>>,
+  staticBodies: Query<Entity, With<StaticBody>>
 ) {
   if (events.length === 0) return;
 
@@ -29,11 +30,11 @@ export function editRigidBodies(
       }
 
       // Add the new rigid body
-      if (e.type === "dynamic") {
+      if (e.type === EditNode_RigidBody_Type.DYNAMIC) {
         commands.get(entity).addType(DynamicBody);
       }
 
-      if (e.type === "static") {
+      if (e.type === EditNode_RigidBody_Type.STATIC) {
         commands.get(entity).addType(StaticBody);
       }
     }

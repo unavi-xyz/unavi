@@ -1,4 +1,7 @@
-import { ColliderType, RigidBodyType } from "@unavi/protocol";
+import {
+  EditNode_Collider_Type,
+  EditNode_RigidBody_Type,
+} from "@unavi/protocol";
 
 import { useSceneStore } from "../sceneStore";
 
@@ -12,8 +15,8 @@ export class TreeItem {
 
   locked = false;
 
-  colliderType?: ColliderType;
-  rigidBodyType?: RigidBodyType;
+  colliderType?: EditNode_Collider_Type;
+  rigidBodyType?: EditNode_RigidBody_Type;
 
   collider = {
     height: 1,

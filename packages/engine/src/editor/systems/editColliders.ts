@@ -1,4 +1,4 @@
-import { ColliderType } from "@unavi/protocol";
+import { EditNode_Collider_Type } from "@unavi/protocol";
 import {
   BoxCollider,
   CapsuleCollider,
@@ -21,7 +21,7 @@ export function editColliders(
   capsuleColliders: Query<[Entity, Mut<CapsuleCollider>]>,
   cylinderColliders: Query<[Entity, Mut<CylinderCollider>]>,
   meshColliders: Query<[Entity, Mut<MeshCollider>]>,
-  hullColliders: Query<[Entity, Mut<HullCollider>]>,
+  hullColliders: Query<[Entity, Mut<HullCollider>]>
 ) {
   if (events.length === 0) return;
 
@@ -37,7 +37,7 @@ export function editColliders(
 
         collider.size.array.set(e.size);
 
-        if (e.type === ColliderType.Box) {
+        if (e.type === EditNode_Collider_Type.BOX) {
           foundCollider = true;
         } else {
           commands.get(colliderEntity).remove(BoxCollider);
@@ -51,7 +51,7 @@ export function editColliders(
 
         collider.radius = e.radius;
 
-        if (e.type === ColliderType.Sphere) {
+        if (e.type === EditNode_Collider_Type.SPHERE) {
           foundCollider = true;
         } else {
           commands.get(colliderEntity).remove(SphereCollider);
@@ -66,7 +66,7 @@ export function editColliders(
         collider.radius = e.radius;
         collider.height = e.height;
 
-        if (e.type === ColliderType.Capsule) {
+        if (e.type === EditNode_Collider_Type.CAPSULE) {
           foundCollider = true;
         } else {
           commands.get(colliderEntity).remove(CapsuleCollider);
@@ -81,7 +81,7 @@ export function editColliders(
         collider.radius = e.radius;
         collider.height = e.height;
 
-        if (e.type === ColliderType.Cylinder) {
+        if (e.type === EditNode_Collider_Type.CYLINDER) {
           foundCollider = true;
         } else {
           commands.get(colliderEntity).remove(CylinderCollider);
@@ -93,7 +93,7 @@ export function editColliders(
       for (const [colliderEntity, collider] of meshColliders) {
         if (colliderEntity.id !== entity.id) continue;
 
-        if (e.type === ColliderType.Mesh) {
+        if (e.type === EditNode_Collider_Type.MESH) {
           foundCollider = true;
         } else {
           commands.get(colliderEntity).remove(MeshCollider);
@@ -105,7 +105,7 @@ export function editColliders(
       for (const [colliderEntity, collider] of hullColliders) {
         if (colliderEntity.id !== entity.id) continue;
 
-        if (e.type === ColliderType.Hull) {
+        if (e.type === EditNode_Collider_Type.HULL) {
           foundCollider = true;
         } else {
           commands.get(colliderEntity).remove(HullCollider);
@@ -114,12 +114,12 @@ export function editColliders(
         break;
       }
 
-      if (foundCollider || e.type === "none") {
+      if (foundCollider || e.type === EditNode_Collider_Type.NONE) {
         break;
       }
 
       // Create new collider
-      if (e.type === ColliderType.Box) {
+      if (e.type === EditNode_Collider_Type.BOX) {
         const collider = new BoxCollider();
         collider.size.array.set(e.size);
 
@@ -128,7 +128,7 @@ export function editColliders(
         dropStruct(collider);
       }
 
-      if (e.type === ColliderType.Sphere) {
+      if (e.type === EditNode_Collider_Type.SPHERE) {
         const collider = new SphereCollider();
         collider.radius = e.radius;
 
@@ -137,7 +137,7 @@ export function editColliders(
         dropStruct(collider);
       }
 
-      if (e.type === ColliderType.Cylinder) {
+      if (e.type === EditNode_Collider_Type.CYLINDER) {
         const collider = new CylinderCollider();
         collider.radius = e.radius;
         collider.height = e.height;
@@ -147,7 +147,7 @@ export function editColliders(
         dropStruct(collider);
       }
 
-      if (e.type === ColliderType.Capsule) {
+      if (e.type === EditNode_Collider_Type.CAPSULE) {
         const collider = new CapsuleCollider();
         collider.radius = e.radius;
         collider.height = e.height;
@@ -157,7 +157,7 @@ export function editColliders(
         dropStruct(collider);
       }
 
-      if (e.type === ColliderType.Mesh) {
+      if (e.type === EditNode_Collider_Type.MESH) {
         const collider = new MeshCollider();
         // TODO: set mesh
 
@@ -166,7 +166,7 @@ export function editColliders(
         dropStruct(collider);
       }
 
-      if (e.type === ColliderType.Hull) {
+      if (e.type === EditNode_Collider_Type.HULL) {
         const collider = new HullCollider();
         // TODO: set mesh
 

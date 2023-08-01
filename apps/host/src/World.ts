@@ -1,4 +1,10 @@
-import { ResponseMessage } from "@wired-protocol/types";
+import {
+  ChatMessage,
+  PlayerData,
+  PlayerJoined,
+  PlayerLeft,
+  Response,
+} from "@wired-protocol/types";
 import { DataProducer } from "mediasoup/node/lib/DataProducer";
 import { Producer } from "mediasoup/node/lib/Producer";
 
@@ -57,28 +63,28 @@ export class World {
 
     this.players.set(playerId, player);
 
+    const playerJoined = PlayerJoined.create({
+      data: player.playerData,
+      playerId,
+    });
+
     this.#publish({
-      data: {
-        avatar: player.avatar || undefined,
-        handle: player.handle || undefined,
-        name: player.name || undefined,
-        playerId,
-      },
-      id: "com.wired-protocol.world.player.join",
+      oneofKind: "playerJoined",
+      playerJoined,
     });
 
     // Tell new player about current players
     this.players.forEach((otherPlayer, otherPlayerId) => {
       if (otherPlayer === player) return;
 
+      const otherPlayerJoined = PlayerJoined.create({
+        data: otherPlayer.playerData,
+        playerId: otherPlayerId,
+      });
+
       player.send({
-        data: {
-          avatar: otherPlayer.avatar || undefined,
-          handle: otherPlayer.handle || undefined,
-          name: otherPlayer.name || undefined,
-          playerId: otherPlayerId,
-        },
-        id: "com.wired-protocol.world.player.join",
+        oneofKind: "playerJoined",
+        playerJoined: otherPlayerJoined,
       });
 
       // Consume current players
@@ -117,9 +123,11 @@ export class World {
 
     this.players.delete(playerId);
 
+    const playerLeft = PlayerLeft.create({ playerId });
+
     this.#publish({
-      data: playerId,
-      id: "com.wired-protocol.world.player.leave",
+      oneofKind: "playerLeft",
+      playerLeft,
     });
 
     console.info(`👋 Player ${toHex(playerId)} left world ${this.uri}`);
@@ -127,53 +135,37 @@ export class World {
     if (this.playerCount === 0) this.#registry.removeWorld(this.uri);
   }
 
+  sendEvent(player: Player, data: Uint8Array) {
+    const playerId = this.playerId(player);
+    if (playerId === undefined) return;
+
+    this.#publish({
+      event: { data, playerId },
+      oneofKind: "event",
+    });
+  }
+
   chat(player: Player, message: string) {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
+    const chatMessage = ChatMessage.create({ message, playerId });
+
     this.#publish({
-      data: { message, playerId },
-      id: "com.wired-protocol.world.chat.message",
+      chatMessage,
+      oneofKind: "chatMessage",
     });
   }
 
-  setFalling(player: Player, falling: boolean) {
+  setPlayerData(player: Player, key: string, value: string) {
     const playerId = this.playerId(player);
     if (playerId === undefined) return;
 
-    this.#publish({
-      data: { falling, playerId },
-      id: "com.wired-protocol.world.player.falling",
-    });
-  }
-
-  setName(player: Player, name: string | null) {
-    const playerId = this.playerId(player);
-    if (playerId === undefined) return;
+    const playerData = PlayerData.create({ key, playerId, value });
 
     this.#publish({
-      data: { name: name, playerId },
-      id: "com.wired-protocol.world.player.name",
-    });
-  }
-
-  setHandle(player: Player, handle: string | null) {
-    const playerId = this.playerId(player);
-    if (playerId === undefined) return;
-
-    this.#publish({
-      data: { handle, playerId },
-      id: "com.wired-protocol.world.player.handle",
-    });
-  }
-
-  setAvatar(player: Player, avatar: string | null) {
-    const playerId = this.playerId(player);
-    if (playerId === undefined) return;
-
-    this.#publish({
-      data: { avatar: avatar, playerId },
-      id: "com.wired-protocol.world.player.avatar",
+      oneofKind: "playerData",
+      playerData,
     });
   }
 
@@ -199,7 +191,8 @@ export class World {
     });
   }
 
-  #publish(message: ResponseMessage) {
-    this.#registry.server.publish(this.topic, JSON.stringify(message));
+  #publish(data: Response["response"]) {
+    const message = Response.create({ response: data });
+    this.#registry.server.publish(this.topic, Response.toBinary(message), true);
   }
 }

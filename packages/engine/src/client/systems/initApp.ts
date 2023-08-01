@@ -13,7 +13,7 @@ export function initApp(
   commands: Commands,
   coreStore: Res<Mut<CoreStore>>,
   sceneStruct: Res<Mut<SceneStruct>>,
-  inputStruct: Res<Mut<InputStruct>>,
+  inputStruct: Res<Mut<InputStruct>>
 ) {
   inputStruct.enablePointerLock = ENABLE_POINTER_LOCK;
 
@@ -24,7 +24,7 @@ export function initApp(
     [0, 4, 0],
     sceneId,
     commands,
-    sceneStruct,
+    sceneStruct
   );
 
   const csm = new CascadingShadowMaps();

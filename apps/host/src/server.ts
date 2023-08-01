@@ -1,8 +1,12 @@
 import {
-  createMediasoupRtpCapabilities,
-  createRouterRtpCapabilities,
+  fromMediasoupRtpCapabilities,
+  toMediasoupRtpCapabilities,
 } from "@unavi/utils";
-import { Request, TransportType } from "@wired-protocol/types";
+import {
+  Request,
+  RouterRtpCapabilities,
+  TransportType,
+} from "@wired-protocol/types";
 import uWS from "uWebSockets.js";
 
 import { createMediasoupWorker } from "./mediasoup";
@@ -80,7 +84,12 @@ server.ws<UserData>("/*", {
       }
 
       case "getRouterRtpCapabilities": {
-        const routerRtpCapabilities = createRouterRtpCapabilities(router);
+        const rtpCapabilities = fromMediasoupRtpCapabilities(
+          router.rtpCapabilities,
+        );
+        const routerRtpCapabilities = RouterRtpCapabilities.create({
+          rtpCapabilities,
+        });
         player.send({
           oneofKind: "routerRtpCapabilities",
           routerRtpCapabilities,
@@ -149,7 +158,7 @@ server.ws<UserData>("/*", {
       case "setRtpCapabilities": {
         if (!req.message.setRtpCapabilities.rtpCapabilities) break;
 
-        const rtpCapabilities = createMediasoupRtpCapabilities(
+        const rtpCapabilities = toMediasoupRtpCapabilities(
           req.message.setRtpCapabilities.rtpCapabilities,
         );
         player.rtpCapabilities = rtpCapabilities;

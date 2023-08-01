@@ -1,3 +1,4 @@
+import { SetPlayerData } from "@wired-protocol/types";
 import { Time } from "lattice-engine/core";
 import { PlayerBody, PlayerCamera } from "lattice-engine/player";
 import { Transform } from "lattice-engine/scene";
@@ -19,7 +20,7 @@ export function publishLocation(
   time: Res<Time>,
   localRes: SystemRes<LocalRes>,
   bodies: Query<[Entity, Transform, PlayerBody]>,
-  cameras: Query<PlayerCamera>
+  cameras: Query<PlayerCamera>,
 ) {
   const now = time.fixedTime;
   if (now - localRes.lastPublish < 1000 / NETWORK_UPDATE_HZ) return;
@@ -42,10 +43,16 @@ export function publishLocation(
 
       if (isFalling !== localRes.isFalling) {
         localRes.isFalling = isFalling;
-        useClientStore.getState().sendWebSockets({
-          data: isFalling,
-          id: "com.wired-protocol.world.user.falling",
+
+        const setPlayerData = SetPlayerData.create({
+          data: {
+            falling: isFalling.toString(),
+          },
         });
+
+        useClientStore
+          .getState()
+          .sendWebSockets(SetPlayerData.toBinary(setPlayerData));
       }
 
       // TODO: Remove hardcoded player height
@@ -60,7 +67,7 @@ export function publishLocation(
         transform.rotation.x,
         transform.rotation.y,
         transform.rotation.z,
-        transform.rotation.w
+        transform.rotation.w,
       );
 
       useClientStore.getState().sendWebRTC(buffer);

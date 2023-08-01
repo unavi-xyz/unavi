@@ -9,8 +9,8 @@
   },
   "license": "GPL-3.0-or-later",
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "pnpm generate && tsc",
     "clean": "rm -rf src/generated/*",

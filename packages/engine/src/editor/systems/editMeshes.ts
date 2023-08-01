@@ -8,7 +8,7 @@ export function editMeshes(
   warehouse: Res<Warehouse>,
   events: EventReader<EditMesh>,
   meshes: Query<[Mut<Mesh>, Mut<Name>, Mut<Geometry>]>,
-  named: Query<[Entity, Name]>
+  named: Query<[Entity, Name]>,
 ) {
   if (events.length === 0) return;
 
@@ -20,44 +20,54 @@ export function editMeshes(
         name.value = e.name;
       }
 
-      if (e.indices) {
-        geometry.indices.write(e.indices.read(warehouse), warehouse);
+      const indices = e.indices.read(warehouse);
+      if (indices) {
+        geometry.indices.write(indices, warehouse);
       }
 
-      if (e.colors) {
-        geometry.colors.write(e.colors.read(warehouse), warehouse);
+      const colors = e.colors.read(warehouse);
+      if (colors) {
+        geometry.colors.write(colors, warehouse);
       }
 
-      if (e.joints) {
-        geometry.joints.write(e.joints.read(warehouse), warehouse);
+      const normals = e.normals.read(warehouse);
+      if (normals) {
+        geometry.normals.write(normals, warehouse);
       }
 
-      if (e.normals) {
-        geometry.normals.write(e.normals.read(warehouse), warehouse);
+      const positions = e.positions.read(warehouse);
+      if (positions) {
+        geometry.positions.write(positions, warehouse);
       }
 
-      if (e.positions) {
-        geometry.positions.write(e.positions.read(warehouse), warehouse);
+      const weights = e.weights.read(warehouse);
+      if (weights) {
+        geometry.weights.write(weights, warehouse);
       }
 
-      if (e.uv) {
-        geometry.uv.write(e.uv.read(warehouse), warehouse);
+      const joints = e.joints.read(warehouse);
+      if (joints) {
+        geometry.joints.write(joints, warehouse);
       }
 
-      if (e.uv1) {
-        geometry.uv1.write(e.uv1.read(warehouse), warehouse);
+      const uv = e.uv.read(warehouse);
+      if (uv) {
+        geometry.uv.write(uv, warehouse);
       }
 
-      if (e.uv2) {
-        geometry.uv2.write(e.uv2.read(warehouse), warehouse);
+      const uv1 = e.uv1.read(warehouse);
+      if (uv1) {
+        geometry.uv1.write(uv1, warehouse);
       }
 
-      if (e.uv3) {
-        geometry.uv3.write(e.uv3.read(warehouse), warehouse);
+      const uv2 = e.uv2.read(warehouse);
+      if (uv2) {
+        geometry.uv2.write(uv2, warehouse);
       }
 
-      if (e.weights) {
-        geometry.weights.write(e.weights.read(warehouse), warehouse);
+      const uv3 = e.uv3.read(warehouse);
+      if (uv3) {
+        geometry.uv3.write(uv3, warehouse);
       }
 
       if (e.material) {

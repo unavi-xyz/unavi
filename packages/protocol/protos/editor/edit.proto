@@ -12,11 +12,13 @@ message EditNode {
   repeated int32 rotation = 5;
   repeated int32 scale = 6;
 
+  optional string mesh = 7;
+
   message Extras {
     bool locked = 1;
   }
 
-  optional Extras extras = 7;
+  optional Extras extras = 8;
 
   message Collider {
     enum Type {
@@ -36,7 +38,7 @@ message EditNode {
     optional string mesh = 5;
   }
 
-  optional Collider collider = 8;
+  optional Collider collider = 9;
 
   message RigidBody {
     enum Type {
@@ -57,7 +59,7 @@ message EditNode {
     repeated int32 inertiaTensor = 6;
   }
 
-  optional RigidBody rigid_body = 9;
+  optional RigidBody rigid_body = 10;
 }
 
 message EditMesh {
@@ -66,19 +68,14 @@ message EditMesh {
   optional string name = 2;
   optional string material = 3;
 
-  message Attribute {
-    bool has_attribute = 1;
-    repeated int32 data = 2;
-  }
-
-  optional Attribute position = 4;
-  optional Attribute normal = 5;
-  optional Attribute indices = 6;
-  optional Attribute color = 7;
-  optional Attribute weights = 8;
-  optional Attribute joints = 9;
-  optional Attribute uv = 10;
-  optional Attribute uv1 = 11;
-  optional Attribute uv2 = 12;
-  optional Attribute uv3 = 13;
+  repeated int32 position = 4;
+  repeated int32 normal = 5;
+  repeated int32 indices = 6;
+  repeated int32 color = 7;
+  repeated int32 weights = 8;
+  repeated int32 joints = 9;
+  repeated int32 uv = 10;
+  repeated int32 uv1 = 11;
+  repeated int32 uv2 = 12;
+  repeated int32 uv3 = 13;
 }

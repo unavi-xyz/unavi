@@ -44,5 +44,8 @@
     "three": "~0.153.0",
     "thyseus": "^0.13.5",
     "zustand": "^4.3.8"
+  },
+  "dependencies": {
+    "@unavi/utils": "workspace:^"
   }
 }

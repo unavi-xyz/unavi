@@ -1,10 +1,23 @@
 import {
+  fromMediasoupDtlsParameters,
+  fromMediasoupRtpCapabilities,
+  fromMediasoupRtpParameters,
+  toMediasoupRtpCapabilities,
+  toMediasoupRtpParameters,
+  toMediasoupTransportOptions,
+} from "@unavi/utils";
+import {
+  ConnectTransport,
   CreateTransport,
   GetRouterRtpCapabilities,
   Join,
+  PauseAudio,
+  Produce,
+  ProduceData,
   Response,
   SendEvent,
   SetRtpCapabilities,
+  TransportCreated_TransportType,
   TransportType,
 } from "@wired-protocol/types";
 import { Device } from "mediasoup-client";
@@ -190,8 +203,9 @@ export function connectToHost(
           try {
             // Initialize device
             await device.load({
-              routerRtpCapabilities:
+              routerRtpCapabilities: toMediasoupRtpCapabilities(
                 msg.response.routerRtpCapabilities.rtpCapabilities,
+              ),
             });
 
             // Create transports
@@ -206,7 +220,9 @@ export function connectToHost(
 
             // Set rtp capabilities
             const setRtpCapabilities = SetRtpCapabilities.create({
-              rtpCapabilities: device.rtpCapabilities,
+              rtpCapabilities: fromMediasoupRtpCapabilities(
+                device.rtpCapabilities,
+              ),
             });
             send(SetRtpCapabilities.toBinary(setRtpCapabilities));
           } catch (error) {
@@ -216,27 +232,39 @@ export function connectToHost(
           break;
         }
 
-        case "com.wired-protocol.webrtc.transport.created": {
+        case "transportCreated": {
+          if (!msg.response.transportCreated.options) break;
+
           // Create transport
+          const options = toMediasoupTransportOptions(
+            msg.response.transportCreated.options,
+          );
+
+          const transportType = msg.response.transportCreated.type;
+
           const transport =
-            data.type === "producer"
-              ? device.createSendTransport(data.options)
-              : device.createRecvTransport(data.options);
+            transportType === TransportCreated_TransportType.PRODUCER
+              ? device.createSendTransport(options)
+              : device.createRecvTransport(options);
 
           // Connect transport
           transport.on("connect", ({ dtlsParameters }, callback) => {
-            send({
-              data: { dtlsParameters, type: data.type },
-              id: "com.wired-protocol.webrtc.transport.connect",
+            const connect = ConnectTransport.create({
+              dtlsParameters: fromMediasoupDtlsParameters(dtlsParameters),
+              type:
+                transportType === TransportCreated_TransportType.PRODUCER
+                  ? TransportType.PRODUCER
+                  : TransportType.CONSUMER,
             });
+            send(ConnectTransport.toBinary(connect));
             callback();
           });
 
           transport.on("connectionstatechange", (state) => {
-            console.info(`WebRTC - ${data.type} ${state}`);
+            console.info(`WebRTC - ${transportType} ${state}`);
           });
 
-          if (data.type === "consumer") {
+          if (transportType === TransportCreated_TransportType.CONSUMER) {
             consumerTransport = transport;
           } else {
             producerTransport = transport;
@@ -248,10 +276,12 @@ export function connectToHost(
               }
 
               producerIdCallback = (id: string) => callback({ id });
-              send({
-                data: rtpParameters,
-                id: "com.wired-protocol.webrtc.produce",
+
+              const produce = Produce.create({
+                rtpParameters: fromMediasoupRtpParameters(rtpParameters),
               });
+
+              send(Produce.toBinary(produce));
             });
 
             // producer = await transport.produce({ track });
@@ -260,10 +290,12 @@ export function connectToHost(
               "producedata",
               ({ sctpStreamParameters }, callback) => {
                 dataProducerIdCallback = (id: string) => callback({ id });
-                send({
-                  data: sctpStreamParameters,
-                  id: "com.wired-protocol.webrtc.produceData",
+
+                const produceData = ProduceData.create({
+                  sctpStreamParameters,
                 });
+
+                send(ProduceData.toBinary(produceData));
               },
             );
 
@@ -284,31 +316,43 @@ export function connectToHost(
           break;
         }
 
-        case "com.wired-protocol.webrtc.producer.id": {
-          if (producerIdCallback) producerIdCallback(data);
+        case "producerId": {
+          if (producerIdCallback) {
+            producerIdCallback(msg.response.producerId.producerId);
+          }
           break;
         }
 
-        case "com.wired-protocol.webrtc.dataProducer.id": {
-          if (dataProducerIdCallback) dataProducerIdCallback(data);
+        case "dataProducerId": {
+          if (dataProducerIdCallback) {
+            dataProducerIdCallback(msg.response.dataProducerId.dataProducerId);
+          }
           break;
         }
 
-        case "com.wired-protocol.webrtc.consumer.create": {
+        case "createConsumer": {
           if (!consumerTransport) {
             console.warn("Consumer transport not initialized");
             return;
           }
 
+          if (!msg.response.createConsumer.rtpParameters) break;
+
           consumer = await consumerTransport.consume({
-            id: data.consumerId,
+            id: msg.response.createConsumer.consumerId,
             kind: "audio",
-            producerId: data.producerId,
-            rtpParameters: data.rtpParameters,
+            producerId: msg.response.createConsumer.producerId,
+            rtpParameters: toMediasoupRtpParameters(
+              msg.response.createConsumer.rtpParameters,
+            ),
           });
 
           // Start receiving audio
-          send({ data: false, id: "com.wired-protocol.webrtc.audio.pause" });
+          const pauseAudio = PauseAudio.create({
+            paused: false,
+          });
+          send(PauseAudio.toBinary(pauseAudio));
+
           consumer.resume();
 
           // Create audio stream
@@ -346,18 +390,21 @@ export function connectToHost(
           break;
         }
 
-        case "com.wired-protocol.webrtc.dataConsumer.create": {
+        case "createDataConsumer": {
           if (!consumerTransport) {
             console.warn("No consumer transport");
             break;
           }
 
+          if (!msg.response.createDataConsumer.sctpStreamParameters) break;
+
           try {
             // Create data consumer
             dataConsumer = await consumerTransport.consumeData({
-              dataProducerId: data.dataProducerId,
-              id: data.dataConsumerId,
-              sctpStreamParameters: data.sctpStreamParameters,
+              dataProducerId: msg.response.createDataConsumer.dataProducerId,
+              id: msg.response.createDataConsumer.dataConsumerId,
+              sctpStreamParameters:
+                msg.response.createDataConsumer.sctpStreamParameters,
             });
 
             const { locations, lastLocationUpdates } =

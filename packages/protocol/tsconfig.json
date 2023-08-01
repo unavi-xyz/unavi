@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "noImplicitOverride": false,
     "noUncheckedIndexedAccess": false,
-    "noImplicitOverride": false
+    "outDir": "./dist",
+    "rootDir": "./src"
   },
   "extends": "tsconfig/base.json",
   "include": [

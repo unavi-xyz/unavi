@@ -8,13 +8,16 @@ import { OtherPlayer } from "../components";
 
 export function setPlayersAvatar(
   players: Query<[Entity, OtherPlayer]>,
-  avatars: Query<[Parent, Mut<Vrm>], With<PlayerAvatar>>
+  avatars: Query<[Parent, Mut<Vrm>], With<PlayerAvatar>>,
 ) {
   for (const [parent, vrm] of avatars) {
     for (const [entity, player] of players) {
       if (entity.id !== parent.id) continue;
 
-      const avatar = useClientStore.getState().avatars.get(player.id);
+      const playerData = useClientStore.getState().playerData.get(player.id);
+      if (!playerData) continue;
+
+      const avatar = playerData.avatar;
 
       if (avatar) {
         vrm.uri = avatar;

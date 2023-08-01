@@ -135,7 +135,14 @@ export function connectToHost(
     };
 
     ws.onmessage = async (e) => {
-      const msg = Response.fromBinary(e.data);
+      if (!(e.data instanceof Blob)) {
+        console.log("Unexpected message type", e.data);
+        return;
+      }
+
+      const buffer = await e.data.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      const msg = Response.fromBinary(bytes);
 
       switch (msg.response.oneofKind) {
         case "joinSuccess": {

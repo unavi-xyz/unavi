@@ -17,7 +17,7 @@
     "lint": "cd ../.. && eslint --fix packages/utils --ext .ts,.tsx,.mjs,.json --ignore-path .gitignore --ignore-path .prettierignore --ignore-pattern package.json"
   },
   "dependencies": {
-    "@wired-protocol/types": "^0.7.0"
+    "@wired-protocol/types": "^0.8.0"
   },
   "devDependencies": {
     "eslint": "^8.44.0",

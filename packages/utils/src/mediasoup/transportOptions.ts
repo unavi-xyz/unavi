@@ -1,5 +1,4 @@
 import {
-  DtlsParameters_Role,
   IceCandidate_Protocol,
   IceCandidate_TcpType,
   IceCandidate_Type,
@@ -7,8 +6,10 @@ import {
 } from "@wired-protocol/types";
 import { IceCandidate, TransportOptions } from "mediasoup-client/lib/types";
 
+import { toMediasoupDtlsRole } from "./dtlsParameters";
+
 export function toMediasoupTransportOptions(
-  options: TransportCreated_TransportOptions
+  options: TransportCreated_TransportOptions,
 ): TransportOptions {
   const iceCandidates: IceCandidate[] = [];
 
@@ -81,32 +82,9 @@ export function toMediasoupTransportOptions(
     });
   });
 
-  if (!options.iceParameters) {
-    throw new Error("iceParameters is required");
-  }
-
-  if (!options.sctpParameters) {
-    throw new Error("sctpParameters is required");
-  }
-
-  let role: TransportOptions["dtlsParameters"]["role"];
-
-  switch (options.dtlsParameters?.role) {
-    case DtlsParameters_Role.AUTO: {
-      role = "auto";
-      break;
-    }
-
-    case DtlsParameters_Role.CLIENT: {
-      role = "client";
-      break;
-    }
-
-    case DtlsParameters_Role.SERVER: {
-      role = "server";
-      break;
-    }
-  }
+  const role = options.dtlsParameters?.role
+    ? toMediasoupDtlsRole(options.dtlsParameters.role)
+    : undefined;
 
   const fingerprints: TransportOptions["dtlsParameters"]["fingerprints"] = [];
 
@@ -119,17 +97,25 @@ export function toMediasoupTransportOptions(
     role,
   };
 
+  const sctpParameters = options.sctpParameters
+    ? {
+      MIS: options.sctpParameters.mis,
+      OS: options.sctpParameters.os,
+      maxMessageSize: options.sctpParameters.maxMessageSize,
+      port: options.sctpParameters.port,
+    }
+    : undefined;
+
+  if (!options.iceParameters) {
+    throw new Error("Missing iceParameters");
+  }
+
   const mediasoupOptions: TransportOptions = {
     dtlsParameters,
     iceCandidates,
     iceParameters: options.iceParameters,
     id: options.id,
-    sctpParameters: {
-      MIS: options.sctpParameters.mis,
-      OS: options.sctpParameters.os,
-      maxMessageSize: options.sctpParameters.maxMessageSize,
-      port: options.sctpParameters.port,
-    },
+    sctpParameters,
   };
 
   return mediasoupOptions;

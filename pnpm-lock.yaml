@@ -122,8 +122,8 @@ importers:
         specifier: workspace:^
         version: link:../../packages/protocol
       '@wired-protocol/types':
-        specifier: ^0.7.0
-        version: 0.7.0
+        specifier: ^0.8.0
+        version: 0.8.0
       boring-avatars:
         specifier: ^1.10.1
         version: 1.10.1
@@ -243,8 +243,8 @@ importers:
         specifier: workspace:^
         version: link:../../packages/utils
       '@wired-protocol/types':
-        specifier: ^0.7.0
-        version: 0.7.0
+        specifier: ^0.8.0
+        version: 0.8.0
       mediasoup:
         specifier: ^3.11.24
         version: 3.11.24
@@ -289,8 +289,8 @@ importers:
         specifier: workspace:^
         version: link:../utils
       '@wired-protocol/types':
-        specifier: ^0.7.0
-        version: 0.7.0
+        specifier: ^0.8.0
+        version: 0.8.0
       gl-matrix:
         specifier: ^4.0.0-beta.1
         version: 4.0.0-beta.1
@@ -432,8 +432,8 @@ importers:
         specifier: ^2.9.1
         version: 2.9.1
       '@wired-protocol/types':
-        specifier: ^0.7.0
-        version: 0.7.0
+        specifier: ^0.8.0
+        version: 0.8.0
       zod:
         specifier: ^3.21.4
         version: 3.21.4
@@ -459,8 +459,8 @@ importers:
   packages/utils:
     dependencies:
       '@wired-protocol/types':
-        specifier: ^0.7.0
-        version: 0.7.0
+        specifier: ^0.8.0
+        version: 0.8.0
     devDependencies:
       eslint:
         specifier: ^8.44.0
@@ -6432,8 +6432,8 @@ packages:
       '@webassemblyjs/ast': 1.11.6
       '@xtuc/long': 4.2.2
 
-  /@wired-protocol/types@0.7.0:
-    resolution: {integrity: sha512-L6RO1UapmlFrjX66Bb+EDMnEq+ErSNhpuN56OseMApAiTVR1AyAzczvROsshcDROSywvvWGx6e1XIIsfz6A7iA==}
+  /@wired-protocol/types@0.8.0:
+    resolution: {integrity: sha512-iTy2MPRZ+jeq9xSEJdx6LpblXU5725QXA2ONYlQs66tIkqQkZ+mBeiEGalTFPZICTzUY9P5KaRiCJwuljM735g==}
     dependencies:
       '@protobuf-ts/runtime': 2.9.1
     dev: false

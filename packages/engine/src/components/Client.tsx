@@ -63,7 +63,7 @@ export function Client({ skybox, defaultAvatar, uri }: Props) {
       },
     });
 
-    sendWebSockets(SetPlayerData.toBinary(setPlayerData));
+    sendWebSockets({ oneofKind: "setPlayerData", setPlayerData });
   }, [sendWebSockets, avatar]);
 
   useEffect(() => {
@@ -73,7 +73,7 @@ export function Client({ skybox, defaultAvatar, uri }: Props) {
       },
     });
 
-    sendWebSockets(SetPlayerData.toBinary(setPlayerData));
+    sendWebSockets({ oneofKind: "setPlayerData", setPlayerData });
   }, [sendWebSockets, handle]);
 
   useEffect(() => {
@@ -83,7 +83,7 @@ export function Client({ skybox, defaultAvatar, uri }: Props) {
       },
     });
 
-    sendWebSockets(SetPlayerData.toBinary(setPlayerData));
+    sendWebSockets({ oneofKind: "setPlayerData", setPlayerData });
   }, [sendWebSockets, nickname]);
 
   return <Canvas />;

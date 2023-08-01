@@ -14,8 +14,8 @@ import {
   PauseAudio,
   Produce,
   ProduceData,
+  Request,
   Response,
-  SendEvent,
   SetRtpCapabilities,
   TransportCreated_TransportType,
   TransportType,
@@ -55,16 +55,18 @@ export function connectToHost(
     const prefix = world.host.startsWith("localhost") ? "ws://" : "wss://";
     const ws = new WebSocket(`${prefix}${world.host}`);
 
-    const sendQueue: Uint8Array[] = [];
+    const sendQueue: Request["message"][] = [];
 
-    const send = (data: Uint8Array) => {
+    const send = (message: Request["message"]) => {
+      const msg = Request.create({
+        message,
+      });
+
       if (ws.readyState === ws.OPEN) {
-        const message = SendEvent.create({
-          data,
-        });
-        ws.send(SendEvent.toBinary(message));
+        const bytes = Request.toBinary(msg);
+        ws.send(bytes);
       } else {
-        sendQueue.push(data);
+        sendQueue.push(message);
       }
     };
 
@@ -112,14 +114,22 @@ export function connectToHost(
       sendQueue.length = 0;
 
       // Initiate WebRTC connection
+<<<<<<< HEAD
       send(
         GetRouterRtpCapabilities.toBinary(GetRouterRtpCapabilities.create({}))
       );
+=======
+      const getRouterRtpCapabilities = GetRouterRtpCapabilities.create({});
+      send({
+        getRouterRtpCapabilities,
+        oneofKind: "getRouterRtpCapabilities",
+      });
+>>>>>>> cb39b6d7 (fix protobuff message sending)
 
       // Join world
       const uri = useClientStore.getState().worldUri;
       const join = Join.create({ world: uri });
-      send(Join.toBinary(join));
+      send({ join, oneofKind: "join" });
     };
 
     ws.onclose = () => {
@@ -215,8 +225,15 @@ export function connectToHost(
             const createConsumerTransport = CreateTransport.create({
               type: TransportType.CONSUMER,
             });
-            send(CreateTransport.toBinary(createProducerTransport));
-            send(CreateTransport.toBinary(createConsumerTransport));
+
+            send({
+              createTransport: createProducerTransport,
+              oneofKind: "createTransport",
+            });
+            send({
+              createTransport: createConsumerTransport,
+              oneofKind: "createTransport",
+            });
 
             // Set rtp capabilities
             const setRtpCapabilities = SetRtpCapabilities.create({
@@ -224,7 +241,10 @@ export function connectToHost(
                 device.rtpCapabilities
               ),
             });
-            send(SetRtpCapabilities.toBinary(setRtpCapabilities));
+            send({
+              oneofKind: "setRtpCapabilities",
+              setRtpCapabilities,
+            });
           } catch (error) {
             console.error("Error loading device", error);
           }
@@ -256,7 +276,12 @@ export function connectToHost(
                   ? TransportType.PRODUCER
                   : TransportType.CONSUMER,
             });
-            send(ConnectTransport.toBinary(connect));
+
+            send({
+              connectTransport: connect,
+              oneofKind: "connectTransport",
+            });
+
             callback();
           });
 
@@ -281,7 +306,7 @@ export function connectToHost(
                 rtpParameters: fromMediasoupRtpParameters(rtpParameters),
               });
 
-              send(Produce.toBinary(produce));
+              send({ oneofKind: "produce", produce });
             });
 
             // producer = await transport.produce({ track });
@@ -295,8 +320,13 @@ export function connectToHost(
                   sctpStreamParameters,
                 });
 
+<<<<<<< HEAD
                 send(ProduceData.toBinary(produceData));
               }
+=======
+                send({ oneofKind: "produceData", produceData });
+              },
+>>>>>>> cb39b6d7 (fix protobuff message sending)
             );
 
             dataProducer = await transport.produceData({
@@ -351,7 +381,7 @@ export function connectToHost(
           const pauseAudio = PauseAudio.create({
             paused: false,
           });
-          send(PauseAudio.toBinary(pauseAudio));
+          send({ oneofKind: "pauseAudio", pauseAudio });
 
           consumer.resume();
 

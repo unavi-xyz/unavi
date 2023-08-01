@@ -1,4 +1,4 @@
-import { Event, Response, SendEvent } from "@wired-protocol/types";
+import { Event, Request, Response, SendEvent } from "@wired-protocol/types";
 import { Engine } from "lattice-engine/core";
 import { create } from "zustand";
 
@@ -11,7 +11,7 @@ export interface IClientStore {
   cleanupConnection: () => void;
   getDisplayName: (playerId: number) => string;
   sendWebRTC: (message: ArrayBuffer) => void;
-  sendWebSockets: (message: Uint8Array) => void;
+  sendWebSockets: (message: Request["message"]) => void;
   setAvatar: (avatar: string) => void;
   setHandle: (handle: string) => void;
   setName: (name: string) => void;
@@ -86,7 +86,7 @@ export const useClientStore = create<IClientStore>((set, get) => ({
 
     // Send to others
     const sendEvent = SendEvent.create({ data });
-    get().sendWebSockets(SendEvent.toBinary(sendEvent));
+    get().sendWebSockets({ oneofKind: "sendEvent", sendEvent });
   },
   nickname: "",
   playerData: new Map(),

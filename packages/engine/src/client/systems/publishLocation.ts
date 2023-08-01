@@ -52,7 +52,7 @@ export function publishLocation(
 
         useClientStore
           .getState()
-          .sendWebSockets(SetPlayerData.toBinary(setPlayerData));
+          .sendWebSockets({ oneofKind: "setPlayerData", setPlayerData });
       }
 
       // TODO: Remove hardcoded player height

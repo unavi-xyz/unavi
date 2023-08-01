@@ -68,11 +68,11 @@ export default function ChatBox({ alwaysShow }: Props) {
 
               e.currentTarget.value = "";
 
-              const sendChat = SendChatMessage.create({
+              const sendChatMessage = SendChatMessage.create({
                 message: text,
               });
 
-              sendWebSockets(SendChatMessage.toBinary(sendChat));
+              sendWebSockets({ oneofKind: "sendChatMessage", sendChatMessage });
             }
           }}
           onFocus={() => usePlayStore.setState({ chatBoxFocused: true })}

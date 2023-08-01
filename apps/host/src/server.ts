@@ -1,5 +1,6 @@
 import {
   fromMediasoupRtpCapabilities,
+  toMediasoupDtlsParameters,
   toMediasoupRtpCapabilities,
 } from "@unavi/utils";
 import {
@@ -136,10 +137,12 @@ server.ws<UserData>("/*", {
             req.message.connectTransport.type === TransportType.PRODUCER
               ? player.producerTransport
               : player.consumerTransport;
-          if (!transport) break;
+          if (!transport || !req.message.connectTransport.dtlsParameters) break;
 
           transport.connect({
-            dtlsParameters: req.message.connectTransport.dtlsParameters,
+            dtlsParameters: toMediasoupDtlsParameters(
+              req.message.connectTransport.dtlsParameters,
+            ),
           });
           break;
         }

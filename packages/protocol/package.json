@@ -12,7 +12,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "pnpm generate && tsc",
+    "build": "tsc",
     "clean": "rm -rf src/generated/*",
     "dev": "tsc -w",
     "generate": "pnpm clean && protoc --ts_out src/generated --proto_path protos protos/**/*.proto",

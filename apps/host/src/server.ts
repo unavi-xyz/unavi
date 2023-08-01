@@ -86,7 +86,7 @@ server.ws<UserData>("/*", {
 
         case "setPlayerData": {
           for (const [key, value] of Object.entries(
-            req.message.setPlayerData.data,
+            req.message.setPlayerData.data
           )) {
             player.setPlayerData(key, value);
           }
@@ -100,7 +100,7 @@ server.ws<UserData>("/*", {
 
         case "getRouterRtpCapabilities": {
           const rtpCapabilities = fromMediasoupRtpCapabilities(
-            router.rtpCapabilities,
+            router.rtpCapabilities
           );
           const routerRtpCapabilities = RouterRtpCapabilities.create({
             rtpCapabilities,
@@ -141,7 +141,7 @@ server.ws<UserData>("/*", {
 
           transport.connect({
             dtlsParameters: toMediasoupDtlsParameters(
-              req.message.connectTransport.dtlsParameters,
+              req.message.connectTransport.dtlsParameters
             ),
           });
           break;
@@ -176,7 +176,7 @@ server.ws<UserData>("/*", {
           if (!req.message.setRtpCapabilities.rtpCapabilities) break;
 
           const rtpCapabilities = toMediasoupRtpCapabilities(
-            req.message.setRtpCapabilities.rtpCapabilities,
+            req.message.setRtpCapabilities.rtpCapabilities
           );
           player.rtpCapabilities = rtpCapabilities;
           break;

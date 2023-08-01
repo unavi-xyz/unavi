@@ -31,7 +31,7 @@ function fromMediasoupDtlsRole(
 }
 
 export function toMediasoupDtlsParameters(
-  dtlsParameters: DtlsParameters,
+  dtlsParameters: DtlsParameters
 ): MediasoupDtlsParameters {
   const role = toMediasoupDtlsRole(dtlsParameters.role);
   return {
@@ -41,7 +41,7 @@ export function toMediasoupDtlsParameters(
 }
 
 function toMediasoupDtlsRole(
-  role: DtlsParameters_Role,
+  role: DtlsParameters_Role
 ): MediasoupDtlsParameters["role"] {
   switch (role) {
     case DtlsParameters_Role.AUTO: {

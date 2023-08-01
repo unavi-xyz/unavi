@@ -32,7 +32,7 @@ export function createPlayerControls(
   spawn: [number, number, number],
   rootId: bigint,
   commands: Commands,
-  sceneStruct: SceneStruct,
+  sceneStruct: SceneStruct
 ) {
   const parent = new Parent();
   const transform = new Transform();
@@ -44,7 +44,7 @@ export function createPlayerControls(
   const targetRotation = new TargetRotation(0, 0, 0, 1);
   const capsuleCollider = new CapsuleCollider(
     PLAYER_WIDTH,
-    PLAYER_HEIGHT - PLAYER_WIDTH * 2,
+    PLAYER_HEIGHT - PLAYER_WIDTH * 2
   );
 
   const bodyId = commands
@@ -87,7 +87,7 @@ export function createPlayerControls(
 
   const playerCamera = new PlayerCamera(
     PlayerCameraMode.Both,
-    PlayerCameraView.ThirdPerson,
+    PlayerCameraView.ThirdPerson
   );
   playerCamera.bodyId = bodyId;
 

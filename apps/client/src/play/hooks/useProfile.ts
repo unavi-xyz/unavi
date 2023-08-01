@@ -13,7 +13,7 @@ export function useProfile() {
 
   const { data, error, isLoading } = useSWR<Profile | null>(
     () => (status === "authenticated" ? "/api/auth/profile" : null),
-    fetcher,
+    fetcher
   );
 
   return {

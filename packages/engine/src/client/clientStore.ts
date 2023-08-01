@@ -44,7 +44,7 @@ export const useClientStore = create<IClientStore>((set, get) => ({
   },
   avatar: "",
   chatMessages: [],
-  cleanupConnection: () => { },
+  cleanupConnection: () => {},
   defaultAvatar: "",
   ecsIncoming: [],
   engine: null,
@@ -92,8 +92,8 @@ export const useClientStore = create<IClientStore>((set, get) => ({
   playerData: new Map(),
   playerId: null,
   rootName: "",
-  sendWebRTC: () => { },
-  sendWebSockets: () => { },
+  sendWebRTC: () => {},
+  sendWebSockets: () => {},
   setAvatar(avatar: string) {
     set({ avatar });
 

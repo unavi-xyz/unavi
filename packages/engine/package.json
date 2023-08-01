@@ -19,6 +19,9 @@
     "dev": "vite build --watch",
     "lint": "cd ../.. && eslint --fix packages/engine --ext .ts,.tsx,.mjs,.json --ignore-path .gitignore --ignore-path .prettierignore --ignore-pattern package.json"
   },
+  "dependencies": {
+    "@unavi/utils": "workspace:^"
+  },
   "devDependencies": {
     "@thyseus/transformer-rollup": "^0.13.0",
     "@types/node": "^18.16.17",
@@ -44,8 +47,5 @@
     "three": "~0.153.0",
     "thyseus": "^0.13.5",
     "zustand": "^4.3.8"
-  },
-  "dependencies": {
-    "@unavi/utils": "workspace:^"
   }
 }

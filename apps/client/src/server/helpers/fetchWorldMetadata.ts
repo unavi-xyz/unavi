@@ -13,5 +13,5 @@ export const fetchWorldMetadata = cache(
     } catch {
       return null;
     }
-  },
+  }
 );

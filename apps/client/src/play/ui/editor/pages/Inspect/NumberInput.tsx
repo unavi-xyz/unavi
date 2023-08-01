@@ -34,7 +34,7 @@ const NumberInput = forwardRef<HTMLInputElement, Props>(
       onChange,
       ...rest
     },
-    ref,
+    ref
   ) => {
     const displayedRef = useRef(value);
     const [displayed, setDisplayed] = useState(value);
@@ -82,7 +82,7 @@ const NumberInput = forwardRef<HTMLInputElement, Props>(
 
           let newDisplayed = round(
             startDisplayed + percentDiff * sensitivity,
-            precision,
+            precision
           );
 
           if (min !== undefined && newDisplayed < Number(min)) {
@@ -119,7 +119,7 @@ const NumberInput = forwardRef<HTMLInputElement, Props>(
         target.addEventListener("pointermove", onPointerMove);
         target.addEventListener("pointerup", onPointerUp);
       },
-      [disabled, updateInterval, onValueChange, sensitivity, min, precision],
+      [disabled, updateInterval, onValueChange, sensitivity, min, precision]
     );
 
     return (
@@ -145,13 +145,14 @@ const NumberInput = forwardRef<HTMLInputElement, Props>(
 
             onChange?.(e);
           }}
-          className={`w-full rounded bg-inherit px-1.5 py-1 text-neutral-200 placeholder:text-neutral-400 ${disabled ? "cursor-default text-opacity-50" : "cursor-ew-resize"
-            } ${mouseDown ? "cursor-none" : ""} ${DISABLE_ARROWS} ${className}`}
+          className={`w-full rounded bg-inherit px-1.5 py-1 text-neutral-200 placeholder:text-neutral-400 ${
+            disabled ? "cursor-default text-opacity-50" : "cursor-ew-resize"
+          } ${mouseDown ? "cursor-none" : ""} ${DISABLE_ARROWS} ${className}`}
           {...rest}
         />
       </label>
     );
-  },
+  }
 );
 
 NumberInput.displayName = "NumberInput";

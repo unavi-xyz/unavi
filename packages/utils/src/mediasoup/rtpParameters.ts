@@ -6,7 +6,7 @@ import {
 import { RtpParameters as MediasoupRtpParameters } from "mediasoup/node/lib/types";
 
 export function fromMediasoupRtpParameters(
-  rtpParameters: MediasoupRtpParameters,
+  rtpParameters: MediasoupRtpParameters
 ): RtpParameters {
   const codecs: RtpParameters_Codec[] = [];
   const headerExtensions: RtpParameters_HeaderExtension[] = [];
@@ -34,7 +34,7 @@ export function fromMediasoupRtpParameters(
 }
 
 export function toMediasoupRtpParameters(
-  rtpParameters: RtpParameters,
+  rtpParameters: RtpParameters
 ): MediasoupRtpParameters {
   const codecs: MediasoupRtpParameters["codecs"] = [];
   const headerExtensions: MediasoupRtpParameters["headerExtensions"] = [];

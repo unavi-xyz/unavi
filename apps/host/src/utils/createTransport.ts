@@ -14,7 +14,7 @@ import { Router, WebRtcServer } from "mediasoup/node/lib/types";
 export async function createTransport(
   type: TransportType,
   router: Router,
-  webRtcServer: WebRtcServer,
+  webRtcServer: WebRtcServer
 ) {
   const transport = await router.createWebRtcTransport({
     enableSctp: true,

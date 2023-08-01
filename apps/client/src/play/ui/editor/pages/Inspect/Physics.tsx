@@ -32,16 +32,16 @@ export default function Physics({ id }: Props) {
   const handleRemove = locked
     ? undefined
     : () => {
-      editNode({
-        collider: {
-          type: EditNode_Collider_Type.NONE,
-        },
-        rigidBody: {
-          type: EditNode_RigidBody_Type.NONE,
-        },
-        target: name,
-      });
-    };
+        editNode({
+          collider: {
+            type: EditNode_Collider_Type.NONE,
+          },
+          rigidBody: {
+            type: EditNode_RigidBody_Type.NONE,
+          },
+          target: name,
+        });
+      };
 
   const rigidBodyOption = getRigidBodyOption(rigidBodyType);
   const colliderOption = getColliderOption(colliderType);
@@ -145,8 +145,8 @@ export default function Physics({ id }: Props) {
       )}
 
       {colliderType === EditNode_Collider_Type.SPHERE ||
-        colliderType === EditNode_Collider_Type.CAPSULE ||
-        colliderType === EditNode_Collider_Type.CYLINDER ? (
+      colliderType === EditNode_Collider_Type.CAPSULE ||
+      colliderType === EditNode_Collider_Type.CYLINDER ? (
         <div className="grid grid-cols-4">
           <div className="w-20 shrink-0 font-bold text-neutral-400">Radius</div>
 
@@ -171,7 +171,7 @@ export default function Physics({ id }: Props) {
       ) : null}
 
       {colliderType === EditNode_Collider_Type.CAPSULE ||
-        colliderType === EditNode_Collider_Type.CYLINDER ? (
+      colliderType === EditNode_Collider_Type.CYLINDER ? (
         <div className="grid grid-cols-4">
           <div className="w-20 shrink-0 font-bold text-neutral-400">Height</div>
 

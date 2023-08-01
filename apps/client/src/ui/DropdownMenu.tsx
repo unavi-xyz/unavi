@@ -20,7 +20,7 @@ export const DropdownContent = forwardRef<HTMLDivElement, Props>(
         </DropdownPrimitive.Content>
       </DropdownPrimitive.DropdownMenuPortal>
     );
-  },
+  }
 );
 
 DropdownContent.displayName = "DropdownContent";
@@ -43,7 +43,7 @@ export const DropdownSubContent = forwardRef<HTMLDivElement, Props>(
         {children}
       </DropdownPrimitive.SubContent>
     );
-  },
+  }
 );
 
 DropdownSubContent.displayName = "DropdownSubContent";

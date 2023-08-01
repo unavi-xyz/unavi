@@ -21,7 +21,7 @@ export function editColliders(
   capsuleColliders: Query<[Entity, Mut<CapsuleCollider>]>,
   cylinderColliders: Query<[Entity, Mut<CylinderCollider>]>,
   meshColliders: Query<[Entity, Mut<MeshCollider>]>,
-  hullColliders: Query<[Entity, Mut<HullCollider>]>,
+  hullColliders: Query<[Entity, Mut<HullCollider>]>
 ) {
   if (events.length === 0) return;
 

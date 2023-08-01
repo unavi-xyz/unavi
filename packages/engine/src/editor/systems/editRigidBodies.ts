@@ -10,7 +10,7 @@ export function editRigidBodies(
   events: EventReader<EditRigidBody>,
   names: Query<[Entity, Name]>,
   dynamicBodies: Query<Entity, With<DynamicBody>>,
-  staticBodies: Query<Entity, With<StaticBody>>,
+  staticBodies: Query<Entity, With<StaticBody>>
 ) {
   if (events.length === 0) return;
 

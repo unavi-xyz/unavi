@@ -19,7 +19,7 @@ export async function parseWorld(
   world: World,
   commands: Commands,
   warehouse: Res<Warehouse>,
-  worlds: Query<[Entity, Asset, Mut<WorldJson>], Without<Gltf>>,
+  worlds: Query<[Entity, Asset, Mut<WorldJson>], Without<Gltf>>
 ) {
   for (const [entity, asset, json] of worlds) {
     const buffer = asset.data.read(warehouse);

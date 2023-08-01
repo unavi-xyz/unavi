@@ -49,7 +49,7 @@ export default function Rotation({ id }: Props) {
         sensitivity={360}
         onValueChange={(val) => {
           quat.setFromEuler(
-            euler.set(toRadians(val), toRadians(y), toRadians(z)),
+            euler.set(toRadians(val), toRadians(y), toRadians(z))
           );
 
           editNode({
@@ -66,7 +66,7 @@ export default function Rotation({ id }: Props) {
         sensitivity={360}
         onValueChange={(val) => {
           quat.setFromEuler(
-            euler.set(toRadians(x), toRadians(val), toRadians(z)),
+            euler.set(toRadians(x), toRadians(val), toRadians(z))
           );
 
           editNode({
@@ -83,7 +83,7 @@ export default function Rotation({ id }: Props) {
         sensitivity={360}
         onValueChange={(val) => {
           quat.setFromEuler(
-            euler.set(toRadians(x), toRadians(y), toRadians(val)),
+            euler.set(toRadians(x), toRadians(y), toRadians(val))
           );
 
           editNode({

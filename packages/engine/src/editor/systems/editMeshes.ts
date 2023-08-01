@@ -8,7 +8,7 @@ export function editMeshes(
   warehouse: Res<Warehouse>,
   events: EventReader<EditMesh>,
   meshes: Query<[Mut<Mesh>, Mut<Name>, Mut<Geometry>]>,
-  named: Query<[Entity, Name]>,
+  named: Query<[Entity, Name]>
 ) {
   if (events.length === 0) return;
 

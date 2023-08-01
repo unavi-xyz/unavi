@@ -78,10 +78,11 @@ export default function WorldPage() {
         <button
           onClick={save}
           disabled={saving}
-          className={`w-full rounded-full bg-neutral-800 py-2 font-bold transition ${saving
+          className={`w-full rounded-full bg-neutral-800 py-2 font-bold transition ${
+            saving
               ? "opacity-50"
               : "hover:scale-105 hover:bg-neutral-700 active:scale-100 active:opacity-90"
-            }`}
+          }`}
         >
           Save
         </button>

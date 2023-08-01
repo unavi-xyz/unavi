@@ -78,10 +78,8 @@ export default async function Handle({ params }: Props) {
 
   const background = foundUser.profile?.backgroundKey
     ? cdnURL(
-      S3Path.profile(foundUser.id).background(
-        foundUser.profile.backgroundKey,
-      ),
-    )
+        S3Path.profile(foundUser.id).background(foundUser.profile.backgroundKey)
+      )
     : undefined;
 
   const image = foundUser.profile?.imageKey

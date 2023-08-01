@@ -25,11 +25,11 @@ export async function generateWorldMetadata(id: string): Promise<Metadata> {
     authors:
       profiles.length > 0
         ? profiles.map(({ username, metadata }) => ({
-          name: metadata.name || username,
-          url: username
-            ? `${env.NEXT_PUBLIC_DEPLOYED_URL}/@${username}`
-            : undefined,
-        }))
+            name: metadata.name || username,
+            url: username
+              ? `${env.NEXT_PUBLIC_DEPLOYED_URL}/@${username}`
+              : undefined,
+          }))
         : undefined,
     description,
     openGraph: {

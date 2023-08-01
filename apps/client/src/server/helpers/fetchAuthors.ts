@@ -21,7 +21,7 @@ export async function fetchAuthors(metadata: World) {
       }
 
       profiles.push(profile);
-    }),
+    })
   );
 
   return profiles;

@@ -61,7 +61,7 @@ export default function ChatMessage({ message, alwaysShow }: Props) {
 function PlayerName({ playerId }: { playerId: number }) {
   const [name] = useState(useClientStore.getState().getDisplayName(playerId));
   const [handle] = useState(
-    useClientStore.getState().playerData.get(playerId)?.handle,
+    useClientStore.getState().playerData.get(playerId)?.handle
   );
 
   if (handle) {
@@ -73,8 +73,9 @@ function PlayerName({ playerId }: { playerId: number }) {
       return (
         <Tooltip text={handle} side="right" capitalize={false}>
           <span
-            className={`${fromSameServer ? "font-semibold" : "text-neutral-300"
-              }`}
+            className={`${
+              fromSameServer ? "font-semibold" : "text-neutral-300"
+            }`}
           >
             @{username}
           </span>

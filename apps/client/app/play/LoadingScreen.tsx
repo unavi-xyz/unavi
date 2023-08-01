@@ -69,8 +69,9 @@ export default function LoadingScreen({ metadata }: Props) {
 
   return (
     <div
-      className={`fixed z-50 flex h-screen w-screen flex-col items-center justify-center bg-neutral-900 text-white transition duration-700 ${doneLoading ? "pointer-events-none opacity-0" : ""
-        }`}
+      className={`fixed z-50 flex h-screen w-screen flex-col items-center justify-center bg-neutral-900 text-white transition duration-700 ${
+        doneLoading ? "pointer-events-none opacity-0" : ""
+      }`}
     >
       {image ? <BackgroundImage src={image} /> : null}
 

@@ -229,7 +229,7 @@ export class Player {
   async consumeData(
     dataProducer: DataProducer,
     spaceURI: string,
-    playerId: number,
+    playerId: number
   ) {
     if (!this.consumerTransport) return;
 
@@ -284,7 +284,7 @@ export class Player {
           this.consume(otherPlayer.producer, world.uri, otherPlayerId);
         if (otherPlayer.dataProducer)
           this.consumeData(otherPlayer.dataProducer, world.uri, otherPlayerId);
-      }),
+      })
     );
   }
 

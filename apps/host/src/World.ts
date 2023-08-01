@@ -33,7 +33,7 @@ export class World {
 
   playerId(player: Player) {
     return Array.from(this.players.keys()).find(
-      (id) => this.players.get(id) === player,
+      (id) => this.players.get(id) === player
     );
   }
 

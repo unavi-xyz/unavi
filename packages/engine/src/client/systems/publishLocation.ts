@@ -20,7 +20,7 @@ export function publishLocation(
   time: Res<Time>,
   localRes: SystemRes<LocalRes>,
   bodies: Query<[Entity, Transform, PlayerBody]>,
-  cameras: Query<PlayerCamera>,
+  cameras: Query<PlayerCamera>
 ) {
   const now = time.fixedTime;
   if (now - localRes.lastPublish < 1000 / NETWORK_UPDATE_HZ) return;
@@ -67,7 +67,7 @@ export function publishLocation(
         transform.rotation.x,
         transform.rotation.y,
         transform.rotation.z,
-        transform.rotation.w,
+        transform.rotation.w
       );
 
       useClientStore.getState().sendWebRTC(buffer);

@@ -37,10 +37,11 @@ export default function TreeItem({ id }: Props) {
     <div className="group relative flex space-x-1">
       <button
         onClick={select}
-        className={`w-full rounded px-2 py-0.5 text-start active:opacity-90 ${isSelected
-          ? "bg-white/10 group-hover:bg-white/20"
-          : "group-hover:bg-white/10"
-          }`}
+        className={`w-full rounded px-2 py-0.5 text-start active:opacity-90 ${
+          isSelected
+            ? "bg-white/10 group-hover:bg-white/20"
+            : "group-hover:bg-white/10"
+        }`}
       >
         {name || `(${id.toString()})`}
       </button>
@@ -58,8 +59,9 @@ export default function TreeItem({ id }: Props) {
         <Tooltip text={locked ? "Unlock" : "Lock"} side="top">
           <button
             onClick={toggleLock}
-            className={`rounded text-lg hover:opacity-70 active:opacity-60 ${locked ? "text-neutral-500" : "hidden group-hover:block"
-              }`}
+            className={`rounded text-lg hover:opacity-70 active:opacity-60 ${
+              locked ? "text-neutral-500" : "hidden group-hover:block"
+            }`}
           >
             {locked ? <IoMdLock /> : <IoMdUnlock />}
           </button>
@@ -67,4 +69,4 @@ export default function TreeItem({ id }: Props) {
       </div>
     </div>
   );
-} 
+}

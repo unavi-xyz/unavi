@@ -25,8 +25,8 @@ export default function Overlay({ id, metadata }: Props) {
 
   const isAuthor = Boolean(
     metadata?.authors &&
-    user?.username &&
-    metadata.authors.includes(`@${user.username}:${HOME_SERVER}`),
+      user?.username &&
+      metadata.authors.includes(`@${user.username}:${HOME_SERVER}`)
   );
 
   return (

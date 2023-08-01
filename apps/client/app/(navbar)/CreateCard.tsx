@@ -51,7 +51,7 @@ export async function createWorld() {
 
 async function uploadDefaultImage(publicId: string) {
   const res = await fetch(
-    `${env.NEXT_PUBLIC_DEPLOYED_URL}/images/Default-World.jpg`,
+    `${env.NEXT_PUBLIC_DEPLOYED_URL}/images/Default-World.jpg`
   );
   const buffer = await res.arrayBuffer();
   const array = new Uint8Array(buffer);
@@ -62,7 +62,7 @@ async function uploadDefaultImage(publicId: string) {
 
 async function uploadDefaultModel(publicId: string) {
   const res = await fetch(
-    `${env.NEXT_PUBLIC_DEPLOYED_URL}/models/Default-World.glb`,
+    `${env.NEXT_PUBLIC_DEPLOYED_URL}/models/Default-World.glb`
   );
   const buffer = await res.arrayBuffer();
   const array = new Uint8Array(buffer);

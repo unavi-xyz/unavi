@@ -38,7 +38,7 @@ export async function fetchLatestWorlds(limit: number, ownerId?: string) {
           metadata,
           uri: `${env.NEXT_PUBLIC_DEPLOYED_URL}/api/worlds/${world.publicId}`,
         });
-      }),
+      })
     );
 
     return fetched;

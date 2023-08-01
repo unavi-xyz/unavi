@@ -8,7 +8,7 @@ import {
 import { IceCandidate, TransportOptions } from "mediasoup-client/lib/types";
 
 export function toMediasoupTransportOptions(
-  options: TransportCreated_TransportOptions,
+  options: TransportCreated_TransportOptions
 ): TransportOptions {
   const iceCandidates: IceCandidate[] = [];
 

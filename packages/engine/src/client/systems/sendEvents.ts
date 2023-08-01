@@ -27,7 +27,7 @@ export function sendEvents(
   editMesh: EventWriter<EditMesh>,
   editExta: EventWriter<EditExtra>,
   rigidBody: EventWriter<EditRigidBody>,
-  collider: EventWriter<EditCollider>,
+  collider: EventWriter<EditCollider>
 ) {
   const ecsIncoming = useClientStore.getState().ecsIncoming;
 
@@ -77,7 +77,7 @@ export function sendEvents(
             e.transform.translation.set(
               editor.event.editNode.translation[0] ?? 0,
               editor.event.editNode.translation[1] ?? 0,
-              editor.event.editNode.translation[2] ?? 0,
+              editor.event.editNode.translation[2] ?? 0
             );
           }
 
@@ -87,7 +87,7 @@ export function sendEvents(
               editor.event.editNode.rotation[0] ?? 0,
               editor.event.editNode.rotation[1] ?? 0,
               editor.event.editNode.rotation[2] ?? 0,
-              editor.event.editNode.rotation[3] ?? 0,
+              editor.event.editNode.rotation[3] ?? 0
             );
           }
 
@@ -96,13 +96,13 @@ export function sendEvents(
             e.transform.scale.set(
               editor.event.editNode.scale[0] ?? 0,
               editor.event.editNode.scale[1] ?? 0,
-              editor.event.editNode.scale[2] ?? 0,
+              editor.event.editNode.scale[2] ?? 0
             );
           }
 
           if (editor.event.editNode.extras) {
             for (const [key, value] of Object.entries(
-              editor.event.editNode.extras,
+              editor.event.editNode.extras
             )) {
               const extra = editExta.create();
               extra.target = editor.event.editNode.target;

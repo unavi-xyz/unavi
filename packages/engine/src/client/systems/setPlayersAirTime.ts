@@ -7,7 +7,7 @@ import { OtherPlayer } from "../components";
 
 export function setPlayersAirTime(
   time: Res<Time>,
-  players: Query<[OtherPlayer, Mut<PlayerBody>]>,
+  players: Query<[OtherPlayer, Mut<PlayerBody>]>
 ) {
   for (const [player, body] of players) {
     const playerData = useClientStore.getState().playerData.get(player.id);

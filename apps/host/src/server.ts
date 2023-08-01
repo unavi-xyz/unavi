@@ -1,3 +1,7 @@
+import {
+  createMediasoupRtpCapabilities,
+  createRouterRtpCapabilities,
+} from "@unavi/utils";
 import { Request, TransportType } from "@wired-protocol/types";
 import uWS from "uWebSockets.js";
 
@@ -5,10 +9,6 @@ import { createMediasoupWorker } from "./mediasoup";
 import { Player } from "./Player";
 import { UserData, uWebSocket } from "./types";
 import { createTransport } from "./utils/createTransport";
-import {
-  createMediasoupRtpCapabilities,
-  createRouterRtpCapabilities,
-} from "./utils/rtpCapabilities";
 import { WorldRegistry } from "./WorldRegistry";
 
 const PORT = 4000;

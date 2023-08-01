@@ -1,0 +1,29 @@
+{
+  "name": "@unavi/utils",
+  "version": "0.0.0",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/unavi-xyz/unavi.git",
+    "directory": "packages/utils"
+  },
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "lint": "cd ../.. && eslint --fix packages/utils --ext .ts,.tsx,.mjs,.json --ignore-path .gitignore --ignore-path .prettierignore --ignore-pattern package.json"
+  },
+  "devDependencies": {
+    "eslint": "^8.44.0",
+    "eslint-config-custom": "workspace:^",
+    "mediasoup": "^3.11.24",
+    "tsconfig": "workspace:^",
+    "typescript": "~5.1.3"
+  },
+  "dependencies": {
+    "@wired-protocol/types": "^0.5.0"
+  }
+}

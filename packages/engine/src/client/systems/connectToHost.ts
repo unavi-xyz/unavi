@@ -1,5 +1,12 @@
-import { EditorMessageSchema } from "@unavi/protocol";
-import { ResponseMessageSchema } from "@wired-protocol/types";
+import {
+  CreateTransport,
+  GetRouterRtpCapabilities,
+  Join,
+  Response,
+  SendEvent,
+  SetRtpCapabilities,
+  TransportType,
+} from "@wired-protocol/types";
 import { Device } from "mediasoup-client";
 import {
   Consumer,
@@ -13,7 +20,6 @@ import { Query, SystemRes } from "thyseus";
 import { useClientStore } from "../clientStore";
 import { WorldJson } from "../components";
 import { LOCATION_ROUNDING } from "../constants";
-import { ValidSendMessage } from "../types";
 import { toHex } from "../utils/toHex";
 
 let chatId = 0;
@@ -24,7 +30,7 @@ class LocalRes {
 
 export function connectToHost(
   localRes: SystemRes<LocalRes>,
-  worlds: Query<WorldJson>
+  worlds: Query<WorldJson>,
 ) {
   for (const world of worlds) {
     if (localRes.host === world.host) continue;
@@ -36,13 +42,16 @@ export function connectToHost(
     const prefix = world.host.startsWith("localhost") ? "ws://" : "wss://";
     const ws = new WebSocket(`${prefix}${world.host}`);
 
-    const sendQueue: ValidSendMessage[] = [];
+    const sendQueue: Uint8Array[] = [];
 
-    const send = (message: ValidSendMessage) => {
+    const send = (data: Uint8Array) => {
       if (ws.readyState === ws.OPEN) {
-        ws.send(JSON.stringify(message));
+        const message = SendEvent.create({
+          data,
+        });
+        ws.send(SendEvent.toBinary(message));
       } else {
-        sendQueue.push(message);
+        sendQueue.push(data);
       }
     };
 
@@ -63,10 +72,10 @@ export function connectToHost(
 
     const cleanupConnection = () => {
       useClientStore.setState({
-        cleanupConnection: () => {},
+        cleanupConnection: () => { },
         playerId: null,
-        sendWebRTC: () => {},
-        sendWebSockets: () => {},
+        sendWebRTC: () => { },
+        sendWebSockets: () => { },
       });
 
       if (consumerTransport) consumerTransport.close();
@@ -90,14 +99,14 @@ export function connectToHost(
       sendQueue.length = 0;
 
       // Initiate WebRTC connection
-      send({
-        data: null,
-        id: "com.wired-protocol.webrtc.router.rtpCapabilities.get",
-      });
+      send(
+        GetRouterRtpCapabilities.toBinary(GetRouterRtpCapabilities.create({})),
+      );
 
       // Join world
       const uri = useClientStore.getState().worldUri;
-      send({ data: uri, id: "com.wired-protocol.world.join" });
+      const join = Join.create({ world: uri });
+      send(Join.toBinary(join));
     };
 
     ws.onclose = () => {
@@ -108,69 +117,42 @@ export function connectToHost(
       console.error("WebSocket - ⚠️ Connection error", error);
     };
 
-    ws.onmessage = async (event) => {
-      const editor = EditorMessageSchema.safeParse(JSON.parse(event.data));
+    ws.onmessage = async (e) => {
+      const msg = Response.fromBinary(e.data);
 
-      if (editor.success) {
-        useClientStore.getState().events.push(editor.data);
-        return;
-      }
-
-      const response = ResponseMessageSchema.safeParse(JSON.parse(event.data));
-
-      if (!response.success) {
-        console.warn(response.error);
-        return;
-      }
-
-      const { data, id } = response.data;
-
-      switch (id) {
-        case "com.wired-protocol.world.joined": {
-          console.info(`🌏 Joined world as player ${toHex(data)}`);
-
-          useClientStore.getState().setPlayerId(data);
+      switch (msg.response.oneofKind) {
+        case "joinSuccess": {
+          const playerId = msg.response.joinSuccess.playerId;
+          console.info(`🌏 Joined world as player ${toHex(playerId)}`);
+          useClientStore.getState().setPlayerId(playerId);
           break;
         }
 
-        case "com.wired-protocol.world.chat.message": {
+        case "chatMessage": {
           useClientStore.getState().addChatMessage({
             id: chatId++,
-            playerId: data.playerId,
-            text: data.message,
+            playerId: msg.response.chatMessage.playerId,
+            text: msg.response.chatMessage.message,
             timestamp: Date.now(),
             type: "player",
           });
           break;
         }
 
-        case "com.wired-protocol.world.player.join": {
-          useClientStore.getState().events.push(response.data);
+        case "playerJoined": {
+          useClientStore.getState().ecsIncoming.push(msg);
 
-          // TODO: Clean this up, make an avatar event or sum
-          const { avatars, names, handles } = useClientStore.getState();
+          const { setPlayerData } = useClientStore.getState();
 
-          if (data.avatar) {
-            avatars.set(data.playerId, data.avatar);
-          } else {
-            avatars.delete(data.playerId);
-          }
-
-          if (data.name) {
-            names.set(data.playerId, data.name);
-          } else {
-            names.delete(data.playerId);
-          }
-
-          if (data.handle) {
-            handles.set(data.playerId, data.handle);
-          } else {
-            handles.delete(data.playerId);
+          for (const [key, value] of Object.entries(
+            msg.response.playerJoined.data,
+          )) {
+            setPlayerData(msg.response.playerJoined.playerId, key, value);
           }
 
           const displayName = useClientStore
             .getState()
-            .getDisplayName(data.playerId);
+            .getDisplayName(msg.response.playerJoined.playerId);
 
           useClientStore.getState().addChatMessage({
             id: chatId++,
@@ -181,10 +163,14 @@ export function connectToHost(
           break;
         }
 
-        case "com.wired-protocol.world.player.leave": {
-          useClientStore.getState().events.push(response.data);
+        case "playerLeft": {
+          useClientStore.getState().ecsIncoming.push(msg);
 
-          const displayName = useClientStore.getState().getDisplayName(data);
+          const playerId = msg.response.playerLeft.playerId;
+
+          const displayName = useClientStore
+            .getState()
+            .getDisplayName(playerId);
 
           useClientStore.getState().addChatMessage({
             id: chatId++,
@@ -193,64 +179,36 @@ export function connectToHost(
             type: "system",
           });
 
-          useClientStore.getState().avatars.delete(data);
-          useClientStore.getState().falling.delete(data);
-          useClientStore.getState().handles.delete(data);
-          useClientStore.getState().locations.delete(data);
-          useClientStore.getState().names.delete(data);
+          useClientStore.getState().playerData.delete(playerId);
+          useClientStore.getState().locations.delete(playerId);
           break;
         }
 
-        case "com.wired-protocol.world.player.falling": {
-          useClientStore.getState().falling.set(data.playerId, data.falling);
-          break;
-        }
+        case "routerRtpCapabilities": {
+          if (!msg.response.routerRtpCapabilities.rtpCapabilities) break;
 
-        case "com.wired-protocol.world.player.name": {
-          useClientStore.getState().names.set(data.playerId, data.name ?? "");
-          break;
-        }
-
-        case "com.wired-protocol.world.player.handle": {
-          useClientStore
-            .getState()
-            .handles.set(data.playerId, data.handle ?? "");
-          break;
-        }
-
-        case "com.wired-protocol.world.player.avatar": {
-          const avatars = useClientStore.getState().avatars;
-          if (data.avatar) {
-            avatars.set(data.playerId, data.avatar);
-          } else {
-            avatars.delete(data.playerId);
-          }
-          break;
-        }
-
-        case "com.wired-protocol.webrtc.router.rtpCapabilities": {
           try {
             // Initialize device
-            await device.load({ routerRtpCapabilities: data });
+            await device.load({
+              routerRtpCapabilities:
+                msg.response.routerRtpCapabilities.rtpCapabilities,
+            });
 
             // Create transports
-            send({
-              data: "producer",
-              id: "com.wired-protocol.webrtc.transport.create",
+            const createProducerTransport = CreateTransport.create({
+              type: TransportType.PRODUCER,
             });
-            send({
-              data: "consumer",
-              id: "com.wired-protocol.webrtc.transport.create",
+            const createConsumerTransport = CreateTransport.create({
+              type: TransportType.CONSUMER,
             });
+            send(CreateTransport.toBinary(createProducerTransport));
+            send(CreateTransport.toBinary(createConsumerTransport));
 
             // Set rtp capabilities
-            send({
-              data: {
-                codecs: device.rtpCapabilities.codecs ?? [],
-                headerExtensions: device.rtpCapabilities.headerExtensions ?? [],
-              },
-              id: "com.wired-protocol.webrtc.rtpCapabilities.set",
+            const setRtpCapabilities = SetRtpCapabilities.create({
+              rtpCapabilities: device.rtpCapabilities,
             });
+            send(SetRtpCapabilities.toBinary(setRtpCapabilities));
           } catch (error) {
             console.error("Error loading device", error);
           }
@@ -306,7 +264,7 @@ export function connectToHost(
                   data: sctpStreamParameters,
                   id: "com.wired-protocol.webrtc.produceData",
                 });
-              }
+              },
             );
 
             dataProducer = await transport.produceData({

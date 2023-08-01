@@ -15,6 +15,7 @@
     "start": "node --experimental-specifier-resolution=node ./dist/server.js"
   },
   "dependencies": {
+    "@unavi/utils": "workspace:^",
     "@wired-protocol/types": "^0.5.0",
     "mediasoup": "^3.11.24",
     "nanoid": "^4.0.2",

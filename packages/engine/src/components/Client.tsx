@@ -22,7 +22,7 @@ export function Client({ skybox, defaultAvatar, uri }: Props) {
   const sendWebSockets = useClientStore((state) => state.sendWebSockets);
   const avatar = useClientStore((state) => state.avatar);
   const handle = useClientStore((state) => state.handle);
-  const name = useClientStore((state) => state.name);
+  const name = useClientStore((state) => state.nickname);
 
   useEffect(() => {
     if (!world) return;

@@ -60,9 +60,9 @@ export function editMeshes(
         geometry.weights.write(e.weights.read(warehouse), warehouse);
       }
 
-      if (e.materialName) {
+      if (e.material) {
         for (const [entity, name] of named) {
-          if (name.value === e.materialName) {
+          if (name.value === e.material) {
             mesh.materialId = entity.id;
             break;
           }

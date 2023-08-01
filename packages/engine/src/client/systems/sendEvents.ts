@@ -28,7 +28,7 @@ export function sendEvents(
   rigidBody: EventWriter<EditRigidBody>,
   collider: EventWriter<EditCollider>,
 ) {
-  const events = useClientStore.getState().events;
+  const events = useClientStore.getState().ecsIncoming;
 
   // Only send 1 event per frame
   const event = events.shift();
@@ -138,7 +138,7 @@ export function sendEvents(
         }
 
         if (event.data.collider.mesh !== undefined) {
-          colliderEvent.meshName = event.data.collider.mesh;
+          colliderEvent.mesh = event.data.collider.mesh;
         }
       }
 
@@ -150,7 +150,7 @@ export function sendEvents(
       e.target = event.data.target;
 
       e.name = event.data.name ?? "";
-      e.materialName = event.data.material ?? "";
+      e.material = event.data.material ?? "";
 
       const indices = new Uint32Array(event.data.indices?.length ?? 0);
       indices.set(event.data.indices ?? []);

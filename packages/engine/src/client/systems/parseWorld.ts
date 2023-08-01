@@ -15,6 +15,8 @@ import {
 import { EngineSchedules } from "../../constants";
 import { WorldJson } from "../components";
 
+const decoder = new TextDecoder();
+
 export async function parseWorld(
   world: World,
   commands: Commands,
@@ -25,8 +27,8 @@ export async function parseWorld(
     const buffer = asset.data.read(warehouse);
     if (!buffer || buffer.byteLength === 0) continue;
 
-    const array = new Uint8Array(buffer);
-    const parsed = WorldSchema.fromBinary(array);
+    const text = decoder.decode(buffer);
+    const parsed = WorldSchema.fromJsonString(text);
 
     // Load model
     const gltf = new Gltf(parsed.model);

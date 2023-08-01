@@ -67,89 +67,9 @@ server.ws<UserData>("/*", {
         req = Request.fromJsonString(text);
       }
 
-<<<<<<< HEAD
-      case "sendChatMessage": {
-        player.chat(req.message.sendChatMessage.message);
-        break;
-      }
-
-      case "setPlayerData": {
-        for (const [key, value] of Object.entries(
-          req.message.setPlayerData.data
-        )) {
-          player.setPlayerData(key, value);
-        }
-        break;
-      }
-
-      case "sendEvent": {
-        player.sendEvent(req.message.sendEvent.data);
-        break;
-      }
-
-      case "getRouterRtpCapabilities": {
-        const rtpCapabilities = fromMediasoupRtpCapabilities(
-          router.rtpCapabilities
-        );
-        const routerRtpCapabilities = RouterRtpCapabilities.create({
-          rtpCapabilities,
-        });
-        player.send({
-          oneofKind: "routerRtpCapabilities",
-          routerRtpCapabilities,
-        });
-        break;
-      }
-
-      case "pauseAudio": {
-        player.setPaused(req.message.pauseAudio.paused);
-        break;
-      }
-
-      case "createTransport": {
-        const type = req.message.createTransport.type;
-
-        createTransport(type, router, webRtcServer)
-          .then(({ transport, message }) => {
-            player.setTransport(type, transport);
-            player.send({
-              oneofKind: "transportCreated",
-              transportCreated: message,
-            });
-          })
-          .catch((err) => console.warn(err));
-        break;
-      }
-
-      case "connectTransport": {
-        const transport =
-          req.message.connectTransport.type === TransportType.PRODUCER
-            ? player.producerTransport
-            : player.consumerTransport;
-        if (!transport) break;
-
-        transport.connect({
-          dtlsParameters: req.message.connectTransport.dtlsParameters,
-        });
-        break;
-      }
-
-      case "produce": {
-        if (!req.message.produce.rtpParameters) break;
-        player.produce(req.message.produce.rtpParameters);
-        break;
-      }
-
-      case "produceData": {
-        if (!req.message.produceData.sctpStreamParameters) break;
-
-        if (!req.message.produceData.sctpStreamParameters.streamId) {
-          console.warn("Stream ID is undefined");
-=======
       switch (req.message.oneofKind) {
         case "join": {
           player.join(req.message.join.world);
->>>>>>> cb39b6d7 (fix protobuff message sending)
           break;
         }
 
@@ -163,13 +83,6 @@ server.ws<UserData>("/*", {
           break;
         }
 
-<<<<<<< HEAD
-        const rtpCapabilities = toMediasoupRtpCapabilities(
-          req.message.setRtpCapabilities.rtpCapabilities
-        );
-        player.rtpCapabilities = rtpCapabilities;
-        break;
-=======
         case "setPlayerData": {
           for (const [key, value] of Object.entries(
             req.message.setPlayerData.data,
@@ -265,7 +178,6 @@ server.ws<UserData>("/*", {
           player.rtpCapabilities = rtpCapabilities;
           break;
         }
->>>>>>> cb39b6d7 (fix protobuff message sending)
       }
     } catch (err) {
       console.warn(err);

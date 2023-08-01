@@ -43,7 +43,7 @@ class LocalRes {
 
 export function connectToHost(
   localRes: SystemRes<LocalRes>,
-  worlds: Query<WorldJson>
+  worlds: Query<WorldJson>,
 ) {
   for (const world of worlds) {
     if (localRes.host === world.host) continue;
@@ -87,10 +87,10 @@ export function connectToHost(
 
     const cleanupConnection = () => {
       useClientStore.setState({
-        cleanupConnection: () => {},
+        cleanupConnection: () => { },
         playerId: null,
-        sendWebRTC: () => {},
-        sendWebSockets: () => {},
+        sendWebRTC: () => { },
+        sendWebSockets: () => { },
       });
 
       if (consumerTransport) consumerTransport.close();
@@ -114,17 +114,11 @@ export function connectToHost(
       sendQueue.length = 0;
 
       // Initiate WebRTC connection
-<<<<<<< HEAD
-      send(
-        GetRouterRtpCapabilities.toBinary(GetRouterRtpCapabilities.create({}))
-      );
-=======
       const getRouterRtpCapabilities = GetRouterRtpCapabilities.create({});
       send({
         getRouterRtpCapabilities,
         oneofKind: "getRouterRtpCapabilities",
       });
->>>>>>> cb39b6d7 (fix protobuff message sending)
 
       // Join world
       const uri = useClientStore.getState().worldUri;
@@ -168,7 +162,7 @@ export function connectToHost(
           const { setPlayerData } = useClientStore.getState();
 
           for (const [key, value] of Object.entries(
-            msg.response.playerJoined.data
+            msg.response.playerJoined.data,
           )) {
             setPlayerData(msg.response.playerJoined.playerId, key, value);
           }
@@ -214,7 +208,7 @@ export function connectToHost(
             // Initialize device
             await device.load({
               routerRtpCapabilities: toMediasoupRtpCapabilities(
-                msg.response.routerRtpCapabilities.rtpCapabilities
+                msg.response.routerRtpCapabilities.rtpCapabilities,
               ),
             });
 
@@ -238,7 +232,7 @@ export function connectToHost(
             // Set rtp capabilities
             const setRtpCapabilities = SetRtpCapabilities.create({
               rtpCapabilities: fromMediasoupRtpCapabilities(
-                device.rtpCapabilities
+                device.rtpCapabilities,
               ),
             });
             send({
@@ -257,7 +251,7 @@ export function connectToHost(
 
           // Create transport
           const options = toMediasoupTransportOptions(
-            msg.response.transportCreated.options
+            msg.response.transportCreated.options,
           );
 
           const transportType = msg.response.transportCreated.type;
@@ -320,13 +314,8 @@ export function connectToHost(
                   sctpStreamParameters,
                 });
 
-<<<<<<< HEAD
-                send(ProduceData.toBinary(produceData));
-              }
-=======
                 send({ oneofKind: "produceData", produceData });
               },
->>>>>>> cb39b6d7 (fix protobuff message sending)
             );
 
             dataProducer = await transport.produceData({
@@ -373,7 +362,7 @@ export function connectToHost(
             kind: "audio",
             producerId: msg.response.createConsumer.producerId,
             rtpParameters: toMediasoupRtpParameters(
-              msg.response.createConsumer.rtpParameters
+              msg.response.createConsumer.rtpParameters,
             ),
           });
 

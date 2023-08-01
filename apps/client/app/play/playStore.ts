@@ -1,4 +1,4 @@
-import { WorldMetadata } from "@wired-protocol/types";
+import { World } from "@wired-protocol/types";
 import { create } from "zustand";
 
 import { LeftPanelPage, PlayMode, RightPanelPage, WorldUriId } from "./types";
@@ -8,7 +8,7 @@ export interface PlayStore {
   leftPage: LeftPanelPage;
   mode: PlayMode;
   rightPage: RightPanelPage;
-  metadata: WorldMetadata;
+  metadata: World;
   uiAvatar: string;
   uiName: string;
   worldId: WorldUriId;
@@ -17,7 +17,7 @@ export interface PlayStore {
 export const usePlayStore = create<PlayStore>(() => ({
   chatBoxFocused: false,
   leftPage: LeftPanelPage.Scene,
-  metadata: { model: "" },
+  metadata: { authors: [], model: "" },
   mode: PlayMode.Play,
   rightPage: RightPanelPage.World,
   uiAvatar: "",

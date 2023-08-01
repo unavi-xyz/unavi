@@ -1,4 +1,4 @@
-import { ProfileMetadata } from "@wired-protocol/types";
+import { Profile } from "@wired-protocol/types";
 import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
@@ -22,10 +22,11 @@ export async function GET(request: NextRequest) {
   });
   if (!found) return new Response(null, { status: 404 });
 
-  const json: ProfileMetadata = {
+  const json: Profile = {
     background: found.backgroundKey ?? undefined,
     bio: found.bio ?? undefined,
     image: found.imageKey ?? undefined,
+    links: [],
   };
 
   return NextResponse.json(json);

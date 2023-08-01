@@ -1,4 +1,4 @@
-import { WorldMetadata } from "@wired-protocol/types";
+import { World } from "@wired-protocol/types";
 import { eq } from "drizzle-orm";
 
 import { getSession } from "@/src/server/auth/getSession";
@@ -12,7 +12,7 @@ import Settings from "./Settings";
 
 interface Props {
   id: WorldId;
-  metadata: WorldMetadata;
+  metadata: World;
 }
 
 export default async function Tabs({ id, metadata }: Props) {

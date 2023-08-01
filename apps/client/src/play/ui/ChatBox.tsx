@@ -1,4 +1,5 @@
 import { useClientStore } from "@unavi/engine";
+import { SendChatMessage } from "@wired-protocol/types";
 import { useEffect, useRef } from "react";
 
 import { usePlayStore } from "@/app/play/playStore";
@@ -67,10 +68,11 @@ export default function ChatBox({ alwaysShow }: Props) {
 
               e.currentTarget.value = "";
 
-              sendWebSockets({
-                data: text,
-                id: "com.wired-protocol.world.chat.send",
+              const sendChat = SendChatMessage.create({
+                message: text,
               });
+
+              sendWebSockets(SendChatMessage.toBinary(sendChat));
             }
           }}
           onFocus={() => usePlayStore.setState({ chatBoxFocused: true })}

@@ -16,20 +16,20 @@ export async function generateWorldMetadata(id: string): Promise<Metadata> {
   const profiles = await fetchAuthors(found.metadata);
 
   const displayId = worldId.value.slice(0, 6);
-  const title = found.metadata.info?.title || `World ${displayId}`;
+  const title = found.metadata?.title || `World ${displayId}`;
 
-  const description = found.metadata.info?.description || "";
-  const image = found.metadata.info?.image;
+  const description = found.metadata?.description || "";
+  const image = found.metadata?.image;
 
   return {
     authors:
       profiles.length > 0
         ? profiles.map(({ username, metadata }) => ({
-            name: metadata.name || username,
-            url: username
-              ? `${env.NEXT_PUBLIC_DEPLOYED_URL}/@${username}`
-              : undefined,
-          }))
+          name: metadata.name || username,
+          url: username
+            ? `${env.NEXT_PUBLIC_DEPLOYED_URL}/@${username}`
+            : undefined,
+        }))
         : undefined,
     description,
     openGraph: {

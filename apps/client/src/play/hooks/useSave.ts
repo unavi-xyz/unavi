@@ -31,11 +31,11 @@ export function useSave() {
     try {
       // Save metadata
       await updateWorld(worldId.value, {
-        description: metadata.info?.description,
-        title: metadata.info?.title,
+        description: metadata?.description,
+        title: metadata?.title,
       });
 
-      const image = metadata.info?.image;
+      const image = metadata?.image;
       const imageBlob = image
         ? await fetch(image).then((res) => res.blob())
         : null;
@@ -65,10 +65,7 @@ export function useSave() {
             usePlayStore.setState({
               metadata: {
                 ...metadata,
-                info: {
-                  ...metadata.info,
-                  image: cdnURL(S3Path.worldModel(modelId).image),
-                },
+                image: cdnURL(S3Path.worldModel(modelId).image),
               },
             });
           }, 1000);

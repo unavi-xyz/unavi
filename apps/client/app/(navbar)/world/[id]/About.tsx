@@ -1,18 +1,18 @@
-import { WorldMetadata } from "@wired-protocol/types";
+import { World } from "@wired-protocol/types";
 
 interface Props {
-  metadata: WorldMetadata;
+  metadata: World;
 }
 
 export default async function About({ metadata }: Props) {
   return (
     <div className="space-y-12">
-      {metadata.info?.description && (
+      {metadata?.description && (
         <div>
           <div className="text-lg font-semibold">Description</div>
 
           <div className="whitespace-pre-line text-neutral-800">
-            {metadata.info.description}
+            {metadata.description}
           </div>
         </div>
       )}

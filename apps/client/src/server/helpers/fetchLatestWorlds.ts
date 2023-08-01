@@ -1,4 +1,4 @@
-import { WorldMetadata } from "@wired-protocol/types";
+import { World } from "@wired-protocol/types";
 
 import { env } from "@/src/env.mjs";
 
@@ -38,7 +38,7 @@ export async function fetchLatestWorlds(limit: number, ownerId?: string) {
           metadata,
           uri: `${env.NEXT_PUBLIC_DEPLOYED_URL}/api/worlds/${world.publicId}`,
         });
-      })
+      }),
     );
 
     return fetched;
@@ -50,6 +50,6 @@ export async function fetchLatestWorlds(limit: number, ownerId?: string) {
 
 export type FetchedWorld = {
   id: string;
-  metadata: WorldMetadata;
+  metadata: World;
   uri: string;
 };

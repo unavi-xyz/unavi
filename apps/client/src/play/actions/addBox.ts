@@ -1,7 +1,7 @@
-import { useClientStore } from "@unavi/engine";
 import { BoxGeometry } from "three";
 
 import { addNode } from "./addNode";
+import { editNode } from "./editNode";
 import { addThreeMesh } from "./utils/addThreeMesh";
 import { getAddParent } from "./utils/getAddParent";
 
@@ -13,14 +13,10 @@ export function addBox() {
 
   const parent = getAddParent();
 
-  useClientStore.getState().mirrorEvent({
-    data: {
-      mesh,
-      parent,
-      target: name,
-    },
-    id: "xyz.unavi.editor.edit.node",
-    target: "client",
+  editNode({
+    mesh,
+    parent,
+    target: name,
   });
 
   return name;

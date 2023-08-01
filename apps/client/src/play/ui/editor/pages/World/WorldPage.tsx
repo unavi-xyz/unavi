@@ -9,9 +9,9 @@ import PanelPage from "../PanelPage";
 
 export default function WorldPage() {
   const worldId = usePlayStore((state) => state.worldId);
-  const image = usePlayStore((state) => state.metadata.info?.image);
-  const title = usePlayStore((state) => state.metadata.info?.title);
-  const description = usePlayStore((state) => state.metadata.info?.description);
+  const image = usePlayStore((state) => state.metadata?.image);
+  const title = usePlayStore((state) => state.metadata?.title);
+  const description = usePlayStore((state) => state.metadata?.description);
 
   const { save, saving } = useSave();
 
@@ -33,10 +33,7 @@ export default function WorldPage() {
           usePlayStore.setState((prev) => ({
             metadata: {
               ...prev.metadata,
-              info: {
-                ...prev.metadata.info,
-                image: croppedURL,
-              },
+              image: croppedURL,
             },
           }));
 
@@ -55,10 +52,7 @@ export default function WorldPage() {
           usePlayStore.setState((prev) => ({
             metadata: {
               ...prev.metadata,
-              info: {
-                ...prev.metadata.info,
-                title: e.target.value,
-              },
+              title: e.target.value,
             },
           }));
         }}
@@ -73,10 +67,7 @@ export default function WorldPage() {
           usePlayStore.setState((prev) => ({
             metadata: {
               ...prev.metadata,
-              info: {
-                ...prev.metadata.info,
-                description: e.target.value,
-              },
+              description: e.target.value,
             },
           }));
         }}

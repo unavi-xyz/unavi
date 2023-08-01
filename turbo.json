@@ -2,12 +2,22 @@
   "$schema": "https://turborepo.org/schema.json",
   "pipeline": {
     "build": {
-      "dependsOn": ["^build", "generate"],
-      "outputs": ["build/**", "dist/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "build/**",
+        "dist/**"
+      ]
     },
     "client#build": {
-      "dependsOn": ["^build", "generate"],
-      "outputs": [".next/**"],
+      "dependsOn": [
+        "^build",
+        "generate"
+      ],
+      "outputs": [
+        ".next/**"
+      ],
       "env": [
         "DATABASE_URL",
         "DISABLE_PWA",
@@ -36,8 +46,13 @@
       ]
     },
     "host#build": {
-      "dependsOn": ["^build", "generate"],
-      "outputs": ["build/**"],
+      "dependsOn": [
+        "^build",
+        "generate"
+      ],
+      "outputs": [
+        "build/**"
+      ],
       "env": [
         "MEDIASOUP_ANNOUNCED_IP",
         "MEDIASOUP_LISTEN_IP",
@@ -48,7 +63,12 @@
       ]
     },
     "lint": {},
-    "generate": { "cache": false },
-    "dev": { "cache": false, "persistent": true }
+    "generate": {
+      "cache": false
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
   }
 }

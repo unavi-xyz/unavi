@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./assets/Logo.png" alt="UNAVI Logo" height="200" />
+  <img src="./assets/block-logo.png" alt="UNAVI Logo" height="200" />
   <h1>UNAVI</h1>
   <strong>An open and decentralized web-based metaverse platform.</strong>
 </div>

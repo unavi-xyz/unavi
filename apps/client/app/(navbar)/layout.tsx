@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import Logo from "@/public/images/Logo.png";
+import Logo from "@/public/images/block-logo.png";
 import { env } from "@/src/env.mjs";
 
 import AccountButton from "./AccountButton";

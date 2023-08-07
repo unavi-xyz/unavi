@@ -1,5 +1,13 @@
 # client
 
+## 1.0.2
+
+### Patch Changes
+
+- 9aca0f31: update lattice
+- Updated dependencies [9aca0f31]
+  - @unavi/engine@1.0.1
+
 ## 1.0.1
 
 ### Patch Changes

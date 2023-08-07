@@ -9,7 +9,7 @@ import { IceCandidate, TransportOptions } from "mediasoup-client/lib/types";
 import { toMediasoupDtlsRole } from "./dtlsParameters";
 
 export function toMediasoupTransportOptions(
-  options: TransportCreated_TransportOptions,
+  options: TransportCreated_TransportOptions
 ): TransportOptions {
   const iceCandidates: IceCandidate[] = [];
 
@@ -99,11 +99,11 @@ export function toMediasoupTransportOptions(
 
   const sctpParameters = options.sctpParameters
     ? {
-      MIS: options.sctpParameters.mis,
-      OS: options.sctpParameters.os,
-      maxMessageSize: options.sctpParameters.maxMessageSize,
-      port: options.sctpParameters.port,
-    }
+        MIS: options.sctpParameters.mis,
+        OS: options.sctpParameters.os,
+        maxMessageSize: options.sctpParameters.maxMessageSize,
+        port: options.sctpParameters.port,
+      }
     : undefined;
 
   if (!options.iceParameters) {

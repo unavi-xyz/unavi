@@ -91,10 +91,10 @@ export function connectToHost(
 
     const cleanupConnection = () => {
       useClientStore.setState({
-        cleanupConnection: () => { },
+        cleanupConnection: () => {},
         playerId: null,
-        sendWebRTC: () => { },
-        sendWebSockets: () => { },
+        sendWebRTC: () => {},
+        sendWebSockets: () => {},
       });
 
       if (consumerTransport) consumerTransport.close();

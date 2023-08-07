@@ -6,7 +6,6 @@ import {
   IceCandidate_TcpType,
   IceCandidate_Type,
   TransportCreated,
-  TransportCreated_TransportType,
   TransportType,
 } from "@wired-protocol/types";
 import { Router, WebRtcServer } from "mediasoup/node/lib/types";
@@ -22,20 +21,6 @@ export async function createTransport(
     enableUdp: true,
     webRtcServer,
   });
-
-  let messageType: TransportCreated_TransportType;
-
-  switch (type) {
-    case TransportType.CONSUMER: {
-      messageType = TransportCreated_TransportType.CONSUMER;
-      break;
-    }
-
-    case TransportType.PRODUCER: {
-      messageType = TransportCreated_TransportType.PRODUCER;
-      break;
-    }
-  }
 
   let dtlsRole: DtlsParameters_Role;
 
@@ -90,18 +75,11 @@ export async function createTransport(
       }
     }
 
-    let tcpType: IceCandidate_TcpType;
+    let tcpType: IceCandidate_TcpType | undefined;
 
-    switch (candidate.tcpType) {
-      case "passive": {
-        tcpType = IceCandidate_TcpType.PASSIVE;
-        break;
-      }
-
-      default: {
-        tcpType = IceCandidate_TcpType.ACTIVE;
-        break;
-      }
+    if (candidate.tcpType) {
+      tcpType = IceCandidate_TcpType.PASSIVE;
+      break;
     }
 
     iceCandidates.push({
@@ -123,7 +101,7 @@ export async function createTransport(
       id: transport.id,
       sctpParameters: transport.sctpParameters,
     },
-    type: messageType,
+    type,
   });
 
   return { message, transport };

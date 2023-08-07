@@ -11,14 +11,15 @@ export function fromMediasoupRtpParameters(
   const codecs: RtpParameters_Codec[] = [];
   const headerExtensions: RtpParameters_HeaderExtension[] = [];
 
-  rtpParameters.codecs?.forEach((codec) => {
+  for (const codec of rtpParameters.codecs) {
     codecs.push({
       channels: codec.channels,
       clockRate: codec.clockRate,
       mimeType: codec.mimeType,
       payloadType: codec.payloadType,
+      rtcpFeedback: codec.rtcpFeedback ?? [],
     });
-  });
+  };
 
   rtpParameters.headerExtensions?.forEach((ext) => {
     headerExtensions.push({
@@ -39,21 +40,22 @@ export function toMediasoupRtpParameters(
   const codecs: MediasoupRtpParameters["codecs"] = [];
   const headerExtensions: MediasoupRtpParameters["headerExtensions"] = [];
 
-  rtpParameters.codecs?.forEach((codec) => {
+  for (const codec of rtpParameters.codecs) {
     codecs.push({
       channels: codec.channels,
       clockRate: codec.clockRate,
       mimeType: codec.mimeType,
       payloadType: codec.payloadType,
+      rtcpFeedback: codec.rtcpFeedback,
     });
-  });
+  };
 
-  rtpParameters.headerExtensions?.forEach((ext) => {
+  for (const ext of rtpParameters.headerExtensions) {
     headerExtensions.push({
       id: ext.id,
       uri: ext.uri,
     });
-  });
+  };
 
   return {
     codecs,

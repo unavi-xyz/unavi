@@ -3,7 +3,7 @@ import {
   RtpCapabilities_Codec,
   RtpCapabilities_HeaderExtension,
   RtpCapabilities_HeaderExtension_Direction,
-  RtpCapabilities_Kind,
+  RtpCapabilities_MediaKind,
 } from "@wired-protocol/types";
 import {
   MediaKind,
@@ -56,14 +56,14 @@ export function fromMediasoupRtpCapabilities(
   };
 }
 
-function fromMediasoupMediaKind(kind: MediaKind): RtpCapabilities_Kind {
+function fromMediasoupMediaKind(kind: MediaKind): RtpCapabilities_MediaKind {
   switch (kind) {
     case "audio": {
-      return RtpCapabilities_Kind.AUDIO;
+      return RtpCapabilities_MediaKind.AUDIO;
     }
 
     case "video": {
-      return RtpCapabilities_Kind.VIDEO;
+      return RtpCapabilities_MediaKind.VIDEO;
     }
   }
 }
@@ -96,7 +96,7 @@ export function toMediasoupRtpCapabilities(
   const codecs: MediasoupRtpCapabilities["codecs"] = [];
   const headerExtensions: MediasoupRtpCapabilities["headerExtensions"] = [];
 
-  message.codecs?.forEach((codec) => {
+  for (const codec of message.codecs) {
     const kind = toMediasoupMediaKind(codec.kind);
     const rtcpFeedback: RtcpFeedback[] = [];
 
@@ -111,9 +111,9 @@ export function toMediasoupRtpCapabilities(
       mimeType: codec.mimeType,
       rtcpFeedback,
     });
-  });
+  };
 
-  message.headerExtensions?.forEach((ext) => {
+  for (const ext of message.headerExtensions) {
     const kind = toMediasoupMediaKind(ext.kind);
     const direction = ext.direction
       ? toMediasoupHeaderExtensionDirection(ext.direction)
@@ -126,7 +126,7 @@ export function toMediasoupRtpCapabilities(
       preferredId: ext.preferredId,
       uri: ext.uri,
     });
-  });
+  }
 
   return {
     codecs,
@@ -134,13 +134,13 @@ export function toMediasoupRtpCapabilities(
   };
 }
 
-function toMediasoupMediaKind(kind: RtpCapabilities_Kind): MediaKind {
+function toMediasoupMediaKind(kind: RtpCapabilities_MediaKind): MediaKind {
   switch (kind) {
-    case RtpCapabilities_Kind.AUDIO: {
+    case RtpCapabilities_MediaKind.AUDIO: {
       return "audio";
     }
 
-    case RtpCapabilities_Kind.VIDEO: {
+    case RtpCapabilities_MediaKind.VIDEO: {
       return "video";
     }
   }

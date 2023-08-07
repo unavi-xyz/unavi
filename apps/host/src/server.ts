@@ -6,6 +6,7 @@ import {
 import {
   Request,
   RouterRtpCapabilities,
+  TransportConnected,
   TransportType,
 } from "@wired-protocol/types";
 import uWS from "uWebSockets.js";
@@ -47,7 +48,7 @@ server.ws<UserData>("/*", {
   idleTimeout: 60,
   maxPayloadLength: 16 * 1024 * 1024, // 16 MB
 
-  message: (ws, buffer) => {
+  message: async (ws, buffer) => {
     try {
       const player = players.get(ws);
       if (!player) return;
@@ -137,38 +138,66 @@ server.ws<UserData>("/*", {
             req.message.connectTransport.type === TransportType.PRODUCER
               ? player.producerTransport
               : player.consumerTransport;
-          if (!transport || !req.message.connectTransport.dtlsParameters) break;
 
-          transport.connect({
-            dtlsParameters: toMediasoupDtlsParameters(
-              req.message.connectTransport.dtlsParameters,
-            ),
+          if (!transport) {
+            console.warn("No transport to connect");
+            break;
+          }
+
+          if (!req.message.connectTransport.dtlsParameters) {
+            console.warn("No dtlsParameters to connect");
+            break;
+          }
+
+          let success = false;
+
+          try {
+            await transport.connect({
+              dtlsParameters: toMediasoupDtlsParameters(
+                req.message.connectTransport.dtlsParameters,
+              ),
+            });
+
+            success = true;
+          } catch (err) {
+            console.warn(err);
+          }
+
+          const transportConnected = TransportConnected.create({
+            success,
+            type: req.message.connectTransport.type,
+          });
+          player.send({
+            oneofKind: "transportConnected",
+            transportConnected,
           });
           break;
         }
 
         case "produce": {
-          if (!req.message.produce.rtpParameters) break;
+          if (!req.message.produce.rtpParameters) {
+            console.warn("No rtpParameters to produce");
+            break;
+          }
           player.produce(req.message.produce.rtpParameters);
           break;
         }
 
         case "produceData": {
-          if (!req.message.produceData.sctpStreamParameters) break;
+          if (!req.message.produceData.sctpStreamParameters) {
+            console.warn("No sctpStreamParameters to produce");
+            break;
+          }
 
-          player.produceData({
-            maxPacketLifeTime:
-              req.message.produceData.sctpStreamParameters.maxPacketLifeTime,
-            maxRetransmits:
-              req.message.produceData.sctpStreamParameters.maxRetransmits,
-            ordered: req.message.produceData.sctpStreamParameters.ordered,
-            streamId: req.message.produceData.sctpStreamParameters.streamId,
-          });
+          player.produceData(req.message.produceData.sctpStreamParameters);
           break;
         }
 
         case "setRtpCapabilities": {
-          if (!req.message.setRtpCapabilities.rtpCapabilities) break;
+          if (!req.message.setRtpCapabilities.rtpCapabilities) {
+            console.warn("No rtpCapabilities to set");
+            break;
+          }
 
           const rtpCapabilities = toMediasoupRtpCapabilities(
             req.message.setRtpCapabilities.rtpCapabilities,

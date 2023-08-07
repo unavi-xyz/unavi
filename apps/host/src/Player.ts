@@ -16,7 +16,7 @@ import {
   RtpParameters,
 } from "mediasoup/node/lib/RtpParameters";
 import { SctpStreamParameters } from "mediasoup/node/lib/SctpParameters";
-import { Transport } from "mediasoup/node/lib/Transport";
+import { WebRtcTransport } from "mediasoup/node/lib/types";
 
 import { uWebSocket } from "./types";
 import { World } from "./World";
@@ -36,8 +36,8 @@ export class Player {
   #dataProducer: DataProducer | null = null;
   #rtpCapabilities: RtpCapabilities | null = null;
 
-  consumerTransport: Transport | null = null;
-  producerTransport: Transport | null = null;
+  consumerTransport: WebRtcTransport | null = null;
+  producerTransport: WebRtcTransport | null = null;
 
   constructor(ws: uWebSocket, registry: WorldRegistry) {
     this.ws = ws;
@@ -136,7 +136,7 @@ export class Player {
     this.worlds.forEach((world) => world.chat(this, message));
   }
 
-  setTransport(type: TransportType, transport: Transport) {
+  setTransport(type: TransportType, transport: WebRtcTransport) {
     if (type === TransportType.PRODUCER) {
       this.producerTransport = transport;
       return;
@@ -192,7 +192,7 @@ export class Player {
     }
   }
 
-  async consume(producer: Producer, spaceURI: string, playerId: number) {
+  async consume(producer: Producer, worldUri: string, playerId: number) {
     if (!this.consumerTransport || !this.rtpCapabilities) return;
 
     try {
@@ -202,7 +202,7 @@ export class Player {
         rtpCapabilities: this.rtpCapabilities,
       });
 
-      const world = this.#registry.getWorld(spaceURI);
+      const world = this.#registry.getWorld(worldUri);
       if (!world) return;
 
       const consumers = this.consumers.get(world) ?? new Map();
@@ -228,7 +228,7 @@ export class Player {
 
   async consumeData(
     dataProducer: DataProducer,
-    spaceURI: string,
+    worldUri: string,
     playerId: number
   ) {
     if (!this.consumerTransport) return;
@@ -241,7 +241,7 @@ export class Player {
       });
       if (!dataConsumer.sctpStreamParameters) return;
 
-      const world = this.#registry.getWorld(spaceURI);
+      const world = this.#registry.getWorld(worldUri);
       if (!world) return;
 
       const dataConsumers = this.dataConsumers.get(world) ?? new Map();

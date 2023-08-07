@@ -1,5 +1,16 @@
 # client
 
+## 1.0.3
+
+### Patch Changes
+
+- 4fd18af2: webrtc fixes
+- 4fd18af2: protobuf message fixes
+- Updated dependencies [4fd18af2]
+- Updated dependencies [4fd18af2]
+  - @unavi/engine@1.0.2
+  - @unavi/protocol@0.2.1
+
 ## 1.0.2
 
 ### Patch Changes

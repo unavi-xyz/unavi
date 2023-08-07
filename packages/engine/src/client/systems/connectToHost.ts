@@ -42,7 +42,7 @@ class LocalRes {
 
 export function connectToHost(
   localRes: SystemRes<LocalRes>,
-  worlds: Query<WorldJson>,
+  worlds: Query<WorldJson>
 ) {
   for (const world of worlds) {
     if (localRes.host === world.host) continue;
@@ -91,10 +91,10 @@ export function connectToHost(
 
     const cleanupConnection = () => {
       useClientStore.setState({
-        cleanupConnection: () => { },
+        cleanupConnection: () => {},
         playerId: null,
-        sendWebRTC: () => { },
-        sendWebSockets: () => { },
+        sendWebRTC: () => {},
+        sendWebSockets: () => {},
       });
 
       if (consumerTransport) consumerTransport.close();
@@ -173,7 +173,7 @@ export function connectToHost(
           const { setPlayerData } = useClientStore.getState();
 
           for (const [key, value] of Object.entries(
-            msg.response.playerJoined.data,
+            msg.response.playerJoined.data
           )) {
             setPlayerData(msg.response.playerJoined.playerId, key, value);
           }
@@ -222,7 +222,7 @@ export function connectToHost(
             // Initialize device
             await device.load({
               routerRtpCapabilities: toMediasoupRtpCapabilities(
-                msg.response.routerRtpCapabilities.rtpCapabilities,
+                msg.response.routerRtpCapabilities.rtpCapabilities
               ),
             });
 
@@ -246,7 +246,7 @@ export function connectToHost(
             // Set rtp capabilities
             const setRtpCapabilities = SetRtpCapabilities.create({
               rtpCapabilities: fromMediasoupRtpCapabilities(
-                device.rtpCapabilities,
+                device.rtpCapabilities
               ),
             });
             send({
@@ -268,7 +268,7 @@ export function connectToHost(
 
           // Create transport
           const options = toMediasoupTransportOptions(
-            msg.response.transportCreated.options,
+            msg.response.transportCreated.options
           );
 
           const transportType = msg.response.transportCreated.type;
@@ -290,10 +290,9 @@ export function connectToHost(
 
             const connect = ConnectTransport.create({
               dtlsParameters: fromMediasoupDtlsParameters(dtlsParameters),
-              type:
-                isProducer
-                  ? TransportType.PRODUCER
-                  : TransportType.CONSUMER,
+              type: isProducer
+                ? TransportType.PRODUCER
+                : TransportType.CONSUMER,
             });
 
             send({
@@ -339,7 +338,7 @@ export function connectToHost(
                 });
 
                 send({ oneofKind: "produceData", produceData });
-              },
+              }
             );
 
             dataProducer = await transport.produceData({
@@ -378,7 +377,7 @@ export function connectToHost(
             }
           }
 
-          break
+          break;
         }
 
         case "producerId": {
@@ -411,7 +410,7 @@ export function connectToHost(
             kind: "audio",
             producerId: msg.response.createConsumer.producerId,
             rtpParameters: toMediasoupRtpParameters(
-              msg.response.createConsumer.rtpParameters,
+              msg.response.createConsumer.rtpParameters
             ),
           });
 
@@ -466,7 +465,7 @@ export function connectToHost(
 
           if (!msg.response.createDataConsumer.sctpStreamParameters) {
             console.warn(
-              "Did not receive data consumer sctp stream parameters",
+              "Did not receive data consumer sctp stream parameters"
             );
             break;
           }

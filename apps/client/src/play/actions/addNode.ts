@@ -9,7 +9,9 @@ export function addNode(namePrefix = "Node") {
   const addNode = AddNode.create({
     id: name,
   });
-  const event = EditorEvent.create({ event: { addNode, oneofKind: "addNode" } });
+  const event = EditorEvent.create({
+    event: { addNode, oneofKind: "addNode" },
+  });
   useClientStore.getState().mirrorEvent(event);
 
   return name;

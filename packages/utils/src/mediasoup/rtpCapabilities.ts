@@ -13,7 +13,7 @@ import {
 } from "mediasoup-client/lib/types";
 
 export function fromMediasoupRtpCapabilities(
-  rtpCapabilities: MediasoupRtpCapabilities,
+  rtpCapabilities: MediasoupRtpCapabilities
 ) {
   const codecs: RtpCapabilities_Codec[] = [];
   const headerExtensions: RtpCapabilities_HeaderExtension[] = [];
@@ -69,7 +69,7 @@ function fromMediasoupMediaKind(kind: MediaKind): RtpCapabilities_MediaKind {
 }
 
 function fromMediasoupHeaderExtensionDirection(
-  direction: RtpHeaderExtensionDirection,
+  direction: RtpHeaderExtensionDirection
 ): RtpCapabilities_HeaderExtension_Direction {
   switch (direction) {
     case "sendrecv": {
@@ -91,7 +91,7 @@ function fromMediasoupHeaderExtensionDirection(
 }
 
 export function toMediasoupRtpCapabilities(
-  message: RtpCapabilities,
+  message: RtpCapabilities
 ): MediasoupRtpCapabilities {
   const codecs: MediasoupRtpCapabilities["codecs"] = [];
   const headerExtensions: MediasoupRtpCapabilities["headerExtensions"] = [];
@@ -111,7 +111,7 @@ export function toMediasoupRtpCapabilities(
       mimeType: codec.mimeType,
       rtcpFeedback,
     });
-  };
+  }
 
   for (const ext of message.headerExtensions) {
     const kind = toMediasoupMediaKind(ext.kind);
@@ -147,7 +147,7 @@ function toMediasoupMediaKind(kind: RtpCapabilities_MediaKind): MediaKind {
 }
 
 function toMediasoupHeaderExtensionDirection(
-  direction: RtpCapabilities_HeaderExtension_Direction,
+  direction: RtpCapabilities_HeaderExtension_Direction
 ): RtpHeaderExtensionDirection {
   switch (direction) {
     case RtpCapabilities_HeaderExtension_Direction.SENDRECV: {

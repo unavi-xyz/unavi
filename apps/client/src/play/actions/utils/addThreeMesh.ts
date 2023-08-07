@@ -30,7 +30,9 @@ export function addThreeMesh(geometry: BufferGeometry) {
     target: name,
     uv: Array.from(uvs),
   });
-  const event = EditorEvent.create({ event: { editMesh, oneofKind: "editMesh" } });
+  const event = EditorEvent.create({
+    event: { editMesh, oneofKind: "editMesh" },
+  });
 
   useClientStore.getState().mirrorEvent(event);
 

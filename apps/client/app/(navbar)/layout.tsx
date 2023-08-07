@@ -21,10 +21,7 @@ export default function NavbarLayout({
         >
           <div className="max-w-content mx-4 flex justify-between lg:grid lg:grid-cols-3">
             <div className="flex h-full items-center">
-              <Link
-                href="/"
-                className="outline-2 outline-offset-4"
-              >
+              <Link href="/" className="outline-2 outline-offset-4">
                 <Image src={Logo} alt="logo" priority width={40} height={40} />
               </Link>
             </div>

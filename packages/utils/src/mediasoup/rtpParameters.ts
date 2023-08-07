@@ -19,7 +19,7 @@ export function fromMediasoupRtpParameters(
       payloadType: codec.payloadType,
       rtcpFeedback: codec.rtcpFeedback ?? [],
     });
-  };
+  }
 
   rtpParameters.headerExtensions?.forEach((ext) => {
     headerExtensions.push({
@@ -48,14 +48,14 @@ export function toMediasoupRtpParameters(
       payloadType: codec.payloadType,
       rtcpFeedback: codec.rtcpFeedback,
     });
-  };
+  }
 
   for (const ext of rtpParameters.headerExtensions) {
     headerExtensions.push({
       id: ext.id,
       uri: ext.uri,
     });
-  };
+  }
 
   return {
     codecs,

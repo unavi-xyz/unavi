@@ -9,7 +9,9 @@ export function addMesh(namePrefix = "Mesh") {
   const addMesh = AddMesh.create({
     id: name,
   });
-  const event = EditorEvent.create({ event: { addMesh, oneofKind: "addMesh" } });
+  const event = EditorEvent.create({
+    event: { addMesh, oneofKind: "addMesh" },
+  });
   useClientStore.getState().mirrorEvent(event);
 
   return name;

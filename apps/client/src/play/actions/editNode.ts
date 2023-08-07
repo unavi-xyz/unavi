@@ -3,6 +3,8 @@ import { EditNode, EditorEvent } from "@unavi/protocol";
 
 export function editNode(data: Parameters<typeof EditNode.create>[0]) {
   const editNode = EditNode.create(data);
-  const event = EditorEvent.create({ event: { editNode, oneofKind: "editNode" } });
+  const event = EditorEvent.create({
+    event: { editNode, oneofKind: "editNode" },
+  });
   useClientStore.getState().mirrorEvent(event);
 }

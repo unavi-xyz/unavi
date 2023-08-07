@@ -65,7 +65,6 @@ server.ws<UserData>("/*", {
         req = Request.fromBinary(array);
       } catch (err) {
         const text = Buffer.from(buffer).toString();
-        console.log("Received text message", text);
         req = Request.fromJsonString(text);
       }
 

@@ -91,10 +91,10 @@ export function connectToHost(
 
     const cleanupConnection = () => {
       useClientStore.setState({
-        cleanupConnection: () => {},
+        cleanupConnection: () => { },
         playerId: null,
-        sendWebRTC: () => {},
-        sendWebSockets: () => {},
+        sendWebRTC: () => { },
+        sendWebSockets: () => { },
       });
 
       if (consumerTransport) consumerTransport.close();
@@ -140,7 +140,7 @@ export function connectToHost(
 
     ws.onmessage = async (e) => {
       if (!(e.data instanceof Blob)) {
-        console.log("Unexpected message type", e.data);
+        console.warn("Unexpected message type", e.data);
         return;
       }
 
@@ -209,6 +209,11 @@ export function connectToHost(
 
           useClientStore.getState().playerData.delete(playerId);
           useClientStore.getState().locations.delete(playerId);
+          break;
+        }
+
+        case "playerData": {
+          useClientStore.getState().setPlayerData(msg.response.playerData.playerId, msg.response.playerData.key, msg.response.playerData.value);
           break;
         }
 

@@ -63,7 +63,6 @@ export default function AddComponent({ id }: Props) {
     <DropdownMenu>
       <DropdownTrigger asChild>
         <button
-          onClick={() => console.log("Add Component")}
           className="w-full rounded-lg py-1 text-center transition hover:bg-neutral-800"
         >
           Add Component

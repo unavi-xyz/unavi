@@ -2,7 +2,7 @@ import { DtlsParameters, DtlsParameters_Role } from "@wired-protocol/types";
 import { DtlsParameters as MediasoupDtlsParameters } from "mediasoup-client/lib/types";
 
 export function fromMediasoupDtlsParameters(
-  dtlsParameters: MediasoupDtlsParameters,
+  dtlsParameters: MediasoupDtlsParameters
 ): DtlsParameters {
   const role = fromMediasoupDtlsRole(dtlsParameters.role);
 
@@ -13,7 +13,7 @@ export function fromMediasoupDtlsParameters(
 }
 
 function fromMediasoupDtlsRole(
-  role: MediasoupDtlsParameters["role"],
+  role: MediasoupDtlsParameters["role"]
 ): DtlsParameters_Role {
   switch (role) {
     case "client": {
@@ -32,7 +32,7 @@ function fromMediasoupDtlsRole(
 }
 
 export function toMediasoupDtlsParameters(
-  dtlsParameters: DtlsParameters,
+  dtlsParameters: DtlsParameters
 ): MediasoupDtlsParameters {
   const role = toMediasoupDtlsRole(dtlsParameters.role);
 
@@ -43,7 +43,7 @@ export function toMediasoupDtlsParameters(
 }
 
 export function toMediasoupDtlsRole(
-  role: DtlsParameters_Role,
+  role: DtlsParameters_Role
 ): MediasoupDtlsParameters["role"] {
   switch (role) {
     case DtlsParameters_Role.AUTO: {

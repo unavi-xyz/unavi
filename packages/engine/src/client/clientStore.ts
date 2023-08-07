@@ -1,3 +1,4 @@
+import { EditorEvent } from "@unavi/protocol";
 import { Event, Request, Response, SendEvent } from "@wired-protocol/types";
 import { Engine } from "lattice-engine/core";
 import { create } from "zustand";
@@ -17,7 +18,7 @@ export interface IClientStore {
   setName: (name: string) => void;
   setPlayerData: (playerId: number, key: string, value: string) => void;
   setPlayerId: (playerId: number | null) => void;
-  mirrorEvent: (data: Uint8Array) => void;
+  mirrorEvent: (editorEvent: EditorEvent) => void;
   avatar: string;
   chatMessages: ChatMessage[];
   defaultAvatar: string;
@@ -44,7 +45,7 @@ export const useClientStore = create<IClientStore>((set, get) => ({
   },
   avatar: "",
   chatMessages: [],
-  cleanupConnection: () => {},
+  cleanupConnection: () => { },
   defaultAvatar: "",
   ecsIncoming: [],
   engine: null,
@@ -72,7 +73,9 @@ export const useClientStore = create<IClientStore>((set, get) => ({
   handle: "",
   lastLocationUpdates: new Map(),
   locations: new Map(),
-  mirrorEvent: (data: Uint8Array) => {
+  mirrorEvent: (editorEvent: EditorEvent) => {
+    const data = EditorEvent.toBinary(editorEvent);
+
     // Send to self
     const playerId = get().playerId;
     if (playerId === null) return;
@@ -92,8 +95,8 @@ export const useClientStore = create<IClientStore>((set, get) => ({
   playerData: new Map(),
   playerId: null,
   rootName: "",
-  sendWebRTC: () => {},
-  sendWebSockets: () => {},
+  sendWebRTC: () => { },
+  sendWebSockets: () => { },
   setAvatar(avatar: string) {
     set({ avatar });
 

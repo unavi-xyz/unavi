@@ -1,5 +1,5 @@
 import { useClientStore } from "@unavi/engine";
-import { EditMesh } from "@unavi/protocol";
+import { EditMesh, EditorEvent } from "@unavi/protocol";
 import { BufferAttribute, BufferGeometry } from "three";
 
 import { addMesh } from "../addMesh";
@@ -23,15 +23,16 @@ export function addThreeMesh(geometry: BufferGeometry) {
 
   const name = addMesh();
 
-  const event = EditMesh.create({
+  const editMesh = EditMesh.create({
     indices: Array.from(indices32),
     normal: Array.from(normals),
     position: Array.from(positions),
     target: name,
     uv: Array.from(uvs),
   });
+  const event = EditorEvent.create({ event: { editMesh, oneofKind: "editMesh" } });
 
-  useClientStore.getState().mirrorEvent(EditMesh.toBinary(event));
+  useClientStore.getState().mirrorEvent(event);
 
   return name;
 }

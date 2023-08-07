@@ -151,62 +151,52 @@ export function sendEvents(
           e.material = editor.event.editMesh.material ?? "";
 
           if (editor.event.editMesh.indices) {
-            const indices = new Uint32Array();
-            indices.set(editor.event.editMesh.indices);
+            const indices = Uint32Array.from(editor.event.editMesh.indices);
             e.indices.write(indices, warehouse);
           }
 
           if (editor.event.editMesh.position) {
-            const positions = new Float32Array();
-            positions.set(editor.event.editMesh.position);
+            const positions = Float32Array.from(editor.event.editMesh.position);
             e.positions.write(positions, warehouse);
           }
 
           if (editor.event.editMesh.normal) {
-            const normals = new Float32Array();
-            normals.set(editor.event.editMesh.normal);
+            const normals = Float32Array.from(editor.event.editMesh.normal);
             e.normals.write(normals, warehouse);
           }
 
           if (editor.event.editMesh.color) {
-            const colors = new Float32Array();
-            colors.set(editor.event.editMesh.color);
+            const colors = Float32Array.from(editor.event.editMesh.color);
             e.colors.write(colors, warehouse);
           }
 
           if (editor.event.editMesh.weights) {
-            const weights = new Float32Array();
-            weights.set(editor.event.editMesh.weights);
+            const weights = Float32Array.from(editor.event.editMesh.weights);
             e.weights.write(weights, warehouse);
           }
 
           if (editor.event.editMesh.joints) {
-            const joints = new Float32Array();
-            joints.set(editor.event.editMesh.joints);
+            const joints = Float32Array.from(editor.event.editMesh.joints);
             e.joints.write(joints, warehouse);
           }
 
           if (editor.event.editMesh.uv) {
-            const uvs = new Float32Array();
-            uvs.set(editor.event.editMesh.uv);
+            const uvs = Float32Array.from(editor.event.editMesh.uv);
             e.uv.write(uvs, warehouse);
           }
 
           if (editor.event.editMesh.uv1) {
-            const uv1s = new Float32Array();
-            uv1s.set(editor.event.editMesh.uv1);
+            const uv1s = Float32Array.from(editor.event.editMesh.uv1);
             e.uv1.write(uv1s, warehouse);
           }
 
           if (editor.event.editMesh.uv2) {
-            const uv2s = new Float32Array();
-            uv2s.set(editor.event.editMesh.uv2);
+            const uv2s = Float32Array.from(editor.event.editMesh.uv2);
             e.uv2.write(uv2s, warehouse);
           }
 
           if (editor.event.editMesh.uv3) {
-            const uv3s = new Float32Array();
-            uv3s.set(editor.event.editMesh.uv3);
+            const uv3s = Float32Array.from(editor.event.editMesh.uv3);
             e.uv3.write(uv3s, warehouse);
           }
         }

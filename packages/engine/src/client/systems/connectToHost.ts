@@ -17,7 +17,6 @@ import {
   Request,
   Response,
   SetRtpCapabilities,
-  TransportCreated_TransportType,
   TransportType,
 } from "@wired-protocol/types";
 import { Device } from "mediasoup-client";
@@ -75,6 +74,11 @@ export function connectToHost(
     // Create mediasoup device
     const device = new Device();
 
+    let connectSendCallback: () => void;
+    let connectSendErrback: (error: Error) => void;
+    let connectRecvCallback: () => void;
+    let connectRecvErrback: (error: Error) => void;
+
     let producerIdCallback: ((id: string) => void) | null = null;
     let dataProducerIdCallback: ((id: string) => void) | null = null;
 
@@ -114,7 +118,7 @@ export function connectToHost(
       sendQueue.length = 0;
 
       // Initiate WebRTC connection
-      const getRouterRtpCapabilities = GetRouterRtpCapabilities.create({});
+      const getRouterRtpCapabilities = GetRouterRtpCapabilities.create();
       send({
         getRouterRtpCapabilities,
         oneofKind: "getRouterRtpCapabilities",
@@ -136,7 +140,7 @@ export function connectToHost(
 
     ws.onmessage = async (e) => {
       if (!(e.data instanceof Blob)) {
-        console.log("Unexpected message type", e.data);
+        console.warn("Unexpected message type", e.data);
         return;
       }
 
@@ -208,8 +212,22 @@ export function connectToHost(
           break;
         }
 
+        case "playerData": {
+          useClientStore
+            .getState()
+            .setPlayerData(
+              msg.response.playerData.playerId,
+              msg.response.playerData.key,
+              msg.response.playerData.value
+            );
+          break;
+        }
+
         case "routerRtpCapabilities": {
-          if (!msg.response.routerRtpCapabilities.rtpCapabilities) break;
+          if (!msg.response.routerRtpCapabilities.rtpCapabilities) {
+            console.warn("Router RTP capabilities are undefined");
+            break;
+          }
 
           try {
             // Initialize device
@@ -254,7 +272,10 @@ export function connectToHost(
         }
 
         case "transportCreated": {
-          if (!msg.response.transportCreated.options) break;
+          if (!msg.response.transportCreated.options) {
+            console.warn("Transport options are undefined");
+            break;
+          }
 
           // Create transport
           const options = toMediasoupTransportOptions(
@@ -262,35 +283,41 @@ export function connectToHost(
           );
 
           const transportType = msg.response.transportCreated.type;
+          const isProducer = transportType === TransportType.PRODUCER;
 
-          const transport =
-            transportType === TransportCreated_TransportType.PRODUCER
-              ? device.createSendTransport(options)
-              : device.createRecvTransport(options);
+          const transport = isProducer
+            ? device.createSendTransport(options)
+            : device.createRecvTransport(options);
 
           // Connect transport
-          transport.on("connect", ({ dtlsParameters }, callback) => {
+          transport.on("connect", ({ dtlsParameters }, callback, errback) => {
+            if (isProducer) {
+              connectSendCallback = callback;
+              connectSendErrback = errback;
+            } else {
+              connectRecvCallback = callback;
+              connectRecvErrback = errback;
+            }
+
             const connect = ConnectTransport.create({
               dtlsParameters: fromMediasoupDtlsParameters(dtlsParameters),
-              type:
-                transportType === TransportCreated_TransportType.PRODUCER
-                  ? TransportType.PRODUCER
-                  : TransportType.CONSUMER,
+              type: isProducer
+                ? TransportType.PRODUCER
+                : TransportType.CONSUMER,
             });
 
             send({
               connectTransport: connect,
               oneofKind: "connectTransport",
             });
-
-            callback();
           });
 
           transport.on("connectionstatechange", (state) => {
-            console.info(`WebRTC - ${transportType} ${state}`);
+            const strType = isProducer ? "Producer" : "Consumer";
+            console.info(`WebRTC - ${strType} ${state}`);
           });
 
-          if (transportType === TransportCreated_TransportType.CONSUMER) {
+          if (!isProducer) {
             consumerTransport = transport;
           } else {
             producerTransport = transport;
@@ -337,6 +364,28 @@ export function connectToHost(
                 }
               },
             });
+          }
+
+          break;
+        }
+
+        case "transportConnected": {
+          const transportType = msg.response.transportConnected.type;
+          const success = msg.response.transportConnected.success;
+
+          if (success) {
+            if (transportType === TransportType.PRODUCER) {
+              connectSendCallback();
+            } else {
+              connectRecvCallback();
+            }
+          } else {
+            const err = new Error("Transport connection failed");
+            if (transportType === TransportType.PRODUCER) {
+              connectSendErrback(err);
+            } else {
+              connectRecvErrback(err);
+            }
           }
 
           break;

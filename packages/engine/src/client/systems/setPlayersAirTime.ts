@@ -13,7 +13,7 @@ export function setPlayersAirTime(
     const playerData = useClientStore.getState().playerData.get(player.id);
     if (!playerData) continue;
 
-    const isFalling = Boolean(playerData.falling);
+    const isFalling = playerData.falling === "true";
 
     if (isFalling) {
       body.airTime += time.mainDelta;

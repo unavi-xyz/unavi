@@ -46,7 +46,7 @@ export function publishLocation(
 
         const setPlayerData = SetPlayerData.create({
           data: {
-            falling: isFalling.toString(),
+            falling: JSON.stringify(isFalling),
           },
         });
 

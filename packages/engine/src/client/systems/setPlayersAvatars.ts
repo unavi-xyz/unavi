@@ -15,12 +15,13 @@ export function setPlayersAvatar(
       if (entity.id !== parent.id) continue;
 
       const playerData = useClientStore.getState().playerData.get(player.id);
-      if (!playerData) continue;
+      if (!playerData) {
+        vrm.uri = useClientStore.getState().defaultAvatar;
+        continue;
+      }
 
-      const avatar = playerData.avatar;
-
-      if (avatar) {
-        vrm.uri = avatar;
+      if (playerData.avatar) {
+        vrm.uri = playerData.avatar;
       } else {
         vrm.uri = useClientStore.getState().defaultAvatar;
       }

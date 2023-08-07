@@ -1,15 +1,18 @@
 import { useClientStore } from "@unavi/engine";
-import { AddMesh } from "@unavi/protocol";
+import { AddMesh, EditorEvent } from "@unavi/protocol";
 
 import { genName } from "./utils/genName";
 
 export function addMesh(namePrefix = "Mesh") {
   const name = genName(namePrefix);
 
-  const event = AddMesh.create({
+  const addMesh = AddMesh.create({
     id: name,
   });
-  useClientStore.getState().mirrorEvent(AddMesh.toBinary(event));
+  const event = EditorEvent.create({
+    event: { addMesh, oneofKind: "addMesh" },
+  });
+  useClientStore.getState().mirrorEvent(event);
 
   return name;
 }

@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@protobuf-ts/runtime": "^2.9.1",
-    "@wired-protocol/types": "^0.8.0",
+    "@wired-protocol/types": "^0.9.0",
     "zod": "^3.21.4"
   },
   "devDependencies": {

@@ -28,15 +28,15 @@ export interface EditNode {
      */
     parent?: string;
     /**
-     * @generated from protobuf field: repeated int32 translation = 4;
+     * @generated from protobuf field: repeated float translation = 4;
      */
     translation: number[];
     /**
-     * @generated from protobuf field: repeated int32 rotation = 5;
+     * @generated from protobuf field: repeated float rotation = 5;
      */
     rotation: number[];
     /**
-     * @generated from protobuf field: repeated int32 scale = 6;
+     * @generated from protobuf field: repeated float scale = 6;
      */
     scale: number[];
     /**
@@ -74,15 +74,15 @@ export interface EditNode_Collider {
      */
     type: EditNode_Collider_Type;
     /**
-     * @generated from protobuf field: optional uint32 height = 2;
+     * @generated from protobuf field: optional float height = 2;
      */
     height?: number;
     /**
-     * @generated from protobuf field: optional uint32 radius = 3;
+     * @generated from protobuf field: optional float radius = 3;
      */
     radius?: number;
     /**
-     * @generated from protobuf field: repeated uint32 size = 4;
+     * @generated from protobuf field: repeated float size = 4;
      */
     size: number[];
     /**
@@ -132,23 +132,23 @@ export interface EditNode_RigidBody {
      */
     type: EditNode_RigidBody_Type;
     /**
-     * @generated from protobuf field: optional uint32 mass = 2;
+     * @generated from protobuf field: optional float mass = 2;
      */
     mass?: number;
     /**
-     * @generated from protobuf field: repeated int32 linear_velocity = 3;
+     * @generated from protobuf field: repeated float linear_velocity = 3;
      */
     linearVelocity: number[];
     /**
-     * @generated from protobuf field: repeated int32 angular_velocity = 4;
+     * @generated from protobuf field: repeated float angular_velocity = 4;
      */
     angularVelocity: number[];
     /**
-     * @generated from protobuf field: repeated int32 center_of_mass = 5;
+     * @generated from protobuf field: repeated float center_of_mass = 5;
      */
     centerOfMass: number[];
     /**
-     * @generated from protobuf field: repeated int32 inertiaTensor = 6;
+     * @generated from protobuf field: repeated float inertiaTensor = 6;
      */
     inertiaTensor: number[];
 }
@@ -202,43 +202,43 @@ export interface EditMesh {
      */
     material?: string;
     /**
-     * @generated from protobuf field: repeated int32 position = 4;
-     */
-    position: number[];
-    /**
-     * @generated from protobuf field: repeated int32 normal = 5;
-     */
-    normal: number[];
-    /**
-     * @generated from protobuf field: repeated int32 indices = 6;
+     * @generated from protobuf field: repeated uint32 indices = 4;
      */
     indices: number[];
     /**
-     * @generated from protobuf field: repeated int32 color = 7;
+     * @generated from protobuf field: repeated float position = 5;
+     */
+    position: number[];
+    /**
+     * @generated from protobuf field: repeated float normal = 6;
+     */
+    normal: number[];
+    /**
+     * @generated from protobuf field: repeated float color = 7;
      */
     color: number[];
     /**
-     * @generated from protobuf field: repeated int32 weights = 8;
+     * @generated from protobuf field: repeated float weights = 8;
      */
     weights: number[];
     /**
-     * @generated from protobuf field: repeated int32 joints = 9;
+     * @generated from protobuf field: repeated float joints = 9;
      */
     joints: number[];
     /**
-     * @generated from protobuf field: repeated int32 uv = 10;
+     * @generated from protobuf field: repeated float uv = 10;
      */
     uv: number[];
     /**
-     * @generated from protobuf field: repeated int32 uv1 = 11;
+     * @generated from protobuf field: repeated float uv1 = 11;
      */
     uv1: number[];
     /**
-     * @generated from protobuf field: repeated int32 uv2 = 12;
+     * @generated from protobuf field: repeated float uv2 = 12;
      */
     uv2: number[];
     /**
-     * @generated from protobuf field: repeated int32 uv3 = 13;
+     * @generated from protobuf field: repeated float uv3 = 13;
      */
     uv3: number[];
 }
@@ -249,9 +249,9 @@ class EditNode$Type extends MessageType<EditNode> {
             { no: 1, name: "target", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 2, name: "name", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 3, name: "parent", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
-            { no: 4, name: "translation", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 5 /*ScalarType.INT32*/ },
-            { no: 5, name: "rotation", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 5 /*ScalarType.INT32*/ },
-            { no: 6, name: "scale", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 5 /*ScalarType.INT32*/ },
+            { no: 4, name: "translation", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 2 /*ScalarType.FLOAT*/ },
+            { no: 5, name: "rotation", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 2 /*ScalarType.FLOAT*/ },
+            { no: 6, name: "scale", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 2 /*ScalarType.FLOAT*/ },
             { no: 7, name: "mesh", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 8, name: "extras", kind: "message", T: () => EditNode_Extras },
             { no: 9, name: "collider", kind: "message", T: () => EditNode_Collider },
@@ -279,26 +279,26 @@ class EditNode$Type extends MessageType<EditNode> {
                 case /* optional string parent */ 3:
                     message.parent = reader.string();
                     break;
-                case /* repeated int32 translation */ 4:
+                case /* repeated float translation */ 4:
                     if (wireType === WireType.LengthDelimited)
                         for (let e = reader.int32() + reader.pos; reader.pos < e;)
-                            message.translation.push(reader.int32());
+                            message.translation.push(reader.float());
                     else
-                        message.translation.push(reader.int32());
+                        message.translation.push(reader.float());
                     break;
-                case /* repeated int32 rotation */ 5:
+                case /* repeated float rotation */ 5:
                     if (wireType === WireType.LengthDelimited)
                         for (let e = reader.int32() + reader.pos; reader.pos < e;)
-                            message.rotation.push(reader.int32());
+                            message.rotation.push(reader.float());
                     else
-                        message.rotation.push(reader.int32());
+                        message.rotation.push(reader.float());
                     break;
-                case /* repeated int32 scale */ 6:
+                case /* repeated float scale */ 6:
                     if (wireType === WireType.LengthDelimited)
                         for (let e = reader.int32() + reader.pos; reader.pos < e;)
-                            message.scale.push(reader.int32());
+                            message.scale.push(reader.float());
                     else
-                        message.scale.push(reader.int32());
+                        message.scale.push(reader.float());
                     break;
                 case /* optional string mesh */ 7:
                     message.mesh = reader.string();
@@ -333,25 +333,25 @@ class EditNode$Type extends MessageType<EditNode> {
         /* optional string parent = 3; */
         if (message.parent !== undefined)
             writer.tag(3, WireType.LengthDelimited).string(message.parent);
-        /* repeated int32 translation = 4; */
+        /* repeated float translation = 4; */
         if (message.translation.length) {
             writer.tag(4, WireType.LengthDelimited).fork();
             for (let i = 0; i < message.translation.length; i++)
-                writer.int32(message.translation[i]);
+                writer.float(message.translation[i]);
             writer.join();
         }
-        /* repeated int32 rotation = 5; */
+        /* repeated float rotation = 5; */
         if (message.rotation.length) {
             writer.tag(5, WireType.LengthDelimited).fork();
             for (let i = 0; i < message.rotation.length; i++)
-                writer.int32(message.rotation[i]);
+                writer.float(message.rotation[i]);
             writer.join();
         }
-        /* repeated int32 scale = 6; */
+        /* repeated float scale = 6; */
         if (message.scale.length) {
             writer.tag(6, WireType.LengthDelimited).fork();
             for (let i = 0; i < message.scale.length; i++)
-                writer.int32(message.scale[i]);
+                writer.float(message.scale[i]);
             writer.join();
         }
         /* optional string mesh = 7; */
@@ -428,9 +428,9 @@ class EditNode_Collider$Type extends MessageType<EditNode_Collider> {
     constructor() {
         super("xyz.unavi.editor.edit.EditNode.Collider", [
             { no: 1, name: "type", kind: "enum", T: () => ["xyz.unavi.editor.edit.EditNode.Collider.Type", EditNode_Collider_Type] },
-            { no: 2, name: "height", kind: "scalar", opt: true, T: 13 /*ScalarType.UINT32*/ },
-            { no: 3, name: "radius", kind: "scalar", opt: true, T: 13 /*ScalarType.UINT32*/ },
-            { no: 4, name: "size", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 13 /*ScalarType.UINT32*/ },
+            { no: 2, name: "height", kind: "scalar", opt: true, T: 2 /*ScalarType.FLOAT*/ },
+            { no: 3, name: "radius", kind: "scalar", opt: true, T: 2 /*ScalarType.FLOAT*/ },
+            { no: 4, name: "size", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 2 /*ScalarType.FLOAT*/ },
             { no: 5, name: "mesh", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ }
         ]);
     }
@@ -449,18 +449,18 @@ class EditNode_Collider$Type extends MessageType<EditNode_Collider> {
                 case /* xyz.unavi.editor.edit.EditNode.Collider.Type type */ 1:
                     message.type = reader.int32();
                     break;
-                case /* optional uint32 height */ 2:
-                    message.height = reader.uint32();
+                case /* optional float height */ 2:
+                    message.height = reader.float();
                     break;
-                case /* optional uint32 radius */ 3:
-                    message.radius = reader.uint32();
+                case /* optional float radius */ 3:
+                    message.radius = reader.float();
                     break;
-                case /* repeated uint32 size */ 4:
+                case /* repeated float size */ 4:
                     if (wireType === WireType.LengthDelimited)
                         for (let e = reader.int32() + reader.pos; reader.pos < e;)
-                            message.size.push(reader.uint32());
+                            message.size.push(reader.float());
                     else
-                        message.size.push(reader.uint32());
+                        message.size.push(reader.float());
                     break;
                 case /* optional string mesh */ 5:
                     message.mesh = reader.string();
@@ -480,17 +480,17 @@ class EditNode_Collider$Type extends MessageType<EditNode_Collider> {
         /* xyz.unavi.editor.edit.EditNode.Collider.Type type = 1; */
         if (message.type !== 0)
             writer.tag(1, WireType.Varint).int32(message.type);
-        /* optional uint32 height = 2; */
+        /* optional float height = 2; */
         if (message.height !== undefined)
-            writer.tag(2, WireType.Varint).uint32(message.height);
-        /* optional uint32 radius = 3; */
+            writer.tag(2, WireType.Bit32).float(message.height);
+        /* optional float radius = 3; */
         if (message.radius !== undefined)
-            writer.tag(3, WireType.Varint).uint32(message.radius);
-        /* repeated uint32 size = 4; */
+            writer.tag(3, WireType.Bit32).float(message.radius);
+        /* repeated float size = 4; */
         if (message.size.length) {
             writer.tag(4, WireType.LengthDelimited).fork();
             for (let i = 0; i < message.size.length; i++)
-                writer.uint32(message.size[i]);
+                writer.float(message.size[i]);
             writer.join();
         }
         /* optional string mesh = 5; */
@@ -511,11 +511,11 @@ class EditNode_RigidBody$Type extends MessageType<EditNode_RigidBody> {
     constructor() {
         super("xyz.unavi.editor.edit.EditNode.RigidBody", [
             { no: 1, name: "type", kind: "enum", T: () => ["xyz.unavi.editor.edit.EditNode.RigidBody.Type", EditNode_RigidBody_Type] },
-            { no: 2, name: "mass", kind: "scalar", opt: true, T: 13 /*ScalarType.UINT32*/ },
-            { no: 3, name: "linear_velocity", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 5 /*ScalarType.INT32*/ },
-            { no: 4, name: "angular_velocity", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 5 /*ScalarType.INT32*/ },
-            { no: 5, name: "center_of_mass", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 5 /*ScalarType.INT32*/ },
-            { no: 6, name: "inertiaTensor", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 5 /*ScalarType.INT32*/ }
+            { no: 2, name: "mass", kind: "scalar", opt: true, T: 2 /*ScalarType.FLOAT*/ },
+            { no: 3, name: "linear_velocity", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 2 /*ScalarType.FLOAT*/ },
+            { no: 4, name: "angular_velocity", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 2 /*ScalarType.FLOAT*/ },
+            { no: 5, name: "center_of_mass", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 2 /*ScalarType.FLOAT*/ },
+            { no: 6, name: "inertiaTensor", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 2 /*ScalarType.FLOAT*/ }
         ]);
     }
     create(value?: PartialMessage<EditNode_RigidBody>): EditNode_RigidBody {
@@ -533,36 +533,36 @@ class EditNode_RigidBody$Type extends MessageType<EditNode_RigidBody> {
                 case /* xyz.unavi.editor.edit.EditNode.RigidBody.Type type */ 1:
                     message.type = reader.int32();
                     break;
-                case /* optional uint32 mass */ 2:
-                    message.mass = reader.uint32();
+                case /* optional float mass */ 2:
+                    message.mass = reader.float();
                     break;
-                case /* repeated int32 linear_velocity */ 3:
+                case /* repeated float linear_velocity */ 3:
                     if (wireType === WireType.LengthDelimited)
                         for (let e = reader.int32() + reader.pos; reader.pos < e;)
-                            message.linearVelocity.push(reader.int32());
+                            message.linearVelocity.push(reader.float());
                     else
-                        message.linearVelocity.push(reader.int32());
+                        message.linearVelocity.push(reader.float());
                     break;
-                case /* repeated int32 angular_velocity */ 4:
+                case /* repeated float angular_velocity */ 4:
                     if (wireType === WireType.LengthDelimited)
                         for (let e = reader.int32() + reader.pos; reader.pos < e;)
-                            message.angularVelocity.push(reader.int32());
+                            message.angularVelocity.push(reader.float());
                     else
-                        message.angularVelocity.push(reader.int32());
+                        message.angularVelocity.push(reader.float());
                     break;
-                case /* repeated int32 center_of_mass */ 5:
+                case /* repeated float center_of_mass */ 5:
                     if (wireType === WireType.LengthDelimited)
                         for (let e = reader.int32() + reader.pos; reader.pos < e;)
-                            message.centerOfMass.push(reader.int32());
+                            message.centerOfMass.push(reader.float());
                     else
-                        message.centerOfMass.push(reader.int32());
+                        message.centerOfMass.push(reader.float());
                     break;
-                case /* repeated int32 inertiaTensor */ 6:
+                case /* repeated float inertiaTensor */ 6:
                     if (wireType === WireType.LengthDelimited)
                         for (let e = reader.int32() + reader.pos; reader.pos < e;)
-                            message.inertiaTensor.push(reader.int32());
+                            message.inertiaTensor.push(reader.float());
                     else
-                        message.inertiaTensor.push(reader.int32());
+                        message.inertiaTensor.push(reader.float());
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -579,35 +579,35 @@ class EditNode_RigidBody$Type extends MessageType<EditNode_RigidBody> {
         /* xyz.unavi.editor.edit.EditNode.RigidBody.Type type = 1; */
         if (message.type !== 0)
             writer.tag(1, WireType.Varint).int32(message.type);
-        /* optional uint32 mass = 2; */
+        /* optional float mass = 2; */
         if (message.mass !== undefined)
-            writer.tag(2, WireType.Varint).uint32(message.mass);
-        /* repeated int32 linear_velocity = 3; */
+            writer.tag(2, WireType.Bit32).float(message.mass);
+        /* repeated float linear_velocity = 3; */
         if (message.linearVelocity.length) {
             writer.tag(3, WireType.LengthDelimited).fork();
             for (let i = 0; i < message.linearVelocity.length; i++)
-                writer.int32(message.linearVelocity[i]);
+                writer.float(message.linearVelocity[i]);
             writer.join();
         }
-        /* repeated int32 angular_velocity = 4; */
+        /* repeated float angular_velocity = 4; */
         if (message.angularVelocity.length) {
             writer.tag(4, WireType.LengthDelimited).fork();
             for (let i = 0; i < message.angularVelocity.length; i++)
-                writer.int32(message.angularVelocity[i]);
+                writer.float(message.angularVelocity[i]);
             writer.join();
         }
-        /* repeated int32 center_of_mass = 5; */
+        /* repeated float center_of_mass = 5; */
         if (message.centerOfMass.length) {
             writer.tag(5, WireType.LengthDelimited).fork();
             for (let i = 0; i < message.centerOfMass.length; i++)
-                writer.int32(message.centerOfMass[i]);
+                writer.float(message.centerOfMass[i]);
             writer.join();
         }
-        /* repeated int32 inertiaTensor = 6; */
+        /* repeated float inertiaTensor = 6; */
         if (message.inertiaTensor.length) {
             writer.tag(6, WireType.LengthDelimited).fork();
             for (let i = 0; i < message.inertiaTensor.length; i++)
-                writer.int32(message.inertiaTensor[i]);
+                writer.float(message.inertiaTensor[i]);
             writer.join();
         }
         let u = options.writeUnknownFields;
@@ -627,20 +627,20 @@ class EditMesh$Type extends MessageType<EditMesh> {
             { no: 1, name: "target", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 2, name: "name", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 3, name: "material", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
-            { no: 4, name: "position", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 5 /*ScalarType.INT32*/ },
-            { no: 5, name: "normal", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 5 /*ScalarType.INT32*/ },
-            { no: 6, name: "indices", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 5 /*ScalarType.INT32*/ },
-            { no: 7, name: "color", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 5 /*ScalarType.INT32*/ },
-            { no: 8, name: "weights", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 5 /*ScalarType.INT32*/ },
-            { no: 9, name: "joints", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 5 /*ScalarType.INT32*/ },
-            { no: 10, name: "uv", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 5 /*ScalarType.INT32*/ },
-            { no: 11, name: "uv1", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 5 /*ScalarType.INT32*/ },
-            { no: 12, name: "uv2", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 5 /*ScalarType.INT32*/ },
-            { no: 13, name: "uv3", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 5 /*ScalarType.INT32*/ }
+            { no: 4, name: "indices", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 13 /*ScalarType.UINT32*/ },
+            { no: 5, name: "position", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 2 /*ScalarType.FLOAT*/ },
+            { no: 6, name: "normal", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 2 /*ScalarType.FLOAT*/ },
+            { no: 7, name: "color", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 2 /*ScalarType.FLOAT*/ },
+            { no: 8, name: "weights", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 2 /*ScalarType.FLOAT*/ },
+            { no: 9, name: "joints", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 2 /*ScalarType.FLOAT*/ },
+            { no: 10, name: "uv", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 2 /*ScalarType.FLOAT*/ },
+            { no: 11, name: "uv1", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 2 /*ScalarType.FLOAT*/ },
+            { no: 12, name: "uv2", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 2 /*ScalarType.FLOAT*/ },
+            { no: 13, name: "uv3", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 2 /*ScalarType.FLOAT*/ }
         ]);
     }
     create(value?: PartialMessage<EditMesh>): EditMesh {
-        const message = { target: "", position: [], normal: [], indices: [], color: [], weights: [], joints: [], uv: [], uv1: [], uv2: [], uv3: [] };
+        const message = { target: "", indices: [], position: [], normal: [], color: [], weights: [], joints: [], uv: [], uv1: [], uv2: [], uv3: [] };
         globalThis.Object.defineProperty(message, MESSAGE_TYPE, { enumerable: false, value: this });
         if (value !== undefined)
             reflectionMergePartial<EditMesh>(this, message, value);
@@ -660,75 +660,75 @@ class EditMesh$Type extends MessageType<EditMesh> {
                 case /* optional string material */ 3:
                     message.material = reader.string();
                     break;
-                case /* repeated int32 position */ 4:
+                case /* repeated uint32 indices */ 4:
                     if (wireType === WireType.LengthDelimited)
                         for (let e = reader.int32() + reader.pos; reader.pos < e;)
-                            message.position.push(reader.int32());
+                            message.indices.push(reader.uint32());
                     else
-                        message.position.push(reader.int32());
+                        message.indices.push(reader.uint32());
                     break;
-                case /* repeated int32 normal */ 5:
+                case /* repeated float position */ 5:
                     if (wireType === WireType.LengthDelimited)
                         for (let e = reader.int32() + reader.pos; reader.pos < e;)
-                            message.normal.push(reader.int32());
+                            message.position.push(reader.float());
                     else
-                        message.normal.push(reader.int32());
+                        message.position.push(reader.float());
                     break;
-                case /* repeated int32 indices */ 6:
+                case /* repeated float normal */ 6:
                     if (wireType === WireType.LengthDelimited)
                         for (let e = reader.int32() + reader.pos; reader.pos < e;)
-                            message.indices.push(reader.int32());
+                            message.normal.push(reader.float());
                     else
-                        message.indices.push(reader.int32());
+                        message.normal.push(reader.float());
                     break;
-                case /* repeated int32 color */ 7:
+                case /* repeated float color */ 7:
                     if (wireType === WireType.LengthDelimited)
                         for (let e = reader.int32() + reader.pos; reader.pos < e;)
-                            message.color.push(reader.int32());
+                            message.color.push(reader.float());
                     else
-                        message.color.push(reader.int32());
+                        message.color.push(reader.float());
                     break;
-                case /* repeated int32 weights */ 8:
+                case /* repeated float weights */ 8:
                     if (wireType === WireType.LengthDelimited)
                         for (let e = reader.int32() + reader.pos; reader.pos < e;)
-                            message.weights.push(reader.int32());
+                            message.weights.push(reader.float());
                     else
-                        message.weights.push(reader.int32());
+                        message.weights.push(reader.float());
                     break;
-                case /* repeated int32 joints */ 9:
+                case /* repeated float joints */ 9:
                     if (wireType === WireType.LengthDelimited)
                         for (let e = reader.int32() + reader.pos; reader.pos < e;)
-                            message.joints.push(reader.int32());
+                            message.joints.push(reader.float());
                     else
-                        message.joints.push(reader.int32());
+                        message.joints.push(reader.float());
                     break;
-                case /* repeated int32 uv */ 10:
+                case /* repeated float uv */ 10:
                     if (wireType === WireType.LengthDelimited)
                         for (let e = reader.int32() + reader.pos; reader.pos < e;)
-                            message.uv.push(reader.int32());
+                            message.uv.push(reader.float());
                     else
-                        message.uv.push(reader.int32());
+                        message.uv.push(reader.float());
                     break;
-                case /* repeated int32 uv1 */ 11:
+                case /* repeated float uv1 */ 11:
                     if (wireType === WireType.LengthDelimited)
                         for (let e = reader.int32() + reader.pos; reader.pos < e;)
-                            message.uv1.push(reader.int32());
+                            message.uv1.push(reader.float());
                     else
-                        message.uv1.push(reader.int32());
+                        message.uv1.push(reader.float());
                     break;
-                case /* repeated int32 uv2 */ 12:
+                case /* repeated float uv2 */ 12:
                     if (wireType === WireType.LengthDelimited)
                         for (let e = reader.int32() + reader.pos; reader.pos < e;)
-                            message.uv2.push(reader.int32());
+                            message.uv2.push(reader.float());
                     else
-                        message.uv2.push(reader.int32());
+                        message.uv2.push(reader.float());
                     break;
-                case /* repeated int32 uv3 */ 13:
+                case /* repeated float uv3 */ 13:
                     if (wireType === WireType.LengthDelimited)
                         for (let e = reader.int32() + reader.pos; reader.pos < e;)
-                            message.uv3.push(reader.int32());
+                            message.uv3.push(reader.float());
                     else
-                        message.uv3.push(reader.int32());
+                        message.uv3.push(reader.float());
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -751,74 +751,74 @@ class EditMesh$Type extends MessageType<EditMesh> {
         /* optional string material = 3; */
         if (message.material !== undefined)
             writer.tag(3, WireType.LengthDelimited).string(message.material);
-        /* repeated int32 position = 4; */
-        if (message.position.length) {
-            writer.tag(4, WireType.LengthDelimited).fork();
-            for (let i = 0; i < message.position.length; i++)
-                writer.int32(message.position[i]);
-            writer.join();
-        }
-        /* repeated int32 normal = 5; */
-        if (message.normal.length) {
-            writer.tag(5, WireType.LengthDelimited).fork();
-            for (let i = 0; i < message.normal.length; i++)
-                writer.int32(message.normal[i]);
-            writer.join();
-        }
-        /* repeated int32 indices = 6; */
+        /* repeated uint32 indices = 4; */
         if (message.indices.length) {
-            writer.tag(6, WireType.LengthDelimited).fork();
+            writer.tag(4, WireType.LengthDelimited).fork();
             for (let i = 0; i < message.indices.length; i++)
-                writer.int32(message.indices[i]);
+                writer.uint32(message.indices[i]);
             writer.join();
         }
-        /* repeated int32 color = 7; */
+        /* repeated float position = 5; */
+        if (message.position.length) {
+            writer.tag(5, WireType.LengthDelimited).fork();
+            for (let i = 0; i < message.position.length; i++)
+                writer.float(message.position[i]);
+            writer.join();
+        }
+        /* repeated float normal = 6; */
+        if (message.normal.length) {
+            writer.tag(6, WireType.LengthDelimited).fork();
+            for (let i = 0; i < message.normal.length; i++)
+                writer.float(message.normal[i]);
+            writer.join();
+        }
+        /* repeated float color = 7; */
         if (message.color.length) {
             writer.tag(7, WireType.LengthDelimited).fork();
             for (let i = 0; i < message.color.length; i++)
-                writer.int32(message.color[i]);
+                writer.float(message.color[i]);
             writer.join();
         }
-        /* repeated int32 weights = 8; */
+        /* repeated float weights = 8; */
         if (message.weights.length) {
             writer.tag(8, WireType.LengthDelimited).fork();
             for (let i = 0; i < message.weights.length; i++)
-                writer.int32(message.weights[i]);
+                writer.float(message.weights[i]);
             writer.join();
         }
-        /* repeated int32 joints = 9; */
+        /* repeated float joints = 9; */
         if (message.joints.length) {
             writer.tag(9, WireType.LengthDelimited).fork();
             for (let i = 0; i < message.joints.length; i++)
-                writer.int32(message.joints[i]);
+                writer.float(message.joints[i]);
             writer.join();
         }
-        /* repeated int32 uv = 10; */
+        /* repeated float uv = 10; */
         if (message.uv.length) {
             writer.tag(10, WireType.LengthDelimited).fork();
             for (let i = 0; i < message.uv.length; i++)
-                writer.int32(message.uv[i]);
+                writer.float(message.uv[i]);
             writer.join();
         }
-        /* repeated int32 uv1 = 11; */
+        /* repeated float uv1 = 11; */
         if (message.uv1.length) {
             writer.tag(11, WireType.LengthDelimited).fork();
             for (let i = 0; i < message.uv1.length; i++)
-                writer.int32(message.uv1[i]);
+                writer.float(message.uv1[i]);
             writer.join();
         }
-        /* repeated int32 uv2 = 12; */
+        /* repeated float uv2 = 12; */
         if (message.uv2.length) {
             writer.tag(12, WireType.LengthDelimited).fork();
             for (let i = 0; i < message.uv2.length; i++)
-                writer.int32(message.uv2[i]);
+                writer.float(message.uv2[i]);
             writer.join();
         }
-        /* repeated int32 uv3 = 13; */
+        /* repeated float uv3 = 13; */
         if (message.uv3.length) {
             writer.tag(13, WireType.LengthDelimited).fork();
             for (let i = 0; i < message.uv3.length; i++)
-                writer.int32(message.uv3[i]);
+                writer.float(message.uv3[i]);
             writer.join();
         }
         let u = options.writeUnknownFields;

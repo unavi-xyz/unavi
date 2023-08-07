@@ -5,8 +5,6 @@ import CommunityCard from "./CommunityCard";
 import CreateCard from "./CreateCard";
 import ExploreCard from "./ExploreCard";
 
-export const revalidate = 60;
-
 const title = "Home";
 
 export const metadata: Metadata = {

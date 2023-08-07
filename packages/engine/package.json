@@ -37,7 +37,7 @@
   },
   "peerDependencies": {
     "@unavi/protocol": "workspace:^",
-    "@wired-protocol/types": "^0.8.0",
+    "@wired-protocol/types": "^0.9.0",
     "gl-matrix": "^4.0.0-beta.1",
     "lattice-engine": "^0.3.18",
     "mediasoup-client": "^3.6.84",

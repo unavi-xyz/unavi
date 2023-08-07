@@ -8,9 +8,9 @@ message EditNode {
   optional string name = 2;
   optional string parent = 3;
   
-  repeated int32 translation = 4;
-  repeated int32 rotation = 5;
-  repeated int32 scale = 6;
+  repeated float translation = 4;
+  repeated float rotation = 5;
+  repeated float scale = 6;
 
   optional string mesh = 7;
 
@@ -32,9 +32,9 @@ message EditNode {
     }
 
     Type type = 1;
-    optional uint32 height = 2;
-    optional uint32 radius = 3;
-    repeated uint32 size = 4;
+    optional float height = 2;
+    optional float radius = 3;
+    repeated float size = 4;
     optional string mesh = 5;
   }
 
@@ -52,11 +52,11 @@ message EditNode {
     }
 
     Type type = 1;
-    optional uint32 mass = 2;
-    repeated int32 linear_velocity = 3;
-    repeated int32 angular_velocity = 4;
-    repeated int32 center_of_mass = 5;
-    repeated int32 inertiaTensor = 6;
+    optional float mass = 2;
+    repeated float linear_velocity = 3;
+    repeated float angular_velocity = 4;
+    repeated float center_of_mass = 5;
+    repeated float inertiaTensor = 6;
   }
 
   optional RigidBody rigid_body = 10;
@@ -68,14 +68,14 @@ message EditMesh {
   optional string name = 2;
   optional string material = 3;
 
-  repeated int32 position = 4;
-  repeated int32 normal = 5;
-  repeated int32 indices = 6;
-  repeated int32 color = 7;
-  repeated int32 weights = 8;
-  repeated int32 joints = 9;
-  repeated int32 uv = 10;
-  repeated int32 uv1 = 11;
-  repeated int32 uv2 = 12;
-  repeated int32 uv3 = 13;
+  repeated uint32 indices = 4;
+  repeated float position = 5;
+  repeated float normal = 6;
+  repeated float color = 7;
+  repeated float weights = 8;
+  repeated float joints = 9;
+  repeated float uv = 10;
+  repeated float uv1 = 11;
+  repeated float uv2 = 12;
+  repeated float uv3 = 13;
 }

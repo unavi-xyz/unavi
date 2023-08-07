@@ -1,15 +1,18 @@
 import { useClientStore } from "@unavi/engine";
-import { AddNode } from "@unavi/protocol";
+import { AddNode, EditorEvent } from "@unavi/protocol";
 
 import { genName } from "./utils/genName";
 
 export function addNode(namePrefix = "Node") {
   const name = genName(namePrefix);
 
-  const event = AddNode.create({
+  const addNode = AddNode.create({
     id: name,
   });
-  useClientStore.getState().mirrorEvent(AddNode.toBinary(event));
+  const event = EditorEvent.create({
+    event: { addNode, oneofKind: "addNode" },
+  });
+  useClientStore.getState().mirrorEvent(event);
 
   return name;
 }

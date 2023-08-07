@@ -27,7 +27,7 @@ export const baseMetadata: Metadata = {
         url: "/images/block-logo.png",
       },
     ],
-    icon: "/images/block-logo.png",
+    icon: "/images/block-logo-raw-light.png",
     shortcut: "/images/block-logo.png",
   },
   keywords: ["Metaverse", "WebXR", "Gaming"],
@@ -46,7 +46,7 @@ export const baseMetadata: Metadata = {
     title: APP_NAME,
     type: "website",
   },
-  themeColor: "#191919",
+  themeColor: "#ffffff",
   title: { default: APP_NAME, template: `%s / ${APP_NAME}` },
   twitter: {
     card: "summary_large_image",

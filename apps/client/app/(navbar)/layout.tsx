@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import Logo from "@/public/images/block-logo.png";
+import Logo from "@/public/images/block-logo-raw.png";
 import { env } from "@/src/env.mjs";
 
 import AccountButton from "./AccountButton";
@@ -23,7 +23,7 @@ export default function NavbarLayout({
             <div className="flex h-full items-center">
               <Link
                 href="/"
-                className="rounded-full outline-2 outline-offset-4"
+                className="outline-2 outline-offset-4"
               >
                 <Image src={Logo} alt="logo" priority width={40} height={40} />
               </Link>

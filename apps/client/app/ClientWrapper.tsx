@@ -11,7 +11,7 @@ import { chains, config } from "@/src/client/wagmi";
 import { RainbowKitAuthProvider } from "./RainbowkitAuthProvider";
 
 const theme = lightTheme({
-  accentColor: "#000000",
+  accentColor: "",
   accentColorForeground: "#ffffff",
   borderRadius: "large",
   fontStack: "system",

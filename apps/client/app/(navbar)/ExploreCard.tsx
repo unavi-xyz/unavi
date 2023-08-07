@@ -6,6 +6,7 @@ import Worlds from "./Worlds";
 
 export const runtime = "edge";
 export const preferredRegion = "iad1";
+export const revalidate = 60;
 
 export default async function ExploreCard() {
   const worlds = await fetchLatestWorlds(40);

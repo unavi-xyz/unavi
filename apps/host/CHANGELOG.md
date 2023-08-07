@@ -1,5 +1,11 @@
 # host
 
+## 0.6.1
+
+### Patch Changes
+
+- 4fd18af2: webrtc fixes
+
 ## 0.6.0
 
 ### Minor Changes

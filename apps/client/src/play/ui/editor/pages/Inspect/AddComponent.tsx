@@ -62,9 +62,7 @@ export default function AddComponent({ id }: Props) {
   return (
     <DropdownMenu>
       <DropdownTrigger asChild>
-        <button
-          className="w-full rounded-lg py-1 text-center transition hover:bg-neutral-800"
-        >
+        <button className="w-full rounded-lg py-1 text-center transition hover:bg-neutral-800">
           Add Component
         </button>
       </DropdownTrigger>

@@ -213,7 +213,13 @@ export function connectToHost(
         }
 
         case "playerData": {
-          useClientStore.getState().setPlayerData(msg.response.playerData.playerId, msg.response.playerData.key, msg.response.playerData.value);
+          useClientStore
+            .getState()
+            .setPlayerData(
+              msg.response.playerData.playerId,
+              msg.response.playerData.key,
+              msg.response.playerData.value
+            );
           break;
         }
 

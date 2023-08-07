@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { MdSettings } from "react-icons/md";
 
-import Logo from "@/public/images/Logo.png";
+import Logo from "@/public/images/block-logo-raw-light.png";
 import { usePointerLocked } from "@/src/play/hooks/usePointerLocked";
 import SettingsDialog from "@/src/play/ui/Settings/SettingsDialog";
 
@@ -24,26 +24,24 @@ export default function PlayOverlay({ id }: Props) {
   return (
     <>
       {!isPointerLocked && (
-        <div className="fixed left-5 top-4 z-20">
-          <div className="flex h-[52px] items-center space-x-3 rounded-full bg-black/50 pr-8 text-white backdrop-blur-xl">
+        <div className="fixed left-4 top-4 z-20">
+          <div className="flex items-center space-x-3 rounded-lg bg-black/60 px-3 py-2 text-white backdrop-blur-xl">
             <Link href={id.type === "id" ? `/world/${id.value}` : "/"}>
-              <div className="-ml-1">
-                <Image
-                  src={Logo}
-                  alt="Logo"
-                  width={52}
-                  height={52}
-                  draggable={false}
-                />
-              </div>
+              <Image
+                src={Logo}
+                alt="Logo"
+                width={36}
+                height={36}
+                draggable={false}
+              />
             </Link>
 
-            <div>
-              <div className="text-lg font-bold leading-6">
-                {metadata.info?.title}
+            <div className="flex h-9 flex-col justify-between">
+              <div className="text-lg font-bold leading-none">
+                {metadata.title}
               </div>
-              <div className="text-sm leading-4 text-white/70">
-                {metadata.info?.host}
+              <div className="text-sm leading-none text-white/80">
+                {metadata.host}
               </div>
             </div>
           </div>

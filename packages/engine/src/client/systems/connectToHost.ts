@@ -1,5 +1,25 @@
-import { EditorMessageSchema } from "@unavi/protocol";
-import { ResponseMessageSchema } from "@wired-protocol/types";
+import {
+  fromMediasoupDtlsParameters,
+  fromMediasoupRtpCapabilities,
+  fromMediasoupRtpParameters,
+  toMediasoupRtpCapabilities,
+  toMediasoupRtpParameters,
+  toMediasoupTransportOptions,
+} from "@unavi/utils";
+import {
+  ConnectTransport,
+  CreateTransport,
+  GetRouterRtpCapabilities,
+  Join,
+  PauseAudio,
+  Produce,
+  ProduceData,
+  Request,
+  Response,
+  SetRtpCapabilities,
+  TransportCreated_TransportType,
+  TransportType,
+} from "@wired-protocol/types";
 import { Device } from "mediasoup-client";
 import {
   Consumer,
@@ -13,7 +33,6 @@ import { Query, SystemRes } from "thyseus";
 import { useClientStore } from "../clientStore";
 import { WorldJson } from "../components";
 import { LOCATION_ROUNDING } from "../constants";
-import { ValidSendMessage } from "../types";
 import { toHex } from "../utils/toHex";
 
 let chatId = 0;
@@ -36,11 +55,16 @@ export function connectToHost(
     const prefix = world.host.startsWith("localhost") ? "ws://" : "wss://";
     const ws = new WebSocket(`${prefix}${world.host}`);
 
-    const sendQueue: ValidSendMessage[] = [];
+    const sendQueue: Request["message"][] = [];
 
-    const send = (message: ValidSendMessage) => {
+    const send = (message: Request["message"]) => {
+      const msg = Request.create({
+        message,
+      });
+
       if (ws.readyState === ws.OPEN) {
-        ws.send(JSON.stringify(message));
+        const bytes = Request.toBinary(msg);
+        ws.send(bytes);
       } else {
         sendQueue.push(message);
       }
@@ -90,14 +114,16 @@ export function connectToHost(
       sendQueue.length = 0;
 
       // Initiate WebRTC connection
+      const getRouterRtpCapabilities = GetRouterRtpCapabilities.create({});
       send({
-        data: null,
-        id: "com.wired-protocol.webrtc.router.rtpCapabilities.get",
+        getRouterRtpCapabilities,
+        oneofKind: "getRouterRtpCapabilities",
       });
 
       // Join world
       const uri = useClientStore.getState().worldUri;
-      send({ data: uri, id: "com.wired-protocol.world.join" });
+      const join = Join.create({ world: uri });
+      send({ join, oneofKind: "join" });
     };
 
     ws.onclose = () => {
@@ -108,69 +134,49 @@ export function connectToHost(
       console.error("WebSocket - ⚠️ Connection error", error);
     };
 
-    ws.onmessage = async (event) => {
-      const editor = EditorMessageSchema.safeParse(JSON.parse(event.data));
-
-      if (editor.success) {
-        useClientStore.getState().events.push(editor.data);
+    ws.onmessage = async (e) => {
+      if (!(e.data instanceof Blob)) {
+        console.log("Unexpected message type", e.data);
         return;
       }
 
-      const response = ResponseMessageSchema.safeParse(JSON.parse(event.data));
+      const buffer = await e.data.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      const msg = Response.fromBinary(bytes);
 
-      if (!response.success) {
-        console.warn(response.error);
-        return;
-      }
-
-      const { data, id } = response.data;
-
-      switch (id) {
-        case "com.wired-protocol.world.joined": {
-          console.info(`🌏 Joined world as player ${toHex(data)}`);
-
-          useClientStore.getState().setPlayerId(data);
+      switch (msg.response.oneofKind) {
+        case "joinSuccess": {
+          const playerId = msg.response.joinSuccess.playerId;
+          console.info(`🌏 Joined world as player ${toHex(playerId)}`);
+          useClientStore.getState().setPlayerId(playerId);
           break;
         }
 
-        case "com.wired-protocol.world.chat.message": {
+        case "chatMessage": {
           useClientStore.getState().addChatMessage({
             id: chatId++,
-            playerId: data.playerId,
-            text: data.message,
+            playerId: msg.response.chatMessage.playerId,
+            text: msg.response.chatMessage.message,
             timestamp: Date.now(),
             type: "player",
           });
           break;
         }
 
-        case "com.wired-protocol.world.player.join": {
-          useClientStore.getState().events.push(response.data);
+        case "playerJoined": {
+          useClientStore.getState().ecsIncoming.push(msg);
 
-          // TODO: Clean this up, make an avatar event or sum
-          const { avatars, names, handles } = useClientStore.getState();
+          const { setPlayerData } = useClientStore.getState();
 
-          if (data.avatar) {
-            avatars.set(data.playerId, data.avatar);
-          } else {
-            avatars.delete(data.playerId);
-          }
-
-          if (data.name) {
-            names.set(data.playerId, data.name);
-          } else {
-            names.delete(data.playerId);
-          }
-
-          if (data.handle) {
-            handles.set(data.playerId, data.handle);
-          } else {
-            handles.delete(data.playerId);
+          for (const [key, value] of Object.entries(
+            msg.response.playerJoined.data
+          )) {
+            setPlayerData(msg.response.playerJoined.playerId, key, value);
           }
 
           const displayName = useClientStore
             .getState()
-            .getDisplayName(data.playerId);
+            .getDisplayName(msg.response.playerJoined.playerId);
 
           useClientStore.getState().addChatMessage({
             id: chatId++,
@@ -181,10 +187,14 @@ export function connectToHost(
           break;
         }
 
-        case "com.wired-protocol.world.player.leave": {
-          useClientStore.getState().events.push(response.data);
+        case "playerLeft": {
+          useClientStore.getState().ecsIncoming.push(msg);
 
-          const displayName = useClientStore.getState().getDisplayName(data);
+          const playerId = msg.response.playerLeft.playerId;
+
+          const displayName = useClientStore
+            .getState()
+            .getDisplayName(playerId);
 
           useClientStore.getState().addChatMessage({
             id: chatId++,
@@ -193,63 +203,48 @@ export function connectToHost(
             type: "system",
           });
 
-          useClientStore.getState().avatars.delete(data);
-          useClientStore.getState().falling.delete(data);
-          useClientStore.getState().handles.delete(data);
-          useClientStore.getState().locations.delete(data);
-          useClientStore.getState().names.delete(data);
+          useClientStore.getState().playerData.delete(playerId);
+          useClientStore.getState().locations.delete(playerId);
           break;
         }
 
-        case "com.wired-protocol.world.player.falling": {
-          useClientStore.getState().falling.set(data.playerId, data.falling);
-          break;
-        }
+        case "routerRtpCapabilities": {
+          if (!msg.response.routerRtpCapabilities.rtpCapabilities) break;
 
-        case "com.wired-protocol.world.player.name": {
-          useClientStore.getState().names.set(data.playerId, data.name ?? "");
-          break;
-        }
-
-        case "com.wired-protocol.world.player.handle": {
-          useClientStore
-            .getState()
-            .handles.set(data.playerId, data.handle ?? "");
-          break;
-        }
-
-        case "com.wired-protocol.world.player.avatar": {
-          const avatars = useClientStore.getState().avatars;
-          if (data.avatar) {
-            avatars.set(data.playerId, data.avatar);
-          } else {
-            avatars.delete(data.playerId);
-          }
-          break;
-        }
-
-        case "com.wired-protocol.webrtc.router.rtpCapabilities": {
           try {
             // Initialize device
-            await device.load({ routerRtpCapabilities: data });
+            await device.load({
+              routerRtpCapabilities: toMediasoupRtpCapabilities(
+                msg.response.routerRtpCapabilities.rtpCapabilities
+              ),
+            });
 
             // Create transports
+            const createProducerTransport = CreateTransport.create({
+              type: TransportType.PRODUCER,
+            });
+            const createConsumerTransport = CreateTransport.create({
+              type: TransportType.CONSUMER,
+            });
+
             send({
-              data: "producer",
-              id: "com.wired-protocol.webrtc.transport.create",
+              createTransport: createProducerTransport,
+              oneofKind: "createTransport",
             });
             send({
-              data: "consumer",
-              id: "com.wired-protocol.webrtc.transport.create",
+              createTransport: createConsumerTransport,
+              oneofKind: "createTransport",
             });
 
             // Set rtp capabilities
+            const setRtpCapabilities = SetRtpCapabilities.create({
+              rtpCapabilities: fromMediasoupRtpCapabilities(
+                device.rtpCapabilities
+              ),
+            });
             send({
-              data: {
-                codecs: device.rtpCapabilities.codecs ?? [],
-                headerExtensions: device.rtpCapabilities.headerExtensions ?? [],
-              },
-              id: "com.wired-protocol.webrtc.rtpCapabilities.set",
+              oneofKind: "setRtpCapabilities",
+              setRtpCapabilities,
             });
           } catch (error) {
             console.error("Error loading device", error);
@@ -258,27 +253,44 @@ export function connectToHost(
           break;
         }
 
-        case "com.wired-protocol.webrtc.transport.created": {
+        case "transportCreated": {
+          if (!msg.response.transportCreated.options) break;
+
           // Create transport
+          const options = toMediasoupTransportOptions(
+            msg.response.transportCreated.options
+          );
+
+          const transportType = msg.response.transportCreated.type;
+
           const transport =
-            data.type === "producer"
-              ? device.createSendTransport(data.options)
-              : device.createRecvTransport(data.options);
+            transportType === TransportCreated_TransportType.PRODUCER
+              ? device.createSendTransport(options)
+              : device.createRecvTransport(options);
 
           // Connect transport
           transport.on("connect", ({ dtlsParameters }, callback) => {
-            send({
-              data: { dtlsParameters, type: data.type },
-              id: "com.wired-protocol.webrtc.transport.connect",
+            const connect = ConnectTransport.create({
+              dtlsParameters: fromMediasoupDtlsParameters(dtlsParameters),
+              type:
+                transportType === TransportCreated_TransportType.PRODUCER
+                  ? TransportType.PRODUCER
+                  : TransportType.CONSUMER,
             });
+
+            send({
+              connectTransport: connect,
+              oneofKind: "connectTransport",
+            });
+
             callback();
           });
 
           transport.on("connectionstatechange", (state) => {
-            console.info(`WebRTC - ${data.type} ${state}`);
+            console.info(`WebRTC - ${transportType} ${state}`);
           });
 
-          if (data.type === "consumer") {
+          if (transportType === TransportCreated_TransportType.CONSUMER) {
             consumerTransport = transport;
           } else {
             producerTransport = transport;
@@ -290,10 +302,12 @@ export function connectToHost(
               }
 
               producerIdCallback = (id: string) => callback({ id });
-              send({
-                data: rtpParameters,
-                id: "com.wired-protocol.webrtc.produce",
+
+              const produce = Produce.create({
+                rtpParameters: fromMediasoupRtpParameters(rtpParameters),
               });
+
+              send({ oneofKind: "produce", produce });
             });
 
             // producer = await transport.produce({ track });
@@ -302,10 +316,12 @@ export function connectToHost(
               "producedata",
               ({ sctpStreamParameters }, callback) => {
                 dataProducerIdCallback = (id: string) => callback({ id });
-                send({
-                  data: sctpStreamParameters,
-                  id: "com.wired-protocol.webrtc.produceData",
+
+                const produceData = ProduceData.create({
+                  sctpStreamParameters,
                 });
+
+                send({ oneofKind: "produceData", produceData });
               }
             );
 
@@ -326,32 +342,47 @@ export function connectToHost(
           break;
         }
 
-        case "com.wired-protocol.webrtc.producer.id": {
-          if (producerIdCallback) producerIdCallback(data);
+        case "producerId": {
+          if (producerIdCallback) {
+            producerIdCallback(msg.response.producerId.producerId);
+          }
           break;
         }
 
-        case "com.wired-protocol.webrtc.dataProducer.id": {
-          if (dataProducerIdCallback) dataProducerIdCallback(data);
+        case "dataProducerId": {
+          if (dataProducerIdCallback) {
+            dataProducerIdCallback(msg.response.dataProducerId.dataProducerId);
+          }
           break;
         }
 
-        case "com.wired-protocol.webrtc.consumer.create": {
+        case "createConsumer": {
           if (!consumerTransport) {
             console.warn("Consumer transport not initialized");
             return;
           }
 
+          if (!msg.response.createConsumer.rtpParameters) {
+            console.warn("Did not receive consumer rtp parameters");
+            return;
+          }
+
           consumer = await consumerTransport.consume({
-            id: data.consumerId,
+            id: msg.response.createConsumer.consumerId,
             kind: "audio",
-            producerId: data.producerId,
-            rtpParameters: data.rtpParameters,
+            producerId: msg.response.createConsumer.producerId,
+            rtpParameters: toMediasoupRtpParameters(
+              msg.response.createConsumer.rtpParameters
+            ),
           });
 
           // Start receiving audio
-          send({ data: false, id: "com.wired-protocol.webrtc.audio.pause" });
-          await consumer.resume();
+          const pauseAudio = PauseAudio.create({
+            paused: false,
+          });
+          send({ oneofKind: "pauseAudio", pauseAudio });
+
+          consumer.resume();
 
           // Create audio stream
           const stream = new MediaStream([consumer.track.clone()]);
@@ -388,23 +419,30 @@ export function connectToHost(
           break;
         }
 
-        case "com.wired-protocol.webrtc.dataConsumer.create": {
+        case "createDataConsumer": {
           if (!consumerTransport) {
             console.warn("No consumer transport");
+            break;
+          }
+
+          if (!msg.response.createDataConsumer.sctpStreamParameters) {
+            console.warn(
+              "Did not receive data consumer sctp stream parameters"
+            );
             break;
           }
 
           try {
             // Create data consumer
             dataConsumer = await consumerTransport.consumeData({
-              dataProducerId: data.dataProducerId,
-              id: data.dataConsumerId,
-              sctpStreamParameters: data.sctpStreamParameters,
+              dataProducerId: msg.response.createDataConsumer.dataProducerId,
+              id: msg.response.createDataConsumer.dataConsumerId,
+              sctpStreamParameters:
+                msg.response.createDataConsumer.sctpStreamParameters,
             });
 
-            const locations = useClientStore.getState().locations;
-            const lastLocationUpdates =
-              useClientStore.getState().lastLocationUpdates;
+            const { locations, lastLocationUpdates } =
+              useClientStore.getState();
 
             // Listen for data
             dataConsumer.on("message", async (message: ArrayBuffer | Blob) => {

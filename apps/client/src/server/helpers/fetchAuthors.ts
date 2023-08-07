@@ -1,20 +1,20 @@
-import { WorldMetadata } from "@wired-protocol/types";
+import { World } from "@wired-protocol/types";
 
 import { fetchUserProfile, UserProfile } from "./fetchUserProfile";
 
-export async function fetchAuthors(metadata: WorldMetadata) {
-  if (!metadata.info?.authors) return [];
+export async function fetchAuthors(metadata: World) {
+  if (!metadata?.authors) return [];
 
   const profiles: UserProfile[] = [];
 
   await Promise.all(
-    metadata.info.authors.map(async (author) => {
+    metadata.authors.map(async (author) => {
       const profile = await fetchUserProfile(author);
 
       if (!profile) {
         profiles.push({
           home: "",
-          metadata: { name: author },
+          metadata: { links: [], name: author },
           username: "",
         });
         return;

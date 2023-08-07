@@ -1,17 +1,36 @@
-import { TransformControls } from "lattice-engine/transform";
+import { TransformControls, TransformMode } from "lattice-engine/transform";
 import { Mut, Query } from "thyseus";
 
 import { useSceneStore } from "../sceneStore";
+import { Tool } from "../types";
 
 let lastTransformTarget: bigint | undefined;
 
-export function syncTransformTarget(
+export function syncTransformControls(
   transformControls: Query<Mut<TransformControls>>
 ) {
   for (const controls of transformControls) {
     const targetId = controls.targetId;
 
-    const { sceneTreeId, selectedId, rootId, items } = useSceneStore.getState();
+    const { sceneTreeId, selectedId, rootId, items, tool } =
+      useSceneStore.getState();
+
+    switch (tool) {
+      case Tool.Translate: {
+        controls.mode = TransformMode.Translate;
+        break;
+      }
+
+      case Tool.Rotate: {
+        controls.mode = TransformMode.Rotate;
+        break;
+      }
+
+      case Tool.Scale: {
+        controls.mode = TransformMode.Scale;
+        break;
+      }
+    }
 
     const uiId = selectedId ?? 0n;
 

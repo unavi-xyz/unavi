@@ -25,7 +25,12 @@ export default function Canvas() {
   return (
     <canvas
       ref={canvas}
-      style={{ flex: 1, touchAction: "none", width: "100%" }}
+      style={{
+        flex: 1,
+        touchAction: "none",
+        userSelect: "none",
+        width: "100%",
+      }}
     />
   );
 }

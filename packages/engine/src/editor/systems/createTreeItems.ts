@@ -15,11 +15,11 @@ import { useSceneStore } from "../sceneStore";
  * Updates the scene tree with the latest entities.
  */
 export function createTreeItems(
+  sceneStruct: Res<SceneStruct>,
   nodes: Query<[Entity, Transform, Parent]>,
   scenes: Query<[Entity, Scene]>,
   names: Query<[Entity, Name]>,
-  extras: Query<Extra>,
-  sceneStruct: Res<SceneStruct>
+  extras: Query<Extra>
 ) {
   const { enabled, items } = useSceneStore.getState();
   if (!enabled) return;

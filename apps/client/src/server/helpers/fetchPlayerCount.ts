@@ -12,7 +12,7 @@ export const fetchPlayerCount = cache(async (uri: string, host?: string) => {
       const world = await fetchWorldMetadata(uri);
       if (!world) throw new Error("Failed to read world metadata");
 
-      worldHost = world.metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST;
+      worldHost = world.metadata?.host || env.NEXT_PUBLIC_DEFAULT_HOST;
     }
 
     const http =

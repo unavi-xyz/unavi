@@ -8,19 +8,13 @@
     {
       "purpose": "maskable",
       "sizes": "512x512",
-      "src": "images/Icon-Maskable.png",
+      "src": "images/block-logo.png",
       "type": "image/png"
     },
     {
       "purpose": "any",
       "sizes": "512x512",
-      "src": "images/Icon-512.png",
-      "type": "image/png"
-    },
-    {
-      "purpose": "any",
-      "sizes": "192x192",
-      "src": "images/Icon-192.png",
+      "src": "images/block-logo.png",
       "type": "image/png"
     }
   ],
@@ -29,5 +23,5 @@
   "short_name": "UNAVI",
   "splash_pages": null,
   "start_url": "/",
-  "theme_color": "#191919"
+  "theme_color": "#ffffff"
 }

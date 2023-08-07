@@ -1,4 +1,4 @@
-import { WorldMetadata } from "@wired-protocol/types";
+import { SetPlayerData, World } from "@wired-protocol/types";
 import { Engine } from "lattice-engine/core";
 import { useEffect } from "react";
 
@@ -14,7 +14,7 @@ interface Props {
   skybox?: string;
   uri?: string;
   baseHomeServer?: string;
-  metadata?: WorldMetadata;
+  metadata?: World;
 }
 
 export function Client({ skybox, defaultAvatar, uri }: Props) {
@@ -22,7 +22,7 @@ export function Client({ skybox, defaultAvatar, uri }: Props) {
   const sendWebSockets = useClientStore((state) => state.sendWebSockets);
   const avatar = useClientStore((state) => state.avatar);
   const handle = useClientStore((state) => state.handle);
-  const name = useClientStore((state) => state.name);
+  const nickname = useClientStore((state) => state.nickname);
 
   useEffect(() => {
     if (!world) return;
@@ -57,25 +57,34 @@ export function Client({ skybox, defaultAvatar, uri }: Props) {
   }, []);
 
   useEffect(() => {
-    sendWebSockets({
-      data: avatar,
-      id: "com.wired-protocol.world.user.avatar",
+    const setPlayerData = SetPlayerData.create({
+      data: {
+        avatar,
+      },
     });
+
+    sendWebSockets({ oneofKind: "setPlayerData", setPlayerData });
   }, [sendWebSockets, avatar]);
 
   useEffect(() => {
-    sendWebSockets({
-      data: handle,
-      id: "com.wired-protocol.world.user.handle",
+    const setPlayerData = SetPlayerData.create({
+      data: {
+        handle,
+      },
     });
+
+    sendWebSockets({ oneofKind: "setPlayerData", setPlayerData });
   }, [sendWebSockets, handle]);
 
   useEffect(() => {
-    sendWebSockets({
-      data: name,
-      id: "com.wired-protocol.world.user.name",
+    const setPlayerData = SetPlayerData.create({
+      data: {
+        nickname,
+      },
     });
-  }, [sendWebSockets, name]);
+
+    sendWebSockets({ oneofKind: "setPlayerData", setPlayerData });
+  }, [sendWebSockets, nickname]);
 
   return <Canvas />;
 }

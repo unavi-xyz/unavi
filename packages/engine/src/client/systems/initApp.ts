@@ -4,6 +4,7 @@ import { InputStruct } from "lattice-engine/input";
 import { Name, SceneStruct } from "lattice-engine/scene";
 import { Commands, dropStruct, Mut, Res } from "thyseus";
 
+import { ENABLE_POINTER_LOCK } from "../../constants";
 import { WorldJson } from "../components";
 import { createPlayerControls } from "../utils/createPlayerControls";
 import { createScene } from "../utils/createScene";
@@ -14,15 +15,16 @@ export function initApp(
   sceneStruct: Res<Mut<SceneStruct>>,
   inputStruct: Res<Mut<InputStruct>>
 ) {
+  inputStruct.enablePointerLock = ENABLE_POINTER_LOCK;
+
   coreStore.canvas = document.querySelector("canvas");
 
   const { rootId, sceneId } = createScene(commands, coreStore, sceneStruct);
   const cameraId = createPlayerControls(
-    [0, 8, 0],
+    [0, 4, 0],
     sceneId,
     commands,
-    sceneStruct,
-    inputStruct
+    sceneStruct
   );
 
   const csm = new CascadingShadowMaps();

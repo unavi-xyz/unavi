@@ -1,12 +1,10 @@
-import { editNode } from "@/src/play/actions/editNode";
-import TextFieldDark from "@/src/ui/TextFieldDark";
-
 import { useTreeValue } from "../../hooks/useTreeValue";
 import { getDisplayName } from "../../utils/getDisplayName";
 import PanelPage from "../PanelPage";
-import Rotation from "./Rotation";
-import Scale from "./Scale";
-import Translation from "./Translation";
+import AddComponent from "./AddComponent";
+import Name from "./Name";
+import Physics from "./Physics";
+import Transform from "./Transform";
 
 interface Props {
   id: bigint;
@@ -14,32 +12,15 @@ interface Props {
 
 export default function InspectPage({ id }: Props) {
   const name = useTreeValue(id, "name");
-  const locked = useTreeValue(id, "locked");
 
   const displayName = getDisplayName(name, id);
 
   return (
     <PanelPage title={displayName}>
-      <TextFieldDark
-        label="Name"
-        value={name}
-        disabled={locked}
-        placeholder={displayName}
-        onChange={(e) => {
-          if (!name) {
-            return;
-          }
-
-          editNode({
-            name: e.target.value,
-            target: name,
-          });
-        }}
-      />
-
-      <Translation id={id} />
-      <Rotation id={id} />
-      <Scale id={id} />
+      <Name id={id} />
+      <Transform id={id} />
+      <Physics id={id} />
+      <AddComponent id={id} />
     </PanelPage>
   );
 }

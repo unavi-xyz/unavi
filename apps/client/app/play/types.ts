@@ -7,12 +7,6 @@ export enum PlayMode {
   Edit = "edit",
 }
 
-export enum Tool {
-  Translate = "translate",
-  Rotate = "rotate",
-  Scale = "scale",
-}
-
 export enum RightPanelPage {
   World = "world",
 }

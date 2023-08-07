@@ -1,8 +1,9 @@
-import { useClientStore } from "@unavi/engine";
 import { SphereGeometry } from "three";
 
 import { addNode } from "./addNode";
+import { editNode } from "./editNode";
 import { addThreeMesh } from "./utils/addThreeMesh";
+import { getAddParent } from "./utils/getAddParent";
 
 export function addSphere() {
   const geometry = new SphereGeometry(0.5);
@@ -10,14 +11,12 @@ export function addSphere() {
   const mesh = addThreeMesh(geometry);
   const name = addNode("Sphere");
 
-  useClientStore.getState().mirrorEvent({
-    data: {
-      mesh,
-      parent: useClientStore.getState().rootName,
-      target: name,
-    },
-    id: "xyz.unavi.editor.edit.node",
-    target: "client",
+  const parent = getAddParent();
+
+  editNode({
+    mesh,
+    parent,
+    target: name,
   });
 
   return name;

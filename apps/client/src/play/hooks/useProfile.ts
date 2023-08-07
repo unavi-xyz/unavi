@@ -1,4 +1,4 @@
-import { ProfileMetadata } from "@wired-protocol/types";
+import { Profile } from "@wired-protocol/types";
 import useSWR from "swr";
 
 import { useAuth } from "@/src/client/AuthProvider";
@@ -11,7 +11,7 @@ import { fetcher } from "../utils/fetcher";
 export function useProfile() {
   const { status } = useAuth();
 
-  const { data, error, isLoading } = useSWR<ProfileMetadata | null>(
+  const { data, error, isLoading } = useSWR<Profile | null>(
     () => (status === "authenticated" ? "/api/auth/profile" : null),
     fetcher
   );

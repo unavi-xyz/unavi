@@ -1,12 +1,10 @@
 import { Euler, Quaternion } from "three";
 
 import { editNode } from "@/src/play/actions/editNode";
-import TextFieldDark from "@/src/ui/TextFieldDark";
 
-import { useTreeArrayValue } from "../../hooks/useTreeArrayValue";
 import { useTreeValue } from "../../hooks/useTreeValue";
-
-const STEP = 1;
+import { useTreeValueKey } from "../../hooks/useTreeValueKey";
+import NumberInput from "./NumberInput";
 
 const euler = new Euler();
 const quat = new Quaternion();
@@ -18,10 +16,10 @@ interface Props {
 export default function Rotation({ id }: Props) {
   const name = useTreeValue(id, "name");
   const locked = useTreeValue(id, "locked");
-  const rawX = useTreeArrayValue(id, "rotation", 0);
-  const rawY = useTreeArrayValue(id, "rotation", 1);
-  const rawZ = useTreeArrayValue(id, "rotation", 2);
-  const rawW = useTreeArrayValue(id, "rotation", 3);
+  const rawX = useTreeValueKey(id, "rotation", 0);
+  const rawY = useTreeValueKey(id, "rotation", 1);
+  const rawZ = useTreeValueKey(id, "rotation", 2);
+  const rawW = useTreeValueKey(id, "rotation", 3);
 
   if (
     !name ||
@@ -40,74 +38,60 @@ export default function Rotation({ id }: Props) {
   const z = round(toDegrees(euler.z));
 
   return (
-    <div>
-      <div className="font-bold text-neutral-400">Rotation</div>
+    <div className="flex items-center space-x-1">
+      <div className="w-20 shrink-0 font-bold text-neutral-400">Rotation</div>
 
-      <div className="flex space-x-2">
-        <TextFieldDark
-          value={x}
-          type="number"
-          step={STEP}
-          placeholder="X"
-          disabled={locked}
-          onChange={(e) => {
-            quat.setFromEuler(
-              euler.set(
-                toRadians(Number(e.target.value)),
-                toRadians(y),
-                toRadians(z)
-              )
-            );
+      <NumberInput
+        value={x}
+        label="X"
+        placeholder="X"
+        disabled={locked}
+        sensitivity={360}
+        onValueChange={(val) => {
+          quat.setFromEuler(
+            euler.set(toRadians(val), toRadians(y), toRadians(z))
+          );
 
-            editNode({
-              rotation: [quat.x, quat.y, quat.z, quat.w],
-              target: name,
-            });
-          }}
-        />
-        <TextFieldDark
-          value={y}
-          type="number"
-          step={STEP}
-          placeholder="Y"
-          disabled={locked}
-          onChange={(e) => {
-            quat.setFromEuler(
-              euler.set(
-                toRadians(x),
-                toRadians(Number(e.target.value)),
-                toRadians(z)
-              )
-            );
+          editNode({
+            rotation: [quat.x, quat.y, quat.z, quat.w],
+            target: name,
+          });
+        }}
+      />
+      <NumberInput
+        value={y}
+        label="Y"
+        placeholder="Y"
+        disabled={locked}
+        sensitivity={360}
+        onValueChange={(val) => {
+          quat.setFromEuler(
+            euler.set(toRadians(x), toRadians(val), toRadians(z))
+          );
 
-            editNode({
-              rotation: [quat.x, quat.y, quat.z, quat.w],
-              target: name,
-            });
-          }}
-        />
-        <TextFieldDark
-          value={z}
-          type="number"
-          step={STEP}
-          placeholder="Z"
-          disabled={locked}
-          onChange={(e) => {
-            quat.setFromEuler(
-              euler.set(
-                toRadians(x),
-                toRadians(y),
-                toRadians(Number(e.target.value))
-              )
-            );
+          editNode({
+            rotation: [quat.x, quat.y, quat.z, quat.w],
+            target: name,
+          });
+        }}
+      />
+      <NumberInput
+        value={z}
+        label="Z"
+        placeholder="Z"
+        disabled={locked}
+        sensitivity={360}
+        onValueChange={(val) => {
+          quat.setFromEuler(
+            euler.set(toRadians(x), toRadians(y), toRadians(val))
+          );
 
-            editNode({
-              rotation: [quat.x, quat.y, quat.z, quat.w],
-              target: name,
-            });
-          }}
-        />
-      </div>
+          editNode({
+            rotation: [quat.x, quat.y, quat.z, quat.w],
+            target: name,
+          });
+        }}
+      />
     </div>
   );
 }

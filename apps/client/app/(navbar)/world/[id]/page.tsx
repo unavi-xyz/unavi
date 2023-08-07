@@ -43,10 +43,10 @@ export default async function World({ params }: Props) {
         <div className="flex flex-col space-y-8 md:flex-row md:space-x-8 md:space-y-0">
           <div className="aspect-card h-full w-full rounded-3xl bg-neutral-200">
             <div className="relative h-full w-full object-cover">
-              {metadata.info?.image &&
-                (isFromCDN(metadata.info.image) ? (
+              {metadata?.image &&
+                (isFromCDN(metadata.image) ? (
                   <Image
-                    src={metadata.info.image}
+                    src={metadata.image}
                     priority
                     fill
                     sizes="(min-width: 768px) 60vw, 100vw"
@@ -55,7 +55,7 @@ export default async function World({ params }: Props) {
                   />
                 ) : (
                   <img
-                    src={metadata.info.image}
+                    src={metadata.image}
                     sizes="(min-width: 768px) 60vw, 100vw"
                     alt=""
                     className="h-full w-full rounded-3xl object-cover"
@@ -68,7 +68,7 @@ export default async function World({ params }: Props) {
           <div className="flex flex-col justify-between space-y-8 md:w-2/3">
             <div className="space-y-4">
               <div className="text-center text-3xl font-black">
-                {metadata.info?.title || `World ${params.id}`}
+                {metadata?.title || `World ${params.id}`}
               </div>
 
               <div>
@@ -97,13 +97,13 @@ export default async function World({ params }: Props) {
                 <div className="flex justify-center space-x-1 md:justify-start">
                   <div className="font-semibold text-neutral-500">Host</div>
                   <div className="font-bold">
-                    {metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST}
+                    {metadata?.host || env.NEXT_PUBLIC_DEFAULT_HOST}
                   </div>
                 </div>
 
                 <PlayerCount
                   uri={found.uri}
-                  host={metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST}
+                  host={metadata?.host || env.NEXT_PUBLIC_DEFAULT_HOST}
                 />
               </div>
             </div>

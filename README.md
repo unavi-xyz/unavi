@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./assets/Logo.png" alt="UNAVI Logo" height="200" />
+  <img src="./assets/block-logo.png" alt="UNAVI Logo" height="200" />
   <h1>UNAVI</h1>
   <strong>An open and decentralized web-based metaverse platform.</strong>
 </div>
@@ -36,10 +36,11 @@ This [turborepo](https://turborepo.org/) uses [pnpm](https://pnpm.io/) as a pack
 ### Packages
 
 - [engine](packages/engine): Extensions of [Lattice](https://github.com/lattice-engine/lattice)
-- [eslint-config-custom](packages/eslint-config-custom): custom eslint config used throughout the repo
+- [eslint-config-custom](packages/eslint-config-custom): Eslint config used throughout the repo
 - [gltf-extension](packages/gltf-extension): [glTF-Transform](https://github.com/donmccurdy/glTF-Transform) extensions used by the client
 - [protocol](packages/protocol): Extensions of [The Wired Protocol](https://github.com/wired-protocol/spec)
 - [tsconfig](packages/tsconfig): tsconfigs used throughout the repo
+- [utils](packages/utils): Utilities used by both the client and host
 
 ### Utilities
 

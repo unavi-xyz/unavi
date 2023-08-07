@@ -31,30 +31,30 @@ export default function AccountSettings({ onClose }: Props) {
 
       {user ? (
         <div className="flex items-center space-x-4 pt-2">
-          <div className="overflow-hidden rounded-xl">
-            <Avatar
-              src={image}
-              uniqueKey={user.username}
-              loading={loading}
-              size={48}
-            />
-          </div>
+          <a
+            href={`/@${user.username}`}
+            target="_blank"
+            className="rounded-xl outline-2 transition hover:opacity-90 active:opacity-80"
+          >
+            <div className="overflow-hidden rounded-xl">
+              <Avatar
+                src={image}
+                uniqueKey={user.username}
+                loading={loading}
+                size={48}
+              />
+            </div>
+          </a>
 
           {loading ? (
             <div className="h-5 w-40 animate-pulse rounded-md bg-neutral-300" />
           ) : (
-            <a
-              href={`/@${user.username}`}
-              target="_blank"
-              className="flex items-center justify-center rounded-lg px-3 py-1 text-xl transition hover:bg-neutral-200 active:opacity-90"
-            >
-              <div>
-                <span className="text-xl font-bold">{profile?.name}</span>
-                <span className="text-lg font-bold text-neutral-800">
-                  @{user.username}
-                </span>
-              </div>
-            </a>
+            <div>
+              <span className="text-xl font-bold">{profile?.name}</span>
+              <span className="text-lg font-bold text-neutral-800">
+                @{user.username}
+              </span>
+            </div>
           )}
 
           <div className="grow" />

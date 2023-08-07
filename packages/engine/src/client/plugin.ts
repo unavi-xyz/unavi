@@ -38,7 +38,7 @@ export function clientPlugin(builder: WorldBuilder) {
     .addPlugin(physicsPlugin)
     .addPlugin(playerPlugin)
     .addPlugin(postprocessingPlugin)
-    .addPlugin(getTransformPlugin({ playerControls: true }))
+    .addPlugin(getTransformPlugin({ physics: true, playerControls: true }))
     .addPlugin(textPlugin)
     .addPlugin(vrmPlugin)
     .addSystemsToSchedule(LatticeSchedules.Startup, initApp)

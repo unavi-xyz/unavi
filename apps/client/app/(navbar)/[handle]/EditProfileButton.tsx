@@ -24,7 +24,7 @@ import TextField from "@/src/ui/TextField";
 import { cropImage } from "@/src/utils/cropImage";
 import { parseError } from "@/src/utils/parseError";
 
-const HEADER_IMAGE_RATIO = 4.4444;
+const HEADER_IMAGE_RATIO = 3;
 
 interface Props {
   userId: string;
@@ -188,7 +188,7 @@ export default function EditProfileButton({
                 );
                 setBackgroundFile(croppedFile);
               }}
-              className="h-28 w-full rounded-lg object-cover"
+              className="aspect-[3/1] w-full rounded-lg object-cover"
             />
           </div>
 

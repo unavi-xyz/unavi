@@ -1,4 +1,4 @@
-import { WorldMetadata } from "@wired-protocol/types";
+import { World } from "@wired-protocol/types";
 import Link from "next/link";
 
 import PlayerCount from "@/app/(navbar)/PlayerCount";
@@ -9,7 +9,7 @@ import { CardImage } from "./Card";
 interface Props {
   id: string;
   uri: string;
-  metadata: WorldMetadata;
+  metadata: World;
   tokenId?: number;
   sizes?: string;
 }
@@ -31,10 +31,10 @@ export default function WorldCard({
           href={`/world/${id}`}
           className="rounded-3xl outline-2 outline-offset-4"
         >
-          <CardImage group image={metadata.info?.image} sizes={sizes}>
+          <CardImage group image={metadata?.image} sizes={sizes}>
             <PlayerCount
               uri={uri}
-              host={metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST}
+              host={metadata?.host || env.NEXT_PUBLIC_DEFAULT_HOST}
             />
           </CardImage>
 
@@ -53,7 +53,7 @@ export default function WorldCard({
 
       <div className="space-x-2 pb-1 pt-2.5">
         <span className="text-xl font-bold text-neutral-900">
-          {metadata.info?.title}
+          {metadata?.title}
         </span>
       </div>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { WorldMetadata } from "@wired-protocol/types";
+import { World } from "@wired-protocol/types";
 import dynamic from "next/dynamic";
 import Script from "next/script";
 import { Suspense, useEffect, useState } from "react";
@@ -22,7 +22,7 @@ const Overlay = dynamic(() => import("./Overlay"), { ssr: false });
 
 interface Props {
   id: WorldUriId;
-  metadata: WorldMetadata;
+  metadata: World;
   uri: string;
 }
 
@@ -43,7 +43,7 @@ export default function App({ id, metadata, uri }: Props) {
   const host =
     process.env.NODE_ENV === "development"
       ? "localhost:4000"
-      : metadata.info?.host || env.NEXT_PUBLIC_DEFAULT_HOST;
+      : metadata.host || env.NEXT_PUBLIC_DEFAULT_HOST;
 
   return (
     <>

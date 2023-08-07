@@ -1,4 +1,4 @@
-import { WorldMetadata } from "@wired-protocol/types";
+import { World } from "@wired-protocol/types";
 
 import { useAuth } from "@/src/client/AuthProvider";
 import { HOME_SERVER } from "@/src/constants";
@@ -14,7 +14,7 @@ import { PlayMode, WorldUriId } from "./types";
 
 interface Props {
   id: WorldUriId;
-  metadata: WorldMetadata;
+  metadata: World;
 }
 
 export default function Overlay({ id, metadata }: Props) {
@@ -24,9 +24,9 @@ export default function Overlay({ id, metadata }: Props) {
   const { user } = useAuth();
 
   const isAuthor = Boolean(
-    metadata.info?.authors &&
+    metadata?.authors &&
       user?.username &&
-      metadata.info.authors.includes(`@${user.username}:${HOME_SERVER}`)
+      metadata.authors.includes(`@${user.username}:${HOME_SERVER}`)
   );
 
   return (

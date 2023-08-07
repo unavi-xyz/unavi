@@ -15,7 +15,7 @@ export default function Worlds({ worlds }: Props) {
   const filtered = worlds.filter(
     (world) =>
       filter === "" ||
-      world.metadata.info?.title?.toLowerCase().includes(filter.toLowerCase())
+      world.metadata?.title?.toLowerCase().includes(filter.toLowerCase())
   );
 
   return filtered.map(({ id, uri, metadata }) => (

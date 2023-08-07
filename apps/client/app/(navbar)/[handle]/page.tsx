@@ -90,7 +90,7 @@ export default async function Handle({ params }: Props) {
     <>
       <div className="flex justify-center">
         <div className="max-w-content">
-          <div className="h-40 w-full bg-neutral-200 md:h-72 xl:rounded-2xl">
+          <div className="aspect-[3/1] w-full bg-neutral-200 md:h-72 xl:rounded-2xl">
             <div className="relative h-full w-full object-cover">
               {background ? (
                 isFromCDN(background) ? (

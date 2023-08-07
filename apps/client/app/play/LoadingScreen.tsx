@@ -1,5 +1,5 @@
 import { useClientStore, useLoadingStore } from "@unavi/engine";
-import { WorldMetadata } from "@wired-protocol/types";
+import { World } from "@wired-protocol/types";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
@@ -12,7 +12,7 @@ const LOADING_DELAY = 1000;
 const FADE_DURATION = 700;
 
 interface Props {
-  metadata: WorldMetadata;
+  metadata: World;
 }
 
 export default function LoadingScreen({ metadata }: Props) {
@@ -63,9 +63,9 @@ export default function LoadingScreen({ metadata }: Props) {
     isConnecting && total === 0 ? "Connecting" : "Loading world";
   const progress = isConnecting ? 0.1 : loaded / total;
 
-  const image = metadata.info?.image;
-  const host = metadata.info?.host ?? env.NEXT_PUBLIC_DEFAULT_HOST;
-  const authors = metadata.info?.authors ?? [];
+  const image = metadata?.image;
+  const host = metadata?.host ?? env.NEXT_PUBLIC_DEFAULT_HOST;
+  const authors = metadata.authors;
 
   return (
     <div
@@ -104,7 +104,7 @@ export default function LoadingScreen({ metadata }: Props) {
       </div>
 
       <div className="z-20 flex flex-col items-center justify-center">
-        <h1 className="text-4xl font-bold">{metadata.info?.title}</h1>
+        <h1 className="text-4xl font-bold">{metadata?.title}</h1>
         <div className="space-y-3 pt-6">
           <LoadingBar progress={progress} />
 

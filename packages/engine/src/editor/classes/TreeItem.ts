@@ -1,3 +1,8 @@
+import {
+  EditNode_Collider_Type,
+  EditNode_RigidBody_Type,
+} from "@unavi/protocol";
+
 import { useSceneStore } from "../sceneStore";
 
 export class TreeItem {
@@ -9,6 +14,16 @@ export class TreeItem {
   scale: [number, number, number] = [1, 1, 1];
 
   locked = false;
+
+  colliderType?: EditNode_Collider_Type;
+  rigidBodyType?: EditNode_RigidBody_Type;
+
+  collider = {
+    height: 1,
+    meshId: 0n,
+    radius: 1,
+    size: [1, 1, 1] as [number, number, number],
+  };
 
   #parentId?: bigint;
   #childrenIds: bigint[] = [];

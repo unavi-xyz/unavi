@@ -1,7 +1,12 @@
-import { ChatMessage as IChatMessage, useClientStore } from "@unavi/engine";
+import {
+  ChatMessage as IChatMessage,
+  splitHandle,
+  useClientStore,
+} from "@unavi/engine";
 import { useEffect, useState } from "react";
 
 import { usePlayStore } from "@/app/play/playStore";
+import { HOME_SERVER } from "@/src/constants";
 import Tooltip from "@/src/ui/Tooltip";
 
 import { usePointerLocked } from "../hooks/usePointerLocked";
@@ -47,7 +52,7 @@ export default function ChatMessage({ message, alwaysShow }: Props) {
           <span className="text-white/90">{message.text}</span>
         </div>
       ) : message.type === "system" ? (
-        <span className="text-white/70">{message.text}</span>
+        <span className="text-neutral-400">{message.text}</span>
       ) : null}
     </div>
   );
@@ -55,18 +60,25 @@ export default function ChatMessage({ message, alwaysShow }: Props) {
 
 function PlayerName({ playerId }: { playerId: number }) {
   const [name] = useState(useClientStore.getState().getDisplayName(playerId));
+  const [handle] = useState(
+    useClientStore.getState().playerData.get(playerId)?.handle
+  );
 
-  const isHandle = name.startsWith("@");
+  if (handle) {
+    const { username, server } = splitHandle(handle);
 
-  if (isHandle) {
-    const parts = name.split(":");
-    const username = parts[0]?.slice(1);
-    const home = parts[1];
+    const fromSameServer = server === HOME_SERVER;
 
-    if (username && home) {
+    if (username) {
       return (
-        <Tooltip text={name} side="right" capitalize={false}>
-          <span className="font-bold">@{username}</span>
+        <Tooltip text={handle} side="right" capitalize={false}>
+          <span
+            className={`${
+              fromSameServer ? "font-semibold" : "text-neutral-300"
+            }`}
+          >
+            @{username}
+          </span>
         </Tooltip>
       );
     }

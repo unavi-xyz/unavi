@@ -14,7 +14,10 @@ export function setPlayersAvatar(
     for (const [entity, player] of players) {
       if (entity.id !== parent.id) continue;
 
-      const avatar = useClientStore.getState().avatars.get(player.id);
+      const playerData = useClientStore.getState().playerData.get(player.id);
+      if (!playerData) continue;
+
+      const avatar = playerData.avatar;
 
       if (avatar) {
         vrm.uri = avatar;

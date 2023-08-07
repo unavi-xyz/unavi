@@ -1,4 +1,4 @@
-import { ProfileMetadata, ProfileMetadataSchema } from "@wired-protocol/types";
+import { Profile } from "@wired-protocol/types";
 
 import { HOME_SERVER } from "@/src/constants";
 import { parseHandle } from "@/src/utils/parseHandle";
@@ -10,7 +10,7 @@ import { FixWith } from "../db/types";
 export type UserProfile = {
   username: string;
   home: string;
-  metadata: ProfileMetadata;
+  metadata: Profile;
 };
 
 /**
@@ -59,6 +59,7 @@ export async function fetchUserProfileDB(
         background,
         bio: foundUser.profile.bio ?? undefined,
         image,
+        links: [],
       },
       username: foundUser.username,
     };
@@ -81,7 +82,7 @@ export async function fetchUserProfileWired(
     if (!res.ok) return null;
 
     const json = await res.json();
-    const metadata = ProfileMetadataSchema.parse(json);
+    const metadata = Profile.fromJson(json);
 
     return {
       home,

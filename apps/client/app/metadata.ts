@@ -10,7 +10,7 @@ export const baseMetadata: Metadata = {
   appleWebApp: {
     capable: true,
     startupImage: {
-      url: "/images/Icon-512.png",
+      url: "/images/block-logo.png",
     },
     title: APP_NAME,
   },
@@ -24,11 +24,11 @@ export const baseMetadata: Metadata = {
     apple: [
       {
         sizes: "192x192",
-        url: "/images/Icon-192.png",
+        url: "/images/block-logo.png",
       },
     ],
-    icon: "/images/Icon-512.png",
-    shortcut: "/images/Icon-512.png",
+    icon: "/images/block-logo-raw-light.png",
+    shortcut: "/images/block-logo.png",
   },
   keywords: ["Metaverse", "WebXR", "Gaming"],
   manifest: "/manifest.json",
@@ -46,7 +46,7 @@ export const baseMetadata: Metadata = {
     title: APP_NAME,
     type: "website",
   },
-  themeColor: "#191919",
+  themeColor: "#ffffff",
   title: { default: APP_NAME, template: `%s / ${APP_NAME}` },
   twitter: {
     card: "summary_large_image",

@@ -4,7 +4,6 @@ import { env } from "@/src/env.mjs";
 
 const APP_NAME = "UNAVI";
 const DESCRIPTION = "An open metaverse platform";
-const HERO = "/images/Hero.png";
 
 export const baseMetadata: Metadata = {
   appleWebApp: {
@@ -35,13 +34,6 @@ export const baseMetadata: Metadata = {
   metadataBase: new URL(env.NEXT_PUBLIC_DEPLOYED_URL),
   openGraph: {
     description: DESCRIPTION,
-    images: [
-      {
-        height: 500,
-        url: HERO,
-        width: 888,
-      },
-    ],
     siteName: APP_NAME,
     title: APP_NAME,
     type: "website",
@@ -51,7 +43,6 @@ export const baseMetadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     description: DESCRIPTION,
-    images: [HERO],
     site: "@unavi_xyz",
     title: APP_NAME,
   },

@@ -11,7 +11,7 @@
     <img src="https://img.shields.io/badge/docs-read-informational" alt="Docs" />
   </a>
   <a href="https://www.unavi.xyz">
-    <img alt="Deployment" src="https://img.shields.io/github/deployments/unavi-xyz/unavi/production">
+    <img alt="Deployment" src="https://img.shields.io/github/deployments/unavi-xyz/unavi/production?label=deployment">
   </a>
   <a href="https://github.com/unavi-xyz/unavi/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/unavi-xyz/unavi" alt="License" />

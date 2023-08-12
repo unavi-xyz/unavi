@@ -10,9 +10,6 @@
   <a href="https://docs.unavi.xyz">
     <img src="https://img.shields.io/badge/docs-read-informational" alt="Docs" />
   </a>
-  <a href="https://unavi.xyz">
-    <img src="https://therealsujitk-vercel-badge.vercel.app/?app=client-unavi" alt="Vercel" />
-  </a>
   <a href="https://github.com/unavi-xyz/unavi/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/unavi-xyz/unavi" alt="License" />
   </a>
@@ -35,10 +32,10 @@ This [turborepo](https://turborepo.org/) uses [pnpm](https://pnpm.io/) as a pack
 
 ### Packages
 
-- [engine](packages/engine): Extensions of [Lattice](https://github.com/lattice-engine/lattice)
+- [engine](packages/engine): Extensions of [Lattice](https://github.com/unavi-xyz/lattice)
 - [eslint-config-custom](packages/eslint-config-custom): Eslint config used throughout the repo
 - [gltf-extension](packages/gltf-extension): [glTF-Transform](https://github.com/donmccurdy/glTF-Transform) extensions used by the client
-- [protocol](packages/protocol): Extensions of [The Wired Protocol](https://github.com/wired-protocol/spec)
+- [protocol](packages/protocol): Extensions of [The Wired Protocol](https://github.com/unavi-xyz/wired-protocol)
 - [tsconfig](packages/tsconfig): tsconfigs used throughout the repo
 - [utils](packages/utils): Utilities used by both the client and host
 

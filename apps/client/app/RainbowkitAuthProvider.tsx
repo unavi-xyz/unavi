@@ -42,7 +42,7 @@ export function RainbowKitAuthProvider({
 
           return new SiweMessage({
             domain: window.location.host,
-            statement: "Sign in to UNAVI 🌐",
+            statement: "Sign in to UNAVI",
             uri: window.location.origin,
             version: "1",
 

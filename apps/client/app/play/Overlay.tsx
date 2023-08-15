@@ -1,7 +1,6 @@
 import { World } from "@wired-protocol/types";
 
 import { useAuth } from "@/src/client/AuthProvider";
-import { HOME_SERVER } from "@/src/constants";
 import EditModeButton from "@/src/play/ui/editor/EditModeButton";
 
 import ChatBox from "../../src/play/ui/ChatBox";
@@ -23,11 +22,7 @@ export default function Overlay({ id, metadata }: Props) {
   const isMobile = useIsMobile();
   const { user } = useAuth();
 
-  const isAuthor = Boolean(
-    metadata?.authors &&
-      user?.username &&
-      metadata.authors.includes(`@${user.username}:${HOME_SERVER}`)
-  );
+  const isAuthor = Boolean(user && metadata.authors.includes(user.did));
 
   return (
     <>

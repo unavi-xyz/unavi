@@ -35,5 +35,5 @@ if (env.PLANETSCALE) {
 
   mysql2Connection = createPool({ uri: secureUrl });
 
-  db = drizzle(mysql2Connection, { logger: LOG, schema });
+  db = drizzle(mysql2Connection, { logger: LOG, mode: "planetscale", schema });
 }

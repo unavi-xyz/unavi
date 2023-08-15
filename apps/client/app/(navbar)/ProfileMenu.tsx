@@ -14,7 +14,7 @@ export default function ProfileMenu({ username }: Props) {
   const { logout } = useAuth();
 
   return (
-    <div className="py-2 text-lg font-bold">
+    <div className="rounded-xl bg-white py-2 text-lg font-bold">
       <DropdownItem asChild>
         <Link
           href={`/@${username}`}

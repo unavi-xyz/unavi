@@ -1,12 +1,7 @@
-import {
-  ChatMessage as IChatMessage,
-  splitHandle,
-  useClientStore,
-} from "@unavi/engine";
+import { ChatMessage as IChatMessage, useClientStore } from "@unavi/engine";
 import { useEffect, useState } from "react";
 
 import { usePlayStore } from "@/app/play/playStore";
-import { HOME_SERVER } from "@/src/constants";
 import Tooltip from "@/src/ui/Tooltip";
 
 import { usePointerLocked } from "../hooks/usePointerLocked";
@@ -60,28 +55,16 @@ export default function ChatMessage({ message, alwaysShow }: Props) {
 
 function PlayerName({ playerId }: { playerId: number }) {
   const [name] = useState(useClientStore.getState().getDisplayName(playerId));
-  const [handle] = useState(
-    useClientStore.getState().playerData.get(playerId)?.handle
+  const [did] = useState(
+    useClientStore.getState().playerData.get(playerId)?.did
   );
 
-  if (handle) {
-    const { username, server } = splitHandle(handle);
-
-    const fromSameServer = server === HOME_SERVER;
-
-    if (username) {
-      return (
-        <Tooltip text={handle} side="right" capitalize={false}>
-          <span
-            className={`${
-              fromSameServer ? "font-semibold" : "text-neutral-300"
-            }`}
-          >
-            @{username}
-          </span>
-        </Tooltip>
-      );
-    }
+  if (did) {
+    return (
+      <Tooltip text={did} side="right" capitalize={false}>
+        {name}
+      </Tooltip>
+    );
   }
 
   return <span>{name}</span>;

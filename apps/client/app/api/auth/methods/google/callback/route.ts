@@ -8,7 +8,7 @@ import {
 import { auth } from "@/src/server/auth/lucia";
 import { db } from "@/src/server/db/drizzle";
 import { profile } from "@/src/server/db/schema";
-import { genUsername } from "@/src/server/helpers/genUsername";
+import { createUserAttributes } from "@/src/server/helpers/createUser";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +37,8 @@ export async function GET(request: NextRequest) {
   let user = existingUser;
 
   if (!user) {
-    user = await createUser({ attributes: { username: genUsername() } });
+    const attributes = await createUserAttributes();
+    user = await createUser({ attributes });
 
     // Create profile
     await db.insert(profile).values({ userId: user.userId });

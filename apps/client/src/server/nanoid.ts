@@ -13,6 +13,10 @@ export const nanoidLowercase = customAlphabet(
  */
 export const nanoidShort = (): string => {
   const id = nanoidLowercase();
-  if (id.startsWith("0x")) return nanoidShort();
+
+  if (id.startsWith("0x")) {
+    return nanoidShort();
+  }
+
   return id;
 };

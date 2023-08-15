@@ -4,7 +4,6 @@ import { Engine } from "lattice-engine/core";
 import { create } from "zustand";
 
 import { ChatMessage } from "./types";
-import { splitHandle } from "./utils/splitHandle";
 import { toHex } from "./utils/toHex";
 
 export interface IClientStore {
@@ -14,7 +13,7 @@ export interface IClientStore {
   sendWebRTC: (message: ArrayBuffer) => void;
   sendWebSockets: (message: Request["message"]) => void;
   setAvatar: (avatar: string) => void;
-  setHandle: (handle: string) => void;
+  setDID: (did: string) => void;
   setName: (name: string) => void;
   setPlayerData: (playerId: number, key: string, value: string) => void;
   setPlayerId: (playerId: number | null) => void;
@@ -26,7 +25,7 @@ export interface IClientStore {
   ecsIncoming: Response[];
   exportedModel: Blob | null;
   playerData: Map<number, Record<string, string>>;
-  handle: string;
+  did: string;
   lastLocationUpdates: Map<number, number>;
   locations: Map<number, number[]>;
   nickname: string;
@@ -47,21 +46,18 @@ export const useClientStore = create<IClientStore>((set, get) => ({
   chatMessages: [],
   cleanupConnection: () => {},
   defaultAvatar: "",
+  did: "",
   ecsIncoming: [],
   engine: null,
   exportedModel: null,
   getDisplayName: (playerId: number) => {
     const playerData = get().playerData.get(playerId);
 
-    const handle = playerData?.handle;
+    const did = playerData?.did;
     const nickname = playerData?.nickname;
 
-    if (handle) {
-      const { username } = splitHandle(handle);
-
-      if (username) {
-        return `@${username}`;
-      }
+    if (did) {
+      // TODO: Resolve profile
     }
 
     if (nickname) {
@@ -70,7 +66,6 @@ export const useClientStore = create<IClientStore>((set, get) => ({
 
     return `Guest ${toHex(playerId)}`;
   },
-  handle: "",
   lastLocationUpdates: new Map(),
   locations: new Map(),
   mirrorEvent: (editorEvent: EditorEvent) => {
@@ -105,13 +100,13 @@ export const useClientStore = create<IClientStore>((set, get) => ({
 
     get().setPlayerData(playerId, "avatar", avatar);
   },
-  setHandle(handle: string) {
-    set({ handle });
+  setDID(did: string) {
+    set({ did });
 
     const playerId = get().playerId;
     if (playerId === null) return;
 
-    get().setPlayerData(playerId, "handle", handle);
+    get().setPlayerData(playerId, "did", did);
   },
   setName(nickname: string) {
     set({ nickname });
@@ -137,7 +132,7 @@ export const useClientStore = create<IClientStore>((set, get) => ({
 
     if (playerId !== null) {
       get().setPlayerData(playerId, "nickname", get().nickname);
-      get().setPlayerData(playerId, "handle", get().handle);
+      get().setPlayerData(playerId, "did", get().did);
       get().setPlayerData(playerId, "avatar", get().avatar);
     }
 

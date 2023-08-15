@@ -1,50 +1,43 @@
-import { eq } from "drizzle-orm";
 import { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
 import { baseMetadata } from "@/app/metadata";
-import { db } from "@/src/server/db/drizzle";
-import { user } from "@/src/server/db/schema";
-import { FixWith } from "@/src/server/db/types";
-import { fetchLatestWorlds } from "@/src/server/helpers/fetchLatestWorlds";
+import {
+  FetchedWorld,
+  fetchLatestWorlds,
+} from "@/src/server/helpers/fetchLatestWorlds";
+import { fetchProfile } from "@/src/server/helpers/fetchProfile";
 import Avatar from "@/src/ui/Avatar";
 import WorldCard from "@/src/ui/WorldCard";
 import { isFromCDN } from "@/src/utils/isFromCDN";
-import { cdnURL, S3Path } from "@/src/utils/s3Paths";
+import { parseIdentity } from "@/src/utils/parseIdentity";
 
 import EditProfileButton from "./EditProfileButton";
 
-type Params = { handle: string };
+type Params = { user: string };
 
 interface Props {
   params: Params;
 }
 
-async function queryUser(username: string) {
-  const _foundUser = await db.query.user.findFirst({
-    columns: { address: true, id: true },
-    where: eq(user.username, username),
-    with: { profile: true },
-  });
-  if (!_foundUser) return null;
-  const foundUser: FixWith<typeof _foundUser, "profile"> = _foundUser;
-
-  return foundUser;
-}
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const username = params.handle.split("%40")[1]; // Remove the @ from the handle
-  if (!username) return {};
+  const identity = parseIdentity(params.user);
+  const profile = await fetchProfile(identity);
+  if (!profile) return {};
 
-  const foundUser = await queryUser(username);
-  if (!foundUser) return {};
+  const description = profile.bio ?? "";
+  const image = profile.image;
 
-  const title = `@${username}`;
-  const description = foundUser.profile?.bio ?? "";
-  const image = foundUser.profile?.imageKey
-    ? cdnURL(S3Path.profile(foundUser.id).image(foundUser.profile.imageKey))
-    : undefined;
+  let title: string | undefined = undefined;
+  let username: string | undefined = undefined;
+
+  if (profile.type === "db") {
+    title = profile.username;
+    username = profile.username;
+  } else if (profile.type === "did") {
+    title = profile.did;
+  }
 
   return {
     description,
@@ -67,30 +60,34 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function Handle({ params }: Props) {
-  const username = params.handle.split("%40")[1]; // Remove the @ from the handle
-  if (!username) return notFound();
+export default async function User({ params }: Props) {
+  const identity = parseIdentity(params.user);
+  const profile = await fetchProfile(identity);
+  if (!profile) notFound();
 
-  const foundUser = await queryUser(username);
-  if (!foundUser) return notFound();
+  const image = profile.image;
+  const background = profile.background;
 
-  const worlds = await fetchLatestWorlds(20, foundUser.id);
+  let id: string | undefined = undefined;
+  let username: string | undefined = undefined;
+  let imageKey: string | undefined = undefined;
+  let backgroundKey: string | undefined = undefined;
+  let worlds: FetchedWorld[] = [];
 
-  const background = foundUser.profile?.backgroundKey
-    ? cdnURL(
-        S3Path.profile(foundUser.id).background(foundUser.profile.backgroundKey)
-      )
-    : undefined;
+  if (profile.type === "db") {
+    id = profile.id;
+    username = profile.username;
+    imageKey = profile.imageKey;
+    backgroundKey = profile.backgroundKey;
 
-  const image = foundUser.profile?.imageKey
-    ? cdnURL(S3Path.profile(foundUser.id).image(foundUser.profile.imageKey))
-    : undefined;
+    worlds = await fetchLatestWorlds(20, id);
+  }
 
   return (
     <>
       <div className="flex justify-center">
         <div className="max-w-content">
-          <div className="aspect-[3/1] w-full bg-neutral-200 md:h-72 xl:rounded-2xl">
+          <div className="aspect-[3/1] w-full bg-neutral-200 lg:rounded-2xl">
             <div className="relative h-full w-full object-cover">
               {background ? (
                 isFromCDN(background) ? (
@@ -100,14 +97,14 @@ export default async function Handle({ params }: Props) {
                     fill
                     sizes="100vw"
                     alt=""
-                    className="h-full w-full object-cover xl:rounded-2xl"
+                    className="h-full w-full object-cover lg:rounded-2xl"
                   />
                 ) : (
                   <img
                     src={background}
                     sizes="100vw"
                     alt=""
-                    className="h-full w-full object-cover xl:rounded-2xl"
+                    className="h-full w-full object-cover lg:rounded-2xl"
                     crossOrigin="anonymous"
                   />
                 )
@@ -118,29 +115,32 @@ export default async function Handle({ params }: Props) {
           <section className="flex justify-center px-4 md:px-0">
             <div className="flex w-full flex-col items-center space-y-2">
               <div className="relative z-10 -mt-16 flex w-32 rounded-full ring-4 ring-white">
-                <Avatar src={image} circle uniqueKey={username} size={128} />
+                <Avatar src={image} circle uniqueKey={profile.did} size={128} />
 
-                <EditProfileButton
-                  userId={foundUser.id}
-                  username={username}
-                  bio={foundUser.profile?.bio ?? undefined}
-                  imageKey={foundUser.profile?.imageKey ?? undefined}
-                  image={image}
-                  backgroundKey={foundUser.profile?.backgroundKey ?? undefined}
-                  background={background}
-                />
+                {id && username && (
+                  <EditProfileButton
+                    userId={id}
+                    username={username}
+                    bio={profile?.bio}
+                    imageKey={imageKey}
+                    image={image}
+                    did={profile.did}
+                    backgroundKey={backgroundKey}
+                    background={background}
+                  />
+                )}
               </div>
 
               <div className="flex w-full flex-col items-center space-y-2">
                 <div className="text-2xl font-bold">@{username}</div>
                 <div className="w-full overflow-x-hidden text-ellipsis text-center text-neutral-400">
-                  {foundUser?.address}
+                  {profile?.address}
                 </div>
               </div>
 
-              {foundUser.profile?.bio && (
+              {profile?.bio && (
                 <div className="w-full whitespace-pre-line text-center">
-                  {foundUser.profile.bio}
+                  {profile.bio}
                 </div>
               )}
             </div>

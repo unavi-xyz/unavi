@@ -1,13 +1,16 @@
-import { Asset } from "lattice-engine/core";
-import { Mut, Query, With } from "thyseus";
+import { Asset, Warehouse } from "lattice-engine/core";
+import { Mut, Query, Res, With } from "thyseus";
 
 import { useClientStore } from "../clientStore";
 import { WorldJson } from "../components";
 
-export function joinWorld(worlds: Query<Mut<Asset>, With<WorldJson>>) {
+export function joinWorld(
+  warehouse: Res<Mut<Warehouse>>,
+  worlds: Query<Mut<Asset>, With<WorldJson>>
+) {
   const uri = useClientStore.getState().worldUri;
 
   for (const asset of worlds) {
-    asset.uri = uri;
+    asset.uri.write(uri, warehouse);
   }
 }

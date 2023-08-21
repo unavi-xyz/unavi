@@ -1,4 +1,4 @@
-import { Time } from "lattice-engine/core";
+import { Time, Warehouse } from "lattice-engine/core";
 import { Velocity } from "lattice-engine/physics";
 import { PlayerAvatar, PlayerBody } from "lattice-engine/player";
 import {
@@ -8,7 +8,7 @@ import {
   Transform,
 } from "lattice-engine/scene";
 import { Vrm } from "lattice-engine/vrm";
-import { Commands, dropStruct, Entity, EventReader, Query, Res } from "thyseus";
+import { Commands, Entity, EventReader, Mut, Query, Res } from "thyseus";
 
 import { useClientStore } from "../clientStore";
 import { NetworkTransform, OtherPlayer, PrevTranslation } from "../components";
@@ -16,6 +16,7 @@ import { PlayerJoin, PlayerLeave } from "../events";
 
 export function spawnPlayers(
   commands: Commands,
+  warehouse: Res<Mut<Warehouse>>,
   time: Res<Time>,
   sceneStruct: Res<SceneStruct>,
   playerJoin: EventReader<PlayerJoin>,
@@ -45,19 +46,16 @@ export function spawnPlayers(
       .addType(PlayerBody)
       .add(otherPlayer).id;
 
-    dropStruct(otherPlayer);
-    dropStruct(networkTransform);
-
     const playerAvatar = new PlayerAvatar();
-    playerAvatar.idleAnimation = "/models/Idle.fbx";
-    playerAvatar.jumpAnimation = "/models/Falling.fbx";
-    playerAvatar.leftWalkAnimation = "/models/LeftWalk.fbx";
-    playerAvatar.rightWalkAnimation = "/models/RightWalk.fbx";
-    playerAvatar.sprintAnimation = "/models/Sprint.fbx";
-    playerAvatar.walkAnimation = "/models/Walk.fbx";
+    playerAvatar.idleAnimation.write("/models/Idle.fbx", warehouse);
+    playerAvatar.jumpAnimation.write("/models/Falling.fbx", warehouse);
+    playerAvatar.leftWalkAnimation.write("/models/LeftWalk.fbx", warehouse);
+    playerAvatar.rightWalkAnimation.write("/models/RightWalk.fbx", warehouse);
+    playerAvatar.sprintAnimation.write("/models/Sprint.fbx", warehouse);
+    playerAvatar.walkAnimation.write("/models/Walk.fbx", warehouse);
 
     const vrm = new Vrm();
-    vrm.uri = useClientStore.getState().defaultAvatar;
+    vrm.uri.write(useClientStore.getState().defaultAvatar, warehouse);
 
     commands
       .spawn(true)
@@ -66,10 +64,6 @@ export function spawnPlayers(
       .addType(GlobalTransform)
       .add(playerAvatar)
       .add(vrm);
-
-    dropStruct(playerAvatar);
-    dropStruct(vrm);
-    dropStruct(parent);
   }
 
   for (const event of playerLeave) {

@@ -1,3 +1,4 @@
+import { Warehouse } from "lattice-engine/core";
 import { Extra } from "lattice-engine/gltf";
 import {
   Name,
@@ -15,6 +16,7 @@ import { useSceneStore } from "../sceneStore";
  * Updates the scene tree with the latest entities.
  */
 export function createTreeItems(
+  warehouse: Res<Warehouse>,
   sceneStruct: Res<SceneStruct>,
   nodes: Query<[Entity, Transform, Parent]>,
   scenes: Query<[Entity, Scene]>,
@@ -68,7 +70,8 @@ export function createTreeItems(
     const item = items.get(entity.id);
     if (!item) continue;
 
-    item.name = name.value;
+    const value = name.value.read(warehouse) ?? "";
+    item.name = value;
   }
 
   for (const extra of extras) {
@@ -76,8 +79,11 @@ export function createTreeItems(
       const item = items.get(extra.target);
       if (!item) continue;
 
-      if (extra.key === "locked") {
-        item.locked = JSON.parse(extra.value);
+      const key = extra.key.read(warehouse);
+      const value = extra.value.read(warehouse);
+
+      if (key === "locked" && value) {
+        item.locked = JSON.parse(value);
       }
     } catch {
       // Ignore invalid JSON

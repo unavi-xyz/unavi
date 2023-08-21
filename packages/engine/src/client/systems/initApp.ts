@@ -1,8 +1,8 @@
-import { Asset, CoreStore } from "lattice-engine/core";
+import { Asset, CoreStore, Warehouse } from "lattice-engine/core";
 import { CascadingShadowMaps } from "lattice-engine/csm";
 import { InputStruct } from "lattice-engine/input";
 import { Name, SceneStruct } from "lattice-engine/scene";
-import { Commands, dropStruct, Mut, Res } from "thyseus";
+import { Commands, Mut, Res } from "thyseus";
 
 import { ENABLE_POINTER_LOCK } from "../../constants";
 import { WorldJson } from "../components";
@@ -11,6 +11,7 @@ import { createScene } from "../utils/createScene";
 
 export function initApp(
   commands: Commands,
+  warehouse: Res<Mut<Warehouse>>,
   coreStore: Res<Mut<CoreStore>>,
   sceneStruct: Res<Mut<SceneStruct>>,
   inputStruct: Res<Mut<InputStruct>>
@@ -21,6 +22,7 @@ export function initApp(
 
   const { rootId, sceneId } = createScene(commands, coreStore, sceneStruct);
   const cameraId = createPlayerControls(
+    warehouse,
     [0, 4, 0],
     sceneId,
     commands,
@@ -31,9 +33,8 @@ export function initApp(
   csm.shadowMapSize = 4096;
   csm.far = 40;
   commands.getById(cameraId).add(csm);
-  dropStruct(csm);
 
-  const name = new Name("root");
+  const name = new Name();
+  name.value.write("root", warehouse);
   commands.getById(rootId).add(name).addType(Asset).addType(WorldJson);
-  dropStruct(name);
 }

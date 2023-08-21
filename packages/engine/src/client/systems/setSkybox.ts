@@ -1,10 +1,11 @@
-import { Asset } from "lattice-engine/core";
+import { Asset, Warehouse } from "lattice-engine/core";
 import { Image, Skybox } from "lattice-engine/scene";
-import { Entity, Mut, Query } from "thyseus";
+import { Entity, Mut, Query, Res } from "thyseus";
 
 import { useClientStore } from "../clientStore";
 
 export function setSkybox(
+  warehouse: Res<Mut<Warehouse>>,
   skyboxes: Query<Skybox>,
   images: Query<[Entity, Mut<Asset>, Mut<Image>]>
 ) {
@@ -13,22 +14,23 @@ export function setSkybox(
       if (skybox.imageId !== entity.id) continue;
 
       const skyboxUri = useClientStore.getState().skybox;
-      if (asset.uri === skyboxUri) continue;
+      const uri = asset.uri.read(warehouse) ?? "";
+      if (uri === skyboxUri) continue;
 
-      asset.uri = skyboxUri;
+      asset.uri.write(skyboxUri, warehouse);
       image.flipY = true;
 
-      const fileExt = asset.uri.split(".").pop();
+      const fileExt = uri.split(".").pop();
 
       switch (fileExt) {
         case "jpg":
         case "jpeg": {
-          asset.mimeType = "image/jpeg";
+          asset.mimeType.write("image/jpeg", warehouse);
           break;
         }
 
         default: {
-          asset.mimeType = "";
+          asset.mimeType.write("", warehouse);
           break;
         }
       }

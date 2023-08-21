@@ -1,9 +1,11 @@
+import { Warehouse } from "lattice-engine/core";
 import { Name, Scene, SceneStruct } from "lattice-engine/scene";
 import { Entity, Query, Res } from "thyseus";
 
 import { useClientStore } from "../clientStore";
 
 export function setRootName(
+  warehouse: Res<Warehouse>,
   sceneStruct: Res<SceneStruct>,
   scenes: Query<[Entity, Scene]>,
   names: Query<[Entity, Name]>
@@ -14,7 +16,8 @@ export function setRootName(
     for (const [entity, name] of names) {
       if (scene.rootId !== entity.id) continue;
 
-      useClientStore.setState({ rootName: name.value });
+      const rootName = name.value.read(warehouse);
+      useClientStore.setState({ rootName });
     }
   }
 }

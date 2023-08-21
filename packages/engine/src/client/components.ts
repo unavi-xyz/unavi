@@ -1,26 +1,26 @@
+import { Resource } from "lattice-engine/core";
 import { Transform } from "lattice-engine/scene";
-import { struct } from "thyseus";
+import { f32, struct, u8 } from "thyseus";
 
 @struct
 export class WorldJson {
-  @struct.string declare host: string;
+  host: Resource<string> = new Resource();
 }
 
 @struct
 export class OtherPlayer {
-  @struct.u8 declare id: number;
+  id: u8 = 0;
 }
 
 @struct
 export class NetworkTransform {
-  @struct.substruct(Transform) declare transform: Transform;
-
-  @struct.f32 declare lastUpdate: number;
+  transform: Transform = new Transform();
+  lastUpdate: f32 = 0;
 }
 
 @struct
 export class PrevTranslation {
-  @struct.f32 declare x: number;
-  @struct.f32 declare y: number;
-  @struct.f32 declare z: number;
+  x: f32 = 0;
+  y: f32 = 0;
+  z: f32 = 0;
 }

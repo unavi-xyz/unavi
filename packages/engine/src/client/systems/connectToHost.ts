@@ -19,6 +19,7 @@ import {
   SetRtpCapabilities,
   TransportType,
 } from "@wired-protocol/types";
+import { Warehouse } from "lattice-engine/core";
 import { Device } from "mediasoup-client";
 import {
   Consumer,
@@ -27,7 +28,7 @@ import {
   Producer,
   Transport,
 } from "mediasoup-client/lib/types";
-import { Query, SystemRes } from "thyseus";
+import { Query, Res, SystemRes } from "thyseus";
 
 import { useClientStore } from "../clientStore";
 import { WorldJson } from "../components";
@@ -41,17 +42,19 @@ class LocalRes {
 }
 
 export function connectToHost(
+  warehouse: Res<Warehouse>,
   localRes: SystemRes<LocalRes>,
   worlds: Query<WorldJson>
 ) {
   for (const world of worlds) {
-    if (localRes.host === world.host) continue;
+    const host = world.host.read(warehouse) ?? "";
+    if (localRes.host === host) continue;
 
-    localRes.host = world.host;
+    localRes.host = host;
 
     useClientStore.getState().cleanupConnection();
 
-    const prefix = world.host.startsWith("localhost") ? "ws://" : "wss://";
+    const prefix = host.startsWith("localhost") ? "ws://" : "wss://";
     const ws = new WebSocket(`${prefix}${world.host}`);
 
     const sendQueue: Request["message"][] = [];

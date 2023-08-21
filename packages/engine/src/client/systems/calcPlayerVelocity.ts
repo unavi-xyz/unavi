@@ -7,6 +7,7 @@ import { Mut, Query, Res, With } from "thyseus";
 import { OtherPlayer, PrevTranslation } from "../components";
 
 const vec3 = new Vec3();
+const vec3b = new Vec3();
 
 export function calcPlayerVelocity(
   time: Res<Time>,
@@ -26,16 +27,15 @@ export function calcPlayerVelocity(
     prev.y = transform.translation.y;
     prev.z = transform.translation.z;
 
-    Vec3.lerp(
-      vec3,
-      [velocity.x, velocity.y, velocity.z],
-      [
-        deltaX / time.mainDelta,
-        deltaY / time.mainDelta,
-        deltaZ / time.mainDelta,
-      ],
-      K
+    Vec3.set(vec3, velocity.x, velocity.y, velocity.z);
+    Vec3.set(
+      vec3b,
+      deltaX / time.mainDelta,
+      deltaY / time.mainDelta,
+      deltaZ / time.mainDelta
     );
+
+    Vec3.lerp(vec3, vec3, vec3b, K);
 
     velocity.x = vec3.x;
     velocity.y = vec3.y;

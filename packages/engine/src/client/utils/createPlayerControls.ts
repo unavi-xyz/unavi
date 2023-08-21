@@ -1,3 +1,4 @@
+import { Warehouse } from "lattice-engine/core";
 import {
   CapsuleCollider,
   CharacterController,
@@ -23,12 +24,13 @@ import {
   Transform,
 } from "lattice-engine/scene";
 import { Vrm } from "lattice-engine/vrm";
-import { Commands, dropStruct } from "thyseus";
+import { Commands } from "thyseus";
 
 const PLAYER_HEIGHT = 1.6;
 const PLAYER_WIDTH = 0.4;
 
 export function createPlayerControls(
+  warehouse: Warehouse,
   spawn: [number, number, number],
   rootId: bigint,
   commands: Commands,
@@ -60,19 +62,17 @@ export function createPlayerControls(
     .addType(CharacterController)
     .add(player).id;
 
-  dropStruct(player);
-  dropStruct(targetTransform);
-  dropStruct(capsuleCollider);
-
   const playerAvatar = new PlayerAvatar();
-  playerAvatar.idleAnimation = "/models/Idle.fbx";
-  playerAvatar.jumpAnimation = "/models/Falling.fbx";
-  playerAvatar.leftWalkAnimation = "/models/LeftWalk.fbx";
-  playerAvatar.rightWalkAnimation = "/models/RightWalk.fbx";
-  playerAvatar.sprintAnimation = "/models/Sprint.fbx";
-  playerAvatar.walkAnimation = "/models/Walk.fbx";
+  playerAvatar.idleAnimation.write("/models/Idle.fbx", warehouse);
+  playerAvatar.jumpAnimation.write("/models/Falling.fbx", warehouse);
+  playerAvatar.leftWalkAnimation.write("/models/LeftWalk.fbx", warehouse);
+  playerAvatar.rightWalkAnimation.write("/models/RightWalk.fbx", warehouse);
+  playerAvatar.sprintAnimation.write("/models/Sprint.fbx", warehouse);
+  playerAvatar.walkAnimation.write("/models/Walk.fbx", warehouse);
 
-  const vrm = new Vrm("/models/Robot.vrm", true);
+  const vrm = new Vrm();
+  vrm.uri.write("/models/Robot.vrm", warehouse);
+  vrm.setupFirstPerson = true;
 
   commands
     .spawn(true)
@@ -81,9 +81,6 @@ export function createPlayerControls(
     .add(parent.setId(bodyId))
     .add(vrm)
     .add(playerAvatar);
-
-  dropStruct(playerAvatar);
-  dropStruct(vrm);
 
   const playerCamera = new PlayerCamera(
     PlayerCameraMode.Both,
@@ -100,11 +97,6 @@ export function createPlayerControls(
     .addType(PerspectiveCamera)
     .add(playerCamera)
     .addType(Raycast).id;
-
-  dropStruct(parent);
-  dropStruct(transform);
-  dropStruct(playerCamera);
-  dropStruct(targetRotation);
 
   sceneStruct.activeCamera = cameraId;
 

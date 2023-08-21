@@ -1,4 +1,5 @@
 import { EditNode_Collider_Type } from "@unavi/protocol";
+import { Warehouse } from "lattice-engine/core";
 import {
   BoxCollider,
   CapsuleCollider,
@@ -8,12 +9,13 @@ import {
   SphereCollider,
 } from "lattice-engine/physics";
 import { Name } from "lattice-engine/scene";
-import { Commands, dropStruct, Entity, EventReader, Mut, Query } from "thyseus";
+import { Commands, Entity, EventReader, Mut, Query, Res } from "thyseus";
 
 import { EditCollider } from "../events";
 
 export function editColliders(
   commands: Commands,
+  warehouse: Res<Warehouse>,
   events: EventReader<EditCollider>,
   names: Query<[Entity, Name]>,
   boxColliders: Query<[Entity, Mut<BoxCollider>]>,
@@ -35,7 +37,10 @@ export function editColliders(
       for (const [colliderEntity, collider] of boxColliders) {
         if (colliderEntity.id !== entity.id) continue;
 
-        collider.size.array.set(e.size);
+        const size = e.size.read(warehouse) ?? new Float32Array();
+        collider.size.x = size[0] ?? 0;
+        collider.size.y = size[1] ?? 0;
+        collider.size.z = size[2] ?? 0;
 
         if (e.type === EditNode_Collider_Type.BOX) {
           foundCollider = true;
@@ -121,11 +126,12 @@ export function editColliders(
       // Create new collider
       if (e.type === EditNode_Collider_Type.BOX) {
         const collider = new BoxCollider();
-        collider.size.array.set(e.size);
+        const size = e.size.read(warehouse) ?? new Float32Array();
+        collider.size.x = size[0] ?? 0;
+        collider.size.y = size[1] ?? 0;
+        collider.size.z = size[2] ?? 0;
 
         commands.get(entity).add(collider);
-
-        dropStruct(collider);
       }
 
       if (e.type === EditNode_Collider_Type.SPHERE) {
@@ -133,8 +139,6 @@ export function editColliders(
         collider.radius = e.radius;
 
         commands.get(entity).add(collider);
-
-        dropStruct(collider);
       }
 
       if (e.type === EditNode_Collider_Type.CYLINDER) {
@@ -143,8 +147,6 @@ export function editColliders(
         collider.height = e.height;
 
         commands.get(entity).add(collider);
-
-        dropStruct(collider);
       }
 
       if (e.type === EditNode_Collider_Type.CAPSULE) {
@@ -153,8 +155,6 @@ export function editColliders(
         collider.height = e.height;
 
         commands.get(entity).add(collider);
-
-        dropStruct(collider);
       }
 
       if (e.type === EditNode_Collider_Type.MESH) {
@@ -162,8 +162,6 @@ export function editColliders(
         // TODO: set mesh
 
         commands.get(entity).add(collider);
-
-        dropStruct(collider);
       }
 
       if (e.type === EditNode_Collider_Type.HULL) {
@@ -171,8 +169,6 @@ export function editColliders(
         // TODO: set mesh
 
         commands.get(entity).add(collider);
-
-        dropStruct(collider);
       }
     }
   }

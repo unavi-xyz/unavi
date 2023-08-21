@@ -15,7 +15,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "vite build --emptyOutDir",
+    "build": "tsc --noEmit && vite build --emptyOutDir",
     "dev": "vite build --watch",
     "lint": "cd ../.. && eslint --fix packages/engine --ext .ts,.tsx,.mjs,.json --ignore-path .gitignore --ignore-path .prettierignore --ignore-pattern package.json"
   },
@@ -23,29 +23,40 @@
     "@unavi/utils": "workspace:^"
   },
   "devDependencies": {
-    "@thyseus/transformer-rollup": "^0.13.0",
+    "@thyseus/transformer-rollup": "^0.14.0-beta.6",
     "@types/node": "^18.16.17",
     "@types/react": "^18.2.11",
     "@types/react-dom": "^18.2.4",
-    "eslint": "^8.44.0",
-    "eslint-config-custom": "workspace:^",
-    "rollup-plugin-peer-deps-external": "^2.2.4",
-    "tsconfig": "workspace:^",
-    "typescript": "~5.1.3",
-    "vite": "^4.3.8",
-    "vite-plugin-dts": "^2.3.0"
-  },
-  "peerDependencies": {
     "@unavi/protocol": "workspace:^",
     "@wired-protocol/types": "^0.9.0",
+    "eslint": "^8.44.0",
+    "eslint-config-custom": "workspace:^",
     "gl-matrix": "^4.0.0-beta.1",
     "lattice-engine": "^0.3.18",
     "mediasoup-client": "^3.6.84",
     "nanoid": "^4.0.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "three": "~0.153.0",
-    "thyseus": "^0.13.5",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
+    "three": "~0.154.0",
+    "thyseus": "^0.14.0-beta.5",
+    "tsconfig": "workspace:^",
+    "typescript": "~5.1.3",
+    "vite": "^4.3.8",
+    "vite-plugin-dts": "^2.3.0",
     "zustand": "^4.3.8"
+  },
+  "peerDependencies": {
+    "@unavi/protocol": "workspace:^",
+    "@wired-protocol/types": "*",
+    "gl-matrix": "^4.0.0-beta.1",
+    "lattice-engine": "*",
+    "mediasoup-client": "*",
+    "nanoid": "*",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "three": "*",
+    "thyseus": "*",
+    "zustand": "*"
   }
 }

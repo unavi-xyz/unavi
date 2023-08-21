@@ -6,7 +6,8 @@ export function sendExportEvent(
   writer: EventWriter<ExportGltf>,
   sceneStruct: Res<SceneStruct>
 ) {
-  const event = writer.create();
-  event.scene = sceneStruct.activeScene;
-  event.binary = true;
+  const e = new ExportGltf();
+  e.scene = sceneStruct.activeScene;
+  e.binary = true;
+  writer.create(e);
 }

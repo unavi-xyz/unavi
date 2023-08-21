@@ -1,6 +1,6 @@
 import { EditorEvent } from "@unavi/protocol";
 import { Warehouse } from "lattice-engine/core";
-import { EventWriter, Res } from "thyseus";
+import { EventWriter, Mut, Res } from "thyseus";
 
 import {
   AddMesh,
@@ -18,7 +18,7 @@ import { PlayerJoin, PlayerLeave } from "../events";
  * Converts networked events into ECS events
  */
 export function sendEvents(
-  warehouse: Res<Warehouse>,
+  warehouse: Res<Mut<Warehouse>>,
   playerJoin: EventWriter<PlayerJoin>,
   playerLeave: EventWriter<PlayerLeave>,
   addNode: EventWriter<AddNode>,
@@ -37,14 +37,16 @@ export function sendEvents(
 
   switch (msg.response.oneofKind) {
     case "playerJoined": {
-      const e = playerJoin.create();
+      const e = new PlayerJoin();
       e.playerId = msg.response.playerJoined.playerId;
+      playerJoin.create(e);
       break;
     }
 
     case "playerLeft": {
-      const e = playerLeave.create();
+      const e = new PlayerLeave();
       e.playerId = msg.response.playerLeft.playerId;
+      playerLeave.create(e);
       break;
     }
 
@@ -53,24 +55,27 @@ export function sendEvents(
 
       switch (editor.event.oneofKind) {
         case "addNode": {
-          const e = addNode.create();
-          e.name = editor.event.addNode.id;
+          const e = new AddNode();
+          e.name.write(editor.event.addNode.id, warehouse);
+          addNode.create(e);
           break;
         }
 
         case "addMesh": {
-          const e = addMesh.create();
-          e.name = editor.event.addMesh.id;
+          const e = new AddMesh();
+          e.name.write(editor.event.addMesh.id, warehouse);
+          addMesh.create(e);
           break;
         }
 
         case "editNode": {
-          const e = editNode.create();
-          e.target = editor.event.editNode.target;
+          const e = new EditNode();
+          e.target.write(editor.event.editNode.target, warehouse);
+          editNode.create(e);
 
-          e.name = editor.event.editNode.name ?? "";
-          e.parentName = editor.event.editNode.parent ?? "";
-          e.meshName = editor.event.editNode.mesh ?? "";
+          e.name.write(editor.event.editNode.name ?? "", warehouse);
+          e.parentName.write(editor.event.editNode.parent ?? "", warehouse);
+          e.meshName.write(editor.event.editNode.mesh ?? "", warehouse);
 
           if (editor.event.editNode.translation) {
             e.translation = true;
@@ -104,27 +109,36 @@ export function sendEvents(
             for (const [key, value] of Object.entries(
               editor.event.editNode.extras
             )) {
-              const extra = editExta.create();
-              extra.target = editor.event.editNode.target;
-              extra.key = key;
-              extra.value = JSON.stringify(value);
+              const extra = new EditExtra();
+              extra.target.write(editor.event.editNode.target, warehouse);
+              extra.key.write(key, warehouse);
+              extra.value.write(JSON.stringify(value), warehouse);
+              editExta.create(extra);
             }
           }
 
           if (editor.event.editNode.rigidBody) {
-            const rigidBodyEvent = rigidBody.create();
-            rigidBodyEvent.target = editor.event.editNode.target;
+            const rigidBodyEvent = new EditRigidBody();
+            rigidBodyEvent.target.write(
+              editor.event.editNode.target,
+              warehouse
+            );
             rigidBodyEvent.type = editor.event.editNode.rigidBody.type;
+            rigidBody.create(rigidBodyEvent);
           }
 
           if (editor.event.editNode.collider) {
-            const colliderEvent = collider.create();
-            colliderEvent.target = editor.event.editNode.target;
+            const colliderEvent = new EditCollider();
+
+            colliderEvent.target.write(editor.event.editNode.target, warehouse);
 
             colliderEvent.type = editor.event.editNode.collider.type;
 
             if (editor.event.editNode.collider.size) {
-              colliderEvent.size.set(editor.event.editNode.collider.size);
+              colliderEvent.size.write(
+                Float32Array.from(editor.event.editNode.collider.size),
+                warehouse
+              );
             }
 
             if (editor.event.editNode.collider.height) {
@@ -136,19 +150,25 @@ export function sendEvents(
             }
 
             if (editor.event.editNode.collider.mesh) {
-              colliderEvent.mesh = editor.event.editNode.collider.mesh;
+              colliderEvent.mesh.write(
+                editor.event.editNode.collider.mesh,
+                warehouse
+              );
             }
+
+            collider.create(colliderEvent);
           }
 
           break;
         }
 
         case "editMesh": {
-          const e = editMesh.create();
-          e.target = editor.event.editMesh.target;
+          const e = new EditMesh();
 
-          e.name = editor.event.editMesh.name ?? "";
-          e.material = editor.event.editMesh.material ?? "";
+          e.target.write(editor.event.editMesh.target, warehouse);
+
+          e.name.write(editor.event.editMesh.name ?? "", warehouse);
+          e.material.write(editor.event.editMesh.material ?? "", warehouse);
 
           if (editor.event.editMesh.indices) {
             const indices = Uint32Array.from(editor.event.editMesh.indices);
@@ -199,6 +219,8 @@ export function sendEvents(
             const uv3s = Float32Array.from(editor.event.editMesh.uv3);
             e.uv3.write(uv3s, warehouse);
           }
+
+          editMesh.create(e);
         }
       }
     }

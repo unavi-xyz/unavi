@@ -1,11 +1,11 @@
-import { struct } from "thyseus";
+import { struct, u8 } from "thyseus";
 
 @struct
 export class PlayerJoin {
-  @struct.u8 declare playerId: number;
+  playerId: u8 = 0;
 }
 
 @struct
 export class PlayerLeave {
-  @struct.u8 declare playerId: number;
+  playerId: u8 = 0;
 }

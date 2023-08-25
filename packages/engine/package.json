@@ -53,8 +53,8 @@
     "lattice-engine": "*",
     "mediasoup-client": "*",
     "nanoid": "*",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "react": "*",
+    "react-dom": "*",
     "three": "*",
     "thyseus": "*",
     "zustand": "*"

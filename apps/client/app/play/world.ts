@@ -1,7 +1,6 @@
+import { enginePlugin } from "@unavi/engine";
 import { Engine } from "lattice-engine/core";
 import { World } from "thyseus";
-
-import { enginePlugin } from "./plugin";
 
 export let world: World | undefined;
 

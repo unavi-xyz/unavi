@@ -13,7 +13,7 @@ import LoadingScreen from "./LoadingScreen";
 import { usePlayStore } from "./playStore";
 import { WorldUriId } from "./types";
 
-const Client = dynamic(() => import("@unavi/engine").then((m) => m.Client), {
+const Client = dynamic(() => import("./Client"), {
   ssr: false,
 });
 
@@ -51,17 +51,15 @@ export default function App({ id, metadata, authors, uri }: Props) {
 
       <Suspense>
         <Overlay id={id} metadata={metadata} />
-      </Suspense>
 
-      <Suspense>
         <div className="fixed h-screen w-screen">
-          {scriptsReady && (
+          {scriptsReady ? (
             <Client
               uri={uri}
               defaultAvatar="/models/Robot.vrm"
               skybox="/images/Skybox.jpg"
             />
-          )}
+          ) : null}
         </div>
       </Suspense>
     </>

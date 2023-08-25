@@ -1,10 +1,10 @@
+import { useClientStore } from "@unavi/engine";
 import { SetPlayerData } from "@wired-protocol/types";
 import { Engine } from "lattice-engine/core";
 import { useEffect } from "react";
 
-import { useClientStore } from "../client/clientStore";
-import { useWorld } from "../hooks/useWorld";
 import Canvas from "./Canvas";
+import { useWorld } from "./useWorld";
 
 interface Props {
   defaultAvatar?: string;
@@ -12,7 +12,7 @@ interface Props {
   uri?: string;
 }
 
-export function Client({ skybox, defaultAvatar, uri }: Props) {
+export default function Client({ skybox, defaultAvatar, uri }: Props) {
   const world = useWorld();
   const sendWebSockets = useClientStore((state) => state.sendWebSockets);
   const avatar = useClientStore((state) => state.avatar);

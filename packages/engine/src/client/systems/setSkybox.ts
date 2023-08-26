@@ -1,8 +1,9 @@
+import { atom, getDefaultStore } from "jotai";
 import { Asset, Warehouse } from "lattice-engine/core";
 import { Image, Skybox } from "lattice-engine/scene";
 import { Entity, Mut, Query, Res } from "thyseus";
 
-import { useClientStore } from "../clientStore";
+export const skyboxAtom = atom("");
 
 export function setSkybox(
   warehouse: Res<Mut<Warehouse>>,
@@ -13,7 +14,8 @@ export function setSkybox(
     for (const [entity, asset, image] of images) {
       if (skybox.imageId !== entity.id) continue;
 
-      const skyboxUri = useClientStore.getState().skybox;
+      const skyboxUri = getDefaultStore().get(skyboxAtom);
+
       const uri = asset.uri.read(warehouse) ?? "";
       if (uri === skyboxUri) continue;
 

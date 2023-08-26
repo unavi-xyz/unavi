@@ -1,3 +1,4 @@
+import { EditorEvent } from "@unavi/protocol";
 import {
   fromMediasoupDtlsParameters,
   fromMediasoupRtpCapabilities,
@@ -9,6 +10,7 @@ import {
 import {
   ConnectTransport,
   CreateTransport,
+  Event,
   GetRouterRtpCapabilities,
   Join,
   PauseAudio,
@@ -16,9 +18,11 @@ import {
   ProduceData,
   Request,
   Response,
+  SendEvent,
   SetRtpCapabilities,
   TransportType,
 } from "@wired-protocol/types";
+import { atom } from "jotai";
 import { Warehouse } from "lattice-engine/core";
 import { Device } from "mediasoup-client";
 import {
@@ -30,12 +34,198 @@ import {
 } from "mediasoup-client/lib/types";
 import { Query, Res, SystemRes } from "thyseus";
 
-import { useClientStore } from "../clientStore";
+import { AtomStore } from "../../AtomStore";
 import { WorldJson } from "../components";
 import { LOCATION_ROUNDING } from "../constants";
+import { ChatMessage } from "../types";
 import { toHex } from "../utils/toHex";
+import { ecsEventStore } from "./sendEvents";
 
-let chatId = 0;
+const consumerTransportAtom = atom<Transport | null>(null);
+const producerTransportAtom = atom<Transport | null>(null);
+const consumerAtom = atom<Consumer | null>(null);
+const producerAtom = atom<Producer | null>(null);
+const dataConsumerAtom = atom<DataConsumer | null>(null);
+const dataProducerAtom = atom<DataProducer | null>(null);
+
+const connectSendCallbackAtom = atom<() => void>(() => {});
+const connectRecvCallbackAtom = atom<() => void>(() => {});
+const connectSendErrbackAtom = atom<(e: Error) => void>(() => {});
+const connectRecvErrbackAtom = atom<(e: Error) => void>(() => {});
+const producerIdCallbackAtom = atom<(producerId: string) => void>(() => {});
+const dataProducerIdCallbackAtom = atom<(dataProducerId: string) => void>(
+  () => {}
+);
+
+export class ConnectionStore extends AtomStore {
+  worldUri = atom("");
+  playerId = atom<number | null>(null);
+
+  nickname = atom("");
+  did = atom("");
+  avatar = atom("");
+  playerData = atom(new Map<number, Record<string, string>>());
+
+  locations = atom(new Map<number, number[]>());
+  lastLocationUpdates = atom(new Map<number, number>());
+
+  constructor() {
+    super();
+
+    let prevPlayerId: number | null = null;
+
+    this.store.sub(this.playerId, () => {
+      const playerId = this.get(this.playerId);
+      const playerData = this.get(this.playerData);
+
+      if (prevPlayerId !== null) {
+        playerData.delete(prevPlayerId);
+      }
+
+      if (playerId !== null) {
+        this.setPlayerData(playerId, "avatar", this.get(this.avatar));
+        this.setPlayerData(playerId, "did", this.get(this.did));
+        this.setPlayerData(playerId, "nickname", this.get(this.nickname));
+      }
+
+      prevPlayerId = playerId;
+    });
+  }
+
+  setPlayerData(playerId: number, key: string, value: string) {
+    const playerData = this.get(this.playerData);
+    const player = playerData.get(playerId);
+
+    if (!player) {
+      playerData.set(playerId, { [key]: value });
+    } else {
+      player[key] = value;
+    }
+  }
+
+  ws = atom<WebSocket | null>(null);
+  wsMessageQueue: Request["message"][] = [];
+  sendWs(message: Request["message"]) {
+    const msg = Request.create({
+      message,
+    });
+
+    const ws = this.get(this.ws);
+
+    if (!ws || ws.readyState !== ws.OPEN) {
+      this.wsMessageQueue.push(message);
+      return;
+    }
+
+    const bytes = Request.toBinary(msg);
+    ws.send(bytes);
+  }
+
+  sendWebRTC(message: ArrayBuffer) {
+    const dataProducer = this.get(dataProducerAtom);
+    if (!dataProducer) return;
+
+    dataProducer.send(message);
+  }
+
+  mirrorEvent(editorEvent: EditorEvent) {
+    const data = EditorEvent.toBinary(editorEvent);
+
+    // Send to self
+    const playerId = this.get(this.playerId);
+    if (playerId === null) return;
+
+    const event = Event.create({ data, playerId });
+    const response = Response.create({
+      response: { event, oneofKind: "event" },
+    });
+
+    const ecsIncoming = ecsEventStore.get(ecsEventStore.ecsIncoming);
+    ecsIncoming.push(response);
+
+    // Send to others
+    const sendEvent = SendEvent.create({ data });
+    this.sendWs({ oneofKind: "sendEvent", sendEvent });
+  }
+
+  chatMessages = atom<ChatMessage[]>([]);
+  chatMessageId = 0;
+  addChatMessage(message: ChatMessage) {
+    const chatMessages = this.get(this.chatMessages);
+    chatMessages.push(message);
+
+    if (chatMessages.length > 100) {
+      chatMessages.shift();
+    }
+
+    this.set(this.chatMessages, chatMessages);
+  }
+
+  getDisplayName(playerId: number) {
+    const playerData = this.get(this.playerData).get(playerId);
+
+    const did = playerData?.did;
+    const nickname = playerData?.nickname;
+
+    if (did) {
+      // TODO: Resolve profile
+    }
+
+    if (nickname) {
+      return nickname;
+    }
+
+    return `Guest ${toHex(playerId)}`;
+  }
+
+  closeConnection() {
+    const ws = this.get(this.ws);
+    if (ws) {
+      ws.close();
+    }
+
+    const consumerTransport = this.get(consumerTransportAtom);
+    if (consumerTransport) {
+      consumerTransport.close();
+    }
+
+    const producerTransport = this.get(producerTransportAtom);
+    if (producerTransport) {
+      producerTransport.close();
+    }
+
+    const consumer = this.get(consumerAtom);
+    if (consumer) {
+      consumer.close();
+    }
+
+    const producer = this.get(producerAtom);
+    if (producer) {
+      producer.close();
+    }
+
+    const dataConsumer = this.get(dataConsumerAtom);
+    if (dataConsumer) {
+      dataConsumer.close();
+    }
+
+    const dataProducer = this.get(dataProducerAtom);
+    if (dataProducer) {
+      dataProducer.close();
+    }
+
+    this.set(this.playerId, null);
+    this.set(consumerTransportAtom, null);
+    this.set(producerTransportAtom, null);
+    this.set(consumerAtom, null);
+    this.set(producerAtom, null);
+    this.set(dataConsumerAtom, null);
+    this.set(dataProducerAtom, null);
+    this.set(this.ws, null);
+  }
+}
+
+export const connectionStore = new ConnectionStore();
 
 class LocalRes {
   host = "";
@@ -52,85 +242,34 @@ export function connectToHost(
 
     localRes.host = host;
 
-    useClientStore.getState().cleanupConnection();
+    connectionStore.closeConnection();
 
     const prefix = host.startsWith("localhost") ? "ws://" : "wss://";
     const ws = new WebSocket(`${prefix}${world.host}`);
 
-    const sendQueue: Request["message"][] = [];
-
-    const send = (message: Request["message"]) => {
-      const msg = Request.create({
-        message,
-      });
-
-      if (ws.readyState === ws.OPEN) {
-        const bytes = Request.toBinary(msg);
-        ws.send(bytes);
-      } else {
-        sendQueue.push(message);
-      }
-    };
-
-    useClientStore.setState({ sendWebSockets: send });
-
     // Create mediasoup device
     const device = new Device();
-
-    let connectSendCallback: () => void;
-    let connectSendErrback: (error: Error) => void;
-    let connectRecvCallback: () => void;
-    let connectRecvErrback: (error: Error) => void;
-
-    let producerIdCallback: ((id: string) => void) | null = null;
-    let dataProducerIdCallback: ((id: string) => void) | null = null;
-
-    let consumerTransport: Transport | null = null;
-    let producerTransport: Transport | null = null;
-    let consumer: Consumer | null = null;
-    const producer: Producer | null = null;
-    let dataConsumer: DataConsumer | null = null;
-    let dataProducer: DataProducer | null = null;
-
-    const cleanupConnection = () => {
-      useClientStore.setState({
-        cleanupConnection: () => {},
-        playerId: null,
-        sendWebRTC: () => {},
-        sendWebSockets: () => {},
-      });
-
-      if (consumerTransport) consumerTransport.close();
-      if (producerTransport) producerTransport.close();
-      if (consumer) consumer.close();
-      // if (producer) producer.close();
-      if (dataConsumer) dataConsumer.close();
-      if (dataProducer) dataProducer.close();
-      if (ws) ws.close();
-    };
-
-    useClientStore.setState({ cleanupConnection });
 
     ws.onopen = () => {
       console.info("WebSocket - ✅ Connected to host");
 
       // Send all queued messages
-      for (const message of sendQueue) {
-        send(message);
+      for (const message of connectionStore.wsMessageQueue) {
+        connectionStore.sendWs(message);
       }
-      sendQueue.length = 0;
+      connectionStore.wsMessageQueue = [];
 
       // Initiate WebRTC connection
       const getRouterRtpCapabilities = GetRouterRtpCapabilities.create();
-      send({
+      connectionStore.sendWs({
         getRouterRtpCapabilities,
         oneofKind: "getRouterRtpCapabilities",
       });
 
       // Join world
-      const uri = useClientStore.getState().worldUri;
+      const uri = connectionStore.get(connectionStore.worldUri);
       const join = Join.create({ world: uri });
-      send({ join, oneofKind: "join" });
+      connectionStore.sendWs({ join, oneofKind: "join" });
     };
 
     ws.onclose = () => {
@@ -155,13 +294,13 @@ export function connectToHost(
         case "joinSuccess": {
           const playerId = msg.response.joinSuccess.playerId;
           console.info(`🌏 Joined world as player ${toHex(playerId)}`);
-          useClientStore.getState().setPlayerId(playerId);
+          connectionStore.set(connectionStore.playerId, playerId);
           break;
         }
 
         case "chatMessage": {
-          useClientStore.getState().addChatMessage({
-            id: chatId++,
+          connectionStore.addChatMessage({
+            id: connectionStore.chatMessageId++,
             playerId: msg.response.chatMessage.playerId,
             text: msg.response.chatMessage.message,
             timestamp: Date.now(),
@@ -171,22 +310,21 @@ export function connectToHost(
         }
 
         case "playerJoined": {
-          useClientStore.getState().ecsIncoming.push(msg);
+          const ecsIncoming = ecsEventStore.get(ecsEventStore.ecsIncoming);
+          ecsIncoming.push(msg);
 
-          const { setPlayerData } = useClientStore.getState();
+          const playerId = msg.response.playerJoined.playerId;
 
           for (const [key, value] of Object.entries(
             msg.response.playerJoined.data
           )) {
-            setPlayerData(msg.response.playerJoined.playerId, key, value);
+            connectionStore.setPlayerData(playerId, key, value);
           }
 
-          const displayName = useClientStore
-            .getState()
-            .getDisplayName(msg.response.playerJoined.playerId);
+          const displayName = connectionStore.getDisplayName(playerId);
 
-          useClientStore.getState().addChatMessage({
-            id: chatId++,
+          connectionStore.addChatMessage({
+            id: connectionStore.chatMessageId++,
             text: `${displayName} joined the world`,
             timestamp: Date.now(),
             type: "system",
@@ -195,34 +333,30 @@ export function connectToHost(
         }
 
         case "playerLeft": {
-          useClientStore.getState().ecsIncoming.push(msg);
+          const ecsIncoming = ecsEventStore.get(ecsEventStore.ecsIncoming);
+          ecsIncoming.push(msg);
 
           const playerId = msg.response.playerLeft.playerId;
+          const displayName = connectionStore.getDisplayName(playerId);
 
-          const displayName = useClientStore
-            .getState()
-            .getDisplayName(playerId);
-
-          useClientStore.getState().addChatMessage({
-            id: chatId++,
+          connectionStore.addChatMessage({
+            id: connectionStore.chatMessageId++,
             text: `${displayName} left the world`,
             timestamp: Date.now(),
             type: "system",
           });
 
-          useClientStore.getState().playerData.delete(playerId);
-          useClientStore.getState().locations.delete(playerId);
+          connectionStore.get(connectionStore.playerData).delete(playerId);
+          connectionStore.get(connectionStore.locations).delete(playerId);
           break;
         }
 
         case "playerData": {
-          useClientStore
-            .getState()
-            .setPlayerData(
-              msg.response.playerData.playerId,
-              msg.response.playerData.key,
-              msg.response.playerData.value
-            );
+          connectionStore.setPlayerData(
+            msg.response.playerData.playerId,
+            msg.response.playerData.key,
+            msg.response.playerData.value
+          );
           break;
         }
 
@@ -248,11 +382,11 @@ export function connectToHost(
               type: TransportType.CONSUMER,
             });
 
-            send({
+            connectionStore.sendWs({
               createTransport: createProducerTransport,
               oneofKind: "createTransport",
             });
-            send({
+            connectionStore.sendWs({
               createTransport: createConsumerTransport,
               oneofKind: "createTransport",
             });
@@ -263,7 +397,7 @@ export function connectToHost(
                 device.rtpCapabilities
               ),
             });
-            send({
+            connectionStore.sendWs({
               oneofKind: "setRtpCapabilities",
               setRtpCapabilities,
             });
@@ -295,11 +429,11 @@ export function connectToHost(
           // Connect transport
           transport.on("connect", ({ dtlsParameters }, callback, errback) => {
             if (isProducer) {
-              connectSendCallback = callback;
-              connectSendErrback = errback;
+              connectionStore.set(connectSendCallbackAtom, callback);
+              connectionStore.set(connectSendErrbackAtom, errback);
             } else {
-              connectRecvCallback = callback;
-              connectRecvErrback = errback;
+              connectionStore.set(connectRecvCallbackAtom, callback);
+              connectionStore.set(connectRecvErrbackAtom, errback);
             }
 
             const connect = ConnectTransport.create({
@@ -309,7 +443,7 @@ export function connectToHost(
                 : TransportType.CONSUMER,
             });
 
-            send({
+            connectionStore.sendWs({
               connectTransport: connect,
               oneofKind: "connectTransport",
             });
@@ -321,9 +455,9 @@ export function connectToHost(
           });
 
           if (!isProducer) {
-            consumerTransport = transport;
+            connectionStore.set(consumerTransportAtom, transport);
           } else {
-            producerTransport = transport;
+            connectionStore.set(producerTransportAtom, transport);
 
             transport.on("produce", ({ kind, rtpParameters }, callback) => {
               if (kind === "video") {
@@ -331,13 +465,15 @@ export function connectToHost(
                 return;
               }
 
-              producerIdCallback = (id: string) => callback({ id });
+              connectionStore.set(producerIdCallbackAtom, (id: string) =>
+                callback({ id })
+              );
 
               const produce = Produce.create({
                 rtpParameters: fromMediasoupRtpParameters(rtpParameters),
               });
 
-              send({ oneofKind: "produce", produce });
+              connectionStore.sendWs({ oneofKind: "produce", produce });
             });
 
             // producer = await transport.produce({ track });
@@ -345,28 +481,26 @@ export function connectToHost(
             transport.on(
               "producedata",
               ({ sctpStreamParameters }, callback) => {
-                dataProducerIdCallback = (id: string) => callback({ id });
+                connectionStore.set(dataProducerIdCallbackAtom, (id: string) =>
+                  callback({ id })
+                );
 
                 const produceData = ProduceData.create({
                   sctpStreamParameters,
                 });
 
-                send({ oneofKind: "produceData", produceData });
+                connectionStore.sendWs({
+                  oneofKind: "produceData",
+                  produceData,
+                });
               }
             );
 
-            dataProducer = await transport.produceData({
+            const dataProducer = await transport.produceData({
               maxRetransmits: 0,
               ordered: false,
             });
-
-            useClientStore.setState({
-              sendWebRTC: (data) => {
-                if (dataProducer?.readyState === "open") {
-                  dataProducer.send(data);
-                }
-              },
-            });
+            connectionStore.set(dataProducerAtom, dataProducer);
           }
 
           break;
@@ -378,15 +512,27 @@ export function connectToHost(
 
           if (success) {
             if (transportType === TransportType.PRODUCER) {
+              const connectSendCallback = connectionStore.get(
+                connectSendCallbackAtom
+              );
               connectSendCallback();
             } else {
+              const connectRecvCallback = connectionStore.get(
+                connectRecvCallbackAtom
+              );
               connectRecvCallback();
             }
           } else {
             const err = new Error("Transport connection failed");
             if (transportType === TransportType.PRODUCER) {
+              const connectSendErrback = connectionStore.get(
+                connectSendErrbackAtom
+              );
               connectSendErrback(err);
             } else {
+              const connectRecvErrback = connectionStore.get(
+                connectRecvErrbackAtom
+              );
               connectRecvErrback(err);
             }
           }
@@ -395,20 +541,24 @@ export function connectToHost(
         }
 
         case "producerId": {
-          if (producerIdCallback) {
-            producerIdCallback(msg.response.producerId.producerId);
-          }
+          const producerIdCallback = connectionStore.get(
+            producerIdCallbackAtom
+          );
+          producerIdCallback(msg.response.producerId.producerId);
           break;
         }
 
         case "dataProducerId": {
-          if (dataProducerIdCallback) {
-            dataProducerIdCallback(msg.response.dataProducerId.dataProducerId);
-          }
+          const dataProducerIdCallback = connectionStore.get(
+            dataProducerIdCallbackAtom
+          );
+          dataProducerIdCallback(msg.response.dataProducerId.dataProducerId);
           break;
         }
 
         case "createConsumer": {
+          const consumerTransport = connectionStore.get(consumerTransportAtom);
+
           if (!consumerTransport) {
             console.warn("Consumer transport not initialized");
             return;
@@ -419,7 +569,7 @@ export function connectToHost(
             return;
           }
 
-          consumer = await consumerTransport.consume({
+          const consumer = await consumerTransport.consume({
             id: msg.response.createConsumer.consumerId,
             kind: "audio",
             producerId: msg.response.createConsumer.producerId,
@@ -427,12 +577,13 @@ export function connectToHost(
               msg.response.createConsumer.rtpParameters
             ),
           });
+          connectionStore.set(consumerAtom, consumer);
 
           // Start receiving audio
           const pauseAudio = PauseAudio.create({
             paused: false,
           });
-          send({ oneofKind: "pauseAudio", pauseAudio });
+          connectionStore.sendWs({ oneofKind: "pauseAudio", pauseAudio });
 
           consumer.resume();
 
@@ -472,6 +623,8 @@ export function connectToHost(
         }
 
         case "createDataConsumer": {
+          const consumerTransport = connectionStore.get(consumerTransportAtom);
+
           if (!consumerTransport) {
             console.warn("No consumer transport");
             break;
@@ -486,15 +639,13 @@ export function connectToHost(
 
           try {
             // Create data consumer
-            dataConsumer = await consumerTransport.consumeData({
+            const dataConsumer = await consumerTransport.consumeData({
               dataProducerId: msg.response.createDataConsumer.dataProducerId,
               id: msg.response.createDataConsumer.dataConsumerId,
               sctpStreamParameters:
                 msg.response.createDataConsumer.sctpStreamParameters,
             });
-
-            const { locations, lastLocationUpdates } =
-              useClientStore.getState();
+            connectionStore.set(dataConsumerAtom, dataConsumer);
 
             // Listen for data
             dataConsumer.on("message", async (message: ArrayBuffer | Blob) => {
@@ -516,6 +667,7 @@ export function connectToHost(
               const rotZ = view.getInt16(17) / LOCATION_ROUNDING.ROTATION;
               const rotW = view.getInt16(19) / LOCATION_ROUNDING.ROTATION;
 
+              const locations = connectionStore.get(connectionStore.locations);
               const location = locations.get(playerId) ?? [];
 
               location[0] = posX;
@@ -527,6 +679,10 @@ export function connectToHost(
               location[6] = rotW;
 
               locations.set(playerId, location);
+
+              const lastLocationUpdates = connectionStore.get(
+                connectionStore.lastLocationUpdates
+              );
               lastLocationUpdates.set(playerId, performance.now());
             });
           } catch (error) {

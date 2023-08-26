@@ -3,7 +3,7 @@ import {
   EditNode_RigidBody_Type,
 } from "@unavi/protocol";
 
-import { useSceneStore } from "../sceneStore";
+import { editorStore } from "../store";
 
 export class TreeItem {
   readonly id: bigint;
@@ -38,9 +38,8 @@ export class TreeItem {
 
   set parentId(value: bigint | undefined) {
     if (this.#parentId === value) return;
-
     if (this.#parentId) {
-      const parent = useSceneStore.getState().items.get(this.#parentId);
+      const parent = editorStore.get(editorStore.items).get(this.#parentId);
       this.#parentId = undefined;
 
       if (parent) {
@@ -49,7 +48,7 @@ export class TreeItem {
     }
 
     if (value) {
-      const parent = useSceneStore.getState().items.get(value);
+      const parent = editorStore.get(editorStore.items).get(value);
       if (parent) {
         this.#parentId = value;
         parent.addChild(this);
@@ -63,7 +62,7 @@ export class TreeItem {
 
   get children(): TreeItem[] {
     return this.childrenIds.map((id) => {
-      const item = useSceneStore.getState().items.get(id);
+      const item = editorStore.get(editorStore.items).get(id);
       if (!item) throw new Error(`Item with id ${id} not found`);
       return item;
     });
@@ -71,7 +70,7 @@ export class TreeItem {
 
   get parent(): TreeItem | undefined {
     if (!this.#parentId) return undefined;
-    return useSceneStore.getState().items.get(this.#parentId);
+    return editorStore.get(editorStore.items).get(this.#parentId);
   }
 
   addChild(child: TreeItem) {
@@ -99,8 +98,8 @@ export class TreeItem {
 
   sortChildren() {
     this.childrenIds.sort((a, b) => {
-      const aItem = useSceneStore.getState().items.get(a);
-      const bItem = useSceneStore.getState().items.get(b);
+      const aItem = editorStore.get(editorStore.items).get(a);
+      const bItem = editorStore.get(editorStore.items).get(b);
 
       if (aItem?.childrenIds?.length && !bItem?.childrenIds?.length) {
         return 1;
@@ -116,11 +115,7 @@ export class TreeItem {
     this.parent?.removeChild(this);
     this.clearChildren();
 
-    useSceneStore.setState((state) => {
-      state.items.delete(this.id);
-      return {
-        items: new Map(state.items),
-      };
-    });
+    const items = editorStore.get(editorStore.items);
+    items.delete(this.id);
   }
 }

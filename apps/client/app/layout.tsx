@@ -1,8 +1,8 @@
 import "./globals.css";
 
 import { Nunito } from "next/font/google";
-import { lazy, Suspense } from "react";
 
+import ClientWrapper from "./ClientWrapper";
 import { baseMetadata } from "./metadata";
 import Toast from "./Toast";
 
@@ -11,8 +11,6 @@ const font = Nunito({ subsets: ["latin"] });
 export const metadata = {
   ...baseMetadata,
 };
-
-const ClientWrapper = lazy(() => import("./ClientWrapper"));
 
 export default function RootLayout({
   children,
@@ -23,10 +21,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={font.className}>
         <ClientWrapper>{children}</ClientWrapper>
-
-        <Suspense>
-          <Toast />
-        </Suspense>
+        <Toast />
       </body>
     </html>
   );

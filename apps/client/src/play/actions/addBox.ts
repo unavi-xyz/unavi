@@ -11,7 +11,7 @@ export function addBox() {
   const mesh = addThreeMesh(geometry);
   const name = addNode("Box");
 
-  const parent = getAddParent();
+  const parent = getAddParent() ?? undefined;
 
   editNode({
     mesh,

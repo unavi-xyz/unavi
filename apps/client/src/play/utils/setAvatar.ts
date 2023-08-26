@@ -1,4 +1,4 @@
-import { useClientStore } from "@unavi/engine";
+import { connectionStore } from "@unavi/engine";
 
 import { getTempUpload } from "@/app/api/temp/helper";
 import { usePlayStore } from "@/app/play/playStore";
@@ -7,9 +7,8 @@ import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 import { LocalStorageKey } from "../constants";
 
 export async function setAvatar(value: string | null) {
-  if (useClientStore.getState().avatar === value) return;
-
-  let avatar = value || "";
+  let avatar = connectionStore.get(connectionStore.avatar);
+  if (value === avatar) return;
 
   // Upload avatar to S3 if it's a local uri
   if (avatar && !avatar.startsWith("http")) {
@@ -30,8 +29,8 @@ export async function setAvatar(value: string | null) {
     avatar = cdnURL(S3Path.temp(fileId));
   }
 
-  // Set avatar
   usePlayStore.setState({ uiAvatar: avatar });
-  useClientStore.getState().setAvatar(avatar);
+  connectionStore.set(connectionStore.avatar, avatar);
+
   localStorage.setItem(LocalStorageKey.Avatar, avatar);
 }

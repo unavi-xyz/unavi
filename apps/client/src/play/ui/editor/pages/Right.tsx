@@ -1,10 +1,11 @@
-import { useSceneStore } from "@unavi/engine";
+import { editorStore } from "@unavi/engine";
+import { useAtom } from "jotai";
 
 import InspectPage from "./Inspect/InspectPage";
 import WorldPage from "./World/WorldPage";
 
 export default function Right() {
-  const selectedId = useSceneStore((state) => state.selectedId);
+  const [selectedId] = useAtom(editorStore.selectedId);
 
   return (
     <div className="fixed right-0 top-24 z-20 h-full p-4">

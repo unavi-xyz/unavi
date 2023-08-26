@@ -1,7 +1,7 @@
 import { TransformControls, TransformMode } from "lattice-engine/transform";
 import { Mut, Query } from "thyseus";
 
-import { useSceneStore } from "../sceneStore";
+import { editorStore } from "../store";
 import { Tool } from "../types";
 
 let lastTransformTarget: bigint | undefined;
@@ -12,8 +12,11 @@ export function syncTransformControls(
   for (const controls of transformControls) {
     const targetId = controls.targetId;
 
-    const { sceneTreeId, selectedId, rootId, items, tool } =
-      useSceneStore.getState();
+    const sceneTreeId = editorStore.get(editorStore.sceneTreeId);
+    const selectedId = editorStore.get(editorStore.selectedId);
+    const rootId = editorStore.get(editorStore.rootId);
+    const items = editorStore.get(editorStore.items);
+    const tool = editorStore.get(editorStore.tool);
 
     switch (tool) {
       case Tool.Translate: {
@@ -71,12 +74,12 @@ export function syncTransformControls(
 }
 
 function setTransformTarget(controls: TransformControls, targetId: bigint) {
-  const { items } = useSceneStore.getState();
+  const items = editorStore.get(editorStore.items);
 
   controls.targetId = targetId;
 
   const selectedId = targetId === 0n ? undefined : targetId;
-  useSceneStore.setState({ selectedId });
+  editorStore.set(editorStore.selectedId, selectedId);
 
   // Disable transform controls if target is locked
   const locked = items.get(targetId)?.locked;

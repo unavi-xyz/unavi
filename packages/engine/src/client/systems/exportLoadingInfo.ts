@@ -1,32 +1,17 @@
+import { atom } from "jotai";
 import { Loading, Warehouse } from "lattice-engine/core";
 import { Entity, Query, Res, SystemRes } from "thyseus";
-import { create } from "zustand";
 
-type LoadingStore = {
-  loading: number;
-  loaded: number;
-  total: number;
-  message: string;
-  entityIds: Set<bigint>;
-  reset: () => void;
-};
+import { AtomStore } from "../../AtomStore";
 
-export const useLoadingStore = create<LoadingStore>((set) => ({
-  entityIds: new Set(),
-  loaded: 0,
-  loading: 0,
-  message: "",
-  reset: () => {
-    set({
-      entityIds: new Set(),
-      loaded: 0,
-      loading: 0,
-      message: "",
-      total: 0,
-    });
-  },
-  total: 0,
-}));
+export class LoadingStore extends AtomStore {
+  message = atom("");
+  numLoading = atom(0);
+  numLoaded = atom(0);
+  loadingEntities = atom(new Set<bigint>());
+}
+
+export const loadingStore = new LoadingStore();
 
 class LocalRes {
   messageId = 0n;
@@ -41,20 +26,16 @@ export function exportLoadingInfo(
   localRes: SystemRes<LocalRes>,
   loading: Query<[Entity, Loading]>
 ) {
-  const entityIds = useLoadingStore.getState().entityIds;
+  const entityIds = loadingStore.get(loadingStore.loadingEntities);
 
   const ids: bigint[] = [];
 
-  let count = 0;
   let displayedId = 0n;
   let displayedMessage = "";
 
   for (const [entity, load] of loading) {
     ids.push(entity.id);
-
     entityIds.add(entity.id);
-
-    count++;
 
     const message = load.message.read(warehouse);
 
@@ -67,9 +48,10 @@ export function exportLoadingInfo(
   for (const id of entityIds) {
     if (!ids.includes(id)) {
       entityIds.delete(id);
-      useLoadingStore.setState((prev) => ({
-        loaded: prev.loaded + 1,
-      }));
+      loadingStore.set(
+        loadingStore.numLoaded,
+        loadingStore.get(loadingStore.numLoaded) + 1
+      );
     }
   }
 
@@ -79,9 +61,6 @@ export function exportLoadingInfo(
     localRes.message = displayedMessage;
   }
 
-  useLoadingStore.setState((prev) => ({
-    loading: count,
-    message: localRes.message,
-    total: prev.loaded + count,
-  }));
+  loadingStore.set(loadingStore.numLoading, ids.length);
+  loadingStore.set(loadingStore.message, localRes.message);
 }

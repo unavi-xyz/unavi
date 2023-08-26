@@ -1,8 +1,9 @@
+import { atom, getDefaultStore } from "jotai";
 import { Warehouse } from "lattice-engine/core";
 import { ExportedGltf } from "lattice-engine/gltf";
 import { EventReader, Res } from "thyseus";
 
-import { useClientStore } from "../clientStore";
+export const exportedModelAtom = atom<Blob | null>(null);
 
 export function saveExport(
   warehouse: Res<Warehouse>,
@@ -10,7 +11,7 @@ export function saveExport(
 ) {
   if (reader.length === 0) return;
 
-  useClientStore.setState({ exportedModel: null });
+  getDefaultStore().set(exportedModelAtom, null);
 
   for (const event of reader) {
     const uri = event.uri.read(warehouse);
@@ -18,7 +19,7 @@ export function saveExport(
 
     fetch(uri)
       .then((response) => response.blob())
-      .then((blob) => useClientStore.setState({ exportedModel: blob }));
+      .then((blob) => getDefaultStore().set(exportedModelAtom, blob));
   }
 
   reader.clear();

@@ -1,4 +1,5 @@
-import { useSceneStore } from "@unavi/engine";
+import { editorStore } from "@unavi/engine";
+import { useAtom } from "jotai";
 import { IoMdExpand, IoMdLock, IoMdUnlock } from "react-icons/io";
 
 import { editNode } from "@/src/play/actions/editNode";
@@ -11,18 +12,19 @@ interface Props {
 }
 
 export default function TreeItem({ id }: Props) {
-  const selectedId = useSceneStore((state) => state.selectedId);
+  const [selectedId, setSelectedId] = useAtom(editorStore.selectedId);
+
   const name = useTreeValue(id, "name");
   const locked = useTreeValue(id, "locked");
 
   function select(e: React.MouseEvent) {
     e.stopPropagation();
-    useSceneStore.setState({ selectedId: id });
+    setSelectedId(id);
   }
 
   function expand(e: React.MouseEvent) {
     e.stopPropagation();
-    useSceneStore.setState({ sceneTreeId: id });
+    setSelectedId(id);
   }
 
   function toggleLock(e: React.MouseEvent) {

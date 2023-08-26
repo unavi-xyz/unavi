@@ -1,8 +1,9 @@
+import { atom, getDefaultStore } from "jotai";
 import { Warehouse } from "lattice-engine/core";
 import { Name, Scene, SceneStruct } from "lattice-engine/scene";
 import { Entity, Query, Res } from "thyseus";
 
-import { useClientStore } from "../clientStore";
+export const rootNameAtom = atom<string | null>(null);
 
 export function setRootName(
   warehouse: Res<Warehouse>,
@@ -17,7 +18,7 @@ export function setRootName(
       if (scene.rootId !== entity.id) continue;
 
       const rootName = name.value.read(warehouse);
-      useClientStore.setState({ rootName });
+      getDefaultStore().set(rootNameAtom, rootName || null);
     }
   }
 }

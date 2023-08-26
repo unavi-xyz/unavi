@@ -1,4 +1,4 @@
-import { useClientStore } from "@unavi/engine";
+import { connectionStore } from "@unavi/engine";
 import { EditMesh, EditorEvent } from "@unavi/protocol";
 import { BufferAttribute, BufferGeometry } from "three";
 
@@ -34,7 +34,7 @@ export function addThreeMesh(geometry: BufferGeometry) {
     event: { editMesh, oneofKind: "editMesh" },
   });
 
-  useClientStore.getState().mirrorEvent(event);
+  connectionStore.mirrorEvent(event);
 
   return name;
 }

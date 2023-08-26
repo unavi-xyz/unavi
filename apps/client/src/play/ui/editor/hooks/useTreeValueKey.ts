@@ -1,4 +1,6 @@
-import { TreeItem, useSceneStore } from "@unavi/engine";
+import { editorStore, TreeItem } from "@unavi/engine";
+import { useAtom } from "jotai";
+import { useMemo } from "react";
 
 type ArrayKey<T extends keyof TreeItem> = Exclude<
   T,
@@ -14,9 +16,12 @@ export function useTreeValueKey<T extends Keys, U extends keyof TreeItem[T]>(
   key: T,
   index: U
 ): TreeItem[T][U] | undefined {
-  const value = useSceneStore((state) =>
-    id ? state.items.get(id)?.[key][index] : undefined
-  );
+  const [items] = useAtom(editorStore.items);
+
+  const value = useMemo(() => {
+    if (!id) return undefined;
+    return items.get(id)?.[key][index];
+  }, [id, key, index, items]);
 
   return value;
 }

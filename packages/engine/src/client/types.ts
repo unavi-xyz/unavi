@@ -8,20 +8,20 @@ import {
 } from "@unavi/protocol";
 import { PlayerJoined, PlayerLeft } from "@wired-protocol/types";
 
-export type PlayerMessage = {
-  type: "player";
+interface BaseMessage {
   id: number;
   timestamp: number;
   text: string;
-  playerId: number;
-};
+}
 
-export type SystemMessage = {
+export interface PlayerMessage extends BaseMessage {
+  type: "player";
+  playerId: number;
+}
+
+export interface SystemMessage extends BaseMessage {
   type: "system";
-  id: number;
-  timestamp: number;
-  text: string;
-};
+}
 
 export type ChatMessage = PlayerMessage | SystemMessage;
 

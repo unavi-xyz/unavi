@@ -1,8 +1,9 @@
-import { useSceneStore } from "@unavi/engine";
+import { editorStore } from "@unavi/engine";
+import { useAtom } from "jotai";
 import { useMemo } from "react";
 
 export function useTreeItem(id: bigint | undefined) {
-  const items = useSceneStore((state) => state.items);
+  const [items] = useAtom(editorStore.items);
 
   const item = useMemo(() => {
     if (!id) return undefined;

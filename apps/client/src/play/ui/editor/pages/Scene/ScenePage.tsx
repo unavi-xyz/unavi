@@ -1,4 +1,5 @@
-import { useSceneStore } from "@unavi/engine";
+import { editorStore } from "@unavi/engine";
+import { useAtom } from "jotai";
 
 import { usePlayStore } from "@/app/play/playStore";
 import { LeftPanelPage } from "@/app/play/types";
@@ -9,8 +10,9 @@ import PanelPage from "../PanelPage";
 import SceneTree from "./SceneTree";
 
 export default function ScenePage() {
-  const rootId = useSceneStore((state) => state.rootId);
-  const sceneTreeId = useSceneStore((state) => state.sceneTreeId);
+  const [rootId] = useAtom(editorStore.rootId);
+  const [sceneTreeId, setSceneTreeId] = useAtom(editorStore.sceneTreeId);
+
   const usedId = sceneTreeId || rootId;
 
   const parentId = useTreeValue(usedId, "parentId");
@@ -20,9 +22,7 @@ export default function ScenePage() {
     return null;
   }
 
-  const handleBack = parentId
-    ? () => useSceneStore.setState({ sceneTreeId: parentId })
-    : undefined;
+  const handleBack = parentId ? () => setSceneTreeId(parentId) : undefined;
 
   const displayName =
     usedId === rootId ? "Scene" : getDisplayName(name, usedId);

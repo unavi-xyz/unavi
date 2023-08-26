@@ -1,4 +1,5 @@
-import { useClientStore } from "@unavi/engine";
+import { connectionStore } from "@unavi/engine";
+import { useAtom } from "jotai";
 
 import { usePlayStore } from "@/app/play/playStore";
 import { useAuth } from "@/src/client/AuthProvider";
@@ -8,8 +9,9 @@ import TextField from "../../../ui/TextField";
 
 export default function NameSettings() {
   const nickname = usePlayStore((state) => state.uiName);
-  const playerId = useClientStore((state) => state.playerId);
   const { user } = useAuth();
+
+  const [playerId] = useAtom(connectionStore.playerId);
 
   const guestName =
     playerId == null || playerId === undefined

@@ -2,7 +2,6 @@ import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 
 import { env } from "@/src/env.mjs";
 import { fetchAuthors } from "@/src/server/helpers/fetchAuthors";
@@ -134,9 +133,7 @@ export default async function World({ params }: Props) {
           </div>
         </div>
 
-        <Suspense fallback={null}>
-          <Tabs id={{ type: "id", value: params.id }} metadata={metadata} />
-        </Suspense>
+        <Tabs id={{ type: "id", value: params.id }} metadata={metadata} />
       </div>
     </div>
   );

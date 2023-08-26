@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 
@@ -14,6 +13,8 @@ import { parseIdentity } from "@/src/utils/parseIdentity";
 
 import App from "./App";
 import { WorldUriId } from "./types";
+
+export const dynamic = "force-dynamic";
 
 interface Props {
   searchParams?: { [key: string]: string | string[] | undefined };
@@ -31,10 +32,6 @@ export async function generateMetadata({
 }
 
 export default async function Play({ searchParams }: Props) {
-  // Call cookies() to force this route to be dynamic
-  // It should be dynamic because of searchParams, but it's not due to a bug in Next.js
-  cookies();
-
   const params = searchParamsSchema.safeParse(searchParams);
   if (!params.success) return notFound();
 

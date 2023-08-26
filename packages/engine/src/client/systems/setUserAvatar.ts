@@ -1,10 +1,12 @@
+import { getDefaultStore } from "jotai";
 import { Warehouse } from "lattice-engine/core";
 import { PlayerAvatar, PlayerBody, PlayerCamera } from "lattice-engine/player";
 import { Parent } from "lattice-engine/scene";
 import { Vrm } from "lattice-engine/vrm";
 import { Entity, Mut, Query, Res, With } from "thyseus";
 
-import { useClientStore } from "../clientStore";
+import { connectionStore } from "./connectToHost";
+import { defaultAvatarAtom } from "./spawnPlayers";
 
 export function setUserAvatar(
   warehouse: Res<Mut<Warehouse>>,
@@ -19,7 +21,9 @@ export function setUserAvatar(
       for (const [avatarParent, vrm] of avatars) {
         if (avatarParent.id !== entity.id) continue;
 
-        const { avatar, defaultAvatar } = useClientStore.getState();
+        const defaultAvatar = getDefaultStore().get(defaultAvatarAtom);
+        const avatar = connectionStore.get(connectionStore.avatar);
+
         const usedAvatar = avatar || defaultAvatar;
         const uri = vrm.uri.read(warehouse) ?? "";
         if (uri === usedAvatar) continue;

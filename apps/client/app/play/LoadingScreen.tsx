@@ -1,5 +1,6 @@
-import { useClientStore, useLoadingStore } from "@unavi/engine";
+import { connectionStore, loadingStore } from "@unavi/engine";
 import { World } from "@wired-protocol/types";
+import { useAtom } from "jotai";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
@@ -16,10 +17,11 @@ interface Props {
 }
 
 export default function LoadingScreen({ metadata, authors }: Props) {
-  const loading = useLoadingStore((state) => state.loading);
-  const loaded = useLoadingStore((state) => state.loaded);
-  const total = useLoadingStore((state) => state.total);
-  const playerId = useClientStore((state) => state.playerId);
+  const [playerId] = useAtom(connectionStore.playerId);
+  const [numLoading] = useAtom(loadingStore.numLoading);
+  const [numLoaded] = useAtom(loadingStore.numLoaded);
+
+  const numTotal = numLoading + numLoaded;
 
   const [doneLoading, setDoneLoading] = useState(false);
   const [hideScreen, setHideScreen] = useState(false);
@@ -27,7 +29,7 @@ export default function LoadingScreen({ metadata, authors }: Props) {
   // Reset loading state when we unmount
   useEffect(() => {
     return () => {
-      useLoadingStore.getState().reset();
+      loadingStore.set(loadingStore.numLoaded, 0);
     };
   }, []);
 
@@ -37,13 +39,13 @@ export default function LoadingScreen({ metadata, authors }: Props) {
     if (playerId === null) return;
 
     const timeout = setTimeout(() => {
-      if (loading === 0) {
+      if (numLoading === 0) {
         setDoneLoading(true);
       }
     }, LOADING_DELAY);
 
     return () => clearTimeout(timeout);
-  }, [playerId, loading, setDoneLoading]);
+  }, [playerId, numLoading, setDoneLoading]);
 
   // Fade out the loading screen
   useEffect(() => {
@@ -60,17 +62,16 @@ export default function LoadingScreen({ metadata, authors }: Props) {
 
   const isConnecting = playerId === null;
   const loadingMessage =
-    isConnecting && total === 0 ? "Connecting" : "Loading world";
-  const progress = isConnecting ? 0.1 : loaded / total;
+    isConnecting && numTotal === 0 ? "Connecting" : "Loading world";
+  const progress = isConnecting ? 0.1 : numLoaded / numTotal;
 
   const image = metadata?.image;
   const host = metadata?.host ?? env.NEXT_PUBLIC_DEFAULT_HOST;
 
   return (
     <div
-      className={`fixed z-50 flex h-screen w-screen flex-col items-center justify-center bg-neutral-900 text-white transition duration-700 ${
-        doneLoading ? "pointer-events-none opacity-0" : ""
-      }`}
+      className={`fixed z-50 flex h-screen w-screen flex-col items-center justify-center bg-neutral-900 text-white transition duration-700 ${doneLoading ? "pointer-events-none opacity-0" : ""
+        }`}
     >
       {image ? <BackgroundImage src={image} /> : null}
 
@@ -119,9 +120,9 @@ export default function LoadingScreen({ metadata, authors }: Props) {
           <div className="space-x-2 text-center text-white/70">
             <span>{loadingMessage}</span>
 
-            {total === 0 ? null : (
+            {numTotal === 0 ? null : (
               <span>
-                ({loaded}/{total})
+                ({numLoaded}/{numTotal})
               </span>
             )}
           </div>

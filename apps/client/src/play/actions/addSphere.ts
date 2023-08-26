@@ -11,7 +11,7 @@ export function addSphere() {
   const mesh = addThreeMesh(geometry);
   const name = addNode("Sphere");
 
-  const parent = getAddParent();
+  const parent = getAddParent() ?? undefined;
 
   editNode({
     mesh,

@@ -1,4 +1,4 @@
-import { useClientStore } from "@unavi/engine";
+import { connectionStore } from "@unavi/engine";
 import { useEffect, useState } from "react";
 
 import { usePlayStore } from "@/app/play/playStore";
@@ -40,8 +40,7 @@ export default function SettingsDialog({ open, setOpen }: Props) {
       localStorage.removeItem(LocalStorageKey.Name);
     }
 
-    // Set name
-    useClientStore.getState().setName(name);
+    connectionStore.set(connectionStore.nickname, name);
   }
 
   return (

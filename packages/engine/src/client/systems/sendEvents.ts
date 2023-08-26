@@ -1,7 +1,10 @@
 import { EditorEvent } from "@unavi/protocol";
+import { Response } from "@wired-protocol/types";
+import { atom } from "jotai";
 import { Warehouse } from "lattice-engine/core";
 import { EventWriter, Mut, Res } from "thyseus";
 
+import { AtomStore } from "../../AtomStore";
 import {
   AddMesh,
   AddNode,
@@ -11,8 +14,13 @@ import {
   EditNode,
   EditRigidBody,
 } from "../../editor/events";
-import { useClientStore } from "../clientStore";
 import { PlayerJoin, PlayerLeave } from "../events";
+
+class EcsEventStore extends AtomStore {
+  ecsIncoming = atom<Response[]>([]);
+}
+
+export const ecsEventStore = new EcsEventStore();
 
 /**
  * Converts networked events into ECS events
@@ -29,7 +37,7 @@ export function sendEvents(
   rigidBody: EventWriter<EditRigidBody>,
   collider: EventWriter<EditCollider>
 ) {
-  const ecsIncoming = useClientStore.getState().ecsIncoming;
+  const ecsIncoming = ecsEventStore.get(ecsEventStore.ecsIncoming);
 
   // Only send 1 event per frame
   const msg = ecsIncoming.shift();

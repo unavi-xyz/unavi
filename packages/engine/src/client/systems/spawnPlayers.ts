@@ -1,3 +1,4 @@
+import { atom, getDefaultStore } from "jotai";
 import { Time, Warehouse } from "lattice-engine/core";
 import { Velocity } from "lattice-engine/physics";
 import { PlayerAvatar, PlayerBody } from "lattice-engine/player";
@@ -10,9 +11,10 @@ import {
 import { Vrm } from "lattice-engine/vrm";
 import { Commands, Entity, EventReader, Mut, Query, Res } from "thyseus";
 
-import { useClientStore } from "../clientStore";
 import { NetworkTransform, OtherPlayer, PrevTranslation } from "../components";
 import { PlayerJoin, PlayerLeave } from "../events";
+
+export const defaultAvatarAtom = atom("");
 
 export function spawnPlayers(
   commands: Commands,
@@ -55,7 +57,9 @@ export function spawnPlayers(
     playerAvatar.walkAnimation.write("/models/Walk.fbx", warehouse);
 
     const vrm = new Vrm();
-    vrm.uri.write(useClientStore.getState().defaultAvatar, warehouse);
+
+    const defaultAvatar = getDefaultStore().get(defaultAvatarAtom);
+    vrm.uri.write(defaultAvatar, warehouse);
 
     commands
       .spawn(true)

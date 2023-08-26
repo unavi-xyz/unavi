@@ -1,4 +1,4 @@
-import { ChatMessage as IChatMessage, useClientStore } from "@unavi/engine";
+import { ChatMessage as IChatMessage, connectionStore } from "@unavi/engine";
 import { useEffect, useState } from "react";
 
 import { usePlayStore } from "@/app/play/playStore";
@@ -54,9 +54,9 @@ export default function ChatMessage({ message, alwaysShow }: Props) {
 }
 
 function PlayerName({ playerId }: { playerId: number }) {
-  const [name] = useState(useClientStore.getState().getDisplayName(playerId));
+  const [name] = useState(connectionStore.getDisplayName(playerId));
   const [did] = useState(
-    useClientStore.getState().playerData.get(playerId)?.did
+    connectionStore.get(connectionStore.playerData).get(playerId)?.did
   );
 
   if (did) {

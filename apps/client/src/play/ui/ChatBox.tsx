@@ -1,5 +1,6 @@
-import { useClientStore } from "@unavi/engine";
+import { connectionStore } from "@unavi/engine";
 import { SendChatMessage } from "@wired-protocol/types";
+import { useAtom } from "jotai";
 import { useEffect, useRef } from "react";
 
 import { usePlayStore } from "@/app/play/playStore";
@@ -15,7 +16,8 @@ export default function ChatBox({ alwaysShow }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
   const chatBoxFocused = usePlayStore((state) => state.chatBoxFocused);
-  const chatMessages = useClientStore((state) => state.chatMessages);
+
+  const [chatMessages] = useAtom(connectionStore.chatMessages);
 
   const isPointerLocked = usePointerLocked();
 
@@ -60,7 +62,7 @@ export default function ChatBox({ alwaysShow }: Props) {
             if (e.key === "Enter") {
               e.preventDefault();
 
-              const { playerId, sendWebSockets } = useClientStore.getState();
+              const playerId = connectionStore.get(connectionStore.playerId);
               if (playerId === null) return;
 
               const text = e.currentTarget.value;
@@ -72,7 +74,10 @@ export default function ChatBox({ alwaysShow }: Props) {
                 message: text,
               });
 
-              sendWebSockets({ oneofKind: "sendChatMessage", sendChatMessage });
+              connectionStore.sendWs({
+                oneofKind: "sendChatMessage",
+                sendChatMessage,
+              });
             }
           }}
           onFocus={() => usePlayStore.setState({ chatBoxFocused: true })}

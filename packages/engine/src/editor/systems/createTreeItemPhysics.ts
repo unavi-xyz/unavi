@@ -14,7 +14,7 @@ import {
 } from "lattice-engine/physics";
 import { Entity, Query, With } from "thyseus";
 
-import { useSceneStore } from "../sceneStore";
+import { editorStore } from "../store";
 
 export function createTreeItemsPhysics(
   boxColliders: Query<[Entity, BoxCollider]>,
@@ -26,8 +26,10 @@ export function createTreeItemsPhysics(
   staticBodies: Query<Entity, With<StaticBody>>,
   dynamicBodies: Query<Entity, With<DynamicBody>>
 ) {
-  const { enabled, items } = useSceneStore.getState();
+  const enabled = editorStore.get(editorStore.enabled);
   if (!enabled) return;
+
+  const items = editorStore.get(editorStore.items);
 
   const colliderIds: bigint[] = [];
 

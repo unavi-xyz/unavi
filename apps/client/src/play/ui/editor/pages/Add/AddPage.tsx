@@ -1,4 +1,4 @@
-import { useSceneStore } from "@unavi/engine";
+import { editorStore } from "@unavi/engine";
 import {
   BiBox,
   BiCircle,
@@ -21,11 +21,11 @@ function wrapAdd(fn: () => string) {
     const name = fn();
 
     setTimeout(() => {
-      const { items } = useSceneStore.getState();
+      const items = editorStore.get(editorStore.items);
 
       for (const [, item] of items) {
         if (item.name === name) {
-          useSceneStore.setState({ selectedId: item.id });
+          editorStore.set(editorStore.selectedId, item.id);
           break;
         }
       }

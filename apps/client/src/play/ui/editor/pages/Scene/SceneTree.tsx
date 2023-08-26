@@ -1,4 +1,4 @@
-import { useSceneStore } from "@unavi/engine";
+import { editorStore } from "@unavi/engine";
 
 import { useTreeValue } from "../../hooks/useTreeValue";
 import TreeItem from "./TreeItem";
@@ -11,7 +11,7 @@ export default function SceneTree({ rootId }: Props) {
   const childrenIds = useTreeValue(rootId, "childrenIds");
 
   function clearSelected() {
-    useSceneStore.setState({ selectedId: undefined });
+    editorStore.set(editorStore.selectedId, undefined);
   }
 
   return (

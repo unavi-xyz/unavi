@@ -4,9 +4,9 @@ import { PlayerBody, PlayerCamera } from "lattice-engine/player";
 import { Transform } from "lattice-engine/scene";
 import { Entity, f32, Query, Res, struct, SystemRes } from "thyseus";
 
-import { useClientStore } from "../clientStore";
 import { NETWORK_UPDATE_HZ } from "../constants";
 import { serializeLocation } from "../utils/serializeLocation";
+import { connectionStore } from "./connectToHost";
 
 const FALL_THRESHOLD_SECONDS = 0.35;
 
@@ -27,7 +27,7 @@ export function publishLocation(
 
   localRes.lastPublish = now;
 
-  const playerId = useClientStore.getState().playerId;
+  const playerId = connectionStore.get(connectionStore.playerId);
   if (playerId === null) return;
 
   for (const [bodyEnt, transform, body] of bodies) {
@@ -50,9 +50,7 @@ export function publishLocation(
           },
         });
 
-        useClientStore
-          .getState()
-          .sendWebSockets({ oneofKind: "setPlayerData", setPlayerData });
+        connectionStore.sendWs({ oneofKind: "setPlayerData", setPlayerData });
       }
 
       // TODO: Remove hardcoded player height
@@ -70,7 +68,7 @@ export function publishLocation(
         transform.rotation.w
       );
 
-      useClientStore.getState().sendWebRTC(buffer);
+      connectionStore.sendWebRTC(buffer);
     }
   }
 }

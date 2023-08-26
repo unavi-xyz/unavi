@@ -91,6 +91,7 @@ export default await defineNextConfig({
     config.experiments = {
       ...config.experiments,
       asyncWebAssembly: true,
+      layers: true,
     };
     config.resolve.fallback = { fs: false, net: false, tls: false };
     return config;

@@ -1,7 +1,10 @@
-import { useClientStore, useSceneStore } from "@unavi/engine";
+import { editorStore, rootNameAtom } from "@unavi/engine";
+import { getDefaultStore } from "jotai";
 
 export function getAddParent() {
-  const { sceneTreeId, items } = useSceneStore.getState();
+  const sceneTreeId = editorStore.get(editorStore.sceneTreeId);
+  const items = editorStore.get(editorStore.items);
+  const rootName = getDefaultStore().get(rootNameAtom);
 
   if (sceneTreeId) {
     const item = items.get(sceneTreeId);
@@ -10,8 +13,6 @@ export function getAddParent() {
       return item.name;
     }
   }
-
-  const { rootName } = useClientStore.getState();
 
   return rootName;
 }

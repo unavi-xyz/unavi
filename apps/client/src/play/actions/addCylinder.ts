@@ -11,7 +11,7 @@ export function addCylinder() {
   const mesh = addThreeMesh(geometry);
   const name = addNode("Cylinder");
 
-  const parent = getAddParent();
+  const parent = getAddParent() ?? undefined;
 
   editNode({
     mesh,

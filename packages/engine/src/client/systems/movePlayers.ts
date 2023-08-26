@@ -1,13 +1,13 @@
 import { Mut, Query } from "thyseus";
 
-import { useClientStore } from "../clientStore";
 import { NetworkTransform, OtherPlayer } from "../components";
-
-const locations = useClientStore.getState().locations;
+import { connectionStore } from "./connectToHost";
 
 export function movePlayers(
   players: Query<[OtherPlayer, Mut<NetworkTransform>]>
 ) {
+  const locations = connectionStore.get(connectionStore.locations);
+
   for (const [player, network] of players) {
     const location = locations.get(player.id);
     if (!location) continue;

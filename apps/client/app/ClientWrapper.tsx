@@ -22,7 +22,7 @@ interface Props {
   children: React.ReactNode;
 }
 
-export default function RainbowkitWrapper({ children }: Props) {
+export default function ClientWrapper({ children }: Props) {
   return (
     <AuthProvider>
       <WagmiConfig config={config}>

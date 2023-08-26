@@ -10,7 +10,7 @@ import {
 import { Entity, Query, Res } from "thyseus";
 
 import { TreeItem } from "../classes/TreeItem";
-import { useSceneStore } from "../sceneStore";
+import { editorStore } from "../store";
 
 /**
  * Updates the scene tree with the latest entities.
@@ -23,13 +23,15 @@ export function createTreeItems(
   names: Query<[Entity, Name]>,
   extras: Query<Extra>
 ) {
-  const { enabled, items } = useSceneStore.getState();
+  const enabled = editorStore.get(editorStore.enabled);
   if (!enabled) return;
+
+  const items = editorStore.get(editorStore.items);
 
   // Set root id
   for (const [entity, scene] of scenes) {
     if (sceneStruct.activeScene === entity.id) {
-      useSceneStore.setState({ rootId: scene.rootId });
+      editorStore.set(editorStore.rootId, scene.rootId);
     }
   }
 

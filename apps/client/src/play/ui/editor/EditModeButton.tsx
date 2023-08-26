@@ -1,14 +1,17 @@
-import { EngineSchedules, useClientStore, useSceneStore } from "@unavi/engine";
+import { editorStore, EngineSchedules } from "@unavi/engine";
+import { useAtom } from "jotai";
 import { useEffect } from "react";
 import { MdConstruction } from "react-icons/md";
 
+import { engineAtom } from "@/app/play/Client";
 import { usePlayStore } from "@/app/play/playStore";
 import { PlayMode } from "@/app/play/types";
 import Tooltip from "@/src/ui/Tooltip";
 
 export default function EditModeButton() {
   const mode = usePlayStore((state) => state.mode);
-  const engine = useClientStore((state) => state.engine);
+
+  const [engine] = useAtom(engineAtom);
 
   useEffect(() => {
     if (!engine) return;
@@ -26,10 +29,10 @@ export default function EditModeButton() {
         <button
           onClick={() => {
             if (mode === PlayMode.Play) {
-              useSceneStore.setState({ enabled: true });
+              editorStore.set(editorStore.enabled, true);
               usePlayStore.setState({ mode: PlayMode.Edit });
             } else {
-              useSceneStore.setState({ enabled: false });
+              editorStore.set(editorStore.enabled, false);
               usePlayStore.setState({ mode: PlayMode.Play });
             }
           }}

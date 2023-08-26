@@ -1,10 +1,12 @@
-import { EngineSchedules, useClientStore } from "@unavi/engine";
+import { EngineSchedules, exportedModelAtom } from "@unavi/engine";
+import { getDefaultStore } from "jotai";
 import { useCallback, useState } from "react";
 import { toast } from "react-hot-toast";
 
 import { updateWorld } from "@/app/api/worlds/[id]/helper";
 import { getWorldModelFileUpload } from "@/app/api/worlds/[id]/model/files/[file]/helper";
 import { createWorldModel } from "@/app/api/worlds/[id]/model/helper";
+import { engineAtom } from "@/app/play/Client";
 import { usePlayStore } from "@/app/play/playStore";
 import { cdnURL, S3Path } from "@/src/utils/s3Paths";
 
@@ -19,7 +21,7 @@ export function useSave() {
     const { worldId, metadata } = usePlayStore.getState();
     if (worldId.type !== "id") return;
 
-    const { engine } = useClientStore.getState();
+    const engine = getDefaultStore().get(engineAtom);
     if (!engine) return;
 
     setSaving(true);
@@ -75,7 +77,8 @@ export function useSave() {
       // Wait for export
       await new Promise<void>((resolve) => {
         const interval = setInterval(() => {
-          const model = useClientStore.getState().exportedModel;
+          const model = getDefaultStore().get(exportedModelAtom);
+
           if (model) {
             clearInterval(interval);
             resolve();
@@ -84,7 +87,7 @@ export function useSave() {
       });
 
       // Upload model
-      const modelBlob = useClientStore.getState().exportedModel;
+      const modelBlob = getDefaultStore().get(exportedModelAtom);
       if (!modelBlob) throw new Error("No model to save");
 
       await fetch(modelUploadURL, {

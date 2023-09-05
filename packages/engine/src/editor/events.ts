@@ -4,15 +4,15 @@ import { f32, struct, u8 } from "thyseus";
 
 @struct
 export class AddNode {
-  name: Resource<string> = new Resource();
+  name: string = "";
 }
 
 @struct
 export class EditNode {
-  target: Resource<string> = new Resource();
-  name: Resource<string> = new Resource();
-  meshName: Resource<string> = new Resource();
-  parentName: Resource<string> = new Resource();
+  target: string = "";
+  name: string = "";
+  meshName: string = "";
+  parentName: string = "";
 
   translation: boolean = false;
   rotation: boolean = false;
@@ -22,38 +22,38 @@ export class EditNode {
 
 @struct
 export class EditExtra {
-  target: Resource<string> = new Resource();
-  key: Resource<string> = new Resource();
-  value: Resource<string> = new Resource();
+  target: string = "";
+  key: string = "";
+  value: string = "";
 }
 
 @struct
 export class EditRigidBody {
-  target: Resource<string> = new Resource();
+  target: string = "";
   type: u8 = 0;
 }
 
 @struct
 export class EditCollider {
-  target: Resource<string> = new Resource();
+  target: string = "";
   type: u8 = 0;
   size: Resource<Float32Array> = new Resource();
   height: f32 = 0;
   radius: f32 = 0;
-  mesh: Resource<string> = new Resource();
+  mesh: string = "";
 }
 
 @struct
 export class AddMesh {
-  name: Resource<string> = new Resource();
+  name: string = "";
 }
 
 @struct
 export class EditMesh {
-  target: Resource<string> = new Resource();
+  target: string = "";
 
-  name: Resource<string> = new Resource();
-  material: Resource<string> = new Resource();
+  name: string = "";
+  material: string = "";
 
   indices: Resource<Uint32Array> = new Resource();
   colors: Resource<Float32Array> = new Resource();

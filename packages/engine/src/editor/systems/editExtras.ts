@@ -1,7 +1,6 @@
-import { Warehouse } from "lattice-engine/core";
 import { Extra } from "lattice-engine/gltf";
 import { Name } from "lattice-engine/scene";
-import { Commands, Entity, EventReader, Mut, Query, Res } from "thyseus";
+import { Commands, Entity, EventReader, Mut, Query } from "thyseus";
 
 import { EditExtra } from "../events";
 
@@ -12,7 +11,6 @@ const nameMap = new Map<bigint, string>();
 
 export function editExtras(
   commands: Commands,
-  warehouse: Res<Mut<Warehouse>>,
   events: EventReader<EditExtra>,
   extras: Query<[Entity, Mut<Extra>]>,
   names: Query<[Entity, Name]>
@@ -20,30 +18,25 @@ export function editExtras(
   if (events.length === 0) return;
 
   for (const [entity, name] of names) {
-    const value = name.value.read(warehouse) ?? "";
-    nameMap.set(entity.id, value);
+    nameMap.set(entity.id, name.value);
   }
 
   for (const event of events) {
     let foundExtra = false;
 
-    const eventTarget = event.target.read(warehouse) ?? "";
+    const eventTarget = event.target;
 
     // Find existing extra to update
     for (const [entity, extra] of extras) {
       const extraName = nameMap.get(extra.target);
       if (extraName !== eventTarget) continue;
 
-      const eventKey = event.key.read(warehouse) ?? "";
-      const extraKey = extra.key.read(warehouse) ?? "";
-      if (eventKey !== extraKey) continue;
-
-      const eventValue = event.value.read(warehouse) ?? "";
+      if (event.key !== extra.key) continue;
 
       foundExtra = true;
 
-      if (eventValue) {
-        extra.value.write(eventValue, warehouse);
+      if (event.value) {
+        extra.value = event.value;
       } else {
         // Delete extra if empty value
         commands.despawn(entity);

@@ -64,26 +64,26 @@ export function sendEvents(
       switch (editor.event.oneofKind) {
         case "addNode": {
           const e = new AddNode();
-          e.name.write(editor.event.addNode.id, warehouse);
+          e.name = editor.event.addNode.id;
           addNode.create(e);
           break;
         }
 
         case "addMesh": {
           const e = new AddMesh();
-          e.name.write(editor.event.addMesh.id, warehouse);
+          e.name = editor.event.addMesh.id;
           addMesh.create(e);
           break;
         }
 
         case "editNode": {
           const e = new EditNode();
-          e.target.write(editor.event.editNode.target, warehouse);
+          e.target = editor.event.editNode.target;
           editNode.create(e);
 
-          e.name.write(editor.event.editNode.name ?? "", warehouse);
-          e.parentName.write(editor.event.editNode.parent ?? "", warehouse);
-          e.meshName.write(editor.event.editNode.mesh ?? "", warehouse);
+          e.name = editor.event.editNode.name ?? "";
+          e.parentName = editor.event.editNode.parent ?? "";
+          e.meshName = editor.event.editNode.mesh ?? "";
 
           if (editor.event.editNode.translation) {
             e.translation = true;
@@ -118,19 +118,16 @@ export function sendEvents(
               editor.event.editNode.extras
             )) {
               const extra = new EditExtra();
-              extra.target.write(editor.event.editNode.target, warehouse);
-              extra.key.write(key, warehouse);
-              extra.value.write(JSON.stringify(value), warehouse);
+              extra.target = editor.event.editNode.target;
+              extra.key = key;
+              extra.value = JSON.stringify(value);
               editExta.create(extra);
             }
           }
 
           if (editor.event.editNode.rigidBody) {
             const rigidBodyEvent = new EditRigidBody();
-            rigidBodyEvent.target.write(
-              editor.event.editNode.target,
-              warehouse
-            );
+            rigidBodyEvent.target = editor.event.editNode.target;
             rigidBodyEvent.type = editor.event.editNode.rigidBody.type;
             rigidBody.create(rigidBodyEvent);
           }
@@ -138,7 +135,7 @@ export function sendEvents(
           if (editor.event.editNode.collider) {
             const colliderEvent = new EditCollider();
 
-            colliderEvent.target.write(editor.event.editNode.target, warehouse);
+            colliderEvent.target = editor.event.editNode.target;
 
             colliderEvent.type = editor.event.editNode.collider.type;
 
@@ -158,10 +155,7 @@ export function sendEvents(
             }
 
             if (editor.event.editNode.collider.mesh) {
-              colliderEvent.mesh.write(
-                editor.event.editNode.collider.mesh,
-                warehouse
-              );
+              colliderEvent.mesh = editor.event.editNode.collider.mesh;
             }
 
             collider.create(colliderEvent);
@@ -173,10 +167,10 @@ export function sendEvents(
         case "editMesh": {
           const e = new EditMesh();
 
-          e.target.write(editor.event.editMesh.target, warehouse);
+          e.target = editor.event.editMesh.target;
 
-          e.name.write(editor.event.editMesh.name ?? "", warehouse);
-          e.material.write(editor.event.editMesh.material ?? "", warehouse);
+          e.name = editor.event.editMesh.name ?? "";
+          e.material = editor.event.editMesh.material ?? "";
 
           if (editor.event.editMesh.indices) {
             const indices = Uint32Array.from(editor.event.editMesh.indices);

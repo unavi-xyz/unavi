@@ -86,12 +86,11 @@ export default await defineNextConfig({
   outputFileTracing: true,
   productionBrowserSourceMaps: true,
   reactStrictMode: true,
-  transpilePackages: ["@unavi/gltf-extensions"],
+  transpilePackages: ["@unavi/engine", "@unavi/gltf-extensions"],
   webpack: function(config) {
     config.experiments = {
       ...config.experiments,
       asyncWebAssembly: true,
-      layers: true,
     };
     config.resolve.fallback = { fs: false, net: false, tls: false };
     return config;

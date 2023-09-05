@@ -1,4 +1,3 @@
-import { Warehouse } from "lattice-engine/core";
 import {
   CapsuleCollider,
   CharacterController,
@@ -30,7 +29,6 @@ const PLAYER_HEIGHT = 1.6;
 const PLAYER_WIDTH = 0.4;
 
 export function createPlayerControls(
-  warehouse: Warehouse,
   spawn: [number, number, number],
   rootId: bigint,
   commands: Commands,
@@ -63,15 +61,15 @@ export function createPlayerControls(
     .add(player).id;
 
   const playerAvatar = new PlayerAvatar();
-  playerAvatar.idleAnimation.write("/models/Idle.fbx", warehouse);
-  playerAvatar.jumpAnimation.write("/models/Falling.fbx", warehouse);
-  playerAvatar.leftWalkAnimation.write("/models/LeftWalk.fbx", warehouse);
-  playerAvatar.rightWalkAnimation.write("/models/RightWalk.fbx", warehouse);
-  playerAvatar.sprintAnimation.write("/models/Sprint.fbx", warehouse);
-  playerAvatar.walkAnimation.write("/models/Walk.fbx", warehouse);
+  playerAvatar.idleAnimation = "/models/Idle.fbx";
+  playerAvatar.jumpAnimation = "/models/Falling.fbx";
+  playerAvatar.leftWalkAnimation = "/models/LeftWalk.fbx";
+  playerAvatar.rightWalkAnimation = "/models/RightWalk.fbx";
+  playerAvatar.sprintAnimation = "/models/Sprint.fbx";
+  playerAvatar.walkAnimation = "/models/Walk.fbx";
 
   const vrm = new Vrm();
-  vrm.uri.write("/models/Robot.vrm", warehouse);
+  vrm.uri = "/models/Robot.vrm";
   vrm.setupFirstPerson = true;
 
   commands

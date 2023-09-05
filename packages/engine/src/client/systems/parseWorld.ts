@@ -22,8 +22,7 @@ export async function parseWorld(
     const parsed = WorldSchema.fromJsonString(text);
 
     // Load model
-    const gltf = new Gltf();
-    gltf.uri.write(parsed.model, warehouse);
+    const gltf = new Gltf(parsed.model);
     commands.getById(entity.id).add(gltf);
 
     // Connect to host

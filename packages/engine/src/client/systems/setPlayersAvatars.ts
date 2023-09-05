@@ -1,16 +1,14 @@
 import { getDefaultStore } from "jotai";
-import { Warehouse } from "lattice-engine/core";
 import { PlayerAvatar } from "lattice-engine/player";
 import { Parent } from "lattice-engine/scene";
 import { Vrm } from "lattice-engine/vrm";
-import { Entity, Mut, Query, Res, With } from "thyseus";
+import { Entity, Mut, Query, With } from "thyseus";
 
 import { OtherPlayer } from "../components";
 import { connectionStore } from "./connectToHost";
 import { defaultAvatarAtom } from "./spawnPlayers";
 
 export function setPlayersAvatar(
-  warehouse: Res<Mut<Warehouse>>,
   players: Query<[Entity, OtherPlayer]>,
   avatars: Query<[Parent, Mut<Vrm>], With<PlayerAvatar>>
 ) {
@@ -25,14 +23,14 @@ export function setPlayersAvatar(
       const defaultAvatar = getDefaultStore().get(defaultAvatarAtom);
 
       if (!playerData) {
-        vrm.uri.write(defaultAvatar, warehouse);
+        vrm.uri = defaultAvatar;
         continue;
       }
 
       if (playerData.avatar) {
-        vrm.uri.write(playerData.avatar, warehouse);
+        vrm.uri = playerData.avatar;
       } else {
-        vrm.uri.write(defaultAvatar, warehouse);
+        vrm.uri = defaultAvatar;
       }
     }
   }

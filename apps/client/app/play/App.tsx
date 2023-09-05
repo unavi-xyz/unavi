@@ -41,8 +41,11 @@ export default function App({ id, metadata, authors, uri }: Props) {
         src="/scripts/draco_wasm_wrapper_gltf.js"
         onReady={() => setScriptsReady(true)}
       />
-      // <LoadingScreen metadata={metadata} authors={authors} />
-      // <Overlay id={id} metadata={metadata} />
+
+      <LoadingScreen metadata={metadata} authors={authors} />
+
+      <Overlay id={id} metadata={metadata} />
+
       <div className="fixed h-screen w-screen">
         {scriptsReady ? (
           <Client

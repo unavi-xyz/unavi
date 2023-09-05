@@ -1,12 +1,11 @@
 import { atom, getDefaultStore } from "jotai";
-import { Asset, Warehouse } from "lattice-engine/core";
+import { Asset } from "lattice-engine/core";
 import { Image, Skybox } from "lattice-engine/scene";
-import { Entity, Mut, Query, Res } from "thyseus";
+import { Entity, Mut, Query } from "thyseus";
 
 export const skyboxAtom = atom("");
 
 export function setSkybox(
-  warehouse: Res<Mut<Warehouse>>,
   skyboxes: Query<Skybox>,
   images: Query<[Entity, Mut<Asset>, Mut<Image>]>
 ) {
@@ -16,10 +15,10 @@ export function setSkybox(
 
       const skyboxUri = getDefaultStore().get(skyboxAtom);
 
-      const uri = asset.uri.read(warehouse) ?? "";
+      const uri = asset.uri;
       if (uri === skyboxUri) continue;
 
-      asset.uri.write(skyboxUri, warehouse);
+      asset.uri = skyboxUri;
       image.flipY = true;
 
       const fileExt = uri.split(".").pop();
@@ -27,12 +26,12 @@ export function setSkybox(
       switch (fileExt) {
         case "jpg":
         case "jpeg": {
-          asset.mimeType.write("image/jpeg", warehouse);
+          asset.mimeType = "image/jpeg";
           break;
         }
 
         default: {
-          asset.mimeType.write("", warehouse);
+          asset.mimeType = "";
           break;
         }
       }

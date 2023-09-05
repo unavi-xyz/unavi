@@ -1,6 +1,6 @@
 import { getDefaultStore } from "jotai";
 
-export class AtomStore {
+export abstract class AtomStore {
   get store() {
     return getDefaultStore();
   }

@@ -1,0 +1,24 @@
+{
+  "name": "vite-plugin-thyseus-ts",
+  "version": "1.0.0",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w"
+  },
+  "devDependencies": {
+    "@thyseus/rollup-plugin-thyseus": "^0.14.0",
+    "thyseus": "^0.14.0",
+    "tsconfig": "workspace:^",
+    "typescript": "~5.2.2",
+    "vite": "^4.4.7",
+    "vite-plugin-dts": "^3.3.1"
+  }
+}

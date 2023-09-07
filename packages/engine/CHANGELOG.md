@@ -13,7 +13,7 @@
 
 ### Patch Changes
 
-- 9aca0f31: update lattice
+- 9aca0f31: update houseki
 
 ## 1.0.0
 

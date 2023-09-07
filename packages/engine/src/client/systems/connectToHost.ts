@@ -27,7 +27,7 @@ import {
   Producer,
   Transport,
 } from "mediasoup-client/lib/types";
-import { Query, SystemRes } from "thyseus";
+import { Query, struct, SystemRes } from "thyseus";
 
 import { useClientStore } from "../clientStore";
 import { WorldJson } from "../components";
@@ -36,8 +36,9 @@ import { toHex } from "../utils/toHex";
 
 let chatId = 0;
 
+@struct
 class LocalRes {
-  host = "";
+  host: string = "";
 }
 
 export function connectToHost(
@@ -45,6 +46,7 @@ export function connectToHost(
   worlds: Query<WorldJson>
 ) {
   for (const world of worlds) {
+    console.log(localRes.host, world.host);
     if (localRes.host === world.host) continue;
 
     localRes.host = world.host;

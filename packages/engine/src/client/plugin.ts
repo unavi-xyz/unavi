@@ -1,13 +1,13 @@
-import { LatticeSchedules } from "lattice-engine/core";
-import { csmPlugin } from "lattice-engine/csm";
-import { gltfPlugin } from "lattice-engine/gltf";
-import { physicsPlugin } from "lattice-engine/physics";
-import { playerPlugin } from "lattice-engine/player";
-import { postprocessingPlugin } from "lattice-engine/postprocessing";
-import { textPlugin } from "lattice-engine/text";
-import { getTransformPlugin } from "lattice-engine/transform";
-import { defaultPlugin } from "lattice-engine/utils";
-import { vrmPlugin } from "lattice-engine/vrm";
+import { HousekiSchedules } from "houseki/core";
+import { csmPlugin } from "houseki/csm";
+import { gltfPlugin } from "houseki/gltf";
+import { physicsPlugin } from "houseki/physics";
+import { playerPlugin } from "houseki/player";
+import { postprocessingPlugin } from "houseki/postprocessing";
+import { textPlugin } from "houseki/text";
+import { getTransformPlugin } from "houseki/transform";
+import { defaultPlugin } from "houseki/utils";
+import { vrmPlugin } from "houseki/vrm";
 import { run, WorldBuilder } from "thyseus";
 
 import { EngineSchedules } from "../constants";
@@ -41,9 +41,9 @@ export function clientPlugin(builder: WorldBuilder) {
     .addPlugin(getTransformPlugin({ physics: true, playerControls: true }))
     .addPlugin(textPlugin)
     .addPlugin(vrmPlugin)
-    .addSystemsToSchedule(LatticeSchedules.Startup, initApp)
-    .addSystemsToSchedule(LatticeSchedules.PreUpdate, sendEvents)
-    .addSystemsToSchedule(LatticeSchedules.PostFixedUpdate, publishLocation)
+    .addSystemsToSchedule(HousekiSchedules.Startup, initApp)
+    .addSystemsToSchedule(HousekiSchedules.PreUpdate, sendEvents)
+    .addSystemsToSchedule(HousekiSchedules.PostFixedUpdate, publishLocation)
     .addSystemsToSchedule(EngineSchedules.ConnectToHost, connectToHost)
     .addSystems(
       exportLoadingInfo,

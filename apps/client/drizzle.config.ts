@@ -11,6 +11,8 @@ const secureUrl = dbUrl?.replace(
 );
 
 export default {
-  connectionString: secureUrl,
+  dbCredentials: {
+    connectionString: secureUrl,
+  },
   schema: "./src/server/db/schema.ts",
 } satisfies Config;

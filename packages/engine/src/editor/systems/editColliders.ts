@@ -6,9 +6,9 @@ import {
   HullCollider,
   MeshCollider,
   SphereCollider,
-} from "lattice-engine/physics";
-import { Name } from "lattice-engine/scene";
-import { Commands, dropStruct, Entity, EventReader, Mut, Query } from "thyseus";
+} from "houseki/physics";
+import { Name } from "houseki/scene";
+import { Commands, Entity, EventReader, Mut, Query } from "thyseus";
 
 import { EditCollider } from "../events";
 
@@ -35,7 +35,7 @@ export function editColliders(
       for (const [colliderEntity, collider] of boxColliders) {
         if (colliderEntity.id !== entity.id) continue;
 
-        collider.size.array.set(e.size);
+        collider.size.fromArray(e.size);
 
         if (e.type === EditNode_Collider_Type.BOX) {
           foundCollider = true;
@@ -121,11 +121,9 @@ export function editColliders(
       // Create new collider
       if (e.type === EditNode_Collider_Type.BOX) {
         const collider = new BoxCollider();
-        collider.size.array.set(e.size);
+        collider.size.fromArray(e.size);
 
         commands.get(entity).add(collider);
-
-        dropStruct(collider);
       }
 
       if (e.type === EditNode_Collider_Type.SPHERE) {
@@ -133,8 +131,6 @@ export function editColliders(
         collider.radius = e.radius;
 
         commands.get(entity).add(collider);
-
-        dropStruct(collider);
       }
 
       if (e.type === EditNode_Collider_Type.CYLINDER) {
@@ -143,8 +139,6 @@ export function editColliders(
         collider.height = e.height;
 
         commands.get(entity).add(collider);
-
-        dropStruct(collider);
       }
 
       if (e.type === EditNode_Collider_Type.CAPSULE) {
@@ -153,8 +147,6 @@ export function editColliders(
         collider.height = e.height;
 
         commands.get(entity).add(collider);
-
-        dropStruct(collider);
       }
 
       if (e.type === EditNode_Collider_Type.MESH) {
@@ -162,8 +154,6 @@ export function editColliders(
         // TODO: set mesh
 
         commands.get(entity).add(collider);
-
-        dropStruct(collider);
       }
 
       if (e.type === EditNode_Collider_Type.HULL) {
@@ -171,8 +161,6 @@ export function editColliders(
         // TODO: set mesh
 
         commands.get(entity).add(collider);
-
-        dropStruct(collider);
       }
     }
   }

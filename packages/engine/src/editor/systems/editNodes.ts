@@ -1,4 +1,4 @@
-import { Mesh, Name, Parent, Transform } from "lattice-engine/scene";
+import { Mesh, Name, Parent, Transform } from "houseki/scene";
 import { Entity, EventReader, Mut, Query } from "thyseus";
 
 import { EditNode } from "../events";

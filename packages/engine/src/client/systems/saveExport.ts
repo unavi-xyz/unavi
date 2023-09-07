@@ -1,4 +1,4 @@
-import { ExportedGltf } from "lattice-engine/gltf";
+import { ExportedGltf } from "houseki/gltf";
 import { EventReader } from "thyseus";
 
 import { useClientStore } from "../clientStore";

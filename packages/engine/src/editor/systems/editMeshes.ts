@@ -1,11 +1,11 @@
-import { Warehouse } from "lattice-engine/core";
-import { Geometry, Mesh, Name } from "lattice-engine/scene";
+import { Warehouse } from "houseki/core";
+import { Geometry, Mesh, Name } from "houseki/scene";
 import { Entity, EventReader, Mut, Query, Res } from "thyseus";
 
 import { EditMesh } from "../events";
 
 export function editMeshes(
-  warehouse: Res<Warehouse>,
+  warehouse: Res<Mut<Warehouse>>,
   events: EventReader<EditMesh>,
   meshes: Query<[Mut<Mesh>, Mut<Name>, Mut<Geometry>]>,
   named: Query<[Entity, Name]>

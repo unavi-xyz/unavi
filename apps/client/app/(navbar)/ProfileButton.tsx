@@ -8,18 +8,24 @@ import {
 import ProfileMenu from "./ProfileMenu";
 
 interface Props {
+  did: string;
   username: string;
   image?: string | null;
   loading?: boolean;
 }
 
-export default function ProfileButton({ username, image, loading }: Props) {
+export default function ProfileButton({
+  did,
+  username,
+  image,
+  loading,
+}: Props) {
   return (
     <DropdownMenu>
       <DropdownTrigger className="rounded-full transition hover:opacity-90">
         <Avatar
           src={image}
-          uniqueKey={username}
+          uniqueKey={did}
           circle
           size={40}
           loading={loading}

@@ -11,7 +11,7 @@ import {
   MeshCollider,
   SphereCollider,
   StaticBody,
-} from "lattice-engine/physics";
+} from "houseki/physics";
 import { Entity, Query, With } from "thyseus";
 
 import { useSceneStore } from "../sceneStore";

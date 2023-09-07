@@ -1,5 +1,5 @@
-import { Asset } from "lattice-engine/core";
-import { Image, Skybox } from "lattice-engine/scene";
+import { Asset } from "houseki/core";
+import { Image, Skybox } from "houseki/scene";
 import { Entity, Mut, Query } from "thyseus";
 
 import { useClientStore } from "../clientStore";

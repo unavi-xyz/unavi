@@ -1,5 +1,5 @@
-import { SetPlayerData, World } from "@wired-protocol/types";
-import { Engine } from "lattice-engine/core";
+import { SetPlayerData } from "@wired-protocol/types";
+import { Engine } from "houseki/core";
 import { useEffect } from "react";
 
 import { useClientStore } from "../client/clientStore";
@@ -7,21 +7,16 @@ import { useWorld } from "../hooks/useWorld";
 import Canvas from "./Canvas";
 
 interface Props {
-  animations?: string;
-  children?: React.ReactNode;
   defaultAvatar?: string;
-  host?: string;
   skybox?: string;
   uri?: string;
-  baseHomeServer?: string;
-  metadata?: World;
 }
 
 export function Client({ skybox, defaultAvatar, uri }: Props) {
   const world = useWorld();
   const sendWebSockets = useClientStore((state) => state.sendWebSockets);
   const avatar = useClientStore((state) => state.avatar);
-  const handle = useClientStore((state) => state.handle);
+  const did = useClientStore((state) => state.did);
   const nickname = useClientStore((state) => state.nickname);
 
   useEffect(() => {
@@ -69,12 +64,12 @@ export function Client({ skybox, defaultAvatar, uri }: Props) {
   useEffect(() => {
     const setPlayerData = SetPlayerData.create({
       data: {
-        handle,
+        did,
       },
     });
 
     sendWebSockets({ oneofKind: "setPlayerData", setPlayerData });
-  }, [sendWebSockets, handle]);
+  }, [sendWebSockets, did]);
 
   useEffect(() => {
     const setPlayerData = SetPlayerData.create({

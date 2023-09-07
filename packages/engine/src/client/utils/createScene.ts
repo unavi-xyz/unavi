@@ -1,5 +1,5 @@
-import { Asset, CoreStore } from "lattice-engine/core";
-import { OutlinePass } from "lattice-engine/postprocessing";
+import { Asset, CoreStore } from "houseki/core";
+import { OutlinePass } from "houseki/postprocessing";
 import {
   GlobalTransform,
   Image,
@@ -8,8 +8,8 @@ import {
   SceneStruct,
   Skybox,
   Transform,
-} from "lattice-engine/scene";
-import { Commands, dropStruct } from "thyseus";
+} from "houseki/scene";
+import { Commands } from "thyseus";
 
 export function createScene(
   commands: Commands,
@@ -36,9 +36,6 @@ export function createScene(
     .add(sceneComponent)
     .add(skybox)
     .addType(OutlinePass).id;
-
-  dropStruct(sceneComponent);
-  dropStruct(skybox);
 
   sceneStruct.activeScene = sceneId;
 

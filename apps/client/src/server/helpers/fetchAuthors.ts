@@ -1,26 +1,24 @@
 import { World } from "@wired-protocol/types";
 
-import { fetchUserProfile, UserProfile } from "./fetchUserProfile";
+import { parseIdentity } from "@/src/utils/parseIdentity";
+
+import { fetchProfile, IdentityProfile } from "./fetchProfile";
 
 export async function fetchAuthors(metadata: World) {
   if (!metadata?.authors) return [];
 
-  const profiles: UserProfile[] = [];
+  const profiles: Array<IdentityProfile | string> = [];
 
   await Promise.all(
     metadata.authors.map(async (author) => {
-      const profile = await fetchUserProfile(author);
+      const identity = parseIdentity(author);
+      const profile = await fetchProfile(identity);
 
-      if (!profile) {
-        profiles.push({
-          home: "",
-          metadata: { links: [], name: author },
-          username: "",
-        });
-        return;
+      if (profile) {
+        profiles.push(profile);
+      } else {
+        profiles.push(author);
       }
-
-      profiles.push(profile);
     })
   );
 

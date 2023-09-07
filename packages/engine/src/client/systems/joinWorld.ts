@@ -1,4 +1,4 @@
-import { Asset } from "lattice-engine/core";
+import { Asset } from "houseki/core";
 import { Mut, Query, With } from "thyseus";
 
 import { useClientStore } from "../clientStore";

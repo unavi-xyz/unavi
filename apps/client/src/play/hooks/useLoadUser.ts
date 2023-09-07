@@ -3,7 +3,6 @@ import { useEffect } from "react";
 
 import { usePlayStore } from "@/app/play/playStore";
 import { useAuth } from "@/src/client/AuthProvider";
-import { HOME_SERVER } from "@/src/constants";
 
 import { LocalStorageKey } from "../constants";
 
@@ -20,9 +19,8 @@ export function useLoadUser() {
     useClientStore.getState().setName(name);
   }, []);
 
-  // Set handle on change
+  // Set did on change
   useEffect(() => {
-    const handle = user?.username ? `@${user.username}:${HOME_SERVER}` : "";
-    useClientStore.getState().setHandle(handle);
+    useClientStore.getState().setDID(user?.did ?? "");
   }, [user]);
 }

@@ -4,10 +4,16 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 
 import { WORLD_ID_LENGTH } from "@/src/server/db/constants";
+import {
+  ClientIdentityProfile,
+  fetchProfile,
+} from "@/src/server/helpers/fetchProfile";
 import { fetchWorld } from "@/src/server/helpers/fetchWorld";
 import { generateWorldMetadata } from "@/src/server/helpers/generateWorldMetadata";
+import { parseIdentity } from "@/src/utils/parseIdentity";
 
 import App from "./App";
+import LoadingScreen from "./LoadingScreen";
 import { WorldUriId } from "./types";
 
 interface Props {
@@ -38,7 +44,28 @@ export default async function Play({ searchParams }: Props) {
 
   if (!world?.metadata) notFound();
 
-  return <App id={id} uri={world.uri} metadata={world.metadata} />;
+  const authors: Array<string | ClientIdentityProfile> = await Promise.all(
+    world.metadata.authors.map(async (author) => {
+      const identity = parseIdentity(author);
+      const profile = await fetchProfile(identity);
+
+      if (profile) {
+        return {
+          ...profile,
+          id: undefined,
+        };
+      }
+
+      return author;
+    })
+  );
+
+  return (
+    <>
+      <LoadingScreen metadata={world.metadata} authors={authors} />
+      <App id={id} uri={world.uri} metadata={world.metadata} />
+    </>
+  );
 }
 
 function parseParams(params: Params): WorldUriId {

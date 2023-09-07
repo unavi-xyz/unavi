@@ -1,7 +1,7 @@
 import { Vec3 } from "gl-matrix/dist/esm";
-import { Time } from "lattice-engine/core";
-import { Velocity } from "lattice-engine/physics";
-import { Transform } from "lattice-engine/scene";
+import { Time } from "houseki/core";
+import { Velocity } from "houseki/physics";
+import { Transform } from "houseki/scene";
 import { Mut, Query, Res, With } from "thyseus";
 
 import { OtherPlayer, PrevTranslation } from "../components";

@@ -31,6 +31,7 @@ module.exports = {
     "@typescript-eslint/no-unused-imports": "off",
     "@typescript-eslint/no-unused-vars": "off",
     "@typescript-eslint/no-var-requires": "off",
+    "@typescript-eslint/no-inferrable-types": "off",
     "import/no-unresolved": "off",
     "simple-import-sort/exports": "warn",
     "simple-import-sort/imports": "warn",

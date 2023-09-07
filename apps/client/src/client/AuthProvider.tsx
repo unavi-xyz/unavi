@@ -18,7 +18,7 @@ import { useAuthStore } from "./authStore";
 
 export type AuthContextValue = {
   status: AuthenticationStatus;
-  loading: boolean; // Sseparate loading state for transitions
+  loading: boolean; // Separate loading state for transitions
   user: User | null;
   login: (args: AuthData) => Promise<void>;
   logout: () => Promise<void>;

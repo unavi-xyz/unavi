@@ -5,9 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateEthereumAuth } from "@/src/server/auth/ethereum";
 import { auth } from "@/src/server/auth/lucia";
 import { AuthMethod, AuthSchema } from "@/src/server/auth/types";
-import { db } from "@/src/server/db/drizzle";
-import { profile } from "@/src/server/db/schema";
-import { genUsername } from "@/src/server/helpers/genUsername";
+import { createUser } from "@/src/server/helpers/createUser";
 
 import { LoginResponse } from "./types";
 
@@ -38,20 +36,11 @@ export async function POST(request: NextRequest) {
     user = await auth.getUser(key.userId);
   } catch {
     // Create new user if it doesn't exist
-    user = await auth.createUser({
-      attributes: {
-        address: result.data.address,
-        username: genUsername(),
-      },
-      key: {
-        password: null,
-        providerId: parsedInput.data.method,
-        providerUserId: result.data.address,
-      },
+    user = await createUser({
+      address: result.data.address,
+      providerId: parsedInput.data.method,
+      providerUserId: result.data.address,
     });
-
-    // Create profile
-    await db.insert(profile).values({ userId: user.userId });
   }
 
   // Create auth session

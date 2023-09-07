@@ -1,5 +1,5 @@
-import { GlobalTransform, Name, Parent, Transform } from "lattice-engine/scene";
-import { Commands, dropStruct, EventReader } from "thyseus";
+import { GlobalTransform, Name, Parent, Transform } from "houseki/scene";
+import { Commands, EventReader } from "thyseus";
 
 import { AddNode } from "../events";
 
@@ -18,8 +18,6 @@ export function addNodes(commands: Commands, events: EventReader<AddNode>) {
       .addType(Transform)
       .addType(GlobalTransform).id;
   }
-
-  dropStruct(nameComp);
 
   events.clear();
 }

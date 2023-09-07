@@ -19,7 +19,12 @@ export default function AccountButton() {
       : undefined;
 
   return user ? (
-    <ProfileButton username={user.username} image={image} loading={loading} />
+    <ProfileButton
+      did={user.did}
+      username={user.username}
+      image={image}
+      loading={loading}
+    />
   ) : (
     <SignInButton loading={loading} />
   );

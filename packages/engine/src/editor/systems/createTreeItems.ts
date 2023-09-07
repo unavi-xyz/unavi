@@ -1,11 +1,11 @@
-import { Extra } from "lattice-engine/gltf";
+import { Extra } from "houseki/gltf";
 import {
   Name,
   Parent,
   Scene,
   SceneStruct,
   Transform,
-} from "lattice-engine/scene";
+} from "houseki/scene";
 import { Entity, Query, Res } from "thyseus";
 
 import { TreeItem } from "../classes/TreeItem";

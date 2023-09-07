@@ -1,11 +1,11 @@
-import { OrbitControls } from "lattice-engine/orbit";
+import { OrbitControls } from "houseki/orbit";
 import {
   GlobalTransform,
   PerspectiveCamera,
   SceneStruct,
   Transform,
-} from "lattice-engine/scene";
-import { Commands, dropStruct } from "thyseus";
+} from "houseki/scene";
+import { Commands } from "thyseus";
 
 export function createOrbitControls(
   commands: Commands,
@@ -20,8 +20,6 @@ export function createOrbitControls(
     .addType(GlobalTransform)
     .addType(PerspectiveCamera)
     .addType(OrbitControls);
-
-  dropStruct(transform);
 
   sceneStruct.activeCamera = camera.id;
 }

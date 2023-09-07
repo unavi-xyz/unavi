@@ -5,7 +5,7 @@ import {
   Raycast,
   TargetTransform,
   Velocity,
-} from "lattice-engine/physics";
+} from "houseki/physics";
 import {
   PlayerAvatar,
   PlayerBody,
@@ -14,16 +14,16 @@ import {
   PlayerCameraView,
   TargetRotation,
   TargetTranslation,
-} from "lattice-engine/player";
+} from "houseki/player";
 import {
   GlobalTransform,
   Parent,
   PerspectiveCamera,
   SceneStruct,
   Transform,
-} from "lattice-engine/scene";
-import { Vrm } from "lattice-engine/vrm";
-import { Commands, dropStruct } from "thyseus";
+} from "houseki/scene";
+import { Vrm } from "houseki/vrm";
+import { Commands } from "thyseus";
 
 const PLAYER_HEIGHT = 1.6;
 const PLAYER_WIDTH = 0.4;
@@ -60,10 +60,6 @@ export function createPlayerControls(
     .addType(CharacterController)
     .add(player).id;
 
-  dropStruct(player);
-  dropStruct(targetTransform);
-  dropStruct(capsuleCollider);
-
   const playerAvatar = new PlayerAvatar();
   playerAvatar.idleAnimation = "/models/Idle.fbx";
   playerAvatar.jumpAnimation = "/models/Falling.fbx";
@@ -82,9 +78,6 @@ export function createPlayerControls(
     .add(vrm)
     .add(playerAvatar);
 
-  dropStruct(playerAvatar);
-  dropStruct(vrm);
-
   const playerCamera = new PlayerCamera(
     PlayerCameraMode.Both,
     PlayerCameraView.ThirdPerson
@@ -100,11 +93,6 @@ export function createPlayerControls(
     .addType(PerspectiveCamera)
     .add(playerCamera)
     .addType(Raycast).id;
-
-  dropStruct(parent);
-  dropStruct(transform);
-  dropStruct(playerCamera);
-  dropStruct(targetRotation);
 
   sceneStruct.activeCamera = cameraId;
 

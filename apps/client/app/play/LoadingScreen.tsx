@@ -1,21 +1,23 @@
+"use client";
+
 import { useClientStore, useLoadingStore } from "@unavi/engine";
 import { World } from "@wired-protocol/types";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
-import { HOME_SERVER } from "@/src/constants";
 import { env } from "@/src/env.mjs";
+import { ClientIdentityProfile } from "@/src/server/helpers/fetchProfile";
 import { isFromCDN } from "@/src/utils/isFromCDN";
-import { parseHandle } from "@/src/utils/parseHandle";
 
 const LOADING_DELAY = 1000;
 const FADE_DURATION = 700;
 
 interface Props {
   metadata: World;
+  authors: Array<ClientIdentityProfile | string>;
 }
 
-export default function LoadingScreen({ metadata }: Props) {
+export default function LoadingScreen({ metadata, authors }: Props) {
   const loading = useLoadingStore((state) => state.loading);
   const loaded = useLoadingStore((state) => state.loaded);
   const total = useLoadingStore((state) => state.total);
@@ -65,7 +67,6 @@ export default function LoadingScreen({ metadata }: Props) {
 
   const image = metadata?.image;
   const host = metadata?.host ?? env.NEXT_PUBLIC_DEFAULT_HOST;
-  const authors = metadata.authors;
 
   return (
     <div
@@ -85,17 +86,26 @@ export default function LoadingScreen({ metadata }: Props) {
           <div className="flex w-full flex-col justify-between whitespace-nowrap text-white/70">
             <div>
               {authors.map((author, i) => {
-                const { username, home } = parseHandle(author);
-
-                if (username && home === HOME_SERVER) {
-                  return (
-                    <a key={i} href={`/@${username}`} target="_blank">
-                      @{username}
-                    </a>
-                  );
+                if (typeof author === "string") {
+                  return <div key={i}>{author}</div>;
                 }
 
-                return <div key={i}>{author}</div>;
+                switch (author.type) {
+                  case "db": {
+                    return (
+                      <a key={i} target="_blank" href={`/@${author.username}`}>
+                        @{author.username}
+                      </a>
+                    );
+                  }
+                  case "did": {
+                    return (
+                      <a key={i} target="_blank" href={`/${author.did}`}>
+                        {author.did}
+                      </a>
+                    );
+                  }
+                }
               })}
             </div>
             <div>{host}</div>

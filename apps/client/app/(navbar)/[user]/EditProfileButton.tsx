@@ -28,6 +28,7 @@ const HEADER_IMAGE_RATIO = 3;
 
 interface Props {
   userId: string;
+  did: string;
   username: string;
   bio?: string;
   imageKey?: string;
@@ -38,11 +39,12 @@ interface Props {
 
 export default function EditProfileButton({
   userId,
+  did,
   username,
   bio,
-  imageKey,
+  imageKey: originalImageKey,
   image,
-  backgroundKey,
+  backgroundKey: originalBackgroundKey,
   background,
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -53,6 +55,8 @@ export default function EditProfileButton({
   const [backgroundDisplay, setBackgroundDisplay] = useState<string | null>(
     null
   );
+  const [imageKey, setImageKey] = useState(originalImageKey);
+  const [backgroundKey, setBackgroundKey] = useState(originalBackgroundKey);
 
   const { user } = useAuth();
   const { mutate } = useSWRConfig();
@@ -126,17 +130,20 @@ export default function EditProfileButton({
     setLoading(true);
 
     try {
-      const [imageKey, backgroundKey] = await Promise.all([
+      const [newImageKey, newBackgroundKey] = await Promise.all([
         uploadImage(),
         uploadBackground(),
       ]);
 
+      setImageKey(newImageKey);
+      setBackgroundKey(newBackgroundKey);
+
       const newUsername = usernameElement.value || username;
 
       await updateProfile({
-        backgroundKey,
+        backgroundKey: newBackgroundKey,
         bio: bioElement.value,
-        imageKey,
+        imageKey: newImageKey,
         username: newUsername,
       });
 
@@ -197,7 +204,7 @@ export default function EditProfileButton({
               <ImageInput
                 disabled={loading}
                 src={imageDisplay || image}
-                fallbackKey={username}
+                fallbackKey={did}
                 fallbackSize={128}
                 size={128}
                 onChange={async (e) => {

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-import { HOME_SERVER } from "@/src/constants";
 import { env } from "@/src/env.mjs";
 import { fetchAuthors } from "@/src/server/helpers/fetchAuthors";
 import { fetchWorld } from "@/src/server/helpers/fetchWorld";
@@ -76,21 +75,39 @@ export default async function World({ params }: Props) {
                   <div className="flex justify-center space-x-1 md:justify-start">
                     <div className="font-semibold text-neutral-500">By</div>
 
-                    {profiles.map((profile, i) => (
-                      <div key={i} className="font-bold">
-                        {profile.home === HOME_SERVER ? (
-                          <Link href={`/@${profile.username}`}>
-                            <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis decoration-2 hover:underline md:max-w-md">
-                              {profile.metadata.name || `@${profile.username}`}
-                            </div>
-                          </Link>
-                        ) : (
-                          <div className="max-w-xs overflow-hidden text-ellipsis md:max-w-md">
-                            {profile.metadata.name}
+                    {profiles.map((profile, i) => {
+                      if (typeof profile === "string") {
+                        return (
+                          <div
+                            key={i}
+                            className="max-w-xs overflow-hidden text-ellipsis font-bold md:max-w-md"
+                          >
+                            {profile}
                           </div>
-                        )}
-                      </div>
-                    ))}
+                        );
+                      }
+
+                      switch (profile.type) {
+                        case "db": {
+                          return (
+                            <Link key={i} href={`/@${profile.username}`}>
+                              <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis font-bold decoration-2 hover:underline md:max-w-md">
+                                {`@${profile.username}`}
+                              </div>
+                            </Link>
+                          );
+                        }
+                        case "did": {
+                          return (
+                            <Link key={i} href={`/@${profile.did}`}>
+                              <div className="max-w-xs cursor-pointer overflow-hidden text-ellipsis font-bold decoration-2 hover:underline md:max-w-md">
+                                {`${profile.did}`}
+                              </div>
+                            </Link>
+                          );
+                        }
+                      }
+                    })}
                   </div>
                 ) : null}
 

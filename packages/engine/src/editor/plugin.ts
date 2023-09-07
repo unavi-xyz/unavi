@@ -1,4 +1,4 @@
-import { createControls, selectTarget } from "lattice-engine/transform";
+import { createControls, selectTarget } from "houseki/transform";
 import { run, WorldBuilder } from "thyseus";
 
 import { EngineSchedules } from "../constants";

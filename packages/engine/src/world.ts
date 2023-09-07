@@ -1,4 +1,4 @@
-import { Engine } from "lattice-engine/core";
+import { Engine } from "houseki/core";
 import { World } from "thyseus";
 
 import { enginePlugin } from "./plugin";

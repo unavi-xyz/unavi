@@ -13,6 +13,7 @@ import {
   AUTH_KEY_TABLE_NAME,
   AUTH_SESSION_TABLE_NAME,
   AUTH_USER_TABLE_NAME,
+  DID_ID_LENGTH,
   ETH_ADDRESS_LENGTH,
   ETH_AUTH_ID_LENGTH,
   ETH_AUTH_NONCE_LENGTH,
@@ -81,11 +82,14 @@ export const user = mysqlTable(
   AUTH_USER_TABLE_NAME,
   {
     address: char("address", { length: ETH_ADDRESS_LENGTH }),
+    did: varchar("did", { length: 255 }).notNull(),
+    did_id: char("did_id", { length: DID_ID_LENGTH }).notNull(),
     id: varchar("id", { length: USER_ID_LENGTH }).primaryKey(),
     username: varchar("username", { length: MAX_USERNAME_LENGTH }).notNull(),
   },
   (table) => ({
     addressIndex: uniqueIndex("address").on(table.address),
+    didIndex: uniqueIndex("did").on(table.did),
     usernameIndex: uniqueIndex("username").on(table.username),
   })
 );

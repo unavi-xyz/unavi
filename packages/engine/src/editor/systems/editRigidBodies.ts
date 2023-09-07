@@ -1,6 +1,6 @@
 import { EditNode_RigidBody_Type } from "@unavi/protocol";
-import { DynamicBody, StaticBody } from "lattice-engine/physics";
-import { Name } from "lattice-engine/scene";
+import { DynamicBody, StaticBody } from "houseki/physics";
+import { Name } from "houseki/scene";
 import { Commands, Entity, EventReader, Query, With } from "thyseus";
 
 import { EditRigidBody } from "../events";

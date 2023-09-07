@@ -1,7 +1,7 @@
-import { InputStruct } from "lattice-engine/input";
-import { PhysicsConfig } from "lattice-engine/physics";
-import { Scene, SceneStruct } from "lattice-engine/scene";
-import { TransformControls } from "lattice-engine/transform";
+import { InputStruct } from "houseki/input";
+import { PhysicsConfig } from "houseki/physics";
+import { Scene, SceneStruct } from "houseki/scene";
+import { TransformControls } from "houseki/transform";
 import { Commands, Entity, Mut, Query, Res, With } from "thyseus";
 
 export function enterEditMode(

@@ -1,6 +1,6 @@
-import { InputStruct } from "lattice-engine/input";
-import { PhysicsConfig } from "lattice-engine/physics";
-import { TransformControls } from "lattice-engine/transform";
+import { InputStruct } from "houseki/input";
+import { PhysicsConfig } from "houseki/physics";
+import { TransformControls } from "houseki/transform";
 import { Commands, Entity, Mut, Query, Res, With } from "thyseus";
 
 import { ENABLE_POINTER_LOCK } from "../../constants";

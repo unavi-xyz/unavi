@@ -8,7 +8,7 @@ import {
   Transform,
 } from "lattice-engine/scene";
 import { Vrm } from "lattice-engine/vrm";
-import { Commands, dropStruct, Entity, EventReader, Query, Res } from "thyseus";
+import { Commands, Entity, EventReader, Query, Res } from "thyseus";
 
 import { useClientStore } from "../clientStore";
 import { NetworkTransform, OtherPlayer, PrevTranslation } from "../components";
@@ -45,9 +45,6 @@ export function spawnPlayers(
       .addType(PlayerBody)
       .add(otherPlayer).id;
 
-    dropStruct(otherPlayer);
-    dropStruct(networkTransform);
-
     const playerAvatar = new PlayerAvatar();
     playerAvatar.idleAnimation = "/models/Idle.fbx";
     playerAvatar.jumpAnimation = "/models/Falling.fbx";
@@ -66,10 +63,6 @@ export function spawnPlayers(
       .addType(GlobalTransform)
       .add(playerAvatar)
       .add(vrm);
-
-    dropStruct(playerAvatar);
-    dropStruct(vrm);
-    dropStruct(parent);
   }
 
   for (const event of playerLeave) {

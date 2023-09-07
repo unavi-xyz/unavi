@@ -4,71 +4,70 @@ import {
 } from "@unavi/protocol";
 import { Resource } from "lattice-engine/core";
 import { Transform } from "lattice-engine/scene";
-import { struct } from "thyseus";
+import { f32, struct } from "thyseus";
 
 @struct
 export class AddNode {
-  @struct.string declare name: string;
+  name: string = "";
 }
 
 @struct
 export class EditNode {
-  @struct.string declare target: string;
+  target: string = "";
 
-  @struct.string declare name: string;
-  @struct.string declare meshName: string;
-  @struct.string declare parentName: string;
+  name: string = "";
+  meshName: string = "";
+  parentName: string = "";
 
-  @struct.bool declare translation: boolean;
-  @struct.bool declare rotation: boolean;
-  @struct.bool declare scale: boolean;
-  @struct.substruct(Transform) declare transform: Transform;
+  translation: boolean = false;
+  rotation: boolean = false;
+  scale: boolean = false;
+  transform: Transform = new Transform();
 }
 
 @struct
 export class EditExtra {
-  @struct.string declare target: string;
-
-  @struct.string declare key: string;
-  @struct.string declare value: string;
+  target: string = "";
+  key: string = "";
+  value: string = "";
 }
 
 @struct
 export class EditRigidBody {
-  @struct.string declare target: string;
-  @struct.u8 declare type: EditNode_RigidBody_Type;
+  target: string = "";
+  type: EditNode_RigidBody_Type = EditNode_RigidBody_Type.NONE;
 }
 
 @struct
 export class EditCollider {
-  @struct.string declare target: string;
-  @struct.u8 declare type: EditNode_Collider_Type;
-  @struct.array({ length: 3, type: "f32" }) declare size: Float32Array;
-  @struct.f32 declare height: number;
-  @struct.f32 declare radius: number;
-  @struct.f32 declare mesh: string;
+  target: string = "";
+  type: EditNode_Collider_Type = EditNode_Collider_Type.NONE;
+  size: [f32, f32, f32] = [0, 0, 0];
+  height: f32 = 0;
+  radius: f32 = 0;
+  mesh: string = "";
 }
 
 @struct
 export class AddMesh {
-  @struct.string declare name: string;
+  name: string = "";
 }
 
 @struct
 export class EditMesh {
-  @struct.string declare target: string;
+  target: string = "";
 
-  @struct.string declare name: string;
-  @struct.string declare material: string;
+  name: string = "";
+  material: string = "";
 
-  @struct.substruct(Resource) declare indices: Resource<Uint32Array>;
-  @struct.substruct(Resource) declare colors: Resource<Float32Array>;
-  @struct.substruct(Resource) declare joints: Resource<Float32Array>;
-  @struct.substruct(Resource) declare normals: Resource<Float32Array>;
-  @struct.substruct(Resource) declare positions: Resource<Float32Array>;
-  @struct.substruct(Resource) declare uv1: Resource<Float32Array>;
-  @struct.substruct(Resource) declare uv2: Resource<Float32Array>;
-  @struct.substruct(Resource) declare uv3: Resource<Float32Array>;
-  @struct.substruct(Resource) declare uv: Resource<Float32Array>;
-  @struct.substruct(Resource) declare weights: Resource<Float32Array>;
+  indices: Resource<Uint32Array> = new Resource();
+  colors: Resource<Float32Array> = new Resource();
+  joints: Resource<Float32Array> = new Resource();
+  normals: Resource<Float32Array> = new Resource();
+  positions: Resource<Float32Array> = new Resource();
+  uv1: Resource<Float32Array> = new Resource();
+  uv2: Resource<Float32Array> = new Resource();
+  uv3: Resource<Float32Array> = new Resource();
+  uv: Resource<Float32Array> = new Resource();
+  weights: Resource<Float32Array> = new Resource();
 }

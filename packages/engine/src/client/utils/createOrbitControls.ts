@@ -5,7 +5,7 @@ import {
   SceneStruct,
   Transform,
 } from "lattice-engine/scene";
-import { Commands, dropStruct } from "thyseus";
+import { Commands } from "thyseus";
 
 export function createOrbitControls(
   commands: Commands,
@@ -20,8 +20,6 @@ export function createOrbitControls(
     .addType(GlobalTransform)
     .addType(PerspectiveCamera)
     .addType(OrbitControls);
-
-  dropStruct(transform);
 
   sceneStruct.activeCamera = camera.id;
 }

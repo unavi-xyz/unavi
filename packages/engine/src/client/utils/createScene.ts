@@ -9,7 +9,7 @@ import {
   Skybox,
   Transform,
 } from "lattice-engine/scene";
-import { Commands, dropStruct } from "thyseus";
+import { Commands } from "thyseus";
 
 export function createScene(
   commands: Commands,
@@ -36,9 +36,6 @@ export function createScene(
     .add(sceneComponent)
     .add(skybox)
     .addType(OutlinePass).id;
-
-  dropStruct(sceneComponent);
-  dropStruct(skybox);
 
   sceneStruct.activeScene = sceneId;
 

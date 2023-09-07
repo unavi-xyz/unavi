@@ -13,6 +13,7 @@ import { generateWorldMetadata } from "@/src/server/helpers/generateWorldMetadat
 import { parseIdentity } from "@/src/utils/parseIdentity";
 
 import App from "./App";
+import LoadingScreen from "./LoadingScreen";
 import { WorldUriId } from "./types";
 
 interface Props {
@@ -60,7 +61,10 @@ export default async function Play({ searchParams }: Props) {
   );
 
   return (
-    <App id={id} uri={world.uri} metadata={world.metadata} authors={authors} />
+    <>
+      <LoadingScreen metadata={world.metadata} authors={authors} />
+      <App id={id} uri={world.uri} metadata={world.metadata} />
+    </>
   );
 }
 

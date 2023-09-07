@@ -1,16 +1,7 @@
 import { World as WorldSchema } from "@wired-protocol/types";
 import { Asset, Warehouse } from "lattice-engine/core";
 import { Gltf } from "lattice-engine/gltf";
-import {
-  Commands,
-  dropStruct,
-  Entity,
-  Mut,
-  Query,
-  Res,
-  Without,
-  World,
-} from "thyseus";
+import { Commands, Entity, Mut, Query, Res, Without, World } from "thyseus";
 
 import { EngineSchedules } from "../../constants";
 import { WorldJson } from "../components";
@@ -33,10 +24,13 @@ export async function parseWorld(
     // Load model
     const gltf = new Gltf(parsed.model);
     commands.getById(entity.id).add(gltf);
-    dropStruct(gltf);
 
     // Connect to host
     json.host = parsed.host ?? "";
+
+    // @ts-expect-error
+    json.serialize();
+
     await world.runSchedule(EngineSchedules.ConnectToHost);
   }
 }

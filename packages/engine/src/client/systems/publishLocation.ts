@@ -2,7 +2,7 @@ import { SetPlayerData } from "@wired-protocol/types";
 import { Time } from "lattice-engine/core";
 import { PlayerBody, PlayerCamera } from "lattice-engine/player";
 import { Transform } from "lattice-engine/scene";
-import { Entity, Query, Res, struct, SystemRes } from "thyseus";
+import { Entity, f32, Query, Res, struct, SystemRes } from "thyseus";
 
 import { useClientStore } from "../clientStore";
 import { NETWORK_UPDATE_HZ } from "../constants";
@@ -12,8 +12,8 @@ const FALL_THRESHOLD_SECONDS = 0.35;
 
 @struct
 class LocalRes {
-  @struct.f32 declare lastPublish: number;
-  @struct.bool declare isFalling: boolean;
+  lastPublish: f32 = 0;
+  isFalling: boolean = false;
 }
 
 export function publishLocation(

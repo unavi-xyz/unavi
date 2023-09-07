@@ -1,3 +1,5 @@
+"use client";
+
 import { useClientStore, useLoadingStore } from "@unavi/engine";
 import { World } from "@wired-protocol/types";
 import Image from "next/image";

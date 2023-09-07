@@ -1,5 +1,5 @@
 import { Geometry, Mesh, Name } from "lattice-engine/scene";
-import { Commands, dropStruct, EventReader } from "thyseus";
+import { Commands, EventReader } from "thyseus";
 
 import { AddMesh } from "../events";
 
@@ -13,8 +13,6 @@ export function addMeshes(commands: Commands, events: EventReader<AddMesh>) {
 
     commands.spawn(true).add(nameComp).addType(Mesh).addType(Geometry).id;
   }
-
-  dropStruct(nameComp);
 
   events.clear();
 }

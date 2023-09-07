@@ -1,6 +1,6 @@
 import { Extra } from "lattice-engine/gltf";
 import { Name } from "lattice-engine/scene";
-import { Commands, dropStruct, Entity, EventReader, Mut, Query } from "thyseus";
+import { Commands, Entity, EventReader, Mut, Query } from "thyseus";
 
 import { EditExtra } from "../events";
 
@@ -55,8 +55,6 @@ export function editExtras(
       extra.value = event.value;
 
       commands.spawn(true).add(extra);
-
-      dropStruct(extra);
     }
   }
 

@@ -1,7 +1,7 @@
 import { SetPlayerData } from "@wired-protocol/types";
-import { Time } from "lattice-engine/core";
-import { PlayerBody, PlayerCamera } from "lattice-engine/player";
-import { Transform } from "lattice-engine/scene";
+import { Time } from "houseki/core";
+import { PlayerBody, PlayerCamera } from "houseki/player";
+import { Transform } from "houseki/scene";
 import { Entity, f32, Query, Res, struct, SystemRes } from "thyseus";
 
 import { useClientStore } from "../clientStore";

@@ -1,5 +1,5 @@
-import { Time } from "lattice-engine/core";
-import { PlayerBody } from "lattice-engine/player";
+import { Time } from "houseki/core";
+import { PlayerBody } from "houseki/player";
 import { Mut, Query, Res } from "thyseus";
 
 import { useClientStore } from "../clientStore";

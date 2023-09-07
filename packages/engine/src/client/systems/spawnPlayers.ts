@@ -1,13 +1,13 @@
-import { Time } from "lattice-engine/core";
-import { Velocity } from "lattice-engine/physics";
-import { PlayerAvatar, PlayerBody } from "lattice-engine/player";
+import { Time } from "houseki/core";
+import { Velocity } from "houseki/physics";
+import { PlayerAvatar, PlayerBody } from "houseki/player";
 import {
   GlobalTransform,
   Parent,
   SceneStruct,
   Transform,
-} from "lattice-engine/scene";
-import { Vrm } from "lattice-engine/vrm";
+} from "houseki/scene";
+import { Vrm } from "houseki/vrm";
 import { Commands, Entity, EventReader, Query, Res } from "thyseus";
 
 import { useClientStore } from "../clientStore";

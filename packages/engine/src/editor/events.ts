@@ -2,8 +2,8 @@ import {
   EditNode_Collider_Type,
   EditNode_RigidBody_Type,
 } from "@unavi/protocol";
-import { Resource } from "lattice-engine/core";
-import { Transform } from "lattice-engine/scene";
+import { Resource } from "houseki/core";
+import { Transform } from "houseki/scene";
 import { f32, struct } from "thyseus";
 
 @struct

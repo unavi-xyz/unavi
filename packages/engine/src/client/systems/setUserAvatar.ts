@@ -1,6 +1,6 @@
-import { PlayerAvatar, PlayerBody, PlayerCamera } from "lattice-engine/player";
-import { Parent } from "lattice-engine/scene";
-import { Vrm } from "lattice-engine/vrm";
+import { PlayerAvatar, PlayerBody, PlayerCamera } from "houseki/player";
+import { Parent } from "houseki/scene";
+import { Vrm } from "houseki/vrm";
 import { Entity, Mut, Query, With } from "thyseus";
 
 import { useClientStore } from "../clientStore";

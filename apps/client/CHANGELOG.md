@@ -15,7 +15,7 @@
 
 ### Patch Changes
 
-- 9aca0f31: update lattice
+- 9aca0f31: update houseki
 - Updated dependencies [9aca0f31]
   - @unavi/engine@1.0.1
 

@@ -1,6 +1,6 @@
 import { Quat, Vec3 } from "gl-matrix/dist/esm";
-import { Time } from "lattice-engine/core";
-import { Transform } from "lattice-engine/scene";
+import { Time } from "houseki/core";
+import { Transform } from "houseki/scene";
 import { Mut, Query, Res } from "thyseus";
 
 import { NetworkTransform } from "../components";

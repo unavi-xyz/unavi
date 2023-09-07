@@ -1,5 +1,5 @@
-import { Asset, CoreStore } from "lattice-engine/core";
-import { OutlinePass } from "lattice-engine/postprocessing";
+import { Asset, CoreStore } from "houseki/core";
+import { OutlinePass } from "houseki/postprocessing";
 import {
   GlobalTransform,
   Image,
@@ -8,7 +8,7 @@ import {
   SceneStruct,
   Skybox,
   Transform,
-} from "lattice-engine/scene";
+} from "houseki/scene";
 import { Commands } from "thyseus";
 
 export function createScene(

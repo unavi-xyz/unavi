@@ -1,4 +1,4 @@
-import { TransformControls, TransformMode } from "lattice-engine/transform";
+import { TransformControls, TransformMode } from "houseki/transform";
 import { Mut, Query } from "thyseus";
 
 import { useSceneStore } from "../sceneStore";

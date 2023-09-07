@@ -1,4 +1,4 @@
-import { Geometry, Mesh, Name } from "lattice-engine/scene";
+import { Geometry, Mesh, Name } from "houseki/scene";
 import { Commands, EventReader } from "thyseus";
 
 import { AddMesh } from "../events";

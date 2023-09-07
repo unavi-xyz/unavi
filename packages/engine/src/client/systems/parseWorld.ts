@@ -1,6 +1,6 @@
 import { World as WorldSchema } from "@wired-protocol/types";
-import { Asset, Warehouse } from "lattice-engine/core";
-import { Gltf } from "lattice-engine/gltf";
+import { Asset, Warehouse } from "houseki/core";
+import { Gltf } from "houseki/gltf";
 import { Commands, Entity, Mut, Query, Res, Without, World } from "thyseus";
 
 import { EngineSchedules } from "../../constants";

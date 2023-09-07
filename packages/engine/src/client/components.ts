@@ -1,4 +1,4 @@
-import { Transform } from "lattice-engine/scene";
+import { Transform } from "houseki/scene";
 import { f32, struct, u8 } from "thyseus";
 
 @struct

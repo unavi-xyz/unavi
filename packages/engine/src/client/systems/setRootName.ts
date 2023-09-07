@@ -1,4 +1,4 @@
-import { Name, Scene, SceneStruct } from "lattice-engine/scene";
+import { Name, Scene, SceneStruct } from "houseki/scene";
 import { Entity, Query, Res } from "thyseus";
 
 import { useClientStore } from "../clientStore";

@@ -1,5 +1,5 @@
-import { Extra } from "lattice-engine/gltf";
-import { Name } from "lattice-engine/scene";
+import { Extra } from "houseki/gltf";
+import { Name } from "houseki/scene";
 import { Commands, Entity, EventReader, Mut, Query } from "thyseus";
 
 import { EditExtra } from "../events";

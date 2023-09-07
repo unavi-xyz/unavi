@@ -1,5 +1,5 @@
 import { EditorEvent } from "@unavi/protocol";
-import { Warehouse } from "lattice-engine/core";
+import { Warehouse } from "houseki/core";
 import { EventWriter, Mut, Res } from "thyseus";
 
 import {

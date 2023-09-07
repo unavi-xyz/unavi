@@ -1,5 +1,5 @@
 import { SetPlayerData } from "@wired-protocol/types";
-import { Engine } from "lattice-engine/core";
+import { Engine } from "houseki/core";
 import { useEffect } from "react";
 
 import { useClientStore } from "../client/clientStore";

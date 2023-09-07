@@ -1,6 +1,6 @@
 import { EditorEvent } from "@unavi/protocol";
 import { Event, Request, Response, SendEvent } from "@wired-protocol/types";
-import { Engine } from "lattice-engine/core";
+import { Engine } from "houseki/core";
 import { create } from "zustand";
 
 import { ChatMessage } from "./types";

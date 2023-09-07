@@ -1,3 +1,3 @@
 # @unavi/engine
 
-Extensions of [Lattice](https://github.com/lattice-engine/lattice), used by the UNAVI client.
+Extensions of [Houseki](https://github.com/houseki/houseki), used by the UNAVI client.

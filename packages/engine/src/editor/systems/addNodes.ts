@@ -1,4 +1,4 @@
-import { GlobalTransform, Name, Parent, Transform } from "lattice-engine/scene";
+import { GlobalTransform, Name, Parent, Transform } from "houseki/scene";
 import { Commands, EventReader } from "thyseus";
 
 import { AddNode } from "../events";

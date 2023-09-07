@@ -6,8 +6,8 @@ import {
   HullCollider,
   MeshCollider,
   SphereCollider,
-} from "lattice-engine/physics";
-import { Name } from "lattice-engine/scene";
+} from "houseki/physics";
+import { Name } from "houseki/scene";
 import { Commands, Entity, EventReader, Mut, Query } from "thyseus";
 
 import { EditCollider } from "../events";

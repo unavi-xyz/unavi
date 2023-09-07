@@ -1,7 +1,7 @@
-import { Asset, CoreStore } from "lattice-engine/core";
-import { CascadingShadowMaps } from "lattice-engine/csm";
-import { InputStruct } from "lattice-engine/input";
-import { Name, SceneStruct } from "lattice-engine/scene";
+import { Asset, CoreStore } from "houseki/core";
+import { CascadingShadowMaps } from "houseki/csm";
+import { InputStruct } from "houseki/input";
+import { Name, SceneStruct } from "houseki/scene";
 import { Commands, Mut, Res } from "thyseus";
 
 import { ENABLE_POINTER_LOCK } from "../../constants";

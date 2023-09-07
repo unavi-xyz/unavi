@@ -1,5 +1,5 @@
-import { ExportGltf } from "lattice-engine/gltf";
-import { SceneStruct } from "lattice-engine/scene";
+import { ExportGltf } from "houseki/gltf";
+import { SceneStruct } from "houseki/scene";
 import { EventWriter, Res } from "thyseus";
 
 export function sendExportEvent(

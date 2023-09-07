@@ -35,7 +35,7 @@ This [turborepo](https://turborepo.org/) uses [pnpm](https://pnpm.io/) as a pack
 
 ### Packages
 
-- [engine](packages/engine): Extensions of [Lattice](https://github.com/unavi-xyz/lattice)
+- [engine](packages/engine): Extensions of [Houseki](https://github.com/unavi-xyz/houseki)
 - [eslint-config-custom](packages/eslint-config-custom): Eslint config used throughout the repo
 - [gltf-extension](packages/gltf-extension): [glTF-Transform](https://github.com/donmccurdy/glTF-Transform) extensions used by the client
 - [protocol](packages/protocol): Extensions of [The Wired Protocol](https://github.com/unavi-xyz/wired-protocol)

@@ -1,5 +1,21 @@
 # client
 
+## 1.1.0
+
+### Minor Changes
+
+- c8d2bcea: move user identity to DIDs
+- c8d2bcea: upgrade engine to thyseus 14
+
+### Patch Changes
+
+- 044de500: fix world saving + a few other engine bugs
+- c8d2bcea: fix sign in message formatting
+- Updated dependencies [c8d2bcea]
+- Updated dependencies [044de500]
+- Updated dependencies [c8d2bcea]
+  - @unavi/engine@1.1.0
+
 ## 1.0.3
 
 ### Patch Changes

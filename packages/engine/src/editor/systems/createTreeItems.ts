@@ -1,11 +1,5 @@
 import { Extra } from "houseki/gltf";
-import {
-  Name,
-  Parent,
-  Scene,
-  SceneStruct,
-  Transform,
-} from "houseki/scene";
+import { Name, Parent, Scene, SceneStruct, Transform } from "houseki/scene";
 import { Entity, Query, Res } from "thyseus";
 
 import { TreeItem } from "../classes/TreeItem";

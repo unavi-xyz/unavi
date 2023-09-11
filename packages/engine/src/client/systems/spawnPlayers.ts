@@ -1,12 +1,7 @@
 import { Time } from "houseki/core";
 import { Velocity } from "houseki/physics";
 import { PlayerAvatar, PlayerBody } from "houseki/player";
-import {
-  GlobalTransform,
-  Parent,
-  SceneStruct,
-  Transform,
-} from "houseki/scene";
+import { GlobalTransform, Parent, SceneStruct, Transform } from "houseki/scene";
 import { Vrm } from "houseki/vrm";
 import { Commands, Entity, EventReader, Query, Res } from "thyseus";
 

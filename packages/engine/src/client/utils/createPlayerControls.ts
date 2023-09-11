@@ -2,6 +2,7 @@ import {
   CapsuleCollider,
   CharacterController,
   KinematicBody,
+  PrevTargetTransform,
   Raycast,
   TargetTransform,
   Velocity,
@@ -52,6 +53,7 @@ export function createPlayerControls(
     .add(parent.setId(rootId))
     .add(transform.set(spawn))
     .add(targetTransform.set(spawn))
+    .addType(PrevTargetTransform)
     .add(targetRotation)
     .addType(GlobalTransform)
     .addType(Velocity)

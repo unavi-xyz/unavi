@@ -6,7 +6,8 @@ export function useTreeItem(id: bigint | undefined) {
 
   const item = useMemo(() => {
     if (!id) return undefined;
-    return items.get(id);
+    const item = items.get(id);
+    return item;
   }, [id, items]);
 
   return item;

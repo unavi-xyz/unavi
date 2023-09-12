@@ -79,14 +79,16 @@ export class TreeItem {
       child.parentId = this.id;
     }
 
-    this.childrenIds.push(child.id);
+    this.#childrenIds = [...this.#childrenIds, child.id];
   }
 
   removeChild(child: TreeItem) {
     child.parentId = undefined;
 
     const index = this.childrenIds.indexOf(child.id);
-    if (index !== -1) this.childrenIds.splice(index, 1);
+    if (index !== -1) {
+      this.#childrenIds = [...this.#childrenIds].splice(index, 1);
+    }
   }
 
   clearChildren() {
@@ -94,13 +96,15 @@ export class TreeItem {
       child.parentId = undefined;
     }
 
-    this.childrenIds.length = 0;
+    this.#childrenIds = [];
   }
 
   sortChildren() {
-    this.childrenIds.sort((a, b) => {
-      const aItem = useSceneStore.getState().items.get(a);
-      const bItem = useSceneStore.getState().items.get(b);
+    const items = useSceneStore.getState().items;
+
+    this.#childrenIds = [...this.#childrenIds].sort((a, b) => {
+      const aItem = items.get(a);
+      const bItem = items.get(b);
 
       if (aItem?.childrenIds?.length && !bItem?.childrenIds?.length) {
         return 1;
@@ -116,11 +120,8 @@ export class TreeItem {
     this.parent?.removeChild(this);
     this.clearChildren();
 
-    useSceneStore.setState((state) => {
-      state.items.delete(this.id);
-      return {
-        items: new Map(state.items),
-      };
-    });
+    const items = useSceneStore.getState().items;
+    items.delete(this.id);
+    useSceneStore.setState({ items: new Map(items) });
   }
 }

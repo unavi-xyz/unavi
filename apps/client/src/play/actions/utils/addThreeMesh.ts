@@ -15,16 +15,10 @@ export function addThreeMesh(geometry: BufferGeometry) {
   const uvs = uvsAttr.array as Float32Array;
   const indices = indicesAttr.array as Uint16Array;
 
-  const indices32 = new Uint32Array(indices.length);
-
-  for (let i = 0; i < indices.length; i++) {
-    indices32[i] = indices[i] ?? 0;
-  }
-
   const name = addMesh();
 
   const editMesh = EditMesh.create({
-    indices: Array.from(indices32),
+    indices: Array.from(indices),
     normal: Array.from(normals),
     position: Array.from(positions),
     target: name,
@@ -34,7 +28,7 @@ export function addThreeMesh(geometry: BufferGeometry) {
     event: { editMesh, oneofKind: "editMesh" },
   });
 
-  useClientStore.getState().mirrorEvent(event);
+  useClientStore.getState().sendEditorEvent(event);
 
   return name;
 }

@@ -1,5 +1,5 @@
 import { EditorEvent } from "@unavi/protocol";
-import { Event, Request, Response, SendEvent } from "@wired-protocol/types";
+import { Request, Response, SendEvent } from "@wired-protocol/types";
 import { Engine } from "houseki/core";
 import { create } from "zustand";
 
@@ -17,7 +17,7 @@ export interface IClientStore {
   setName: (name: string) => void;
   setPlayerData: (playerId: number, key: string, value: string) => void;
   setPlayerId: (playerId: number | null) => void;
-  mirrorEvent: (editorEvent: EditorEvent) => void;
+  sendEditorEvent: (editorEvent: EditorEvent) => void;
   avatar: string;
   chatMessages: ChatMessage[];
   defaultAvatar: string;
@@ -68,28 +68,15 @@ export const useClientStore = create<IClientStore>((set, get) => ({
   },
   lastLocationUpdates: new Map(),
   locations: new Map(),
-  mirrorEvent: (editorEvent: EditorEvent) => {
-    const data = EditorEvent.toBinary(editorEvent);
-
-    // Send to self
-    const playerId = get().playerId;
-    if (playerId === null) return;
-
-    const event = Event.create({ data, playerId });
-    const response = Response.create({
-      response: { event, oneofKind: "event" },
-    });
-    const events = get().ecsIncoming;
-    events.push(response);
-
-    // Send to others
-    const sendEvent = SendEvent.create({ data });
-    get().sendWebSockets({ oneofKind: "sendEvent", sendEvent });
-  },
   nickname: "",
   playerData: new Map(),
   playerId: null,
   rootName: "",
+  sendEditorEvent: (editorEvent: EditorEvent) => {
+    const data = EditorEvent.toBinary(editorEvent);
+    const sendEvent = SendEvent.create({ data });
+    get().sendWebSockets({ oneofKind: "sendEvent", sendEvent });
+  },
   sendWebRTC: () => {},
   sendWebSockets: () => {},
   setAvatar(avatar: string) {

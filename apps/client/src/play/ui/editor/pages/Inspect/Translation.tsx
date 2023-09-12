@@ -1,7 +1,7 @@
 import { editNode } from "@/src/play/actions/editNode";
 
 import { useTreeValue } from "../../hooks/useTreeValue";
-import { useTreeValueKey } from "../../hooks/useTreeValueKey";
+import { useTreeValueIndex } from "../../hooks/useTreeValueIndex";
 import NumberInput from "./NumberInput";
 
 interface Props {
@@ -11,9 +11,9 @@ interface Props {
 export default function Translation({ id }: Props) {
   const name = useTreeValue(id, "name");
   const locked = useTreeValue(id, "locked");
-  const rawX = useTreeValueKey(id, "translation", 0);
-  const rawY = useTreeValueKey(id, "translation", 1);
-  const rawZ = useTreeValueKey(id, "translation", 2);
+  const rawX = useTreeValueIndex(id, "translation", 0);
+  const rawY = useTreeValueIndex(id, "translation", 1);
+  const rawZ = useTreeValueIndex(id, "translation", 2);
 
   if (!name || rawX === undefined || rawY === undefined || rawZ === undefined) {
     return null;

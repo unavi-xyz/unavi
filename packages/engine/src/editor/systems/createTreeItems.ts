@@ -15,8 +15,10 @@ export function createTreeItems(
   names: Query<[Entity, Name]>,
   extras: Query<Extra>
 ) {
-  const { enabled, items } = useSceneStore.getState();
+  const { enabled } = useSceneStore.getState();
   if (!enabled) return;
+
+  let items = useSceneStore.getState().items;
 
   // Set root id
   for (const [entity, scene] of scenes) {
@@ -35,7 +37,11 @@ export function createTreeItems(
 
     if (!item) {
       item = new TreeItem(entity.id);
+
+      items = new Map(items);
       items.set(entity.id, item);
+
+      useSceneStore.setState({ items });
     }
 
     item.translation[0] = transform.translation.x;

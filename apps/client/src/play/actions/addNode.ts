@@ -12,7 +12,7 @@ export function addNode(namePrefix = "Node") {
   const event = EditorEvent.create({
     event: { addNode, oneofKind: "addNode" },
   });
-  useClientStore.getState().mirrorEvent(event);
+  useClientStore.getState().sendEditorEvent(event);
 
   return name;
 }

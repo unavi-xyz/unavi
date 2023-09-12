@@ -10,7 +10,6 @@ export function addMeshes(commands: Commands, events: EventReader<AddMesh>) {
 
   for (const e of events) {
     nameComp.value = e.name;
-
     commands.spawn(true).add(nameComp).addType(Mesh).addType(Geometry).id;
   }
 

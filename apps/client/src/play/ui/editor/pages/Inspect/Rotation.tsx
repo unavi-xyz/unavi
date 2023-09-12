@@ -3,7 +3,7 @@ import { Euler, Quaternion } from "three";
 import { editNode } from "@/src/play/actions/editNode";
 
 import { useTreeValue } from "../../hooks/useTreeValue";
-import { useTreeValueKey } from "../../hooks/useTreeValueKey";
+import { useTreeValueIndex } from "../../hooks/useTreeValueIndex";
 import NumberInput from "./NumberInput";
 
 const euler = new Euler();
@@ -16,10 +16,10 @@ interface Props {
 export default function Rotation({ id }: Props) {
   const name = useTreeValue(id, "name");
   const locked = useTreeValue(id, "locked");
-  const rawX = useTreeValueKey(id, "rotation", 0);
-  const rawY = useTreeValueKey(id, "rotation", 1);
-  const rawZ = useTreeValueKey(id, "rotation", 2);
-  const rawW = useTreeValueKey(id, "rotation", 3);
+  const rawX = useTreeValueIndex(id, "rotation", 0);
+  const rawY = useTreeValueIndex(id, "rotation", 1);
+  const rawZ = useTreeValueIndex(id, "rotation", 2);
+  const rawW = useTreeValueIndex(id, "rotation", 3);
 
   if (
     !name ||

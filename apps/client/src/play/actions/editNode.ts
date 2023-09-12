@@ -6,5 +6,5 @@ export function editNode(data: Parameters<typeof EditNode.create>[0]) {
   const event = EditorEvent.create({
     event: { editNode, oneofKind: "editNode" },
   });
-  useClientStore.getState().mirrorEvent(event);
+  useClientStore.getState().sendEditorEvent(event);
 }

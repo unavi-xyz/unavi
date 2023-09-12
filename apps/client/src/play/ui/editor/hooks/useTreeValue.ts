@@ -7,6 +7,5 @@ export function useTreeValue<T extends keyof TreeItem>(
   const value = useSceneStore((state) =>
     id ? state.items.get(id)?.[key] : undefined
   );
-
   return value;
 }

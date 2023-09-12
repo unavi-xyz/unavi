@@ -6,7 +6,7 @@ import {
 import { editNode } from "@/src/play/actions/editNode";
 
 import { useTreeValue } from "../../hooks/useTreeValue";
-import { useTreeValueKey } from "../../hooks/useTreeValueKey";
+import { useTreeValueIndex } from "../../hooks/useTreeValueIndex";
 import InspectSection from "./InspectSection";
 import NumberInput from "./NumberInput";
 import { SelectInput } from "./SelectInput";
@@ -21,9 +21,9 @@ export default function Physics({ id }: Props) {
   const colliderType = useTreeValue(id, "colliderType");
   const rigidBodyType = useTreeValue(id, "rigidBodyType");
 
-  const size = useTreeValueKey(id, "collider", "size") ?? [0, 0, 0];
-  const height = useTreeValueKey(id, "collider", "height") ?? 0;
-  const radius = useTreeValueKey(id, "collider", "radius") ?? 0;
+  const size = useTreeValueIndex(id, "collider", "size") ?? [0, 0, 0];
+  const height = useTreeValueIndex(id, "collider", "height") ?? 0;
+  const radius = useTreeValueIndex(id, "collider", "radius") ?? 0;
 
   if (!name || !colliderType || !rigidBodyType) {
     return null;

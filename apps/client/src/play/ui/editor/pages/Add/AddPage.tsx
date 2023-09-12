@@ -25,7 +25,7 @@ function wrapAdd(fn: () => string) {
 
       for (const [, item] of items) {
         if (item.name === name) {
-          useSceneStore.setState({ selectedId: item.id });
+          useSceneStore.setState({ selectedId: item.entityId });
           break;
         }
       }

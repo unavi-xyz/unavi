@@ -7,17 +7,15 @@ import { getAddParent } from "./utils/getAddParent";
 
 export function addCylinder() {
   const geometry = new CylinderGeometry(0.5, 0.5);
-
   const mesh = addThreeMesh(geometry);
-  const name = addNode("Cylinder");
-
   const parent = getAddParent();
 
-  editNode({
+  const id = addNode("Cylinder");
+
+  editNode(id, {
     mesh,
     parent,
-    target: name,
   });
 
-  return name;
+  return id;
 }

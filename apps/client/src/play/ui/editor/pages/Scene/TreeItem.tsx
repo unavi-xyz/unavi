@@ -7,31 +7,32 @@ import Tooltip from "@/src/ui/Tooltip";
 import { useTreeValue } from "../../hooks/useTreeValue";
 
 interface Props {
-  id: bigint;
+  entityId: bigint;
 }
 
-export default function TreeItem({ id }: Props) {
+export default function TreeItem({ entityId }: Props) {
   const selectedId = useSceneStore((state) => state.selectedId);
-  const name = useTreeValue(id, "name");
-  const locked = useTreeValue(id, "locked");
+  const id = useTreeValue(entityId, "id");
+  const name = useTreeValue(entityId, "name");
+  const locked = useTreeValue(entityId, "locked");
 
   function select(e: React.MouseEvent) {
     e.stopPropagation();
-    useSceneStore.setState({ selectedId: id });
+    useSceneStore.setState({ selectedId: entityId });
   }
 
   function expand(e: React.MouseEvent) {
     e.stopPropagation();
-    useSceneStore.setState({ sceneTreeId: id });
+    useSceneStore.setState({ sceneTreeId: entityId });
   }
 
   function toggleLock(e: React.MouseEvent) {
     e.stopPropagation();
-    if (!name) return;
-    editNode({ extras: { locked: !locked }, target: name });
+    if (!id) return;
+    editNode(id, { extras: { locked: !locked } });
   }
 
-  const isSelected = selectedId === id;
+  const isSelected = selectedId === entityId;
 
   return (
     <div className="group relative flex space-x-1">
@@ -43,7 +44,7 @@ export default function TreeItem({ id }: Props) {
             : "group-hover:bg-white/10"
         }`}
       >
-        {name || `(${id.toString()})`}
+        {name || `(${entityId.toString()})`}
       </button>
 
       <div className="absolute inset-y-0 right-0 flex items-center space-x-1 pr-1">

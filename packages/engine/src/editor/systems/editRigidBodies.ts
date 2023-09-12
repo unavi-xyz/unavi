@@ -1,22 +1,22 @@
 import { EditNode_RigidBody_Type } from "@unavi/protocol";
 import { DynamicBody, StaticBody } from "houseki/physics";
-import { Name } from "houseki/scene";
 import { Commands, Entity, EventReader, Query, With } from "thyseus";
 
+import { EditorId } from "../../client/components";
 import { EditRigidBody } from "../events";
 
 export function editRigidBodies(
   commands: Commands,
   events: EventReader<EditRigidBody>,
-  names: Query<[Entity, Name]>,
+  ids: Query<[Entity, EditorId]>,
   dynamicBodies: Query<Entity, With<DynamicBody>>,
   staticBodies: Query<Entity, With<StaticBody>>
 ) {
   if (events.length === 0) return;
 
   for (const e of events) {
-    for (const [entity, name] of names) {
-      if (name.value !== e.target) continue;
+    for (const [entity, id] of ids) {
+      if (id.value !== e.target) continue;
 
       // Remove the old rigid body
       for (const rigidBodyEntity of dynamicBodies) {

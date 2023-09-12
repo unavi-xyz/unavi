@@ -2,19 +2,20 @@ import { Warehouse } from "houseki/core";
 import { Geometry, Mesh, Name } from "houseki/scene";
 import { Entity, EventReader, Mut, Query, Res } from "thyseus";
 
+import { EditorId } from "../../client/components";
 import { EditMesh } from "../events";
 
 export function editMeshes(
   warehouse: Res<Mut<Warehouse>>,
   events: EventReader<EditMesh>,
-  meshes: Query<[Mut<Mesh>, Mut<Name>, Mut<Geometry>]>,
-  named: Query<[Entity, Name]>
+  meshes: Query<[EditorId, Mut<Mesh>, Mut<Name>, Mut<Geometry>]>,
+  ids: Query<[Entity, EditorId]>
 ) {
   if (events.length === 0) return;
 
   for (const e of events) {
-    for (const [mesh, name, geometry] of meshes) {
-      if (name.value !== e.target) continue;
+    for (const [id, mesh, name, geometry] of meshes) {
+      if (id.value !== e.target) continue;
 
       if (e.name) {
         name.value = e.name;
@@ -71,8 +72,8 @@ export function editMeshes(
       }
 
       if (e.material) {
-        for (const [entity, name] of named) {
-          if (name.value === e.material) {
+        for (const [entity, materialId] of ids) {
+          if (materialId.value === e.material) {
             mesh.materialId = entity.id;
             break;
           }

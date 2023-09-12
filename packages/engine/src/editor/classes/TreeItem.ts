@@ -6,7 +6,8 @@ import {
 import { useSceneStore } from "../sceneStore";
 
 export class TreeItem {
-  readonly id: bigint;
+  readonly id: string;
+  readonly entityId: bigint;
 
   name = "";
   translation: [number, number, number] = [0, 0, 0];
@@ -28,8 +29,9 @@ export class TreeItem {
   #parentId?: bigint;
   #childrenIds: bigint[] = [];
 
-  constructor(id: bigint) {
+  constructor(id: string, entityId: bigint) {
     this.id = id;
+    this.entityId = entityId;
   }
 
   get parentId(): bigint | undefined {
@@ -75,17 +77,17 @@ export class TreeItem {
   }
 
   addChild(child: TreeItem) {
-    if (child.parentId !== this.id) {
-      child.parentId = this.id;
+    if (child.parentId !== this.entityId) {
+      child.parentId = this.entityId;
     }
 
-    this.#childrenIds = [...this.#childrenIds, child.id];
+    this.#childrenIds = [...this.#childrenIds, child.entityId];
   }
 
   removeChild(child: TreeItem) {
     child.parentId = undefined;
 
-    const index = this.childrenIds.indexOf(child.id);
+    const index = this.childrenIds.indexOf(child.entityId);
     if (index !== -1) {
       this.#childrenIds = [...this.#childrenIds].splice(index, 1);
     }
@@ -121,7 +123,7 @@ export class TreeItem {
     this.clearChildren();
 
     const items = useSceneStore.getState().items;
-    items.delete(this.id);
+    items.delete(this.entityId);
     useSceneStore.setState({ items: new Map(items) });
   }
 }

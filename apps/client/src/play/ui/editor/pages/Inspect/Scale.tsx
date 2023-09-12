@@ -5,17 +5,24 @@ import { useTreeValueIndex } from "../../hooks/useTreeValueIndex";
 import NumberInput from "./NumberInput";
 
 interface Props {
-  id: bigint;
+  entityId: bigint;
 }
 
-export default function Scale({ id }: Props) {
-  const name = useTreeValue(id, "name");
-  const locked = useTreeValue(id, "locked");
-  const rawX = useTreeValueIndex(id, "scale", 0);
-  const rawY = useTreeValueIndex(id, "scale", 1);
-  const rawZ = useTreeValueIndex(id, "scale", 2);
+export default function Scale({ entityId }: Props) {
+  const id = useTreeValue(entityId, "id");
+  const name = useTreeValue(entityId, "name");
+  const locked = useTreeValue(entityId, "locked");
+  const rawX = useTreeValueIndex(entityId, "scale", 0);
+  const rawY = useTreeValueIndex(entityId, "scale", 1);
+  const rawZ = useTreeValueIndex(entityId, "scale", 2);
 
-  if (!name || rawX === undefined || rawY === undefined || rawZ === undefined) {
+  if (
+    !id ||
+    !name ||
+    rawX === undefined ||
+    rawY === undefined ||
+    rawZ === undefined
+  ) {
     return null;
   }
 
@@ -33,9 +40,8 @@ export default function Scale({ id }: Props) {
         placeholder="X"
         disabled={locked}
         onValueChange={(val) => {
-          editNode({
+          editNode(id, {
             scale: [val, y, z],
-            target: name,
           });
         }}
       />
@@ -45,9 +51,8 @@ export default function Scale({ id }: Props) {
         placeholder="Y"
         disabled={locked}
         onValueChange={(val) => {
-          editNode({
+          editNode(id, {
             scale: [x, val, z],
-            target: name,
           });
         }}
       />
@@ -57,9 +62,8 @@ export default function Scale({ id }: Props) {
         placeholder="Z"
         disabled={locked}
         onValueChange={(val) => {
-          editNode({
+          editNode(id, {
             scale: [x, y, val],
-            target: name,
           });
         }}
       />

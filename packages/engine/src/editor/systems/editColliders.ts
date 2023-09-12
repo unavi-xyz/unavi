@@ -7,15 +7,15 @@ import {
   MeshCollider,
   SphereCollider,
 } from "houseki/physics";
-import { Name } from "houseki/scene";
 import { Commands, Entity, EventReader, Mut, Query } from "thyseus";
 
+import { EditorId } from "../../client/components";
 import { EditCollider } from "../events";
 
 export function editColliders(
   commands: Commands,
   events: EventReader<EditCollider>,
-  names: Query<[Entity, Name]>,
+  ids: Query<[Entity, EditorId]>,
   boxColliders: Query<[Entity, Mut<BoxCollider>]>,
   sphereColliders: Query<[Entity, Mut<SphereCollider>]>,
   capsuleColliders: Query<[Entity, Mut<CapsuleCollider>]>,
@@ -26,8 +26,8 @@ export function editColliders(
   if (events.length === 0) return;
 
   for (const e of events) {
-    for (const [entity, name] of names) {
-      if (name.value !== e.target) continue;
+    for (const [entity, id] of ids) {
+      if (id.value !== e.target) continue;
 
       let foundCollider = false;
 

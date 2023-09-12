@@ -7,17 +7,15 @@ import { getAddParent } from "./utils/getAddParent";
 
 export function addBox() {
   const geometry = new BoxGeometry();
-
   const mesh = addThreeMesh(geometry);
-  const name = addNode("Box");
-
   const parent = getAddParent();
 
-  editNode({
+  const id = addNode("Box");
+
+  editNode(id, {
     mesh,
     parent,
-    target: name,
   });
 
-  return name;
+  return id;
 }

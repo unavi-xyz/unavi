@@ -5,14 +5,15 @@ import { useTreeValue } from "../../hooks/useTreeValue";
 import { getDisplayName } from "../../utils/getDisplayName";
 
 interface Props {
-  id: bigint;
+  entityId: bigint;
 }
 
-export default function Name({ id }: Props) {
-  const name = useTreeValue(id, "name");
-  const locked = useTreeValue(id, "locked");
+export default function Name({ entityId }: Props) {
+  const id = useTreeValue(entityId, "id");
+  const name = useTreeValue(entityId, "name");
+  const locked = useTreeValue(entityId, "locked");
 
-  const displayName = getDisplayName(name, id);
+  const displayName = getDisplayName(name, entityId);
 
   return (
     <TextFieldDark
@@ -21,13 +22,12 @@ export default function Name({ id }: Props) {
       disabled={locked}
       placeholder={displayName}
       onChange={(e) => {
-        if (!name) {
+        if (!id || !name) {
           return;
         }
 
-        editNode({
+        editNode(id, {
           name: e.target.value,
-          target: name,
         });
       }}
     />

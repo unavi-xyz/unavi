@@ -11,10 +11,11 @@ message EditorEvent {
     add.AddNode add_node = 1;
     add.AddMesh add_mesh = 2;
 
-    edit.EditNode edit_node = 3;
-    edit.EditMesh edit_mesh = 4;
+    edit.EditId edit_id = 3;
+    edit.EditNode edit_node = 4;
+    edit.EditMesh edit_mesh = 5;
 
-    remove.RemoveNode remove_node = 5;
-    remove.RemoveMesh remove_mesh = 6;
+    remove.RemoveNode remove_node = 6;
+    remove.RemoveMesh remove_mesh = 7;
   }
 }

@@ -18,33 +18,34 @@ enum AddOption {
 }
 
 interface Props {
-  id: bigint;
+  entityId: bigint;
 }
 
-export default function AddComponent({ id }: Props) {
+export default function AddComponent({ entityId }: Props) {
   const options: AddOption[] = [];
 
-  const name = useTreeValue(id, "name");
-  const locked = useTreeValue(id, "locked");
-  const rigidBodyType = useTreeValue(id, "rigidBodyType");
-  const colliderType = useTreeValue(id, "colliderType");
+  const id = useTreeValue(entityId, "id");
+  const name = useTreeValue(entityId, "name");
+  const locked = useTreeValue(entityId, "locked");
+  const rigidBodyType = useTreeValue(entityId, "rigidBodyType");
+  const colliderType = useTreeValue(entityId, "colliderType");
 
   if (!rigidBodyType || !colliderType) {
     options.push(AddOption.Physics);
   }
 
-  if (!name || locked || options.length === 0) {
+  if (!id || !name || locked || options.length === 0) {
     return null;
   }
 
   function handleAdd(option: AddOption) {
-    if (!name) {
+    if (!name || !id) {
       return;
     }
 
     switch (option) {
       case AddOption.Physics: {
-        editNode({
+        editNode(id, {
           collider: {
             size: [1, 1, 1],
             type: EditNode_Collider_Type.BOX,
@@ -52,7 +53,6 @@ export default function AddComponent({ id }: Props) {
           rigidBody: {
             type: EditNode_RigidBody_Type.STATIC,
           },
-          target: name,
         });
         break;
       }

@@ -1,14 +1,14 @@
 import { useSceneStore } from "@unavi/engine";
 import { useMemo } from "react";
 
-export function useTreeItem(id: bigint | undefined) {
+export function useTreeItem(entityId: bigint | undefined) {
   const items = useSceneStore((state) => state.items);
 
   const item = useMemo(() => {
-    if (!id) return undefined;
-    const item = items.get(id);
+    if (!entityId) return undefined;
+    const item = items.get(entityId);
     return item;
-  }, [id, items]);
+  }, [entityId, items]);
 
   return item;
 }

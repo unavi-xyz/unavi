@@ -5,17 +5,24 @@ import { useTreeValueIndex } from "../../hooks/useTreeValueIndex";
 import NumberInput from "./NumberInput";
 
 interface Props {
-  id: bigint;
+  entityId: bigint;
 }
 
-export default function Translation({ id }: Props) {
-  const name = useTreeValue(id, "name");
-  const locked = useTreeValue(id, "locked");
-  const rawX = useTreeValueIndex(id, "translation", 0);
-  const rawY = useTreeValueIndex(id, "translation", 1);
-  const rawZ = useTreeValueIndex(id, "translation", 2);
+export default function Translation({ entityId }: Props) {
+  const id = useTreeValue(entityId, "id");
+  const name = useTreeValue(entityId, "name");
+  const locked = useTreeValue(entityId, "locked");
+  const rawX = useTreeValueIndex(entityId, "translation", 0);
+  const rawY = useTreeValueIndex(entityId, "translation", 1);
+  const rawZ = useTreeValueIndex(entityId, "translation", 2);
 
-  if (!name || rawX === undefined || rawY === undefined || rawZ === undefined) {
+  if (
+    !id ||
+    !name ||
+    rawX === undefined ||
+    rawY === undefined ||
+    rawZ === undefined
+  ) {
     return null;
   }
 
@@ -33,8 +40,7 @@ export default function Translation({ id }: Props) {
         placeholder="X"
         disabled={locked}
         onValueChange={(val) => {
-          editNode({
-            target: name,
+          editNode(id, {
             translation: [val, y, z],
           });
         }}
@@ -45,8 +51,7 @@ export default function Translation({ id }: Props) {
         placeholder="Y"
         disabled={locked}
         onValueChange={(val) => {
-          editNode({
-            target: name,
+          editNode(id, {
             translation: [x, val, z],
           });
         }}
@@ -57,8 +62,7 @@ export default function Translation({ id }: Props) {
         placeholder="Z"
         disabled={locked}
         onValueChange={(val) => {
-          editNode({
-            target: name,
+          editNode(id, {
             translation: [x, y, val],
           });
         }}

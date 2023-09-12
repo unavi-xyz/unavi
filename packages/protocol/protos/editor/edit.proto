@@ -2,6 +2,19 @@ syntax = "proto3";
 
 package xyz.unavi.editor.edit;
 
+message EditId {
+  enum Type {
+    SCENE = 0;
+    NODE = 1;
+    MESH = 2;
+    MATERIAL = 3;
+  }
+
+  Type type = 1;
+  uint32 index = 2;
+  string id = 3;
+}
+
 message EditNode {
   string target = 1;
 

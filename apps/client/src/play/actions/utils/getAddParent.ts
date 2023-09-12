@@ -7,11 +7,11 @@ export function getAddParent() {
     const item = items.get(sceneTreeId);
 
     if (item) {
-      return item.name;
+      return item.id;
     }
   }
 
-  const { rootName } = useClientStore.getState();
+  const { rootId } = useClientStore.getState();
 
-  return rootName;
+  return rootId;
 }

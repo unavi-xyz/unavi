@@ -2,6 +2,7 @@ import { Extra } from "houseki/gltf";
 import { Name, Parent, Scene, SceneStruct, Transform } from "houseki/scene";
 import { Entity, Query, Res } from "thyseus";
 
+import { EditorId } from "../../client/components";
 import { TreeItem } from "../classes/TreeItem";
 import { useSceneStore } from "../sceneStore";
 
@@ -10,7 +11,7 @@ import { useSceneStore } from "../sceneStore";
  */
 export function createTreeItems(
   sceneStruct: Res<SceneStruct>,
-  nodes: Query<[Entity, Transform, Parent]>,
+  nodes: Query<[Entity, Transform, Parent, EditorId]>,
   scenes: Query<[Entity, Scene]>,
   names: Query<[Entity, Name]>,
   extras: Query<Extra>
@@ -30,13 +31,13 @@ export function createTreeItems(
   const ids: bigint[] = [];
 
   // Create or update items
-  for (const [entity, transform, parent] of nodes) {
+  for (const [entity, transform, parent, id] of nodes) {
     ids.push(entity.id);
 
     let item = items.get(entity.id);
 
     if (!item) {
-      item = new TreeItem(entity.id);
+      item = new TreeItem(id.value, entity.id);
 
       items = new Map(items);
       items.set(entity.id, item);

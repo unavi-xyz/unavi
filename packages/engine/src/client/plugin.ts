@@ -25,7 +25,7 @@ import { sendEvents } from "./systems/sendEvents";
 import { setLocationUpdateTime } from "./systems/setLocationUpdateTime";
 import { setPlayersAirTime } from "./systems/setPlayersAirTime";
 import { setPlayersAvatar } from "./systems/setPlayersAvatars";
-import { setRootName } from "./systems/setRootName";
+import { setRootId } from "./systems/setRootId";
 import { setSkybox } from "./systems/setSkybox";
 import { setUserAvatar } from "./systems/setUserAvatar";
 import { spawnPlayers } from "./systems/spawnPlayers";
@@ -53,7 +53,7 @@ export function clientPlugin(builder: WorldBuilder) {
       saveExport,
       setPlayersAirTime,
       setPlayersAvatar,
-      setRootName,
+      setRootId,
       setSkybox,
       setUserAvatar,
       spawnPlayers,

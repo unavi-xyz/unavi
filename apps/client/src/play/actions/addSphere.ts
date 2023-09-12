@@ -7,17 +7,15 @@ import { getAddParent } from "./utils/getAddParent";
 
 export function addSphere() {
   const geometry = new SphereGeometry(0.5);
-
   const mesh = addThreeMesh(geometry);
-  const name = addNode("Sphere");
-
   const parent = getAddParent();
 
-  editNode({
+  const id = addNode("Sphere");
+
+  editNode(id, {
     mesh,
     parent,
-    target: name,
   });
 
-  return name;
+  return id;
 }

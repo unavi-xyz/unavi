@@ -7,6 +7,7 @@ import {
   AddNode,
   EditCollider,
   EditExtra,
+  EditId,
   EditMesh,
   EditNode,
   EditRigidBody,
@@ -23,6 +24,7 @@ export function sendEvents(
   playerLeave: EventWriter<PlayerLeave>,
   addNode: EventWriter<AddNode>,
   addMesh: EventWriter<AddMesh>,
+  editId: EventWriter<EditId>,
   editNode: EventWriter<EditNode>,
   editMesh: EventWriter<EditMesh>,
   editExta: EventWriter<EditExtra>,
@@ -53,18 +55,29 @@ export function sendEvents(
     case "event": {
       const editor = EditorEvent.fromBinary(msg.response.event.data);
 
+      console.log("--- event", editor.event.oneofKind);
+
       switch (editor.event.oneofKind) {
         case "addNode": {
           const e = new AddNode();
-          e.name = editor.event.addNode.id;
+          e.id = editor.event.addNode.id;
           addNode.create(e);
           break;
         }
 
         case "addMesh": {
           const e = new AddMesh();
-          e.name = editor.event.addMesh.id;
+          e.id = editor.event.addMesh.id;
           addMesh.create(e);
+          break;
+        }
+
+        case "editId": {
+          const e = new EditId();
+          e.type = editor.event.editId.type;
+          e.index = editor.event.editId.index;
+          e.id = editor.event.editId.id;
+          editId.create(e);
           break;
         }
 
@@ -73,8 +86,8 @@ export function sendEvents(
           e.target = editor.event.editNode.target;
 
           e.name = editor.event.editNode.name ?? "";
-          e.parentName = editor.event.editNode.parent ?? "";
-          e.meshName = editor.event.editNode.mesh ?? "";
+          e.parent = editor.event.editNode.parent ?? "";
+          e.mesh = editor.event.editNode.mesh ?? "";
 
           if (editor.event.editNode.translation.length) {
             e.translation = true;

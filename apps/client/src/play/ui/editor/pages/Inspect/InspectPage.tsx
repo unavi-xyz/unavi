@@ -7,20 +7,20 @@ import Physics from "./Physics";
 import Transform from "./Transform";
 
 interface Props {
-  id: bigint;
+  entityId: bigint;
 }
 
-export default function InspectPage({ id }: Props) {
-  const name = useTreeValue(id, "name");
+export default function InspectPage({ entityId }: Props) {
+  const name = useTreeValue(entityId, "name");
 
-  const displayName = getDisplayName(name, id);
+  const displayName = getDisplayName(name, entityId);
 
   return (
     <PanelPage title={displayName}>
-      <Name id={id} />
-      <Transform id={id} />
-      <Physics id={id} />
-      <AddComponent id={id} />
+      <Name entityId={entityId} />
+      <Transform entityId={entityId} />
+      <Physics entityId={entityId} />
+      <AddComponent entityId={entityId} />
     </PanelPage>
   );
 }

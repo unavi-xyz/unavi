@@ -12,34 +12,34 @@ import NumberInput from "./NumberInput";
 import { SelectInput } from "./SelectInput";
 
 interface Props {
-  id: bigint;
+  entityId: bigint;
 }
 
-export default function Physics({ id }: Props) {
-  const name = useTreeValue(id, "name");
-  const locked = useTreeValue(id, "locked");
-  const colliderType = useTreeValue(id, "colliderType");
-  const rigidBodyType = useTreeValue(id, "rigidBodyType");
+export default function Physics({ entityId }: Props) {
+  const id = useTreeValue(entityId, "id");
+  const name = useTreeValue(entityId, "name");
+  const locked = useTreeValue(entityId, "locked");
+  const colliderType = useTreeValue(entityId, "colliderType");
+  const rigidBodyType = useTreeValue(entityId, "rigidBodyType");
 
-  const size = useTreeValueIndex(id, "collider", "size") ?? [0, 0, 0];
-  const height = useTreeValueIndex(id, "collider", "height") ?? 0;
-  const radius = useTreeValueIndex(id, "collider", "radius") ?? 0;
+  const size = useTreeValueIndex(entityId, "collider", "size") ?? [0, 0, 0];
+  const height = useTreeValueIndex(entityId, "collider", "height") ?? 0;
+  const radius = useTreeValueIndex(entityId, "collider", "radius") ?? 0;
 
-  if (!name || !colliderType || !rigidBodyType) {
+  if (!id || !name || !colliderType || !rigidBodyType) {
     return null;
   }
 
   const handleRemove = locked
     ? undefined
     : () => {
-        editNode({
+        editNode(id, {
           collider: {
             type: EditNode_Collider_Type.NONE,
           },
           rigidBody: {
             type: EditNode_RigidBody_Type.NONE,
           },
-          target: name,
         });
       };
 
@@ -56,11 +56,10 @@ export default function Physics({ id }: Props) {
         onChange={(e) => {
           const value = e.currentTarget.value as RigidBodyOption;
           const rigidBodyType = getRigidBodyType(value);
-          editNode({
+          editNode(id, {
             rigidBody: {
               type: rigidBodyType,
             },
-            target: name,
           });
         }}
       />
@@ -80,14 +79,13 @@ export default function Physics({ id }: Props) {
         onChange={(e) => {
           const value = e.currentTarget.value as ColliderOption;
           const colliderType = getColliderType(value);
-          editNode({
+          editNode(id, {
             collider: {
               height: 1,
               radius: 0.5,
               size: [1, 1, 1],
               type: colliderType,
             },
-            target: name,
           });
         }}
       />
@@ -102,12 +100,11 @@ export default function Physics({ id }: Props) {
             min={0}
             value={size[0]}
             onValueChange={(val) => {
-              editNode({
+              editNode(id, {
                 collider: {
                   size: [val, size[1], size[2]],
                   type: colliderType,
                 },
-                target: name,
               });
             }}
           />
@@ -117,12 +114,11 @@ export default function Physics({ id }: Props) {
             min={0}
             value={size[1]}
             onValueChange={(val) => {
-              editNode({
+              editNode(id, {
                 collider: {
                   size: [size[0], val, size[2]],
                   type: colliderType,
                 },
-                target: name,
               });
             }}
           />
@@ -132,12 +128,11 @@ export default function Physics({ id }: Props) {
             min={0}
             value={size[2]}
             onValueChange={(val) => {
-              editNode({
+              editNode(id, {
                 collider: {
                   size: [size[0], size[1], val],
                   type: colliderType,
                 },
-                target: name,
               });
             }}
           />
@@ -156,13 +151,12 @@ export default function Physics({ id }: Props) {
               min={0}
               value={radius}
               onValueChange={(val) => {
-                editNode({
+                editNode(id, {
                   collider: {
                     height,
                     radius: val,
                     type: colliderType,
                   },
-                  target: name,
                 });
               }}
             />
@@ -181,13 +175,12 @@ export default function Physics({ id }: Props) {
               min={0}
               value={height}
               onValueChange={(val) => {
-                editNode({
+                editNode(id, {
                   collider: {
                     height: val,
                     radius,
                     type: colliderType,
                   },
-                  target: name,
                 });
               }}
             />

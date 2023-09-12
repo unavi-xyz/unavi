@@ -9,7 +9,7 @@ export default function Right() {
   return (
     <div className="fixed right-0 top-24 z-20 h-full p-4">
       <div className="h-2/3 w-80 rounded-2xl bg-neutral-900 text-white">
-        {selectedId ? <InspectPage id={selectedId} /> : <WorldPage />}
+        {selectedId ? <InspectPage entityId={selectedId} /> : <WorldPage />}
       </div>
     </div>
   );

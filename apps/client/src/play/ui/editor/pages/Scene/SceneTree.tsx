@@ -16,8 +16,8 @@ export default function SceneTree({ rootId }: Props) {
 
   return (
     <div onClick={clearSelected} className="h-full space-y-1">
-      {childrenIds?.map((id) => (
-        <TreeItem key={id.toString()} id={id} />
+      {childrenIds?.map((entityId) => (
+        <TreeItem key={entityId.toString()} entityId={entityId} />
       ))}
     </div>
   );

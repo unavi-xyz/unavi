@@ -3,14 +3,52 @@
 // tslint:disable
 import type { BinaryWriteOptions } from "@protobuf-ts/runtime";
 import type { IBinaryWriter } from "@protobuf-ts/runtime";
+import { WireType } from "@protobuf-ts/runtime";
 import type { BinaryReadOptions } from "@protobuf-ts/runtime";
 import type { IBinaryReader } from "@protobuf-ts/runtime";
 import { UnknownFieldHandler } from "@protobuf-ts/runtime";
-import { WireType } from "@protobuf-ts/runtime";
 import type { PartialMessage } from "@protobuf-ts/runtime";
 import { reflectionMergePartial } from "@protobuf-ts/runtime";
 import { MESSAGE_TYPE } from "@protobuf-ts/runtime";
 import { MessageType } from "@protobuf-ts/runtime";
+/**
+ * @generated from protobuf message xyz.unavi.editor.edit.EditId
+ */
+export interface EditId {
+    /**
+     * @generated from protobuf field: xyz.unavi.editor.edit.EditId.Type type = 1;
+     */
+    type: EditId_Type;
+    /**
+     * @generated from protobuf field: uint32 index = 2;
+     */
+    index: number;
+    /**
+     * @generated from protobuf field: string id = 3;
+     */
+    id: string;
+}
+/**
+ * @generated from protobuf enum xyz.unavi.editor.edit.EditId.Type
+ */
+export enum EditId_Type {
+    /**
+     * @generated from protobuf enum value: SCENE = 0;
+     */
+    SCENE = 0,
+    /**
+     * @generated from protobuf enum value: NODE = 1;
+     */
+    NODE = 1,
+    /**
+     * @generated from protobuf enum value: MESH = 2;
+     */
+    MESH = 2,
+    /**
+     * @generated from protobuf enum value: MATERIAL = 3;
+     */
+    MATERIAL = 3
+}
 /**
  * @generated from protobuf message xyz.unavi.editor.edit.EditNode
  */
@@ -242,6 +280,67 @@ export interface EditMesh {
      */
     uv3: number[];
 }
+// @generated message type with reflection information, may provide speed optimized methods
+class EditId$Type extends MessageType<EditId> {
+    constructor() {
+        super("xyz.unavi.editor.edit.EditId", [
+            { no: 1, name: "type", kind: "enum", T: () => ["xyz.unavi.editor.edit.EditId.Type", EditId_Type] },
+            { no: 2, name: "index", kind: "scalar", T: 13 /*ScalarType.UINT32*/ },
+            { no: 3, name: "id", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+        ]);
+    }
+    create(value?: PartialMessage<EditId>): EditId {
+        const message = { type: 0, index: 0, id: "" };
+        globalThis.Object.defineProperty(message, MESSAGE_TYPE, { enumerable: false, value: this });
+        if (value !== undefined)
+            reflectionMergePartial<EditId>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: EditId): EditId {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* xyz.unavi.editor.edit.EditId.Type type */ 1:
+                    message.type = reader.int32();
+                    break;
+                case /* uint32 index */ 2:
+                    message.index = reader.uint32();
+                    break;
+                case /* string id */ 3:
+                    message.id = reader.string();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: EditId, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* xyz.unavi.editor.edit.EditId.Type type = 1; */
+        if (message.type !== 0)
+            writer.tag(1, WireType.Varint).int32(message.type);
+        /* uint32 index = 2; */
+        if (message.index !== 0)
+            writer.tag(2, WireType.Varint).uint32(message.index);
+        /* string id = 3; */
+        if (message.id !== "")
+            writer.tag(3, WireType.LengthDelimited).string(message.id);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message xyz.unavi.editor.edit.EditId
+ */
+export const EditId = new EditId$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class EditNode$Type extends MessageType<EditNode> {
     constructor() {

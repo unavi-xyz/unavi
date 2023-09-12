@@ -1,14 +1,22 @@
 import {
+  EditId_Type,
   EditNode_Collider_Type,
   EditNode_RigidBody_Type,
 } from "@unavi/protocol";
 import { Resource } from "houseki/core";
 import { Transform } from "houseki/scene";
-import { f32, struct } from "thyseus";
+import { f32, struct, u32 } from "thyseus";
 
 @struct
 export class AddNode {
-  name: string = "";
+  id: string = "";
+}
+
+@struct
+export class EditId {
+  type: EditId_Type = EditId_Type.NODE;
+  index: u32 = 0;
+  id: string = "";
 }
 
 @struct
@@ -16,8 +24,8 @@ export class EditNode {
   target: string = "";
 
   name: string = "";
-  meshName: string = "";
-  parentName: string = "";
+  mesh: string = "";
+  parent: string = "";
 
   translation: boolean = false;
   rotation: boolean = false;
@@ -50,7 +58,7 @@ export class EditCollider {
 
 @struct
 export class AddMesh {
-  name: string = "";
+  id: string = "";
 }
 
 @struct

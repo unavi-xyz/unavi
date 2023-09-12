@@ -30,7 +30,7 @@ export interface IClientStore {
   locations: Map<number, number[]>;
   nickname: string;
   playerId: number | null;
-  rootName: string;
+  rootId: string;
   skybox: string;
   worldUri: string;
 }
@@ -71,7 +71,7 @@ export const useClientStore = create<IClientStore>((set, get) => ({
   nickname: "",
   playerData: new Map(),
   playerId: null,
-  rootName: "",
+  rootId: "",
   sendEditorEvent: (editorEvent: EditorEvent) => {
     const data = EditorEvent.toBinary(editorEvent);
     const sendEvent = SendEvent.create({ data });

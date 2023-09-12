@@ -10,18 +10,20 @@ const euler = new Euler();
 const quat = new Quaternion();
 
 interface Props {
-  id: bigint;
+  entityId: bigint;
 }
 
-export default function Rotation({ id }: Props) {
-  const name = useTreeValue(id, "name");
-  const locked = useTreeValue(id, "locked");
-  const rawX = useTreeValueIndex(id, "rotation", 0);
-  const rawY = useTreeValueIndex(id, "rotation", 1);
-  const rawZ = useTreeValueIndex(id, "rotation", 2);
-  const rawW = useTreeValueIndex(id, "rotation", 3);
+export default function Rotation({ entityId }: Props) {
+  const id = useTreeValue(entityId, "id");
+  const name = useTreeValue(entityId, "name");
+  const locked = useTreeValue(entityId, "locked");
+  const rawX = useTreeValueIndex(entityId, "rotation", 0);
+  const rawY = useTreeValueIndex(entityId, "rotation", 1);
+  const rawZ = useTreeValueIndex(entityId, "rotation", 2);
+  const rawW = useTreeValueIndex(entityId, "rotation", 3);
 
   if (
+    !id ||
     !name ||
     rawX === undefined ||
     rawY === undefined ||
@@ -52,9 +54,8 @@ export default function Rotation({ id }: Props) {
             euler.set(toRadians(val), toRadians(y), toRadians(z))
           );
 
-          editNode({
+          editNode(id, {
             rotation: [quat.x, quat.y, quat.z, quat.w],
-            target: name,
           });
         }}
       />
@@ -69,9 +70,8 @@ export default function Rotation({ id }: Props) {
             euler.set(toRadians(x), toRadians(val), toRadians(z))
           );
 
-          editNode({
+          editNode(id, {
             rotation: [quat.x, quat.y, quat.z, quat.w],
-            target: name,
           });
         }}
       />
@@ -86,9 +86,8 @@ export default function Rotation({ id }: Props) {
             euler.set(toRadians(x), toRadians(y), toRadians(val))
           );
 
-          editNode({
+          editNode(id, {
             rotation: [quat.x, quat.y, quat.z, quat.w],
-            target: name,
           });
         }}
       />

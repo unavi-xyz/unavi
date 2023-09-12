@@ -55,8 +55,6 @@ export function sendEvents(
     case "event": {
       const editor = EditorEvent.fromBinary(msg.response.event.data);
 
-      console.log("--- event", editor.event.oneofKind);
-
       switch (editor.event.oneofKind) {
         case "addNode": {
           const e = new AddNode();

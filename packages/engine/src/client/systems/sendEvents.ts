@@ -34,7 +34,26 @@ export function sendEvents(
   const ecsIncoming = useClientStore.getState().ecsIncoming;
   if (ecsIncoming.length === 0) return;
 
+  let msgKind: string | undefined;
+
   for (const msg of ecsIncoming) {
+    let kind: string | undefined = msg.response.oneofKind;
+
+    if (msg.response.oneofKind === "event") {
+      const editor = EditorEvent.fromBinary(msg.response.event.data);
+      kind = `event.${editor.event.oneofKind}`;
+    }
+
+    if (!msgKind) {
+      msgKind = kind;
+    } else if (msgKind !== kind) {
+      // Only process one kind of message per frame
+      // This is to simplify message handling
+      break;
+    }
+
+    ecsIncoming.shift();
+
     switch (msg.response.oneofKind) {
       case "playerJoined": {
         const e = new PlayerJoin();
@@ -232,6 +251,4 @@ export function sendEvents(
       }
     }
   }
-
-  ecsIncoming.length = 0;
 }

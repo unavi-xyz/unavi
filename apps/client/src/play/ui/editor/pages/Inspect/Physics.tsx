@@ -33,15 +33,15 @@ export default function Physics({ entityId }: Props) {
   const handleRemove = locked
     ? undefined
     : () => {
-        editNode(id, {
-          collider: {
-            type: EditNode_Collider_Type.NONE,
-          },
-          rigidBody: {
-            type: EditNode_RigidBody_Type.NONE,
-          },
-        });
-      };
+      editNode(id, {
+        collider: {
+          type: EditNode_Collider_Type.NONE,
+        },
+        rigidBody: {
+          type: EditNode_RigidBody_Type.NONE,
+        },
+      });
+    };
 
   const rigidBodyOption = getRigidBodyOption(rigidBodyType);
   const colliderOption = getColliderOption(colliderType);
@@ -79,9 +79,11 @@ export default function Physics({ entityId }: Props) {
         onChange={(e) => {
           const value = e.currentTarget.value as ColliderOption;
           const colliderType = getColliderType(value);
+
           editNode(id, {
             collider: {
               height: 1,
+              mesh: id,
               radius: 0.5,
               size: [1, 1, 1],
               type: colliderType,
@@ -140,8 +142,8 @@ export default function Physics({ entityId }: Props) {
       )}
 
       {colliderType === EditNode_Collider_Type.SPHERE ||
-      colliderType === EditNode_Collider_Type.CAPSULE ||
-      colliderType === EditNode_Collider_Type.CYLINDER ? (
+        colliderType === EditNode_Collider_Type.CAPSULE ||
+        colliderType === EditNode_Collider_Type.CYLINDER ? (
         <div className="grid grid-cols-4">
           <div className="w-20 shrink-0 font-bold text-neutral-400">Radius</div>
 
@@ -165,7 +167,7 @@ export default function Physics({ entityId }: Props) {
       ) : null}
 
       {colliderType === EditNode_Collider_Type.CAPSULE ||
-      colliderType === EditNode_Collider_Type.CYLINDER ? (
+        colliderType === EditNode_Collider_Type.CYLINDER ? (
         <div className="grid grid-cols-4">
           <div className="w-20 shrink-0 font-bold text-neutral-400">Height</div>
 

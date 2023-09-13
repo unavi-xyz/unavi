@@ -90,8 +90,23 @@ export function editColliders(
         break;
       }
 
+      let meshId: bigint | undefined;
+
+      if (e.mesh) {
+        for (const [ent, id] of ids) {
+          if (id.value === e.mesh) {
+            meshId = ent.id;
+            break;
+          }
+        }
+      }
+
       for (const [colliderEntity, collider] of meshColliders) {
         if (colliderEntity.id !== entity.id) continue;
+
+        if (meshId) {
+          collider.meshId = meshId;
+        }
 
         if (e.type === EditNode_Collider_Type.MESH) {
           foundCollider = true;
@@ -105,6 +120,10 @@ export function editColliders(
       for (const [colliderEntity, collider] of hullColliders) {
         if (colliderEntity.id !== entity.id) continue;
 
+        if (meshId) {
+          collider.meshId = meshId;
+        }
+
         if (e.type === EditNode_Collider_Type.HULL) {
           foundCollider = true;
         } else {
@@ -114,53 +133,53 @@ export function editColliders(
         break;
       }
 
-      if (foundCollider || e.type === EditNode_Collider_Type.NONE) {
-        break;
-      }
+      if (!foundCollider && e.type !== EditNode_Collider_Type.NONE) {
+        // Create new collider
+        if (e.type === EditNode_Collider_Type.BOX) {
+          const collider = new BoxCollider();
+          collider.size.fromArray(e.size);
 
-      // Create new collider
-      if (e.type === EditNode_Collider_Type.BOX) {
-        const collider = new BoxCollider();
-        collider.size.fromArray(e.size);
+          commands.get(entity).add(collider);
+        }
 
-        commands.get(entity).add(collider);
-      }
+        if (e.type === EditNode_Collider_Type.SPHERE) {
+          const collider = new SphereCollider();
+          collider.radius = e.radius;
 
-      if (e.type === EditNode_Collider_Type.SPHERE) {
-        const collider = new SphereCollider();
-        collider.radius = e.radius;
+          commands.get(entity).add(collider);
+        }
 
-        commands.get(entity).add(collider);
-      }
+        if (e.type === EditNode_Collider_Type.CYLINDER) {
+          const collider = new CylinderCollider();
+          collider.radius = e.radius;
+          collider.height = e.height;
 
-      if (e.type === EditNode_Collider_Type.CYLINDER) {
-        const collider = new CylinderCollider();
-        collider.radius = e.radius;
-        collider.height = e.height;
+          commands.get(entity).add(collider);
+        }
 
-        commands.get(entity).add(collider);
-      }
+        if (e.type === EditNode_Collider_Type.CAPSULE) {
+          const collider = new CapsuleCollider();
+          collider.radius = e.radius;
+          collider.height = e.height;
 
-      if (e.type === EditNode_Collider_Type.CAPSULE) {
-        const collider = new CapsuleCollider();
-        collider.radius = e.radius;
-        collider.height = e.height;
+          commands.get(entity).add(collider);
+        }
 
-        commands.get(entity).add(collider);
-      }
+        if (e.type === EditNode_Collider_Type.MESH) {
+          const collider = new MeshCollider();
 
-      if (e.type === EditNode_Collider_Type.MESH) {
-        const collider = new MeshCollider();
-        // TODO: set mesh
+          commands.get(entity).add(collider);
+        }
 
-        commands.get(entity).add(collider);
-      }
+        if (e.type === EditNode_Collider_Type.HULL) {
+          const collider = new HullCollider();
 
-      if (e.type === EditNode_Collider_Type.HULL) {
-        const collider = new HullCollider();
-        // TODO: set mesh
+          if (meshId) {
+            collider.meshId = meshId;
+          }
 
-        commands.get(entity).add(collider);
+          commands.get(entity).add(collider);
+        }
       }
     }
   }

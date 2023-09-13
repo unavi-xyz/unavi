@@ -1,3 +1,4 @@
+import { PrevTargetTransform, TargetTransform } from "houseki/physics";
 import { Mesh, Name, Parent, Transform } from "houseki/scene";
 import { Entity, EventReader, Mut, Query } from "thyseus";
 
@@ -8,6 +9,7 @@ export function editNodes(
   events: EventReader<EditNode>,
   ids: Query<[Entity, EditorId]>,
   nodes: Query<[Entity, EditorId, Mut<Name>, Mut<Parent>, Mut<Transform>]>,
+  targets: Query<[Entity, Mut<TargetTransform>, Mut<PrevTargetTransform>]>,
   meshes: Query<[EditorId, Mut<Mesh>]>
 ) {
   if (events.length === 0) return;
@@ -49,6 +51,31 @@ export function editNodes(
 
       if (e.scale) {
         transform.scale.copy(e.transform.scale);
+      }
+
+      if (e.translation || e.rotation || e.scale) {
+        for (const [
+          targetEnt,
+          targetTransform,
+          prevTargetTransform,
+        ] of targets) {
+          if (targetEnt.id === entity.id) {
+            if (e.translation) {
+              targetTransform.translation.copy(e.transform.translation);
+              prevTargetTransform.translation.copy(e.transform.translation);
+            }
+
+            if (e.rotation) {
+              targetTransform.rotation.copy(e.transform.rotation);
+              prevTargetTransform.rotation.copy(e.transform.rotation);
+            }
+
+            if (e.scale) {
+              targetTransform.scale.copy(e.transform.scale);
+              prevTargetTransform.scale.copy(e.transform.scale);
+            }
+          }
+        }
       }
     }
   }

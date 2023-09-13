@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import { Euler, Quaternion } from "three";
 
 import { editNode } from "@/src/play/actions/editNode";
@@ -17,23 +18,50 @@ export default function Rotation({ entityId }: Props) {
   const id = useTreeValue(entityId, "id");
   const name = useTreeValue(entityId, "name");
   const locked = useTreeValue(entityId, "locked");
+
   const rawX = useTreeValueIndex(entityId, "rotation", 0);
   const rawY = useTreeValueIndex(entityId, "rotation", 1);
   const rawZ = useTreeValueIndex(entityId, "rotation", 2);
   const rawW = useTreeValueIndex(entityId, "rotation", 3);
 
-  if (
-    !id ||
-    !name ||
-    rawX === undefined ||
-    rawY === undefined ||
-    rawZ === undefined ||
-    rawW === undefined
-  ) {
+  const [uiX, setX] = useState(rawX ?? 0);
+  const [uiY, setY] = useState(rawY ?? 0);
+  const [uiZ, setZ] = useState(rawZ ?? 0);
+  const [uiW, setW] = useState(rawW ?? 0);
+
+  const [usingUI, setUsingUI] = useState(false);
+  const usingUITimout = useRef<NodeJS.Timeout | null>(null);
+
+  if (!id || !name) {
     return null;
   }
 
-  euler.setFromQuaternion(quat.set(rawX, rawY, rawZ, rawW));
+  function usedUI() {
+    setUsingUI(true);
+    setX(rawX ?? 0);
+    setY(rawY ?? 0);
+    setZ(rawZ ?? 0);
+    setW(rawW ?? 0);
+
+    if (usingUITimout.current) {
+      clearTimeout(usingUITimout.current);
+    }
+
+    usingUITimout.current = setTimeout(() => {
+      setUsingUI(false);
+    }, 100);
+  }
+
+  if (!id || !name) {
+    return null;
+  }
+
+  const qx = usingUI ? uiX : rawX ?? 0;
+  const qy = usingUI ? uiY : rawY ?? 0;
+  const qz = usingUI ? uiZ : rawZ ?? 0;
+  const qw = usingUI ? uiW : rawW ?? 0;
+
+  euler.setFromQuaternion(quat.set(qx, qy, qz, qw));
 
   const x = round(toDegrees(euler.x));
   const y = round(toDegrees(euler.y));
@@ -54,6 +82,12 @@ export default function Rotation({ entityId }: Props) {
             euler.set(toRadians(val), toRadians(y), toRadians(z))
           );
 
+          usedUI();
+          setX(quat.x);
+          setY(quat.y);
+          setZ(quat.z);
+          setW(quat.w);
+
           editNode(id, {
             rotation: [quat.x, quat.y, quat.z, quat.w],
           });
@@ -69,6 +103,12 @@ export default function Rotation({ entityId }: Props) {
           quat.setFromEuler(
             euler.set(toRadians(x), toRadians(val), toRadians(z))
           );
+
+          usedUI();
+          setX(quat.x);
+          setY(quat.y);
+          setZ(quat.z);
+          setW(quat.w);
 
           editNode(id, {
             rotation: [quat.x, quat.y, quat.z, quat.w],
@@ -86,6 +126,12 @@ export default function Rotation({ entityId }: Props) {
             euler.set(toRadians(x), toRadians(y), toRadians(val))
           );
 
+          usedUI();
+          setX(quat.x);
+          setY(quat.y);
+          setZ(quat.z);
+          setW(quat.w);
+
           editNode(id, {
             rotation: [quat.x, quat.y, quat.z, quat.w],
           });
@@ -95,10 +141,8 @@ export default function Rotation({ entityId }: Props) {
   );
 }
 
-const PRECISION = 1000;
-
-function round(num: number) {
-  return Math.round(num * PRECISION) / PRECISION;
+function round(num: number, precision = 1000) {
+  return Math.round(num * precision) / precision;
 }
 
 function toRadians(degrees: number) {

@@ -39,7 +39,7 @@
     "did-resolver": "^4.1.0",
     "drizzle-orm": "^0.28.2",
     "ethers": "^5.7.2",
-    "houseki": "^1.1.1",
+    "houseki": "^1.1.2",
     "lucia": "2.0.0-beta.7",
     "mysql2": "^3.3.5",
     "nanoid": "^4.0.2",

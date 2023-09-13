@@ -7,13 +7,13 @@ import { EditId } from "../events";
 
 export function editIds(
   commands: Commands,
-  reader: EventReader<EditId>,
+  events: EventReader<EditId>,
   infos: Query<GltfInfo>,
   withIds: Query<[Entity, Mut<EditorId>]>
 ) {
-  if (!reader.length) return;
+  if (events.length === 0) return;
 
-  for (const e of reader) {
+  for (const e of events) {
     for (const info of infos) {
       let targetId: bigint | undefined;
 
@@ -56,5 +56,5 @@ export function editIds(
     }
   }
 
-  reader.clear();
+  events.clear();
 }

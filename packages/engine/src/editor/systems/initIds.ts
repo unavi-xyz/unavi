@@ -1,7 +1,7 @@
 import { EditId_Type } from "@unavi/protocol";
 import { GltfInfo } from "houseki/gltf";
 import { SceneStruct } from "houseki/scene";
-import { Entity, Query, Res, Without } from "thyseus";
+import { Entity, Query, Res, With } from "thyseus";
 
 import { useClientStore } from "../../client";
 import { EditorId } from "../../client/components";
@@ -10,12 +10,12 @@ import { nanoidShort } from "../../client/utils/nanoid";
 export function initIds(
   infos: Query<GltfInfo>,
   sceneStruct: Res<SceneStruct>,
-  withoutIds: Query<Entity, Without<EditorId>>
+  withIds: Query<Entity, With<EditorId>>
 ) {
-  const entities: bigint[] = [];
+  const processed: bigint[] = [];
 
-  for (const entity of withoutIds) {
-    entities.push(entity.id);
+  for (const entity of withIds) {
+    processed.push(entity.id);
   }
 
   for (const info of infos) {
@@ -23,19 +23,19 @@ export function initIds(
       sceneStruct.activeScene,
       EditId_Type.SCENE,
       info.defaultScene,
-      entities
+      processed
     );
 
     info.nodes.forEach((entityId, i) =>
-      processEntity(entityId, EditId_Type.NODE, i, entities)
+      processEntity(entityId, EditId_Type.NODE, i, processed)
     );
 
     info.meshes.forEach((entityId, i) => {
-      processEntity(entityId, EditId_Type.MESH, i, entities);
+      processEntity(entityId, EditId_Type.MESH, i, processed);
     });
 
     info.materials.forEach((entityId, i) =>
-      processEntity(entityId, EditId_Type.MATERIAL, i, entities)
+      processEntity(entityId, EditId_Type.MATERIAL, i, processed)
     );
   }
 }
@@ -44,9 +44,11 @@ function processEntity(
   entityId: bigint,
   type: EditId_Type,
   index: number,
-  entities: bigint[]
+  processed: bigint[]
 ) {
-  if (!entities.includes(entityId)) return;
+  if (processed.includes(entityId)) return;
+
+  processed.push(entityId);
 
   const id = nanoidShort();
 

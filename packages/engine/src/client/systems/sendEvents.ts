@@ -3,12 +3,12 @@ import { Warehouse } from "houseki/core";
 import { EventWriter, Mut, Res } from "thyseus";
 
 import {
-  AddMesh,
+  AddMeshPrimitive,
   AddNode,
   EditCollider,
   EditExtra,
   EditId,
-  EditMesh,
+  EditMeshPrimitive,
   EditNode,
   EditRigidBody,
 } from "../../editor/events";
@@ -23,10 +23,10 @@ export function sendEvents(
   playerJoin: EventWriter<PlayerJoin>,
   playerLeave: EventWriter<PlayerLeave>,
   addNode: EventWriter<AddNode>,
-  addMesh: EventWriter<AddMesh>,
+  addMeshPrimitive: EventWriter<AddMeshPrimitive>,
   editId: EventWriter<EditId>,
   editNode: EventWriter<EditNode>,
-  editMesh: EventWriter<EditMesh>,
+  editMeshPrimitive: EventWriter<EditMeshPrimitive>,
   editExta: EventWriter<EditExtra>,
   rigidBody: EventWriter<EditRigidBody>,
   collider: EventWriter<EditCollider>
@@ -80,10 +80,10 @@ export function sendEvents(
             break;
           }
 
-          case "addMesh": {
-            const e = new AddMesh();
-            e.id = editor.event.addMesh.id;
-            addMesh.create(e);
+          case "addMeshPrimitive": {
+            const e = new AddMeshPrimitive();
+            e.id = editor.event.addMeshPrimitive.id;
+            addMeshPrimitive.create(e);
             break;
           }
 
@@ -186,66 +186,82 @@ export function sendEvents(
             break;
           }
 
-          case "editMesh": {
-            const e = new EditMesh();
-            e.target = editor.event.editMesh.target;
+          case "editMeshPrimitive": {
+            const e = new EditMeshPrimitive();
+            e.target = editor.event.editMeshPrimitive.target;
 
-            e.name = editor.event.editMesh.name ?? "";
-            e.material = editor.event.editMesh.material ?? "";
+            e.name = editor.event.editMeshPrimitive.name ?? "";
+            e.material = editor.event.editMeshPrimitive.material ?? "";
 
-            if (editor.event.editMesh.indices) {
-              const indices = Uint32Array.from(editor.event.editMesh.indices);
+            if (editor.event.editMeshPrimitive.indices) {
+              const indices = Uint32Array.from(
+                editor.event.editMeshPrimitive.indices
+              );
               e.indices.write(indices, warehouse);
             }
 
-            if (editor.event.editMesh.position) {
+            if (editor.event.editMeshPrimitive.position) {
               const positions = Float32Array.from(
-                editor.event.editMesh.position
+                editor.event.editMeshPrimitive.position
               );
               e.positions.write(positions, warehouse);
             }
 
-            if (editor.event.editMesh.normal) {
-              const normals = Float32Array.from(editor.event.editMesh.normal);
+            if (editor.event.editMeshPrimitive.normal) {
+              const normals = Float32Array.from(
+                editor.event.editMeshPrimitive.normal
+              );
               e.normals.write(normals, warehouse);
             }
 
-            if (editor.event.editMesh.color) {
-              const colors = Float32Array.from(editor.event.editMesh.color);
+            if (editor.event.editMeshPrimitive.color) {
+              const colors = Float32Array.from(
+                editor.event.editMeshPrimitive.color
+              );
               e.colors.write(colors, warehouse);
             }
 
-            if (editor.event.editMesh.weights) {
-              const weights = Float32Array.from(editor.event.editMesh.weights);
+            if (editor.event.editMeshPrimitive.weights) {
+              const weights = Float32Array.from(
+                editor.event.editMeshPrimitive.weights
+              );
               e.weights.write(weights, warehouse);
             }
 
-            if (editor.event.editMesh.joints) {
-              const joints = Float32Array.from(editor.event.editMesh.joints);
+            if (editor.event.editMeshPrimitive.joints) {
+              const joints = Float32Array.from(
+                editor.event.editMeshPrimitive.joints
+              );
               e.joints.write(joints, warehouse);
             }
 
-            if (editor.event.editMesh.uv) {
-              const uvs = Float32Array.from(editor.event.editMesh.uv);
+            if (editor.event.editMeshPrimitive.uv) {
+              const uvs = Float32Array.from(editor.event.editMeshPrimitive.uv);
               e.uv.write(uvs, warehouse);
             }
 
-            if (editor.event.editMesh.uv1) {
-              const uv1s = Float32Array.from(editor.event.editMesh.uv1);
+            if (editor.event.editMeshPrimitive.uv1) {
+              const uv1s = Float32Array.from(
+                editor.event.editMeshPrimitive.uv1
+              );
               e.uv1.write(uv1s, warehouse);
             }
 
-            if (editor.event.editMesh.uv2) {
-              const uv2s = Float32Array.from(editor.event.editMesh.uv2);
+            if (editor.event.editMeshPrimitive.uv2) {
+              const uv2s = Float32Array.from(
+                editor.event.editMeshPrimitive.uv2
+              );
               e.uv2.write(uv2s, warehouse);
             }
 
-            if (editor.event.editMesh.uv3) {
-              const uv3s = Float32Array.from(editor.event.editMesh.uv3);
+            if (editor.event.editMeshPrimitive.uv3) {
+              const uv3s = Float32Array.from(
+                editor.event.editMeshPrimitive.uv3
+              );
               e.uv3.write(uv3s, warehouse);
             }
 
-            editMesh.create(e);
+            editMeshPrimitive.create(e);
           }
         }
       }

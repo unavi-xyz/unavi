@@ -136,8 +136,8 @@ importers:
         specifier: ^5.7.2
         version: 5.7.2
       houseki:
-        specifier: ^1.1.2
-        version: 1.1.2(@types/three@0.154.0)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0)
+        specifier: ^1.1.5
+        version: 1.1.5(@types/three@0.154.0)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0)
       lucia:
         specifier: 2.0.0-beta.7
         version: 2.0.0-beta.7
@@ -316,8 +316,8 @@ importers:
         specifier: ^4.0.0-beta.1
         version: 4.0.0-beta.1
       houseki:
-        specifier: ^1.1.2
-        version: 1.1.2(@types/three@0.154.0)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0)
+        specifier: ^1.1.5
+        version: 1.1.5(@types/three@0.154.0)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0)
       mediasoup-client:
         specifier: ^3.6.84
         version: 3.6.84
@@ -3821,11 +3821,11 @@ packages:
       three: 0.154.0
       thyseus: 0.14.0
 
-  /@houseki-engine/gltf@7.2.1(@houseki-engine/core@1.1.1)(@houseki-engine/physics@6.0.1)(@houseki-engine/scene@2.0.1)(@houseki-engine/text@6.0.1)(thyseus@0.14.0):
-    resolution: {integrity: sha512-NFKTS2GoMvs9rXZpun8JUOR2w/VRC6BVL3sb87Aa/A+NK2bil2DwCpg6hrpIAZjUSJlkNADUgHAvUFK+k7lMfg==}
+  /@houseki-engine/gltf@8.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/physics@6.1.1)(@houseki-engine/scene@2.0.1)(@houseki-engine/text@6.0.1)(thyseus@0.14.0):
+    resolution: {integrity: sha512-wDUgtdwBrruxrwjrLx56RtJDH93jXipcuy1s9xn56pp+5Dgw0mFVShj+ypZYvjvGaXYJjqQxtkVZipgBxzFyCw==}
     peerDependencies:
       '@houseki-engine/core': ^1.1.1
-      '@houseki-engine/physics': ^6.0.1
+      '@houseki-engine/physics': ^6.1.1
       '@houseki-engine/scene': ^2.0.1
       '@houseki-engine/text': ^6.0.1
       thyseus: '*'
@@ -3834,7 +3834,7 @@ packages:
       '@gltf-transform/extensions': 3.6.0
       '@gltf-transform/functions': 3.6.0
       '@houseki-engine/core': 1.1.1(thyseus@0.14.0)
-      '@houseki-engine/physics': 6.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0)
+      '@houseki-engine/physics': 6.1.1(@houseki-engine/core@1.1.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0)
       '@houseki-engine/scene': 2.0.1(@houseki-engine/core@1.1.1)(three@0.154.0)(thyseus@0.14.0)
       '@houseki-engine/text': 6.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0)
       thyseus: 0.14.0
@@ -3864,8 +3864,8 @@ packages:
       three: 0.154.0
       thyseus: 0.14.0
 
-  /@houseki-engine/physics@6.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0):
-    resolution: {integrity: sha512-ZFNfSYkDdvkrWEstFcK/jd7XxS8gIOfMUKt7oDfqm0Dbi4F0Om/uv26LyOE5Zvo7apR34DrT+wzUf16VkN0U9w==}
+  /@houseki-engine/physics@6.1.1(@houseki-engine/core@1.1.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0):
+    resolution: {integrity: sha512-mML83mETcPAlUlPoOA5P2P2DnamGZfF714fCa8CYqH5zoBKSiK66J3z27uqjqGPJMGA8nqJ8RFeLCLNZL/Aa9g==}
     peerDependencies:
       '@houseki-engine/core': ^1.1.1
       '@houseki-engine/scene': ^2.0.1
@@ -3878,12 +3878,12 @@ packages:
       three: 0.154.0
       thyseus: 0.14.0
 
-  /@houseki-engine/player@7.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/input@2.0.1)(@houseki-engine/physics@6.0.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(@houseki-engine/vrm@6.0.1)(three@0.154.0)(thyseus@0.14.0):
-    resolution: {integrity: sha512-d5l/Zdt5JsKQvqEx/v5EkG41SFmRt+q8DPdPchzSAmqM5Sdww8iMKO8eU6u04HH3tazyhj+4/8dngaZiq9XyRg==}
+  /@houseki-engine/player@8.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/input@2.0.1)(@houseki-engine/physics@6.1.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(@houseki-engine/vrm@6.0.1)(three@0.154.0)(thyseus@0.14.0):
+    resolution: {integrity: sha512-7yKjrZwMBH3BrG8PH+Jl0WeeWCpNfx+QhwUpEDoC6/7r5XUOa4lD2ZqGkqL/qv0wz9AF4AkTSL71+e0BE4u/UA==}
     peerDependencies:
       '@houseki-engine/core': ^1.1.1
       '@houseki-engine/input': ^2.0.1
-      '@houseki-engine/physics': ^6.0.1
+      '@houseki-engine/physics': ^6.1.1
       '@houseki-engine/render': ^6.0.1
       '@houseki-engine/scene': ^2.0.1
       '@houseki-engine/vrm': ^6.0.1
@@ -3892,19 +3892,19 @@ packages:
     dependencies:
       '@houseki-engine/core': 1.1.1(thyseus@0.14.0)
       '@houseki-engine/input': 2.0.1(@houseki-engine/core@1.1.1)(thyseus@0.14.0)
-      '@houseki-engine/physics': 6.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0)
+      '@houseki-engine/physics': 6.1.1(@houseki-engine/core@1.1.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0)
       '@houseki-engine/render': 6.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/scene@2.0.1)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0)
       '@houseki-engine/scene': 2.0.1(@houseki-engine/core@1.1.1)(three@0.154.0)(thyseus@0.14.0)
       '@houseki-engine/vrm': 6.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(@types/three@0.154.0)(three@0.154.0)(thyseus@0.14.0)
       three: 0.154.0
       thyseus: 0.14.0
 
-  /@houseki-engine/portal@6.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/physics@6.0.1)(@houseki-engine/player@7.0.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0):
-    resolution: {integrity: sha512-sx9xCA1Ywr9W8+UbkwEEDn8ZYWWtfdfdJmKB6TXfCQ76fpVVgcdF17CASNApVBK+x8Y1J0qf/ZgWPh7xAKsWzA==}
+  /@houseki-engine/portal@7.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/physics@6.1.1)(@houseki-engine/player@8.0.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0):
+    resolution: {integrity: sha512-gsqlk0dLZw/iuYyRFzFPSmqDOTmF1p4/Qi20HV0dY6d5ph9sAH5CurQvyg0f2YtO6Pcr6lHyytxEmSy0Pd4uZw==}
     peerDependencies:
       '@houseki-engine/core': ^1.1.1
-      '@houseki-engine/physics': ^6.0.1
-      '@houseki-engine/player': ^7.0.1
+      '@houseki-engine/physics': ^6.1.1
+      '@houseki-engine/player': ^8.0.1
       '@houseki-engine/render': ^6.0.1
       '@houseki-engine/scene': ^2.0.1
       postprocessing: '*'
@@ -3912,8 +3912,8 @@ packages:
       thyseus: '*'
     dependencies:
       '@houseki-engine/core': 1.1.1(thyseus@0.14.0)
-      '@houseki-engine/physics': 6.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0)
-      '@houseki-engine/player': 7.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/input@2.0.1)(@houseki-engine/physics@6.0.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(@houseki-engine/vrm@6.0.1)(three@0.154.0)(thyseus@0.14.0)
+      '@houseki-engine/physics': 6.1.1(@houseki-engine/core@1.1.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0)
+      '@houseki-engine/player': 8.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/input@2.0.1)(@houseki-engine/physics@6.1.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(@houseki-engine/vrm@6.0.1)(three@0.154.0)(thyseus@0.14.0)
       '@houseki-engine/render': 6.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/scene@2.0.1)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0)
       '@houseki-engine/scene': 2.0.1(@houseki-engine/core@1.1.1)(three@0.154.0)(thyseus@0.14.0)
       postprocessing: 6.33.0(three@0.154.0)
@@ -3980,14 +3980,14 @@ packages:
       thyseus: 0.14.0
       troika-three-text: 0.47.2(three@0.154.0)
 
-  /@houseki-engine/transform@7.0.2(@houseki-engine/core@1.1.1)(@houseki-engine/input@2.0.1)(@houseki-engine/orbit@7.0.1)(@houseki-engine/physics@6.0.1)(@houseki-engine/player@7.0.1)(@houseki-engine/postprocessing@5.0.2)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0):
-    resolution: {integrity: sha512-uuXBntcch2B20/At/xIam/IwyTUb4tCtxHlK24MMim1gZ6bAOhEnki1RW+GCrE1rt9SIMVrZf9z4qejg07sE8Q==}
+  /@houseki-engine/transform@8.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/input@2.0.1)(@houseki-engine/orbit@7.0.1)(@houseki-engine/physics@6.1.1)(@houseki-engine/player@8.0.1)(@houseki-engine/postprocessing@5.0.2)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0):
+    resolution: {integrity: sha512-bEKE+ykd2kpsV2rYRdJc2KAwWPXYCOnfi/P5rt36uipqC54l895SBjTTxg879djTSxKxE0pziH40Dvduu7MWlg==}
     peerDependencies:
       '@houseki-engine/core': ^1.1.1
       '@houseki-engine/input': ^2.0.1
       '@houseki-engine/orbit': ^7.0.1
-      '@houseki-engine/physics': ^6.0.1
-      '@houseki-engine/player': ^7.0.1
+      '@houseki-engine/physics': ^6.1.1
+      '@houseki-engine/player': ^8.0.1
       '@houseki-engine/postprocessing': ^5.0.2
       '@houseki-engine/render': ^6.0.1
       '@houseki-engine/scene': ^2.0.1
@@ -3997,8 +3997,8 @@ packages:
       '@houseki-engine/core': 1.1.1(thyseus@0.14.0)
       '@houseki-engine/input': 2.0.1(@houseki-engine/core@1.1.1)(thyseus@0.14.0)
       '@houseki-engine/orbit': 7.0.1(@houseki-engine/input@2.0.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0)
-      '@houseki-engine/physics': 6.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0)
-      '@houseki-engine/player': 7.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/input@2.0.1)(@houseki-engine/physics@6.0.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(@houseki-engine/vrm@6.0.1)(three@0.154.0)(thyseus@0.14.0)
+      '@houseki-engine/physics': 6.1.1(@houseki-engine/core@1.1.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0)
+      '@houseki-engine/player': 8.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/input@2.0.1)(@houseki-engine/physics@6.1.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(@houseki-engine/vrm@6.0.1)(three@0.154.0)(thyseus@0.14.0)
       '@houseki-engine/postprocessing': 5.0.2(@houseki-engine/core@1.1.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0)
       '@houseki-engine/render': 6.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/scene@2.0.1)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0)
       '@houseki-engine/scene': 2.0.1(@houseki-engine/core@1.1.1)(three@0.154.0)(thyseus@0.14.0)
@@ -4032,7 +4032,7 @@ packages:
       '@houseki-engine/core': 1.1.1(thyseus@0.14.0)
       '@houseki-engine/render': 6.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/scene@2.0.1)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0)
       '@houseki-engine/scene': 2.0.1(@houseki-engine/core@1.1.1)(three@0.154.0)(thyseus@0.14.0)
-      '@pixiv/three-vrm': 2.0.4(@types/three@0.154.0)(three@0.154.0)
+      '@pixiv/three-vrm': 2.0.5(@types/three@0.154.0)(three@0.154.0)
       three: 0.154.0
       thyseus: 0.14.0
     transitivePeerDependencies:
@@ -4401,8 +4401,8 @@ packages:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.15.0
 
-  /@pixiv/three-vrm-core@2.0.4(@types/three@0.154.0)(three@0.154.0):
-    resolution: {integrity: sha512-U1cwo50nPsyr5EPXwPeejqTJRG4h7OaXQYU0dxT852laqPk7MvJ4aFXTEjv+LZqWG6Aqwk9gc4I1VD/emmpWZQ==}
+  /@pixiv/three-vrm-core@2.0.5(@types/three@0.154.0)(three@0.154.0):
+    resolution: {integrity: sha512-4RiYvVjoSmMW2ttcNDLzmYqCbi8xJVSVQugD3p3SslQTaAxF6nxRcBfWje39NbJq9nKh38BFepdVqIpYUF4iWw==}
     peerDependencies:
       '@types/three': ^0.154.0
       three: ^0.154.0
@@ -4444,8 +4444,8 @@ packages:
       '@types/three': 0.154.0
       three: 0.154.0
 
-  /@pixiv/three-vrm-node-constraint@2.0.3(@types/three@0.154.0)(three@0.154.0):
-    resolution: {integrity: sha512-JaxOU9DaoMnKx214iWhFFUaiwiBN8RxDp/h04kp3VujuvMeRarOdofRi2ucPX3yGMS0UXPXBCtbGggFIZfHR+w==}
+  /@pixiv/three-vrm-node-constraint@2.0.5(@types/three@0.154.0)(three@0.154.0):
+    resolution: {integrity: sha512-Xcyuxede3JnKpLahtw6RTLGVSrBMbiwW8wOi3oe9liJLNZ976wkqyF+Wp4GRr3ZtMwPZ6iD9mgHgcWb++W8XAw==}
     peerDependencies:
       '@types/three': ^0.154.0
       three: ^0.154.0
@@ -4463,17 +4463,17 @@ packages:
       '@pixiv/types-vrmc-springbone-1.0': 2.0.3
       three: 0.154.0
 
-  /@pixiv/three-vrm@2.0.4(@types/three@0.154.0)(three@0.154.0):
-    resolution: {integrity: sha512-LzIUbB5SHxTdhPFCWztHpTRSvU7Nwl29w6KEgwmSnC+BxjDSr4auukJBpqwbsh+UGGhQZh4otcK8mA3rJN2OhQ==}
+  /@pixiv/three-vrm@2.0.5(@types/three@0.154.0)(three@0.154.0):
+    resolution: {integrity: sha512-17WxJhlho0TgDeHGP1qlaCeymCB++ML8nhgubxD3TEokCdKJmCairfC8tDzQf2rwn/IrExlUZPXa1/Fs9iNm/A==}
     peerDependencies:
       '@types/three': ^0.154.0
       three: ^0.154.0
     dependencies:
-      '@pixiv/three-vrm-core': 2.0.4(@types/three@0.154.0)(three@0.154.0)
+      '@pixiv/three-vrm-core': 2.0.5(@types/three@0.154.0)(three@0.154.0)
       '@pixiv/three-vrm-materials-hdr-emissive-multiplier': 2.0.3(@types/three@0.154.0)(three@0.154.0)
       '@pixiv/three-vrm-materials-mtoon': 2.0.3(@types/three@0.154.0)(three@0.154.0)
       '@pixiv/three-vrm-materials-v0compat': 2.0.4(@types/three@0.154.0)(three@0.154.0)
-      '@pixiv/three-vrm-node-constraint': 2.0.3(@types/three@0.154.0)(three@0.154.0)
+      '@pixiv/three-vrm-node-constraint': 2.0.5(@types/three@0.154.0)(three@0.154.0)
       '@pixiv/three-vrm-springbone': 2.0.3(three@0.154.0)
       '@types/three': 0.154.0
       three: 0.154.0
@@ -9333,8 +9333,8 @@ packages:
     resolution: {integrity: sha512-mxIDAb9Lsm6DoOJ7xH+5+X4y1LU/4Hi50L9C5sIswK3JzULS4bwk1FvjdBgvYR4bzT4tuUQiC15FE2f5HbLvYw==}
     dev: true
 
-  /houseki@1.1.2(@types/three@0.154.0)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0):
-    resolution: {integrity: sha512-2+xnUYxpORs/ve0HXrc6tnt+PBphj3GyyBkS5NzWqZ23/WsctRLr/l9XX2WL4mli0v2IhRdNsWMBVEel23/qJw==}
+  /houseki@1.1.5(@types/three@0.154.0)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0):
+    resolution: {integrity: sha512-hx1+tXk94DbVXLED2fbZvkzSDsCNohV9nUlf1ODyc9aZP60IQIfyhUU8FuTc3GrSr9rDr3fm6f5BGiWCkMQozA==}
     peerDependencies:
       postprocessing: ^6.32.2
       three: ~0.154.0
@@ -9342,17 +9342,17 @@ packages:
     dependencies:
       '@houseki-engine/core': 1.1.1(thyseus@0.14.0)
       '@houseki-engine/csm': 5.0.1(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0)
-      '@houseki-engine/gltf': 7.2.1(@houseki-engine/core@1.1.1)(@houseki-engine/physics@6.0.1)(@houseki-engine/scene@2.0.1)(@houseki-engine/text@6.0.1)(thyseus@0.14.0)
+      '@houseki-engine/gltf': 8.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/physics@6.1.1)(@houseki-engine/scene@2.0.1)(@houseki-engine/text@6.0.1)(thyseus@0.14.0)
       '@houseki-engine/input': 2.0.1(@houseki-engine/core@1.1.1)(thyseus@0.14.0)
       '@houseki-engine/orbit': 7.0.1(@houseki-engine/input@2.0.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0)
-      '@houseki-engine/physics': 6.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0)
-      '@houseki-engine/player': 7.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/input@2.0.1)(@houseki-engine/physics@6.0.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(@houseki-engine/vrm@6.0.1)(three@0.154.0)(thyseus@0.14.0)
-      '@houseki-engine/portal': 6.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/physics@6.0.1)(@houseki-engine/player@7.0.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0)
+      '@houseki-engine/physics': 6.1.1(@houseki-engine/core@1.1.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0)
+      '@houseki-engine/player': 8.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/input@2.0.1)(@houseki-engine/physics@6.1.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(@houseki-engine/vrm@6.0.1)(three@0.154.0)(thyseus@0.14.0)
+      '@houseki-engine/portal': 7.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/physics@6.1.1)(@houseki-engine/player@8.0.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0)
       '@houseki-engine/postprocessing': 5.0.2(@houseki-engine/core@1.1.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0)
       '@houseki-engine/render': 6.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/scene@2.0.1)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0)
       '@houseki-engine/scene': 2.0.1(@houseki-engine/core@1.1.1)(three@0.154.0)(thyseus@0.14.0)
       '@houseki-engine/text': 6.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0)
-      '@houseki-engine/transform': 7.0.2(@houseki-engine/core@1.1.1)(@houseki-engine/input@2.0.1)(@houseki-engine/orbit@7.0.1)(@houseki-engine/physics@6.0.1)(@houseki-engine/player@7.0.1)(@houseki-engine/postprocessing@5.0.2)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0)
+      '@houseki-engine/transform': 8.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/input@2.0.1)(@houseki-engine/orbit@7.0.1)(@houseki-engine/physics@6.1.1)(@houseki-engine/player@8.0.1)(@houseki-engine/postprocessing@5.0.2)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0)
       '@houseki-engine/utils': 7.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/input@2.0.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(thyseus@0.14.0)
       '@houseki-engine/vrm': 6.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(@types/three@0.154.0)(three@0.154.0)(thyseus@0.14.0)
       postprocessing: 6.33.0(three@0.154.0)
@@ -11679,8 +11679,8 @@ packages:
       path-parse: 1.0.7
       supports-preserve-symlinks-flag: 1.0.0
 
-  /resolve@1.22.4:
-    resolution: {integrity: sha512-PXNdCiPqDqeUou+w1C2eTQbNfxKSuMxqTCuvlmmMsk1NWHL5fRrhY6Pl0qEYYc6+QqGClco1Qj8XnjPego4wfg==}
+  /resolve@1.22.5:
+    resolution: {integrity: sha512-qWhv7PF1V95QPvRoUGHxOtnAlEvlXBylMZcjUR9pAumMmveFtcHJRXGIr+TkjfNJVQypqv2qcDiiars2y1PsSg==}
     hasBin: true
     dependencies:
       is-core-module: 2.13.0
@@ -12434,7 +12434,7 @@ packages:
       postcss-load-config: 4.0.1(postcss@8.4.29)
       postcss-nested: 6.0.1(postcss@8.4.29)
       postcss-selector-parser: 6.0.13
-      resolve: 1.22.4
+      resolve: 1.22.5
       sucrase: 3.34.0
     transitivePeerDependencies:
       - ts-node

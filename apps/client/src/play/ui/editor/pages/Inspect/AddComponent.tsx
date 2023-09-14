@@ -11,7 +11,7 @@ import {
   DropdownTrigger,
 } from "@/src/ui/DropdownMenu";
 
-import { useTreeValue } from "../../hooks/useTreeValue";
+import { useNodeValue } from "../../hooks/useNodeValue";
 
 enum AddOption {
   Physics = "physics",
@@ -24,11 +24,11 @@ interface Props {
 export default function AddComponent({ entityId }: Props) {
   const options: AddOption[] = [];
 
-  const id = useTreeValue(entityId, "id");
-  const name = useTreeValue(entityId, "name");
-  const locked = useTreeValue(entityId, "locked");
-  const rigidBodyType = useTreeValue(entityId, "rigidBodyType");
-  const colliderType = useTreeValue(entityId, "colliderType");
+  const id = useNodeValue(entityId, "id");
+  const name = useNodeValue(entityId, "name");
+  const locked = useNodeValue(entityId, "locked");
+  const rigidBodyType = useNodeValue(entityId, "rigidBodyType");
+  const colliderType = useNodeValue(entityId, "colliderType");
 
   if (!rigidBodyType || !colliderType) {
     options.push(AddOption.Physics);

@@ -1,11 +1,11 @@
 import { create } from "zustand";
 
-import { TreeItem } from "./classes/TreeItem";
+import { NodeItem } from "./classes/NodeItem";
 import { Tool } from "./types";
 
 export interface SceneStore {
   enabled: boolean;
-  items: Map<bigint, TreeItem>;
+  items: Map<bigint, NodeItem>;
   rootId?: bigint;
   sceneTreeId?: bigint;
   selectedId?: bigint;

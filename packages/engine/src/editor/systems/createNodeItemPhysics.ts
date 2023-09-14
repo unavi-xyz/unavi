@@ -16,7 +16,7 @@ import { Entity, Query, With } from "thyseus";
 
 import { useSceneStore } from "../sceneStore";
 
-export function createTreeItemsPhysics(
+export function createNodeItemPhysics(
   boxColliders: Query<[Entity, BoxCollider]>,
   sphereColliders: Query<[Entity, SphereCollider]>,
   capsuleColliders: Query<[Entity, CapsuleCollider]>,

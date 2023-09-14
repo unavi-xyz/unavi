@@ -6,6 +6,6 @@ message AddNode {
   string id = 1;
 }
 
-message AddMesh {
+message AddMeshPrimitive {
   string id = 1;
 }

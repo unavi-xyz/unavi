@@ -4,7 +4,7 @@ import { IoMdExpand, IoMdLock, IoMdUnlock } from "react-icons/io";
 import { editNode } from "@/src/play/actions/editNode";
 import Tooltip from "@/src/ui/Tooltip";
 
-import { useTreeValue } from "../../hooks/useTreeValue";
+import { useNodeValue } from "../../hooks/useNodeValue";
 
 interface Props {
   entityId: bigint;
@@ -12,9 +12,9 @@ interface Props {
 
 export default function TreeItem({ entityId }: Props) {
   const selectedId = useSceneStore((state) => state.selectedId);
-  const id = useTreeValue(entityId, "id");
-  const name = useTreeValue(entityId, "name");
-  const locked = useTreeValue(entityId, "locked");
+  const id = useNodeValue(entityId, "id");
+  const name = useNodeValue(entityId, "name");
+  const locked = useNodeValue(entityId, "locked");
 
   function select(e: React.MouseEvent) {
     e.stopPropagation();

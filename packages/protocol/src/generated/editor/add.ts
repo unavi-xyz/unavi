@@ -21,9 +21,9 @@ export interface AddNode {
     id: string;
 }
 /**
- * @generated from protobuf message xyz.unavi.editor.add.AddMesh
+ * @generated from protobuf message xyz.unavi.editor.add.AddMeshPrimitive
  */
-export interface AddMesh {
+export interface AddMeshPrimitive {
     /**
      * @generated from protobuf field: string id = 1;
      */
@@ -77,20 +77,20 @@ class AddNode$Type extends MessageType<AddNode> {
  */
 export const AddNode = new AddNode$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class AddMesh$Type extends MessageType<AddMesh> {
+class AddMeshPrimitive$Type extends MessageType<AddMeshPrimitive> {
     constructor() {
-        super("xyz.unavi.editor.add.AddMesh", [
+        super("xyz.unavi.editor.add.AddMeshPrimitive", [
             { no: 1, name: "id", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
-    create(value?: PartialMessage<AddMesh>): AddMesh {
+    create(value?: PartialMessage<AddMeshPrimitive>): AddMeshPrimitive {
         const message = { id: "" };
         globalThis.Object.defineProperty(message, MESSAGE_TYPE, { enumerable: false, value: this });
         if (value !== undefined)
-            reflectionMergePartial<AddMesh>(this, message, value);
+            reflectionMergePartial<AddMeshPrimitive>(this, message, value);
         return message;
     }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AddMesh): AddMesh {
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AddMeshPrimitive): AddMeshPrimitive {
         let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
@@ -109,7 +109,7 @@ class AddMesh$Type extends MessageType<AddMesh> {
         }
         return message;
     }
-    internalBinaryWrite(message: AddMesh, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+    internalBinaryWrite(message: AddMeshPrimitive, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
         /* string id = 1; */
         if (message.id !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.id);
@@ -120,6 +120,6 @@ class AddMesh$Type extends MessageType<AddMesh> {
     }
 }
 /**
- * @generated MessageType for protobuf message xyz.unavi.editor.add.AddMesh
+ * @generated MessageType for protobuf message xyz.unavi.editor.add.AddMeshPrimitive
  */
-export const AddMesh = new AddMesh$Type();
+export const AddMeshPrimitive = new AddMeshPrimitive$Type();

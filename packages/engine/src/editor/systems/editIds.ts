@@ -28,8 +28,8 @@ export function editIds(
           break;
         }
 
-        case EditId_Type.MESH: {
-          targetId = info.meshes[e.index];
+        case EditId_Type.PRIMITIVE: {
+          targetId = info.meshPrimitives[e.index];
           break;
         }
 

@@ -41,9 +41,9 @@ export enum EditId_Type {
      */
     NODE = 1,
     /**
-     * @generated from protobuf enum value: MESH = 2;
+     * @generated from protobuf enum value: PRIMITIVE = 2;
      */
-    MESH = 2,
+    PRIMITIVE = 2,
     /**
      * @generated from protobuf enum value: MATERIAL = 3;
      */
@@ -224,9 +224,9 @@ export enum EditNode_RigidBody_Type {
     TRIGGER = 6
 }
 /**
- * @generated from protobuf message xyz.unavi.editor.edit.EditMesh
+ * @generated from protobuf message xyz.unavi.editor.edit.EditMeshPrimitive
  */
-export interface EditMesh {
+export interface EditMeshPrimitive {
     /**
      * @generated from protobuf field: string target = 1;
      */
@@ -720,9 +720,9 @@ class EditNode_RigidBody$Type extends MessageType<EditNode_RigidBody> {
  */
 export const EditNode_RigidBody = new EditNode_RigidBody$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class EditMesh$Type extends MessageType<EditMesh> {
+class EditMeshPrimitive$Type extends MessageType<EditMeshPrimitive> {
     constructor() {
-        super("xyz.unavi.editor.edit.EditMesh", [
+        super("xyz.unavi.editor.edit.EditMeshPrimitive", [
             { no: 1, name: "target", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 2, name: "name", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 3, name: "material", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
@@ -738,14 +738,14 @@ class EditMesh$Type extends MessageType<EditMesh> {
             { no: 13, name: "uv3", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 2 /*ScalarType.FLOAT*/ }
         ]);
     }
-    create(value?: PartialMessage<EditMesh>): EditMesh {
+    create(value?: PartialMessage<EditMeshPrimitive>): EditMeshPrimitive {
         const message = { target: "", indices: [], position: [], normal: [], color: [], weights: [], joints: [], uv: [], uv1: [], uv2: [], uv3: [] };
         globalThis.Object.defineProperty(message, MESSAGE_TYPE, { enumerable: false, value: this });
         if (value !== undefined)
-            reflectionMergePartial<EditMesh>(this, message, value);
+            reflectionMergePartial<EditMeshPrimitive>(this, message, value);
         return message;
     }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: EditMesh): EditMesh {
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: EditMeshPrimitive): EditMeshPrimitive {
         let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
@@ -840,7 +840,7 @@ class EditMesh$Type extends MessageType<EditMesh> {
         }
         return message;
     }
-    internalBinaryWrite(message: EditMesh, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+    internalBinaryWrite(message: EditMeshPrimitive, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
         /* string target = 1; */
         if (message.target !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.target);
@@ -927,6 +927,6 @@ class EditMesh$Type extends MessageType<EditMesh> {
     }
 }
 /**
- * @generated MessageType for protobuf message xyz.unavi.editor.edit.EditMesh
+ * @generated MessageType for protobuf message xyz.unavi.editor.edit.EditMeshPrimitive
  */
-export const EditMesh = new EditMesh$Type();
+export const EditMeshPrimitive = new EditMeshPrimitive$Type();

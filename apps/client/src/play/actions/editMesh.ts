@@ -1,16 +1,16 @@
 import { useClientStore } from "@unavi/engine";
-import { EditMesh, EditorEvent } from "@unavi/protocol";
+import { EditMeshPrimitive, EditorEvent } from "@unavi/protocol";
 
 export function editMesh(
   id: string,
-  data: Parameters<typeof EditMesh.create>[0]
+  data: Parameters<typeof EditMeshPrimitive.create>[0]
 ) {
-  const editMesh = EditMesh.create({
+  const editMeshPrimitive = EditMeshPrimitive.create({
     target: id,
     ...data,
   });
   const event = EditorEvent.create({
-    event: { editMesh, oneofKind: "editMesh" },
+    event: { editMeshPrimitive, oneofKind: "editMeshPrimitive" },
   });
   useClientStore.getState().sendEditorEvent(event);
 }

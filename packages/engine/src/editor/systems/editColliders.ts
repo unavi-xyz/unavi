@@ -90,12 +90,12 @@ export function editColliders(
         break;
       }
 
-      let meshId: bigint | undefined;
+      let meshEntId: bigint | undefined;
 
       if (e.mesh) {
         for (const [ent, id] of ids) {
           if (id.value === e.mesh) {
-            meshId = ent.id;
+            meshEntId = ent.id;
             break;
           }
         }
@@ -104,8 +104,8 @@ export function editColliders(
       for (const [colliderEntity, collider] of meshColliders) {
         if (colliderEntity.id !== entity.id) continue;
 
-        if (meshId) {
-          collider.meshId = meshId;
+        if (meshEntId) {
+          collider.meshId = meshEntId;
         }
 
         if (e.type === EditNode_Collider_Type.MESH) {
@@ -120,8 +120,8 @@ export function editColliders(
       for (const [colliderEntity, collider] of hullColliders) {
         if (colliderEntity.id !== entity.id) continue;
 
-        if (meshId) {
-          collider.meshId = meshId;
+        if (meshEntId) {
+          collider.meshId = meshEntId;
         }
 
         if (e.type === EditNode_Collider_Type.HULL) {
@@ -168,14 +168,18 @@ export function editColliders(
         if (e.type === EditNode_Collider_Type.MESH) {
           const collider = new MeshCollider();
 
+          if (meshEntId) {
+            collider.meshId = meshEntId;
+          }
+
           commands.get(entity).add(collider);
         }
 
         if (e.type === EditNode_Collider_Type.HULL) {
           const collider = new HullCollider();
 
-          if (meshId) {
-            collider.meshId = meshId;
+          if (meshEntId) {
+            collider.meshId = meshEntId;
           }
 
           commands.get(entity).add(collider);

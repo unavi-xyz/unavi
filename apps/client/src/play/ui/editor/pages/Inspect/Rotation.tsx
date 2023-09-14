@@ -3,8 +3,8 @@ import { Euler, Quaternion } from "three";
 
 import { editNode } from "@/src/play/actions/editNode";
 
-import { useTreeValue } from "../../hooks/useTreeValue";
-import { useTreeValueIndex } from "../../hooks/useTreeValueIndex";
+import { useNodeValue } from "../../hooks/useNodeValue";
+import { useNodeValueIndex } from "../../hooks/useNodeValueIndex";
 import NumberInput from "./NumberInput";
 
 const euler = new Euler();
@@ -15,14 +15,14 @@ interface Props {
 }
 
 export default function Rotation({ entityId }: Props) {
-  const id = useTreeValue(entityId, "id");
-  const name = useTreeValue(entityId, "name");
-  const locked = useTreeValue(entityId, "locked");
+  const id = useNodeValue(entityId, "id");
+  const name = useNodeValue(entityId, "name");
+  const locked = useNodeValue(entityId, "locked");
 
-  const rawX = useTreeValueIndex(entityId, "rotation", 0);
-  const rawY = useTreeValueIndex(entityId, "rotation", 1);
-  const rawZ = useTreeValueIndex(entityId, "rotation", 2);
-  const rawW = useTreeValueIndex(entityId, "rotation", 3);
+  const rawX = useNodeValueIndex(entityId, "rotation", 0);
+  const rawY = useNodeValueIndex(entityId, "rotation", 1);
+  const rawZ = useNodeValueIndex(entityId, "rotation", 2);
+  const rawW = useNodeValueIndex(entityId, "rotation", 3);
 
   const [uiX, setX] = useState(rawX ?? 0);
   const [uiY, setY] = useState(rawY ?? 0);

@@ -1,9 +1,9 @@
-import { TreeItem, useSceneStore } from "@unavi/engine";
+import { NodeItem, useSceneStore } from "@unavi/engine";
 
-export function useTreeValue<T extends keyof TreeItem>(
+export function useNodeValue<T extends keyof NodeItem>(
   entityId: bigint | undefined,
   key: T
-): TreeItem[T] | undefined {
+): NodeItem[T] | undefined {
   const value = useSceneStore((state) =>
     entityId ? state.items.get(entityId)?.[key] : undefined
   );

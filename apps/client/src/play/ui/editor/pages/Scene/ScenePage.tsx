@@ -3,7 +3,7 @@ import { useSceneStore } from "@unavi/engine";
 import { usePlayStore } from "@/app/play/playStore";
 import { LeftPanelPage } from "@/app/play/types";
 
-import { useTreeValue } from "../../hooks/useTreeValue";
+import { useNodeValue } from "../../hooks/useNodeValue";
 import { getDisplayName } from "../../utils/getDisplayName";
 import PanelPage from "../PanelPage";
 import SceneTree from "./SceneTree";
@@ -13,8 +13,8 @@ export default function ScenePage() {
   const sceneTreeId = useSceneStore((state) => state.sceneTreeId);
   const usedId = sceneTreeId || rootId;
 
-  const parentId = useTreeValue(usedId, "parentId");
-  const name = useTreeValue(usedId, "name");
+  const parentId = useNodeValue(usedId, "parentId");
+  const name = useNodeValue(usedId, "name");
 
   if (usedId === undefined) {
     return null;

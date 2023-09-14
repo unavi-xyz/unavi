@@ -9,13 +9,13 @@ import "editor/remove.proto";
 message EditorEvent {
   oneof event {
     add.AddNode add_node = 1;
-    add.AddMesh add_mesh = 2;
+    add.AddMeshPrimitive add_mesh_primitive = 2;
 
     edit.EditId edit_id = 3;
     edit.EditNode edit_node = 4;
-    edit.EditMesh edit_mesh = 5;
+    edit.EditMeshPrimitive edit_mesh_primitive = 5;
 
     remove.RemoveNode remove_node = 6;
-    remove.RemoveMesh remove_mesh = 7;
+    remove.RemoveMeshPrimitive remove_mesh_primitive = 7;
   }
 }

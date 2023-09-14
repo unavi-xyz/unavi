@@ -2,9 +2,12 @@ import { Geometry, Mesh, Name } from "houseki/scene";
 import { Commands, EventReader } from "thyseus";
 
 import { EditorId } from "../../client/components";
-import { AddMesh } from "../events";
+import { AddMeshPrimitive } from "../events";
 
-export function addMeshes(commands: Commands, events: EventReader<AddMesh>) {
+export function addMeshPrimitives(
+  commands: Commands,
+  events: EventReader<AddMeshPrimitive>
+) {
   if (events.length === 0) return;
 
   for (const e of events) {

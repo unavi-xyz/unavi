@@ -1,6 +1,6 @@
 import { useSceneStore } from "@unavi/engine";
 
-import { useTreeValue } from "../../hooks/useTreeValue";
+import { useNodeValue } from "../../hooks/useNodeValue";
 import TreeItem from "./TreeItem";
 
 interface Props {
@@ -8,7 +8,7 @@ interface Props {
 }
 
 export default function SceneTree({ rootId }: Props) {
-  const childrenIds = useTreeValue(rootId, "childrenIds");
+  const childrenIds = useNodeValue(rootId, "childrenIds");
 
   function clearSelected() {
     useSceneStore.setState({ selectedId: undefined });

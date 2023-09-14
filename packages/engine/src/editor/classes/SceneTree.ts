@@ -1,11 +1,11 @@
-import { TreeItem } from "./TreeItem";
+import { NodeItem } from "./NodeItem";
 
 export class SceneTree {
-  readonly items = new Map<bigint, TreeItem>();
+  readonly items = new Map<bigint, NodeItem>();
 
   #rootId?: bigint;
 
-  root?: TreeItem;
+  root?: NodeItem;
 
   get rootId() {
     return this.#rootId;

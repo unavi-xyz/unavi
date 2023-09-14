@@ -6,7 +6,7 @@ message EditId {
   enum Type {
     SCENE = 0;
     NODE = 1;
-    MESH = 2;
+    PRIMITIVE = 2;
     MATERIAL = 3;
   }
 
@@ -75,7 +75,7 @@ message EditNode {
   optional RigidBody rigid_body = 10;
 }
 
-message EditMesh {
+message EditMeshPrimitive {
   string target = 1;
 
   optional string name = 2;

@@ -1,4 +1,4 @@
-import { useTreeValue } from "../../hooks/useTreeValue";
+import { useNodeValue } from "../../hooks/useNodeValue";
 import { getDisplayName } from "../../utils/getDisplayName";
 import PanelPage from "../PanelPage";
 import AddComponent from "./AddComponent";
@@ -11,7 +11,7 @@ interface Props {
 }
 
 export default function InspectPage({ entityId }: Props) {
-  const name = useTreeValue(entityId, "name");
+  const name = useNodeValue(entityId, "name");
 
   const displayName = getDisplayName(name, entityId);
 

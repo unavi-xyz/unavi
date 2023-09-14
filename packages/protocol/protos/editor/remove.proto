@@ -6,6 +6,6 @@ message RemoveNode {
   string target = 1;
 }
 
-message RemoveMesh {
+message RemoveMeshPrimitive {
   string target = 1;
 }

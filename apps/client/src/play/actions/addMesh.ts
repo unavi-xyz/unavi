@@ -1,5 +1,5 @@
 import { useClientStore } from "@unavi/engine";
-import { AddMesh, EditorEvent } from "@unavi/protocol";
+import { AddMeshPrimitive, EditorEvent } from "@unavi/protocol";
 
 import { nanoidShort } from "@/src/server/nanoid";
 
@@ -10,11 +10,11 @@ export function addMesh(namePrefix = "Mesh") {
   const id = nanoidShort();
   const name = genName(namePrefix);
 
-  const addMesh = AddMesh.create({
+  const addMeshPrimitive = AddMeshPrimitive.create({
     id,
   });
   const event = EditorEvent.create({
-    event: { addMesh, oneofKind: "addMesh" },
+    event: { addMeshPrimitive, oneofKind: "addMeshPrimitive" },
   });
   useClientStore.getState().sendEditorEvent(event);
 

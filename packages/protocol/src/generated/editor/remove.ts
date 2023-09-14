@@ -21,9 +21,9 @@ export interface RemoveNode {
     target: string;
 }
 /**
- * @generated from protobuf message xyz.unavi.editor.remove.RemoveMesh
+ * @generated from protobuf message xyz.unavi.editor.remove.RemoveMeshPrimitive
  */
-export interface RemoveMesh {
+export interface RemoveMeshPrimitive {
     /**
      * @generated from protobuf field: string target = 1;
      */
@@ -77,20 +77,20 @@ class RemoveNode$Type extends MessageType<RemoveNode> {
  */
 export const RemoveNode = new RemoveNode$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class RemoveMesh$Type extends MessageType<RemoveMesh> {
+class RemoveMeshPrimitive$Type extends MessageType<RemoveMeshPrimitive> {
     constructor() {
-        super("xyz.unavi.editor.remove.RemoveMesh", [
+        super("xyz.unavi.editor.remove.RemoveMeshPrimitive", [
             { no: 1, name: "target", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
-    create(value?: PartialMessage<RemoveMesh>): RemoveMesh {
+    create(value?: PartialMessage<RemoveMeshPrimitive>): RemoveMeshPrimitive {
         const message = { target: "" };
         globalThis.Object.defineProperty(message, MESSAGE_TYPE, { enumerable: false, value: this });
         if (value !== undefined)
-            reflectionMergePartial<RemoveMesh>(this, message, value);
+            reflectionMergePartial<RemoveMeshPrimitive>(this, message, value);
         return message;
     }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: RemoveMesh): RemoveMesh {
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: RemoveMeshPrimitive): RemoveMeshPrimitive {
         let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
@@ -109,7 +109,7 @@ class RemoveMesh$Type extends MessageType<RemoveMesh> {
         }
         return message;
     }
-    internalBinaryWrite(message: RemoveMesh, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+    internalBinaryWrite(message: RemoveMeshPrimitive, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
         /* string target = 1; */
         if (message.target !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.target);
@@ -120,6 +120,6 @@ class RemoveMesh$Type extends MessageType<RemoveMesh> {
     }
 }
 /**
- * @generated MessageType for protobuf message xyz.unavi.editor.remove.RemoveMesh
+ * @generated MessageType for protobuf message xyz.unavi.editor.remove.RemoveMeshPrimitive
  */
-export const RemoveMesh = new RemoveMesh$Type();
+export const RemoveMeshPrimitive = new RemoveMeshPrimitive$Type();

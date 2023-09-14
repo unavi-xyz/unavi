@@ -1,7 +1,7 @@
 import { useSceneStore } from "@unavi/engine";
 import { useMemo } from "react";
 
-export function useTreeItem(entityId: bigint | undefined) {
+export function useNodeItem(entityId: bigint | undefined) {
   const items = useSceneStore((state) => state.items);
 
   const item = useMemo(() => {

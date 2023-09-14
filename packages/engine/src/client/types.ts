@@ -1,9 +1,9 @@
 import {
-  AddMesh,
+  AddMeshPrimitive,
   AddNode,
-  EditMesh,
+  EditMeshPrimitive,
   EditNode,
-  RemoveMesh,
+  RemoveMeshPrimitive,
   RemoveNode,
 } from "@unavi/protocol";
 import { PlayerJoined, PlayerLeft } from "@wired-protocol/types";
@@ -29,8 +29,8 @@ export type EcsEvent =
   | PlayerJoined
   | PlayerLeft
   | AddNode
-  | AddMesh
+  | AddMeshPrimitive
   | EditNode
-  | EditMesh
+  | EditMeshPrimitive
   | RemoveNode
-  | RemoveMesh;
+  | RemoveMeshPrimitive;

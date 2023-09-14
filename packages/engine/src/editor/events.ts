@@ -57,12 +57,12 @@ export class EditCollider {
 }
 
 @struct
-export class AddMesh {
+export class AddMeshPrimitive {
   id: string = "";
 }
 
 @struct
-export class EditMesh {
+export class EditMeshPrimitive {
   target: string = "";
 
   name: string = "";

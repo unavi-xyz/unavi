@@ -2,14 +2,14 @@ import { createControls, selectTarget } from "houseki/transform";
 import { run, WorldBuilder } from "thyseus";
 
 import { EngineSchedules } from "../constants";
-import { addMeshes } from "./systems/addMeshes";
+import { addMeshPrimitives } from "./systems/addMeshPrimitives";
 import { addNodes } from "./systems/addNodes";
-import { createTreeItemsPhysics } from "./systems/createTreeItemPhysics";
-import { createTreeItems } from "./systems/createTreeItems";
+import { createNodeItemPhysics } from "./systems/createNodeItemPhysics";
+import { createNodeItems } from "./systems/createNodeItems";
 import { editColliders } from "./systems/editColliders";
 import { editExtras } from "./systems/editExtras";
 import { editIds } from "./systems/editIds";
-import { editMeshes } from "./systems/editMeshes";
+import { editMeshPrimitives } from "./systems/editMeshPrimitives";
 import { editNodes } from "./systems/editNodes";
 import { editRigidBodies } from "./systems/editRigidBodies";
 import { enterEditMode } from "./systems/enterEditMode";
@@ -25,12 +25,12 @@ export function editorPlugin(builder: WorldBuilder) {
     .addSystemsToSchedule(EngineSchedules.Export, sendExportEvent)
     .addSystemsToSchedule(EngineSchedules.EnterEditMode, initIds)
     .addSystems(
-      addMeshes,
+      addMeshPrimitives,
       addNodes,
-      createTreeItems,
-      createTreeItemsPhysics,
+      createNodeItems,
+      createNodeItemPhysics,
       editExtras,
-      editMeshes,
+      editMeshPrimitives,
       editIds,
       editNodes,
       editRigidBodies,

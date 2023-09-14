@@ -2,8 +2,8 @@ import { useRef, useState } from "react";
 
 import { editNode } from "@/src/play/actions/editNode";
 
-import { useTreeValue } from "../../hooks/useTreeValue";
-import { useTreeValueIndex } from "../../hooks/useTreeValueIndex";
+import { useNodeValue } from "../../hooks/useNodeValue";
+import { useNodeValueIndex } from "../../hooks/useNodeValueIndex";
 import NumberInput from "./NumberInput";
 
 interface Props {
@@ -11,13 +11,13 @@ interface Props {
 }
 
 export default function Scale({ entityId }: Props) {
-  const id = useTreeValue(entityId, "id");
-  const name = useTreeValue(entityId, "name");
-  const locked = useTreeValue(entityId, "locked");
+  const id = useNodeValue(entityId, "id");
+  const name = useNodeValue(entityId, "name");
+  const locked = useNodeValue(entityId, "locked");
 
-  const rawX = useTreeValueIndex(entityId, "scale", 0);
-  const rawY = useTreeValueIndex(entityId, "scale", 1);
-  const rawZ = useTreeValueIndex(entityId, "scale", 2);
+  const rawX = useNodeValueIndex(entityId, "scale", 0);
+  const rawY = useNodeValueIndex(entityId, "scale", 1);
+  const rawZ = useNodeValueIndex(entityId, "scale", 2);
 
   const [uiX, setX] = useState(rawX ?? 0);
   const [uiY, setY] = useState(rawY ?? 0);

@@ -26,17 +26,17 @@ export function initIds(
       processed
     );
 
-    info.nodes.forEach((entityId, i) =>
-      processEntity(entityId, EditId_Type.NODE, i, processed)
-    );
-
-    info.meshes.forEach((entityId, i) => {
-      processEntity(entityId, EditId_Type.MESH, i, processed);
+    info.nodes.forEach((entityId, i) => {
+      processEntity(entityId, EditId_Type.NODE, i, processed);
     });
 
-    info.materials.forEach((entityId, i) =>
-      processEntity(entityId, EditId_Type.MATERIAL, i, processed)
-    );
+    info.meshPrimitives.forEach((entityId, i) => {
+      processEntity(entityId, EditId_Type.PRIMITIVE, i, processed);
+    });
+
+    info.materials.forEach((entityId, i) => {
+      processEntity(entityId, EditId_Type.MATERIAL, i, processed);
+    });
   }
 }
 

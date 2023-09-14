@@ -3,11 +3,11 @@ import { Geometry, Mesh, Name } from "houseki/scene";
 import { Entity, EventReader, Mut, Query, Res } from "thyseus";
 
 import { EditorId } from "../../client/components";
-import { EditMesh } from "../events";
+import { EditMeshPrimitive } from "../events";
 
-export function editMeshes(
+export function editMeshPrimitives(
   warehouse: Res<Mut<Warehouse>>,
-  events: EventReader<EditMesh>,
+  events: EventReader<EditMeshPrimitive>,
   meshes: Query<[EditorId, Mut<Mesh>, Mut<Name>, Mut<Geometry>]>,
   ids: Query<[Entity, EditorId]>
 ) {

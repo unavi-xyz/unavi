@@ -5,8 +5,8 @@ import {
 
 import { editNode } from "@/src/play/actions/editNode";
 
-import { useTreeValue } from "../../hooks/useTreeValue";
-import { useTreeValueIndex } from "../../hooks/useTreeValueIndex";
+import { useNodeValue } from "../../hooks/useNodeValue";
+import { useNodeValueIndex } from "../../hooks/useNodeValueIndex";
 import InspectSection from "./InspectSection";
 import NumberInput from "./NumberInput";
 import { SelectInput } from "./SelectInput";
@@ -16,15 +16,15 @@ interface Props {
 }
 
 export default function Physics({ entityId }: Props) {
-  const id = useTreeValue(entityId, "id");
-  const name = useTreeValue(entityId, "name");
-  const locked = useTreeValue(entityId, "locked");
-  const colliderType = useTreeValue(entityId, "colliderType");
-  const rigidBodyType = useTreeValue(entityId, "rigidBodyType");
+  const id = useNodeValue(entityId, "id");
+  const name = useNodeValue(entityId, "name");
+  const locked = useNodeValue(entityId, "locked");
+  const colliderType = useNodeValue(entityId, "colliderType");
+  const rigidBodyType = useNodeValue(entityId, "rigidBodyType");
 
-  const size = useTreeValueIndex(entityId, "collider", "size") ?? [0, 0, 0];
-  const height = useTreeValueIndex(entityId, "collider", "height") ?? 0;
-  const radius = useTreeValueIndex(entityId, "collider", "radius") ?? 0;
+  const size = useNodeValueIndex(entityId, "collider", "size") ?? [0, 0, 0];
+  const height = useNodeValueIndex(entityId, "collider", "height") ?? 0;
+  const radius = useNodeValueIndex(entityId, "collider", "radius") ?? 0;
 
   if (!id || !name || !colliderType || !rigidBodyType) {
     return null;
@@ -33,15 +33,15 @@ export default function Physics({ entityId }: Props) {
   const handleRemove = locked
     ? undefined
     : () => {
-      editNode(id, {
-        collider: {
-          type: EditNode_Collider_Type.NONE,
-        },
-        rigidBody: {
-          type: EditNode_RigidBody_Type.NONE,
-        },
-      });
-    };
+        editNode(id, {
+          collider: {
+            type: EditNode_Collider_Type.NONE,
+          },
+          rigidBody: {
+            type: EditNode_RigidBody_Type.NONE,
+          },
+        });
+      };
 
   const rigidBodyOption = getRigidBodyOption(rigidBodyType);
   const colliderOption = getColliderOption(colliderType);
@@ -56,6 +56,7 @@ export default function Physics({ entityId }: Props) {
         onChange={(e) => {
           const value = e.currentTarget.value as RigidBodyOption;
           const rigidBodyType = getRigidBodyType(value);
+
           editNode(id, {
             rigidBody: {
               type: rigidBodyType,
@@ -142,8 +143,8 @@ export default function Physics({ entityId }: Props) {
       )}
 
       {colliderType === EditNode_Collider_Type.SPHERE ||
-        colliderType === EditNode_Collider_Type.CAPSULE ||
-        colliderType === EditNode_Collider_Type.CYLINDER ? (
+      colliderType === EditNode_Collider_Type.CAPSULE ||
+      colliderType === EditNode_Collider_Type.CYLINDER ? (
         <div className="grid grid-cols-4">
           <div className="w-20 shrink-0 font-bold text-neutral-400">Radius</div>
 
@@ -167,7 +168,7 @@ export default function Physics({ entityId }: Props) {
       ) : null}
 
       {colliderType === EditNode_Collider_Type.CAPSULE ||
-        colliderType === EditNode_Collider_Type.CYLINDER ? (
+      colliderType === EditNode_Collider_Type.CYLINDER ? (
         <div className="grid grid-cols-4">
           <div className="w-20 shrink-0 font-bold text-neutral-400">Height</div>
 

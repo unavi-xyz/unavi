@@ -5,7 +5,7 @@ import {
 
 import { useSceneStore } from "../sceneStore";
 
-export class TreeItem {
+export class NodeItem {
   readonly id: string;
   readonly entityId: bigint;
 
@@ -18,6 +18,8 @@ export class TreeItem {
 
   colliderType?: EditNode_Collider_Type;
   rigidBodyType?: EditNode_RigidBody_Type;
+
+  meshPrimitiveIds: string[] = [];
 
   collider = {
     height: 1,
@@ -63,7 +65,7 @@ export class TreeItem {
     return this.#childrenIds;
   }
 
-  get children(): TreeItem[] {
+  get children(): NodeItem[] {
     return this.childrenIds.map((id) => {
       const item = useSceneStore.getState().items.get(id);
       if (!item) throw new Error(`Item with id ${id} not found`);
@@ -71,12 +73,12 @@ export class TreeItem {
     });
   }
 
-  get parent(): TreeItem | undefined {
+  get parent(): NodeItem | undefined {
     if (!this.#parentId) return undefined;
     return useSceneStore.getState().items.get(this.#parentId);
   }
 
-  addChild(child: TreeItem) {
+  addChild(child: NodeItem) {
     if (child.parentId !== this.entityId) {
       child.parentId = this.entityId;
     }
@@ -84,7 +86,7 @@ export class TreeItem {
     this.#childrenIds = [...this.#childrenIds, child.entityId];
   }
 
-  removeChild(child: TreeItem) {
+  removeChild(child: NodeItem) {
     child.parentId = undefined;
 
     const index = this.childrenIds.indexOf(child.entityId);

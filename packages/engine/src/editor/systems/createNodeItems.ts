@@ -1,17 +1,22 @@
 import { Extra } from "houseki/gltf";
-import { Name, Parent, Scene, SceneStruct, Transform } from "houseki/scene";
+import {
+  Mesh,
+  Name,
+  Parent,
+  Scene,
+  SceneStruct,
+  Transform,
+} from "houseki/scene";
 import { Entity, Query, Res } from "thyseus";
 
 import { EditorId } from "../../client/components";
-import { TreeItem } from "../classes/TreeItem";
+import { NodeItem } from "../classes/NodeItem";
 import { useSceneStore } from "../sceneStore";
 
-/**
- * Updates the scene tree with the latest entities.
- */
-export function createTreeItems(
+export function createNodeItems(
   sceneStruct: Res<SceneStruct>,
   nodes: Query<[Entity, Transform, Parent, EditorId]>,
+  meshes: Query<[EditorId, Mesh]>,
   scenes: Query<[Entity, Scene]>,
   names: Query<[Entity, Name]>,
   extras: Query<Extra>
@@ -37,7 +42,7 @@ export function createTreeItems(
     let item = items.get(entity.id);
 
     if (!item) {
-      item = new TreeItem(id.value, entity.id);
+      item = new NodeItem(id.value, entity.id);
 
       items = new Map(items);
       items.set(entity.id, item);
@@ -62,6 +67,14 @@ export function createTreeItems(
       item.parentId = parent.id;
     } else {
       item.parentId = undefined;
+    }
+
+    item.meshPrimitiveIds.length = 0;
+
+    for (const [meshId, mesh] of meshes) {
+      if (mesh.parentId === entity.id) {
+        item.meshPrimitiveIds.push(meshId.value);
+      }
     }
   }
 

@@ -1,7 +1,7 @@
 import { editNode } from "@/src/play/actions/editNode";
 import TextFieldDark from "@/src/ui/TextFieldDark";
 
-import { useTreeValue } from "../../hooks/useTreeValue";
+import { useNodeValue } from "../../hooks/useNodeValue";
 import { getDisplayName } from "../../utils/getDisplayName";
 
 interface Props {
@@ -9,9 +9,9 @@ interface Props {
 }
 
 export default function Name({ entityId }: Props) {
-  const id = useTreeValue(entityId, "id");
-  const name = useTreeValue(entityId, "name");
-  const locked = useTreeValue(entityId, "locked");
+  const id = useNodeValue(entityId, "id");
+  const name = useNodeValue(entityId, "name");
+  const locked = useNodeValue(entityId, "locked");
 
   const displayName = getDisplayName(name, entityId);
 

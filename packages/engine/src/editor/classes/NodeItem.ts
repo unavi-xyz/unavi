@@ -19,8 +19,6 @@ export class NodeItem {
   colliderType?: EditNode_Collider_Type;
   rigidBodyType?: EditNode_RigidBody_Type;
 
-  meshPrimitiveIds: string[] = [];
-
   collider = {
     height: 1,
     meshId: 0n,

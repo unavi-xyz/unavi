@@ -35,12 +35,14 @@ export function sendEvents(
   if (ecsIncoming.length === 0) return;
 
   let msgKind: string | undefined;
+  let numProcessed = 0;
 
   for (const msg of ecsIncoming) {
     let kind: string | undefined = msg.response.oneofKind;
+    let editor: EditorEvent | undefined;
 
     if (msg.response.oneofKind === "event") {
-      const editor = EditorEvent.fromBinary(msg.response.event.data);
+      editor = EditorEvent.fromBinary(msg.response.event.data);
       kind = `event.${editor.event.oneofKind}`;
     }
 
@@ -52,7 +54,7 @@ export function sendEvents(
       break;
     }
 
-    ecsIncoming.shift();
+    numProcessed++;
 
     switch (msg.response.oneofKind) {
       case "playerJoined": {
@@ -70,7 +72,10 @@ export function sendEvents(
       }
 
       case "event": {
-        const editor = EditorEvent.fromBinary(msg.response.event.data);
+        if (!editor) {
+          console.error("No editor event");
+          break;
+        }
 
         switch (editor.event.oneofKind) {
           case "addNode": {
@@ -266,5 +271,9 @@ export function sendEvents(
         }
       }
     }
+  }
+
+  for (let i = 0; i < numProcessed; i++) {
+    ecsIncoming.shift();
   }
 }

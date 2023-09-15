@@ -1,12 +1,5 @@
 import { Extra } from "houseki/gltf";
-import {
-  Mesh,
-  Name,
-  Parent,
-  Scene,
-  SceneStruct,
-  Transform,
-} from "houseki/scene";
+import { Name, Parent, Scene, SceneStruct, Transform } from "houseki/scene";
 import { Entity, Query, Res } from "thyseus";
 
 import { EditorId } from "../../client/components";
@@ -16,7 +9,6 @@ import { useSceneStore } from "../sceneStore";
 export function createNodeItems(
   sceneStruct: Res<SceneStruct>,
   nodes: Query<[Entity, Transform, Parent, EditorId]>,
-  meshes: Query<[EditorId, Mesh]>,
   scenes: Query<[Entity, Scene]>,
   names: Query<[Entity, Name]>,
   extras: Query<Extra>
@@ -67,14 +59,6 @@ export function createNodeItems(
       item.parentId = parent.id;
     } else {
       item.parentId = undefined;
-    }
-
-    item.meshPrimitiveIds.length = 0;
-
-    for (const [meshId, mesh] of meshes) {
-      if (mesh.parentId === entity.id) {
-        item.meshPrimitiveIds.push(meshId.value);
-      }
     }
   }
 

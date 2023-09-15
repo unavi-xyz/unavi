@@ -42,8 +42,6 @@ export function editColliders(
         } else {
           commands.get(colliderEntity).remove(BoxCollider);
         }
-
-        break;
       }
 
       for (const [colliderEntity, collider] of sphereColliders) {
@@ -56,8 +54,6 @@ export function editColliders(
         } else {
           commands.get(colliderEntity).remove(SphereCollider);
         }
-
-        break;
       }
 
       for (const [colliderEntity, collider] of capsuleColliders) {
@@ -71,8 +67,6 @@ export function editColliders(
         } else {
           commands.get(colliderEntity).remove(CapsuleCollider);
         }
-
-        break;
       }
 
       for (const [colliderEntity, collider] of cylinderColliders) {
@@ -86,8 +80,6 @@ export function editColliders(
         } else {
           commands.get(colliderEntity).remove(CylinderCollider);
         }
-
-        break;
       }
 
       let meshEntId: bigint | undefined;
@@ -113,8 +105,6 @@ export function editColliders(
         } else {
           commands.get(colliderEntity).remove(MeshCollider);
         }
-
-        break;
       }
 
       for (const [colliderEntity, collider] of hullColliders) {
@@ -129,8 +119,6 @@ export function editColliders(
         } else {
           commands.get(colliderEntity).remove(HullCollider);
         }
-
-        break;
       }
 
       if (!foundCollider && e.type !== EditNode_Collider_Type.NONE) {

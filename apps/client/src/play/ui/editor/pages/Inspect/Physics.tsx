@@ -33,15 +33,15 @@ export default function Physics({ entityId }: Props) {
   const handleRemove = locked
     ? undefined
     : () => {
-        editNode(id, {
-          collider: {
-            type: EditNode_Collider_Type.NONE,
-          },
-          rigidBody: {
-            type: EditNode_RigidBody_Type.NONE,
-          },
-        });
-      };
+      editNode(id, {
+        collider: {
+          type: EditNode_Collider_Type.NONE,
+        },
+        rigidBody: {
+          type: EditNode_RigidBody_Type.NONE,
+        },
+      });
+    };
 
   const rigidBodyOption = getRigidBodyOption(rigidBodyType);
   const colliderOption = getColliderOption(colliderType);
@@ -101,7 +101,7 @@ export default function Physics({ entityId }: Props) {
             label="X"
             disabled={locked}
             min={0}
-            value={size[0]}
+            value={round(size[0])}
             onValueChange={(val) => {
               editNode(id, {
                 collider: {
@@ -115,7 +115,7 @@ export default function Physics({ entityId }: Props) {
             label="Y"
             disabled={locked}
             min={0}
-            value={size[1]}
+            value={round(size[1])}
             onValueChange={(val) => {
               editNode(id, {
                 collider: {
@@ -129,7 +129,7 @@ export default function Physics({ entityId }: Props) {
             label="Z"
             disabled={locked}
             min={0}
-            value={size[2]}
+            value={round(size[2])}
             onValueChange={(val) => {
               editNode(id, {
                 collider: {
@@ -143,8 +143,8 @@ export default function Physics({ entityId }: Props) {
       )}
 
       {colliderType === EditNode_Collider_Type.SPHERE ||
-      colliderType === EditNode_Collider_Type.CAPSULE ||
-      colliderType === EditNode_Collider_Type.CYLINDER ? (
+        colliderType === EditNode_Collider_Type.CAPSULE ||
+        colliderType === EditNode_Collider_Type.CYLINDER ? (
         <div className="grid grid-cols-4">
           <div className="w-20 shrink-0 font-bold text-neutral-400">Radius</div>
 
@@ -152,11 +152,10 @@ export default function Physics({ entityId }: Props) {
             <NumberInput
               disabled={locked}
               min={0}
-              value={radius}
+              value={round(radius)}
               onValueChange={(val) => {
                 editNode(id, {
                   collider: {
-                    height,
                     radius: val,
                     type: colliderType,
                   },
@@ -168,7 +167,7 @@ export default function Physics({ entityId }: Props) {
       ) : null}
 
       {colliderType === EditNode_Collider_Type.CAPSULE ||
-      colliderType === EditNode_Collider_Type.CYLINDER ? (
+        colliderType === EditNode_Collider_Type.CYLINDER ? (
         <div className="grid grid-cols-4">
           <div className="w-20 shrink-0 font-bold text-neutral-400">Height</div>
 
@@ -176,12 +175,11 @@ export default function Physics({ entityId }: Props) {
             <NumberInput
               disabled={locked}
               min={0}
-              value={height}
+              value={round(height)}
               onValueChange={(val) => {
                 editNode(id, {
                   collider: {
                     height: val,
-                    radius,
                     type: colliderType,
                   },
                 });
@@ -294,4 +292,8 @@ function getColliderType(option: ColliderOption): EditNode_Collider_Type {
       return EditNode_Collider_Type.HULL;
     }
   }
+}
+
+function round(num: number, precision = 1000) {
+  return Math.round(num * precision) / precision;
 }

@@ -1,4 +1,13 @@
+import { EditNode_Collider_Type } from "@unavi/protocol";
 import { Extra } from "houseki/gltf";
+import {
+  BoxCollider,
+  CapsuleCollider,
+  CylinderCollider,
+  HullCollider,
+  MeshCollider,
+  SphereCollider,
+} from "houseki/physics";
 import { Name, Parent, Scene, SceneStruct, Transform } from "houseki/scene";
 import { Entity, Query, Res } from "thyseus";
 
@@ -11,7 +20,13 @@ export function createNodeItems(
   nodes: Query<[Entity, Transform, Parent, EditorId]>,
   scenes: Query<[Entity, Scene]>,
   names: Query<[Entity, Name]>,
-  extras: Query<Extra>
+  extras: Query<Extra>,
+  boxColliders: Query<[Entity, BoxCollider]>,
+  sphereColliders: Query<[Entity, SphereCollider]>,
+  cylinderColliders: Query<[Entity, CylinderCollider]>,
+  capsuleColliders: Query<[Entity, CapsuleCollider]>,
+  meshColliders: Query<[Entity, MeshCollider]>,
+  hullColliders: Query<[Entity, HullCollider]>
 ) {
   const { enabled } = useSceneStore.getState();
   if (!enabled) return;
@@ -80,6 +95,58 @@ export function createNodeItems(
     } catch {
       // Ignore invalid JSON
     }
+  }
+
+  for (const [entity, boxCollider] of boxColliders) {
+    const item = items.get(entity.id);
+    if (!item) continue;
+
+    item.colliderType = EditNode_Collider_Type.BOX;
+    item.collider.size[0] = boxCollider.size.x;
+    item.collider.size[1] = boxCollider.size.y;
+    item.collider.size[2] = boxCollider.size.z;
+  }
+
+  for (const [entity, sphereCollider] of sphereColliders) {
+    const item = items.get(entity.id);
+    if (!item) continue;
+
+    item.colliderType = EditNode_Collider_Type.SPHERE;
+    item.collider.radius = sphereCollider.radius;
+  }
+
+  for (const [entity, cylinderCollider] of cylinderColliders) {
+    const item = items.get(entity.id);
+    if (!item) continue;
+
+    item.colliderType = EditNode_Collider_Type.CYLINDER;
+    item.collider.radius = cylinderCollider.radius;
+    item.collider.height = cylinderCollider.height;
+  }
+
+  for (const [entity, capsuleCollider] of capsuleColliders) {
+    const item = items.get(entity.id);
+    if (!item) continue;
+
+    item.colliderType = EditNode_Collider_Type.CAPSULE;
+    item.collider.radius = capsuleCollider.radius;
+    item.collider.height = capsuleCollider.height;
+  }
+
+  for (const [entity, meshCollider] of meshColliders) {
+    const item = items.get(entity.id);
+    if (!item) continue;
+
+    item.colliderType = EditNode_Collider_Type.MESH;
+    item.collider.meshId = meshCollider.meshId;
+  }
+
+  for (const [entity, hullCollider] of hullColliders) {
+    const item = items.get(entity.id);
+    if (!item) continue;
+
+    item.colliderType = EditNode_Collider_Type.HULL;
+    item.collider.meshId = hullCollider.meshId;
   }
 
   // Destroy items that no longer exist

@@ -136,8 +136,8 @@ importers:
         specifier: ^5.7.2
         version: 5.7.2
       houseki:
-        specifier: ^1.1.5
-        version: 1.1.5(@types/three@0.154.0)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0)
+        specifier: ^1.1.6
+        version: 1.1.6(@types/three@0.154.0)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0)
       lucia:
         specifier: 2.0.0-beta.7
         version: 2.0.0-beta.7
@@ -316,8 +316,8 @@ importers:
         specifier: ^4.0.0-beta.1
         version: 4.0.0-beta.1
       houseki:
-        specifier: ^1.1.5
-        version: 1.1.5(@types/three@0.154.0)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0)
+        specifier: ^1.1.6
+        version: 1.1.6(@types/three@0.154.0)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0)
       mediasoup-client:
         specifier: ^3.6.84
         version: 3.6.84
@@ -3980,8 +3980,8 @@ packages:
       thyseus: 0.14.0
       troika-three-text: 0.47.2(three@0.154.0)
 
-  /@houseki-engine/transform@8.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/input@2.0.1)(@houseki-engine/orbit@7.0.1)(@houseki-engine/physics@6.1.1)(@houseki-engine/player@8.0.1)(@houseki-engine/postprocessing@5.0.2)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0):
-    resolution: {integrity: sha512-bEKE+ykd2kpsV2rYRdJc2KAwWPXYCOnfi/P5rt36uipqC54l895SBjTTxg879djTSxKxE0pziH40Dvduu7MWlg==}
+  /@houseki-engine/transform@8.1.0(@houseki-engine/core@1.1.1)(@houseki-engine/input@2.0.1)(@houseki-engine/orbit@7.0.1)(@houseki-engine/physics@6.1.1)(@houseki-engine/player@8.0.1)(@houseki-engine/postprocessing@5.0.2)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0):
+    resolution: {integrity: sha512-tpR1JAK9CaV22mdNm4+51tbIjRtfo6SOCykYQvUnKtusdiB+UEFqx1VhTdhZ77InkSN54eiU7QAFWo3NDclI8w==}
     peerDependencies:
       '@houseki-engine/core': ^1.1.1
       '@houseki-engine/input': ^2.0.1
@@ -9333,8 +9333,8 @@ packages:
     resolution: {integrity: sha512-mxIDAb9Lsm6DoOJ7xH+5+X4y1LU/4Hi50L9C5sIswK3JzULS4bwk1FvjdBgvYR4bzT4tuUQiC15FE2f5HbLvYw==}
     dev: true
 
-  /houseki@1.1.5(@types/three@0.154.0)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0):
-    resolution: {integrity: sha512-hx1+tXk94DbVXLED2fbZvkzSDsCNohV9nUlf1ODyc9aZP60IQIfyhUU8FuTc3GrSr9rDr3fm6f5BGiWCkMQozA==}
+  /houseki@1.1.6(@types/three@0.154.0)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0):
+    resolution: {integrity: sha512-/WSZZYNI2Hdoa4+57POMR5blPqbAgmGUNc1urEzCeRJzaSrve98ZBnZoRG5+j0pCbknLVfU90Vh0xJMmCctyyw==}
     peerDependencies:
       postprocessing: ^6.32.2
       three: ~0.154.0
@@ -9352,7 +9352,7 @@ packages:
       '@houseki-engine/render': 6.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/scene@2.0.1)(postprocessing@6.33.0)(three@0.154.0)(thyseus@0.14.0)
       '@houseki-engine/scene': 2.0.1(@houseki-engine/core@1.1.1)(three@0.154.0)(thyseus@0.14.0)
       '@houseki-engine/text': 6.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0)
-      '@houseki-engine/transform': 8.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/input@2.0.1)(@houseki-engine/orbit@7.0.1)(@houseki-engine/physics@6.1.1)(@houseki-engine/player@8.0.1)(@houseki-engine/postprocessing@5.0.2)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0)
+      '@houseki-engine/transform': 8.1.0(@houseki-engine/core@1.1.1)(@houseki-engine/input@2.0.1)(@houseki-engine/orbit@7.0.1)(@houseki-engine/physics@6.1.1)(@houseki-engine/player@8.0.1)(@houseki-engine/postprocessing@5.0.2)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(three@0.154.0)(thyseus@0.14.0)
       '@houseki-engine/utils': 7.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/input@2.0.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(thyseus@0.14.0)
       '@houseki-engine/vrm': 6.0.1(@houseki-engine/core@1.1.1)(@houseki-engine/render@6.0.1)(@houseki-engine/scene@2.0.1)(@types/three@0.154.0)(three@0.154.0)(thyseus@0.14.0)
       postprocessing: 6.33.0(three@0.154.0)

@@ -77,6 +77,8 @@ export function sendEvents(
           break;
         }
 
+        console.log("Editor event", editor.event.oneofKind);
+
         switch (editor.event.oneofKind) {
           case "addNode": {
             const e = new AddNode();

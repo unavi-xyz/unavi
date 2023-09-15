@@ -15,6 +15,7 @@ import { editRigidBodies } from "./systems/editRigidBodies";
 import { enterEditMode } from "./systems/enterEditMode";
 import { exitEditMode } from "./systems/exitEditMode";
 import { initIds } from "./systems/initIds";
+import { publishTransformControlChanges } from "./systems/publishTransformControlChanges";
 import { sendExportEvent } from "./systems/sendExportEvent";
 import { syncTransformControls } from "./systems/syncTransformControls";
 
@@ -35,6 +36,7 @@ export function editorPlugin(builder: WorldBuilder) {
       editNodes,
       editRigidBodies,
       editColliders,
+      publishTransformControlChanges,
       run(syncTransformControls).after(selectTarget).before(createControls)
     );
 }

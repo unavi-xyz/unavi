@@ -1,12 +1,16 @@
 import { TransformControls, TransformMode } from "houseki/transform";
-import { Mut, Query } from "thyseus";
+import { Mut, Query, struct, SystemRes, u64 } from "thyseus";
 
 import { useSceneStore } from "../sceneStore";
 import { Tool } from "../types";
 
-let lastTransformTarget: bigint | undefined;
+@struct
+class LocalStore {
+  lastTransformTarget: u64 = 0n;
+}
 
 export function syncTransformControls(
+  localStore: SystemRes<LocalStore>,
   transformControls: Query<Mut<TransformControls>>
 ) {
   for (const controls of transformControls) {
@@ -34,9 +38,9 @@ export function syncTransformControls(
 
     const uiId = selectedId ?? 0n;
 
-    if (targetId !== lastTransformTarget) {
+    if (targetId !== localStore.lastTransformTarget) {
       // Set UI from transform controls
-      lastTransformTarget = targetId;
+      localStore.lastTransformTarget = targetId;
 
       const usedId = sceneTreeId ?? rootId;
       if (!usedId) continue;
@@ -64,7 +68,7 @@ export function syncTransformControls(
       setTransformTarget(controls, newTargetId);
     } else if (targetId !== uiId) {
       // Set transform controls from UI
-      lastTransformTarget = uiId;
+      localStore.lastTransformTarget = uiId;
       setTransformTarget(controls, uiId);
     }
   }

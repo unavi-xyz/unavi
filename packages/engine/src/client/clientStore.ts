@@ -43,7 +43,7 @@ export const useClientStore = create<IClientStore>((set, get) => ({
   },
   avatar: "",
   chatMessages: [],
-  cleanupConnection: () => { },
+  cleanupConnection: () => {},
   defaultAvatar: "",
   did: "",
   ecsIncoming: [],
@@ -75,8 +75,8 @@ export const useClientStore = create<IClientStore>((set, get) => ({
     const sendEvent = SendEvent.create({ data });
     get().sendWebSockets({ oneofKind: "sendEvent", sendEvent });
   },
-  sendWebRTC: () => { },
-  sendWebSockets: () => { },
+  sendWebRTC: () => {},
+  sendWebSockets: () => {},
   setAvatar(avatar: string) {
     set({ avatar });
 

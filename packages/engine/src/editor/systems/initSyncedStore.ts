@@ -1,5 +1,15 @@
 import { Warehouse } from "houseki/core";
 import { GltfInfo, SceneView, SubScene } from "houseki/gltf";
+import {
+  BoxCollider,
+  CapsuleCollider,
+  CylinderCollider,
+  DynamicBody,
+  HullCollider,
+  MeshCollider,
+  SphereCollider,
+  StaticBody,
+} from "houseki/physics";
 import { Geometry, Mesh, Name, Parent, Transform } from "houseki/scene";
 import { Commands, Entity, Query, Res, With } from "thyseus";
 
@@ -8,7 +18,13 @@ import { addMesh, addNode, editMesh, editNode } from "../actions";
 import { addScene } from "../actions/addScene";
 import { editScene } from "../actions/editScene";
 import { getId, setEntityId } from "../entities";
-import { syncedStore } from "../store";
+import {
+  SyncedNode_Collider,
+  SyncedNode_Collider_Type,
+  SyncedNode_RigidBody,
+  SyncedNode_RigidBody_Type,
+  syncedStore,
+} from "../store";
 
 export function initSyncedStore(
   commands: Commands,
@@ -16,7 +32,15 @@ export function initSyncedStore(
   worlds: Query<[SceneView, GltfInfo], With<WorldJson>>,
   subscenes: Query<[Entity, Name, SubScene]>,
   nodes: Query<[Entity, Name, Transform, Parent]>,
-  primitives: Query<[Entity, Name, Geometry, Mesh]>
+  primitives: Query<[Entity, Name, Geometry, Mesh]>,
+  boxColliders: Query<[Entity, BoxCollider]>,
+  sphereColliders: Query<[Entity, SphereCollider]>,
+  capsuleColliders: Query<[Entity, CapsuleCollider]>,
+  cylinderColliders: Query<[Entity, CylinderCollider]>,
+  meshColliders: Query<[Entity, MeshCollider]>,
+  hullColliders: Query<[Entity, HullCollider]>,
+  staticBodies: Query<Entity, With<StaticBody>>,
+  dynamicBodies: Query<Entity, With<DynamicBody>>
 ) {
   if (syncedStore.initialized) return;
 
@@ -31,7 +55,73 @@ export function initSyncedStore(
 
         commands.getById(entityId).add(new EditorId(id));
 
+        const collider: SyncedNode_Collider = {
+          height: 1,
+          meshId: "",
+          radius: 0.5,
+          size: [1, 1, 1],
+          type: SyncedNode_Collider_Type.NONE,
+        };
+
+        for (const [boxEnt, col] of boxColliders) {
+          if (boxEnt.id !== entityId) continue;
+          collider.size = col.size.toArray();
+          collider.type = SyncedNode_Collider_Type.BOX;
+        }
+
+        for (const [sphereEnt, col] of sphereColliders) {
+          if (sphereEnt.id !== entityId) continue;
+          collider.radius = col.radius;
+          collider.type = SyncedNode_Collider_Type.SPHERE;
+        }
+
+        for (const [capsuleEnt, col] of capsuleColliders) {
+          if (capsuleEnt.id !== entityId) continue;
+          collider.height = col.height;
+          collider.radius = col.radius;
+          collider.type = SyncedNode_Collider_Type.CAPSULE;
+        }
+
+        for (const [cylinderEnt, col] of cylinderColliders) {
+          if (cylinderEnt.id !== entityId) continue;
+          collider.height = col.height;
+          collider.radius = col.radius;
+          collider.type = SyncedNode_Collider_Type.CYLINDER;
+        }
+
+        for (const [meshEnt, col] of meshColliders) {
+          if (meshEnt.id !== entityId) continue;
+          const meshId = getId(col.meshId);
+          if (!meshId) continue;
+          collider.meshId = meshId;
+          collider.type = SyncedNode_Collider_Type.MESH;
+        }
+
+        for (const [hullEnt, col] of hullColliders) {
+          if (hullEnt.id !== entityId) continue;
+          const meshId = getId(col.meshId);
+          if (!meshId) continue;
+          collider.meshId = meshId;
+          collider.type = SyncedNode_Collider_Type.HULL;
+        }
+
+        const rigidBody: SyncedNode_RigidBody = {
+          type: SyncedNode_RigidBody_Type.STATIC,
+        };
+
+        for (const staticEnt of staticBodies) {
+          if (staticEnt.id !== entityId) continue;
+          rigidBody.type = SyncedNode_RigidBody_Type.STATIC;
+        }
+
+        for (const dynamicEnt of dynamicBodies) {
+          if (dynamicEnt.id !== entityId) continue;
+          rigidBody.type = SyncedNode_RigidBody_Type.DYNAMIC;
+        }
+
         editNode(id, {
+          collider,
+          rigidBody,
           rotation: transform.rotation.toArray(),
           scale: transform.scale.toArray(),
           translation: transform.translation.toArray(),

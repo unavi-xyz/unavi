@@ -2,8 +2,10 @@ import { createControls, selectTarget } from "houseki/transform";
 import { run, WorldBuilder } from "thyseus";
 
 import { EngineSchedules } from "../constants";
+import { createColliders } from "./systems/createColliders";
 import { createMeshes } from "./systems/createMeshes";
 import { createNodes } from "./systems/createNodes";
+import { createRigidBodies } from "./systems/createRigidBodies";
 import { createScenes } from "./systems/createScenes";
 import { enterEditMode } from "./systems/enterEditMode";
 import { exitEditMode } from "./systems/exitEditMode";
@@ -26,6 +28,8 @@ export function editorPlugin(builder: WorldBuilder) {
       setEntityIds,
       createScenes,
       createNodes,
+      createColliders,
+      createRigidBodies,
       createMeshes,
       syncTransformControlChanges,
       run(syncTransformControlTarget).after(selectTarget).before(createControls)

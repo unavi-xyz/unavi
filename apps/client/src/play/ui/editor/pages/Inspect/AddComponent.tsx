@@ -24,7 +24,7 @@ interface Props {
 export default function AddComponent({ node }: Props) {
   const options: AddOption[] = [];
 
-  if (node?.collider.type === SyncedNode_Collider_Type.NONE) {
+  if (node.collider.type === SyncedNode_Collider_Type.NONE) {
     options.push(AddOption.Physics);
   }
 

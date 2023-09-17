@@ -12,13 +12,13 @@ export type SyncedScene = {
 };
 
 export enum SyncedNode_Collider_Type {
-  NONE = "NONE",
-  BOX = "BOX",
-  SPHERE = "SPHERE",
-  CAPSULE = "CAPSULE",
-  CYLINDER = "CYLINDER",
-  MESH = "MESH",
-  CONVEX = "CONVEX",
+  NONE = "none",
+  BOX = "box",
+  SPHERE = "sphere",
+  CAPSULE = "capsule",
+  CYLINDER = "cylinder",
+  MESH = "mesh",
+  HULL = "hull",
 }
 
 export type SyncedNode_Collider = {
@@ -30,8 +30,8 @@ export type SyncedNode_Collider = {
 };
 
 export enum SyncedNode_RigidBody_Type {
-  STATIC = "STATIC",
-  DYNAMIC = "DYNAMIC",
+  STATIC = "static",
+  DYNAMIC = "dynamic",
 }
 
 export type SyncedNode_RigidBody = {

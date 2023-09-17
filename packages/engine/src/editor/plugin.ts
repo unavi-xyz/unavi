@@ -27,12 +27,12 @@ export function editorPlugin(builder: WorldBuilder) {
     .addSystemsToSchedule(EngineSchedules.Export, sendExportEvent)
     .addSystems(
       setEntityIds,
-      createScenes,
       createExtras,
       createNodes,
       createColliders,
       createRigidBodies,
       createMeshes,
+      run(createScenes).after(createNodes),
       run(syncTransformControlChanges).before(createNodes),
       run(syncTransformControlTarget).after(selectTarget).before(createControls)
     );

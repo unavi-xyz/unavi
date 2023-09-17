@@ -12,7 +12,7 @@ export function addNode(name = "") {
     collider: {
       height: 1,
       meshId: "",
-      radius: 1,
+      radius: 0.5,
       size: [1, 1, 1],
       type: SyncedNode_Collider_Type.NONE,
     },

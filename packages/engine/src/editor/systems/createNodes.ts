@@ -12,6 +12,7 @@ export function createNodes(
     [Entity, EditorId, Mut<Name>, Mut<Transform>, Mut<Parent>],
     Without<SubScene>
   >,
+  scenes: Query<SubScene>,
   meshes: Query<[EditorId, Mut<Mesh>]>
 ) {
   const ids: string[] = [];
@@ -35,7 +36,16 @@ export function createNodes(
       if (node.parentId) {
         parent.id = getEntityId(node.parentId) ?? 0n;
       } else {
-        parent.id = 0n;
+        let hasParent = false;
+
+        for (const scene of scenes) {
+          if (!scene.nodes.includes(entity.id)) continue;
+          hasParent = true;
+        }
+
+        if (!hasParent) {
+          parent.id = 0n;
+        }
       }
 
       for (const [meshId, mesh] of meshes) {

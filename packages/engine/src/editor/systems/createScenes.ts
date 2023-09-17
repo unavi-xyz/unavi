@@ -39,7 +39,6 @@ export function createScenes(
   // Create new scenes
   for (const id of Object.keys(syncedStore.scenes)) {
     if (ids.includes(id)) continue;
-
     commands.spawn(true).add(new EditorId(id)).addType(Name).addType(SubScene);
   }
 }

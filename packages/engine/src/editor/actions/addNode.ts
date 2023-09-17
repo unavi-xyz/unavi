@@ -16,8 +16,10 @@ export function addNode(name = "") {
       size: [1, 1, 1],
       type: SyncedNode_Collider_Type.NONE,
     },
+    extras: {
+      locked: false,
+    },
     id,
-    locked: false,
     name: name || "Node",
     rigidBody: {
       type: SyncedNode_RigidBody_Type.STATIC,

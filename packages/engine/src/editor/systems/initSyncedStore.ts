@@ -1,5 +1,5 @@
 import { Warehouse } from "houseki/core";
-import { GltfInfo, SceneView, SubScene } from "houseki/gltf";
+import { Extra, GltfInfo, SceneView, SubScene } from "houseki/gltf";
 import {
   BoxCollider,
   CapsuleCollider,
@@ -21,6 +21,7 @@ import { getId, setEntityId } from "../entities";
 import {
   SyncedNode_Collider,
   SyncedNode_Collider_Type,
+  SyncedNode_Extras,
   SyncedNode_RigidBody,
   SyncedNode_RigidBody_Type,
   syncedStore,
@@ -40,7 +41,8 @@ export function initSyncedStore(
   meshColliders: Query<[Entity, MeshCollider]>,
   hullColliders: Query<[Entity, HullCollider]>,
   staticBodies: Query<Entity, With<StaticBody>>,
-  dynamicBodies: Query<Entity, With<DynamicBody>>
+  dynamicBodies: Query<Entity, With<DynamicBody>>,
+  extrasQuery: Query<Extra>
 ) {
   if (syncedStore.initialized) return;
 
@@ -54,6 +56,15 @@ export function initSyncedStore(
         setEntityId(id, ent.id);
 
         commands.getById(entityId).add(new EditorId(id));
+
+        const extras: SyncedNode_Extras = {
+          locked: false,
+        };
+
+        for (const extra of extrasQuery) {
+          if (extra.target !== entityId) continue;
+          extras[extra.key] = JSON.parse(extra.value);
+        }
 
         const collider: SyncedNode_Collider = {
           height: 1,
@@ -121,6 +132,7 @@ export function initSyncedStore(
 
         editNode(id, {
           collider,
+          extras,
           rigidBody,
           rotation: transform.rotation.toArray(),
           scale: transform.scale.toArray(),

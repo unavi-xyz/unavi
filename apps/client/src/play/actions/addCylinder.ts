@@ -6,7 +6,7 @@ import { addToRoot } from "./utils/addToRoot";
 
 export function addCylinder() {
   const geometry = new CylinderGeometry(0.5, 0.5);
-  const meshId = addThreeMesh(geometry);
+  const meshId = addThreeMesh(geometry, "Cylinder");
 
   const { sceneTreeId } = useSceneStore.getState();
 

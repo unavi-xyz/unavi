@@ -52,7 +52,7 @@ export default function Translation({ node }: Props) {
         value={roundedX}
         label="X"
         placeholder="X"
-        disabled={node.locked}
+        disabled={node.extras.locked}
         onValueChange={(val) => {
           usedUI();
           setX(val);
@@ -65,7 +65,7 @@ export default function Translation({ node }: Props) {
         value={roundedY}
         label="Y"
         placeholder="Y"
-        disabled={node.locked}
+        disabled={node.extras.locked}
         onValueChange={(val) => {
           usedUI();
           setY(val);
@@ -78,7 +78,7 @@ export default function Translation({ node }: Props) {
         value={roundedZ}
         label="Z"
         placeholder="Z"
-        disabled={node.locked}
+        disabled={node.extras.locked}
         onValueChange={(val) => {
           usedUI();
           setZ(val);

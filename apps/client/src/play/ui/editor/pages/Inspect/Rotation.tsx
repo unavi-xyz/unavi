@@ -62,7 +62,7 @@ export default function Rotation({ node }: Props) {
         value={x}
         label="X"
         placeholder="X"
-        disabled={node.locked}
+        disabled={node.extras.locked}
         sensitivity={360}
         onValueChange={(val) => {
           quat.setFromEuler(
@@ -84,7 +84,7 @@ export default function Rotation({ node }: Props) {
         value={y}
         label="Y"
         placeholder="Y"
-        disabled={node.locked}
+        disabled={node.extras.locked}
         sensitivity={360}
         onValueChange={(val) => {
           quat.setFromEuler(
@@ -106,7 +106,7 @@ export default function Rotation({ node }: Props) {
         value={z}
         label="Z"
         placeholder="Z"
-        disabled={node.locked}
+        disabled={node.extras.locked}
         sensitivity={360}
         onValueChange={(val) => {
           quat.setFromEuler(

@@ -3,6 +3,7 @@ import { run, WorldBuilder } from "thyseus";
 
 import { EngineSchedules } from "../constants";
 import { createColliders } from "./systems/createColliders";
+import { createExtras } from "./systems/createExtras";
 import { createMeshes } from "./systems/createMeshes";
 import { createNodes } from "./systems/createNodes";
 import { createRigidBodies } from "./systems/createRigidBodies";
@@ -27,6 +28,7 @@ export function editorPlugin(builder: WorldBuilder) {
     .addSystems(
       setEntityIds,
       createScenes,
+      createExtras,
       createNodes,
       createColliders,
       createRigidBodies,

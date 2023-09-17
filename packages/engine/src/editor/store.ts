@@ -38,10 +38,13 @@ export type SyncedNode_RigidBody = {
   type: SyncedNode_RigidBody_Type;
 };
 
+export type SyncedNode_Extras = Record<string, unknown> & {
+  locked: boolean;
+};
+
 export type SyncedNode = {
   id: string;
   name: string;
-  locked: boolean;
 
   translation: [number, number, number];
   rotation: [number, number, number, number];
@@ -52,6 +55,8 @@ export type SyncedNode = {
 
   collider: SyncedNode_Collider;
   rigidBody: SyncedNode_RigidBody;
+
+  extras: SyncedNode_Extras;
 };
 
 export type SyncedMesh = {

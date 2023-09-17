@@ -1,4 +1,4 @@
-import { editNode, SyncedNode, useSceneStore } from "@unavi/engine";
+import { SyncedNode, syncedStore, useSceneStore } from "@unavi/engine";
 import { IoMdExpand, IoMdLock, IoMdUnlock } from "react-icons/io";
 
 import { DeepReadonly } from "@/src/play/utils/types";
@@ -25,7 +25,11 @@ export default function TreeItem({ node }: Props) {
 
   function toggleLock(e: React.MouseEvent) {
     e.stopPropagation();
-    editNode(node.id, { locked: !node.locked });
+
+    const synced = syncedStore.nodes[node.id];
+    if (!synced) return;
+
+    synced.extras.locked = !synced.extras.locked;
   }
 
   const isSelected = selectedId === node.id;
@@ -53,14 +57,16 @@ export default function TreeItem({ node }: Props) {
           </button>
         </Tooltip>
 
-        <Tooltip text={node.locked ? "Unlock" : "Lock"} side="top">
+        <Tooltip text={node.extras.locked ? "Unlock" : "Lock"} side="top">
           <button
             onClick={toggleLock}
             className={`rounded text-lg hover:opacity-70 active:opacity-60 ${
-              node.locked ? "text-neutral-500" : "hidden group-hover:block"
+              node.extras.locked
+                ? "text-neutral-500"
+                : "hidden group-hover:block"
             }`}
           >
-            {node.locked ? <IoMdLock /> : <IoMdUnlock />}
+            {node.extras.locked ? <IoMdLock /> : <IoMdUnlock />}
           </button>
         </Tooltip>
       </div>

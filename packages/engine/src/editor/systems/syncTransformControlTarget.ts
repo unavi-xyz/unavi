@@ -71,7 +71,7 @@ export function syncTransformControlTarget(
       if (!newTarget) continue;
 
       // If locked, do not select it
-      if (newTarget.locked) {
+      if (newTarget.extras.locked) {
         newTargetId = 0n;
       }
 
@@ -95,5 +95,5 @@ function setTransformTarget(controls: TransformControls, targetId: bigint) {
   const target = getNodeByEntityId(targetId);
   if (!target) return;
 
-  controls.enabled = !target.locked;
+  controls.enabled = !target.extras.locked;
 }

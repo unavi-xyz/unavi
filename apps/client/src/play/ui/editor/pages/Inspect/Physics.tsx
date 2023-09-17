@@ -20,19 +20,19 @@ export default function Physics({ node }: Props) {
     return null;
   }
 
-  const handleRemove = node.locked
+  const handleRemove = node.extras.locked
     ? undefined
     : () => {
-      editNode(node.id, {
-        collider: {
-          height: 1,
-          meshId: "",
-          radius: 1,
-          size: [1, 1, 1],
-          type: SyncedNode_Collider_Type.NONE,
-        },
-      });
-    };
+        editNode(node.id, {
+          collider: {
+            height: 1,
+            meshId: "",
+            radius: 1,
+            size: [1, 1, 1],
+            type: SyncedNode_Collider_Type.NONE,
+          },
+        });
+      };
 
   const sizeX = node.collider.size[0] ?? 0;
   const sizeY = node.collider.size[1] ?? 0;
@@ -42,7 +42,7 @@ export default function Physics({ node }: Props) {
     <InspectSection title="Physics" onRemove={handleRemove}>
       <SelectInput
         label="Type"
-        disabled={node.locked}
+        disabled={node.extras.locked}
         value={node.rigidBody.type}
         options={[
           SyncedNode_RigidBody_Type.STATIC,
@@ -61,7 +61,7 @@ export default function Physics({ node }: Props) {
 
       <SelectInput
         label="Shape"
-        disabled={node.locked}
+        disabled={node.extras.locked}
         value={node.collider.type}
         options={[
           SyncedNode_Collider_Type.BOX,
@@ -90,7 +90,7 @@ export default function Physics({ node }: Props) {
 
           <NumberInput
             label="X"
-            disabled={node.locked}
+            disabled={node.extras.locked}
             min={0}
             value={round(sizeX)}
             onValueChange={(val) => {
@@ -104,7 +104,7 @@ export default function Physics({ node }: Props) {
           />
           <NumberInput
             label="Y"
-            disabled={node.locked}
+            disabled={node.extras.locked}
             min={0}
             value={round(sizeY)}
             onValueChange={(val) => {
@@ -118,7 +118,7 @@ export default function Physics({ node }: Props) {
           />
           <NumberInput
             label="Z"
-            disabled={node.locked}
+            disabled={node.extras.locked}
             min={0}
             value={round(sizeZ)}
             onValueChange={(val) => {
@@ -134,14 +134,14 @@ export default function Physics({ node }: Props) {
       )}
 
       {node.collider.type === SyncedNode_Collider_Type.SPHERE ||
-        node.collider.type === SyncedNode_Collider_Type.CAPSULE ||
-        node.collider.type === SyncedNode_Collider_Type.CYLINDER ? (
+      node.collider.type === SyncedNode_Collider_Type.CAPSULE ||
+      node.collider.type === SyncedNode_Collider_Type.CYLINDER ? (
         <div className="grid grid-cols-4">
           <div className="w-20 shrink-0 font-bold text-neutral-400">Radius</div>
 
           <div className="col-span-3">
             <NumberInput
-              disabled={node.locked}
+              disabled={node.extras.locked}
               min={0}
               value={round(node.collider.radius)}
               onValueChange={(val) => {
@@ -159,13 +159,13 @@ export default function Physics({ node }: Props) {
       ) : null}
 
       {node.collider.type === SyncedNode_Collider_Type.CAPSULE ||
-        node.collider.type === SyncedNode_Collider_Type.CYLINDER ? (
+      node.collider.type === SyncedNode_Collider_Type.CYLINDER ? (
         <div className="grid grid-cols-4">
           <div className="w-20 shrink-0 font-bold text-neutral-400">Height</div>
 
           <div className="col-span-3">
             <NumberInput
-              disabled={node.locked}
+              disabled={node.extras.locked}
               min={0}
               value={round(node.collider.height)}
               onValueChange={(val) => {

@@ -16,7 +16,7 @@ export default function Name({ node }: Props) {
     <TextFieldDark
       label="Name"
       value={node.name}
-      disabled={node.locked}
+      disabled={node.extras.locked}
       placeholder={displayName}
       onChange={(e) => {
         editNode(node.id, {

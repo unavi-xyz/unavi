@@ -43,36 +43,42 @@ export function syncTransformControlTarget(
       // Set UI from transform controls
       localStore.lastTransformTarget = targetId;
 
-      const usedId = sceneTreeId ?? rootId;
-      if (!usedId) continue;
+      const treeId = sceneTreeId ?? rootId;
+      if (!treeId) continue;
 
-      const usedEntityId = getEntityId(usedId);
-      if (!usedEntityId) continue;
+      const treeEntityId = getEntityId(treeId);
+      if (!treeEntityId) continue;
 
       // Continue up tree until we reach a child of usedId
       let newTargetId = targetId;
 
-      while (newTargetId !== usedEntityId) {
+      while (newTargetId !== treeEntityId) {
         const newTarget = getNodeByEntityId(newTargetId);
-        if (!newTarget?.parentId) break;
+        if (!newTarget) break;
 
-        const parentId = getEntityId(newTarget.parentId);
-        if (!parentId) break;
-
-        if (parentId === usedEntityId) {
-          // We've reached a child of usedId
+        if (!newTarget.parentId) {
+          // If no parent, assume child of scene root
           break;
-        }
+        } else {
+          const parentId = getEntityId(newTarget.parentId);
+          if (!parentId) break;
 
-        newTargetId = parentId;
+          if (parentId === treeEntityId) {
+            // We've reached a child of usedId
+            break;
+          }
+
+          newTargetId = parentId;
+        }
       }
 
-      const newTarget = getNodeByEntityId(newTargetId);
-      if (!newTarget) continue;
+      if (newTargetId) {
+        const newTarget = getNodeByEntityId(newTargetId);
 
-      // If locked, do not select it
-      if (newTarget.extras.locked) {
-        newTargetId = 0n;
+        // If locked, do not select it
+        if (newTarget?.extras.locked) {
+          newTargetId = 0n;
+        }
       }
 
       setTransformTarget(controls, newTargetId);

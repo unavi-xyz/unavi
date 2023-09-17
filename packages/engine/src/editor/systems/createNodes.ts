@@ -1,3 +1,4 @@
+import { SubScene } from "houseki/gltf";
 import {
   BoxCollider,
   CapsuleCollider,
@@ -6,8 +7,8 @@ import {
   MeshCollider,
   SphereCollider,
 } from "houseki/physics";
-import { GlobalTransform, Name, Parent, Transform } from "houseki/scene";
-import { Commands, Entity, Mut, Query } from "thyseus";
+import { GlobalTransform, Mesh, Name, Parent, Transform } from "houseki/scene";
+import { Commands, Entity, Mut, Query, Without } from "thyseus";
 
 import { EditorId } from "../../client/components";
 import { getEntityId } from "../entities";
@@ -15,7 +16,11 @@ import { SyncedNode_Collider_Type, syncedStore } from "../store";
 
 export function createNodes(
   commands: Commands,
-  nodes: Query<[Entity, EditorId, Mut<Name>, Mut<Transform>, Mut<Parent>]>,
+  nodes: Query<
+    [Entity, EditorId, Mut<Name>, Mut<Transform>, Mut<Parent>],
+    Without<SubScene>
+  >,
+  meshes: Query<[EditorId, Mut<Mesh>]>,
   boxColliders: Query<[Entity, Mut<BoxCollider>]>,
   sphereColliders: Query<[Entity, Mut<SphereCollider>]>,
   capsuleColliders: Query<[Entity, Mut<CapsuleCollider>]>,
@@ -45,6 +50,14 @@ export function createNodes(
         parent.id = getEntityId(node.parentId) ?? 0n;
       } else {
         parent.id = 0n;
+      }
+
+      for (const [meshId, mesh] of meshes) {
+        if (node.meshId === meshId.value) {
+          mesh.parentId = entity.id;
+        } else if (mesh.parentId === entity.id) {
+          mesh.parentId = 0n;
+        }
       }
 
       switch (node.collider.type) {

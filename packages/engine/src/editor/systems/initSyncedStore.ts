@@ -105,10 +105,16 @@ export function initSyncedStore(
         commands.getById(entityId).add(new EditorId(id));
 
         editMesh(id, {
+          colors: Array.from(geometry.colors.read(warehouse) ?? []),
           indices: Array.from(geometry.indices.read(warehouse) ?? []),
+          joints: Array.from(geometry.joints.read(warehouse) ?? []),
           normals: Array.from(geometry.normals.read(warehouse) ?? []),
           positions: Array.from(geometry.positions.read(warehouse) ?? []),
           uv: Array.from(geometry.uv.read(warehouse) ?? []),
+          uv1: Array.from(geometry.uv1.read(warehouse) ?? []),
+          uv2: Array.from(geometry.uv2.read(warehouse) ?? []),
+          uv3: Array.from(geometry.uv3.read(warehouse) ?? []),
+          weights: Array.from(geometry.weights.read(warehouse) ?? []),
         });
 
         const nodeId = getId(mesh.parentId);

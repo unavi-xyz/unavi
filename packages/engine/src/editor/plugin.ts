@@ -4,6 +4,7 @@ import { run, WorldBuilder } from "thyseus";
 import { EngineSchedules } from "../constants";
 import { createMeshes } from "./systems/createMeshes";
 import { createNodes } from "./systems/createNodes";
+import { createScenes } from "./systems/createScenes";
 import { enterEditMode } from "./systems/enterEditMode";
 import { exitEditMode } from "./systems/exitEditMode";
 import { initSyncedStore } from "./systems/initSyncedStore";
@@ -14,12 +15,16 @@ import { syncTransformControlTarget } from "./systems/syncTransformControlTarget
 
 export function editorPlugin(builder: WorldBuilder) {
   builder
-    .addSystemsToSchedule(EngineSchedules.EnterEditMode, enterEditMode)
+    .addSystemsToSchedule(
+      EngineSchedules.EnterEditMode,
+      initSyncedStore,
+      enterEditMode
+    )
     .addSystemsToSchedule(EngineSchedules.ExitEditMode, exitEditMode)
     .addSystemsToSchedule(EngineSchedules.Export, sendExportEvent)
-    .addSystemsToSchedule(EngineSchedules.EnterEditMode, initSyncedStore)
     .addSystems(
       setEntityIds,
+      createScenes,
       createNodes,
       createMeshes,
       syncTransformControlChanges,

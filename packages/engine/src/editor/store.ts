@@ -62,6 +62,12 @@ export type SyncedMesh = {
   normals: number[];
   positions: number[];
   uv: number[];
+  uv1: number[];
+  uv2: number[];
+  uv3: number[];
+  colors: number[];
+  joints: number[];
+  weights: number[];
 };
 
 export type SyncedStore = {

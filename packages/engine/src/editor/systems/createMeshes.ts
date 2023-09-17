@@ -1,5 +1,5 @@
 import { Resource, Warehouse } from "houseki/core";
-import { Geometry, Mesh, Name } from "houseki/scene";
+import { Geometry, Mesh, Name, StandardMaterial } from "houseki/scene";
 import { Commands, Entity, Mut, Query, Res, With } from "thyseus";
 
 import { EditorId } from "../../client/components";
@@ -28,6 +28,12 @@ export function createMeshes(
       setAttribute(mesh.positions, geometry.positions, warehouse);
       setAttribute(mesh.normals, geometry.normals, warehouse);
       setAttribute(mesh.uv, geometry.uv, warehouse);
+      setAttribute(mesh.uv1, geometry.uv1, warehouse);
+      setAttribute(mesh.uv2, geometry.uv2, warehouse);
+      setAttribute(mesh.uv3, geometry.uv3, warehouse);
+      setAttribute(mesh.colors, geometry.colors, warehouse);
+      setAttribute(mesh.joints, geometry.joints, warehouse);
+      setAttribute(mesh.weights, geometry.weights, warehouse);
     }
   }
 
@@ -39,7 +45,8 @@ export function createMeshes(
         .add(new EditorId(id))
         .addType(Name)
         .addType(Mesh)
-        .addType(Geometry);
+        .addType(Geometry)
+        .addType(StandardMaterial);
     }
   }
 }

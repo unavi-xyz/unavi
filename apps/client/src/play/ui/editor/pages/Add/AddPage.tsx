@@ -8,6 +8,7 @@ import {
   BiText,
 } from "react-icons/bi";
 
+import { usePlayStore } from "@/app/play/playStore";
 import { LeftPanelPage } from "@/app/play/types";
 
 import { addBox } from "../../../../actions/addBox";
@@ -19,6 +20,7 @@ function wrapAdd(fn: () => string) {
   return () => {
     const id = fn();
     useSceneStore.setState({ selectedId: id });
+    usePlayStore.setState({ leftPage: LeftPanelPage.Scene });
   };
 }
 

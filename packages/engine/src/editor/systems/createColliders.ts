@@ -31,166 +31,156 @@ export function createColliders(
     const node = syncedStore.nodes[id.value];
     if (!node) continue;
 
-    switch (node.collider.type) {
-      case SyncedNode_Collider_Type.BOX: {
-        let found = false;
+    let foundBox = false;
+    let foundSphere = false;
+    let foundCapsule = false;
+    let foundCylinder = false;
+    let foundMesh = false;
+    let foundHull = false;
 
-        for (const [ent, collider] of boxColliders) {
-          if (ent.id === entity.id) {
-            found = true;
-            collider.size.fromArray(node.collider.size);
-          }
-        }
+    for (const [ent, collider] of boxColliders) {
+      if (ent.id !== entity.id) continue;
 
-        if (!found) {
-          commands
-            .get(entity)
-            .remove(SphereCollider)
-            .remove(CapsuleCollider)
-            .remove(CylinderCollider)
-            .remove(MeshCollider)
-            .remove(HullCollider)
-            .add(new BoxCollider(node.collider.size));
-        }
-
+      if (node.collider.type !== SyncedNode_Collider_Type.BOX) {
+        commands.get(entity).remove(BoxCollider);
         break;
       }
 
-      case SyncedNode_Collider_Type.SPHERE: {
-        let found = false;
+      foundBox = true;
 
-        for (const [ent, collider] of sphereColliders) {
-          if (ent.id === entity.id) {
-            found = true;
-            collider.radius = node.collider.radius;
-          }
-        }
+      collider.size.fromArray(node.collider.size);
+    }
 
-        if (!found) {
-          commands
-            .get(entity)
-            .remove(BoxCollider)
-            .remove(CapsuleCollider)
-            .remove(CylinderCollider)
-            .remove(MeshCollider)
-            .remove(HullCollider)
-            .add(new SphereCollider(node.collider.radius));
-        }
+    if (!foundBox && node.collider.type === SyncedNode_Collider_Type.BOX) {
+      commands.get(entity).add(new BoxCollider(node.collider.size));
+    }
 
+    for (const [ent, collider] of sphereColliders) {
+      if (ent.id !== entity.id) continue;
+
+      if (node.collider.type !== SyncedNode_Collider_Type.SPHERE) {
+        commands.get(entity).remove(SphereCollider);
         break;
       }
 
-      case SyncedNode_Collider_Type.CAPSULE: {
-        let found = false;
+      foundSphere = true;
 
-        for (const [ent, collider] of capsuleColliders) {
-          if (ent.id === entity.id) {
-            found = true;
-            collider.radius = node.collider.radius;
-            collider.height = node.collider.height;
-          }
-        }
+      collider.radius = node.collider.radius;
+    }
 
-        if (!found) {
-          commands
-            .get(entity)
-            .remove(BoxCollider)
-            .remove(SphereCollider)
-            .remove(CylinderCollider)
-            .remove(MeshCollider)
-            .remove(HullCollider)
-            .add(
-              new CapsuleCollider(node.collider.radius, node.collider.height)
-            );
-        }
+    if (
+      !foundSphere &&
+      node.collider.type === SyncedNode_Collider_Type.SPHERE
+    ) {
+      commands.get(entity).add(new SphereCollider(node.collider.radius));
+    }
 
+    for (const [ent, collider] of capsuleColliders) {
+      if (ent.id !== entity.id) continue;
+
+      if (node.collider.type !== SyncedNode_Collider_Type.CAPSULE) {
+        commands.get(entity).remove(CapsuleCollider);
         break;
       }
 
-      case SyncedNode_Collider_Type.CYLINDER: {
-        let found = false;
+      foundCapsule = true;
 
-        for (const [ent, collider] of cylinderColliders) {
-          if (ent.id === entity.id) {
-            found = true;
-            collider.radius = node.collider.radius;
-            collider.height = node.collider.height;
-          }
-        }
+      collider.radius = node.collider.radius;
+      collider.height = node.collider.height;
+    }
 
-        if (!found) {
-          commands
-            .get(entity)
-            .remove(BoxCollider)
-            .remove(SphereCollider)
-            .remove(CapsuleCollider)
-            .remove(MeshCollider)
-            .remove(HullCollider)
-            .add(
-              new CylinderCollider(node.collider.radius, node.collider.height)
-            );
-        }
+    if (
+      !foundCapsule &&
+      node.collider.type === SyncedNode_Collider_Type.CAPSULE
+    ) {
+      commands
+        .get(entity)
+        .add(new CapsuleCollider(node.collider.radius, node.collider.height));
+    }
 
+    for (const [ent, collider] of cylinderColliders) {
+      if (ent.id !== entity.id) continue;
+
+      if (node.collider.type !== SyncedNode_Collider_Type.CYLINDER) {
+        commands.get(entity).remove(CylinderCollider);
         break;
       }
 
-      case SyncedNode_Collider_Type.MESH: {
-        let found = false;
+      foundCylinder = true;
 
-        const meshId = getEntityId(node.collider.meshId);
-        if (!meshId) break;
+      collider.radius = node.collider.radius;
+      collider.height = node.collider.height;
+    }
 
-        for (const [ent, collider] of meshColliders) {
-          if (ent.id === entity.id) {
-            found = true;
-            collider.meshId = meshId;
-          }
-        }
+    if (
+      !foundCylinder &&
+      node.collider.type === SyncedNode_Collider_Type.CYLINDER
+    ) {
+      commands
+        .get(entity)
+        .add(new CylinderCollider(node.collider.radius, node.collider.height));
+    }
 
-        if (!found) {
-          const collider = new MeshCollider();
-          collider.meshId = meshId;
-          commands
-            .get(entity)
-            .remove(BoxCollider)
-            .remove(SphereCollider)
-            .remove(CapsuleCollider)
-            .remove(CylinderCollider)
-            .remove(HullCollider)
-            .add(collider);
-        }
+    for (const [ent, collider] of meshColliders) {
+      if (ent.id !== entity.id) continue;
 
+      if (node.collider.type !== SyncedNode_Collider_Type.MESH) {
+        commands.get(entity).remove(MeshCollider);
         break;
       }
 
-      case SyncedNode_Collider_Type.HULL: {
-        let found = false;
+      foundMesh = true;
 
-        const meshId = getEntityId(node.collider.meshId);
-        if (!meshId) break;
+      const meshId = getEntityId(node.collider.meshId);
+      if (meshId) {
+        collider.meshId = meshId;
+      } else {
+        collider.meshId = entity.id;
+      }
+    }
 
-        for (const [ent, collider] of hullColliders) {
-          if (ent.id === entity.id) {
-            found = true;
-            collider.meshId = meshId;
-          }
-        }
+    if (!foundMesh && node.collider.type === SyncedNode_Collider_Type.MESH) {
+      const mesh = new MeshCollider();
 
-        if (!found) {
-          const collider = new HullCollider();
-          collider.meshId = meshId;
-          commands
-            .get(entity)
-            .remove(BoxCollider)
-            .remove(SphereCollider)
-            .remove(CapsuleCollider)
-            .remove(CylinderCollider)
-            .remove(MeshCollider)
-            .add(collider);
-        }
+      const meshId = getEntityId(node.collider.meshId);
+      if (meshId) {
+        mesh.meshId = meshId;
+      } else {
+        mesh.meshId = entity.id;
+      }
 
+      commands.get(entity).add(mesh);
+    }
+
+    for (const [ent, collider] of hullColliders) {
+      if (ent.id !== entity.id) continue;
+
+      if (node.collider.type !== SyncedNode_Collider_Type.HULL) {
+        commands.get(entity).remove(HullCollider);
         break;
       }
+
+      foundHull = true;
+
+      const meshId = getEntityId(node.collider.meshId);
+      if (meshId) {
+        collider.meshId = meshId;
+      } else {
+        collider.meshId = entity.id;
+      }
+    }
+
+    if (!foundHull && node.collider.type === SyncedNode_Collider_Type.HULL) {
+      const mesh = new HullCollider();
+
+      const meshId = getEntityId(node.collider.meshId);
+      if (meshId) {
+        mesh.meshId = meshId;
+      } else {
+        mesh.meshId = entity.id;
+      }
+
+      commands.get(entity).add(mesh);
     }
   }
 }

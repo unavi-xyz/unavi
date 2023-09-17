@@ -33,7 +33,7 @@ export function editorPlugin(builder: WorldBuilder) {
       createColliders,
       createRigidBodies,
       createMeshes,
-      syncTransformControlChanges,
+      run(syncTransformControlChanges).before(createNodes),
       run(syncTransformControlTarget).after(selectTarget).before(createControls)
     );
 }

@@ -8,7 +8,6 @@ import {
   BiText,
 } from "react-icons/bi";
 
-import { usePlayStore } from "@/app/play/playStore";
 import { LeftPanelPage } from "@/app/play/types";
 
 import { addBox } from "../../../../actions/addBox";
@@ -18,20 +17,8 @@ import PanelPage from "../PanelPage";
 
 function wrapAdd(fn: () => string) {
   return () => {
-    const name = fn();
-
-    setTimeout(() => {
-      const { items } = useSceneStore.getState();
-
-      for (const [, item] of items) {
-        if (item.name === name) {
-          useSceneStore.setState({ selectedId: item.entityId });
-          break;
-        }
-      }
-
-      usePlayStore.setState({ leftPage: LeftPanelPage.Scene });
-    }, 40);
+    const id = fn();
+    useSceneStore.setState({ selectedId: id });
   };
 }
 

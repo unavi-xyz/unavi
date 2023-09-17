@@ -1,6 +1,7 @@
 import { TransformControls, TransformMode } from "houseki/transform";
 import { Mut, Query, struct, SystemRes, u64 } from "thyseus";
 
+import { getEntityId, getId, getNodeByEntityId } from "../entities";
 import { useSceneStore } from "../sceneStore";
 import { Tool } from "../types";
 
@@ -9,15 +10,14 @@ class LocalStore {
   lastTransformTarget: u64 = 0n;
 }
 
-export function syncTransformControls(
+export function syncTransformControlTarget(
   localStore: SystemRes<LocalStore>,
   transformControls: Query<Mut<TransformControls>>
 ) {
   for (const controls of transformControls) {
     const targetId = controls.targetId;
 
-    const { sceneTreeId, selectedId, rootId, items, tool } =
-      useSceneStore.getState();
+    const { sceneTreeId, selectedId, rootId, tool } = useSceneStore.getState();
 
     switch (tool) {
       case Tool.Translate: {
@@ -36,7 +36,8 @@ export function syncTransformControls(
       }
     }
 
-    const uiId = selectedId ?? 0n;
+    const selectedEntityId = selectedId ? getEntityId(selectedId) : undefined;
+    const uiId = selectedEntityId ?? 0n;
 
     if (targetId !== localStore.lastTransformTarget) {
       // Set UI from transform controls
@@ -45,14 +46,20 @@ export function syncTransformControls(
       const usedId = sceneTreeId ?? rootId;
       if (!usedId) continue;
 
+      const usedEntityId = getEntityId(usedId);
+      if (!usedEntityId) continue;
+
       // Continue up tree until we reach a child of usedId
       let newTargetId = targetId;
 
-      while (newTargetId !== usedId) {
-        const parentId: bigint | undefined = items.get(newTargetId)?.parentId;
+      while (newTargetId !== usedEntityId) {
+        const newTarget = getNodeByEntityId(newTargetId);
+        if (!newTarget?.parentId) break;
+
+        const parentId = getEntityId(newTarget.parentId);
         if (!parentId) break;
 
-        if (parentId === usedId) {
+        if (parentId === usedEntityId) {
           // We've reached a child of usedId
           break;
         }
@@ -60,8 +67,11 @@ export function syncTransformControls(
         newTargetId = parentId;
       }
 
+      const newTarget = getNodeByEntityId(newTargetId);
+      if (!newTarget) continue;
+
       // If locked, do not select it
-      if (items.get(newTargetId)?.locked) {
+      if (newTarget.locked) {
         newTargetId = 0n;
       }
 
@@ -75,14 +85,15 @@ export function syncTransformControls(
 }
 
 function setTransformTarget(controls: TransformControls, targetId: bigint) {
-  const { items } = useSceneStore.getState();
-
   controls.targetId = targetId;
 
-  const selectedId = targetId === 0n ? undefined : targetId;
+  const selectedEntityId = targetId === 0n ? undefined : targetId;
+  const selectedId = selectedEntityId ? getId(selectedEntityId) : undefined;
   useSceneStore.setState({ selectedId });
 
   // Disable transform controls if target is locked
-  const locked = items.get(targetId)?.locked;
-  controls.enabled = !locked;
+  const target = getNodeByEntityId(targetId);
+  if (!target) return;
+
+  controls.enabled = !target.locked;
 }

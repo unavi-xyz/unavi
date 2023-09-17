@@ -1,31 +1,42 @@
-import { useSceneStore } from "@unavi/engine";
+import { syncedStore, useSceneStore } from "@unavi/engine";
+import { useSnapshot } from "valtio";
 
 import { usePlayStore } from "@/app/play/playStore";
 import { LeftPanelPage } from "@/app/play/types";
 
-import { useNodeValue } from "../../hooks/useNodeValue";
 import { getDisplayName } from "../../utils/getDisplayName";
 import PanelPage from "../PanelPage";
 import SceneTree from "./SceneTree";
 
 export default function ScenePage() {
+  const snap = useSnapshot(syncedStore);
+
   const rootId = useSceneStore((state) => state.rootId);
   const sceneTreeId = useSceneStore((state) => state.sceneTreeId);
-  const usedId = sceneTreeId || rootId;
+  const id = sceneTreeId || rootId;
 
-  const parentId = useNodeValue(usedId, "parentId");
-  const name = useNodeValue(usedId, "name");
-
-  if (usedId === undefined) {
+  if (!id) {
     return null;
   }
 
-  const handleBack = parentId
-    ? () => useSceneStore.setState({ sceneTreeId: parentId })
-    : undefined;
+  const node = snap.nodes[id];
+  const scene = snap.scenes[id];
 
-  const displayName =
-    usedId === rootId ? "Scene" : getDisplayName(name, usedId);
+  const isRoot = id === rootId;
+  const obj = isRoot ? scene : node;
+
+  if (!obj) {
+    return null;
+  }
+
+  let handleBack = undefined;
+
+  if (node) {
+    const parentId = node.parentId || rootId;
+    handleBack = () => useSceneStore.setState({ sceneTreeId: parentId });
+  }
+
+  const displayName = id === rootId ? "Scene" : getDisplayName(obj.name, id);
 
   return (
     <PanelPage title={displayName} onBack={handleBack}>
@@ -36,7 +47,7 @@ export default function ScenePage() {
         Add
       </button>
 
-      <SceneTree rootId={usedId} />
+      <SceneTree obj={obj} />
     </PanelPage>
   );
 }

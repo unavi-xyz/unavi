@@ -2,41 +2,27 @@ import { createControls, selectTarget } from "houseki/transform";
 import { run, WorldBuilder } from "thyseus";
 
 import { EngineSchedules } from "../constants";
-import { addMeshPrimitives } from "./systems/addMeshPrimitives";
-import { addNodes } from "./systems/addNodes";
-import { createNodeItemPhysics } from "./systems/createNodeItemPhysics";
-import { createNodeItems } from "./systems/createNodeItems";
-import { editColliders } from "./systems/editColliders";
-import { editExtras } from "./systems/editExtras";
-import { editIds } from "./systems/editIds";
-import { editMeshPrimitives } from "./systems/editMeshPrimitives";
-import { editNodes } from "./systems/editNodes";
-import { editRigidBodies } from "./systems/editRigidBodies";
+import { createMeshes } from "./systems/createMeshes";
+import { createNodes } from "./systems/createNodes";
 import { enterEditMode } from "./systems/enterEditMode";
 import { exitEditMode } from "./systems/exitEditMode";
-import { initIds } from "./systems/initIds";
-import { publishTransformControlChanges } from "./systems/publishTransformControlChanges";
+import { initSyncedStore } from "./systems/initSyncedStore";
 import { sendExportEvent } from "./systems/sendExportEvent";
-import { syncTransformControls } from "./systems/syncTransformControls";
+import { setEntityIds } from "./systems/setEntityIds";
+import { syncTransformControlChanges } from "./systems/syncTransformControlChanges";
+import { syncTransformControlTarget } from "./systems/syncTransformControlTarget";
 
 export function editorPlugin(builder: WorldBuilder) {
   builder
     .addSystemsToSchedule(EngineSchedules.EnterEditMode, enterEditMode)
     .addSystemsToSchedule(EngineSchedules.ExitEditMode, exitEditMode)
     .addSystemsToSchedule(EngineSchedules.Export, sendExportEvent)
-    .addSystemsToSchedule(EngineSchedules.EnterEditMode, initIds)
+    .addSystemsToSchedule(EngineSchedules.EnterEditMode, initSyncedStore)
     .addSystems(
-      addMeshPrimitives,
-      addNodes,
-      createNodeItems,
-      createNodeItemPhysics,
-      editExtras,
-      editMeshPrimitives,
-      editIds,
-      editNodes,
-      editRigidBodies,
-      editColliders,
-      publishTransformControlChanges,
-      run(syncTransformControls).after(selectTarget).before(createControls)
+      setEntityIds,
+      createNodes,
+      createMeshes,
+      syncTransformControlChanges,
+      run(syncTransformControlTarget).after(selectTarget).before(createControls)
     );
 }

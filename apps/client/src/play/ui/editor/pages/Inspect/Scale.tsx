@@ -1,34 +1,25 @@
+import { editNode, SyncedNode } from "@unavi/engine";
 import { useRef, useState } from "react";
 
-import { editNode } from "@/src/play/actions/editNode";
+import { DeepReadonly } from "@/src/play/utils/types";
 
-import { useNodeValue } from "../../hooks/useNodeValue";
-import { useNodeValueIndex } from "../../hooks/useNodeValueIndex";
 import NumberInput from "./NumberInput";
 
 interface Props {
-  entityId: bigint;
+  node: DeepReadonly<SyncedNode>;
 }
 
-export default function Scale({ entityId }: Props) {
-  const id = useNodeValue(entityId, "id");
-  const name = useNodeValue(entityId, "name");
-  const locked = useNodeValue(entityId, "locked");
+export default function Scale({ node }: Props) {
+  const rawX = node.scale[0] ?? 0;
+  const rawY = node.scale[1] ?? 0;
+  const rawZ = node.scale[2] ?? 0;
 
-  const rawX = useNodeValueIndex(entityId, "scale", 0);
-  const rawY = useNodeValueIndex(entityId, "scale", 1);
-  const rawZ = useNodeValueIndex(entityId, "scale", 2);
-
-  const [uiX, setX] = useState(rawX ?? 0);
-  const [uiY, setY] = useState(rawY ?? 0);
-  const [uiZ, setZ] = useState(rawZ ?? 0);
+  const [uiX, setX] = useState(rawX);
+  const [uiY, setY] = useState(rawY);
+  const [uiZ, setZ] = useState(rawZ);
 
   const [usingUI, setUsingUI] = useState(false);
   const usingUITimout = useRef<NodeJS.Timeout | null>(null);
-
-  if (!id || !name) {
-    return null;
-  }
 
   function usedUI() {
     setUsingUI(true);
@@ -61,11 +52,11 @@ export default function Scale({ entityId }: Props) {
         value={roundedX}
         label="X"
         placeholder="X"
-        disabled={locked}
+        disabled={node.locked}
         onValueChange={(val) => {
           usedUI();
           setX(val);
-          editNode(id, {
+          editNode(node.id, {
             scale: [val, y, z],
           });
         }}
@@ -74,11 +65,11 @@ export default function Scale({ entityId }: Props) {
         value={roundedY}
         label="Y"
         placeholder="Y"
-        disabled={locked}
+        disabled={node.locked}
         onValueChange={(val) => {
           usedUI();
           setY(val);
-          editNode(id, {
+          editNode(node.id, {
             scale: [x, val, z],
           });
         }}
@@ -87,11 +78,11 @@ export default function Scale({ entityId }: Props) {
         value={roundedZ}
         label="Z"
         placeholder="Z"
-        disabled={locked}
+        disabled={node.locked}
         onValueChange={(val) => {
           usedUI();
           setZ(val);
-          editNode(id, {
+          editNode(node.id, {
             scale: [x, y, val],
           });
         }}

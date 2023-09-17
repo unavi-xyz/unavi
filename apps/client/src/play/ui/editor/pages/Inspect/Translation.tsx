@@ -1,23 +1,18 @@
+import { editNode, SyncedNode } from "@unavi/engine";
 import { useRef, useState } from "react";
 
-import { editNode } from "@/src/play/actions/editNode";
+import { DeepReadonly } from "@/src/play/utils/types";
 
-import { useNodeValue } from "../../hooks/useNodeValue";
-import { useNodeValueIndex } from "../../hooks/useNodeValueIndex";
 import NumberInput from "./NumberInput";
 
 interface Props {
-  entityId: bigint;
+  node: DeepReadonly<SyncedNode>;
 }
 
-export default function Translation({ entityId }: Props) {
-  const id = useNodeValue(entityId, "id");
-  const name = useNodeValue(entityId, "name");
-  const locked = useNodeValue(entityId, "locked");
-
-  const rawX = useNodeValueIndex(entityId, "translation", 0);
-  const rawY = useNodeValueIndex(entityId, "translation", 1);
-  const rawZ = useNodeValueIndex(entityId, "translation", 2);
+export default function Translation({ node }: Props) {
+  const rawX = node?.translation[0];
+  const rawY = node?.translation[1];
+  const rawZ = node?.translation[2];
 
   const [uiX, setX] = useState(rawX ?? 0);
   const [uiY, setY] = useState(rawY ?? 0);
@@ -25,10 +20,6 @@ export default function Translation({ entityId }: Props) {
 
   const [usingUI, setUsingUI] = useState(false);
   const usingUITimout = useRef<NodeJS.Timeout | null>(null);
-
-  if (!id || !name) {
-    return null;
-  }
 
   function usedUI() {
     setUsingUI(true);
@@ -61,11 +52,11 @@ export default function Translation({ entityId }: Props) {
         value={roundedX}
         label="X"
         placeholder="X"
-        disabled={locked}
+        disabled={node.locked}
         onValueChange={(val) => {
           usedUI();
           setX(val);
-          editNode(id, {
+          editNode(node.id, {
             translation: [val, y, z],
           });
         }}
@@ -74,11 +65,11 @@ export default function Translation({ entityId }: Props) {
         value={roundedY}
         label="Y"
         placeholder="Y"
-        disabled={locked}
+        disabled={node.locked}
         onValueChange={(val) => {
           usedUI();
           setY(val);
-          editNode(id, {
+          editNode(node.id, {
             translation: [x, val, z],
           });
         }}
@@ -87,11 +78,11 @@ export default function Translation({ entityId }: Props) {
         value={roundedZ}
         label="Z"
         placeholder="Z"
-        disabled={locked}
+        disabled={node.locked}
         onValueChange={(val) => {
           usedUI();
           setZ(val);
-          editNode(id, {
+          editNode(node.id, {
             translation: [x, y, val],
           });
         }}

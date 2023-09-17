@@ -1,7 +1,5 @@
+import { addMesh, editMesh } from "@unavi/engine";
 import { BufferAttribute, BufferGeometry } from "three";
-
-import { addMesh } from "../addMesh";
-import { editMesh } from "../editMesh";
 
 export function addThreeMesh(geometry: BufferGeometry) {
   const positionsAttr = geometry.getAttribute("position") as BufferAttribute;
@@ -18,8 +16,8 @@ export function addThreeMesh(geometry: BufferGeometry) {
 
   editMesh(id, {
     indices: Array.from(indices),
-    normal: Array.from(normals),
-    position: Array.from(positions),
+    normals: Array.from(normals),
+    positions: Array.from(positions),
     uv: Array.from(uvs),
   });
 

@@ -1,65 +1,55 @@
 import {
-  EditNode_Collider_Type,
-  EditNode_RigidBody_Type,
-} from "@unavi/protocol";
+  editNode,
+  SyncedNode,
+  SyncedNode_Collider_Type,
+  SyncedNode_RigidBody_Type,
+} from "@unavi/engine";
 
-import { editNode } from "@/src/play/actions/editNode";
+import { DeepReadonly } from "@/src/play/utils/types";
 
-import { useNodeValue } from "../../hooks/useNodeValue";
-import { useNodeValueIndex } from "../../hooks/useNodeValueIndex";
 import InspectSection from "./InspectSection";
 import NumberInput from "./NumberInput";
 import { SelectInput } from "./SelectInput";
 
 interface Props {
-  entityId: bigint;
+  node: DeepReadonly<SyncedNode>;
 }
 
-export default function Physics({ entityId }: Props) {
-  const id = useNodeValue(entityId, "id");
-  const name = useNodeValue(entityId, "name");
-  const locked = useNodeValue(entityId, "locked");
-  const colliderType = useNodeValue(entityId, "colliderType");
-  const rigidBodyType = useNodeValue(entityId, "rigidBodyType");
-
-  const size = useNodeValueIndex(entityId, "collider", "size") ?? [0, 0, 0];
-  const height = useNodeValueIndex(entityId, "collider", "height") ?? 0;
-  const radius = useNodeValueIndex(entityId, "collider", "radius") ?? 0;
-
-  if (!id || !name || !colliderType || !rigidBodyType) {
-    return null;
-  }
-
-  const handleRemove = locked
+export default function Physics({ node }: Props) {
+  const handleRemove = node.locked
     ? undefined
     : () => {
-        editNode(id, {
-          collider: {
-            type: EditNode_Collider_Type.NONE,
-          },
-          rigidBody: {
-            type: EditNode_RigidBody_Type.NONE,
-          },
-        });
-      };
+      editNode(node.id, {
+        collider: {
+          height: 1,
+          meshId: "",
+          radius: 1,
+          size: [1, 1, 1],
+          type: SyncedNode_Collider_Type.NONE,
+        },
+      });
+    };
 
-  const rigidBodyOption = getRigidBodyOption(rigidBodyType);
-  const colliderOption = getColliderOption(colliderType);
+  const sizeX = node.collider.size[0] ?? 0;
+  const sizeY = node.collider.size[1] ?? 0;
+  const sizeZ = node.collider.size[2] ?? 0;
 
   return (
     <InspectSection title="Physics" onRemove={handleRemove}>
       <SelectInput
         label="Type"
-        disabled={locked}
-        value={rigidBodyOption}
-        options={[RigidBodyOption.Static, RigidBodyOption.Dynamic]}
+        disabled={node.locked}
+        value={node.rigidBody.type}
+        options={[
+          SyncedNode_RigidBody_Type.STATIC,
+          SyncedNode_RigidBody_Type.DYNAMIC,
+        ]}
         onChange={(e) => {
-          const value = e.currentTarget.value as RigidBodyOption;
-          const rigidBodyType = getRigidBodyType(value);
+          const value = e.currentTarget.value as SyncedNode_RigidBody_Type;
 
-          editNode(id, {
+          editNode(node.id, {
             rigidBody: {
-              type: rigidBodyType,
+              type: value,
             },
           });
         }}
@@ -67,74 +57,71 @@ export default function Physics({ entityId }: Props) {
 
       <SelectInput
         label="Shape"
-        disabled={locked}
-        value={colliderOption}
+        disabled={node.locked}
+        value={node.collider.type}
         options={[
-          ColliderOption.Box,
-          ColliderOption.Sphere,
-          ColliderOption.Cylinder,
-          ColliderOption.Capsule,
-          ColliderOption.Mesh,
-          ColliderOption.Hull,
+          SyncedNode_Collider_Type.BOX,
+          SyncedNode_Collider_Type.SPHERE,
+          SyncedNode_Collider_Type.CAPSULE,
+          SyncedNode_Collider_Type.CYLINDER,
+          SyncedNode_Collider_Type.MESH,
+          SyncedNode_Collider_Type.CONVEX,
         ]}
         onChange={(e) => {
-          const value = e.currentTarget.value as ColliderOption;
-          const colliderType = getColliderType(value);
+          const value = e.currentTarget.value as SyncedNode_Collider_Type;
 
-          editNode(id, {
+          editNode(node.id, {
             collider: {
-              height: 1,
-              mesh: id,
-              radius: 0.5,
-              size: [1, 1, 1],
-              type: colliderType,
+              ...node.collider,
+              size: [sizeX, sizeY, sizeZ],
+              type: value,
             },
           });
         }}
       />
 
-      {colliderType === EditNode_Collider_Type.BOX && (
+      {node.collider.type === SyncedNode_Collider_Type.BOX && (
         <div className="grid grid-cols-4">
           <div className="w-20 shrink-0 font-bold text-neutral-400">Size</div>
 
           <NumberInput
             label="X"
-            disabled={locked}
+            disabled={node.locked}
             min={0}
-            value={round(size[0])}
+            value={round(sizeX)}
             onValueChange={(val) => {
-              editNode(id, {
+              editNode(node.id, {
                 collider: {
-                  size: [val, size[1], size[2]],
-                  type: colliderType,
+                  ...node.collider,
+                  size: [val, sizeY, sizeZ],
                 },
               });
             }}
           />
           <NumberInput
             label="Y"
-            disabled={locked}
+            disabled={node.locked}
             min={0}
-            value={round(size[1])}
+            value={round(sizeY)}
             onValueChange={(val) => {
-              editNode(id, {
+              editNode(node.id, {
                 collider: {
-                  size: [size[0], val, size[2]],
-                  type: colliderType,
+                  ...node.collider,
+                  size: [sizeX, val, sizeZ],
                 },
               });
             }}
           />
           <NumberInput
             label="Z"
-            disabled={locked}
+            disabled={node.locked}
             min={0}
-            value={round(size[2])}
+            value={round(sizeZ)}
             onValueChange={(val) => {
-              editNode(id, {
+              editNode(node.id, {
                 collider: {
-                  size: [size[0], size[1], val],
-                  type: colliderType,
+                  ...node.collider,
+                  size: [sizeX, sizeY, val],
                 },
               });
             }}
@@ -142,22 +129,23 @@ export default function Physics({ entityId }: Props) {
         </div>
       )}
 
-      {colliderType === EditNode_Collider_Type.SPHERE ||
-      colliderType === EditNode_Collider_Type.CAPSULE ||
-      colliderType === EditNode_Collider_Type.CYLINDER ? (
+      {node.collider.type === SyncedNode_Collider_Type.SPHERE ||
+        node.collider.type === SyncedNode_Collider_Type.CAPSULE ||
+        node.collider.type === SyncedNode_Collider_Type.CYLINDER ? (
         <div className="grid grid-cols-4">
           <div className="w-20 shrink-0 font-bold text-neutral-400">Radius</div>
 
           <div className="col-span-3">
             <NumberInput
-              disabled={locked}
+              disabled={node.locked}
               min={0}
-              value={round(radius)}
+              value={round(node.collider.radius)}
               onValueChange={(val) => {
-                editNode(id, {
+                editNode(node.id, {
                   collider: {
+                    ...node.collider,
                     radius: val,
-                    type: colliderType,
+                    size: [sizeX, sizeY, sizeZ],
                   },
                 });
               }}
@@ -166,21 +154,22 @@ export default function Physics({ entityId }: Props) {
         </div>
       ) : null}
 
-      {colliderType === EditNode_Collider_Type.CAPSULE ||
-      colliderType === EditNode_Collider_Type.CYLINDER ? (
+      {node.collider.type === SyncedNode_Collider_Type.CAPSULE ||
+        node.collider.type === SyncedNode_Collider_Type.CYLINDER ? (
         <div className="grid grid-cols-4">
           <div className="w-20 shrink-0 font-bold text-neutral-400">Height</div>
 
           <div className="col-span-3">
             <NumberInput
-              disabled={locked}
+              disabled={node.locked}
               min={0}
-              value={round(height)}
+              value={round(node.collider.height)}
               onValueChange={(val) => {
-                editNode(id, {
+                editNode(node.id, {
                   collider: {
+                    ...node.collider,
                     height: val,
-                    type: colliderType,
+                    size: [sizeX, sizeY, sizeZ],
                   },
                 });
               }}
@@ -190,108 +179,6 @@ export default function Physics({ entityId }: Props) {
       ) : null}
     </InspectSection>
   );
-}
-
-enum RigidBodyOption {
-  Static = "static",
-  Dynamic = "dynamic",
-}
-
-function getRigidBodyOption(type: EditNode_RigidBody_Type): RigidBodyOption {
-  switch (type) {
-    case EditNode_RigidBody_Type.STATIC: {
-      return RigidBodyOption.Static;
-    }
-
-    case EditNode_RigidBody_Type.DYNAMIC: {
-      return RigidBodyOption.Dynamic;
-    }
-
-    default: {
-      return RigidBodyOption.Static;
-    }
-  }
-}
-
-function getRigidBodyType(option: RigidBodyOption): EditNode_RigidBody_Type {
-  switch (option) {
-    case RigidBodyOption.Static: {
-      return EditNode_RigidBody_Type.STATIC;
-    }
-
-    case RigidBodyOption.Dynamic: {
-      return EditNode_RigidBody_Type.DYNAMIC;
-    }
-  }
-}
-
-enum ColliderOption {
-  Box = "box",
-  Sphere = "sphere",
-  Cylinder = "cylinder",
-  Capsule = "capsule",
-  Mesh = "mesh",
-  Hull = "hull",
-}
-
-function getColliderOption(type: EditNode_Collider_Type): ColliderOption {
-  switch (type) {
-    case EditNode_Collider_Type.BOX: {
-      return ColliderOption.Box;
-    }
-
-    case EditNode_Collider_Type.SPHERE: {
-      return ColliderOption.Sphere;
-    }
-
-    case EditNode_Collider_Type.CYLINDER: {
-      return ColliderOption.Cylinder;
-    }
-
-    case EditNode_Collider_Type.CAPSULE: {
-      return ColliderOption.Capsule;
-    }
-
-    case EditNode_Collider_Type.MESH: {
-      return ColliderOption.Mesh;
-    }
-
-    case EditNode_Collider_Type.HULL: {
-      return ColliderOption.Hull;
-    }
-
-    default: {
-      return ColliderOption.Box;
-    }
-  }
-}
-
-function getColliderType(option: ColliderOption): EditNode_Collider_Type {
-  switch (option) {
-    case ColliderOption.Box: {
-      return EditNode_Collider_Type.BOX;
-    }
-
-    case ColliderOption.Sphere: {
-      return EditNode_Collider_Type.SPHERE;
-    }
-
-    case ColliderOption.Cylinder: {
-      return EditNode_Collider_Type.CYLINDER;
-    }
-
-    case ColliderOption.Capsule: {
-      return EditNode_Collider_Type.CAPSULE;
-    }
-
-    case ColliderOption.Mesh: {
-      return EditNode_Collider_Type.MESH;
-    }
-
-    case ColliderOption.Hull: {
-      return EditNode_Collider_Type.HULL;
-    }
-  }
 }
 
 function round(num: number, precision = 1000) {

@@ -1,23 +1,19 @@
-import { EditNode, EditorEvent } from "@unavi/protocol";
 import { Transform } from "houseki/scene";
 import { TransformControls } from "houseki/transform";
 import { Entity, Query, struct, SystemRes, u32 } from "thyseus";
 
-import { useClientStore } from "../../client";
 import { EditorId } from "../../client/components";
+import { editNode } from "../actions";
 
 const PUBLISH_INTERVAL = 25;
 
 @struct
 class LocalRes {
   wasDragging: boolean = false;
-  lastPublish: u32 = 0;
+  lastSync: u32 = 0;
 }
 
-/**
- * Publish final transform, and on an interval while dragging
- */
-export function publishTransformControlChanges(
+export function syncTransformControlChanges(
   localRes: SystemRes<LocalRes>,
   transformControls: Query<TransformControls>,
   ids: Query<[Entity, EditorId]>,
@@ -32,14 +28,14 @@ export function publishTransformControlChanges(
     const now = performance.now();
 
     if (changedDragState) {
-      localRes.lastPublish = now;
+      localRes.lastSync = now;
     }
 
-    const shouldPublish =
-      changedDragState || now - localRes.lastPublish > PUBLISH_INTERVAL;
+    const shouldSync =
+      changedDragState || now - localRes.lastSync > PUBLISH_INTERVAL;
 
-    if (shouldPublish) {
-      localRes.lastPublish = now;
+    if (shouldSync) {
+      localRes.lastSync = now;
 
       let id: string | undefined;
       for (const [entity, editorId] of ids) {
@@ -59,16 +55,11 @@ export function publishTransformControlChanges(
       }
       if (!transform) continue;
 
-      const editNode = EditNode.create({
+      editNode(id, {
         rotation: transform.rotation.toArray(),
         scale: transform.scale.toArray(),
-        target: id,
         translation: transform.translation.toArray(),
       });
-      const event = EditorEvent.create({
-        event: { editNode, oneofKind: "editNode" },
-      });
-      useClientStore.getState().sendEditorEvent(event);
     }
   }
 }

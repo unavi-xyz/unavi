@@ -1,21 +1,18 @@
-import { Scene, SceneStruct } from "houseki/scene";
-import { Entity, Query, Res } from "thyseus";
+import { SceneView } from "houseki/gltf";
+import { Entity, Query } from "thyseus";
 
-import { useClientStore } from "../clientStore";
+import { useSceneStore } from "../../editor";
 import { EditorId } from "../components";
 
 export function setRootId(
-  sceneStruct: Res<SceneStruct>,
-  scenes: Query<[Entity, Scene]>,
+  views: Query<SceneView>,
   ids: Query<[Entity, EditorId]>
 ) {
-  for (const [entity, scene] of scenes) {
-    if (sceneStruct.activeScene !== entity.id) continue;
-
-    for (const [entity, id] of ids) {
-      if (scene.rootId !== entity.id) continue;
-
-      useClientStore.setState({ rootId: id.value });
+  for (const view of views) {
+    for (const [ent, editorId] of ids) {
+      if (ent.id === view.active) {
+        useSceneStore.setState({ rootId: editorId.value });
+      }
     }
   }
 }

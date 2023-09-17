@@ -1,40 +1,31 @@
+import { editNode, SyncedNode } from "@unavi/engine";
 import { useRef, useState } from "react";
 import { Euler, Quaternion } from "three";
 
-import { editNode } from "@/src/play/actions/editNode";
+import { DeepReadonly } from "@/src/play/utils/types";
 
-import { useNodeValue } from "../../hooks/useNodeValue";
-import { useNodeValueIndex } from "../../hooks/useNodeValueIndex";
 import NumberInput from "./NumberInput";
 
 const euler = new Euler();
 const quat = new Quaternion();
 
 interface Props {
-  entityId: bigint;
+  node: DeepReadonly<SyncedNode>;
 }
 
-export default function Rotation({ entityId }: Props) {
-  const id = useNodeValue(entityId, "id");
-  const name = useNodeValue(entityId, "name");
-  const locked = useNodeValue(entityId, "locked");
+export default function Rotation({ node }: Props) {
+  const rawX = node.rotation[0] ?? 0;
+  const rawY = node.rotation[1] ?? 0;
+  const rawZ = node.rotation[2] ?? 0;
+  const rawW = node.rotation[3] ?? 0;
 
-  const rawX = useNodeValueIndex(entityId, "rotation", 0);
-  const rawY = useNodeValueIndex(entityId, "rotation", 1);
-  const rawZ = useNodeValueIndex(entityId, "rotation", 2);
-  const rawW = useNodeValueIndex(entityId, "rotation", 3);
-
-  const [uiX, setX] = useState(rawX ?? 0);
-  const [uiY, setY] = useState(rawY ?? 0);
-  const [uiZ, setZ] = useState(rawZ ?? 0);
-  const [uiW, setW] = useState(rawW ?? 0);
+  const [uiX, setX] = useState(rawX);
+  const [uiY, setY] = useState(rawY);
+  const [uiZ, setZ] = useState(rawZ);
+  const [uiW, setW] = useState(rawW);
 
   const [usingUI, setUsingUI] = useState(false);
   const usingUITimout = useRef<NodeJS.Timeout | null>(null);
-
-  if (!id || !name) {
-    return null;
-  }
 
   function usedUI() {
     setUsingUI(true);
@@ -50,10 +41,6 @@ export default function Rotation({ entityId }: Props) {
     usingUITimout.current = setTimeout(() => {
       setUsingUI(false);
     }, 100);
-  }
-
-  if (!id || !name) {
-    return null;
   }
 
   const qx = usingUI ? uiX : rawX ?? 0;
@@ -75,7 +62,7 @@ export default function Rotation({ entityId }: Props) {
         value={x}
         label="X"
         placeholder="X"
-        disabled={locked}
+        disabled={node.locked}
         sensitivity={360}
         onValueChange={(val) => {
           quat.setFromEuler(
@@ -88,7 +75,7 @@ export default function Rotation({ entityId }: Props) {
           setZ(quat.z);
           setW(quat.w);
 
-          editNode(id, {
+          editNode(node.id, {
             rotation: [quat.x, quat.y, quat.z, quat.w],
           });
         }}
@@ -97,7 +84,7 @@ export default function Rotation({ entityId }: Props) {
         value={y}
         label="Y"
         placeholder="Y"
-        disabled={locked}
+        disabled={node.locked}
         sensitivity={360}
         onValueChange={(val) => {
           quat.setFromEuler(
@@ -110,7 +97,7 @@ export default function Rotation({ entityId }: Props) {
           setZ(quat.z);
           setW(quat.w);
 
-          editNode(id, {
+          editNode(node.id, {
             rotation: [quat.x, quat.y, quat.z, quat.w],
           });
         }}
@@ -119,7 +106,7 @@ export default function Rotation({ entityId }: Props) {
         value={z}
         label="Z"
         placeholder="Z"
-        disabled={locked}
+        disabled={node.locked}
         sensitivity={360}
         onValueChange={(val) => {
           quat.setFromEuler(
@@ -132,7 +119,7 @@ export default function Rotation({ entityId }: Props) {
           setZ(quat.z);
           setW(quat.w);
 
-          editNode(id, {
+          editNode(node.id, {
             rotation: [quat.x, quat.y, quat.z, quat.w],
           });
         }}

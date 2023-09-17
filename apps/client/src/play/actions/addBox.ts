@@ -1,20 +1,19 @@
+import { addNode, editNode } from "@unavi/engine";
 import { BoxGeometry } from "three";
 
-import { addNode } from "./addNode";
-import { editNode } from "./editNode";
 import { addThreeMesh } from "./utils/addThreeMesh";
 import { getAddParent } from "./utils/getAddParent";
 
 export function addBox() {
   const geometry = new BoxGeometry();
-  const mesh = addThreeMesh(geometry);
-  const parent = getAddParent();
+  const meshId = addThreeMesh(geometry);
+  const parentId = getAddParent();
 
   const id = addNode("Box");
 
   editNode(id, {
-    mesh,
-    parent,
+    meshId,
+    parentId,
   });
 
   return id;

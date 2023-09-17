@@ -1,50 +1,45 @@
-import { useSceneStore } from "@unavi/engine";
+import { editNode, SyncedNode, useSceneStore } from "@unavi/engine";
 import { IoMdExpand, IoMdLock, IoMdUnlock } from "react-icons/io";
 
-import { editNode } from "@/src/play/actions/editNode";
+import { DeepReadonly } from "@/src/play/utils/types";
 import Tooltip from "@/src/ui/Tooltip";
 
-import { useNodeValue } from "../../hooks/useNodeValue";
+import { getDisplayName } from "../../utils/getDisplayName";
 
 interface Props {
-  entityId: bigint;
+  node: DeepReadonly<SyncedNode>;
 }
 
-export default function TreeItem({ entityId }: Props) {
+export default function TreeItem({ node }: Props) {
   const selectedId = useSceneStore((state) => state.selectedId);
-  const id = useNodeValue(entityId, "id");
-  const name = useNodeValue(entityId, "name");
-  const locked = useNodeValue(entityId, "locked");
 
   function select(e: React.MouseEvent) {
     e.stopPropagation();
-    useSceneStore.setState({ selectedId: entityId });
+    useSceneStore.setState({ selectedId: node.id });
   }
 
   function expand(e: React.MouseEvent) {
     e.stopPropagation();
-    useSceneStore.setState({ sceneTreeId: entityId });
+    useSceneStore.setState({ sceneTreeId: node.id });
   }
 
   function toggleLock(e: React.MouseEvent) {
     e.stopPropagation();
-    if (!id) return;
-    editNode(id, { extras: { locked: !locked } });
+    editNode(node.id, { locked: !node.locked });
   }
 
-  const isSelected = selectedId === entityId;
+  const isSelected = selectedId === node.id;
 
   return (
     <div className="group relative flex space-x-1">
       <button
         onClick={select}
-        className={`w-full rounded px-2 py-0.5 text-start active:opacity-90 ${
-          isSelected
+        className={`w-full rounded px-2 py-0.5 text-start active:opacity-90 ${isSelected
             ? "bg-white/10 group-hover:bg-white/20"
             : "group-hover:bg-white/10"
-        }`}
+          }`}
       >
-        {name || `(${entityId.toString()})`}
+        {getDisplayName(node.name, node.id)}
       </button>
 
       <div className="absolute inset-y-0 right-0 flex items-center space-x-1 pr-1">
@@ -57,14 +52,13 @@ export default function TreeItem({ entityId }: Props) {
           </button>
         </Tooltip>
 
-        <Tooltip text={locked ? "Unlock" : "Lock"} side="top">
+        <Tooltip text={node.locked ? "Unlock" : "Lock"} side="top">
           <button
             onClick={toggleLock}
-            className={`rounded text-lg hover:opacity-70 active:opacity-60 ${
-              locked ? "text-neutral-500" : "hidden group-hover:block"
-            }`}
+            className={`rounded text-lg hover:opacity-70 active:opacity-60 ${node.locked ? "text-neutral-500" : "hidden group-hover:block"
+              }`}
           >
-            {locked ? <IoMdLock /> : <IoMdUnlock />}
+            {node.locked ? <IoMdLock /> : <IoMdUnlock />}
           </button>
         </Tooltip>
       </div>

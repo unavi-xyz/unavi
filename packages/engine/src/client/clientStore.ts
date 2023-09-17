@@ -30,7 +30,6 @@ export interface IClientStore {
   locations: Map<number, number[]>;
   nickname: string;
   playerId: number | null;
-  rootId: string;
   skybox: string;
   worldUri: string;
 }
@@ -44,7 +43,7 @@ export const useClientStore = create<IClientStore>((set, get) => ({
   },
   avatar: "",
   chatMessages: [],
-  cleanupConnection: () => {},
+  cleanupConnection: () => { },
   defaultAvatar: "",
   did: "",
   ecsIncoming: [],
@@ -71,14 +70,13 @@ export const useClientStore = create<IClientStore>((set, get) => ({
   nickname: "",
   playerData: new Map(),
   playerId: null,
-  rootId: "",
   sendEditorEvent: (editorEvent: EditorEvent) => {
     const data = EditorEvent.toBinary(editorEvent);
     const sendEvent = SendEvent.create({ data });
     get().sendWebSockets({ oneofKind: "sendEvent", sendEvent });
   },
-  sendWebRTC: () => {},
-  sendWebSockets: () => {},
+  sendWebRTC: () => { },
+  sendWebSockets: () => { },
   setAvatar(avatar: string) {
     set({ avatar });
 

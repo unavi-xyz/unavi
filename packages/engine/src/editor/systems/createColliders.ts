@@ -41,12 +41,12 @@ export function createColliders(
     for (const [ent, collider] of boxColliders) {
       if (ent.id !== entity.id) continue;
 
+      foundBox = true;
+
       if (node.collider.type !== SyncedNode_Collider_Type.BOX) {
         commands.get(entity).remove(BoxCollider);
         break;
       }
-
-      foundBox = true;
 
       collider.size.fromArray(node.collider.size);
     }
@@ -58,12 +58,12 @@ export function createColliders(
     for (const [ent, collider] of sphereColliders) {
       if (ent.id !== entity.id) continue;
 
+      foundSphere = true;
+
       if (node.collider.type !== SyncedNode_Collider_Type.SPHERE) {
         commands.get(entity).remove(SphereCollider);
         break;
       }
-
-      foundSphere = true;
 
       collider.radius = node.collider.radius;
     }
@@ -78,12 +78,12 @@ export function createColliders(
     for (const [ent, collider] of capsuleColliders) {
       if (ent.id !== entity.id) continue;
 
+      foundCapsule = true;
+
       if (node.collider.type !== SyncedNode_Collider_Type.CAPSULE) {
         commands.get(entity).remove(CapsuleCollider);
         break;
       }
-
-      foundCapsule = true;
 
       collider.radius = node.collider.radius;
       collider.height = node.collider.height;
@@ -101,12 +101,12 @@ export function createColliders(
     for (const [ent, collider] of cylinderColliders) {
       if (ent.id !== entity.id) continue;
 
+      foundCylinder = true;
+
       if (node.collider.type !== SyncedNode_Collider_Type.CYLINDER) {
         commands.get(entity).remove(CylinderCollider);
         break;
       }
-
-      foundCylinder = true;
 
       collider.radius = node.collider.radius;
       collider.height = node.collider.height;
@@ -124,12 +124,12 @@ export function createColliders(
     for (const [ent, collider] of meshColliders) {
       if (ent.id !== entity.id) continue;
 
+      foundMesh = true;
+
       if (node.collider.type !== SyncedNode_Collider_Type.MESH) {
         commands.get(entity).remove(MeshCollider);
         break;
       }
-
-      foundMesh = true;
 
       const meshId = getEntityId(node.collider.meshId);
       if (meshId) {
@@ -155,12 +155,12 @@ export function createColliders(
     for (const [ent, collider] of hullColliders) {
       if (ent.id !== entity.id) continue;
 
+      foundHull = true;
+
       if (node.collider.type !== SyncedNode_Collider_Type.HULL) {
         commands.get(entity).remove(HullCollider);
         break;
       }
-
-      foundHull = true;
 
       const meshId = getEntityId(node.collider.meshId);
       if (meshId) {

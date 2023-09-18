@@ -19,38 +19,41 @@ export function createRigidBodies(
     const node = syncedStore.nodes[id.value];
     if (!node) continue;
 
-    switch (node.rigidBody.type) {
-      case SyncedNode_RigidBody_Type.STATIC: {
-        let found = false;
+    let foundStatic = false;
+    let foundDynamic = false;
 
-        for (const ent of staticBodies) {
-          if (ent.id === entity.id) {
-            found = true;
-          }
-        }
+    for (const ent of staticBodies) {
+      if (ent.id !== entity.id) continue;
 
-        if (!found) {
-          commands.get(entity).remove(DynamicBody).addType(StaticBody);
-        }
+      foundStatic = true;
 
-        break;
-      }
+      if (node.rigidBody.type === SyncedNode_RigidBody_Type.STATIC) continue;
 
-      case SyncedNode_RigidBody_Type.DYNAMIC: {
-        let found = false;
+      commands.get(entity).remove(StaticBody);
+    }
 
-        for (const ent of dynamicBodies) {
-          if (ent.id === entity.id) {
-            found = true;
-          }
-        }
+    for (const ent of dynamicBodies) {
+      if (ent.id !== entity.id) continue;
 
-        if (!found) {
-          commands.get(entity).remove(StaticBody).addType(DynamicBody);
-        }
+      foundDynamic = true;
 
-        break;
-      }
+      if (node.rigidBody.type === SyncedNode_RigidBody_Type.DYNAMIC) continue;
+
+      commands.get(entity).remove(DynamicBody);
+    }
+
+    if (
+      !foundStatic &&
+      node.rigidBody.type === SyncedNode_RigidBody_Type.STATIC
+    ) {
+      commands.get(entity).addType(StaticBody);
+    }
+
+    if (
+      !foundDynamic &&
+      node.rigidBody.type === SyncedNode_RigidBody_Type.DYNAMIC
+    ) {
+      commands.get(entity).addType(DynamicBody);
     }
   }
 }

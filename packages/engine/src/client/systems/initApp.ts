@@ -2,7 +2,7 @@ import { Asset, CoreStore } from "houseki/core";
 import { CascadingShadowMaps } from "houseki/csm";
 import { InputStruct } from "houseki/input";
 import { MeshCollider, StaticBody } from "houseki/physics";
-import { Mesh, Name, SceneStruct } from "houseki/scene";
+import { Mesh, Name, RenderView } from "houseki/scene";
 import { Commands, Entity, Mut, Query, Res, Without } from "thyseus";
 
 import { ENABLE_POINTER_LOCK } from "../../constants";
@@ -13,20 +13,16 @@ import { createScene } from "../utils/createScene";
 export function initApp(
   commands: Commands,
   coreStore: Res<Mut<CoreStore>>,
-  sceneStruct: Res<Mut<SceneStruct>>,
   inputStruct: Res<Mut<InputStruct>>
 ) {
   inputStruct.enablePointerLock = ENABLE_POINTER_LOCK;
 
   coreStore.canvas = document.querySelector("canvas");
 
-  const { rootId, sceneId } = createScene(commands, coreStore, sceneStruct);
-  const cameraId = createPlayerControls(
-    [0, 4, 0],
-    sceneId,
-    commands,
-    sceneStruct
-  );
+  const { viewId, sceneId } = createScene(commands, coreStore);
+  const cameraId = createPlayerControls([0, 4, 0], sceneId, commands);
+
+  commands.getById(viewId).add(new RenderView(cameraId));
 
   const csm = new CascadingShadowMaps();
   csm.shadowMapSize = 4096;
@@ -34,7 +30,7 @@ export function initApp(
   commands.getById(cameraId).add(csm);
 
   const name = new Name("root");
-  commands.getById(rootId).add(name).addType(Asset).addType(WorldJson);
+  commands.getById(sceneId).add(name).addType(Asset).addType(WorldJson);
 }
 
 export function addPhysics(

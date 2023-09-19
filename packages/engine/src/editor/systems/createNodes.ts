@@ -1,5 +1,11 @@
-import { SubScene } from "houseki/gltf";
-import { GlobalTransform, Mesh, Name, Parent, Transform } from "houseki/scene";
+import {
+  GlobalTransform,
+  Mesh,
+  Name,
+  Parent,
+  Scene,
+  Transform,
+} from "houseki/scene";
 import { Commands, Entity, Mut, Query, Without } from "thyseus";
 
 import { EditorId } from "../../client/components";
@@ -10,9 +16,8 @@ export function createNodes(
   commands: Commands,
   nodes: Query<
     [Entity, EditorId, Mut<Name>, Mut<Transform>, Mut<Parent>],
-    Without<SubScene>
+    Without<Scene>
   >,
-  scenes: Query<SubScene>,
   meshes: Query<[EditorId, Mut<Mesh>]>
 ) {
   const ids: string[] = [];
@@ -36,12 +41,7 @@ export function createNodes(
       if (node.parentId) {
         parent.id = getEntityId(node.parentId) ?? 0n;
       } else {
-        let hasParent = false;
-
-        for (const scene of scenes) {
-          if (!scene.nodes.includes(entity.id)) continue;
-          hasParent = true;
-        }
+        const hasParent = false;
 
         if (!hasParent) {
           parent.id = 0n;

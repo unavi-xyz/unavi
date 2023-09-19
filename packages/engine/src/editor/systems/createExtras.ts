@@ -1,16 +1,13 @@
-import { Extra, SubScene } from "houseki/gltf";
+import { Extra } from "houseki/gltf";
 import { Parent, Transform } from "houseki/scene";
-import { Commands, Entity, Mut, Query, With, Without } from "thyseus";
+import { Commands, Entity, Mut, Query, With } from "thyseus";
 
 import { EditorId } from "../../client/components";
 import { syncedStore } from "../store";
 
 export function createExtras(
   commands: Commands,
-  nodes: Query<
-    [Entity, EditorId],
-    [With<Transform>, With<Parent>, Without<SubScene>]
-  >,
+  nodes: Query<[Entity, EditorId], [With<Transform>, With<Parent>]>,
   extras: Query<Mut<Extra>>
 ) {
   for (const [entity, id] of nodes) {

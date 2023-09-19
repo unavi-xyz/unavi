@@ -1,16 +1,16 @@
 import { Asset } from "houseki/core";
-import { Image, Skybox } from "houseki/scene";
+import { Background, Image } from "houseki/scene";
 import { Entity, Mut, Query } from "thyseus";
 
 import { useClientStore } from "../clientStore";
 
-export function setSkybox(
-  skyboxes: Query<Skybox>,
+export function setBackground(
+  backgrounds: Query<Background>,
   images: Query<[Entity, Mut<Asset>, Mut<Image>]>
 ) {
-  for (const skybox of skyboxes) {
+  for (const background of backgrounds) {
     for (const [entity, asset, image] of images) {
-      if (skybox.imageId !== entity.id) continue;
+      if (background.imageId !== entity.id) continue;
 
       const skyboxUri = useClientStore.getState().skybox;
       if (asset.uri === skyboxUri) continue;

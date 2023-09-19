@@ -1,5 +1,5 @@
 import { Warehouse } from "houseki/core";
-import { Extra, GltfInfo, SceneView, SubScene } from "houseki/gltf";
+import { Extra, GltfInfo } from "houseki/gltf";
 import {
   BoxCollider,
   CapsuleCollider,
@@ -10,13 +10,20 @@ import {
   SphereCollider,
   StaticBody,
 } from "houseki/physics";
-import { Geometry, Mesh, Name, Parent, Transform } from "houseki/scene";
+import {
+  Geometry,
+  Mesh,
+  Name,
+  Parent,
+  Scene,
+  SceneView,
+  Transform,
+} from "houseki/scene";
 import { Commands, Entity, Query, Res, With } from "thyseus";
 
 import { EditorId, WorldJson } from "../../client/components";
 import { addMesh, addNode, editMesh, editNode } from "../actions";
 import { addScene } from "../actions/addScene";
-import { editScene } from "../actions/editScene";
 import { getId, setEntityId } from "../entities";
 import {
   SyncedNode_Collider,
@@ -31,7 +38,7 @@ export function initSyncedStore(
   commands: Commands,
   warehouse: Res<Warehouse>,
   worlds: Query<[SceneView, GltfInfo], With<WorldJson>>,
-  subscenes: Query<[Entity, Name, SubScene]>,
+  scenes: Query<[Entity, Name], With<Scene>>,
   nodes: Query<[Entity, Name, Transform, Parent]>,
   primitives: Query<[Entity, Name, Geometry, Mesh]>,
   boxColliders: Query<[Entity, BoxCollider]>,
@@ -143,7 +150,7 @@ export function initSyncedStore(
 
     // Scenes
     for (const entityId of view.scenes) {
-      for (const [ent, name, subscene] of subscenes) {
+      for (const [ent, name] of scenes) {
         if (ent.id !== entityId) continue;
 
         const id = addScene(name.value);
@@ -154,19 +161,6 @@ export function initSyncedStore(
         if (view.active === entityId) {
           syncedStore.defaultSceneId = id;
         }
-
-        const nodeIds = [];
-
-        for (const nodeId of subscene.nodes) {
-          const id = getId(nodeId);
-          if (!id) continue;
-
-          nodeIds.push(id);
-        }
-
-        editScene(id, {
-          nodeIds,
-        });
       }
     }
 
@@ -181,18 +175,7 @@ export function initSyncedStore(
         const parentId = getId(parent.id);
         if (!parentId) continue;
 
-        let isScene = false;
-
-        for (const sceneId of view.scenes) {
-          if (sceneId === parent.id) {
-            isScene = true;
-            break;
-          }
-        }
-
-        if (!isScene) {
-          editNode(id, { parentId });
-        }
+        editNode(id, { parentId });
       }
     }
 

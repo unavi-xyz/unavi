@@ -24,16 +24,16 @@ export default function Physics({ node }: Props) {
   const handleRemove = node.extras.locked
     ? undefined
     : () => {
-      editNode(node.id, {
-        collider: {
-          height: 1,
-          meshId: "",
-          radius: 0.5,
-          size: [1, 1, 1],
-          type: SyncedNode_Collider_Type.NONE,
-        },
-      });
-    };
+        editNode(node.id, {
+          collider: {
+            height: 1,
+            meshId: "",
+            radius: 0.5,
+            size: [1, 1, 1],
+            type: SyncedNode_Collider_Type.NONE,
+          },
+        });
+      };
 
   const sizeX = node.collider.size[0] ?? 0;
   const sizeY = node.collider.size[1] ?? 0;
@@ -132,8 +132,8 @@ export default function Physics({ node }: Props) {
       )}
 
       {node.collider.type === SyncedNode_Collider_Type.SPHERE ||
-        node.collider.type === SyncedNode_Collider_Type.CAPSULE ||
-        node.collider.type === SyncedNode_Collider_Type.CYLINDER ? (
+      node.collider.type === SyncedNode_Collider_Type.CAPSULE ||
+      node.collider.type === SyncedNode_Collider_Type.CYLINDER ? (
         <div className="grid grid-cols-4">
           <div className="w-20 shrink-0 font-bold text-neutral-400">Radius</div>
 
@@ -157,7 +157,7 @@ export default function Physics({ node }: Props) {
       ) : null}
 
       {node.collider.type === SyncedNode_Collider_Type.CAPSULE ||
-        node.collider.type === SyncedNode_Collider_Type.CYLINDER ? (
+      node.collider.type === SyncedNode_Collider_Type.CYLINDER ? (
         <div className="grid grid-cols-4">
           <div className="w-20 shrink-0 font-bold text-neutral-400">Height</div>
 

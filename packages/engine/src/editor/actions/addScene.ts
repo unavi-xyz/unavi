@@ -7,7 +7,6 @@ export function addScene(name = "") {
   syncedStore.scenes[id] = {
     id,
     name,
-    nodeIds: [],
   };
 
   return id;

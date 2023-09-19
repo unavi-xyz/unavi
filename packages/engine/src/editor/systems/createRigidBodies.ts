@@ -1,17 +1,13 @@
-import { SubScene } from "houseki/gltf";
 import { DynamicBody, StaticBody } from "houseki/physics";
 import { Parent, Transform } from "houseki/scene";
-import { Commands, Entity, Query, With, Without } from "thyseus";
+import { Commands, Entity, Query, With } from "thyseus";
 
 import { EditorId } from "../../client/components";
 import { SyncedNode_RigidBody_Type, syncedStore } from "../store";
 
 export function createRigidBodies(
   commands: Commands,
-  nodes: Query<
-    [Entity, EditorId],
-    [With<Transform>, With<Parent>, Without<SubScene>]
-  >,
+  nodes: Query<[Entity, EditorId], [With<Transform>, With<Parent>]>,
   staticBodies: Query<Entity, With<StaticBody>>,
   dynamicBodies: Query<Entity, With<DynamicBody>>
 ) {

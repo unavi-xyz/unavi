@@ -22,11 +22,11 @@ import { parseWorld } from "./systems/parseWorld";
 import { publishLocation } from "./systems/publishLocation";
 import { saveExport } from "./systems/saveExport";
 import { sendEvents } from "./systems/sendEvents";
+import { setBackground } from "./systems/setBackground";
 import { setLocationUpdateTime } from "./systems/setLocationUpdateTime";
 import { setPlayersAirTime } from "./systems/setPlayersAirTime";
 import { setPlayersAvatar } from "./systems/setPlayersAvatars";
 import { setRootId } from "./systems/setRootId";
-import { setSkybox } from "./systems/setSkybox";
 import { setUserAvatar } from "./systems/setUserAvatar";
 import { spawnPlayers } from "./systems/spawnPlayers";
 
@@ -54,7 +54,7 @@ export function clientPlugin(builder: WorldBuilder) {
       setPlayersAirTime,
       setPlayersAvatar,
       setRootId,
-      setSkybox,
+      setBackground,
       setUserAvatar,
       spawnPlayers,
       ...run.chain(setLocationUpdateTime, lerpTransforms, [

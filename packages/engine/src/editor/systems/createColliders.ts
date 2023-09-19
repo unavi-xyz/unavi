@@ -1,4 +1,3 @@
-import { SubScene } from "houseki/gltf";
 import {
   BoxCollider,
   CapsuleCollider,
@@ -7,7 +6,7 @@ import {
   MeshCollider,
   SphereCollider,
 } from "houseki/physics";
-import { Parent, Transform } from "houseki/scene";
+import { Parent, Scene, Transform } from "houseki/scene";
 import { Commands, Entity, Mut, Query, With, Without } from "thyseus";
 
 import { EditorId } from "../../client/components";
@@ -18,7 +17,7 @@ export function createColliders(
   commands: Commands,
   nodes: Query<
     [Entity, EditorId],
-    [With<Transform>, With<Parent>, Without<SubScene>]
+    [With<Transform>, With<Parent>, Without<Scene>]
   >,
   boxColliders: Query<[Entity, Mut<BoxCollider>]>,
   sphereColliders: Query<[Entity, Mut<SphereCollider>]>,

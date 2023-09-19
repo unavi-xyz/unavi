@@ -1,11 +1,11 @@
-import { SceneView } from "houseki/gltf";
-import { Entity, Query } from "thyseus";
+import { SceneView } from "houseki/scene";
+import { Entity, Query, With } from "thyseus";
 
 import { useSceneStore } from "../../editor";
-import { EditorId } from "../components";
+import { EditorId, WorldJson } from "../components";
 
 export function setRootId(
-  views: Query<SceneView>,
+  views: Query<SceneView, With<WorldJson>>,
   ids: Query<[Entity, EditorId]>
 ) {
   for (const view of views) {

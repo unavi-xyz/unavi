@@ -8,7 +8,6 @@ export type SyncedMetadata = {
 export type SyncedScene = {
   id: string;
   name: string;
-  nodeIds: string[];
 };
 
 export enum SyncedNode_Collider_Type {

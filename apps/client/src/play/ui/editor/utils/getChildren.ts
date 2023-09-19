@@ -6,5 +6,15 @@ export function getChildren(
   id: string,
   store: DeepReadonly<SyncedStore> = syncedStore
 ): DeepReadonly<SyncedNode>[] {
-  return Object.values(store.nodes).filter((n) => n.parentId === id);
+  const children: DeepReadonly<SyncedNode>[] = [];
+
+  for (const nodeId in store.nodes) {
+    const node = store.nodes[nodeId];
+
+    if (node?.parentId === id) {
+      children.push(node);
+    }
+  }
+
+  return children;
 }

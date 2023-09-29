@@ -1,4 +1,3 @@
-import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { NextRequest, NextResponse } from "next/server";
 import { generateNonce } from "siwe";
@@ -22,34 +21,23 @@ export async function GET(request: NextRequest) {
 
   // Get ethereum session id from cookie
   const ethSessionCookie = request.cookies.get(ETH_SESSION_COOKIE);
-  let publicId = ethSessionCookie?.value;
+  const publicId = ethSessionCookie?.value ?? nanoid();
 
-  // Check if ethereum session exists in database
-  let ethSessionExists = false;
-
-  // Verify provided eth session exists
-  if (publicId) {
-    const session = await db.query.ethereumSession.findFirst({
-      where: eq(ethereumSession.publicId, publicId),
+  // Update nonce in db
+  await db
+    .insert(ethereumSession)
+    .values({
+      nonce,
+      publicId,
+    })
+    .onDuplicateKeyUpdate({
+      set: { nonce },
     });
-
-    ethSessionExists = Boolean(session);
-  }
-
-  if (!ethSessionExists) {
-    // If no ethereum session, create a new one
-    publicId = nanoid();
-    await db.insert(ethereumSession).values({ nonce, publicId });
-  } else {
-    // Otherwise, update the existing nonce
-    await db.update(ethereumSession).set({ nonce });
-  }
 
   const json: GetNonceResponse = { nonce };
 
   return NextResponse.json(json, {
     headers: {
-      // Store ethereum session id in cookie
       "Set-Cookie": `${ETH_SESSION_COOKIE}=${publicId}; Path=/; HttpOnly; Secure; SameSite=Strict`,
     },
   });

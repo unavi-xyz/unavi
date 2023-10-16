@@ -46,7 +46,6 @@ export function connectToHost(
   worlds: Query<WorldJson>
 ) {
   for (const world of worlds) {
-    console.log(localRes.host, world.host);
     if (localRes.host === world.host) continue;
 
     localRes.host = world.host;
@@ -151,6 +150,11 @@ export function connectToHost(
       const msg = Response.fromBinary(bytes);
 
       switch (msg.response.oneofKind) {
+        case "event": {
+          useClientStore.getState().ecsIncoming.push(msg);
+          break;
+        }
+
         case "joinSuccess": {
           const playerId = msg.response.joinSuccess.playerId;
           console.info(`🌏 Joined world as player ${toHex(playerId)}`);

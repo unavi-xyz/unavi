@@ -1,11 +1,4 @@
-import {
-  AddMesh,
-  AddNode,
-  EditMesh,
-  EditNode,
-  RemoveMesh,
-  RemoveNode,
-} from "@unavi/protocol";
+import { SyncScene } from "@unavi/protocol";
 import { PlayerJoined, PlayerLeft } from "@wired-protocol/types";
 
 export type PlayerMessage = {
@@ -25,12 +18,4 @@ export type SystemMessage = {
 
 export type ChatMessage = PlayerMessage | SystemMessage;
 
-export type EcsEvent =
-  | PlayerJoined
-  | PlayerLeft
-  | AddNode
-  | AddMesh
-  | EditNode
-  | EditMesh
-  | RemoveNode
-  | RemoveMesh;
+export type EcsEvent = PlayerJoined | PlayerLeft | SyncScene;

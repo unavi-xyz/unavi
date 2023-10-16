@@ -1,23 +1,21 @@
+import { addNode, editNode, useSceneStore } from "@unavi/engine";
 import { BoxGeometry } from "three";
 
-import { addNode } from "./addNode";
-import { editNode } from "./editNode";
 import { addThreeMesh } from "./utils/addThreeMesh";
-import { getAddParent } from "./utils/getAddParent";
 
 export function addBox() {
   const geometry = new BoxGeometry();
+  const meshId = addThreeMesh(geometry, "Box");
 
-  const mesh = addThreeMesh(geometry);
-  const name = addNode("Box");
+  const { sceneTreeId, rootId } = useSceneStore.getState();
+  const parentId = sceneTreeId ?? rootId;
 
-  const parent = getAddParent();
+  const id = addNode("Box");
 
-  editNode({
-    mesh,
-    parent,
-    target: name,
+  editNode(id, {
+    meshId,
+    parentId,
   });
 
-  return name;
+  return id;
 }

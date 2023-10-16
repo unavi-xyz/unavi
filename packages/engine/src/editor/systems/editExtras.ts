@@ -1,24 +1,27 @@
 import { Extra } from "houseki/gltf";
-import { Name } from "houseki/scene";
-import { Commands, Entity, EventReader, Mut, Query } from "thyseus";
+import { Commands, Entity, EventReader, Mut, Query, SystemRes } from "thyseus";
 
+import { EditorId } from "../../client/components";
 import { EditExtra } from "../events";
 
-/**
- * Entity ID -> Name
- */
-const nameMap = new Map<bigint, string>();
+class LocalStore {
+  /**
+   * Entity ID -> ID
+   */
+  targets = new Map<bigint, string>();
+}
 
 export function editExtras(
   commands: Commands,
+  localStore: SystemRes<LocalStore>,
   events: EventReader<EditExtra>,
   extras: Query<[Entity, Mut<Extra>]>,
-  names: Query<[Entity, Name]>
+  ids: Query<[Entity, EditorId]>
 ) {
   if (events.length === 0) return;
 
-  for (const [entity, name] of names) {
-    nameMap.set(entity.id, name.value);
+  for (const [entity, id] of ids) {
+    localStore.targets.set(entity.id, id.value);
   }
 
   for (const event of events) {
@@ -26,8 +29,9 @@ export function editExtras(
 
     // Find existing extra to update
     for (const [entity, extra] of extras) {
-      const extraName = nameMap.get(extra.target);
-      if (extraName !== event.target) continue;
+      const extraId = localStore.targets.get(extra.target);
+      if (extraId !== event.target) continue;
+
       if (event.key !== extra.key) continue;
 
       foundExtra = true;
@@ -44,7 +48,7 @@ export function editExtras(
     if (!foundExtra) {
       const extra = new Extra();
 
-      for (const [id, name] of nameMap) {
+      for (const [id, name] of localStore.targets) {
         if (name === event.target) {
           extra.target = id;
           break;
@@ -59,5 +63,5 @@ export function editExtras(
   }
 
   events.clear();
-  nameMap.clear();
+  localStore.targets.clear();
 }

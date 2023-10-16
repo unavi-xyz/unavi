@@ -1,13 +1,17 @@
 import { ExportGltf } from "houseki/gltf";
-import { SceneStruct } from "houseki/scene";
-import { EventWriter, Res } from "thyseus";
+import { SceneView } from "houseki/scene";
+import { Entity, EventWriter, Query, With } from "thyseus";
+
+import { WorldJson } from "../../client/components";
 
 export function sendExportEvent(
   writer: EventWriter<ExportGltf>,
-  sceneStruct: Res<SceneStruct>
+  views: Query<Entity, [With<SceneView>, With<WorldJson>]>
 ) {
-  const e = new ExportGltf();
-  e.scene = sceneStruct.activeScene;
-  e.binary = true;
-  writer.create(e);
+  for (const entity of views) {
+    const e = new ExportGltf();
+    e.scene = entity.id;
+    e.binary = true;
+    writer.create(e);
+  }
 }

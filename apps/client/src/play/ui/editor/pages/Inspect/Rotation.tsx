@@ -1,37 +1,54 @@
+import { editNode, SyncedNode } from "@unavi/engine";
+import { useRef, useState } from "react";
 import { Euler, Quaternion } from "three";
 
-import { editNode } from "@/src/play/actions/editNode";
+import { DeepReadonly } from "@/src/play/utils/types";
 
-import { useTreeValue } from "../../hooks/useTreeValue";
-import { useTreeValueKey } from "../../hooks/useTreeValueKey";
 import NumberInput from "./NumberInput";
 
 const euler = new Euler();
 const quat = new Quaternion();
 
 interface Props {
-  id: bigint;
+  node: DeepReadonly<SyncedNode>;
 }
 
-export default function Rotation({ id }: Props) {
-  const name = useTreeValue(id, "name");
-  const locked = useTreeValue(id, "locked");
-  const rawX = useTreeValueKey(id, "rotation", 0);
-  const rawY = useTreeValueKey(id, "rotation", 1);
-  const rawZ = useTreeValueKey(id, "rotation", 2);
-  const rawW = useTreeValueKey(id, "rotation", 3);
+export default function Rotation({ node }: Props) {
+  const rawX = node.rotation[0] ?? 0;
+  const rawY = node.rotation[1] ?? 0;
+  const rawZ = node.rotation[2] ?? 0;
+  const rawW = node.rotation[3] ?? 0;
 
-  if (
-    !name ||
-    rawX === undefined ||
-    rawY === undefined ||
-    rawZ === undefined ||
-    rawW === undefined
-  ) {
-    return null;
+  const [uiX, setX] = useState(rawX);
+  const [uiY, setY] = useState(rawY);
+  const [uiZ, setZ] = useState(rawZ);
+  const [uiW, setW] = useState(rawW);
+
+  const [usingUI, setUsingUI] = useState(false);
+  const usingUITimout = useRef<NodeJS.Timeout | null>(null);
+
+  function usedUI() {
+    setUsingUI(true);
+    setX(rawX ?? 0);
+    setY(rawY ?? 0);
+    setZ(rawZ ?? 0);
+    setW(rawW ?? 0);
+
+    if (usingUITimout.current) {
+      clearTimeout(usingUITimout.current);
+    }
+
+    usingUITimout.current = setTimeout(() => {
+      setUsingUI(false);
+    }, 100);
   }
 
-  euler.setFromQuaternion(quat.set(rawX, rawY, rawZ, rawW));
+  const qx = usingUI ? uiX : rawX ?? 0;
+  const qy = usingUI ? uiY : rawY ?? 0;
+  const qz = usingUI ? uiZ : rawZ ?? 0;
+  const qw = usingUI ? uiW : rawW ?? 0;
+
+  euler.setFromQuaternion(quat.set(qx, qy, qz, qw));
 
   const x = round(toDegrees(euler.x));
   const y = round(toDegrees(euler.y));
@@ -45,16 +62,21 @@ export default function Rotation({ id }: Props) {
         value={x}
         label="X"
         placeholder="X"
-        disabled={locked}
+        disabled={node.extras.locked}
         sensitivity={360}
         onValueChange={(val) => {
           quat.setFromEuler(
             euler.set(toRadians(val), toRadians(y), toRadians(z))
           );
 
-          editNode({
+          usedUI();
+          setX(quat.x);
+          setY(quat.y);
+          setZ(quat.z);
+          setW(quat.w);
+
+          editNode(node.id, {
             rotation: [quat.x, quat.y, quat.z, quat.w],
-            target: name,
           });
         }}
       />
@@ -62,16 +84,21 @@ export default function Rotation({ id }: Props) {
         value={y}
         label="Y"
         placeholder="Y"
-        disabled={locked}
+        disabled={node.extras.locked}
         sensitivity={360}
         onValueChange={(val) => {
           quat.setFromEuler(
             euler.set(toRadians(x), toRadians(val), toRadians(z))
           );
 
-          editNode({
+          usedUI();
+          setX(quat.x);
+          setY(quat.y);
+          setZ(quat.z);
+          setW(quat.w);
+
+          editNode(node.id, {
             rotation: [quat.x, quat.y, quat.z, quat.w],
-            target: name,
           });
         }}
       />
@@ -79,16 +106,21 @@ export default function Rotation({ id }: Props) {
         value={z}
         label="Z"
         placeholder="Z"
-        disabled={locked}
+        disabled={node.extras.locked}
         sensitivity={360}
         onValueChange={(val) => {
           quat.setFromEuler(
             euler.set(toRadians(x), toRadians(y), toRadians(val))
           );
 
-          editNode({
+          usedUI();
+          setX(quat.x);
+          setY(quat.y);
+          setZ(quat.z);
+          setW(quat.w);
+
+          editNode(node.id, {
             rotation: [quat.x, quat.y, quat.z, quat.w],
-            target: name,
           });
         }}
       />
@@ -96,10 +128,8 @@ export default function Rotation({ id }: Props) {
   );
 }
 
-const PRECISION = 1000;
-
-function round(num: number) {
-  return Math.round(num * PRECISION) / PRECISION;
+function round(num: number, precision = 1000) {
+  return Math.round(num * precision) / precision;
 }
 
 function toRadians(degrees: number) {

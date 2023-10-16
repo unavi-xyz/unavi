@@ -1,33 +1,26 @@
-import { editNode } from "@/src/play/actions/editNode";
+import { editNode, SyncedNode } from "@unavi/engine";
+
+import { DeepReadonly } from "@/src/play/utils/types";
 import TextFieldDark from "@/src/ui/TextFieldDark";
 
-import { useTreeValue } from "../../hooks/useTreeValue";
 import { getDisplayName } from "../../utils/getDisplayName";
 
 interface Props {
-  id: bigint;
+  node: DeepReadonly<SyncedNode>;
 }
 
-export default function Name({ id }: Props) {
-  const name = useTreeValue(id, "name");
-  const locked = useTreeValue(id, "locked");
-
-  const displayName = getDisplayName(name, id);
+export default function Name({ node }: Props) {
+  const displayName = getDisplayName(node.name, node.id);
 
   return (
     <TextFieldDark
       label="Name"
-      value={name}
-      disabled={locked}
+      value={node.name}
+      disabled={node.extras.locked}
       placeholder={displayName}
       onChange={(e) => {
-        if (!name) {
-          return;
-        }
-
-        editNode({
+        editNode(node.id, {
           name: e.target.value,
-          target: name,
         });
       }}
     />

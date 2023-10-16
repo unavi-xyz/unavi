@@ -2,35 +2,38 @@ import { createControls, selectTarget } from "houseki/transform";
 import { run, WorldBuilder } from "thyseus";
 
 import { EngineSchedules } from "../constants";
-import { addMeshes } from "./systems/addMeshes";
-import { addNodes } from "./systems/addNodes";
-import { createTreeItemsPhysics } from "./systems/createTreeItemPhysics";
-import { createTreeItems } from "./systems/createTreeItems";
-import { editColliders } from "./systems/editColliders";
-import { editExtras } from "./systems/editExtras";
-import { editMeshes } from "./systems/editMeshes";
-import { editNodes } from "./systems/editNodes";
-import { editRigidBodies } from "./systems/editRigidBodies";
+import { createColliders } from "./systems/createColliders";
+import { createExtras } from "./systems/createExtras";
+import { createMeshes } from "./systems/createMeshes";
+import { createNodes } from "./systems/createNodes";
+import { createRigidBodies } from "./systems/createRigidBodies";
+import { createScenes } from "./systems/createScenes";
 import { enterEditMode } from "./systems/enterEditMode";
 import { exitEditMode } from "./systems/exitEditMode";
+import { initSyncedStore } from "./systems/initSyncedStore";
 import { sendExportEvent } from "./systems/sendExportEvent";
-import { syncTransformControls } from "./systems/syncTransformControls";
+import { setEntityIds } from "./systems/setEntityIds";
+import { syncTransformControlChanges } from "./systems/syncTransformControlChanges";
+import { syncTransformControlTarget } from "./systems/syncTransformControlTarget";
 
 export function editorPlugin(builder: WorldBuilder) {
   builder
-    .addSystemsToSchedule(EngineSchedules.EnterEditMode, enterEditMode)
+    .addSystemsToSchedule(
+      EngineSchedules.EnterEditMode,
+      initSyncedStore,
+      enterEditMode
+    )
     .addSystemsToSchedule(EngineSchedules.ExitEditMode, exitEditMode)
     .addSystemsToSchedule(EngineSchedules.Export, sendExportEvent)
     .addSystems(
-      addMeshes,
-      addNodes,
-      createTreeItems,
-      createTreeItemsPhysics,
-      editExtras,
-      editMeshes,
-      editNodes,
-      editRigidBodies,
-      editColliders,
-      run(syncTransformControls).after(selectTarget).before(createControls)
+      setEntityIds,
+      createExtras,
+      createNodes,
+      createColliders,
+      createRigidBodies,
+      createMeshes,
+      run(createScenes).after(createNodes),
+      run(syncTransformControlChanges).before(createNodes),
+      run(syncTransformControlTarget).after(selectTarget).before(createControls)
     );
 }

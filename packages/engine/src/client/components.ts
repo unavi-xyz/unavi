@@ -23,3 +23,12 @@ export class PrevTranslation {
   y: f32 = 0;
   z: f32 = 0;
 }
+
+@struct
+export class EditorId {
+  value: string;
+
+  constructor(value = "") {
+    this.value = value;
+  }
+}

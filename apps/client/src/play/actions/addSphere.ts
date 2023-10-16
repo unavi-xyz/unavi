@@ -1,23 +1,21 @@
+import { addNode, editNode, useSceneStore } from "@unavi/engine";
 import { SphereGeometry } from "three";
 
-import { addNode } from "./addNode";
-import { editNode } from "./editNode";
 import { addThreeMesh } from "./utils/addThreeMesh";
-import { getAddParent } from "./utils/getAddParent";
 
 export function addSphere() {
   const geometry = new SphereGeometry(0.5);
+  const meshId = addThreeMesh(geometry, "Sphere");
 
-  const mesh = addThreeMesh(geometry);
-  const name = addNode("Sphere");
+  const { sceneTreeId, rootId } = useSceneStore.getState();
+  const parentId = sceneTreeId ?? rootId;
 
-  const parent = getAddParent();
+  const id = addNode("Sphere");
 
-  editNode({
-    mesh,
-    parent,
-    target: name,
+  editNode(id, {
+    meshId,
+    parentId,
   });
 
-  return name;
+  return id;
 }

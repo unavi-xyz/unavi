@@ -1,4 +1,6 @@
-import { useTreeValue } from "../../hooks/useTreeValue";
+import { syncedStore } from "@unavi/engine";
+import { useSnapshot } from "valtio";
+
 import { getDisplayName } from "../../utils/getDisplayName";
 import PanelPage from "../PanelPage";
 import AddComponent from "./AddComponent";
@@ -7,20 +9,25 @@ import Physics from "./Physics";
 import Transform from "./Transform";
 
 interface Props {
-  id: bigint;
+  id: string;
 }
 
 export default function InspectPage({ id }: Props) {
-  const name = useTreeValue(id, "name");
+  const snap = useSnapshot(syncedStore);
+  const node = id ? snap.nodes[id] : undefined;
 
-  const displayName = getDisplayName(name, id);
+  if (!node || !id) {
+    return null;
+  }
+
+  const displayName = getDisplayName(node.name, id);
 
   return (
     <PanelPage title={displayName}>
-      <Name id={id} />
-      <Transform id={id} />
-      <Physics id={id} />
-      <AddComponent id={id} />
+      <Name node={node} />
+      <Transform node={node} />
+      <Physics node={node} />
+      <AddComponent node={node} />
     </PanelPage>
   );
 }

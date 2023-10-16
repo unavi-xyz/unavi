@@ -1,64 +1,88 @@
-import { editNode } from "@/src/play/actions/editNode";
+import { editNode, SyncedNode } from "@unavi/engine";
+import { useRef, useState } from "react";
 
-import { useTreeValue } from "../../hooks/useTreeValue";
-import { useTreeValueKey } from "../../hooks/useTreeValueKey";
+import { DeepReadonly } from "@/src/play/utils/types";
+
 import NumberInput from "./NumberInput";
 
 interface Props {
-  id: bigint;
+  node: DeepReadonly<SyncedNode>;
 }
 
-export default function Translation({ id }: Props) {
-  const name = useTreeValue(id, "name");
-  const locked = useTreeValue(id, "locked");
-  const rawX = useTreeValueKey(id, "translation", 0);
-  const rawY = useTreeValueKey(id, "translation", 1);
-  const rawZ = useTreeValueKey(id, "translation", 2);
+export default function Translation({ node }: Props) {
+  const rawX = node?.translation[0];
+  const rawY = node?.translation[1];
+  const rawZ = node?.translation[2];
 
-  if (!name || rawX === undefined || rawY === undefined || rawZ === undefined) {
-    return null;
+  const [uiX, setX] = useState(rawX ?? 0);
+  const [uiY, setY] = useState(rawY ?? 0);
+  const [uiZ, setZ] = useState(rawZ ?? 0);
+
+  const [usingUI, setUsingUI] = useState(false);
+  const usingUITimout = useRef<NodeJS.Timeout | null>(null);
+
+  function usedUI() {
+    setUsingUI(true);
+    setX(rawX ?? 0);
+    setY(rawY ?? 0);
+    setZ(rawZ ?? 0);
+
+    if (usingUITimout.current) {
+      clearTimeout(usingUITimout.current);
+    }
+
+    usingUITimout.current = setTimeout(() => {
+      setUsingUI(false);
+    }, 100);
   }
 
-  const x = round(rawX);
-  const y = round(rawY);
-  const z = round(rawZ);
+  const x = usingUI ? uiX : rawX ?? 0;
+  const y = usingUI ? uiY : rawY ?? 0;
+  const z = usingUI ? uiZ : rawZ ?? 0;
+
+  const roundedX = round(x);
+  const roundedY = round(y);
+  const roundedZ = round(z);
 
   return (
     <div className="flex items-center space-x-1">
       <div className="w-20 shrink-0 font-bold text-neutral-400">Position</div>
 
       <NumberInput
-        value={x}
+        value={roundedX}
         label="X"
         placeholder="X"
-        disabled={locked}
+        disabled={node.extras.locked}
         onValueChange={(val) => {
-          editNode({
-            target: name,
+          usedUI();
+          setX(val);
+          editNode(node.id, {
             translation: [val, y, z],
           });
         }}
       />
       <NumberInput
-        value={y}
+        value={roundedY}
         label="Y"
         placeholder="Y"
-        disabled={locked}
+        disabled={node.extras.locked}
         onValueChange={(val) => {
-          editNode({
-            target: name,
+          usedUI();
+          setY(val);
+          editNode(node.id, {
             translation: [x, val, z],
           });
         }}
       />
       <NumberInput
-        value={z}
+        value={roundedZ}
         label="Z"
         placeholder="Z"
-        disabled={locked}
+        disabled={node.extras.locked}
         onValueChange={(val) => {
-          editNode({
-            target: name,
+          usedUI();
+          setZ(val);
+          editNode(node.id, {
             translation: [x, y, val],
           });
         }}
@@ -67,8 +91,6 @@ export default function Translation({ id }: Props) {
   );
 }
 
-const PRECISION = 1000;
-
-function round(num: number) {
-  return Math.round(num * PRECISION) / PRECISION;
+function round(num: number, precision = 1000) {
+  return Math.round(num * precision) / precision;
 }

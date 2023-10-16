@@ -11,12 +11,7 @@ import type { PartialMessage } from "@protobuf-ts/runtime";
 import { reflectionMergePartial } from "@protobuf-ts/runtime";
 import { MESSAGE_TYPE } from "@protobuf-ts/runtime";
 import { MessageType } from "@protobuf-ts/runtime";
-import { RemoveMesh } from "./remove";
-import { RemoveNode } from "./remove";
-import { EditMesh } from "./edit";
-import { EditNode } from "./edit";
-import { AddMesh } from "./add";
-import { AddNode } from "./add";
+import { SyncScene } from "./sync";
 /**
  * @generated from protobuf message xyz.unavi.editor.event.EditorEvent
  */
@@ -25,41 +20,11 @@ export interface EditorEvent {
      * @generated from protobuf oneof: event
      */
     event: {
-        oneofKind: "addNode";
+        oneofKind: "syncScene";
         /**
-         * @generated from protobuf field: xyz.unavi.editor.add.AddNode add_node = 1;
+         * @generated from protobuf field: xyz.unavi.editor.sync.SyncScene sync_scene = 1;
          */
-        addNode: AddNode;
-    } | {
-        oneofKind: "addMesh";
-        /**
-         * @generated from protobuf field: xyz.unavi.editor.add.AddMesh add_mesh = 2;
-         */
-        addMesh: AddMesh;
-    } | {
-        oneofKind: "editNode";
-        /**
-         * @generated from protobuf field: xyz.unavi.editor.edit.EditNode edit_node = 3;
-         */
-        editNode: EditNode;
-    } | {
-        oneofKind: "editMesh";
-        /**
-         * @generated from protobuf field: xyz.unavi.editor.edit.EditMesh edit_mesh = 4;
-         */
-        editMesh: EditMesh;
-    } | {
-        oneofKind: "removeNode";
-        /**
-         * @generated from protobuf field: xyz.unavi.editor.remove.RemoveNode remove_node = 5;
-         */
-        removeNode: RemoveNode;
-    } | {
-        oneofKind: "removeMesh";
-        /**
-         * @generated from protobuf field: xyz.unavi.editor.remove.RemoveMesh remove_mesh = 6;
-         */
-        removeMesh: RemoveMesh;
+        syncScene: SyncScene;
     } | {
         oneofKind: undefined;
     };
@@ -68,12 +33,7 @@ export interface EditorEvent {
 class EditorEvent$Type extends MessageType<EditorEvent> {
     constructor() {
         super("xyz.unavi.editor.event.EditorEvent", [
-            { no: 1, name: "add_node", kind: "message", oneof: "event", T: () => AddNode },
-            { no: 2, name: "add_mesh", kind: "message", oneof: "event", T: () => AddMesh },
-            { no: 3, name: "edit_node", kind: "message", oneof: "event", T: () => EditNode },
-            { no: 4, name: "edit_mesh", kind: "message", oneof: "event", T: () => EditMesh },
-            { no: 5, name: "remove_node", kind: "message", oneof: "event", T: () => RemoveNode },
-            { no: 6, name: "remove_mesh", kind: "message", oneof: "event", T: () => RemoveMesh }
+            { no: 1, name: "sync_scene", kind: "message", oneof: "event", T: () => SyncScene }
         ]);
     }
     create(value?: PartialMessage<EditorEvent>): EditorEvent {
@@ -88,40 +48,10 @@ class EditorEvent$Type extends MessageType<EditorEvent> {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* xyz.unavi.editor.add.AddNode add_node */ 1:
+                case /* xyz.unavi.editor.sync.SyncScene sync_scene */ 1:
                     message.event = {
-                        oneofKind: "addNode",
-                        addNode: AddNode.internalBinaryRead(reader, reader.uint32(), options, (message.event as any).addNode)
-                    };
-                    break;
-                case /* xyz.unavi.editor.add.AddMesh add_mesh */ 2:
-                    message.event = {
-                        oneofKind: "addMesh",
-                        addMesh: AddMesh.internalBinaryRead(reader, reader.uint32(), options, (message.event as any).addMesh)
-                    };
-                    break;
-                case /* xyz.unavi.editor.edit.EditNode edit_node */ 3:
-                    message.event = {
-                        oneofKind: "editNode",
-                        editNode: EditNode.internalBinaryRead(reader, reader.uint32(), options, (message.event as any).editNode)
-                    };
-                    break;
-                case /* xyz.unavi.editor.edit.EditMesh edit_mesh */ 4:
-                    message.event = {
-                        oneofKind: "editMesh",
-                        editMesh: EditMesh.internalBinaryRead(reader, reader.uint32(), options, (message.event as any).editMesh)
-                    };
-                    break;
-                case /* xyz.unavi.editor.remove.RemoveNode remove_node */ 5:
-                    message.event = {
-                        oneofKind: "removeNode",
-                        removeNode: RemoveNode.internalBinaryRead(reader, reader.uint32(), options, (message.event as any).removeNode)
-                    };
-                    break;
-                case /* xyz.unavi.editor.remove.RemoveMesh remove_mesh */ 6:
-                    message.event = {
-                        oneofKind: "removeMesh",
-                        removeMesh: RemoveMesh.internalBinaryRead(reader, reader.uint32(), options, (message.event as any).removeMesh)
+                        oneofKind: "syncScene",
+                        syncScene: SyncScene.internalBinaryRead(reader, reader.uint32(), options, (message.event as any).syncScene)
                     };
                     break;
                 default:
@@ -136,24 +66,9 @@ class EditorEvent$Type extends MessageType<EditorEvent> {
         return message;
     }
     internalBinaryWrite(message: EditorEvent, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        /* xyz.unavi.editor.add.AddNode add_node = 1; */
-        if (message.event.oneofKind === "addNode")
-            AddNode.internalBinaryWrite(message.event.addNode, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
-        /* xyz.unavi.editor.add.AddMesh add_mesh = 2; */
-        if (message.event.oneofKind === "addMesh")
-            AddMesh.internalBinaryWrite(message.event.addMesh, writer.tag(2, WireType.LengthDelimited).fork(), options).join();
-        /* xyz.unavi.editor.edit.EditNode edit_node = 3; */
-        if (message.event.oneofKind === "editNode")
-            EditNode.internalBinaryWrite(message.event.editNode, writer.tag(3, WireType.LengthDelimited).fork(), options).join();
-        /* xyz.unavi.editor.edit.EditMesh edit_mesh = 4; */
-        if (message.event.oneofKind === "editMesh")
-            EditMesh.internalBinaryWrite(message.event.editMesh, writer.tag(4, WireType.LengthDelimited).fork(), options).join();
-        /* xyz.unavi.editor.remove.RemoveNode remove_node = 5; */
-        if (message.event.oneofKind === "removeNode")
-            RemoveNode.internalBinaryWrite(message.event.removeNode, writer.tag(5, WireType.LengthDelimited).fork(), options).join();
-        /* xyz.unavi.editor.remove.RemoveMesh remove_mesh = 6; */
-        if (message.event.oneofKind === "removeMesh")
-            RemoveMesh.internalBinaryWrite(message.event.removeMesh, writer.tag(6, WireType.LengthDelimited).fork(), options).join();
+        /* xyz.unavi.editor.sync.SyncScene sync_scene = 1; */
+        if (message.event.oneofKind === "syncScene")
+            SyncScene.internalBinaryWrite(message.event.syncScene, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

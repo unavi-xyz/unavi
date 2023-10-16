@@ -2,19 +2,10 @@ syntax = "proto3";
 
 package xyz.unavi.editor.event;
 
-import "editor/add.proto";
-import "editor/edit.proto";
-import "editor/remove.proto";
+import "editor/sync.proto";
 
 message EditorEvent {
   oneof event {
-    add.AddNode add_node = 1;
-    add.AddMesh add_mesh = 2;
-
-    edit.EditNode edit_node = 3;
-    edit.EditMesh edit_mesh = 4;
-
-    remove.RemoveNode remove_node = 5;
-    remove.RemoveMesh remove_mesh = 6;
+    sync.SyncScene sync_scene = 1;
   }
 }

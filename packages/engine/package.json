@@ -1,6 +1,6 @@
 {
   "name": "@unavi/engine",
-  "version": "1.1.0",
+  "version": "1.0.2",
   "private": true,
   "repository": {
     "type": "git",
@@ -20,7 +20,10 @@
     "lint": "cd ../.. && eslint --fix packages/engine --ext .ts,.tsx,.mjs,.json --ignore-path .gitignore --ignore-path .prettierignore --ignore-pattern package.json"
   },
   "dependencies": {
-    "@unavi/utils": "workspace:^"
+    "@unavi/utils": "workspace:^",
+    "lib0": "^0.2.85",
+    "valtio-yjs": "^0.5.0",
+    "yjs": "^13.6.7"
   },
   "devDependencies": {
     "@thyseus/rollup-plugin-thyseus": "^0.14.0",
@@ -32,7 +35,7 @@
     "eslint": "^8.44.0",
     "eslint-config-custom": "workspace:^",
     "gl-matrix": "^4.0.0-beta.1",
-    "houseki": "^1.0.4",
+    "houseki": "^1.1.9",
     "mediasoup-client": "^3.6.84",
     "nanoid": "^4.0.2",
     "react": "^18.2.0",
@@ -42,6 +45,7 @@
     "thyseus": "^0.14.0",
     "tsconfig": "workspace:^",
     "typescript": "~5.1.3",
+    "valtio": "^1.11.2",
     "vite": "^4.3.8",
     "vite-plugin-dts": "^2.3.0",
     "zustand": "^4.3.8"
@@ -57,6 +61,7 @@
     "react-dom": "*",
     "three": "*",
     "thyseus": "*",
+    "valtio": "*",
     "zustand": "*"
   }
 }

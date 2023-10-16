@@ -1,37 +1,38 @@
-import { useSceneStore } from "@unavi/engine";
+import { SyncedNode, syncedStore, useSceneStore } from "@unavi/engine";
 import { IoMdExpand, IoMdLock, IoMdUnlock } from "react-icons/io";
 
-import { editNode } from "@/src/play/actions/editNode";
+import { DeepReadonly } from "@/src/play/utils/types";
 import Tooltip from "@/src/ui/Tooltip";
 
-import { useTreeValue } from "../../hooks/useTreeValue";
+import { getDisplayName } from "../../utils/getDisplayName";
 
 interface Props {
-  id: bigint;
+  node: DeepReadonly<SyncedNode>;
 }
 
-export default function TreeItem({ id }: Props) {
+export default function TreeItem({ node }: Props) {
   const selectedId = useSceneStore((state) => state.selectedId);
-  const name = useTreeValue(id, "name");
-  const locked = useTreeValue(id, "locked");
 
   function select(e: React.MouseEvent) {
     e.stopPropagation();
-    useSceneStore.setState({ selectedId: id });
+    useSceneStore.setState({ selectedId: node.id });
   }
 
   function expand(e: React.MouseEvent) {
     e.stopPropagation();
-    useSceneStore.setState({ sceneTreeId: id });
+    useSceneStore.setState({ sceneTreeId: node.id });
   }
 
   function toggleLock(e: React.MouseEvent) {
     e.stopPropagation();
-    if (!name) return;
-    editNode({ extras: { locked: !locked }, target: name });
+
+    const synced = syncedStore.nodes[node.id];
+    if (!synced) return;
+
+    synced.extras.locked = !synced.extras.locked;
   }
 
-  const isSelected = selectedId === id;
+  const isSelected = selectedId === node.id;
 
   return (
     <div className="group relative flex space-x-1">
@@ -43,7 +44,7 @@ export default function TreeItem({ id }: Props) {
             : "group-hover:bg-white/10"
         }`}
       >
-        {name || `(${id.toString()})`}
+        {getDisplayName(node.name, node.id)}
       </button>
 
       <div className="absolute inset-y-0 right-0 flex items-center space-x-1 pr-1">
@@ -56,14 +57,16 @@ export default function TreeItem({ id }: Props) {
           </button>
         </Tooltip>
 
-        <Tooltip text={locked ? "Unlock" : "Lock"} side="top">
+        <Tooltip text={node.extras.locked ? "Unlock" : "Lock"} side="top">
           <button
             onClick={toggleLock}
             className={`rounded text-lg hover:opacity-70 active:opacity-60 ${
-              locked ? "text-neutral-500" : "hidden group-hover:block"
+              node.extras.locked
+                ? "text-neutral-500"
+                : "hidden group-hover:block"
             }`}
           >
-            {locked ? <IoMdLock /> : <IoMdUnlock />}
+            {node.extras.locked ? <IoMdLock /> : <IoMdUnlock />}
           </button>
         </Tooltip>
       </div>

@@ -20,19 +20,21 @@ export default function EditModeButton() {
     }
   }, [mode, engine]);
 
+  function toggleMode() {
+    if (mode === PlayMode.Play) {
+      useSceneStore.setState({ enabled: true });
+      usePlayStore.setState({ mode: PlayMode.Edit });
+    } else {
+      useSceneStore.setState({ enabled: false });
+      usePlayStore.setState({ mode: PlayMode.Play });
+    }
+  }
+
   return (
     <div className="fixed bottom-0 right-0 z-20 space-x-2 p-4">
       <Tooltip text="Toggle Build Mode" side="left">
         <button
-          onClick={() => {
-            if (mode === PlayMode.Play) {
-              useSceneStore.setState({ enabled: true });
-              usePlayStore.setState({ mode: PlayMode.Edit });
-            } else {
-              useSceneStore.setState({ enabled: false });
-              usePlayStore.setState({ mode: PlayMode.Play });
-            }
-          }}
+          onClick={toggleMode}
           className={`h-[52px] w-[52px] rounded-full text-2xl backdrop-blur-lg transition active:scale-95 ${
             mode === PlayMode.Edit
               ? "bg-white text-black hover:bg-white/90"

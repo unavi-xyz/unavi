@@ -1,17 +1,21 @@
+import { SyncedNode } from "@unavi/engine";
+
+import { DeepReadonly } from "@/src/play/utils/types";
+
 import Rotation from "./Rotation";
 import Scale from "./Scale";
 import Translation from "./Translation";
 
 interface Props {
-  id: bigint;
+  node: DeepReadonly<SyncedNode>;
 }
 
-export default function Transform({ id }: Props) {
+export default function Transform({ node }: Props) {
   return (
     <div className="space-y-1">
-      <Translation id={id} />
-      <Rotation id={id} />
-      <Scale id={id} />
+      <Translation node={node} />
+      <Rotation node={node} />
+      <Scale node={node} />
     </div>
   );
 }

@@ -1,9 +1,11 @@
 import {
-  EditNode_Collider_Type,
-  EditNode_RigidBody_Type,
-} from "@unavi/protocol";
+  editNode,
+  SyncedNode,
+  SyncedNode_Collider_Type,
+  SyncedNode_RigidBody_Type,
+} from "@unavi/engine";
 
-import { editNode } from "@/src/play/actions/editNode";
+import { DeepReadonly } from "@/src/play/utils/types";
 import {
   DropdownContent,
   DropdownItem,
@@ -11,48 +13,39 @@ import {
   DropdownTrigger,
 } from "@/src/ui/DropdownMenu";
 
-import { useTreeValue } from "../../hooks/useTreeValue";
-
 enum AddOption {
   Physics = "physics",
 }
 
 interface Props {
-  id: bigint;
+  node: DeepReadonly<SyncedNode>;
 }
 
-export default function AddComponent({ id }: Props) {
+export default function AddComponent({ node }: Props) {
   const options: AddOption[] = [];
 
-  const name = useTreeValue(id, "name");
-  const locked = useTreeValue(id, "locked");
-  const rigidBodyType = useTreeValue(id, "rigidBodyType");
-  const colliderType = useTreeValue(id, "colliderType");
-
-  if (!rigidBodyType || !colliderType) {
+  if (node.collider.type === SyncedNode_Collider_Type.NONE) {
     options.push(AddOption.Physics);
   }
 
-  if (!name || locked || options.length === 0) {
+  if (!node || options.length === 0) {
     return null;
   }
 
   function handleAdd(option: AddOption) {
-    if (!name) {
-      return;
-    }
-
     switch (option) {
       case AddOption.Physics: {
-        editNode({
+        editNode(node.id, {
           collider: {
+            height: 1,
+            meshId: "",
+            radius: 0.5,
             size: [1, 1, 1],
-            type: EditNode_Collider_Type.BOX,
+            type: SyncedNode_Collider_Type.BOX,
           },
           rigidBody: {
-            type: EditNode_RigidBody_Type.STATIC,
+            type: SyncedNode_RigidBody_Type.STATIC,
           },
-          target: name,
         });
         break;
       }

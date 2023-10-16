@@ -1,65 +1,89 @@
-import { editNode } from "@/src/play/actions/editNode";
+import { editNode, SyncedNode } from "@unavi/engine";
+import { useRef, useState } from "react";
 
-import { useTreeValue } from "../../hooks/useTreeValue";
-import { useTreeValueKey } from "../../hooks/useTreeValueKey";
+import { DeepReadonly } from "@/src/play/utils/types";
+
 import NumberInput from "./NumberInput";
 
 interface Props {
-  id: bigint;
+  node: DeepReadonly<SyncedNode>;
 }
 
-export default function Scale({ id }: Props) {
-  const name = useTreeValue(id, "name");
-  const locked = useTreeValue(id, "locked");
-  const rawX = useTreeValueKey(id, "scale", 0);
-  const rawY = useTreeValueKey(id, "scale", 1);
-  const rawZ = useTreeValueKey(id, "scale", 2);
+export default function Scale({ node }: Props) {
+  const rawX = node.scale[0] ?? 0;
+  const rawY = node.scale[1] ?? 0;
+  const rawZ = node.scale[2] ?? 0;
 
-  if (!name || rawX === undefined || rawY === undefined || rawZ === undefined) {
-    return null;
+  const [uiX, setX] = useState(rawX);
+  const [uiY, setY] = useState(rawY);
+  const [uiZ, setZ] = useState(rawZ);
+
+  const [usingUI, setUsingUI] = useState(false);
+  const usingUITimout = useRef<NodeJS.Timeout | null>(null);
+
+  function usedUI() {
+    setUsingUI(true);
+    setX(rawX ?? 0);
+    setY(rawY ?? 0);
+    setZ(rawZ ?? 0);
+
+    if (usingUITimout.current) {
+      clearTimeout(usingUITimout.current);
+    }
+
+    usingUITimout.current = setTimeout(() => {
+      setUsingUI(false);
+    }, 100);
   }
 
-  const x = round(rawX);
-  const y = round(rawY);
-  const z = round(rawZ);
+  const x = usingUI ? uiX : rawX ?? 0;
+  const y = usingUI ? uiY : rawY ?? 0;
+  const z = usingUI ? uiZ : rawZ ?? 0;
+
+  const roundedX = round(x);
+  const roundedY = round(y);
+  const roundedZ = round(z);
 
   return (
     <div className="flex items-center space-x-1">
       <div className="w-20 shrink-0 font-bold text-neutral-400">Scale</div>
 
       <NumberInput
-        value={x}
+        value={roundedX}
         label="X"
         placeholder="X"
-        disabled={locked}
+        disabled={node.extras.locked}
         onValueChange={(val) => {
-          editNode({
+          usedUI();
+          setX(val);
+          editNode(node.id, {
             scale: [val, y, z],
-            target: name,
           });
         }}
       />
       <NumberInput
-        value={y}
+        value={roundedY}
         label="Y"
         placeholder="Y"
-        disabled={locked}
+        disabled={node.extras.locked}
         onValueChange={(val) => {
-          editNode({
+          usedUI();
+          setY(val);
+          editNode(node.id, {
             scale: [x, val, z],
-            target: name,
           });
         }}
       />
       <NumberInput
-        value={z}
+        value={roundedZ}
         label="Z"
         placeholder="Z"
-        disabled={locked}
+        disabled={node.extras.locked}
         onValueChange={(val) => {
-          editNode({
+          usedUI();
+          setZ(val);
+          editNode(node.id, {
             scale: [x, y, val],
-            target: name,
           });
         }}
       />

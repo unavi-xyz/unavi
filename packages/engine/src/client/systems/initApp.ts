@@ -29,8 +29,7 @@ export function initApp(
   csm.far = 40;
   commands.getById(cameraId).add(csm);
 
-  const name = new Name("root");
-  commands.getById(sceneId).add(name).addType(Asset).addType(WorldJson);
+  commands.getById(sceneId).addType(Asset).addType(WorldJson);
 }
 
 export function addPhysics(

@@ -76,13 +76,12 @@ export function CardImage({
 }: CardImageProps) {
   return (
     <div
-      className={`relative flex aspect-card h-full w-full flex-col overflow-hidden rounded-3xl bg-neutral-200 transition duration-100 ease-out ${
-        loading
+      className={`relative flex aspect-card h-full w-full flex-col overflow-hidden rounded-3xl bg-neutral-200 transition duration-100 ease-out ${loading
           ? ""
           : group
-          ? "group-hover:scale-105 group-hover:shadow-lg"
-          : "hover:scale-105 hover:shadow-lg"
-      } ${loading && loadingAnimation ? "animate-pulse" : ""}`}
+            ? "group-hover:scale-105 group-hover:shadow-lg"
+            : "hover:scale-105 hover:shadow-lg"
+        } ${loading && loadingAnimation ? "animate-pulse" : ""}`}
     >
       {loading ? null : image ? (
         isFromCDN(image) ? (

@@ -23,7 +23,7 @@ export async function GET() {
   response.cookies.set(GOOGLE_OAUTH_STATE_COOKIE, state, {
     httpOnly: true,
     maxAge: 60 * 60,
-    path: "/", // 1 hour
+    path: "/",
   });
 
   return response;

@@ -1,7 +1,8 @@
 import "./globals.css";
 
+import dynamic from "next/dynamic";
 import { Nunito } from "next/font/google";
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 
 import { baseMetadata } from "./metadata";
 import Toast from "./Toast";
@@ -12,7 +13,7 @@ export const metadata = {
   ...baseMetadata,
 };
 
-const ClientWrapper = lazy(() => import("./ClientWrapper"));
+const ClientWrapper = dynamic(() => import("./ClientWrapper"));
 
 export default function RootLayout({
   children,

@@ -2,7 +2,7 @@ import { Asset, CoreStore } from "houseki/core";
 import { CascadingShadowMaps } from "houseki/csm";
 import { InputStruct } from "houseki/input";
 import { MeshCollider, StaticBody } from "houseki/physics";
-import { Mesh, Name, RenderView } from "houseki/scene";
+import { Mesh, RenderView } from "houseki/scene";
 import { Commands, Entity, Mut, Query, Res, Without } from "thyseus";
 
 import { ENABLE_POINTER_LOCK } from "../../constants";

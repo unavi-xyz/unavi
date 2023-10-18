@@ -35,3 +35,27 @@ UNAVI provides both a web client, and a native build.
 - [core](/core) Core engine library
 - [wasm](/wasm) WASM build of the engine, used by the web client
 - [web](/web) Next.js site + web client
+
+## ⚙️ Development (with Nix)
+
+### Build
+
+Build all crates with:
+
+```bash
+nix build
+```
+
+### Develop
+
+Enter a development shell with:
+
+```bash
+nix develop
+```
+
+Then from there you can run the app with cargo commands such as:
+
+```bash
+cargo run --features bevy/dynamic_linking --features bevy/wayland
+```

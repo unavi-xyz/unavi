@@ -9,5 +9,6 @@ edition.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+bevy = "0.11.3"
 wasm-bindgen = "0.2.87"
 

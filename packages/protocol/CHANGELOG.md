@@ -1,5 +1,11 @@
 # @unavi/protocol
 
+## 0.2.2
+
+### Patch Changes
+
+- 032056c3: rename mesh to mesh primitive
+
 ## 0.2.1
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @unavi/engine
 
+## 1.0.3
+
+### Patch Changes
+
+- 032056c3: fix mesh colliders
+- Updated dependencies [032056c3]
+  - @unavi/protocol@0.2.2
+
 ## 1.1.0
 
 ### Minor Changes

@@ -1,3 +1,3 @@
-pub fn hello_world() {
-    println!("Hello, world!");
+pub fn main() {
+    println!("unavi_wasm::main");
 }

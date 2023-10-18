@@ -11,8 +11,36 @@
     with inputs;
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
-        code = pkgs.callPackage ./. { inherit nixpkgs system rust-overlay; };
+        overlays = [ (import rust-overlay) ];
+        pkgs = import nixpkgs { inherit system overlays; };
+
+        build_inputs = with pkgs; [
+          # Rust
+          rust-bin.stable.latest.default
+
+          # Bevy
+          alsa-lib
+          libxkbcommon
+          udev
+          vulkan-loader
+          wayland
+          xorg.libX11
+          xorg.libXcursor
+          xorg.libXi
+          xorg.libXrandr
+          zstd
+        ];
+
+        native_build_inputs = with pkgs; [
+          # Rust
+          cargo-auditable
+          pkg-config
+        ];
+
+        code = pkgs.callPackage ./. {
+          inherit pkgs system build_inputs native_build_inputs;
+        };
+
       in rec {
         packages = {
           app = code.app;
@@ -25,14 +53,8 @@
         };
 
         devShell = pkgs.mkShell {
-          buildInputs = with pkgs; [
-            # Rust
-            cargo
-            clippy
-            rust-analyzer
-            rustc
-            rustfmt
-          ];
+          buildInputs = build_inputs;
+          nativeBuildInputs = native_build_inputs;
         };
       });
 }

@@ -1,48 +1,31 @@
-{ lib, pkgs, nixpkgs, system, makeRustPlatform, rust-overlay }:
+{ lib, pkgs, system, build_inputs, native_build_inputs, makeRustPlatform }:
 let
-  rustPkgs = import nixpkgs {
-    inherit system;
-    overlays = [ (import rust-overlay) ];
-  };
-
-  rustVersion = "1.73.0";
   wasmTarget = "wasm32-unknown-unknown";
 
-  rustWithWasmTarget =
-    rustPkgs.rust-bin.stable.${rustVersion}.default.override {
-      targets = [ wasmTarget ];
-    };
+  rustBin = pkgs.rust-bin.stable.latest.default;
+  rustBinWasm = rustBin.override { targets = [ wasmTarget ]; };
+
+  rustPlatform = makeRustPlatform {
+    cargo = rustBin;
+    rustc = rustBin;
+  };
 
   rustPlatformWasm = makeRustPlatform {
-    cargo = rustWithWasmTarget;
-    rustc = rustWithWasmTarget;
+    cargo = rustBinWasm;
+    rustc = rustBinWasm;
   };
 
   common = {
     version = "0.0.0";
     src = ./.;
     cargoLock.lockFile = ./Cargo.lock;
-
-    buildInputs = with pkgs; [
-      # Bevy
-      alsa-lib
-      libxkbcommon
-      udev
-      vulkan-loader
-      wayland
-      xorg.libX11
-      xorg.libXcursor
-      xorg.libXi
-      xorg.libXrandr
-      zstd
-    ];
-
-    nativeBuildInputs = with pkgs; [ pkg-config cargo-auditable wasm-pack ];
-
     PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+
+    buildInputs = build_inputs;
+    nativeBuildInputs = native_build_inputs;
   };
 in {
-  app = pkgs.rustPlatform.buildRustPackage (common // { pname = "unavi-app"; });
+  app = rustPlatform.buildRustPackage (common // { pname = "unavi-app"; });
 
   wasm = rustPlatformWasm.buildRustPackage (common // {
     pname = "unavi-wasm";
@@ -50,6 +33,7 @@ in {
     buildPhase = ''
       cargo build --release --target=${wasmTarget}
     '';
+
     installPhase = ''
       mkdir -p $out/lib
       cp target/wasm32-unknown-unknown/release/*.wasm $out/lib/

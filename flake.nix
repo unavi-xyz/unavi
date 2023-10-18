@@ -7,8 +7,7 @@
     nixpkgs.follows = "rust-overlay/nixpkgs";
   };
 
-  outputs = inputs:
-    with inputs;
+  outputs = { self, nixpkgs, flake-utils, rust-overlay, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         overlays = [ (import rust-overlay) ];
@@ -16,19 +15,21 @@
 
         build_inputs = with pkgs; [
           # Rust
+          rust-analyzer
           rust-bin.stable.latest.default
 
           # Bevy
           alsa-lib
-          libxkbcommon
           udev
           vulkan-loader
+
+          libxkbcommon
           wayland
+
           xorg.libX11
           xorg.libXcursor
           xorg.libXi
           xorg.libXrandr
-          zstd
         ];
 
         native_build_inputs = with pkgs; [
@@ -40,7 +41,6 @@
         code = pkgs.callPackage ./. {
           inherit pkgs system build_inputs native_build_inputs;
         };
-
       in rec {
         packages = {
           app = code.app;
@@ -55,6 +55,8 @@
         devShell = pkgs.mkShell {
           buildInputs = build_inputs;
           nativeBuildInputs = native_build_inputs;
+
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath build_inputs;
         };
       });
 }

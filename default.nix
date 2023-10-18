@@ -23,6 +23,8 @@ let
 
     buildInputs = build_inputs;
     nativeBuildInputs = native_build_inputs;
+
+    LD_LIBRARY_PATH = lib.makeLibraryPath build_inputs;
   };
 in {
   app = rustPlatform.buildRustPackage (common // { pname = "unavi-app"; });

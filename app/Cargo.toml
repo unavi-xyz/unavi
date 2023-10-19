@@ -8,4 +8,3 @@ edition.workspace = true
 [dependencies]
 bevy = "0.11.3"
 unavi-core = { path = "../core" }
-

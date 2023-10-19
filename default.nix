@@ -27,19 +27,32 @@ let
     LD_LIBRARY_PATH = lib.makeLibraryPath build_inputs;
   };
 in {
-  app = rustPlatform.buildRustPackage (common // { pname = "unavi-app"; });
+  release = {
+    app = rustPlatform.buildRustPackage (common // { pname = "unavi-app"; });
+    wasm = rustPlatformWasm.buildRustPackage (common // {
+      pname = "unavi-wasm";
+      buildPhase = ''
+        cargo build -p unavi-wasm --release --target=${wasmTarget}
+      '';
+      installPhase = ''
+        mkdir -p $out/lib
+        cp target/${wasmTarget}/release/*.wasm $out/lib/
+        wasm-bindgen target/${wasmTarget}/release/unavi_wasm.wasm --out-dir $out/pkg --browser --weak-refs
+      '';
+    });
+  };
 
-  wasm = rustPlatformWasm.buildRustPackage (common // {
-    pname = "unavi-wasm";
-
-    buildPhase = ''
-      cargo build --release --target=${wasmTarget} -p unavi-wasm
-    '';
-
-    installPhase = ''
-      mkdir -p $out/lib
-      cp target/${wasmTarget}/release/*.wasm $out/lib/
-      wasm-bindgen target/${wasmTarget}/release/unavi_wasm.wasm --out-dir $out/pkg --browser --weak-refs --reference-types
-    '';
-  });
+  debug = {
+    wasm = rustPlatformWasm.buildRustPackage (common // {
+      pname = "unavi-wasm";
+      buildPhase = ''
+        cargo build -p unavi-wasm --target=${wasmTarget}
+      '';
+      installPhase = ''
+        mkdir -p $out/lib
+        cp target/${wasmTarget}/debug/*.wasm $out/lib/
+        wasm-bindgen target/${wasmTarget}/debug/unavi_wasm.wasm --out-dir $out/pkg --browser --weak-refs
+      '';
+    });
+  };
 }

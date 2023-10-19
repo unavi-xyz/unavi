@@ -63,5 +63,5 @@ nix develop
 Then from there you can run the app with something like:
 
 ```bash
-cargo run -p unavi_app --features bevy/dynamic_linking --features bevy/wayland
+cargo run -p unavi-app --features bevy/dynamic_linking --features bevy/wayland
 ```

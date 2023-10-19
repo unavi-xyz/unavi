@@ -1,8 +1,14 @@
 use bevy::prelude::*;
 
-pub fn main() {
+pub fn start() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                fit_canvas_to_parent: true,
+                ..Default::default()
+            }),
+            ..Default::default()
+        }))
         .add_systems(Startup, setup)
         .add_systems(Update, rotate)
         .run();
@@ -11,7 +17,7 @@ pub fn main() {
 #[derive(Component)]
 struct Shape;
 
-pub fn setup(
+fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,

@@ -16,6 +16,10 @@
         overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs { inherit system overlays; };
 
+        wasmTarget = "wasm32-unknown-unknown";
+        rustBin = pkgs.rust-bin.stable.latest.default;
+        rustBinWasm = rustBin.override { targets = [ wasmTarget ]; };
+
         build_inputs = with pkgs; [
           # Bevy
           alsa-lib
@@ -35,6 +39,7 @@
           # Rust
           cargo-auditable
           pkg-config
+          wasm-bindgen-cli
         ];
 
         code = pkgs.callPackage ./. {
@@ -55,7 +60,7 @@
           buildInputs = with pkgs;
             [
               # Rust
-              rust-bin.stable.latest.default
+              rustBinWasm
               rust-analyzer
             ] ++ build_inputs;
           nativeBuildInputs = native_build_inputs;

@@ -6,7 +6,7 @@ repository.workspace = true
 edition.workspace = true
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["cdylib"]
 
 [dependencies]
 bevy = "0.11.3"

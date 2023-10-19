@@ -33,12 +33,13 @@ in {
     pname = "unavi-wasm";
 
     buildPhase = ''
-      cargo build --release --target=${wasmTarget}
+      cargo build --release --target=${wasmTarget} -p unavi-wasm
     '';
 
     installPhase = ''
       mkdir -p $out/lib
-      cp target/wasm32-unknown-unknown/release/*.wasm $out/lib/
+      cp target/${wasmTarget}/release/*.wasm $out/lib/
+      wasm-bindgen target/${wasmTarget}/release/unavi_wasm.wasm --out-dir $out/pkg --browser --weak-refs --reference-types
     '';
   });
 }

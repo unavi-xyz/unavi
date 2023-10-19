@@ -1,7 +1,8 @@
 {
   "compilerOptions": {
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@wasm/*": ["../result/pkg/*"]
     },
     "plugins": [
       {
@@ -39,7 +40,8 @@
     "**/*.ts",
     "**/*.tsx",
     "next-env.d.ts",
-    "src/**/*.json"
+    "src/**/*.json",
+    "../result/pkg/**/*.d.ts"
   ],
   "exclude": ["node_modules", ".turbo"]
 }

@@ -41,7 +41,8 @@
     "**/*.tsx",
     "next-env.d.ts",
     "src/**/*.json",
-    "../result/pkg/**/*.d.ts"
+    "../result/pkg/**/*.d.ts",
+    "../result/pkg/**/*.js"
   ],
   "exclude": ["node_modules", ".turbo"]
 }

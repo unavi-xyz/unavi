@@ -40,22 +40,28 @@ UNAVI provides both a web client, and a native build.
 
 ### Build
 
-Build all crates with:
+Build all crates in release mode:
 
 ```bash
 nix build
 ```
 
+Or build the wasm library in debug mode:
+
+```bash
+nix build .#debug_wasm
+```
+
 ### Develop
 
-Enter a development shell with:
+Enter a development shell:
 
 ```bash
 nix develop
 ```
 
-Then from there you can run the app with cargo commands such as:
+Then from there you can run the app with something like:
 
 ```bash
-cargo run --features bevy/dynamic_linking --features bevy/wayland
+cargo run -p unavi_app --features bevy/dynamic_linking --features bevy/wayland
 ```

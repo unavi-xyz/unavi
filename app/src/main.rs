@@ -1,3 +1,3 @@
 fn main() {
-    unavi_core::main();
+    unavi_core::start();
 }

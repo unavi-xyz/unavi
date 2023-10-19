@@ -47,13 +47,14 @@
         };
       in rec {
         packages = {
-          app = code.app;
-          wasm = code.wasm;
-          all = pkgs.symlinkJoin {
-            name = "all";
-            paths = with code; [ app wasm ];
+          debug_wasm = code.debug.wasm;
+
+          release = pkgs.symlinkJoin {
+            name = "release";
+            paths = with code.release; [ app wasm ];
           };
-          default = packages.all;
+
+          default = packages.release;
         };
 
         devShell = pkgs.mkShell {

@@ -1,22 +1,25 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export default function Home() {
+  const loaded = useRef(false);
+
   useEffect(() => {
-    if (!window) {
+    if (typeof window === "undefined") {
       return;
     }
 
+    if (loaded.current) {
+      return;
+    }
+
+    loaded.current = true;
+
     import("@wasm/unavi_wasm").then((wasm) => {
-      wasm.greet("test");
+      wasm.start();
     });
   }, []);
 
-  return (
-    <div>
-      <h1>Home</h1>
-      <p>Welcome to the home page!</p>
-    </div>
-  );
+  return null;
 }

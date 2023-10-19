@@ -2,22 +2,21 @@
   description = "A flake for building a Rust workspace using buildRustPackage.";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
+
+    rust-overlay.inputs.flake-utils.follows = "flake-utils";
+    rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, flake-utils, rust-overlay, ... }:
+  outputs = { self, flake-utils, nixpkgs, rust-overlay, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs { inherit system overlays; };
 
         build_inputs = with pkgs; [
-          # Rust
-          rust-analyzer
-          rust-bin.stable.latest.default
-
           # Bevy
           alsa-lib
           udev
@@ -53,7 +52,12 @@
         };
 
         devShell = pkgs.mkShell {
-          buildInputs = build_inputs;
+          buildInputs = with pkgs;
+            [
+              # Rust
+              rust-bin.stable.latest.default
+              rust-analyzer
+            ] ++ build_inputs;
           nativeBuildInputs = native_build_inputs;
 
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath build_inputs;

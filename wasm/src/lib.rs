@@ -1,3 +1,3 @@
-pub fn main() {
-    unavi_core::main();
+pub fn start() {
+    println!("Hello, world!");
 }

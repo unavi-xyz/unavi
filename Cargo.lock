@@ -3092,11 +3092,11 @@ name = "unavi-app"
 version = "0.0.0"
 dependencies = [
  "bevy",
- "unavi-core",
+ "unavi-engine",
 ]
 
 [[package]]
-name = "unavi-core"
+name = "unavi-engine"
 version = "0.0.0"
 dependencies = [
  "bevy",
@@ -3111,7 +3111,7 @@ name = "unavi-wasm"
 version = "0.0.0"
 dependencies = [
  "bevy",
- "unavi-core",
+ "unavi-engine",
  "wasm-bindgen",
 ]
 

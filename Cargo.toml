@@ -2,7 +2,7 @@
 resolver = "2"
 members = [
   "app",
-  "core",
+  "engine",
   "server",
   "wasm"
 ]

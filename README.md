@@ -33,6 +33,7 @@ UNAVI provides both a web client, and a native build.
 
 - [app](/app) Native UNAVI client
 - [core](/core) Core engine library
+- [server](/server) Home server
 - [wasm](/wasm) WASM build of the engine, used by the web client
 - [web](/web) Next.js site + web client
 

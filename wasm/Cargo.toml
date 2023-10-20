@@ -10,5 +10,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 bevy = "0.11.3"
-unavi-core = { path = "../core" }
+unavi-engine = { path = "../engine" }
 wasm-bindgen = "0.2.87"

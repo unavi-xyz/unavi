@@ -29,6 +29,10 @@ let
 in {
   release = {
     app = rustPlatform.buildRustPackage (common // { pname = "unavi-app"; });
+
+    server =
+      rustPlatform.buildRustPackage (common // { pname = "unavi-server"; });
+
     wasm = rustPlatformWasm.buildRustPackage (common // {
       pname = "unavi-wasm";
       buildPhase = ''

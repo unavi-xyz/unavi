@@ -3103,6 +3103,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-server"
+version = "0.0.0"
+
+[[package]]
 name = "unavi-wasm"
 version = "0.0.0"
 dependencies = [

@@ -1,5 +1,5 @@
 [package]
-name = "unavi-core"
+name = "unavi-engine"
 version.workspace = true
 license.workspace = true
 repository.workspace = true

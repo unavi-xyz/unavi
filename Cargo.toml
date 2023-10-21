@@ -4,7 +4,8 @@ members = [
   "app",
   "engine",
   "server",
-  "wasm"
+  "web/app",
+  "web/frontend"
 ]
 
 [workspace.package]
@@ -12,6 +13,12 @@ version = "0.0.0"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/unavi-xyz/unavi"
 edition = "2021"
+
+[[workspace.metadata.leptos]]
+name = "unavi"
+bin-package = "unavi-server"
+lib-package = "unavi-web-frontend"
+style-file = "web/app/style.css"
 
 [profile.dev]
 opt-level = 1

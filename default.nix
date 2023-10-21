@@ -27,36 +27,18 @@ let
     LD_LIBRARY_PATH = lib.makeLibraryPath build_inputs;
   };
 in {
-  release = {
-    app = rustPlatform.buildRustPackage (common // { pname = "unavi-app"; });
+  app = rustPlatform.buildRustPackage (common // { pname = "unavi-app"; });
 
-    server =
-      rustPlatform.buildRustPackage (common // { pname = "unavi-server"; });
+  server =
+    rustPlatform.buildRustPackage (common // { pname = "unavi-server"; });
 
-    wasm = rustPlatformWasm.buildRustPackage (common // {
-      pname = "unavi-wasm";
-      buildPhase = ''
-        cargo build -p unavi-wasm --release --target=${wasmTarget}
-      '';
-      installPhase = ''
-        mkdir -p $out/lib
-        cp target/${wasmTarget}/release/*.wasm $out/lib/
-        wasm-bindgen target/${wasmTarget}/release/unavi_wasm.wasm --out-dir $out/pkg --browser --weak-refs
-      '';
-    });
-  };
-
-  debug = {
-    wasm = rustPlatformWasm.buildRustPackage (common // {
-      pname = "unavi-wasm";
-      buildPhase = ''
-        cargo build -p unavi-wasm --target=${wasmTarget}
-      '';
-      installPhase = ''
-        mkdir -p $out/lib
-        cp target/${wasmTarget}/debug/*.wasm $out/lib/
-        wasm-bindgen target/${wasmTarget}/debug/unavi_wasm.wasm --out-dir $out/pkg --browser --weak-refs
-      '';
-    });
-  };
+  web = rustPlatformWasm.buildRustPackage (common // {
+    pname = "unavi-web";
+    buildPhase = ''
+      cargo leptos build --release
+    '';
+    installPhase = ''
+      mkdir -p $out/release-tmp
+    '';
+  });
 }

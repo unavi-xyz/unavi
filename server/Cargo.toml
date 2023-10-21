@@ -4,3 +4,17 @@ version.workspace = true
 license.workspace = true
 repository.workspace = true
 edition.workspace = true
+
+[dependencies]
+axum = "0.6.20"
+leptos = { version = "0.5.1", features = ["ssr"] }
+leptos_axum = "0.5.1"
+tokio = { version = "1.33.0", features = ["full"] }
+tower = "0.4.13"
+tower-http = { version = "0.4.4", features = ["fs"] }
+
+unavi-web-app = { path = "../web/app", features = ["ssr"] }
+
+[features]
+default = ["web"]
+web = []

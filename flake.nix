@@ -6,6 +6,11 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
 
+    cargo-leptos = {
+      url = "github:leptos-rs/cargo-leptos";
+      flake = false;
+    };
+
     rust-overlay.inputs.flake-utils.follows = "flake-utils";
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
   };
@@ -36,6 +41,11 @@
         ];
 
         native_build_inputs = with pkgs; [
+          # Leptos
+          cargo-leptos
+          openssl
+          binaryen
+
           # Rust
           cargo-auditable
           pkg-config
@@ -46,23 +56,23 @@
           inherit pkgs system build_inputs native_build_inputs;
         };
       in rec {
-        packages = {
-          debug_wasm = code.debug.wasm;
-
-          release = pkgs.symlinkJoin {
-            name = "release";
-            paths = with code.release; [ app wasm ];
+        packages = code // {
+          all = pkgs.symlinkJoin {
+            name = "all";
+            paths = with code; [ app server ];
           };
 
-          default = packages.release;
+          default = packages.all;
         };
 
         devShell = pkgs.mkShell {
           buildInputs = with pkgs;
             [
               # Rust
-              rustBinWasm
+              cargo-watch
               rust-analyzer
+              rustBinWasm
+              trunk
             ] ++ build_inputs;
           nativeBuildInputs = native_build_inputs;
 

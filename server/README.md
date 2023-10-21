@@ -1,33 +1,44 @@
 # Server
 
-UNAVI home server.
+A modular UNAVI home server.
 
-## Blocks
+## Containers
 
-Home server functionality is split into different "blocks".
-Each block can be enabled or disabled, allowing for flexibility in deployment.
+Home server functionality is divided into separate features.
+
+Each feature can be enabled or disabled, allowing for flexibility in deployment.
+Note that some features rely on other features.
 
 For example, I may want to run a lightweight home server that only handles user identity,
-and disable the World block.
+and disable the other features.
 
-Some blocks can be replaced by a remote URL.
-For example, I may want to use a hosted DB service, and disable the DB block (setting the DB url to my provider).
-
-Or I may want to run the World block on a separate machine for performance reasons.
-
-### User
-
-The user block handles user authentication and federation.
-
-### World
-
-The world block handles world networking over WebSockets and WebRTC.
-It is the multiplayer server that connects users in a world together.
+Or I may want to split up my service and run each feature on a separate machine.
 
 ### DB
 
-The DB block runs a MySQL database.
+The DB feature runs a MySQL database.
 
 ### IPFS
 
-The IPFS block runs an IPFS Kubo node for file storage and retrieval.
+The IPFS feature runs an IPFS Kubo node for file storage and retrieval.
+
+### Identity
+
+The identity feature handles allows users to use the server as their home server.
+It handles user authentication, and federates social interactions with other servers.
+
+Depends on `DB` and `IPFS`.
+
+### Web
+
+The web feature hosts a web client at `/`.
+
+Depends on `IPFS`.
+Can also use `DB` for additional functionality.
+
+### World
+
+The world feature handles world networking over WebSockets and WebRTC.
+It is the multiplayer server that connects users in a world together.
+
+Depends on the `DB`.

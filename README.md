@@ -34,8 +34,7 @@ UNAVI provides both a web client and native build.
 - [app](/app) Native client
 - [engine](/engine) Core engine library
 - [server](/server) Home server
-- [wasm](/wasm) WASM build of the engine, used by the web client
-- [web](/web) Next.js web client
+- [wasm](/wasm) WASM build of the engine
 
 ## ⚙️ Development (with Nix)
 
@@ -47,10 +46,10 @@ Build all crates in release mode:
 nix build
 ```
 
-Or build the wasm library in debug mode:
+Or a specific crate with:
 
 ```bash
-nix build .#debug_wasm
+nix build .#app
 ```
 
 ### Develop
@@ -61,8 +60,14 @@ Enter a development shell:
 nix develop
 ```
 
-Then from there you can run the app with something like:
+From there you can run the app with something like:
 
 ```bash
 cargo run -p unavi-app --features bevy/dynamic_linking --features bevy/wayland
+```
+
+Or run the web client using `cargo-leptos`:
+
+```bash
+cargo leptos watch
 ```

@@ -34,7 +34,7 @@ UNAVI provides both a web client and native build.
 - [app](/app) Native client
 - [engine](/engine) Core engine library
 - [server](/server) Home server
-- [wasm](/wasm) WASM build of the engine
+- [web](/web) Web client
 
 ## ⚙️ Development (with Nix)
 

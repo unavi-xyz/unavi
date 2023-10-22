@@ -2,7 +2,7 @@
 resolver = "2"
 members = [
   "app",
-  "engine",
+  "native",
   "server",
   "web/app",
   "web/frontend"

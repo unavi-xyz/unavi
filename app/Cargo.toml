@@ -7,4 +7,3 @@ edition.workspace = true
 
 [dependencies]
 bevy = "0.11.3"
-unavi-engine = { path = "../engine" }

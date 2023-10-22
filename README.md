@@ -28,7 +28,8 @@ Anyone can run their own servers, modify their client, and extend the underlying
 
 UNAVI is almost entirely written in Rust 🦀.
 The app is built using [Bevy](https://bevyengine.org/) and makes heavy use of [WebAssembly](https://webassembly.org/) for user scripting.
-Multiplayer is handled by self-hostable servers running [Mediasoup](https://mediasoup.org/), handling communication between players.
+Multiplayer is handled by self-hostable servers running [Mediasoup](https://mediasoup.org/),
+acting as [SFUs](https://bloggeek.me/webrtcglossary/sfu/) for communication between players.
 UNAVI provides both a web client and native build.
 
 This project is still early, any feedback or contributions are really appreciated!
@@ -36,7 +37,7 @@ Come join the [Discord](https://discord.gg/VCsAEneUMn) and say hi!
 
 ## 📦 What's inside?
 
-- [app](/app) - The main UNAVI app, built with [Bevy](https://bevyengine.org/)
+- [app](/app) - The core UNAVI app, built with [Bevy](https://bevyengine.org/)
 - [native](/native) - Native build of the app
 - [server](/server) - A modular home server
 - [web](/web) - Web client / WASM build of the app

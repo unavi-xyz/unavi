@@ -17,6 +17,7 @@ edition = "2021"
 [[workspace.metadata.leptos]]
 name = "unavi"
 bin-package = "unavi-server"
+bin-default-features = true
 lib-package = "unavi-web-frontend"
 style-file = "web/app/style.css"
 

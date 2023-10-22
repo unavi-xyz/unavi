@@ -23,7 +23,7 @@
 
 ## ◻️ About
 
-UNAVI is an open source VR social platform, built upon [The Wired](https://github.com/unavi-xyz/wired-protocol).
+UNAVI is an open source VR social platform, built on [The Wired](https://github.com/unavi-xyz/wired-protocol).
 Anyone can run their own servers, modify their client, and extend the underlying protocol to add new features.
 
 UNAVI is almost entirely written in Rust 🦀.
@@ -37,7 +37,7 @@ Come join the [Discord](https://discord.gg/VCsAEneUMn) and say hi!
 
 ## 📦 What's inside?
 
-- [app](/app) - The core UNAVI app, built with [Bevy](https://bevyengine.org/)
+- [app](/app) - The core UNAVI app
 - [native](/native) - Native build of the app
 - [server](/server) - A modular home server
 - [web](/web) - Web client / WASM build of the app

@@ -19,6 +19,7 @@ name = "unavi"
 bin-package = "unavi-server"
 bin-default-features = true
 lib-package = "unavi-web-frontend"
+lib-profile-release = "wasm-release"
 style-file = "web/app/style.css"
 
 [profile.dev]
@@ -29,3 +30,8 @@ opt-level = 3
 
 [profile.release]
 lto = true
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = 'z'
+codegen-units = 1

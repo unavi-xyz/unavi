@@ -31,8 +31,6 @@ The IPFS container runs an IPFS Kubo node for file storage and retrieval.
 The identity container handles allows users to use the server as their home server.
 It handles user authentication, and federates social interactions with other servers.
 
-Depends on `DB` and `IPFS`.
-
 ### Router
 
 The router is the entrypoint into the service.
@@ -40,14 +38,9 @@ It recieves external requests and delegates them to other containers.
 
 ### Web
 
-The web container hosts a web client at `/`.
-
-Depends on `IPFS`.
-Can also use `DB` for additional functionality.
+The web container hosts a web client.
 
 ### World
 
 The world container handles world networking over WebSockets and WebRTC.
 It is the multiplayer server that connects users in a world together.
-
-Depends on the `DB`.

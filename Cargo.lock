@@ -4486,14 +4486,14 @@ name = "unavi-app"
 version = "0.0.0"
 dependencies = [
  "bevy",
- "unavi-engine",
 ]
 
 [[package]]
-name = "unavi-engine"
+name = "unavi-native"
 version = "0.0.0"
 dependencies = [
  "bevy",
+ "unavi-app",
 ]
 
 [[package]]
@@ -4527,7 +4527,7 @@ name = "unavi-web-frontend"
 version = "0.0.0"
 dependencies = [
  "leptos",
- "unavi-engine",
+ "unavi-app",
  "unavi-web-app",
 ]
 

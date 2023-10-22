@@ -27,7 +27,8 @@ let
     LD_LIBRARY_PATH = lib.makeLibraryPath build_inputs;
   };
 in {
-  app = rustPlatform.buildRustPackage (common // { pname = "unavi-app"; });
+  native =
+    rustPlatform.buildRustPackage (common // { pname = "unavi-native"; });
 
   server =
     rustPlatform.buildRustPackage (common // { pname = "unavi-server"; });

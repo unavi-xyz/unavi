@@ -11,4 +11,4 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 leptos = { version = "0.5.1", features = ["hydrate"] }
 unavi-web-app = { path = "../app", features = ["hydrate"] }
-unavi-engine = { path = "../../engine" }
+unavi-app = { path = "../../app" }

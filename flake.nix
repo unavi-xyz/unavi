@@ -54,7 +54,7 @@
         packages = code // {
           all = pkgs.symlinkJoin {
             name = "all";
-            paths = with code; [ app server ];
+            paths = with code; [ native server web ];
           };
 
           default = packages.all;

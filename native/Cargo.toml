@@ -1,5 +1,5 @@
 [package]
-name = "unavi-engine"
+name = "unavi-native"
 version.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -7,3 +7,4 @@ edition.workspace = true
 
 [dependencies]
 bevy = "0.11.3"
+unavi-app = { path = "../app" }

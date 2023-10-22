@@ -6,3 +6,8 @@ html, body {
   margin: 0;
   overflow: hidden;
 }
+
+canvas {
+  user-select: none;
+  touch-action: none;
+}

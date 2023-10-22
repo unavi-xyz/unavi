@@ -1,21 +1,5 @@
 {
   "nodes": {
-    "cargo-leptos": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1697224455,
-        "narHash": "sha256-jzZl2j4Pnkys01QVgVLW9m/H+HDQlCs3lMgecdX8tMg=",
-        "owner": "leptos-rs",
-        "repo": "cargo-leptos",
-        "rev": "f57c00607cd9d124f6c648d4da11f78be22a9bf4",
-        "type": "github"
-      },
-      "original": {
-        "owner": "leptos-rs",
-        "repo": "cargo-leptos",
-        "type": "github"
-      }
-    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -52,7 +36,6 @@
     },
     "root": {
       "inputs": {
-        "cargo-leptos": "cargo-leptos",
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs",
         "rust-overlay": "rust-overlay"

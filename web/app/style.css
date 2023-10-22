@@ -11,3 +11,7 @@ canvas {
   user-select: none;
   touch-action: none;
 }
+
+canvas:focus {
+  outline: none;
+}

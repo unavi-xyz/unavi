@@ -4751,6 +4751,7 @@ dependencies = [
 name = "unavi-web-frontend"
 version = "0.0.0"
 dependencies = [
+ "console_error_panic_hook",
  "leptos",
  "unavi-app",
  "unavi-web-app",

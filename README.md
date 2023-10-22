@@ -23,10 +23,12 @@
 
 ## ◻️ About
 
-UNAVI is an open source VR social platform - a view into [The Wired](https://github.com/unavi-xyz/wired-protocol).
+UNAVI is an open source VR social platform, built upon [The Wired](https://github.com/unavi-xyz/wired-protocol).
 Anyone can run their own servers, modify their client, and extend the underlying protocol to add new features.
 
-The UNAVI engine is written in Rust, using [Bevy](https://bevyengine.org/).
+UNAVI is almost entirely written in Rust 🦀.
+The app is built using [Bevy](https://bevyengine.org/) and makes heavy use of [WebAssembly](https://webassembly.org/) for user scripting.
+Multiplayer is handled by self-hostable servers running [Mediasoup](https://mediasoup.org/), which acts as a [SFU](https://bloggeek.me/webrtcglossary/sfu/) for communication between players.
 UNAVI provides both a web client and native build.
 
 ## 📦 What's inside?

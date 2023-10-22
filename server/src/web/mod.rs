@@ -5,13 +5,11 @@ use axum::Router;
 use fileserve::file_and_error_handler;
 use leptos::*;
 use leptos_axum::{generate_route_list, LeptosRoutes};
-use std::net::SocketAddr;
 use unavi_web_app::*;
 
-pub async fn router() -> (Router, SocketAddr) {
+pub async fn router() -> Router {
     let conf = get_configuration(None).await.unwrap();
     let leptos_options = conf.leptos_options;
-    let addr = leptos_options.site_addr;
 
     let routes = generate_route_list(App);
 
@@ -21,5 +19,5 @@ pub async fn router() -> (Router, SocketAddr) {
         .fallback(file_and_error_handler)
         .with_state(leptos_options);
 
-    (router, addr)
+    router
 }

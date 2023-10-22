@@ -5,13 +5,11 @@ A modular UNAVI home server.
 ## Architecture
 
 Home server functionality is divided into separate containers.
-
 Each container can be enabled or disabled, allowing for flexibility in deployment.
 Note that some containers rely on other containers.
 
 For example, I may want to run a lightweight home server that only handles user identity,
 and disable the other containers.
-
 Or I may want to split up my service and run each container on a separate machine.
 
 <div align="center">
@@ -34,6 +32,11 @@ The identity container handles allows users to use the server as their home serv
 It handles user authentication, and federates social interactions with other servers.
 
 Depends on `DB` and `IPFS`.
+
+### Router
+
+The router is the entrypoint into the service.
+It recieves external requests and delegates them to other containers.
 
 ### Web
 

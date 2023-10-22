@@ -7,14 +7,18 @@ edition.workspace = true
 
 [dependencies]
 axum = "0.6.20"
-leptos = { version = "0.5.1", features = ["ssr"] }
-leptos_axum = "0.5.1"
 tokio = { version = "1.33.0", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.4.4", features = ["fs"] }
 
-unavi-web-app = { path = "../web/app", features = ["ssr"] }
+leptos = { version = "0.5.1", features = ["ssr"], optional = true }
+leptos_axum = { version = "0.5.1", optional = true }
+unavi-web-app = { path = "../web/app", features = ["ssr"], optional = true }
 
 [features]
 default = ["web"]
-web = []
+web = [
+  "dep:leptos",
+  "dep:leptos_axum",
+  "dep:unavi-web-app"
+]

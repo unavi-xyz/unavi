@@ -1,35 +1,24 @@
-use axum::{routing::post, Router};
-use fileserve::file_and_error_handler;
-use leptos::*;
-use leptos_axum::{generate_route_list, LeptosRoutes};
-use unavi_web_app::*;
-
-pub mod fileserve;
+#[cfg(feature = "web")]
+mod web;
 
 #[tokio::main]
 async fn main() {
-    // Setting get_configuration(None) means we'll be using cargo-leptos's env values
-    // For deployment these variables are:
-    // <https://github.com/leptos-rs/start-axum#executing-a-server-on-a-remote-machine-without-the-toolchain>
-    // Alternately a file can be specified such as Some("Cargo.toml")
-    // The file would need to be included with the executable when moved to deployment
-    let conf = get_configuration(None).await.unwrap();
-    let leptos_options = conf.leptos_options;
-    let addr = leptos_options.site_addr;
-    let routes = generate_route_list(App);
+    #[cfg(feature = "web")]
+    let (router, addr) = web::router().await;
 
-    // build our application with a route
-    let app = Router::new()
-        .route("/api/*fn_name", post(leptos_axum::handle_server_fns))
-        .leptos_routes(&leptos_options, routes, App)
-        .fallback(file_and_error_handler)
-        .with_state(leptos_options);
+    #[cfg(not(feature = "web"))]
+    let (router, addr) = {
+        use axum::Router;
+        use std::net::SocketAddr;
 
-    // run our app with hyper
-    // `axum::Server` is a re-export of `hyper::Server`
+        let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+        let router = Router::new();
+
+        (router, addr)
+    };
+
     axum::Server::bind(&addr)
-        .serve(app.into_make_service())
+        .serve(router.into_make_service())
         .await
         .unwrap();
 }
-

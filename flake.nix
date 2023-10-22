@@ -6,11 +6,6 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
 
-    cargo-leptos = {
-      url = "github:leptos-rs/cargo-leptos";
-      flake = false;
-    };
-
     rust-overlay.inputs.flake-utils.follows = "flake-utils";
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
   };
@@ -42,9 +37,9 @@
 
         native_build_inputs = with pkgs; [
           # Leptos
+          binaryen
           cargo-leptos
           openssl
-          binaryen
 
           # Rust
           cargo-auditable
@@ -72,7 +67,6 @@
               cargo-watch
               rust-analyzer
               rustBinWasm
-              trunk
             ] ++ build_inputs;
           nativeBuildInputs = native_build_inputs;
 

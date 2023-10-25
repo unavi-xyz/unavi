@@ -39,7 +39,7 @@ in {
       cargo leptos build --release
     '';
     installPhase = ''
-      mkdir -p $out/release-tmp
+      cp -r target $out/web
     '';
   });
 }

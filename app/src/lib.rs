@@ -1,6 +1,8 @@
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
 
-mod demo;
+mod home;
+mod player;
 
 pub fn start() {
     App::new()
@@ -12,7 +14,10 @@ pub fn start() {
                 }),
                 ..Default::default()
             }),
-            demo::DemoPlugin,
+            RapierPhysicsPlugin::<NoUserData>::default(),
+            RapierDebugRenderPlugin::default(),
+            home::HomePlugin,
+            player::PlayerPlugin,
         ))
         .run();
 }

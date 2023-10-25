@@ -10,7 +10,7 @@ pub fn App() -> impl IntoView {
 
     view! {
         <Stylesheet href="/pkg/unavi.css"/>
-        <Title text="Welcome to UNAVI"/>
+        <Title text="UNAVI"/>
         <Router>
             <main>
                 <Routes>

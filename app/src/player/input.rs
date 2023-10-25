@@ -38,6 +38,7 @@ pub fn read_input(
         player.input.backward = keys.pressed(input_map.key_backward);
         player.input.left = keys.pressed(input_map.key_left);
         player.input.right = keys.pressed(input_map.key_right);
+        player.input.jump = keys.pressed(input_map.key_jump);
         player.input.sprint = keys.pressed(input_map.key_sprint);
     }
 }

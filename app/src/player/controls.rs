@@ -6,13 +6,14 @@ use super::{
     look::{LookDirection, LookEntity},
 };
 
-pub struct PlayerInput {
+pub struct InputState {
     pub forward: bool,
     pub backward: bool,
     pub left: bool,
     pub right: bool,
     pub up: bool,
     pub down: bool,
+    pub jump: bool,
     pub sprint: bool,
 }
 
@@ -20,23 +21,26 @@ pub struct PlayerInput {
 pub struct Player {
     pub speed: f32,
     pub sprint_speed: f32,
+    pub jump_velocity: f32,
     pub velocity: Vec3,
-    pub input: PlayerInput,
+    pub input: InputState,
 }
 
 impl Default for Player {
     fn default() -> Self {
         Self {
-            speed: 2.5,
-            sprint_speed: 4.0,
+            speed: 3.0,
+            sprint_speed: 5.0,
+            jump_velocity: 4.0,
             velocity: Vec3::ZERO,
-            input: PlayerInput {
+            input: InputState {
                 forward: false,
                 backward: false,
                 left: false,
                 right: false,
                 up: false,
                 down: false,
+                jump: false,
                 sprint: false,
             },
         }
@@ -110,12 +114,13 @@ pub fn move_player(
         &LookEntity,
         &Velocity,
         &mut KinematicCharacterController,
+        &KinematicCharacterControllerOutput,
     )>,
     look_directions: Query<&LookDirection>,
 ) {
     let xz = Vec3::new(1.0, 0.0, 1.0);
 
-    for (player, look_entity, velocity, mut controller) in players.iter_mut() {
+    for (player, look_entity, velocity, mut controller, output) in players.iter_mut() {
         let look_direction = look_directions
             .get_component::<LookDirection>(look_entity.0)
             .expect("Failed to get LookDirection from Entity");
@@ -156,15 +161,14 @@ pub fn move_player(
             velocity.linvel.clone() * DAMPING_FACTOR * xz
         };
 
-        info!(
-            "gravity y: {}, linvel y: {}",
-            rapier_config.gravity.y, velocity.linvel.y
-        );
-
-        desired_velocity.y = rapier_config
-            .gravity
-            .y
-            .mul_add(time.delta_seconds(), velocity.linvel.y);
+        desired_velocity.y = if player.input.jump && output.grounded {
+            player.jump_velocity
+        } else {
+            rapier_config
+                .gravity
+                .y
+                .mul_add(time.delta_seconds(), velocity.linvel.y)
+        };
 
         let desired_translation = desired_velocity * time.delta_seconds();
         controller.translation = desired_translation.into();

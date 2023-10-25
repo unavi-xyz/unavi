@@ -20,15 +20,18 @@ impl Plugin for PlayerPlugin {
             .add_systems(
                 Update,
                 (
-                    input::read_input,
                     look::grab_mouse,
-                    controls::apply_yaw,
-                    controls::apply_pitch,
+                    (
+                        (
+                            input::read_input,
+                            controls::apply_yaw,
+                            controls::apply_pitch,
+                            controls::void_teleport,
+                        ),
+                        controls::move_player,
+                    )
+                        .chain(),
                 ),
-            )
-            .add_systems(
-                FixedUpdate,
-                (controls::void_teleport, controls::move_player).chain(),
             );
     }
 }

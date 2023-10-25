@@ -68,7 +68,7 @@ pub fn spawn_player(mut commands: Commands) {
         .spawn((
             Player::default(),
             LookEntity(camera),
-            RigidBody::KinematicPositionBased,
+            RigidBody::KinematicVelocityBased,
             Collider::capsule_y(PLAYER_HEIGHT / 2.0, PLAYER_WIDTH / 2.0),
             TransformBundle {
                 local: Transform::from_translation(SPAWN),
@@ -112,7 +112,6 @@ pub fn move_player(
     mut players: Query<(
         &Player,
         &LookEntity,
-        &Velocity,
         &mut KinematicCharacterController,
         &KinematicCharacterControllerOutput,
     )>,
@@ -120,13 +119,15 @@ pub fn move_player(
 ) {
     let xz = Vec3::new(1.0, 0.0, 1.0);
 
-    for (player, look_entity, velocity, mut controller, output) in players.iter_mut() {
+    for (player, look_entity, mut controller, output) in players.iter_mut() {
         let look_direction = look_directions
             .get_component::<LookDirection>(look_entity.0)
             .expect("Failed to get LookDirection from Entity");
         let forward = (look_direction.forward * xz).normalize();
         let right = (look_direction.right * xz).normalize();
         let up = Vec3::Y;
+
+        let velocity = output.effective_translation / time.delta_seconds();
 
         let mut desired_velocity = Vec3::ZERO;
         if player.input.forward {
@@ -158,7 +159,7 @@ pub fn move_player(
             desired_velocity.normalize() * speed
         } else {
             // No input, apply damping to the x/z of the current velocity
-            velocity.linvel.clone() * DAMPING_FACTOR * xz
+            velocity.clone() * DAMPING_FACTOR * xz
         };
 
         desired_velocity.y = if player.input.jump && output.grounded {
@@ -167,7 +168,7 @@ pub fn move_player(
             rapier_config
                 .gravity
                 .y
-                .mul_add(time.delta_seconds(), velocity.linvel.y)
+                .mul_add(time.delta_seconds(), velocity.y)
         };
 
         let desired_translation = desired_velocity * time.delta_seconds();
@@ -177,24 +178,13 @@ pub fn move_player(
 
 const VOID_LEVEL: f32 = -50.0;
 
-pub fn void_teleport(
-    mut players: Query<
-        (
-            &mut Transform,
-            &mut Velocity,
-            &mut KinematicCharacterControllerOutput,
-        ),
-        With<Player>,
-    >,
-) {
-    for (mut transform, mut velocity, mut output) in players.iter_mut() {
-        // TODO: Fix void teleporting send you into orbit
+pub fn void_teleport(mut players: Query<(&mut Transform, &mut Velocity), With<Player>>) {
+    for (mut transform, mut velocity) in players.iter_mut() {
         if transform.translation.y < VOID_LEVEL {
+            info!("Player fell into void! Teleporting player to spawn...");
             transform.translation = SPAWN.clone();
             velocity.linvel = Vec3::ZERO;
             velocity.angvel = Vec3::ZERO;
-            output.effective_translation = Vec3::ZERO;
-            output.desired_translation = Vec3::ZERO;
         }
     }
 }

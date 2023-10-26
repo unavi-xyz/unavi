@@ -4,6 +4,8 @@ use bevy_rapier3d::prelude::*;
 mod home;
 mod player;
 
+const FIXED_TIMESTEP: f32 = 1.0 / 60.0;
+
 pub fn start() {
     App::new()
         .add_plugins((
@@ -18,6 +20,9 @@ pub fn start() {
             RapierDebugRenderPlugin::default(),
             home::HomePlugin,
             player::PlayerPlugin,
+            // bevy::diagnostic::LogDiagnosticsPlugin::default(),
+            // bevy::diagnostic::FrameTimeDiagnosticsPlugin::default(),
         ))
+        .insert_resource(FixedTime::new_from_secs(FIXED_TIMESTEP))
         .run();
 }

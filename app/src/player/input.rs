@@ -28,7 +28,7 @@ impl Default for InputMap {
     }
 }
 
-pub fn read_input(
+pub fn read_keyboard_input(
     keys: Res<Input<KeyCode>>,
     input_map: Res<InputMap>,
     mut players: Query<&mut Player>,

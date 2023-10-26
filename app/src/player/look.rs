@@ -1,4 +1,4 @@
-use super::events::{LookDeltaEvent, LookEvent, PitchEvent, YawEvent};
+use super::events::{PitchEvent, YawEvent};
 use bevy::{input::mouse::MouseMotion, prelude::*, window::CursorGrabMode, window::Window};
 
 #[derive(Resource)]
@@ -27,56 +27,52 @@ impl Default for LookDirection {
 #[derive(Component)]
 pub struct LookEntity(pub Entity);
 
-pub fn forward_up(settings: Res<MouseSettings>, mut query: Query<&mut LookDirection>) {
-    for mut look in query.iter_mut() {
+pub fn set_look_direction(settings: Res<MouseSettings>, mut query: Query<&mut LookDirection>) {
+    for mut look_direction in query.iter_mut() {
         let rotation = Quat::from_euler(
             EulerRot::YXZ,
             settings.yaw_pitch_roll.x,
             settings.yaw_pitch_roll.y,
-            0.0,
+            settings.yaw_pitch_roll.z,
         );
 
-        look.forward = rotation * -Vec3::Z;
-        look.right = rotation * Vec3::X;
-        look.up = rotation * Vec3::Y;
+        look_direction.forward = rotation * Vec3::NEG_Z;
+        look_direction.right = rotation * Vec3::X;
+        look_direction.up = rotation * Vec3::Y;
     }
 }
 
 impl Default for MouseSettings {
     fn default() -> Self {
         Self {
-            sensitivity: 0.05,
+            sensitivity: 1.0,
             yaw_pitch_roll: Vec3::ZERO,
         }
     }
 }
 
+const SENSITIVITY_FACTOR: f32 = 1.0 / 180.0;
 const PITCH_BOUND: f32 = std::f32::consts::FRAC_PI_2 - 1E-3;
 
-pub fn input_to_look(
+pub fn read_mouse_input(
     windows: Query<&Window>,
-    time: Res<Time>,
     mut mouse_motion_events: EventReader<MouseMotion>,
     mut settings: ResMut<MouseSettings>,
     mut pitch_events: EventWriter<PitchEvent>,
     mut yaw_events: EventWriter<YawEvent>,
-    mut look_events: EventWriter<LookEvent>,
-    mut look_delta_events: EventWriter<LookDeltaEvent>,
 ) {
     let window = windows.single();
-
     if window.cursor.grab_mode == CursorGrabMode::None {
         return;
     }
 
     let mut delta = Vec2::ZERO;
-
     for motion in mouse_motion_events.iter() {
         delta -= motion.delta;
     }
 
     if delta.length_squared() > 1E-6 {
-        delta *= settings.sensitivity * time.delta_seconds();
+        delta *= SENSITIVITY_FACTOR * settings.sensitivity;
 
         settings.yaw_pitch_roll += delta.extend(0.0);
 
@@ -88,8 +84,6 @@ pub fn input_to_look(
             settings.yaw_pitch_roll.y = -PITCH_BOUND;
         }
 
-        look_delta_events.send(LookDeltaEvent::new(&delta.extend(0.0)));
-        look_events.send(LookEvent::new(&settings.yaw_pitch_roll));
         pitch_events.send(PitchEvent::new(settings.yaw_pitch_roll.y));
         yaw_events.send(YawEvent::new(settings.yaw_pitch_roll.x));
     }

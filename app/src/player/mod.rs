@@ -12,21 +12,20 @@ impl Plugin for PlayerPlugin {
         app.insert_resource(input::InputMap::default())
             .add_event::<events::YawEvent>()
             .add_event::<events::PitchEvent>()
-            .add_event::<events::LookEvent>()
-            .add_event::<events::LookDeltaEvent>()
             .init_resource::<look::MouseSettings>()
             .add_systems(Startup, controls::spawn_player)
-            .add_systems(PreUpdate, (look::input_to_look, look::forward_up).chain())
             .add_systems(
                 Update,
                 (
                     look::grab_mouse,
+                    (controls::void_teleport, input::read_keyboard_input)
+                        .before(controls::move_player),
                     (
+                        look::read_mouse_input,
                         (
-                            input::read_input,
+                            look::set_look_direction,
                             controls::apply_yaw,
                             controls::apply_pitch,
-                            controls::void_teleport,
                         ),
                         controls::move_player,
                     )

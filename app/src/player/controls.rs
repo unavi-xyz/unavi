@@ -17,6 +17,21 @@ pub struct InputState {
     pub sprint: bool,
 }
 
+impl Default for InputState {
+    fn default() -> Self {
+        Self {
+            forward: false,
+            backward: false,
+            left: false,
+            right: false,
+            up: false,
+            down: false,
+            jump: false,
+            sprint: false,
+        }
+    }
+}
+
 #[derive(Component)]
 pub struct Player {
     pub speed: f32,
@@ -33,16 +48,7 @@ impl Default for Player {
             sprint_speed: 5.0,
             jump_velocity: 4.0,
             velocity: Vec3::ZERO,
-            input: InputState {
-                forward: false,
-                backward: false,
-                left: false,
-                right: false,
-                up: false,
-                down: false,
-                jump: false,
-                sprint: false,
-            },
+            input: InputState::default(),
         }
     }
 }
@@ -99,7 +105,7 @@ pub fn apply_pitch(
 ) {
     if let Some(pitch) = pitches.iter().next() {
         for mut transform in query.iter_mut() {
-            transform.rotation = Quat::from_euler(EulerRot::YXZ, 0.0, **pitch, 0.0);
+            transform.rotation = Quat::from_rotation_x(**pitch);
         }
     }
 }
@@ -108,9 +114,10 @@ const DAMPING_FACTOR: f32 = 0.75;
 
 pub fn move_player(
     time: Res<Time>,
+    mut last_time: Local<f32>,
     rapier_config: Res<RapierConfiguration>,
     mut players: Query<(
-        &Player,
+        &mut Player,
         &LookEntity,
         &mut KinematicCharacterController,
         &KinematicCharacterControllerOutput,
@@ -118,16 +125,18 @@ pub fn move_player(
     look_directions: Query<&LookDirection>,
 ) {
     let xz = Vec3::new(1.0, 0.0, 1.0);
+    let dt = time.raw_elapsed_seconds() - *last_time;
 
-    for (player, look_entity, mut controller, output) in players.iter_mut() {
+    for (mut player, look_entity, mut controller, output) in players.iter_mut() {
         let look_direction = look_directions
             .get_component::<LookDirection>(look_entity.0)
             .expect("Failed to get LookDirection from Entity");
+
         let forward = (look_direction.forward * xz).normalize();
         let right = (look_direction.right * xz).normalize();
         let up = Vec3::Y;
 
-        let velocity = output.effective_translation / time.delta_seconds();
+        let velocity = output.effective_translation / dt;
 
         let mut desired_velocity = Vec3::ZERO;
         if player.input.forward {
@@ -165,15 +174,16 @@ pub fn move_player(
         desired_velocity.y = if player.input.jump && output.grounded {
             player.jump_velocity
         } else {
-            rapier_config
-                .gravity
-                .y
-                .mul_add(time.delta_seconds(), velocity.y)
+            rapier_config.gravity.y.mul_add(dt, velocity.y)
         };
 
-        let desired_translation = desired_velocity * time.delta_seconds();
+        let desired_translation = desired_velocity * dt;
         controller.translation = desired_translation.into();
+
+        player.input = InputState::default();
     }
+
+    *last_time = time.raw_elapsed_seconds();
 }
 
 const VOID_LEVEL: f32 = -50.0;

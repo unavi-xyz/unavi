@@ -76,6 +76,7 @@ pub fn spawn_player(mut commands: Commands) {
             LookEntity(camera),
             RigidBody::KinematicVelocityBased,
             Collider::capsule_y(PLAYER_HEIGHT / 2.0, PLAYER_WIDTH / 2.0),
+            ColliderMassProperties::Density(10.0),
             TransformBundle {
                 local: Transform::from_translation(SPAWN),
                 ..default()

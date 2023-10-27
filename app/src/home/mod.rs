@@ -81,7 +81,7 @@ fn setup_world(
                             pyramid_material.clone(),
                             &mut meshes,
                         ),
-                        ColliderMassProperties::Density(0.25),
+                        ColliderMassProperties::Density(0.5),
                     ));
                 }
             }

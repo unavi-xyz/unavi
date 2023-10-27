@@ -45,7 +45,7 @@ pub fn set_look_direction(settings: Res<MouseSettings>, mut query: Query<&mut Lo
 impl Default for MouseSettings {
     fn default() -> Self {
         Self {
-            sensitivity: 1.0,
+            sensitivity: 0.75,
             yaw_pitch_roll: Vec3::ZERO,
         }
     }

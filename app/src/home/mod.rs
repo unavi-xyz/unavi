@@ -1,15 +1,18 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
+mod skybox;
+
 pub struct HomePlugin;
 
 impl Plugin for HomePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_world);
+        app.add_systems(Startup, (setup_world, skybox::setup_skybox))
+            .add_systems(Update, (skybox::create_skybox, skybox::process_skybox));
     }
 }
 
-const GROUND_SIZE: f32 = 20.0;
+const GROUND_SIZE: f32 = 50.0;
 const GROUND_THICKNESS: f32 = 0.1;
 const BALL_RADIUS: f32 = 0.5;
 

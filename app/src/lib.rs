@@ -3,6 +3,7 @@ use bevy_rapier3d::prelude::*;
 
 mod home;
 mod player;
+mod settings;
 
 const FIXED_TIMESTEP: f32 = 1.0 / 60.0;
 
@@ -25,17 +26,18 @@ pub fn start(options: StartOptions) {
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         fit_canvas_to_parent: true,
-                        ..Default::default()
+                        ..default()
                     }),
-                    ..Default::default()
+                    ..default()
                 })
                 .set(AssetPlugin {
                     asset_folder: options.asset_folder,
-                    ..Default::default()
+                    ..default()
                 }),
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default(),
             home::HomePlugin,
+            settings::SettingsPlugin,
             player::PlayerPlugin,
             // bevy::diagnostic::LogDiagnosticsPlugin::default(),
             // bevy::diagnostic::FrameTimeDiagnosticsPlugin::default(),

@@ -12,7 +12,7 @@ pub struct Cubemap {
 pub fn setup_skybox(mut commands: Commands) {
     commands.insert_resource(Cubemap {
         is_loaded: false,
-        image_handle: Default::default(),
+        image_handle: default(),
     });
 }
 

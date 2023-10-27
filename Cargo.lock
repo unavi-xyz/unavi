@@ -4711,6 +4711,7 @@ version = "0.0.0"
 dependencies = [
  "bevy",
  "bevy_rapier3d",
+ "cfg-if",
  "tracing",
 ]
 

@@ -78,7 +78,7 @@ pub fn spawn_player(mut commands: Commands) {
             Collider::capsule_y(PLAYER_HEIGHT / 2.0, PLAYER_WIDTH / 2.0),
             TransformBundle {
                 local: Transform::from_translation(SPAWN),
-                ..Default::default()
+                ..default()
             },
             Velocity::default(),
             KinematicCharacterController::default(),

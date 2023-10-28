@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
+mod avatar;
 mod home;
 mod player;
 mod settings;
@@ -36,6 +37,7 @@ pub fn start(options: StartOptions) {
                 }),
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default(),
+            avatar::AvatarPlugin,
             home::HomePlugin,
             settings::SettingsPlugin,
             player::PlayerPlugin,

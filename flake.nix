@@ -58,9 +58,11 @@
           };
 
           default = packages.all;
+          override = packages.all;
+          overrideDerivation = packages.all;
         };
 
-        devShell = pkgs.mkShell {
+        devShells.default = pkgs.mkShell {
           buildInputs = with pkgs;
             [
               # Rust

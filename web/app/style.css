@@ -1,0 +1,17 @@
+html, body {
+  background-color: #111;
+  color: #fff;
+  font-family: 'Roboto', sans-serif;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+canvas {
+  user-select: none;
+  touch-action: none;
+}
+
+canvas:focus {
+  outline: none;
+}

@@ -1,0 +1,15 @@
+[package]
+name = "unavi-web-frontend"
+version.workspace = true
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+leptos = { version = "0.5.1", features = ["hydrate"] }
+unavi-web-app = { path = "../app", features = ["hydrate"] }
+unavi-app = { path = "../../app" }
+console_error_panic_hook = "0.1.7"

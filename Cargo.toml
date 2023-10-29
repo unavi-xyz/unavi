@@ -1,0 +1,37 @@
+[workspace]
+resolver = "2"
+members = [
+  "app",
+  "native",
+  "server",
+  "web/app",
+  "web/frontend"
+]
+
+[workspace.package]
+version = "0.0.0"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/unavi-xyz/unavi"
+edition = "2021"
+
+[[workspace.metadata.leptos]]
+name = "unavi"
+bin-package = "unavi-server"
+bin-default-features = true
+lib-package = "unavi-web-frontend"
+lib-profile-release = "wasm-release"
+style-file = "web/app/style.css"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+lto = true
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = 'z'
+codegen-units = 1

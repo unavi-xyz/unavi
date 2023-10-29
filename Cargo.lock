@@ -1101,6 +1101,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_vrm"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57e5e36a14e34b57684dde48262636281b23b60bc44b8ebdf68e6ee6380bab62"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "bevy_window"
 version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4711,6 +4720,7 @@ version = "0.0.0"
 dependencies = [
  "bevy",
  "bevy_rapier3d",
+ "bevy_vrm",
  "cfg-if",
  "tracing",
 ]

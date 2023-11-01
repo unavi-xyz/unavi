@@ -84,6 +84,7 @@ pub fn spawn_player(mut commands: Commands) {
             Velocity::default(),
             KinematicCharacterController::default(),
             KinematicCharacterControllerOutput::default(),
+            bevy_vrm::mtoon::MtoonMainCamera,
         ))
         .id();
 

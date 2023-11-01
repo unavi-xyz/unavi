@@ -16,7 +16,7 @@ pub fn setup_skybox(mut commands: Commands) {
     });
 }
 
-const SKYBOX_URI: &str = "skybox-1-512.png";
+const SKYBOX_URI: &str = "images/skybox-1-512.png";
 
 pub fn create_skybox(
     asset_server: Res<AssetServer>,

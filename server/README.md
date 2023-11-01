@@ -13,7 +13,7 @@ and disable the other containers.
 Or I may want to split up my service and run each container on a separate machine.
 
 <div align="center">
-  <img src="../assets/server-architecture.png" height="600" />
+  <img src="../assets/images/server-architecture.png" height="600" />
 </div>
 
 ## Containers

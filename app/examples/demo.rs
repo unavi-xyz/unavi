@@ -48,7 +48,7 @@ fn setup_world(
     ));
 
     commands.spawn((SceneBundle {
-        scene: asset_server.load("catbot.vrm#Scene0"),
+        scene: asset_server.load("models/catbot.vrm#Scene0"),
         transform: Transform::from_xyz(-3.0, 0.0, -10.0).with_rotation(Quat::from_rotation_y(PI)),
         ..default()
     },));

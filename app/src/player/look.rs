@@ -45,13 +45,13 @@ pub fn set_look_direction(settings: Res<MouseSettings>, mut query: Query<&mut Lo
 impl Default for MouseSettings {
     fn default() -> Self {
         Self {
-            sensitivity: 0.75,
+            sensitivity: 1.0,
             yaw_pitch_roll: Vec3::ZERO,
         }
     }
 }
 
-const SENSITIVITY_FACTOR: f32 = 1.0 / 180.0;
+const SENSITIVITY_FACTOR: f32 = 1.0 / 1000.0;
 const PITCH_BOUND: f32 = std::f32::consts::FRAC_PI_2 - 1E-3;
 
 pub fn read_mouse_input(

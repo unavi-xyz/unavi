@@ -60,8 +60,8 @@ impl ShadowQuality {
         #[cfg(not(target_arch = "wasm32"))]
         let value = match self {
             ShadowQuality::Low => 30.0,
-            ShadowQuality::Medium => 50.0,
-            ShadowQuality::High => 80.0,
+            ShadowQuality::Medium => 40.0,
+            ShadowQuality::High => 50.0,
         };
 
         value

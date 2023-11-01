@@ -23,39 +23,48 @@ impl ShadowQuality {
 
     pub fn num_cascades(&self) -> usize {
         #[cfg(target_arch = "wasm32")]
-        return 1;
+        let value = 1;
 
-        match self {
+        #[cfg(not(target_arch = "wasm32"))]
+        let value = match self {
             ShadowQuality::Low => 2,
             ShadowQuality::Medium => 3,
             ShadowQuality::High => 3,
-        }
+        };
+
+        value
     }
 
     pub fn first_cascade_far_bound(&self) -> f32 {
         #[cfg(target_arch = "wasm32")]
-        return self.maximum_distance();
+        let value = self.maximum_distance();
 
-        match self {
+        #[cfg(not(target_arch = "wasm32"))]
+        let value = match self {
             ShadowQuality::Low => 15.0,
             ShadowQuality::Medium => 15.0,
             ShadowQuality::High => 15.0,
-        }
+        };
+
+        value
     }
 
     pub fn maximum_distance(&self) -> f32 {
         #[cfg(target_arch = "wasm32")]
-        return match self {
+        let value = match self {
             ShadowQuality::Low => 20.0,
             ShadowQuality::Medium => 30.0,
             ShadowQuality::High => 40.0,
         };
 
-        match self {
+        #[cfg(not(target_arch = "wasm32"))]
+        let value = match self {
             ShadowQuality::Low => 30.0,
             ShadowQuality::Medium => 50.0,
             ShadowQuality::High => 80.0,
-        }
+        };
+
+        value
     }
 }
 

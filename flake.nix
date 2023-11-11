@@ -20,7 +20,7 @@
         rustBin = pkgs.rust-bin.stable.latest.default;
         rustBinWasm = rustBin.override { targets = [ wasmTarget ]; };
 
-        build_inputs = with pkgs; [
+        build_inputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [
           # Bevy
           alsa-lib
           udev
@@ -33,7 +33,7 @@
           xorg.libXcursor
           xorg.libXi
           xorg.libXrandr
-        ];
+        ]);
 
         native_build_inputs = with pkgs; [
           # Leptos

@@ -6,8 +6,11 @@ pub struct WorldPlugin;
 
 impl Plugin for WorldPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (setup_world, skybox::setup_skybox))
-            .add_systems(Update, (skybox::create_skybox, skybox::process_skybox));
+        app.add_systems(Startup, (setup_world, skybox::create_skybox))
+            .add_systems(
+                Update,
+                (skybox::add_skybox_to_cameras, skybox::process_cubemap),
+            );
     }
 }
 

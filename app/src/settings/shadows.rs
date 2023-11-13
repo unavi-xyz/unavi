@@ -73,7 +73,7 @@ pub fn set_shadow_config(
     mut directional_shadow_config: ResMut<DirectionalLightShadowMap>,
     mut directional_lights: Query<&mut CascadeShadowConfig, With<DirectionalLight>>,
 ) {
-    info!("Updating shadow config to {:?}", settings.shadow_quality);
+    info!("Setting shadow config to {:?}", settings.shadow_quality);
 
     directional_shadow_config.size = settings.shadow_quality.size();
 

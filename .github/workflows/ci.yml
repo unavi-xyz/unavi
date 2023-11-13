@@ -22,6 +22,5 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
       - run: nix flake check
-      - run: nix build
       - run: nix develop -c cargo doc --all-features --no-deps
       - run: nix develop -c cargo test --all-features --all-targets

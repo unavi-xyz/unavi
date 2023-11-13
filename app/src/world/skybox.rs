@@ -2,6 +2,7 @@ use bevy::asset::LoadState;
 use bevy::core_pipeline::Skybox;
 use bevy::prelude::*;
 use bevy::render::render_resource::{TextureViewDescriptor, TextureViewDimension};
+use bevy_vrm::mtoon::MtoonMainCamera;
 
 #[derive(Resource)]
 pub struct Cubemap {
@@ -9,38 +10,26 @@ pub struct Cubemap {
     image_handle: Handle<Image>,
 }
 
-pub fn setup_skybox(mut commands: Commands) {
+pub fn create_skybox(asset_server: Res<AssetServer>, mut commands: Commands) {
     commands.insert_resource(Cubemap {
         is_loaded: false,
-        image_handle: default(),
+        image_handle: asset_server.load("images/skybox-1-512.png"),
     });
 }
 
-const SKYBOX_URI: &str = "images/skybox-1-512.png";
-
-pub fn create_skybox(
-    asset_server: Res<AssetServer>,
+pub fn add_skybox_to_cameras(
     mut commands: Commands,
-    mut cubemap: ResMut<Cubemap>,
-    cameras: Query<Entity, (With<Camera3d>, Without<Skybox>)>,
+    cubemap: ResMut<Cubemap>,
+    cameras: Query<Entity, (With<MtoonMainCamera>, Without<Skybox>)>,
 ) {
-    if cameras.is_empty() {
-        return;
+    for camera in cameras.iter() {
+        commands
+            .entity(camera)
+            .insert(Skybox(cubemap.image_handle.clone()));
     }
-
-    info!("Loading skybox {}", SKYBOX_URI);
-
-    let skybox_handle = asset_server.load(SKYBOX_URI);
-
-    let ent = cameras.single();
-
-    commands.entity(ent).insert(Skybox(skybox_handle.clone()));
-
-    cubemap.is_loaded = false;
-    cubemap.image_handle = skybox_handle;
 }
 
-pub fn process_skybox(
+pub fn process_cubemap(
     asset_server: Res<AssetServer>,
     mut images: ResMut<Assets<Image>>,
     mut cubemap: ResMut<Cubemap>,
@@ -50,27 +39,26 @@ pub fn process_skybox(
         return;
     }
 
-    if asset_server.get_load_state(cubemap.image_handle.clone_weak()) != LoadState::Loaded {
-        return;
+    match asset_server.get_load_state(&cubemap.image_handle) {
+        Some(load_state) => {
+            if load_state != LoadState::Loaded {
+                return;
+            }
+        }
+        None => return,
     }
 
     // Load cubemap
-    let image = images.get_mut(&cubemap.image_handle);
-
-    let image = match image {
+    let image = match images.get_mut(&cubemap.image_handle) {
         Some(image) => image,
         None => {
-            warn!("Failed to load skybox image");
+            warn!("Failed to get skybox image");
             return;
         }
     };
 
-    // NOTE: PNGs do not have any metadata that could indicate they contain a cubemap texture,
-    // so they appear as one texture. The following code reconfigures the texture as necessary.
     if image.texture_descriptor.array_layer_count() == 1 {
-        image.reinterpret_stacked_2d_as_array(
-            image.texture_descriptor.size.height / image.texture_descriptor.size.width,
-        );
+        image.reinterpret_stacked_2d_as_array(image.height() / image.width());
         image.texture_view_descriptor = Some(TextureViewDescriptor {
             dimension: Some(TextureViewDimension::Cube),
             ..default()

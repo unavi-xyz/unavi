@@ -2,17 +2,25 @@ name: "CI"
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
   pull_request:
-    branches: ["main"]
 
 jobs:
-  test:
+  fmt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: cachix/install-nix-action@v22
-        with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-      - run: nix build
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --check --all
+
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: Swatinem/rust-cache@v2
       - run: nix flake check
+      - run: nix develop -c cargo doc --all-features --no-deps
+      - run: nix develop -c cargo test --all-features --all-targets

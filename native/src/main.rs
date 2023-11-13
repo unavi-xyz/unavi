@@ -2,7 +2,7 @@
 
 fn main() {
     unavi_app::start(unavi_app::StartOptions {
-        asset_folder: "../assets".to_string(),
+        file_path: "../assets".to_string(),
         ..Default::default()
     });
 }

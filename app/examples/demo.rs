@@ -1,18 +1,11 @@
 use std::f32::consts::PI;
 
-use bevy::{
-    prelude::*,
-    render::{
-        mesh::VertexAttributeValues,
-        render_resource::{AddressMode, Extent3d, SamplerDescriptor},
-        texture::ImageSampler,
-    },
-};
-use bevy_rapier3d::prelude::*;
+use bevy::{prelude::*, render::mesh::VertexAttributeValues};
+use bevy_rapier3d::prelude::{Real, *};
 
 fn main() {
     let options = unavi_app::StartOptions {
-        asset_folder: "../assets".to_string(),
+        file_path: "../assets".to_string(),
         callback: Some(Box::new(callback)),
         ..default()
     };
@@ -21,8 +14,7 @@ fn main() {
 }
 
 fn callback(app: &mut App) {
-    app.add_systems(Startup, setup_world)
-        .add_systems(Update, set_texture_tiled);
+    app.add_systems(Startup, setup_world);
 }
 
 const GROUND_SIZE: f32 = 40.0;
@@ -37,39 +29,40 @@ fn setup_world(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    let dev_texture = asset_server.load("images/dev/texture_07.png");
+    {
+        let ground_texture = asset_server.load("images/dev/texture_07.png");
+        let ground_texture_scale = GROUND_SIZE / 4.0;
 
-    let ground_texture_scale = GROUND_SIZE / 4.0;
-
-    let mut ground_mesh = Mesh::from(shape::Plane {
-        size: GROUND_SIZE,
-        ..default()
-    });
-
-    match ground_mesh.attribute_mut(Mesh::ATTRIBUTE_UV_0).unwrap() {
-        VertexAttributeValues::Float32x2(uvs) => {
-            for uv in uvs {
-                uv[0] *= ground_texture_scale;
-                uv[1] *= ground_texture_scale;
-            }
-        }
-        _ => panic!(),
-    }
-
-    commands.spawn((
-        RigidBody::Fixed,
-        Collider::cuboid(GROUND_SIZE / 2.0, GROUND_THICKNESS / 2.0, GROUND_SIZE / 2.0),
-        PbrBundle {
-            mesh: meshes.add(ground_mesh),
-            material: materials.add(StandardMaterial {
-                base_color_texture: Some(dev_texture.clone()),
-                ..default()
-            }),
-            transform: Transform::from_xyz(0.0, -0.1, 0.0),
+        let mut ground_mesh = Mesh::from(shape::Plane {
+            size: GROUND_SIZE,
             ..default()
-        },
-        RepeatTexture,
-    ));
+        });
+
+        match ground_mesh.attribute_mut(Mesh::ATTRIBUTE_UV_0).unwrap() {
+            VertexAttributeValues::Float32x2(uvs) => {
+                for uv in uvs {
+                    uv[0] *= ground_texture_scale;
+                    uv[1] *= ground_texture_scale;
+                }
+            }
+            _ => panic!(),
+        }
+
+        commands.spawn((
+            RigidBody::Fixed,
+            Collider::cuboid(GROUND_SIZE / 2.0, GROUND_THICKNESS / 2.0, GROUND_SIZE / 2.0),
+            PbrBundle {
+                mesh: meshes.add(ground_mesh),
+                material: materials.add(StandardMaterial {
+                    base_color_texture: Some(ground_texture.clone()),
+                    ..default()
+                }),
+                transform: Transform::from_xyz(0.0, -0.1, 0.0),
+                ..default()
+            },
+            RepeatTexture,
+        ));
+    }
 
     commands.spawn((SceneBundle {
         scene: asset_server.load("models/catbot.vrm#Scene0"),
@@ -122,41 +115,6 @@ fn setup_world(
             ),
             ColliderMassProperties::Density(8.0),
         ));
-    }
-}
-
-// https://github.com/bevyengine/bevy/issues/399
-pub fn set_texture_tiled(
-    mut commands: Commands,
-    repeat_textures: Query<(Entity, &Handle<StandardMaterial>), With<RepeatTexture>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut images: ResMut<Assets<Image>>,
-) {
-    for (entity, handle) in repeat_textures.iter() {
-        if let Some(material) = materials.get_mut(handle) {
-            if let Some(base_color_texture_handle) = &material.base_color_texture {
-                if let Some(image) = images.get_mut(base_color_texture_handle) {
-                    match &mut image.sampler_descriptor {
-                        ImageSampler::Default => {
-                            image.sampler_descriptor =
-                                ImageSampler::Descriptor(SamplerDescriptor {
-                                    address_mode_u: AddressMode::Repeat,
-                                    address_mode_v: AddressMode::Repeat,
-                                    address_mode_w: AddressMode::Repeat,
-                                    ..default()
-                                });
-                        }
-                        ImageSampler::Descriptor(sampler_descriptor) => {
-                            sampler_descriptor.address_mode_u = AddressMode::Repeat;
-                            sampler_descriptor.address_mode_v = AddressMode::Repeat;
-                            sampler_descriptor.address_mode_w = AddressMode::Repeat;
-                        }
-                    }
-
-                    commands.entity(entity).remove::<RepeatTexture>();
-                }
-            }
-        }
     }
 }
 

@@ -94,7 +94,7 @@ pub fn spawn_player(mut commands: Commands) {
 }
 
 pub fn apply_yaw(mut yaws: EventReader<YawEvent>, mut query: Query<&mut Transform, With<YawTag>>) {
-    if let Some(yaw) = yaws.iter().next() {
+    if let Some(yaw) = yaws.read().next() {
         for mut transform in query.iter_mut() {
             transform.rotation = Quat::from_rotation_y(**yaw);
         }
@@ -105,7 +105,7 @@ pub fn apply_pitch(
     mut pitches: EventReader<PitchEvent>,
     mut query: Query<&mut Transform, With<PitchTag>>,
 ) {
-    if let Some(pitch) = pitches.iter().next() {
+    if let Some(pitch) = pitches.read().next() {
         for mut transform in query.iter_mut() {
             transform.rotation = Quat::from_rotation_x(**pitch);
         }
@@ -127,7 +127,7 @@ pub fn move_player(
     look_directions: Query<&LookDirection>,
 ) {
     let xz = Vec3::new(1.0, 0.0, 1.0);
-    let dt = time.raw_elapsed_seconds() - *last_time;
+    let dt = time.elapsed_seconds() - *last_time;
 
     for (mut player, look_entity, mut controller, output) in players.iter_mut() {
         let look_direction = look_directions
@@ -185,7 +185,7 @@ pub fn move_player(
         player.input = InputState::default();
     }
 
-    *last_time = time.raw_elapsed_seconds();
+    *last_time = time.elapsed_seconds();
 }
 
 const VOID_LEVEL: f32 = -50.0;

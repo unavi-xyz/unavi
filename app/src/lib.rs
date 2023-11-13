@@ -9,14 +9,14 @@ mod world;
 const FIXED_TIMESTEP: f32 = 1.0 / 60.0;
 
 pub struct StartOptions {
-    pub asset_folder: String,
+    pub file_path: String,
     pub callback: Option<Box<dyn FnOnce(&mut App)>>,
 }
 
 impl Default for StartOptions {
     fn default() -> Self {
         Self {
-            asset_folder: "assets".to_string(),
+            file_path: "assets".to_string(),
             callback: None,
         }
     }
@@ -35,7 +35,7 @@ pub fn start(options: StartOptions) {
                 ..default()
             })
             .set(AssetPlugin {
-                asset_folder: options.asset_folder,
+                file_path: options.file_path,
                 ..default()
             }),
         RapierPhysicsPlugin::<NoUserData>::default(),
@@ -46,8 +46,7 @@ pub fn start(options: StartOptions) {
         player::PlayerPlugin,
         // bevy::diagnostic::LogDiagnosticsPlugin::default(),
         // bevy::diagnostic::FrameTimeDiagnosticsPlugin::default(),
-    ))
-    .insert_resource(FixedTime::new_from_secs(FIXED_TIMESTEP));
+    ));
 
     if let Some(callback) = options.callback {
         callback(&mut app);

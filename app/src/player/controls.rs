@@ -6,6 +6,7 @@ use super::{
     look::{LookDirection, LookEntity},
 };
 
+#[derive(Default)]
 pub struct InputState {
     pub forward: bool,
     pub backward: bool,
@@ -17,20 +18,7 @@ pub struct InputState {
     pub sprint: bool,
 }
 
-impl Default for InputState {
-    fn default() -> Self {
-        Self {
-            forward: false,
-            backward: false,
-            left: false,
-            right: false,
-            up: false,
-            down: false,
-            jump: false,
-            sprint: false,
-        }
-    }
-}
+
 
 #[derive(Component)]
 pub struct Player {
@@ -170,7 +158,7 @@ pub fn move_player(
             desired_velocity.normalize() * speed
         } else {
             // No input, apply damping to the x/z of the current velocity
-            velocity.clone() * DAMPING_FACTOR * xz
+            velocity * DAMPING_FACTOR * xz
         };
 
         desired_velocity.y = if player.input.jump && output.grounded {
@@ -194,7 +182,7 @@ pub fn void_teleport(mut players: Query<(&mut Transform, &mut Velocity), With<Pl
     for (mut transform, mut velocity) in players.iter_mut() {
         if transform.translation.y < VOID_LEVEL {
             info!("Player fell into void! Teleporting player to spawn...");
-            transform.translation = SPAWN.clone();
+            transform.translation = SPAWN;
             velocity.linvel = Vec3::ZERO;
             velocity.angvel = Vec3::ZERO;
         }

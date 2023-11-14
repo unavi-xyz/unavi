@@ -7,17 +7,6 @@ on:
   pull_request:
 
 jobs:
-  fmt:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo fmt --all
-      - uses: EndBug/add-and-commit@v9
-        with:
-          message: "chore: format"
-          default_author: github_actions
-
   check:
     runs-on: ubuntu-latest
     steps:
@@ -32,4 +21,15 @@ jobs:
       - uses: EndBug/add-and-commit@v9
         with:
           message: "chore: lint"
+          default_author: github_actions
+  fmt:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all
+      - uses: EndBug/add-and-commit@v9
+        with:
+          message: "chore: format"
           default_author: github_actions

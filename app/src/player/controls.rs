@@ -18,8 +18,6 @@ pub struct InputState {
     pub sprint: bool,
 }
 
-
-
 #[derive(Component)]
 pub struct Player {
     pub speed: f32,

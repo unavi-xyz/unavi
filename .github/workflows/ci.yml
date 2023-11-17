@@ -16,8 +16,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: nix flake check --all-systems
       - run: nix develop -c cargo clippy --fix -- -D warnings
-      - run: nix develop -c cargo doc --all-features --no-deps
-      - run: nix develop -c cargo test --all-features --all-targets
+      - run: nix develop -c cargo doc --workspace --all-features --no-deps --document-private-items
+      - run: nix develop -c cargo test --workspace --all-features
       - uses: EndBug/add-and-commit@v9
         with:
           message: "chore: lint"

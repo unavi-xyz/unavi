@@ -28,21 +28,13 @@ Anyone can run their own servers, modify their client, and extend the underlying
 
 UNAVI is almost entirely written in Rust 🦀.
 The app is built using [Bevy](https://bevyengine.org/) and makes heavy use of [WebAssembly](https://webassembly.org/) for user scripting.
-Multiplayer is handled by self-hostable servers running [Mediasoup](https://mediasoup.org/),
-acting as [SFUs](https://bloggeek.me/webrtcglossary/sfu/) for communication between players.
+Multiplayer is handled by self-hostable servers acting as relays for communication between players.
 UNAVI provides both a web client and native build.
 
 This project is still early, any feedback or contributions are really appreciated!
 Come join the [Discord](https://discord.gg/VCsAEneUMn) and say hi!
 
-## 📦 What's inside?
-
-- [app](/app) - The core UNAVI app
-- [native](/native) - Native build of the app
-- [server](/server) - A modular home server
-- [web](/web) - Web client / WASM build of the app
-
-## ⚙️ Development (with Nix)
+## ❄️ Development (with Nix)
 
 ### Build
 
@@ -50,12 +42,6 @@ Build all crates in release mode:
 
 ```bash
 nix build
-```
-
-Or a specific crate with:
-
-```bash
-nix build .#app
 ```
 
 ### Develop
@@ -69,7 +55,7 @@ nix develop
 From there you can run the native client with something like:
 
 ```bash
-cargo run -p unavi-native --features bevy/dynamic_linking --features bevy/wayland
+cargo run -p unavi-native --features bevy/dynamic_linking
 ```
 
 Or run the web client using `cargo-leptos`:

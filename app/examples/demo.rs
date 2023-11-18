@@ -7,7 +7,6 @@ fn main() {
     let options = unavi_app::StartOptions {
         file_path: "../assets".to_string(),
         callback: Some(Box::new(callback)),
-        ..default()
     };
 
     unavi_app::start(options);

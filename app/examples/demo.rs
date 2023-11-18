@@ -4,16 +4,12 @@ use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 use bevy_rapier3d::prelude::{Real, *};
 
 fn main() {
-    let options = unavi_app::StartOptions {
-        file_path: "../assets".to_string(),
-        callback: Some(Box::new(callback)),
-    };
-
-    unavi_app::start(options);
-}
-
-fn callback(app: &mut App) {
-    app.add_systems(Startup, setup_world);
+    unavi_app::App::new()
+        .add_plugins(unavi_app::UnaviPlugin {
+            file_path: "../assets".to_string(),
+        })
+        .add_systems(Startup, setup_world)
+        .run();
 }
 
 const GROUND_SIZE: f32 = 40.0;

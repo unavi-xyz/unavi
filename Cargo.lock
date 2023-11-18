@@ -4902,7 +4902,6 @@ dependencies = [
  "bevy",
  "bevy_rapier3d",
  "bevy_vrm",
- "tracing",
 ]
 
 [[package]]

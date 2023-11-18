@@ -6,49 +6,43 @@ mod player;
 mod settings;
 mod world;
 
-pub struct StartOptions {
+pub use bevy::app::App;
+
+pub struct UnaviPlugin {
     pub file_path: String,
-    pub callback: Option<Box<dyn FnOnce(&mut App)>>,
 }
 
-impl Default for StartOptions {
+impl Default for UnaviPlugin {
     fn default() -> Self {
         Self {
             file_path: "assets".to_string(),
-            callback: None,
         }
     }
 }
 
-pub fn start(options: StartOptions) {
-    let mut app = App::new();
-
-    app.add_plugins((
-        DefaultPlugins
-            .set(WindowPlugin {
-                primary_window: Some(Window {
-                    fit_canvas_to_parent: true,
+impl Plugin for UnaviPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins((
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        fit_canvas_to_parent: true,
+                        ..default()
+                    }),
+                    ..default()
+                })
+                .set(AssetPlugin {
+                    file_path: self.file_path.clone(),
                     ..default()
                 }),
-                ..default()
-            })
-            .set(AssetPlugin {
-                file_path: options.file_path,
-                ..default()
-            }),
-        RapierPhysicsPlugin::<NoUserData>::default(),
-        RapierDebugRenderPlugin::default(),
-        avatar::AvatarPlugin,
-        world::WorldPlugin,
-        settings::SettingsPlugin,
-        player::PlayerPlugin,
-        // bevy::diagnostic::LogDiagnosticsPlugin::default(),
-        // bevy::diagnostic::FrameTimeDiagnosticsPlugin::default(),
-    ));
-
-    if let Some(callback) = options.callback {
-        callback(&mut app);
+            RapierPhysicsPlugin::<NoUserData>::default(),
+            RapierDebugRenderPlugin::default(),
+            avatar::AvatarPlugin,
+            world::WorldPlugin,
+            settings::SettingsPlugin,
+            player::PlayerPlugin,
+            // bevy::diagnostic::LogDiagnosticsPlugin::default(),
+            // bevy::diagnostic::FrameTimeDiagnosticsPlugin::default(),
+        ));
     }
-
-    app.run();
 }

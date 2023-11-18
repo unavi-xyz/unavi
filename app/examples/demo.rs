@@ -25,7 +25,7 @@ fn setup_world(
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     {
-        let ground_texture = asset_server.load("images/dev/texture_07.png");
+        let ground_texture = asset_server.load("images/dev-white.png");
         let ground_texture_scale = GROUND_SIZE / 4.0;
 
         let mut ground_mesh = Mesh::from(shape::Plane {

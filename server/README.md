@@ -1,46 +1,41 @@
 # Server
 
-A modular UNAVI home server.
+A modular UNAVI server.
 
 ## Architecture
 
-Home server functionality is divided into separate containers.
-Each container can be enabled or disabled, allowing for flexibility in deployment.
-Note that some containers rely on other containers.
+Home server functionality is divided into separate features.
+Each feature can be enabled or disabled, allowing for flexibility in deployment.
+Note that some features rely on other features.
 
 For example, I may want to run a lightweight home server that only handles user identity,
-and disable the other containers.
-Or I may want to split up my service and run each container on a separate machine.
+and disable the other features.
+Or I may want to split up my service and run each feature on a separate machine.
 
 <div align="center">
   <img src="../assets/images/server-architecture.png" height="600" />
 </div>
 
-## Containers
+## Features
 
 ### DB
 
-The DB container runs a MySQL database.
+MySQL database.
 
 ### IPFS
 
-The IPFS container runs an IPFS Kubo node for file storage and retrieval.
+IPFS Kubo node, used for file storage and retrieval.
 
 ### Identity
 
-The identity container handles allows users to use the server as their home server.
-It handles user authentication, and federates social interactions with other servers.
-
-### Router
-
-The router is the entrypoint into the service.
-It recieves external requests and delegates them to other containers.
+Allows users to use the server as their home server.
+Handles user authentication, and federates social interactions with other servers.
 
 ### Web
 
-The web container hosts a web client.
+Hosts a web client.
 
 ### World
 
-The world container handles world networking over WebSockets and WebRTC.
-It is the multiplayer server that connects users in a world together.
+Allows worlds to use the server as their world server.
+Handles networking, connecting player's within a world together.

@@ -6,8 +6,6 @@ mod player;
 mod settings;
 mod world;
 
-const FIXED_TIMESTEP: f32 = 1.0 / 60.0;
-
 pub struct StartOptions {
     pub file_path: String,
     pub callback: Option<Box<dyn FnOnce(&mut App)>>,

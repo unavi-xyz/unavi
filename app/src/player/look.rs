@@ -67,7 +67,7 @@ pub fn read_mouse_input(
     }
 
     let mut delta = Vec2::ZERO;
-    for motion in mouse_motion_events.iter() {
+    for motion in mouse_motion_events.read() {
         delta -= motion.delta;
     }
 

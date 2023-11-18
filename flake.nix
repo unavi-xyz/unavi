@@ -40,7 +40,7 @@
         native_build_inputs = with pkgs; [
           # Leptos
           binaryen
-          cargo-leptos
+          # cargo-leptos (broken right now)
           openssl
 
           # Rust
@@ -56,7 +56,11 @@
         packages = code // {
           all = pkgs.symlinkJoin {
             name = "all";
-            paths = with code; [ native server web ];
+            paths = with code; [
+              native
+              server
+              # web (waiting for cargo-leptos)
+            ];
           };
 
           default = packages.all;

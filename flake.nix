@@ -29,10 +29,8 @@
           alsa-lib
           udev
           vulkan-loader
-
           libxkbcommon
           wayland
-
           xorg.libX11
           xorg.libXcursor
           xorg.libXi

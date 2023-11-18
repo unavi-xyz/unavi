@@ -16,9 +16,10 @@ leptos_axum = { version = "0.5.1", optional = true }
 unavi-web-app = { path = "../web/app", features = ["ssr"], optional = true }
 
 [features]
-default = ["web"]
+default = ["web", "world"]
 web = [
   "dep:leptos",
   "dep:leptos_axum",
   "dep:unavi-web-app"
 ]
+world = []

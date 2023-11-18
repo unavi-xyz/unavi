@@ -5,7 +5,7 @@ use bevy::{
 
 use super::UserSettings;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ShadowQuality {
     Low,
     Medium,

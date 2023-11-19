@@ -7,17 +7,17 @@
 <br />
 
 <div align="center">
-  <a href="https://unavi.xyz">
-    <img alt="Deployment" src="https://img.shields.io/github/deployments/unavi-xyz/unavi/production?label=deployment">
+  <a href="https://github.com/unavi-xyz/unavi/actions/workflows/ci.yml/badge.svg">
+    <img alt="CI" src="https://github.com/unavi-xyz/gltf_kun/actions/workflows/ci.yml">
   </a>
   <a href="https://github.com/unavi-xyz/unavi/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/unavi-xyz/unavi" alt="License" />
+    <img alt="License" src="https://img.shields.io/github/license/unavi-xyz/unavi" />
   </a>
   <a href="https://discord.gg/VCsAEneUMn">
-    <img src="https://img.shields.io/discord/918705784311939134.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" alt="Discord" />
+    <img alt="Discord" src="https://img.shields.io/discord/918705784311939134.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" />
   </a>
   <a href="https://twitter.com/unavi_xyz">
-    <img src="https://img.shields.io/badge/unavi__xyz--1DA1F2?logo=twitter" alt="Twitter" />
+    <img alt="Twitter" src="https://img.shields.io/badge/unavi__xyz--1DA1F2?logo=twitter" />
   </a>
 </div>
 

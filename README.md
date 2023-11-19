@@ -7,8 +7,8 @@
 <br />
 
 <div align="center">
-  <a href="https://github.com/unavi-xyz/unavi/actions/workflows/ci.yml/badge.svg">
-    <img alt="CI" src="https://github.com/unavi-xyz/gltf_kun/actions/workflows/ci.yml">
+  <a href="https://github.com/unavi-xyz/unavi/actions/workflows/ci.yml">
+    <img alt="CI" src="https://github.com/unavi-xyz/unavi/actions/workflows/ci.yml/badge.svg">
   </a>
   <a href="https://github.com/unavi-xyz/unavi/blob/main/LICENSE">
     <img alt="License" src="https://img.shields.io/github/license/unavi-xyz/unavi" />

@@ -6,4 +6,4 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
-unavi-app = { path = "../app" }
+unavi-app = { path = "../unavi-app" }

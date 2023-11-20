@@ -59,6 +59,7 @@
             paths = with code; [
               native
               server
+              protocol
               # web (waiting for cargo-leptos)
             ];
           };

@@ -9,7 +9,7 @@ pub fn App() -> impl IntoView {
     provide_meta_context();
 
     view! {
-        <Stylesheet href="/pkg/unavi.css"/>
+        <Stylesheet href="/pkg/style.css"/>
         <Title text="UNAVI"/>
         <Router>
             <main>

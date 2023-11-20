@@ -13,7 +13,7 @@ tower-http = { version = "0.4.4", features = ["fs"] }
 
 leptos = { version = "0.5.1", features = ["ssr"], optional = true }
 leptos_axum = { version = "0.5.1", optional = true }
-unavi-web-app = { path = "../web/app", features = ["ssr"], optional = true }
+unavi-web-app = { path = "../unavi-web/app", features = ["ssr"], optional = true }
 
 [features]
 default = ["web", "world"]

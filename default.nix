@@ -29,10 +29,10 @@ let
 in {
   native =
     rustPlatform.buildRustPackage (common // { pname = "unavi-native"; });
-
   server =
     rustPlatform.buildRustPackage (common // { pname = "unavi-server"; });
-
+  protocol =
+    rustPlatform.buildRustPackage (common // { pname = "wired-protocol"; });
   web = rustPlatformWasm.buildRustPackage (common // {
     pname = "unavi-web";
     buildPhase = ''

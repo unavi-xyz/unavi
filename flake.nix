@@ -27,9 +27,9 @@
         build_inputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [
           # Bevy
           alsa-lib
+          libxkbcommon
           udev
           vulkan-loader
-          libxkbcommon
           wayland
           xorg.libX11
           xorg.libXcursor
@@ -38,15 +38,15 @@
         ]);
 
         native_build_inputs = with pkgs; [
+          cargo-auditable
+          pkg-config
+          protobuf
+          wasm-bindgen-cli
+
           # Leptos
           binaryen
           # cargo-leptos (broken right now)
           openssl
-
-          # Rust
-          cargo-auditable
-          pkg-config
-          wasm-bindgen-cli
         ];
 
         code = pkgs.callPackage ./. {

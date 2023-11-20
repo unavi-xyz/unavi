@@ -4,6 +4,7 @@ members = [
   "app",
   "native",
   "server",
+  "protocol",
   "web/app",
   "web/frontend"
 ]

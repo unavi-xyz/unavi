@@ -1,6 +1,1 @@
-use axum::Router;
-
-pub async fn router() -> Router {
-    let router: Router = Router::new();
-    router
-}
+pub async fn world_server() {}

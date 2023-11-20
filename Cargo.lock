@@ -5053,7 +5053,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "unavi-web-frontend"
+name = "unavi-web-client"
 version = "0.0.0"
 dependencies = [
  "console_error_panic_hook",

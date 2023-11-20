@@ -1,12 +1,12 @@
 [workspace]
 resolver = "2"
 members = [
-  "app",
-  "native",
-  "server",
-  "protocol",
-  "web/app",
-  "web/frontend"
+  "unavi-app",
+  "unavi-native",
+  "unavi-server",
+  "unavi-web/app",
+  "unavi-web/client",
+  "wired-protocol"
 ]
 
 [workspace.package]
@@ -19,9 +19,9 @@ edition = "2021"
 name = "unavi"
 bin-package = "unavi-server"
 bin-default-features = true
-lib-package = "unavi-web-frontend"
+lib-package = "unavi-web-client"
 lib-profile-release = "wasm-release"
-style-file = "web/app/style.css"
+style-file = "unavi-web/app/style.css"
 
 [profile.dev]
 opt-level = 1

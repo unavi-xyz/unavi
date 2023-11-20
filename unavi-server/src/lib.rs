@@ -3,11 +3,19 @@ use axum::routing::get;
 use axum::Router;
 use std::net::SocketAddr;
 
-pub async fn axum_server() {
+#[cfg(feature = "web")]
+mod web;
+#[cfg(feature = "world")]
+mod world;
+
+pub async fn server() {
     let router = Router::new().route("/ping", get(ping));
 
     #[cfg(feature = "web")]
-    let router = router.merge(super::web::router().await);
+    let router = router.merge(web::router().await);
+
+    #[cfg(feature = "world")]
+    let router = router.merge(world::router().await);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     println!("Listening on {}", addr);

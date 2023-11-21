@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package world.webrtc.request;
+
+import "world/webrtc/common.proto";
+
+message Request {
+  oneof message {
+    common.Location publish_location = 1;
+  }
+}

@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package world.websocket.signaling.response;
+
+import "world/websocket/signaling/common.proto";
+
+message CreateConsumer {
+  int32 player_id = 1;
+  string consumer_id = 2;
+  string producer_id = 3;
+  common.RtpParameters rtp_parameters = 4;
+}
+
+message CreateDataConsumer {
+  int32 player_id = 1;
+  string data_consumer_id = 2;
+  string data_producer_id = 3;
+  common.SctpStreamParameters sctp_stream_parameters = 4;
+}
+
+message ProducerId {
+  string producer_id = 1;
+}
+
+message DataProducerId {
+  string data_producer_id = 1;
+}
+
+message RouterRtpCapabilities {
+  common.RtpCapabilities rtp_capabilities = 1;
+}
+
+message TransportCreated {
+  message TransportOptions {
+    message IceParameters {
+      string username_fragment = 1;
+      string password = 2;
+      optional bool iceLite = 3;
+    }
+
+    message IceServer {
+      repeated string urls = 1;
+      optional string username = 2;
+      optional string credential = 3;
+    }
+
+    message SctpParameters {
+      int32 port = 1;
+      int32 os = 2;
+      int32 mis = 3;
+      int32 max_message_size = 4;
+    }
+
+    enum IceTransportPolicy {
+      ALL = 0;
+      RELAY = 1;
+    }
+
+    string id = 1;
+    IceParameters ice_parameters = 2;
+    common.DtlsParameters dtls_parameters = 3;
+    repeated common.IceCandidate ice_candidates = 4;
+    optional SctpParameters sctp_parameters = 5;
+    optional IceTransportPolicy ice_transport_policy = 6;
+    repeated IceServer ice_servers = 7;
+  }
+
+  common.TransportType type = 1;
+  TransportOptions options = 2;
+}
+
+message TransportConnected {
+  common.TransportType type = 1;
+  bool success = 2;
+}

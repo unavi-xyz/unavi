@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package world.websocket.request;
+
+import "world/websocket/signaling/request.proto";
+
+message Request {
+  oneof message {
+    signaling.request.PauseAudio pause_audio = 1;
+    signaling.request.ConnectTransport connect_transport = 2;
+    signaling.request.CreateTransport create_transport = 3;
+    signaling.request.GetRouterRtpCapabilities get_router_rtp_capabilities = 4;
+    signaling.request.SetRtpCapabilities set_rtp_capabilities = 5;
+    signaling.request.Produce produce = 6;
+    signaling.request.ProduceData produce_data = 7;
+  }
+}

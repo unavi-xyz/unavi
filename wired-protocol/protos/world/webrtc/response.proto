@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package world.webrtc.response;
+
+import "world/webrtc/common.proto";
+
+message Response {
+  oneof message {
+    PlayerLocation player_location = 1;
+  }
+}
+
+message PlayerLocation {
+  uint32 player_id = 1;
+  common.Location location = 2;
+}

@@ -3,16 +3,16 @@ syntax = "proto3";
 package world.webrtc.common;
 
 message Position {
-  sint32 x = 1;
-  sint32 y = 2;
-  sint32 z = 3;
+  float x = 1;
+  float y = 2;
+  float z = 3;
 }
 
 message Rotation {
-  sint32 x = 1;
-  sint32 y = 2;
-  sint32 z = 3;
-  sint32 w = 4;
+  float x = 1;
+  float y = 2;
+  float z = 3;
+  float w = 4;
 }
 
 

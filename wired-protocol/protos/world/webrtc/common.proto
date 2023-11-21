@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package world.webrtc.common;
+
+message Position {
+  sint32 x = 1;
+  sint32 y = 2;
+  sint32 z = 3;
+}
+
+message Rotation {
+  sint32 x = 1;
+  sint32 y = 2;
+  sint32 z = 3;
+  sint32 w = 4;
+}
+
+
+message Location {
+  Position body_position = 1;
+  float body_rotation = 2;
+  Rotation head_rotation = 3;
+}

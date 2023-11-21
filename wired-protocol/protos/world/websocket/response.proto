@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package world.websocket.response;
+
+import "world/websocket/signaling/response.proto";
+
+message Response {
+  oneof response {
+    signaling.response.CreateConsumer create_consumer = 1;
+    signaling.response.CreateDataConsumer create_data_consumer = 2;
+    signaling.response.ProducerId producer_id = 3;
+    signaling.response.DataProducerId data_producer_id = 4;
+    signaling.response.RouterRtpCapabilities router_rtp_capabilities = 5;
+    signaling.response.TransportCreated transport_created = 6;
+    signaling.response.TransportConnected transport_connected = 13;
+  }
+}

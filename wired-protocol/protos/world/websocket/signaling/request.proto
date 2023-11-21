@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package world.websocket.signaling.request;
+
+import "world/websocket/signaling/common.proto";
+
+message PauseAudio {
+  bool paused = 1;
+}
+
+message ConnectTransport {
+  common.TransportType type = 1;
+  common.DtlsParameters dtlsParameters = 2;
+}
+
+message CreateTransport {
+  common.TransportType type = 1;
+}
+
+message GetRouterRtpCapabilities {
+}
+
+message SetRtpCapabilities {
+  common.RtpCapabilities rtpCapabilities = 1;
+}
+
+message Produce {
+  common.RtpParameters rtpParameters = 1;
+}
+
+message ProduceData {
+  common.SctpStreamParameters sctpStreamParameters = 1;
+}

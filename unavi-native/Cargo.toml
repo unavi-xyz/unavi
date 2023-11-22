@@ -5,5 +5,8 @@ license.workspace = true
 repository.workspace = true
 edition.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 unavi-app = { path = "../unavi-app" }

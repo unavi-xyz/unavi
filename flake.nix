@@ -38,8 +38,8 @@
         ]);
 
         native_build_inputs = with pkgs; [
-          clang
           cargo-auditable
+          clang
           cmake
           pkg-config
           protobuf

@@ -42,6 +42,3 @@ quinn = { version = "0.10.2", optional = true }
 rcgen = { version = "0.11.3", optional = true }
 rustls = { version = "0.21.9", optional = true }
 time = { version = "0.3.30", optional = true }
-
-[dev-dependencies]
-rustls-native-certs = "0.6.3"

@@ -38,7 +38,7 @@ async fn main() {
         }
     });
 
-    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
     // Connect to server
     let uri = Uri::builder()
@@ -93,8 +93,6 @@ async fn connect(uri: Uri, ca: &rustls::Certificate) -> Result<(), Box<dyn std::
     let mut stream = connection.open_bi().await.unwrap().await.unwrap();
     stream.0.write_all(b"HELLO").await.unwrap();
     stream.0.finish().await.unwrap();
-
-    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
     Ok(())
 }

@@ -168,7 +168,7 @@ where
     C::SendStream: SendStreamUnframed<Bytes>,
 {
     let session_id = session.session_id();
-    let stream = session.open_bi(session_id).await?;
+    let _stream = session.open_bi(session_id).await?;
 
     loop {
         tokio::select! {
@@ -187,13 +187,13 @@ where
                 }
             }
             uni_stream = session.accept_uni() => {
-                let (id, stream) = uni_stream?.unwrap();
+                let (id, _stream) = uni_stream?.unwrap();
 
-                let send = session.open_uni(id).await?;
+                let _send = session.open_uni(id).await?;
             }
             stream = session.accept_bi() => {
                 if let Some(h3_webtransport::server::AcceptedBi::BidiStream(_, stream)) = stream? {
-                    let (send, recv) = h3::quic::BidiStream::split(stream);
+                    let (_send, _recv) = h3::quic::BidiStream::split(stream);
                 }
             }
             else => {

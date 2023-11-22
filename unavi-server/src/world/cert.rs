@@ -17,23 +17,6 @@ pub fn new_ca() -> Certificate {
     Certificate::from_params(params).unwrap()
 }
 
-// fn new_end_entity(name: String) -> Certificate {
-//     let mut params = CertificateParams::new(vec![name.clone()]);
-//
-//     let (yesterday, tomorrow) = validity_period();
-//
-//     params.distinguished_name.push(DnType::CommonName, name);
-//     params.use_authority_key_identifier_extension = true;
-//     params.key_usages.push(KeyUsagePurpose::DigitalSignature);
-//     params
-//         .extended_key_usages
-//         .push(ExtendedKeyUsagePurpose::ServerAuth);
-//     params.not_before = yesterday;
-//     params.not_after = tomorrow;
-//
-//     Certificate::from_params(params).unwrap()
-// }
-
 fn validity_period() -> (OffsetDateTime, OffsetDateTime) {
     let day = Duration::new(86400, 0);
     let yesterday = OffsetDateTime::now_utc().checked_sub(day).unwrap();

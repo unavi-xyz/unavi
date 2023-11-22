@@ -1,7 +1,4 @@
-use rcgen::{
-    BasicConstraints, Certificate, CertificateParams, IsCa,
-    KeyUsagePurpose,
-};
+use rcgen::{BasicConstraints, Certificate, CertificateParams, IsCa, KeyUsagePurpose};
 use time::{Duration, OffsetDateTime};
 
 /// Generate a new CA certificate

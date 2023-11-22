@@ -15,6 +15,9 @@ license = "GPL-3.0-or-later"
 repository = "https://github.com/unavi-xyz/unavi"
 edition = "2021"
 
+[workspace.lints.clippy]
+type_complexity = "allow"
+
 [[workspace.metadata.leptos]]
 name = "unavi"
 bin-package = "unavi-server"

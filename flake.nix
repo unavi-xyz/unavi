@@ -25,8 +25,6 @@
         rustBinWasm = rustBin.override { targets = [ wasmTarget ]; };
 
         build_inputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [
-          clang
-
           # Bevy
           alsa-lib.dev
           libxkbcommon
@@ -40,6 +38,7 @@
         ]);
 
         native_build_inputs = with pkgs; [
+          clang
           cargo-auditable
           cmake
           pkg-config
@@ -74,12 +73,7 @@
 
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs;
-            [
-              # Rust
-              cargo-watch
-              rust-analyzer
-              rustBinWasm
-            ] ++ build_inputs;
+            [ cargo-watch clang rust-analyzer rustBinWasm ] ++ build_inputs;
           nativeBuildInputs = native_build_inputs;
 
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath build_inputs;

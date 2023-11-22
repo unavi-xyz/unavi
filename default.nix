@@ -25,6 +25,7 @@ let
     nativeBuildInputs = native_build_inputs;
 
     LD_LIBRARY_PATH = lib.makeLibraryPath build_inputs;
+    LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
   };
 in {
   native =

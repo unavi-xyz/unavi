@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy --fix -- -D warnings
+      - run: cargo clippy --fix --no-deps -- -D warnings
       - uses: EndBug/add-and-commit@v9
         with:
           message: "chore: lint"

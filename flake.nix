@@ -25,8 +25,10 @@
         rustBinWasm = rustBin.override { targets = [ wasmTarget ]; };
 
         build_inputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [
+          clang
+
           # Bevy
-          alsa-lib
+          alsa-lib.dev
           libxkbcommon
           udev
           vulkan-loader
@@ -39,6 +41,7 @@
 
         native_build_inputs = with pkgs; [
           cargo-auditable
+          cmake
           pkg-config
           protobuf
           wasm-bindgen-cli
@@ -80,6 +83,7 @@
           nativeBuildInputs = native_build_inputs;
 
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath build_inputs;
+          LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
       });
 }

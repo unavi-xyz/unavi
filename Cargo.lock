@@ -5358,6 +5358,7 @@ dependencies = [
  "quinn",
  "rcgen",
  "rustls",
+ "rustls-native-certs",
  "time",
  "tokio",
  "tower",

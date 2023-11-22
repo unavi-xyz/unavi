@@ -45,7 +45,7 @@
 
           # Leptos
           binaryen
-          # cargo-leptos (broken right now)
+          # cargo-leptos (broken right now?)
           openssl
         ];
 

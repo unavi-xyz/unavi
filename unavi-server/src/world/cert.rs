@@ -1,5 +1,5 @@
 use rcgen::{
-    BasicConstraints, Certificate, CertificateParams, DnType, ExtendedKeyUsagePurpose, IsCa,
+    BasicConstraints, Certificate, CertificateParams, IsCa,
     KeyUsagePurpose,
 };
 use time::{Duration, OffsetDateTime};

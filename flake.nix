@@ -1,6 +1,4 @@
 {
-  description = "A flake for building a Rust workspace using buildRustPackage.";
-
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";

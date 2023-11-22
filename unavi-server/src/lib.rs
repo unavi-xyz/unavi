@@ -2,6 +2,7 @@ use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::Router;
 use std::net::SocketAddr;
+use tracing::{error, info};
 
 #[cfg(feature = "web")]
 pub mod web;
@@ -28,7 +29,7 @@ pub async fn start_server(opts: ServerOptions) -> Result<(), Box<dyn std::error:
 
     #[cfg(feature = "world")]
     tokio::spawn(async move {
-        match world::start_server(world::WorldOptions {
+        if let Err(e) = world::start_server(world::WorldOptions {
             address: opts.address,
             cert_pair: world::CertPair {
                 cert: rustls::Certificate(world::cert::new_ca().serialize_der().unwrap()),
@@ -37,12 +38,11 @@ pub async fn start_server(opts: ServerOptions) -> Result<(), Box<dyn std::error:
         })
         .await
         {
-            Ok(_) => println!("World server exited"),
-            Err(e) => println!("Error: {}", e),
+            error!("World server: {}", e);
         }
     });
 
-    println!("Listening on {}", opts.address);
+    info!("Listening on {}", opts.address);
 
     axum::Server::bind(&opts.address)
         .serve(router.into_make_service())

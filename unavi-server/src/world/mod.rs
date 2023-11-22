@@ -1,15 +1,6 @@
-use axum::http::Method;
-use bytes::{BufMut, Bytes, BytesMut};
-use h3::{
-    error::ErrorLevel,
-    ext::Protocol,
-    quic::{RecvDatagramExt, SendDatagramExt, SendStreamUnframed},
-    server::Connection,
-};
-use h3_webtransport::{server::WebTransportSession, stream};
-use std::{net::SocketAddr, sync::Arc, time::Duration};
-use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
-use tracing::{error, info, trace_span};
+use std::net::SocketAddr;
+use tracing::{error, info, info_span, Instrument};
+use wtransport::{endpoint::IncomingSession, tls::Certificate, Endpoint, ServerConfig};
 
 pub mod cert;
 
@@ -24,214 +15,92 @@ pub struct CertPair {
 }
 
 pub async fn start_server(opts: WorldOptions) -> Result<(), Box<dyn std::error::Error>> {
-    let mut tls_config = rustls::ServerConfig::builder()
-        .with_safe_default_cipher_suites()
-        .with_safe_default_kx_groups()
-        .with_protocol_versions(&[&rustls::version::TLS13])?
-        .with_no_client_auth()
-        .with_single_cert(vec![opts.cert_pair.cert], opts.cert_pair.key)?;
+    let certificate = Certificate::new(vec![opts.cert_pair.cert.0], opts.cert_pair.key.0);
 
-    tls_config.max_early_data_size = u32::MAX;
-    let alpn: Vec<Vec<u8>> = vec![
-        b"h3".to_vec(),
-        b"h3-32".to_vec(),
-        b"h3-31".to_vec(),
-        b"h3-30".to_vec(),
-        b"h3-29".to_vec(),
-    ];
-    tls_config.alpn_protocols = alpn;
+    let config = ServerConfig::builder()
+        .with_bind_default(opts.address.port())
+        .with_certificate(certificate)
+        .build();
 
-    let mut server_config = quinn::ServerConfig::with_crypto(Arc::new(tls_config));
-    let mut transport_config = quinn::TransportConfig::default();
-    transport_config.keep_alive_interval(Some(Duration::from_secs(2)));
-    server_config.transport = Arc::new(transport_config);
-    let endpoint = quinn::Endpoint::server(server_config, opts.address)?;
+    let server = Endpoint::server(config)?;
 
-    println!("World server listening on {}", opts.address);
+    info!("World server started on port {}", opts.address.port());
 
-    // Accept incoming QUIC connections and spawn a new task to handle them
-    while let Some(new_conn) = endpoint.accept().await {
-        trace_span!("New connection being attempted");
-
-        tokio::spawn(async move {
-            match new_conn.await {
-                Ok(conn) => {
-                    info!("New http3 connection established");
-
-                    let h3_conn = h3::server::builder()
-                        .enable_webtransport(true)
-                        .enable_connect(true)
-                        .enable_datagram(true)
-                        .max_webtransport_sessions(1)
-                        .send_grease(true)
-                        .build(h3_quinn::Connection::new(conn))
-                        .await
-                        .unwrap();
-
-                    tokio::spawn(async move {
-                        if let Err(err) = handle_connection(h3_conn).await {
-                            error!("Failed to handle connection: {err:?}");
-                        }
-                    });
-                }
-                Err(err) => {
-                    error!("Accepting connection failed: {:?}", err);
-                }
-            }
-        });
+    for id in 0.. {
+        let incoming_session = server.accept().await;
+        tokio::spawn(
+            handle_connection_wrapper(incoming_session).instrument(info_span!("Connection", id)),
+        );
     }
 
-    // shut down gracefully
-    // wait for connections to be closed before exiting
-    endpoint.wait_idle().await;
-
     Ok(())
+}
+
+async fn handle_connection_wrapper(incoming_session: IncomingSession) {
+    let result = handle_connection(incoming_session).await;
+    error!("{:?}", result);
 }
 
 async fn handle_connection(
-    mut conn: Connection<h3_quinn::Connection, Bytes>,
+    incoming_session: IncomingSession,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    loop {
-        match conn.accept().await {
-            Ok(Some((req, stream))) => {
-                info!("New request: {:#?}", req);
-                println!("New request: {:#?}", req);
+    let mut buffer = vec![0; 65536].into_boxed_slice();
 
-                let ext = req.extensions();
-                println!("Extensions: {:#?}", ext);
+    info!("Waiting for session request...");
 
-                println!("Method: {:#?}", req.method());
+    let session_request = incoming_session.await?;
 
-                match req.method() {
-                    &Method::CONNECT if ext.get::<Protocol>() == Some(&Protocol::WEB_TRANSPORT) => {
-                        println!("Initiating webtransport session");
+    info!(
+        "New session: Authority: '{}', Path: '{}'",
+        session_request.authority(),
+        session_request.path()
+    );
 
-                        let session = WebTransportSession::accept(req, stream, conn).await?;
+    let connection = session_request.accept().await?;
 
-                        println!("Established webtransport session");
-
-                        handle_session(session).await?;
-
-                        return Ok(());
-                    }
-                    _ => {
-                        println!("Not a webtransport request");
-                        info!(?req, "Received request");
-                    }
-                }
-            }
-
-            // No more streams to be received
-            Ok(None) => {
-                break;
-            }
-
-            Err(err) => {
-                error!("Error on accept {}", err);
-
-                match err.get_error_level() {
-                    ErrorLevel::ConnectionError => break,
-                    ErrorLevel::StreamError => continue,
-                }
-            }
-        }
-    }
-    Ok(())
-}
-
-macro_rules! log_result {
-    ($expr:expr) => {
-        if let Err(err) = $expr {
-            error!("{err:?}");
-        }
-    };
-}
-
-async fn handle_session<C>(
-    session: WebTransportSession<C, Bytes>,
-) -> Result<(), Box<dyn std::error::Error>>
-where
-    // What in the ever living fuck
-    C: 'static
-        + Send
-        + h3::quic::Connection<Bytes>
-        + RecvDatagramExt<Buf = Bytes>
-        + SendDatagramExt<Bytes>,
-    <C::SendStream as h3::quic::SendStream<Bytes>>::Error:
-        'static + std::error::Error + Send + Sync + Into<std::io::Error>,
-    <C::RecvStream as h3::quic::RecvStream>::Error:
-        'static + std::error::Error + Send + Sync + Into<std::io::Error>,
-    stream::BidiStream<C::BidiStream, Bytes>:
-        h3::quic::BidiStream<Bytes> + Unpin + AsyncWrite + AsyncRead,
-    <stream::BidiStream<C::BidiStream, Bytes> as h3::quic::BidiStream<Bytes>>::SendStream:
-        Unpin + AsyncWrite + Send + Sync,
-    <stream::BidiStream<C::BidiStream, Bytes> as h3::quic::BidiStream<Bytes>>::RecvStream:
-        Unpin + AsyncRead + Send + Sync,
-    C::SendStream: Send + Unpin,
-    C::RecvStream: Send + Unpin,
-    C::BidiStream: Send + Unpin,
-    stream::SendStream<C::SendStream, Bytes>: AsyncWrite,
-    C::BidiStream: SendStreamUnframed<Bytes>,
-    C::SendStream: SendStreamUnframed<Bytes>,
-{
-    let session_id = session.session_id();
-
-    // This will open a bidirectional stream and send a message to the client right after connecting!
-    let stream = session.open_bi(session_id).await?;
-    tokio::spawn(async move { log_result!(open_bidi_test(stream).await) });
+    info!("Waiting for data from client...");
 
     loop {
         tokio::select! {
-            datagram = session.accept_datagram() => {
-                let datagram = datagram?;
-                if let Some((_, datagram)) = datagram {
-                    info!("Responding with {datagram:?}");
+            stream = connection.accept_bi() => {
+                let mut stream = stream?;
+                info!("Accepted BI stream");
 
-                    let mut resp = BytesMut::from(&b"Response: "[..]);
-                    resp.put(datagram);
+                let bytes_read = match stream.1.read(&mut buffer).await? {
+                    Some(bytes_read) => bytes_read,
+                    None => continue,
+                };
 
-                    session.send_datagram(resp.freeze())?;
-                    info!("Finished sending datagram");
-                }
+                let str_data = std::str::from_utf8(&buffer[..bytes_read])?;
+
+                info!("Received (bi) '{str_data}' from client");
+
+                stream.0.write_all(b"ACK").await?;
             }
-            uni_stream = session.accept_uni() => {
-                // let (id, stream) = uni_stream?.unwrap();
-                //
-                // let send = session.open_uni(id).await?;
-                // tokio::spawn( async move { log_result!(echo_stream(send, stream).await); });
+            stream = connection.accept_uni() => {
+                let mut stream = stream?;
+                info!("Accepted UNI stream");
+
+                let bytes_read = match stream.read(&mut buffer).await? {
+                    Some(bytes_read) => bytes_read,
+                    None => continue,
+                };
+
+                let str_data = std::str::from_utf8(&buffer[..bytes_read])?;
+
+                info!("Received (uni) '{str_data}' from client");
+
+                let mut stream = connection.open_uni().await?.await?;
+                stream.write_all(b"ACK").await?;
             }
-            stream = session.accept_bi() => {
-                // if let Some(server::AcceptedBi::BidiStream(_, stream)) = stream? {
-                //     let (send, recv) = quic::BidiStream::split(stream);
-                //     tokio::spawn( async move { log_result!(echo_stream(send, recv).await); });
-                // }
-            }
-            else => {
-                break
+            dgram = connection.receive_datagram() => {
+                let dgram = dgram?;
+                let str_data = std::str::from_utf8(&dgram)?;
+
+                info!("Received (dgram) '{str_data}' from client");
+
+                connection.send_datagram(b"ACK")?;
             }
         }
     }
-
-    info!("Finished handling session");
-
-    Ok(())
-}
-
-async fn open_bidi_test<S>(mut stream: S) -> Result<(), Box<dyn std::error::Error>>
-where
-    S: Unpin + AsyncRead + AsyncWrite,
-{
-    info!("Opening bidirectional stream");
-
-    stream
-        .write_all(b"Hello from a server initiated bidi stream")
-        .await?;
-
-    let mut resp = Vec::new();
-    stream.shutdown().await?;
-    stream.read_to_end(&mut resp).await?;
-
-    info!("Got response from client: {resp:?}");
-
-    Ok(())
 }

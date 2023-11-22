@@ -1,27 +1,26 @@
-use axum::http::Uri;
+use axum::http::{Method, Uri};
 use std::{net::SocketAddr, sync::Arc};
 use tokio::io::AsyncWriteExt;
 use unavi_server::world::{cert::new_ca, CertPair, WorldOptions};
 
 #[tokio::main]
 async fn main() {
-    // Start the server
     let address = SocketAddr::from(([127, 0, 0, 1], 4433));
     let domain = "localhost".to_string();
 
+    // Generate a self-signed certificate
     let ca = new_ca();
     let cert = rcgen::generate_simple_self_signed(vec![domain.clone()]).unwrap();
-
     let key = rustls::PrivateKey(cert.serialize_private_key_der());
     let cert = rustls::Certificate(cert.serialize_der_with_signer(&ca).unwrap());
+    let ca = rustls::Certificate(ca.serialize_der().unwrap());
 
     let opts = WorldOptions {
         address,
         cert_pair: CertPair { cert, key },
     };
 
-    let ca = rustls::Certificate(ca.serialize_der().unwrap());
-
+    // Start the server
     tokio::spawn(async move {
         match unavi_server::world::start_server(opts).await {
             Ok(_) => println!("Server exited"),
@@ -31,7 +30,7 @@ async fn main() {
 
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
-    // Connect to server over http3
+    // Connect to server
     let uri = Uri::builder()
         .scheme("https")
         .authority(format!("{}:{}", domain, address.port()))
@@ -83,10 +82,12 @@ async fn connect(uri: Uri, ca: &rustls::Certificate) -> Result<(), Box<dyn std::
         Err(e)?;
     }
 
-    let tls_config = rustls::ClientConfig::builder()
+    let mut tls_config = rustls::ClientConfig::builder()
         .with_safe_defaults()
         .with_root_certificates(roots)
         .with_no_client_auth();
+    tls_config.enable_early_data = true;
+    tls_config.alpn_protocols = vec![b"h3".into()];
 
     let mut client_endpoint = h3_quinn::quinn::Endpoint::client("[::]:0".parse().unwrap())?;
 
@@ -110,13 +111,15 @@ async fn connect(uri: Uri, ca: &rustls::Certificate) -> Result<(), Box<dyn std::
     let request = async move {
         println!("Sending request...");
 
-        let req = axum::http::Request::builder().uri(uri).body(())?;
+        let req = axum::http::Request::builder()
+            .method(Method::CONNECT)
+            .uri(uri)
+            .body(())?;
 
-        // sending request results in a bidirectional stream,
-        // which is also used for receiving response
+        // Sending request results in a bidirectional stream, which is also used for receiving response
         let mut stream = send_request.send_request(req).await?;
 
-        // finish on the sending side
+        // Finish on the sending side
         stream.finish().await?;
 
         println!("Receiving response...");

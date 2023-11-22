@@ -2,6 +2,11 @@ use tracing::{error, info};
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt()
+        .with_target(true)
+        .with_level(true)
+        .init();
+
     info!("Features:");
     let feat_web = cfg!(feature = "web");
     info!("- web: {}", feat_web);

@@ -29,6 +29,7 @@ pub fn add_skybox_to_cameras(
     }
 }
 
+/// Loads the skybox cubemap and adds it to the skybox resource
 pub fn process_cubemap(
     asset_server: Res<AssetServer>,
     mut images: ResMut<Assets<Image>>,

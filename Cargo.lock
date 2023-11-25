@@ -5426,6 +5426,7 @@ dependencies = [
 name = "unavi-native"
 version = "0.0.0"
 dependencies = [
+ "bevy",
  "unavi-app",
 ]
 

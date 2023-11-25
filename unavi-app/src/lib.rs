@@ -43,14 +43,14 @@ impl Plugin for UnaviPlugin {
                     ..default()
                 }),
             RapierPhysicsPlugin::<NoUserData>::default(),
-            RapierDebugRenderPlugin::default(),
             avatar::AvatarPlugin,
             networking::NetworkingPlugin,
             player::PlayerPlugin,
             settings::SettingsPlugin,
             world::WorldPlugin,
-            // bevy::diagnostic::LogDiagnosticsPlugin::default(),
-            // bevy::diagnostic::FrameTimeDiagnosticsPlugin::default(),
+            //RapierDebugRenderPlugin::default(),
+            //bevy::diagnostic::LogDiagnosticsPlugin::default(),
+            //bevy::diagnostic::FrameTimeDiagnosticsPlugin::default(),
         ));
     }
 }

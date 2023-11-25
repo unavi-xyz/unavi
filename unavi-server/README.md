@@ -1,4 +1,4 @@
-# Server
+# unavi-server
 
 A modular UNAVI server.
 

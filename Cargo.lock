@@ -87,6 +87,59 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
+name = "aeronet"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2bb7cda00652dd52e435cf7eeabd547637d9c937fc13cedbcc71c733131d55bc"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "derivative",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "aeronet_wt_core"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "390d1d1eb526c65ad650afe37ed9aaa347eb8a9f8e1103330ee958b496cf1421"
+dependencies = [
+ "aeronet",
+ "aeronet_wt_core_derive",
+ "anyhow",
+ "thiserror",
+]
+
+[[package]]
+name = "aeronet_wt_core_derive"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8cddbebe33ebbf2da28217909e7784c8b43c1ea4ec22f74baa564bc4e54fd804"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.39",
+]
+
+[[package]]
+name = "aeronet_wt_native"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5952199101c3398a0e108ad40f5df395d17fbd4ab9bcb0f585e5767b3a26a1f5"
+dependencies = [
+ "aeronet",
+ "aeronet_wt_core",
+ "anyhow",
+ "bevy",
+ "rustc-hash",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "wtransport",
+]
+
+[[package]]
 name = "ahash"
 version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1868,6 +1921,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0f32d04922c60427da6f9fef14d042d9edddef64cb9d4ce0d64d0685fbeb1fd3"
 dependencies = [
  "powerfmt",
+]
+
+[[package]]
+name = "derivative"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fcc3dd5e9e9c0b295d6e1e4d811fb6f157d5ffd784b8d202fc62eac8035a770b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -4596,9 +4660,9 @@ checksum = "e388332cd64eb80cd595a00941baf513caffae8dce9cfd0467fc9c66397dade6"
 
 [[package]]
 name = "serde"
-version = "1.0.192"
+version = "1.0.193"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bca2a08484b285dcb282d0f67b26cadc0df8b19f8c12502c13d966bf9482f001"
+checksum = "25dd9975e68d0cb5aa1120c288333fc98731bd1dd12f561e468ea4728c042b89"
 dependencies = [
  "serde_derive",
 ]
@@ -4616,9 +4680,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.192"
+version = "1.0.193"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6c7207fbec9faa48073f3e3074cbe553af6ea512d7c21ba46e434e70ea9fbc1"
+checksum = "43576ca501357b9b071ac53cdc7da8ef0cbd9493d8df094cd821777ea6e894d3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5344,10 +5408,18 @@ checksum = "42ff0bf0c66b8238c6f3b578df37d0b7848e55df8577b3f74f92a69acceeb825"
 name = "unavi-app"
 version = "0.0.0"
 dependencies = [
+ "aeronet",
+ "aeronet_wt_core",
+ "aeronet_wt_native",
+ "anyhow",
  "bevy",
  "bevy_rapier3d",
  "bevy_vrm",
+ "serde",
+ "tokio",
+ "tracing",
  "wired-protocol",
+ "wtransport",
 ]
 
 [[package]]
@@ -5361,7 +5433,12 @@ dependencies = [
 name = "unavi-server"
 version = "0.0.0"
 dependencies = [
+ "aeronet",
+ "aeronet_wt_core",
+ "aeronet_wt_native",
+ "anyhow",
  "axum",
+ "bevy",
  "leptos",
  "leptos_axum",
  "rcgen",

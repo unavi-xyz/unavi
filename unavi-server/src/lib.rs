@@ -29,11 +29,13 @@ pub async fn start_server(opts: ServerOptions) -> Result<(), Box<dyn std::error:
 
     #[cfg(feature = "world")]
     tokio::spawn(async move {
+        let ca = world::cert::new_ca();
+
         if let Err(e) = world::start_server(world::WorldOptions {
             address: opts.address,
             cert_pair: world::CertPair {
-                cert: rustls::Certificate(world::cert::new_ca().serialize_der().unwrap()),
-                key: rustls::PrivateKey(world::cert::new_ca().serialize_private_key_der()),
+                cert: ca.serialize_der().unwrap(),
+                key: ca.serialize_private_key_der(),
             },
         })
         .await

@@ -1,105 +1,139 @@
+use aeronet::{
+    AsyncRuntime, DisconnectClient, FromClient, RemoteClientConnected, RemoteClientDisconnected,
+    ServerTransport, ServerTransportPlugin, ToClient, TryFromBytes, TryIntoBytes,
+};
+use aeronet_wt_native::{Channels, OnChannel, WebTransportServer};
+use anyhow::Result;
+use bevy::{
+    app::{AppExit, ScheduleRunnerPlugin},
+    log::LogPlugin,
+    prelude::*,
+};
 use std::net::SocketAddr;
-use tracing::{error, info, info_span, Instrument};
-use wtransport::{endpoint::IncomingSession, tls::Certificate, Endpoint, ServerConfig};
+use std::time::Duration;
+use wtransport::{tls::Certificate, ServerConfig};
 
 pub mod cert;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Channels)]
+#[channel_kind(Datagram)]
+struct AppChannel;
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, OnChannel)]
+#[channel_type(AppChannel)]
+#[on_channel(AppChannel)]
+struct AppMessage(String);
+
+impl TryFromBytes for AppMessage {
+    fn try_from_bytes(buf: &[u8]) -> Result<Self> {
+        String::from_utf8(buf.to_vec())
+            .map(AppMessage)
+            .map_err(Into::into)
+    }
+}
+
+impl TryIntoBytes for AppMessage {
+    fn try_into_bytes(self) -> Result<Vec<u8>> {
+        Ok(self.0.into_bytes())
+    }
+}
+
+type Server = WebTransportServer<AppMessage, AppMessage, AppChannel>;
 
 pub struct WorldOptions {
     pub address: SocketAddr,
     pub cert_pair: CertPair,
 }
 
+#[derive(Resource)]
 pub struct CertPair {
-    pub cert: rustls::Certificate,
-    pub key: rustls::PrivateKey,
+    pub cert: Vec<u8>,
+    pub key: Vec<u8>,
 }
 
 pub async fn start_server(opts: WorldOptions) -> Result<(), Box<dyn std::error::Error>> {
-    let certificate = Certificate::new(vec![opts.cert_pair.cert.0], opts.cert_pair.key.0);
-
-    let config = ServerConfig::builder()
-        .with_bind_default(opts.address.port())
-        .with_certificate(certificate)
-        .build();
-
-    let server = Endpoint::server(config)?;
-
-    info!("World server started on port {}", opts.address.port());
-
-    for id in 0.. {
-        let incoming_session = server.accept().await;
-        tokio::spawn(
-            handle_connection_wrapper(incoming_session).instrument(info_span!("Connection", id)),
-        );
-    }
+    App::new()
+        .add_plugins((
+            LogPlugin {
+                level: tracing::Level::DEBUG,
+                ..default()
+            },
+            MinimalPlugins.set(ScheduleRunnerPlugin::run_loop(Duration::from_millis(100))),
+            ServerTransportPlugin::<_, _, Server>::default(),
+        ))
+        .init_resource::<AsyncRuntime>()
+        .insert_resource(opts.cert_pair)
+        .add_systems(Startup, setup)
+        .add_systems(Update, (reply, log))
+        .run();
 
     Ok(())
 }
 
-async fn handle_connection_wrapper(incoming_session: IncomingSession) {
-    let result = handle_connection(incoming_session).await;
-    error!("{:?}", result);
+fn setup(mut commands: Commands, rt: Res<AsyncRuntime>, cert: Res<CertPair>) {
+    let cert = Certificate::new(vec![cert.cert.clone()], cert.key.clone());
+
+    match create(&rt, cert) {
+        Ok(server) => {
+            commands.insert_resource(server);
+        }
+        Err(err) => panic!("Failed to create server: {err:#}"),
+    }
 }
 
-async fn handle_connection(
-    incoming_session: IncomingSession,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut buffer = vec![0; 65536].into_boxed_slice();
+fn create(rt: &AsyncRuntime, cert: Certificate) -> Result<Server> {
+    let port = 4433;
 
-    info!("Waiting for session request...");
+    let config = ServerConfig::builder()
+        .with_bind_default(port)
+        .with_certificate(cert)
+        .keep_alive_interval(Some(Duration::from_secs(5)))
+        .build();
 
-    let session_request = incoming_session.await?;
+    let (front, back) = aeronet_wt_native::create_server(config);
 
-    info!(
-        "New session: Authority: '{}', Path: '{}'",
-        session_request.authority(),
-        session_request.path()
-    );
+    rt.0.spawn(async move {
+        back.start().await.unwrap();
+    });
 
-    let connection = session_request.accept().await?;
+    info!("World listening on 127.0.0.1:{}", port);
 
-    info!("Waiting for data from client...");
+    Ok(front)
+}
 
-    loop {
-        tokio::select! {
-            stream = connection.accept_bi() => {
-                let mut stream = stream?;
-                info!("Accepted BI stream");
+fn log(
+    server: Res<Server>,
+    mut connected: EventReader<RemoteClientConnected>,
+    mut disconnected: EventReader<RemoteClientDisconnected>,
+) {
+    for RemoteClientConnected(client) in connected.read() {
+        info!("Client {client} connected");
+        info!("  Info: {:?}", server.client_info(*client));
+    }
 
-                let bytes_read = match stream.1.read(&mut buffer).await? {
-                    Some(bytes_read) => bytes_read,
-                    None => continue,
-                };
+    for RemoteClientDisconnected(client, reason) in disconnected.read() {
+        info!(
+            "Client {client} disconnected: {:#}",
+            aeronet::error::as_pretty(reason),
+        );
+        info!("  Info: {:?}", server.client_info(*client));
+    }
+}
 
-                let str_data = std::str::from_utf8(&buffer[..bytes_read])?;
-
-                info!("Received (bi) '{str_data}' from client");
-
-                stream.0.write_all(b"ACK").await?;
-            }
-            stream = connection.accept_uni() => {
-                let mut stream = stream?;
-                info!("Accepted UNI stream");
-
-                let bytes_read = match stream.read(&mut buffer).await? {
-                    Some(bytes_read) => bytes_read,
-                    None => continue,
-                };
-
-                let str_data = std::str::from_utf8(&buffer[..bytes_read])?;
-
-                info!("Received (uni) '{str_data}' from client");
-
-                let mut stream = connection.open_uni().await?.await?;
-                stream.write_all(b"ACK").await?;
-            }
-            dgram = connection.receive_datagram() => {
-                let dgram = dgram?;
-                let str_data = std::str::from_utf8(&dgram)?;
-
-                info!("Received (dgram) '{str_data}' from client");
-
-                connection.send_datagram(b"ACK")?;
+fn reply(
+    mut recv: EventReader<FromClient<AppMessage>>,
+    mut send: EventWriter<ToClient<AppMessage>>,
+    mut disconnect: EventWriter<DisconnectClient>,
+    mut exit: EventWriter<AppExit>,
+) {
+    for FromClient(client, msg) in recv.read() {
+        info!("From {client}: {:?}", msg.0);
+        match msg.0.as_str() {
+            "dc" => disconnect.send(DisconnectClient(*client)),
+            "stop" => exit.send(AppExit),
+            msg => {
+                let msg = format!("You sent: {}", msg);
+                send.send(ToClient(*client, AppMessage(msg)));
             }
         }
     }

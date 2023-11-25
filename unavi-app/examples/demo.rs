@@ -2,14 +2,31 @@ use std::f32::consts::PI;
 
 use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 use bevy_rapier3d::prelude::{Real, *};
+use unavi_app::networking::JoinWorld;
 
 fn main() {
     unavi_app::App::new()
         .add_plugins(unavi_app::UnaviPlugin {
             file_path: "../assets".to_string(),
+            log_level: tracing::Level::DEBUG,
         })
         .add_systems(Startup, setup_world)
+        .add_systems(Update, join_world)
         .run();
+}
+
+fn join_world(mut joined: Local<bool>, time: Res<Time>, mut writer: EventWriter<JoinWorld>) {
+    if *joined {
+        return;
+    }
+
+    if time.elapsed_seconds() < 1.0 {
+        return;
+    }
+
+    *joined = true;
+
+    writer.send(JoinWorld { world_id: 4 });
 }
 
 const GROUND_SIZE: f32 = 40.0;

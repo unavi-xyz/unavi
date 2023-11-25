@@ -5450,20 +5450,8 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
- "unavi-web-app",
+ "unavi-web-common",
  "wtransport",
-]
-
-[[package]]
-name = "unavi-web-app"
-version = "0.0.0"
-dependencies = [
- "http",
- "leptos",
- "leptos_axum",
- "leptos_meta",
- "leptos_router",
- "thiserror",
 ]
 
 [[package]]
@@ -5473,7 +5461,19 @@ dependencies = [
  "console_error_panic_hook",
  "leptos",
  "unavi-app",
- "unavi-web-app",
+ "unavi-web-common",
+]
+
+[[package]]
+name = "unavi-web-common"
+version = "0.0.0"
+dependencies = [
+ "http",
+ "leptos",
+ "leptos_axum",
+ "leptos_meta",
+ "leptos_router",
+ "thiserror",
 ]
 
 [[package]]

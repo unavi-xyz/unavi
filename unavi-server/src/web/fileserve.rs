@@ -8,8 +8,7 @@ use axum::{
 use leptos::*;
 use tower::ServiceExt;
 use tower_http::services::ServeDir;
-use unavi_web_app::error_template::AppError;
-use unavi_web_app::error_template::ErrorTemplate;
+use unavi_web_common::error_template::{AppError, ErrorTemplate};
 
 pub async fn assets_file_handler(
     uri: Uri,

@@ -2,7 +2,6 @@ use bevy::asset::LoadState;
 use bevy::core_pipeline::Skybox;
 use bevy::prelude::*;
 use bevy::render::render_resource::{TextureViewDescriptor, TextureViewDimension};
-use bevy_vrm::mtoon::MtoonMainCamera;
 
 #[derive(Resource)]
 pub struct Cubemap {
@@ -17,10 +16,11 @@ pub fn create_skybox(asset_server: Res<AssetServer>, mut commands: Commands) {
     });
 }
 
+/// Adds the Skybox component to all cameras
 pub fn add_skybox_to_cameras(
     mut commands: Commands,
     cubemap: ResMut<Cubemap>,
-    cameras: Query<Entity, (With<MtoonMainCamera>, Without<Skybox>)>,
+    cameras: Query<Entity, Without<Skybox>>,
 ) {
     for camera in cameras.iter() {
         commands
@@ -66,6 +66,7 @@ pub fn process_cubemap(
         });
     }
 
+    // Update skyboxes
     for mut skybox in &mut skyboxes {
         skybox.0 = cubemap.image_handle.clone();
     }

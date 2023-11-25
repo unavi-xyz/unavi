@@ -6,7 +6,7 @@ use axum::Router;
 use fileserve::file_and_error_handler;
 use leptos::*;
 use leptos_axum::{generate_route_list, LeptosRoutes};
-use unavi_web_app::*;
+use unavi_web_common::*;
 
 use self::fileserve::assets_file_handler;
 

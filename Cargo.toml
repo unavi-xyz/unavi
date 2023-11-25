@@ -4,8 +4,8 @@ members = [
   "unavi-app",
   "unavi-native",
   "unavi-server",
-  "unavi-web/app",
   "unavi-web/client",
+  "unavi-web/common",
   "wired-protocol"
 ]
 
@@ -24,7 +24,7 @@ bin-package = "unavi-server"
 bin-default-features = true
 lib-package = "unavi-web-client"
 lib-profile-release = "wasm-release"
-style-file = "unavi-web/app/style.css"
+style-file = "unavi-web/common/style.css"
 
 [profile.dev]
 opt-level = 1

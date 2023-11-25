@@ -22,8 +22,8 @@ async fn main() {
     // Generate a self-signed certificate
     let ca = new_ca();
     let cert = rcgen::generate_simple_self_signed(vec![domain.clone()]).unwrap();
-    let key = rustls::PrivateKey(cert.serialize_private_key_der());
-    let cert = rustls::Certificate(cert.serialize_der_with_signer(&ca).unwrap());
+    let key = cert.serialize_private_key_der();
+    let cert = cert.serialize_der_with_signer(&ca).unwrap();
     let ca = rustls::Certificate(ca.serialize_der().unwrap());
 
     let opts = WorldOptions {

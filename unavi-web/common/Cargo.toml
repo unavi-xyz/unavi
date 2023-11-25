@@ -1,5 +1,5 @@
 [package]
-name = "unavi-web-app"
+name = "unavi-web-common"
 version.workspace = true
 license.workspace = true
 repository.workspace = true

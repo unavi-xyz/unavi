@@ -9,5 +9,5 @@ pub fn hydrate() {
         .add_plugins(unavi_app::UnaviPlugin::default())
         .run();
 
-    leptos::mount_to_body(unavi_web_app::App);
+    leptos::mount_to_body(unavi_web_common::App);
 }

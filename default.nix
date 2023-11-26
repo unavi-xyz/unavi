@@ -28,13 +28,26 @@ let
     LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
   };
 in {
-  native =
+  unavi_native =
     rustPlatform.buildRustPackage (common // { pname = "unavi-native"; });
-  server =
+
+  unavi_server =
     rustPlatform.buildRustPackage (common // { pname = "unavi-server"; });
-  protocol =
-    rustPlatform.buildRustPackage (common // { pname = "wired-protocol"; });
-  web = rustPlatformWasm.buildRustPackage (common // {
+
+  unavi_ui = rustPlatform.buildRustPackage (common // {
+    pname = "unavi-ui";
+    # buildPhase = ''
+    #   cargo build --target ${wasmTarget} --profile wasm-release
+    #   wasm-tools component new target/${wasmTarget}/wasm-release/unavi_ui.wasm \
+    #              -o target/${wasmTarget}/wasm-release/unavi_ui_component.wasm
+    # '';
+    # installPhase = ''
+    #   mkdir -p $out/lib
+    #   cp target/${wasmTarget}/wasm-release/unavi_ui_component.wasm $out/lib/
+    # '';
+  });
+
+  unavi_web = rustPlatformWasm.buildRustPackage (common // {
     pname = "unavi-web";
     buildPhase = ''
       cargo leptos build --release
@@ -44,4 +57,7 @@ in {
       cp -r target $out/web
     '';
   });
+
+  wired_protocol =
+    rustPlatform.buildRustPackage (common // { pname = "wired-protocol"; });
 }

@@ -42,6 +42,7 @@
           pkg-config
           protobuf
           wasm-bindgen-cli
+          wasm-tools
 
           # Leptos
           binaryen
@@ -57,12 +58,19 @@
           all = pkgs.symlinkJoin {
             name = "all";
             paths = with code; [
-              native
-              server
-              protocol
-              # web (waiting for cargo-leptos)
+              unavi_native
+              unavi_server
+              unavi_ui
+              # unavi_web
+              wired_protocol
             ];
           };
+
+          unavi_native = code.unavi_native;
+          unavi_server = code.unavi_server;
+          unavi_ui = code.unavi_ui;
+          unavi_web = code.unavi_web;
+          wired_protocol = code.wired_protocol;
 
           default = packages.all;
           override = packages.all;

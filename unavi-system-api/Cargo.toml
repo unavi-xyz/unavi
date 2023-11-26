@@ -1,16 +1,12 @@
 [package]
-name = "wired-protocol"
+name = "unavi-system-api"
 version.workspace = true
 license.workspace = true
 repository.workspace = true
 edition.workspace = true
 
-[lints]
-workspace = true
+[lib]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-bytes = "1.5.0"
-prost = "0.12.2"
-
-[build-dependencies]
-prost-build = "0.12.2"
+wit-bindgen = "0.14.0"

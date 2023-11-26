@@ -19,5 +19,5 @@ bevy_vrm = "0.0.5"
 serde = { version = "1.0.193", features = ["derive"] }
 tokio = { version = "1.34.0", features = ["full"] }
 tracing = "0.1.40"
-wired-protocol = { path = "../wired-protocol" }
+wired-protocol-proto = { path = "../wired-protocol-proto" }
 wtransport = "0.1.8"

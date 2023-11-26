@@ -4,10 +4,12 @@ members = [
   "unavi-app",
   "unavi-native",
   "unavi-server",
+  "unavi-system-api",
   "unavi-ui",
   "unavi-web/client",
   "unavi-web/common",
-  "wired-protocol"
+  "unavi-wired-api",
+  "wired-protocol-proto"
 ]
 
 [workspace.package]

@@ -5449,7 +5449,7 @@ dependencies = [
  "serde",
  "tokio",
  "tracing",
- "wired-protocol",
+ "wired-protocol-proto",
  "wtransport",
 ]
 
@@ -5487,6 +5487,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-system-api"
+version = "0.0.0"
+dependencies = [
+ "wit-bindgen",
+]
+
+[[package]]
 name = "unavi-ui"
 version = "0.0.0"
 dependencies = [
@@ -5513,6 +5520,13 @@ dependencies = [
  "leptos_meta",
  "leptos_router",
  "thiserror",
+]
+
+[[package]]
+name = "unavi-wired-api"
+version = "0.0.0"
+dependencies = [
+ "wit-bindgen",
 ]
 
 [[package]]
@@ -6183,7 +6197,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "wired-protocol"
+name = "wired-protocol-proto"
 version = "0.0.0"
 dependencies = [
  "bytes",

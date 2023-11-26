@@ -1,3 +1,3 @@
 # wired-protocol-proto
 
-[Protobuf](https://protobuf.dev/) specification for [The Wired 🔌](https://github.com/unavi-xyz/wired-protocol).
+Rust build of The Wired's [protobuf spec](https://github.com/unavi-xyz/wired-protocol-proto).

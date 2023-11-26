@@ -1,1 +1,1 @@
-pub mod interaction;
+pub mod input;

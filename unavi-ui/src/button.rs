@@ -1,15 +1,14 @@
 wit_bindgen::generate!({
     world: "button",
-
     exports: {
-        world: MyButton,
+        world: UnaviButton,
     },
 });
 
-struct MyButton;
+struct UnaviButton;
 
-impl Guest for MyButton {
-    fn run() {
-        print("Hello, world!");
+impl Guest for UnaviButton {
+    fn press(state: HoverState) {
+        println!("Button pressed with state: {:?}", state);
     }
 }

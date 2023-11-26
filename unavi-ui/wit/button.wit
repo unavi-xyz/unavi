@@ -1,7 +1,0 @@
-package example:button;
-
-world button {
-  import print: func(msg: string);
-
-  export run: func();
-}

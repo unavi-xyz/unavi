@@ -4,6 +4,7 @@ members = [
   "unavi-app",
   "unavi-native",
   "unavi-server",
+  "unavi-ui",
   "unavi-web/client",
   "unavi-web/common",
   "wired-protocol"

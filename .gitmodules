@@ -4,3 +4,6 @@
 [submodule "unavi-ui/wit"]
 	path = unavi-ui/wit
 	url = git@github.com:unavi-xyz/wired-protocol-wit.git
+[submodule "wired-protocol-proto/protos"]
+	path = wired-protocol-proto/protos
+	url = git@github.com:unavi-xyz/wired-protocol-proto.git

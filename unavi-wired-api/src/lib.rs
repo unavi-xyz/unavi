@@ -1,1 +1,4 @@
-pub mod input;
+pub fn hello() {
+    println!("Hello, world!");
+}
+

@@ -1,0 +1,3 @@
+[submodule "unavi-wired-api/wit"]
+	path = unavi-wired-api/wit
+	url = git@github.com:unavi-xyz/wired-protocol-wit.git

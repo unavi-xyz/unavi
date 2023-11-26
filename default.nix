@@ -58,6 +58,6 @@ in {
     '';
   });
 
-  wired_protocol =
-    rustPlatform.buildRustPackage (common // { pname = "wired-protocol"; });
+  wired_protocol_proto = rustPlatform.buildRustPackage
+    (common // { pname = "wired-protocol-proto"; });
 }

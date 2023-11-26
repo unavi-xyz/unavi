@@ -62,7 +62,7 @@
               unavi_server
               unavi_ui
               # unavi_web
-              wired_protocol
+              wired_protocol_proto
             ];
           };
 
@@ -70,7 +70,7 @@
           unavi_server = code.unavi_server;
           unavi_ui = code.unavi_ui;
           unavi_web = code.unavi_web;
-          wired_protocol = code.wired_protocol;
+          wired_protocol_proto = code.wired_protocol_proto;
 
           default = packages.all;
           override = packages.all;

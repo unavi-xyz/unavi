@@ -1,5 +1,5 @@
 [package]
-name = "unavi-system-api"
+name = "unavi-wasm-runtime"
 version.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -9,5 +9,5 @@ edition.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-wasmtime = { version = "15.0.0", default-features = false, features = ["component-model"] }
-wit-bindgen = "0.15.0"
+wasmtime = { version = "15.0.0", features = ["component-model"] }
+unavi-system-api = { path = "../unavi-system-api" }

@@ -1,0 +1,8 @@
+package unavi:menu;
+
+world menu {
+  import log: func(msg: string);
+
+  export open: func();
+  export close: func();
+}

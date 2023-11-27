@@ -8,7 +8,7 @@ wit_bindgen::generate!({
 struct UnaviButton;
 
 impl Guest for UnaviButton {
-    fn press(state: HoverState) {
-        println!("Button pressed with state: {:?}", state);
+    fn press() {
+        println!("Button pressed!");
     }
 }

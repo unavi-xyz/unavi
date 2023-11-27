@@ -1,0 +1,21 @@
+[workspace]
+resolver = "2"
+members = [
+  "app",
+  "core",
+  "wasm"
+]
+
+[workspace.package]
+version = "0.0.0"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/unavi-xyz/unavi"
+edition = "2021"
+
+# Enable a small amount of optimization in debug mode
+[profile.dev]
+opt-level = 1
+
+# Enable high optimizations for dependencies, but not for our code:
+[profile.dev.package."*"]
+opt-level = 3

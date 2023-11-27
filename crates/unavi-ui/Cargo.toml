@@ -9,4 +9,4 @@ edition.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-wit-bindgen = "0.14.0"
+wit-bindgen = "0.15.0"

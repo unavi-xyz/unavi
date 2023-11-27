@@ -1,3 +1,2 @@
-pub fn hello() {
-    println!("Hello, world!");
-}
+pub mod logger;
+pub mod menu;

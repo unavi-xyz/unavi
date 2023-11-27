@@ -1,15 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-  "unavi-app",
-  "unavi-native",
-  "unavi-server",
-  "unavi-system-api",
-  "unavi-ui",
-  "unavi-web/client",
-  "unavi-web/common",
-  "unavi-wired-api",
-  "wired-protocol-proto"
+  "crates/*"
 ]
 
 [workspace.package]
@@ -27,7 +19,7 @@ bin-package = "unavi-server"
 bin-default-features = true
 lib-package = "unavi-web-client"
 lib-profile-release = "wasm-release"
-style-file = "unavi-web/common/style.css"
+style-file = "crates/unavi-web-common/style.css"
 
 [profile.dev]
 opt-level = 1

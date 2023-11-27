@@ -37,7 +37,7 @@ tracing-subscriber = "0.3.18"
 
 leptos = { version = "0.5.1", features = ["ssr"], optional = true }
 leptos_axum = { version = "0.5.1", optional = true }
-unavi-web-common= { path = "../unavi-web/common", features = ["ssr"], optional = true }
+unavi-web-common= { path = "../unavi-web-common", features = ["ssr"], optional = true }
 
 aeronet = { version = "0.3.0",  features = ["bevy"], optional = true }
 aeronet_wt_core = { version = "0.3.0", optional = true }

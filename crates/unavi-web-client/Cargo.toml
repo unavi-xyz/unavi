@@ -13,6 +13,6 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 leptos = { version = "0.5.1", features = ["hydrate"] }
-unavi-web-common = { path = "../common", features = ["hydrate"] }
-unavi-app = { path = "../../unavi-app" }
+unavi-web-common = { path = "../unavi-web-common", features = ["hydrate"] }
+unavi-app = { path = "../unavi-app" }
 console_error_panic_hook = "0.1.7"

@@ -12,6 +12,8 @@ jobs:
     steps:
       - uses: AdityaGarg8/remove-unwanted-software@v1
         with:
+          remove-android: "true"
+          remove-dotnet: "true"
           remove-haskell: "true"
       - uses: actions/checkout@v4
         with:

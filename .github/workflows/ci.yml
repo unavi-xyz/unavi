@@ -10,7 +10,9 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: easimon/maximize-build-space@master
+      - uses: AdityaGarg8/remove-unwanted-software@v1
+        with:
+          remove-haskell: "true"
       - uses: actions/checkout@v4
         with:
           submodules: "true"

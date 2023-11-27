@@ -1,5 +1,5 @@
 [package]
-name = "unavi-wasm-runtime"
+name = "unavi-wired-bindgen"
 version.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -7,4 +7,3 @@ edition.workspace = true
 
 [dependencies]
 wasmtime = { version = "15.0.0", features = ["component-model"] }
-unavi-system-bindgen = { path = "../../wasm/unavi-system/bindgen" }

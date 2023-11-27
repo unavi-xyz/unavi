@@ -1,12 +1,3 @@
-[submodule "unavi-wired-api/wit"]
-	path = crates/unavi-wired-api/wit/deps
-	url = git@github.com:unavi-xyz/wired-protocol-wit.git
-[submodule "unavi-ui/wit"]
-	path = crates/unavi-ui/wit/deps
-	url = git@github.com:unavi-xyz/wired-protocol-wit.git
 [submodule "wired-protocol-proto/protos"]
 	path = crates/wired-protocol-proto/protos
 	url = git@github.com:unavi-xyz/wired-protocol-proto.git
-[submodule "crates/unavi-system-api/wit"]
-	path = crates/unavi-system-api/wit/deps
-	url = git@github.com:unavi-xyz/wired-protocol-wit.git

@@ -1,8 +1,17 @@
-use unavi_system_api::menu::{Menu, MenuState};
+use unavi_system_bindgen::menu::{Menu, MenuImports};
 use wasmtime::{
     component::{Component, Linker},
     Engine, Store,
 };
+
+struct MenuState;
+
+impl MenuImports for MenuState {
+    fn log(&mut self, msg: String) -> wasmtime::Result<()> {
+        println!("log: {}", msg);
+        Ok(())
+    }
+}
 
 fn main() {
     if let Err(e) = load_wasm() {
@@ -16,7 +25,7 @@ fn load_wasm() -> wasmtime::Result<()> {
     let engine = Engine::new(&config)?;
 
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("examples/unavi_system_api_component.wasm");
+        .join("examples/unavi_system_component.wasm");
     println!("Loading wasm file: {:?}", path);
 
     let component = Component::from_file(&engine, &path)?;

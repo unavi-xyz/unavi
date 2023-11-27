@@ -1,3 +1,0 @@
-world button {
-  export press: func();
-}

@@ -1,5 +1,3 @@
-package unavi:menu;
-
 world menu {
   import log: func(msg: string);
 

@@ -1,13 +1,12 @@
 [package]
-name = "unavi-system-api"
+name = "unavi-ui"
 version.workspace = true
 license.workspace = true
 repository.workspace = true
 edition.workspace = true
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["cdylib"]
 
 [dependencies]
-wasmtime = { version = "15.0.0", default-features = false, features = ["component-model"] }
 wit-bindgen = "0.15.0"

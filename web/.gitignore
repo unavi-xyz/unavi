@@ -1,0 +1,30 @@
+# dependencies
+.pnp
+.pnp.js
+node_modules
+
+# next.js
+.next
+
+# misc
+.DS_Store
+.npmrc
+.vscode
+*.pem
+
+# debug
+.pnpm-debug.log*
+npm-debug.log*
+vite.config.*.timestamp*
+yarn-debug.log*
+yarn-error.log*
+
+# local files
+.env.development.local
+.env.local
+.env.production.local
+.env.test.local
+*.local.*
+
+# typescript
+*.tsbuildinfo

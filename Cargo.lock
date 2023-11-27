@@ -5874,11 +5874,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "unavi-system-api"
+name = "unavi-system"
+version = "0.0.0"
+dependencies = [
+ "wit-bindgen",
+]
+
+[[package]]
+name = "unavi-system-bindgen"
 version = "0.0.0"
 dependencies = [
  "wasmtime",
- "wit-bindgen",
 ]
 
 [[package]]
@@ -5889,10 +5895,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-ui-bindgen"
+version = "0.0.0"
+dependencies = [
+ "wasmtime",
+]
+
+[[package]]
 name = "unavi-wasm-runtime"
 version = "0.0.0"
 dependencies = [
- "unavi-system-api",
+ "unavi-system-bindgen",
  "wasmtime",
 ]
 
@@ -5919,10 +5932,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "unavi-wired-api"
+name = "unavi-wired"
 version = "0.0.0"
 dependencies = [
  "wit-bindgen",
+]
+
+[[package]]
+name = "unavi-wired-bindgen"
+version = "0.0.0"
+dependencies = [
+ "wasmtime",
 ]
 
 [[package]]

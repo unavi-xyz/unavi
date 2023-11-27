@@ -1,1 +1,0 @@
-// wasmtime::component::bindgen!("logger");

@@ -1,5 +1,0 @@
-package unavi:button;
-
-world button {
-  export press: func();
-}

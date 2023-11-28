@@ -5,14 +5,16 @@ wit_bindgen::generate!({
     },
 });
 
+use wired::system::logger::{log, LogLevel};
+
 pub struct Menu;
 
 impl Guest for Menu {
     fn open() {
-        // log(LogLevel::Info, "Menu open");
+        log(LogLevel::Info, "Menu open");
     }
 
     fn close() {
-        // log(LogLevel::Info, "Menu close");
+        log(LogLevel::Info, "Menu close");
     }
 }

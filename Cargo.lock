@@ -5905,6 +5905,8 @@ dependencies = [
 name = "unavi-wasm-runtime"
 version = "0.0.0"
 dependencies = [
+ "tracing",
+ "tracing-subscriber",
  "unavi-system-bindgen",
  "wasmtime",
 ]

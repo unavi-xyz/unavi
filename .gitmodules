@@ -1,3 +1,6 @@
 [submodule "wired-protocol-proto/protos"]
 	path = crates/wired-protocol-proto/protos
 	url = git@github.com:unavi-xyz/wired-protocol-proto.git
+[submodule "wasm/unavi-system/wit/deps"]
+	path = wasm/unavi-system/wit/deps
+	url = git@github.com:unavi-xyz/wired-protocol-wit.git

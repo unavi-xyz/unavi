@@ -9,10 +9,10 @@ pub struct Menu;
 
 impl Guest for Menu {
     fn open() {
-        log("Menu open");
+        // log(LogLevel::Info, "Menu open");
     }
 
     fn close() {
-        log("Menu close");
+        // log(LogLevel::Info, "Menu close");
     }
 }

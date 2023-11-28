@@ -8,3 +8,7 @@ edition.workspace = true
 [dependencies]
 wasmtime = { version = "15.0.0", features = ["component-model"] }
 unavi-system-bindgen = { path = "../../wasm/unavi-system/bindgen" }
+tracing = "0.1.40"
+
+[dev-dependencies]
+tracing-subscriber = "0.3.18"

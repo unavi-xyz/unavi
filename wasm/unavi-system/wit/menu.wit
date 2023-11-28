@@ -1,5 +1,5 @@
 world menu {
-  //import wired:system/logger;
+  import wired:system/logger;
 
   export open: func();
   export close: func();

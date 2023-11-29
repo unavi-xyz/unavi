@@ -3,10 +3,6 @@
 target="wasm32-unknown-unknown"
 profile="wasm-release"
 
-# Remove previous builds
-rm -r assets/wasm
-mkdir -p assets/wasm
-
 cd wasm
 
 for pkg in *

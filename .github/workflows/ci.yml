@@ -27,6 +27,7 @@ jobs:
       - run: nix develop -c cargo test --workspace --all-features --features bevy/dynamic_linking --exclude unavi-system --exclude unavi-ui --exclude wired-host
 
   build:
+    needs: check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

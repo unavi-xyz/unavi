@@ -23,7 +23,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: nix flake check --all-systems
       - run: nix develop -c cargo doc --workspace --all-features --no-deps --document-private-items --features bevy/dynamic_linking
-      - run: nix develop -c cargo test --workspace --all-features --features bevy/dynamic_linking
+        # Exclude WASM libraries, wit-bindgen currently fails tests
+      - run: nix develop -c cargo test --workspace --all-features --features bevy/dynamic_linking --exclude unavi-system --exclude unavi-ui
 
   lint:
     runs-on: ubuntu-latest

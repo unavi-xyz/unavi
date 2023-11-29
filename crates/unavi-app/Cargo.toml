@@ -19,5 +19,7 @@ bevy_vrm = "0.0.5"
 serde = { version = "1.0.193", features = ["derive"] }
 tokio = { version = "1.34.0", features = ["full"] }
 tracing = "0.1.40"
+unavi-system-bindgen = { path = "../../wasm/unavi-system/bindgen" }
+wasmtime = { version = "15.0.0", features = ["component-model"] }
 wired-protocol-proto = { path = "../wired-protocol-proto" }
 wtransport = "0.1.8"

@@ -5836,6 +5836,8 @@ dependencies = [
  "serde",
  "tokio",
  "tracing",
+ "unavi-system-bindgen",
+ "wasmtime",
  "wired-protocol-proto",
  "wtransport",
 ]
@@ -5898,18 +5900,6 @@ dependencies = [
 name = "unavi-ui-bindgen"
 version = "0.0.0"
 dependencies = [
- "wasmtime",
-]
-
-[[package]]
-name = "unavi-wasm-runtime"
-version = "0.0.0"
-dependencies = [
- "bevy",
- "bevy_rapier3d",
- "tracing",
- "tracing-subscriber",
- "unavi-system-bindgen",
  "wasmtime",
 ]
 

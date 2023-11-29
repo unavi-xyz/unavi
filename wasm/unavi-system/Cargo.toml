@@ -1,5 +1,8 @@
+cargo-features = ["per-package-target"]
+
 [package]
 name = "unavi-system"
+default-target = "wasm32-unknown-unknown"
 version.workspace = true
 license.workspace = true
 repository.workspace = true

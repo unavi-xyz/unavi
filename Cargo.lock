@@ -6975,6 +6975,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "wired-host"
+version = "0.0.0"
+dependencies = [
+ "wit-bindgen",
+]
+
+[[package]]
 name = "wired-protocol-proto"
 version = "0.0.0"
 dependencies = [

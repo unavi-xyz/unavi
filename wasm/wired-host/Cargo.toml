@@ -1,7 +1,7 @@
 cargo-features = ["per-package-target"]
 
 [package]
-name = "unavi-ui"
+name = "wired-host"
 default-target = "wasm32-unknown-unknown"
 version.workspace = true
 license.workspace = true

@@ -61,6 +61,8 @@ jobs:
     needs: lint
     runs-on: ubuntu-latest
     steps:
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --all

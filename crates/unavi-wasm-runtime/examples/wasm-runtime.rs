@@ -1,23 +1,9 @@
-use unavi_system_bindgen::menu::{wired::host::logger, Menu};
+use unavi_system_bindgen::menu::Menu;
+use unavi_wasm_runtime::state::State;
 use wasmtime::{
     component::{Component, Linker},
     Engine, Store,
 };
-
-struct MenuState;
-
-impl logger::Host for MenuState {
-    fn log(&mut self, level: logger::LogLevel, msg: String) -> wasmtime::Result<()> {
-        match level {
-            logger::LogLevel::Debug => tracing::debug!("{}", msg),
-            logger::LogLevel::Info => tracing::info!("{}", msg),
-            logger::LogLevel::Warn => tracing::warn!("{}", msg),
-            logger::LogLevel::Error => tracing::error!("{}", msg),
-        };
-
-        Ok(())
-    }
-}
 
 fn main() {
     if let Err(e) = load_wasm() {
@@ -43,9 +29,9 @@ fn load_wasm() -> wasmtime::Result<()> {
     let component = Component::from_file(&engine, &path)?;
 
     let mut linker = Linker::new(&engine);
-    Menu::add_to_linker(&mut linker, |state: &mut MenuState| state)?;
+    Menu::add_to_linker(&mut linker, |state: &mut State| state)?;
 
-    let mut store = Store::new(&engine, MenuState {});
+    let mut store = Store::new(&engine, State {});
 
     let (bindings, _) = Menu::instantiate(&mut store, &component, &linker)?;
 

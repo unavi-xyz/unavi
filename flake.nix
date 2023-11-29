@@ -18,9 +18,10 @@
         overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs { inherit system overlays; };
 
-        rustBin = pkgs.rust-bin.nightly.latest.default.override {
-          targets = [ "wasm32-unknown-unknown" ];
-        };
+        rustBin = pkgs.rust-bin.selectLatestNightlyWith (toolchain:
+          toolchain.default.override {
+            targets = [ "wasm32-unknown-unknown" ];
+          });
 
         build_inputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [
           # Bevy

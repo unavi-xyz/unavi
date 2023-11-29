@@ -6,15 +6,15 @@ use bevy::{
 };
 
 #[derive(Asset, Debug, TypePath)]
-pub struct Script {
+pub struct Wasm {
     pub bytes: Vec<u8>,
 }
 
 #[derive(Default)]
-pub struct ScriptLoader;
+pub struct WasmLoader;
 
-impl AssetLoader for ScriptLoader {
-    type Asset = Script;
+impl AssetLoader for WasmLoader {
+    type Asset = Wasm;
     type Settings = ();
     type Error = std::io::Error;
     fn load<'a>(
@@ -26,7 +26,7 @@ impl AssetLoader for ScriptLoader {
         Box::pin(async move {
             let mut bytes = Vec::new();
             reader.read_to_end(&mut bytes).await?;
-            Ok(Script { bytes })
+            Ok(Wasm { bytes })
         })
     }
 

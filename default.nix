@@ -1,18 +1,12 @@
 { lib, pkgs, system, build_inputs, native_build_inputs, makeRustPlatform }:
 let
-  wasmTarget = "wasm32-unknown-unknown";
-
-  rustBin = pkgs.rust-bin.stable.latest.default;
-  rustBinWasm = rustBin.override { targets = [ wasmTarget ]; };
+  rustBin = pkgs.rust-bin.nightly.latest.default.override {
+    targets = [ "wasm32-unknown-unknown" ];
+  };
 
   rustPlatform = makeRustPlatform {
     cargo = rustBin;
     rustc = rustBin;
-  };
-
-  rustPlatformWasm = makeRustPlatform {
-    cargo = rustBinWasm;
-    rustc = rustBinWasm;
   };
 
   common = {
@@ -47,7 +41,7 @@ in {
     # '';
   });
 
-  unavi_web = rustPlatformWasm.buildRustPackage (common // {
+  unavi_web = rustPlatform.buildRustPackage (common // {
     pname = "unavi-web";
     buildPhase = ''
       cargo leptos build --release

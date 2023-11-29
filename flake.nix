@@ -18,9 +18,9 @@
         overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs { inherit system overlays; };
 
-        wasmTarget = "wasm32-unknown-unknown";
-        rustBin = pkgs.rust-bin.stable.latest.default;
-        rustBinWasm = rustBin.override { targets = [ wasmTarget ]; };
+        rustBin = pkgs.rust-bin.nightly.latest.default.override {
+          targets = [ "wasm32-unknown-unknown" ];
+        };
 
         build_inputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [
           # Bevy
@@ -79,7 +79,7 @@
 
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs;
-            [ cargo-watch clang rust-analyzer rustBinWasm ] ++ build_inputs;
+            [ cargo-watch clang rust-analyzer rustBin ] ++ build_inputs;
           nativeBuildInputs = native_build_inputs;
 
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath build_inputs;

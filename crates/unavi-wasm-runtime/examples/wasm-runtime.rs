@@ -1,4 +1,4 @@
-use unavi_system_bindgen::menu::{wired::system::logger, Menu};
+use unavi_system_bindgen::menu::{wired::host::logger, Menu};
 use wasmtime::{
     component::{Component, Linker},
     Engine, Store,
@@ -36,7 +36,8 @@ fn load_wasm() -> wasmtime::Result<()> {
 
     let engine = Engine::new(&config)?;
 
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("examples/unavi_system.wasm");
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../assets/wasm/unavi_system.wasm");
     println!("Loading wasm file: {:?}", path);
 
     let component = Component::from_file(&engine, &path)?;

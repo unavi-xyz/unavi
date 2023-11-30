@@ -1,1 +1,1 @@
-pub mod menu;
+pub mod script;

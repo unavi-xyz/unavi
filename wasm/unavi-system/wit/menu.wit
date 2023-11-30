@@ -1,6 +1,0 @@
-world menu {
-  import wired:host/logger;
-
-  export open: func();
-  export close: func();
-}

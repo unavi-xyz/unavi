@@ -1,0 +1,5 @@
+package unavi:system;
+
+world script {
+  include wired:host/script;
+}

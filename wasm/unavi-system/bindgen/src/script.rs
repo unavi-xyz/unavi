@@ -1,4 +1,4 @@
 wasmtime::component::bindgen!({
-    world: "menu",
+    world: "script",
     path: "../wit"
 });

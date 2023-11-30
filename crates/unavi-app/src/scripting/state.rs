@@ -1,8 +1,8 @@
 use wired_host_bindgen::script::wired::host::logger;
 
-pub struct State;
+pub struct ScriptState;
 
-impl logger::Host for State {
+impl logger::Host for ScriptState {
     fn log(&mut self, level: logger::LogLevel, msg: String) -> wasmtime::Result<()> {
         match level {
             logger::LogLevel::Debug => tracing::debug!("{}", msg),

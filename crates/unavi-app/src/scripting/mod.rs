@@ -23,6 +23,7 @@ impl Plugin for ScriptingPlugin {
                     scripts::instantiate_scripts,
                     lifecycle::init_scripts,
                     lifecycle::update_scripts,
+                    lifecycle::exit_scripts,
                 )
                     .chain(),
             );

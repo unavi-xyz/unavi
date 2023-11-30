@@ -39,7 +39,7 @@ pub type ScriptRuntimeBundle = WasmRuntimeBundle<ScriptState>;
 
 impl Default for ScriptRuntimeBundle {
     fn default() -> Self {
-        Self::new(ScriptState)
+        Self::new(ScriptState::default())
     }
 }
 

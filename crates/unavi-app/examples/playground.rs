@@ -2,14 +2,14 @@ use std::f32::consts::PI;
 
 use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 use bevy_rapier3d::prelude::{Real, *};
-use unavi_app::networking::JoinWorld;
+use unavi_app::{networking::JoinWorld, UnaviPlugin};
 
 fn main() {
+    let mut unavi_plugin = UnaviPlugin::debug();
+    unavi_plugin.assets_dir = "../../assets".to_string();
+
     unavi_app::App::new()
-        .add_plugins(unavi_app::UnaviPlugin {
-            file_path: "../../assets".to_string(),
-            log_level: tracing::Level::INFO,
-        })
+        .add_plugins(unavi_plugin)
         .add_systems(Startup, setup_world)
         .add_systems(Update, join_world)
         .run();

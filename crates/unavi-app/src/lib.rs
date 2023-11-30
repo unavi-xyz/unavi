@@ -12,14 +12,29 @@ pub mod world;
 pub use bevy::app::App;
 
 pub struct UnaviPlugin {
-    pub file_path: String,
+    pub assets_dir: String,
+    pub debug_frame_time: bool,
+    pub debug_physics: bool,
     pub log_level: tracing::Level,
+}
+
+impl UnaviPlugin {
+    pub fn debug() -> Self {
+        Self {
+            assets_dir: "assets".to_string(),
+            debug_frame_time: false,
+            debug_physics: true,
+            log_level: tracing::Level::DEBUG,
+        }
+    }
 }
 
 impl Default for UnaviPlugin {
     fn default() -> Self {
         Self {
-            file_path: "assets".to_string(),
+            assets_dir: "assets".to_string(),
+            debug_frame_time: false,
+            debug_physics: false,
             log_level: tracing::Level::INFO,
         }
     }
@@ -37,7 +52,7 @@ impl Plugin for UnaviPlugin {
                     ..default()
                 })
                 .set(AssetPlugin {
-                    file_path: self.file_path.clone(),
+                    file_path: self.assets_dir.clone(),
                     ..default()
                 })
                 .set(LogPlugin {
@@ -51,10 +66,15 @@ impl Plugin for UnaviPlugin {
             scripting::ScriptingPlugin,
             settings::SettingsPlugin,
             world::WorldPlugin,
-            //RapierDebugRenderPlugin::default(),
-            //bevy::diagnostic::LogDiagnosticsPlugin::default(),
-            //bevy::diagnostic::FrameTimeDiagnosticsPlugin::default(),
         ))
         .add_state::<state::AppState>();
+
+        if self.debug_physics {
+            app.add_plugins(RapierDebugRenderPlugin::default());
+        }
+
+        if self.debug_frame_time {
+            app.add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin);
+        }
     }
 }

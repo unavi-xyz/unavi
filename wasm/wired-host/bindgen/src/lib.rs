@@ -1,4 +1,2 @@
-wasmtime::component::bindgen!({
-    world: "host",
-    path: "../wit"
-});
+pub mod host;
+pub mod script;

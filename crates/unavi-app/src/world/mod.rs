@@ -73,7 +73,7 @@ fn setup_world(
 
         commands.spawn((
             RigidBody::Fixed,
-            Collider::cuboid(ground_size / 2.0, 0.2, ground_size / 2.0),
+            Collider::cuboid(ground_size / 2.0, 0.05, ground_size / 2.0),
             PbrBundle {
                 mesh: meshes.add(ground_mesh),
                 material: materials.add(StandardMaterial {

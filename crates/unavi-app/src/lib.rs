@@ -6,6 +6,7 @@ pub mod networking;
 pub mod player;
 pub mod scripting;
 pub mod settings;
+pub mod state;
 pub mod world;
 
 pub use bevy::app::App;
@@ -53,6 +54,7 @@ impl Plugin for UnaviPlugin {
             //RapierDebugRenderPlugin::default(),
             //bevy::diagnostic::LogDiagnosticsPlugin::default(),
             //bevy::diagnostic::FrameTimeDiagnosticsPlugin::default(),
-        ));
+        ))
+        .add_state::<state::AppState>();
     }
 }

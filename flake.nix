@@ -47,7 +47,7 @@
 
           # Leptos
           binaryen
-          # cargo-leptos (broken right now?)
+          cargo-leptos
           openssl
         ];
 
@@ -62,7 +62,7 @@
               unavi_native
               unavi_server
               unavi_ui
-              # unavi_web
+              unavi_web
               wired_protocol_proto
             ];
           };

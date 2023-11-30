@@ -27,7 +27,6 @@ impl Guest for Script {
         );
 
         if time::elapsed_seconds() > 1000.0 {
-            log(LogLevel::Info, "Exiting unavi-system!");
             process::exit();
         }
     }

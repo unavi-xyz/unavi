@@ -19,7 +19,12 @@ impl Plugin for ScriptingPlugin {
             .add_systems(OnEnter(AppState::InWorld), setup_runtimes)
             .add_systems(
                 Update,
-                (scripts::instantiate_scripts, lifecycle::init_scripts),
+                (
+                    scripts::instantiate_scripts,
+                    lifecycle::init_scripts,
+                    lifecycle::update_scripts,
+                )
+                    .chain(),
             );
     }
 }

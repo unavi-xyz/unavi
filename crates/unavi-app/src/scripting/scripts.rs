@@ -1,4 +1,4 @@
-use super::{asset::Wasm, state::ScriptState};
+use super::{asset::Wasm, state::RuntimeState};
 use bevy::prelude::*;
 use wired_host_bindgen::script::Script;
 
@@ -35,19 +35,28 @@ impl<T: Send + Sync + 'static> WasmRuntimeBundle<T> {
     }
 }
 
-pub type ScriptRuntimeBundle = WasmRuntimeBundle<ScriptState>;
+pub type ScriptRuntimeBundle = WasmRuntimeBundle<RuntimeState>;
 
 impl Default for ScriptRuntimeBundle {
     fn default() -> Self {
-        Self::new(ScriptState::default())
+        Self::new(RuntimeState::default())
+    }
+}
+
+pub fn set_runtime_name(mut runtimes: Query<(&mut WasmStore<RuntimeState>, &Name, Changed<Name>)>) {
+    for (mut store, name, changed) in runtimes.iter_mut() {
+        if changed {
+            store.0.data_mut().name = name.to_string();
+        }
     }
 }
 
 #[derive(Component)]
 pub struct WasmScript {
+    /// The asset handle for the wasm.
     pub asset: Handle<Wasm>,
     /// Whether the script has been processed.
-    pub processed: bool,
+    processed: bool,
 }
 
 impl WasmScript {
@@ -84,8 +93,8 @@ pub fn instantiate_scripts(
     mut commands: Commands,
     mut runtimes: Query<(
         &WasmEngine,
-        &mut WasmLinker<ScriptState>,
-        &mut WasmStore<ScriptState>,
+        &mut WasmLinker<RuntimeState>,
+        &mut WasmStore<RuntimeState>,
     )>,
     mut scripts: Query<(Entity, &Parent, &mut WasmScript)>,
 ) {
@@ -117,7 +126,7 @@ pub fn instantiate_scripts(
             }
         };
 
-        if let Err(e) = Script::add_to_linker(&mut linker.0, |state: &mut ScriptState| state) {
+        if let Err(e) = Script::add_to_linker(&mut linker.0, |state: &mut RuntimeState| state) {
             error!("Failed to add script to linker: {}", e);
             continue;
         }

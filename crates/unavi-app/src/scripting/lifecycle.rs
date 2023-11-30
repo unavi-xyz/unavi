@@ -2,12 +2,12 @@ use bevy::prelude::*;
 
 use super::{
     scripts::{InstantiatedScript, WasmStore},
-    state::ScriptState,
+    state::RuntimeState,
 };
 
 pub fn init_scripts(
     mut scripts: Query<(&Parent, &mut InstantiatedScript)>,
-    mut stores: Query<&mut WasmStore<ScriptState>>,
+    mut stores: Query<&mut WasmStore<RuntimeState>>,
 ) {
     for (parent, mut script) in scripts.iter_mut() {
         if script.initialized {
@@ -34,7 +34,7 @@ pub fn init_scripts(
 pub fn update_scripts(
     time: Res<Time>,
     mut scripts: Query<(&Parent, &mut InstantiatedScript)>,
-    mut stores: Query<&mut WasmStore<ScriptState>>,
+    mut stores: Query<&mut WasmStore<RuntimeState>>,
 ) {
     for (parent, script) in scripts.iter_mut() {
         let mut store = match stores.get_mut(parent.get()) {
@@ -58,7 +58,7 @@ pub fn update_scripts(
 pub fn exit_scripts(
     mut commands: Commands,
     mut scripts: Query<(Entity, &Parent, &mut InstantiatedScript)>,
-    mut stores: Query<&mut WasmStore<ScriptState>>,
+    mut stores: Query<&mut WasmStore<RuntimeState>>,
 ) {
     for (entity, parent, script) in scripts.iter_mut() {
         let mut store = match stores.get_mut(parent.get()) {

@@ -21,6 +21,7 @@ impl Plugin for ScriptingPlugin {
                 Update,
                 (
                     scripts::instantiate_scripts,
+                    scripts::set_runtime_name,
                     lifecycle::init_scripts,
                     lifecycle::update_scripts,
                     lifecycle::exit_scripts,
@@ -41,6 +42,4 @@ pub fn setup_runtimes(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn((Name::new("system"), ScriptRuntimeBundle::default()))
         .add_child(unavi_system);
-
-    commands.spawn((Name::new("world"), ScriptRuntimeBundle::default()));
 }

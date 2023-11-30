@@ -21,10 +21,9 @@ pub struct UnaviPlugin {
 impl UnaviPlugin {
     pub fn debug() -> Self {
         Self {
-            assets_dir: "assets".to_string(),
-            debug_frame_time: false,
             debug_physics: true,
             log_level: tracing::Level::DEBUG,
+            ..default()
         }
     }
 }

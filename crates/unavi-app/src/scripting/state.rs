@@ -1,4 +1,4 @@
-use unavi_system_bindgen::menu::wired::host::logger;
+use wired_host_bindgen::script::wired::host::logger;
 
 pub struct State;
 

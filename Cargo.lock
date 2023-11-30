@@ -5838,6 +5838,7 @@ dependencies = [
  "tracing",
  "unavi-system-bindgen",
  "wasmtime",
+ "wired-host-bindgen",
  "wired-protocol-proto",
  "wtransport",
 ]

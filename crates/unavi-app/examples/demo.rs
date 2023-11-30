@@ -7,8 +7,8 @@ use unavi_app::networking::JoinWorld;
 fn main() {
     unavi_app::App::new()
         .add_plugins(unavi_app::UnaviPlugin {
-            file_path: "../assets".to_string(),
-            log_level: tracing::Level::DEBUG,
+            file_path: "../../assets".to_string(),
+            log_level: tracing::Level::INFO,
         })
         .add_systems(Startup, setup_world)
         .add_systems(Update, join_world)

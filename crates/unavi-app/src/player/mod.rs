@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::world::WorldState;
+use crate::state::AppState;
 
 mod controls;
 mod events;
@@ -15,7 +15,7 @@ impl Plugin for PlayerPlugin {
             .add_event::<events::YawEvent>()
             .add_event::<events::PitchEvent>()
             .init_resource::<look::MouseSettings>()
-            .add_systems(OnEnter(WorldState::InWorld), controls::spawn_player)
+            .add_systems(OnEnter(AppState::InWorld), controls::spawn_player)
             .add_systems(
                 Update,
                 (

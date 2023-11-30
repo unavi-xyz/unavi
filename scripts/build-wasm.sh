@@ -12,5 +12,5 @@ do
   # Compile to wasm
   cargo build -p $pkg --target $target --profile $profile && \
   # Convert to component + move to assets dir
-  wasm-tools component new ../target/$target/$profile/$wasm_name.wasm -o ../assets/wasm/$wasm_name.wasm
+  wasm-tools component new ../target/$target/$profile/$wasm_name.wasm -o ../assets/scripts/$wasm_name.wasm
 done

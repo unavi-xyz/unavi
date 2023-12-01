@@ -1,11 +1,22 @@
 use wired_host_bindgen::script::wired::host::{logger, logger::Host, process, time};
 
-#[derive(Default)]
 pub struct RuntimeState {
     /// The name of the runtime.
     pub name: String,
     /// Whether the runtime should exit.
     pub exit: bool,
+    /// The time the runtime started.
+    pub start_time: std::time::Instant,
+}
+
+impl Default for RuntimeState {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            exit: false,
+            start_time: std::time::Instant::now(),
+        }
+    }
 }
 
 impl logger::Host for RuntimeState {
@@ -39,8 +50,8 @@ impl process::Host for RuntimeState {
 
 impl time::Host for RuntimeState {
     fn elapsed_seconds(&mut self) -> wasmtime::Result<f32> {
-        let now = std::time::SystemTime::now();
-        let duration = now.duration_since(std::time::UNIX_EPOCH).unwrap();
-        Ok(duration.as_millis() as f32)
+        let now = std::time::Instant::now();
+        let elapsed = now.duration_since(self.start_time).as_secs_f32();
+        Ok(elapsed)
     }
 }

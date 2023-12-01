@@ -14,19 +14,17 @@ pub struct Script;
 
 impl Guest for Script {
     fn init() {
-        log(
-            LogLevel::Info,
-            format!("Initializing unavi-system at {}", time::elapsed_seconds()).as_str(),
-        );
+        log(LogLevel::Info, "Initializing unavi-system.");
     }
 
-    fn update(delta_seconds: f32) {
-        log(
-            LogLevel::Info,
-            format!("Updating with delta {}", delta_seconds).as_str(),
-        );
+    fn update(_delta: f32) {
+        if time::elapsed_seconds() > 3.0 {
+            let msg = format!(
+                "Exiting unavi-system after {} seconds",
+                time::elapsed_seconds()
+            );
+            log(LogLevel::Info, msg.as_str());
 
-        if time::elapsed_seconds() > 1000.0 {
             process::exit();
         }
     }

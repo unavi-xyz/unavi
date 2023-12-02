@@ -58,20 +58,12 @@
         packages = code // {
           all = pkgs.symlinkJoin {
             name = "all";
-            paths = with code; [
-              unavi_native
-              unavi_server
-              unavi_ui
-              unavi_web
-              wired_protocol_proto
-            ];
+            paths = with code; [ unavi_native unavi_server unavi_web ];
           };
 
           unavi_native = code.unavi_native;
           unavi_server = code.unavi_server;
-          unavi_ui = code.unavi_ui;
           unavi_web = code.unavi_web;
-          wired_protocol_proto = code.wired_protocol_proto;
 
           default = packages.all;
           override = packages.all;

@@ -19,8 +19,7 @@ serde = { version = "1.0.193", features = ["derive"] }
 tokio = { version = "1.34.0", features = ["full"] }
 tracing = "0.1.40"
 unavi-system-bindgen = { path = "../../wasm/unavi-system/bindgen" }
-wired-host-bindgen = { path = "../../wasm/wired-host/bindgen" }
-wired-protocol-proto = { path = "../wired-protocol-proto" }
+wired-script-bindgen = { path = "../../wasm/wired-script/bindgen" }
 wtransport = "0.1.8"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]

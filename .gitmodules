@@ -1,6 +1,3 @@
-[submodule "wired-protocol-proto/protos"]
-	path = crates/wired-protocol-proto/protos
-	url = git@github.com:unavi-xyz/wired-protocol-proto.git
-[submodule "wasm/wired-host/wit"]
-	path = wasm/wired-host/wit
-	url = git@github.com:unavi-xyz/wired-protocol-wit.git
+[submodule "wired-protocol"]
+	path = wired-protocol
+	url = git@github.com:unavi-xyz/wired-protocol.git

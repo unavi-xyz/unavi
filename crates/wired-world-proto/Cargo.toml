@@ -1,5 +1,5 @@
 [package]
-name = "wired-protocol-proto"
+name = "wired-world-proto"
 version.workspace = true
 license.workspace = true
 repository.workspace = true

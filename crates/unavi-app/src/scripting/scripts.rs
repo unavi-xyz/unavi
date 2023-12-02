@@ -1,6 +1,6 @@
 use super::{asset::Wasm, state::RuntimeState};
 use bevy::prelude::*;
-use wired_host_bindgen::script::Script;
+use wired_script_bindgen::Script;
 
 #[derive(Component)]
 pub struct WasmEngine(wasmtime::Engine);

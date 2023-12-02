@@ -1,4 +1,4 @@
-use self::wired::host::{
+use self::wired::script::{
     logger::{log, LogLevel},
     process, time,
 };

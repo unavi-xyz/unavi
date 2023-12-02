@@ -5838,8 +5838,7 @@ dependencies = [
  "tracing",
  "unavi-system-bindgen",
  "wasmtime",
- "wired-host-bindgen",
- "wired-protocol-proto",
+ "wired-script-bindgen",
  "wtransport",
 ]
 
@@ -6968,21 +6967,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "wired-host"
+name = "wired-script"
 version = "0.0.0"
 dependencies = [
  "wit-bindgen",
 ]
 
 [[package]]
-name = "wired-host-bindgen"
+name = "wired-script-bindgen"
 version = "0.0.0"
 dependencies = [
  "wasmtime",
 ]
 
 [[package]]
-name = "wired-protocol-proto"
+name = "wired-world-proto"
 version = "0.0.0"
 dependencies = [
  "bytes",

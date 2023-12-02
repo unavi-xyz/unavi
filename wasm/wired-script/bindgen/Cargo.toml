@@ -1,5 +1,5 @@
 [package]
-name = "wired-host-bindgen"
+name = "wired-script-bindgen"
 version.workspace = true
 license.workspace = true
 repository.workspace = true

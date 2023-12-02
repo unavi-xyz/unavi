@@ -1,4 +1,4 @@
-use wired_host_bindgen::script::wired::host::{logger, logger::Host, process, time};
+use wired_script_bindgen::wired::script::{logger, logger::Host, process, time};
 
 pub struct RuntimeState {
     /// The name of the runtime.

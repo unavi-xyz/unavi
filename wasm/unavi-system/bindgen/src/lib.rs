@@ -1,1 +1,4 @@
-pub mod script;
+wasmtime::component::bindgen!({
+    world: "script",
+    path: "../wit"
+});

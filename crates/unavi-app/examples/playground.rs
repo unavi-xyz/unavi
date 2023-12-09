@@ -15,7 +15,7 @@ fn main() {
         .run();
 }
 
-fn join_world(mut joined: Local<bool>, time: Res<Time>, mut writer: EventWriter<JoinWorld>) {
+fn join_world(mut joined: Local<bool>, time: Res<Time>, _writer: EventWriter<JoinWorld>) {
     if *joined {
         return;
     }

@@ -15,6 +15,9 @@ edition = "2021"
 [workspace.lints.clippy]
 type_complexity = "allow"
 
+[workspace.dependencies]
+bevy = "0.12.1"
+
 [[workspace.metadata.leptos]]
 name = "unavi"
 bin-package = "unavi-server"

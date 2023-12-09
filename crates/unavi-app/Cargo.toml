@@ -12,9 +12,9 @@ workspace = true
 aeronet = { version = "0.3.0", features = ["bevy"] }
 aeronet_wt_core = "0.3.0"
 anyhow = "1.0.75"
-bevy = "0.12.0"
+bevy.workspace = true
 bevy_rapier3d = { version = "0.23.0", features = ["simd-stable"] }
-bevy_vrm = "0.0.5"
+bevy_vrm = "0.0.6"
 serde = { version = "1.0.193", features = ["derive"] }
 tokio = { version = "1.34.0", features = ["full"] }
 tracing = "0.1.40"

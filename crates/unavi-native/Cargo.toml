@@ -9,5 +9,5 @@ edition.workspace = true
 workspace = true
 
 [dependencies]
-bevy = "0.12.0"
+bevy.workspace = true
 unavi-app = { path = "../unavi-app" }

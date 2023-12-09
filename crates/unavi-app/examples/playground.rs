@@ -26,7 +26,7 @@ fn join_world(mut joined: Local<bool>, time: Res<Time>, mut writer: EventWriter<
 
     *joined = true;
 
-    writer.send(JoinWorld { world_id: 4 });
+    // writer.send(JoinWorld { world_id: 4 });
 }
 
 const GROUND_SIZE: f32 = 40.0;

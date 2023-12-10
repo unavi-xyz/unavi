@@ -2,11 +2,7 @@ use tracing::{error, info};
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt()
-        .with_target(true)
-        .with_level(true)
-        .with_max_level(tracing::Level::DEBUG)
-        .init();
+    tracing_subscriber::fmt().init();
 
     info!("Features:");
     let feat_social = cfg!(feature = "social");

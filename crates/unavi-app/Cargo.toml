@@ -9,8 +9,6 @@ edition.workspace = true
 workspace = true
 
 [dependencies]
-aeronet = { version = "0.3.0", features = ["bevy"] }
-aeronet_wt_core = "0.3.0"
 anyhow = "1.0.75"
 bevy.workspace = true
 bevy_rapier3d = { version = "0.23.0", features = ["simd-stable"] }
@@ -21,10 +19,7 @@ tracing = "0.1.40"
 unavi-system-bindgen = { path = "../../wasm/unavi-system/bindgen" }
 wired-script-bindgen = { path = "../../wasm/wired-script/bindgen" }
 wtransport = "0.1.8"
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-# aeronet_wt_wasm = { version = "0.3.0", features = ["bevy"] }
+xwt = "0.3.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-aeronet_wt_native = { version = "0.3.0", features = ["bevy"] }
 wasmtime = { version = "15.0.0", features = ["component-model"] }

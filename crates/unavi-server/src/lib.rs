@@ -1,14 +1,12 @@
-use axum::response::IntoResponse;
-use axum::routing::get;
-use axum::Router;
 use std::net::SocketAddr;
-use tracing::{error, info};
 
 #[cfg(feature = "web")]
-pub mod web;
-#[cfg(feature = "world")]
-pub mod world;
+mod axum_server;
 
+#[cfg(feature = "world")]
+mod world_server;
+
+#[derive(Clone)]
 pub struct ServerOptions {
     pub address: SocketAddr,
 }
@@ -21,38 +19,28 @@ impl Default for ServerOptions {
     }
 }
 
-pub async fn start_server(opts: ServerOptions) -> Result<(), Box<dyn std::error::Error>> {
-    let router = Router::new().route("/ping", get(ping));
-
+pub async fn start(opts: ServerOptions) -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(feature = "web")]
-    let router = router.merge(web::router().await);
+    {
+        let opts = opts.clone();
+        tokio::spawn(async move {
+            if let Err(e) = axum_server::start_server(&opts).await {
+                tracing::error!(e);
+                panic!("axum_server failed");
+            }
+        });
+    }
 
     #[cfg(feature = "world")]
-    tokio::spawn(async move {
-        let ca = world::cert::new_ca();
-
-        if let Err(e) = world::start_server(world::WorldOptions {
-            address: opts.address,
-            cert_pair: world::CertPair {
-                cert: ca.serialize_der().unwrap(),
-                key: ca.serialize_private_key_der(),
-            },
-        })
-        .await
-        {
-            error!("World server: {}", e);
-        }
-    });
-
-    info!("Listening on {}", opts.address);
-
-    axum::Server::bind(&opts.address)
-        .serve(router.into_make_service())
-        .await?;
+    {
+        let opts = opts.clone();
+        tokio::spawn(async move {
+            if let Err(e) = world_server::start_server(&opts).await {
+                tracing::error!(e);
+                panic!("world_server failed");
+            }
+        });
+    }
 
     Ok(())
-}
-
-async fn ping() -> impl IntoResponse {
-    "pong"
 }

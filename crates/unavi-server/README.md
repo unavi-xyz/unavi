@@ -4,13 +4,13 @@ A modular UNAVI server.
 
 ## Architecture
 
-Home server functionality is divided into separate services.
-Each service can be enabled or disabled, allowing for flexibility in deployment.
+Server functionality is organized into separate features.
+Each feature can be enabled or disabled, allowing for flexibility in deployment.
 
-For example, I may want to run a lightweight server that only handles user identity, and disable the other services.
+For example, I may want to run a lightweight server that only handles social functionality, and disable the other features.
 Or I may want to split up my server and run worlds on a separate machine.
 
-## Services
+## Features
 
 ### DB
 
@@ -20,9 +20,9 @@ MySQL database.
 
 IPFS Kubo node, used for file storage and retrieval.
 
-### Identity
+### Social 
 
-Handles user authentication, federates social interactions with other servers.
+Manages a user's identity, federates social interactions with other servers.
 
 ### Web
 

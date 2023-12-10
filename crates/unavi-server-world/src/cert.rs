@@ -1,8 +1,17 @@
-use rcgen::{BasicConstraints, Certificate, CertificateParams, IsCa, KeyUsagePurpose};
+use rcgen::{BasicConstraints, CertificateParams, IsCa, KeyUsagePurpose};
 use time::{Duration, OffsetDateTime};
 
-/// Generate a new CA certificate
-pub fn new_ca() -> Certificate {
+/// Generate a self-signed certificate.
+pub fn generate_certificate() -> wtransport::tls::Certificate {
+    let ca = new_ca();
+
+    let cert = ca.serialize_der().unwrap();
+    let key = ca.serialize_private_key_der();
+
+    wtransport::tls::Certificate::new(vec![cert], key)
+}
+
+fn new_ca() -> rcgen::Certificate {
     let mut params = CertificateParams::new(Vec::default());
 
     let (yesterday, tomorrow) = validity_period();
@@ -14,7 +23,7 @@ pub fn new_ca() -> Certificate {
     params.not_before = yesterday;
     params.not_after = tomorrow;
 
-    Certificate::from_params(params).unwrap()
+    rcgen::Certificate::from_params(params).unwrap()
 }
 
 fn validity_period() -> (OffsetDateTime, OffsetDateTime) {

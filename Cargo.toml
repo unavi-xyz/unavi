@@ -20,7 +20,7 @@ bevy = "0.12.1"
 
 [[workspace.metadata.leptos]]
 name = "unavi"
-bin-package = "unavi-server"
+bin-package = "unavi-server-web"
 bin-default-features = true
 lib-package = "unavi-web-client"
 lib-profile-release = "wasm-release"

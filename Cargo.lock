@@ -5774,6 +5774,7 @@ dependencies = [
  "wired-script-bindgen",
  "wtransport",
  "xwt",
+ "xwt-core",
 ]
 
 [[package]]

@@ -24,7 +24,7 @@ pub async fn start(opts: ServerOptions) -> Result<(), Box<dyn std::error::Error>
     {
         let opts = opts.clone();
         tokio::spawn(async move {
-            if let Err(e) = axum_server::start_server(&opts).await {
+            if let Err(e) = axum_server::start(&opts).await {
                 tracing::error!(e);
                 panic!("axum_server failed");
             }
@@ -35,7 +35,7 @@ pub async fn start(opts: ServerOptions) -> Result<(), Box<dyn std::error::Error>
     {
         let opts = opts.clone();
         tokio::spawn(async move {
-            if let Err(e) = world_server::start_server(&opts).await {
+            if let Err(e) = world_server::start(&opts).await {
                 tracing::error!(e);
                 panic!("world_server failed");
             }

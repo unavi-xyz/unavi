@@ -3,7 +3,7 @@ use tracing::info;
 
 use super::ServerOptions;
 
-pub async fn start_server(opts: &ServerOptions) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start(opts: &ServerOptions) -> Result<(), Box<dyn std::error::Error>> {
     tracing::span!(tracing::Level::INFO, "axum_server");
 
     let router = Router::new();

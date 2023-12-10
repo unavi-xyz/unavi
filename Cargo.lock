@@ -87,59 +87,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
-name = "aeronet"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bb7cda00652dd52e435cf7eeabd547637d9c937fc13cedbcc71c733131d55bc"
-dependencies = [
- "anyhow",
- "bevy",
- "derivative",
- "thiserror",
- "tokio",
-]
-
-[[package]]
-name = "aeronet_wt_core"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "390d1d1eb526c65ad650afe37ed9aaa347eb8a9f8e1103330ee958b496cf1421"
-dependencies = [
- "aeronet",
- "aeronet_wt_core_derive",
- "anyhow",
- "thiserror",
-]
-
-[[package]]
-name = "aeronet_wt_core_derive"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8cddbebe33ebbf2da28217909e7784c8b43c1ea4ec22f74baa564bc4e54fd804"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.39",
-]
-
-[[package]]
-name = "aeronet_wt_native"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5952199101c3398a0e108ad40f5df395d17fbd4ab9bcb0f585e5767b3a26a1f5"
-dependencies = [
- "aeronet",
- "aeronet_wt_core",
- "anyhow",
- "bevy",
- "rustc-hash",
- "thiserror",
- "tokio",
- "tracing",
- "wtransport",
-]
-
-[[package]]
 name = "ahash"
 version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2086,22 +2033,11 @@ dependencies = [
 
 [[package]]
 name = "deranged"
-version = "0.3.9"
+version = "0.3.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f32d04922c60427da6f9fef14d042d9edddef64cb9d4ce0d64d0685fbeb1fd3"
+checksum = "8eb30d70a07a3b04884d2677f06bec33509dc67ca60d92949e5535352d3191dc"
 dependencies = [
  "powerfmt",
-]
-
-[[package]]
-name = "derivative"
-version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fcc3dd5e9e9c0b295d6e1e4d811fb6f157d5ffd784b8d202fc62eac8035a770b"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
 ]
 
 [[package]]
@@ -5826,9 +5762,6 @@ checksum = "42ff0bf0c66b8238c6f3b578df37d0b7848e55df8577b3f74f92a69acceeb825"
 name = "unavi-app"
 version = "0.0.0"
 dependencies = [
- "aeronet",
- "aeronet_wt_core",
- "aeronet_wt_native",
  "anyhow",
  "bevy",
  "bevy_rapier3d",
@@ -5840,6 +5773,7 @@ dependencies = [
  "wasmtime",
  "wired-script-bindgen",
  "wtransport",
+ "xwt",
 ]
 
 [[package]]
@@ -5854,24 +5788,43 @@ dependencies = [
 name = "unavi-server"
 version = "0.0.0"
 dependencies = [
- "aeronet",
- "aeronet_wt_core",
- "aeronet_wt_native",
+ "axum",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "unavi-server-social",
+ "unavi-server-web",
+ "unavi-server-world",
+]
+
+[[package]]
+name = "unavi-server-social"
+version = "0.0.0"
+
+[[package]]
+name = "unavi-server-web"
+version = "0.0.0"
+dependencies = [
  "anyhow",
  "axum",
- "bevy",
  "leptos",
  "leptos_axum",
- "rcgen",
- "rustls",
- "rustls-native-certs",
- "time",
  "tokio",
  "tower",
  "tower-http",
  "tracing",
  "tracing-subscriber",
  "unavi-web-common",
+]
+
+[[package]]
+name = "unavi-server-world"
+version = "0.0.0"
+dependencies = [
+ "rcgen",
+ "time",
+ "tokio",
+ "tracing",
  "wtransport",
 ]
 
@@ -6542,6 +6495,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "web-sys-async-io"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8055771c3c4424de054452f7ec3251e20244ae5d9f2f5ac35c60f20724d7171"
+dependencies = [
+ "js-sys",
+ "tokio",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
+name = "web-sys-stream-utils"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "85a6c77d32f2180bf140293a8b7ec853bacf7c31813dba8126398ec5bcd67a42"
+dependencies = [
+ "js-sys",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
 name = "wgpu"
 version = "0.17.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7126,6 +7104,52 @@ name = "xml-rs"
 version = "0.8.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fcb9cbac069e033553e8bb871be2fbdffcab578eb25bd0f7c508cedc6dcd75a"
+
+[[package]]
+name = "xwt"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7c2cde69c6a11e841f30a5a41ed4ecc4d8476bab6f8f6fbb31bdd92c038e2ef"
+dependencies = [
+ "xwt-web-sys",
+ "xwt-wtransport",
+]
+
+[[package]]
+name = "xwt-core"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b55bacfe8104303e34115584798aa64fab2e8595d030b921c35848bf2ed47759"
+dependencies = [
+ "async-trait",
+ "tokio",
+]
+
+[[package]]
+name = "xwt-web-sys"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95ccd8f3c5ad3809c72bd84a45e2c15949762d147ff0c476dd9b96345389cbd6"
+dependencies = [
+ "js-sys",
+ "tokio",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "web-sys-async-io",
+ "web-sys-stream-utils",
+ "xwt-core",
+]
+
+[[package]]
+name = "xwt-wtransport"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eea214f42141c733c29eeffac1a66768ae87d8d527ea1f1148ce7969fc15415b"
+dependencies = [
+ "wtransport",
+ "xwt-core",
+]
 
 [[package]]
 name = "xxhash-rust"

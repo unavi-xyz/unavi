@@ -24,9 +24,15 @@ impl Plugin for NetworkingPlugin {
 
 const WORLD_ADDRESS: &str = "https://127.0.0.1:3000";
 
-fn open_connection(mut task_executor: AsyncTaskRunner<u32>) {
+fn open_connection(mut task_executor: AsyncTaskRunner<String>, mut started: Local<bool>) {
     match task_executor.poll() {
         AsyncTaskStatus::Idle => {
+            if *started {
+                return;
+            }
+
+            *started = true;
+
             // Start an async task!
             task_executor.start(test_connection_wrapped());
             // Closures also work:
@@ -42,10 +48,8 @@ fn open_connection(mut task_executor: AsyncTaskRunner<u32>) {
     }
 }
 
-async fn test_connection_wrapped() -> u32 {
-    let result = test_connection().await.unwrap();
-    println!("Received: {}", result);
-    5
+async fn test_connection_wrapped() -> String {
+    test_connection().await.unwrap()
 }
 
 async fn test_connection() -> Result<String, Box<dyn std::error::Error>> {

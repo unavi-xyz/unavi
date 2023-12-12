@@ -11,23 +11,32 @@ impl Plugin for NetworkingPlugin {
     }
 }
 
+const WORLD_ADDRESS: &str = "https://127.0.0.1:3000";
+
 fn open_connection(runtime: Res<runtime::AsyncRuntime>) {
     runtime.0.spawn(async move {
         #[cfg(not(target_family = "wasm"))]
-        let endpoint = xwt::current::Endpoint(
-            wtransport::Endpoint::client(
-                wtransport::ClientConfig::builder()
-                    .with_bind_address("0.0.0.0:0".parse().unwrap())
-                    .with_native_certs()
-                    .build(),
+        let endpoint = {
+            let config = wtransport::ClientConfig::builder().with_bind_default();
+
+            #[cfg(not(feature = "disable-cert-validation"))]
+            let config = config.with_native_certs();
+
+            #[cfg(feature = "disable-cert-validation")]
+            let config = config.with_no_cert_validation();
+
+            xwt::current::Endpoint(
+                wtransport::Endpoint::client(config.build())
+                    .expect("should be able to create client endpoint"),
             )
-            .expect("should be able to create client endpoint"),
-        );
+        };
 
         #[cfg(target_family = "wasm")]
         let endpoint = xwt::current::Endpoint::default();
 
-        let connection = match endpoint.0.connect("https://localhost:3000").await {
+        info!("Connecting to server");
+
+        let connection = match endpoint.0.connect(WORLD_ADDRESS).await {
             Ok(connection) => connection,
             Err(e) => {
                 error!("Failed to connect: {}", e);

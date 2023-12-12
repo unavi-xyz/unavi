@@ -5,6 +5,9 @@ license.workspace = true
 repository.workspace = true
 edition.workspace = true
 
+[features]
+disable-cert-validation = ["wtransport/dangerous-configuration"]
+
 [lints]
 workspace = true
 

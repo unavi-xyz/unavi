@@ -23,7 +23,10 @@ fn open_connection(runtime: Res<runtime::AsyncRuntime>) {
             let config = config.with_native_certs();
 
             #[cfg(feature = "disable-cert-validation")]
-            let config = config.with_no_cert_validation();
+            let config = { 
+                warn!("Certificate validation is disabled. This is not recommended for production use.");
+                config.with_no_cert_validation()
+            };
 
             xwt::current::Endpoint(
                 wtransport::Endpoint::client(config.build())

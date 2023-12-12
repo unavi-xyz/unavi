@@ -23,7 +23,7 @@ fn open_connection(runtime: Res<runtime::AsyncRuntime>) {
             let config = config.with_native_certs();
 
             #[cfg(feature = "disable-cert-validation")]
-            let config = { 
+            let config = {
                 warn!("Certificate validation is disabled. This is not recommended for production use.");
                 config.with_no_cert_validation()
             };
@@ -37,7 +37,7 @@ fn open_connection(runtime: Res<runtime::AsyncRuntime>) {
         #[cfg(target_family = "wasm")]
         let endpoint = xwt::current::Endpoint::default();
 
-        info!("Connecting to server");
+        info!("Connecting to {}", WORLD_ADDRESS);
 
         let connection = match endpoint.0.connect(WORLD_ADDRESS).await {
             Ok(connection) => connection,
@@ -47,12 +47,33 @@ fn open_connection(runtime: Res<runtime::AsyncRuntime>) {
             }
         };
 
-        let bi = match connection.open_bi().await {
-            Ok(bi) => bi,
+        info!("Connected to server");
+
+        let opening = match connection.open_bi().await {
+            Ok(opening) => opening,
             Err(e) => {
                 error!("Failed to open bi: {}", e);
                 return;
             }
         };
+
+        let (mut send, mut recv) = match opening.await {
+            Ok(bi) => bi,
+            Err(e) => {
+                error!("Failed to accept bi: {}", e);
+                return;
+            }
+        };
+
+        info!("Opened bi");
+
+        send.write_all(b"Hello, world!").await.unwrap();
+
+        let mut buf = [0; 1024];
+        let n = recv.read(&mut buf).await.unwrap().unwrap();
+
+        let msg = std::str::from_utf8(&buf[..n]).unwrap();
+
+        info!("Received: {}", msg);
     });
 }

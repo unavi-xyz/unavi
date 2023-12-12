@@ -4,7 +4,7 @@ use bevy_rapier3d::prelude::*;
 pub mod avatar;
 pub mod networking;
 pub mod player;
-pub mod scripting;
+// pub mod scripting;
 pub mod settings;
 pub mod state;
 pub mod world;
@@ -62,7 +62,7 @@ impl Plugin for UnaviPlugin {
             avatar::AvatarPlugin,
             networking::NetworkingPlugin,
             player::PlayerPlugin,
-            scripting::ScriptingPlugin,
+            // scripting::ScriptingPlugin,
             settings::SettingsPlugin,
             world::WorldPlugin,
         ))

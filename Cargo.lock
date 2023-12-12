@@ -5778,14 +5778,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "unavi-native"
-version = "0.0.0"
-dependencies = [
- "bevy",
- "unavi-app",
-]
-
-[[package]]
 name = "unavi-server"
 version = "0.0.0"
 dependencies = [

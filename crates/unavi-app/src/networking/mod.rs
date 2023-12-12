@@ -1,38 +1,51 @@
-use bevy::{
-    prelude::*,
-    tasks::{block_on, AsyncComputeTaskPool, Task},
-};
+use bevy::prelude::*;
+
+use bevy_async_task::{AsyncTaskRunner, AsyncTaskStatus};
 
 #[cfg(target_family = "wasm")]
 use xwt_core::traits::EndpointConnect;
+
+#[cfg(target_family = "wasm")]
+use xwt_core::traits::OpenBiStream;
+
+#[cfg(target_family = "wasm")]
+use xwt_core::Write;
+
+#[cfg(target_family = "wasm")]
+use xwt_core::Read;
 
 pub struct NetworkingPlugin;
 
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, open_connection)
-            .add_systems(Update, handle_tasks);
+        app.add_systems(Update, open_connection);
     }
 }
 
 const WORLD_ADDRESS: &str = "https://127.0.0.1:3000";
 
-#[derive(Component)]
-pub struct OpenConnection(Task<String>);
+fn open_connection(mut task_executor: AsyncTaskRunner<u32>) {
+    match task_executor.poll() {
+        AsyncTaskStatus::Idle => {
+            // Start an async task!
+            task_executor.start(test_connection_wrapped());
+            // Closures also work:
+            // task_executor.start(async { 5 });
+            println!("Started!");
+        }
+        AsyncTaskStatus::Pending => {
+            // Waiting...
+        }
+        AsyncTaskStatus::Finished(v) => {
+            println!("Received {v}");
+        }
+    }
+}
 
-fn open_connection(mut commands: Commands) {
-    let thread_pool = AsyncComputeTaskPool::get();
-
-    #[cfg(not(target_family = "wasm"))]
-    let task = {
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        thread_pool.spawn(async move { rt.block_on(test_connection()).unwrap() })
-    };
-
-    #[cfg(target_family = "wasm")]
-    let task = thread_pool.spawn(async move { test_connection().await.unwrap() });
-
-    commands.spawn(OpenConnection(task));
+async fn test_connection_wrapped() -> u32 {
+    let result = test_connection().await.unwrap();
+    println!("Received: {}", result);
+    5
 }
 
 async fn test_connection() -> Result<String, Box<dyn std::error::Error>> {
@@ -55,17 +68,27 @@ async fn test_connection() -> Result<String, Box<dyn std::error::Error>> {
     };
 
     #[cfg(target_family = "wasm")]
-    let endpoint = xwt::current::Endpoint::default();
+    let endpoint = xwt_web_sys::Endpoint::default();
 
     info!("Connecting to {}", WORLD_ADDRESS);
 
     let connection = endpoint.connect(WORLD_ADDRESS).await?;
+
+    #[cfg(not(target_family = "wasm"))]
     let opening = connection.open_bi().await?;
+
+    #[cfg(target_family = "wasm")]
+    let opening = connection.0.open_bi().await?;
+
+    #[cfg(not(target_family = "wasm"))]
     let (mut send, mut recv) = opening.await?;
+
+    #[cfg(target_family = "wasm")]
+    let (mut send, mut recv) = opening.0;
 
     info!("Opened bi stream");
 
-    send.write_all(b"Hello, world!").await.unwrap();
+    send.write(b"Hello, world!").await.unwrap();
 
     let mut buf = [0; 1024];
     let n = recv.read(&mut buf).await.unwrap().unwrap();
@@ -73,13 +96,4 @@ async fn test_connection() -> Result<String, Box<dyn std::error::Error>> {
     let msg = std::str::from_utf8(&buf[..n]).unwrap();
 
     Ok(String::from(msg))
-}
-
-fn handle_tasks(mut commands: Commands, mut tasks: Query<(Entity, &mut OpenConnection)>) {
-    for (entity, mut task) in tasks.iter_mut() {
-        if let Some(result) = block_on(futures_lite::future::poll_once(&mut task.0)) {
-            commands.entity(entity).remove::<OpenConnection>();
-            info!("Received message: {:?}", result);
-        }
-    }
 }

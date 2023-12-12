@@ -12,12 +12,10 @@ disable-cert-validation = ["wtransport/dangerous-configuration"]
 workspace = true
 
 [dependencies]
-anyhow = "1.0.75"
 bevy.workspace = true
+bevy-async-task = "1.3.0"
 bevy_rapier3d = { version = "0.23.0", features = ["simd-stable"] }
 bevy_vrm = "0.0.6"
-futures-lite = "2.1.0"
-serde = { version = "1.0.193", features = ["derive"] }
 tracing = "0.1.40"
 # unavi-system-bindgen = { path = "../../wasm/unavi-system/bindgen" }
 # wired-script-bindgen = { path = "../../wasm/wired-script/bindgen" }
@@ -25,19 +23,8 @@ xwt = "0.3.0"
 xwt-core = "0.2.0"
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-js-sys = "0.3.66"
-web-sys = { version = "0.3.66", features = [
-  "WebTransport",
-  "WebTransportOptions",
-  "WebTransportBidirectionalStream",
-  "WebTransportSendStream",
-  "WebTransportReceiveStream",
-  "ReadableStreamDefaultReader",
-  "WritableStreamDefaultWriter",
-  "WebTransportDatagramDuplexStream",
-] }
+xwt-web-sys = "0.3.1"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-tokio = { version = "1.34.0", features = ["full"] }
 wasmtime = { version = "15.0.0", features = ["component-model"] }
 wtransport = "0.1.8"

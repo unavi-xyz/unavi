@@ -21,8 +21,8 @@ let
     LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
   };
 in {
-  unavi_native =
-    rustPlatform.buildRustPackage (common // { pname = "unavi-native"; });
+  unavi_app =
+    rustPlatform.buildRustPackage (common // { pname = "unavi-app"; });
 
   unavi_server =
     rustPlatform.buildRustPackage (common // { pname = "unavi-server"; });

@@ -1,79 +1,85 @@
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    tasks::{block_on, AsyncComputeTaskPool, Task},
+};
 
-pub mod runtime;
+#[cfg(target_family = "wasm")]
+use xwt_core::traits::EndpointConnect;
 
 pub struct NetworkingPlugin;
 
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<runtime::AsyncRuntime>()
-            .add_systems(Startup, open_connection);
+        app.add_systems(Startup, open_connection)
+            .add_systems(Update, handle_tasks);
     }
 }
 
 const WORLD_ADDRESS: &str = "https://127.0.0.1:3000";
 
-fn open_connection(runtime: Res<runtime::AsyncRuntime>) {
-    runtime.0.spawn(async move {
-        #[cfg(not(target_family = "wasm"))]
-        let endpoint = {
-            let config = wtransport::ClientConfig::builder().with_bind_default();
+#[derive(Component)]
+pub struct OpenConnection(Task<String>);
 
-            #[cfg(not(feature = "disable-cert-validation"))]
-            let config = config.with_native_certs();
+fn open_connection(mut commands: Commands) {
+    let thread_pool = AsyncComputeTaskPool::get();
 
-            #[cfg(feature = "disable-cert-validation")]
-            let config = {
-                warn!("Certificate validation is disabled. This is not recommended for production use.");
-                config.with_no_cert_validation()
-            };
+    #[cfg(not(target_family = "wasm"))]
+    let task = {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        thread_pool.spawn(async move { rt.block_on(test_connection()).unwrap() })
+    };
 
-            xwt::current::Endpoint(
-                wtransport::Endpoint::client(config.build())
-                    .expect("should be able to create client endpoint"),
-            )
+    #[cfg(target_family = "wasm")]
+    let task = thread_pool.spawn(async move { test_connection().await.unwrap() });
+
+    commands.spawn(OpenConnection(task));
+}
+
+async fn test_connection() -> Result<String, Box<dyn std::error::Error>> {
+    #[cfg(not(target_family = "wasm"))]
+    let endpoint = {
+        let config = wtransport::ClientConfig::builder().with_bind_default();
+
+        #[cfg(not(feature = "disable-cert-validation"))]
+        let config = config.with_native_certs();
+
+        #[cfg(feature = "disable-cert-validation")]
+        let config = {
+            warn!(
+                "Certificate validation is disabled. This is not recommended for production use."
+            );
+            config.with_no_cert_validation()
         };
 
-        #[cfg(target_family = "wasm")]
-        let endpoint = xwt::current::Endpoint::default();
+        xwt::current::Endpoint(wtransport::Endpoint::client(config.build()).unwrap()).0
+    };
 
-        info!("Connecting to {}", WORLD_ADDRESS);
+    #[cfg(target_family = "wasm")]
+    let endpoint = xwt::current::Endpoint::default();
 
-        let connection = match endpoint.0.connect(WORLD_ADDRESS).await {
-            Ok(connection) => connection,
-            Err(e) => {
-                error!("Failed to connect: {}", e);
-                return;
-            }
-        };
+    info!("Connecting to {}", WORLD_ADDRESS);
 
-        info!("Connected to server");
+    let connection = endpoint.connect(WORLD_ADDRESS).await?;
+    let opening = connection.open_bi().await?;
+    let (mut send, mut recv) = opening.await?;
 
-        let opening = match connection.open_bi().await {
-            Ok(opening) => opening,
-            Err(e) => {
-                error!("Failed to open bi: {}", e);
-                return;
-            }
-        };
+    info!("Opened bi stream");
 
-        let (mut send, mut recv) = match opening.await {
-            Ok(bi) => bi,
-            Err(e) => {
-                error!("Failed to accept bi: {}", e);
-                return;
-            }
-        };
+    send.write_all(b"Hello, world!").await.unwrap();
 
-        info!("Opened bi");
+    let mut buf = [0; 1024];
+    let n = recv.read(&mut buf).await.unwrap().unwrap();
 
-        send.write_all(b"Hello, world!").await.unwrap();
+    let msg = std::str::from_utf8(&buf[..n]).unwrap();
 
-        let mut buf = [0; 1024];
-        let n = recv.read(&mut buf).await.unwrap().unwrap();
+    Ok(String::from(msg))
+}
 
-        let msg = std::str::from_utf8(&buf[..n]).unwrap();
-
-        info!("Received: {}", msg);
-    });
+fn handle_tasks(mut commands: Commands, mut tasks: Query<(Entity, &mut OpenConnection)>) {
+    for (entity, mut task) in tasks.iter_mut() {
+        if let Some(result) = block_on(futures_lite::future::poll_once(&mut task.0)) {
+            commands.entity(entity).remove::<OpenConnection>();
+            info!("Received message: {:?}", result);
+        }
+    }
 }

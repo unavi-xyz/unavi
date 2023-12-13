@@ -1,82 +1,103 @@
-use aeronet::{AsyncRuntime, ClientTransportPlugin, TryFromBytes, TryIntoBytes};
-use aeronet_wt_native::{Channels, OnChannel, WebTransportClient};
-use anyhow::Result;
 use bevy::prelude::*;
-use std::time::Duration;
-use wtransport::ClientConfig;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Channels)]
-#[channel_kind(Datagram)]
-struct AppChannel;
+use bevy_async_task::{AsyncTaskRunner, AsyncTaskStatus};
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, OnChannel)]
-#[channel_type(AppChannel)]
-#[on_channel(AppChannel)]
-struct AppMessage(String);
+#[cfg(target_family = "wasm")]
+use xwt_core::traits::EndpointConnect;
 
-impl TryFromBytes for AppMessage {
-    fn try_from_bytes(buf: &[u8]) -> Result<Self> {
-        String::from_utf8(buf.to_vec())
-            .map(AppMessage)
-            .map_err(Into::into)
-    }
-}
+#[cfg(target_family = "wasm")]
+use xwt_core::traits::OpenBiStream;
 
-impl TryIntoBytes for AppMessage {
-    fn try_into_bytes(self) -> Result<Vec<u8>> {
-        Ok(self.0.into_bytes())
-    }
-}
+#[cfg(target_family = "wasm")]
+use xwt_core::Write;
 
-type Client = WebTransportClient<AppMessage, AppMessage, AppChannel>;
+#[cfg(target_family = "wasm")]
+use xwt_core::Read;
 
 pub struct NetworkingPlugin;
 
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(ClientTransportPlugin::<_, _, Client>::default())
-            .init_resource::<AsyncRuntime>()
-            .add_event::<JoinWorld>()
-            .add_systems(Startup, setup)
-            .add_systems(Update, join_world);
+        app.add_systems(Update, open_connection);
     }
 }
 
-fn setup(mut commands: Commands, rt: Res<AsyncRuntime>) {
-    match create(&rt) {
-        Ok(client) => {
-            commands.insert_resource(client);
+const WORLD_ADDRESS: &str = "https://127.0.0.1:3000";
+
+fn open_connection(mut task_executor: AsyncTaskRunner<String>, mut started: Local<bool>) {
+    match task_executor.poll() {
+        AsyncTaskStatus::Idle => {
+            if *started {
+                return;
+            }
+
+            *started = true;
+
+            // Start an async task!
+            task_executor.start(test_connection_wrapped());
+            // Closures also work:
+            // task_executor.start(async { 5 });
+            println!("Started!");
         }
-        Err(err) => panic!("Failed to create server: {err:#}"),
+        AsyncTaskStatus::Pending => {
+            // Waiting...
+        }
+        AsyncTaskStatus::Finished(v) => {
+            println!("Received {v}");
+        }
     }
 }
 
-fn create(rt: &AsyncRuntime) -> Result<Client> {
-    let config = ClientConfig::builder()
-        .with_bind_default()
-        .with_no_cert_validation()
-        .keep_alive_interval(Some(Duration::from_secs(5)))
-        .build();
-
-    let (front, back) = aeronet_wt_native::create_client(config);
-
-    rt.0.spawn(async move {
-        back.start().await.unwrap();
-    });
-
-    Ok(front)
+async fn test_connection_wrapped() -> String {
+    test_connection().await.unwrap()
 }
 
-#[derive(Event)]
-pub struct JoinWorld {
-    pub world_id: u32,
-}
+async fn test_connection() -> Result<String, Box<dyn std::error::Error>> {
+    #[cfg(not(target_family = "wasm"))]
+    let endpoint = {
+        let config = wtransport::ClientConfig::builder().with_bind_default();
 
-fn join_world(mut events: EventReader<JoinWorld>, client: Res<Client>) {
-    for event in events.read() {
-        info!("Joining world {}", event.world_id);
+        #[cfg(not(feature = "disable-cert-validation"))]
+        let config = config.with_native_certs();
 
-        let url = "https://localhost:4433";
-        client.connect(url);
-    }
+        #[cfg(feature = "disable-cert-validation")]
+        let config = {
+            warn!(
+                "Certificate validation is disabled. This is not recommended for production use."
+            );
+            config.with_no_cert_validation()
+        };
+
+        xwt::current::Endpoint(wtransport::Endpoint::client(config.build()).unwrap()).0
+    };
+
+    #[cfg(target_family = "wasm")]
+    let endpoint = xwt_web_sys::Endpoint::default();
+
+    info!("Connecting to {}", WORLD_ADDRESS);
+
+    let connection = endpoint.connect(WORLD_ADDRESS).await?;
+
+    #[cfg(not(target_family = "wasm"))]
+    let opening = connection.open_bi().await?;
+
+    #[cfg(target_family = "wasm")]
+    let opening = connection.0.open_bi().await?;
+
+    #[cfg(not(target_family = "wasm"))]
+    let (mut send, mut recv) = opening.await?;
+
+    #[cfg(target_family = "wasm")]
+    let (mut send, mut recv) = opening.0;
+
+    info!("Opened bi stream");
+
+    send.write(b"Hello, world!").await.unwrap();
+
+    let mut buf = [0; 1024];
+    let n = recv.read(&mut buf).await.unwrap().unwrap();
+
+    let msg = std::str::from_utf8(&buf[..n]).unwrap();
+
+    Ok(String::from(msg))
 }

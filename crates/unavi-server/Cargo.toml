@@ -9,44 +9,24 @@ edition.workspace = true
 workspace = true
 
 [features]
-default = ["web", "world"]
+default = ["social", "web", "world"]
+social = [
+  "dep:unavi-server-social",
+]
 web = [
-  "dep:leptos",
-  "dep:leptos_axum",
-  "dep:unavi-web-common"
+  "dep:unavi-server-web",
+  "dep:axum",
 ]
 world = [
-  "dep:aeronet",
-  "dep:aeronet_wt_core",
-  "dep:aeronet_wt_native",
-  "dep:bevy",
-  "dep:rcgen",
-  "dep:rustls",
-  "dep:time",
-  "dep:wtransport"
+  "dep:unavi-server-world",
 ]
 
 [dependencies]
-anyhow = "1.0.75"
-axum = "0.6.20"
-tokio = { version = "1.33.0", features = ["full"] }
-tower = "0.4.13"
-tower-http = { version = "0.4.4", features = ["fs"] }
+tokio = { version = "1.34.0", features = ["full"] }
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 
-leptos = { version = "0.5.1", features = ["ssr"], optional = true }
-leptos_axum = { version = "0.5.1", optional = true }
-unavi-web-common= { path = "../unavi-web-common", features = ["ssr"], optional = true }
-
-aeronet = { version = "0.3.0",  features = ["bevy"], optional = true }
-aeronet_wt_core = { version = "0.3.0", optional = true }
-aeronet_wt_native = { version = "0.3.0", features = ["bevy"], optional = true } 
-bevy = { workspace = true, optional = true }
-rcgen = { version = "0.11.3", optional = true }
-rustls = { version = "0.21.9", optional = true }
-time = { version = "0.3.30", optional = true }
-wtransport = { version = "0.1.8", optional = true }
-
-[dev-dependencies]
-rustls-native-certs = "0.6.3"
+axum = { version = "0.6.20", optional = true }
+unavi-server-social = { path = "../unavi-server-social", optional = true }
+unavi-server-web = { path = "../unavi-server-web", optional = true }
+unavi-server-world = { path = "../unavi-server-world", optional = true }

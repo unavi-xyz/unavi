@@ -1,0 +1,18 @@
+[package]
+name = "unavi-server-web"
+version.workspace = true
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+[dependencies]
+anyhow = "1.0.75"
+axum = "0.6.20"
+leptos = { version = "0.5.1", features = ["ssr"] }
+leptos_axum = "0.5.1"
+tokio = { version = "1.33.0", features = ["full"] }
+tower = "0.4.13"
+tower-http = { version = "0.4.4", features = ["fs"] }
+tracing = "0.1.40"
+tracing-subscriber = "0.3.18"
+unavi-web-common= { path = "../unavi-web-common", features = ["ssr"] }

@@ -52,10 +52,10 @@ Enter a development shell:
 nix develop
 ```
 
-From there you can run the native client with something like:
+From there you can run the app with something like:
 
 ```bash
-cargo run -p unavi-native --features bevy/dynamic_linking
+cargo run -p unavi-app --features bevy/dynamic_linking
 ```
 
 Or run the web client using `cargo-leptos`:

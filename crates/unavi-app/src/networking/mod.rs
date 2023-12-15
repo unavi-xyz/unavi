@@ -16,6 +16,6 @@ pub struct JoinWorld {
     pub did: String,
 }
 
-fn join_world(mut commands: Commands, mut events: EventReader<JoinWorld>) {
-    for event in events.read() {}
+fn join_world(_commands: Commands, mut events: EventReader<JoinWorld>) {
+    for _event in events.read() {}
 }

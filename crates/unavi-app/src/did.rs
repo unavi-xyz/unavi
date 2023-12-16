@@ -5,13 +5,15 @@ pub struct DidPlugin;
 
 impl Plugin for DidPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<UserDID>()
-            .add_systems(Startup, set_user_did);
+        app.add_systems(Startup, set_user_did);
     }
 }
 
-#[derive(Default, Resource)]
-pub struct UserDID(pub String);
+#[derive(Resource)]
+pub struct UserDID {
+    pub did_key: String,
+    key: didkit::JWK,
+}
 
 fn set_user_did(mut commands: Commands) {
     let key = match didkit::JWK::generate_ed25519() {
@@ -24,7 +26,7 @@ fn set_user_did(mut commands: Commands) {
 
     let source = didkit::Source::Key(&key);
 
-    let did = match did_method_key::DIDKey.generate(&source) {
+    let did_key = match did_method_key::DIDKey.generate(&source) {
         Some(did) => did,
         None => {
             error!("Failed to generate DID");
@@ -32,7 +34,7 @@ fn set_user_did(mut commands: Commands) {
         }
     };
 
-    info!("User DID: {}", did);
+    info!("User DID: {}", did_key);
 
-    commands.insert_resource(UserDID(did));
+    commands.insert_resource(UserDID { did_key, key });
 }

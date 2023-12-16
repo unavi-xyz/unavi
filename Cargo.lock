@@ -8822,6 +8822,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-server-dwn"
+version = "0.0.0"
+dependencies = [
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "unavi-server-social"
 version = "0.0.0"
 

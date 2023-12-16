@@ -10,8 +10,8 @@ Each feature can be enabled or disabled, allowing for flexibility in deployment.
 For example, I may want to run a lightweight server that only hosts my identity, and disable the other features.
 Or I may want to split up my server and run worlds on a separate machine.
 
-| Feature | Description |
-| ------- | ----------- |
-| social  | Manages a user's identity, federating social interactions with other servers. |
-| web     | Hosts a web client. |
-| world   | Handles world networking, connecting players within a world together. |
+| Feature   | Description |
+| --------- | ----------- |
+| `social`  | Enables the [social protocol](https://github.com/unavi-xyz/wired-protocol/tree/main/social). |
+| `web`     | Hosts a web client. |
+| `world`   | Enables the [world protocol](https://github.com/unavi-xyz/wired-protocol/tree/main/world). |

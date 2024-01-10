@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use didkit::DIDMethod;
+use didkit::DID_METHODS;
 
 pub struct DidPlugin;
 
@@ -26,7 +26,7 @@ fn set_user_did(mut commands: Commands) {
 
     let source = didkit::Source::Key(&key);
 
-    let did_key = match did_method_key::DIDKey.generate(&source) {
+    let did = match DID_METHODS.generate(&source) {
         Some(did) => did,
         None => {
             error!("Failed to generate DID");
@@ -34,7 +34,7 @@ fn set_user_did(mut commands: Commands) {
         }
     };
 
-    info!("User DID: {}", did_key);
+    info!("User DID: {}", did);
 
-    commands.insert_resource(UserDID { did_key, key });
+    commands.insert_resource(UserDID { did_key: did, key });
 }

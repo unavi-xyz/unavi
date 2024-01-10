@@ -1,7 +1,7 @@
 <div align="center">
   <img src="./assets/images/block-logo.png" alt="UNAVI Logo" height="200" />
   <h1>UNAVI</h1>
-  <strong>An open source VR social platform.</strong>
+  <strong>An open-source VR social platform.</strong>
 </div>
 
 <br />
@@ -23,7 +23,7 @@
 
 ## ◻️ About
 
-UNAVI is an open source VR social platform, built on [The Wired 🔌](https://github.com/unavi-xyz/wired-protocol).
+UNAVI is an open-source VR social platform, built on [The Wired 🔌](https://github.com/unavi-xyz/wired-protocol).
 Anyone can run their own servers, modify their client, and extend the underlying protocol to add new features.
 
 UNAVI is almost entirely written in Rust 🦀.

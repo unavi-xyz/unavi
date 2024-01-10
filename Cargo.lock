@@ -8798,7 +8798,6 @@ dependencies = [
  "bevy-async-task",
  "bevy_rapier3d",
  "bevy_vrm",
- "did-method-key",
  "didkit",
  "tracing",
  "wasmtime",

@@ -36,6 +36,7 @@
         ]);
 
         native_build_inputs = with pkgs; [
+          binaryen
           cargo-auditable
           clang
           cmake
@@ -52,6 +53,21 @@
         };
       in rec {
         packages = code // {
+          app = pkgs.symlinkJoin {
+            name = "app";
+            paths = with code; [ app ];
+          };
+
+          server = pkgs.symlinkJoin {
+            name = "server";
+            paths = with code; [ server ];
+          };
+
+          web = pkgs.symlinkJoin {
+            name = "web";
+            paths = with code; [ web ];
+          };
+
           all = pkgs.symlinkJoin {
             name = "all";
             paths = with code; [ app server web ];

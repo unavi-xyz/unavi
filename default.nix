@@ -21,17 +21,24 @@ let
     LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
   };
 in {
-  app = rustPlatform.buildRustPackage (common // { pname = "unavi-app"; });
+  app = rustPlatform.buildRustPackage (common // {
+    pname = "unavi-app";
+    buildAndTestSubdir = "crates/unavi-app";
+  });
 
-  server =
-    rustPlatform.buildRustPackage (common // { pname = "unavi-server"; });
+  server = rustPlatform.buildRustPackage (common // {
+    pname = "unavi-server";
+    buildAndTestSubdir = "crates/unavi-server";
+  });
 
   web = rustPlatform.buildRustPackage (common // {
     pname = "unavi-web";
+    buildAndTestSubdir = "crates/unavi-app";
+    cargoBuildFlags = "--target wasm32-unknown-unknown";
     buildPhase = "trunk build --release";
     installPhase = ''
       mkdir -p $out/web
-      cp -r ./dist/* $out/web
+      cp -r ./crates/unavi-server-web/dist/* $out/web
     '';
     postInstall = ''
       cp -r ./assets $out/bin

@@ -8,7 +8,7 @@ pub fn generate_certificate() -> wtransport::tls::Certificate {
     let cert = ca.serialize_der().unwrap();
     let key = ca.serialize_private_key_der();
 
-    wtransport::tls::Certificate::new(vec![cert], key)
+    wtransport::tls::Certificate::new(vec![cert], key).expect("invalid certificate")
 }
 
 fn new_ca() -> rcgen::Certificate {

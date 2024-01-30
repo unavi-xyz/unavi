@@ -1,0 +1,2 @@
+[build]
+target = "crates/unavi-server-web/index.html"

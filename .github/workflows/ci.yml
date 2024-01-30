@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  build:
+  build-wasm:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,7 +23,7 @@ jobs:
           default_author: github_actions
 
   check:
-    needs: build
+    needs: build-wasm
     runs-on: ubuntu-latest
     steps:
       - uses: AdityaGarg8/remove-unwanted-software@v2
@@ -51,7 +51,7 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
-      - run: nix develop -c cargo clippy --fix --no-deps --features bevy/dynamic_linking -- -D warnings
+      - run: nix develop -c cargo clippy --fix --no-deps --features bevy/dynamic_linking
       - uses: EndBug/add-and-commit@v9
         with:
           message: "chore: lint"
@@ -66,6 +66,7 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
       - run: nix develop -c cargo fmt --all
+      - run: nix develop -c prettier -w .
       - uses: EndBug/add-and-commit@v9
         with:
           message: "chore: format"

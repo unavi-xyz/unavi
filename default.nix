@@ -21,20 +21,20 @@ let
     LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
   };
 in {
-  unavi_app =
-    rustPlatform.buildRustPackage (common // { pname = "unavi-app"; });
+  app = rustPlatform.buildRustPackage (common // { pname = "unavi-app"; });
 
-  unavi_server =
+  server =
     rustPlatform.buildRustPackage (common // { pname = "unavi-server"; });
 
-  unavi_web = rustPlatform.buildRustPackage (common // {
+  web = rustPlatform.buildRustPackage (common // {
     pname = "unavi-web";
-    buildPhase = ''
-      cargo leptos build --release
-    '';
+    buildPhase = "trunk build --release";
     installPhase = ''
       mkdir -p $out/web
-      cp -r target $out/web
+      cp -r ./dist/* $out/web
+    '';
+    postInstall = ''
+      cp -r ./assets $out/bin
     '';
   });
 }

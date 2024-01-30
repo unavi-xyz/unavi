@@ -38,8 +38,6 @@ Come join the [Discord](https://discord.gg/cazUfCCgHJ) and say hi!
 
 ### Build
 
-Build all crates in release mode:
-
 ```bash
 nix build
 ```
@@ -52,14 +50,14 @@ Enter a development shell:
 nix develop
 ```
 
-From there you can run the app with something like:
+From there you can run the native app with:
 
 ```bash
 cargo run -p unavi-app --features bevy/dynamic_linking
 ```
 
-Or run the web client using `cargo-leptos`:
+Or run the web app using `trunk`:
 
 ```bash
-cargo leptos watch
+trunk serve
 ```

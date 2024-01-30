@@ -44,6 +44,7 @@
           protobuf
           trunk
           wasm-bindgen-cli
+          wasm-tools
         ];
 
         code = pkgs.callPackage ./. {

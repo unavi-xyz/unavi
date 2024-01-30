@@ -24,7 +24,6 @@
           });
 
         build_inputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [
-          # Bevy
           alsa-lib.dev
           libxkbcommon
           udev
@@ -40,15 +39,11 @@
           cargo-auditable
           clang
           cmake
+          nodePackages.prettier
           pkg-config
           protobuf
+          trunk
           wasm-bindgen-cli
-          wasm-tools
-
-          # Leptos
-          binaryen
-          cargo-leptos
-          openssl
         ];
 
         code = pkgs.callPackage ./. {
@@ -58,7 +53,7 @@
         packages = code // {
           all = pkgs.symlinkJoin {
             name = "all";
-            paths = with code; [ unavi_app unavi_server unavi_web ];
+            paths = with code; [ app server web ];
           };
 
           default = packages.all;
@@ -69,6 +64,7 @@
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs;
             [ cargo-watch clang rust-analyzer rustBin ] ++ build_inputs;
+
           nativeBuildInputs = native_build_inputs;
 
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath build_inputs;

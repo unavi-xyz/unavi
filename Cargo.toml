@@ -18,14 +18,6 @@ type_complexity = "allow"
 [workspace.dependencies]
 bevy = "0.12.1"
 
-[[workspace.metadata.leptos]]
-name = "unavi"
-bin-package = "unavi-server-web"
-bin-default-features = true
-lib-package = "unavi-web-client"
-lib-profile-release = "wasm-release"
-style-file = "crates/unavi-web-common/style.css"
-
 [profile.dev]
 opt-level = 1
 
@@ -37,4 +29,5 @@ lto = true
 
 [profile.wasm-release]
 inherits = "release"
-opt-level = 'z'
+codegen-units = 1
+opt-level = "z"

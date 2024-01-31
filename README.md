@@ -38,16 +38,22 @@ Come join the [Discord](https://discord.gg/cazUfCCgHJ) and say hi!
 
 ### Build
 
-Build the native app with:
+#### Native App
 
 ```bash
 nix build .#app
 ```
 
-Or the server with:
+#### Server
 
 ```bash
 nix build .#server
+```
+
+#### Web App
+
+```bash
+nix build .#web
 ```
 
 ### Develop

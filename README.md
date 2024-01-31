@@ -38,25 +38,33 @@ Come join the [Discord](https://discord.gg/cazUfCCgHJ) and say hi!
 
 ### Build
 
+Build the native app with:
+
 ```bash
-nix build
+nix build .#app
+```
+
+Or the server with:
+
+```bash
+nix build .#server
 ```
 
 ### Develop
 
-Enter a development shell:
+First enter a development shell:
 
 ```bash
 nix develop
 ```
 
-From there you can run the native app with:
+You can then run crates using cargo:
 
 ```bash
 cargo run -p unavi-app --features bevy/dynamic_linking
 ```
 
-Or run the web app using trunk:
+Or serve the web app using trunk:
 
 ```bash
 trunk serve

@@ -5,11 +5,17 @@ use bevy_rapier3d::prelude::{Real, *};
 use unavi_app::UnaviPlugin;
 
 fn main() {
-    let mut unavi_plugin = UnaviPlugin::debug();
-    unavi_plugin.assets_dir = "../../assets".to_string();
-
     unavi_app::App::new()
-        .add_plugins(unavi_plugin)
+        .add_plugins((
+            DefaultPlugins.set(AssetPlugin {
+                file_path: "../../assets".to_string(),
+                ..default()
+            }),
+            UnaviPlugin {
+                debug_physics: true,
+                ..default()
+            },
+        ))
         .add_systems(Startup, setup_world)
         .run();
 }

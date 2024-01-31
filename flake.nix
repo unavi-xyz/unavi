@@ -74,7 +74,7 @@
 
           all = pkgs.symlinkJoin {
             name = "all";
-            paths = with code; [ app server web ];
+            paths = with code; [ unavi-app unavi-server web ];
           };
 
           default = packages.all;

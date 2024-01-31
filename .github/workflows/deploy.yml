@@ -23,5 +23,6 @@ jobs:
       - run: nix build .#web
       - uses: s0/git-publish-subdir-action@v2.6.0
         env:
+          REPO: self
           BRANCH: deployment
           FOLDER: result

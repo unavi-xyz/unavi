@@ -21,14 +21,14 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
       - run: nix build .#web
-      - run: cp -rL result/web dist
+      - run: cp -rL result/web web
       - uses: s0/git-publish-subdir-action@v2.6.0
         env:
           BRANCH: deployment
           COMMIT_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
           COMMIT_NAME: "github-actions[bot]"
-          FOLDER: dist
+          FOLDER: web
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: self
           SQUASH_HISTORY: true
-          TARGET_DIR: dist
+          TARGET_DIR: web

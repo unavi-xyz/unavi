@@ -1,0 +1,31 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "deployment"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: Swatinem/rust-cache@v2
+      - run: nix build .#web
+      - run: |
+          files=$(find crates/unavi-server/web/dist -type f)
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git checkout ${GITHUB_REF##*/} -- $files
+          git add -A
+          git diff-index --quiet HEAD ||  git commit -am "deploy"
+          git push origin deployment

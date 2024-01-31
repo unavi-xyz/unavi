@@ -22,7 +22,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: nix build .#web
       - run: |
-          files=$(find crates/unavi-server-web/dist -type f)
+          files=$(find result -type f)
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
           git checkout ${GITHUB_REF##*/} -- $files

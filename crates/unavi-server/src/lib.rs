@@ -20,7 +20,7 @@ impl Default for ServerOptions {
 }
 
 pub async fn start(opts: ServerOptions) -> Result<(), Box<dyn std::error::Error>> {
-    #[cfg(feature = "web")]
+    #[cfg(feature = "axum")]
     {
         let opts = opts.clone();
         tokio::spawn(async move {

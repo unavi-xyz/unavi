@@ -1,0 +1,12 @@
+[package]
+name = "unavi-server-auth"
+version.workspace = true
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+[dependencies]
+axum = "0.6.20"
+tokio = { version = "1.33.0", features = ["full"] }
+tracing = "0.1.40"
+tracing-subscriber = "0.3.18"

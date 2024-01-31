@@ -31,3 +31,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: self
           SQUASH_HISTORY: true
+          TARGET_DIR: dist

@@ -56,7 +56,7 @@ From there you can run the native app with:
 cargo run -p unavi-app --features bevy/dynamic_linking
 ```
 
-Or run the web app using `trunk`:
+Or run the web app using trunk:
 
 ```bash
 trunk serve

@@ -25,6 +25,9 @@ in {
   unavi-app = rustPlatform.buildRustPackage (common // {
     pname = "unavi-app";
     buildAndTestSubdir = "crates/unavi-app";
+    postInstall = ''
+      cp -r ./assets $out/bin
+    '';
   });
 
   unavi-server = rustPlatform.buildRustPackage (common // {
@@ -54,13 +57,11 @@ in {
     pname = "web";
     buildAndTestSubdir = "crates/unavi-app";
     cargoBuildFlags = "--target wasm32-unknown-unknown";
-    buildPhase = "trunk build --release";
+    buildPhase = "trunk build";
     installPhase = ''
       mkdir -p $out/web
-      cp -r ./crates/unavi-server-web/dist/* $out/web
-    '';
-    postInstall = ''
-      cp -r ./assets $out/bin
+      cp -r ./crates/unavi-server-web/dist/* $out
+      cp -r ./assets $out
     '';
   });
 }

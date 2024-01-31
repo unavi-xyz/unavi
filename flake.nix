@@ -74,7 +74,7 @@
 
           all = pkgs.symlinkJoin {
             name = "all";
-            paths = with code; [ app server wasm web ];
+            paths = with code; [ app server web ];
           };
 
           default = packages.all;

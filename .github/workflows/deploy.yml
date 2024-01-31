@@ -25,4 +25,5 @@ jobs:
         env:
           REPO: self
           BRANCH: deployment
-          FOLDER: result
+          FOLDER: result/web
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

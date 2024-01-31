@@ -25,8 +25,8 @@ jobs:
       - uses: s0/git-publish-subdir-action@v2.6.0
         env:
           BRANCH: deployment
-          COMMIT_EMAIL: "action@github.com"
-          COMMIT_NAME: "GitHub Action"
+          COMMIT_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
+          COMMIT_NAME: "github-actions[bot]"
           FOLDER: dist
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: self

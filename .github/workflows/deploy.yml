@@ -21,6 +21,7 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
       - run: nix build .#web
+      - run: find . ! -name result -delete
       - run: cp -rL result/web web
       - uses: s0/git-publish-subdir-action@v2.6.0
         env:

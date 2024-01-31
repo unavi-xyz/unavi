@@ -1,6 +1,6 @@
 # unavi-server-web
 
-Statically serves a web build of the app.
+Static file server hosting a web build of the app.
 
 ## Usage
 

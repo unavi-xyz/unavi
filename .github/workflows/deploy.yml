@@ -21,9 +21,13 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
       - run: nix build .#web
+      - run: cp -r result/web dist
       - uses: s0/git-publish-subdir-action@v2.6.0
         env:
-          REPO: self
           BRANCH: deployment
-          FOLDER: result/web
+          COMMIT_EMAIL: "action@github.com"
+          COMMIT_NAME: "GitHub Action"
+          FOLDER: dist
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: self
+          SQUASH_HISTORY: true

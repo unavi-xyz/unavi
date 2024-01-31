@@ -1,7 +1,8 @@
 { lib, pkgs, system, build_inputs, native_build_inputs, makeRustPlatform }:
 let
-  rustBin = pkgs.rust-bin.selectLatestNightlyWith (toolchain:
-    toolchain.default.override { targets = [ "wasm32-unknown-unknown" ]; });
+  rustBin = pkgs.rust-bin.stable.latest.default.override {
+    targets = [ "wasm32-unknown-unknown" ];
+  };
 
   rustPlatform = makeRustPlatform {
     cargo = rustBin;
@@ -21,18 +22,36 @@ let
     LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
   };
 in {
-  app = rustPlatform.buildRustPackage (common // {
+  unavi-app = rustPlatform.buildRustPackage (common // {
     pname = "unavi-app";
     buildAndTestSubdir = "crates/unavi-app";
   });
 
-  server = rustPlatform.buildRustPackage (common // {
+  unavi-server = rustPlatform.buildRustPackage (common // {
     pname = "unavi-server";
     buildAndTestSubdir = "crates/unavi-server";
   });
 
+  unavi-system = rustPlatform.buildRustPackage (common // {
+    pname = "unavi-system";
+    buildAndTestSubdir = "wasm/unavi-system";
+    cargoBuildFlags = "--target wasm32-unknown-unknown";
+  });
+
+  unavi-ui = rustPlatform.buildRustPackage (common // {
+    pname = "unavi-ui";
+    buildAndTestSubdir = "wasm/unavi-ui";
+    cargoBuildFlags = "--target wasm32-unknown-unknown";
+  });
+
+  wired-script = rustPlatform.buildRustPackage (common // {
+    pname = "wired-script";
+    buildAndTestSubdir = "wasm/wired-script";
+    cargoBuildFlags = "--target wasm32-unknown-unknown";
+  });
+
   web = rustPlatform.buildRustPackage (common // {
-    pname = "unavi-web";
+    pname = "web";
     buildAndTestSubdir = "crates/unavi-app";
     cargoBuildFlags = "--target wasm32-unknown-unknown";
     buildPhase = "trunk build --release";

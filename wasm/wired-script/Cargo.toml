@@ -1,8 +1,5 @@
-cargo-features = ["per-package-target"]
-
 [package]
 name = "wired-script"
-default-target = "wasm32-unknown-unknown"
 version.workspace = true
 license.workspace = true
 repository.workspace = true

@@ -18,10 +18,9 @@
         overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs { inherit system overlays; };
 
-        rustBin = pkgs.rust-bin.selectLatestNightlyWith (toolchain:
-          toolchain.default.override {
-            targets = [ "wasm32-unknown-unknown" ];
-          });
+        rustBin = pkgs.rust-bin.stable.latest.default.override {
+          targets = [ "wasm32-unknown-unknown" ];
+        };
 
         build_inputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [
           alsa-lib.dev
@@ -55,12 +54,17 @@
         packages = code // {
           app = pkgs.symlinkJoin {
             name = "app";
-            paths = with code; [ app ];
+            paths = with code; [ unavi-app ];
           };
 
           server = pkgs.symlinkJoin {
             name = "server";
-            paths = with code; [ server ];
+            paths = with code; [ unavi-server ];
+          };
+
+          wasm = pkgs.symlinkJoin {
+            name = "wasm";
+            paths = with code; [ unavi-system unavi-ui wired-script ];
           };
 
           web = pkgs.symlinkJoin {
@@ -70,7 +74,7 @@
 
           all = pkgs.symlinkJoin {
             name = "all";
-            paths = with code; [ app server web ];
+            paths = with code; [ app server wasm web ];
           };
 
           default = packages.all;

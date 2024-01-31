@@ -9,13 +9,17 @@ edition.workspace = true
 workspace = true
 
 [features]
-default = ["social", "web", "world"]
-social = [
-  "dep:unavi-server-social",
+default = ["auth", "web", "world"]
+axum = [
+  "dep:axum",
+]
+auth = [
+  "axum",
+  "dep:unavi-server-auth",
 ]
 web = [
+  "axum",
   "dep:unavi-server-web",
-  "dep:axum",
 ]
 world = [
   "dep:unavi-server-world",
@@ -27,6 +31,6 @@ tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 
 axum = { version = "0.6.20", optional = true }
-unavi-server-social = { path = "../unavi-server-social", optional = true }
+unavi-server-auth = { path = "../unavi-server-auth", optional = true }
 unavi-server-web = { path = "../unavi-server-web", optional = true }
 unavi-server-world = { path = "../unavi-server-world", optional = true }

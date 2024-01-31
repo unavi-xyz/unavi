@@ -26,8 +26,7 @@ in {
     pname = "unavi-app";
     buildAndTestSubdir = "crates/unavi-app";
     postInstall = ''
-      cp -r ./assets $out
-      ln -s $out/assets $out/bin
+      cp -r ./assets $out/bin
     '';
   });
 
@@ -62,10 +61,6 @@ in {
     installPhase = ''
       mkdir -p $out/web
       cp -r ./crates/unavi-server-web/dist/* $out/web
-    '';
-    postInstall = ''
-      cp -r ./assets $out
-      ln -s $out/assets $out/web
     '';
   });
 }

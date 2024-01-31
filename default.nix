@@ -60,7 +60,7 @@ in {
     buildPhase = "trunk build";
     installPhase = ''
       mkdir -p $out/web
-      cp -r ./crates/unavi-server-web/dist/* $out/web
+      cp -r ./crates/unavi-app/dist/* $out/web
     '';
   });
 }

@@ -1,5 +1,5 @@
 [build]
-target = "crates/unavi-server-web/index.html"
+target = "crates/unavi-app/index.html"
 
 [tools]
 wasm_bindgen = "0.2.88"

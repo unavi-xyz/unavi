@@ -9381,9 +9381,6 @@ dependencies = [
 [[package]]
 name = "wired-script"
 version = "0.0.0"
-dependencies = [
- "wit-bindgen",
-]
 
 [[package]]
 name = "wired-script-bindgen"

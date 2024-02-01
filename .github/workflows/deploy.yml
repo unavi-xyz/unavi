@@ -22,7 +22,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: nix build .#web
       - run: cp -rL result/web www
-      - run: ls -A | grep -v www | xargs rm -r
       - uses: kayhhh/git-publish-subdir-action@develop
         env:
           BRANCH: build/web-app

@@ -22,7 +22,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: nix build .#web
       - run: cp -rL result/web web
-      - run: find . ! -name web -delete
+      - run: ls -A | grep -v web | xargs rm -r
       - uses: s0/git-publish-subdir-action@v2.6.0
         env:
           BRANCH: build/web-app

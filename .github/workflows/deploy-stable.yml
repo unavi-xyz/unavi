@@ -19,7 +19,7 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
       - run: nix build .#web
-      - run: cp -rL result/web www
+      - run: cp -rL result www
       - uses: s0/git-publish-subdir-action@develop
         env:
           BRANCH: stable/web-app

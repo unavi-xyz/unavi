@@ -22,6 +22,7 @@
           inherit system;
           overlays = [ (import rust-overlay) ];
         };
+        inherit (pkgs) lib;
 
         rustToolchain =
           pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
@@ -78,6 +79,19 @@
           '';
         });
 
+        unavi-web = craneLib.buildPackage (commonArgs // {
+          inherit cargoArtifacts;
+          pname = "unavi-web";
+          cargoExtraArgs = "-p unavi-app --target wasm32-unknown-unknown";
+          src = lib.cleanSourceWith {
+            src = ./.;
+            filter = path: type:
+              (lib.hasSuffix ".html" path)
+              || (lib.hasInfix "/crates/unavi-app/public/" path)
+              || (craneLib.filterCargoSources path type);
+          };
+        });
+
         unavi-server = craneLib.buildPackage (commonArgs // {
           inherit cargoArtifacts;
           pname = "unavi-server";
@@ -88,14 +102,20 @@
       in {
         apps = rec {
           app = flake-utils.lib.mkApp {
-            drv = pkgs.writeScriptBin "unavi-app" ''
+            drv = pkgs.writeScriptBin "app" ''
               ${unavi-app}/bin/unavi-app
             '';
           };
 
           server = flake-utils.lib.mkApp {
-            drv = pkgs.writeScriptBin "unavi-server" ''
+            drv = pkgs.writeScriptBin "server" ''
               ${unavi-server}/bin/unavi-server
+            '';
+          };
+
+          web = flake-utils.lib.mkApp {
+            drv = pkgs.writeShellScriptBin "web" ''
+              ${pkgs.python3Minimal}/bin/python3 -m http.server --directory ${unavi-web} 3000
             '';
           };
 
@@ -105,11 +125,11 @@
         packages = rec {
           linux-app = pkgs.symlinkJoin {
             name = "linux-app";
-            paths = with linux; [ unavi-app ];
+            paths = [ linux.unavi-app ];
           };
           linux-server = pkgs.symlinkJoin {
             name = "linux-server";
-            paths = with linux; [ unavi-server ];
+            paths = [ linux.unavi-server ];
           };
           linux = pkgs.symlinkJoin {
             name = "linux";
@@ -118,9 +138,10 @@
 
           app = unavi-app;
           server = unavi-server;
+          web = unavi-web;
           default = pkgs.symlinkJoin {
             name = "all";
-            paths = [ app server ];
+            paths = [ app server web ];
           };
         };
 

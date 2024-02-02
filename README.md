@@ -36,28 +36,6 @@ Come join the [Discord](https://discord.gg/cazUfCCgHJ) and say hi!
 
 ## ❄️ Development (with Nix)
 
-### Build
-
-#### Native App
-
-```bash
-nix build .#app
-```
-
-#### Server
-
-```bash
-nix build .#server
-```
-
-#### Web App
-
-```bash
-nix build .#web
-```
-
-### Develop
-
 First enter a development shell:
 
 ```bash

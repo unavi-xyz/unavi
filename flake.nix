@@ -64,8 +64,8 @@
         cargoArtifacts =
           craneLib.buildDepsOnly (commonArgs // { pname = "deps"; });
 
-        cargoArtifactsNoTest = craneLib.buildDepsOnly (commonArgs // {
-          pname = "deps-no-test";
+        cargoArtifactsWasm = craneLib.buildDepsOnly (commonArgs // {
+          pname = "deps-wasm";
           doCheck = false;
         });
 
@@ -95,15 +95,14 @@
         });
 
         unavi-web = craneLib.buildTrunkPackage (commonArgs // {
-          inherit cargoArtifactsNoTest;
+          inherit cargoArtifactsWasm;
           pname = "unavi-web";
           cargoExtraArgs = "-p unavi-app --target wasm32-unknown-unknown";
           trunkIndexPath = "crates/unavi-app/index.html";
           src = lib.cleanSourceWith {
             src = ./.;
             filter = path: type:
-              (lib.hasSuffix ".html" path)
-              || (lib.hasInfix "/crates/unavi-app/assets/" path)
+              (lib.hasSuffix ".html" path) || (lib.hasInfix "/assets/" path)
               || (lib.hasInfix "/crates/unavi-app/public/" path)
               || (craneLib.filterCargoSources path type);
           };

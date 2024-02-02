@@ -15,7 +15,7 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
-      - run: nix develop -c cargo clippy --fix --no-deps --features bevy/dynamic_linking
+      - run: nix develop -c cargo clippy --fix --no-deps
       - uses: EndBug/add-and-commit@v9
         with:
           message: "chore: lint"

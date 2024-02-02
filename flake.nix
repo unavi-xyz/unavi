@@ -84,7 +84,7 @@
 
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs;
-            [ cargo-watch clang rust-analyzer rustBin ] ++ build_inputs;
+            [ cargo-watch clang rust-analyzer rustBin zip ] ++ build_inputs;
 
           nativeBuildInputs = native_build_inputs;
 

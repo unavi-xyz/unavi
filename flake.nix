@@ -32,7 +32,13 @@
         craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
         commonArgs = {
-          src = craneLib.cleanCargoSource (craneLib.path ./.);
+          src = lib.cleanSourceWith {
+            src = ./.;
+            filter = path: type:
+              (lib.hasInfix "/assets/" path)
+              || (lib.hasInfix "/wired-protocol/" path)
+              || (craneLib.filterCargoSources path type);
+          };
           strictDeps = true;
 
           buildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [
@@ -138,11 +144,11 @@
         packages = rec {
           linux-app = pkgs.symlinkJoin {
             name = "linux-app";
-            paths = [ linux.unavi-app ];
+            paths = with linux; [ unavi-app ];
           };
           linux-server = pkgs.symlinkJoin {
             name = "linux-server";
-            paths = [ linux.unavi-server ];
+            paths = with linux; [ unavi-server ];
           };
           linux = pkgs.symlinkJoin {
             name = "linux";

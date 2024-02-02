@@ -10,14 +10,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu]
+        target: [windows, linux]
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
-      - run: nix build .#app
-      - run: zip -r release-app-${{ matrix.target }}.zip result/bin
+      - run: nix build .#${{ matrix.target }}-app
+      - run: zip -r app-${{ matrix.target }}.zip result/bin
 
   release-server:
     runs-on: ubuntu-latest
@@ -26,8 +26,8 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
-      - run: nix build .#server
-      - run: zip -r release-server.zip result/bin
+      - run: nix build .#linux-server
+      - run: zip -r server-linux.zip result/bin
 
   release-web:
     runs-on: ubuntu-latest
@@ -37,7 +37,7 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
       - run: nix build .#web
-      - run: zip -r release-web.zip result/web
+      - run: zip -r web.zip result
 
   create-pr:
     needs:

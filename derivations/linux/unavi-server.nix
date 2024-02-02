@@ -4,18 +4,6 @@ craneLib.buildPackage {
   cargoVendorDir = craneLib.vendorCargoDeps { src = ../.; };
   strictDeps = true;
 
-  buildInputs = with pkgs; [
-    alsa-lib.dev
-    libxkbcommon
-    udev
-    vulkan-loader
-    wayland
-    xorg.libX11
-    xorg.libXcursor
-    xorg.libXi
-    xorg.libXrandr
-  ];
-
   nativeBuildInputs = with pkgs; [
     cargo-auditable
     clang

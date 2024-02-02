@@ -88,23 +88,30 @@
           '';
         });
 
-        unavi-web = craneLib.buildPackage (commonArgs // {
-          inherit cargoArtifactsNoTest;
-          pname = "unavi-web";
-          cargoExtraArgs = "-p unavi-app --target wasm32-unknown-unknown";
-          src = lib.cleanSourceWith {
-            src = ./.;
-            filter = path: type:
-              (lib.hasSuffix ".html" path)
-              || (lib.hasInfix "/crates/unavi-app/public/" path)
-              || (craneLib.filterCargoSources path type);
-          };
-        });
-
         unavi-server = craneLib.buildPackage (commonArgs // {
           inherit cargoArtifacts;
           pname = "unavi-server";
           cargoExtraArgs = "-p unavi-server";
+        });
+
+        unavi-web = craneLib.buildTrunkPackage (commonArgs // {
+          inherit cargoArtifactsNoTest;
+          pname = "unavi-web";
+          cargoExtraArgs = "-p unavi-app --target wasm32-unknown-unknown";
+          trunkIndexPath = "crates/unavi-app/index.html";
+          src = lib.cleanSourceWith {
+            src = ./.;
+            filter = path: type:
+              (lib.hasSuffix ".html" path)
+              || (lib.hasInfix "/crates/unavi-app/assets/" path)
+              || (lib.hasInfix "/crates/unavi-app/public/" path)
+              || (craneLib.filterCargoSources path type);
+          };
+          wasm-bindgen-cli = pkgs.wasm-bindgen-cli.override {
+            version = "0.2.90";
+            hash = "sha256-X8+DVX7dmKh7BgXqP7Fp0smhup5OO8eWEhn26ODYbkQ=";
+            cargoHash = "sha256-ckJxAR20GuVGstzXzIj1M0WBFj5eJjrO2/DRMUK5dwM=";
+          };
         });
 
         linux = pkgs.callPackage ./derivations/linux { };
@@ -115,13 +122,11 @@
               ${unavi-app}/bin/unavi-app
             '';
           };
-
           server = flake-utils.lib.mkApp {
             drv = pkgs.writeScriptBin "server" ''
               ${unavi-server}/bin/unavi-server
             '';
           };
-
           web = flake-utils.lib.mkApp {
             drv = pkgs.writeShellScriptBin "web" ''
               ${pkgs.python3Minimal}/bin/python3 -m http.server --directory ${unavi-web} 3000
@@ -154,18 +159,14 @@
           };
         };
 
-        checks = { inherit cargoClippy cargoDoc unavi-app unavi-server; };
+        checks = {
+          inherit unavi-app unavi-server unavi-web cargoClippy cargoDoc;
+        };
 
         devShells.default = craneLib.devShell {
-          inputsFrom = [ unavi-app ];
+          checks = self.checks.${system};
 
-          packages = with pkgs; [
-            cargo-watch
-            clang
-            rust-analyzer
-            rustToolchain
-            zip
-          ];
+          packages = with pkgs; [ cargo-watch clang rust-analyzer zip ];
 
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ pkgs.vulkan-loader ];
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";

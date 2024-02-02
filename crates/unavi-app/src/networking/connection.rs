@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_async_task::{AsyncTaskRunner, AsyncTaskStatus};
 
-const WORLD_ADDRESS: &str = "https://127.0.0.1:3000";
+const WORLD_ADDRESS: &str = "https://127.0.0.1:3001";
 
 #[cfg(target_family = "wasm")]
 use xwt_core::traits::EndpointConnect;

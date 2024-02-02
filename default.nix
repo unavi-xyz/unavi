@@ -57,7 +57,7 @@ in {
     pname = "web";
     buildAndTestSubdir = "crates/unavi-app";
     cargoBuildFlags = "--target wasm32-unknown-unknown";
-    buildPhase = "trunk build";
+    buildPhase = "trunk build --release";
     installPhase = ''
       mkdir -p $out/web
       cp -r ./crates/unavi-app/dist/* $out/web

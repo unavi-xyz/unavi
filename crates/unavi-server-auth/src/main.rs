@@ -8,7 +8,7 @@ async fn main() {
     tracing_subscriber::fmt::init();
 
     let router = unavi_server_auth::router().await;
-    let address = SocketAddr::from(([127, 0, 0, 1], 3001));
+    let address = SocketAddr::from(([127, 0, 0, 1], 3002));
 
     info!("Listening on {}", address);
 

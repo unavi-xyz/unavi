@@ -12,7 +12,7 @@ impl Plugin for DidPlugin {
 #[derive(Resource)]
 pub struct UserDID {
     pub did_key: String,
-    key: JWK,
+    _key: JWK,
 }
 
 fn generate_did_key(mut commands: Commands) {
@@ -36,5 +36,8 @@ fn generate_did_key(mut commands: Commands) {
 
     info!("User DID: {}", did);
 
-    commands.insert_resource(UserDID { did_key: did, key });
+    commands.insert_resource(UserDID {
+        did_key: did,
+        _key: key,
+    });
 }

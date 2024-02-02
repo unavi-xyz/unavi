@@ -1,94 +1,143 @@
 {
   inputs = {
+    crane = {
+      url = "github:ipetkov/crane";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     flake-utils.url = "github:numtide/flake-utils";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs = {
-        flake-utils.follows = "flake-utils";
         nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
       };
     };
   };
 
-  outputs = { self, flake-utils, nixpkgs, rust-overlay, ... }:
+  outputs = { self, nixpkgs, crane, flake-utils, rust-overlay, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        overlays = [ (import rust-overlay) ];
-        pkgs = import nixpkgs { inherit system overlays; };
-
-        rustBin = pkgs.rust-bin.stable.latest.default.override {
-          targets = [ "wasm32-unknown-unknown" ];
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ (import rust-overlay) ];
         };
 
-        build_inputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [
-          alsa-lib.dev
-          libxkbcommon
-          udev
-          vulkan-loader
-          wayland
-          xorg.libX11
-          xorg.libXcursor
-          xorg.libXi
-          xorg.libXrandr
-        ]);
+        rustToolchain =
+          pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
+            targets = [ "wasm32-unknown-unknown" ];
+          };
 
-        native_build_inputs = with pkgs; [
-          binaryen
-          cargo-auditable
-          clang
-          cmake
-          nodePackages.prettier
-          pkg-config
-          protobuf
-          trunk
-          wasm-bindgen-cli
-          wasm-tools
-        ];
+        craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
-        code = pkgs.callPackage ./. {
-          inherit pkgs system build_inputs native_build_inputs;
+        commonArgs = {
+          src = craneLib.cleanCargoSource (craneLib.path ./.);
+          strictDeps = true;
+
+          buildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [
+            alsa-lib.dev
+            libxkbcommon
+            udev
+            vulkan-loader
+            wayland
+            xorg.libX11
+            xorg.libXcursor
+            xorg.libXi
+            xorg.libXrandr
+          ]);
+
+          nativeBuildInputs = with pkgs; [
+            binaryen
+            cargo-auditable
+            clang
+            cmake
+            nodePackages.prettier
+            pkg-config
+            protobuf
+            trunk
+            wasm-bindgen-cli
+            wasm-tools
+          ];
         };
-      in rec {
-        packages = code // {
-          app = pkgs.symlinkJoin {
-            name = "app";
-            paths = with code; [ unavi-app ];
+
+        cargoArtifacts =
+          craneLib.buildDepsOnly (commonArgs // { pname = "deps"; });
+
+        clippy = craneLib.cargoClippy (commonArgs // {
+          inherit cargoArtifacts;
+          pname = "clippy";
+          cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+        });
+
+        unavi-app = craneLib.buildPackage (commonArgs // {
+          inherit cargoArtifacts;
+          pname = "unavi-app";
+          cargoExtraArgs = "-p unavi-app";
+          postInstall = ''
+            cp -r assets $out/bin
+          '';
+        });
+
+        unavi-server = craneLib.buildPackage (commonArgs // {
+          inherit cargoArtifacts;
+          pname = "unavi-server";
+          cargoExtraArgs = "-p unavi-server";
+        });
+
+        linux = pkgs.callPackage ./derivations/linux { };
+      in {
+        apps = rec {
+          app = flake-utils.lib.mkApp {
+            drv = pkgs.writeScriptBin "unavi-app" ''
+              ${unavi-app}/bin/unavi-app
+            '';
           };
 
-          server = pkgs.symlinkJoin {
-            name = "server";
-            paths = with code; [ unavi-server ];
+          server = flake-utils.lib.mkApp {
+            drv = pkgs.writeScriptBin "unavi-server" ''
+              ${unavi-server}/bin/unavi-server
+            '';
           };
 
-          wasm = pkgs.symlinkJoin {
-            name = "wasm";
-            paths = with code; [ unavi-system unavi-ui wired-script ];
+          default = app;
+        };
+
+        packages = rec {
+          linux-app = pkgs.symlinkJoin {
+            name = "linux-app";
+            paths = with linux; [ unavi-app ];
+          };
+          linux-server = pkgs.symlinkJoin {
+            name = "linux-server";
+            paths = with linux; [ unavi-server ];
+          };
+          linux = pkgs.symlinkJoin {
+            name = "linux";
+            paths = [ linux-app linux-server ];
           };
 
-          web = pkgs.symlinkJoin {
-            name = "web";
-            paths = with code; [ web ];
-          };
-
-          all = pkgs.symlinkJoin {
+          app = unavi-app;
+          server = unavi-server;
+          default = pkgs.symlinkJoin {
             name = "all";
-            paths = with code; [ unavi-app unavi-server web ];
+            paths = [ app server ];
           };
-
-          default = packages.all;
-          override = packages.all;
-          overrideDerivation = packages.all;
         };
 
-        devShells.default = pkgs.mkShell {
-          buildInputs = with pkgs;
-            [ cargo-watch clang rust-analyzer rustBin zip ] ++ build_inputs;
+        checks = { inherit clippy unavi-app unavi-server; };
 
-          nativeBuildInputs = native_build_inputs;
+        devShells.default = craneLib.devShell {
+          inputsFrom = [ unavi-app ];
 
-          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath build_inputs;
+          packages = with pkgs; [
+            cargo-watch
+            clang
+            rust-analyzer
+            rustToolchain
+            zip
+          ];
+
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ pkgs.vulkan-loader ];
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
       });

@@ -1,22 +1,22 @@
 use bevy::prelude::*;
-use didkit::DID_METHODS;
+use didkit::{DIDMethod, Source, JWK};
 
 pub struct DidPlugin;
 
 impl Plugin for DidPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, set_user_did);
+        app.add_systems(Startup, generate_did_key);
     }
 }
 
 #[derive(Resource)]
 pub struct UserDID {
     pub did_key: String,
-    key: didkit::JWK,
+    key: JWK,
 }
 
-fn set_user_did(mut commands: Commands) {
-    let key = match didkit::JWK::generate_ed25519() {
+fn generate_did_key(mut commands: Commands) {
+    let key = match JWK::generate_ed25519() {
         Ok(key) => key,
         Err(err) => {
             error!("Failed to generate JWK key: {}", err);
@@ -24,9 +24,9 @@ fn set_user_did(mut commands: Commands) {
         }
     };
 
-    let source = didkit::Source::Key(&key);
+    let source = Source::Key(&key);
 
-    let did = match DID_METHODS.generate(&source) {
+    let did = match did_method_key::DIDKey.generate(&source) {
         Some(did) => did,
         None => {
             error!("Failed to generate DID");

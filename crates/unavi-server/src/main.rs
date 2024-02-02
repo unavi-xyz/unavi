@@ -15,4 +15,6 @@ async fn main() {
     if let Err(e) = unavi_server::start(unavi_server::ServerOptions::default()).await {
         error!(e);
     }
+
+    tokio::signal::ctrl_c().await.unwrap();
 }

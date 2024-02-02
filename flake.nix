@@ -64,6 +64,11 @@
         cargoArtifacts =
           craneLib.buildDepsOnly (commonArgs // { pname = "deps"; });
 
+        cargoArtifactsNoTest = craneLib.buildDepsOnly (commonArgs // {
+          pname = "deps-no-test";
+          doCheck = false;
+        });
+
         cargoClippy = craneLib.cargoClippy (commonArgs // {
           inherit cargoArtifacts;
           pname = "clippy";
@@ -84,7 +89,7 @@
         });
 
         unavi-web = craneLib.buildPackage (commonArgs // {
-          inherit cargoArtifacts;
+          inherit cargoArtifactsNoTest;
           pname = "unavi-web";
           cargoExtraArgs = "-p unavi-app --target wasm32-unknown-unknown";
           src = lib.cleanSourceWith {

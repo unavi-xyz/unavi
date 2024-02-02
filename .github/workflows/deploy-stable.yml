@@ -1,15 +1,13 @@
-name: Deploy
+name: Deploy (stable)
 
 on:
   push:
     branches:
-      - main
+      - stable
   workflow_dispatch:
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
-  group: "deployment"
+  group: "deploy-stable"
   cancel-in-progress: false
 
 jobs:
@@ -24,7 +22,7 @@ jobs:
       - run: cp -rL result/web www
       - uses: s0/git-publish-subdir-action@develop
         env:
-          BRANCH: build/web-app
+          BRANCH: stable/web-app
           COMMIT_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
           COMMIT_NAME: "github-actions[bot]"
           FOLDER: www

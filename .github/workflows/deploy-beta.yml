@@ -1,0 +1,32 @@
+name: Deploy (beta)
+
+on:
+  push:
+    branches:
+      - beta
+  workflow_dispatch:
+
+concurrency:
+  group: "deploy-beta"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: Swatinem/rust-cache@v2
+      - run: nix build .#web
+      - run: cp -rL result/web www
+      - uses: s0/git-publish-subdir-action@develop
+        env:
+          BRANCH: beta/web-app
+          COMMIT_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
+          COMMIT_NAME: "github-actions[bot]"
+          FOLDER: www
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: self
+          SQUASH_HISTORY: true
+          TARGET_DIR: www

@@ -64,10 +64,14 @@
         cargoArtifacts =
           craneLib.buildDepsOnly (commonArgs // { pname = "deps"; });
 
-        clippy = craneLib.cargoClippy (commonArgs // {
+        cargoClippy = craneLib.cargoClippy (commonArgs // {
           inherit cargoArtifacts;
           pname = "clippy";
-          cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+        });
+
+        cargoDoc = craneLib.cargoDoc (commonArgs // {
+          inherit cargoArtifacts;
+          pname = "doc";
         });
 
         unavi-app = craneLib.buildPackage (commonArgs // {
@@ -145,7 +149,7 @@
           };
         };
 
-        checks = { inherit clippy unavi-app unavi-server; };
+        checks = { inherit cargoClippy cargoDoc unavi-app unavi-server; };
 
         devShells.default = craneLib.devShell {
           inputsFrom = [ unavi-app ];

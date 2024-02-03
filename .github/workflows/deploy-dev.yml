@@ -19,7 +19,7 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
       - run: nix develop -c trunk build
-      - run: mkdir www && mv ./crates/unavi-app/dist www
+      - run: mv crates/unavi-app/dist www
       - uses: s0/git-publish-subdir-action@develop
         env:
           BRANCH: dev/web-app

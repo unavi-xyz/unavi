@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [windows, linux]
+        target: [linux]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [windows, linux]
+        target: [linux]
     steps:
       - uses: actions/checkout@v4
         with:

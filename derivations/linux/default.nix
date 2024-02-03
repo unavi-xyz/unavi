@@ -18,18 +18,21 @@ let
     craneLib.buildDepsOnly (commonArgs // { pname = "linux-deps"; });
 
   linuxCommonArgs = commonArgs // { inherit cargoArtifacts; };
-in rec {
-  linux-app = pkgs.callPackage ./unavi-app.nix {
+
+  unavi-app = pkgs.callPackage ./unavi-app.nix {
     inherit craneLib crossTarget;
     commonArgs = linuxCommonArgs;
   };
-  linux-server = pkgs.callPackage ./unavi-server.nix {
+  unavi-server = pkgs.callPackage ./unavi-server.nix {
     inherit craneLib crossTarget;
     commonArgs = linuxCommonArgs;
   };
+in {
+  linux-app = unavi-app;
+  linux-server = unavi-server;
 
   linux = pkgs.symlinkJoin {
     name = "linux";
-    paths = [ linux-app linux-server ];
+    paths = [ unavi-app unavi-server ];
   };
 }

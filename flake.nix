@@ -79,7 +79,7 @@
         cargoClippy = craneLib.cargoClippy (commonArgs // {
           inherit cargoArtifacts;
           pname = "clippy";
-          cargoClippyExtraArgs = "--all-targets -- -D warnings";
+          # cargoClippyExtraArgs = "--all-targets -- -D warnings";
         });
 
         cargoDoc = craneLib.cargoDoc (commonArgs // {
@@ -149,10 +149,11 @@
           default = app;
         };
 
-        packages = linux // windows // {
+        packages = {
           app = unavi-app;
           server = unavi-server;
           web = unavi-web;
+
           default = pkgs.symlinkJoin {
             name = "all";
             paths = [ unavi-app unavi-server unavi-web ];

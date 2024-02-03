@@ -7,12 +7,12 @@ jobs:
   version:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - id: cargo-bump
-        uses: tj-actions/cargo-bump@v2
-        with:
-          release_type: minor
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install gbump
+      - run: gpump minor -t
+        id: bump
       - uses: EndBug/add-and-commit@v9
         with:
-          message: "chore: bump ${{ steps.run_tests.outputs.old_version }} -> ${{ steps.run_tests.outputs.new_version }}"
+          message: "chore: bump ${{ steps.bump.outputs }}"
           default_author: github_actions

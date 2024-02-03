@@ -1,10 +1,10 @@
 { stdenv, qemu, craneLib, commonArgs, crossTarget, pkgs }:
 craneLib.buildPackage commonArgs // {
-  pname = "linux-server";
+  pname = "windows-server";
   cargoExtraArgs = "-p unavi-server --target ${crossTarget}";
 
   depsBuildBuild = [ qemu ];
 
-  CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "${stdenv.cc.targetPrefix}cc";
-  CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUNNER = "qemu-x86_64";
+  CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER = "${stdenv.cc.targetPrefix}link";
+  CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUNNER = "qemu-x86_64";
 }

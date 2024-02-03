@@ -5,7 +5,7 @@ on:
 
 jobs:
   release-app:
-    name: release ${{ matrix.target }}
+    name: release ${{ matrix.target }}-app
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -16,18 +16,23 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
-      - run: nix build .#${{ matrix.target }}-app
+      - run: nix build ".?submodules=1#${{ matrix.target }}-app"
       - run: zip -r app-${{ matrix.target }}.zip result/bin
 
   release-server:
+    name: release ${{ matrix.target }}-server
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [windows, linux]
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
-      - run: nix build .#linux-server
-      - run: zip -r server-linux.zip result/bin
+      - run: nix build ".?submodules=1#${{ matrix.target }}-server"
+      - run: zip -r server-${{ matrix.target }}.zip result/bin
 
   release-web:
     runs-on: ubuntu-latest
@@ -36,7 +41,7 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
-      - run: nix build .#web
+      - run: nix build ".?submodules=1#web"
       - run: zip -r web.zip result
 
   create-pr:

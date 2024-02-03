@@ -31,7 +31,11 @@
 
         rustToolchain =
           pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
-            targets = [ "wasm32-unknown-unknown" "wasm32-wasi" ];
+            targets = [
+              "wasm32-unknown-unknown"
+              "wasm32-wasi"
+              "x86_64-pc-windows-msvc"
+            ];
           };
 
         craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
@@ -56,7 +60,8 @@
             xorg.libXcursor
             xorg.libXi
             xorg.libXrandr
-          ]);
+          ]) ++ pkgs.lib.optionals pkgs.stdenv.isDarwin
+            (with pkgs; [ pkgs.darwin.apple_sdk.frameworks.Cocoa ]);
 
           nativeBuildInputs = with pkgs; [
             binaryen

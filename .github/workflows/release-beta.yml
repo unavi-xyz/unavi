@@ -8,13 +8,27 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  nix-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - run: |
+          set -Eeu
+          matrix="$(nix eval --json '.#githubActions.matrix')"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
   release-app:
-    name: release-app-${{ matrix.target }}
-    runs-on: ubuntu-latest
+    needs:
+      - nix-matrix
+    name: release-app-${{ matrix.attr }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
-      matrix:
-        target: [linux]
+      matrix: ${{fromJSON(needs.nix-matrix.outputs.matrix)}}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,43 +36,17 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
-      - run: nix build ".?submodules=1#${{ matrix.target }}-app"
-      - run: zip -r app-${{ matrix.target }}.zip result/bin
-
-  release-server:
-    name: release-server-${{ matrix.target }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [linux]
-    steps:
-      - uses: actions/checkout@v4
+      - run: nix build ".?submodules=1#app-${{ matrix.attr }}"
+      - run: zip -r app-${{ matrix.attr }}.zip result/bin
+      - uses: actions/upload-artifact@v3
         with:
-          submodules: "true"
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-      - uses: Swatinem/rust-cache@v2
-      - run: nix build ".?submodules=1#${{ matrix.target }}-server"
-      - run: zip -r server-${{ matrix.target }}.zip result/bin
-
-  release-web:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: "true"
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-      - uses: Swatinem/rust-cache@v2
-      - run: nix build ".?submodules=1#web"
-      - run: zip -r web.zip result
+          path: app-${{ matrix.attr }}.zip
+          name: app-${{ matrix.attr }}
+          retention-days: 1
 
   create-pr:
     needs:
       - release-app
-      - release-server
-      - release-web
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

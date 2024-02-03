@@ -192,8 +192,8 @@
         githubActions = nix-github-actions.lib.mkGithubMatrix {
           attrPrefix = "";
           checks = nixpkgs.lib.mapAttrs (_: v:
-            nixpkgs.lib.filterAttrs
-            (n: _: !nixpkgs.lib.mutuallyExclusive [ n ] gh_packages) v)
+            (nixpkgs.lib.filterAttrs
+              (n: _: !(nixpkgs.lib.mutuallyExclusive [ n ] gh_packages)) v))
             (nixpkgs.lib.getAttrs gh_systems self.packages);
         };
       });

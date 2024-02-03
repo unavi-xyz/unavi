@@ -52,6 +52,8 @@ jobs:
       - uses: AdityaGarg8/remove-unwanted-software@v2
         with:
           remove-android: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
           remove-dotnet: "true"
           remove-haskell: "true"
       - uses: actions/checkout@v4

@@ -109,6 +109,7 @@
             src = ./.;
             filter = path: type:
               (lib.hasSuffix ".html" path) || (lib.hasInfix "/assets/" path)
+              || (lib.hasInfix "/wired-protocol/" path)
               || (lib.hasInfix "/crates/unavi-app/public/" path)
               || (craneLib.filterCargoSources path type);
           };

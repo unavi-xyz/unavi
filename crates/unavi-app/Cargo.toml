@@ -19,8 +19,6 @@ bevy_vrm = "0.0.6"
 did-method-key = "0.2.2"
 didkit = { version = "0.6.0", default-features = false, features = ["w3c", "ed25519", "ripemd-160", "http-did"] }
 tracing = "0.1.40"
-# unavi-system-bindgen = { path = "../../wasm/unavi-system/bindgen" }
-# wired-script-bindgen = { path = "../../wasm/wired-script/bindgen" }
 xwt = "0.3.0"
 xwt-core = "0.2.0"
 

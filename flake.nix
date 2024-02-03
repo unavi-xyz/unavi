@@ -26,7 +26,7 @@
 
         rustToolchain =
           pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
-            targets = [ "wasm32-unknown-unknown" ];
+            targets = [ "wasm32-unknown-unknown" "wasm32-wasi" ];
           };
 
         craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
@@ -56,6 +56,7 @@
           nativeBuildInputs = with pkgs; [
             binaryen
             cargo-auditable
+            cargo-component
             clang
             cmake
             nodePackages.prettier

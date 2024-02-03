@@ -1,9 +1,0 @@
-[package]
-name = "unavi-ui-bindgen"
-version.workspace = true
-license.workspace = true
-repository.workspace = true
-edition.workspace = true
-
-[dependencies]
-wasmtime = { version = "15.0.0", features = ["component-model"] }

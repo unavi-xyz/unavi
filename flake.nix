@@ -79,6 +79,7 @@
         cargoClippy = craneLib.cargoClippy (commonArgs // {
           inherit cargoArtifacts;
           pname = "clippy";
+          cargoClippyExtraArgs = "--all-targets -- -D warnings";
         });
 
         cargoDoc = craneLib.cargoDoc (commonArgs // {

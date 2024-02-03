@@ -5,7 +5,7 @@ on:
 
 jobs:
   release-app:
-    name: release ${{ matrix.target }}-app
+    name: release-app-${{ matrix.target }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -22,7 +22,7 @@ jobs:
       - run: zip -r app-${{ matrix.target }}.zip result/bin
 
   release-server:
-    name: release ${{ matrix.target }}-server
+    name: release-server-${{ matrix.target }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

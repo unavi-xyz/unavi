@@ -3,6 +3,10 @@ name: "Release (stable)"
 on:
   workflow_dispatch:
 
+concurrency:
+  group: "release-stable"
+  cancel-in-progress: false
+
 jobs:
   release-app:
     name: release-app-${{ matrix.target }}

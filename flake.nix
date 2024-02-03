@@ -137,10 +137,6 @@
           };
         });
       in {
-        githubActions = nix-github-actions.lib.mkGithubMatrix {
-          checks = { inherit (self.checks) x86_64-linux x86_64-darwin; };
-        };
-
         checks = {
           inherit unavi-app unavi-server unavi-web cargoClippy cargoDoc;
         };
@@ -148,31 +144,33 @@
         apps = rec {
           app = flake-utils.lib.mkApp {
             drv = pkgs.writeScriptBin "app" ''
-              ${unavi-app}/bin/unavi-app
+              ${self.packages.${system}.app}/bin/unavi-app
             '';
           };
           server = flake-utils.lib.mkApp {
             drv = pkgs.writeScriptBin "server" ''
-              ${unavi-server}/bin/unavi-server
+              ${self.packages.${system}.server}/bin/unavi-server
             '';
           };
           web = flake-utils.lib.mkApp {
             drv = pkgs.writeShellScriptBin "web" ''
-              ${pkgs.python3Minimal}/bin/python3 -m http.server --directory ${unavi-web} 3000
+              ${pkgs.python3Minimal}/bin/python3 -m http.server --directory ${
+                self.packages.${system}.web
+              } 3000
             '';
           };
 
           default = app;
         };
 
-        packages = {
+        packages = rec {
           app = unavi-app;
           server = unavi-server;
           web = unavi-web;
 
           default = pkgs.symlinkJoin {
             name = "all";
-            paths = [ unavi-app unavi-server unavi-web ];
+            paths = [ app server web ];
           };
         };
 
@@ -184,5 +182,12 @@
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ pkgs.vulkan-loader ];
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
-      });
+      }) // {
+        githubActions = nix-github-actions.lib.mkGithubMatrix {
+          checks = nixpkgs.lib.getAttrs [
+            flake-utils.lib.system.x86_64-darwin
+            flake-utils.lib.system.x86_64-linux
+          ] self.checks;
+        };
+      };
 }

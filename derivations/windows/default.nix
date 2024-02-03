@@ -18,18 +18,21 @@ let
     craneLib.buildDepsOnly (commonArgs // { pname = "windows-deps"; });
 
   windowsCommonArgs = commonArgs // { inherit cargoArtifacts; };
-in rec {
-  windows-app = pkgs.callPackage ./unavi-app.nix {
+
+  unavi-app = pkgs.callPackage ./unavi-app.nix {
     inherit craneLib crossTarget;
     commonArgs = windowsCommonArgs;
   };
-  windows-server = pkgs.callPackage ./unavi-server.nix {
+  unavi-server = pkgs.callPackage ./unavi-server.nix {
     inherit craneLib crossTarget;
     commonArgs = windowsCommonArgs;
   };
+in {
+  windows-app = unavi-app;
+  windows-server = unavi-server;
 
   windows = pkgs.symlinkJoin {
     name = "windows";
-    paths = [ windows-app windows-server ];
+    paths = [ unavi-app unavi-server ];
   };
 }

@@ -2,10 +2,11 @@ name: "CI"
 
 on:
   push:
+    - main
   pull_request:
 
 jobs:
-  build-wasm:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,14 +21,17 @@ jobs:
         with:
           message: "chore: build wasm"
           default_author: github_actions
+      - run: echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
   lint:
+    needs:
+      - build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: "true"
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ needs.build.outputs.sha }}
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
@@ -38,10 +42,10 @@ jobs:
         with:
           message: "chore: lint"
           default_author: github_actions
+      - run: echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
   check:
     needs:
-      - build-wasm
       - lint
     runs-on: ubuntu-latest
     steps:
@@ -53,7 +57,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: "true"
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ needs.lint.outputs.sha }}
+      - run: git pull
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2

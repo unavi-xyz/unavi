@@ -182,13 +182,19 @@
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ pkgs.vulkan-loader ];
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
-      }) // {
+      }) // (let
+        gh_packages = [ "app" "server" ];
+        gh_systems = [
+          flake-utils.lib.system.x86_64-darwin
+          flake-utils.lib.system.x86_64-linux
+        ];
+      in {
         githubActions = nix-github-actions.lib.mkGithubMatrix {
           attrPrefix = "";
-          checks = nixpkgs.lib.getAttrs [
-            flake-utils.lib.system.x86_64-darwin
-            flake-utils.lib.system.x86_64-linux
-          ] self.packages;
+          checks = nixpkgs.lib.mapAttrs (_: v:
+            nixpkgs.lib.filterAttrs
+            (n: _: !nixpkgs.lib.mutuallyExclusive [ n ] gh_packages) v)
+            (nixpkgs.lib.getAttrs gh_systems self.packages);
         };
-      };
+      });
 }

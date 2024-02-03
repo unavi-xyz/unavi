@@ -35,6 +35,7 @@ jobs:
   check:
     needs:
       - lint
+    runs-on: ubunut-latest
     steps:
       - uses: AdityaGarg8/remove-unwanted-software@v2
         with:

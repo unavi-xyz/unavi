@@ -187,7 +187,7 @@
           checks = nixpkgs.lib.getAttrs [
             flake-utils.lib.system.x86_64-darwin
             flake-utils.lib.system.x86_64-linux
-          ] self.checks;
+          ] self.packages;
         };
       };
 }

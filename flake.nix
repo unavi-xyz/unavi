@@ -131,14 +131,15 @@
             cargoHash = "sha256-ckJxAR20GuVGstzXzIj1M0WBFj5eJjrO2/DRMUK5dwM=";
           };
         });
-
-        linux = pkgs.callPackage ./derivations/linux {
-          inherit nixpkgs crane rust-overlay system commonArgs;
-        };
-        windows = pkgs.callPackage ./derivations/windows {
-          inherit nixpkgs crane rust-overlay system commonArgs;
-        };
       in {
+        githubActions = self.lib.mkGithubMatrix {
+          checks = { inherit (self.checks) x86_64-linux x86_64-darwin; };
+        };
+
+        checks = {
+          inherit unavi-app unavi-server unavi-web cargoClippy cargoDoc;
+        };
+
         apps = rec {
           app = flake-utils.lib.mkApp {
             drv = pkgs.writeScriptBin "app" ''
@@ -168,10 +169,6 @@
             name = "all";
             paths = [ unavi-app unavi-server unavi-web ];
           };
-        };
-
-        checks = {
-          inherit unavi-app unavi-server unavi-web cargoClippy cargoDoc;
         };
 
         devShells.default = craneLib.devShell {

@@ -13,6 +13,8 @@ jobs:
         target: [windows, linux]
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: "true"
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
@@ -28,6 +30,8 @@ jobs:
         target: [windows, linux]
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: "true"
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
@@ -38,6 +42,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: "true"
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2

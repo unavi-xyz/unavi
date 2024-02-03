@@ -16,7 +16,7 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
-      - run: nix develop -c cargo component build -p unavi-system
+      - run: nix develop -c cargo component check
       - uses: EndBug/add-and-commit@v9
         with:
           message: "chore: generate wasm bindings"

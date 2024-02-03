@@ -2,7 +2,6 @@ name: "CI"
 
 on:
   push:
-    - main
   pull_request:
 
 jobs:

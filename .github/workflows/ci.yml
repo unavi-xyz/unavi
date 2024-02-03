@@ -5,6 +5,22 @@ on:
   pull_request:
 
 jobs:
+  build-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: "true"
+          ref: ${{ github.event.pull_request.head.ref }}
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: Swatinem/rust-cache@v2
+      - run: nix develop -c sh scripts/build-wasm.sh
+      - uses: EndBug/add-and-commit@v9
+        with:
+          message: "chore: build wasm libs"
+          default_author: github_actions
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -37,22 +53,6 @@ jobs:
       - uses: EndBug/add-and-commit@v9
         with:
           message: "chore: format"
-          default_author: github_actions
-
-  build-wasm:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: "true"
-          ref: ${{ github.event.pull_request.head.ref }}
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-      - uses: Swatinem/rust-cache@v2
-      - run: nix develop -c sh scripts/build-wasm.sh
-      - uses: EndBug/add-and-commit@v9
-        with:
-          message: "chore: build wasm libs"
           default_author: github_actions
 
   check:

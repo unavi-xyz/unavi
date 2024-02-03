@@ -26,7 +26,7 @@ jobs:
       - nix-matrix
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.nix-matrix.outputs.matrix) }}
+      matrix: ${{fromJSON(needs.nix-matrix.outputs.matrix)}}
     name: release-app-${{ matrix.attr }}
     runs-on: ${{ matrix.os }}
     steps:

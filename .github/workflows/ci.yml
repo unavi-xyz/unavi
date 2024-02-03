@@ -73,4 +73,4 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
-      - run: nix flake check --all-systems
+      - run: nix flake check ".?submodules=1" --all-systems

@@ -122,7 +122,12 @@
           };
         });
 
-        linux = pkgs.callPackage ./derivations/linux { };
+        linux = pkgs.callPackage ./derivations/linux {
+          inherit nixpkgs crane rust-overlay system commonArgs;
+        };
+        windows = pkgs.callPackage ./derivations/windows {
+          inherit nixpkgs crane rust-overlay system commonArgs;
+        };
       in {
         apps = rec {
           app = flake-utils.lib.mkApp {
@@ -144,26 +149,13 @@
           default = app;
         };
 
-        packages = rec {
-          linux-app = pkgs.symlinkJoin {
-            name = "linux-app";
-            paths = with linux; [ unavi-app ];
-          };
-          linux-server = pkgs.symlinkJoin {
-            name = "linux-server";
-            paths = with linux; [ unavi-server ];
-          };
-          linux = pkgs.symlinkJoin {
-            name = "linux";
-            paths = [ linux-app linux-server ];
-          };
-
+        packages = linux // windows // {
           app = unavi-app;
           server = unavi-server;
           web = unavi-web;
           default = pkgs.symlinkJoin {
             name = "all";
-            paths = [ app server web ];
+            paths = [ unavi-app unavi-server unavi-web ];
           };
         };
 

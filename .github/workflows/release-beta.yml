@@ -37,7 +37,7 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
-      - run: nix build ".?submodules=1#${{ matrix.attr }}"
+      - run: nix build ".?submodules=1#packages.${{ matrix.attr }}"
       - run: zip -r ${{ matrix.attr }}.zip result/bin
       - uses: actions/upload-artifact@v3
         with:

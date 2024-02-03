@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  build:
+  generate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,19 +19,19 @@ jobs:
       - run: nix develop -c cargo component build -p unavi-system
       - uses: EndBug/add-and-commit@v9
         with:
-          message: "chore: build wasm"
+          message: "chore: generate wasm bindings"
           default_author: github_actions
       - run: echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
   lint:
     needs:
-      - build
+      - generate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: "true"
-          ref: ${{ needs.build.outputs.sha }}
+          ref: ${{ needs.generate.outputs.sha }}
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
@@ -58,7 +58,6 @@ jobs:
         with:
           submodules: "true"
           ref: ${{ needs.lint.outputs.sha }}
-      - run: git pull
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2

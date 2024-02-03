@@ -3,6 +3,13 @@ craneLib.buildPackage commonArgs // {
   pname = "windows-app";
   cargoExtraArgs = "-p unavi-app --target ${crossTarget}";
 
+  src = lib.cleanSourceWith {
+    src = ./.;
+    filter = path: type:
+      (lib.hasInfix "/assets/" path) || (lib.hasInfix "/wired-protocol/" path)
+      || (craneLib.filterCargoSources path type);
+  };
+
   depsBuildBuild = [ qemu ];
 
   CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER = "${stdenv.cc.targetPrefix}link";

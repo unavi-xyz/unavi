@@ -35,10 +35,10 @@
           src = lib.cleanSourceWith {
             src = ./.;
             filter = path: type:
-              (lib.hasInfix "/assets/" path)
-              || (lib.hasInfix "/wired-protocol/" path)
+              (lib.hasInfix "/wired-protocol/" path)
               || (craneLib.filterCargoSources path type);
           };
+
           strictDeps = true;
 
           buildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [
@@ -79,7 +79,6 @@
         cargoClippy = craneLib.cargoClippy (commonArgs // {
           inherit cargoArtifacts;
           pname = "clippy";
-          # cargoClippyExtraArgs = "--all-targets -- -D warnings";
         });
 
         cargoDoc = craneLib.cargoDoc (commonArgs // {
@@ -91,6 +90,15 @@
           inherit cargoArtifacts;
           pname = "unavi-app";
           cargoExtraArgs = "-p unavi-app";
+
+          src = lib.cleanSourceWith {
+            src = ./.;
+            filter = path: type:
+              (lib.hasInfix "/assets/" path)
+              || (lib.hasInfix "/wired-protocol/" path)
+              || (craneLib.filterCargoSources path type);
+          };
+
           postInstall = ''
             cp -r assets $out/bin
           '';
@@ -107,6 +115,7 @@
           pname = "unavi-web";
           cargoExtraArgs = "-p unavi-app --target wasm32-unknown-unknown";
           trunkIndexPath = "crates/unavi-app/index.html";
+
           src = lib.cleanSourceWith {
             src = ./.;
             filter = path: type:
@@ -115,6 +124,7 @@
               || (lib.hasInfix "/crates/unavi-app/public/" path)
               || (craneLib.filterCargoSources path type);
           };
+
           wasm-bindgen-cli = pkgs.wasm-bindgen-cli.override {
             version = "0.2.90";
             hash = "sha256-X8+DVX7dmKh7BgXqP7Fp0smhup5OO8eWEhn26ODYbkQ=";

@@ -22,13 +22,13 @@ jobs:
           matrix="$(nix eval --json '.#githubActions.matrix')"
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
-  release-app:
+  release:
     needs:
       - nix-matrix
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.nix-matrix.outputs.matrix) }}
-    name: release-app-${{ matrix.attr }}
+    name: release-${{ matrix.attr }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -37,17 +37,17 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
-      - run: nix build ".?submodules=1#app-${{ matrix.attr }}"
-      - run: zip -r app-${{ matrix.attr }}.zip result/bin
+      - run: nix build ".?submodules=1#${{ matrix.attr }}"
+      - run: zip -r ${{ matrix.attr }}.zip result/bin
       - uses: actions/upload-artifact@v3
         with:
-          path: app-${{ matrix.attr }}.zip
-          name: app-${{ matrix.attr }}
+          path: ${{ matrix.attr }}.zip
+          name: ${{ matrix.attr }}
           retention-days: 1
 
   create-pr:
     needs:
-      - release-app
+      - release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

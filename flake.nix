@@ -19,7 +19,8 @@
     };
   };
 
-  outputs = { self, nixpkgs, crane, flake-utils, rust-overlay, ... }:
+  outputs = { self, nix-github-actions, nixpkgs, crane, flake-utils
+    , rust-overlay, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
@@ -136,7 +137,7 @@
           };
         });
       in {
-        githubActions = self.lib.mkGithubMatrix {
+        githubActions = nix-github-actions.lib.mkGithubMatrix {
           checks = { inherit (self.checks) x86_64-linux x86_64-darwin; };
         };
 

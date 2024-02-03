@@ -15,7 +15,7 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
-      - run: nix develop -c cargo component build
+      - run: nix develop -c cargo component build -p unavi-system
       - uses: EndBug/add-and-commit@v9
         with:
           message: "chore: build wasm"
@@ -32,27 +32,11 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
       - run: nix develop -c cargo clippy --fix --no-deps
-      - uses: EndBug/add-and-commit@v9
-        with:
-          message: "chore: lint"
-          default_author: github_actions
-
-  fmt:
-    needs: lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: "true"
-          ref: ${{ github.event.pull_request.head.ref }}
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-      - uses: Swatinem/rust-cache@v2
       - run: nix develop -c cargo fmt --all
       - run: nix develop -c prettier -w .
       - uses: EndBug/add-and-commit@v9
         with:
-          message: "chore: format"
+          message: "chore: lint"
           default_author: github_actions
 
   check:

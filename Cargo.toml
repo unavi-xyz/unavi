@@ -2,8 +2,8 @@
 resolver = "2"
 members = [
   "crates/*",
-  # "wasm/*",
-  # "wasm/*/bindgen"
+  "wasm/*",
+  "wasm/*/bindgen"
 ]
 
 [workspace.package]

@@ -1,9 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
+  "components/*",
   "crates/*",
-  "wasm/*",
-  "wasm/*/bindgen"
 ]
 
 [workspace.package]

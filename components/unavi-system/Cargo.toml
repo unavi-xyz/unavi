@@ -1,0 +1,20 @@
+[package]
+name = "unavi-system"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+wit-bindgen = { version = "0.16.0", default-features = false, features = ["realloc"] }
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[package.metadata.component]
+package = "component:unavi-system"
+
+[package.metadata.component.dependencies]

@@ -1,0 +1,18 @@
+name: Version (minor)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - id: cargo-bump
+        uses: tj-actions/cargo-bump@v2
+        with:
+          release_type: minor
+      - uses: EndBug/add-and-commit@v9
+        with:
+          message: "chore: bump ${{ steps.run_tests.outputs.old_version }} -> ${{ steps.run_tests.outputs.new_version }}"
+          default_author: github_actions

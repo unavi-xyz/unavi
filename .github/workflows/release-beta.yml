@@ -37,3 +37,4 @@ jobs:
           target_branch: beta
           message: "chore: merge ${{ steps.semver.outputs.version }}"
           type: now
+      - uses: ./.github/workflows/build.yml

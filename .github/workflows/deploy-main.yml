@@ -1,4 +1,4 @@
-name: Deploy (dev)
+name: Deploy (main)
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: "deploy-dev"
+  group: "deploy-main"
   cancel-in-progress: false
 
 jobs:
@@ -22,7 +22,7 @@ jobs:
       - run: mv crates/unavi-app/dist www
       - uses: s0/git-publish-subdir-action@develop
         env:
-          BRANCH: dev/web-app
+          BRANCH: main/web-app
           COMMIT_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
           COMMIT_NAME: "github-actions[bot]"
           FOLDER: www

@@ -8,60 +8,78 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release-app:
-    name: release-app-${{ matrix.target }}
+  nix-matrix:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [linux]
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: "true"
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
-      - uses: Swatinem/rust-cache@v2
-      - run: nix build ".?submodules=1#${{ matrix.target }}-app"
-      - run: zip -r app-${{ matrix.target }}.zip result/bin
+      - id: set-matrix
+        run: |
+          set -Eeu
+          matrix=$(nix eval --json .#githubActions.matrix)
+          echo matrix=$matrix >> $GITHUB_OUTPUT
 
-  release-server:
-    name: release-server-${{ matrix.target }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [linux]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: "true"
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-      - uses: Swatinem/rust-cache@v2
-      - run: nix build ".?submodules=1#${{ matrix.target }}-server"
-      - run: zip -r server-${{ matrix.target }}.zip result/bin
-
-  release-web:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: "true"
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-      - uses: Swatinem/rust-cache@v2
-      - run: nix build ".?submodules=1#web"
-      - run: zip -r web.zip result
-
-  create-pr:
+  build:
     needs:
-      - release-app
-      - release-server
-      - release-web
+      - nix-matrix
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.nix-matrix.outputs.matrix) }}
+    name: build-${{ matrix.attr }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: "true"
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: Swatinem/rust-cache@v2
+      - run: nix build .?submodules=1#packages.${{ matrix.attr }}
+      - run: zip -r ${{ matrix.attr }}.zip result/bin
+      - uses: actions/upload-artifact@v3
+        with:
+          path: ${{ matrix.attr }}.zip
+          name: ${{ matrix.attr }}
+          retention-days: 1
+
+  release:
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.semver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: nguyenvukhang/semver-increment@v1
+        id: semver
+        with:
+          increment: "patch"
+          version-file: "Cargo.toml"
+          version-regex: '^version = "(.*)"'
+      - uses: EndBug/add-and-commit@v9
+        with:
+          message: "chore: bump to ${{ steps.semver.outputs.version }}"
+          default_author: github_actions
+      - uses: actions/create-release@v1
+        with:
+          tag_name: ${{ steps.semver.outputs.version }}
+          release_name: ${{ steps.semver.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  pr:
+    needs:
+      - release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: peter-evans/create-pull-request@v6
         with:
-          branch: stable
+          base: stable
+          branch: release/${{ needs.release.outputs.version }}
+          title: Release ${{ needs.release.outputs.version }}

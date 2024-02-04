@@ -22,13 +22,13 @@ jobs:
           matrix=$(nix eval --json .#githubActions.matrix)
           echo matrix=$matrix >> $GITHUB_OUTPUT
 
-  release:
+  build:
     needs:
       - nix-matrix
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.nix-matrix.outputs.matrix) }}
-    name: release-${{ matrix.attr }}
+    name: build-${{ matrix.attr }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -45,46 +45,35 @@ jobs:
           name: ${{ matrix.attr }}
           retention-days: 1
 
-  crate-release:
+  release:
     needs:
-      - release
+      - build
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.semver.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Get version
-        id: get-version
-        uses: michmich112/extract-version@main
-        with:
-          version-file: Cargo.toml
-          schema: major.minor.build
-
-      - run: echo ${{ steps.get-version.outputs }}
-
-      - name: Get previous tag
-        id: previoustag
-        uses: "WyriHaximus/github-action-get-previous-tag@v1"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Get next minor version
+      - uses: nguyenvukhang/semver-increment@v1
         id: semver
-        uses: "WyriHaximus/github-action-next-semvers@v1"
         with:
-          version: ${{ steps.previoustag.outputs.tag }}
-
-      - name: Create release
-        id: create_release_id
-        uses: actions/create-release@v1
+          increment: "prerelease"
+          identifier: "beta"
+          version-file: "Cargo.toml"
+          version-regex: '^version = "(.*)"'
+      - uses: EndBug/add-and-commit@v9
+        with:
+          message: "chore: bump to ${{ steps.semver.outputs.version }}"
+          default_author: github_actions
+      - uses: actions/create-release@v1
+        with:
+          tag_name: ${{ steps.semver.outputs.version }}
+          release_name: ${{ steps.semver.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.semver.outputs.patch }}
-          release_name: Release ${{ steps.semver.outputs.patch }}
 
-  create-pr:
+  pr:
     needs:
       - release
     runs-on: ubuntu-latest
@@ -93,5 +82,5 @@ jobs:
       - uses: peter-evans/create-pull-request@v6
         with:
           base: beta
-          branch: release/beta
-          title: Release (beta)
+          branch: release/${{ needs.release.outputs.version }}
+          title: Release ${{ needs.release.outputs.version }}

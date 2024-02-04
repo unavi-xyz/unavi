@@ -23,7 +23,7 @@ jobs:
       - run: cp -rL result www
       - uses: s0/git-publish-subdir-action@develop
         env:
-          BRANCH: beta/web-app
+          BRANCH: web-app/beta
           COMMIT_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
           COMMIT_NAME: "github-actions[bot]"
           FOLDER: www

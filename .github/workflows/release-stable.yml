@@ -42,3 +42,4 @@ jobs:
           target_branch: stable
           message: "chore: merge ${{ steps.semver.outputs.version }}"
           type: now
+      - uses: ./.github/workflows/build.yml

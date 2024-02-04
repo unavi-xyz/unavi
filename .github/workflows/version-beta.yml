@@ -23,7 +23,7 @@ jobs:
       - id: semver
         uses: nguyenvukhang/semver-increment@v1
         with:
-          increment: pre${{ on.workflow_call.inputs.increment }}
+          increment: pre${{ inputs.increment }}
           identifier: "beta"
           version-file: "Cargo.toml"
           version-regex: '^version = "(.*)"'

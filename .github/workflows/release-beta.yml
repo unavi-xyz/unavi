@@ -27,7 +27,7 @@ jobs:
 
           git add -A
           git commit -m "chore: bump ${{ steps.semver.outputs.version }}"
-          git tag v${{ steps.semver.outputs.version }}
+          git tag "v${{ steps.semver.outputs.version }}"
 
           git checkout beta
           git merge main

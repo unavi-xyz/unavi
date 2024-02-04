@@ -1,6 +1,9 @@
 name: Deploy
 
 on:
+  push:
+    branches:
+      - main
   workflow_call:
     inputs:
       channel:
@@ -27,6 +30,8 @@ concurrency:
 jobs:
   deploy-web:
     runs-on: ubuntu-latest
+    env:
+      IS_MAIN: ${{ inputs.channel == main || github.ref_name == main }}
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
@@ -34,10 +39,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - run: nix build .#web
-        if: inputs.channel != main
+        if: env.IS_MAIN
 
       - run: nix develop -c trunk build
-        if: inputs.channel == main
+        if: !env.IS_MAIN
 
       - run: cp -rL result www
       - uses: s0/git-publish-subdir-action@develop

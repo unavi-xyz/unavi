@@ -8,46 +8,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  nix-matrix:
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-      - id: set-matrix
-        run: |
-          set -Eeu
-          matrix=$(nix eval --json .#githubActions.matrix)
-          echo matrix=$matrix >> $GITHUB_OUTPUT
-
-  build:
-    needs:
-      - nix-matrix
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.nix-matrix.outputs.matrix) }}
-    name: build-${{ matrix.attr }}
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: "true"
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-      - uses: Swatinem/rust-cache@v2
-      - run: nix build .?submodules=1#packages.${{ matrix.attr }}
-      - run: zip -r ${{ matrix.attr }}.zip result/bin
-      - uses: actions/upload-artifact@v3
-        with:
-          path: ${{ matrix.attr }}.zip
-          name: ${{ matrix.attr }}
-          retention-days: 1
-
   release:
-    needs:
-      - build
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.semver.outputs.version }}
@@ -70,15 +31,11 @@ jobs:
           git add -A
           git commit -m "chore: bump ${{ steps.semver.outputs.version }}"
           git tag v${{ steps.semver.outputs.version }}
-          git push --tags
+
+          git checkout beta
+          git merge main
 
           git checkout stable
           git merge main
-          git push
 
-      - uses: actions/create-release@v1
-        with:
-          tag_name: v${{ steps.semver.outputs.version }}
-          release_name: v${{ steps.semver.outputs.version }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git push --tags

@@ -35,7 +35,7 @@ jobs:
   check:
     needs:
       - lint
-    runs-on: ubunut-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: AdityaGarg8/remove-unwanted-software@v2
         with:
@@ -52,4 +52,4 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
-      - run: nix flake check ".?submodules=1" --all-systems
+      - run: nix flake check .?submodules=1 --all-systems

@@ -1,2 +1,5 @@
 [build]
 target = "crates/unavi-app/index.html"
+
+[tools]
+wasm_bindgen = "0.2.89"

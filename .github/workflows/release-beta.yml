@@ -19,8 +19,8 @@ jobs:
       - id: set-matrix
         run: |
           set -Eeu
-          matrix="$(nix eval --json '.#githubActions.matrix')"
-          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          matrix=$(nix eval --json .#githubActions.matrix)
+          echo matrix=$matrix >> $GITHUB_OUTPUT
 
   release:
     needs:
@@ -37,13 +37,52 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
-      - run: nix build ".?submodules=1#packages.${{ matrix.attr }}"
+      - run: nix build .?submodules=1#packages.${{ matrix.attr }}
       - run: zip -r ${{ matrix.attr }}.zip result/bin
       - uses: actions/upload-artifact@v3
         with:
           path: ${{ matrix.attr }}.zip
           name: ${{ matrix.attr }}
           retention-days: 1
+
+  crate-release:
+    needs:
+      - release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version
+        id: get-version
+        uses: michmich112/extract-version@main
+        with:
+          version-file: Cargo.toml
+          schema: major.minor.build
+
+      - run: echo ${{ steps.get-version.outputs }}
+
+      - name: Get previous tag
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get next minor version
+        id: semver
+        uses: "WyriHaximus/github-action-next-semvers@v1"
+        with:
+          version: ${{ steps.previoustag.outputs.tag }}
+
+      - name: Create release
+        id: create_release_id
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.semver.outputs.patch }}
+          release_name: Release ${{ steps.semver.outputs.patch }}
 
   create-pr:
     needs:
@@ -53,4 +92,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: peter-evans/create-pull-request@v6
         with:
-          branch: beta
+          base: beta
+          branch: release/beta
+          title: Release (beta)

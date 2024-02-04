@@ -16,8 +16,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: nguyenvukhang/semver-increment@v1
-        id: semver
+      - id: semver
+        uses: nguyenvukhang/semver-increment@v1
         with:
           increment: "prerelease"
           identifier: "beta"
@@ -26,16 +26,17 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - run: nix develop -c cargo metadata # Force Cargo.lock to update
-      - uses: EndBug/add-and-commit@v9
+      - id: commit
+        uses: EndBug/add-and-commit@v9
         with:
           default_author: github_actions
           message: "chore: bump ${{ steps.semver.outputs.version }}"
           tag: v${{ steps.semver.outputs.version }}
-      - uses: devmasx/merge-branch@v1.4.0
+      - uses: everlytic/branch-merge@1.1.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          source_ref: ${{ steps.commit.outputs.commit_long_sha }}
           target_branch: beta
-          message: "chore: merge ${{ steps.semver.outputs.version }}"
           type: now
 
   build:

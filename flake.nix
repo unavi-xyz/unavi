@@ -47,7 +47,7 @@
           src = lib.cleanSourceWith {
             src = ./.;
             filter = path: type:
-              (lib.hasInfix "/wired-protocol/" path)
+              (lib.hasSuffix ".proto" path) || (lib.hasSuffix ".wit" path)
               || (craneLib.filterCargoSources path type);
           };
 
@@ -110,8 +110,8 @@
           src = lib.cleanSourceWith {
             src = ./.;
             filter = path: type:
-              (lib.hasInfix "/assets/" path)
-              || (lib.hasInfix "/wired-protocol/" path)
+              (lib.hasSuffix ".proto" path) || (lib.hasSuffix ".wit" path)
+              || (lib.hasInfix "/assets/" path)
               || (craneLib.filterCargoSources path type);
           };
 
@@ -135,17 +135,13 @@
           src = lib.cleanSourceWith {
             src = ./.;
             filter = path: type:
-              (lib.hasSuffix ".html" path) || (lib.hasInfix "/assets/" path)
-              || (lib.hasInfix "/wired-protocol/" path)
+              (lib.hasSuffix ".html" path) || (lib.hasSuffix ".proto" path)
+              || (lib.hasSuffix ".wit" path) || (lib.hasInfix "/assets/" path)
               || (lib.hasInfix "/crates/unavi-app/public/" path)
               || (craneLib.filterCargoSources path type);
           };
 
-          wasm-bindgen-cli = pkgs.wasm-bindgen-cli.override {
-            version = "0.2.90";
-            hash = "sha256-X8+DVX7dmKh7BgXqP7Fp0smhup5OO8eWEhn26ODYbkQ=";
-            cargoHash = "sha256-ckJxAR20GuVGstzXzIj1M0WBFj5eJjrO2/DRMUK5dwM=";
-          };
+          wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
         });
       in {
         checks = {

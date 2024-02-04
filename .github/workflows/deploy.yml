@@ -7,12 +7,7 @@ on:
   workflow_call:
     inputs:
       channel:
-        type: choice
         required: true
-        options:
-          - beta
-          - main
-          - stable
   workflow_dispatch:
     inputs:
       channel:

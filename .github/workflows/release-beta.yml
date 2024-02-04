@@ -14,6 +14,8 @@ jobs:
       version: ${{ steps.semver.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: nguyenvukhang/semver-increment@v1
         id: semver
         with:
@@ -24,15 +26,12 @@ jobs:
       - run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --global pull.ff only
 
           git add -A
           git commit -m "chore: bump ${{ steps.semver.outputs.version }}"
           git tag "v${{ steps.semver.outputs.version }}"
 
-          git fetch
           git checkout beta
-          git pull
           git merge main
 
           git push --tags

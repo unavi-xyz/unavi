@@ -27,7 +27,7 @@ jobs:
   deploy-web:
     runs-on: ubuntu-latest
     env:
-      IS_MAIN: ${{ inputs.channel == "main" || github.ref_name == "main" }}
+      IS_MAIN: ${{ inputs.channel == 'main' || github.ref_name == 'main' }}
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main

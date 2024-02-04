@@ -21,21 +21,24 @@
 
   outputs = { self, nix-github-actions, nixpkgs, crane, flake-utils
     , rust-overlay, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
+    flake-utils.lib.eachSystem [
+      flake-utils.lib.system.aarch64-darwin
+      flake-utils.lib.system.aarch64-linux
+      flake-utils.lib.system.x86_64-darwin
+      flake-utils.lib.system.x86_64-linux
+      flake-utils.lib.system.x86_64-windows
+    ] (localSystem:
       let
         pkgs = import nixpkgs {
-          inherit system;
+          inherit localSystem;
           overlays = [ (import rust-overlay) ];
         };
+
         inherit (pkgs) lib;
 
         rustToolchain =
           pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
-            targets = [
-              "wasm32-unknown-unknown"
-              "wasm32-wasi"
-              "x86_64-pc-windows-msvc"
-            ];
+            targets = [ "wasm32-unknown-unknown" "wasm32-wasi" ];
           };
 
         craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
@@ -50,7 +53,7 @@
 
           strictDeps = true;
 
-          buildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [
+          buildInputs = lib.optionals pkgs.stdenv.isLinux (with pkgs; [
             alsa-lib
             alsa-lib.dev
             libxkbcommon
@@ -61,7 +64,7 @@
             xorg.libXcursor
             xorg.libXi
             xorg.libXrandr
-          ]) ++ pkgs.lib.optionals pkgs.stdenv.isDarwin
+          ]) ++ lib.optionals pkgs.stdenv.isDarwin
             (with pkgs; [ pkgs.darwin.apple_sdk.frameworks.Cocoa ]);
 
           nativeBuildInputs = with pkgs;
@@ -77,7 +80,7 @@
               trunk
               wasm-bindgen-cli
               wasm-tools
-            ] ++ pkgs.lib.optionals (!pkgs.stdenv.isDarwin)
+            ] ++ lib.optionals (!pkgs.stdenv.isDarwin)
             (with pkgs; [ alsa-lib alsa-lib.dev ]);
         };
 
@@ -152,18 +155,18 @@
         apps = rec {
           app = flake-utils.lib.mkApp {
             drv = pkgs.writeScriptBin "app" ''
-              ${self.packages.${system}.app}/bin/unavi-app
+              ${self.packages.${localSystem}.app}/bin/unavi-app
             '';
           };
           server = flake-utils.lib.mkApp {
             drv = pkgs.writeScriptBin "server" ''
-              ${self.packages.${system}.server}/bin/unavi-server
+              ${self.packages.${localSystem}.server}/bin/unavi-server
             '';
           };
           web = flake-utils.lib.mkApp {
             drv = pkgs.writeShellScriptBin "web" ''
               ${pkgs.python3Minimal}/bin/python3 -m http.server --directory ${
-                self.packages.${system}.web
+                self.packages.${localSystem}.web
               } 3000
             '';
           };
@@ -183,18 +186,19 @@
         };
 
         devShells.default = craneLib.devShell {
-          checks = self.checks.${system};
+          checks = self.checks.${localSystem};
 
           packages = with pkgs; [ cargo-watch clang rust-analyzer zip ];
 
-          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ pkgs.vulkan-loader ];
+          LD_LIBRARY_PATH = lib.makeLibraryPath [ pkgs.vulkan-loader ];
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
       }) // (let
         gh_packages = [ "app" "server" ];
         gh_systems = [
-          flake-utils.lib.system.x86_64-darwin
+          # flake-utils.lib.system.aarch64-darwin
           flake-utils.lib.system.x86_64-linux
+          # flake-utils.lib.system.x86_64-windows
         ];
       in {
         githubActions = nix-github-actions.lib.mkGithubMatrix {

@@ -23,6 +23,9 @@ jobs:
           identifier: "beta"
           version-file: "Cargo.toml"
           version-regex: '^version = "(.*)"'
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - run: nix develop -c cargo metadata # Force Cargo.lock to update
       - uses: EndBug/add-and-commit@v9
         with:
           default_author: github_actions
@@ -32,4 +35,5 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           target_branch: beta
+          message: "chore: merge ${{ steps.semver.outputs.version }}"
           type: now

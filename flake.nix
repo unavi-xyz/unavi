@@ -51,6 +51,7 @@
           strictDeps = true;
 
           buildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [
+            alsa-lib
             alsa-lib.dev
             libxkbcommon
             udev
@@ -63,19 +64,21 @@
           ]) ++ pkgs.lib.optionals pkgs.stdenv.isDarwin
             (with pkgs; [ pkgs.darwin.apple_sdk.frameworks.Cocoa ]);
 
-          nativeBuildInputs = with pkgs; [
-            binaryen
-            cargo-auditable
-            cargo-component
-            clang
-            cmake
-            nodePackages.prettier
-            pkg-config
-            protobuf
-            trunk
-            wasm-bindgen-cli
-            wasm-tools
-          ];
+          nativeBuildInputs = with pkgs;
+            [
+              binaryen
+              cargo-auditable
+              cargo-component
+              clang
+              cmake
+              nodePackages.prettier
+              pkg-config
+              protobuf
+              trunk
+              wasm-bindgen-cli
+              wasm-tools
+            ] ++ pkgs.lib.optionals (!pkgs.stdenv.isDarwin)
+            (with pkgs; [ alsa-lib alsa-lib.dev ]);
         };
 
         cargoArtifacts =

@@ -11,6 +11,9 @@ on:
           - preminor
           - stable
 
+env:
+  CHANNEL: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
+
 concurrency:
   group: "version"
   cancel-in-progress: false
@@ -28,7 +31,7 @@ jobs:
       - id: semver
         uses: nguyenvukhang/semver-increment@v1
         with:
-          increment: ${{ inputs.increment == "stable" && "patch" || inputs.increment }}
+          increment: ${{ inputs.increment == 'stable' && 'patch' || inputs.increment }}
           identifier: "beta"
           version-file: "Cargo.toml"
           version-regex: '^version = "(.*)"'
@@ -47,7 +50,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           source_ref: ${{ steps.commit.outputs.commit_long_sha }}
-          target_branch: ${{ inputs.channel }}
+          target_branch: ${{ env.channel }}
 
   release:
     needs:
@@ -59,4 +62,4 @@ jobs:
       - release
     uses: ./.github/workflows/deploy.yml
     with:
-      channel: ${{ inputs.increment == "stable" && "stable" || "beta" }}
+      channel: ${{ env.CHANNEL }}

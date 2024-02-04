@@ -16,7 +16,6 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - id: set-matrix
         run: |
-          set -Eeu
           matrix=$(nix eval --json .#githubActions.matrix)
           echo matrix=$matrix >> $GITHUB_OUTPUT
 
@@ -32,6 +31,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: "true"
+          fetch-depth: 0
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2

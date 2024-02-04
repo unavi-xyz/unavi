@@ -39,7 +39,11 @@ jobs:
           type: now
 
   build:
+    needs:
+      - release
     uses: ./.github/workflows/build.yml
 
   deploy:
+    needs:
+      - build
     uses: ./.github/workflows/deploy-beta.yml

@@ -50,7 +50,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           source_ref: ${{ steps.commit.outputs.commit_long_sha }}
-          target_branch: $CHANNEL
+          target_branch: env.channel
 
   release:
     needs:

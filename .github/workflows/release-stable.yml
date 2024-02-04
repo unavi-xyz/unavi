@@ -55,31 +55,23 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - uses: nguyenvukhang/semver-increment@v1
         id: semver
         with:
           increment: "patch"
           version-file: "Cargo.toml"
           version-regex: '^version = "(.*)"'
+
       - uses: EndBug/add-and-commit@v9
         with:
-          message: "chore: bump to ${{ steps.semver.outputs.version }}"
+          message: "chore: bump ${{ steps.semver.outputs.version }}"
           default_author: github_actions
+          tag: v${{ steps.semver.outputs.version }}
+
       - uses: actions/create-release@v1
         with:
-          tag_name: ${{ steps.semver.outputs.version }}
-          release_name: ${{ steps.semver.outputs.version }}
+          tag_name: v${{ steps.semver.outputs.version }}
+          release_name: v${{ steps.semver.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  pr:
-    needs:
-      - release
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: peter-evans/create-pull-request@v6
-        with:
-          base: stable
-          branch: release/${{ needs.release.outputs.version }}
-          title: Release ${{ needs.release.outputs.version }}

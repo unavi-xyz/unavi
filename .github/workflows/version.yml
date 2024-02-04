@@ -7,8 +7,8 @@ on:
         required: true
         type: choice
         options:
-          - preminor
           - prerelease
+          - preminor
           - stable
 
 concurrency:

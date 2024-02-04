@@ -15,8 +15,8 @@ on:
         type: choice
         required: true
         options:
-          - beta
           - main
+          - beta
           - stable
 
 concurrency:

@@ -1,4 +1,4 @@
-name: "Build"
+name: "Release"
 
 on:
   workflow_call:
@@ -17,13 +17,13 @@ jobs:
           matrix=$(nix eval --json .#githubActions.matrix)
           echo matrix=$matrix >> $GITHUB_OUTPUT
 
-  build:
+  release:
     needs:
       - nix-matrix
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.nix-matrix.outputs.matrix) }}
-    name: build-${{ matrix.attr }}
+    name: ${{ matrix.attr }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4

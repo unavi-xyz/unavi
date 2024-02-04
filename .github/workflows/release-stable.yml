@@ -30,13 +30,13 @@ jobs:
           default_author: github_actions
           message: "chore: bump ${{ steps.semver.outputs.version }}"
           tag: v${{ steps.semver.outputs.version }}
-      - uses: devmasx/merge-branch@master
+      - uses: devmasx/merge-branch@v1.4.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           target_branch: beta
           message: "chore: merge ${{ steps.semver.outputs.version }}"
           type: now
-      - uses: devmasx/merge-branch@master
+      - uses: devmasx/merge-branch@v1.4.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           target_branch: stable

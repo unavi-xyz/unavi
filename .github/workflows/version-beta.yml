@@ -1,14 +1,18 @@
-name: "Release (stable)"
+name: "Version (beta)"
 
 on:
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      increment:
+        required: true
+        type: string
 
 concurrency:
-  group: "release-stable"
+  group: "version-beta"
   cancel-in-progress: false
 
 jobs:
-  release:
+  version:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.semver.outputs.version }}
@@ -19,7 +23,8 @@ jobs:
       - id: semver
         uses: nguyenvukhang/semver-increment@v1
         with:
-          increment: "patch"
+          increment: pre${{ on.workflow_call.inputs.increment }}
+          identifier: "beta"
           version-file: "Cargo.toml"
           version-regex: '^version = "(.*)"'
       - uses: DeterminateSystems/nix-installer-action@main
@@ -36,20 +41,13 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           source_ref: ${{ steps.commit.outputs.commit_long_sha }}
           target_branch: beta
-          type: now
-      - uses: everlytic/branch-merge@1.1.2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          source_ref: ${{ steps.commit.outputs.commit_long_sha }}
-          target_branch: stable
-          type: now
 
-  build:
+  release:
     needs:
-      - release
-    uses: ./.github/workflows/build.yml
+      - version
+    uses: ./.github/workflows/release.yml
 
   deploy:
     needs:
-      - build
-    uses: ./.github/workflows/deploy-stable.yml
+      - release
+    uses: ./.github/workflows/deploy-beta.yml

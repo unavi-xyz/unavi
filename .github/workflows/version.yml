@@ -1,14 +1,18 @@
-name: "Version (beta)"
+name: "Version"
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
       increment:
         required: true
-        type: string
+        type: choice
+        options:
+          - preminor
+          - prerelease
+          - stable
 
 concurrency:
-  group: "version-beta"
+  group: "version"
   cancel-in-progress: false
 
 jobs:
@@ -20,16 +24,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - id: semver
         uses: nguyenvukhang/semver-increment@v1
         with:
-          increment: pre${{ inputs.increment }}
+          increment: ${{ inputs.increment == "stable" && "patch" || inputs.increment }}
           identifier: "beta"
           version-file: "Cargo.toml"
           version-regex: '^version = "(.*)"'
+
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - run: nix develop -c cargo metadata # Force Cargo.lock to update
+
       - id: commit
         uses: EndBug/add-and-commit@v9
         with:
@@ -40,7 +47,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           source_ref: ${{ steps.commit.outputs.commit_long_sha }}
-          target_branch: beta
+          target_branch: ${{ inputs.channel }}
 
   release:
     needs:
@@ -50,4 +57,6 @@ jobs:
   deploy:
     needs:
       - release
-    uses: ./.github/workflows/deploy-beta.yml
+    uses: ./.github/workflows/deploy.yml
+    with:
+      channel: ${{ inputs.increment == "stable" && "stable" || "beta" }}

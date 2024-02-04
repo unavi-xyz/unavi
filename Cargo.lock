@@ -8099,7 +8099,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-app"
-version = "0.0.1-beta.0"
+version = "0.0.1-beta.1"
 dependencies = [
  "bevy",
  "bevy-async-task",
@@ -8118,7 +8118,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-server"
-version = "0.0.1-beta.0"
+version = "0.0.1-beta.1"
 dependencies = [
  "axum",
  "tokio",
@@ -8131,7 +8131,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-server-auth"
-version = "0.0.1-beta.0"
+version = "0.0.1-beta.1"
 dependencies = [
  "axum",
  "tokio",
@@ -8141,7 +8141,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-server-web"
-version = "0.0.1-beta.0"
+version = "0.0.1-beta.1"
 dependencies = [
  "axum",
  "tokio",
@@ -8152,7 +8152,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-server-world"
-version = "0.0.1-beta.0"
+version = "0.0.1-beta.1"
 dependencies = [
  "rcgen 0.11.3",
  "time",
@@ -8164,7 +8164,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-system"
-version = "0.0.1-beta.0"
+version = "0.0.1-beta.1"
 dependencies = [
  "wit-bindgen",
 ]
@@ -9307,7 +9307,7 @@ dependencies = [
 
 [[package]]
 name = "wired-world-proto"
-version = "0.0.1-beta.0"
+version = "0.0.1-beta.1"
 dependencies = [
  "prost",
  "prost-build",

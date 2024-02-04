@@ -14,16 +14,12 @@ jobs:
       version: ${{ steps.semver.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - uses: nguyenvukhang/semver-increment@v1
         id: semver
         with:
           increment: "patch"
           version-file: "Cargo.toml"
           version-regex: '^version = "(.*)"'
-
       - run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"

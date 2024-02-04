@@ -1,14 +1,27 @@
-name: Deploy (stable)
+name: Deploy
 
 on:
-  push:
-    branches:
-      - stable
   workflow_call:
+    inputs:
+      channel:
+        type: choice
+        required: true
+        options:
+          - beta
+          - main
+          - stable
   workflow_dispatch:
+    inputs:
+      channel:
+        type: choice
+        required: true
+        options:
+          - beta
+          - main
+          - stable
 
 concurrency:
-  group: "deploy-stable"
+  group: "deploy-${{ inputs.channel }}"
   cancel-in-progress: false
 
 jobs:
@@ -19,11 +32,17 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
+
       - run: nix build .#web
+        if: inputs.channel != main
+
+      - run: nix develop -c trunk build
+        if: inputs.channel == main
+
       - run: cp -rL result www
       - uses: s0/git-publish-subdir-action@develop
         env:
-          BRANCH: web-app/stable
+          BRANCH: "web-app/${{ inputs.channel }}"
           COMMIT_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
           COMMIT_NAME: "github-actions[bot]"
           FOLDER: www

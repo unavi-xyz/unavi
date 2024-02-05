@@ -43,7 +43,7 @@ jobs:
           message: "chore: bump ${{ steps.semver.outputs.version }}"
           tag: v${{ steps.semver.outputs.version }}
 
-      - uses: everlytic/branch-merge@1.1.2
+      - uses: everlytic/branch-merge@1.1.5
         with:
           github_token: ${{ github.token }}
           source_ref: ${{ github.ref }}

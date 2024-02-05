@@ -28,12 +28,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - if: env.CHANNEL == 'main'
-        run: nix develop -c trunk build
+        run: nix develop -c trunk build && cp -r crates/unavi-app/dist www
 
       - if: env.CHANNEL != 'main'
-        run: nix build .#web
+        run: nix build .#web && cp -rL result www
 
-      - run: cp -rL result www
       - uses: s0/git-publish-subdir-action@develop
         env:
           BRANCH: "web-app/${{ env.CHANNEL }}"

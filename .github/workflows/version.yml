@@ -20,6 +20,7 @@ concurrency:
 
 jobs:
   version:
+    name: version-${{ inputs.increment }}
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.semver.outputs.version }}

@@ -21,7 +21,7 @@ jobs:
           matrix=$(nix eval --json .#githubActions.matrix)
           echo matrix=$matrix >> $GITHUB_OUTPUT
 
-  release:
+  build:
     needs:
       - nix-matrix
     strategy:

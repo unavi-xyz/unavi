@@ -14,9 +14,9 @@ pub async fn start(opts: &ServerOptions) -> Result<(), Box<dyn std::error::Error
     #[cfg(feature = "web")]
     let router = router.merge(unavi_server_web::router().await);
 
-    info!("Listening on {}", opts.address);
+    info!("Listening on {}", opts.axum_addr);
 
-    axum::Server::bind(&opts.address)
+    axum::Server::bind(&opts.axum_addr)
         .serve(router.into_make_service())
         .await?;
 

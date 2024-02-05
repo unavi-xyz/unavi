@@ -8,13 +8,15 @@ mod world_server;
 
 #[derive(Clone)]
 pub struct ServerOptions {
-    pub address: SocketAddr,
+    pub axum_addr: SocketAddr,
+    pub world_addr: SocketAddr,
 }
 
 impl Default for ServerOptions {
     fn default() -> Self {
         Self {
-            address: SocketAddr::from(([127, 0, 0, 1], 3000)),
+            axum_addr: SocketAddr::from(([127, 0, 0, 1], 3000)),
+            world_addr: SocketAddr::from(([127, 0, 0, 1], 3001)),
         }
     }
 }

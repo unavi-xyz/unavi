@@ -64,4 +64,4 @@ jobs:
       - release
     uses: ./.github/workflows/deploy.yml
     with:
-      channel: $CHANNEL
+      channel: ${{ env.CHANNEL }}

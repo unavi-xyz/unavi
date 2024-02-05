@@ -50,7 +50,7 @@ jobs:
         with:
           github_token: ${{ github.token}}
           source_ref: ${{ github.ref }}
-          target_branch: ${{ env.channel }}
+          target_branch: ${{ env.CHANNEL }}
 
   release:
     needs:

@@ -10,14 +10,6 @@ on:
         type: string
         required: true
   workflow_dispatch:
-    inputs:
-      channel:
-        type: choice
-        required: true
-        options:
-          - main
-          - beta
-          - stable
 
 concurrency:
   group: "deploy-${{ inputs.channel }}"
@@ -25,6 +17,7 @@ concurrency:
 
 jobs:
   deploy-web:
+    name: deploy-web-${{ inputs.channel }}
     runs-on: ubuntu-latest
     env:
       IS_MAIN: ${{ inputs.channel == 'main' || github.ref_name == 'main' }}

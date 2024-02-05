@@ -48,7 +48,8 @@ jobs:
 
       - uses: everlytic/branch-merge@1.1.2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ github.token}}
+          source_ref: ${{ github.ref }}
           target_branch: ${{ env.channel }}
 
   release:

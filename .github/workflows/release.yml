@@ -3,7 +3,7 @@ name: "Release"
 on:
   workflow_call:
     inputs:
-      tag:
+      version:
         type: string
         required: true
 
@@ -41,7 +41,7 @@ jobs:
       - run: zip -r ${{ matrix.attr }}.zip result/bin
       - uses: svenstaro/upload-release-action@v2
         with:
-          asset_name: ${{ matrix.attr }}-${{ inputs.tag }}.zip
+          asset_name: ${{ matrix.attr }}-${{ inputs.version }}.zip
           file: ${{ matrix.attr }}.zip
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ inputs.tag }}
+          tag: ${{ inputs.version }}

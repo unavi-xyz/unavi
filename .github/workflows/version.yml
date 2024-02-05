@@ -57,7 +57,7 @@ jobs:
       - version
     uses: ./.github/workflows/release.yml
     with:
-      tag: v${{ needs.version.outputs.version }}
+      version: v${{ needs.version.outputs.version }}
 
   deploy:
     needs:

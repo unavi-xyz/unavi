@@ -50,7 +50,7 @@ jobs:
         with:
           submodules: "true"
           ref: ${{ needs.lint.outputs.sha }}
-      - uses: DeterminateSystems/flake-checker-action@v4
+      - uses: DeterminateSystems/flake-checker-action@v5
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2

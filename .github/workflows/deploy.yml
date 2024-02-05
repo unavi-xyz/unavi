@@ -34,11 +34,11 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
 
-      - run: nix build .#web
-        if: env.IS_MAIN
+      - if: env.IS_MAIN == true
+        run: nix develop -c trunk build
 
-      - run: nix develop -c trunk build
-        if: env.IS_MAIN == false
+      - if: env.IS_MAIN == false
+        run: nix build .#web
 
       - run: cp -rL result www
       - uses: s0/git-publish-subdir-action@develop

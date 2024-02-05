@@ -11,9 +11,6 @@ on:
           - preminor
           - stable
 
-env:
-  CHANNEL: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
-
 concurrency:
   group: "version"
   cancel-in-progress: false
@@ -50,7 +47,7 @@ jobs:
         with:
           github_token: ${{ github.token }}
           source_ref: ${{ github.ref }}
-          target_branch: ${{ env.CHANNEL }}
+          target_branch: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
 
   release:
     needs:
@@ -64,4 +61,4 @@ jobs:
       - release
     uses: ./.github/workflows/deploy.yml
     with:
-      channel: ${{ env.CHANNEL }}
+      channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}

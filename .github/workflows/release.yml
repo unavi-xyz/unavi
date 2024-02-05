@@ -2,6 +2,10 @@ name: "Release"
 
 on:
   workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
 
 jobs:
   nix-matrix:
@@ -35,11 +39,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: nix build .?submodules=1#packages.${{ matrix.attr }}
       - run: zip -r ${{ matrix.attr }}.zip result/bin
-      - id: get-tag
-        uses: olegtarasov/get-tag@v2.1.2
       - uses: svenstaro/upload-release-action@v2
         with:
-          asset_name: ${{ matrix.attr }}-${{ steps.get-tag.outputs.tag }}.zip
+          asset_name: ${{ matrix.attr }}-${{ inputs.tag }}.zip
           file: ${{ matrix.attr }}.zip
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ steps.get-tag.outputs.tag }}
+          tag: ${{ inputs.tag }}

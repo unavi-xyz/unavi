@@ -43,5 +43,5 @@ jobs:
         with:
           asset_name: ${{ matrix.attr }}-${{ inputs.version }}.zip
           file: ${{ matrix.attr }}.zip
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          repo_token: ${{ github.token }}
           tag: ${{ inputs.version }}

@@ -170,14 +170,14 @@
           default = app;
         };
 
-        packages = rec {
+        packages = {
           app = unavi-app;
           server = unavi-server;
           web = unavi-web;
 
           default = pkgs.symlinkJoin {
             name = "all";
-            paths = [ app server web ];
+            paths = [ unavi-app unavi-server unavi-web ];
           };
         };
 

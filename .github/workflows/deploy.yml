@@ -41,7 +41,4 @@ jobs:
           git add .
           git commit -m "chore: deploy web-app/${{ env.CHANNEL }}"
 
-          # Squash commits
-          git rebase -i HEAD~2
-
           git push origin HEAD:web-app/${{ env.CHANNEL }}

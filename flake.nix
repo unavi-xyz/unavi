@@ -69,7 +69,9 @@
           src = lib.cleanSourceWith {
             src = ./.;
             filter = path: type:
-              (lib.hasSuffix ".proto" path) || (lib.hasSuffix ".wit" path)
+              (lib.hasSuffix ".html" path) || (lib.hasSuffix ".proto" path)
+              || (lib.hasSuffix ".wit" path) || (lib.hasInfix "/assets/" path)
+              || (lib.hasInfix "/crates/unavi-app/public/" path)
               || (craneLib.filterCargoSources path type);
           };
 
@@ -123,38 +125,10 @@
           pname = "doc";
         });
 
-        unavi-ui = craneLib.buildPackage (wasmArgs // {
-          pname = "unavi-ui";
-          cargoBuildCommand = "cargo component build --profile wasm-release";
-          cargoExtraArgs = "--locked -p unavi-ui";
-          doCheck = false;
-        });
-
-        unavi-system = craneLib.buildPackage (commonArgs // {
-          # Manually build component deps until cargo-component has better support :(
-          cargoArtifacts = unavi-ui;
-          preBuild = ''
-            cargo component build --profile wasm-release --locked -p unavi-ui
-          '';
-
-          pname = "unavi-system";
-          cargoBuildCommand = "cargo component build --profile wasm-release";
-          cargoExtraArgs = "--locked -p unavi-system";
-          doCheck = false;
-        });
-
         unavi-app = craneLib.buildPackage (commonArgs // {
           inherit cargoArtifacts;
           pname = "unavi-app";
           cargoExtraArgs = "--locked -p unavi-app";
-
-          src = lib.cleanSourceWith {
-            src = ./.;
-            filter = path: type:
-              (lib.hasSuffix ".proto" path) || (lib.hasSuffix ".wit" path)
-              || (lib.hasInfix "/assets/" path)
-              || (craneLib.filterCargoSources path type);
-          };
 
           postInstall = ''
             cp -r assets $out/bin
@@ -167,29 +141,31 @@
           cargoExtraArgs = "--locked -p unavi-server";
         });
 
-        cargoArtifactsWeb = craneLib.buildDepsOnly (wasmArgs // {
-          pname = "deps-web";
-          cargoExtraArgs = "--locked -p unavi-app";
-          doCheck = false;
-        });
-
-        unavi-web = craneLib.buildTrunkPackage (wasmArgs // {
-          cargoArtifacts = cargoArtifactsWeb;
-
+        unavi-web = craneLib.buildTrunkPackage (wasmArgs // rec {
           pname = "unavi-web";
           cargoExtraArgs = "--locked -p unavi-app";
           trunkIndexPath = "./crates/unavi-app/index.html";
-
-          src = lib.cleanSourceWith {
-            src = ./.;
-            filter = path: type:
-              (lib.hasSuffix ".html" path) || (lib.hasSuffix ".proto" path)
-              || (lib.hasSuffix ".wit" path) || (lib.hasInfix "/assets/" path)
-              || (lib.hasInfix "/crates/unavi-app/public/" path)
-              || (craneLib.filterCargoSources path type);
-          };
-
           wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
+        });
+
+        unavi-ui = craneLib.buildPackage (wasmArgs // {
+          pname = "unavi-ui";
+          cargoBuildCommand = "cargo component build --profile wasm-release";
+          cargoExtraArgs = "--locked -p unavi-ui";
+          doCheck = false;
+        });
+
+        unavi-system = craneLib.buildPackage (wasmArgs // {
+          # Manually build component deps until cargo-component has better support :(
+          cargoArtifacts = unavi-ui;
+          preBuild = ''
+            cargo component build --profile wasm-release --locked -p unavi-ui
+          '';
+
+          pname = "unavi-system";
+          cargoBuildCommand = "cargo component build --profile wasm-release";
+          cargoExtraArgs = "--locked -p unavi-system";
+          doCheck = false;
         });
       in {
         checks = {

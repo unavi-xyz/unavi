@@ -216,8 +216,9 @@
           };
 
           check-components = flake-utils.lib.mkApp {
-            drv = pkgs.writeScriptBin "check-components" ''
+            drv = pkgs.writeShellScriptBin "check-components" ''
               mkdir -p ./target/wasm32-wasi/wasm-release
+
               cp ${
                 self.packages.${localSystem}.components
               }/lib/* ./target/wasm32-wasi/wasm-release

@@ -29,13 +29,14 @@ jobs:
 
       - run: nix build .#web
 
-      - run: |
+      - name: Publish to branch
+        run: |
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
 
           # Remove all files besides our build output
           git rm -r .
-          cp -rL result .
+          cp -rL result/* .
 
           git add .
           git commit -m "chore: deploy web-app/${{ env.CHANNEL }}"

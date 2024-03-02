@@ -131,8 +131,8 @@
         });
 
         unavi-system = craneLib.buildPackage (commonArgs // {
+          # Manually build component deps until cargo-component has better support :(
           cargoArtifacts = unavi-ui;
-
           preBuild = ''
             cargo component build --profile wasm-release --locked -p unavi-ui
           '';
@@ -212,6 +212,17 @@
               ${pkgs.python3Minimal}/bin/python3 -m http.server --directory ${
                 self.packages.${localSystem}.web
               } 3000
+            '';
+          };
+
+          check-components = flake-utils.lib.mkApp {
+            drv = pkgs.writeScriptBin "generate-bindings" ''
+              mkdir -p ./target/wasm32-wasi/wasm-release
+              cp ${
+                self.packages.${localSystem}.components
+              }/lib/* ./target/wasm32-wasi/wasm-release
+
+              cargo component check -p unavi-ui -p unavi-system
             '';
           };
 

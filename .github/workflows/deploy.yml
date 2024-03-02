@@ -27,11 +27,7 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
 
-      - if: env.CHANNEL == 'main'
-        run: nix develop -c trunk build && cp -r crates/unavi-app/dist www
-
-      - if: env.CHANNEL != 'main'
-        run: nix build .#web && cp -rL result www
+      - run: nix build .#web && cp -rL result www
 
       - uses: s0/git-publish-subdir-action@develop
         env:

@@ -6,7 +6,7 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
-axum = "0.6.20"
-tokio = { version = "1.33.0", features = ["full"] }
-tracing = "0.1.40"
-tracing-subscriber = "0.3.18"
+axum.workspace = true
+tokio.workspace = true
+tracing-subscriber.workspace = true
+tracing.workspace = true

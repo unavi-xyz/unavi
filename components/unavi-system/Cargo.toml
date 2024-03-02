@@ -5,14 +5,14 @@ edition.workspace = true
 repository.workspace = true
 license.workspace = true
 
-[dependencies]
-wit-bindgen = { version = "0.16.0", default-features = false, features = ["realloc"] }
+[lib]
+crate-type = ["cdylib"]
 
 [lints]
 workspace = true
 
-[lib]
-crate-type = ["cdylib"]
+[dependencies]
+wit-bindgen = { version = "0.16.0", default-features = false, features = ["realloc"] }
 
 [package.metadata.component]
 package = "component:unavi-system"

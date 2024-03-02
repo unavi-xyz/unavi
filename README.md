@@ -45,7 +45,7 @@ nix develop
 You can then run crates using cargo:
 
 ```bash
-cargo run -p unavi-app --features bevy/dynamic_linking
+cargo run -p unavi-app
 ```
 
 Or serve the web app using trunk:

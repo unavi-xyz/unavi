@@ -1,0 +1,5 @@
+package unavi:ui;
+
+world ui {
+    export new-bubble: func() -> string;
+}

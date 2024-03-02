@@ -1,4 +1,4 @@
-package component:unavi-system;
+package unavi:system;
 
 /// An example world for the component to target.
 world example {

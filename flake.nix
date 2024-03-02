@@ -41,6 +41,28 @@
             targets = [ "wasm32-unknown-unknown" "wasm32-wasi" ];
           };
 
+        # TODO: Remove manual cargo-component build once nixpkgs-unstable has it
+        cargo-component = pkgs.rustPlatform.buildRustPackage rec {
+          pname = "cargo-component";
+          version = "0.9.0";
+
+          src = pkgs.fetchFromGitHub {
+            owner = "bytecodealliance";
+            repo = "cargo-component";
+            rev = "v${version}";
+            hash = "sha256-zJ3fV6GOYcbLvOjZKrSOxGPc8GSQGridInvOZFruXks=";
+          };
+
+          cargoHash = "sha256-ixk9ui/vS6DynCTF086JBFEw/JC8jpixvUkwIi5Hr0A=";
+
+          nativeBuildInputs = with pkgs; [ pkg-config ];
+          buildInputs = with pkgs;
+            [ openssl ] ++ lib.optionals stdenv.isDarwin
+            [ darwin.apple_sdk.frameworks.SystemConfiguration ];
+
+          doCheck = false;
+        };
+
         craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
         commonArgs = {
@@ -105,7 +127,6 @@
         unavi-app = craneLib.buildPackage (commonArgs // {
           inherit cargoArtifacts;
           pname = "unavi-app";
-          cargoExtraArgs = "-p unavi-app";
 
           src = lib.cleanSourceWith {
             src = ./.;
@@ -123,13 +144,11 @@
         unavi-server = craneLib.buildPackage (commonArgs // {
           inherit cargoArtifacts;
           pname = "unavi-server";
-          cargoExtraArgs = "-p unavi-server";
         });
 
         unavi-web = craneLib.buildTrunkPackage (commonArgs // {
           inherit cargoArtifactsWasm;
           pname = "unavi-web";
-          cargoExtraArgs = "-p unavi-app --target wasm32-unknown-unknown";
           trunkIndexPath = "crates/unavi-app/index.html";
 
           src = lib.cleanSourceWith {

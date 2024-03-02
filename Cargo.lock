@@ -8166,7 +8166,16 @@ dependencies = [
 name = "unavi-system"
 version = "0.0.1"
 dependencies = [
- "wit-bindgen",
+ "bitflags 2.4.2",
+ "wit-bindgen-rt",
+]
+
+[[package]]
+name = "unavi-ui"
+version = "0.0.1"
+dependencies = [
+ "bitflags 2.4.2",
+ "wit-bindgen-rt",
 ]
 
 [[package]]
@@ -9314,13 +9323,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "wit-bindgen"
-version = "0.16.0"
+name = "wit-bindgen-rt"
+version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b76f1d099678b4f69402a421e888bbe71bf20320c2f3f3565d0e7484dbe5bc20"
-dependencies = [
- "bitflags 2.4.2",
-]
+checksum = "781989c70b3300b1be7ffbc7095e3b56c4f208f0c109cb5d1d943b297918dd8a"
 
 [[package]]
 name = "wit-parser"

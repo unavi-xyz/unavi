@@ -6,8 +6,8 @@ use bindings::Guest;
 struct Component;
 
 impl Guest for Component {
-    fn hello_world() -> String {
-        "Hello, World!".to_string()
+    fn new_bubble() -> String {
+        "bubble".into()
     }
 }
 

@@ -29,7 +29,8 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
 
-      - run: nix develop -c cargo component check
+      - run: nix develop -c cargo component build --release -p unavi-ui
+      - run: nix develop -c cargo component check -p unavi-ui -p unavi-system
       - uses: EndBug/add-and-commit@v9
         with:
           message: "chore: generate wasm bindings"

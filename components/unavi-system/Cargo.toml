@@ -19,4 +19,4 @@ wit-bindgen-rt.workspace = true
 package = "unavi:system"
 
 [package.metadata.component.dependencies]
-"unavi:ui" = { path = "../../target/wasm32-wasi/release/unavi_ui.wasm" }
+"unavi:ui" = { path = "../../target/wasm32-wasi/wasm-release/unavi_ui.wasm" }

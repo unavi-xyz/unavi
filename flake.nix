@@ -106,13 +106,12 @@
             (with pkgs; [ alsa-lib alsa-lib.dev ]);
         };
 
+        wasmArgs = commonArgs // {
+          CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
+        };
+
         cargoArtifacts =
           craneLib.buildDepsOnly (commonArgs // { pname = "deps"; });
-
-        cargoArtifactsWasm = craneLib.buildDepsOnly (commonArgs // {
-          pname = "deps-wasm";
-          doCheck = false;
-        });
 
         cargoClippy = craneLib.cargoClippy (commonArgs // {
           inherit cargoArtifacts;
@@ -124,9 +123,30 @@
           pname = "doc";
         });
 
+        unavi-ui = craneLib.buildPackage (wasmArgs // {
+          pname = "unavi-ui";
+          cargoBuildCommand = "cargo component build --profile wasm-release";
+          cargoExtraArgs = "--locked -p unavi-ui";
+          doCheck = false;
+        });
+
+        unavi-system = craneLib.buildPackage (commonArgs // {
+          cargoArtifacts = unavi-ui;
+
+          preBuild = ''
+            cargo component build --profile wasm-release --locked -p unavi-ui
+          '';
+
+          pname = "unavi-system";
+          cargoBuildCommand = "cargo component build --profile wasm-release";
+          cargoExtraArgs = "--locked -p unavi-system";
+          doCheck = false;
+        });
+
         unavi-app = craneLib.buildPackage (commonArgs // {
           inherit cargoArtifacts;
           pname = "unavi-app";
+          cargoExtraArgs = "--locked -p unavi-app";
 
           src = lib.cleanSourceWith {
             src = ./.;
@@ -144,12 +164,21 @@
         unavi-server = craneLib.buildPackage (commonArgs // {
           inherit cargoArtifacts;
           pname = "unavi-server";
+          cargoExtraArgs = "--locked -p unavi-server";
         });
 
-        unavi-web = craneLib.buildTrunkPackage (commonArgs // {
-          inherit cargoArtifactsWasm;
+        cargoArtifactsWeb = craneLib.buildDepsOnly (wasmArgs // {
+          pname = "deps-web";
+          cargoExtraArgs = "--locked -p unavi-app";
+          doCheck = false;
+        });
+
+        unavi-web = craneLib.buildTrunkPackage (wasmArgs // {
+          cargoArtifacts = cargoArtifactsWeb;
+
           pname = "unavi-web";
-          trunkIndexPath = "crates/unavi-app/index.html";
+          cargoExtraArgs = "--locked -p unavi-app";
+          trunkIndexPath = "./crates/unavi-app/index.html";
 
           src = lib.cleanSourceWith {
             src = ./.;
@@ -194,9 +223,17 @@
           server = unavi-server;
           web = unavi-web;
 
+          unavi-ui = unavi-ui;
+          unavi-system = unavi-system;
+
+          components = pkgs.symlinkJoin {
+            name = "components";
+            paths = [ unavi-ui unavi-system ];
+          };
+
           default = pkgs.symlinkJoin {
             name = "all";
-            paths = [ unavi-app unavi-server unavi-web ];
+            paths = [ unavi-app unavi-server unavi-web unavi-ui unavi-system ];
           };
         };
 

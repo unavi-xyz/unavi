@@ -4,16 +4,10 @@ use bevy_async_task::{AsyncTaskRunner, AsyncTaskStatus};
 const WORLD_ADDRESS: &str = "https://127.0.0.1:3001";
 
 #[cfg(target_family = "wasm")]
-use xwt_core::traits::EndpointConnect;
-
-#[cfg(target_family = "wasm")]
-use xwt_core::traits::OpenBiStream;
-
-#[cfg(target_family = "wasm")]
-use xwt_core::Write;
-
-#[cfg(target_family = "wasm")]
-use xwt_core::Read;
+use xwt_core::{
+    traits::{Connecting, EndpointConnect, OpenBiStream, OpeningBiStream},
+    Read, Write,
+};
 
 pub fn open_connection(mut task_executor: AsyncTaskRunner<String>, mut started: Local<bool>) {
     match task_executor.poll() {
@@ -73,17 +67,16 @@ async fn test_connection() -> Result<String, Box<dyn std::error::Error>> {
 
     let connection = endpoint.connect(WORLD_ADDRESS).await?;
 
-    #[cfg(not(target_family = "wasm"))]
-    let opening = connection.open_bi().await?;
-
     #[cfg(target_family = "wasm")]
-    let opening = connection.0.open_bi().await?;
+    let connection = connection.wait_connect().await?;
+
+    let opening = connection.open_bi().await?;
 
     #[cfg(not(target_family = "wasm"))]
     let (mut send, mut recv) = opening.await?;
 
     #[cfg(target_family = "wasm")]
-    let (mut send, mut recv) = opening.0;
+    let (mut send, mut recv) = opening.wait_bi().await?;
 
     info!("Opened bi stream");
 

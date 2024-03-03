@@ -41,13 +41,13 @@ jobs:
       - name: Log IS_WINDOWS
         run: echo "IS_WINDOWS=$IS_WINDOWS"
 
-      - if: ${{ ! env.IS_WINDOWS }}
+      - if: ${{ env.IS_WINDOWS == false }}
         uses: DeterminateSystems/nix-installer-action@main
-      - if: ${{ ! env.IS_WINDOWS }}
+      - if: ${{ env.IS_WINDOWS == false }}
         uses: DeterminateSystems/magic-nix-cache-action@main
-      - if: ${{ ! env.IS_WINDOWS }}
+      - if: ${{ env.IS_WINDOWS == false }}
         run: nix build .?submodules=1#packages.${{ matrix.attr }}
-      - if: ${{ ! env.IS_WINDOWS }}
+      - if: ${{ env.IS_WINDOWS == false }}
         run: zip -r ${{ matrix.attr }}.zip result/bin
 
       - if: ${{ env.IS_WINDOWS }}

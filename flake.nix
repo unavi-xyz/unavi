@@ -229,8 +229,9 @@
         githubActions = {
           checks = githubActions.checks;
           matrix = {
-            include = githubActions.matrix.include ++ (map (v: {
-              attr = v;
+            include = githubActions.matrix.include ++ (map (package: {
+              attr =
+                nixpkgs.lib.concatStringsSep "." [ "x86_64-windows" package ];
               os = [ "windows-latest" ];
             }) gh_packages);
           };

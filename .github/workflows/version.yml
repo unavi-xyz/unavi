@@ -36,9 +36,8 @@ jobs:
           version-file: "Cargo.toml"
           version-regex: '^version = "(.*)"'
 
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-      - run: nix develop -c cargo metadata # Force Cargo.lock to update
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo metadata # Force Cargo.lock to update
 
       - uses: EndBug/add-and-commit@v9
         with:

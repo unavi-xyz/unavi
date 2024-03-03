@@ -2,6 +2,9 @@ name: "Get Build Matrix"
 
 on:
   workflow_call:
+    outputs:
+      matrix:
+        type: string
 
 jobs:
   build-matrix:

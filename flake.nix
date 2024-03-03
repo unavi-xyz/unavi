@@ -21,13 +21,7 @@
 
   outputs = { self, nix-github-actions, nixpkgs, crane, flake-utils
     , rust-overlay, ... }:
-    flake-utils.lib.eachSystem [
-      flake-utils.lib.system.aarch64-darwin
-      flake-utils.lib.system.aarch64-linux
-      flake-utils.lib.system.x86_64-darwin
-      flake-utils.lib.system.x86_64-linux
-      # flake-utils.lib.system.x86_64-windows
-    ] (localSystem:
+    flake-utils.lib.eachDefaultSystem (localSystem:
       let
         pkgs = import nixpkgs {
           inherit localSystem;
@@ -130,7 +124,6 @@
           inherit cargoArtifacts;
           pname = "unavi-app";
           cargoExtraArgs = "--locked -p unavi-app";
-
           postInstall = ''
             cp -r assets $out/bin
           '';
@@ -239,11 +232,9 @@
         gh_systems = [
           flake-utils.lib.system.x86_64-darwin
           flake-utils.lib.system.x86_64-linux
-          # flake-utils.lib.system.x86_64-windows
         ];
       in {
         githubActions = nix-github-actions.lib.mkGithubMatrix {
-          attrPrefix = "";
           checks = nixpkgs.lib.mapAttrs (_: v:
             (nixpkgs.lib.filterAttrs
               (n: _: !(nixpkgs.lib.mutuallyExclusive [ n ] gh_packages)) v))

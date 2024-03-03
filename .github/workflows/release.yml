@@ -40,18 +40,18 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
 
-      - if: IS_WINDOWS == false
+      - if: env.IS_WINDOWS == false
         run: nix build .?submodules=1#packages.${{ matrix.attr }}
 
-      - if: IS_WINDOWS
+      - if: env.IS_WINDOWS
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
 
-      - if: IS_WINDOWS
+      - if: env.IS_WINDOWS
         run: cargo build -p ${{ matrix.attr }} --release --target x86_64-pc-windows-msvc
 
-      - if: IS_WINDOWS
+      - if: env.IS_WINDOWS
         run: |
           mkdir -p result/bin
           mv target/x86_64-pc-windows-msvc/release result/bin

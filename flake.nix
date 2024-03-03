@@ -201,7 +201,12 @@
         };
 
         packages = {
-          inherit unavi-app unavi-server unavi-system unavi-ui unavi-web;
+          inherit unavi-app unavi-server unavi-web;
+
+          components = pkgs.symlinkJoin {
+            name = "components";
+            paths = [ unavi-ui unavi-system ];
+          };
         };
 
         devShells.default = craneLib.devShell {

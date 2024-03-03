@@ -11,9 +11,22 @@ jobs:
   build-matrix:
     uses: ./.github/workflows/build-matrix.yml
 
-  release:
+  release-notes:
+    runs-on: ubuntu-latest
+    outputs:
+      release-notes: ${{ steps.release-notes.outputs.release-notes }}
+    steps:
+      - name: Generate Release Notes
+        id: release-notes
+        uses: RedCrafter07/release-notes-action@v1
+        with:
+          tag-name: ${{ github.event.inputs.tag-name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  upload-artifacts:
     needs:
       - build-matrix
+      - release-notes
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.build-matrix.outputs.matrix) }}
@@ -27,6 +40,8 @@ jobs:
       - uses: svenstaro/upload-release-action@v2
         with:
           asset_name: ${{ matrix.attr }}-${{ inputs.version }}.zip
+          body: ${{ needs.release-notes.outputs.release-notes }}
           file: ${{ matrix.attr }}.zip
+          prerelease: ${{ contains(inputs.version, 'beta') }}
           repo_token: ${{ github.token }}
           tag: ${{ inputs.version }}

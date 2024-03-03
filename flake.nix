@@ -77,24 +77,25 @@
 
           strictDeps = true;
 
-          buildInputs = lib.optionals pkgs.stdenv.isLinux (with pkgs; [
-            alsa-lib
-            alsa-lib.dev
-            libxkbcommon
-            udev
-            vulkan-loader
-            wayland
-            xorg.libX11
-            xorg.libXcursor
-            xorg.libXi
-            xorg.libXrandr
-          ]) ++ lib.optionals pkgs.stdenv.isDarwin
-            (with pkgs; [ pkgs.darwin.apple_sdk.frameworks.Cocoa ]);
+          buildInputs = with pkgs;
+            [ rustPlatform.bindgenHook ] ++ lib.optionals pkgs.stdenv.isLinux
+            (with pkgs; [
+              alsa-lib
+              alsa-lib.dev
+              libxkbcommon
+              udev
+              vulkan-loader
+              wayland
+              xorg.libX11
+              xorg.libXcursor
+              xorg.libXi
+              xorg.libXrandr
+            ]) ++ lib.optionals pkgs.stdenv.isDarwin
+            (with pkgs; [ darwin.apple_sdk.frameworks.Cocoa libiconv ]);
 
           nativeBuildInputs = with pkgs;
             [
               binaryen
-              cargo-auditable
               cargo-component
               clang
               cmake

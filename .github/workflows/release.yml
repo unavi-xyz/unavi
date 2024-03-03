@@ -29,6 +29,8 @@ jobs:
       matrix: ${{ fromJSON(needs.nix-matrix.outputs.matrix) }}
     name: ${{ matrix.attr }}
     runs-on: ${{ matrix.os }}
+    env:
+      IS_WINDOWS: ${{ matrix.os == 'windows-latest' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,8 +39,26 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
-      - run: nix build .?submodules=1#packages.${{ matrix.attr }}
+
+      - if: IS_WINDOWS == false
+        run: nix build .?submodules=1#packages.${{ matrix.attr }}
+
+      - if: IS_WINDOWS
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - if: IS_WINDOWS
+        run: cargo build --release --target x86_64-pc-windows-msvc
+
+      - if: IS_WINDOWS
+        run: |
+          mkdir -p result/bin
+          mv target/x86_64-pc-windows-msvc/release result/bin
+          cp -r assets result/bin
+
       - run: zip -r ${{ matrix.attr }}.zip result/bin
+
       - uses: svenstaro/upload-release-action@v2
         with:
           asset_name: ${{ matrix.attr }}-${{ inputs.version }}.zip

@@ -232,6 +232,7 @@
         gh_systems = [
           flake-utils.lib.system.x86_64-darwin
           flake-utils.lib.system.x86_64-linux
+          flake-utils.lib.system.x86_64-windows
         ];
       in {
         githubActions = nix-github-actions.lib.mkGithubMatrix {

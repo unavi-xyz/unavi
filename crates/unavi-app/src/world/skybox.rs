@@ -25,7 +25,7 @@ pub fn add_skybox_to_cameras(
     for camera in cameras.iter() {
         commands.entity(camera).insert(Skybox {
             image: cubemap.image_handle.clone(),
-            brightness: 1.0,
+            brightness: 1000.0,
         });
     }
 }

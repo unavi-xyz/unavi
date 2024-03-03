@@ -21,6 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.semver.outputs.version }}
+    env:
+      TARGET_BRANCH: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,11 +46,16 @@ jobs:
           message: "chore: bump ${{ steps.semver.outputs.version }}"
           tag: v${{ steps.semver.outputs.version }}
 
+      - name: Create branch if it doesn't exist
+        run: |
+          git fetch origin ${{ env.TARGET_BRANCH }} || git checkout -b ${{ env.TARGET_BRANCH }}
+          git push origin ${{ env.TARGET_BRANCH }}
+
       - uses: everlytic/branch-merge@1.1.5
         with:
           github_token: ${{ github.token }}
           source_ref: ${{ github.ref }}
-          target_branch: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
+          target_branch: ${{ env.TARGET_BRANCH }}
 
   release:
     needs:

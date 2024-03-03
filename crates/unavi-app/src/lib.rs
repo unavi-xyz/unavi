@@ -11,7 +11,6 @@ pub mod world;
 // pub mod scripting;
 
 pub use bevy::app::App;
-use state::AppState;
 
 #[derive(Debug, Default)]
 pub struct UnaviPlugin {
@@ -31,7 +30,7 @@ impl Plugin for UnaviPlugin {
             settings::SettingsPlugin,
             world::WorldPlugin,
         ))
-        .init_state::<AppState>();
+        .init_state::<state::AppState>();
 
         if self.debug_physics {
             app.add_plugins(RapierDebugRenderPlugin::default());

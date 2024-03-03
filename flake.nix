@@ -230,18 +230,13 @@
 
           packages = with pkgs; [ cargo-watch clang rust-analyzer zip ];
 
-          LD_LIBRARY_PATH = lib.makeLibraryPath [
-            pkgs.alsa-lib
-            pkgs.libxkbcommon
-            pkgs.udev
-            pkgs.vulkan-loader
-          ];
+          LD_LIBRARY_PATH = commonArgs.buildInputs;
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
       }) // (let
         gh_packages = [ "app" "server" ];
         gh_systems = [
-          # flake-utils.lib.system.aarch64-darwin
+          flake-utils.lib.system.aarch64-darwin
           flake-utils.lib.system.x86_64-linux
           # flake-utils.lib.system.x86_64-windows
         ];

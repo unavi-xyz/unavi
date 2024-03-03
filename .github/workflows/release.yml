@@ -30,7 +30,7 @@ jobs:
     name: ${{ matrix.attr }}
     runs-on: ${{ matrix.os }}
     env:
-      IS_WINDOWS: ${{ matrix.os == "windows-latest" }}
+      IS_WINDOWS: ${{ matrix.os == 'windows-latest' }}
     steps:
       - uses: actions/checkout@v4
         with:

@@ -6,7 +6,7 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
-rcgen = "0.11.3" 
+rcgen = "0.12.1" 
 time = "0.3.30"
 tokio.workspace = true
 tracing-subscriber.workspace = true

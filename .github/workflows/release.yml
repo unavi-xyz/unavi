@@ -49,7 +49,7 @@ jobs:
           targets: x86_64-pc-windows-msvc
 
       - if: IS_WINDOWS
-        run: cargo build --release --target x86_64-pc-windows-msvc
+        run: cargo build -p ${{ matrix.attr }} --release --target x86_64-pc-windows-msvc
 
       - if: IS_WINDOWS
         run: |

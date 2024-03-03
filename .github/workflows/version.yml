@@ -17,7 +17,19 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+
+  deploy:
+    needs:
+      - build
+    uses: ./.github/workflows/deploy.yml
+    with:
+      channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
+
   version:
+    needs:
+      - deploy
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.semver.outputs.version }}
@@ -63,10 +75,3 @@ jobs:
     uses: ./.github/workflows/release.yml
     with:
       version: v${{ needs.version.outputs.version }}
-
-  deploy:
-    needs:
-      - release
-    uses: ./.github/workflows/deploy.yml
-    with:
-      channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}

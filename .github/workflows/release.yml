@@ -8,57 +8,21 @@ on:
         required: true
 
 jobs:
-  nix-matrix:
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-      - id: set-matrix
-        run: |
-          matrix=$(nix eval --json .#githubActions.matrix)
-          echo matrix=$matrix >> $GITHUB_OUTPUT
+  build-matrix:
+    uses: ./.github/workflows/build-matrix.yml
 
-  build:
+  release:
     needs:
-      - nix-matrix
+      - build-matrix
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.nix-matrix.outputs.matrix) }}
-    name: ${{ matrix.attr }}
-    runs-on: ${{ matrix.os }}
-    env:
-      IS_WINDOWS: ${{ startsWith(matrix.attr, 'x86_64-windows') }}
+      matrix: ${{ fromJSON(needs.build-matrix.outputs.matrix) }}
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v2
         with:
-          submodules: "true"
-          fetch-depth: 0
-      - uses: Swatinem/rust-cache@v2
-
-      - if: ${{ env.IS_WINDOWS == 'false' }}
-        uses: DeterminateSystems/nix-installer-action@main
-      - if: ${{ env.IS_WINDOWS == 'false' }}
-        uses: DeterminateSystems/magic-nix-cache-action@main
-      - if: ${{ env.IS_WINDOWS == 'false' }}
-        run: nix build .?submodules=1#packages.${{ matrix.attr }}
-      - if: ${{ env.IS_WINDOWS == 'false' }}
-        run: zip -r ${{ matrix.attr }}.zip result/bin
-
-      - if: ${{ env.IS_WINDOWS == 'true' }}
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-pc-windows-msvc
-      - if: ${{ env.IS_WINDOWS == 'true' }}
-        run: |
-          cargo build -p ${{ matrix.package }} --release --target x86_64-pc-windows-msvc
-          mkdir -p result/bin
-          mv target/x86_64-pc-windows-msvc/release result/bin
-          cp -r assets result/bin
-      - if: ${{ env.IS_WINDOWS == 'true' }}
-        run: Compress-Archive -Path result/bin -DestinationPath ${{ matrix.attr }}.zip
+          name: ${{ matrix.attr }}
+          path: ${{ matrix.attr }}.zip
 
       - uses: svenstaro/upload-release-action@v2
         with:

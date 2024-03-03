@@ -39,7 +39,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Log IS_WINDOWS
-        run: echo "IS_WINDOWS=$IS_WINDOWS"
+        run: echo "IS_WINDOWS=${{ env.IS_WINDOWS }}"
 
       - if: ${{ env.IS_WINDOWS == false }}
         uses: DeterminateSystems/nix-installer-action@main

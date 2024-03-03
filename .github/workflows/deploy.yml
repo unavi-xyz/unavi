@@ -29,16 +29,23 @@ jobs:
 
       - run: nix build .#web
 
-      - name: Publish to branch
-        run: |
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
+      - name: Create branch
+        run: git checkout --orphan web-app/${{ env.CHANNEL }}
 
-          # Remove all files besides our build output
+      - name: Clean directory
+        run: |
           git rm -r .
           cp -rL result/* .
 
+      - name: Commit changes
+        run: |
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
           git add .
-          git commit -m "chore: deploy web-app/${{ env.CHANNEL }}"
+          git commit -m "Deploy web-app/${{ env.CHANNEL }}"
 
-          git push origin HEAD:web-app/${{ env.CHANNEL }}
+      - name: Squash history
+        run: git rebase -i HEAD~1
+
+      - name: Push changes
+        run: git push origin web-app/${{ env.CHANNEL }} --force

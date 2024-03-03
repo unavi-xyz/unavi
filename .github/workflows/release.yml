@@ -36,6 +36,9 @@ jobs:
           fetch-depth: 0
       - uses: Swatinem/rust-cache@v2
 
+      - name: Log os
+        run: echo "os=${{ matrix.os }}"
+
       - if: matrix.os != 'windows-latest'
         uses: DeterminateSystems/nix-installer-action@main
       - if: matrix.os != 'windows-latest'

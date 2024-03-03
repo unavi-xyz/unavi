@@ -49,7 +49,7 @@ jobs:
       - name: Create branch if it doesn't exist
         run: |
           git fetch origin ${{ env.TARGET_BRANCH }} || git checkout -b ${{ env.TARGET_BRANCH }}
-          git push origin ${{ env.TARGET_BRANCH }}
+          git push origin ${{ env.TARGET_BRANCH }} || echo "Branch already exists"
 
       - uses: everlytic/branch-merge@1.1.5
         with:

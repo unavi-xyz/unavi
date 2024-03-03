@@ -34,7 +34,7 @@ jobs:
 
       - name: Clean directory
         run: |
-          rm -rf *
+          find . -mindepth 1 -maxdepth 1 -not -name '.git' -not -name 'result' -exec rm -rf {} \;
           cp -rL result/* .
 
       - name: Commit changes

@@ -201,22 +201,7 @@
         };
 
         packages = {
-          app = unavi-app;
-          server = unavi-server;
-          web = unavi-web;
-
-          unavi-ui = unavi-ui;
-          unavi-system = unavi-system;
-
-          components = pkgs.symlinkJoin {
-            name = "components";
-            paths = [ unavi-ui unavi-system ];
-          };
-
-          default = pkgs.symlinkJoin {
-            name = "all";
-            paths = [ unavi-app unavi-server unavi-web unavi-ui unavi-system ];
-          };
+          inherit unavi-app unavi-server unavi-system unavi-ui unavi-web;
         };
 
         devShells.default = craneLib.devShell {
@@ -228,18 +213,27 @@
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
       }) // (let
-        gh_packages = [ "app" "server" ];
+        gh_packages = [ "unavi-app" "unavi-server" ];
         gh_systems = [
           flake-utils.lib.system.x86_64-darwin
           flake-utils.lib.system.x86_64-linux
         ];
-      in {
         githubActions = nix-github-actions.lib.mkGithubMatrix {
           attrPrefix = "";
           checks = nixpkgs.lib.mapAttrs (_: v:
             (nixpkgs.lib.filterAttrs
               (n: _: !(nixpkgs.lib.mutuallyExclusive [ n ] gh_packages)) v))
             (nixpkgs.lib.getAttrs gh_systems self.packages);
+        };
+      in {
+        githubActions = {
+          checks = githubActions.checks;
+          matrix = {
+            include = githubActions.matrix.include ++ (map (v: {
+              attr = v;
+              os = [ "windows-latest" ];
+            }) gh_packages);
+          };
         };
       });
 }

@@ -135,8 +135,8 @@
           cargoExtraArgs = "--locked -p unavi-server";
         });
 
-        unavi-web = craneLib.buildTrunkPackage (wasmArgs // rec {
-          pname = "unavi-web";
+        web = craneLib.buildTrunkPackage (wasmArgs // rec {
+          pname = "web";
           cargoExtraArgs = "--locked -p unavi-app";
           trunkIndexPath = "./crates/unavi-app/index.html";
           wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
@@ -162,9 +162,7 @@
           doCheck = false;
         });
       in {
-        checks = {
-          inherit unavi-app unavi-server unavi-web cargoClippy cargoDoc;
-        };
+        checks = { inherit unavi-app unavi-server web cargoClippy cargoDoc; };
 
         apps = rec {
           app = flake-utils.lib.mkApp {
@@ -201,7 +199,7 @@
         };
 
         packages = {
-          inherit unavi-app unavi-server unavi-web;
+          inherit unavi-app unavi-server web;
 
           components = pkgs.symlinkJoin {
             name = "components";

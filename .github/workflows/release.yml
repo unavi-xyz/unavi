@@ -29,6 +29,8 @@ jobs:
       matrix: ${{ fromJSON(needs.nix-matrix.outputs.matrix) }}
     name: ${{ matrix.attr }}
     runs-on: ${{ matrix.os }}
+    env:
+      IS_WINDOWS: ${{ startsWith(matrix.attr, 'x86_64-windows') }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,29 +38,29 @@ jobs:
           fetch-depth: 0
       - uses: Swatinem/rust-cache@v2
 
-      - name: Log os
-        run: echo "os=${{ matrix.os }}"
+      - name: Log IS_WINDOWS
+        run: echo "IS_WINDOWS=$IS_WINDOWS"
 
-      - if: matrix.os != 'windows-latest'
+      - if: ! env.IS_WINDOWS
         uses: DeterminateSystems/nix-installer-action@main
-      - if: matrix.os != 'windows-latest'
+      - if: ! env.IS_WINDOWS
         uses: DeterminateSystems/magic-nix-cache-action@main
-      - if: matrix.os != 'windows-latest'
+      - if: ! env.IS_WINDOWS
         run: nix build .?submodules=1#packages.${{ matrix.attr }}
-      - if: matrix.os != 'windows-latest'
+      - if: ! env.IS_WINDOWS
         run: zip -r ${{ matrix.attr }}.zip result/bin
 
-      - if: matrix.os == 'windows-latest'
+      - if: env.IS_WINDOWS
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
-      - if: matrix.os == 'windows-latest'
+      - if: env.IS_WINDOWS
         run: |
           cargo build -p ${{ matrix.package }} --release --target x86_64-pc-windows-msvc
           mkdir -p result/bin
           mv target/x86_64-pc-windows-msvc/release result/bin
           cp -r assets result/bin
-      - if: matrix.os == 'windows-latest'
+      - if: env.IS_WINDOWS
         run: Compress-Archive -Path result/bin -DestinationPath ${{ matrix.attr }}.zip
 
       - uses: svenstaro/upload-release-action@v2

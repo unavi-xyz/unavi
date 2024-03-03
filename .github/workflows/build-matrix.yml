@@ -4,7 +4,7 @@ on:
   workflow_call:
     outputs:
       matrix:
-        type: string
+        value: ${{ jobs.build-matrix.outputs.matrix }}
 
 jobs:
   build-matrix:

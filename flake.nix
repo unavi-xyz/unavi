@@ -230,6 +230,7 @@
           checks = githubActions.checks;
           matrix = {
             include = githubActions.matrix.include ++ (map (package: {
+              inherit package;
               attr =
                 nixpkgs.lib.concatStringsSep "." [ "x86_64-windows" package ];
               os = [ "windows-latest" ];

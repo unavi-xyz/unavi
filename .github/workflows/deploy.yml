@@ -44,8 +44,5 @@ jobs:
           git add .
           git commit -m "Deploy web-app/${{ env.CHANNEL }}"
 
-      - name: Squash history
-        run: git rebase -i HEAD~1
-
       - name: Push changes
         run: git push origin web-app/${{ env.CHANNEL }} --force

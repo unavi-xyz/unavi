@@ -23,9 +23,10 @@ pub fn add_skybox_to_cameras(
     cameras: Query<Entity, Without<Skybox>>,
 ) {
     for camera in cameras.iter() {
-        commands
-            .entity(camera)
-            .insert(Skybox(cubemap.image_handle.clone()));
+        commands.entity(camera).insert(Skybox {
+            image: cubemap.image_handle.clone(),
+            brightness: 1.0,
+        });
     }
 }
 
@@ -68,7 +69,7 @@ pub fn process_cubemap(
 
     // Update skyboxes
     for mut skybox in &mut skyboxes {
-        skybox.0 = cubemap.image_handle.clone();
+        skybox.image = cubemap.image_handle.clone();
     }
 
     cubemap.is_loaded = true;

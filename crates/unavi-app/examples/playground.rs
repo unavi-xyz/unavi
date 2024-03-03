@@ -36,10 +36,7 @@ fn setup_world(
         let ground_texture = asset_server.load("images/dev-white.png");
         let ground_texture_scale = GROUND_SIZE / 4.0;
 
-        let mut ground_mesh = Mesh::from(shape::Plane {
-            size: GROUND_SIZE,
-            ..default()
-        });
+        let mut ground_mesh = Mesh::from(Plane3d::default());
 
         match ground_mesh.attribute_mut(Mesh::ATTRIBUTE_UV_0).unwrap() {
             VertexAttributeValues::Float32x2(uvs) => {
@@ -76,7 +73,7 @@ fn setup_world(
     {
         let box_size = 0.1;
         let pyramid_layers = 8;
-        let pyramid_material = materials.add(Color::rgb(0.7, 0.8, 0.6).into());
+        let pyramid_material = materials.add(StandardMaterial::from(Color::rgb(0.7, 0.8, 0.6)));
         let pyramid_offset = Transform::from_xyz(5.0, GROUND_THICKNESS * 2.0, -10.0);
 
         for i in 1..=pyramid_layers {
@@ -106,7 +103,7 @@ fn setup_world(
     }
 
     {
-        let ball_material = materials.add(Color::rgb(0.9, 0.3, 0.3).into());
+        let ball_material = materials.add(StandardMaterial::from(Color::rgb(0.9, 0.3, 0.3)));
         let ball_radius = 0.75;
 
         commands.spawn((
@@ -140,17 +137,9 @@ impl PhysShapeBundle {
             rigid_body: RigidBody::Dynamic,
             pbr_bundle: PbrBundle {
                 transform,
-                mesh: meshes.add(
-                    (shape::Box {
-                        min_x: -size,
-                        max_x: size,
-                        min_y: -size,
-                        max_y: size,
-                        min_z: -size,
-                        max_z: size,
-                    })
-                    .into(),
-                ),
+                mesh: meshes.add(Cuboid {
+                    half_size: Vec3::splat(size),
+                }),
                 material,
                 ..default()
             },
@@ -168,14 +157,10 @@ impl PhysShapeBundle {
             rigid_body: RigidBody::Dynamic,
             pbr_bundle: PbrBundle {
                 transform,
-                mesh: meshes.add(
-                    (shape::Icosphere {
-                        radius,
-                        ..default()
-                    })
-                    .try_into()
-                    .unwrap(),
-                ),
+                mesh: meshes.add(Sphere {
+                    radius,
+                    ..default()
+                }),
                 material,
                 ..default()
             },

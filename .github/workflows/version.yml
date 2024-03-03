@@ -36,6 +36,7 @@ jobs:
           version-file: "Cargo.toml"
           version-regex: '^version = "(.*)"'
 
+      - uses: Swatinem/rust-cache@v2
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo metadata # Force Cargo.lock to update
 

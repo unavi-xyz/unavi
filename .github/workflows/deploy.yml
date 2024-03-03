@@ -34,7 +34,7 @@ jobs:
 
       - name: Clean directory
         run: |
-          git rm -r .
+          git rm -rf .
           cp -rL result/* .
 
       - name: Commit changes

@@ -36,25 +36,27 @@ jobs:
           fetch-depth: 0
       - uses: Swatinem/rust-cache@v2
 
-      - if: ${{ ! matrix.os == 'windows-latest' }}
+      - if: matrix.os != 'windows-latest'
         uses: DeterminateSystems/nix-installer-action@main
-      - if: ${{ ! matrix.os == 'windows-latest' }}
+      - if: matrix.os != 'windows-latest'
         uses: DeterminateSystems/magic-nix-cache-action@main
-      - if: ${{ ! matrix.os == 'windows-latest' }}
+      - if: matrix.os != 'windows-latest'
         run: nix build .?submodules=1#packages.${{ matrix.attr }}
+      - if: matrix.os != 'windows-latest'
+        run: zip -r ${{ matrix.attr }}.zip result/bin
 
-      - if: ${{ matrix.os == 'windows-latest' }}
+      - if: matrix.os == 'windows-latest'
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
-      - if: ${{ matrix.os == 'windows-latest' }}
+      - if: matrix.os == 'windows-latest'
         run: |
           cargo build -p ${{ matrix.package }} --release --target x86_64-pc-windows-msvc
           mkdir -p result/bin
           mv target/x86_64-pc-windows-msvc/release result/bin
           cp -r assets result/bin
-
-      - run: zip -r ${{ matrix.attr }}.zip result/bin
+      - if: matrix.os == 'windows-latest'
+        run: Compress-Archive -Path result/bin -DestinationPath ${{ matrix.attr }}.zip
 
       - uses: svenstaro/upload-release-action@v2
         with:

@@ -57,7 +57,7 @@ jobs:
           mkdir -p result/bin
           mv target/x86_64-pc-windows-msvc/release result/bin
           cp -r assets result/bin
-      - if: ${{ env.IS_WINDOWS }}
+      - if: ${{ env.IS_WINDOWS == 'true' }}
         run: Compress-Archive -Path result/bin -DestinationPath ${{ matrix.attr }}.zip
 
       - uses: svenstaro/upload-release-action@v2

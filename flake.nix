@@ -216,8 +216,8 @@
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
       }) // (let
-        gh_packages = [ "unavi-app" "unavi-server" ];
-        gh_systems = [
+        ghPackages = [ "unavi-app" "unavi-server" ];
+        ghSystems = [
           flake-utils.lib.system.x86_64-darwin
           flake-utils.lib.system.x86_64-linux
         ];
@@ -225,8 +225,8 @@
           attrPrefix = "";
           checks = nixpkgs.lib.mapAttrs (_: v:
             (nixpkgs.lib.filterAttrs
-              (n: _: !(nixpkgs.lib.mutuallyExclusive [ n ] gh_packages)) v))
-            (nixpkgs.lib.getAttrs gh_systems self.packages);
+              (n: _: !(nixpkgs.lib.mutuallyExclusive [ n ] ghPackages)) v))
+            (nixpkgs.lib.getAttrs ghSystems self.packages);
         };
       in {
         githubActions = {
@@ -237,7 +237,7 @@
               attr =
                 nixpkgs.lib.concatStringsSep "." [ "x86_64-windows" package ];
               os = [ "windows-latest" ];
-            }) gh_packages);
+            }) ghPackages);
           };
         };
       });

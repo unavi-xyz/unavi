@@ -56,7 +56,9 @@ fn setup_world(
         let ground_texture = asset_server.load("images/dev-white.png");
         let ground_texture_scale = ground_size / 4.0;
 
-        let mut ground_mesh = Mesh::from(Plane3d::default());
+        let mut ground_mesh = Mesh::from(Cuboid {
+            half_size: Vec3::new(ground_size / 2.0, 0.05, ground_size / 2.0),
+        });
 
         match ground_mesh.attribute_mut(Mesh::ATTRIBUTE_UV_0).unwrap() {
             VertexAttributeValues::Float32x2(uvs) => {

@@ -16,9 +16,8 @@ pub async fn start(opts: &ServerOptions) -> Result<(), Box<dyn std::error::Error
 
     info!("Listening on {}", opts.axum_addr);
 
-    axum::Server::bind(&opts.axum_addr)
-        .serve(router.into_make_service())
-        .await?;
+    let listener = tokio::net::TcpListener::bind(&opts.axum_addr).await?;
+    axum::serve(listener, router).await?;
 
     Ok(())
 }

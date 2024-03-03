@@ -1,6 +1,5 @@
 use std::net::SocketAddr;
 
-use axum::Server;
 use tracing::{error, info};
 
 #[tokio::main]
@@ -12,10 +11,15 @@ async fn main() {
 
     info!("Listening on {}", address);
 
-    if let Err(e) = Server::bind(&address)
-        .serve(router.into_make_service())
-        .await
-    {
+    let listener = match tokio::net::TcpListener::bind(&address).await {
+        Ok(listener) => listener,
+        Err(e) => {
+            error!("Failed to bind to address: {}", e);
+            return;
+        }
+    };
+
+    if let Err(e) = axum::serve(listener, router).await {
         error!("Server error: {}", e);
     }
 }

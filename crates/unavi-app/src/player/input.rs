@@ -17,10 +17,10 @@ pub struct InputMap {
 impl Default for InputMap {
     fn default() -> Self {
         Self {
-            key_forward: KeyCode::W,
-            key_backward: KeyCode::S,
-            key_left: KeyCode::A,
-            key_right: KeyCode::D,
+            key_forward: KeyCode::KeyW,
+            key_backward: KeyCode::KeyS,
+            key_left: KeyCode::KeyA,
+            key_right: KeyCode::KeyD,
             key_jump: KeyCode::Space,
             key_sprint: KeyCode::ShiftLeft,
             key_crouch: KeyCode::ControlLeft,
@@ -29,7 +29,7 @@ impl Default for InputMap {
 }
 
 pub fn read_keyboard_input(
-    keys: Res<Input<KeyCode>>,
+    keys: Res<ButtonInput<KeyCode>>,
     input_map: Res<InputMap>,
     mut players: Query<&mut Player>,
 ) {

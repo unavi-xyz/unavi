@@ -117,7 +117,7 @@ pub fn move_player(
 
     for (mut player, look_entity, mut controller, output) in players.iter_mut() {
         let look_direction = look_directions
-            .get_component::<LookDirection>(look_entity.0)
+            .get(look_entity.0)
             .expect("Failed to get LookDirection from Entity");
 
         let forward = (look_direction.forward * xz).normalize();

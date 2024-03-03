@@ -230,7 +230,12 @@
 
           packages = with pkgs; [ cargo-watch clang rust-analyzer zip ];
 
-          LD_LIBRARY_PATH = lib.makeLibraryPath [ pkgs.vulkan-loader ];
+          LD_LIBRARY_PATH = lib.makeLibraryPath [
+            pkgs.alsa-lib
+            pkgs.libxkbcommon
+            pkgs.udev
+            pkgs.vulkan-loader
+          ];
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
       }) // (let

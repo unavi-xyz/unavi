@@ -19,6 +19,7 @@
                 anisotropy_clamp: 1,
                 border_color: None,
             )),
+            asset_usage: RenderAssetUsages("MAIN_WORLD | RENDER_WORLD"),
         ),
     ),
 )

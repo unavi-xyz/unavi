@@ -1,5 +1,5 @@
 [package]
-name = "wired-log"
+name = "wired-gltf"
 version.workspace = true
 edition.workspace = true
 repository.workspace = true
@@ -14,7 +14,7 @@ tracing.workspace = true
 wit-bindgen-rt.workspace = true
 
 [package.metadata.component]
-package = "wired:log"
+package = "wired:gltf"
 
 [package.metadata.component.target]
 world = "host"

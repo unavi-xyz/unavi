@@ -109,25 +109,25 @@ mod _rt {
 #[allow(unused_macros)]
 #[doc(hidden)]
 
-macro_rules! __export_logger_impl {
+macro_rules! __export_host_impl {
   ($ty:ident) => (self::export!($ty with_types_in self););
   ($ty:ident with_types_in $($path_to_types_root:tt)*) => (
   $($path_to_types_root)*::exports::wired::log::types::__export_wired_log_types_cabi!($ty with_types_in $($path_to_types_root)*::exports::wired::log::types);
   )
 }
 #[doc(inline)]
-pub(crate) use __export_logger_impl as export;
+pub(crate) use __export_host_impl as export;
 
 #[cfg(target_arch = "wasm32")]
-#[link_section = "component-type:wit-bindgen:0.20.0:logger:encoded world"]
+#[link_section = "component-type:wit-bindgen:0.20.0:host:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 239] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07s\x01A\x02\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 235] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07q\x01A\x02\x01A\x02\x01\
 B\x04\x01m\x04\x05debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\
 \x02\x05level\x01\x03msgs\x01\0\x04\0\x03log\x01\x02\x04\x01\x0fwired:log/types\x05\
-\0\x04\x01\x10wired:log/logger\x04\0\x0b\x0c\x01\0\x06logger\x03\0\0\0G\x09produ\
-cers\x01\x0cprocessed-by\x02\x0dwit-component\x070.201.0\x10wit-bindgen-rust\x06\
-0.20.0";
+\0\x04\x01\x0ewired:log/host\x04\0\x0b\x0a\x01\0\x04host\x03\0\0\0G\x09producers\
+\x01\x0cprocessed-by\x02\x0dwit-component\x070.201.0\x10wit-bindgen-rust\x060.20\
+.0";
 
 #[inline(never)]
 #[doc(hidden)]

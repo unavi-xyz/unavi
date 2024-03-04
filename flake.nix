@@ -178,6 +178,11 @@
           cargoExtraArgs = "--locked -p unavi-system";
         });
 
+        wired-gltf = craneLib.buildPackage (componentArgs // {
+          pname = "wired-gltf";
+          cargoExtraArgs = "--locked -p wired-gltf";
+        });
+
         wired-log = craneLib.buildPackage (componentArgs // {
           pname = "wired-log";
           cargoExtraArgs = "--locked -p wired-log";
@@ -212,7 +217,7 @@
                 self.packages.${localSystem}.components
               }/lib/* ./target/wasm32-wasi/wasm-release
 
-              cargo component check -p unavi-ui -p unavi-system -p wired-log
+              cargo component check -p unavi-ui -p unavi-system -p wired-gltf -p wired-log
             '';
           };
 
@@ -224,13 +229,21 @@
 
           components = pkgs.symlinkJoin {
             name = "components";
-            paths = [ unavi-ui unavi-system wired-log ];
+            paths = [ unavi-ui unavi-system wired-gltf wired-log ];
           };
 
           default = pkgs.symlinkJoin {
             name = "default";
-            paths =
-              [ unavi-app unavi-server web unavi-ui unavi-system wired-log ];
+            paths = [
+              unavi-app
+              unavi-server
+              web
+
+              unavi-ui
+              unavi-system
+              wired-gltf
+              wired-log
+            ];
           };
         };
 

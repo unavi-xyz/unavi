@@ -9612,6 +9612,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "wired-gltf"
+version = "0.0.2-beta.19"
+dependencies = [
+ "bitflags 2.4.2",
+ "tracing",
+ "wit-bindgen-rt",
+]
+
+[[package]]
 name = "wired-log"
 version = "0.0.2-beta.20"
 dependencies = [

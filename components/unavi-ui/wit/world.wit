@@ -1,9 +1,16 @@
 package unavi:ui;
 
-world ui {
-  export types;
+world imports {
+  import api;
 }
 
-interface types {
+world host {
+  import wired:spatial/node;
+  import wired:input/handler;
+
+  export api;
+}
+
+interface api {
   new-bubble: func() -> string;
 }

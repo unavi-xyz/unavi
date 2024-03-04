@@ -15,4 +15,10 @@ wit-bindgen-rt.workspace = true
 [package.metadata.component]
 package = "unavi:ui"
 
-[package.metadata.component.dependencies]
+[package.metadata.component.target]
+world = "host"
+
+[package.metadata.component.target.dependencies]
+"wired:input" = { path = "../../wired-protocol/spatial/wired-input" }
+"wired:math" = { path = "../../wired-protocol/spatial/wired-math" }
+"wired:spatial" = { path = "../../wired-protocol/spatial/wired-spatial" }

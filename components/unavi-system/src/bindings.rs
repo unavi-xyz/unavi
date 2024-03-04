@@ -27,7 +27,7 @@ pub trait Guest {
 }
 #[doc(hidden)]
 
-macro_rules! __export_world_example_cabi{
+macro_rules! __export_world_system_cabi{
   ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
 
@@ -43,7 +43,7 @@ macro_rules! __export_world_example_cabi{
   };);
 }
 #[doc(hidden)]
-pub(crate) use __export_world_example_cabi;
+pub(crate) use __export_world_system_cabi;
 
 #[repr(align(4))]
 struct _RetArea([::core::mem::MaybeUninit<u8>; 8]);
@@ -52,7 +52,7 @@ pub mod unavi {
     pub mod ui {
 
         #[allow(clippy::all)]
-        pub mod unavi_ui_types {
+        pub mod api {
             #[used]
             #[doc(hidden)]
             #[cfg(target_arch = "wasm32")]
@@ -67,7 +67,7 @@ pub mod unavi {
                     let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                     let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "unavi:ui/unavi-ui-types")]
+                    #[link(wasm_import_module = "unavi:ui/api")]
                     extern "C" {
                         #[link_name = "new-bubble"]
                         fn wit_import(_: *mut u8);
@@ -84,6 +84,142 @@ pub mod unavi {
                     let bytes3 = _rt::Vec::from_raw_parts(l1.cast(), len3, len3);
                     _rt::string_lift(bytes3)
                 }
+            }
+        }
+    }
+}
+pub mod wired {
+    pub mod log {
+
+        #[allow(clippy::all)]
+        pub mod api {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            #[repr(u8)]
+            #[derive(Clone, Copy, Eq, PartialEq)]
+            pub enum LogLevel {
+                Debug,
+                Info,
+                Warn,
+                Error,
+            }
+            impl ::core::fmt::Debug for LogLevel {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        LogLevel::Debug => f.debug_tuple("LogLevel::Debug").finish(),
+                        LogLevel::Info => f.debug_tuple("LogLevel::Info").finish(),
+                        LogLevel::Warn => f.debug_tuple("LogLevel::Warn").finish(),
+                        LogLevel::Error => f.debug_tuple("LogLevel::Error").finish(),
+                    }
+                }
+            }
+
+            impl LogLevel {
+                pub(crate) unsafe fn _lift(val: u8) -> LogLevel {
+                    if !cfg!(debug_assertions) {
+                        return ::core::mem::transmute(val);
+                    }
+
+                    match val {
+                        0 => LogLevel::Debug,
+                        1 => LogLevel::Info,
+                        2 => LogLevel::Warn,
+                        3 => LogLevel::Error,
+
+                        _ => panic!("invalid enum discriminant"),
+                    }
+                }
+            }
+
+            #[allow(unused_unsafe, clippy::all)]
+            /// Logs a message with the given log level.
+            pub fn log(level: LogLevel, msg: &str) {
+                unsafe {
+                    let vec0 = msg;
+                    let ptr0 = vec0.as_ptr().cast::<u8>();
+                    let len0 = vec0.len();
+
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wired:log/api")]
+                    extern "C" {
+                        #[link_name = "log"]
+                        fn wit_import(_: i32, _: *mut u8, _: usize);
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(_: i32, _: *mut u8, _: usize) {
+                        unreachable!()
+                    }
+                    wit_import(level.clone() as i32, ptr0.cast_mut(), len0);
+                }
+            }
+        }
+    }
+}
+pub mod exports {
+    pub mod wired {
+        pub mod script {
+
+            #[allow(clippy::all)]
+            pub mod lifecycle {
+                #[used]
+                #[doc(hidden)]
+                #[cfg(target_arch = "wasm32")]
+                static __FORCE_SECTION_REF: fn() =
+                    super::super::super::super::__link_custom_section_describing_imports;
+
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_init_cabi<T: Guest>() {
+                    T::init();
+                }
+
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_update_cabi<T: Guest>(arg0: f32) {
+                    T::update(arg0);
+                }
+
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_cleanup_cabi<T: Guest>() {
+                    T::cleanup();
+                }
+                pub trait Guest {
+                    /// Called once when the script is loaded.
+                    fn init();
+                    /// Called every tick.
+                    fn update(delta_seconds: f32);
+                    /// Called once when the script is about to be unloaded.
+                    fn cleanup();
+                }
+                #[doc(hidden)]
+
+                macro_rules! __export_wired_script_lifecycle_cabi{
+    ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
+
+
+      #[export_name = "wired:script/lifecycle#init"]
+      unsafe extern "C" fn export_init() {
+        $($path_to_types)*::_export_init_cabi::<$ty>()
+      }
+
+      #[export_name = "wired:script/lifecycle#update"]
+      unsafe extern "C" fn export_update(arg0: f32,) {
+        $($path_to_types)*::_export_update_cabi::<$ty>(arg0)
+      }
+
+      #[export_name = "wired:script/lifecycle#cleanup"]
+      unsafe extern "C" fn export_cleanup() {
+        $($path_to_types)*::_export_cleanup_cabi::<$ty>()
+      }
+    };);
+  }
+                #[doc(hidden)]
+                pub(crate) use __export_wired_script_lifecycle_cabi;
             }
         }
     }
@@ -128,24 +264,29 @@ mod _rt {
 #[allow(unused_macros)]
 #[doc(hidden)]
 
-macro_rules! __export_example_impl {
+macro_rules! __export_system_impl {
   ($ty:ident) => (self::export!($ty with_types_in self););
   ($ty:ident with_types_in $($path_to_types_root:tt)*) => (
-  $($path_to_types_root)*::__export_world_example_cabi!($ty with_types_in $($path_to_types_root)*);
+  $($path_to_types_root)*::__export_world_system_cabi!($ty with_types_in $($path_to_types_root)*);
+  $($path_to_types_root)*::exports::wired::script::lifecycle::__export_wired_script_lifecycle_cabi!($ty with_types_in $($path_to_types_root)*::exports::wired::script::lifecycle);
   )
 }
 #[doc(inline)]
-pub(crate) use __export_example_impl as export;
+pub(crate) use __export_system_impl as export;
 
 #[cfg(target_arch = "wasm32")]
-#[link_section = "component-type:wit-bindgen:0.20.0:example:encoded world"]
+#[link_section = "component-type:wit-bindgen:0.20.0:system:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 228] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07g\x01A\x02\x01A\x04\x01\
-B\x02\x01@\0\0s\x04\0\x0anew-bubble\x01\0\x03\x01\x17unavi:ui/unavi-ui-types\x05\
-\0\x01@\0\0s\x04\0\x0bhello-world\x01\x01\x04\x01\x14unavi:system/example\x04\0\x0b\
-\x0d\x01\0\x07example\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-com\
-ponent\x070.201.0\x10wit-bindgen-rust\x060.20.0";
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 389] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x88\x02\x01A\x02\x01\
+A\x08\x01B\x02\x01@\0\0s\x04\0\x0anew-bubble\x01\0\x03\x01\x0cunavi:ui/api\x05\0\
+\x01B\x04\x01m\x04\x05debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01\
+@\x02\x05level\x01\x03msgs\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\
+\x01\x01@\0\0s\x04\0\x0bhello-world\x01\x02\x01B\x05\x01@\0\x01\0\x04\0\x04init\x01\
+\0\x01@\x01\x0ddelta-secondsv\x01\0\x04\0\x06update\x01\x01\x04\0\x07cleanup\x01\
+\0\x04\x01\x16wired:script/lifecycle\x05\x03\x04\x01\x13unavi:system/system\x04\0\
+\x0b\x0c\x01\0\x06system\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-\
+component\x070.201.0\x10wit-bindgen-rust\x060.20.0";
 
 #[inline(never)]
 #[doc(hidden)]

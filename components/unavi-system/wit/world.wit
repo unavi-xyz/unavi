@@ -1,6 +1,10 @@
 package unavi:system;
 
-/// An example world for the component to target.
-world example {
+world system {
+    import unavi:ui/api;
+    import wired:log/api;
+
+    include wired:script/script; 
+
     export hello-world: func() -> string;
 }

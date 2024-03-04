@@ -18,5 +18,10 @@ wit-bindgen-rt.workspace = true
 [package.metadata.component]
 package = "unavi:system"
 
-[package.metadata.component.dependencies]
-"unavi:ui" = { path = "../../target/wasm32-wasi/wasm-release/unavi_ui.wasm" }
+[package.metadata.component.target.dependencies]
+"unavi:ui" = { path = "../unavi-ui/wit" }
+"wired:input" = { path = "../../wired-protocol/spatial/wired-input" }
+"wired:log" = { path = "../../wired-protocol/spatial/wired-log" }
+"wired:math" = { path = "../../wired-protocol/spatial/wired-math" }
+"wired:script" = { path = "../../wired-protocol/spatial/wired-script" }
+"wired:spatial" = { path = "../../wired-protocol/spatial/wired-spatial" }

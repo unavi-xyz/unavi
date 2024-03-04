@@ -26,12 +26,8 @@ impl Guest for Component {
         }
     }
 
-    fn add_mesh(m: Mesh) {
-        println!("Mesh added: {:?}", m);
-    }
-
-    fn remove_mesh(m: Mesh) {
-        println!("Mesh removed: {:?}", m);
+    fn remove_mesh(id: u32) {
+        println!("Mesh removed: {}", id);
     }
 }
 

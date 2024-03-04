@@ -165,112 +165,49 @@ pub mod exports {
 
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_add_mesh_cabi<T: Guest>(
-                    arg0: i32,
-                    arg1: *mut u8,
-                    arg2: usize,
-                    arg3: i32,
-                    arg4: *mut u8,
-                    arg5: usize,
-                ) {
-                    let len0 = arg2;
-                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
-                    T::add_mesh(Mesh {
-                        id: arg0 as u32,
-                        name: _rt::string_lift(bytes0),
-                        extras: match arg3 {
-                            0 => None,
-                            1 => {
-                                let e = {
-                                    let len1 = arg5;
-                                    let bytes1 = _rt::Vec::from_raw_parts(arg4.cast(), len1, len1);
-
-                                    _rt::string_lift(bytes1)
-                                };
-                                Some(e)
-                            }
-                            _ => _rt::invalid_enum_discriminant(),
-                        },
-                    });
-                }
-
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_remove_mesh_cabi<T: Guest>(
-                    arg0: i32,
-                    arg1: *mut u8,
-                    arg2: usize,
-                    arg3: i32,
-                    arg4: *mut u8,
-                    arg5: usize,
-                ) {
-                    let len0 = arg2;
-                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
-                    T::remove_mesh(Mesh {
-                        id: arg0 as u32,
-                        name: _rt::string_lift(bytes0),
-                        extras: match arg3 {
-                            0 => None,
-                            1 => {
-                                let e = {
-                                    let len1 = arg5;
-                                    let bytes1 = _rt::Vec::from_raw_parts(arg4.cast(), len1, len1);
-
-                                    _rt::string_lift(bytes1)
-                                };
-                                Some(e)
-                            }
-                            _ => _rt::invalid_enum_discriminant(),
-                        },
-                    });
+                pub unsafe fn _export_remove_mesh_cabi<T: Guest>(arg0: i32) {
+                    T::remove_mesh(arg0 as u32);
                 }
                 pub trait Guest {
                     /// Get all meshes in the world.
                     fn meshes() -> _rt::Vec<Mesh>;
                     /// Spawn a new mesh.
                     fn spawn_mesh() -> Mesh;
-                    /// Add a mesh to the world.
-                    fn add_mesh(m: Mesh);
                     /// Remove a mesh from the world.
-                    fn remove_mesh(m: Mesh);
+                    fn remove_mesh(id: u32);
                 }
                 #[doc(hidden)]
 
                 macro_rules! __export_wired_gltf_types_cabi{
-    ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
+      ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
 
-      #[export_name = "wired:gltf/types#meshes"]
-      unsafe extern "C" fn export_meshes() -> *mut u8 {
-        $($path_to_types)*::_export_meshes_cabi::<$ty>()
-      }
+        #[export_name = "wired:gltf/types#meshes"]
+        unsafe extern "C" fn export_meshes() -> *mut u8 {
+          $($path_to_types)*::_export_meshes_cabi::<$ty>()
+        }
 
-      #[export_name = "cabi_post_wired:gltf/types#meshes"]
-      unsafe extern "C" fn _post_return_meshes(arg0: *mut u8,) {
-        $($path_to_types)*::__post_return_meshes::<$ty>(arg0)
-      }
+        #[export_name = "cabi_post_wired:gltf/types#meshes"]
+        unsafe extern "C" fn _post_return_meshes(arg0: *mut u8,) {
+          $($path_to_types)*::__post_return_meshes::<$ty>(arg0)
+        }
 
-      #[export_name = "wired:gltf/types#spawn-mesh"]
-      unsafe extern "C" fn export_spawn_mesh() -> *mut u8 {
-        $($path_to_types)*::_export_spawn_mesh_cabi::<$ty>()
-      }
+        #[export_name = "wired:gltf/types#spawn-mesh"]
+        unsafe extern "C" fn export_spawn_mesh() -> *mut u8 {
+          $($path_to_types)*::_export_spawn_mesh_cabi::<$ty>()
+        }
 
-      #[export_name = "cabi_post_wired:gltf/types#spawn-mesh"]
-      unsafe extern "C" fn _post_return_spawn_mesh(arg0: *mut u8,) {
-        $($path_to_types)*::__post_return_spawn_mesh::<$ty>(arg0)
-      }
+        #[export_name = "cabi_post_wired:gltf/types#spawn-mesh"]
+        unsafe extern "C" fn _post_return_spawn_mesh(arg0: *mut u8,) {
+          $($path_to_types)*::__post_return_spawn_mesh::<$ty>(arg0)
+        }
 
-      #[export_name = "wired:gltf/types#add-mesh"]
-      unsafe extern "C" fn export_add_mesh(arg0: i32,arg1: *mut u8,arg2: usize,arg3: i32,arg4: *mut u8,arg5: usize,) {
-        $($path_to_types)*::_export_add_mesh_cabi::<$ty>(arg0, arg1, arg2, arg3, arg4, arg5)
-      }
-
-      #[export_name = "wired:gltf/types#remove-mesh"]
-      unsafe extern "C" fn export_remove_mesh(arg0: i32,arg1: *mut u8,arg2: usize,arg3: i32,arg4: *mut u8,arg5: usize,) {
-        $($path_to_types)*::_export_remove_mesh_cabi::<$ty>(arg0, arg1, arg2, arg3, arg4, arg5)
-      }
-    };);
-  }
+        #[export_name = "wired:gltf/types#remove-mesh"]
+        unsafe extern "C" fn export_remove_mesh(arg0: i32,) {
+          $($path_to_types)*::_export_remove_mesh_cabi::<$ty>(arg0)
+        }
+      };);
+    }
                 #[doc(hidden)]
                 pub(crate) use __export_wired_gltf_types_cabi;
 
@@ -362,20 +299,6 @@ mod _rt {
         alloc::dealloc(ptr as *mut u8, layout);
     }
     pub use alloc_crate::vec::Vec;
-    pub unsafe fn string_lift(bytes: Vec<u8>) -> String {
-        if cfg!(debug_assertions) {
-            String::from_utf8(bytes).unwrap()
-        } else {
-            String::from_utf8_unchecked(bytes)
-        }
-    }
-    pub unsafe fn invalid_enum_discriminant<T>() -> T {
-        if cfg!(debug_assertions) {
-            panic!("invalid enum discriminant")
-        } else {
-            core::hint::unreachable_unchecked()
-        }
-    }
     extern crate alloc as alloc_crate;
 }
 
@@ -410,14 +333,14 @@ pub(crate) use __export_host_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.20.0:host:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 283] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa0\x01\x01A\x02\x01\
-A\x02\x01B\x0b\x01ks\x01r\x03\x02idy\x04names\x06extras\0\x04\0\x04mesh\x03\0\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 271] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x94\x01\x01A\x02\x01\
+A\x02\x01B\x0a\x01ks\x01r\x03\x02idy\x04names\x06extras\0\x04\0\x04mesh\x03\0\x01\
 \x01p\x02\x01@\0\0\x03\x04\0\x06meshes\x01\x04\x01@\0\0\x02\x04\0\x0aspawn-mesh\x01\
-\x05\x01@\x01\x01m\x02\x01\0\x04\0\x08add-mesh\x01\x06\x04\0\x0bremove-mesh\x01\x06\
-\x04\x01\x10wired:gltf/types\x05\0\x04\x01\x0fwired:gltf/host\x04\0\x0b\x0a\x01\0\
-\x04host\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.2\
-01.0\x10wit-bindgen-rust\x060.20.0";
+\x05\x01@\x01\x02idy\x01\0\x04\0\x0bremove-mesh\x01\x06\x04\x01\x10wired:gltf/ty\
+pes\x05\0\x04\x01\x0fwired:gltf/host\x04\0\x0b\x0a\x01\0\x04host\x03\0\0\0G\x09p\
+roducers\x01\x0cprocessed-by\x02\x0dwit-component\x070.201.0\x10wit-bindgen-rust\
+\x060.20.0";
 
 #[inline(never)]
 #[doc(hidden)]

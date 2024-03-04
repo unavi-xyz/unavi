@@ -48,7 +48,7 @@ jobs:
       - if: ${{ env.IS_WINDOWS == 'true' }}
         run: Compress-Archive -Path result -DestinationPath ${{ matrix.attr }}.zip
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.attr }}
           path: ${{ matrix.attr }}.zip

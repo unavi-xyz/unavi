@@ -1,5 +1,5 @@
 use bevy::{prelude::*, render::mesh::VertexAttributeValues};
-use bevy_rapier3d::{dynamics::RigidBody, geometry::Collider};
+use bevy_xpbd_3d::prelude::*;
 
 use crate::state::AppState;
 
@@ -71,8 +71,8 @@ fn setup_world(
         }
 
         commands.spawn((
-            RigidBody::Fixed,
-            Collider::cuboid(ground_size / 2.0, 0.05, ground_size / 2.0),
+            RigidBody::Static,
+            Collider::cuboid(ground_size, 0.05, ground_size),
             PbrBundle {
                 mesh: meshes.add(ground_mesh),
                 material: materials.add(StandardMaterial {

@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
 
 use bevy::{prelude::*, render::mesh::VertexAttributeValues};
-use bevy_rapier3d::prelude::{Real, *};
+use bevy_xpbd_3d::prelude::*;
 use unavi_app::UnaviPlugin;
 
 fn main() {
@@ -51,8 +51,8 @@ fn setup_world(
         }
 
         commands.spawn((
-            RigidBody::Fixed,
-            Collider::cuboid(GROUND_SIZE / 2.0, GROUND_THICKNESS / 2.0, GROUND_SIZE / 2.0),
+            RigidBody::Static,
+            Collider::cuboid(GROUND_SIZE, GROUND_THICKNESS, GROUND_SIZE),
             PbrBundle {
                 mesh: meshes.add(ground_mesh),
                 material: materials.add(StandardMaterial {
@@ -97,7 +97,7 @@ fn setup_world(
                             pyramid_material.clone(),
                             &mut meshes,
                         ),
-                        ColliderMassProperties::Density(0.5),
+                        ColliderDensity(0.5),
                     ));
                 }
             }
@@ -115,7 +115,7 @@ fn setup_world(
                 ball_material.clone(),
                 &mut meshes,
             ),
-            ColliderMassProperties::Density(8.0),
+            Mass(8.0),
         ));
     }
 }
@@ -129,7 +129,7 @@ struct PhysShapeBundle {
 
 impl PhysShapeBundle {
     fn cube(
-        size: Real,
+        size: f32,
         transform: Transform,
         material: Handle<StandardMaterial>,
         meshes: &mut ResMut<Assets<Mesh>>,
@@ -149,13 +149,13 @@ impl PhysShapeBundle {
     }
 
     fn sphere(
-        radius: Real,
+        radius: f32,
         transform: Transform,
         material: Handle<StandardMaterial>,
         meshes: &mut ResMut<Assets<Mesh>>,
     ) -> Self {
         Self {
-            collider: Collider::ball(radius),
+            collider: Collider::sphere(radius),
             rigid_body: RigidBody::Dynamic,
             pbr_bundle: PbrBundle {
                 transform,

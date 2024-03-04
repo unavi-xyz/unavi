@@ -7,10 +7,6 @@ on:
         type: string
         required: true
 
-concurrency:
-  group: "release"
-  cancel-in-progress: false
-
 jobs:
   build-matrix:
     uses: ./.github/workflows/build-matrix.yml
@@ -34,6 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.build-matrix.outputs.matrix) }}
+      max-parallel: 1
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v2

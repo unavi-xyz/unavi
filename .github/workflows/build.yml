@@ -4,10 +4,6 @@ on:
   workflow_call:
   workflow_dispatch:
 
-concurrency:
-  group: "build"
-  cancel-in-progress: false
-
 jobs:
   build-matrix:
     uses: ./.github/workflows/build-matrix.yml

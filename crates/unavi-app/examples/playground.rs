@@ -159,10 +159,7 @@ impl PhysShapeBundle {
             rigid_body: RigidBody::Dynamic,
             pbr_bundle: PbrBundle {
                 transform,
-                mesh: meshes.add(Sphere {
-                    radius,
-                    ..default()
-                }),
+                mesh: meshes.add(Sphere { radius }),
                 material,
                 ..default()
             },

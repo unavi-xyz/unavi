@@ -51,7 +51,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - uses: dtolnay/rust-toolchain@stable
       - name: Force Cargo.lock to update
-        run: cargo update --worksapce
+        run: cargo update --workspace
 
       - uses: EndBug/add-and-commit@v9
         with:

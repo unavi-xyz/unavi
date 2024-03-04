@@ -103,10 +103,6 @@
             (with pkgs; [ alsa-lib alsa-lib.dev ]);
         };
 
-        wasmArgs = commonArgs // {
-          CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
-        };
-
         cargoArtifacts =
           craneLib.buildDepsOnly (commonArgs // { pname = "deps"; });
 
@@ -120,6 +116,7 @@
           pname = "doc";
         });
 
+        # Crates
         unavi-app = craneLib.buildPackage (commonArgs // {
           inherit cargoArtifacts;
           pname = "unavi-app";
@@ -135,31 +132,34 @@
           cargoExtraArgs = "--locked -p unavi-server";
         });
 
-        web = craneLib.buildTrunkPackage (wasmArgs // rec {
+        web = craneLib.buildTrunkPackage (commonArgs // rec {
           pname = "web";
           cargoExtraArgs = "--locked -p unavi-app";
           trunkIndexPath = "./crates/unavi-app/index.html";
           wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
         });
 
-        unavi-ui = craneLib.buildPackage (wasmArgs // {
-          pname = "unavi-ui";
+        # Components
+        componentArgs = commonArgs // {
           cargoBuildCommand = "cargo component build --profile wasm-release";
-          cargoExtraArgs = "--locked -p unavi-ui";
           doCheck = false;
+        };
+
+        unavi-ui = craneLib.buildPackage (componentArgs // {
+          pname = "unavi-ui";
+          cargoExtraArgs = "--locked -p unavi-ui";
         });
 
-        unavi-system = craneLib.buildPackage (wasmArgs // {
-          # Manually build component deps until cargo-component has better support :(
-          cargoArtifacts = unavi-ui;
-          preBuild = ''
-            cargo component build --profile wasm-release --locked -p unavi-ui
-          '';
-
+        unavi-system = craneLib.buildPackage (componentArgs // {
           pname = "unavi-system";
-          cargoBuildCommand = "cargo component build --profile wasm-release";
+          # Manually build component deps
+          preBuild = componentArgs.cargoBuildCommand + " --locked -p unavi-ui";
           cargoExtraArgs = "--locked -p unavi-system";
-          doCheck = false;
+        });
+
+        wired-log = craneLib.buildPackage (componentArgs // {
+          pname = "wired-log";
+          cargoExtraArgs = "--locked -p wired-log";
         });
       in {
         checks = { inherit unavi-app unavi-server web cargoClippy cargoDoc; };
@@ -191,7 +191,7 @@
                 self.packages.${localSystem}.components
               }/lib/* ./target/wasm32-wasi/wasm-release
 
-              cargo component check -p unavi-ui -p unavi-system
+              cargo component check -p unavi-ui -p unavi-system -p wired-log
             '';
           };
 
@@ -203,7 +203,13 @@
 
           components = pkgs.symlinkJoin {
             name = "components";
-            paths = [ unavi-ui unavi-system ];
+            paths = [ unavi-ui unavi-system wired-log ];
+          };
+
+          default = pkgs.symlinkJoin {
+            name = "default";
+            paths =
+              [ unavi-app unavi-server web unavi-ui unavi-system wired-log ];
           };
         };
 

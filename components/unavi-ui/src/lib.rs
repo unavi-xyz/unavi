@@ -1,7 +1,7 @@
 #[allow(warnings)]
 mod bindings;
 
-use bindings::Guest;
+use bindings::exports::unavi::ui::types::Guest;
 
 struct Component;
 

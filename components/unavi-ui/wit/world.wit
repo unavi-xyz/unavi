@@ -1,5 +1,9 @@
 package unavi:ui;
 
 world ui {
-    export new-bubble: func() -> string;
+  export types;
+}
+
+interface types {
+  new-bubble: func() -> string;
 }

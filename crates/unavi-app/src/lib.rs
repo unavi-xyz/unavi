@@ -5,10 +5,10 @@ pub mod avatar;
 mod did;
 pub mod networking;
 pub mod player;
+pub mod scripting;
 pub mod settings;
 pub mod state;
 pub mod world;
-// pub mod scripting;
 
 pub use bevy::app::App;
 
@@ -26,7 +26,7 @@ impl Plugin for UnaviPlugin {
             did::DidPlugin,
             networking::NetworkingPlugin,
             player::PlayerPlugin,
-            // scripting::ScriptingPlugin,
+            scripting::ScriptingPlugin,
             settings::SettingsPlugin,
             world::WorldPlugin,
         ))

@@ -173,8 +173,6 @@
 
         unavi-system = craneLib.buildPackage (componentArgs // {
           pname = "unavi-system";
-          # Manually build component deps
-          preBuild = componentArgs.cargoBuildCommand + " --locked -p unavi-ui";
           cargoExtraArgs = "--locked -p unavi-system";
         });
 
@@ -211,12 +209,6 @@
 
           check-components = flake-utils.lib.mkApp {
             drv = pkgs.writeShellScriptBin "check-components" ''
-              mkdir -p ./target/wasm32-wasi/wasm-release
-
-              cp ${
-                self.packages.${localSystem}.components
-              }/lib/* ./target/wasm32-wasi/wasm-release
-
               cargo component check -p unavi-ui -p unavi-system -p wired-gltf -p wired-log
             '';
           };

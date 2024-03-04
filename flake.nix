@@ -169,12 +169,12 @@
         apps = rec {
           app = flake-utils.lib.mkApp {
             drv = pkgs.writeScriptBin "app" ''
-              ${self.packages.${localSystem}.app}/bin/unavi-app
+              ${self.packages.${localSystem}.unavi-app}/bin/unavi-app
             '';
           };
           server = flake-utils.lib.mkApp {
             drv = pkgs.writeScriptBin "server" ''
-              ${self.packages.${localSystem}.server}/bin/unavi-server
+              ${self.packages.${localSystem}.unavi-server}/bin/unavi-server
             '';
           };
           web = flake-utils.lib.mkApp {

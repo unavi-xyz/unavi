@@ -60,15 +60,7 @@
         craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
         commonArgs = {
-          src = lib.cleanSourceWith {
-            src = ./.;
-            filter = path: type:
-              (lib.hasSuffix ".html" path) || (lib.hasSuffix ".proto" path)
-              || (lib.hasSuffix ".wit" path) || (lib.hasInfix "/assets/" path)
-              || (lib.hasInfix "/crates/unavi-app/public/" path)
-              || (craneLib.filterCargoSources path type);
-          };
-
+          src = craneLib.cleanCargoSource (craneLib.path ./.);
           strictDeps = true;
 
           buildInputs = with pkgs;
@@ -118,6 +110,13 @@
 
         # Crates
         unavi-app = craneLib.buildPackage (commonArgs // {
+          src = lib.cleanSourceWith {
+            src = ./.;
+            filter = path: type:
+              (lib.hasInfix "/assets/" path)
+              || (craneLib.filterCargoSources path type);
+          };
+
           inherit cargoArtifacts;
           pname = "unavi-app";
           cargoExtraArgs = "--locked -p unavi-app";
@@ -127,12 +126,27 @@
         });
 
         unavi-server = craneLib.buildPackage (commonArgs // {
+          src = lib.cleanSourceWith {
+            src = ./.;
+            filter = path: type:
+              (lib.hasSuffix ".proto" path)
+              || (craneLib.filterCargoSources path type);
+          };
+
           inherit cargoArtifacts;
           pname = "unavi-server";
           cargoExtraArgs = "--locked -p unavi-server";
         });
 
         web = craneLib.buildTrunkPackage (commonArgs // rec {
+          src = lib.cleanSourceWith {
+            src = ./.;
+            filter = path: type:
+              (lib.hasSuffix ".html" path) || (lib.hasInfix "/assets/" path)
+              || (lib.hasInfix "/crates/unavi-app/public/" path)
+              || (craneLib.filterCargoSources path type);
+          };
+
           pname = "web";
           cargoExtraArgs = "--locked -p unavi-app";
           trunkIndexPath = "./crates/unavi-app/index.html";
@@ -143,6 +157,13 @@
         componentArgs = commonArgs // {
           cargoBuildCommand = "cargo component build --profile wasm-release";
           doCheck = false;
+
+          src = lib.cleanSourceWith {
+            src = ./.;
+            filter = path: type:
+              (lib.hasSuffix ".wit" path)
+              || (craneLib.filterCargoSources path type);
+          };
         };
 
         unavi-ui = craneLib.buildPackage (componentArgs // {

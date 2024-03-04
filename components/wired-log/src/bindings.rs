@@ -5,7 +5,7 @@ pub mod exports {
         pub mod log {
 
             #[allow(clippy::all)]
-            pub mod types {
+            pub mod api {
                 #[used]
                 #[doc(hidden)]
                 #[cfg(target_arch = "wasm32")]
@@ -61,18 +61,18 @@ pub mod exports {
                 }
                 #[doc(hidden)]
 
-                macro_rules! __export_wired_log_types_cabi{
+                macro_rules! __export_wired_log_api_cabi{
         ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
 
-          #[export_name = "wired:log/types#log"]
+          #[export_name = "wired:log/api#log"]
           unsafe extern "C" fn export_log(arg0: i32,arg1: *mut u8,arg2: usize,) {
             $($path_to_types)*::_export_log_cabi::<$ty>(arg0, arg1, arg2)
           }
         };);
       }
                 #[doc(hidden)]
-                pub(crate) use __export_wired_log_types_cabi;
+                pub(crate) use __export_wired_log_api_cabi;
             }
         }
     }
@@ -112,7 +112,7 @@ mod _rt {
 macro_rules! __export_host_impl {
   ($ty:ident) => (self::export!($ty with_types_in self););
   ($ty:ident with_types_in $($path_to_types_root:tt)*) => (
-  $($path_to_types_root)*::exports::wired::log::types::__export_wired_log_types_cabi!($ty with_types_in $($path_to_types_root)*::exports::wired::log::types);
+  $($path_to_types_root)*::exports::wired::log::api::__export_wired_log_api_cabi!($ty with_types_in $($path_to_types_root)*::exports::wired::log::api);
   )
 }
 #[doc(inline)]
@@ -121,10 +121,10 @@ pub(crate) use __export_host_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.20.0:host:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 235] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07q\x01A\x02\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 233] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07o\x01A\x02\x01A\x02\x01\
 B\x04\x01m\x04\x05debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\
-\x02\x05level\x01\x03msgs\x01\0\x04\0\x03log\x01\x02\x04\x01\x0fwired:log/types\x05\
+\x02\x05level\x01\x03msgs\x01\0\x04\0\x03log\x01\x02\x04\x01\x0dwired:log/api\x05\
 \0\x04\x01\x0ewired:log/host\x04\0\x0b\x0a\x01\0\x04host\x03\0\0\0G\x09producers\
 \x01\x0cprocessed-by\x02\x0dwit-component\x070.201.0\x10wit-bindgen-rust\x060.20\
 .0";

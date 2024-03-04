@@ -33,16 +33,16 @@ jobs:
       max-parallel: 1
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - id: download-artifact
+        uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.attr }}
-          path: ${{ matrix.attr }}.zip
 
       - uses: svenstaro/upload-release-action@v2
         with:
           asset_name: ${{ matrix.attr }}-${{ inputs.version }}.zip
           body: ${{ needs.release-notes.outputs.release-notes }}
-          file: ${{ matrix.attr }}.zip
+          file: ${{ steps.download-artifact.outputs.download-path }}/${{ matrix.attr }}
           prerelease: ${{ contains(inputs.version, 'beta') }}
           repo_token: ${{ github.token }}
           tag: ${{ inputs.version }}

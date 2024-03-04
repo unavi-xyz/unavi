@@ -9630,15 +9630,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wired-script"
-version = "0.0.2-beta.20"
-dependencies = [
- "bitflags 2.4.2",
- "tracing",
- "wit-bindgen-rt",
-]
-
-[[package]]
 name = "wired-world-proto"
 version = "0.0.2-beta.20"
 dependencies = [

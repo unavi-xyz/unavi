@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: "version"
+  group: "build"
   cancel-in-progress: false
 
 jobs:

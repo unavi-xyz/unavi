@@ -653,6 +653,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy-tnua"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e79dea24f40fa0a93c82a1f5a9a08e3cdfb64488ca28e5faafbe365c8c19e836"
+dependencies = [
+ "bevy",
+ "bevy-tnua-physics-integration-layer",
+ "thiserror",
+]
+
+[[package]]
+name = "bevy-tnua-physics-integration-layer"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2116c25ee9f769b3c5f82951634dfca780f919e03ff85fdbd43384e13d7df469"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
+name = "bevy-tnua-xpbd3d"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3cb35478ca0d02bf043ed6f198e5081664d7a9138da4d9ef29c73f7e9824946"
+dependencies = [
+ "bevy",
+ "bevy-tnua-physics-integration-layer",
+ "bevy_xpbd_3d",
+]
+
+[[package]]
 name = "bevy_a11y"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1095,19 +1126,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "86afa4a88ee06b10fe1e6f28a796ba2eedd16804717cbbb911df0cbb0cd6677b"
 
 [[package]]
-name = "bevy_rapier3d"
-version = "0.25.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ac2b344d110e8aff2dab7ca6ed428dfcbbfeeb8f20827825996538f24e7fcdf"
-dependencies = [
- "bevy",
- "bitflags 2.4.2",
- "log",
- "nalgebra",
- "rapier3d",
-]
-
-[[package]]
 name = "bevy_reflect"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1425,6 +1443,34 @@ dependencies = [
  "wasm-bindgen",
  "web-sys",
  "winit",
+]
+
+[[package]]
+name = "bevy_xpbd_3d"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0425ea7361b9b27c2a382e0663deb42f41147eee60fb2b3d5fa7e42d363ea848"
+dependencies = [
+ "bevy",
+ "bevy_math",
+ "bevy_xpbd_derive",
+ "derive_more",
+ "fxhash",
+ "indexmap 2.2.5",
+ "itertools 0.12.1",
+ "nalgebra",
+ "parry3d",
+ "parry3d-f64",
+]
+
+[[package]]
+name = "bevy_xpbd_derive"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3e1ef1d5e328abe1b76df974245f78e17fd17867583883d5e77444c6a8223a64"
+dependencies = [
+ "quote",
+ "syn 2.0.52",
 ]
 
 [[package]]
@@ -2056,6 +2102,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05ca71f324d19e85a2e976be04b5ecbb193253794a75adfe2e5044c8bef03f6a"
 
 [[package]]
+name = "convert_case"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
+
+[[package]]
 name = "core-foundation"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2293,19 +2345,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "crossbeam"
-version = "0.8.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1137cd7e7fc0fb5d3c5a8678be38ec56e819125d8d7907411fe24ccb943faca8"
-dependencies = [
- "crossbeam-channel",
- "crossbeam-deque",
- "crossbeam-epoch",
- "crossbeam-queue",
- "crossbeam-utils",
-]
-
-[[package]]
 name = "crossbeam-channel"
 version = "0.5.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2329,15 +2368,6 @@ name = "crossbeam-epoch"
 version = "0.9.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b82ac4a3c2ca9c3460964f020e1402edd5753411d7737aa39c3714ad1b5420e"
-dependencies = [
- "crossbeam-utils",
-]
-
-[[package]]
-name = "crossbeam-queue"
-version = "0.3.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df0346b5d5e76ac2fe4e327c5fd1118d6be7c51dfb18f9b7922923f287471e35"
 dependencies = [
  "crossbeam-utils",
 ]
@@ -2750,8 +2780,10 @@ version = "0.99.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4fb810d30a7c1953f91334de7244731fc3f3c10d7fe163338a35b9f640960321"
 dependencies = [
+ "convert_case",
  "proc-macro2",
  "quote",
+ "rustc_version",
  "syn 1.0.109",
 ]
 
@@ -3510,6 +3542,15 @@ dependencies = [
  "pin-project-lite",
  "pin-utils",
  "slab",
+]
+
+[[package]]
+name = "fxhash"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c"
+dependencies = [
+ "byteorder",
 ]
 
 [[package]]
@@ -5873,6 +5914,29 @@ dependencies = [
  "nalgebra",
  "num-derive 0.4.2",
  "num-traits",
+ "rayon",
+ "rustc-hash",
+ "simba",
+ "slab",
+ "smallvec",
+ "spade",
+]
+
+[[package]]
+name = "parry3d-f64"
+version = "0.13.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "368eb8be4f9f4b6669474f092a954cb94151cc57b097b95acab3b30ed4c4164f"
+dependencies = [
+ "approx",
+ "arrayvec 0.7.4",
+ "bitflags 1.3.2",
+ "downcast-rs",
+ "either",
+ "nalgebra",
+ "num-derive 0.4.2",
+ "num-traits",
+ "rayon",
  "rustc-hash",
  "simba",
  "slab",
@@ -6440,27 +6504,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c8a99fddc9f0ba0a85884b8d14e3592853e787d581ca1816c91349b10e4eeab"
 
 [[package]]
-name = "rapier3d"
-version = "0.18.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92d07a833e0aa3bc57010caaa50bf75fa78afc03a74207607db740da4e4579a1"
-dependencies = [
- "approx",
- "arrayvec 0.7.4",
- "bit-vec",
- "bitflags 1.3.2",
- "crossbeam",
- "downcast-rs",
- "nalgebra",
- "num-derive 0.4.2",
- "num-traits",
- "parry3d",
- "rustc-hash",
- "simba",
- "vec_map",
-]
-
-[[package]]
 name = "raw-window-handle"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6477,6 +6520,26 @@ name = "rawpointer"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "60a357793950651c4ed0f3f52338f53b2f809f32d83a07f72909fa13e4c6c1e3"
+
+[[package]]
+name = "rayon"
+version = "1.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e4963ed1bc86e4f3ee217022bd855b297cef07fb9eac5dfa1f788b220b49b3bd"
+dependencies = [
+ "either",
+ "rayon-core",
+]
+
+[[package]]
+name = "rayon-core"
+version = "1.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1465873a3dfdaa8ae7cb14b4383657caab0b3e8a0aa9ae8e04b044854c8dfce2"
+dependencies = [
+ "crossbeam-deque",
+ "crossbeam-utils",
+]
 
 [[package]]
 name = "rcgen"
@@ -8332,8 +8395,10 @@ version = "0.0.2-beta.21"
 dependencies = [
  "bevy",
  "bevy-async-task",
- "bevy_rapier3d",
+ "bevy-tnua",
+ "bevy-tnua-xpbd3d",
  "bevy_vrm",
+ "bevy_xpbd_3d",
  "did-method-key",
  "didkit",
  "tracing",

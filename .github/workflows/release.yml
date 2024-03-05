@@ -17,15 +17,10 @@ jobs:
           tag-name: ${{ inputs.version }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - id: download-artifact
-        uses: actions/download-artifact@v4
-
-      - name: List downloaded files
-        run: ls -l ${{ steps.download-artifact.outputs.download-path }} > files.txt
+      - uses: actions/download-artifact@v4
 
       - name: Add version to file names
         run: |
-          cd ${{ steps.download-artifact.outputs.download-path }}
           for file in *; do
             mv $file $file-${{ inputs.version }}
           done
@@ -33,7 +28,7 @@ jobs:
       - uses: svenstaro/upload-release-action@v2
         with:
           body: ${{ steps.release-notes.outputs.release-notes }}
-          file: ${{ steps.download-artifact.outputs.download-path }}/*
+          file: "*"
           file_glob: true
           prerelease: ${{ contains(inputs.version, 'beta') }}
           repo_token: ${{ github.token }}

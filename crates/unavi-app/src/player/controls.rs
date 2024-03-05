@@ -10,8 +10,6 @@ pub struct InputState {
     pub backward: bool,
     pub left: bool,
     pub right: bool,
-    pub up: bool,
-    pub down: bool,
     pub jump: bool,
     pub sprint: bool,
 }
@@ -104,13 +102,16 @@ pub fn move_player(
     let xz = Vec3::new(1.0, 0.0, 1.0);
 
     for (mut player, look_entity, mut controller) in players.iter_mut() {
-        let look_direction = look_directions
-            .get(look_entity.0)
-            .expect("Failed to get LookDirection from Entity");
+        let look_direction = match look_directions.get(look_entity.0) {
+            Ok(d) => d,
+            Err(e) => {
+                error!("Failed to get look direction: {:?}", e);
+                continue;
+            }
+        };
 
         let forward = (look_direction.forward * xz).normalize();
         let right = (look_direction.right * xz).normalize();
-        let up = Vec3::Y;
 
         let mut move_direction = Vec3::ZERO;
 
@@ -126,12 +127,6 @@ pub fn move_player(
         if player.input.left {
             move_direction -= right;
         }
-        if player.input.up {
-            move_direction += up;
-        }
-        if player.input.down {
-            move_direction -= up;
-        }
 
         let speed = if player.input.sprint {
             player.sprint_speed
@@ -144,16 +139,14 @@ pub fn move_player(
         if player.input.jump {
             controller.action(TnuaBuiltinJump {
                 height: player.jump_height,
-                allow_in_air: true,
                 ..default()
             });
         }
 
         controller.basis(TnuaBuiltinWalk {
             coyote_time: 0.2,
-            desired_forward: forward,
             desired_velocity,
-            float_height: 1.0,
+            float_height: PLAYER_HEIGHT,
             ..default()
         });
 
@@ -172,12 +165,12 @@ pub fn void_teleport(
         if transform.translation.y < VOID_LEVEL {
             info!("Player fell into void! Teleporting player to spawn...");
             transform.translation = SPAWN;
-            linvel.x = 0.0;
-            linvel.y = 0.0;
-            linvel.z = 0.0;
             angvel.x = 0.0;
             angvel.y = 0.0;
             angvel.z = 0.0;
+            linvel.x = 0.0;
+            linvel.y = 0.0;
+            linvel.z = 0.0;
         }
     }
 }

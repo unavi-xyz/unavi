@@ -13,7 +13,7 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(TnuaXpbd3dPlugin)
+        app.add_plugins((TnuaControllerPlugin, TnuaXpbd3dPlugin))
             .add_systems(OnEnter(AppState::InWorld), spawn_player);
 
         // app.insert_resource(input::InputMap::default())
@@ -46,5 +46,9 @@ impl Plugin for PlayerPlugin {
 pub struct PlayerMarker;
 
 fn spawn_player(mut commands: Commands) {
-    commands.spawn((PlayerMarker, TnuaControllerBundle::default()));
+    commands.spawn((
+        PlayerMarker,
+        Camera3dBundle::default(),
+        TnuaControllerBundle::default(),
+    ));
 }

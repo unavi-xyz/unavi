@@ -37,8 +37,16 @@
 
         craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
+        src = craneLib.cleanCargoSource (craneLib.path ./.);
+
         commonArgs = {
-          src = craneLib.cleanCargoSource (craneLib.path ./.);
+          src = lib.cleanSourceWith {
+            src = ./.;
+            filter = path: type:
+              (lib.hasSuffix ".proto" path)
+              || (craneLib.filterCargoSources path type);
+          };
+
           strictDeps = true;
 
           buildInputs = with pkgs;
@@ -86,6 +94,11 @@
           pname = "doc";
         });
 
+        cargoFmt = craneLib.cargoFmt {
+          inherit src;
+          pname = "fmt";
+        };
+
         # Crates
         unavi-app = craneLib.buildPackage (commonArgs // {
           src = lib.cleanSourceWith {
@@ -104,13 +117,6 @@
         });
 
         unavi-server = craneLib.buildPackage (commonArgs // {
-          src = lib.cleanSourceWith {
-            src = ./.;
-            filter = path: type:
-              (lib.hasSuffix ".proto" path)
-              || (craneLib.filterCargoSources path type);
-          };
-
           inherit cargoArtifacts;
           pname = "unavi-server";
           cargoExtraArgs = "--locked -p unavi-server";
@@ -164,19 +170,14 @@
           cargoExtraArgs = "--locked -p wired-log";
         });
       in {
-        checks = { inherit unavi-app unavi-server web cargoClippy cargoDoc; };
+        checks = {
+          inherit unavi-app unavi-server web cargoClippy cargoDoc cargoFmt;
+        };
 
         apps = rec {
-          app = flake-utils.lib.mkApp {
-            drv = pkgs.writeScriptBin "app" ''
-              ${self.packages.${localSystem}.unavi-app}/bin/unavi-app
-            '';
-          };
-          server = flake-utils.lib.mkApp {
-            drv = pkgs.writeScriptBin "server" ''
-              ${self.packages.${localSystem}.unavi-server}/bin/unavi-server
-            '';
-          };
+          app = flake-utils.lib.mkApp { drv = unavi-app; };
+          server = flake-utils.lib.mkApp { drv = unavi-server; };
+
           web = flake-utils.lib.mkApp {
             drv = pkgs.writeShellScriptBin "web" ''
               ${pkgs.python3Minimal}/bin/python3 -m http.server --directory ${

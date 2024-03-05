@@ -212,7 +212,13 @@
         devShells.default = craneLib.devShell {
           checks = self.checks.${localSystem};
 
-          packages = with pkgs; [ cargo-watch clang rust-analyzer zip ];
+          packages = with pkgs; [
+            cargo-deny
+            cargo-watch
+            clang
+            rust-analyzer
+            zip
+          ];
 
           LD_LIBRARY_PATH = commonArgs.buildInputs;
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";

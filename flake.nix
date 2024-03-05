@@ -220,7 +220,7 @@
             zip
           ];
 
-          LD_LIBRARY_PATH = commonArgs.buildInputs;
+          LD_LIBRARY_PATH = lib.makeLibraryPath (commonArgs.buildInputs);
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
       }) // (let

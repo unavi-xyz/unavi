@@ -187,11 +187,9 @@
           };
 
           check-components = flake-utils.lib.mkApp {
-            drv = pkgs.writeShellScriptBin "check-components" ''
-              cargo component check --locked -p ${
-                (lib.concatStringsSep " -p " component-names)
-              }
-            '';
+            drv = pkgs.writeShellScriptBin "check-components"
+              (lib.concatStringsSep " -p "
+                ([ "cargo component check --locked" ] ++ component-names));
           };
 
           default = app;

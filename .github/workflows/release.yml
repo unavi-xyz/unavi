@@ -22,7 +22,8 @@ jobs:
       - name: Add version to file names
         run: |
           for file in *; do
-            mv $file $file-${{ inputs.version }}
+            echo "Renaming $file"
+            mv "$file" "${file}-${{ inputs.version }}"
           done
 
       - uses: svenstaro/upload-release-action@v2

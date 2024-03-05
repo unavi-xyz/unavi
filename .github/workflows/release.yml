@@ -26,10 +26,13 @@ jobs:
             mv "$file" "${file}-${{ inputs.version }}"
           done
 
+          echo "Done"
+          ls
+
       - uses: svenstaro/upload-release-action@v2
         with:
           body: ${{ steps.release-notes.outputs.release-notes }}
-          file: "*"
+          file: ./*
           file_glob: true
           prerelease: ${{ contains(inputs.version, 'beta') }}
           repo_token: ${{ github.token }}

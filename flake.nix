@@ -170,9 +170,7 @@
           cargoExtraArgs = "--locked -p wired-log";
         });
       in {
-        checks = {
-          inherit unavi-app unavi-server web cargoClippy cargoDoc cargoFmt;
-        };
+        checks = { inherit cargoClippy cargoDoc cargoFmt; };
 
         apps = rec {
           app = flake-utils.lib.mkApp { drv = unavi-app; };
@@ -196,15 +194,11 @@
         };
 
         packages = {
-          inherit unavi-app unavi-server web;
-
-          components = pkgs.symlinkJoin {
-            name = "components";
-            paths = [ unavi-ui unavi-system wired-gltf wired-log ];
-          };
+          inherit unavi-app unavi-server web unavi-ui unavi-system wired-gltf
+            wired-log;
 
           default = pkgs.symlinkJoin {
-            name = "default";
+            name = "all";
             paths = [
               unavi-app
               unavi-server

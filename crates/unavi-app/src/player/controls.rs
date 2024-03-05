@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_tnua::prelude::*;
 use bevy_xpbd_3d::prelude::*;
 
 use super::{
@@ -60,16 +61,15 @@ pub fn spawn_player(mut commands: Commands) {
         .spawn((
             Player::default(),
             LookEntity(camera),
-            RigidBody::KinematicVelocityBased,
-            Collider::capsule_y(PLAYER_HEIGHT / 2.0, PLAYER_WIDTH / 2.0),
-            ColliderMassProperties::Density(10.0),
+            RigidBody::Dynamic,
+            Collider::capsule(PLAYER_HEIGHT, PLAYER_WIDTH),
+            ColliderDensity(10.0),
             TransformBundle {
                 local: Transform::from_translation(SPAWN),
                 ..default()
             },
-            Velocity::default(),
-            KinematicCharacterController::default(),
-            KinematicCharacterControllerOutput::default(),
+            LinearVelocity::default(),
+            TnuaControllerBundle::default(),
             bevy_vrm::mtoon::MtoonMainCamera,
         ))
         .id();
@@ -103,19 +103,17 @@ const DAMPING_FACTOR: f32 = 0.75;
 pub fn move_player(
     time: Res<Time>,
     mut last_time: Local<f32>,
-    rapier_config: Res<RapierConfiguration>,
     mut players: Query<(
         &mut Player,
         &LookEntity,
-        &mut KinematicCharacterController,
-        &KinematicCharacterControllerOutput,
+        &mut TnuaController,
+        &LinearVelocity,
     )>,
     look_directions: Query<&LookDirection>,
 ) {
     let xz = Vec3::new(1.0, 0.0, 1.0);
-    let dt = time.elapsed_seconds() - *last_time;
 
-    for (mut player, look_entity, mut controller, output) in players.iter_mut() {
+    for (mut player, look_entity, mut controller, velocity) in players.iter_mut() {
         let look_direction = look_directions
             .get(look_entity.0)
             .expect("Failed to get LookDirection from Entity");
@@ -124,9 +122,8 @@ pub fn move_player(
         let right = (look_direction.right * xz).normalize();
         let up = Vec3::Y;
 
-        let velocity = output.effective_translation / dt;
-
         let mut desired_velocity = Vec3::ZERO;
+
         if player.input.forward {
             desired_velocity += forward;
         }
@@ -156,17 +153,22 @@ pub fn move_player(
             desired_velocity.normalize() * speed
         } else {
             // No input, apply damping to the x/z of the current velocity
-            velocity * DAMPING_FACTOR * xz
+            // velocity * DAMPING_FACTOR * xz
+            **velocity
         };
 
-        desired_velocity.y = if player.input.jump && output.grounded {
-            player.jump_velocity
-        } else {
-            rapier_config.gravity.y.mul_add(dt, velocity.y)
-        };
+        if player.input.jump {
+            controller.action(TnuaBuiltinJump {
+                height: 4.0,
+                ..default()
+            });
+        }
 
-        let desired_translation = desired_velocity * dt;
-        controller.translation = desired_translation.into();
+        controller.basis(TnuaBuiltinWalk {
+            desired_velocity,
+            float_height: 0.5,
+            ..default()
+        });
 
         player.input = InputState::default();
     }
@@ -176,13 +178,19 @@ pub fn move_player(
 
 const VOID_LEVEL: f32 = -50.0;
 
-pub fn void_teleport(mut players: Query<(&mut Transform, &mut Velocity), With<Player>>) {
-    for (mut transform, mut velocity) in players.iter_mut() {
+pub fn void_teleport(
+    mut players: Query<(&mut Transform, &mut LinearVelocity, &mut AngularVelocity), With<Player>>,
+) {
+    for (mut transform, mut linvel, mut angvel) in players.iter_mut() {
         if transform.translation.y < VOID_LEVEL {
             info!("Player fell into void! Teleporting player to spawn...");
             transform.translation = SPAWN;
-            velocity.linvel = Vec3::ZERO;
-            velocity.angvel = Vec3::ZERO;
+            linvel.x = 0.0;
+            linvel.y = 0.0;
+            linvel.z = 0.0;
+            angvel.x = 0.0;
+            angvel.y = 0.0;
+            angvel.z = 0.0;
         }
     }
 }

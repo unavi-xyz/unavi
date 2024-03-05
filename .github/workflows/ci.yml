@@ -27,6 +27,7 @@ jobs:
 
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: Swatinem/rust-cache@v2
 
       - run: nix develop -c nix run .?submodules=1#check-components
       - uses: EndBug/add-and-commit@v9

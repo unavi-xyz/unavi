@@ -40,6 +40,8 @@
         src = craneLib.cleanCargoSource (craneLib.path ./.);
 
         commonArgs = {
+          pname = "unavi";
+
           src = lib.cleanSourceWith {
             src = ./.;
             filter = path: type:
@@ -81,39 +83,45 @@
             (with pkgs; [ alsa-lib alsa-lib.dev ]);
         };
 
-        cargoArtifacts =
-          craneLib.buildDepsOnly (commonArgs // { pname = "deps"; });
+        cargoArtifacts = craneLib.buildDepsOnly commonArgs;
 
-        cargoClippy = craneLib.cargoClippy (commonArgs // {
-          inherit cargoArtifacts;
-          pname = "clippy";
-        });
+        cargoClippy =
+          craneLib.cargoClippy (commonArgs // { inherit cargoArtifacts; });
 
-        cargoDoc = craneLib.cargoDoc (commonArgs // {
-          inherit cargoArtifacts;
-          pname = "doc";
-        });
+        cargoDoc =
+          craneLib.cargoDoc (commonArgs // { inherit cargoArtifacts; });
 
         cargoFmt = craneLib.cargoFmt {
           inherit src;
-          pname = "fmt";
+          pname = "unavi";
         };
+
+        cargoTest = craneLib.cargoTest (commonArgs // {
+          inherit cargoArtifacts;
+          cargoTestArgs = "--all-features --all-targets";
+        });
+
+        cargoTestDoc = craneLib.cargoTest (commonArgs // {
+          inherit cargoArtifacts;
+          pname = "doc";
+          cargoTestArgs = "--all-features --doc";
+        });
 
         # Crates
         unavi-app = craneLib.buildPackage (commonArgs // {
-          src = lib.cleanSourceWith {
-            src = ./.;
-            filter = path: type:
-              (lib.hasInfix "/assets/" path)
-              || (craneLib.filterCargoSources path type);
-          };
-
           inherit cargoArtifacts;
           pname = "unavi-app";
           cargoExtraArgs = "--locked -p unavi-app";
           postInstall = ''
             cp -r assets $out/bin
           '';
+
+          src = lib.cleanSourceWith {
+            src = ./.;
+            filter = path: type:
+              (lib.hasInfix "/assets/" path)
+              || (craneLib.filterCargoSources path type);
+          };
         });
 
         unavi-server = craneLib.buildPackage (commonArgs // {
@@ -150,27 +158,21 @@
           };
         };
 
-        unavi-ui = craneLib.buildPackage (componentArgs // {
-          pname = "unavi-ui";
-          cargoExtraArgs = "--locked -p unavi-ui";
-        });
+        buildComponent = pname:
+          craneLib.buildPackage (componentArgs // {
+            inherit pname;
+            cargoExtraArgs = "--locked -p ${pname}";
+          });
 
-        unavi-system = craneLib.buildPackage (componentArgs // {
-          pname = "unavi-system";
-          cargoExtraArgs = "--locked -p unavi-system";
-        });
+        component-names =
+          lib.mapAttrsToList (name: _: name) (builtins.readDir ./components);
 
-        wired-gltf = craneLib.buildPackage (componentArgs // {
-          pname = "wired-gltf";
-          cargoExtraArgs = "--locked -p wired-gltf";
-        });
+        components = (map (name: buildComponent name) component-names);
 
-        wired-log = craneLib.buildPackage (componentArgs // {
-          pname = "wired-log";
-          cargoExtraArgs = "--locked -p wired-log";
-        });
       in {
-        checks = { inherit cargoClippy cargoDoc cargoFmt; };
+        checks = {
+          inherit cargoClippy cargoDoc cargoFmt cargoTest cargoTestDoc;
+        };
 
         apps = rec {
           app = flake-utils.lib.mkApp { drv = unavi-app; };
@@ -186,7 +188,9 @@
 
           check-components = flake-utils.lib.mkApp {
             drv = pkgs.writeShellScriptBin "check-components" ''
-              cargo component check -p unavi-ui -p unavi-system -p wired-gltf -p wired-log
+              cargo component check --locked -p ${
+                (lib.concatStringsSep " -p " component-names)
+              }
             '';
           };
 
@@ -194,21 +198,16 @@
         };
 
         packages = {
-          inherit unavi-app unavi-server web unavi-ui unavi-system wired-gltf
-            wired-log;
+          inherit unavi-app unavi-server web;
+
+          components = pkgs.symlinkJoin {
+            name = "components";
+            paths = [ components ];
+          };
 
           default = pkgs.symlinkJoin {
             name = "all";
-            paths = [
-              unavi-app
-              unavi-server
-              web
-
-              unavi-ui
-              unavi-system
-              wired-gltf
-              wired-log
-            ];
+            paths = [ components unavi-app unavi-server web ];
           };
         };
 

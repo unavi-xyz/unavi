@@ -35,13 +35,13 @@ fn setup_world(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     ambient.color = Color::rgb(0.95, 0.95, 1.0);
-    ambient.brightness = 0.1;
+    ambient.brightness = 10.0;
 
     commands.spawn((
         DirectionalLightBundle {
             directional_light: DirectionalLight {
                 shadows_enabled: true,
-                illuminance: 10_000.0,
+                illuminance: 5000.0,
                 color: Color::rgb(1.0, 1.0, 0.98),
                 ..default()
             },

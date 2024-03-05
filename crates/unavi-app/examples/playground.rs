@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use bevy::{prelude::*, render::mesh::VertexAttributeValues};
+use bevy::prelude::*;
 use bevy_xpbd_3d::prelude::*;
 use unavi_app::UnaviPlugin;
 
@@ -20,90 +20,52 @@ fn main() {
         .run();
 }
 
-const GROUND_SIZE: f32 = 40.0;
-const GROUND_THICKNESS: f32 = 0.01;
-
-#[derive(Component, Default)]
-pub struct RepeatTexture;
-
 fn setup_world(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    {
-        let ground_texture = asset_server.load("images/dev-white.png");
-        let ground_texture_scale = GROUND_SIZE / 4.0;
-
-        let mut ground_mesh = Mesh::from(Cuboid {
-            half_size: Vec3::new(GROUND_SIZE / 2.0, GROUND_THICKNESS / 2.0, GROUND_SIZE / 2.0),
-        });
-
-        match ground_mesh.attribute_mut(Mesh::ATTRIBUTE_UV_0).unwrap() {
-            VertexAttributeValues::Float32x2(uvs) => {
-                for uv in uvs {
-                    uv[0] *= ground_texture_scale;
-                    uv[1] *= ground_texture_scale;
-                }
-            }
-            _ => panic!(),
-        }
-
-        commands.spawn((
-            RigidBody::Static,
-            Collider::cuboid(GROUND_SIZE, GROUND_THICKNESS, GROUND_SIZE),
-            PbrBundle {
-                mesh: meshes.add(ground_mesh),
-                material: materials.add(StandardMaterial {
-                    base_color_texture: Some(ground_texture.clone()),
-                    ..default()
-                }),
-                transform: Transform::from_xyz(0.0, -0.1, 0.0),
-                ..default()
-            },
-            RepeatTexture,
-        ));
-    }
-
     commands.spawn(SceneBundle {
         scene: asset_server.load("models/catbot.vrm#Scene0"),
         transform: Transform::from_xyz(-3.0, 0.0, -10.0).with_rotation(Quat::from_rotation_y(PI)),
         ..default()
     });
 
-    {
-        let box_size = 0.1;
-        let pyramid_layers = 8;
-        let pyramid_material = materials.add(StandardMaterial::from(Color::rgb(0.7, 0.8, 0.6)));
-        let pyramid_offset = Transform::from_xyz(5.0, GROUND_THICKNESS * 2.0, -10.0);
+    // Pyramid of cubes
+    // {
+    //     let box_size = 0.1;
+    //     let pyramid_layers = 8;
+    //     let pyramid_material = materials.add(StandardMaterial::from(Color::rgb(0.7, 0.8, 0.6)));
+    //     let pyramid_offset = Transform::from_xyz(5.0, 1.0, -10.0);
+    //
+    //     for i in 1..=pyramid_layers {
+    //         for j in 0..i {
+    //             for k in 0..i {
+    //                 let i = i as f32;
+    //                 let j = j as f32;
+    //                 let k = k as f32;
+    //                 let pyramid_layers = pyramid_layers as f32;
+    //
+    //                 let x = (j - (i / 2.0)) * box_size * 2.0;
+    //                 let y = (pyramid_layers - i) * box_size * 2.0;
+    //                 let z = (k - (i / 2.0)) * box_size * 2.0;
+    //
+    //                 commands.spawn((
+    //                     PhysShapeBundle::cube(
+    //                         box_size,
+    //                         pyramid_offset * Transform::from_xyz(x, y, z),
+    //                         pyramid_material.clone(),
+    //                         &mut meshes,
+    //                     ),
+    //                     ColliderDensity(0.5),
+    //                 ));
+    //             }
+    //         }
+    //     }
+    // }
 
-        for i in 1..=pyramid_layers {
-            for j in 0..i {
-                for k in 0..i {
-                    let i = i as f32;
-                    let j = j as f32;
-                    let k = k as f32;
-                    let pyramid_layers = pyramid_layers as f32;
-
-                    let x = (j - (i / 2.0)) * box_size * 2.0;
-                    let y = (pyramid_layers - i) * box_size * 2.0;
-                    let z = (k - (i / 2.0)) * box_size * 2.0;
-
-                    commands.spawn((
-                        PhysShapeBundle::cube(
-                            box_size,
-                            pyramid_offset * Transform::from_xyz(x, y, z),
-                            pyramid_material.clone(),
-                            &mut meshes,
-                        ),
-                        ColliderDensity(0.5),
-                    ));
-                }
-            }
-        }
-    }
-
+    // Ball
     {
         let ball_material = materials.add(StandardMaterial::from(Color::rgb(0.9, 0.3, 0.3)));
         let ball_radius = 0.75;
@@ -122,9 +84,9 @@ fn setup_world(
 
 #[derive(Bundle)]
 struct PhysShapeBundle {
-    rigid_body: RigidBody,
     collider: Collider,
     pbr_bundle: PbrBundle,
+    rigid_body: RigidBody,
 }
 
 impl PhysShapeBundle {

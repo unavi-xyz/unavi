@@ -1,4 +1,3 @@
-use super::events::{PitchEvent, YawEvent};
 use bevy::{input::mouse::MouseMotion, prelude::*, window::CursorGrabMode, window::Window};
 
 #[derive(Resource)]
@@ -23,6 +22,12 @@ impl Default for LookDirection {
         }
     }
 }
+
+#[derive(Event, Debug, Default)]
+pub struct PitchEvent(pub f32);
+
+#[derive(Event, Debug, Default)]
+pub struct YawEvent(pub f32);
 
 #[derive(Component)]
 pub struct LookEntity(pub Entity);
@@ -84,8 +89,8 @@ pub fn read_mouse_input(
             settings.yaw_pitch_roll.y = -PITCH_BOUND;
         }
 
-        pitch_events.send(PitchEvent::new(settings.yaw_pitch_roll.y));
-        yaw_events.send(YawEvent::new(settings.yaw_pitch_roll.x));
+        pitch_events.send(PitchEvent(settings.yaw_pitch_roll.y));
+        yaw_events.send(YawEvent(settings.yaw_pitch_roll.x));
     }
 }
 

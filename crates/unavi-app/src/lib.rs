@@ -25,7 +25,7 @@ impl Plugin for UnaviPlugin {
             avatar::AvatarPlugin,
             did::DidPlugin,
             networking::NetworkingPlugin,
-            // player::PlayerPlugin,
+            player::PlayerPlugin,
             scripting::ScriptingPlugin,
             settings::SettingsPlugin,
             world::WorldPlugin,

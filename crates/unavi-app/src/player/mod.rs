@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_tnua::prelude::*;
+use bevy_tnua_xpbd3d::TnuaXpbd3dPlugin;
 
 use crate::state::AppState;
 
@@ -12,7 +13,8 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::InWorld), spawn_player);
+        app.add_plugins(TnuaXpbd3dPlugin)
+            .add_systems(OnEnter(AppState::InWorld), spawn_player);
 
         // app.insert_resource(input::InputMap::default())
         //     .add_event::<events::YawEvent>()

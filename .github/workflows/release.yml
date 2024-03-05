@@ -42,7 +42,7 @@ jobs:
         with:
           asset_name: ${{ matrix.attr }}-${{ inputs.version }}.zip
           body: ${{ needs.release-notes.outputs.release-notes }}
-          file: ${{ steps.download-artifact.outputs.download-path }}/${{ matrix.attr }}
+          file: ${{ steps.download-artifact.outputs.download-path }}/${{ matrix.attr }}.zip
           prerelease: ${{ contains(inputs.version, 'beta') }}
           repo_token: ${{ github.token }}
           tag: ${{ inputs.version }}

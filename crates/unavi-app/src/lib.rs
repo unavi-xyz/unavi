@@ -10,8 +10,7 @@ pub mod state;
 pub mod world;
 
 pub use bevy::app::App;
-use bevy_tnua_xpbd3d::TnuaXpbd3dPlugin;
-use bevy_xpbd_3d::plugins::PhysicsPlugins;
+use bevy_xpbd_3d::plugins::{PhysicsDebugPlugin, PhysicsPlugins};
 
 #[derive(Debug, Default)]
 pub struct UnaviPlugin {
@@ -23,7 +22,6 @@ impl Plugin for UnaviPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             PhysicsPlugins::default(),
-            TnuaXpbd3dPlugin,
             avatar::AvatarPlugin,
             did::DidPlugin,
             networking::NetworkingPlugin,
@@ -34,7 +32,9 @@ impl Plugin for UnaviPlugin {
         ))
         .init_state::<state::AppState>();
 
-        if self.debug_physics {}
+        if self.debug_physics {
+            app.add_plugins(PhysicsDebugPlugin::default());
+        }
 
         if self.debug_frame_time {
             app.add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin);

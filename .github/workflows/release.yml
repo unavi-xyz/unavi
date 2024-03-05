@@ -33,7 +33,7 @@ jobs:
       - uses: svenstaro/upload-release-action@v2
         with:
           body: ${{ steps.release-notes.outputs.release-notes }}
-          file_glob: ${{ steps.download-artifact.outputs.download-path }}
+          file_glob: ${{ steps.download-artifact.outputs.download-path }}/*
           prerelease: ${{ contains(inputs.version, 'beta') }}
           repo_token: ${{ github.token }}
           tag: ${{ inputs.version }}

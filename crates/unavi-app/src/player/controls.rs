@@ -2,10 +2,7 @@ use bevy::prelude::*;
 use bevy_tnua::prelude::*;
 use bevy_xpbd_3d::prelude::*;
 
-use super::{
-    events::{PitchEvent, YawEvent},
-    look::{LookDirection, LookEntity},
-};
+use super::look::{LookDirection, LookEntity, PitchEvent, YawEvent};
 
 #[derive(Default)]
 pub struct InputState {
@@ -23,7 +20,7 @@ pub struct InputState {
 pub struct Player {
     pub speed: f32,
     pub sprint_speed: f32,
-    pub jump_velocity: f32,
+    pub jump_height: f32,
     pub velocity: Vec3,
     pub input: InputState,
 }
@@ -31,9 +28,9 @@ pub struct Player {
 impl Default for Player {
     fn default() -> Self {
         Self {
-            speed: 3.0,
-            sprint_speed: 5.0,
-            jump_velocity: 4.0,
+            speed: 7.0,
+            sprint_speed: 10.0,
+            jump_height: 2.0,
             velocity: Vec3::ZERO,
             input: InputState::default(),
         }
@@ -59,17 +56,17 @@ pub fn spawn_player(mut commands: Commands) {
 
     let body = commands
         .spawn((
-            Player::default(),
-            LookEntity(camera),
-            RigidBody::Dynamic,
             Collider::capsule(PLAYER_HEIGHT, PLAYER_WIDTH),
             ColliderDensity(10.0),
+            LinearVelocity::default(),
+            LookEntity(camera),
+            Player::default(),
+            RigidBody::Dynamic,
+            TnuaControllerBundle::default(),
             TransformBundle {
-                local: Transform::from_translation(SPAWN),
+                global: GlobalTransform::from_translation(SPAWN),
                 ..default()
             },
-            LinearVelocity::default(),
-            TnuaControllerBundle::default(),
             bevy_vrm::mtoon::MtoonMainCamera,
         ))
         .id();
@@ -82,7 +79,7 @@ pub fn spawn_player(mut commands: Commands) {
 pub fn apply_yaw(mut yaws: EventReader<YawEvent>, mut query: Query<&mut Transform, With<YawTag>>) {
     if let Some(yaw) = yaws.read().next() {
         for mut transform in query.iter_mut() {
-            transform.rotation = Quat::from_rotation_y(**yaw);
+            transform.rotation = Quat::from_rotation_y(yaw.0);
         }
     }
 }
@@ -93,27 +90,20 @@ pub fn apply_pitch(
 ) {
     if let Some(pitch) = pitches.read().next() {
         for mut transform in query.iter_mut() {
-            transform.rotation = Quat::from_rotation_x(**pitch);
+            transform.rotation = Quat::from_rotation_x(pitch.0);
         }
     }
 }
 
-const DAMPING_FACTOR: f32 = 0.75;
-
 pub fn move_player(
     time: Res<Time>,
     mut last_time: Local<f32>,
-    mut players: Query<(
-        &mut Player,
-        &LookEntity,
-        &mut TnuaController,
-        &LinearVelocity,
-    )>,
+    mut players: Query<(&mut Player, &LookEntity, &mut TnuaController)>,
     look_directions: Query<&LookDirection>,
 ) {
     let xz = Vec3::new(1.0, 0.0, 1.0);
 
-    for (mut player, look_entity, mut controller, velocity) in players.iter_mut() {
+    for (mut player, look_entity, mut controller) in players.iter_mut() {
         let look_direction = look_directions
             .get(look_entity.0)
             .expect("Failed to get LookDirection from Entity");
@@ -122,25 +112,25 @@ pub fn move_player(
         let right = (look_direction.right * xz).normalize();
         let up = Vec3::Y;
 
-        let mut desired_velocity = Vec3::ZERO;
+        let mut move_direction = Vec3::ZERO;
 
         if player.input.forward {
-            desired_velocity += forward;
+            move_direction += forward;
         }
         if player.input.backward {
-            desired_velocity -= forward;
+            move_direction -= forward;
         }
         if player.input.right {
-            desired_velocity += right;
+            move_direction += right;
         }
         if player.input.left {
-            desired_velocity -= right;
+            move_direction -= right;
         }
         if player.input.up {
-            desired_velocity += up;
+            move_direction += up;
         }
         if player.input.down {
-            desired_velocity -= up;
+            move_direction -= up;
         }
 
         let speed = if player.input.sprint {
@@ -149,24 +139,21 @@ pub fn move_player(
             player.speed
         };
 
-        desired_velocity = if desired_velocity.length_squared() > 1E-6 {
-            desired_velocity.normalize() * speed
-        } else {
-            // No input, apply damping to the x/z of the current velocity
-            // velocity * DAMPING_FACTOR * xz
-            **velocity
-        };
+        let desired_velocity = move_direction.normalize_or_zero() * speed;
 
         if player.input.jump {
             controller.action(TnuaBuiltinJump {
-                height: 4.0,
+                height: player.jump_height,
+                allow_in_air: true,
                 ..default()
             });
         }
 
         controller.basis(TnuaBuiltinWalk {
+            coyote_time: 0.2,
+            desired_forward: forward,
             desired_velocity,
-            float_height: 0.5,
+            float_height: 1.0,
             ..default()
         });
 

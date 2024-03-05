@@ -17,10 +17,13 @@ jobs:
           tag-name: ${{ inputs.version }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/download-artifact@v4
+      - id: download-artifact
+        uses: actions/download-artifact@v4
 
       - name: Add version to file names
         run: |
+          cd ${{ steps.download-artifact.outputs.download-path }}
+
           for file in *; do
             echo "Renaming $file"
             mv "$file" "${file}-${{ inputs.version }}"
@@ -32,7 +35,7 @@ jobs:
       - uses: svenstaro/upload-release-action@v2
         with:
           body: ${{ steps.release-notes.outputs.release-notes }}
-          file: ./*
+          file: ${{ steps.download-artifact.outputs.download-path }}/*
           file_glob: true
           prerelease: ${{ contains(inputs.version, 'beta') }}
           repo_token: ${{ github.token }}

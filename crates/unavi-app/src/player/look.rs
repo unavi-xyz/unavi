@@ -1,3 +1,5 @@
+use std::f32::consts::FRAC_PI_2;
+
 use bevy::{input::mouse::MouseMotion, prelude::*, window::CursorGrabMode, window::Window};
 
 #[derive(Resource)]
@@ -57,7 +59,7 @@ impl Default for MouseSettings {
 }
 
 const SENSITIVITY_FACTOR: f32 = 1.0 / 1000.0;
-const PITCH_BOUND: f32 = std::f32::consts::FRAC_PI_2 - 1E-3;
+const PITCH_BOUND: f32 = FRAC_PI_2 - 1E-3;
 
 pub fn read_mouse_input(
     windows: Query<&Window>,
@@ -66,32 +68,37 @@ pub fn read_mouse_input(
     mut pitch_events: EventWriter<PitchEvent>,
     mut yaw_events: EventWriter<YawEvent>,
 ) {
-    let window = windows.single();
-    if window.cursor.grab_mode == CursorGrabMode::None {
+    if mouse_motion_events.is_empty() {
+        return;
+    }
+
+    if !windows
+        .iter()
+        .any(|window| window.cursor.grab_mode == CursorGrabMode::Locked)
+    {
         return;
     }
 
     let mut delta = Vec2::ZERO;
+
     for motion in mouse_motion_events.read() {
         delta -= motion.delta;
     }
 
-    if delta.length_squared() > 1E-6 {
-        delta *= SENSITIVITY_FACTOR * settings.sensitivity;
+    delta *= SENSITIVITY_FACTOR * settings.sensitivity;
 
-        settings.yaw_pitch_roll += delta.extend(0.0);
+    settings.yaw_pitch_roll += delta.extend(0.0);
 
-        if settings.yaw_pitch_roll.y > PITCH_BOUND {
-            settings.yaw_pitch_roll.y = PITCH_BOUND;
-        }
-
-        if settings.yaw_pitch_roll.y < -PITCH_BOUND {
-            settings.yaw_pitch_roll.y = -PITCH_BOUND;
-        }
-
-        pitch_events.send(PitchEvent(settings.yaw_pitch_roll.y));
-        yaw_events.send(YawEvent(settings.yaw_pitch_roll.x));
+    if settings.yaw_pitch_roll.y > PITCH_BOUND {
+        settings.yaw_pitch_roll.y = PITCH_BOUND;
     }
+
+    if settings.yaw_pitch_roll.y < -PITCH_BOUND {
+        settings.yaw_pitch_roll.y = -PITCH_BOUND;
+    }
+
+    pitch_events.send(PitchEvent(settings.yaw_pitch_roll.y));
+    yaw_events.send(YawEvent(settings.yaw_pitch_roll.x));
 }
 
 pub fn grab_mouse(
@@ -99,15 +106,15 @@ pub fn grab_mouse(
     mouse: Res<ButtonInput<MouseButton>>,
     key: Res<ButtonInput<KeyCode>>,
 ) {
-    let mut window = windows.single_mut();
+    for mut window in windows.iter_mut() {
+        if mouse.just_pressed(MouseButton::Left) {
+            window.cursor.visible = false;
+            window.cursor.grab_mode = CursorGrabMode::Locked;
+        }
 
-    if mouse.just_pressed(MouseButton::Left) {
-        window.cursor.visible = false;
-        window.cursor.grab_mode = CursorGrabMode::Locked;
-    }
-
-    if key.just_pressed(KeyCode::Escape) {
-        window.cursor.visible = true;
-        window.cursor.grab_mode = CursorGrabMode::None;
+        if key.just_pressed(KeyCode::Escape) {
+            window.cursor.visible = true;
+            window.cursor.grab_mode = CursorGrabMode::None;
+        }
     }
 }

@@ -35,7 +35,7 @@ fn setup_world(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     ambient.color = Color::rgb(0.95, 0.95, 1.0);
-    ambient.brightness = 10.0;
+    ambient.brightness = 40.0;
 
     commands.spawn((
         DirectionalLightBundle {

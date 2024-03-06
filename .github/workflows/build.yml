@@ -15,9 +15,10 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - id: set-matrix
         run: |
-          matrix=$(nix eval --json .#githubActions.matrix)
+          matrix=$(nix eval --json .#githubMatrix.matrix)
           echo matrix=$matrix >> $GITHUB_OUTPUT
-  build:
+
+  build-nix:
     needs:
       - nix-matrix
     strategy:
@@ -25,37 +26,57 @@ jobs:
       matrix: ${{ fromJSON(needs.nix-matrix.outputs.matrix) }}
     name: ${{ matrix.attr }}
     runs-on: ${{ matrix.os }}
-    env:
-      IS_WINDOWS: ${{ startsWith(matrix.attr, 'x86_64-windows') }}
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: "true"
           fetch-depth: 0
 
-      - if: ${{ env.IS_WINDOWS == 'false' }}
-        uses: DeterminateSystems/nix-installer-action@main
-      - if: ${{ env.IS_WINDOWS == 'false' }}
-        uses: DeterminateSystems/magic-nix-cache-action@main
-      - if: ${{ env.IS_WINDOWS == 'false' }}
-        run: nix build .?submodules=1#packages.${{ matrix.attr }}
-      - if: ${{ env.IS_WINDOWS == 'false' }}
-        run: find result/bin -exec zip -r ${{ matrix.attr }}.zip {} +
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - run: nix build .?submodules=1#packages.${{ matrix.attr }}
+      - run: find result/bin -exec zip -r ${{ matrix.attr }}.zip {} +
 
-      - if: ${{ env.IS_WINDOWS == 'true' }}
-        uses: Swatinem/rust-cache@v2
-      - if: ${{ env.IS_WINDOWS == 'true' }}
-        uses: dtolnay/rust-toolchain@stable
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.attr }}
+          path: ${{ matrix.attr }}.zip
+          retention-days: 1
+
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        package: [unavi-app, unavi-server]
+    name: x86_64-windows-${{ matrix.package }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: Swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
-      - if: ${{ env.IS_WINDOWS == 'true' }}
+
+      - run: mkdir result
+
+      - if: ${{ matrix.package == 'unavi-app' }}
+        name: Generate assets
+        run: |
+          cargo install cargo-component
+
+          for package in components; do
+            cargo component build -p $package --profile wasm-release
+          done
+
+          cp -r target/wasm32-unknown-unknown/wasm-release/* assets/components
+          cp -r assets result
+
+      - name: Build package
         run: |
           cargo build -p ${{ matrix.package }} --release --target x86_64-pc-windows-msvc
-          mkdir result
           mv target/x86_64-pc-windows-msvc/release/*.exe result
-          cp -r assets result
-      - if: ${{ env.IS_WINDOWS == 'true' }}
-        run: Compress-Archive -Path result -DestinationPath ${{ matrix.attr }}.zip
+
+      - run: Compress-Archive -Path result -DestinationPath ${{ matrix.attr }}.zip
 
       - uses: actions/upload-artifact@v4
         with:

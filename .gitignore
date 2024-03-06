@@ -1,3 +1,4 @@
-dist
-result
-target
+/assets/components
+/crates/unavi-app/dist
+/result
+/target

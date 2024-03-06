@@ -40,7 +40,7 @@ jobs:
       - if: ${{ env.IS_WINDOWS == 'false' }}
         run: nix build .?submodules=1#packages.${{ matrix.attr }}
       - if: ${{ env.IS_WINDOWS == 'false' }}
-        run: zip -r ${{ matrix.attr }}.zip result/bin/*
+        run: find result/bin -exec zip -r ${{ matrix.attr }}.zip {} +
 
       - if: ${{ env.IS_WINDOWS == 'true' }}
         uses: Swatinem/rust-cache@v2

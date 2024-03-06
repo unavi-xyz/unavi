@@ -22,7 +22,7 @@ jobs:
       - name: Add version to file names
         run: |
           for file in *; do
-            mv "$file" "${file}-${{ inputs.version }}"
+            mv "$file" "${file}-${{ inputs.version }}.zip"
           done
 
           echo "Directory contents:"
@@ -30,7 +30,7 @@ jobs:
 
       - uses: ncipollo/release-action@v1
         with:
-          artifacts: ./*
+          artifacts: "*.zip"
           body: ${{ steps.release-notes.outputs.release-notes }}
           prerelease: ${{ contains(inputs.version, 'beta') }}
           tag: ${{ inputs.version }}

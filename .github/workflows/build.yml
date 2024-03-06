@@ -66,7 +66,7 @@ jobs:
           cargo install cargo-component
 
           foreach ($component in Get-ChildItem -Path components) {
-              cargo component build -p $component --profile wasm-release
+              cargo component build -p $component.Name --profile wasm-release
           }
 
           Get-ChildItem -Path "target/wasm32-wasi/wasm-release" -Recurse -File | Where-Object { $_.Name -like '*.wasm' } | ForEach-Object {

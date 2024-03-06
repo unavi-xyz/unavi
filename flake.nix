@@ -45,7 +45,7 @@
           src = lib.cleanSourceWith {
             src = ./.;
             filter = path: type:
-              (lib.hasSuffix ".proto" path)
+              (lib.hasSuffix ".proto" path) || (lib.hasSuffix ".wit" path)
               || (craneLib.filterCargoSources path type);
           };
 
@@ -235,30 +235,18 @@
           LD_LIBRARY_PATH = lib.makeLibraryPath (commonArgs.buildInputs);
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
-      }) // (let
-        ghPackages = [ "unavi-app" "unavi-server" ];
-        ghSystems = [
-          flake-utils.lib.system.x86_64-darwin
-          flake-utils.lib.system.x86_64-linux
-        ];
-        githubActions = nix-github-actions.lib.mkGithubMatrix {
+
+        githubMatrix = nix-github-actions.lib.mkGithubMatrix {
           attrPrefix = "";
           checks = nixpkgs.lib.mapAttrs (_: v:
-            (nixpkgs.lib.filterAttrs
-              (n: _: !(nixpkgs.lib.mutuallyExclusive [ n ] ghPackages)) v))
-            (nixpkgs.lib.getAttrs ghSystems self.packages);
-        };
-      in {
-        githubActions = {
-          checks = githubActions.checks;
-          matrix = {
-            include = githubActions.matrix.include ++ (map (package: {
-              inherit package;
-              attr =
-                nixpkgs.lib.concatStringsSep "." [ "x86_64-windows" package ];
-              os = [ "windows-latest" ];
-            }) ghPackages);
-          };
+            (nixpkgs.lib.filterAttrs (n: _:
+              !(nixpkgs.lib.mutuallyExclusive [ n ] [
+                "unavi-app"
+                "unavi-server"
+              ])) v)) (nixpkgs.lib.getAttrs [
+                flake-utils.lib.system.x86_64-linux
+                flake-utils.lib.system.x86_64-darwin
+              ] self.packages);
         };
       });
 }

@@ -66,6 +66,11 @@ jobs:
           cargo install cargo-component
 
           foreach ($component in Get-ChildItem -Path components) {
+              # Replace all forward slashes with backslashes in Cargo.toml
+              cd $component.FullName
+              (Get-Content -Path "Cargo.toml") -replace "/", "\" | Set-Content -Path "Cargo.toml"
+              cd ..
+
               cargo component build -p $component.Name --profile wasm-release
           }
 

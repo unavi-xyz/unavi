@@ -49,7 +49,7 @@ jobs:
     strategy:
       matrix:
         package: [unavi-app, unavi-server]
-    name: x86_64-windows-${{ matrix.package }}
+    name: x86_64-windows.${{ matrix.package }}
     steps:
       - uses: actions/checkout@v4
 
@@ -65,22 +65,23 @@ jobs:
         run: |
           cargo install cargo-component
 
-          for package in components; do
-            cargo component build -p $package --profile wasm-release
-          done
+          $components = "components"
+          foreach ($package in $components) {
+              cargo component build -p $package --profile wasm-release
+          }
 
-          cp -r target/wasm32-unknown-unknown/wasm-release/* assets/components
-          cp -r assets result
+          Copy-Item -Path "target/wasm32-unknown-unknown/wasm-release/*" -Destination "assets/components" -Recurse -Force
+          Copy-Item -Path "assets" -Destination "result" -Recurse -Force
 
       - name: Build package
         run: |
           cargo build -p ${{ matrix.package }} --release --target x86_64-pc-windows-msvc
           mv target/x86_64-pc-windows-msvc/release/*.exe result
 
-      - run: Compress-Archive -Path result -DestinationPath ${{ matrix.attr }}.zip
+      - run: Compress-Archive -Path result -DestinationPath x86_64-windows.${{ matrix.path }}.zip
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.attr }}
-          path: ${{ matrix.attr }}.zip
+          name: x86_64-windows.${{ matrix.path }}
+          path: x86_64-windows.${{ matrix.path }}.zip
           retention-days: 1

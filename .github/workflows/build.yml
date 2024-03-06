@@ -65,9 +65,8 @@ jobs:
         run: |
           cargo install cargo-component
 
-          $components = "components"
-          foreach ($package in $components) {
-              cargo component build -p $package --profile wasm-release
+          foreach ($component in Get-ChildItem -Path components) {
+              cargo component build -p $component --profile wasm-release
           }
 
           Copy-Item -Path "target/wasm32-wasi/wasm-release/*" -Destination "assets/components" -Recurse -Force

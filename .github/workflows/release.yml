@@ -22,8 +22,11 @@ jobs:
       - name: Add version to file names
         run: |
           for file in *; do
-            mv "$file" "${file}-${{ inputs.version }}.zip"
+            mv "$file" "${file}-${{ inputs.version }}"
           done
+
+          echo "Directory contents:"
+          ls -la
 
       - uses: ncipollo/release-action@v1
         with:

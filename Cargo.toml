@@ -6,7 +6,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.0.2-beta.30"
+version = "0.0.2-beta.31"
 edition = "2021"
 repository = "https://github.com/unavi-xyz/unavi"
 license = "GPL-3.0-or-later"

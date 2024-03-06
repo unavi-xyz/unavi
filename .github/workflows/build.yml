@@ -70,7 +70,7 @@ jobs:
               cargo component build -p $package --profile wasm-release
           }
 
-          Copy-Item -Path "target/wasm32-unknown-unknown/wasm-release/*" -Destination "assets/components" -Recurse -Force
+          Copy-Item -Path "target/wasm32-wasi/wasm-release/*" -Destination "assets/components" -Recurse -Force
           Copy-Item -Path "assets" -Destination "result" -Recurse -Force
 
       - name: Build package

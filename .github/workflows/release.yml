@@ -28,7 +28,7 @@ jobs:
             cd $dir
 
             for file in *; do
-              mv $file ../$file-${{ inputs.version }}
+              mv $file ../$file-${{ inputs.version }}.zip
             done
 
             cd ..

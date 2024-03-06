@@ -212,6 +212,19 @@
             name = "all";
             paths = [ components unavi-app unavi-server web ];
           };
+
+          githubMatrix = nix-github-actions.lib.mkGithubMatrix {
+            attrPrefix = "";
+            checks = nixpkgs.lib.mapAttrs (_: v:
+              (nixpkgs.lib.filterAttrs (n: _:
+                !(nixpkgs.lib.mutuallyExclusive [ n ] [
+                  "unavi-app"
+                  "unavi-server"
+                ])) v)) (nixpkgs.lib.getAttrs [
+                  flake-utils.lib.system.x86_64-linux
+                  flake-utils.lib.system.x86_64-darwin
+                ] self.packages);
+          };
         };
 
         devShells.default = craneLib.devShell {
@@ -223,17 +236,5 @@
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
 
-        githubMatrix = nix-github-actions.lib.mkGithubMatrix {
-          attrPrefix = "";
-          checks = nixpkgs.lib.mapAttrs (_: v:
-            (nixpkgs.lib.filterAttrs (n: _:
-              !(nixpkgs.lib.mutuallyExclusive [ n ] [
-                "unavi-app"
-                "unavi-server"
-              ])) v)) (nixpkgs.lib.getAttrs [
-                flake-utils.lib.system.x86_64-linux
-                flake-utils.lib.system.x86_64-darwin
-              ] self.packages);
-        };
       });
 }

@@ -21,6 +21,7 @@ bevy_xpbd_3d = { version = "0.4.2", features = ["simd"] }
 did-method-key = "0.2.2"
 didkit = { version = "0.6.0", default-features = false, features = ["w3c", "ed25519", "ripemd-160", "http-did"] }
 tracing.workspace = true
+wasm-bindgen.workspace = true
 wasm-bridge = { version = "0.3.0", features = ["component-model"] }
 xwt = "0.6.0"
 xwt-core = "0.2.2"
@@ -30,6 +31,3 @@ xwt-web-sys = "0.6.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 wtransport.workspace = true
-
-[dev-dependencies]
-wasm-bindgen.workspace = true

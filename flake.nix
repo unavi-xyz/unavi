@@ -107,11 +107,21 @@
           cargoTestArgs = "--all-features --doc";
         });
 
+        generateAssetsScript = ''
+          rm -rf assets/components
+          mkdir -p assets/components
+          cp -r --no-preserve=mode ${
+            self.packages.${localSystem}.components
+          }/lib/* assets/components
+        '';
+
         # Crates
         unavi-app = craneLib.buildPackage (commonArgs // {
           inherit cargoArtifacts;
           pname = "unavi-app";
           cargoExtraArgs = "--locked -p unavi-app";
+
+          preBuild = generateAssetsScript;
           postInstall = ''
             cp -r assets $out/bin
           '';
@@ -119,7 +129,7 @@
           src = lib.cleanSourceWith {
             src = ./.;
             filter = path: type:
-              (lib.hasInfix "/assets/" path)
+              (lib.hasSuffix ".wit" path) || (lib.hasInfix "/assets/" path)
               || (craneLib.filterCargoSources path type);
           };
         });
@@ -134,7 +144,8 @@
           src = lib.cleanSourceWith {
             src = ./.;
             filter = path: type:
-              (lib.hasSuffix ".html" path) || (lib.hasInfix "/assets/" path)
+              (lib.hasSuffix ".wit" path) || (lib.hasSuffix ".html" path)
+              || (lib.hasInfix "/assets/" path)
               || (lib.hasInfix "/crates/unavi-app/public/" path)
               || (craneLib.filterCargoSources path type);
           };
@@ -143,6 +154,8 @@
           cargoExtraArgs = "--locked -p unavi-app";
           trunkIndexPath = "./crates/unavi-app/index.html";
           wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
+
+          preBuild = generateAssetsScript;
         });
 
         # Components
@@ -193,13 +206,8 @@
           };
 
           generate-assets = flake-utils.lib.mkApp {
-            drv = pkgs.writeShellScriptBin "generate-assets" ''
-              rm -rf assets/components
-              mkdir -p assets/components
-              cp -r --no-preserve=mode ${
-                self.packages.${localSystem}.components
-              }/lib/* assets/components
-            '';
+            drv =
+              pkgs.writeShellScriptBin "generate-assets" generateAssetsScript;
           };
 
           default = app;

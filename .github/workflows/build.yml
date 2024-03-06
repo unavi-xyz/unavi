@@ -34,6 +34,7 @@ jobs:
 
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
+
       - run: nix build .?submodules=1#packages.${{ matrix.attr }}
       - run: find result/bin -exec zip -r ${{ matrix.attr }}.zip {} +
 

@@ -192,6 +192,16 @@
                 ([ "cargo component check --locked" ] ++ component-names));
           };
 
+          generate-assets = flake-utils.lib.mkApp {
+            drv = pkgs.writeShellScriptBin "generate-assets" ''
+              rm -rf assets/components
+              mkdir -p assets/components
+              cp -r --no-preserve=mode ${
+                self.packages.${localSystem}.components
+              }/lib/* assets/components
+            '';
+          };
+
           default = app;
         };
 

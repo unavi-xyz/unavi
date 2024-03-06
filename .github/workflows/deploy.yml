@@ -23,10 +23,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: "true"
+
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
-      - run: nix build .#web
+      - run: nix build .?submodules=1#web
 
       - name: Create branch
         run: git checkout --orphan web-app/${{ env.CHANNEL }}

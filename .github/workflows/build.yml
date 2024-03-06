@@ -69,7 +69,10 @@ jobs:
               cargo component build -p $component --profile wasm-release
           }
 
-          Copy-Item -Path "target/wasm32-wasi/wasm-release/*" -Destination "assets/components" -Recurse -Force
+          Get-ChildItem -Path "target/wasm32-wasi/wasm-release" -Recurse -File | Where-Object { $_.Name -like '*.wasm' } | ForEach-Object {
+              Copy-Item -Path $_.FullName -Destination "assets/components" -Force
+          }
+
           Copy-Item -Path "assets" -Destination "result" -Recurse -Force
 
       - name: Build package

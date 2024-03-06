@@ -17,21 +17,30 @@ jobs:
           tag-name: ${{ inputs.version }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - id: download-artifact
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
 
       - name: Add version to file names
         run: |
-          for file in *; do
-            mv "$file" "${file}-${{ inputs.version }}.zip"
+          echo Current directory contents:
+          ls -la
+
+          for dir in *; do
+            cd $dir
+
+            for file in *; do
+              mv $file ../$file-${{ inputs.version }}
+            done
+
+            cd ..
+            rm -rf $dir
           done
 
-          echo "Directory contents:"
+          echo New directory contents:
           ls -la
 
       - uses: ncipollo/release-action@v1
         with:
-          artifacts: "${{ steps.download-artifact.outputs.download-path }}/*.zip"
+          artifacts: "*"
           body: ${{ steps.release-notes.outputs.release-notes }}
           prerelease: ${{ contains(inputs.version, 'beta') }}
           tag: ${{ inputs.version }}

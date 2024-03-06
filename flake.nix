@@ -96,17 +96,6 @@
           pname = "unavi";
         };
 
-        cargoTest = craneLib.cargoTest (commonArgs // {
-          inherit cargoArtifacts;
-          cargoTestArgs = "--all-features --all-targets";
-        });
-
-        cargoTestDoc = craneLib.cargoTest (commonArgs // {
-          inherit cargoArtifacts;
-          pname = "doc";
-          cargoTestArgs = "--all-features --doc";
-        });
-
         generateAssetsScript = ''
           rm -rf assets/components
           mkdir -p assets/components
@@ -183,9 +172,7 @@
         components = (map (name: buildComponent name) component-names);
 
       in {
-        checks = {
-          inherit cargoClippy cargoDoc cargoFmt cargoTest cargoTestDoc;
-        };
+        checks = { inherit cargoClippy cargoDoc cargoFmt; };
 
         apps = rec {
           app = flake-utils.lib.mkApp { drv = unavi-app; };

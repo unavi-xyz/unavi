@@ -41,3 +41,6 @@ opt-level = "z"
 
 [patch.crates-io]
 wasm-bridge = { git = "https://github.com/kayhhh/wasm-bridge.git", branch = "arc-store" }
+wasm-bridge-js = { git = "https://github.com/kayhhh/wasm-bridge.git", branch = "arc-store" }
+wasm-bridge-macros = { git = "https://github.com/kayhhh/wasm-bridge.git", branch = "arc-store" }
+wasm-bridge-wasi = { git = "https://github.com/kayhhh/wasm-bridge.git", branch = "arc-store" }

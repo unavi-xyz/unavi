@@ -22,7 +22,6 @@ impl Plugin for ScriptingPlugin {
 }
 
 fn load_unavi_system(mut load_queue: ResMut<ScriptLoadQueue>, asset_server: Res<AssetServer>) {
-    info!("Loading unavi_system.wasm");
     let handle = asset_server.load("components/unavi_system.wasm");
     load_queue.0.push(handle);
 }

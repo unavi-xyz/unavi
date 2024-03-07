@@ -84,7 +84,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: components
-          path: components.zip
 
       - if: ${{ matrix.package == 'unavi-app' }}
         name: Copy generated assets

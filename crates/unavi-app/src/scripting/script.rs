@@ -3,13 +3,6 @@ use wasm_bridge::{component::Linker, Config, Engine, Store};
 
 use super::asset::Wasm;
 
-#[cfg(target_family = "windows")]
-wasm_bridge::component::bindgen!({
-    path: "..\\..\\wired-protocol\\spatial\\wired-script\\world.wit",
-    world: "script",
-});
-
-#[cfg(not(target_family = "windows"))]
 wasm_bridge::component::bindgen!({
     path: "../../wired-protocol/spatial/wired-script/world.wit",
     world: "script",

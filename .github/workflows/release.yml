@@ -1,27 +1,100 @@
 name: "Release"
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
-      version:
-        type: string
+      increment:
+        description: "Type of version increment."
         required: true
+        type: choice
+        options:
+          - prerelease
+          - preminor
+          - stable
+
+concurrency:
+  group: "release"
+  cancel-in-progress: false
 
 jobs:
-  upload-release:
+  version:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.semver.outputs.version }}
     steps:
-      - id: release-notes
-        uses: RedCrafter07/release-notes-action@v1.0.0
+      - uses: actions/checkout@v4
         with:
-          tag-name: ${{ inputs.version }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - id: semver
+        uses: nguyenvukhang/semver-increment@v1
+        with:
+          increment: ${{ inputs.increment == 'stable' && 'patch' || inputs.increment }}
+          identifier: "beta"
+          version-file: "Cargo.toml"
+          version-regex: '^version = "(.*)"'
+
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Force Cargo.lock to update
+        run: cargo update --workspace
+
+      - uses: EndBug/add-and-commit@v9
+        with:
+          default_author: github_actions
+          message: "chore: bump ${{ steps.semver.outputs.version }}"
+          new_branch: release-v${{ steps.semver.outputs.version }}
+          tag: v${{ steps.semver.outputs.version }}
+
+  build:
+    needs:
+      - version
+    uses: ./.github/workflows/build.yml
+
+  deploy:
+    needs:
+      - build
+    uses: ./.github/workflows/deploy.yml
+    with:
+      channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
+
+  release:
+    needs:
+      - deploy
+    runs-on: ubuntu-latest
+    env:
+      TARGET_BRANCH: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v${{ steps.version.outputs.version }}
+
+      - name: Create target branch if it doesn't exist
+        run: |
+          git fetch origin ${{ env.TARGET_BRANCH }} || git checkout -b ${{ env.TARGET_BRANCH }}
+          git push origin ${{ env.TARGET_BRANCH }} || echo "Branch already exists"
+
+      - name: Merge version into main
+        uses: everlytic/branch-merge@1.1.5
+        with:
+          github_token: ${{ github.token }}
+          source_ref: v${{ steps.version.outputs.version }}
+          target_branch: main
+
+      - name: Merge version into target
+        uses: everlytic/branch-merge@1.1.5
+        with:
+          github_token: ${{ github.token }}
+          source_ref: v${{ steps.version.outputs.version }}
+          target_branch: ${{ env.TARGET_BRANCH }}
+
+      - name: Delete version branch
+        run: git push origin --delete release-v${{ steps.version.outputs.version }}
 
       - uses: actions/download-artifact@v4
         with:
           pattern: "build-*"
 
-      - name: Add version to file names
+      - name: Add version to build file names
         run: |
           echo Current directory contents:
           ls -la
@@ -30,7 +103,7 @@ jobs:
             cd $dir
 
             for file in *; do
-              mv $file ../${file%.zip}-${{ inputs.version }}.zip
+              mv $file ../${file%.zip}-${{ jobs.version.outputs.version }}.zip
             done
 
             cd ..
@@ -43,6 +116,6 @@ jobs:
       - uses: ncipollo/release-action@v1
         with:
           artifacts: "*"
-          body: ${{ steps.release-notes.outputs.release-notes }}
-          prerelease: ${{ contains(inputs.version, 'beta') }}
-          tag: ${{ inputs.version }}
+          generateReleaseNotes: true
+          prerelease: ${{ contains(jobs.version.output.version, 'beta') }}
+          tag: v${{ jobs.version.output.version }}

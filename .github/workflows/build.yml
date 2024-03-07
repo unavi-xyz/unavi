@@ -11,8 +11,10 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
+
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
+
       - id: set-matrix
         run: |
           matrix=$(nix eval --json .#githubMatrix.matrix)

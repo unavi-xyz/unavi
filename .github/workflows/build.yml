@@ -74,6 +74,8 @@ jobs:
     name: x86_64-windows.${{ matrix.package }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: "true"
 
       - uses: Swatinem/rust-cache@v2
       - uses: dtolnay/rust-toolchain@stable

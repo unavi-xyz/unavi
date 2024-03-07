@@ -8539,7 +8539,7 @@ checksum = "4f186bd2dcf04330886ce82d6f33dd75a7bfcf69ecf5763b89fcde53b6ac9838"
 [[package]]
 name = "wasm-bridge"
 version = "0.3.0"
-source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=arc-store#eca64d9c7cca1d72928f7e9ff2b89ac61fb7ef68"
+source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=arc-store#83eaf4fb28d1c1a9fd7a80a507f7c8213cb8fbe5"
 dependencies = [
  "async-trait",
  "wasm-bridge-js",
@@ -8550,7 +8550,7 @@ dependencies = [
 [[package]]
 name = "wasm-bridge-js"
 version = "0.3.0"
-source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=arc-store#eca64d9c7cca1d72928f7e9ff2b89ac61fb7ef68"
+source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=arc-store#83eaf4fb28d1c1a9fd7a80a507f7c8213cb8fbe5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8565,7 +8565,7 @@ dependencies = [
 [[package]]
 name = "wasm-bridge-macros"
 version = "0.3.0"
-source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=arc-store#eca64d9c7cca1d72928f7e9ff2b89ac61fb7ef68"
+source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=arc-store#83eaf4fb28d1c1a9fd7a80a507f7c8213cb8fbe5"
 dependencies = [
  "anyhow",
  "heck",

@@ -53,7 +53,7 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
-      - run: nix build .?submodules=1#generate-assets
+      - run: nix run .?submodules=1#generate-assets
       - run: find result/lib/* -exec zip -r components.zip {} +
 
       - uses: actions/upload-artifact@v4

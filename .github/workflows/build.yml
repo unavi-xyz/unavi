@@ -54,7 +54,7 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - run: nix run .?submodules=1#generate-assets
-      - run: find result/lib/* -exec zip -r components.zip {} +
+      - run: find assets/components/* -exec zip -r components.zip {} +
 
       - uses: actions/upload-artifact@v4
         with:

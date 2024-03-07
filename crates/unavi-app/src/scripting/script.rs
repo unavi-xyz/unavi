@@ -9,7 +9,7 @@ use wasm_bridge::{
     component::{new_component_async, Linker},
     AsContextMut, Config, Engine, Store,
 };
-use wasm_bridge_wasi::preview2::{command, Table, WasiCtx, WasiCtxBuilder, WasiView};
+use wasm_bridge_wasi::preview2::{command, ResourceTable, WasiCtx, WasiCtxBuilder, WasiView};
 
 use super::asset::Wasm;
 
@@ -28,21 +28,15 @@ pub struct WasmRuntime {
 }
 
 pub struct RuntimeState {
-    table: Table,
+    table: ResourceTable,
     wasi: WasiCtx,
 }
 
 impl WasiView for RuntimeState {
-    fn table(&self) -> &Table {
-        &self.table
-    }
-    fn table_mut(&mut self) -> &mut Table {
+    fn table(&mut self) -> &mut ResourceTable {
         &mut self.table
     }
-    fn ctx(&self) -> &WasiCtx {
-        &self.wasi
-    }
-    fn ctx_mut(&mut self) -> &mut WasiCtx {
+    fn ctx(&mut self) -> &mut WasiCtx {
         &mut self.wasi
     }
 }
@@ -55,7 +49,7 @@ impl Default for WasmRuntime {
 
         let engine = Engine::new(&config).expect("Failed to create engine");
 
-        let table = Table::new();
+        let table = ResourceTable::new();
         let wasi = WasiCtxBuilder::new().build();
         let state = RuntimeState { table, wasi };
 

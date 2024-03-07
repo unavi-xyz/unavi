@@ -30,7 +30,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: "true"
-          fetch-depth: 0
 
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
@@ -40,11 +39,32 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.attr }}
+          name: build-${{ matrix.attr }}
           path: ${{ matrix.attr }}.zip
           retention-days: 1
 
+  generate-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: "true"
+
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - run: nix build .?submodules=1#generate-assets
+      - run: find result/lib/* -exec zip -r components.zip {} +
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: components
+          path: components.zip
+          retention-days: 1
+
   build-windows:
+    needs:
+      - generate-assets
     runs-on: windows-latest
     strategy:
       matrix:
@@ -61,24 +81,15 @@ jobs:
       - run: mkdir result
 
       - if: ${{ matrix.package == 'unavi-app' }}
-        name: Generate assets
+        uses: actions/download-artifact@v2
+        with:
+          name: components
+
+      - if: ${{ matrix.package == 'unavi-app' }}
+        name: Copy generated assets
         run: |
-          cargo install cargo-component
-
-          foreach ($component in Get-ChildItem -Path components) {
-              # Replace all forward slashes with backslashes in Cargo.toml
-              cd $component.FullName
-              (Get-Content -Path "Cargo.toml") -replace "/", "\" | Set-Content -Path "Cargo.toml"
-              cd ..
-
-              cargo component build -p $component.Name --profile wasm-release
-          }
-
-          Get-ChildItem -Path "target/wasm32-wasi/wasm-release" -Recurse -File | Where-Object { $_.Name -like '*.wasm' } | ForEach-Object {
-              Copy-Item -Path $_.FullName -Destination "assets/components" -Force
-          }
-
-          Copy-Item -Path "assets" -Destination "result" -Recurse -Force
+          New-Item -ItemType Directory -Path "assets/components"
+          Expand-Archive -Path components.zip -DestinationPath "assets/components"
 
       - name: Build package
         run: |

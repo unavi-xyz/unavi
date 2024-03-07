@@ -58,7 +58,9 @@ jobs:
       ref: v${{ needs.version.outputs.version }}
 
   deploy:
-    needs: build
+    needs:
+      - build
+      - version
     uses: ./.github/workflows/deploy.yml
     with:
       channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}

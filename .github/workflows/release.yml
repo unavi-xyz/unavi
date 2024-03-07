@@ -47,7 +47,7 @@ jobs:
           default_author: github_actions
           message: "chore: bump ${{ steps.semver.outputs.version }}"
           new_branch: release-v${{ steps.semver.outputs.version }}
-          tag: v${{ steps.semver.outputs.version }}
+          tag: v${{ steps.semver.outputs.version }} --force
 
   build:
     needs: version

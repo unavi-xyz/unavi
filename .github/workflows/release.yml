@@ -60,6 +60,7 @@ jobs:
   release:
     needs:
       - deploy
+      - version
     runs-on: ubuntu-latest
     env:
       TARGET_BRANCH: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
@@ -103,7 +104,7 @@ jobs:
             cd $dir
 
             for file in *; do
-              mv $file ../${file%.zip}-${{ jobs.version.outputs.version }}.zip
+              mv $file ../${file%.zip}-${{ needs.version.outputs.version }}.zip
             done
 
             cd ..
@@ -117,5 +118,5 @@ jobs:
         with:
           artifacts: "*"
           generateReleaseNotes: true
-          prerelease: ${{ contains(jobs.version.output.version, 'beta') }}
-          tag: v${{ jobs.version.output.version }}
+          prerelease: ${{ contains(needs.version.output.version, 'beta') }}
+          tag: v${{ needs.version.output.version }}

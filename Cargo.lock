@@ -8686,7 +8686,7 @@ checksum = "4f186bd2dcf04330886ce82d6f33dd75a7bfcf69ecf5763b89fcde53b6ac9838"
 [[package]]
 name = "wasm-bridge"
 version = "0.3.0"
-source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=wasmtime-18#e56dae258af7a0f2aa3c1b6c3477746b9c51c991"
+source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=wasmtime-18#4b3303c4273b0d67327630f8ebc6ecf2f1e506a6"
 dependencies = [
  "async-trait",
  "wasm-bridge-js",
@@ -8697,7 +8697,7 @@ dependencies = [
 [[package]]
 name = "wasm-bridge-js"
 version = "0.3.0"
-source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=wasmtime-18#e56dae258af7a0f2aa3c1b6c3477746b9c51c991"
+source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=wasmtime-18#4b3303c4273b0d67327630f8ebc6ecf2f1e506a6"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8712,7 +8712,7 @@ dependencies = [
 [[package]]
 name = "wasm-bridge-macros"
 version = "0.3.0"
-source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=wasmtime-18#e56dae258af7a0f2aa3c1b6c3477746b9c51c991"
+source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=wasmtime-18#4b3303c4273b0d67327630f8ebc6ecf2f1e506a6"
 dependencies = [
  "anyhow",
  "heck",
@@ -8728,7 +8728,7 @@ dependencies = [
 [[package]]
 name = "wasm-bridge-wasi"
 version = "0.3.0"
-source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=wasmtime-18#e56dae258af7a0f2aa3c1b6c3477746b9c51c991"
+source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=wasmtime-18#4b3303c4273b0d67327630f8ebc6ecf2f1e506a6"
 dependencies = [
  "anyhow",
  "bytes",

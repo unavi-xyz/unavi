@@ -76,7 +76,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: v${{ steps.version.outputs.version }}
+          ref: v${{ needs.version.outputs.version }}
 
       - name: Create target branch if it doesn't exist
         run: |
@@ -87,18 +87,18 @@ jobs:
         uses: everlytic/branch-merge@1.1.5
         with:
           github_token: ${{ github.token }}
-          source_ref: v${{ steps.version.outputs.version }}
+          source_ref: v${{ needs.version.outputs.version }}
           target_branch: main
 
       - name: Merge version into target
         uses: everlytic/branch-merge@1.1.5
         with:
           github_token: ${{ github.token }}
-          source_ref: v${{ steps.version.outputs.version }}
+          source_ref: v${{ needs.version.outputs.version }}
           target_branch: ${{ env.TARGET_BRANCH }}
 
       - name: Delete version branch
-        run: git push origin --delete release-v${{ steps.version.outputs.version }}
+        run: git push origin --delete release-v${{ needs.version.outputs.version }}
 
       - uses: actions/download-artifact@v4
         with:

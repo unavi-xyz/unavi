@@ -39,10 +39,10 @@ jobs:
       - name: Force Cargo.lock to update
         run: cargo update --workspace
 
-      - name: Delete branch and tag if they exist
+      - name: Delete version branch and tag if they exist
         run: |
           git push origin --delete release-v${{ steps.semver.outputs.version }} || echo "Branch doesn't exist"
-          git tag -d v${{ steps.semver.outputs.version }} || echo "Tag doesn't exist"
+          git push origin --delete v${{ steps.semver.outputs.version }} || echo "Tag doesn't exist"
 
       - uses: EndBug/add-and-commit@v9
         with:

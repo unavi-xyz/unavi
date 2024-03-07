@@ -1858,9 +1858,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.0.89"
+version = "1.0.90"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0ba8f7aaa012f30d5b2861462f6708eccd49c3c39863fe083a308035f63d723"
+checksum = "8cd6604a82acf3039f1144f54b8eb34e91ffba622051189e71b781822d5ee1f5"
 dependencies = [
  "jobserver",
  "libc",
@@ -7773,9 +7773,9 @@ dependencies = [
 
 [[package]]
 name = "sysinfo"
-version = "0.30.6"
+version = "0.30.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6746919caf9f2a85bff759535664c060109f21975c5ac2e8652e60102bd4d196"
+checksum = "0c385888ef380a852a16209afc8cfad22795dd8873d69c9a14d2e2088f118d18"
 dependencies = [
  "cfg-if",
  "core-foundation-sys",
@@ -8539,9 +8539,9 @@ checksum = "4f186bd2dcf04330886ce82d6f33dd75a7bfcf69ecf5763b89fcde53b6ac9838"
 [[package]]
 name = "wasm-bridge"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79dbf58a51965ecfc599039ee2560836b2bbdb0d449d7636cb306083bd8acca4"
+source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=arc-store#eca64d9c7cca1d72928f7e9ff2b89ac61fb7ef68"
 dependencies = [
+ "async-trait",
  "wasm-bridge-js",
  "wasm-bridge-macros",
  "wasmtime",
@@ -8550,8 +8550,7 @@ dependencies = [
 [[package]]
 name = "wasm-bridge-js"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9700f867daae39019f032dc5ebf4b31fe6e76198dded1689daba3ec9e22a180"
+source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=arc-store#eca64d9c7cca1d72928f7e9ff2b89ac61fb7ef68"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8566,10 +8565,10 @@ dependencies = [
 [[package]]
 name = "wasm-bridge-macros"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c4d65e81cc9ac1be28ea1a3927d70e7e67b472f86a19e47669905c1bb1b79b9"
+source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=arc-store#eca64d9c7cca1d72928f7e9ff2b89ac61fb7ef68"
 dependencies = [
  "anyhow",
+ "heck",
  "proc-macro2",
  "quote",
  "regex",
@@ -8699,6 +8698,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "642e12d108e800215263e3b95972977f473957923103029d7d617db701d67ba4"
 dependencies = [
  "anyhow",
+ "async-trait",
  "bincode",
  "bumpalo",
  "cfg-if",
@@ -8719,6 +8719,7 @@ dependencies = [
  "wasmtime-component-util 15.0.1",
  "wasmtime-cranelift",
  "wasmtime-environ 15.0.1",
+ "wasmtime-fiber",
  "wasmtime-jit",
  "wasmtime-runtime",
  "wasmtime-winch",
@@ -8850,6 +8851,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasmtime-fiber"
+version = "15.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "404741f4c6d7f4e043be2e8b466406a2aee289ccdba22bf9eba6399921121b97"
+dependencies = [
+ "anyhow",
+ "cc",
+ "cfg-if",
+ "rustix 0.38.31",
+ "wasmtime-asm-macros",
+ "wasmtime-versioned-export-macros",
+ "windows-sys 0.48.0",
+]
+
+[[package]]
 name = "wasmtime-jit"
 version = "15.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8915,6 +8931,7 @@ dependencies = [
  "wasm-encoder 0.36.2",
  "wasmtime-asm-macros",
  "wasmtime-environ 15.0.1",
+ "wasmtime-fiber",
  "wasmtime-jit-debug",
  "wasmtime-versioned-export-macros",
  "wasmtime-wmemcheck",

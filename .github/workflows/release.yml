@@ -46,16 +46,17 @@ jobs:
           tag: v${{ steps.semver.outputs.version }}
 
   build:
-    needs:
-      - version
+    needs: version
     uses: ./.github/workflows/build.yml
+    with:
+      ref: v${{ needs.version.outputs.version }}
 
   deploy:
-    needs:
-      - build
+    needs: build
     uses: ./.github/workflows/deploy.yml
     with:
       channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
+      ref: v${{ needs.version.outputs.version }}
 
   release:
     needs:

@@ -18,6 +18,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/download-artifact@v4
+        with:
+          pattern: "build-*"
 
       - name: Add version to file names
         run: |

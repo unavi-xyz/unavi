@@ -7,8 +7,11 @@ on:
   workflow_call:
     inputs:
       channel:
-        type: string
         required: true
+        type: string
+      ref:
+        required: true
+        type: string
   workflow_dispatch:
 
 env:
@@ -24,7 +27,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: "true"
+          submodules: true
+          ref: ${{ inputs.ref || github.ref }}
 
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main

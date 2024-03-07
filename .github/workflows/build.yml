@@ -2,6 +2,11 @@ name: "Build"
 
 on:
   workflow_call:
+    inputs:
+      ref:
+        description: "The ref to build."
+        required: true
+        type: string
   workflow_dispatch:
 
 jobs:
@@ -11,6 +16,8 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
 
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
@@ -21,8 +28,7 @@ jobs:
           echo matrix=$matrix >> $GITHUB_OUTPUT
 
   build-nix:
-    needs:
-      - nix-matrix
+    needs: nix-matrix
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.nix-matrix.outputs.matrix) }}
@@ -31,7 +37,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: "true"
+          ref: ${{ inputs.ref }}
+          submodules: true
 
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
@@ -50,7 +57,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: "true"
+          ref: ${{ inputs.ref }}
+          submodules: true
 
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
@@ -65,8 +73,7 @@ jobs:
           retention-days: 1
 
   build-windows:
-    needs:
-      - generate-assets
+    needs: generate-assets
     runs-on: windows-latest
     strategy:
       matrix:
@@ -75,7 +82,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: "true"
+          ref: ${{ inputs.ref }}
+          submodules: true
 
       - uses: Swatinem/rust-cache@v2
       - uses: dtolnay/rust-toolchain@stable

@@ -132,5 +132,5 @@ jobs:
         with:
           artifacts: artifacts/*
           generateReleaseNotes: true
-          prerelease: ${{ contains(needs.version.output.version, 'beta') }}
-          tag: v${{ needs.version.output.version }}
+          prerelease: ${{ contains(needs.version.outputs.version, 'beta') }}
+          tag: v${{ needs.version.outputs.version }}

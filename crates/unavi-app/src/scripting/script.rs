@@ -5,17 +5,13 @@ use bevy::{
     prelude::*,
     tasks::{AsyncComputeTaskPool, Task},
 };
-use bytes::Bytes;
 use wasm_bridge::{
     component::{new_component_async, Linker},
     AsContextMut, Config, Engine, Store,
 };
-use wasm_bridge_wasi::preview2::{
-    command, HostOutputStream, ResourceTable, StdoutStream, StreamResult, Subscribe, WasiCtx,
-    WasiCtxBuilder, WasiView,
-};
+use wasm_bridge_wasi::preview2::{command, ResourceTable, WasiCtx, WasiCtxBuilder, WasiView};
 
-use super::asset::Wasm;
+use super::{asset::Wasm, stream::OutStream};
 
 wasm_bridge::component::bindgen!({
     async: true,
@@ -57,7 +53,7 @@ impl Default for WasmRuntime {
         let out_bytes = Arc::new(Mutex::new(Vec::<u8>::new()));
         let out_stream = OutStream {
             data: out_bytes.clone(),
-            max: 3,
+            max: 512,
         };
 
         let wasi = WasiCtxBuilder::new().stdout(out_stream).build();
@@ -136,46 +132,5 @@ pub fn load_scripts(
 
     for handle in to_remove {
         load_queue.0.retain(|h| h != &handle);
-    }
-}
-
-#[derive(Clone, Debug)]
-struct OutStream {
-    data: Arc<Mutex<Vec<u8>>>,
-    max: usize,
-}
-
-#[wasm_bridge::async_trait]
-impl Subscribe for OutStream {
-    async fn ready(&mut self) {}
-}
-
-impl HostOutputStream for OutStream {
-    fn write(&mut self, buf: Bytes) -> StreamResult<()> {
-        assert!(
-            buf.len() <= self.max,
-            "We specified to write at most {} bytes at a time.",
-            self.max
-        );
-        self.data.try_lock().unwrap().extend(buf);
-        StreamResult::Ok(())
-    }
-
-    fn flush(&mut self) -> StreamResult<()> {
-        StreamResult::Ok(())
-    }
-
-    fn check_write(&mut self) -> StreamResult<usize> {
-        StreamResult::Ok(self.max)
-    }
-}
-
-impl StdoutStream for OutStream {
-    fn stream(&self) -> Box<(dyn HostOutputStream + 'static)> {
-        Box::new((*self).clone())
-    }
-
-    fn isatty(&self) -> bool {
-        false
     }
 }

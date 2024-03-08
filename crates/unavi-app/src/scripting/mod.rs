@@ -7,6 +7,7 @@ use self::{
 
 mod asset;
 mod script;
+mod stream;
 
 pub struct ScriptingPlugin;
 

@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use self::{
     asset::Wasm,
-    script::{load_scripts, ScriptLoadQueue, WasmRuntime},
+    script::{ScriptLoadQueue, WasmEngine},
 };
 
 mod asset;
@@ -16,9 +16,24 @@ impl Plugin for ScriptingPlugin {
         app.register_asset_loader(asset::WasmLoader)
             .init_asset::<Wasm>()
             .init_resource::<ScriptLoadQueue>()
-            .init_resource::<WasmRuntime>()
-            .add_systems(Startup, load_unavi_system)
-            .add_systems(Update, load_scripts);
+            .init_resource::<WasmEngine>()
+            .add_systems(Startup, load_unavi_system);
+
+        #[cfg(target_family = "wasm")]
+        {
+            use self::script::wasm::{load_scripts, update_scripts, Scripts};
+
+            app.init_non_send_resource::<Scripts>()
+                .add_systems(Update, (load_scripts, update_scripts));
+        }
+
+        #[cfg(not(target_family = "wasm"))]
+        {
+            use self::script::native::{load_scripts, update_scripts, Scripts};
+
+            app.init_resource::<Scripts>()
+                .add_systems(Update, (load_scripts, update_scripts));
+        }
     }
 }
 

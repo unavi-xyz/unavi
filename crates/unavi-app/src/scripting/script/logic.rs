@@ -1,7 +1,6 @@
 use std::sync::{Arc, Mutex};
 
 use bevy::{prelude::*, tasks::AsyncComputeTaskPool};
-use wasm_bridge::AsContextMut;
 
 use crate::scripting::asset::Wasm;
 
@@ -64,41 +63,23 @@ pub fn update_scripts(scripts: ScriptsVec, mut last_time: Local<f32>, time: Res<
 
     let pool = AsyncComputeTaskPool::get();
 
-    for script in scripts.lock().unwrap().iter_mut() {
+    for (i, script) in scripts.lock().unwrap().iter_mut().enumerate() {
         let script = script.clone();
 
         #[allow(clippy::await_holding_lock)]
         pool.spawn_local(async move {
-            let wasm_script = script.lock().unwrap();
+            let mut wasm_script = script.lock().unwrap();
+            wasm_script.update(delta).await.unwrap();
 
-            if !wasm_script.initialized {
-                let mut store = wasm_script.store.lock().unwrap();
+            let mut stdout = wasm_script.stdout.lock().unwrap();
 
-                if let Err(e) = wasm_script
-                    .script
-                    .interface0
-                    .call_init(store.as_context_mut())
-                    .await
-                {
-                    error!("Failed to initialize script: {}", e);
-                    return;
-                }
-
-                let mut wasm_script = script.lock().unwrap();
-                wasm_script.initialized = true;
-
-                return;
-            }
-
-            let mut store = wasm_script.store.lock().unwrap();
-
-            if let Err(e) = wasm_script
-                .script
-                .interface0
-                .call_update(store.as_context_mut(), delta)
-                .await
-            {
-                error!("Failed to update script: {}", e);
+            if !stdout.is_empty() {
+                info_span!("script", i).in_scope(|| {
+                    let text = String::from_utf8_lossy(&stdout);
+                    let text = text.trim_end_matches('\n');
+                    info!("{}", text);
+                    stdout.clear();
+                });
             }
         })
         .detach();

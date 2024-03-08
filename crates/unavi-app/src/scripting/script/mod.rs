@@ -43,7 +43,7 @@ pub struct WasmScript {
     pub initialized: bool,
     pub script: Script,
     pub stdout: Arc<Mutex<Vec<u8>>>,
-    pub store: Arc<Mutex<Store<StoreState>>>,
+    pub store: Store<StoreState>,
 }
 
 impl WasmScript {
@@ -75,8 +75,28 @@ impl WasmScript {
             initialized: false,
             script,
             stdout: out_bytes,
-            store: Arc::new(Mutex::new(store)),
+            store,
         })
+    }
+
+    pub async fn update(&mut self, delta: f32) -> Result<(), wasm_bridge::Error> {
+        if !self.initialized {
+            self.script
+                .interface0
+                .call_init(self.store.as_context_mut())
+                .await?;
+
+            self.initialized = true;
+
+            return Ok(());
+        }
+
+        self.script
+            .interface0
+            .call_update(self.store.as_context_mut(), delta)
+            .await?;
+
+        Ok(())
     }
 }
 

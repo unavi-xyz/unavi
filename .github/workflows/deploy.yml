@@ -30,19 +30,21 @@ jobs:
           submodules: true
           ref: ${{ inputs.ref || github.ref }}
 
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-
-      - run: nix build .?submodules=1#web
-
       - name: Create branch
         run: git checkout --orphan web-app/${{ env.CHANNEL }}
 
       - name: Clean directory
         run: |
-          find . -mindepth 1 -maxdepth 1 -not -name '.git' -not -name 'result' -exec rm -rf {} \;
-          cp -rL result/* .
-          rm -rf result
+          find . -mindepth 1 -maxdepth 1 -not -name '.git' -exec rm -rf {} \;
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-web
+
+      - name: Unzip artifact
+        run: |
+          unzip web.zip
+          rm web.zip
 
       - name: Commit changes
         run: |

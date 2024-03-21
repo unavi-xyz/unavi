@@ -115,3 +115,23 @@ jobs:
           name: build-x86_64-windows.${{ matrix.package }}
           path: x86_64-windows.${{ matrix.package }}.zip
           retention-days: 1
+
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: true
+
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - run: nix build .?submodules=1#web
+      - run: find result -exec zip -r web.zip {} +
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-web
+          path: web.zip
+          retention-days: 1

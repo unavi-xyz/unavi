@@ -51,25 +51,36 @@ jobs:
           new_branch: release-v${{ steps.semver.outputs.version }}
           tag: v${{ steps.semver.outputs.version }} --force
 
-  build:
+  build-nix:
     needs: version
-    uses: ./.github/workflows/build.yml
+    uses: ./.github/workflows/build-nix.yml
     with:
       ref: v${{ needs.version.outputs.version }}
 
-  deploy:
+  build-web:
+    needs: version
+    uses: ./.github/workflows/build-web.yml
+    with:
+      ref: v${{ needs.version.outputs.version }}
+
+  build-windows:
+    needs: version
+    uses: ./.github/workflows/build-windows.yml
+    with:
+      ref: v${{ needs.version.outputs.version }}
+
+  deploy-web:
     needs:
-      - build
-      - version
-    uses: ./.github/workflows/deploy.yml
+      - build-nix
+      - build-web
+      - build-windows
+    uses: ./.github/workflows/deploy-web.yml
     with:
       channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
       ref: v${{ needs.version.outputs.version }}
 
   release:
-    needs:
-      - deploy
-      - version
+    needs: deploy-web
     runs-on: ubuntu-latest
     env:
       TARGET_BRANCH: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}

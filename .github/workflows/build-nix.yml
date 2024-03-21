@@ -1,0 +1,53 @@
+name: "Build Nix"
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: "The ref to build."
+        required: true
+        type: string
+  workflow_dispatch:
+
+jobs:
+  nix-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - id: set-matrix
+        run: |
+          matrix=$(nix eval --json .#githubMatrix.matrix)
+          echo matrix=$matrix >> $GITHUB_OUTPUT
+
+  build-nix:
+    needs: nix-matrix
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.nix-matrix.outputs.matrix) }}
+    name: ${{ matrix.attr }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          submodules: true
+
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - run: nix build .?submodules=1#packages.${{ matrix.attr }}
+      - run: find result/bin -exec zip -r ${{ matrix.attr }}.zip {} +
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.attr }}-${{ inputs.ref || github.ref }}
+          path: ${{ matrix.attr }}.zip
+          retention-days: 1

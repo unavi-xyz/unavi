@@ -5,9 +5,6 @@ world imports {
 }
 
 world host {
-  import wired:spatial/node;
-  import wired:input/handler;
-
   export api;
 }
 

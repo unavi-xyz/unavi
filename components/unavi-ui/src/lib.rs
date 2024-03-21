@@ -7,6 +7,7 @@ struct Component;
 
 impl Guest for Component {
     fn new_bubble() -> String {
+        println!("Creating a new bubble");
         "bubble".into()
     }
 }

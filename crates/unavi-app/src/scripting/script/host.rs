@@ -1,7 +1,4 @@
-use wasm_bridge::{
-    component::{new_component_async, Linker},
-    AsContextMut, Store,
-};
+use wasm_bridge::{component::Linker, Store};
 
 use super::StoreState;
 
@@ -23,8 +20,8 @@ mod ui_host {
 
 /// Add provided host components to the linker and store.
 pub async fn add_host_components(
-    linker: &mut Linker<StoreState>,
-    store: &mut Store<StoreState>,
+    _linker: &mut Linker<StoreState>,
+    _store: &mut Store<StoreState>,
 ) -> Result<(), wasm_bridge::Error> {
     // let bytes = UNAVI_UI.to_vec();
     //

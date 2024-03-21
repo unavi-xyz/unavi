@@ -7,8 +7,12 @@ use wasm_bridge::{
 };
 use wasm_bridge_wasi::preview2::{command, ResourceTable, WasiCtx, WasiCtxBuilder, WasiView};
 
+use self::host::add_host_components;
+
 use super::{asset::Wasm, stream::OutStream};
 
+mod components;
+mod host;
 pub mod logic;
 #[cfg(not(target_family = "wasm"))]
 pub mod native;
@@ -66,6 +70,8 @@ impl WasmScript {
                 wasi,
             },
         );
+
+        add_host_components(&mut linker, &mut store).await?;
 
         let component = new_component_async(engine, bytes).await?;
         let (script, _) =

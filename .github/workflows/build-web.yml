@@ -26,6 +26,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: build-web-${{ inputs.ref || github.ref }}
+          name: build-web
           path: web.zip
           retention-days: 1

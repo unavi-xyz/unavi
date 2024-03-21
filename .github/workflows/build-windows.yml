@@ -70,6 +70,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: build-x86_64-windows.${{ matrix.package }}-${{ inputs.ref || github.ref }}
+          name: build-x86_64-windows.${{ matrix.package }}
           path: x86_64-windows.${{ matrix.package }}.zip
           retention-days: 1

@@ -22,13 +22,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-web:
+  build:
     if: github.event_name == 'push' || github.event_name == 'repository_dispatch'
     uses: ./.github/workflows/build-web.yml
     with:
       ref: ${{ inputs.ref || github.ref }}
 
-  deploy-web:
+  deploy:
     needs: build-web
     runs-on: ubuntu-latest
     steps:

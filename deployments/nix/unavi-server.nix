@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> { } }:
+{ pkgs ? import <nixpkgs> { }, ... }:
 let
   unavi_server_zip = pkgs.fetchzip {
     url = "placeholder-url";

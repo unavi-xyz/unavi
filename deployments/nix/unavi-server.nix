@@ -4,7 +4,7 @@ let
     name = "unavi-server";
     buildInputs = [ pkgs.unzip ];
 
-    src = ./x86_64-linux.unavi-server.zip;
+    src = ../../x86_64-linux.unavi-server.zip;
 
     unpackPhase = "unzip $src";
     installPhase = ''

@@ -86,8 +86,12 @@ jobs:
 
       - uses: DeterminateSystems/nix-installer-action@main
 
+      - name: Create show.json
+        run: |
+          cd deployments/terraform
+          terraform show -json > ../nix/show.json
+
       - name: Morph deploy
         run: |
           cd deployments/nix
-          sh show.sh
           nix-shell -p morph --command "morph deploy network.nix switch"

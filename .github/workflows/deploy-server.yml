@@ -51,7 +51,7 @@ jobs:
           terraform workspace select -or-create ${{ env.CHANNEL }}
           terraform apply -auto-approve
 
-      - name: Set artifact download URL
+      - name: Get artifact download URL
         run: |
           ARTIFACT_NAME="build-x86_64-linux.unavi-server"
           REPO_NAME="${{ github.repository }}"
@@ -67,7 +67,11 @@ jobs:
           echo "URL: $url"
           echo "URL=$url" >> $GITHUB_ENV
 
-      - name: Set artifact SHA
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-x86_64-linux.unavi-server
+
+      - name: Get artifact SHA
         run: |
           sha = $(sha256sum x86_64-linux.unavi-server.zip | cut -d ' ' -f 1)
           echo "SHA: $sha"

@@ -70,10 +70,12 @@ jobs:
       - name: Upload artifact
         run: |
           cd deployments/nix
-          servers=$(jq '.values.root_module.resources[] | select(.name == "unavi-server")' show.json)
-          for server in $(echo $servers); do
+
+          jq -c '.values.root_module.resources[] | select(.name == "unavi-server")' ../nix/show.json | while read server; do
+            name=$(echo $server | jq -r '.values.name')
             ip=$(echo $server | jq -r '.values.ipv4_address')
-            echo "Uploading to $server ($ip)"
+            echo "Uploading to $name ($ip)"
+
             ssh -i ~/.ssh/id_ed25519 root@$ip "mkdir -p /var/lib/unavi-server/"
             scp -i ~/.ssh/id_ed25519 x86_64-linux.unavi-server.zip root@$ip:/var/lib/unavi-server/unavi-server.zip
           done

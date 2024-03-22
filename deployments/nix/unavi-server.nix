@@ -4,10 +4,9 @@ let
     name = "unavi-server";
     buildInputs = [ pkgs.unzip ];
 
-    # Our ZIP file needs to be manually uploaded to the server.
-    # This is handled by the CI/CD pipeline.
-    unpackPhase = "unzip /var/lib/unavi-server/unavi-server.zip";
+    src = ./x86_64-linux.unavi-server.zip;
 
+    unpackPhase = "unzip $src";
     installPhase = ''
       mkdir -p $out/bin
       cp -r * $out/bin/

@@ -67,6 +67,11 @@ jobs:
         with:
           name: build-x86_64-linux.unavi-server
 
+      - name: Hmm
+        run: |
+          cd deployments/nix
+          cat show.json | jq
+
       - name: Upload artifacts
         run: |
           cd deployments/nix

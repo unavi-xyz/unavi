@@ -4,11 +4,23 @@
     ++ [ (modulesPath + "/virtualisation/digital-ocean-config.nix") ];
 
   boot.tmp.cleanOnBoot = true;
-  nix.settings.auto-optimise-store = true;
+
+  nix = {
+    settings = {
+      auto-optimise-store = true;
+      experimental-features = [ "nix-command" "flakes" ];
+    };
+
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 7d";
+    };
+  };
 
   services.journald.extraConfig = ''
     SystemMaxUse=100M
-    MaxFileSec=14day
+    MaxFileSec=7day
   '';
 
   deployment.targetUser = "root";

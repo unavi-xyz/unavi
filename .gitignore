@@ -4,5 +4,6 @@
 
 /assets/components
 /crates/unavi-app/dist
+/deployments/nix/show.json
 /result
 /target

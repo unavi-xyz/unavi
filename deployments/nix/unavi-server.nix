@@ -13,13 +13,15 @@ let
     '';
   };
 in {
-  # systemd.services.unavi_server = {
-  #   description = "UNAVI Server";
-  #   after = [ "network.target" ];
-  #   wantedBy = [ "multi-user.target" ];
-  #   serviceConfig = {
-  #     ExecStart = "${unavi_server}/bin/unavi-server";
-  #     Restart = "always";
-  #   };
-  # };
+  networking.firewall.allowedTCPPorts = [ 3000 3001 ];
+
+  systemd.services.unavi_server = {
+    description = "UNAVI Server";
+    after = [ "network.target" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      ExecStart = "${unavi_server}/bin/unavi-server";
+      Restart = "always";
+    };
+  };
 }

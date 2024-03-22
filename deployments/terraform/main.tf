@@ -18,10 +18,13 @@ terraform {
 provider "digitalocean" {}
 
 resource "digitalocean_droplet" "unavi-server" {
-  name     = "unavi-server-${terraform.workspace}"
-  tags     = ["${terraform.workspace}"]
-  region   = "nyc3"
-  size     = "s-1vcpu-1gb"
-  image    = 152510211
-  ssh_keys = [41375001, 41382380]
+  name   = "unavi-server-${terraform.workspace}"
+  tags   = ["${terraform.workspace}"]
+  region = "nyc3"
+  size   = "s-1vcpu-1gb"
+  image  = 152510211
+  ssh_keys = [
+    41375001, # kayh
+    41382380  # github-actions
+  ]
 }

@@ -43,6 +43,7 @@ jobs:
           ref: ${{ inputs.ref || github.ref }}
 
       - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Apply Terraform
         run: |

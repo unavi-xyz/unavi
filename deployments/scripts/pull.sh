@@ -6,3 +6,5 @@ curl \
   | xargs curl -L \
   --header "Authorization: Bearer $TERRAFORM_TOKEN" \
   --output ../terraform/terraform.tfstate
+
+cd ../terraform && terraform show -json > ../nix/show.json

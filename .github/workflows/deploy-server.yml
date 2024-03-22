@@ -82,6 +82,8 @@ jobs:
           sed -i 's|placeholder-url|'"$URL"'|g' deployments/nix/unavi-server.nix
           sed -i 's|placeholder-sha|'"$SHA"'|g' deployments/nix/unavi-server.nix
 
+          cat deployments/nix/unavi-server.nix
+
       - uses: DeterminateSystems/nix-installer-action@main
 
       - name: Morph deploy

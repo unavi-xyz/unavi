@@ -8,8 +8,12 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
   - package-ecosystem: gitsubmodule
     directory: /
     schedule:
       interval: weekly
+  - package-ecosystem: terraform
+    directory: /deployments/terraform
+    schedule:
+      interval: monthly

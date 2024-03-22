@@ -83,10 +83,9 @@ jobs:
           sed -i 's|placeholder-sha|'"$SHA"'|g' deployments/nix/unavi-server.nix
 
       - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Morph deploy
         run: |
           cd deployments/nix
           sh show.sh
-          nix develop -c morph deploy network.nix switch
+          nix-shell -p morph --command "morph deploy network.nix switch"

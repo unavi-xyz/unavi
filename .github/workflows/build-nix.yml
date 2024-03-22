@@ -31,11 +31,11 @@ jobs:
           matrix=$(nix eval --json .#githubMatrix.matrix)
 
           if [ -n "${{ inputs.attr }}" ]; then
-            matrix=$(echo $matrix | jq '[.include[] | select(.attr == "${{ inputs.attr }}")]')
+          matrix=$(echo $matrix | jq '{include: [.include[] | select(.attr == "${{ inputs.attr }}")]}')
           fi
 
           echo "Matrix: $matrix"
-          echo "::set-output name=matrix::$matrix"
+          echo matrix=$matrix >> $GITHUB_OUTPUT
 
   build-nix:
     needs: nix-matrix

@@ -4,5 +4,5 @@ jq -c '.values.root_module.resources[] | select(.name == "unavi-server")' ../nix
   echo "Uploading to $name ($ip)"
 
   ssh -n -i "$HOME/.ssh/id_ed25519" "root@$ip" "mkdir -p /var/lib/unavi-server/"
-  scp -i "$HOME/.ssh/id_ed25519" "x86_64-linux.unavi-server.zip root@$ip:/var/lib/unavi-server/unavi-server.zip"
+  scp -i "$HOME/.ssh/id_ed25519" "x86_64-linux.unavi-server.zip" "root@$ip:/var/lib/unavi-server/unavi-server.zip"
 done

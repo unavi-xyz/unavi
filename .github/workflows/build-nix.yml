@@ -31,7 +31,7 @@ jobs:
           matrix=$(nix eval --json .#githubMatrix.matrix)
 
           if [ -n "${{ inputs.attr }}" ]; then
-            matrix=$(echo $matrix | jq 'map(select(.attr == "${{ inputs.attr }}"))')
+            matrix=$(echo $matrix | jq '[.include[] | select(.attr == "${{ inputs.attr }}")]')
           fi
 
           echo matrix=$matrix >> $GITHUB_OUTPUT

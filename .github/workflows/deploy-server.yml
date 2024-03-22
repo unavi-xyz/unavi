@@ -51,41 +51,6 @@ jobs:
           terraform workspace select -or-create ${{ env.CHANNEL }}
           terraform apply -auto-approve
 
-      - name: Get artifact download URL
-        run: |
-          ARTIFACT_NAME="build-x86_64-linux.unavi-server"
-          REPO_NAME="${{ github.repository }}"
-          RUN_ID="${{ github.run_id }}"
-
-          # Use GitHub API to list artifacts
-          ARTIFACTS_URL="https://api.github.com/repos/$REPO_NAME/actions/runs/$RUN_ID/artifacts"
-          ARTIFACTS_JSON=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" $ARTIFACTS_URL)
-
-          # Parse JSON to get the download URL of the specific artifact
-          url=$(echo $ARTIFACTS_JSON | jq -r --arg ARTIFACT_NAME "$ARTIFACT_NAME" '.artifacts[] | select(.name==$ARTIFACT_NAME) | .archive_download_url')
-
-          echo "URL: $url"
-          echo "URL=$url" >> $GITHUB_ENV
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: build-x86_64-linux.unavi-server
-
-      - name: Get artifact SHA
-        run: |
-          sha=$(sha256sum x86_64-linux.unavi-server.zip | cut -d ' ' -f 1)
-          echo "SHA: $sha"
-          echo "SHA=$sha" >> $GITHUB_ENV
-
-      - name: Update unavi-server.nix
-        run: |
-          sed -i 's|placeholder-url|'"$URL"'|g' deployments/nix/unavi-server.nix
-          sed -i 's|placeholder-sha|'"$SHA"'|g' deployments/nix/unavi-server.nix
-
-          cat deployments/nix/unavi-server.nix
-
-      - uses: DeterminateSystems/nix-installer-action@main
-
       - name: Create show.json
         run: |
           cd deployments/terraform
@@ -98,7 +63,24 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-x86_64-linux.unavi-server
+
+      - name: Upload artifact
+        run: |
+          cd deployments/nix
+          servers=$(jq '.values.root_module.resources[] | select(.name == "unavi-server")' show.json)
+          for server in $(echo $servers); do
+            ip=$(echo $server | jq -r '.values.ipv4_address')
+            echo "Uploading to $server ($ip)"
+            ssh -i ~/.ssh/id_ed25519 root@$ip "mkdir -p /var/lib/unavi-server/"
+            scp -i ~/.ssh/id_ed25519 x86_64-linux.unavi-server.zip root@$ip:/var/lib/unavi-server/unavi-server.zip
+          done
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
       - name: Morph deploy
         run: |
           cd deployments/nix
-          nix-shell -p morph --show-trace --command "morph deploy network.nix switch"
+          nix-shell -p morph --command "morph deploy network.nix switch"

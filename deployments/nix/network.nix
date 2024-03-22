@@ -5,12 +5,11 @@ let
   servers = builtins.filter (d: d.name == "unavi-server") droplets;
 
   mkServer = resource:
-    { modulesPath, lib, name, ... }: {
+    { lib, modulesPath, name, ... }: {
       imports = [ ./common.nix ./unavi-server.nix ];
       deployment.targetHost = resource.values.ipv4_address;
       networking.hostName = resource.values.name;
     };
-
 in {
   network = {
     pkgs = import (builtins.fetchGit {

@@ -1,17 +1,13 @@
 { pkgs ? import <nixpkgs> { }, ... }:
 let
-  unavi_server_zip = pkgs.fetchzip {
-    url = "placeholder-url";
-    sha256 = "placeholder-sha";
-  };
-
   unavi_server = pkgs.stdenv.mkDerivation {
     name = "unavi-server";
     buildInputs = [ pkgs.unzip ];
 
-    src = unavi_server_zip;
+    # Our ZIP file needs to be manually uploaded to the server.
+    # This is handled by the CI/CD pipeline.
+    unpackPhase = "unzip /var/lib/unavi-server/unavi-server.zip";
 
-    unpackPhase = "unzip $src";
     installPhase = ''
       mkdir -p $out/bin
       cp -r * $out/bin/

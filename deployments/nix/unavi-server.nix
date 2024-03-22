@@ -13,13 +13,13 @@ let
     '';
   };
 in {
-  systemd.services.unavi_server = {
-    description = "UNAVI Server";
-    after = [ "network.target" ];
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      ExecStart = "${unavi_server}/bin/unavi-server";
-      Restart = "always";
-    };
-  };
+  # systemd.services.unavi_server = {
+  #   description = "UNAVI Server";
+  #   after = [ "network.target" ];
+  #   wantedBy = [ "multi-user.target" ];
+  #   serviceConfig = {
+  #     ExecStart = "${unavi_server}/bin/unavi-server";
+  #     Restart = "always";
+  #   };
+  # };
 }

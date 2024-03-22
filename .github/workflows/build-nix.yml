@@ -34,7 +34,8 @@ jobs:
             matrix=$(echo $matrix | jq '[.include[] | select(.attr == "${{ inputs.attr }}")]')
           fi
 
-          echo matrix=$matrix >> $GITHUB_OUTPUT
+          echo "Matrix: $matrix"
+          echo "::set-output name=matrix::$matrix"
 
   build-nix:
     needs: nix-matrix

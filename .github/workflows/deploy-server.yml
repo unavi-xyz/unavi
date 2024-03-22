@@ -47,8 +47,8 @@ jobs:
       - name: Apply Terraform
         run: |
           cd deployments/terraform
-          terraform workspace select -or-create ${{ env.CHANNEL }}
           terraform init
+          terraform workspace select -or-create ${{ env.CHANNEL }}
           terraform apply -auto-approve
 
       - name: Set artifact download URL
@@ -62,16 +62,16 @@ jobs:
           ARTIFACTS_JSON=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" $ARTIFACTS_URL)
 
           # Parse JSON to get the download URL of the specific artifact
-          URL=$(echo $ARTIFACTS_JSON | jq -r --arg ARTIFACT_NAME "$ARTIFACT_NAME" '.artifacts[] | select(.name==$ARTIFACT_NAME) | .archive_download_url')
+          url=$(echo $ARTIFACTS_JSON | jq -r --arg ARTIFACT_NAME "$ARTIFACT_NAME" '.artifacts[] | select(.name==$ARTIFACT_NAME) | .archive_download_url')
 
-          echo "URL: $URL"
-          echo "::set-output name=download_url::$URL"
+          echo "URL: $url"
+          echo "URL=$url" >> $GITHUB_ENV
 
       - name: Set artifact SHA
         run: |
           sha = $(sha256sum x86_64-linux.unavi-server.zip | cut -d ' ' -f 1)
           echo "SHA: $sha"
-          echo "::set-output name=sha::$sha"
+          echo "SHA=$sha" >> $GITHUB_ENV
 
       - name: Update Nix file
         run: |

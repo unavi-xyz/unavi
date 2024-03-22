@@ -1,0 +1,78 @@
+name: Deploy Server
+
+on:
+  push:
+    branches:
+      - main
+  workflow_call:
+    inputs:
+      channel:
+        required: true
+        type: string
+      ref:
+        required: true
+        type: string
+  workflow_dispatch:
+
+env:
+  CHANNEL: ${{ inputs.channel || github.ref_name }}
+
+concurrency:
+  group: "deploy-server-${{ inputs.channel || github.ref_name }}"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event_name == 'push' || github.event_name == 'repository_dispatch'
+    uses: ./.github/workflows/build-nix.yml
+    with:
+      ref: ${{ inputs.ref || github.ref }}
+      attr: x86_64-linux.unavi-server
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.SPACES_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.SPACES_SECRET_ACCESS_KEY }}
+      DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          ref: ${{ inputs.ref || github.ref }}
+
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Apply Terraform
+        run: |
+          cd deployments/terraform
+          nix develop -c terraform init
+          nix develop -c terraform workspace select -or-create ${{ env.CHANNEL }}
+          nix develop -c terraform apply -auto-approve
+
+      - name: Create show.json
+        run: |
+          cd deployments/terraform
+          nix develop -c terraform show -json > ../nix/show.json
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DO_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+      - name: Add IPs to known hosts
+        run: |
+          cd deployments/nix
+          sh add-known-hosts.sh
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-x86_64-linux.unavi-server
+
+      - name: Morph deploy
+        run: |
+          cd deployments/nix
+          nix develop -c morph deploy network.nix switch

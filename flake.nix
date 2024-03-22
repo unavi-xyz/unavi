@@ -74,7 +74,6 @@
               cargo-component
               clang
               cmake
-              nodePackages.prettier
               pkg-config
               protobuf
               trunk
@@ -237,6 +236,7 @@
             clang
             curl
             morph
+            nodePackages.prettier
             rust-analyzer
             terraform
           ];

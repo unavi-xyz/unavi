@@ -6,19 +6,9 @@ let
 
   mkServer = resource:
     { modulesPath, lib, name, ... }: {
-      imports =
-        lib.optional (builtins.pathExists ./do-userdata.nix) ./do-userdata.nix
-        ++ [
-          (modulesPath + "/virtualisation/digital-ocean-config.nix")
-          ./common.nix
-        ];
-
+      imports = [ ./common.nix ];
       deployment.targetHost = resource.values.ipv4_address;
-      deployment.targetUser = "root";
-
       networking.hostName = resource.values.name;
-
-      system.stateVersion = "23.11";
     };
 
 in {

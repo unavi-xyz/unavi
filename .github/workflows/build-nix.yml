@@ -24,7 +24,6 @@ jobs:
           ref: ${{ inputs.ref || github.ref }}
 
       - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - id: set-matrix
         run: |

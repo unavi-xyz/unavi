@@ -23,5 +23,5 @@ resource "digitalocean_droplet" "unavi-server" {
   region   = "nyc3"
   size     = "s-1vcpu-1gb"
   image    = 152510211
-  ssh_keys = [41375001]
+  ssh_keys = [41375001, 41382380]
 }

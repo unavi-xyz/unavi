@@ -26,6 +26,7 @@
         pkgs = import nixpkgs {
           inherit localSystem;
           overlays = [ (import rust-overlay) ];
+          config.allowUnfree = true;
         };
 
         inherit (pkgs) lib;
@@ -230,11 +231,18 @@
         devShells.default = craneLib.devShell {
           checks = self.checks.${localSystem};
 
-          packages = with pkgs; [ cargo-deny cargo-watch clang rust-analyzer ];
+          packages = with pkgs; [
+            cargo-deny
+            cargo-watch
+            clang
+            curl
+            morph
+            rust-analyzer
+            terraform
+          ];
 
           LD_LIBRARY_PATH = lib.makeLibraryPath (commonArgs.buildInputs);
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
-
       });
 }

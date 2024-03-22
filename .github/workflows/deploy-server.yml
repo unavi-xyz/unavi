@@ -42,7 +42,7 @@ jobs:
           submodules: true
           ref: ${{ inputs.ref || github.ref }}
 
-      - uses: hashicorp/setup-terraform@v1
+      - uses: hashicorp/setup-terraform@v3
 
       - name: Apply Terraform
         run: |

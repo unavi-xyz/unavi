@@ -69,6 +69,16 @@ jobs:
     with:
       ref: v${{ needs.version.outputs.version }}
 
+  deploy-server:
+    needs:
+      - build-nix
+      - build-web
+      - build-windows
+    uses: ./.github/workflows/deploy-server.yml
+    with:
+      channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
+      ref: v${{ needs.version.outputs.version }}
+
   deploy-web:
     needs:
       - build-nix
@@ -80,7 +90,9 @@ jobs:
       ref: v${{ needs.version.outputs.version }}
 
   release:
-    needs: deploy-web
+    needs:
+      - deploy-server
+      - deploy-web
     runs-on: ubuntu-latest
     env:
       TARGET_BRANCH: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}

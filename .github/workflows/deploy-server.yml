@@ -1,0 +1,85 @@
+name: Deploy Server
+
+on:
+  push:
+    branches:
+      - main
+  workflow_call:
+    inputs:
+      channel:
+        required: true
+        type: string
+      ref:
+        required: true
+        type: string
+  workflow_dispatch:
+
+env:
+  CHANNEL: ${{ inputs.channel || github.ref_name }}
+
+concurrency:
+  group: "deploy-server-${{ inputs.channel || github.ref_name }}"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event_name == 'push' || github.event_name == 'repository_dispatch'
+    uses: ./.github/workflows/build-nix.yml
+    with:
+      ref: ${{ inputs.ref || github.ref }}
+      attr: x86_64-linux.unavi-server
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.SPACES_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.SPACES_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: us-east-1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          ref: ${{ inputs.ref || github.ref }}
+
+      - uses: hashicorp/setup-terraform@v1
+
+      - name: Apply Terraform
+        run: |
+          cd deployments/terraform
+          terraform workspace select -or-create ${{ env.CHANNEL }}
+          terraform init
+          terraform apply -auto-approve
+
+      - name: Set artifact download URL
+        run: |
+          ARTIFACT_NAME="build-x86_64-linux.unavi-server"
+          REPO_NAME="${{ github.repository }}"
+          RUN_ID="${{ github.run_id }}"
+
+          # Use GitHub API to list artifacts
+          ARTIFACTS_URL="https://api.github.com/repos/$REPO_NAME/actions/runs/$RUN_ID/artifacts"
+          ARTIFACTS_JSON=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" $ARTIFACTS_URL)
+
+          # Parse JSON to get the download URL of the specific artifact
+          URL=$(echo $ARTIFACTS_JSON | jq -r --arg ARTIFACT_NAME "$ARTIFACT_NAME" '.artifacts[] | select(.name==$ARTIFACT_NAME) | .archive_download_url')
+
+          echo "URL: $URL"
+          echo "::set-output name=download_url::$URL"
+
+      - name: Set artifact SHA
+        run: |
+          sha = $(sha256sum x86_64-linux.unavi-server.zip | cut -d ' ' -f 1)
+          echo "SHA: $sha"
+          echo "::set-output name=sha::$sha"
+
+      - name: Update Nix file
+        run: |
+          sed -i 's|placeholder-url|'"$URL"'|g' deployments/nix/unavi-server.nix
+          sed -i 's|placeholder-sha|'"$SHA"'|g' deployments/nix/unavi-server.nix
+
+      - name: Morph deploy
+        run: |
+          cd deployments/nix
+          sh show.sh
+          morph deploy network.nix switch

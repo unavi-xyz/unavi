@@ -7,6 +7,10 @@ on:
         description: "The ref to build."
         required: true
         type: string
+      attr:
+        description: "Only build this attribute."
+        required: false
+        type: string
   workflow_dispatch:
 
 jobs:
@@ -25,6 +29,11 @@ jobs:
       - id: set-matrix
         run: |
           matrix=$(nix eval --json .#githubMatrix.matrix)
+
+          if [ -n "${{ inputs.attr }}" ]; then
+            matrix=$(echo $matrix | jq 'map(select(.attr == "${{ inputs.attr }}"))')
+          fi
+
           echo matrix=$matrix >> $GITHUB_OUTPUT
 
   build-nix:

@@ -2,11 +2,11 @@ let
   resourcesByType = (import ./parse.nix { }).resourcesByType;
 
   droplets = resourcesByType "digitalocean_droplet";
-  servers = builtins.filter (d: d.name == "server") droplets;
+  servers = builtins.filter (d: d.name == "unavi-server") droplets;
 
   mkServer = resource:
     { modulesPath, lib, name, ... }: {
-      imports = [ ./common.nix ];
+      imports = [ ./common.nix ./unavi-server.nix ];
       deployment.targetHost = resource.values.ipv4_address;
       networking.hostName = resource.values.name;
     };

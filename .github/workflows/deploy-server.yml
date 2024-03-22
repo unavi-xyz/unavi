@@ -70,7 +70,7 @@ jobs:
       - name: Hmm
         run: |
           cd deployments/nix
-          cat show.json | jq
+          cat show.json
 
       - name: Upload artifacts
         run: |

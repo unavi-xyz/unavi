@@ -77,7 +77,7 @@ jobs:
           echo "SHA: $sha"
           echo "SHA=$sha" >> $GITHUB_ENV
 
-      - name: Update Nix file
+      - name: Update unavi-server.nix
         run: |
           sed -i 's|placeholder-url|'"$URL"'|g' deployments/nix/unavi-server.nix
           sed -i 's|placeholder-sha|'"$SHA"'|g' deployments/nix/unavi-server.nix
@@ -91,7 +91,14 @@ jobs:
           cd deployments/terraform
           terraform show -json > ../nix/show.json
 
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DO_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+
       - name: Morph deploy
         run: |
           cd deployments/nix
-          nix-shell -p morph --command "morph deploy network.nix switch"
+          nix-shell -p morph --show-trace --command "morph deploy network.nix switch"

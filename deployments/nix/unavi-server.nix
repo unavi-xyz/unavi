@@ -18,14 +18,12 @@ let
     '';
   };
 in {
-  environment.systemPackages = [ unavi_server ];
-
   systemd.services.unavi_server = {
     description = "UNAVI Server";
     after = [ "network.target" ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
-      ExecStart = "${pkgs.unavi_server}/bin/unavi_server";
+      ExecStart = "${unavi_server}/bin/unavi-server";
       Restart = "always";
     };
   };

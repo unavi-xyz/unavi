@@ -47,14 +47,14 @@ jobs:
       - name: Apply Terraform
         run: |
           cd deployments/terraform
-          nix-shell -p terraform --command "terraform init"
-          nix-shell -p terraform --command "terraform workspace select -or-create ${{ env.CHANNEL }}"
-          nix-shell -p terraform --command "terraform apply -auto-approve"
+          nix develop -c terraform init
+          nix develop -c terraform workspace select -or-create ${{ env.CHANNEL }}
+          nix develop -c terraform apply -auto-approve
 
       - name: Create show.json
         run: |
           cd deployments/terraform
-          nix-shell -p terraform --command "terraform show -json > ../nix/show.json"
+          nix develop -c terraform show -json > ../nix/show.json
 
       - name: Set up SSH key
         run: |
@@ -70,4 +70,4 @@ jobs:
       - name: Morph deploy
         run: |
           cd deployments/nix
-          nix-shell -p morph --command "morph deploy network.nix switch"
+          nix develop -c morph deploy network.nix switch

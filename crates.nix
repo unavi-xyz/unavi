@@ -100,7 +100,8 @@ let
     preBuild = components.generateAssetsScript;
   });
 in {
-  LD_LIBRARY_PATH = lib.makeLibraryPath (commonArgs.buildInputs);
+  buildInputs = commonArgs.buildInputs;
+  nativeBuildInputs = commonArgs.nativeBuildInputs;
 
   apps = {
     app = flake-utils.lib.mkApp { drv = unavi-app; };

@@ -4,12 +4,17 @@
       url = "github:ipetkov/crane";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    deploy-rs = {
+      url = "github:serokell/deploy-rs";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     flake-utils.url = "github:numtide/flake-utils";
     nix-github-actions = {
       url = "github:nix-community/nix-github-actions";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-23.11";
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs = {
@@ -19,17 +24,26 @@
     };
   };
 
-  outputs = { self, nix-github-actions, nixpkgs, crane, flake-utils
-    , rust-overlay, ... }:
+  outputs = { self, deploy-rs, nix-github-actions, nixpkgs, crane, flake-utils
+    , rust-overlay, ... }@inputs:
     flake-utils.lib.eachDefaultSystem (localSystem:
       let
         pkgs = import nixpkgs {
           inherit localSystem;
-          overlays = [ (import rust-overlay) ];
+
+          overlays = [
+            (import rust-overlay)
+            deploy-rs.overlay
+            (self: super: {
+              deploy-rs = {
+                inherit (pkgs) deploy-rs;
+                lib = super.deploy-rs.lib;
+              };
+            })
+          ];
+
           config.allowUnfree = true;
         };
-
-        inherit (pkgs) lib;
 
         rustToolchain =
           pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
@@ -38,200 +52,18 @@
 
         craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
-        src = craneLib.cleanCargoSource (craneLib.path ./.);
-
-        commonArgs = {
-          pname = "unavi";
-
-          src = lib.cleanSourceWith {
-            src = ./.;
-            filter = path: type:
-              (lib.hasSuffix ".proto" path) || (lib.hasSuffix ".wit" path)
-              || (craneLib.filterCargoSources path type);
-          };
-
-          strictDeps = true;
-
-          buildInputs = with pkgs;
-            [ rustPlatform.bindgenHook ] ++ lib.optionals pkgs.stdenv.isLinux
-            (with pkgs; [
-              alsa-lib
-              alsa-lib.dev
-              libxkbcommon
-              udev
-              vulkan-loader
-              wayland
-              xorg.libX11
-              xorg.libXcursor
-              xorg.libXi
-              xorg.libXrandr
-            ]) ++ lib.optionals pkgs.stdenv.isDarwin
-            (with pkgs; [ darwin.apple_sdk.frameworks.Cocoa libiconv ]);
-
-          nativeBuildInputs = with pkgs;
-            [
-              binaryen
-              cargo-component
-              clang
-              cmake
-              pkg-config
-              protobuf
-              trunk
-              wasm-bindgen-cli
-              wasm-tools
-            ] ++ lib.optionals (!pkgs.stdenv.isDarwin)
-            (with pkgs; [ alsa-lib alsa-lib.dev ]);
-        };
-
-        cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-
-        cargoClippy =
-          craneLib.cargoClippy (commonArgs // { inherit cargoArtifacts; });
-
-        cargoDoc =
-          craneLib.cargoDoc (commonArgs // { inherit cargoArtifacts; });
-
-        cargoFmt = craneLib.cargoFmt {
-          inherit src;
-          pname = "unavi";
-        };
-
-        generateAssetsScript = ''
-          rm -rf assets/components
-          mkdir -p assets/components
-          cp -r --no-preserve=mode ${
-            self.packages.${localSystem}.components
-          }/lib/* assets/components
-        '';
-
-        # Crates
-        unavi-app = craneLib.buildPackage (commonArgs // {
-          inherit cargoArtifacts;
-          pname = "unavi-app";
-          cargoExtraArgs = "--locked -p unavi-app";
-
-          preBuild = generateAssetsScript;
-          postInstall = ''
-            cp -r assets $out/bin
-          '';
-
-          src = lib.cleanSourceWith {
-            src = ./.;
-            filter = path: type:
-              (lib.hasSuffix ".wit" path) || (lib.hasInfix "/assets/" path)
-              || (craneLib.filterCargoSources path type);
-          };
-        });
-
-        unavi-server = craneLib.buildPackage (commonArgs // {
-          inherit cargoArtifacts;
-          pname = "unavi-server";
-          cargoExtraArgs = "--locked -p unavi-server";
-        });
-
-        web = craneLib.buildTrunkPackage (commonArgs // rec {
-          src = lib.cleanSourceWith {
-            src = ./.;
-            filter = path: type:
-              (lib.hasSuffix ".wit" path) || (lib.hasSuffix ".html" path)
-              || (lib.hasInfix "/assets/" path)
-              || (lib.hasInfix "/crates/unavi-app/public/" path)
-              || (craneLib.filterCargoSources path type);
-          };
-
-          pname = "web";
-          cargoExtraArgs = "--locked -p unavi-app";
-          trunkIndexPath = "./crates/unavi-app/index.html";
-          wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
-
-          preBuild = generateAssetsScript;
-        });
-
-        # Components
-        componentArgs = commonArgs // {
-          cargoBuildCommand = "cargo component build --profile wasm-release";
-          doCheck = false;
-
-          src = lib.cleanSourceWith {
-            src = ./.;
-            filter = path: type:
-              (lib.hasSuffix ".wit" path)
-              || (craneLib.filterCargoSources path type);
-          };
-        };
-
-        buildComponent = pname:
-          craneLib.buildPackage (componentArgs // {
-            inherit pname;
-            cargoExtraArgs = "--locked -p ${pname}";
-          });
-
-        component-names =
-          lib.mapAttrsToList (name: _: name) (builtins.readDir ./components);
-
-        components = (map (name: buildComponent name) component-names);
-
+        components = import ./components.nix
+          (inputs // { inherit craneLib localSystem pkgs; });
+        crates = import ./crates.nix
+          (inputs // { inherit components craneLib localSystem pkgs; });
       in {
-        checks = { inherit cargoClippy cargoDoc cargoFmt; };
-
-        apps = rec {
-          app = flake-utils.lib.mkApp { drv = unavi-app; };
-          server = flake-utils.lib.mkApp { drv = unavi-server; };
-
-          web = flake-utils.lib.mkApp {
-            drv = pkgs.writeShellScriptBin "web" ''
-              ${pkgs.python3Minimal}/bin/python3 -m http.server --directory ${
-                self.packages.${localSystem}.web
-              } 3000
-            '';
-          };
-
-          check-components = flake-utils.lib.mkApp {
-            drv = pkgs.writeShellScriptBin "check-components"
-              (lib.concatStringsSep " -p "
-                ([ "cargo component check --locked" ] ++ component-names));
-          };
-
-          generate-assets = flake-utils.lib.mkApp {
-            drv =
-              pkgs.writeShellScriptBin "generate-assets" generateAssetsScript;
-          };
-
-          default = app;
-        };
-
-        packages = {
-          inherit unavi-app unavi-server web;
-
-          components = pkgs.symlinkJoin {
-            name = "components";
-            paths = [ components ];
-          };
-
-          default = pkgs.symlinkJoin {
-            name = "all";
-            paths = [ components unavi-app unavi-server web ];
-          };
-
-          githubMatrix = nix-github-actions.lib.mkGithubMatrix {
-            attrPrefix = "";
-            checks = nixpkgs.lib.mapAttrs (_: v:
-              (nixpkgs.lib.filterAttrs (n: _:
-                !(nixpkgs.lib.mutuallyExclusive [ n ] [
-                  "unavi-app"
-                  "unavi-server"
-                ])) v)) (nixpkgs.lib.getAttrs [
-                  flake-utils.lib.system.x86_64-linux
-                  flake-utils.lib.system.x86_64-darwin
-                ] self.packages);
-          };
-        };
+        apps = components.apps // crates.apps;
+        checks = crates.checks;
+        packages = components.packages // crates.packages;
 
         devShells.default = craneLib.devShell {
-          checks = self.checks.${localSystem};
-
           packages = with pkgs; [
-            cargo-deny
+            cargo-component
             cargo-watch
             clang
             curl
@@ -241,8 +73,21 @@
             terraform
           ];
 
-          LD_LIBRARY_PATH = lib.makeLibraryPath (commonArgs.buildInputs);
+          # LD_LIBRARY_PATH = lib.makeLibraryPath (commonArgs.buildInputs);
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
-      });
+      }) // (import ./deployments { inherit self nixpkgs deploy-rs; }) // {
+        githubMatrix = nix-github-actions.lib.mkGithubMatrix {
+          attrPrefix = "";
+          checks = nixpkgs.lib.mapAttrs (_: v:
+            (nixpkgs.lib.filterAttrs (n: _:
+              !(nixpkgs.lib.mutuallyExclusive [ n ] [
+                "unavi-app"
+                "unavi-server"
+              ])) v)) (nixpkgs.lib.getAttrs [
+                flake-utils.lib.system.x86_64-linux
+                flake-utils.lib.system.x86_64-darwin
+              ] self.packages);
+        };
+      };
 }

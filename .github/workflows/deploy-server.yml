@@ -56,4 +56,4 @@ jobs:
           name: build-x86_64-linux.unavi-server
 
       - name: Deploy
-        run: git add . && nix-shell -p deploy-rs --command 'deploy ".?submodules=1" -- --impure --no-sandbox'
+        run: git add . && nix-shell -p deploy-rs --command deploy .?submodules=1#

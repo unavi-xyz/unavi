@@ -1,6 +1,7 @@
-.terraform
-*.tfvars
 *.tfstate*
+*.tfvars
+.terraform
+/config.tf.json
 
 /assets/components
 /crates/unavi-app/dist

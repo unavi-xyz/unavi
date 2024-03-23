@@ -1,34 +1,36 @@
-{ deploy-rs, nixpkgs-stable, self, ... }:
+{ deploy-rs, localSystem, nixpkgs, nixpkgs-stable, self, ... }:
 let
-  pkgs = import nixpkgs-stable {
-    localSystem = "x86_64-linux";
+  pkgs = import nixpkgs {
+    inherit localSystem;
     config.allowUnfree = true;
   };
 
-  resourcesByType = (import ./parse.nix { inherit pkgs; }).resourcesByType;
-
-  droplets = resourcesByType "digitalocean_droplet";
-  servers = builtins.filter (d: d.name == "unavi-server") droplets;
+  tfOutput = builtins.fromJSON (builtins.readFile ./terraform-output.json);
 
   mkServer = resource: {
-    hostname = resource.values.ipv4_address;
-    sshUser = "root";
+    name = resource.value.name;
+    value = {
+      hostname = resource.value.ip;
+      sshUser = "root";
 
-    profiles.system = {
-      path = deploy-rs.lib.x86_64-linux.activate.nixos
-        self.nixosConfigurations.unavi-server;
+      profiles.system = {
+        path = deploy-rs.lib.${localSystem}.activate.nixos
+          self.nixosConfigurations.unavi-server;
+      };
     };
   };
+
+  outputValues = builtins.attrValues tfOutput;
+  nodeList = builtins.map mkServer outputValues;
 in {
-  deploy.nodes = builtins.listToAttrs (map (r: {
-    name = r.values.name;
-    value = mkServer r;
-  }) servers);
+  checks = deploy-rs.lib.${localSystem}.deployChecks self.deploy;
+
+  deploy.nodes = builtins.listToAttrs nodeList;
 
   nixosConfigurations = {
     unavi-server = nixpkgs-stable.lib.nixosSystem {
       system = "x86_64-linux";
-      modules = [ ./nix/unavi-server.nix ];
+      modules = [ ./configurations/unavi-server.nix ];
     };
   };
 }

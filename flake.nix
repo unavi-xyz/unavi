@@ -6,7 +6,10 @@
     };
     deploy-rs = {
       url = "github:serokell/deploy-rs";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        utils.follows = "flake-utils";
+      };
     };
     flake-utils.url = "github:numtide/flake-utils";
     nix-github-actions = {
@@ -20,6 +23,13 @@
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-utils.follows = "flake-utils";
+      };
+    };
+    terranix = {
+      url = "github:terranix/terranix";
+      inputs = {
+        flake-utils.follows = "flake-utils";
+        nixpkgs.follows = "nixpkgs";
       };
     };
   };
@@ -56,10 +66,13 @@
           (inputs // { inherit craneLib localSystem pkgs; });
         crates = import ./crates.nix
           (inputs // { inherit components craneLib localSystem pkgs; });
+
+        terraform = import ./deployments/terraform.nix
+          (inputs // { inherit localSystem pkgs; });
       in {
-        apps = components.apps // crates.apps;
+        apps = components.apps // crates.apps // terraform.apps;
         checks = crates.checks;
-        packages = components.packages // crates.packages;
+        packages = components.packages // crates.packages // terraform.packages;
 
         devShells.default = craneLib.devShell {
           packages = with pkgs; [
@@ -70,13 +83,14 @@
             morph
             nodePackages.prettier
             rust-analyzer
-            terraform
           ];
 
           LD_LIBRARY_PATH = crates.LD_LIBRARY_PATH;
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
-      }) // (let deployments = import ./deployments inputs;
+      }) // (let
+        deployments =
+          import ./deployments (inputs // { localSystem = "x86_64-linux"; });
       in {
         deploy = deployments.deploy;
         nixosConfigurations = deployments.nixosConfigurations;

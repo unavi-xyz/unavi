@@ -1,3 +1,3 @@
 # Deployments
 
-UNAVI deployment using Terraform and NixOS [Morph](https://github.com/DBCDK/morph/tree/master).
+UNAVI NixOS deployments using [terranix](https://github.com/terranix/terranix) and [deploy-rs](https://github.com/serokell/deploy-rs).

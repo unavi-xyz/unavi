@@ -73,7 +73,7 @@
             terraform
           ];
 
-          # LD_LIBRARY_PATH = lib.makeLibraryPath (commonArgs.buildInputs);
+          LD_LIBRARY_PATH = crates.LD_LIBRARY_PATH;
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
       }) // (import ./deployments { inherit self nixpkgs deploy-rs; }) // {

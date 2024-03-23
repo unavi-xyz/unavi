@@ -22,7 +22,10 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - run: nix build .?submodules=1#web
-      - run: find result -exec zip -rj web.zip {} +
+      - run: |
+          cp -rL result tmp
+          cd tmp
+          zip -r ../web.zip .
 
       - uses: actions/upload-artifact@v4
         with:

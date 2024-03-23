@@ -75,17 +75,17 @@
         packages = components.packages // crates.packages // terraform.packages;
 
         devShells.default = craneLib.devShell {
-          packages = with pkgs; [
-            cargo-component
-            cargo-watch
-            clang
-            curl
-            morph
-            nodePackages.prettier
-            rust-analyzer
-          ];
+          packages = with pkgs;
+            [
+              cargo-component
+              cargo-watch
+              clang
+              curl
+              morph
+              nodePackages.prettier
+              rust-analyzer
+            ] ++ crates.buildInputs ++ crates.nativeBuildInputs;
 
-          LD_LIBRARY_PATH = crates.LD_LIBRARY_PATH;
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
       }) // (let

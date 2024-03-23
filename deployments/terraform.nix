@@ -24,10 +24,12 @@ in {
           && ${pkgs.terraform}/bin/terraform init \
           && ${pkgs.terraform}/bin/terraform workspace select -or-create $workspace \
           && ${pkgs.terraform}/bin/terraform apply -auto-approve
-          
-        ${pkgs.terraform}/bin/terraform output -json > deployments/terraform-output.json
 
-        jq -rc '.[].value.ip' deployments/terraform-output.json | while read -r ip; do
+        mkdir -p deployments/terraform/$workspace
+          
+        ${pkgs.terraform}/bin/terraform output -json > deployments/terraform/$workspace/terraform-output.json
+
+        jq -rc '.[].value.ip' deployments/terraform/$workspace/terraform-output.json | while read -r ip; do
           echo "Adding $ip to known hosts"
           ssh-keyscan -H "$ip" >> "$HOME/.ssh/known_hosts"
         done
@@ -44,8 +46,8 @@ in {
           && ${pkgs.terraform}/bin/terraform init \
           && ${pkgs.terraform}/bin/terraform workspace select -or-create $workspace \
           && ${pkgs.terraform}/bin/terraform destroy -auto-approve
-          
-        ${pkgs.terraform}/bin/terraform output -json > deployments/terraform-output.json
+
+        rm -rf deployments/terraform/$workspace
       '';
     };
   };

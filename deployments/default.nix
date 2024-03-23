@@ -5,8 +5,6 @@ let
     config.allowUnfree = true;
   };
 
-  tfOutput = builtins.fromJSON (builtins.readFile ./terraform-output.json);
-
   mkServer = resource: {
     name = resource.value.name;
     value = {
@@ -20,12 +18,21 @@ let
     };
   };
 
-  outputValues = builtins.attrValues tfOutput;
-  nodeList = builtins.map mkServer outputValues;
+  terraformDir = ./terraform;
+
+  subdirs = builtins.attrNames (builtins.readDir terraformDir);
+
+  loadTfOutput = subdir:
+    builtins.fromJSON
+    (builtins.readFile "${terraformDir}/${subdir}/terraform-output.json");
+
+  nodeList =
+    map (subdir: map mkServer (builtins.attrValues (loadTfOutput subdir)))
+    subdirs;
 in {
   checks = deploy-rs.lib.${localSystem}.deployChecks self.deploy;
 
-  deploy.nodes = builtins.listToAttrs nodeList;
+  deploy.nodes = builtins.listToAttrs (builtins.concatLists nodeList);
 
   nixosConfigurations = {
     unavi-server = nixpkgs-stable.lib.nixosSystem {

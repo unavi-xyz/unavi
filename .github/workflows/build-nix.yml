@@ -53,7 +53,10 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - run: nix build .?submodules=1#packages.${{ matrix.attr }}
-      - run: find result/bin -exec zip -rj ${{ matrix.attr }}.zip {} +
+      - run: |
+          cp -rL result tmp
+          cd tmp
+          zip -r ../${{ matrix.attr }}.zip .
 
       - uses: actions/upload-artifact@v4
         with:

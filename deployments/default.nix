@@ -26,7 +26,7 @@ in {
   }) servers);
 
   nixosConfigurations = {
-    unavi-server = pkgs.lib.nixosSystem {
+    unavi-server = nixpkgs-stable.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [ ./nix/unavi-server.nix ];
     };

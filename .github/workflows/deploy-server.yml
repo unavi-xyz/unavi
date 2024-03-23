@@ -43,5 +43,8 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
+      - name: Add to known hosts
+        run: cat deployments/terraform-output.json | jq .[].value.ip > ~/.ssh/known_hosts
+
       - name: Deploy
-        run: nix-shell -p deploy-rs --command "deploy .?submodules=1# --skip-checks"
+        run: nix-shell -p deploy-rs --command "deploy .?submodules=1 --skip-checks"

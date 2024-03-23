@@ -1,0 +1,16 @@
+{
+  "unavi_server": {
+    "sensitive": false,
+    "type": [
+      "object",
+      {
+        "ip": "string",
+        "name": "string"
+      }
+    ],
+    "value": {
+      "ip": "209.97.153.197",
+      "name": "unavi-server-main"
+    }
+  }
+}

@@ -26,7 +26,7 @@ wasm-bridge = { version = "0.3.0", features = ["async", "component-model"] }
 wasm-bridge-wasi = "0.3.0"
 xwt = "0.6.0"
 xwt-core = "0.2.2"
-bytes = "1.5.0"
+bytes = "1.6.0"
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 xwt-web-sys = "0.6.0"

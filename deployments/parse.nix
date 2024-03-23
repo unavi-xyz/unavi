@@ -22,9 +22,7 @@ let
 
   payload = builtins.fromJSON (builtins.readFile "${show}/show.json");
 
-  resourcesInModule = type: module:
-    builtins.filter (r: r.type == type) module.resources ++ pkgs.lib.flatten
-    (map (resourcesInModule type) (module.child_modules or [ ]));
+  resourcesInModule = type: module: builtins.filter (r: r.type == type) module;
 
   resourcesByType = type: resourcesInModule type payload;
 in { inherit resourcesByType; }

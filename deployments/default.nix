@@ -12,6 +12,8 @@ let
 
   mkServer = resource: {
     hostname = resource.values.ipv4_address;
+    sshUser = "root";
+
     profiles.system = {
       path = deploy-rs.lib.x86_64-linux.activate.nixos
         self.nixosConfigurations.unavi-server;

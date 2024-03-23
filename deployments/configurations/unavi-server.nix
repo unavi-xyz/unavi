@@ -1,16 +1,17 @@
 { pkgs, ... }:
 let
-  unavi_server = pkgs.stdenv.mkDerivation {
+  unavi-server = pkgs.rustPlatform.buildRustPackage {
+    buildAndTestSubdir = "crates/unavi-server";
     name = "unavi-server";
-    buildInputs = [ pkgs.unzip ];
+    src = pkgs.lib.cleanSource ../../.;
 
-    src = ../../x86_64-linux.unavi-server.zip;
-
-    unpackPhase = "unzip $src";
-    installPhase = ''
-      mkdir -p $out/bin
-      cp -r * $out/bin/
-    '';
+    cargoLock = {
+      lockFile = ../../Cargo.lock;
+      outputHashes = {
+        "wasm-bridge-0.3.0" =
+          "sha256-R7qLWzyd0DlU6/rAr2/T3kuhRLTcz3jAHmLzlznRp+s=";
+      };
+    };
   };
 in {
   imports = [ ./common.nix ];
@@ -22,7 +23,7 @@ in {
     after = [ "network.target" ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
-      ExecStart = "${unavi_server}/bin/unavi-server";
+      ExecStart = "${unavi-server}/bin/unavi-server";
       Restart = "always";
     };
   };

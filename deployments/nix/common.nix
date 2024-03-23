@@ -23,7 +23,5 @@
     MaxFileSec=7day
   '';
 
-  deployment.targetUser = "root";
-
   system.stateVersion = "23.11";
 }

@@ -1,8 +1,8 @@
-{ pkgs, ... }:
+{ nixpkgs, ... }:
 let
-  unavi_server = pkgs.stdenv.mkDerivation {
+  unavi_server = nixpkgs.stdenv.mkDerivation {
     name = "unavi-server";
-    buildInputs = [ pkgs.unzip ];
+    buildInputs = [ nixpkgs.unzip ];
 
     src = ../../x86_64-linux.unavi-server.zip;
 
@@ -13,8 +13,6 @@ let
     '';
   };
 in {
-  imports = [ ./common.nix ];
-
   networking.firewall.allowedTCPPorts = [ 3000 3001 ];
 
   systemd.services.unavi_server = {
@@ -26,4 +24,23 @@ in {
       Restart = "always";
     };
   };
+
+  sound.enable = true;
+  hardware.pulseaudio.enable = false;
+  security.rtkit.enable = true;
+  services.pipewire = {
+    enable = true;
+    alsa.enable = true;
+    alsa.support32Bit = true;
+    pulse.enable = true;
+    jack.enable = true;
+  };
+
+  environment.systemPackages = with nixpkgs; [
+    gcc
+    glibc
+    jack2
+    pipewire
+    pipewire.jack
+  ];
 }

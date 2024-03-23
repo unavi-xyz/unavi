@@ -12,6 +12,14 @@ let
       export DIGITALOCEAN_TOKEN=${builtins.getEnv "DIGITALOCEAN_TOKEN"}
 
       terraform init
+
+      export TF_WORKSPACE=${builtins.getEnv "TF_WORKSPACE"}
+
+      if [ -z "$TF_WORKSPACE+x" ]; then
+        terraform workspace select -or-create $TF_WORKSPACE
+      fi
+
+      terraform apply -auto-approve
       terraform show -json | jq "[.values.root_module.resources[] | {name,type,values: .values | {name,ipv4_address}}]" > show.json
     '';
     installPhase = ''

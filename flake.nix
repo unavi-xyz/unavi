@@ -24,8 +24,8 @@
     };
   };
 
-  outputs = { self, deploy-rs, nix-github-actions, nixpkgs, crane, flake-utils
-    , rust-overlay, ... }@inputs:
+  outputs = { self, deploy-rs, nix-github-actions, nixpkgs, nixpkgs-stable
+    , crane, flake-utils, rust-overlay, ... }@inputs:
     flake-utils.lib.eachDefaultSystem (localSystem:
       let
         pkgs = import nixpkgs {
@@ -76,7 +76,11 @@
           LD_LIBRARY_PATH = crates.LD_LIBRARY_PATH;
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
-      }) // (import ./deployments { inherit self nixpkgs deploy-rs; }) // {
+      }) // (let deployments = import ./deployments inputs;
+      in {
+        deploy = deployments.deploy;
+        nixosConfigurations = deployments.nixosConfigurations;
+
         githubMatrix = nix-github-actions.lib.mkGithubMatrix {
           attrPrefix = "";
           checks = nixpkgs.lib.mapAttrs (_: v:
@@ -89,5 +93,5 @@
                 flake-utils.lib.system.x86_64-darwin
               ] self.packages);
         };
-      };
+      });
 }

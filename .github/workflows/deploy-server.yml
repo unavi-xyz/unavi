@@ -31,8 +31,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true
           ref: ${{ inputs.ref || github.ref }}
+          submodules: true
 
       - name: Set up SSH key
         run: |

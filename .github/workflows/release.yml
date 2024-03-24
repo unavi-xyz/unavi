@@ -68,14 +68,14 @@ jobs:
     uses: ./.github/workflows/deploy-server.yml
     with:
       channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
-      ref: v${{ needs.version.outputs.version }}
+      ref: release-v${{ needs.version.outputs.version }}
 
   deploy-web:
     needs: version
     uses: ./.github/workflows/deploy-web.yml
     with:
       channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
-      ref: v${{ needs.version.outputs.version }}
+      ref: release-v${{ needs.version.outputs.version }}
 
   release:
     needs:

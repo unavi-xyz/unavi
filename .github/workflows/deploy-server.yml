@@ -43,7 +43,7 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Apply Terraform
-        run: nix run .?submodules=1#tf-apply ${{ env.TF_WORKSPACE }}
+        run: nix run .?submodules=1#tf-apply
 
       - uses: EndBug/add-and-commit@v9
         with:

@@ -84,6 +84,7 @@ jobs:
       - build-windows
       - deploy-server
       - deploy-web
+      - version
     runs-on: ubuntu-latest
     env:
       TARGET_BRANCH: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}

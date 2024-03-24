@@ -15,6 +15,9 @@ on:
   workflow_dispatch:
 
 env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.SPACES_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.SPACES_SECRET_ACCESS_KEY }}
+  DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
   TF_WORKSPACE: ${{ inputs.channel || github.ref_name }}
 
 concurrency:
@@ -24,10 +27,6 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.SPACES_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.SPACES_SECRET_ACCESS_KEY }}
-      DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,6 +44,7 @@ jobs:
 
       - name: Apply Terraform
         run: nix run .?submodules=1#tf-apply ${{ env.TF_WORKSPACE }}
+
       - uses: EndBug/add-and-commit@v9
         with:
           message: "chore: update terraform output"

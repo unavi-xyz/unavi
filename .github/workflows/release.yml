@@ -65,6 +65,7 @@ jobs:
 
   deploy-server:
     needs: version
+    secrets: inherit
     uses: ./.github/workflows/deploy-server.yml
     with:
       channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}

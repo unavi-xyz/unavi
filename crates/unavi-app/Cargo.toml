@@ -12,7 +12,7 @@ workspace = true
 disable-cert-validation = ["wtransport/dangerous-configuration"]
 
 [dependencies]
-bevy-async-task = "1.4.0"
+bevy_async_task = "0.1.0"
 bevy-tnua = "0.15.0"
 bevy-tnua-xpbd3d = "0.2.0"
 bevy.workspace = true

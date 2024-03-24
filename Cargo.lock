@@ -8360,7 +8360,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-app"
-version = "0.0.2"
+version = "0.0.3-beta.0"
 dependencies = [
  "bevy",
  "bevy-tnua",
@@ -8383,7 +8383,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-server"
-version = "0.0.2"
+version = "0.0.3-beta.0"
 dependencies = [
  "axum",
  "tokio",
@@ -8396,7 +8396,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-server-auth"
-version = "0.0.2"
+version = "0.0.3-beta.0"
 dependencies = [
  "axum",
  "tokio",
@@ -8406,7 +8406,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-server-web"
-version = "0.0.2"
+version = "0.0.3-beta.0"
 dependencies = [
  "axum",
  "tokio",
@@ -8417,7 +8417,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-server-world"
-version = "0.0.2"
+version = "0.0.3-beta.0"
 dependencies = [
  "rcgen",
  "time",
@@ -8429,7 +8429,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-system"
-version = "0.0.2"
+version = "0.0.3-beta.0"
 dependencies = [
  "bitflags 2.5.0",
  "wit-bindgen-rt",
@@ -8437,7 +8437,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-ui"
-version = "0.0.2"
+version = "0.0.3-beta.0"
 dependencies = [
  "bitflags 2.5.0",
  "wit-bindgen-rt",
@@ -9728,7 +9728,7 @@ dependencies = [
 
 [[package]]
 name = "wired-gltf"
-version = "0.0.2"
+version = "0.0.3-beta.0"
 dependencies = [
  "bitflags 2.5.0",
  "tracing",
@@ -9737,7 +9737,7 @@ dependencies = [
 
 [[package]]
 name = "wired-log"
-version = "0.0.2"
+version = "0.0.3-beta.0"
 dependencies = [
  "bitflags 2.5.0",
  "tracing",

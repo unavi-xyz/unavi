@@ -57,12 +57,6 @@ jobs:
     with:
       ref: v${{ needs.version.outputs.version }}
 
-  build-web:
-    needs: version
-    uses: ./.github/workflows/build-web.yml
-    with:
-      ref: v${{ needs.version.outputs.version }}
-
   build-windows:
     needs: version
     uses: ./.github/workflows/build-windows.yml
@@ -70,20 +64,14 @@ jobs:
       ref: v${{ needs.version.outputs.version }}
 
   deploy-server:
-    needs:
-      - build-nix
-      - build-web
-      - build-windows
+    needs: version
     uses: ./.github/workflows/deploy-server.yml
     with:
       channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
       ref: v${{ needs.version.outputs.version }}
 
   deploy-web:
-    needs:
-      - build-nix
-      - build-web
-      - build-windows
+    needs: version
     uses: ./.github/workflows/deploy-web.yml
     with:
       channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
@@ -91,6 +79,8 @@ jobs:
 
   release:
     needs:
+      - build-nix
+      - build-windows
       - deploy-server
       - deploy-web
     runs-on: ubuntu-latest

@@ -39,7 +39,6 @@ jobs:
   build-nix:
     needs: nix-matrix
     strategy:
-      fail-fast: false
       matrix: ${{ fromJSON(needs.nix-matrix.outputs.matrix) }}
     name: ${{ matrix.attr }}
     runs-on: ${{ matrix.os }}

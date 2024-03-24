@@ -88,6 +88,10 @@ jobs:
     env:
       TARGET_BRANCH: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: release-v${{ needs.version.outputs.version }}
+
       - name: Git config
         run: |
           git config user.name github-actions

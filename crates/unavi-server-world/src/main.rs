@@ -5,11 +5,11 @@ async fn main() {
     tracing_subscriber::fmt::init();
 
     let address = SocketAddr::from(([127, 0, 0, 1], 3001));
-    let certificate = unavi_server_world::cert::generate_certificate();
+    let identity = unavi_server_world::cert::generate_tls_identity();
 
     if let Err(e) = unavi_server_world::start_server(unavi_server_world::WorldOptions {
         address,
-        certificate,
+        identity: &identity,
     })
     .await
     {

@@ -1,20 +1,20 @@
 use std::net::SocketAddr;
 use tracing::{error, info, info_span, Instrument};
-use wtransport::{endpoint::IncomingSession, tls::Certificate, Endpoint, ServerConfig};
+use wtransport::{endpoint::IncomingSession, Endpoint, Identity, ServerConfig};
 
 pub mod cert;
 
-pub struct WorldOptions {
+pub struct WorldOptions<'a> {
     pub address: SocketAddr,
-    pub certificate: Certificate,
+    pub identity: &'a Identity,
 }
 
-pub async fn start_server(opts: WorldOptions) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start_server(opts: WorldOptions<'_>) -> Result<(), Box<dyn std::error::Error>> {
     info!("Starting server on {}", opts.address);
 
     let config = ServerConfig::builder()
         .with_bind_address(opts.address)
-        .with_certificate(opts.certificate)
+        .with_identity(opts.identity)
         .build();
 
     let endpoint = Endpoint::server(config)?;

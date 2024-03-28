@@ -16,7 +16,7 @@ type_complexity = "allow"
 
 [workspace.dependencies]
 axum = "0.7.5"
-bevy = "0.13.0"
+bevy = "0.13.1"
 bitflags = "2.5.0"
 tokio = { version = "1.36.0", features = ["full"] }
 tracing = "0.1.40"

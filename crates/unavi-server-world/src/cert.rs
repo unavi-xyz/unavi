@@ -1,14 +1,22 @@
 use rcgen::{BasicConstraints, CertificateParams, IsCa, KeyUsagePurpose};
 use time::{Duration, OffsetDateTime};
+use wtransport::{
+    tls::{Certificate, CertificateChain, PrivateKey},
+    Identity,
+};
 
-/// Generate a self-signed certificate.
-pub fn generate_certificate() -> wtransport::tls::Certificate {
+pub fn generate_tls_identity() -> Identity {
     let ca = new_ca();
 
     let cert = ca.serialize_der().unwrap();
     let key = ca.serialize_private_key_der();
 
-    wtransport::tls::Certificate::new(vec![cert], key).expect("invalid certificate")
+    Identity::new(
+        CertificateChain::new(vec![
+            Certificate::from_der(cert).expect("invalid certificate")
+        ]),
+        PrivateKey::from_der_pkcs8(key),
+    )
 }
 
 fn new_ca() -> rcgen::Certificate {

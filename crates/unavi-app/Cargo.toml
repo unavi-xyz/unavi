@@ -16,7 +16,7 @@ bevy_async_task = "0.1.0"
 bevy-tnua = "0.15.0"
 bevy-tnua-xpbd3d = "0.2.0"
 bevy.workspace = true
-bevy_vrm = "0.0.8"
+bevy_vrm = "0.0.9"
 bevy_xpbd_3d = { version = "0.4.2", features = ["simd"] }
 did-method-key = "0.2.2"
 didkit = { version = "0.6.0", default-features = false, features = ["w3c", "ed25519", "ripemd-160", "http-did"] }

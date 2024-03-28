@@ -65,7 +65,6 @@ pub fn spawn_player(mut commands: Commands) {
                 global: GlobalTransform::from_translation(SPAWN),
                 ..default()
             },
-            bevy_vrm::mtoon::MtoonMainCamera,
         ))
         .id();
 

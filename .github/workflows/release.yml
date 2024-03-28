@@ -41,14 +41,14 @@ jobs:
 
       - name: Delete version branch and tag if they exist
         run: |
-          git push origin --delete release-v${{ steps.semver.outputs.version }} || echo "Branch doesn't exist"
+          git push origin --delete release/v${{ steps.semver.outputs.version }} || echo "Branch doesn't exist"
           git push origin --delete v${{ steps.semver.outputs.version }} || echo "Tag doesn't exist"
 
       - uses: EndBug/add-and-commit@v9
         with:
           default_author: github_actions
           message: "chore: bump ${{ steps.semver.outputs.version }}"
-          new_branch: release-v${{ steps.semver.outputs.version }}
+          new_branch: release/v${{ steps.semver.outputs.version }}
           tag: v${{ steps.semver.outputs.version }} --force
 
   build-nix:
@@ -69,14 +69,14 @@ jobs:
     uses: ./.github/workflows/deploy-server.yml
     with:
       channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
-      ref: release-v${{ needs.version.outputs.version }}
+      ref: release/v${{ needs.version.outputs.version }}
 
   deploy-web:
     needs: version
     uses: ./.github/workflows/deploy-web.yml
     with:
       channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
-      ref: release-v${{ needs.version.outputs.version }}
+      ref: release/v${{ needs.version.outputs.version }}
 
   release:
     needs:
@@ -91,7 +91,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: release-v${{ needs.version.outputs.version }}
+          ref: release/v${{ needs.version.outputs.version }}
 
       - name: Git config
         run: |
@@ -131,7 +131,7 @@ jobs:
           git push origin stable
 
       - name: Delete release branch
-        run: git push origin --delete release-v${{ needs.version.outputs.version }}
+        run: git push origin --delete release/v${{ needs.version.outputs.version }}
 
       - run: mkdir artifacts
 

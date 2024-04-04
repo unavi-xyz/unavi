@@ -26,7 +26,7 @@ let
   };
 
   unaviServerConfig = {
-    buildInputs = (with pkgs; [ openssl ]);
+    buildInputs = (with pkgs; [ openssl.dev ]);
     nativeBuildInputs = with pkgs; [
       clang
       cmake

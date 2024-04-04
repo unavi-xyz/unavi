@@ -87,6 +87,7 @@
             ] ++ crates.buildInputs ++ crates.nativeBuildInputs;
 
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath crates.buildInputs;
+          LD_PRELOAD = "${pkgs.glibc}/lib/libc.so";
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
       }) // (let

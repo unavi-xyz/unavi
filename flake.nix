@@ -80,7 +80,6 @@
             [
               cargo-component
               cargo-watch
-              clang
               curl
               morph
               nodePackages.prettier

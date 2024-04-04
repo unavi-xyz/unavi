@@ -38,6 +38,7 @@ in {
     unavi-server = nixpkgs-stable.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [ ./configurations/unavi-server.nix ];
+      specialArgs = { unavi-server = self.packages.x86_64-linux.unavi-server; };
     };
   };
 }

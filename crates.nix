@@ -78,8 +78,9 @@ let
         || (craneLib.filterCargoSources path type);
     };
 
-    pname = "unavi-app";
     cargoExtraArgs = "--locked -p unavi-app";
+    pname = "unavi-app";
+    strictDeps = true;
 
     preBuild = components.generateAssetsScript;
     postInstall = ''
@@ -88,9 +89,10 @@ let
   });
 
   unavi-server = craneLib.buildPackage (unaviServerConfig // {
-    src = commonArgs.src;
-    pname = "unavi-server";
     cargoExtraArgs = "--locked -p unavi-server";
+    pname = "unavi-server";
+    src = commonArgs.src;
+    strictDeps = true;
   });
 
   web = craneLib.buildTrunkPackage (unaviWebConfig // {
@@ -105,6 +107,7 @@ let
 
     cargoExtraArgs = "--locked -p unavi-app";
     pname = "web";
+    strictDeps = true;
     trunkIndexPath = "./crates/unavi-app/index.html";
     wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
 

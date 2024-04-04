@@ -54,7 +54,7 @@ jobs:
           ref: ${{ inputs.ref || github.ref }}
 
       - name: Create branch
-        run: git checkout --orphan web-app/${{ env.CHANNEL }}
+        run: git checkout --orphan web/${{ env.CHANNEL }}
 
       - name: Clean directory
         run: |
@@ -74,7 +74,7 @@ jobs:
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
           git add .
-          git commit -m "Deploy web-app/${{ env.CHANNEL }}"
+          git commit -m "Deploy web/${{ env.CHANNEL }}"
 
       - name: Push changes
-        run: git push origin web-app/${{ env.CHANNEL }} --force
+        run: git push origin web/${{ env.CHANNEL }} --force

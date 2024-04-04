@@ -22,6 +22,7 @@ let
         alsa-lib
         alsa-lib.dev
         libxkbcommon
+        openssl
         udev
         vulkan-loader
         wayland

@@ -837,7 +837,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e79dea24f40fa0a93c82a1f5a9a08e3cdfb64488ca28e5faafbe365c8c19e836"
 dependencies = [
  "bevy",
- "bevy-tnua-physics-integration-layer",
+ "bevy-tnua-physics-integration-layer 0.2.0",
  "thiserror",
 ]
 
@@ -851,13 +851,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy-tnua-xpbd3d"
-version = "0.2.0"
+name = "bevy-tnua-physics-integration-layer"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3cb35478ca0d02bf043ed6f198e5081664d7a9138da4d9ef29c73f7e9824946"
+checksum = "3924097b24a5411d31de920521d0703be1db6d12c67156c7149d194e3e2ddf68"
 dependencies = [
  "bevy",
- "bevy-tnua-physics-integration-layer",
+]
+
+[[package]]
+name = "bevy-tnua-xpbd3d"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77c4bfe3289e238ec9881a74a30bbe8f56cde50f744a442847e3c4c8d2773a8f"
+dependencies = [
+ "bevy",
+ "bevy-tnua-physics-integration-layer 0.3.0",
  "bevy_xpbd_3d",
 ]
 

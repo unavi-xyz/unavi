@@ -2,23 +2,23 @@
 let
   lib = pkgs.lib;
 
-  componentArgs = {
-    cargoBuildCommand = "cargo component build --profile wasm-release";
-    doCheck = false;
-
-    nativeBuildInputs = [ pkgs.cargo-component ];
-
-    src = lib.cleanSourceWith {
-      src = ./.;
-      filter = path: type:
-        (lib.hasSuffix ".wit" path) || (craneLib.filterCargoSources path type);
-    };
-  };
-
   buildComponent = pname:
-    craneLib.buildPackage (componentArgs // {
+    craneLib.buildPackage ({
       inherit pname;
+
+      src = lib.cleanSourceWith {
+        src = ./.;
+        filter = path: type:
+          (lib.hasSuffix ".wit" path)
+          || (craneLib.filterCargoSources path type);
+      };
+
+      nativeBuildInputs = with pkgs; [ cargo-component ];
+
+      cargoBuildCommand = "cargo component build --profile wasm-release";
       cargoExtraArgs = "--locked -p ${pname}";
+      doCheck = false;
+      strictDeps = true;
     });
 
   componentNames =

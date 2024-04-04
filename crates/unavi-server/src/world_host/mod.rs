@@ -10,8 +10,6 @@ pub struct WorldOptions<'a> {
 }
 
 pub async fn start_server(opts: WorldOptions<'_>) -> Result<(), Box<dyn std::error::Error>> {
-    info!("Starting server on {}", opts.address);
-
     let config = ServerConfig::builder()
         .with_bind_address(opts.address)
         .with_identity(opts.identity)

@@ -4,6 +4,43 @@ let
 
   src = craneLib.cleanCargoSource (craneLib.path ./.);
 
+  unaviAppConfig = {
+    buildInputs = lib.optionals pkgs.stdenv.isLinux (with pkgs; [
+      alsa-lib
+      alsa-lib.dev
+      libxkbcommon
+      udev
+      vulkan-loader
+      wayland
+      xorg.libX11
+      xorg.libXcursor
+      xorg.libXi
+      xorg.libXrandr
+    ]) ++ lib.optionals pkgs.stdenv.isDarwin
+      (with pkgs; [ darwin.apple_sdk.frameworks.Cocoa libiconv ]);
+
+    nativeBuildInputs = with pkgs;
+      [ clang cmake pkg-config rustPlatform.bindgenHook ]
+      ++ lib.optionals (!pkgs.stdenv.isDarwin)
+      (with pkgs; [ alsa-lib alsa-lib.dev ]);
+  };
+
+  unaviServerConfig = {
+    buildInputs = (with pkgs; [ openssl ]);
+    nativeBuildInputs = with pkgs; [
+      clang
+      cmake
+      pkg-config
+      rustPlatform.bindgenHook
+    ];
+  };
+
+  unaviWebConfig = {
+    buildInputs = unaviAppConfig.buildInputs;
+    nativeBuildInputs = unaviAppConfig.nativeBuildInputs
+      ++ (with pkgs; [ binaryen trunk wasm-bindgen-cli wasm-tools ]);
+  };
+
   commonArgs = {
     pname = "unavi";
 
@@ -16,35 +53,9 @@ let
 
     strictDeps = true;
 
-    buildInputs = with pkgs;
-      [ rustPlatform.bindgenHook ] ++ lib.optionals pkgs.stdenv.isLinux
-      (with pkgs; [
-        alsa-lib
-        alsa-lib.dev
-        libxkbcommon
-        openssl
-        udev
-        vulkan-loader
-        wayland
-        xorg.libX11
-        xorg.libXcursor
-        xorg.libXi
-        xorg.libXrandr
-      ]) ++ lib.optionals pkgs.stdenv.isDarwin
-      (with pkgs; [ darwin.apple_sdk.frameworks.Cocoa libiconv ]);
-
-    nativeBuildInputs = with pkgs;
-      [
-        binaryen
-        clang
-        cmake
-        pkg-config
-        protobuf
-        trunk
-        wasm-bindgen-cli
-        wasm-tools
-      ] ++ lib.optionals (!pkgs.stdenv.isDarwin)
-      (with pkgs; [ alsa-lib alsa-lib.dev ]);
+    buildInputs = unaviAppConfig.buildInputs ++ unaviServerConfig.buildInputs;
+    nativeBuildInputs = unaviServerConfig.nativeBuildInputs
+      ++ unaviWebConfig.nativeBuildInputs;
   };
 
   cargoArtifacts = craneLib.buildDepsOnly commonArgs;
@@ -59,8 +70,14 @@ let
     pname = "unavi";
   };
 
-  unavi-app = craneLib.buildPackage (commonArgs // {
-    inherit cargoArtifacts;
+  unavi-app = craneLib.buildPackage (unaviAppConfig // {
+    src = lib.cleanSourceWith {
+      src = ./.;
+      filter = path: type:
+        (lib.hasSuffix ".wit" path) || (lib.hasInfix "/assets/" path)
+        || (craneLib.filterCargoSources path type);
+    };
+
     pname = "unavi-app";
     cargoExtraArgs = "--locked -p unavi-app";
 
@@ -68,22 +85,15 @@ let
     postInstall = ''
       cp -r assets $out/bin
     '';
-
-    src = lib.cleanSourceWith {
-      src = ./.;
-      filter = path: type:
-        (lib.hasSuffix ".wit" path) || (lib.hasInfix "/assets/" path)
-        || (craneLib.filterCargoSources path type);
-    };
   });
 
-  unavi-server = craneLib.buildPackage (commonArgs // {
-    inherit cargoArtifacts;
+  unavi-server = craneLib.buildPackage (unaviServerConfig // {
+    src = commonArgs.src;
     pname = "unavi-server";
     cargoExtraArgs = "--locked -p unavi-server";
   });
 
-  web = craneLib.buildTrunkPackage (commonArgs // rec {
+  web = craneLib.buildTrunkPackage (unaviWebConfig // {
     src = lib.cleanSourceWith {
       src = ./.;
       filter = path: type:
@@ -93,8 +103,8 @@ let
         || (craneLib.filterCargoSources path type);
     };
 
-    pname = "web";
     cargoExtraArgs = "--locked -p unavi-app";
+    pname = "web";
     trunkIndexPath = "./crates/unavi-app/index.html";
     wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
 

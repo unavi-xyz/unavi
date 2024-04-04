@@ -87,6 +87,7 @@
               rust-analyzer
             ] ++ crates.buildInputs ++ crates.nativeBuildInputs;
 
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath crates.buildInputs;
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
       }) // (let

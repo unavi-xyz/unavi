@@ -1,14 +1,19 @@
 use std::sync::Arc;
 
+use dwn::{store::SurrealStore, DWN};
+use surrealdb::{engine::local::SpeeDb, Surreal};
 use tokio::net::TcpListener;
 use tracing::{info, info_span, Instrument};
 
 mod did_host;
 mod world_host;
 
+const DB_DIR: &str = ".unavi/db";
+
 #[derive(Debug, Clone)]
 pub struct ServerOptions {
     pub enable_did_host: bool,
+    pub enable_dwn: bool,
     pub enable_world_registry: bool,
     pub enable_world_host: bool,
     pub port_did_host: u16,
@@ -18,6 +23,33 @@ pub struct ServerOptions {
 
 pub async fn start(opts: ServerOptions) -> Result<(), Box<dyn std::error::Error>> {
     let opts = Arc::new(opts);
+
+    std::fs::create_dir_all(DB_DIR).unwrap();
+
+    let db = Surreal::new::<SpeeDb>(DB_DIR).await.unwrap();
+    let dwn = Arc::new(DWN::from(SurrealStore::from(db)));
+
+    if opts.enable_dwn {
+        let opts = opts.clone();
+
+        tokio::spawn(
+            async move {
+                let router = dwn_server::router(dwn);
+
+                let addr = format!("0.0.0.0:{}", opts.port_dwn);
+                let listener = TcpListener::bind(addr.clone())
+                    .await
+                    .expect("failed to bind");
+
+                info!("Listening on {}", addr);
+
+                axum::serve(listener, router)
+                    .await
+                    .expect("failed to start server");
+            }
+            .instrument(info_span!("dwn")),
+        );
+    }
 
     if opts.enable_did_host {
         let opts = opts.clone();

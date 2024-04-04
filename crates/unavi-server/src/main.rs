@@ -10,22 +10,26 @@ struct Args {
     #[arg(long)]
     enable_did_host: bool,
 
-    /// Creates a world registry within the DWN.
+    /// Hosts an HTTP API for the Decentralized Web Node (DWN).
     #[arg(long)]
-    enable_world_registry: bool,
+    enable_dwn: bool,
 
     /// Hosts multiplayer instances of worlds.
     #[arg(long)]
     enable_world_host: bool,
 
+    /// Creates a world registry within the DWN.
+    #[arg(long)]
+    enable_world_registry: bool,
+
     #[arg(long, default_value = "8080")]
     port_did_host: Option<u16>,
 
     #[arg(long, default_value = "8081")]
-    port_world_host: Option<u16>,
+    port_dwn: Option<u16>,
 
     #[arg(long, default_value = "8082")]
-    port_dwn: Option<u16>,
+    port_world_host: Option<u16>,
 }
 
 #[tokio::main]
@@ -34,8 +38,14 @@ async fn main() {
 
     let args = Args::parse();
 
+    if args.enable_world_registry && !args.enable_dwn {
+        error!("The world registry requires the DWN to be enabled.");
+        return;
+    }
+
     let options = ServerOptions {
         enable_did_host: args.enable_did_host,
+        enable_dwn: args.enable_dwn,
         enable_world_registry: args.enable_world_registry,
         enable_world_host: args.enable_world_host,
         port_did_host: args.port_did_host.unwrap(),

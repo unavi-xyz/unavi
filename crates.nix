@@ -7,7 +7,6 @@ let
   unaviAppConfig = {
     buildInputs = lib.optionals pkgs.stdenv.isLinux (with pkgs; [
       alsa-lib
-      alsa-lib.dev
       libxkbcommon
       udev
       vulkan-loader
@@ -20,7 +19,7 @@ let
       (with pkgs; [ darwin.apple_sdk.frameworks.Cocoa libiconv ]);
 
     nativeBuildInputs = with pkgs;
-      [ clang cmake pkg-config rustPlatform.bindgenHook ]
+      [ alsa-lib.dev clang cmake pkg-config rustPlatform.bindgenHook ]
       ++ lib.optionals (!pkgs.stdenv.isDarwin)
       (with pkgs; [ alsa-lib alsa-lib.dev ]);
   };

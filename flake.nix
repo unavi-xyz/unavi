@@ -64,6 +64,7 @@
 
         components = import ./components.nix
           (inputs // { inherit craneLib localSystem pkgs; });
+
         crates = import ./crates.nix
           (inputs // { inherit components craneLib localSystem pkgs; });
 

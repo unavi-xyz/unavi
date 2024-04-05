@@ -11,10 +11,16 @@ let
       hostname = resource.value.ip;
       sshUser = "root";
 
-      profiles.system = {
-        path = deploy-rs.lib.${localSystem}.activate.nixos
-          self.nixosConfigurations.unavi-server;
-      };
+      profiles.system = let
+        config = nixpkgs-stable.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [ ./configurations/unavi-server.nix ];
+          specialArgs = {
+            domain = resource.value.name + ".unavi.xyz";
+            unavi-server = self.packages.x86_64-linux.unavi-server;
+          };
+        };
+      in { path = deploy-rs.lib.${localSystem}.activate.nixos config; };
     };
   };
 
@@ -31,14 +37,5 @@ let
     subdirs;
 in {
   checks = deploy-rs.lib.${localSystem}.deployChecks self.deploy;
-
   deploy.nodes = builtins.listToAttrs (builtins.concatLists nodeList);
-
-  nixosConfigurations = {
-    unavi-server = nixpkgs-stable.lib.nixosSystem {
-      system = "x86_64-linux";
-      modules = [ ./configurations/unavi-server.nix ];
-      specialArgs = { unavi-server = self.packages.x86_64-linux.unavi-server; };
-    };
-  };
 }

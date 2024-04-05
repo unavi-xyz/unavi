@@ -23,5 +23,8 @@
     MaxFileSec=7day
   '';
 
-  system.stateVersion = "23.11";
+  system = {
+    autoUpgrade.enable = true;
+    stateVersion = "23.11";
+  };
 }

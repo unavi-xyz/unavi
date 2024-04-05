@@ -1,7 +1,35 @@
-{ pkgs, unavi-server, ... }: {
+{ domain, pkgs, unavi-server, ... }: {
   imports = [ ./common.nix ];
 
-  networking.firewall.allowedTCPPorts = [ 443 ];
+  networking.firewall = {
+    enable = true;
+    allowedTCPPorts = [ 443 ];
+  };
+
+  security.acme = {
+    acceptTerms = true;
+    defaults.email = "admin@${domain}";
+    certs = {
+      ${domain} = {
+        webroot = "/var/www/${domain}";
+        postRun = "systemctl reload nginx.service";
+      };
+    };
+  };
+
+  services.nginx = {
+    enable = true;
+    recommendedGzipSettings = true;
+    recommendedOptimisation = true;
+    recommendedProxySettings = true;
+    recommendedTlsSettings = true;
+    virtualHosts.${domain} = {
+      enableACME = true;
+      forceSSL = true;
+      http2 = true;
+      locations."/" = { proxyPass = "http://localhost:3000"; };
+    };
+  };
 
   systemd.services.unavi_server = {
     description = "UNAVI Server";

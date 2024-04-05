@@ -53,9 +53,9 @@ async fn main() {
         port_world_host: args.port_world_host.unwrap(),
     };
 
-    if let Err(e) = unavi_server::start(options).await {
-        error!(e);
-    }
+    unavi_server::start(options)
+        .await
+        .expect("Failed to start server");
 
     tokio::signal::ctrl_c().await.unwrap();
 }

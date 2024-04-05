@@ -39,7 +39,7 @@ async fn main() {
     let args = Args::parse();
 
     if args.enable_world_registry && !args.enable_dwn {
-        error!("The world registry requires the DWN to be enabled.");
+        error!("--enable-world-registry requires --enable-dwn");
         return;
     }
 

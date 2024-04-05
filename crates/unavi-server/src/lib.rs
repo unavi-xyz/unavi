@@ -4,9 +4,11 @@ use dwn::{store::SurrealStore, DWN};
 use surrealdb::{engine::local::SpeeDb, Surreal};
 use tokio::net::TcpListener;
 use tracing::{info, info_span, Instrument};
+use world_registry::create_world_registry;
 
 mod did_host;
 mod world_host;
+mod world_registry;
 
 const DB_DIR: &str = ".unavi/db";
 
@@ -30,6 +32,7 @@ pub async fn start(opts: ServerOptions) -> Result<(), Box<dyn std::error::Error>
     let dwn = Arc::new(DWN::from(SurrealStore::from(db)));
 
     if opts.enable_dwn {
+        let dwn = dwn.clone();
         let opts = opts.clone();
 
         tokio::spawn(
@@ -71,6 +74,12 @@ pub async fn start(opts: ServerOptions) -> Result<(), Box<dyn std::error::Error>
             }
             .instrument(info_span!("did_host")),
         );
+    }
+
+    if opts.enable_world_registry {
+        create_world_registry(dwn)
+            .instrument(info_span!("world_registry"))
+            .await;
     }
 
     if opts.enable_world_host {

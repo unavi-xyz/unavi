@@ -15,7 +15,6 @@ license = "GPL-3.0-or-later"
 type_complexity = "allow"
 
 [workspace.dependencies]
-axum = "0.7.5"
 bevy = "0.13.1"
 bitflags = "2.5.0"
 tokio = { version = "1.37.0", features = ["full"] }
@@ -40,5 +39,6 @@ codegen-units = 1
 opt-level = "z"
 
 [patch.crates-io]
+dwn = { git = "https://github.com/unavi-xyz/dwn.git" }
 wasm-bridge = { git = "https://github.com/kayhhh/wasm-bridge.git", branch = "wasmtime-18" }
 wasm-bridge-wasi = { git = "https://github.com/kayhhh/wasm-bridge.git", branch = "wasmtime-18" }

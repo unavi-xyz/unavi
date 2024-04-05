@@ -1,8 +1,11 @@
-use std::sync::Arc;
+use std::{
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    sync::Arc,
+};
 
+use axum_server::tls_rustls::RustlsConfig;
 use dwn::{store::SurrealStore, DWN};
 use surrealdb::{engine::local::SpeeDb, Surreal};
-use tokio::net::TcpListener;
 use tracing::{info, info_span, Instrument};
 
 mod did_host;
@@ -31,46 +34,44 @@ pub async fn start(opts: ServerOptions) -> Result<(), Box<dyn std::error::Error>
     let db = Surreal::new::<SpeeDb>(DB_DIR).await.unwrap();
     let dwn = Arc::new(DWN::from(SurrealStore::from(db)));
 
+    let domains = vec!["localhost".to_string()];
+
     if opts.enable_did_host {
-        let opts = opts.clone();
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), opts.port_did_host);
+        let domains = domains.clone();
 
         tokio::spawn(
             async move {
                 let router = did_host::router();
 
-                let addr = format!("0.0.0.0:{}", opts.port_did_host);
-                let listener = TcpListener::bind(addr.clone())
-                    .await
-                    .expect("failed to bind");
-
                 info!("Listening on {}", addr);
 
-                axum::serve(listener, router)
+                let config = self_signed_config(domains).await;
+                axum_server::bind_rustls(addr, config)
+                    .serve(router.into_make_service())
                     .await
-                    .expect("failed to start server");
+                    .unwrap();
             }
             .instrument(info_span!("did_host")),
         );
     }
 
     if opts.enable_dwn {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), opts.port_dwn);
+        let domains = domains.clone();
         let dwn = dwn.clone();
-        let opts = opts.clone();
 
         tokio::spawn(
             async move {
                 let router = dwn_server::router(dwn);
 
-                let addr = format!("0.0.0.0:{}", opts.port_dwn);
-                let listener = TcpListener::bind(addr.clone())
-                    .await
-                    .expect("failed to bind");
-
                 info!("Listening on {}", addr);
 
-                axum::serve(listener, router)
+                let config = self_signed_config(domains).await;
+                axum_server::bind_rustls(addr, config)
+                    .serve(router.into_make_service())
                     .await
-                    .expect("failed to start server");
+                    .unwrap();
             }
             .instrument(info_span!("dwn")),
         );
@@ -100,31 +101,48 @@ pub async fn start(opts: ServerOptions) -> Result<(), Box<dyn std::error::Error>
 
     if opts.enable_world_registry {
         let dwn = dwn.clone();
-        let opts = opts.clone();
+        let span = info_span!("world_registry");
+        let span_clone = span.clone();
+
+        let addr = SocketAddr::new(
+            IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
+            opts.port_world_registry,
+        );
 
         tokio::spawn(
             async move {
-                let addr = format!("0.0.0.0:{}", opts.port_world_registry);
-                let (router, create_registry) = world_registry::router(dwn, &addr).await;
+                let (router, create_registry) =
+                    world_registry::router(dwn, &addr.clone().to_string()).await;
 
-                let listener = TcpListener::bind(addr.clone())
-                    .await
-                    .expect("failed to bind");
+                tokio::spawn(
+                    async move {
+                        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+                        create_registry.await;
+                    }
+                    .instrument(span_clone),
+                );
 
                 info!("Listening on {}", addr);
 
-                tokio::spawn(async move {
-                    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-                    create_registry.await;
-                });
-
-                axum::serve(listener, router)
+                let config = self_signed_config(domains).await;
+                axum_server::bind_rustls(addr, config)
+                    .serve(router.into_make_service())
                     .await
-                    .expect("failed to start server");
+                    .unwrap();
             }
-            .instrument(info_span!("world_registry")),
+            .instrument(span),
         );
     }
 
     Ok(())
+}
+
+async fn self_signed_config(domains: Vec<String>) -> RustlsConfig {
+    let cert = rcgen::generate_simple_self_signed(domains).unwrap();
+    let cert_der = cert.serialize_der().unwrap();
+    let key_der = cert.serialize_private_key_der();
+
+    RustlsConfig::from_der(vec![cert_der], key_der)
+        .await
+        .unwrap()
 }

@@ -1,10 +1,14 @@
 use clap::Parser;
-use tracing::error;
+use tracing::{error, Level};
 use unavi_server::ServerOptions;
 
 #[derive(Parser, Debug)]
 #[command(version, about)]
 struct Args {
+    /// Enables debug logging.
+    #[arg(long)]
+    debug: bool,
+
     /// Hosts DID documents over HTTP using `did:web`.
     /// Provides login APIs for users to create and manage their DIDs.
     #[arg(long)]
@@ -37,9 +41,13 @@ struct Args {
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt().init();
-
     let args = Args::parse();
+
+    let mut log = tracing_subscriber::fmt();
+    if args.debug {
+        log = log.with_max_level(Level::DEBUG);
+    }
+    log.init();
 
     if args.enable_world_registry && !args.enable_dwn {
         error!("--enable-world-registry requires --enable-dwn");

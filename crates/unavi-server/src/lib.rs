@@ -73,22 +73,14 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
 
         router = router.merge(registry_router);
 
-        tokio::spawn(
-            async move {
-                tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-                create_registry.await;
-            }
-            .instrument(info_span!("world_registry")),
-        );
+        tokio::spawn(async move {
+            tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+            create_registry.await;
+        });
     }
 
-    let domains = vec![
-        "0.0.0.0".to_string(),
-        "127.0.0.1".to_string(),
-        "localhost".to_string(),
-    ];
-
-    let config = self_signed_config(domains).await;
+    let domains = vec!["localhost".to_string()];
+    let config = rustls_config(domains).await;
 
     info!("Listening on {}", addr);
 
@@ -100,10 +92,12 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
 const CERT_PATH: &str = ".unavi/cert.pem";
 const KEY_PATH: &str = ".unavi/key.pem";
 
-async fn self_signed_config(domains: Vec<String>) -> RustlsConfig {
+async fn rustls_config(domains: Vec<String>) -> RustlsConfig {
     if let Ok(config) = RustlsConfig::from_pem_file(CERT_PATH, KEY_PATH).await {
         return config;
     }
+
+    info!("Certificates not found, attempting `mkcert` generation.");
 
     Command::new("mkcert")
         .arg("-install")

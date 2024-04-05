@@ -1,5 +1,5 @@
 use clap::Parser;
-use tracing::{error, Level};
+use tracing::Level;
 use unavi_server::ServerOptions;
 
 #[derive(Parser, Debug)]

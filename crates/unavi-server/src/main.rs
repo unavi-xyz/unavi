@@ -26,8 +26,11 @@ struct Args {
     #[arg(long)]
     enable_world_registry: bool,
 
+    #[arg(short, long, default_value = "443")]
+    port: u16,
+
     #[arg(long, default_value = "8082")]
-    port_world_host: Option<u16>,
+    port_world_host: u16,
 }
 
 #[tokio::main]
@@ -50,7 +53,8 @@ async fn main() {
         enable_dwn: args.enable_dwn,
         enable_world_host: args.enable_world_host,
         enable_world_registry: args.enable_world_registry,
-        port_world_host: args.port_world_host.unwrap(),
+        port: args.port,
+        port_world_host: args.port_world_host,
     };
 
     unavi_server::start(options)

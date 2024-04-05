@@ -22,6 +22,7 @@ pub struct ServerOptions {
     pub enable_dwn: bool,
     pub enable_world_host: bool,
     pub enable_world_registry: bool,
+    pub port: u16,
     pub port_world_host: u16,
 }
 
@@ -33,7 +34,7 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
     let db = Surreal::new::<SpeeDb>(DB_DIR).await.unwrap();
     let dwn = Arc::new(DWN::from(SurrealStore::from(db)));
 
-    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 443);
+    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), opts.port);
     let mut router = Router::new();
 
     if opts.enable_did_host {
@@ -88,6 +89,8 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
     ];
 
     let config = self_signed_config(domains).await;
+
+    info!("Listening on {}", addr);
 
     axum_server::bind_rustls(addr, config)
         .serve(router.into_make_service())

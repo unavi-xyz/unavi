@@ -3,18 +3,12 @@
 
   networking.firewall = {
     enable = true;
-    allowedTCPPorts = [ 443 ];
+    allowedTCPPorts = [ 80 443 ];
   };
 
   security.acme = {
     acceptTerms = true;
     defaults.email = "admin@${domain}";
-    certs = {
-      ${domain} = {
-        webroot = "/var/www/${domain}";
-        postRun = "systemctl reload nginx.service";
-      };
-    };
   };
 
   services.nginx = {
@@ -27,7 +21,7 @@
       enableACME = true;
       forceSSL = true;
       http2 = true;
-      locations."/" = { proxyPass = "http://localhost:3000"; };
+      locations = { "/" = { proxyPass = "http://localhost:3000"; }; };
     };
   };
 

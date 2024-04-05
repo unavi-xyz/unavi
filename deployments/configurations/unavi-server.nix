@@ -1,7 +1,7 @@
 { pkgs, unavi-server, ... }: {
   imports = [ ./common.nix ];
 
-  networking.firewall.allowedTCPPorts = [ 8080 8081 8082 ];
+  networking.firewall.allowedTCPPorts = [ 443 ];
 
   systemd.services.unavi_server = {
     description = "UNAVI Server";

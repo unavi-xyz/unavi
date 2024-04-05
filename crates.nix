@@ -46,7 +46,8 @@ let
     src = lib.cleanSourceWith {
       src = ./.;
       filter = path: type:
-        (lib.hasSuffix ".proto" path) || (lib.hasSuffix ".wit" path)
+        (lib.hasSuffix ".json" path) || (lib.hasSuffix ".proto" path)
+        || (lib.hasSuffix ".wit" path)
         || (craneLib.filterCargoSources path type);
     };
 

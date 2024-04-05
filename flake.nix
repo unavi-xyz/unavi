@@ -81,6 +81,7 @@
               cargo-component
               cargo-watch
               curl
+              mkcert
               morph
               nodePackages.prettier
               rust-analyzer

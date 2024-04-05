@@ -26,17 +26,8 @@ struct Args {
     #[arg(long)]
     enable_world_registry: bool,
 
-    #[arg(long, default_value = "8080")]
-    port_did_host: Option<u16>,
-
-    #[arg(long, default_value = "8081")]
-    port_dwn: Option<u16>,
-
     #[arg(long, default_value = "8082")]
     port_world_host: Option<u16>,
-
-    #[arg(long, default_value = "8083")]
-    port_world_registry: Option<u16>,
 }
 
 #[tokio::main]
@@ -59,10 +50,7 @@ async fn main() {
         enable_dwn: args.enable_dwn,
         enable_world_host: args.enable_world_host,
         enable_world_registry: args.enable_world_registry,
-        port_did_host: args.port_did_host.unwrap(),
-        port_dwn: args.port_dwn.unwrap(),
         port_world_host: args.port_world_host.unwrap(),
-        port_world_registry: args.port_world_registry.unwrap(),
     };
 
     if let Err(e) = unavi_server::start(options).await {

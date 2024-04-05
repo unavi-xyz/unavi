@@ -741,6 +741,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "axum-server"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1ad46c3ec4e12f4a4b6835e173ba21c25e484c9d02b49770bf006ce5367c036"
+dependencies = [
+ "arc-swap",
+ "bytes",
+ "futures-util",
+ "http 1.1.0",
+ "http-body 1.0.0",
+ "http-body-util",
+ "hyper 1.2.0",
+ "hyper-util",
+ "pin-project-lite",
+ "rustls",
+ "rustls-pemfile 2.1.1",
+ "tokio",
+ "tokio-rustls",
+ "tower",
+ "tower-service",
+]
+
+[[package]]
 name = "backtrace"
 version = "0.3.71"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3667,8 +3690,7 @@ checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 [[package]]
 name = "dwn"
 version = "0.0.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a8115691d9842a7c91a9729120e656a9fb22867813f538f6645a99d1ae95965"
+source = "git+https://github.com/unavi-xyz/dwn.git#e6261082ed3b6b04f0e5976a4c3ece80d2475249"
 dependencies = [
  "anyhow",
  "async-recursion",
@@ -10619,6 +10641,7 @@ name = "unavi-server"
 version = "0.0.2"
 dependencies = [
  "axum",
+ "axum-server",
  "clap",
  "didkit",
  "dwn",

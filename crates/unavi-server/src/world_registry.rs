@@ -19,6 +19,7 @@ use serde_json::Value;
 use tracing::{info, warn};
 
 const IDENTITY_PATH: &str = ".unavi/registry_identity.json";
+const KEY_FRAGMENT: &str = "key-0";
 const PROTOCOL_DEFINITION: &str =
     include_str!("../../../wired-protocol/social/dwn/protocols/world-registry.json");
 const PROTOCOL_VERSION: &str = "0.0.1";
@@ -27,6 +28,7 @@ pub async fn router(
     dwn: Arc<DWN<impl DataStore, impl MessageStore>>,
     addr: &str,
 ) -> (Router, impl Future) {
+    let addr = addr.replace(':', "%3A");
     let did = format!("did:web:{}", addr);
 
     let actor = if let Ok(identity) = std::fs::read_to_string(IDENTITY_PATH) {
@@ -54,8 +56,6 @@ pub async fn router(
 
     let mut document = Document::new(&actor.did);
 
-    const KEY_FRAGMENT: &str = "key-0";
-
     document.verification_method = Some(vec![VerificationMethod::Map(VerificationMethodMap {
         controller: actor.did.clone(),
         id: format!("{}#{}", &actor.did, KEY_FRAGMENT),
@@ -75,7 +75,10 @@ pub async fn router(
     })]);
 
     let document = Arc::new(document);
-    let router = Router::new().route("/", get(|| async move { Json(document.clone()) }));
+    let router = Router::new().route(
+        "/.well-known/did.json",
+        get(|| async move { Json(document.clone()) }),
+    );
 
     let create_registry = async move {
         let value: Value = serde_json::from_str(PROTOCOL_DEFINITION).unwrap();
@@ -111,7 +114,11 @@ where
     D: DataStore,
     M: MessageStore,
 {
+    // Create a did:key and convert it to a did:web.
     let mut actor = Actor::new_did_key(dwn).unwrap();
+    let key_id = format!("{}#{}", did, KEY_FRAGMENT);
+    actor.attestation.key_id = key_id.clone();
+    actor.authorization.key_id = key_id;
     actor.did = did;
 
     let identity = RegistryIdentity {

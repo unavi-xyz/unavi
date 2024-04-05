@@ -4,10 +4,8 @@ use std::{
 };
 
 use axum::Router;
-use axum_server::tls_rustls::RustlsConfig;
 use dwn::{store::SurrealStore, DWN};
 use surrealdb::{engine::local::SpeeDb, Surreal};
-use tokio::process::Command;
 use tracing::{info, info_span, Instrument};
 
 mod did_host;
@@ -23,7 +21,6 @@ pub struct ServerOptions {
     pub enable_world_host: bool,
     pub enable_world_registry: bool,
     pub port: u16,
-    pub port_world_host: u16,
 }
 
 pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
@@ -50,7 +47,7 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
 
         tokio::spawn(
             async move {
-                let addr = format!("0.0.0.0:{}", opts.port_world_host);
+                let addr = format!("0.0.0.0:{}", 3001);
                 let identity = world_host::cert::generate_tls_identity();
                 let options = world_host::WorldOptions {
                     address: addr.parse().unwrap(),
@@ -79,40 +76,9 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
         });
     }
 
-    let domains = vec!["localhost".to_string()];
-    let config = rustls_config(domains).await;
-
     info!("Listening on {}", addr);
 
-    axum_server::bind_rustls(addr, config)
+    axum_server::bind(addr)
         .serve(router.into_make_service())
         .await
-}
-
-const CERT_PATH: &str = ".unavi/cert.pem";
-const KEY_PATH: &str = ".unavi/key.pem";
-
-async fn rustls_config(domains: Vec<String>) -> RustlsConfig {
-    if let Ok(config) = RustlsConfig::from_pem_file(CERT_PATH, KEY_PATH).await {
-        return config;
-    }
-
-    info!("Certificates not found, attempting `mkcert` generation.");
-
-    Command::new("mkcert")
-        .arg("-install")
-        .output()
-        .await
-        .expect("failed to install mkcert");
-
-    Command::new("mkcert")
-        .args(["-cert-file", CERT_PATH, "-key-file", KEY_PATH])
-        .args(&domains)
-        .output()
-        .await
-        .expect("failed to generate certificate");
-
-    RustlsConfig::from_pem_file(CERT_PATH, KEY_PATH)
-        .await
-        .unwrap()
 }

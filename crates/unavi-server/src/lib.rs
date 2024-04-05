@@ -43,7 +43,7 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
     }
 
     if opts.enable_world_host {
-        let opts = opts.clone();
+        let _opts = opts.clone();
 
         tokio::spawn(
             async move {

@@ -64,7 +64,8 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
     }
 
     if opts.enable_world_registry {
-        let (registry_router, create_registry) = world_registry::router(dwn, &opts.domain).await;
+        let (registry_router, create_registry) =
+            world_registry::router(dwn, opts.domain.clone()).await;
 
         router = router.merge(registry_router);
 

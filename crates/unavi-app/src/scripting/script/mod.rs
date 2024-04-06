@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use bevy::{ecs::system::CommandQueue, prelude::*, tasks::Task};
+use bevy::prelude::*;
 use wasm_bridge::{
     component::{new_component_async, Linker},
     AsContextMut, Config, Engine, Store,
@@ -119,8 +119,5 @@ impl WasiView for StoreState {
         &mut self.wasi
     }
 }
-
-#[derive(Component)]
-struct LoadScript(Task<CommandQueue>);
 
 pub type ScriptsVec = Arc<Mutex<Vec<Arc<Mutex<WasmScript>>>>>;

@@ -42,6 +42,6 @@ fn generate_did_key(mut commands: Commands) {
     });
 }
 
-fn create_world(did: Res<UserDID>) {
-    let registry_did = "did:web:localhost%3A3000";
+fn create_world(_did: Res<UserDID>) {
+    let _registry_did = "did:web:localhost%3A3000";
 }

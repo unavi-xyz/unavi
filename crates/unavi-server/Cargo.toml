@@ -9,7 +9,7 @@ edition.workspace = true
 axum = "0.7.5"
 axum-server = "0.6.0"
 clap = { version = "4.5.4", features = ["derive"] }
-didkit = { version = "0.6.0", default-features = false }
+didkit.workspace = true
 dwn = "0.0.5"
 dwn-server = "0.0.5"
 rcgen = "0.12.1" 

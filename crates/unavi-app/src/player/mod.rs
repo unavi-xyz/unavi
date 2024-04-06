@@ -12,7 +12,7 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((TnuaXpbd3dPlugin, TnuaControllerPlugin))
+        app.add_plugins((TnuaXpbd3dPlugin::default(), TnuaControllerPlugin::default()))
             .insert_resource(input::InputMap::default())
             .add_event::<look::YawEvent>()
             .add_event::<look::PitchEvent>()

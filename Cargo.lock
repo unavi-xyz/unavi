@@ -8099,6 +8099,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "rcgen"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "54077e1872c46788540de1ea3d7f4ccb1983d12f9aa909b234468676c1a36779"
+dependencies = [
+ "pem 3.0.3",
+ "ring 0.17.8",
+ "rustls-pki-types",
+ "time",
+ "yasna",
+]
+
+[[package]]
 name = "rdf-types"
 version = "0.12.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10640,7 +10653,7 @@ dependencies = [
  "didkit",
  "dwn",
  "dwn-server",
- "rcgen",
+ "rcgen 0.13.1",
  "serde",
  "serde_json",
  "surrealdb",
@@ -12160,7 +12173,7 @@ checksum = "358eb4bb09681342ab5284da0a4a2443183509874e8417e85391850786d08f33"
 dependencies = [
  "bytes",
  "quinn",
- "rcgen",
+ "rcgen 0.12.1",
  "ring 0.17.8",
  "rustls",
  "rustls-native-certs",

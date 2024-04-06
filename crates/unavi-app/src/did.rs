@@ -1,47 +1,62 @@
 use bevy::prelude::*;
-use didkit::{DIDMethod, Source, JWK};
+use bevy_async_task::AsyncTaskRunner;
+use didkit::{Document, ResolutionInputMetadata, ResolutionMetadata, DID_METHODS};
+use dwn::{actor::Actor, store::SurrealStore};
+use surrealdb::engine::local::Db;
+use thiserror::Error;
+
+const REGISTRY_DID: &str = "did:web:localhost%3A3000";
 
 pub struct DidPlugin;
 
 impl Plugin for DidPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (generate_did_key, create_world));
+        app.add_systems(Startup, create_world);
     }
 }
 
 #[derive(Resource)]
-pub struct UserDID {
-    pub did_key: String,
-    _key: JWK,
+pub struct User {
+    pub actor: Actor<SurrealStore<Db>, SurrealStore<Db>>,
 }
 
-fn generate_did_key(mut commands: Commands) {
-    let key = match JWK::generate_ed25519() {
-        Ok(key) => key,
-        Err(err) => {
-            error!("Failed to generate JWK key: {}", err);
-            return;
+fn create_world(mut task_runner: AsyncTaskRunner<()>) {
+    task_runner.start(async {
+        match resolve_did(REGISTRY_DID).await {
+            Ok(doc) => {
+                info!("Resolved registry: {:#?}", doc);
+            }
+            Err(err) => {
+                error!("Failed to create world: {}", err);
+            }
         }
-    };
-
-    let source = Source::Key(&key);
-
-    let did = match did_method_key::DIDKey.generate(&source) {
-        Some(did) => did,
-        None => {
-            error!("Failed to generate DID");
-            return;
-        }
-    };
-
-    info!("User DID: {}", did);
-
-    commands.insert_resource(UserDID {
-        did_key: did,
-        _key: key,
     });
 }
 
-fn create_world(_did: Res<UserDID>) {
-    let _registry_did = "did:web:localhost%3A3000";
+#[derive(Error, Debug)]
+enum ResolveDidError {
+    #[error("Failed to parse DID: {0}")]
+    DidParse(&'static str),
+    #[error("Failed to resolve DID: {0}")]
+    Resolution(String),
+}
+
+async fn resolve_did(did: &str) -> Result<Document, ResolveDidError> {
+    match DID_METHODS
+        .get_method(did)
+        .map_err(ResolveDidError::DidParse)?
+        .to_resolver()
+        .resolve(did, &ResolutionInputMetadata::default())
+        .await
+    {
+        (
+            ResolutionMetadata {
+                error: Some(err), ..
+            },
+            _,
+            _,
+        ) => Err(ResolveDidError::Resolution(err)),
+        (_, Some(doc), _) => Ok(doc),
+        _ => Err(ResolveDidError::Resolution("Unexpected result".to_string())),
+    }
 }

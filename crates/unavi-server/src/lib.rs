@@ -12,7 +12,7 @@ mod did_host;
 mod world_host;
 mod world_registry;
 
-const DB_DIR: &str = ".unavi/db";
+const DB_DIR: &str = ".unavi/server-db";
 
 #[derive(Debug, Clone)]
 pub struct ServerOptions {
@@ -30,7 +30,8 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
     std::fs::create_dir_all(DB_DIR).unwrap();
 
     let db = Surreal::new::<SpeeDb>(DB_DIR).await.unwrap();
-    let dwn = Arc::new(DWN::from(SurrealStore::from(db)));
+    let store = SurrealStore::new(db).await.unwrap();
+    let dwn = Arc::new(DWN::from(store));
 
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), opts.port);
     let mut router = Router::new();

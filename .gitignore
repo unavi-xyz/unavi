@@ -6,9 +6,13 @@
 
 # Nix
 /result
+
+# Rust
 /target
+
+# Trunk
+/crates/unavi-app/dist
 
 # Other
 /.unavi
 /assets/components
-/crates/unavi-app/dist

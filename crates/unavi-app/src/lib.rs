@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 pub mod avatar;
-mod did;
+pub mod did;
 pub mod networking;
 pub mod player;
 pub mod scripting;

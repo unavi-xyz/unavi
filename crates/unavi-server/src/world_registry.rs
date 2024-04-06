@@ -2,7 +2,12 @@ use std::{future::Future, sync::Arc};
 
 use axum::{routing::get, Json, Router};
 use didkit::{
-    ssi::did::{RelativeDIDURL, VerificationMethod, VerificationMethodMap},
+    ssi::{
+        did::{
+            RelativeDIDURL, Service, ServiceEndpoint, VerificationMethod, VerificationMethodMap,
+        },
+        vc::OneOrMany,
+    },
     Document, JWK,
 };
 use dwn::{
@@ -26,9 +31,9 @@ const PROTOCOL_VERSION: &str = "0.0.1";
 
 pub async fn router(
     dwn: Arc<DWN<impl DataStore, impl MessageStore>>,
-    domain: &str,
+    domain: String,
 ) -> (Router, impl Future) {
-    let domain = domain.replace(':', "%3A");
+    let domain = domain.clone().replace(':', "%3A");
     let did = format!("did:web:{}", domain);
 
     let actor = if let Ok(identity) = std::fs::read_to_string(IDENTITY_PATH) {
@@ -55,6 +60,13 @@ pub async fn router(
     info!("Registry DID: {}", actor.did);
 
     let mut document = Document::new(&actor.did);
+
+    document.service = Some(vec![Service {
+        id: format!("{}#dwn", actor.did),
+        type_: OneOrMany::One("DWN".to_string()),
+        property_set: None,
+        service_endpoint: Some(OneOrMany::One(ServiceEndpoint::URI(domain))),
+    }]);
 
     document.verification_method = Some(vec![VerificationMethod::Map(VerificationMethodMap {
         controller: actor.did.clone(),

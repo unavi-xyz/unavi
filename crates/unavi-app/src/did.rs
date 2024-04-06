@@ -5,7 +5,7 @@ pub struct DidPlugin;
 
 impl Plugin for DidPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, generate_did_key);
+        app.add_systems(Startup, (generate_did_key, create_world));
     }
 }
 
@@ -40,4 +40,8 @@ fn generate_did_key(mut commands: Commands) {
         did_key: did,
         _key: key,
     });
+}
+
+fn create_world(did: Res<UserDID>) {
+    let registry_did = "did:web:localhost%3A3000";
 }

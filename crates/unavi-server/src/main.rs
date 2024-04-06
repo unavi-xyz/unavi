@@ -11,7 +11,7 @@ struct Args {
 
     /// The domain of the server.
     /// Used to generate DIDs for the server.
-    #[arg(long, default_value = "localhost")]
+    #[arg(long, default_value = "localhost:<port>")]
     domain: String,
 
     /// Provides login APIs for users to create and manage their DIDs.
@@ -46,8 +46,14 @@ async fn main() {
     }
     log.init();
 
+    let domain = if args.domain == "localhost:<port>" {
+        format!("localhost:{}", args.port)
+    } else {
+        args.domain
+    };
+
     let options = ServerOptions {
-        domain: args.domain,
+        domain,
         enable_did_host: args.enable_did_host,
         enable_dwn: args.enable_dwn,
         enable_world_host: args.enable_world_host,

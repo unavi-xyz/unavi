@@ -16,6 +16,7 @@ const DB_DIR: &str = ".unavi/db";
 
 #[derive(Debug, Clone)]
 pub struct ServerOptions {
+    pub domain: String,
     pub enable_did_host: bool,
     pub enable_dwn: bool,
     pub enable_world_host: bool,
@@ -43,8 +44,6 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
     }
 
     if opts.enable_world_host {
-        let _opts = opts.clone();
-
         tokio::spawn(
             async move {
                 let addr = format!("0.0.0.0:{}", 3001);
@@ -65,8 +64,7 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
     }
 
     if opts.enable_world_registry {
-        let (registry_router, create_registry) =
-            world_registry::router(dwn, &addr.clone().to_string()).await;
+        let (registry_router, create_registry) = world_registry::router(dwn, &opts.domain).await;
 
         router = router.merge(registry_router);
 

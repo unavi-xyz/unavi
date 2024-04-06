@@ -26,10 +26,10 @@ const PROTOCOL_VERSION: &str = "0.0.1";
 
 pub async fn router(
     dwn: Arc<DWN<impl DataStore, impl MessageStore>>,
-    addr: &str,
+    domain: &str,
 ) -> (Router, impl Future) {
-    let addr = addr.replace(':', "%3A");
-    let did = format!("did:web:{}", addr);
+    let domain = domain.replace(':', "%3A");
+    let did = format!("did:web:{}", domain);
 
     let actor = if let Ok(identity) = std::fs::read_to_string(IDENTITY_PATH) {
         let identity: RegistryIdentity =

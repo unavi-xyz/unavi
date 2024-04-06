@@ -9,6 +9,11 @@ struct Args {
     #[arg(long)]
     debug: bool,
 
+    /// The domain of the server.
+    /// Used to generate DIDs for the server.
+    #[arg(long, default_value = "localhost")]
+    domain: String,
+
     /// Provides login APIs for users to create and manage their DIDs.
     /// Hosts user DID documents over HTTP.
     #[arg(long)]
@@ -42,6 +47,7 @@ async fn main() {
     log.init();
 
     let options = ServerOptions {
+        domain: args.domain,
         enable_did_host: args.enable_did_host,
         enable_dwn: args.enable_dwn,
         enable_world_host: args.enable_world_host,

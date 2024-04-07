@@ -1,11 +1,18 @@
 use bevy::prelude::*;
 use bevy_async_task::AsyncTaskRunner;
-use didkit::{Document, ResolutionInputMetadata, ResolutionMetadata, DID_METHODS};
-use dwn::{actor::Actor, store::SurrealStore};
+use dwn::{
+    actor::{Actor, MessageBuilder},
+    message::descriptor::records::Version,
+    store::SurrealStore,
+};
+use serde_json::Value;
 use surrealdb::engine::local::Db;
-use thiserror::Error;
 
 const REGISTRY_DID: &str = "did:web:localhost%3A3000";
+const REGISTRY_VERSION: &str = "0.0.1";
+const REGISTRY_PATH: &str = "world";
+const PROTOCOL_DEFINITION: &str =
+    include_str!("../../../wired-protocol/social/dwn/protocols/world-registry.json");
 
 pub struct DidPlugin;
 
@@ -16,47 +23,23 @@ impl Plugin for DidPlugin {
 }
 
 #[derive(Resource)]
-pub struct User {
-    pub actor: Actor<SurrealStore<Db>, SurrealStore<Db>>,
-}
+pub struct UserActor(pub Actor<SurrealStore<Db>, SurrealStore<Db>>);
 
-fn create_world(mut task_runner: AsyncTaskRunner<()>) {
-    task_runner.start(async {
-        match resolve_did(REGISTRY_DID).await {
-            Ok(doc) => {
-                info!("Resolved registry: {:#?}", doc);
-            }
-            Err(err) => {
-                error!("Failed to create world: {}", err);
-            }
-        }
+fn create_world(actor: Res<UserActor>, mut task_runner: AsyncTaskRunner<()>) {
+    let value: Value = serde_json::from_str(PROTOCOL_DEFINITION).unwrap();
+    let protocol = value["protocol"].as_str().unwrap().to_string();
+
+    let actor = actor.0.clone();
+
+    task_runner.start(async move {
+        let mut create = actor.create_record().published(true).protocol(
+            protocol,
+            Version::parse(REGISTRY_VERSION).unwrap(),
+            REGISTRY_PATH.to_string(),
+        );
+
+        let reply = create.send(REGISTRY_DID).await;
+
+        info!("Created world: {:#?}", reply);
     });
-}
-
-#[derive(Error, Debug)]
-enum ResolveDidError {
-    #[error("Failed to parse DID: {0}")]
-    DidParse(&'static str),
-    #[error("Failed to resolve DID: {0}")]
-    Resolution(String),
-}
-
-async fn resolve_did(did: &str) -> Result<Document, ResolveDidError> {
-    match DID_METHODS
-        .get_method(did)
-        .map_err(ResolveDidError::DidParse)?
-        .to_resolver()
-        .resolve(did, &ResolutionInputMetadata::default())
-        .await
-    {
-        (
-            ResolutionMetadata {
-                error: Some(err), ..
-            },
-            _,
-            _,
-        ) => Err(ResolveDidError::Resolution(err)),
-        (_, Some(doc), _) => Ok(doc),
-        _ => Err(ResolveDidError::Resolution("Unexpected result".to_string())),
-    }
 }

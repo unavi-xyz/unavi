@@ -6,7 +6,7 @@ use bevy::{asset::AssetMetaCheck, prelude::*, utils::HashSet};
 
 use dwn::{actor::Actor, store::SurrealStore, DWN};
 use surrealdb::{engine::local::SpeeDb, Surreal};
-use unavi_app::{did::User, UnaviPlugin};
+use unavi_app::{did::UserActor, UnaviPlugin};
 
 const DB_PATH: &str = ".unavi/app-db";
 
@@ -28,7 +28,7 @@ async fn main() {
     meta_paths.insert("images/skybox-1-512.png".into());
 
     App::new()
-        .insert_resource(User { actor })
+        .insert_resource(UserActor(actor))
         .insert_resource(AssetMetaCheck::Paths(meta_paths))
         .add_plugins((DefaultPlugins, UnaviPlugin::default()))
         .run();

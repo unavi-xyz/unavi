@@ -3708,7 +3708,7 @@ checksum = "75b325c5dbd37f80359721ad39aca5a29fb04c89279657cffdda8736d0c0b9d2"
 [[package]]
 name = "dwn"
 version = "0.0.5"
-source = "git+https://github.com/unavi-xyz/dwn.git#e29a8403773774baf9fb47d045f4636d2c13c448"
+source = "git+https://github.com/unavi-xyz/dwn.git#b277763a15056dd451fa12b73b11ed1a348de75c"
 dependencies = [
  "aes-gcm",
  "anyhow",

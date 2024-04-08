@@ -30,8 +30,11 @@ fn create_world(actor: Res<UserActor>, mut task_runner: AsyncTaskRunner<()>) {
             "world".to_string(),
         );
 
-        let reply = create.send(REGISTRY_DID).await;
-
-        info!("Created world: {:#?}", reply);
+        match create.send(REGISTRY_DID).await {
+            Ok(reply) => info!("Created world: {:#?}", reply),
+            Err(err) => {
+                error!("Failed to create world: {:#?}", err)
+            }
+        };
     });
 }

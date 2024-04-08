@@ -55,11 +55,17 @@ pub async fn router(
 
     let mut document = Document::new(&actor.did);
 
+    let dwn_url = if domain == "localhost" || domain.starts_with("localhost%3A") {
+        format!("http://{}", domain)
+    } else {
+        format!("https://{}", domain)
+    };
+
     document.service = Some(vec![Service {
         id: format!("{}#dwn", actor.did),
         type_: OneOrMany::One("DWN".to_string()),
         property_set: None,
-        service_endpoint: Some(OneOrMany::One(ServiceEndpoint::URI(domain))),
+        service_endpoint: Some(OneOrMany::One(ServiceEndpoint::URI(dwn_url))),
     }]);
 
     document.verification_method = Some(vec![VerificationMethod::Map(VerificationMethodMap {

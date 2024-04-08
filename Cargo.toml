@@ -15,13 +15,12 @@ license = "GPL-3.0-or-later"
 type_complexity = "allow"
 
 [workspace.dependencies]
-bevy = "0.13.1"
 bitflags = "2.5.0"
 didkit = { version = "0.6.0", default-features = false, features = ["ed25519"] }
 dwn = "0.0.5"
 serde_json = "1.0.115"
-surrealdb = { version = "1.3.1", default-features = false, features = ["kv-speedb"] }
-tokio = { version = "1.37.0", features = ["full"] }
+surrealdb = { version = "1.3.1", default-features = false }
+tokio = { version = "1.37.0", features = ["rt", "macros"] }
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 wasm-bindgen = "=0.2.91"

@@ -15,9 +15,9 @@ dwn.workspace = true
 rcgen = "0.13.0" 
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json.workspace = true
-surrealdb.workspace = true
+surrealdb = { workspace = true, features = ["kv-speedb"] }
 time = "0.3.30"
-tokio.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread"] }
 tracing-subscriber.workspace = true
 tracing.workspace = true
 wtransport.workspace = true

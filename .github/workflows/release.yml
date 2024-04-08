@@ -63,10 +63,10 @@ jobs:
     with:
       ref: v${{ needs.version.outputs.version }}
 
-  deploy-server:
+  deploy:
     needs: version
     secrets: inherit
-    uses: ./.github/workflows/deploy-server.yml
+    uses: ./.github/workflows/deploy.yml
     with:
       channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
       ref: release/v${{ needs.version.outputs.version }}
@@ -75,7 +75,7 @@ jobs:
     needs:
       - build-nix
       - build-windows
-      - deploy-server
+      - deploy
       - version
     runs-on: ubuntu-latest
     env:

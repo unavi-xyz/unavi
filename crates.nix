@@ -10,15 +10,24 @@
 let
   lib = pkgs.lib;
 
-  clibs = with pkgs; [
-    clang
-    cmake
-    glibc_multi
-    glibc_multi.dev
-    libcxx
-    pkg-config
-    rustPlatform.bindgenHook
-  ];
+  clibs =
+    lib.optionals (pkgs.stdenv.isLinux && pkgs.stdenv.hostPlatform.system != "aarch64-linux") (
+      with pkgs;
+      [
+        glibc_multi
+        glibc_multi.dev
+      ]
+    )
+    ++ lib.optionals pkgs.stdenv.isLinux (
+      with pkgs;
+      [
+        clang
+        cmake
+        libcxx
+        pkg-config
+        rustPlatform.bindgenHook
+      ]
+    );
 
   unaviAppConfig = {
     buildInputs =
@@ -44,7 +53,7 @@ let
         ]
       );
 
-    nativeBuildInputs = with pkgs; [ alsa-lib.dev ] ++ clibs;
+    nativeBuildInputs = lib.optionals pkgs.stdenv.isLinux (with pkgs; [ alsa-lib.dev ]) ++ clibs;
   };
 
   unaviServerConfig = {
@@ -89,7 +98,7 @@ let
   cargoDoc = craneLib.cargoDoc (commonArgs // { inherit cargoArtifacts; });
   cargoFmt = craneLib.cargoFmt commonArgs;
 
-  app = craneLib.buildPackage (
+  unavi-app = craneLib.buildPackage (
     unaviAppConfig
     // {
       src = commonArgs.src;
@@ -120,7 +129,7 @@ let
     }
   );
 
-  server = craneLib.buildPackage (
+  unavi-server = craneLib.buildPackage (
     unaviServerConfig
     // {
       src = commonArgs.src;
@@ -140,8 +149,8 @@ in
   nativeBuildInputs = commonArgs.nativeBuildInputs;
 
   apps = {
-    app = flake-utils.lib.mkApp { drv = app; };
-    server = flake-utils.lib.mkApp { drv = server; };
+    unavi-app = flake-utils.lib.mkApp { drv = unavi-app; };
+    unavi-server = flake-utils.lib.mkApp { drv = unavi-server; };
     web = flake-utils.lib.mkApp {
       drv = pkgs.writeShellScriptBin "web" ''
         ${pkgs.python3Minimal}/bin/python3 -m http.server --directory ${web} 8080
@@ -152,6 +161,6 @@ in
     inherit cargoClippy cargoDoc cargoFmt;
   };
   packages = {
-    inherit app server web;
+    inherit unavi-app unavi-server web;
   };
 }

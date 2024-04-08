@@ -127,7 +127,6 @@
       in
       {
         deploy = deployments.deploy;
-        nixosConfigurations = deployments.nixosConfigurations;
 
         githubMatrix = nix-github-actions.lib.mkGithubMatrix {
           attrPrefix = "";

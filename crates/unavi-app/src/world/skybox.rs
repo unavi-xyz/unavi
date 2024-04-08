@@ -23,11 +23,9 @@ pub fn add_skybox_to_cameras(
     cameras: Query<Entity, Without<Skybox>>,
 ) {
     for camera in cameras.iter() {
-        // TODO: Enable this when it's supported in WASM (Bevy 0.13.1 patch)
-        #[cfg(not(target_family = "wasm"))]
         commands.entity(camera).insert(Skybox {
             image: cubemap.image_handle.clone(),
-            brightness: 1000.0,
+            brightness: 1500.0,
         });
     }
 }

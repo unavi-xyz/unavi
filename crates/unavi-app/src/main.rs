@@ -37,6 +37,14 @@ fn main() {}
 #[cfg(not(target_family = "wasm"))]
 #[tokio::main]
 async fn main() {
+    tokio::task::spawn_blocking(|| {
+        if let Err(e) = update() {
+            println!("Error while updating: {}", e);
+        }
+    })
+    .await
+    .unwrap();
+
     const DB_PATH: &str = ".unavi/app-db";
 
     std::fs::create_dir_all(DB_PATH).expect("Failed to create database dir.");
@@ -71,4 +79,35 @@ fn args_to_options(args: Args) -> StartOptions {
         log_level,
         ..Default::default()
     }
+}
+
+#[cfg(not(target_family = "wasm"))]
+fn update() -> Result<(), Box<dyn std::error::Error>> {
+    let status = self_update::backends::github::Update::configure()
+        .repo_owner("unavi-xyz")
+        .repo_name("unavi")
+        .bin_name("unavi-app")
+        .show_download_progress(true)
+        .current_version(env!("CARGO_PKG_VERSION"))
+        .build()?
+        .update()?;
+
+    if status.updated() {
+        println!("Updated to {}. Restarting.", status.version());
+
+        if let Err(e) = restart_app() {
+            eprintln!("Failed to restart application: {}", e);
+        }
+
+        std::process::exit(0);
+    }
+
+    Ok(())
+}
+
+#[cfg(not(target_family = "wasm"))]
+fn restart_app() -> std::io::Result<()> {
+    let exe = std::env::current_exe()?;
+    std::process::Command::new(exe).spawn()?;
+    Ok(())
 }

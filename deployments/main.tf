@@ -59,7 +59,7 @@ resource "cloudflare_record" "unavi_subdomain" {
 resource "cloudflare_page_rule" "cache_html" {
   zone_id  = var.cloudflare_zone_id
   target   = "*.${digitalocean_domain.unavi_domain.name}/*.html"
-  priority = 1
+  priority = 2
   actions {
     cache_level = "bypass"
   }
@@ -68,7 +68,7 @@ resource "cloudflare_page_rule" "cache_html" {
 resource "cloudflare_page_rule" "cache_all" {
   zone_id  = var.cloudflare_zone_id
   target   = "*.${digitalocean_domain.unavi_domain.name}/*"
-  priority = 2
+  priority = 1
   actions {
     cache_level    = "cache_everything"
     edge_cache_ttl = 7200

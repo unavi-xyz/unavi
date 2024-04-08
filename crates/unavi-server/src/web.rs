@@ -5,5 +5,5 @@ pub fn router() -> Router {
     let mut path = std::env::current_dir().unwrap();
     path.push("web");
 
-    Router::new().nest_service("/", ServeDir::new(path))
+    Router::new().fallback_service(ServeDir::new(path))
 }

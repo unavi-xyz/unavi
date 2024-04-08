@@ -1,3 +1,12 @@
+//! A multi-purpose UNAVI server.
+//! Hosts worlds, provides login APIs, and more.
+//!
+//! ## Usage
+//!
+//! ```bash
+//! unavi-server --help
+//! ```
+
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     sync::Arc,

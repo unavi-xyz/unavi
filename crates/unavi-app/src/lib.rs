@@ -1,3 +1,5 @@
+//! The core UNAVI app, built with [Bevy](https://bevyengine.org/).
+
 use bevy::prelude::*;
 
 pub mod avatar;

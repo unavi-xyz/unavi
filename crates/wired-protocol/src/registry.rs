@@ -1,19 +1,13 @@
 use dwn::message::descriptor::protocols::ProtocolDefinition;
 use semver::Version;
-use serde_json::Value;
 
-pub const REGISTRY_PROTOCOL_DEFINITION: &str =
-    include_str!("../../../wired-protocol/social/dwn/protocols/world-registry.json");
+const REGISTRY_PROTOCOL_DEFINITION: &[u8] =
+    include_bytes!("../../../wired-protocol/social/dwn/protocols/world-registry.json");
 
 pub const REGISTRY_PROTOCOL_VERSION: Version = Version::new(0, 0, 1);
 
 pub fn registry_definition() -> ProtocolDefinition {
-    serde_json::from_str(REGISTRY_PROTOCOL_DEFINITION).unwrap()
-}
-
-pub fn registry_protocol() -> String {
-    let value: Value = serde_json::from_str(REGISTRY_PROTOCOL_DEFINITION).unwrap();
-    value["protocol"].as_str().unwrap().to_string()
+    serde_json::from_slice(REGISTRY_PROTOCOL_DEFINITION).unwrap()
 }
 
 #[cfg(test)]
@@ -22,12 +16,7 @@ mod tests {
 
     #[test]
     fn test_registry_definition() {
-        let _ = registry_definition();
-    }
-
-    #[test]
-    fn test_registry_protocol() {
-        let protocol = registry_protocol();
-        assert!(!protocol.is_empty());
+        let definition = registry_definition();
+        assert!(!definition.protocol.is_empty())
     }
 }

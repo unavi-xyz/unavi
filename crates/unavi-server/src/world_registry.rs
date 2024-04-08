@@ -18,7 +18,7 @@ use dwn::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
-use wired_protocol::registry::{registry_definition, registry_protocol, REGISTRY_PROTOCOL_VERSION};
+use wired_protocol::registry::{registry_definition, REGISTRY_PROTOCOL_VERSION};
 
 const IDENTITY_PATH: &str = ".unavi/registry_identity.json";
 const KEY_FRAGMENT: &str = "key-0";
@@ -87,9 +87,12 @@ pub async fn router(
     );
 
     let create_registry = async move {
+        let mut definition = registry_definition();
+        definition.published = true;
+
         let query = actor
             .query_protocols(ProtocolsFilter {
-                protocol: registry_protocol(),
+                protocol: definition.protocol.clone(),
                 versions: vec![REGISTRY_PROTOCOL_VERSION],
             })
             .process()
@@ -98,8 +101,9 @@ pub async fn router(
 
         if query.entries.is_empty() {
             info!("Creating world registry v{}", REGISTRY_PROTOCOL_VERSION);
+
             actor
-                .register_protocol(registry_definition())
+                .register_protocol(definition)
                 .protocol_version(REGISTRY_PROTOCOL_VERSION)
                 .process()
                 .await

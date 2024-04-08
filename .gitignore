@@ -1,8 +1,7 @@
 # Terraform
 *.tfstate*
 *.tfvars
-/.terraform
-/config.tf.json
+/deployments/.terraform
 
 # Nix
 /result

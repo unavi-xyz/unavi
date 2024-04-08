@@ -25,13 +25,6 @@
         flake-utils.follows = "flake-utils";
       };
     };
-    terranix = {
-      url = "github:terranix/terranix";
-      inputs = {
-        flake-utils.follows = "flake-utils";
-        nixpkgs.follows = "nixpkgs";
-      };
-    };
   };
 
   outputs =
@@ -108,7 +101,7 @@
           };
 
         checks = crates.checks;
-        packages = components.packages // crates.packages // terraform.packages;
+        packages = components.packages // crates.packages;
 
         devShells.default = craneLib.devShell {
           packages =

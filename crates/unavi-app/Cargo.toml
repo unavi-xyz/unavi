@@ -19,6 +19,7 @@ bevy_async_task = "0.1.0"
 bevy_vrm = "0.0.9"
 bevy_xpbd_3d = { version = "0.4.2", features = ["simd"] }
 bytes = "1.5.0"
+clap.workspace = true
 didkit.workspace = true
 dwn.workspace = true
 serde_json.workspace = true
@@ -36,6 +37,7 @@ surrealdb = { workspace = true, features = ["kv-indxdb"] }
 tokio.workspace = true
 wasm-bindgen = "=0.2.91"
 wasm-bindgen-futures = "0.4.41"
+web-sys = { version = "0.3.68", features = ["Location", "UrlSearchParams", "Window"] }
 xwt-web-sys = "0.6.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]

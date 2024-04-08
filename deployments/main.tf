@@ -70,7 +70,7 @@ resource "cloudflare_page_rule" "cache_all" {
   target   = "*.${digitalocean_domain.unavi_domain.name}/*"
   priority = 2
   actions {
-    cache_level = "cache_everything"
+    cache_level    = "cache_everything"
     edge_cache_ttl = 7200
   }
 }

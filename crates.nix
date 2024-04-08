@@ -48,7 +48,8 @@ let
   };
 
   unaviServerConfig = {
-    nativeBuildInputs = with pkgs; [ openssl.dev ] ++ clibs;
+    buildInputs = with pkgs; [ openssl.dev ];
+    nativeBuildInputs = clibs;
   };
 
   unaviWebConfig = {
@@ -65,7 +66,7 @@ let
   };
 
   commonArgs = {
-    buildInputs = unaviAppConfig.buildInputs;
+    buildInputs = unaviAppConfig.buildInputs ++ unaviServerConfig.buildInputs;
     nativeBuildInputs = unaviServerConfig.nativeBuildInputs ++ unaviWebConfig.nativeBuildInputs;
     pname = "unavi";
     strictDeps = true;

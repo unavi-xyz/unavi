@@ -1,9 +1,18 @@
-{ domain, pkgs, unavi-server, ... }: {
+{
+  domain,
+  pkgs,
+  unavi-server,
+  ...
+}:
+{
   imports = [ ./common.nix ];
 
   networking.firewall = {
     enable = true;
-    allowedTCPPorts = [ 80 443 ];
+    allowedTCPPorts = [
+      80
+      443
+    ];
   };
 
   security.acme = {
@@ -21,7 +30,11 @@
       enableACME = true;
       forceSSL = true;
       http2 = true;
-      locations = { "/" = { proxyPass = "http://localhost:3000"; }; };
+      locations = {
+        "/" = {
+          proxyPass = "http://localhost:3000";
+        };
+      };
     };
   };
 
@@ -30,8 +43,7 @@
     after = [ "network.target" ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
-      ExecStart =
-        "${unavi-server}/bin/unavi-server --domain ${domain} --enable-did-host --enable-dwn --enable-world-host --enable-world-registry";
+      ExecStart = "${unavi-server}/bin/unavi-server --domain ${domain} --enable-did-host --enable-dwn --enable-web --enable-world-host --enable-world-registry";
       Restart = "always";
     };
   };

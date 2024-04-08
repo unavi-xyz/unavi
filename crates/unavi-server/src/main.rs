@@ -23,6 +23,10 @@ struct Args {
     #[arg(long)]
     enable_dwn: bool,
 
+    /// Serves a web client.
+    #[arg(long)]
+    enable_web: bool,
+
     /// Hosts multiplayer instances of worlds within the connected registry.
     #[arg(long)]
     enable_world_host: bool,
@@ -56,6 +60,7 @@ async fn main() {
         domain,
         enable_did_host: args.enable_did_host,
         enable_dwn: args.enable_dwn,
+        enable_web: args.enable_web,
         enable_world_host: args.enable_world_host,
         enable_world_registry: args.enable_world_registry,
         port: args.port,

@@ -71,19 +71,11 @@ jobs:
       channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
       ref: release/v${{ needs.version.outputs.version }}
 
-  deploy-web:
-    needs: version
-    uses: ./.github/workflows/deploy-web.yml
-    with:
-      channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
-      ref: release/v${{ needs.version.outputs.version }}
-
   release:
     needs:
       - build-nix
       - build-windows
       - deploy-server
-      - deploy-web
       - version
     runs-on: ubuntu-latest
     env:

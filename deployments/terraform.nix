@@ -24,6 +24,13 @@
       '';
     };
 
+    tf-format = flake-utils.lib.mkApp {
+      drv = pkgs.writeShellScriptBin "format" ''
+        cd deployments
+        ${pkgs.terraform}/bin/terraform fmt . 
+      '';
+    };
+
     tf-destroy = flake-utils.lib.mkApp {
       drv = pkgs.writeShellScriptBin "destroy" ''
         cd deployments

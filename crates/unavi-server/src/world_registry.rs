@@ -27,8 +27,15 @@ pub async fn router(
     dwn: Arc<DWN<impl DataStore, impl MessageStore>>,
     domain: String,
 ) -> (Router, impl Future) {
-    let domain = domain.clone().replace(':', "%3A");
-    let did = format!("did:web:{}", domain);
+    let domain_name = domain.split(':').next().unwrap();
+
+    let dwn_url = if domain_name == "localhost" {
+        format!("http://{}", domain)
+    } else {
+        format!("https://{}", domain)
+    };
+
+    let did = format!("did:web:{}", domain.clone().replace(':', "%3A"));
 
     let actor = if let Ok(identity) = std::fs::read_to_string(IDENTITY_PATH) {
         let identity: RegistryIdentity =
@@ -54,12 +61,6 @@ pub async fn router(
     info!("Registry DID: {}", actor.did);
 
     let mut document = Document::new(&actor.did);
-
-    let dwn_url = if domain == "localhost" || domain.starts_with("localhost%3A") {
-        format!("http://{}", domain)
-    } else {
-        format!("https://{}", domain)
-    };
 
     document.service = Some(vec![Service {
         id: format!("{}#dwn", actor.did),

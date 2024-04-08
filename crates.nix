@@ -10,8 +10,6 @@
 let
   lib = pkgs.lib;
 
-  src = craneLib.cleanCargoSource (craneLib.path ./.);
-
   clibs = with pkgs; [
     clang
     cmake
@@ -67,46 +65,33 @@ let
   };
 
   commonArgs = {
+    buildInputs = unaviAppConfig.buildInputs;
+    nativeBuildInputs = unaviServerConfig.nativeBuildInputs ++ unaviWebConfig.nativeBuildInputs;
     pname = "unavi";
+    strictDeps = true;
 
     src = lib.cleanSourceWith {
       src = ./.;
       filter =
         path: type:
-        (lib.hasSuffix ".json" path)
-        || (lib.hasSuffix ".proto" path)
+        (lib.hasInfix "/assets/" path)
+        || (lib.hasInfix "/crates/unavi-app/public/" path)
+        || (lib.hasSuffix ".html" path)
+        || (lib.hasSuffix ".json" path)
         || (lib.hasSuffix ".wit" path)
         || (craneLib.filterCargoSources path type);
     };
-
-    strictDeps = true;
-
-    buildInputs = unaviAppConfig.buildInputs;
-    nativeBuildInputs = unaviServerConfig.nativeBuildInputs ++ unaviWebConfig.nativeBuildInputs;
   };
 
   cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-
   cargoClippy = craneLib.cargoClippy (commonArgs // { inherit cargoArtifacts; });
-
   cargoDoc = craneLib.cargoDoc (commonArgs // { inherit cargoArtifacts; });
-
-  cargoFmt = craneLib.cargoFmt {
-    inherit src;
-    pname = "unavi";
-  };
+  cargoFmt = craneLib.cargoFmt commonArgs;
 
   unavi-app = craneLib.buildPackage (
     unaviAppConfig
     // {
-      src = lib.cleanSourceWith {
-        src = ./.;
-        filter =
-          path: type:
-          (lib.hasSuffix ".wit" path)
-          || (lib.hasInfix "/assets/" path)
-          || (craneLib.filterCargoSources path type);
-      };
+      src = commonArgs.src;
 
       cargoExtraArgs = "--locked -p unavi-app";
       pname = "unavi-app";
@@ -122,9 +107,10 @@ let
   unavi-server = craneLib.buildPackage (
     unaviServerConfig
     // {
+      src = commonArgs.src;
+
       cargoExtraArgs = "--locked -p unavi-server";
       pname = "unavi-server";
-      src = commonArgs.src;
       strictDeps = true;
     }
   );
@@ -132,16 +118,7 @@ let
   web = craneLib.buildTrunkPackage (
     unaviWebConfig
     // {
-      src = lib.cleanSourceWith {
-        src = ./.;
-        filter =
-          path: type:
-          (lib.hasSuffix ".wit" path)
-          || (lib.hasSuffix ".html" path)
-          || (lib.hasInfix "/assets/" path)
-          || (lib.hasInfix "/crates/unavi-app/public/" path)
-          || (craneLib.filterCargoSources path type);
-      };
+      src = commonArgs.src;
 
       cargoExtraArgs = "--locked -p unavi-app";
       pname = "web";
@@ -162,7 +139,7 @@ in
     server = flake-utils.lib.mkApp { drv = unavi-server; };
     web = flake-utils.lib.mkApp {
       drv = pkgs.writeShellScriptBin "web" ''
-        ${pkgs.python3Minimal}/bin/python3 -m http.server --directory ${web} 3000
+        ${pkgs.python3Minimal}/bin/python3 -m http.server --directory ${web} 8080
       '';
     };
   };

@@ -51,4 +51,4 @@ jobs:
           default_author: github_actions
 
       - name: Deploy
-        run: nix-shell -p deploy-rs --command "deploy .?submodules=1#server-${{ env.TF_WORKSPACE }} --skip-checks"
+        run: nix-shell -p deploy-rs --command "deploy .?submodules=1#unavi-server-${{ env.TF_WORKSPACE }} --skip-checks"

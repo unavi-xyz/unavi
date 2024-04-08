@@ -38,6 +38,10 @@ impl Plugin for ScriptingPlugin {
 }
 
 fn load_unavi_system(mut load_queue: ResMut<ScriptLoadQueue>, asset_server: Res<AssetServer>) {
-    let handle = asset_server.load("components/unavi_system.wasm");
+    let handle = asset_server.load(component_path("unavi_system"));
     load_queue.0.push(handle);
+}
+
+fn component_path(name: &str) -> String {
+    format!("components/{}_{}.wasm", name, env!("CARGO_PKG_VERSION"))
 }

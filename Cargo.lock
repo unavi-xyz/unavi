@@ -3708,7 +3708,7 @@ checksum = "75b325c5dbd37f80359721ad39aca5a29fb04c89279657cffdda8736d0c0b9d2"
 [[package]]
 name = "dwn"
 version = "0.0.5"
-source = "git+https://github.com/unavi-xyz/dwn.git#37108649d112d6920ca0b93c24b95be00dd8acba"
+source = "git+https://github.com/unavi-xyz/dwn.git#e29a8403773774baf9fb47d045f4636d2c13c448"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -10700,6 +10700,7 @@ dependencies = [
  "wasm-bindgen-futures",
  "wasm-bridge",
  "wasm-bridge-wasi",
+ "wired-protocol",
  "wtransport",
  "xwt",
  "xwt-core",
@@ -10724,6 +10725,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "wired-protocol",
  "wtransport",
 ]
 
@@ -12144,6 +12146,15 @@ dependencies = [
  "bitflags 2.5.0",
  "tracing",
  "wit-bindgen-rt",
+]
+
+[[package]]
+name = "wired-protocol"
+version = "0.0.2"
+dependencies = [
+ "dwn",
+ "semver",
+ "serde_json",
 ]
 
 [[package]]

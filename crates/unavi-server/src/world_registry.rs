@@ -12,22 +12,16 @@ use didkit::{
 };
 use dwn::{
     actor::{Actor, VerifiableCredential},
-    message::descriptor::{
-        protocols::{ProtocolDefinition, ProtocolsFilter},
-        records::Version,
-    },
+    message::descriptor::protocols::ProtocolsFilter,
     store::{DataStore, MessageStore},
     DWN,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use tracing::{info, warn};
+use wired_protocol::registry::{registry_definition, registry_protocol, REGISTRY_PROTOCOL_VERSION};
 
 const IDENTITY_PATH: &str = ".unavi/registry_identity.json";
 const KEY_FRAGMENT: &str = "key-0";
-const PROTOCOL_DEFINITION: &str =
-    include_str!("../../../wired-protocol/social/dwn/protocols/world-registry.json");
-const PROTOCOL_VERSION: &str = "0.0.1";
 
 pub async fn router(
     dwn: Arc<DWN<impl DataStore, impl MessageStore>>,
@@ -93,25 +87,20 @@ pub async fn router(
     );
 
     let create_registry = async move {
-        let value: Value = serde_json::from_str(PROTOCOL_DEFINITION).unwrap();
-        let protocol = value["protocol"].as_str().unwrap().to_string();
-        let version = Version::parse(PROTOCOL_VERSION).unwrap();
-
         let query = actor
             .query_protocols(ProtocolsFilter {
-                protocol,
-                versions: vec![version.clone()],
+                protocol: registry_protocol(),
+                versions: vec![REGISTRY_PROTOCOL_VERSION],
             })
             .process()
             .await
             .unwrap();
 
         if query.entries.is_empty() {
-            info!("Creating world registry v{}", PROTOCOL_VERSION);
-            let definition = json_to_defition(value);
+            info!("Creating world registry v{}", REGISTRY_PROTOCOL_VERSION);
             actor
-                .register_protocol(definition)
-                .protocol_version(version)
+                .register_protocol(registry_definition())
+                .protocol_version(REGISTRY_PROTOCOL_VERSION)
                 .process()
                 .await
                 .unwrap();
@@ -142,31 +131,6 @@ where
     std::fs::write(IDENTITY_PATH, identity).unwrap();
 
     actor
-}
-
-fn json_to_defition(json: Value) -> ProtocolDefinition {
-    let protocol = json["protocol"].as_str().unwrap().to_string();
-
-    let structure = json["structure"]
-        .as_object()
-        .unwrap()
-        .iter()
-        .map(|(k, v)| (k.to_string(), serde_json::from_value(v.clone()).unwrap()))
-        .collect();
-
-    let types = json["types"]
-        .as_object()
-        .unwrap()
-        .iter()
-        .map(|(k, v)| (k.to_string(), serde_json::from_value(v.clone()).unwrap()))
-        .collect();
-
-    ProtocolDefinition {
-        protocol,
-        published: true,
-        structure,
-        types,
-    }
 }
 
 #[derive(Clone, Deserialize, Serialize)]

@@ -20,4 +20,5 @@ time = "0.3.30"
 tokio = { workspace = true, features = ["rt-multi-thread"] }
 tracing-subscriber.workspace = true
 tracing.workspace = true
+wired-protocol.workspace = true
 wtransport.workspace = true

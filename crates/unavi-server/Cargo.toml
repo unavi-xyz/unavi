@@ -8,7 +8,7 @@ edition.workspace = true
 [dependencies]
 axum = "0.7.5"
 axum-server = "0.6.0"
-clap = { version = "4.5.4", features = ["derive"] }
+clap.workspace = true
 didkit.workspace = true
 dwn-server = "0.0.5"
 dwn.workspace = true

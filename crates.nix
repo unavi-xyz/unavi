@@ -79,7 +79,6 @@ let
         || (lib.hasInfix "/crates/unavi-app/public/" path)
         || (lib.hasSuffix ".html" path)
         || (lib.hasSuffix ".json" path)
-        || (lib.hasSuffix ".wit" path)
         || (craneLib.filterCargoSources path type);
     };
   };

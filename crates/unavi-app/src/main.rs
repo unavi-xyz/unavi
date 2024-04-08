@@ -1,21 +1,34 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::sync::Arc;
-
-use bevy::{asset::AssetMetaCheck, prelude::*, utils::HashSet};
-
-use dwn::{actor::Actor, store::SurrealStore, DWN};
-use surrealdb::{engine::local::Db, Surreal};
-use unavi_app::{did::UserActor, UnaviPlugin};
+use clap::Parser;
+use surrealdb::Surreal;
+use tracing::Level;
+use unavi_app::StartOptions;
 
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen::prelude::wasm_bindgen(start)]
 pub async fn wasm_start() {
+    let window = web_sys::window().unwrap();
+    let document = window.document().unwrap();
+    let location = document.location().unwrap();
+    let search = location.search().unwrap();
+    let params = web_sys::UrlSearchParams::new_with_str(&search).unwrap();
+
+    let mut args = Args { debug: false };
+
+    if let Some(value) = params.get("debug") {
+        if let Ok(value) = value.parse() {
+            args.debug = value;
+        }
+    }
+
     let db = Surreal::new::<surrealdb::engine::local::IndxDb>("unavi")
         .await
         .expect("Failed to create SurrealDB.");
 
-    start(db).await
+    let opts = args_to_options(args);
+
+    unavi_app::start(db, opts).await
 }
 
 #[cfg(target_family = "wasm")]
@@ -32,23 +45,30 @@ async fn main() {
         .await
         .expect("Failed to create SurrealDB.");
 
-    start(db).await
+    let args = Args::parse();
+    let opts = args_to_options(args);
+
+    unavi_app::start(db, opts).await
 }
 
-async fn start(db: Surreal<Db>) {
-    let store = SurrealStore::new(db)
-        .await
-        .expect("Failed to create DWN store.");
-    let dwn = Arc::new(DWN::from(store));
-    let actor = Actor::new_did_key(dwn).expect("Failed to create DWN actor.");
+#[derive(Parser, Debug)]
+#[command(version, about)]
+struct Args {
+    /// Enables debug logging and rendering.
+    #[arg(long)]
+    debug: bool,
+}
 
-    let mut meta_paths = HashSet::new();
-    meta_paths.insert("images/dev-white.png".into());
-    meta_paths.insert("images/skybox-1-512.png".into());
+fn args_to_options(args: Args) -> StartOptions {
+    let log_level = if args.debug {
+        Level::DEBUG
+    } else {
+        Level::INFO
+    };
 
-    App::new()
-        .insert_resource(UserActor(actor))
-        .insert_resource(AssetMetaCheck::Paths(meta_paths))
-        .add_plugins((DefaultPlugins, UnaviPlugin::default()))
-        .run();
+    StartOptions {
+        debug_physics: args.debug,
+        log_level,
+        ..Default::default()
+    }
 }

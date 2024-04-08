@@ -9,8 +9,8 @@ use surrealdb::{engine::local::Db, Surreal};
 use unavi_app::{did::UserActor, UnaviPlugin};
 
 #[cfg(target_family = "wasm")]
-#[tokio::main(flavor = "current_thread")]
-async fn main() {
+#[wasm_bindgen::prelude::wasm_bindgen(start)]
+pub async fn wasm_start() {
     let db = Surreal::new::<surrealdb::engine::local::IndxDb>("unavi")
         .await
         .expect("Failed to create SurrealDB.");
@@ -18,8 +18,11 @@ async fn main() {
     start(db).await
 }
 
+#[cfg(target_family = "wasm")]
+fn main() {}
+
 #[cfg(not(target_family = "wasm"))]
-#[tokio::main(flavor = "multi_thread")]
+#[tokio::main]
 async fn main() {
     const DB_PATH: &str = ".unavi/app-db";
 

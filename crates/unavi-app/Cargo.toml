@@ -24,7 +24,6 @@ dwn.workspace = true
 serde_json.workspace = true
 thiserror = "1.0.58"
 tracing.workspace = true
-wasm-bindgen.workspace = true
 wasm-bridge = { version = "0.3.0", features = ["async", "component-model"] }
 wasm-bridge-wasi = "0.3.0"
 xwt = "0.6.0"
@@ -34,6 +33,8 @@ xwt-core = "0.2.2"
 rustls-pki-types = { version = "1.4.1", features = ["web"] }
 surrealdb = { workspace = true, features = ["kv-indxdb"] }
 tokio.workspace = true
+wasm-bindgen = "0.2.92"
+wasm-bindgen-futures = "0.4.42"
 xwt-web-sys = "0.6.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]

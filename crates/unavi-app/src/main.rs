@@ -5,18 +5,34 @@ use std::sync::Arc;
 use bevy::{asset::AssetMetaCheck, prelude::*, utils::HashSet};
 
 use dwn::{actor::Actor, store::SurrealStore, DWN};
-use surrealdb::{engine::local::SpeeDb, Surreal};
+use surrealdb::{engine::local::Db, Surreal};
 use unavi_app::{did::UserActor, UnaviPlugin};
 
-const DB_PATH: &str = ".unavi/app-db";
-
-#[tokio::main]
+#[cfg(target_family = "wasm")]
+#[tokio::main(flavor = "current_thread")]
 async fn main() {
-    std::fs::create_dir_all(DB_PATH).expect("Failed to create database dir.");
-
-    let db = Surreal::new::<SpeeDb>(DB_PATH)
+    let db = Surreal::new::<surrealdb::engine::local::IndxDb>("unavi")
         .await
         .expect("Failed to create SurrealDB.");
+
+    start(db).await
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[tokio::main(flavor = "multi_thread")]
+async fn main() {
+    const DB_PATH: &str = ".unavi/app-db";
+
+    std::fs::create_dir_all(DB_PATH).expect("Failed to create database dir.");
+
+    let db = Surreal::new::<surrealdb::engine::local::SpeeDb>(DB_PATH)
+        .await
+        .expect("Failed to create SurrealDB.");
+
+    start(db).await
+}
+
+async fn start(db: Surreal<Db>) {
     let store = SurrealStore::new(db)
         .await
         .expect("Failed to create DWN store.");

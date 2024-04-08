@@ -104,7 +104,7 @@ let
       src = commonArgs.src;
 
       cargoExtraArgs = "--locked -p unavi-app";
-      pname = "app";
+      pname = "unavi-app";
       strictDeps = true;
 
       preBuild = components.generateAssetsScript;
@@ -135,7 +135,7 @@ let
       src = commonArgs.src;
 
       cargoExtraArgs = "--locked -p unavi-server";
-      pname = "server";
+      pname = "unavi-server";
       strictDeps = true;
 
       postInstall = ''

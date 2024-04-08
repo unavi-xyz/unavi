@@ -79,6 +79,7 @@ let
         || (lib.hasInfix "/crates/unavi-app/public/" path)
         || (lib.hasSuffix ".html" path)
         || (lib.hasSuffix ".json" path)
+        || (lib.hasSuffix ".wit" path)
         || (craneLib.filterCargoSources path type);
     };
   };
@@ -88,30 +89,19 @@ let
   cargoDoc = craneLib.cargoDoc (commonArgs // { inherit cargoArtifacts; });
   cargoFmt = craneLib.cargoFmt commonArgs;
 
-  unavi-app = craneLib.buildPackage (
+  app = craneLib.buildPackage (
     unaviAppConfig
     // {
       src = commonArgs.src;
 
       cargoExtraArgs = "--locked -p unavi-app";
-      pname = "unavi-app";
+      pname = "app";
       strictDeps = true;
 
       preBuild = components.generateAssetsScript;
       postInstall = ''
         cp -r assets $out/bin
       '';
-    }
-  );
-
-  unavi-server = craneLib.buildPackage (
-    unaviServerConfig
-    // {
-      src = commonArgs.src;
-
-      cargoExtraArgs = "--locked -p unavi-server";
-      pname = "unavi-server";
-      strictDeps = true;
     }
   );
 
@@ -129,14 +119,29 @@ let
       preBuild = components.generateAssetsScript;
     }
   );
+
+  server = craneLib.buildPackage (
+    unaviServerConfig
+    // {
+      src = commonArgs.src;
+
+      cargoExtraArgs = "--locked -p unavi-server";
+      pname = "server";
+      strictDeps = true;
+
+      postInstall = ''
+        ln -s ${web} $out/bin/web
+      '';
+    }
+  );
 in
 {
   buildInputs = commonArgs.buildInputs;
   nativeBuildInputs = commonArgs.nativeBuildInputs;
 
   apps = {
-    app = flake-utils.lib.mkApp { drv = unavi-app; };
-    server = flake-utils.lib.mkApp { drv = unavi-server; };
+    app = flake-utils.lib.mkApp { drv = app; };
+    server = flake-utils.lib.mkApp { drv = server; };
     web = flake-utils.lib.mkApp {
       drv = pkgs.writeShellScriptBin "web" ''
         ${pkgs.python3Minimal}/bin/python3 -m http.server --directory ${web} 8080
@@ -147,6 +152,6 @@ in
     inherit cargoClippy cargoDoc cargoFmt;
   };
   packages = {
-    inherit unavi-app unavi-server web;
+    inherit app server web;
   };
 }

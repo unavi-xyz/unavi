@@ -1,1 +1,3 @@
 # wired-protocol
+
+<!-- cargo-rdme -->

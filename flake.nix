@@ -92,7 +92,21 @@
         terraform = import ./deployments/terraform.nix (inputs // { inherit localSystem pkgs; });
       in
       {
-        apps = components.apps // crates.apps // terraform.apps;
+        apps =
+          components.apps
+          // crates.apps
+          // terraform.apps
+          // {
+            generate-readme = flake-utils.lib.mkApp {
+              drv = pkgs.writeShellScriptBin "generate-readme" ''
+                cd crates
+                for folder in */; do
+                  (cd $folder && cargo rdme)
+                done
+              '';
+            };
+          };
+
         checks = crates.checks;
         packages = components.packages // crates.packages // terraform.packages;
 
@@ -101,9 +115,9 @@
             with pkgs;
             [
               cargo-component
+              cargo-rdme
               cargo-watch
               curl
-              morph
               nodePackages.prettier
               rust-analyzer
             ]

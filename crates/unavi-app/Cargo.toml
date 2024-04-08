@@ -34,8 +34,8 @@ xwt-core = "0.2.2"
 rustls-pki-types = { version = "1.4.1", features = ["web"] }
 surrealdb = { workspace = true, features = ["kv-indxdb"] }
 tokio.workspace = true
-wasm-bindgen = "0.2.92"
-wasm-bindgen-futures = "0.4.42"
+wasm-bindgen = "=0.2.91"
+wasm-bindgen-futures = "0.4.41"
 xwt-web-sys = "0.6.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]

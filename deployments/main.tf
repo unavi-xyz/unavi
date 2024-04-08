@@ -36,7 +36,7 @@ resource "digitalocean_domain" "unavi_domain" {
 }
 
 resource "digitalocean_droplet" "unavi_server" {
-  name   = "server-${terraform.workspace}"
+  name   = "unavi-server-${terraform.workspace}"
   tags   = [terraform.workspace]
   region = "nyc3"
   size   = "s-1vcpu-1gb"
@@ -48,7 +48,7 @@ resource "digitalocean_droplet" "unavi_server" {
 }
 
 resource "cloudflare_record" "unavi_subdomain" {
-  name    = "server-${terraform.workspace}"
+  name    = "unavi-server-${terraform.workspace}"
   proxied = true
   ttl     = 1
   type    = "A"

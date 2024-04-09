@@ -12,6 +12,13 @@ let
     config.allowUnfree = true;
   };
 
+  mkDidWeb =
+    domain:
+    pkgs.lib.concatStrings [
+      "did:web:"
+      domain
+    ];
+
   mkServer = resource: {
     name = resource.value.name;
     value = {
@@ -20,12 +27,12 @@ let
 
       profiles.system =
         let
-          config = nixpkgs-stable.lib.nixosSystem {
+          config = nixpkgs-stable.lib.nixosSystem rec {
             system = "x86_64-linux";
             modules = [ ./configurations/unavi-server.nix ];
             specialArgs = {
               domain = resource.value.domain;
-              unavi-server = self.packages.x86_64-linux.unavi-server;
+              unavi-server = self.crates.${system}.mkUnaviServer { registry = mkDidWeb resource.value.domain; };
             };
           };
         in

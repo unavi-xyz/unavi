@@ -10,6 +10,18 @@
 let
   lib = pkgs.lib;
 
+  src = lib.cleanSourceWith {
+    src = ./.;
+    filter =
+      path: type:
+      (lib.hasInfix "/assets/" path)
+      || (lib.hasInfix "/crates/unavi-app/public/" path)
+      || (lib.hasSuffix ".html" path)
+      || (lib.hasSuffix ".json" path)
+      || (lib.hasSuffix ".wit" path)
+      || (craneLib.filterCargoSources path type);
+  };
+
   clibs =
     lib.optionals (pkgs.stdenv.isLinux && pkgs.stdenv.hostPlatform.system != "aarch64-linux") (
       with pkgs;
@@ -30,6 +42,8 @@ let
     );
 
   unaviAppConfig = {
+    inherit src;
+
     buildInputs =
       lib.optionals pkgs.stdenv.isLinux (
         with pkgs;
@@ -53,16 +67,32 @@ let
           libiconv
         ]
       );
-
     nativeBuildInputs = lib.optionals pkgs.stdenv.isLinux (with pkgs; [ alsa-lib.dev ]) ++ clibs;
+
+    cargoExtraArgs = "--locked -p unavi-app";
+    pname = "unavi-app";
+    strictDeps = true;
+
+    preBuild = components.generateAssetsScript;
+    postInstall = ''
+      cp -r assets $out/bin
+    '';
   };
 
   unaviServerConfig = {
+    inherit src;
+
     buildInputs = with pkgs; [ openssl.dev ];
     nativeBuildInputs = clibs;
+
+    cargoExtraArgs = "--locked -p unavi-server";
+    pname = "unavi-server";
+    strictDeps = true;
   };
 
   unaviWebConfig = {
+    inherit src;
+
     buildInputs = unaviAppConfig.buildInputs;
     nativeBuildInputs =
       with pkgs;
@@ -73,25 +103,24 @@ let
         wasm-tools
       ]
       ++ unaviAppConfig.nativeBuildInputs;
+
+    cargoExtraArgs = "--locked -p unavi-app";
+    pname = "web";
+    strictDeps = true;
+    trunkIndexPath = "./crates/unavi-app/index.html";
+    wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
+
+    preBuild = components.generateAssetsScript;
   };
 
   commonArgs = {
+    inherit src;
+
     buildInputs = unaviAppConfig.buildInputs ++ unaviServerConfig.buildInputs;
     nativeBuildInputs = unaviServerConfig.nativeBuildInputs ++ unaviWebConfig.nativeBuildInputs;
+
     pname = "unavi";
     strictDeps = true;
-
-    src = lib.cleanSourceWith {
-      src = ./.;
-      filter =
-        path: type:
-        (lib.hasInfix "/assets/" path)
-        || (lib.hasInfix "/crates/unavi-app/public/" path)
-        || (lib.hasSuffix ".html" path)
-        || (lib.hasSuffix ".json" path)
-        || (lib.hasSuffix ".wit" path)
-        || (craneLib.filterCargoSources path type);
-    };
   };
 
   cargoArtifacts = craneLib.buildDepsOnly commonArgs;
@@ -99,62 +128,51 @@ let
   cargoDoc = craneLib.cargoDoc (commonArgs // { inherit cargoArtifacts; });
   cargoFmt = craneLib.cargoFmt commonArgs;
 
-  unavi-app = craneLib.buildPackage (
-    unaviAppConfig
-    // {
-      src = commonArgs.src;
+  unavi-app = craneLib.buildPackage unaviAppConfig;
 
-      cargoExtraArgs = "--locked -p unavi-app";
-      pname = "unavi-app";
-      strictDeps = true;
+  registry = "did:web:localhost%3A3000";
 
-      preBuild = components.generateAssetsScript;
-      postInstall = ''
-        cp -r assets $out/bin
-      '';
-    }
-  );
+  unaviWebArtifacts = craneLib.buildDepsOnly unaviWebConfig;
 
-  web = craneLib.buildTrunkPackage (
-    unaviWebConfig
-    // {
-      src = commonArgs.src;
+  mkUnaviWeb =
+    { registry }: craneLib.buildTrunkPackage (unaviWebConfig // { UNAVI_REGISTRY_DID = registry; });
 
-      cargoExtraArgs = "--locked -p unavi-app";
-      pname = "web";
-      strictDeps = true;
-      trunkIndexPath = "./crates/unavi-app/index.html";
-      wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
+  unavi-web = mkUnaviWeb { inherit registry; };
 
-      preBuild = components.generateAssetsScript;
-    }
-  );
+  unaviServerArtifacts = craneLib.buildDepsOnly unaviServerConfig;
 
-  unavi-server = craneLib.buildPackage (
-    unaviServerConfig
-    // {
-      src = commonArgs.src;
+  mkUnaviServer =
+    input:
+    craneLib.buildPackage (
+      unaviServerConfig
+      // {
+        cargoArtifacts = unaviServerArtifacts;
 
-      cargoExtraArgs = "--locked -p unavi-server";
-      pname = "unavi-server";
-      strictDeps = true;
+        postInstall =
+          let
+            web = mkUnaviWeb input;
+          in
+          ''
+            mkdir -p $out/bin
+            ln -s ${web} $out/bin/web
+          '';
+      }
+    );
 
-      postInstall = ''
-        ln -s ${web} $out/bin/web
-      '';
-    }
-  );
+  unavi-server = mkUnaviServer { inherit registry; };
 in
 {
+  inherit mkUnaviServer;
+
   buildInputs = commonArgs.buildInputs;
   nativeBuildInputs = commonArgs.nativeBuildInputs;
 
   apps = {
     unavi-app = flake-utils.lib.mkApp { drv = unavi-app; };
     unavi-server = flake-utils.lib.mkApp { drv = unavi-server; };
-    web = flake-utils.lib.mkApp {
-      drv = pkgs.writeShellScriptBin "web" ''
-        ${pkgs.python3Minimal}/bin/python3 -m http.server --directory ${web} 8080
+    unavi-web = flake-utils.lib.mkApp {
+      drv = pkgs.writeShellScriptBin "unavi-web" ''
+        ${pkgs.python3Minimal}/bin/python3 -m http.server --directory ${unavi-web} 8080
       '';
     };
   };
@@ -162,6 +180,6 @@ in
     inherit cargoClippy cargoDoc cargoFmt;
   };
   packages = {
-    inherit unavi-app unavi-server web;
+    inherit unavi-app unavi-server unavi-web;
   };
 }

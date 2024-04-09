@@ -23,7 +23,7 @@ env:
   TF_WORKSPACE: ${{ inputs.channel || (github.ref_name == 'main' && 'nightly') || github.ref_name }}
 
 concurrency:
-  group: deploy-${{ env.TF_WORKSPACE }}
+  group: deploy-${{ inputs.channel || github.ref_name }}
   cancel-in-progress: false
 
 jobs:

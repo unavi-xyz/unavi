@@ -31,10 +31,6 @@ terraform {
 provider "cloudflare" {}
 provider "digitalocean" {}
 
-resource "digitalocean_domain" "unavi_domain" {
-  name = "unavi.xyz"
-}
-
 resource "digitalocean_droplet" "unavi_server" {
   name   = "unavi-server-${terraform.workspace}"
   tags   = [terraform.workspace]
@@ -58,7 +54,7 @@ resource "cloudflare_record" "unavi_subdomain" {
 
 resource "cloudflare_page_rule" "cache_html" {
   zone_id  = var.cloudflare_zone_id
-  target   = "*.${digitalocean_domain.unavi_domain.name}/*.html"
+  target   = "*.unavi.xyz/*.html"
   priority = 2
   actions {
     cache_level = "bypass"
@@ -67,7 +63,7 @@ resource "cloudflare_page_rule" "cache_html" {
 
 resource "cloudflare_page_rule" "cache_all" {
   zone_id  = var.cloudflare_zone_id
-  target   = "*.${digitalocean_domain.unavi_domain.name}/*"
+  target   = "*.unavi.xyz/*"
   priority = 1
   actions {
     cache_level    = "cache_everything"
@@ -77,7 +73,7 @@ resource "cloudflare_page_rule" "cache_all" {
 
 output "unavi_server" {
   value = {
-    domain = "${cloudflare_record.unavi_subdomain.name}.${digitalocean_domain.unavi_domain.name}"
+    domain = "${cloudflare_record.unavi_subdomain.name}.unavi.xyz"
     ip     = digitalocean_droplet.unavi_server.ipv4_address
     name   = digitalocean_droplet.unavi_server.name
   }

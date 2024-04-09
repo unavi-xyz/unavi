@@ -85,6 +85,8 @@
         terraform = import ./deployments/terraform.nix (inputs // { inherit localSystem pkgs; });
       in
       {
+        inherit crates;
+
         apps =
           components.apps
           // crates.apps

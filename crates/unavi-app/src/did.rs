@@ -11,7 +11,7 @@ use wired_protocol::registry::{
     registry_definition, registry_world_schema_url, World, REGISTRY_PROTOCOL_VERSION,
 };
 
-const ENV_REGISTRY_DID: Option<&str> = option_env!("REGISTRY_DID");
+const ENV_REGISTRY_DID: Option<&str> = option_env!("UNAVI_REGISTRY_DID");
 const LOCAL_REGISTRY_DID: &str = "did:web:localhost%3A3000";
 
 fn registry_did() -> &'static str {
@@ -54,6 +54,7 @@ fn create_worlds(
 
                 task.start(async move {
                     let did = registry_did();
+                    info!("Creating world at registry: {}", did);
 
                     actor
                         .create_record()

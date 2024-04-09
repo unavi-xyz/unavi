@@ -31,6 +31,16 @@ terraform {
 provider "cloudflare" {}
 provider "digitalocean" {}
 
+resource "digitalocean_ssh_key" "github" {
+  name       = "unavi-github"
+  public_key = file("./keys/github.pub")
+}
+
+resource "digitalocean_ssh_key" "kayh" {
+  name       = "kayh"
+  public_key = file("./keys/kayh.pub")
+}
+
 resource "digitalocean_droplet" "unavi_server" {
   name   = "unavi-server-${terraform.workspace}"
   tags   = [terraform.workspace]
@@ -38,8 +48,8 @@ resource "digitalocean_droplet" "unavi_server" {
   size   = "s-1vcpu-1gb"
   image  = 152510211
   ssh_keys = [
-    41375001, // GitHub
-    41382380, // Kayh
+    digitalocean_ssh_key.github.id,
+    digitalocean_ssh_key.kayh.id
   ]
 }
 

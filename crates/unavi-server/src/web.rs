@@ -2,7 +2,8 @@ use axum::{routing::get_service, Router};
 use tower_http::services::{ServeDir, ServeFile};
 
 pub fn router() -> Router {
-    let mut path = std::env::current_dir().unwrap();
+    let mut path = std::env::current_exe().unwrap();
+    path.pop();
     path.push("web");
 
     let mut index_path = path.clone();

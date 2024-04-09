@@ -13,7 +13,7 @@ didkit.workspace = true
 dwn-server = "0.0.5"
 dwn.workspace = true
 rcgen = "0.13.0" 
-serde = { version = "1.0.197", features = ["derive"] }
+serde.workspace = true
 serde_json.workspace = true
 surrealdb = { workspace = true, features = ["kv-speedb"] }
 time = "0.3.30"

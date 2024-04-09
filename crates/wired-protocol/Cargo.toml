@@ -8,4 +8,8 @@ edition.workspace = true
 [dependencies]
 dwn.workspace = true
 semver = "1.0.22"
+serde.workspace = true
 serde_json.workspace = true
+
+[dev-dependencies]
+jsonschema = { version = "0.17.1", features = ["draft201909", "draft202012"] }

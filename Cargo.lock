@@ -2320,9 +2320,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.0.91"
+version = "1.0.92"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1fd97381a8cc6493395a5afc4c691c1084b3768db713b73aa215217aa245d153"
+checksum = "2678b2e3449475e95b0aa6f9b506a28e61b3dc8996592b983695e8ebb58a8b41"
 dependencies = [
  "jobserver",
  "libc",
@@ -3721,7 +3721,7 @@ checksum = "75b325c5dbd37f80359721ad39aca5a29fb04c89279657cffdda8736d0c0b9d2"
 [[package]]
 name = "dwn"
 version = "0.0.5"
-source = "git+https://github.com/unavi-xyz/dwn.git#b277763a15056dd451fa12b73b11ed1a348de75c"
+source = "git+https://github.com/unavi-xyz/dwn.git#3b7acfe105b2ae58243a460ed133199b31ac7d94"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -5804,6 +5804,7 @@ dependencies = [
  "anyhow",
  "base64 0.21.7",
  "bytecount",
+ "clap",
  "fancy-regex",
  "fraction",
  "getrandom",
@@ -5815,6 +5816,7 @@ dependencies = [
  "parking_lot",
  "percent-encoding",
  "regex",
+ "reqwest 0.11.27",
  "serde",
  "serde_json",
  "time",
@@ -10067,9 +10069,9 @@ dependencies = [
 
 [[package]]
 name = "surrealdb-core"
-version = "1.3.1"
+version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0fcec4e37f6a316d8b872595a2c983c6b520b03bd1c0ff6185633a08f0e7e1a3"
+checksum = "a16fc8b784a23ddedddf4086005ee054d916a1ee1ef3c5e1f45793cc5f8fed1d"
 dependencies = [
  "addr",
  "any_ascii",
@@ -10241,9 +10243,9 @@ dependencies = [
 
 [[package]]
 name = "sysinfo"
-version = "0.30.8"
+version = "0.30.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b1a378e48fb3ce3a5cf04359c456c9c98ff689bcf1c1bc6e6a31f247686f275"
+checksum = "e9a84fe4cfc513b41cb2596b624e561ec9e7e1c4b46328e496ed56a53514ef2a"
 dependencies = [
  "cfg-if",
  "core-foundation-sys",
@@ -12293,7 +12295,9 @@ name = "wired-protocol"
 version = "0.0.2"
 dependencies = [
  "dwn",
+ "jsonschema",
  "semver",
+ "serde",
  "serde_json",
 ]
 

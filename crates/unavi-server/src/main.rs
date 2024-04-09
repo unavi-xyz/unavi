@@ -23,7 +23,7 @@ struct Args {
     #[arg(long)]
     enable_dwn: bool,
 
-    /// Serves a web client.
+    /// Hosts a web build of the UNAVI app.
     #[arg(long)]
     enable_web: bool,
 

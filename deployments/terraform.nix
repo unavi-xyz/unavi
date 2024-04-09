@@ -6,39 +6,52 @@
 }:
 {
   apps = {
-    tf-apply = flake-utils.lib.mkApp {
-      drv = pkgs.writeShellScriptBin "apply" ''
-        cd deployments
+    tf-universal-apply = flake-utils.lib.mkApp {
+      drv = pkgs.writeShellScriptBin "universal-apply" ''
+        cd deployments/environments/universal
+
+        ${pkgs.terraform}/bin/terraform init \
+          && ${pkgs.terraform}/bin/terraform apply -auto-approve
+      '';
+    };
+
+    tf-format = flake-utils.lib.mkApp {
+      drv = pkgs.writeShellScriptBin "format" ''
+        cd deployments/environments/universal
+        ${pkgs.terraform}/bin/terraform fmt . 
+        cd ../common
+        ${pkgs.terraform}/bin/terraform fmt . 
+        cd ../channel
+        ${pkgs.terraform}/bin/terraform fmt . 
+      '';
+    };
+
+    tf-channel-apply = flake-utils.lib.mkApp {
+      drv = pkgs.writeShellScriptBin "channel-apply" ''
+        cd deployments/environments/channel
 
         ${pkgs.terraform}/bin/terraform init \
           && ${pkgs.terraform}/bin/terraform apply -auto-approve
 
-        mkdir -p terraform/$TF_WORKSPACE
+        mkdir -p ../..output/$TF_WORKSPACE
           
-        ${pkgs.terraform}/bin/terraform output -json > terraform/$TF_WORKSPACE/terraform-output.json
+        ${pkgs.terraform}/bin/terraform output -json > ../../output/$TF_WORKSPACE/terraform-output.json
 
-        jq -rc '.[].value.ip' terraform/$TF_WORKSPACE/terraform-output.json | while read -r ip; do
+        jq -rc '.[].value.ip' ../../output/$TF_WORKSPACE/terraform-output.json | while read -r ip; do
           echo "Adding $ip to known hosts"
           ssh-keyscan -H "$ip" >> "$HOME/.ssh/known_hosts"
         done
       '';
     };
 
-    tf-format = flake-utils.lib.mkApp {
-      drv = pkgs.writeShellScriptBin "format" ''
-        cd deployments
-        ${pkgs.terraform}/bin/terraform fmt . 
-      '';
-    };
-
-    tf-destroy = flake-utils.lib.mkApp {
-      drv = pkgs.writeShellScriptBin "destroy" ''
-        cd deployments
+    tf-channel-destroy = flake-utils.lib.mkApp {
+      drv = pkgs.writeShellScriptBin "channel-destroy" ''
+        cd deployments/environments/channel
 
         ${pkgs.terraform}/bin/terraform init \
           && ${pkgs.terraform}/bin/terraform destroy -auto-approve
 
-        rm -rf terraform/$TF_WORKSPACE
+        rm -rf ../../output/$TF_WORKSPACE
       '';
     };
   };

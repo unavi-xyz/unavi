@@ -1,7 +1,7 @@
 # Terraform
 *.tfstate*
 *.tfvars
-/deployments/.terraform
+.terraform
 
 # Nix
 /result
@@ -13,5 +13,5 @@
 /crates/unavi-app/dist
 
 # Other
-/.unavi
+.unavi
 /assets/components

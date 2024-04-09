@@ -35,12 +35,12 @@ let
     };
   };
 
-  terraformDir = ./terraform;
+  outputDir = ./output;
 
-  subdirs = builtins.attrNames (builtins.readDir terraformDir);
+  subdirs = builtins.attrNames (builtins.readDir outputDir);
 
   loadTfOutput =
-    subdir: builtins.fromJSON (builtins.readFile "${terraformDir}/${subdir}/terraform-output.json");
+    subdir: builtins.fromJSON (builtins.readFile "${outputDir}/${subdir}/terraform-output.json");
 
   nodeList = map (subdir: map mkServer (builtins.attrValues (loadTfOutput subdir))) subdirs;
 in

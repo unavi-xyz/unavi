@@ -42,7 +42,6 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
 
       - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - run: nix run .#tf-universal-apply
         env:

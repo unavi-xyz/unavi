@@ -21,7 +21,7 @@ pub fn registry_world_schema_url() -> String {
         .unwrap()
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct World {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,

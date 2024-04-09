@@ -43,7 +43,7 @@
     after = [ "network.target" ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
-      ExecStart = "${unavi-server}/bin/unavi-server --domain ${domain} --enable-did-host --enable-dwn --enable-web --enable-world-host --enable-world-registry";
+      ExecStart = "${unavi-server}/bin/unavi-server --debug --domain ${domain} --enable-did-host --enable-dwn --enable-web --enable-world-host --enable-world-registry";
       Restart = "always";
     };
   };

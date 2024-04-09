@@ -20,10 +20,10 @@ env:
   CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
   DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
   TF_VAR_cloudflare_zone_id: ${{ secrets.TF_VAR_CLOUDFLARE_ZONE_ID }}
-  TF_WORKSPACE: ${{ inputs.channel || github.ref_name }}
+  TF_WORKSPACE: ${{ inputs.channel || (github.ref_name == 'main' && 'nightly') || github.ref_name }}
 
 concurrency:
-  group: "deploy-${{ inputs.channel || github.ref_name }}"
+  group: deploy-${{ env.TF_WORKSPACE }}
   cancel-in-progress: false
 
 jobs:

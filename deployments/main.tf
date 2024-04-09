@@ -44,7 +44,7 @@ resource "digitalocean_droplet" "unavi_server" {
 }
 
 resource "cloudflare_record" "unavi_subdomain" {
-  name    = terraform.workspace == "stable" ? "app" : terraform.workspace == "main" ? "nightly" : terraform.workspace
+  name    = terraform.workspace == "stable" ? "app" : terraform.workspace
   proxied = true
   ttl     = 1
   type    = "A"

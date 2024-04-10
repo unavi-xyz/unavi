@@ -33,7 +33,7 @@
         ${pkgs.terraform}/bin/terraform init \
           && ${pkgs.terraform}/bin/terraform apply -auto-approve
 
-        mkdir -p ../..output/$TF_WORKSPACE
+        mkdir -p ../../output/$TF_WORKSPACE
           
         ${pkgs.terraform}/bin/terraform output -json > ../../output/$TF_WORKSPACE/terraform-output.json
 

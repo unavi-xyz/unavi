@@ -64,6 +64,7 @@ let
           darwin.apple_sdk.frameworks.AudioUnit
           darwin.apple_sdk.frameworks.Cocoa
           darwin.apple_sdk.frameworks.CoreAudio
+          darwin.apple_sdk.frameworks.SystemConfiguration
         ]
       );
     nativeBuildInputs = lib.optionals pkgs.stdenv.isLinux (with pkgs; [ alsa-lib.dev ]) ++ clibs;

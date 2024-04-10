@@ -27,10 +27,10 @@ let
     [
       clang
       cmake
+      libcxx
       pkg-config
       rustPlatform.bindgenHook
     ]
-    ++ lib.optionals pkgs.stdenv.isLinux (with pkgs; [ libcxx ])
     ++ lib.optionals (pkgs.stdenv.isLinux && pkgs.stdenv.hostPlatform.system != "aarch64-linux") (
       with pkgs;
       [

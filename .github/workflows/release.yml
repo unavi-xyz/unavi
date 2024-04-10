@@ -87,7 +87,6 @@ jobs:
     with:
       channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
       ref: release/v${{ needs.version.outputs.version }}
-      disable-terraform: true
 
   release:
     needs:

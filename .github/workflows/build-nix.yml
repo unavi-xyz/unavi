@@ -1,17 +1,20 @@
-name: "Build Nix"
+name: Build Nix
 
 on:
   workflow_call:
     inputs:
+      channel:
+        description: The channel to build.
+        required: true
+        type: string
       ref:
-        description: "The ref to build."
+        description: The ref to build.
         required: true
         type: string
       attr:
-        description: "Only build this attribute."
+        description: Only build this attribute.
         required: false
         type: string
-  workflow_dispatch:
 
 jobs:
   nix-matrix:
@@ -30,7 +33,7 @@ jobs:
           matrix=$(nix eval --json .#githubMatrix.matrix)
 
           if [ -n "${{ inputs.attr }}" ]; then
-          matrix=$(echo $matrix | jq '{include: [.include[] | select(.attr == "${{ inputs.attr }}")]}')
+            matrix=$(echo $matrix | jq '{include: [.include[] | select(.attr == "${{ inputs.attr }}")]}')
           fi
 
           echo "Matrix: $matrix"
@@ -51,7 +54,7 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
-      - run: nix build .?submodules=1#packages.${{ matrix.attr }}
+      - run: nix build .?submodules=1#packages.${{ matrix.attr }}-${{ inputs.channel }}
       - run: |
           cp -rL result tmp
           cd tmp

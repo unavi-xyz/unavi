@@ -1,13 +1,16 @@
-name: "Build Windows"
+name: Build Windows
 
 on:
   workflow_call:
     inputs:
-      ref:
-        description: "The ref to build."
+      channel:
+        description: The channel to build.
         required: true
         type: string
-  workflow_dispatch:
+      ref:
+        description: The ref to build.
+        required: true
+        type: string
 
 jobs:
   generate-assets:
@@ -65,6 +68,8 @@ jobs:
         run: |
           cargo build -p ${{ matrix.package }} --release --target x86_64-pc-windows-msvc
           mv target/x86_64-pc-windows-msvc/release/*.exe result
+        env:
+          UNAVI_REGISTRY_DID: ${{ inputs.channel == 'stable' && 'app' || inputs.channel }}.unavi.xyz
 
       - run: Compress-Archive -Path result -DestinationPath x86_64-windows.${{ matrix.package }}.zip
 

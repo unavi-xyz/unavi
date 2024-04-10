@@ -55,12 +55,14 @@ jobs:
     needs: version
     uses: ./.github/workflows/build-nix.yml
     with:
+      channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
       ref: v${{ needs.version.outputs.version }}
 
   build-windows:
     needs: version
     uses: ./.github/workflows/build-windows.yml
     with:
+      channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
       ref: v${{ needs.version.outputs.version }}
 
   deploy:

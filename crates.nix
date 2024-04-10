@@ -42,32 +42,30 @@ let
   unaviAppConfig = {
     inherit src;
 
-    buildInputs =
+    buildInputs = lib.optionals pkgs.stdenv.isLinux (
+      with pkgs;
+      [
+        alsa-lib
+        libxkbcommon
+        udev
+        vulkan-loader
+        wayland
+        xorg.libX11
+        xorg.libXcursor
+        xorg.libXi
+        xorg.libXrandr
+      ]
+    );
+    nativeBuildInputs =
       lib.optionals pkgs.stdenv.isLinux (
         with pkgs;
         [
-          alsa-lib
-          libxkbcommon
+          alsa-lib.dev
           openssl.dev
-          udev
-          vulkan-loader
-          wayland
-          xorg.libX11
-          xorg.libXcursor
-          xorg.libXi
-          xorg.libXrandr
         ]
       )
-      ++ lib.optionals pkgs.stdenv.isDarwin (
-        with pkgs;
-        [
-          darwin.apple_sdk.frameworks.AudioUnit
-          darwin.apple_sdk.frameworks.Cocoa
-          darwin.apple_sdk.frameworks.CoreAudio
-          darwin.apple_sdk.frameworks.SystemConfiguration
-        ]
-      );
-    nativeBuildInputs = lib.optionals pkgs.stdenv.isLinux (with pkgs; [ alsa-lib.dev ]) ++ clibs;
+      ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs; [ darwin.apple_sdk.frameworks.Cocoa ])
+      ++ clibs;
 
     cargoExtraArgs = "--locked -p unavi-app";
     pname = "unavi-app";

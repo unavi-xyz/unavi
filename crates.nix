@@ -42,27 +42,20 @@ let
   unaviAppConfig = {
     inherit src;
 
-    buildInputs = lib.optionals pkgs.stdenv.isLinux (
-      with pkgs;
-      [
-        alsa-lib
-        libxkbcommon
-        openssl
-        udev
-        vulkan-loader
-        wayland
-        xorg.libX11
-        xorg.libXcursor
-        xorg.libXi
-        xorg.libXrandr
-      ]
-    );
-    nativeBuildInputs =
+    buildInputs =
       lib.optionals pkgs.stdenv.isLinux (
         with pkgs;
         [
-          alsa-lib.dev
-          openssl.dev
+          alsa-lib
+          libxkbcommon
+          openssl
+          udev
+          vulkan-loader
+          wayland
+          xorg.libX11
+          xorg.libXcursor
+          xorg.libXi
+          xorg.libXrandr
         ]
       )
       ++ lib.optionals pkgs.stdenv.isDarwin (
@@ -70,6 +63,14 @@ let
         [
           darwin.apple_sdk.frameworks.AudioUnit
           darwin.apple_sdk.frameworks.Cocoa
+        ]
+      );
+    nativeBuildInputs =
+      lib.optionals pkgs.stdenv.isLinux (
+        with pkgs;
+        [
+          alsa-lib.dev
+          openssl.dev
         ]
       )
       ++ clibs;
@@ -82,6 +83,17 @@ let
     postInstall = ''
       cp -r assets $out/bin
     '';
+  };
+
+  unaviServerConfig = {
+    inherit src;
+
+    buildInputs = with pkgs; [ openssl ];
+    nativeBuildInputs = with pkgs; [ openssl.dev ] ++ clibs;
+
+    cargoExtraArgs = "--locked -p unavi-server";
+    pname = "unavi-server";
+    strictDeps = true;
   };
 
   unaviWebConfig = {
@@ -105,17 +117,6 @@ let
     wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
 
     preBuild = components.generateAssetsScript;
-  };
-
-  unaviServerConfig = {
-    inherit src;
-
-    buildInputs = with pkgs; [ openssl ] ++ unaviWebConfig.buildInputs;
-    nativeBuildInputs = with pkgs; [ openssl.dev ] ++ clibs ++ unaviWebConfig.nativeBuildInputs;
-
-    cargoExtraArgs = "--locked -p unavi-server";
-    pname = "unavi-server";
-    strictDeps = true;
   };
 
   commonArgs = {

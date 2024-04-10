@@ -19,7 +19,31 @@ let
       domain
     ];
 
-  mkServer = resource: {
+  mkAppInput = resource: { registry = mkDidWeb resource.value.domain; };
+
+  mkAppPackage = resource: self.crates.${localSystem}.mkUnaviApp (mkAppInput resource);
+  mkServerPackage = resource: self.crates.${localSystem}.mkUnaviServer (mkAppInput resource);
+
+  mkPackages =
+    { resource, subdir }:
+    [
+      {
+        name = pkgs.lib.concatStrings [
+          "unavi-app-"
+          subdir
+        ];
+        value = mkAppPackage resource;
+      }
+      {
+        name = pkgs.lib.concatStrings [
+          "unavi-server-"
+          subdir
+        ];
+        value = mkServerPackage resource;
+      }
+    ];
+
+  mkServerNode = resource: {
     name = resource.value.name;
     value = {
       hostname = resource.value.ip;
@@ -32,7 +56,7 @@ let
             modules = [ ./configurations/unavi-server.nix ];
             specialArgs = {
               domain = resource.value.domain;
-              unavi-server = self.crates.${system}.mkUnaviServer { registry = mkDidWeb resource.value.domain; };
+              unavi-server = self.crates.${system}.mkUnaviServer (mkAppInput resource);
             };
           };
         in
@@ -43,15 +67,22 @@ let
   };
 
   outputDir = ./output;
-
   subdirs = builtins.attrNames (builtins.readDir outputDir);
 
   loadTfOutput =
     subdir: builtins.fromJSON (builtins.readFile "${outputDir}/${subdir}/terraform-output.json");
 
-  nodeList = map (subdir: map mkServer (builtins.attrValues (loadTfOutput subdir))) subdirs;
+  nodeList = map (subdir: map mkServerNode (builtins.attrValues (loadTfOutput subdir))) subdirs;
+
+  packageList = map (
+    subdir:
+    map mkPackages (
+      map (resource: { inherit resource subdir; }) (builtins.attrValues (loadTfOutput subdir))
+    )
+  ) subdirs;
 in
 {
   checks = deploy-rs.lib.${localSystem}.deployChecks self.deploy;
   deploy.nodes = builtins.listToAttrs (builtins.concatLists nodeList);
+  packages = builtins.listToAttrs (builtins.concatLists (builtins.concatLists packageList));
 }

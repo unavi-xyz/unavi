@@ -39,6 +39,7 @@
       rust-overlay,
       ...
     }@inputs:
+
     flake-utils.lib.eachDefaultSystem (
       localSystem:
       let
@@ -83,6 +84,8 @@
         );
 
         terraform = import ./deployments/terraform.nix (inputs // { inherit localSystem pkgs; });
+
+        deployments = import ./deployments (inputs // { inherit localSystem; });
       in
       {
         inherit crates;
@@ -103,7 +106,7 @@
           };
 
         checks = crates.checks;
-        packages = components.packages // crates.packages;
+        packages = components.packages // crates.packages // deployments.packages;
 
         devShells.default = craneLib.devShell {
           packages =

@@ -128,41 +128,45 @@ let
   cargoDoc = craneLib.cargoDoc (commonArgs // { inherit cargoArtifacts; });
   cargoFmt = craneLib.cargoFmt commonArgs;
 
-  unavi-app = craneLib.buildPackage unaviAppConfig;
-
   registry = "did:web:localhost%3A3000";
 
+  mkAppEnv =
+    { registry }:
+    {
+      UNAVI_REGISTRY_DID = registry;
+    };
+
+  unaviAppArtifacts = craneLib.buildDepsOnly unaviAppConfig;
+  mkUnaviApp =
+    input:
+    craneLib.buildPackage (unaviWebConfig // { cargoArtifacts = unaviAppArtifacts; } // mkAppEnv input);
+  unavi-app = mkUnaviApp { inherit registry; };
+
   unaviWebArtifacts = craneLib.buildDepsOnly unaviWebConfig;
-
   mkUnaviWeb =
-    { registry }: craneLib.buildTrunkPackage (unaviWebConfig // { UNAVI_REGISTRY_DID = registry; });
-
+    input:
+    craneLib.buildTrunkPackage (
+      unaviWebConfig // { cargoArtifacts = unaviWebArtifacts; } // mkAppEnv input
+    );
   unavi-web = mkUnaviWeb { inherit registry; };
 
   unaviServerArtifacts = craneLib.buildDepsOnly unaviServerConfig;
-
   mkUnaviServer =
     input:
     craneLib.buildPackage (
       unaviServerConfig
       // {
         cargoArtifacts = unaviServerArtifacts;
-
-        postInstall =
-          let
-            web = mkUnaviWeb input;
-          in
-          ''
-            mkdir -p $out/bin
-            ln -s ${web} $out/bin/web
-          '';
+        postInstall = ''
+          mkdir -p $out/bin
+          ln -s ${mkUnaviWeb input} $out/bin/web
+        '';
       }
     );
-
   unavi-server = mkUnaviServer { inherit registry; };
 in
 {
-  inherit mkUnaviServer;
+  inherit mkUnaviApp mkUnaviServer;
 
   buildInputs = commonArgs.buildInputs;
   nativeBuildInputs = commonArgs.nativeBuildInputs;

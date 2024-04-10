@@ -77,6 +77,7 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
 
       - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Deploy
         run: nix-shell -p deploy-rs --command "deploy .?submodules=1#unavi-server-${{ env.TF_WORKSPACE }} --skip-checks"

@@ -65,7 +65,13 @@ let
           openssl.dev
         ]
       )
-      ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs; [ darwin.apple_sdk.frameworks.Cocoa ])
+      ++ lib.optionals pkgs.stdenv.isDarwin (
+        with pkgs;
+        [
+          darwin.apple_sdk.frameworks.AudioUnit
+          darwin.apple_sdk.frameworks.Cocoa
+        ]
+      )
       ++ clibs;
 
     cargoExtraArgs = "--locked -p unavi-app";

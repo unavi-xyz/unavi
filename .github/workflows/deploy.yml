@@ -6,16 +6,12 @@ on:
   workflow_call:
     inputs:
       channel:
-        required: true
         type: string
       ref:
-        required: true
         type: string
       run_terraform:
-        required: false
         type: boolean
       run_deploy:
-        required: false
         type: boolean
   workflow_dispatch:
 

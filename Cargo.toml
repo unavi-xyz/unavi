@@ -45,5 +45,6 @@ opt-level = "z"
 
 [patch.crates-io]
 dwn = { git = "https://github.com/unavi-xyz/dwn.git" }
+dwn-server = { git = "https://github.com/unavi-xyz/dwn.git" }
 wasm-bridge = { git = "https://github.com/kayhhh/wasm-bridge.git", branch = "wasmtime-18" }
 wasm-bridge-wasi = { git = "https://github.com/kayhhh/wasm-bridge.git", branch = "wasmtime-18" }

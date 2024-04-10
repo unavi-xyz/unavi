@@ -1,2 +1,9 @@
-[target.wasm32-unknown-unknown]
-rustflags = ["--cfg=web_sys_unstable_apis"] # Needed for xwt-web-sys
+[target.'cfg(target_family = "wasm")']
+rustflags = [
+  "--cfg=web_sys_unstable_apis", # xwt-web-sys
+] 
+
+[target.'cfg(not(target_family = "wasm"))']
+rustflags = [
+  "--cfg=surrealdb_unstable" # surreal-kv
+]

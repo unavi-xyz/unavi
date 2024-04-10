@@ -14,7 +14,7 @@ use std::{
 
 use axum::Router;
 use dwn::{store::SurrealStore, DWN};
-use surrealdb::{engine::local::SpeeDb, Surreal};
+use surrealdb::{engine::local::SurrealKV, Surreal};
 use tracing::{info, info_span, Instrument};
 
 mod did_host;
@@ -40,7 +40,7 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
 
     std::fs::create_dir_all(DB_DIR).unwrap();
 
-    let db = Surreal::new::<SpeeDb>(DB_DIR).await.unwrap();
+    let db = Surreal::new::<SurrealKV>(DB_DIR).await.unwrap();
     let store = SurrealStore::new(db).await.unwrap();
     let dwn = Arc::new(DWN::from(store));
 

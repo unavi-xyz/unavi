@@ -27,7 +27,6 @@ let
     [
       clang
       cmake
-      libcxx
       pkg-config
       rustPlatform.bindgenHook
     ]

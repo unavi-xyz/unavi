@@ -17,7 +17,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  apply-terraform:
+    secrets: inherit
+    uses: ./.github/workflows/deploy.yml
+    with:
+      channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
+      run_deploy: false
+
   version:
+    needs: apply-terraform
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.semver.outputs.version }}
@@ -72,6 +80,7 @@ jobs:
     with:
       channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
       ref: release/v${{ needs.version.outputs.version }}
+      run_terraform: false
 
   release:
     needs:

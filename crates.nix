@@ -36,7 +36,8 @@ let
         glibc_multi
         glibc_multi.dev
       ]
-    );
+    )
+    ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs; [ libiconv ]);
 
   unaviAppConfig = {
     inherit src;
@@ -63,7 +64,6 @@ let
           darwin.apple_sdk.frameworks.AudioUnit
           darwin.apple_sdk.frameworks.Cocoa
           darwin.apple_sdk.frameworks.CoreAudio
-          libiconv
         ]
       );
     nativeBuildInputs = lib.optionals pkgs.stdenv.isLinux (with pkgs; [ alsa-lib.dev ]) ++ clibs;

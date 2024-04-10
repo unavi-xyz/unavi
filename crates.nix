@@ -23,21 +23,19 @@ let
   };
 
   clibs =
-    lib.optionals (pkgs.stdenv.isLinux && pkgs.stdenv.hostPlatform.system != "aarch64-linux") (
+    with pkgs;
+    [
+      clang
+      cmake
+      pkg-config
+      rustPlatform.bindgenHook
+    ]
+    ++ lib.optionals pkgs.stdenv.isLinux (with pkgs; [ libcxx ])
+    ++ lib.optionals (pkgs.stdenv.isLinux && pkgs.stdenv.hostPlatform.system != "aarch64-linux") (
       with pkgs;
       [
         glibc_multi
         glibc_multi.dev
-      ]
-    )
-    ++ lib.optionals pkgs.stdenv.isLinux (
-      with pkgs;
-      [
-        clang
-        cmake
-        libcxx
-        pkg-config
-        rustPlatform.bindgenHook
       ]
     );
 
@@ -63,7 +61,9 @@ let
       ++ lib.optionals pkgs.stdenv.isDarwin (
         with pkgs;
         [
+          darwin.apple_sdk.frameworks.AudioUnit
           darwin.apple_sdk.frameworks.Cocoa
+          darwin.apple_sdk.frameworks.CoreAudio
           libiconv
         ]
       );

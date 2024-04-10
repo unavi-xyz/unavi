@@ -9,9 +9,9 @@ on:
         type: string
       ref:
         type: string
-      run_terraform:
+      disable-terraform:
         type: boolean
-      run_deploy:
+      disable-deploy:
         type: boolean
   workflow_dispatch:
 
@@ -31,7 +31,7 @@ concurrency:
 jobs:
   apply-terraform:
     runs-on: ubuntu-latest
-    if: inputs.run_terraform != false
+    if: inputs.disable-terraform != true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,7 +61,7 @@ jobs:
   deploy:
     needs: apply-terraform
     runs-on: ubuntu-latest
-    if: inputs.run_deploy != false
+    if: inputs.disable-deploy != true
     steps:
       - uses: actions/checkout@v4
         with:

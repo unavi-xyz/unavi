@@ -1,5 +1,5 @@
 data "digitalocean_ssh_key" "github" {
-  name = "unavi-github"
+  name = "github"
 }
 
 data "digitalocean_ssh_key" "kayh" {

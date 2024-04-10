@@ -29,7 +29,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  apply-terraform:
+  terraform:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -43,6 +43,7 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
 
       - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - if: inputs.disable-terraform != true
         name: Apply universal
@@ -61,7 +62,7 @@ jobs:
           default_author: github_actions
 
   deploy:
-    needs: apply-terraform
+    needs: terraform
     runs-on: ubuntu-latest
     if: inputs.disable-deploy != true
     steps:

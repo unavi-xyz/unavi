@@ -84,17 +84,6 @@ let
     '';
   };
 
-  unaviServerConfig = {
-    inherit src;
-
-    buildInputs = with pkgs; [ openssl ];
-    nativeBuildInputs = with pkgs; [ openssl.dev ] ++ clibs;
-
-    cargoExtraArgs = "--locked -p unavi-server";
-    pname = "unavi-server";
-    strictDeps = true;
-  };
-
   unaviWebConfig = {
     inherit src;
 
@@ -116,6 +105,17 @@ let
     wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
 
     preBuild = components.generateAssetsScript;
+  };
+
+  unaviServerConfig = {
+    inherit src;
+
+    buildInputs = with pkgs; [ openssl ] ++ unaviWebConfig.buildInputs;
+    nativeBuildInputs = with pkgs; [ openssl.dev ] ++ clibs ++ unaviWebConfig.nativeBuildInputs;
+
+    cargoExtraArgs = "--locked -p unavi-server";
+    pname = "unavi-server";
+    strictDeps = true;
   };
 
   commonArgs = {

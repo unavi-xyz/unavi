@@ -1,5 +1,5 @@
 resource "digitalocean_ssh_key" "github" {
-  name       = "unavi-github"
+  name       = "github"
   public_key = file("./keys/github.pub")
 }
 

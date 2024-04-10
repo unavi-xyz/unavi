@@ -22,7 +22,7 @@ jobs:
     uses: ./.github/workflows/deploy.yml
     with:
       channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
-      run_deploy: false
+      disable-deploy: true
 
   version:
     needs: apply-terraform
@@ -80,7 +80,7 @@ jobs:
     with:
       channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
       ref: release/v${{ needs.version.outputs.version }}
-      run_terraform: false
+      disable-terraform: false
 
   release:
     needs:

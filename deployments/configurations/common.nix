@@ -1,14 +1,23 @@
-{ lib, modulesPath, pkgs, ... }: {
-  imports =
-    lib.optional (builtins.pathExists ./do-userdata.nix) ./do-userdata.nix
-    ++ [ (modulesPath + "/virtualisation/digital-ocean-config.nix") ];
+{
+  lib,
+  modulesPath,
+  pkgs,
+  ...
+}:
+{
+  imports = lib.optional (builtins.pathExists ./do-userdata.nix) ./do-userdata.nix ++ [
+    (modulesPath + "/virtualisation/digital-ocean-config.nix")
+  ];
 
   boot.tmp.cleanOnBoot = true;
 
   nix = {
     settings = {
       auto-optimise-store = true;
-      experimental-features = [ "nix-command" "flakes" ];
+      experimental-features = [
+        "nix-command"
+        "flakes"
+      ];
     };
 
     gc = {
@@ -28,5 +37,8 @@
     stateVersion = "23.11";
   };
 
-  environment.systemPackages = with pkgs; [ htop vim ];
+  environment.systemPackages = with pkgs; [
+    htop
+    vim
+  ];
 }

@@ -139,7 +139,7 @@ let
   unaviAppArtifacts = craneLib.buildDepsOnly unaviAppConfig;
   mkUnaviApp =
     input:
-    craneLib.buildPackage (unaviWebConfig // { cargoArtifacts = unaviAppArtifacts; } // mkAppEnv input);
+    craneLib.buildPackage (unaviAppConfig // { cargoArtifacts = unaviAppArtifacts; } // mkAppEnv input);
   unavi-app = mkUnaviApp { inherit registry; };
 
   unaviWebArtifacts = craneLib.buildDepsOnly unaviWebConfig;

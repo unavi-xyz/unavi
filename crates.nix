@@ -47,6 +47,7 @@ let
       [
         alsa-lib
         libxkbcommon
+        openssl
         udev
         vulkan-loader
         wayland
@@ -80,8 +81,8 @@ let
   unaviServerConfig = {
     inherit src;
 
-    buildInputs = with pkgs; [ openssl.dev ];
-    nativeBuildInputs = clibs;
+    buildInputs = with pkgs; [ openssl ];
+    nativeBuildInputs = with pkgs; [ openssl.dev ] ++ clibs;
 
     cargoExtraArgs = "--locked -p unavi-server";
     pname = "unavi-server";

@@ -49,7 +49,7 @@ async fn main() {
 
     std::fs::create_dir_all(DB_PATH).expect("Failed to create database dir.");
 
-    let db = Surreal::new::<surrealdb::engine::local::SpeeDb>(DB_PATH)
+    let db = Surreal::new::<surrealdb::engine::local::SurrealKV>(DB_PATH)
         .await
         .expect("Failed to create SurrealDB.");
 

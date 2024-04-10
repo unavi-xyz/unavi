@@ -43,28 +43,30 @@ let
       }
     ];
 
-  mkServerNode = resource: {
-    name = resource.value.name;
-    value = {
-      hostname = resource.value.ip;
-      sshUser = "root";
+  mkServerNode =
+    { resource, subdir }:
+    {
+      name = resource.value.name;
+      value = {
+        hostname = resource.value.ip;
+        sshUser = "root";
 
-      profiles.system =
-        let
-          config = nixpkgs-stable.lib.nixosSystem rec {
-            system = "x86_64-linux";
-            modules = [ ./configurations/unavi-server.nix ];
-            specialArgs = {
-              domain = resource.value.domain;
-              unavi-server = self.crates.${system}.mkUnaviServer (mkAppInput resource);
+        profiles.system =
+          let
+            config = nixpkgs-stable.lib.nixosSystem rec {
+              system = "x86_64-linux";
+              modules = [ ./configurations/unavi-server.nix ];
+              specialArgs = {
+                domain = resource.value.domain;
+                unavi-server = self.packages.${system}."unavi-server-${subdir}";
+              };
             };
+          in
+          {
+            path = deploy-rs.lib.${localSystem}.activate.nixos config;
           };
-        in
-        {
-          path = deploy-rs.lib.${localSystem}.activate.nixos config;
-        };
+      };
     };
-  };
 
   outputDir = ./output;
   subdirs = builtins.attrNames (builtins.readDir outputDir);
@@ -72,14 +74,15 @@ let
   loadTfOutput =
     subdir: builtins.fromJSON (builtins.readFile "${outputDir}/${subdir}/terraform-output.json");
 
-  nodeList = map (subdir: map mkServerNode (builtins.attrValues (loadTfOutput subdir))) subdirs;
+  forEachResource =
+    fn:
+    map (
+      subdir:
+      map (resource: (fn) { inherit resource subdir; }) (builtins.attrValues (loadTfOutput subdir))
+    ) subdirs;
 
-  packageList = map (
-    subdir:
-    map mkPackages (
-      map (resource: { inherit resource subdir; }) (builtins.attrValues (loadTfOutput subdir))
-    )
-  ) subdirs;
+  nodeList = forEachResource mkServerNode;
+  packageList = forEachResource mkPackages;
 in
 {
   checks = deploy-rs.lib.${localSystem}.deployChecks self.deploy;

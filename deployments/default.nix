@@ -19,10 +19,10 @@ let
       domain
     ];
 
-  mkAppInput = resource: { registry = mkDidWeb resource.value.domain; };
+  mkAppInput = resource: { registry = mkDidWeb resource.value.domain_server; };
 
   mkAppPackage = resource: self.crates.${localSystem}.mkUnaviApp (mkAppInput resource);
-  mkServerPackage = resource: self.crates.${localSystem}.mkUnaviServer (mkAppInput resource);
+  mkWebPackage = resource: self.crates.${localSystem}.mkUnaviWeb (mkAppInput resource);
 
   mkPackages =
     { resource, subdir }:
@@ -36,17 +36,17 @@ let
       }
       {
         name = pkgs.lib.concatStrings [
-          "unavi-server-"
+          "unavi-web-"
           subdir
         ];
-        value = mkServerPackage resource;
+        value = mkWebPackage resource;
       }
     ];
 
-  mkServerNode =
+  mkNode =
     { resource, subdir }:
     {
-      name = resource.value.name;
+      name = subdir;
       value = {
         hostname = resource.value.ip;
         sshUser = "root";
@@ -57,8 +57,10 @@ let
               system = "x86_64-linux";
               modules = [ ./configurations/unavi-server.nix ];
               specialArgs = {
-                domain = resource.value.domain;
-                unavi-server = self.packages.${system}."unavi-server-${subdir}";
+                domain-server = resource.value.domain_server;
+                domain-web = resource.value.domain_web;
+                unavi-server = self.packages.${system}.unavi-server;
+                unavi-web = self.packages.${system}."unavi-web-${subdir}";
               };
             };
           in
@@ -81,7 +83,7 @@ let
       map (resource: (fn) { inherit resource subdir; }) (builtins.attrValues (loadTfOutput subdir))
     ) subdirs;
 
-  nodeList = forEachResource mkServerNode;
+  nodeList = forEachResource mkNode;
   packageList = forEachResource mkPackages;
 in
 {

@@ -18,7 +18,6 @@ use surrealdb::{engine::local::SurrealKV, Surreal};
 use tracing::{info, info_span, Instrument};
 
 mod did_host;
-mod web;
 mod world_host;
 mod world_registry;
 
@@ -29,7 +28,6 @@ pub struct ServerOptions {
     pub domain: String,
     pub enable_did_host: bool,
     pub enable_dwn: bool,
-    pub enable_web: bool,
     pub enable_world_host: bool,
     pub enable_world_registry: bool,
     pub port: u16,
@@ -53,10 +51,6 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
 
     if opts.enable_dwn {
         router = router.merge(dwn_server::router(dwn.clone()));
-    }
-
-    if opts.enable_web {
-        router = router.merge(web::router());
     }
 
     if opts.enable_world_host {

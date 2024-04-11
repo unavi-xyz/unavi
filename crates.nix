@@ -156,23 +156,10 @@ let
     );
   unavi-web = mkUnaviWeb { inherit registry; };
 
-  unaviServerArtifacts = craneLib.buildDepsOnly unaviServerConfig;
-  mkUnaviServer =
-    input:
-    craneLib.buildPackage (
-      unaviServerConfig
-      // {
-        cargoArtifacts = unaviServerArtifacts;
-        postInstall = ''
-          mkdir -p $out/bin
-          ln -s ${mkUnaviWeb input} $out/bin/web
-        '';
-      }
-    );
-  unavi-server = mkUnaviServer { inherit registry; };
+  unavi-server = craneLib.buildPackage (unaviServerConfig);
 in
 {
-  inherit mkUnaviApp mkUnaviServer;
+  inherit mkUnaviApp mkUnaviWeb;
 
   buildInputs = commonArgs.buildInputs;
   nativeBuildInputs = commonArgs.nativeBuildInputs;

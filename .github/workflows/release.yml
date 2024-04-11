@@ -109,20 +109,20 @@ jobs:
 
       - name: Merge release into main
         run: |
-          git merge --no-ff --no-edit v${{ needs.version.outputs.version }}
+          git merge --no-ff --no-edit release/v${{ needs.version.outputs.version }}
           git push origin main
 
       - if: ${{ inputs.increment == 'beta' }}
         name: Merge beta
         run: |
           # Create beta branch if it doesn't exist
-          git checkout v${{ needs.version.outputs.version }}
+          git checkout release/v${{ needs.version.outputs.version }}
           git fetch origin beta || git branch beta
 
           # Merge release into beta
           git checkout beta
           git pull origin beta
-          git merge --no-ff --no-edit v${{ needs.version.outputs.version }}
+          git merge --no-ff --no-edit release/v${{ needs.version.outputs.version }}
           git push origin beta
 
       - if: ${{ inputs.increment == 'stable' }}
@@ -133,7 +133,7 @@ jobs:
           git push origin --delete stable || echo "Branch doesn't exist"
 
           # Create stable branch from release
-          git checkout v${{ needs.version.outputs.version }}
+          git checkout release/v${{ needs.version.outputs.version }}
           git checkout -b stable
           git push origin stable
 

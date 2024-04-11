@@ -39,8 +39,8 @@ resource "cloudflare_record" "subdomain_web" {
 output "unavi_server" {
   value = {
     domain_server = "${cloudflare_record.subdomain_server.name}.unavi.xyz"
-    domain_web = "${cloudflare_record.subdomain_web.name}.unavi.xyz"
-    ip     = digitalocean_droplet.unavi_server.ipv4_address
-    name   = digitalocean_droplet.unavi_server.name
+    domain_web    = "${cloudflare_record.subdomain_web.name}.unavi.xyz"
+    ip            = digitalocean_droplet.unavi_server.ipv4_address
+    name          = digitalocean_droplet.unavi_server.name
   }
 }

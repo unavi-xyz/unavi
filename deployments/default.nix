@@ -41,6 +41,13 @@ let
         ];
         value = mkWebPackage resource;
       }
+      {
+        name = pkgs.lib.concatStrings [
+          "unavi-server-"
+          subdir
+        ];
+        value = self.packages.${localSystem}.unavi-server;
+      }
     ];
 
   mkNode =
@@ -59,7 +66,7 @@ let
               specialArgs = {
                 domain-server = resource.value.domain_server;
                 domain-web = resource.value.domain_web;
-                unavi-server = self.packages.${system}.unavi-server;
+                unavi-server = self.packages.${system}."unavi-server-${subdir}";
                 unavi-web = self.packages.${system}."unavi-web-${subdir}";
               };
             };

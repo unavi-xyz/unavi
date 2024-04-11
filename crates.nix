@@ -89,7 +89,11 @@ let
     inherit src;
 
     buildInputs = with pkgs; [ openssl ];
-    nativeBuildInputs = with pkgs; [ openssl.dev ] ++ clibs;
+    nativeBuildInputs =
+      with pkgs;
+      [ openssl.dev ]
+      ++ clibs
+      ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs; [ darwin.apple_sdk.frameworks.Cocoa ]);
 
     cargoExtraArgs = "--locked -p unavi-server";
     pname = "unavi-server";

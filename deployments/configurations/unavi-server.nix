@@ -36,6 +36,18 @@
         locations = {
           "/" = {
             proxyPass = "http://localhost:3000";
+            extraConfig = ''
+              add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+              add_header 'Access-Control-Allow-Origin' '*';
+
+              if ($request_method = 'OPTIONS') {
+                  add_header 'Access-Control-Allow-Origin' '*';
+                  add_header 'Access-Control-Max-Age' 1728000;
+                  add_header 'Content-Length' 0;
+                  add_header 'Content-Type' 'text/plain; charset=utf-8';
+                  return 204;
+              }
+            '';
           };
         };
       };

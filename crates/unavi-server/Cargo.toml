@@ -16,9 +16,7 @@ rcgen = "0.13.0"
 serde.workspace = true
 serde_json.workspace = true
 surrealdb = { workspace = true, features = ["kv-surrealkv"] }
-time = "0.3.30"
 tokio = { workspace = true, features = ["rt-multi-thread", "signal"] }
-tower-http = { version = "0.5.2", features = ["fs"] }
 tracing-subscriber.workspace = true
 tracing.workspace = true
 wired-protocol.workspace = true

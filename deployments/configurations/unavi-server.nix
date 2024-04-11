@@ -1,7 +1,9 @@
 {
-  domain,
+  domain-server,
+  domain-web,
   pkgs,
   unavi-server,
+  unavi-web,
   ...
 }:
 {
@@ -17,7 +19,7 @@
 
   security.acme = {
     acceptTerms = true;
-    defaults.email = "admin@${domain}";
+    defaults.email = "admin@${domain-server}";
   };
 
   services.nginx = {
@@ -26,13 +28,26 @@
     recommendedOptimisation = true;
     recommendedProxySettings = true;
     recommendedTlsSettings = true;
-    virtualHosts.${domain} = {
-      enableACME = true;
-      forceSSL = true;
-      http2 = true;
-      locations = {
-        "/" = {
-          proxyPass = "http://localhost:3000";
+    virtualHosts = {
+      ${domain-server} = {
+        enableACME = true;
+        forceSSL = true;
+        http2 = true;
+        locations = {
+          "/" = {
+            proxyPass = "http://localhost:3000";
+          };
+        };
+      };
+      ${domain-web} = {
+        enableACME = true;
+        forceSSL = true;
+        http2 = true;
+        root = unavi-web;
+        locations = {
+          "/" = {
+            index = "index.html";
+          };
         };
       };
     };
@@ -43,7 +58,7 @@
     after = [ "network.target" ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
-      ExecStart = "${unavi-server}/bin/unavi-server --debug --domain ${domain} --enable-did-host --enable-dwn --enable-web --enable-world-host --enable-world-registry";
+      ExecStart = "${unavi-server}/bin/unavi-server --debug --domain ${domain-server} --enable-did-host --enable-dwn --enable-world-host --enable-world-registry";
       Restart = "always";
     };
   };

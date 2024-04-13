@@ -95,20 +95,20 @@ jobs:
       - deploy
       - version
     runs-on: ubuntu-latest
-    env:
-      TARGET_BRANCH: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           ref: release/v${{ needs.version.outputs.version }}
 
       - name: Git config
         run: |
-          git config user.name github-actions
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git config user.name github-actions
 
       - name: Merge release into main
         run: |
+          git fetch --all
           git switch -c main --track origin/main
 
           git merge --no-ff --no-edit release/v${{ needs.version.outputs.version }}

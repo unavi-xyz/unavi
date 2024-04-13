@@ -100,7 +100,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: release/v${{ needs.version.outputs.version }}
 
       - name: Git config
         run: |
@@ -109,24 +109,21 @@ jobs:
 
       - name: Merge release into main
         run: |
+          git switch -c main --track origin/main
+
           git merge --no-ff --no-edit release/v${{ needs.version.outputs.version }}
-          git push origin main
+          git push
 
       - if: ${{ inputs.increment == 'beta' }}
-        name: Merge beta
+        name: Merge release into beta
         run: |
-          # Create beta branch if it doesn't exist
-          git checkout release/v${{ needs.version.outputs.version }}
-          git fetch origin beta || git branch beta
+          git switch -c beta --track origin/beta
 
-          # Merge release into beta
-          git checkout beta
-          git pull origin beta
           git merge --no-ff --no-edit release/v${{ needs.version.outputs.version }}
-          git push origin beta
+          git push
 
       - if: ${{ inputs.increment == 'stable' }}
-        name: Merge stable
+        name: Merge release into stable
         run: |
           # Delete beta and stable branches if they exist
           git push origin --delete beta || echo "Branch doesn't exist"

@@ -9,8 +9,6 @@ license.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-bitflags.workspace = true
-tracing.workspace = true
 wit-bindgen-rt.workspace = true
 
 [package.metadata.component]

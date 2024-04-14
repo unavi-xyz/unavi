@@ -9,14 +9,10 @@ license.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-bitflags.workspace = true
 wit-bindgen-rt.workspace = true
 
 [package.metadata.component]
 package = "unavi:ui"
-
-[package.metadata.component.target]
-world = "host"
 
 [package.metadata.component.target.dependencies]
 "wired:input" = { path = "../../wired-protocol/spatial/wired-input" }

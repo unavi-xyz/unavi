@@ -34,11 +34,11 @@ pub struct UserActor(pub Actor<SurrealStore<Db>, SurrealStore<Db>>);
 #[derive(Event)]
 pub struct CreateWorld(pub World);
 
-fn create_initial_world(mut writer: EventWriter<CreateWorld>) {
-    writer.send(CreateWorld(World {
-        name: Some("New World".to_string()),
-        ..Default::default()
-    }));
+fn create_initial_world(mut _writer: EventWriter<CreateWorld>) {
+    // writer.send(CreateWorld(World {
+    //     name: Some("New World".to_string()),
+    //     ..Default::default()
+    // }));
 }
 
 fn create_worlds(

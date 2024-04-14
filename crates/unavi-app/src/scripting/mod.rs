@@ -2,12 +2,13 @@ use bevy::prelude::*;
 
 use self::{
     asset::Wasm,
-    script::{ScriptLoadQueue, WasmEngine},
+    script::{load_scripts, log_script_output},
+    unavi_system::spawn_unavi_system,
 };
 
 mod asset;
 mod script;
-mod stream;
+mod unavi_system;
 
 pub struct ScriptingPlugin;
 
@@ -15,33 +16,7 @@ impl Plugin for ScriptingPlugin {
     fn build(&self, app: &mut App) {
         app.register_asset_loader(asset::WasmLoader)
             .init_asset::<Wasm>()
-            .init_resource::<ScriptLoadQueue>()
-            .init_resource::<WasmEngine>()
-            .add_systems(Startup, load_unavi_system);
-
-        #[cfg(target_family = "wasm")]
-        {
-            use self::script::wasm::{load_scripts, update_scripts, Scripts};
-
-            app.init_non_send_resource::<Scripts>()
-                .add_systems(Update, (load_scripts, update_scripts));
-        }
-
-        #[cfg(not(target_family = "wasm"))]
-        {
-            use self::script::native::{load_scripts, update_scripts, Scripts};
-
-            app.init_resource::<Scripts>()
-                .add_systems(Update, (load_scripts, update_scripts));
-        }
+            .add_systems(Startup, spawn_unavi_system)
+            .add_systems(Update, (load_scripts, log_script_output));
     }
-}
-
-fn load_unavi_system(mut load_queue: ResMut<ScriptLoadQueue>, asset_server: Res<AssetServer>) {
-    let handle = asset_server.load(component_path("unavi_system"));
-    load_queue.0.push(handle);
-}
-
-fn component_path(name: &str) -> String {
-    format!("components/{}_{}.wasm", name, env!("CARGO_PKG_VERSION"))
 }

@@ -6,9 +6,7 @@ use bevy::{
 };
 
 #[derive(Asset, Debug, TypePath)]
-pub struct Wasm {
-    pub bytes: Vec<u8>,
-}
+pub struct Wasm(pub Vec<u8>);
 
 #[derive(Default)]
 pub struct WasmLoader;
@@ -26,7 +24,7 @@ impl AssetLoader for WasmLoader {
         Box::pin(async move {
             let mut bytes = Vec::new();
             reader.read_to_end(&mut bytes).await?;
-            Ok(Wasm { bytes })
+            Ok(Wasm(bytes))
         })
     }
 

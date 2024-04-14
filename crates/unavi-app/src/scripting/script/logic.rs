@@ -2,14 +2,15 @@ use std::sync::{Arc, Mutex};
 
 use bevy::{prelude::*, tasks::AsyncComputeTaskPool};
 
-use crate::scripting::asset::Wasm;
+use crate::scripting::{asset::Wasm, LibraryComponents};
 
 use super::{ScriptLoadQueue, ScriptsVec, WasmEngine, WasmScript};
 
 pub fn load_scripts(
-    scripts: ScriptsVec,
     engine: Res<WasmEngine>,
+    host_scripts: Res<LibraryComponents>,
     mut load_queue: ResMut<ScriptLoadQueue>,
+    scripts: ScriptsVec,
     wasm_assets: Res<Assets<Wasm>>,
 ) {
     if load_queue.0.is_empty() {
@@ -27,9 +28,10 @@ pub fn load_scripts(
             let bytes = wasm.bytes.clone();
             let engine = engine.0.clone();
             let scripts = scripts.clone();
+            let host_scripts = host_scripts.clone();
 
             pool.spawn(async move {
-                let script = match WasmScript::new(&engine, &bytes).await {
+                let script = match WasmScript::new(&engine, &bytes, &host_scripts).await {
                     Ok(script) => script,
                     Err(e) => {
                         error!("Failed to create script: {}", e);

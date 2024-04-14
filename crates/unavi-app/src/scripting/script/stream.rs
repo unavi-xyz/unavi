@@ -1,12 +1,17 @@
-use std::sync::{Arc, Mutex};
+use std::sync::mpsc::{Receiver, SyncSender};
 
 use bytes::Bytes;
-use wasm_bridge_wasi::preview2::{HostOutputStream, StdoutStream, StreamResult, Subscribe};
+use tracing::debug;
+use wasm_bridge_wasi::{HostOutputStream, StdoutStream, StreamResult, Subscribe};
 
 #[derive(Clone, Debug)]
-pub struct OutStream {
-    pub data: Arc<Mutex<Vec<u8>>>,
-    pub max: usize,
+pub struct OutStream(SyncSender<Bytes>);
+
+impl OutStream {
+    pub fn new() -> (Self, Receiver<Bytes>) {
+        let (send, recv) = std::sync::mpsc::sync_channel(100);
+        (Self(send), recv)
+    }
 }
 
 #[wasm_bridge::async_trait]
@@ -16,13 +21,11 @@ impl Subscribe for OutStream {
 
 impl HostOutputStream for OutStream {
     fn write(&mut self, buf: Bytes) -> StreamResult<()> {
-        assert!(
-            buf.len() <= self.max,
-            "We specified to write at most {} bytes at a time.",
-            self.max
-        );
-        self.data.try_lock().unwrap().extend(buf);
-        StreamResult::Ok(())
+        if let Err(err) = self.0.try_send(buf) {
+            debug!("Failed to send bytes to out stream: {}", err)
+        }
+
+        Ok(())
     }
 
     fn flush(&mut self) -> StreamResult<()> {
@@ -30,7 +33,7 @@ impl HostOutputStream for OutStream {
     }
 
     fn check_write(&mut self) -> StreamResult<usize> {
-        StreamResult::Ok(self.max)
+        StreamResult::Ok(1)
     }
 }
 

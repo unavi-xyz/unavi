@@ -90,23 +90,23 @@ mod _rt {
 #[allow(unused_macros)]
 #[doc(hidden)]
 
-macro_rules! __export_host_impl {
+macro_rules! __export_ui_impl {
   ($ty:ident) => (self::export!($ty with_types_in self););
   ($ty:ident with_types_in $($path_to_types_root:tt)*) => (
   $($path_to_types_root)*::exports::unavi::ui::api::__export_unavi_ui_api_cabi!($ty with_types_in $($path_to_types_root)*::exports::unavi::ui::api);
   )
 }
 #[doc(inline)]
-pub(crate) use __export_host_impl as export;
+pub(crate) use __export_ui_impl as export;
 
 #[cfg(target_arch = "wasm32")]
-#[link_section = "component-type:wit-bindgen:0.21.0:host:encoded world"]
+#[link_section = "component-type:wit-bindgen:0.21.0:ui:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 186] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07@\x01A\x02\x01A\x02\x01\
-B\x02\x01@\0\0s\x04\0\x0anew-bubble\x01\0\x04\x01\x0cunavi:ui/api\x05\0\x04\x01\x0d\
-unavi:ui/host\x04\0\x0b\x0a\x01\0\x04host\x03\0\0\0G\x09producers\x01\x0cprocess\
-ed-by\x02\x0dwit-component\x070.201.0\x10wit-bindgen-rust\x060.21.0";
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 182] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07>\x01A\x02\x01A\x02\x01\
+B\x02\x01@\0\0s\x04\0\x0anew-bubble\x01\0\x04\x01\x0cunavi:ui/api\x05\0\x04\x01\x0b\
+unavi:ui/ui\x04\0\x0b\x08\x01\0\x02ui\x03\0\0\0G\x09producers\x01\x0cprocessed-b\
+y\x02\x0dwit-component\x070.201.0\x10wit-bindgen-rust\x060.21.0";
 
 #[inline(never)]
 #[doc(hidden)]

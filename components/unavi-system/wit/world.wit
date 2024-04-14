@@ -1,6 +1,6 @@
 package unavi:system;
 
-world system {
+world script {
     import unavi:ui/api;
 
     include wired:script/script; 

@@ -27,17 +27,37 @@ let
       cargoExtraArgs = "--locked -p ${pname}";
       doCheck = false;
       strictDeps = true;
-
-      postInstall =
-        let
-          wasm_name = lib.replaceStrings [ "-" ] [ "_" ] pname;
-        in
-        "mv $out/lib/${wasm_name}.wasm $out/lib/${wasm_name}_${crate.version}.wasm";
     });
 
   componentNames = lib.mapAttrsToList (name: _: name) (builtins.readDir ./components);
 
-  components = (map (name: buildComponent name) componentNames);
+  components = pkgs.symlinkJoin {
+    name = "components";
+    paths = map buildComponent componentNames;
+
+    nativeBuildInputs = with pkgs; [ wasm-tools ];
+
+    postBuild =
+      let
+        config = pkgs.writeText "config.yml" ''
+          dependencies:
+            unavi:ui/api: ${buildComponent "unavi-ui"}/lib/unavi_ui.wasm
+        '';
+      in
+      lib.concatStrings (
+        map (
+          name:
+          let
+            wasm_name = lib.replaceStrings [ "-" ] [ "_" ] name;
+            out_name = "${wasm_name}_${crate.version}";
+          in
+          ''
+            (wasm-tools compose --config ${config} -o $out/lib/${out_name}.wasm $out/lib/${wasm_name}.wasm && rm $out/lib/${wasm_name}.wasm) || \
+            mv $out/lib/${wasm_name}.wasm $out/lib/${out_name}.wasm
+          ''
+        ) componentNames
+      );
+  };
 
   generateAssetsScript = ''
     rm -rf assets/components
@@ -61,9 +81,6 @@ in
   };
 
   packages = {
-    components = pkgs.symlinkJoin {
-      name = "components";
-      paths = [ components ];
-    };
+    inherit components;
   };
 }

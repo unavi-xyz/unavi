@@ -17,7 +17,7 @@ bevy = "0.13.1"
 bevy-tnua = "0.16.0"
 bevy-tnua-xpbd3d = "0.4.0"
 bevy_async_task = "0.1.0"
-bevy_vrm = "0.0.9"
+bevy_vrm = "0.0.10"
 bevy_xpbd_3d = { version = "0.4.2", features = ["simd"] }
 bytes = "1.5.0"
 clap.workspace = true
@@ -26,8 +26,8 @@ dwn.workspace = true
 serde_json.workspace = true
 thiserror = "1.0.58"
 tracing.workspace = true
-wasm-bridge = { version = "0.3.0", features = ["async", "component-model"] }
-wasm-bridge-wasi = "0.3.0"
+wasm-bridge = { version = "0.4.0", features = ["async", "component-model"] }
+wasm-bridge-wasi = "0.4.0"
 wired-protocol.workspace = true
 xwt = "0.6.0"
 xwt-core = "0.2.2"

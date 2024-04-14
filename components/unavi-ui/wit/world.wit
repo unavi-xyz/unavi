@@ -1,10 +1,6 @@
 package unavi:ui;
 
-world imports {
-  import api;
-}
-
-world host {
+world ui {
   export api;
 }
 

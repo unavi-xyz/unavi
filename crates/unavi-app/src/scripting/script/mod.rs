@@ -1,35 +1,40 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{mpsc::Receiver, Arc, Mutex};
 
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    tasks::{block_on, futures_lite::future, AsyncComputeTaskPool, Task},
+};
+use bytes::Bytes;
 use wasm_bridge::{
-    component::{new_component_async, Linker},
+    component::{Component, Linker, ResourceTable},
     AsContextMut, Config, Engine, Store,
 };
-use wasm_bridge_wasi::preview2::{command, ResourceTable, WasiCtx, WasiCtxBuilder, WasiView};
+use wasm_bridge_wasi::{WasiCtx, WasiCtxBuilder, WasiView};
 
-use self::host::add_host_components;
+use self::stream::OutStream;
 
-use super::{asset::Wasm, stream::OutStream};
+use super::asset::Wasm;
 
-mod components;
-mod host;
-pub mod logic;
-#[cfg(not(target_family = "wasm"))]
-pub mod native;
-#[cfg(target_family = "wasm")]
-pub mod wasm;
+mod stream;
 
 wasm_bridge::component::bindgen!({
     async: true,
     path: "../../wired-protocol/spatial/wired-script/world.wit",
-    world: "script",
 });
 
-#[derive(Resource, Default)]
-pub struct ScriptLoadQueue(pub Vec<Handle<Wasm>>);
+#[derive(Bundle, Clone)]
+pub struct ScriptBundle {
+    pub wasm: Handle<Wasm>,
+}
 
-#[derive(Resource)]
-pub struct WasmEngine(pub Arc<Engine>);
+impl ScriptBundle {
+    pub fn new(wasm: Handle<Wasm>) -> Self {
+        ScriptBundle { wasm }
+    }
+}
+
+#[derive(Component, Clone)]
+pub struct WasmEngine(pub Engine);
 
 impl Default for WasmEngine {
     fn default() -> Self {
@@ -39,79 +44,117 @@ impl Default for WasmEngine {
 
         let engine = Engine::new(&config).expect("Failed to create engine");
 
-        Self(Arc::new(engine))
+        Self(engine)
     }
 }
 
-pub struct WasmScript {
-    pub initialized: bool,
+#[derive(Component)]
+pub struct InstantiatedScript(pub Script);
+
+#[derive(Component)]
+pub struct ScriptOutput(pub Arc<Mutex<Receiver<Bytes>>>);
+
+pub struct ScriptTaskOutput {
     pub script: Script,
-    pub stdout: Arc<Mutex<Vec<u8>>>,
-    pub store: Store<StoreState>,
+    pub store: Store<RuntimeState>,
 }
 
-impl WasmScript {
-    pub async fn new(engine: &Engine, bytes: &[u8]) -> Result<Self, wasm_bridge::Error> {
-        let mut linker = Linker::new(engine);
-        command::add_to_linker(&mut linker)?;
+pub fn load_scripts(
+    mut commands: Commands,
+    mut tasks: Local<Vec<Task<ScriptTaskOutput>>>,
+    to_load: Query<(Entity, &Handle<Wasm>), Without<WasmEngine>>,
+    wasm_assets: Res<Assets<Wasm>>,
+) {
+    let pool = AsyncComputeTaskPool::get();
 
-        let out_bytes = Arc::new(Mutex::new(Vec::<u8>::new()));
-        let out_stream = OutStream {
-            data: out_bytes.clone(),
-            max: 512,
+    for (i, task) in tasks.iter_mut().enumerate() {
+        if let Some(_output) = block_on(future::poll_once(task)) {
+            info!("Loaded script!");
+
+            let _task = tasks.remove(i);
+            break;
+        }
+    }
+
+    for (entity, wasm) in to_load.iter() {
+        let bytes = match wasm_assets.get(wasm) {
+            Some(wasm) => wasm.0.clone(),
+            None => continue,
         };
 
-        let wasi = WasiCtxBuilder::new().stdout(out_stream).build();
+        let (stream, recv) = OutStream::new();
 
-        let mut store = Store::new(
-            engine,
-            StoreState {
-                table: ResourceTable::new(),
-                wasi,
-            },
-        );
+        // Create a new engine for each script.
+        // In the future an engine could be shared across many scripts.
+        let engine = WasmEngine::default();
 
-        add_host_components(&mut linker, &mut store).await?;
+        commands
+            .entity(entity)
+            .insert(engine.clone())
+            .insert(ScriptOutput(Arc::new(Mutex::new(recv))));
 
-        let component = new_component_async(engine, bytes).await?;
-        let (script, _) =
-            Script::instantiate_async(store.as_context_mut(), &component, &linker).await?;
+        let task = pool.spawn(async move {
+            let wasi = WasiCtxBuilder::new().stdout(stream).build();
 
-        Ok(Self {
-            initialized: false,
-            script,
-            stdout: out_bytes,
-            store,
-        })
-    }
+            let mut store = Store::new(&engine.0, RuntimeState::new(wasi));
 
-    pub async fn update(&mut self, delta: f32) -> Result<(), wasm_bridge::Error> {
-        if !self.initialized {
-            self.script
+            let mut linker = Linker::new(&engine.0);
+            wasm_bridge_wasi::command::add_to_linker(&mut linker).unwrap();
+
+            let component = Component::new_safe(&engine.0, bytes).await.unwrap();
+
+            let (script, _) =
+                Script::instantiate_async(store.as_context_mut(), &component, &linker)
+                    .await
+                    .unwrap();
+
+            script
                 .interface0
-                .call_init(self.store.as_context_mut())
-                .await?;
+                .call_init(store.as_context_mut())
+                .await
+                .unwrap();
 
-            self.initialized = true;
+            ScriptTaskOutput { script, store }
+        });
 
-            return Ok(());
-        }
-
-        self.script
-            .interface0
-            .call_update(self.store.as_context_mut(), delta)
-            .await?;
-
-        Ok(())
+        tasks.push(task);
     }
 }
 
-pub struct StoreState {
+pub fn log_script_output(outputs: Query<&ScriptOutput>) {
+    for output in outputs.iter() {
+        let recv = output.0.lock().unwrap();
+
+        let mut out = Vec::new();
+
+        while let Ok(bytes) = recv.try_recv() {
+            out.extend(&bytes);
+        }
+
+        if out.is_empty() {
+            continue;
+        }
+
+        let out_str = String::from_utf8_lossy(&out);
+        info!("{}", out_str);
+    }
+}
+
+pub struct RuntimeState {
     table: ResourceTable,
     wasi: WasiCtx,
 }
 
-impl WasiView for StoreState {
+impl RuntimeState {
+    pub fn new(wasi: WasiCtx) -> Self {
+        Self {
+            table: Default::default(),
+            wasi,
+        }
+    }
+}
+
+impl WasiView for RuntimeState {
     fn table(&mut self) -> &mut ResourceTable {
         &mut self.table
     }
@@ -119,5 +162,3 @@ impl WasiView for StoreState {
         &mut self.wasi
     }
 }
-
-pub type ScriptsVec = Arc<Mutex<Vec<Arc<Mutex<WasmScript>>>>>;

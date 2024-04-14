@@ -129,24 +129,24 @@ mod _rt {
 #[allow(unused_macros)]
 #[doc(hidden)]
 
-macro_rules! __export_system_impl {
+macro_rules! __export_script_impl {
   ($ty:ident) => (self::export!($ty with_types_in self););
   ($ty:ident with_types_in $($path_to_types_root:tt)*) => (
   $($path_to_types_root)*::exports::wired::script::lifecycle::__export_wired_script_lifecycle_cabi!($ty with_types_in $($path_to_types_root)*::exports::wired::script::lifecycle);
   )
 }
 #[doc(inline)]
-pub(crate) use __export_system_impl as export;
+pub(crate) use __export_script_impl as export;
 
 #[cfg(target_arch = "wasm32")]
-#[link_section = "component-type:wit-bindgen:0.21.0:system:encoded world"]
+#[link_section = "component-type:wit-bindgen:0.21.0:script:encoded world"]
 #[doc(hidden)]
 pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 282] = *b"\
 \0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x9d\x01\x01A\x02\x01\
 A\x04\x01B\x02\x01@\0\0s\x04\0\x0anew-bubble\x01\0\x03\x01\x0cunavi:ui/api\x05\0\
 \x01B\x05\x01@\0\x01\0\x04\0\x04init\x01\0\x01@\x01\x0ddelta-secondsv\x01\0\x04\0\
 \x06update\x01\x01\x04\0\x07cleanup\x01\0\x04\x01\x16wired:script/lifecycle\x05\x01\
-\x04\x01\x13unavi:system/system\x04\0\x0b\x0c\x01\0\x06system\x03\0\0\0G\x09prod\
+\x04\x01\x13unavi:system/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09prod\
 ucers\x01\x0cprocessed-by\x02\x0dwit-component\x070.201.0\x10wit-bindgen-rust\x06\
 0.21.0";
 

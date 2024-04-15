@@ -5,5 +5,8 @@ world lib {
 }
 
 interface shapes {
-  new-cube: func() -> string;
+  use wired:gltf/mesh.{mesh};
+  use wired:math/types.{vec3};
+
+  create-cuboid: func(half-size: vec3) -> mesh;
 }

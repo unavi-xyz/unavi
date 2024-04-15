@@ -16,3 +16,4 @@ package = "unavi:mirror"
 
 [package.metadata.component.target.dependencies]
 "wired:gltf" = { path = "../../wired-protocol/spatial/wit/wired-gltf" }
+"wired:math" = { path = "../../wired-protocol/spatial/wit/wired-math" }

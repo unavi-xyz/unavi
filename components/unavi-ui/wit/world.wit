@@ -1,6 +1,6 @@
 package unavi:ui;
 
-world ui {
+world lib {
   export api;
 }
 

@@ -2,9 +2,9 @@
 // Options used:
 pub mod exports {
     pub mod unavi {
-        pub mod ui {
+        pub mod shapes {
             #[allow(clippy::all)]
-            pub mod api {
+            pub mod shapes {
                 #[used]
                 #[doc(hidden)]
                 #[cfg(target_arch = "wasm32")]
@@ -13,8 +13,8 @@ pub mod exports {
                 use super::super::super::super::_rt;
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_new_bubble_cabi<T: Guest>() -> *mut u8 {
-                    let result0 = T::new_bubble();
+                pub unsafe fn _export_new_cube_cabi<T: Guest>() -> *mut u8 {
+                    let result0 = T::new_cube();
                     let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
                     let vec2 = (result0.into_bytes()).into_boxed_slice();
                     let ptr2 = vec2.as_ptr().cast::<u8>();
@@ -26,31 +26,31 @@ pub mod exports {
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn __post_return_new_bubble<T: Guest>(arg0: *mut u8) {
+                pub unsafe fn __post_return_new_cube<T: Guest>(arg0: *mut u8) {
                     let l0 = *arg0.add(0).cast::<*mut u8>();
                     let l1 = *arg0.add(4).cast::<usize>();
                     _rt::cabi_dealloc(l0, l1, 1);
                 }
                 pub trait Guest {
-                    fn new_bubble() -> _rt::String;
+                    fn new_cube() -> _rt::String;
                 }
                 #[doc(hidden)]
 
-                macro_rules! __export_unavi_ui_api_cabi{
+                macro_rules! __export_unavi_shapes_shapes_cabi{
         ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
-          #[export_name = "unavi:ui/api#new-bubble"]
-          unsafe extern "C" fn export_new_bubble() -> *mut u8 {
-            $($path_to_types)*::_export_new_bubble_cabi::<$ty>()
+          #[export_name = "unavi:shapes/shapes#new-cube"]
+          unsafe extern "C" fn export_new_cube() -> *mut u8 {
+            $($path_to_types)*::_export_new_cube_cabi::<$ty>()
           }
-          #[export_name = "cabi_post_unavi:ui/api#new-bubble"]
-          unsafe extern "C" fn _post_return_new_bubble(arg0: *mut u8,) {
-            $($path_to_types)*::__post_return_new_bubble::<$ty>(arg0)
+          #[export_name = "cabi_post_unavi:shapes/shapes#new-cube"]
+          unsafe extern "C" fn _post_return_new_cube(arg0: *mut u8,) {
+            $($path_to_types)*::__post_return_new_cube::<$ty>(arg0)
           }
         };);
       }
                 #[doc(hidden)]
-                pub(crate) use __export_unavi_ui_api_cabi;
+                pub(crate) use __export_unavi_shapes_shapes_cabi;
                 #[repr(align(4))]
                 struct _RetArea([::core::mem::MaybeUninit<u8>; 8]);
                 static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 8]);
@@ -93,7 +93,7 @@ mod _rt {
 macro_rules! __export_lib_impl {
   ($ty:ident) => (self::export!($ty with_types_in self););
   ($ty:ident with_types_in $($path_to_types_root:tt)*) => (
-  $($path_to_types_root)*::exports::unavi::ui::api::__export_unavi_ui_api_cabi!($ty with_types_in $($path_to_types_root)*::exports::unavi::ui::api);
+  $($path_to_types_root)*::exports::unavi::shapes::shapes::__export_unavi_shapes_shapes_cabi!($ty with_types_in $($path_to_types_root)*::exports::unavi::shapes::shapes);
   )
 }
 #[doc(inline)]
@@ -102,11 +102,11 @@ pub(crate) use __export_lib_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.21.0:lib:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 184] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07?\x01A\x02\x01A\x02\x01\
-B\x02\x01@\0\0s\x04\0\x0anew-bubble\x01\0\x04\x01\x0cunavi:ui/api\x05\0\x04\x01\x0c\
-unavi:ui/lib\x04\0\x0b\x09\x01\0\x03lib\x03\0\0\0G\x09producers\x01\x0cprocessed\
--by\x02\x0dwit-component\x070.201.0\x10wit-bindgen-rust\x060.21.0";
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 193] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07H\x01A\x02\x01A\x02\x01\
+B\x02\x01@\0\0s\x04\0\x08new-cube\x01\0\x04\x01\x13unavi:shapes/shapes\x05\0\x04\
+\x01\x10unavi:shapes/lib\x04\0\x0b\x09\x01\0\x03lib\x03\0\0\0G\x09producers\x01\x0c\
+processed-by\x02\x0dwit-component\x070.201.0\x10wit-bindgen-rust\x060.21.0";
 
 #[inline(never)]
 #[doc(hidden)]

@@ -1,5 +1,5 @@
 [package]
-name = "wired-log"
+name = "unavi-mirror"
 version.workspace = true
 edition.workspace = true
 repository.workspace = true
@@ -9,13 +9,10 @@ license.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-tracing.workspace = true
 wit-bindgen-rt.workspace = true
 
 [package.metadata.component]
-package = "wired:log"
+package = "unavi:mirror"
 
-[package.metadata.component.target]
-world = "host"
-
-[package.metadata.component.dependencies]
+[package.metadata.component.target.dependencies]
+"wired:gltf" = { path = "../../wired-protocol/spatial/wit/wired-gltf" }

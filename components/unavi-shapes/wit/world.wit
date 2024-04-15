@@ -1,0 +1,9 @@
+package unavi:shapes;
+
+world lib {
+  export shapes;
+}
+
+interface shapes {
+  new-cube: func() -> string;
+}

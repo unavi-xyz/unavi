@@ -19,4 +19,4 @@ package = "unavi:system"
 
 [package.metadata.component.target.dependencies]
 "unavi:ui" = { path = "../unavi-ui/wit" }
-"wired:script" = { path = "../../wired-protocol/spatial/wired-script" }
+"wired:script" = { path = "../../wired-protocol/spatial/wit/wired-script" }

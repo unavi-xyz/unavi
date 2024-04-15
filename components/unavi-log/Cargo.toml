@@ -1,5 +1,5 @@
 [package]
-name = "wired-gltf"
+name = "unavi-log"
 version.workspace = true
 edition.workspace = true
 repository.workspace = true
@@ -9,12 +9,10 @@ license.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
+tracing.workspace = true
 wit-bindgen-rt.workspace = true
 
 [package.metadata.component]
-package = "wired:gltf"
-
-[package.metadata.component.target]
-world = "host"
+package = "unavi:log"
 
 [package.metadata.component.dependencies]

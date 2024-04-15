@@ -49,9 +49,9 @@ pub fn vertices(half_size: Vec3) -> Vertices {
         ([max.x, min.y, min.z], [0.0, -1.0, 0.0], [0.0, 1.0]),
     ];
 
-    let positions: Vec<_> = vertices.iter().map(|(p, _, _)| *p).flatten().collect();
-    let normals: Vec<_> = vertices.iter().map(|(_, n, _)| *n).flatten().collect();
-    let uvs: Vec<_> = vertices.iter().map(|(_, _, uv)| *uv).flatten().collect();
+    let positions: Vec<_> = vertices.iter().flat_map(|(p, _, _)| *p).collect();
+    let normals: Vec<_> = vertices.iter().flat_map(|(_, n, _)| *n).collect();
+    let uvs: Vec<_> = vertices.iter().flat_map(|(_, _, uv)| *uv).collect();
 
     let indices = vec![
         0, 1, 2, 2, 3, 0, // front

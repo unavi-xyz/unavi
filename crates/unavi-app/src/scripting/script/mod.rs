@@ -19,7 +19,7 @@ mod stream;
 
 wasm_bridge::component::bindgen!({
     async: true,
-    path: "../../wired-protocol/spatial/wired-script/world.wit",
+    path: "../../wired-protocol/spatial/wit/wired-script/world.wit",
 });
 
 #[derive(Bundle, Clone)]

@@ -10830,6 +10830,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-log"
+version = "0.0.2"
+dependencies = [
+ "tracing",
+ "wit-bindgen-rt",
+]
+
+[[package]]
+name = "unavi-mirror"
+version = "0.0.2"
+dependencies = [
+ "wit-bindgen-rt",
+]
+
+[[package]]
 name = "unavi-server"
 version = "0.0.2"
 dependencies = [
@@ -10848,6 +10863,13 @@ dependencies = [
  "tracing-subscriber",
  "wired-protocol",
  "wtransport",
+]
+
+[[package]]
+name = "unavi-shapes"
+version = "0.0.2"
+dependencies = [
+ "wit-bindgen-rt",
 ]
 
 [[package]]
@@ -12190,21 +12212,6 @@ checksum = "f9643b83820c0cd246ecabe5fa454dd04ba4fa67996369466d0747472d337346"
 dependencies = [
  "bitflags 2.5.0",
  "windows-sys 0.52.0",
-]
-
-[[package]]
-name = "wired-gltf"
-version = "0.0.2"
-dependencies = [
- "wit-bindgen-rt",
-]
-
-[[package]]
-name = "wired-log"
-version = "0.0.2"
-dependencies = [
- "tracing",
- "wit-bindgen-rt",
 ]
 
 [[package]]

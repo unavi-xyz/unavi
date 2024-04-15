@@ -1,5 +1,5 @@
 [package]
-name = "unavi-ui"
+name = "unavi-shapes"
 version.workspace = true
 edition.workspace = true
 repository.workspace = true
@@ -12,6 +12,7 @@ crate-type = ["cdylib"]
 wit-bindgen-rt.workspace = true
 
 [package.metadata.component]
-package = "unavi:ui"
+package = "unavi:shapes"
 
 [package.metadata.component.target.dependencies]
+"wired:gltf" = { path = "../../wired-protocol/spatial/wit/wired-gltf" }

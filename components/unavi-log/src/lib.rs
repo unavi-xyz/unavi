@@ -3,7 +3,7 @@ use tracing::{debug, error, info, warn};
 #[allow(warnings)]
 mod bindings;
 
-use bindings::exports::wired::log::api::{Guest, LogLevel};
+use bindings::exports::unavi::log::api::{Guest, LogLevel};
 
 struct Component;
 

@@ -83,10 +83,6 @@ impl wired::ecs::types::HostQuery for ScriptState {
 }
 
 impl wired::ecs::types::HostEcsWorld for ScriptState {
-<<<<<<< HEAD
-    fn spawn(&mut self, _self_: Resource<EcsWorld>) -> wasm_bridge::Result<Resource<Entity>> {
-        Ok(Resource::new_own(0))
-=======
     fn spawn(
         &mut self,
         self_: Resource<EcsWorld>,
@@ -113,7 +109,6 @@ impl wired::ecs::types::HostEcsWorld for ScriptState {
         }
 
         Ok(entity)
->>>>>>> c9d2141 (add wired_ecs type implementations)
     }
 
     fn register_component(

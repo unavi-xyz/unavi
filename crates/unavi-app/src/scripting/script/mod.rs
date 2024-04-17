@@ -15,7 +15,10 @@ use wasm_bridge::{
 };
 use wasm_bridge_wasi::WasiCtxBuilder;
 
-use self::{state::ScriptState, stream::OutStream};
+use self::{
+    state::{ScriptCommand, ScriptState},
+    stream::OutStream,
+};
 
 use super::asset::Wasm;
 
@@ -28,6 +31,10 @@ wasm_bridge::component::bindgen!({
     path: "../../wired-protocol/spatial/wit/wired-script",
     with: {
         "wired:ecs/types": host::wired_ecs,
+        "wired:ecs/types/component-instance": host::wired_ecs::ComponentInstance,
+        "wired:ecs/types/component": host::wired_ecs::Component,
+        "wired:ecs/types/entity": host::wired_ecs::Entity,
+        "wired:ecs/types/query": host::wired_ecs::Query,
     }
 });
 
@@ -57,6 +64,9 @@ pub struct InstantiatedScript(pub Script);
 
 #[derive(Component)]
 pub struct ScriptOutput(pub Arc<Mutex<Receiver<Bytes>>>);
+
+#[derive(Component)]
+pub struct ScriptCommandReceiver(pub Arc<Mutex<Receiver<ScriptCommand>>>);
 
 pub struct ScriptTaskOutput {
     pub script: Script,
@@ -109,23 +119,23 @@ pub fn load_scripts(
         };
 
         let (stream, recv) = OutStream::new();
+        let (send_command, recv_command) = std::sync::mpsc::sync_channel(100);
 
         // Create a new engine for each script.
         // In the future an engine could be shared across many scripts.
         let engine = WasmEngine::default();
 
-        commands
-            .entity(entity)
-            .insert(engine.clone())
-            .insert(ScriptOutput(Arc::new(Mutex::new(recv))));
-
-        let (send_command, _recv_command) = std::sync::mpsc::sync_channel(100);
+        commands.entity(entity).insert((
+            ScriptCommandReceiver(Arc::new(Mutex::new(recv_command))),
+            ScriptOutput(Arc::new(Mutex::new(recv))),
+            engine.clone(),
+        ));
 
         let task = pool.spawn(async move {
             let wasi = WasiCtxBuilder::new().stdout(stream).build();
 
             let state = ScriptState {
-                send_command,
+                sender: send_command,
                 table: Default::default(),
                 wasi,
             };

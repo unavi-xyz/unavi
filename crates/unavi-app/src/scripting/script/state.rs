@@ -4,13 +4,29 @@ use wasm_bridge::component::ResourceTable;
 use wasm_bridge_wasi::{WasiCtx, WasiView};
 
 pub struct ScriptState {
-    pub send_command: SyncSender<ScriptCommand>,
+    pub sender: SyncSender<ScriptCommand>,
     pub table: ResourceTable,
     pub wasi: WasiCtx,
 }
 
 pub enum ScriptCommand {
-    CreateMesh,
+    Query(Vec<ComponentId>),
+    RegisterComponent(Component),
+    SpawnEntity(SpawnEntity),
+}
+
+pub type ComponentId = u32;
+pub type EntityId = u32;
+pub type InstanceId = u32;
+
+pub struct Component {
+    pub id: ComponentId,
+    pub instance: InstanceId,
+}
+
+pub struct SpawnEntity {
+    pub components: Vec<Component>,
+    pub id: EntityId,
 }
 
 impl WasiView for ScriptState {

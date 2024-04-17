@@ -32,7 +32,7 @@ wasm_bridge::component::bindgen!({
 });
 
 impl wired::ecs::types::HostComponentInstance for ScriptState {
-    fn drop(&mut self, rep: Resource<ComponentInstance>) -> wasm_bridge::Result<()> {
+    fn drop(&mut self, _rep: Resource<ComponentInstance>) -> wasm_bridge::Result<()> {
         Ok(())
     }
 }
@@ -49,7 +49,7 @@ impl wired::ecs::types::HostComponent for ScriptState {
         Ok(resource)
     }
 
-    fn drop(&mut self, rep: Resource<Component>) -> wasm_bridge::Result<()> {
+    fn drop(&mut self, _rep: Resource<Component>) -> wasm_bridge::Result<()> {
         Ok(())
     }
 }
@@ -57,14 +57,14 @@ impl wired::ecs::types::HostComponent for ScriptState {
 impl wired::ecs::types::HostEntity for ScriptState {
     fn insert(
         &mut self,
-        self_: Resource<Entity>,
-        component: Resource<ComponentInstance>,
+        _self_: Resource<Entity>,
+        _component: Resource<ComponentInstance>,
     ) -> wasm_bridge::Result<()> {
         // TODO
         Ok(())
     }
 
-    fn drop(&mut self, rep: Resource<Entity>) -> wasm_bridge::Result<()> {
+    fn drop(&mut self, _rep: Resource<Entity>) -> wasm_bridge::Result<()> {
         Ok(())
     }
 }
@@ -72,12 +72,12 @@ impl wired::ecs::types::HostEntity for ScriptState {
 impl wired::ecs::types::HostQuery for ScriptState {
     fn read(
         &mut self,
-        self_: Resource<Query>,
+        _self_: Resource<Query>,
     ) -> wasm_bridge::Result<Vec<(Resource<Entity>, Resource<ComponentInstance>)>> {
         Ok(Vec::new())
     }
 
-    fn drop(&mut self, rep: Resource<Query>) -> wasm_bridge::Result<()> {
+    fn drop(&mut self, _rep: Resource<Query>) -> wasm_bridge::Result<()> {
         Ok(())
     }
 }
@@ -85,7 +85,7 @@ impl wired::ecs::types::HostQuery for ScriptState {
 impl wired::ecs::types::HostEcsWorld for ScriptState {
     fn spawn(
         &mut self,
-        self_: Resource<EcsWorld>,
+        _self_: Resource<EcsWorld>,
         components: Vec<Resource<ComponentInstance>>,
     ) -> wasm_bridge::Result<Resource<Entity>> {
         let components = components
@@ -121,7 +121,7 @@ impl wired::ecs::types::HostEcsWorld for ScriptState {
 
     fn register_query(
         &mut self,
-        self_: Resource<EcsWorld>,
+        _self_: Resource<EcsWorld>,
         components: Vec<Resource<Component>>,
     ) -> wasm_bridge::Result<Resource<Query>> {
         let components = components.iter().map(|r| r.rep()).collect();

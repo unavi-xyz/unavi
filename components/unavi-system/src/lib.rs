@@ -1,25 +1,52 @@
-use bindings::exports::wired::script::lifecycle::Guest;
+use std::collections::HashMap;
 
-use crate::bindings::unavi::ui::api::new_bubble;
+use bindings::{
+    exports::wired::script::types::{Guest, GuestScript, Script, ScriptBorrow},
+    wired::ecs::types::{Component, EcsWorld},
+};
 
 #[allow(warnings)]
 mod bindings;
 
-struct Component;
+struct Count {
+    increment: usize,
+    value: usize,
+}
 
-impl Guest for Component {
-    fn init() {
-        println!("Component initialized");
+struct ScriptImpl {
+    component: Component,
+    data: HashMap<usize, Count>,
+}
 
-        let res = new_bubble();
-        println!("Result: {}", res);
+impl GuestScript for ScriptImpl {}
+
+struct UnaviSystem;
+
+impl Guest for UnaviSystem {
+    type Script = ScriptImpl;
+
+    fn init(ecs_world: &EcsWorld) -> Script {
+        let component = ecs_world.register_component();
+
+        let script = Script::new(ScriptImpl {
+            component,
+            data: HashMap::new(),
+        });
+
+        println!("script init");
+
+        script
     }
 
-    fn update(_delta_seconds: f32) {}
+    fn update(ecs_world: &EcsWorld, script: ScriptBorrow) {
+        let script: &ScriptImpl = script.get();
 
-    fn cleanup() {
-        println!("Component cleaned up");
+        println!("script update");
+
+        // let mut count = script.count.borrow_mut();
+        // println!("update count: {}", count);
+        // *count += 1;
     }
 }
 
-bindings::export!(Component with_types_in bindings);
+bindings::export!(UnaviSystem with_types_in bindings);

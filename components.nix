@@ -39,10 +39,16 @@ let
 
     postBuild =
       let
-        config = pkgs.writeText "config.yml" ''
-          dependencies:
-            unavi:ui/api: ${buildComponent "unavi-ui"}/lib/unavi_ui.wasm
-        '';
+        # We must manually keep this updated for WASM component dependencies.
+        # `wasm-tools compose` says it can search directories automatically for dependencies,
+        # but I've never gotten it to work.
+        #
+        # This could maybe be automated if you extract the interface from each component wit definition.
+        #
+        # Example:
+        # dependencies:
+        #   unavi:ecs/api: ${buildComponent "unavi-ecs"}/lib/unavi_ecs.wasm
+        config = pkgs.writeText "config.yml" '''';
       in
       lib.concatStrings (
         map (

@@ -18,5 +18,5 @@ wit-bindgen-rt.workspace = true
 package = "unavi:system"
 
 [package.metadata.component.target.dependencies]
-"unavi:ui" = { path = "../unavi-ui/wit" }
+"wired:ecs" = { path = "../../wired-protocol/spatial/wit/wired-ecs" }
 "wired:script" = { path = "../../wired-protocol/spatial/wit/wired-script" }

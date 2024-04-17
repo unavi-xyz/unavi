@@ -1,9 +1,0 @@
-package unavi:mirror;
-
-world mirror {
-  export api;
-}
-
-interface api {
-  new-mirror: func() -> string;
-}

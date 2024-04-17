@@ -1,36 +1,40 @@
-use std::sync::{mpsc::Receiver, Arc, Mutex};
+use std::{
+    sync::{mpsc::Receiver, Arc, Mutex},
+    time::Duration,
+};
 
 use bevy::{
     prelude::*,
     tasks::{block_on, futures_lite::future, AsyncComputeTaskPool, Task},
 };
 use bytes::Bytes;
+use thiserror::Error;
 use wasm_bridge::{
-    component::{Component, Linker, ResourceTable},
+    component::{Component, Linker, Resource},
     AsContextMut, Config, Engine, Store,
 };
-use wasm_bridge_wasi::{WasiCtx, WasiCtxBuilder, WasiView};
+use wasm_bridge_wasi::WasiCtxBuilder;
 
-use self::stream::OutStream;
+use self::{state::ScriptState, stream::OutStream};
 
 use super::asset::Wasm;
 
+mod host;
+mod state;
 mod stream;
 
 wasm_bridge::component::bindgen!({
     async: true,
-    path: "../../wired-protocol/spatial/wit/wired-script/world.wit",
+    path: "../../wired-protocol/spatial/wit/wired-script",
+    with: {
+        "wired:ecs/types": host::wired_ecs,
+    }
 });
 
 #[derive(Bundle, Clone)]
 pub struct ScriptBundle {
+    pub name: Name,
     pub wasm: Handle<Wasm>,
-}
-
-impl ScriptBundle {
-    pub fn new(wasm: Handle<Wasm>) -> Self {
-        ScriptBundle { wasm }
-    }
 }
 
 #[derive(Component, Clone)]
@@ -56,22 +60,44 @@ pub struct ScriptOutput(pub Arc<Mutex<Receiver<Bytes>>>);
 
 pub struct ScriptTaskOutput {
     pub script: Script,
-    pub store: Store<RuntimeState>,
+    pub store: Store<ScriptState>,
+}
+
+#[derive(Error, Debug)]
+pub enum ScriptTaskErr {
+    #[error("Failed to add WASI to linker: {0}")]
+    AddWasiToLinker(anyhow::Error),
+    #[error("Failed to add host scripts to linker: {0}")]
+    AddHostToLinker(anyhow::Error),
+    #[error("Failed to compile WASM component: {0}")]
+    Compile(anyhow::Error),
+    #[error("Failed to instantiate script: {0}")]
+    Instantiate(anyhow::Error),
+    #[error("Failed to initialize script: {0}")]
+    Init(anyhow::Error),
 }
 
 pub fn load_scripts(
     mut commands: Commands,
-    mut tasks: Local<Vec<Task<ScriptTaskOutput>>>,
+    mut tasks: Local<Vec<Task<Result<ScriptTaskOutput, ScriptTaskErr>>>>,
     to_load: Query<(Entity, &Handle<Wasm>), Without<WasmEngine>>,
     wasm_assets: Res<Assets<Wasm>>,
 ) {
     let pool = AsyncComputeTaskPool::get();
 
     for (i, task) in tasks.iter_mut().enumerate() {
-        if let Some(_output) = block_on(future::poll_once(task)) {
+        if let Some(res) = block_on(future::poll_once(task)) {
+            let _output = match res {
+                Ok(out) => out,
+                Err(e) => {
+                    error!("Error loading script: {}", e);
+                    continue;
+                }
+            };
+
             info!("Loaded script!");
 
-            let _task = tasks.remove(i);
+            let _t = tasks.remove(i);
             break;
         }
     }
@@ -93,36 +119,70 @@ pub fn load_scripts(
             .insert(engine.clone())
             .insert(ScriptOutput(Arc::new(Mutex::new(recv))));
 
+        let (send_command, recv_command) = std::sync::mpsc::sync_channel(100);
+
         let task = pool.spawn(async move {
             let wasi = WasiCtxBuilder::new().stdout(stream).build();
 
-            let mut store = Store::new(&engine.0, RuntimeState::new(wasi));
+            let state = ScriptState {
+                send_command,
+                table: Default::default(),
+                wasi,
+            };
+
+            let mut store = Store::new(&engine.0, state);
 
             let mut linker = Linker::new(&engine.0);
-            wasm_bridge_wasi::command::add_to_linker(&mut linker).unwrap();
 
-            let component = Component::new_safe(&engine.0, bytes).await.unwrap();
+            wasm_bridge_wasi::command::add_to_linker(&mut linker)
+                .map_err(ScriptTaskErr::AddWasiToLinker)?;
+
+            host::add_to_linker(&mut linker).map_err(ScriptTaskErr::AddHostToLinker)?;
+
+            let component = Component::new_safe(&engine.0, bytes)
+                .await
+                .map_err(ScriptTaskErr::Compile)?;
 
             let (script, _) =
                 Script::instantiate_async(store.as_context_mut(), &component, &linker)
                     .await
-                    .unwrap();
+                    .map_err(ScriptTaskErr::Instantiate)?;
 
-            script
+            let ecs_world_id = 0;
+            let ecs_world = Resource::new_borrow(ecs_world_id);
+
+            let res_script = match script
                 .interface0
-                .call_init(store.as_context_mut())
+                .call_init(store.as_context_mut(), ecs_world)
                 .await
-                .unwrap();
+            {
+                Ok(r) => r,
+                Err(e) => return Err(ScriptTaskErr::Init(e)),
+            };
 
-            ScriptTaskOutput { script, store }
+            for _ in 0..10 {
+                std::thread::sleep(Duration::from_secs_f32(0.1));
+
+                let ecs_world = Resource::new_borrow(ecs_world_id);
+
+                if let Err(e) = script
+                    .interface0
+                    .call_update(store.as_context_mut(), ecs_world, res_script)
+                    .await
+                {
+                    return Err(ScriptTaskErr::Init(e));
+                }
+            }
+
+            Ok(ScriptTaskOutput { script, store })
         });
 
         tasks.push(task);
     }
 }
 
-pub fn log_script_output(outputs: Query<&ScriptOutput>) {
-    for output in outputs.iter() {
+pub fn log_script_output(outputs: Query<(&Name, &ScriptOutput)>) {
+    for (name, output) in outputs.iter() {
         let recv = output.0.lock().unwrap();
 
         let mut out = Vec::new();
@@ -136,29 +196,6 @@ pub fn log_script_output(outputs: Query<&ScriptOutput>) {
         }
 
         let out_str = String::from_utf8_lossy(&out);
-        info!("{}", out_str);
-    }
-}
-
-pub struct RuntimeState {
-    table: ResourceTable,
-    wasi: WasiCtx,
-}
-
-impl RuntimeState {
-    pub fn new(wasi: WasiCtx) -> Self {
-        Self {
-            table: Default::default(),
-            wasi,
-        }
-    }
-}
-
-impl WasiView for RuntimeState {
-    fn table(&mut self) -> &mut ResourceTable {
-        &mut self.table
-    }
-    fn ctx(&mut self) -> &mut WasiCtx {
-        &mut self.wasi
+        info!("{}: {}", name, out_str);
     }
 }

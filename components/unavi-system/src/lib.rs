@@ -38,8 +38,8 @@ impl Guest for UnaviSystem {
         script
     }
 
-    fn update(ecs_world: &EcsWorld, script: ScriptBorrow) {
-        let script: &ScriptImpl = script.get();
+    fn update(_ecs_world: &EcsWorld, script: ScriptBorrow) {
+        let _script: &ScriptImpl = script.get();
 
         println!("script update");
 

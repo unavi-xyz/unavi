@@ -119,7 +119,7 @@ pub fn load_scripts(
             .insert(engine.clone())
             .insert(ScriptOutput(Arc::new(Mutex::new(recv))));
 
-        let (send_command, recv_command) = std::sync::mpsc::sync_channel(100);
+        let (send_command, _recv_command) = std::sync::mpsc::sync_channel(100);
 
         let task = pool.spawn(async move {
             let wasi = WasiCtxBuilder::new().stdout(stream).build();

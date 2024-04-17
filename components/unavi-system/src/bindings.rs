@@ -13,6 +13,50 @@ pub mod wired {
 
             #[derive(Debug)]
             #[repr(transparent)]
+            pub struct ComponentInstance {
+                handle: _rt::Resource<ComponentInstance>,
+            }
+
+            impl ComponentInstance {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for ComponentInstance {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wired:ecs/types")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]component-instance"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            #[derive(Debug)]
+            #[repr(transparent)]
             pub struct Component {
                 handle: _rt::Resource<Component>,
             }
@@ -101,6 +145,50 @@ pub mod wired {
 
             #[derive(Debug)]
             #[repr(transparent)]
+            pub struct Query {
+                handle: _rt::Resource<Query>,
+            }
+
+            impl Query {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for Query {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wired:ecs/types")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]query"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            #[derive(Debug)]
+            #[repr(transparent)]
             pub struct EcsWorld {
                 handle: _rt::Resource<EcsWorld>,
             }
@@ -143,6 +231,88 @@ pub mod wired {
                 }
             }
 
+            impl Component {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn new(&self) -> ComponentInstance {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:ecs/types")]
+                        extern "C" {
+                            #[link_name = "[method]component.new"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ComponentInstance::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Entity {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn insert(&self, component: ComponentInstance) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:ecs/types")]
+                        extern "C" {
+                            #[link_name = "[method]entity.insert"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, (&component).take_handle() as i32);
+                    }
+                }
+            }
+            impl Query {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn read(&self) -> _rt::Vec<(Entity, ComponentInstance)> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:ecs/types")]
+                        extern "C" {
+                            #[link_name = "[method]query.read"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<*mut u8>();
+                        let l2 = *ptr0.add(4).cast::<usize>();
+                        let base5 = l1;
+                        let len5 = l2;
+                        let mut result5 = _rt::Vec::with_capacity(len5);
+                        for i in 0..len5 {
+                            let base = base5.add(i * 8);
+                            let e5 = {
+                                let l3 = *base.add(0).cast::<i32>();
+                                let l4 = *base.add(4).cast::<i32>();
+
+                                (
+                                    Entity::from_handle(l3 as u32),
+                                    ComponentInstance::from_handle(l4 as u32),
+                                )
+                            };
+                            result5.push(e5);
+                        }
+                        _rt::cabi_dealloc(base5, len5 * 8, 4);
+                        result5
+                    }
+                }
+            }
             impl EcsWorld {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn register_component(&self) -> Component {
@@ -165,20 +335,90 @@ pub mod wired {
             }
             impl EcsWorld {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn spawn(&self) -> Entity {
+                pub fn register_query(&self, components: &[&Component]) -> Query {
                     unsafe {
+                        let vec0 = components;
+                        let len0 = vec0.len();
+                        let layout0 =
+                            _rt::alloc::Layout::from_size_align_unchecked(vec0.len() * 4, 4);
+                        let result0 = if layout0.size() != 0 {
+                            let ptr = _rt::alloc::alloc(layout0).cast::<u8>();
+                            if ptr.is_null() {
+                                _rt::alloc::handle_alloc_error(layout0);
+                            }
+                            ptr
+                        } else {
+                            {
+                                ::core::ptr::null_mut()
+                            }
+                        };
+                        for (i, e) in vec0.into_iter().enumerate() {
+                            let base = result0.add(i * 4);
+                            {
+                                *base.add(0).cast::<i32>() = (e).handle() as i32;
+                            }
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:ecs/types")]
+                        extern "C" {
+                            #[link_name = "[method]ecs-world.register-query"]
+                            fn wit_import(_: i32, _: *mut u8, _: usize) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8, _: usize) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32, result0, len0);
+                        if layout0.size() != 0 {
+                            _rt::alloc::dealloc(result0.cast(), layout0);
+                        }
+                        Query::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl EcsWorld {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn spawn(&self, components: _rt::Vec<ComponentInstance>) -> Entity {
+                    unsafe {
+                        let vec0 = &components;
+                        let len0 = vec0.len();
+                        let layout0 =
+                            _rt::alloc::Layout::from_size_align_unchecked(vec0.len() * 4, 4);
+                        let result0 = if layout0.size() != 0 {
+                            let ptr = _rt::alloc::alloc(layout0).cast::<u8>();
+                            if ptr.is_null() {
+                                _rt::alloc::handle_alloc_error(layout0);
+                            }
+                            ptr
+                        } else {
+                            {
+                                ::core::ptr::null_mut()
+                            }
+                        };
+                        for (i, e) in vec0.into_iter().enumerate() {
+                            let base = result0.add(i * 4);
+                            {
+                                *base.add(0).cast::<i32>() = (e).take_handle() as i32;
+                            }
+                        }
+
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:ecs/types")]
                         extern "C" {
                             #[link_name = "[method]ecs-world.spawn"]
-                            fn wit_import(_: i32) -> i32;
+                            fn wit_import(_: i32, _: *mut u8, _: usize) -> i32;
                         }
 
                         #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32) -> i32 {
+                        fn wit_import(_: i32, _: *mut u8, _: usize) -> i32 {
                             unreachable!()
                         }
-                        let ret = wit_import((self).handle() as i32);
+                        let ret = wit_import((self).handle() as i32, result0, len0);
+                        if layout0.size() != 0 {
+                            _rt::alloc::dealloc(result0.cast(), layout0);
+                        }
                         Entity::from_handle(ret as u32)
                     }
                 }
@@ -520,6 +760,15 @@ mod _rt {
             }
         }
     }
+    pub use alloc_crate::vec::Vec;
+    pub unsafe fn cabi_dealloc(ptr: *mut u8, size: usize, align: usize) {
+        if size == 0 {
+            return;
+        }
+        let layout = alloc::Layout::from_size_align_unchecked(size, align);
+        alloc::dealloc(ptr as *mut u8, layout);
+    }
+    pub use alloc_crate::alloc;
     pub use alloc_crate::boxed::Box;
     extern crate alloc as alloc_crate;
 }
@@ -555,18 +804,24 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.21.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 457] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xcc\x02\x01A\x02\x01\
-A\x05\x01B\x0a\x04\0\x09component\x03\x01\x04\0\x06entity\x03\x01\x04\0\x09ecs-w\
-orld\x03\x01\x01h\x02\x01i\0\x01@\x01\x04self\x03\0\x04\x04\0$[method]ecs-world.\
-register-component\x01\x05\x01i\x01\x01@\x01\x04self\x03\0\x06\x04\0\x17[method]\
-ecs-world.spawn\x01\x07\x03\x01\x0fwired:ecs/types\x05\0\x02\x03\0\0\x09ecs-worl\
-d\x01B\x0a\x02\x03\x02\x01\x01\x04\0\x09ecs-world\x03\0\0\x04\0\x06script\x03\x01\
-\x01h\x01\x01i\x02\x01@\x01\x09ecs-world\x03\0\x04\x04\0\x04init\x01\x05\x01h\x02\
-\x01@\x02\x09ecs-world\x03\x06script\x06\x01\0\x04\0\x06update\x01\x07\x04\x01\x12\
-wired:script/types\x05\x02\x04\x01\x13unavi:system/script\x04\0\x0b\x0c\x01\0\x06\
-script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.201\
-.0\x10wit-bindgen-rust\x060.21.0";
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 710] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc9\x04\x01A\x02\x01\
+A\x05\x01B\x1d\x04\0\x12component-instance\x03\x01\x04\0\x09component\x03\x01\x04\
+\0\x06entity\x03\x01\x04\0\x05query\x03\x01\x04\0\x09ecs-world\x03\x01\x01h\x01\x01\
+i\0\x01@\x01\x04self\x05\0\x06\x04\0\x15[method]component.new\x01\x07\x01h\x02\x01\
+@\x02\x04self\x08\x09component\x06\x01\0\x04\0\x15[method]entity.insert\x01\x09\x01\
+h\x03\x01i\x02\x01o\x02\x0b\x06\x01p\x0c\x01@\x01\x04self\x0a\0\x0d\x04\0\x12[me\
+thod]query.read\x01\x0e\x01h\x04\x01i\x01\x01@\x01\x04self\x0f\0\x10\x04\0$[meth\
+od]ecs-world.register-component\x01\x11\x01p\x05\x01i\x03\x01@\x02\x04self\x0f\x0a\
+components\x12\0\x13\x04\0\x20[method]ecs-world.register-query\x01\x14\x01p\x06\x01\
+@\x02\x04self\x0f\x0acomponents\x15\0\x0b\x04\0\x17[method]ecs-world.spawn\x01\x16\
+\x03\x01\x0fwired:ecs/types\x05\0\x02\x03\0\0\x09ecs-world\x01B\x0a\x02\x03\x02\x01\
+\x01\x04\0\x09ecs-world\x03\0\0\x04\0\x06script\x03\x01\x01h\x01\x01i\x02\x01@\x01\
+\x09ecs-world\x03\0\x04\x04\0\x04init\x01\x05\x01h\x02\x01@\x02\x09ecs-world\x03\
+\x06script\x06\x01\0\x04\0\x06update\x01\x07\x04\x01\x12wired:script/types\x05\x02\
+\x04\x01\x13unavi:system/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09prod\
+ucers\x01\x0cprocessed-by\x02\x0dwit-component\x070.201.0\x10wit-bindgen-rust\x06\
+0.21.0";
 
 #[inline(never)]
 #[doc(hidden)]

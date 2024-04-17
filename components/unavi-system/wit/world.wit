@@ -1,7 +1,7 @@
 package unavi:system;
 
 world script {
-    import unavi:ui/api;
-
     include wired:script/script; 
+
+    import wired:ecs/types;
 }

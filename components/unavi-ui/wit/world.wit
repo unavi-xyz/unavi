@@ -1,9 +1,0 @@
-package unavi:ui;
-
-world lib {
-  export api;
-}
-
-interface api {
-  new-bubble: func() -> string;
-}

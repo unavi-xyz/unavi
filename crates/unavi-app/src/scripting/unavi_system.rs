@@ -5,8 +5,11 @@ use super::{asset::Wasm, script::ScriptBundle};
 const UNAVI_SYSTEM: &str = "unavi_system";
 
 pub fn spawn_unavi_system(asset_server: Res<AssetServer>, mut commands: Commands) {
-    let unavi_system = load_component_wasm(&asset_server, UNAVI_SYSTEM);
-    commands.spawn(ScriptBundle::new(unavi_system));
+    let wasm = load_component_wasm(&asset_server, UNAVI_SYSTEM);
+    commands.spawn(ScriptBundle {
+        name: UNAVI_SYSTEM.into(),
+        wasm,
+    });
 }
 
 fn load_component_wasm(asset_server: &AssetServer, name: &str) -> Handle<Wasm> {

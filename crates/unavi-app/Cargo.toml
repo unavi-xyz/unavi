@@ -13,6 +13,7 @@ default = []
 disable-cert-validation = ["wtransport/dangerous-configuration"]
 
 [dependencies]
+anyhow = "1.0.82"
 bevy = "0.13.1"
 bevy-tnua = "0.16.0"
 bevy-tnua-xpbd3d = "0.4.0"

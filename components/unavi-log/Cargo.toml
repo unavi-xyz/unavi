@@ -14,5 +14,3 @@ wit-bindgen-rt.workspace = true
 
 [package.metadata.component]
 package = "unavi:log"
-
-[package.metadata.component.dependencies]

@@ -50,13 +50,13 @@ impl Guest for UnaviSystem {
         script
     }
 
-    fn update(ecs_world: &EcsWorld, script: ScriptBorrow) {
+    fn update(_ecs_world: &EcsWorld, script: ScriptBorrow) {
         let script: &ScriptImpl = script.get();
         println!("script update");
 
         let mut store = script.store.borrow_mut();
 
-        for (entity, count_comp) in script.query.read() {
+        for (_entity, count_comp) in script.query.read() {
             let count = store.get(&count_comp).unwrap();
             println!("count: {}", count.value);
 

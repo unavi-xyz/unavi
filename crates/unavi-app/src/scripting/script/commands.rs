@@ -113,7 +113,7 @@ pub fn handle_script_commands(
 
                         Some(CommandResult::RegisterQuery { id, query })
                     }
-                    CommandPreprocess::SpawnEntity { id, components } => {
+                    CommandPreprocess::SpawnEntity { id, components: _ } => {
                         let entity = world.spawn(());
 
                         // TODO: components

@@ -2,7 +2,9 @@ use wasm_bridge::component::Resource;
 use wasm_bridge_wasi::ResourceTableError;
 
 use crate::scripting::script::{
-    commands::{ComponentInstance as ComponentInstanceState, ScriptCommand, SpawnEntity},
+    commands::{
+        ComponentInstance as ComponentInstanceState, RegisterQuery, ScriptCommand, SpawnEntity,
+    },
     state::ScriptState,
 };
 
@@ -127,11 +129,17 @@ impl wired::ecs::types::HostEcsWorld for ScriptState {
         _self_: Resource<EcsWorld>,
         components: Vec<Resource<Component>>,
     ) -> wasm_bridge::Result<Resource<Query>> {
-        let components = components.iter().map(|r| r.rep()).collect();
-        let query = Query { components };
+        let components = components.iter().map(|r| r.rep()).collect::<Vec<_>>();
+        let query = Query {
+            components: components.clone(),
+        };
         let resource = self.table.push(query)?;
 
-        // TODO: command
+        self.sender
+            .send(ScriptCommand::RegisterQuery(RegisterQuery {
+                id: _self_.rep(),
+                components,
+            }))?;
 
         Ok(resource)
     }

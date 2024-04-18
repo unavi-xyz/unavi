@@ -16,12 +16,14 @@ use wasm_bridge::{
 use wasm_bridge_wasi::WasiCtxBuilder;
 
 use self::{
-    state::{ScriptCommand, ScriptState},
+    commands::{ScriptCommand, ScriptResourceMap},
+    state::ScriptState,
     stream::OutStream,
 };
 
 use super::asset::Wasm;
 
+pub mod commands;
 mod host;
 mod state;
 mod stream;
@@ -128,6 +130,7 @@ pub fn load_scripts(
         commands.entity(entity).insert((
             ScriptCommandReceiver(Arc::new(Mutex::new(recv_command))),
             ScriptOutput(Arc::new(Mutex::new(recv))),
+            ScriptResourceMap::default(),
             engine.clone(),
         ));
 

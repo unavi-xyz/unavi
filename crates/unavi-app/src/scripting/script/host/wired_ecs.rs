@@ -1,9 +1,9 @@
-use tracing::error;
 use wasm_bridge::component::Resource;
 use wasm_bridge_wasi::ResourceTableError;
 
-use crate::scripting::script::state::{
-    Component as ComponentState, ScriptCommand, ScriptState, SpawnEntity,
+use crate::scripting::script::{
+    commands::{ComponentInstance as ComponentInstanceState, ScriptCommand, SpawnEntity},
+    state::ScriptState,
 };
 
 pub use self::wired::ecs::types::EcsWorld;
@@ -60,7 +60,7 @@ impl wired::ecs::types::HostEntity for ScriptState {
         _self_: Resource<Entity>,
         _component: Resource<ComponentInstance>,
     ) -> wasm_bridge::Result<()> {
-        // TODO
+        // TODO: command
         Ok(())
     }
 
@@ -74,6 +74,7 @@ impl wired::ecs::types::HostQuery for ScriptState {
         &mut self,
         _self_: Resource<Query>,
     ) -> wasm_bridge::Result<Vec<(Resource<Entity>, Resource<ComponentInstance>)>> {
+        // TODO
         Ok(Vec::new())
     }
 
@@ -90,10 +91,10 @@ impl wired::ecs::types::HostEcsWorld for ScriptState {
     ) -> wasm_bridge::Result<Resource<Entity>> {
         let components = components
             .iter()
-            .map(|r| -> Result<ComponentState, ResourceTableError> {
+            .map(|r| -> Result<ComponentInstanceState, ResourceTableError> {
                 let instance = self.table.get(r)?;
-                Ok(ComponentState {
-                    id: instance.component,
+                Ok(ComponentInstanceState {
+                    component: instance.component,
                     instance: r.rep(),
                 })
             })
@@ -101,12 +102,10 @@ impl wired::ecs::types::HostEcsWorld for ScriptState {
 
         let entity = self.table.push(Entity)?;
 
-        if let Err(e) = self.sender.send(ScriptCommand::SpawnEntity(SpawnEntity {
+        self.sender.send(ScriptCommand::SpawnEntity(SpawnEntity {
             id: entity.rep(),
             components,
-        })) {
-            error!("Failed to spawn entity: {}", e);
-        }
+        }))?;
 
         Ok(entity)
     }
@@ -116,6 +115,10 @@ impl wired::ecs::types::HostEcsWorld for ScriptState {
         _self_: Resource<wired::ecs::types::EcsWorld>,
     ) -> wasm_bridge::Result<Resource<Component>> {
         let resource = self.table.push(Component)?;
+
+        self.sender
+            .send(ScriptCommand::RegisterComponent(resource.rep()))?;
+
         Ok(resource)
     }
 
@@ -127,6 +130,9 @@ impl wired::ecs::types::HostEcsWorld for ScriptState {
         let components = components.iter().map(|r| r.rep()).collect();
         let query = Query { components };
         let resource = self.table.push(query)?;
+
+        // TODO: command
+
         Ok(resource)
     }
 

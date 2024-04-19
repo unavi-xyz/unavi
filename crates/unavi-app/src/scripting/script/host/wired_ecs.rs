@@ -78,8 +78,6 @@ impl wired::ecs::types::HostQuery for ScriptState {
     fn read(&mut self, self_: Resource<Query>) -> wasm_bridge::Result<QueryResult> {
         let query = self.table.get(&self_)?;
 
-        tracing::info!("read query: {:?}", query.result);
-
         Ok(query
             .result
             .iter()

@@ -145,10 +145,7 @@ pub fn handle_script_commands(
 
                         for (instance, info) in components {
                             let len = info.layout().size() / std::mem::size_of::<u64>();
-
                             let mut data = vec![instance; len];
-
-                            info!("Spawning entity with data: {:?}, len: {}", data, len);
                             let ptr = data.as_mut_ptr();
 
                             unsafe {

@@ -111,7 +111,12 @@ pub fn init_scripts(
     }
 }
 
+const SCRIPT_UPDATE_HZ: f32 = 2.0;
+const SCRIPT_DELTA: f32 = 1.0 / SCRIPT_UPDATE_HZ;
+
 pub fn update_scripts(
+    last_update: Local<f32>,
+    time: Res<Time>,
     scripts: Query<
         (
             &Name,
@@ -125,15 +130,27 @@ pub fn update_scripts(
     >,
     mut tasks: Local<Vec<Task<wasm_bridge::Result<()>>>>,
 ) {
+    let mut completed_tasks = Vec::new();
+
     for (i, task) in tasks.iter_mut().enumerate() {
         if let Some(res) = block_on(future::poll_once(task)) {
             if let Err(e) = res {
                 error!("Script update errror: {}", e);
             }
 
-            let _t = tasks.remove(i);
-            break;
+            completed_tasks.push(i);
         }
+    }
+
+    for i in completed_tasks {
+        let _task = tasks.remove(i);
+    }
+
+    let current_time = time.elapsed_seconds();
+    let delta = current_time - *last_update;
+
+    if delta < SCRIPT_DELTA {
+        return;
     }
 
     let pool = AsyncComputeTaskPool::get();

@@ -75,8 +75,8 @@ impl wired::ecs::types::HostEntity for ScriptState {
 }
 
 impl wired::ecs::types::HostQuery for ScriptState {
-    fn read(&mut self, _self_: Resource<Query>) -> wasm_bridge::Result<QueryResult> {
-        let query = self.table.get(&_self_)?;
+    fn read(&mut self, self_: Resource<Query>) -> wasm_bridge::Result<QueryResult> {
+        let query = self.table.get(&self_)?;
 
         tracing::info!("read query: {:?}", query.result);
 
@@ -138,7 +138,7 @@ impl wired::ecs::types::HostEcsWorld for ScriptState {
 
     fn register_query(
         &mut self,
-        self_: Resource<EcsWorld>,
+        _self_: Resource<EcsWorld>,
         components: Vec<Resource<Component>>,
     ) -> wasm_bridge::Result<Resource<Query>> {
         let components = components.iter().map(|r| r.rep()).collect::<Vec<_>>();
@@ -150,7 +150,7 @@ impl wired::ecs::types::HostEcsWorld for ScriptState {
 
         self.sender
             .send(ScriptCommand::RegisterQuery(RegisterQuery {
-                id: self_.rep(),
+                id: resource.rep(),
                 components,
             }))?;
 

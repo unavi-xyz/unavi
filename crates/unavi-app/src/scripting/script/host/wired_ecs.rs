@@ -1,5 +1,4 @@
 use wasm_bridge::component::Resource;
-use wasm_bridge_wasi::ResourceTableError;
 
 use crate::scripting::script::{
     commands::{
@@ -103,7 +102,7 @@ impl wired::ecs::types::HostEcsWorld for ScriptState {
     ) -> wasm_bridge::Result<Resource<Entity>> {
         let components = components
             .iter()
-            .map(|r| -> Result<ComponentInstanceState, ResourceTableError> {
+            .map(|r| -> anyhow::Result<ComponentInstanceState> {
                 let instance = self.table.get(r)?;
                 Ok(ComponentInstanceState {
                     component: instance.component,

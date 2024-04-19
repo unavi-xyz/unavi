@@ -90,7 +90,7 @@ pub fn run_script_queries(
 
             let state = store.data_mut();
 
-            let resource = Resource::<wired_ecs::Query>::new_borrow(*query_id);
+            let resource = Resource::<wired_ecs::Query>::new_own(*query_id);
             let resource = state.table.get_mut(&resource).unwrap();
 
             resource.result = query_results;

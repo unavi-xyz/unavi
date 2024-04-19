@@ -1,7 +1,6 @@
 use std::sync::mpsc::SyncSender;
 
-use wasm_bridge::component::ResourceTable;
-use wasm_bridge_wasi::{WasiCtx, WasiView};
+use wasm_bridge_wasi::{ResourceTable, WasiCtx, WasiView};
 
 use super::commands::ScriptCommand;
 

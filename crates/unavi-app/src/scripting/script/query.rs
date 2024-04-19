@@ -86,8 +86,6 @@ pub fn run_script_queries(
         for (query_id, _) in map.queries.iter_mut() {
             let query_results = results.get_mut(query_id).unwrap().take().unwrap();
 
-            info!("Query result: {:?}", query_results);
-
             let mut store = future::block_on(async { store.0.lock().await });
 
             let state = store.data_mut();

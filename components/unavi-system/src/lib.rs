@@ -40,19 +40,14 @@ impl Guest for UnaviSystem {
             increment: 2,
         })]);
 
-        let script = Script::new(ScriptImpl {
+        Script::new(ScriptImpl {
             store: store.into(),
             query,
-        });
-
-        println!("script init");
-
-        script
+        })
     }
 
     fn update(_ecs_world: &EcsWorld, script: ScriptBorrow) {
         let script: &ScriptImpl = script.get();
-        println!("script update");
 
         let mut store = script.store.borrow_mut();
 
@@ -60,7 +55,7 @@ impl Guest for UnaviSystem {
             let count_component = components.first().unwrap();
 
             let count = store.get(count_component).unwrap();
-            println!("count: {}", count.value);
+            println!("Count: {}", count.value);
 
             let mut count = count.clone();
             count.value += count.increment;

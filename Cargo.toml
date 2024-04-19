@@ -44,5 +44,5 @@ codegen-units = 1
 opt-level = "z"
 
 [patch.crates-io]
-wasm-bridge = { git = "https://github.com/kajacx/wasm-bridge.git" }
-wasm-bridge-wasi = { git = "https://github.com/kajacx/wasm-bridge.git" }
+wasm-bridge = { git = "https://github.com/kayhhh/wasm-bridge.git", branch = "sync" }
+wasm-bridge-wasi = { git = "https://github.com/kayhhh/wasm-bridge.git", branch = "sync" }

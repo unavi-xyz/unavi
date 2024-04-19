@@ -1,9 +1,7 @@
 use std::sync::{mpsc::Receiver, Arc};
 
-use bevy::{
-    prelude::*,
-    tasks::{block_on, futures_lite::future, AsyncComputeTaskPool, Task},
-};
+use bevy::prelude::*;
+use bevy_async_task::{AsyncTaskPool, AsyncTaskStatus};
 use bytes::Bytes;
 use thiserror::Error;
 use tokio::sync::Mutex;
@@ -11,7 +9,7 @@ use wasm_bridge::{
     component::{Component, Linker, Resource},
     AsContextMut, Store,
 };
-use wasm_bridge_wasi::{ResourceTableError, WasiCtxBuilder};
+use wasm_bridge_wasi::WasiCtxBuilder;
 
 use crate::scripting::asset::Wasm;
 
@@ -33,11 +31,14 @@ pub struct ScriptOutput(pub Arc<Mutex<Receiver<Bytes>>>);
 pub struct ScriptCommandReceiver(pub Arc<Mutex<Receiver<ScriptCommand>>>);
 
 pub struct ScriptTaskOutput {
-    pub binding: Script,
+    pub binding: Arc<Mutex<Script>>,
     pub ecs_world: Resource<EcsWorld>,
     pub entity: Entity,
-    pub store: Store<ScriptState>,
+    pub store: Arc<Mutex<Store<ScriptState>>>,
 }
+
+// SAFETY: Script is used with Arc<Mutex<T>>, so uhhhh maybe this is fine
+unsafe impl Send for Script {}
 
 #[derive(Component)]
 pub struct ScriptStore(pub Arc<Mutex<Store<ScriptState>>>);
@@ -55,20 +56,18 @@ pub enum ScriptTaskErr {
     Compile(anyhow::Error),
     #[error("Failed to instantiate script: {0}")]
     Instantiate(anyhow::Error),
-    #[error(transparent)]
-    ResourceTable(#[from] ResourceTableError),
+    #[error("Resource table error: {0}")]
+    ResourceTable(anyhow::Error),
 }
 
 pub fn load_scripts(
     mut commands: Commands,
-    mut tasks: Local<Vec<Task<Result<ScriptTaskOutput, ScriptTaskErr>>>>,
+    mut pool: AsyncTaskPool<Result<ScriptTaskOutput, ScriptTaskErr>>,
     to_load: Query<(Entity, &Handle<Wasm>), Without<WasmEngine>>,
     wasm_assets: Res<Assets<Wasm>>,
 ) {
-    let pool = AsyncComputeTaskPool::get();
-
-    for (i, task) in tasks.iter_mut().enumerate() {
-        if let Some(res) = block_on(future::poll_once(task)) {
+    for task in pool.iter_poll() {
+        if let AsyncTaskStatus::Finished(res) = task {
             let output = match res {
                 Ok(out) => out,
                 Err(e) => {
@@ -78,13 +77,10 @@ pub fn load_scripts(
             };
 
             commands.entity(output.entity).insert((
-                ScriptBinding(Arc::new(Mutex::new(output.binding))),
+                ScriptBinding(output.binding),
                 ScriptEcsWorld(output.ecs_world),
-                ScriptStore(Arc::new(Mutex::new(output.store))),
+                ScriptStore(output.store),
             ));
-
-            let _t = tasks.remove(i);
-            break;
         }
     }
 
@@ -108,16 +104,19 @@ pub fn load_scripts(
             engine.clone(),
         ));
 
-        let task = pool.spawn(async move {
+        pool.spawn(async move {
             let wasi = WasiCtxBuilder::new().stdout(stream).build();
 
             let mut state = ScriptState {
                 sender: send_command,
-                table: Default::default(),
-                wasi,
+                wasi_table: Default::default(),
+                wasi_ctx: wasi,
             };
 
-            let ecs_world = state.table.push(EcsWorld)?;
+            let ecs_world = state
+                .wasi_table
+                .push(EcsWorld)
+                .map_err(|e| ScriptTaskErr::ResourceTable(anyhow::anyhow!(e)))?;
 
             let mut store = Store::new(&engine.0, state);
 
@@ -138,13 +137,11 @@ pub fn load_scripts(
                     .map_err(ScriptTaskErr::Instantiate)?;
 
             Ok(ScriptTaskOutput {
+                binding: Arc::new(Mutex::new(script)),
                 ecs_world,
                 entity,
-                binding: script,
-                store,
+                store: Arc::new(Mutex::new(store)),
             })
         });
-
-        tasks.push(task);
     }
 }

@@ -1,8 +1,6 @@
-use bevy::{
-    prelude::*,
-    tasks::{block_on, futures_lite::future, AsyncComputeTaskPool, Task},
-};
+use bevy::prelude::*;
 
+use bevy_async_task::{AsyncTaskPool, AsyncTaskStatus};
 use wasm_bridge::{
     component::{Resource, ResourceAny},
     AsContextMut, Config, Engine,
@@ -57,47 +55,43 @@ impl Default for WasmEngine {
 pub struct ScriptInitialized;
 
 #[derive(Component)]
-pub struct ScriptInitializing(Task<wasm_bridge::Result<ResourceAny>>);
+pub struct ScriptInitializing;
 
 #[derive(Component)]
 pub struct ScriptResource(ResourceAny);
 
 pub fn init_scripts(
     mut commands: Commands,
+    mut pool: AsyncTaskPool<wasm_bridge::Result<(Entity, ResourceAny)>>,
     scripts: Query<
         (Entity, &ScriptBinding, &ScriptStore, &ScriptEcsWorld),
         (Without<ScriptInitialized>, Without<ScriptInitializing>),
     >,
-    mut initializing: Query<(Entity, &mut ScriptInitializing)>,
 ) {
-    for (entity, mut task) in initializing.iter_mut() {
-        if let Some(res) = block_on(future::poll_once(&mut task.0)) {
-            commands
-                .entity(entity)
-                .insert(ScriptInitialized)
-                .remove::<ScriptInitializing>();
-
-            let script = match res {
+    for task in pool.iter_poll() {
+        if let AsyncTaskStatus::Finished(res) = task {
+            let (entity, script) = match res {
                 Ok(r) => r,
                 Err(e) => {
-                    error!("Error initializing script: {}", e);
+                    error!("Failed to initialize script: {}", e);
                     continue;
                 }
             };
 
-            commands.entity(entity).insert(ScriptResource(script));
+            commands
+                .entity(entity)
+                .remove::<ScriptInitializing>()
+                .insert((ScriptInitialized, ScriptResource(script)));
         }
     }
-
-    let pool = AsyncComputeTaskPool::get();
 
     for (entity, binding, store, ecs_world) in scripts.iter() {
         let binding = binding.0.clone();
         let store = store.0.clone();
 
-        let ecs_world = Resource::new_borrow(ecs_world.0.rep());
+        let ecs_world = Resource::new_own(ecs_world.0.rep());
 
-        let task = pool.spawn(async move {
+        pool.spawn(async move {
             let binding = binding.lock().await;
             let mut store = store.lock().await;
 
@@ -105,9 +99,10 @@ pub fn init_scripts(
                 .interface0
                 .call_init(store.as_context_mut(), ecs_world)
                 .await
+                .map(|r| (entity, r))
         });
 
-        commands.entity(entity).insert(ScriptInitializing(task));
+        commands.entity(entity).insert(ScriptInitializing);
     }
 }
 
@@ -116,7 +111,7 @@ const SCRIPT_DELTA: f32 = 1.0 / SCRIPT_UPDATE_HZ;
 
 pub fn update_scripts(
     last_update: Local<f32>,
-    time: Res<Time>,
+    mut pool: AsyncTaskPool<()>,
     scripts: Query<
         (
             &Name,
@@ -128,24 +123,8 @@ pub fn update_scripts(
         ),
         With<ScriptInitialized>,
     >,
-    mut tasks: Local<Vec<Task<wasm_bridge::Result<()>>>>,
+    time: Res<Time>,
 ) {
-    let mut completed_tasks = Vec::new();
-
-    for (i, task) in tasks.iter_mut().enumerate() {
-        if let Some(res) = block_on(future::poll_once(task)) {
-            if let Err(e) = res {
-                error!("Script update errror: {}", e);
-            }
-
-            completed_tasks.push(i);
-        }
-    }
-
-    for i in completed_tasks {
-        let _task = tasks.remove(i);
-    }
-
     let current_time = time.elapsed_seconds();
     let delta = current_time - *last_update;
 
@@ -153,24 +132,25 @@ pub fn update_scripts(
         return;
     }
 
-    let pool = AsyncComputeTaskPool::get();
-
     for (name, binding, store, ecs_world, script_resource, output) in scripts.iter() {
         let binding = binding.0.clone();
-        let ecs_world = Resource::new_borrow(ecs_world.0.rep());
+        let ecs_world = Resource::new_own(ecs_world.0.rep());
         let name = name.to_string();
         let output = output.0.clone();
         let script_resource = script_resource.0;
         let store = store.0.clone();
 
-        let task = pool.spawn(async move {
+        pool.spawn(async move {
             let binding = binding.lock().await;
             let mut store = store.lock().await;
 
-            let resource = binding
+            if let Err(e) = binding
                 .interface0
                 .call_update(store.as_context_mut(), ecs_world, script_resource)
-                .await;
+                .await
+            {
+                error!("Error during script update: {}", e);
+            };
 
             let output = output.lock().await;
             let mut out_bytes = Vec::new();
@@ -181,12 +161,8 @@ pub fn update_scripts(
 
             if !out_bytes.is_empty() {
                 let out_str = String::from_utf8_lossy(&out_bytes);
-                info!("{}: {}", name, out_str)
+                info!("{}: {}", name, out_str);
             }
-
-            resource
         });
-
-        tasks.push(task);
     }
 }

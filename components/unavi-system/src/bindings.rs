@@ -272,7 +272,7 @@ pub mod wired {
             }
             impl Query {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn read(&self) -> _rt::Vec<(Entity, ComponentInstance)> {
+                pub fn read(&self) -> _rt::Vec<(Entity, _rt::Vec<ComponentInstance>)> {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
@@ -292,24 +292,35 @@ pub mod wired {
                         wit_import((self).handle() as i32, ptr0);
                         let l1 = *ptr0.add(0).cast::<*mut u8>();
                         let l2 = *ptr0.add(4).cast::<usize>();
-                        let base5 = l1;
-                        let len5 = l2;
-                        let mut result5 = _rt::Vec::with_capacity(len5);
-                        for i in 0..len5 {
-                            let base = base5.add(i * 8);
-                            let e5 = {
+                        let base8 = l1;
+                        let len8 = l2;
+                        let mut result8 = _rt::Vec::with_capacity(len8);
+                        for i in 0..len8 {
+                            let base = base8.add(i * 12);
+                            let e8 = {
                                 let l3 = *base.add(0).cast::<i32>();
-                                let l4 = *base.add(4).cast::<i32>();
+                                let l4 = *base.add(4).cast::<*mut u8>();
+                                let l5 = *base.add(8).cast::<usize>();
+                                let base7 = l4;
+                                let len7 = l5;
+                                let mut result7 = _rt::Vec::with_capacity(len7);
+                                for i in 0..len7 {
+                                    let base = base7.add(i * 4);
+                                    let e7 = {
+                                        let l6 = *base.add(0).cast::<i32>();
 
-                                (
-                                    Entity::from_handle(l3 as u32),
-                                    ComponentInstance::from_handle(l4 as u32),
-                                )
+                                        ComponentInstance::from_handle(l6 as u32)
+                                    };
+                                    result7.push(e7);
+                                }
+                                _rt::cabi_dealloc(base7, len7 * 4, 4);
+
+                                (Entity::from_handle(l3 as u32), result7)
                             };
-                            result5.push(e5);
+                            result8.push(e8);
                         }
-                        _rt::cabi_dealloc(base5, len5 * 8, 4);
-                        result5
+                        _rt::cabi_dealloc(base8, len8 * 12, 4);
+                        result8
                     }
                 }
             }
@@ -810,18 +821,18 @@ A\x05\x01B\x1d\x04\0\x12component-instance\x03\x01\x04\0\x09component\x03\x01\x0
 \0\x06entity\x03\x01\x04\0\x05query\x03\x01\x04\0\x09ecs-world\x03\x01\x01h\x01\x01\
 i\0\x01@\x01\x04self\x05\0\x06\x04\0\x15[method]component.new\x01\x07\x01h\x02\x01\
 @\x02\x04self\x08\x09component\x06\x01\0\x04\0\x15[method]entity.insert\x01\x09\x01\
-h\x03\x01i\x02\x01o\x02\x0b\x06\x01p\x0c\x01@\x01\x04self\x0a\0\x0d\x04\0\x12[me\
-thod]query.read\x01\x0e\x01h\x04\x01i\x01\x01@\x01\x04self\x0f\0\x10\x04\0$[meth\
-od]ecs-world.register-component\x01\x11\x01p\x05\x01i\x03\x01@\x02\x04self\x0f\x0a\
-components\x12\0\x13\x04\0\x20[method]ecs-world.register-query\x01\x14\x01p\x06\x01\
-@\x02\x04self\x0f\x0acomponents\x15\0\x0b\x04\0\x17[method]ecs-world.spawn\x01\x16\
-\x03\x01\x0fwired:ecs/types\x05\0\x02\x03\0\0\x09ecs-world\x01B\x0a\x02\x03\x02\x01\
-\x01\x04\0\x09ecs-world\x03\0\0\x04\0\x06script\x03\x01\x01h\x01\x01i\x02\x01@\x01\
-\x09ecs-world\x03\0\x04\x04\0\x04init\x01\x05\x01h\x02\x01@\x02\x09ecs-world\x03\
-\x06script\x06\x01\0\x04\0\x06update\x01\x07\x04\x01\x12wired:script/types\x05\x02\
-\x04\x01\x13unavi:system/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09prod\
-ucers\x01\x0cprocessed-by\x02\x0dwit-component\x070.201.0\x10wit-bindgen-rust\x06\
-0.21.0";
+h\x03\x01i\x02\x01p\x06\x01o\x02\x0b\x0c\x01p\x0d\x01@\x01\x04self\x0a\0\x0e\x04\
+\0\x12[method]query.read\x01\x0f\x01h\x04\x01i\x01\x01@\x01\x04self\x10\0\x11\x04\
+\0$[method]ecs-world.register-component\x01\x12\x01p\x05\x01i\x03\x01@\x02\x04se\
+lf\x10\x0acomponents\x13\0\x14\x04\0\x20[method]ecs-world.register-query\x01\x15\
+\x01@\x02\x04self\x10\x0acomponents\x0c\0\x0b\x04\0\x17[method]ecs-world.spawn\x01\
+\x16\x03\x01\x0fwired:ecs/types\x05\0\x02\x03\0\0\x09ecs-world\x01B\x0a\x02\x03\x02\
+\x01\x01\x04\0\x09ecs-world\x03\0\0\x04\0\x06script\x03\x01\x01h\x01\x01i\x02\x01\
+@\x01\x09ecs-world\x03\0\x04\x04\0\x04init\x01\x05\x01h\x02\x01@\x02\x09ecs-worl\
+d\x03\x06script\x06\x01\0\x04\0\x06update\x01\x07\x04\x01\x12wired:script/types\x05\
+\x02\x04\x01\x13unavi:system/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09\
+producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.201.0\x10wit-bindgen-rus\
+t\x060.21.0";
 
 #[inline(never)]
 #[doc(hidden)]

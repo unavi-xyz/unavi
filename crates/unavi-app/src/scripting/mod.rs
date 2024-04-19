@@ -2,7 +2,10 @@ use bevy::prelude::*;
 
 use self::{
     asset::Wasm,
-    script::{commands::handle_script_commands, load_scripts, log_script_output},
+    script::{
+        commands::handle_script_commands, init_scripts, load::load_scripts,
+        query::run_script_queries, update_scripts,
+    },
     unavi_system::spawn_unavi_system,
 };
 
@@ -19,7 +22,16 @@ impl Plugin for ScriptingPlugin {
             .add_systems(Startup, spawn_unavi_system)
             .add_systems(
                 Update,
-                (handle_script_commands, load_scripts, log_script_output),
+                (
+                    load_scripts,
+                    (
+                        handle_script_commands,
+                        run_script_queries,
+                        init_scripts,
+                        update_scripts,
+                    )
+                        .chain(),
+                ),
             );
     }
 }

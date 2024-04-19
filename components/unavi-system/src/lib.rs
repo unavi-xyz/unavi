@@ -56,14 +56,16 @@ impl Guest for UnaviSystem {
 
         let mut store = script.store.borrow_mut();
 
-        for (_entity, count_comp) in script.query.read() {
-            let count = store.get(&count_comp).unwrap();
+        for (_entity, components) in script.query.read() {
+            let count_component = components.first().unwrap();
+
+            let count = store.get(count_component).unwrap();
             println!("count: {}", count.value);
 
             let mut count = count.clone();
             count.value += count.increment;
 
-            store.insert(&count_comp, count)
+            store.insert(count_component, count)
         }
     }
 }

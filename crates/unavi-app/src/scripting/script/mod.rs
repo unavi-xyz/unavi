@@ -1,30 +1,21 @@
-use std::{
-    sync::{mpsc::Receiver, Arc, Mutex},
-    time::Duration,
-};
-
 use bevy::{
     prelude::*,
     tasks::{block_on, futures_lite::future, AsyncComputeTaskPool, Task},
 };
-use bytes::Bytes;
-use thiserror::Error;
-use wasm_bridge::{
-    component::{Component, Linker, Resource},
-    AsContextMut, Config, Engine, Store,
-};
-use wasm_bridge_wasi::WasiCtxBuilder;
 
-use self::{
-    commands::{ScriptCommand, ScriptResourceMap},
-    state::ScriptState,
-    stream::OutStream,
+use wasm_bridge::{
+    component::{Resource, ResourceAny},
+    AsContextMut, Config, Engine,
 };
+
+use self::load::{ScriptBinding, ScriptEcsWorld, ScriptOutput, ScriptStore};
 
 use super::asset::Wasm;
 
 pub mod commands;
 mod host;
+pub mod load;
+pub mod query;
 mod state;
 mod stream;
 
@@ -33,8 +24,9 @@ wasm_bridge::component::bindgen!({
     path: "../../wired-protocol/spatial/wit/wired-script",
     with: {
         "wired:ecs/types": host::wired_ecs,
-        "wired:ecs/types/component-instance": host::wired_ecs::ComponentInstance,
         "wired:ecs/types/component": host::wired_ecs::Component,
+        "wired:ecs/types/component-instance": host::wired_ecs::ComponentInstance,
+        "wired:ecs/types/ecs-world": host::wired_ecs::EcsWorld,
         "wired:ecs/types/entity": host::wired_ecs::Entity,
         "wired:ecs/types/query": host::wired_ecs::Query,
     }
@@ -62,153 +54,122 @@ impl Default for WasmEngine {
 }
 
 #[derive(Component)]
-pub struct InstantiatedScript(pub Script);
+pub struct ScriptInitialized;
 
 #[derive(Component)]
-pub struct ScriptOutput(pub Arc<Mutex<Receiver<Bytes>>>);
+pub struct ScriptInitializing(Task<wasm_bridge::Result<ResourceAny>>);
 
 #[derive(Component)]
-pub struct ScriptCommandReceiver(pub Arc<Mutex<Receiver<ScriptCommand>>>);
+pub struct ScriptResource(ResourceAny);
 
-pub struct ScriptTaskOutput {
-    pub script: Script,
-    pub store: Store<ScriptState>,
-}
-
-#[derive(Error, Debug)]
-pub enum ScriptTaskErr {
-    #[error("Failed to add WASI to linker: {0}")]
-    AddWasiToLinker(anyhow::Error),
-    #[error("Failed to add host scripts to linker: {0}")]
-    AddHostToLinker(anyhow::Error),
-    #[error("Failed to compile WASM component: {0}")]
-    Compile(anyhow::Error),
-    #[error("Failed to instantiate script: {0}")]
-    Instantiate(anyhow::Error),
-    #[error("Failed to initialize script: {0}")]
-    Init(anyhow::Error),
-}
-
-pub fn load_scripts(
+pub fn init_scripts(
     mut commands: Commands,
-    mut tasks: Local<Vec<Task<Result<ScriptTaskOutput, ScriptTaskErr>>>>,
-    to_load: Query<(Entity, &Handle<Wasm>), Without<WasmEngine>>,
-    wasm_assets: Res<Assets<Wasm>>,
+    scripts: Query<
+        (Entity, &ScriptBinding, &ScriptStore, &ScriptEcsWorld),
+        (Without<ScriptInitialized>, Without<ScriptInitializing>),
+    >,
+    mut initializing: Query<(Entity, &mut ScriptInitializing)>,
 ) {
-    let pool = AsyncComputeTaskPool::get();
+    for (entity, mut task) in initializing.iter_mut() {
+        if let Some(res) = block_on(future::poll_once(&mut task.0)) {
+            commands
+                .entity(entity)
+                .insert(ScriptInitialized)
+                .remove::<ScriptInitializing>();
 
-    for (i, task) in tasks.iter_mut().enumerate() {
-        if let Some(res) = block_on(future::poll_once(task)) {
-            let _output = match res {
-                Ok(out) => out,
+            let script = match res {
+                Ok(r) => r,
                 Err(e) => {
-                    error!("Error loading script: {}", e);
+                    error!("Error initializing script: {}", e);
                     continue;
                 }
             };
 
-            info!("Loaded script!");
+            commands.entity(entity).insert(ScriptResource(script));
+        }
+    }
+
+    let pool = AsyncComputeTaskPool::get();
+
+    for (entity, binding, store, ecs_world) in scripts.iter() {
+        let binding = binding.0.clone();
+        let store = store.0.clone();
+
+        let ecs_world = Resource::new_borrow(ecs_world.0.rep());
+
+        let task = pool.spawn(async move {
+            let binding = binding.lock().await;
+            let mut store = store.lock().await;
+
+            binding
+                .interface0
+                .call_init(store.as_context_mut(), ecs_world)
+                .await
+        });
+
+        commands.entity(entity).insert(ScriptInitializing(task));
+    }
+}
+
+pub fn update_scripts(
+    scripts: Query<
+        (
+            &Name,
+            &ScriptBinding,
+            &ScriptStore,
+            &ScriptEcsWorld,
+            &ScriptResource,
+            &ScriptOutput,
+        ),
+        With<ScriptInitialized>,
+    >,
+    mut tasks: Local<Vec<Task<wasm_bridge::Result<()>>>>,
+) {
+    for (i, task) in tasks.iter_mut().enumerate() {
+        if let Some(res) = block_on(future::poll_once(task)) {
+            if let Err(e) = res {
+                error!("Script update errror: {}", e);
+            }
 
             let _t = tasks.remove(i);
             break;
         }
     }
 
-    for (entity, wasm) in to_load.iter() {
-        let bytes = match wasm_assets.get(wasm) {
-            Some(wasm) => wasm.0.clone(),
-            None => continue,
-        };
+    let pool = AsyncComputeTaskPool::get();
 
-        let (stream, recv) = OutStream::new();
-        let (send_command, recv_command) = std::sync::mpsc::sync_channel(100);
-
-        // Create a new engine for each script.
-        // In the future an engine could be shared across many scripts.
-        let engine = WasmEngine::default();
-
-        commands.entity(entity).insert((
-            ScriptCommandReceiver(Arc::new(Mutex::new(recv_command))),
-            ScriptOutput(Arc::new(Mutex::new(recv))),
-            ScriptResourceMap::default(),
-            engine.clone(),
-        ));
+    for (name, binding, store, ecs_world, script_resource, output) in scripts.iter() {
+        let binding = binding.0.clone();
+        let ecs_world = Resource::new_borrow(ecs_world.0.rep());
+        let name = name.to_string();
+        let output = output.0.clone();
+        let script_resource = script_resource.0;
+        let store = store.0.clone();
 
         let task = pool.spawn(async move {
-            let wasi = WasiCtxBuilder::new().stdout(stream).build();
+            let binding = binding.lock().await;
+            let mut store = store.lock().await;
 
-            let state = ScriptState {
-                sender: send_command,
-                table: Default::default(),
-                wasi,
-            };
-
-            let mut store = Store::new(&engine.0, state);
-
-            let mut linker = Linker::new(&engine.0);
-
-            wasm_bridge_wasi::command::add_to_linker(&mut linker)
-                .map_err(ScriptTaskErr::AddWasiToLinker)?;
-
-            host::add_to_linker(&mut linker).map_err(ScriptTaskErr::AddHostToLinker)?;
-
-            let component = Component::new_safe(&engine.0, bytes)
-                .await
-                .map_err(ScriptTaskErr::Compile)?;
-
-            let (script, _) =
-                Script::instantiate_async(store.as_context_mut(), &component, &linker)
-                    .await
-                    .map_err(ScriptTaskErr::Instantiate)?;
-
-            let ecs_world_id = 0;
-            let ecs_world = Resource::new_borrow(ecs_world_id);
-
-            let res_script = match script
+            let resource = binding
                 .interface0
-                .call_init(store.as_context_mut(), ecs_world)
-                .await
-            {
-                Ok(r) => r,
-                Err(e) => return Err(ScriptTaskErr::Init(e)),
-            };
+                .call_update(store.as_context_mut(), ecs_world, script_resource)
+                .await;
 
-            for _ in 0..10 {
-                std::thread::sleep(Duration::from_secs_f32(0.1));
+            let output = output.lock().await;
+            let mut out_bytes = Vec::new();
 
-                let ecs_world = Resource::new_borrow(ecs_world_id);
-
-                if let Err(e) = script
-                    .interface0
-                    .call_update(store.as_context_mut(), ecs_world, res_script)
-                    .await
-                {
-                    return Err(ScriptTaskErr::Init(e));
-                }
+            while let Ok(bytes) = output.try_recv() {
+                out_bytes.extend(&bytes);
             }
 
-            Ok(ScriptTaskOutput { script, store })
+            if !out_bytes.is_empty() {
+                let out_str = String::from_utf8_lossy(&out_bytes);
+                info!("{}: {}", name, out_str)
+            }
+
+            resource
         });
 
         tasks.push(task);
-    }
-}
-
-pub fn log_script_output(outputs: Query<(&Name, &ScriptOutput)>) {
-    for (name, output) in outputs.iter() {
-        let recv = output.0.lock().unwrap();
-
-        let mut out = Vec::new();
-
-        while let Ok(bytes) = recv.try_recv() {
-            out.extend(&bytes);
-        }
-
-        if out.is_empty() {
-            continue;
-        }
-
-        let out_str = String::from_utf8_lossy(&out);
-        info!("{}: {}", name, out_str);
     }
 }

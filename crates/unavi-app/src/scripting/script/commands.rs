@@ -1,12 +1,21 @@
-use std::alloc::Layout;
+use std::{
+    alloc::Layout,
+    ptr::NonNull,
+    sync::{Arc, Mutex},
+};
 
 use bevy::{
-    ecs::component::{ComponentDescriptor, ComponentId, StorageType},
+    ecs::{
+        component::{ComponentDescriptor, ComponentInfo, StorageType},
+        world::FilteredEntityRef,
+    },
     prelude::*,
+    ptr::OwningPtr,
+    tasks::futures_lite::future,
     utils::HashMap,
 };
 
-use super::ScriptCommandReceiver;
+use super::load::ScriptCommandReceiver;
 
 #[derive(Debug)]
 pub enum ScriptCommand {
@@ -18,7 +27,7 @@ pub enum ScriptCommand {
 #[derive(Debug)]
 pub struct ComponentInstance {
     pub component: u32,
-    pub instance: u32,
+    pub instance: u64,
 }
 
 #[derive(Debug)]
@@ -36,9 +45,14 @@ pub struct SpawnEntity {
 /// Maps script resources to their Bevy counterparts.
 #[derive(Component, Debug, Default)]
 pub struct ScriptResourceMap {
-    components: HashMap<u32, ComponentId>,
-    entities: HashMap<u32, Entity>,
-    queries: HashMap<u32, QueryState<()>>,
+    pub components: HashMap<u32, ComponentInfo>,
+    pub entities: HashMap<u32, Entity>,
+    pub queries: HashMap<u32, ScriptQuery>,
+}
+
+#[derive(Debug)]
+pub struct ScriptQuery {
+    pub state: Arc<Mutex<QueryState<FilteredEntityRef<'static>>>>,
 }
 
 #[derive(Debug)]
@@ -46,18 +60,27 @@ enum CommandPreprocess {
     RegisterComponent(u32),
     RegisterQuery {
         id: u32,
-        components: Vec<ComponentId>,
+        components: Vec<ComponentInfo>,
     },
     SpawnEntity {
         id: u32,
-        components: Vec<ComponentInstance>,
+        components: Vec<(u64, ComponentInfo)>,
     },
 }
 
 enum CommandResult {
-    RegisterComponent { id: u32, component: ComponentId },
-    RegisterQuery { id: u32, query: Box<QueryState<()>> },
-    SpawnEntity { id: u32, entity: Entity },
+    RegisterComponent {
+        id: u32,
+        component: ComponentInfo,
+    },
+    RegisterQuery {
+        id: u32,
+        query: Box<QueryState<FilteredEntityRef<'static>>>,
+    },
+    SpawnEntity {
+        id: u32,
+        entity: Entity,
+    },
 }
 
 pub fn handle_script_commands(
@@ -90,8 +113,7 @@ pub fn handle_script_commands(
                     CommandPreprocess::RegisterComponent(id) => {
                         *counter += 1;
 
-                        // SAFETY: [u64] is Send + Sync
-                        let component = world.init_component_with_descriptor(unsafe {
+                        let component_id = world.init_component_with_descriptor(unsafe {
                             ComponentDescriptor::new_with_layout(
                                 format!("_GeneratedScriptComponent{}", *counter),
                                 StorageType::Table,
@@ -100,23 +122,41 @@ pub fn handle_script_commands(
                             )
                         });
 
-                        Some(CommandResult::RegisterComponent { id, component })
+                        let info = world.components().get_info(component_id).unwrap();
+
+                        Some(CommandResult::RegisterComponent {
+                            id,
+                            component: info.clone(),
+                        })
                     }
                     CommandPreprocess::RegisterQuery { id, components } => {
-                        let mut builder = QueryBuilder::<()>::new(world);
+                        let mut builder = QueryBuilder::new(world);
 
-                        for id in components.into_iter() {
-                            builder.ref_id(id);
+                        for info in components.into_iter() {
+                            builder.ref_id(info.id());
                         }
 
                         let query = Box::new(builder.build());
 
                         Some(CommandResult::RegisterQuery { id, query })
                     }
-                    CommandPreprocess::SpawnEntity { id, components: _ } => {
-                        let entity = world.spawn(());
+                    CommandPreprocess::SpawnEntity { id, components } => {
+                        let mut entity = world.spawn(());
 
-                        // TODO: components
+                        for (instance, info) in components {
+                            let len = info.layout().size() / std::mem::size_of::<u64>();
+
+                            let mut data = vec![instance; len];
+
+                            info!("Spawning entity with data: {:?}, len: {}", data, len);
+                            let ptr = data.as_mut_ptr();
+
+                            unsafe {
+                                let non_null = NonNull::new_unchecked(ptr.cast());
+                                let owning_ptr = OwningPtr::new(non_null);
+                                entity.insert_by_id(info.id(), owning_ptr);
+                            };
+                        }
 
                         Some(CommandResult::SpawnEntity {
                             id,
@@ -137,7 +177,12 @@ pub fn handle_script_commands(
                         map.components.insert(id, component);
                     }
                     CommandResult::RegisterQuery { id, query } => {
-                        map.queries.insert(id, *query);
+                        map.queries.insert(
+                            id,
+                            ScriptQuery {
+                                state: Arc::new(Mutex::new(*query)),
+                            },
+                        );
                     }
                     CommandResult::SpawnEntity { id, entity } => {
                         map.entities.insert(id, entity);
@@ -155,10 +200,10 @@ fn preprocess(
     scripts
         .iter_mut(world)
         .map(|(receiver, map)| {
-            let receiver = match receiver.0.lock() {
-                Ok(r) => r,
-                Err(_) => return None,
-            };
+            let receiver = future::block_on(async {
+                receiver.0.lock().await
+            });
+
 
             let command = match receiver.try_recv() {
                 Ok(c) => c,
@@ -201,7 +246,16 @@ fn preprocess(
                         return None;
                     }
 
-                    Some(CommandPreprocess::SpawnEntity { id , components })
+                    let components = components.iter().map(|item| {
+                        map.components.get(&item.component).cloned().map(|info| (item.instance, info))
+                    }).collect::<Option<Vec<_>>>();
+
+                    if let Some(components) = components {
+                        Some(CommandPreprocess::SpawnEntity { id , components })
+                    }  else {
+                        warn!("Unable to find component for spawning entity {}. Ignoring script command.", id );
+                        None
+                    }
                 }
             }
         })

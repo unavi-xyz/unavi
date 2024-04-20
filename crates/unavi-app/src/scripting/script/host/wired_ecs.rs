@@ -1,3 +1,4 @@
+use bevy::tasks::futures_lite::future;
 use wasm_bridge::component::Resource;
 
 use crate::scripting::script::{
@@ -7,17 +8,24 @@ use crate::scripting::script::{
     state::ScriptState,
 };
 
+#[derive(Debug)]
 pub struct ComponentInstance {
     component: u32,
 }
 
+#[derive(Debug)]
 pub struct Component;
+
+#[derive(Debug)]
 pub struct EcsWorld;
+
+#[derive(Debug)]
 pub struct Entity;
 
 type QueryResultIds = Vec<(u32, Vec<u32>)>;
 type QueryResult = Vec<(Resource<Entity>, Vec<Resource<ComponentInstance>>)>;
 
+#[derive(Debug)]
 pub struct Query {
     components: Vec<u32>,
     pub result: QueryResultIds,
@@ -49,7 +57,9 @@ impl wired::ecs::types::HostComponent for ScriptState {
         let instance = ComponentInstance {
             component: self_.rep(),
         };
-        let resource = self.table.push_child(instance, &self_)?;
+
+        let mut table = future::block_on(async { self.table.lock().await });
+        let resource = table.push_child(instance, &self_)?;
         Ok(resource)
     }
 
@@ -75,7 +85,8 @@ impl wired::ecs::types::HostEntity for ScriptState {
 
 impl wired::ecs::types::HostQuery for ScriptState {
     fn read(&mut self, self_: Resource<Query>) -> wasm_bridge::Result<QueryResult> {
-        let query = self.table.get(&self_)?;
+        let table = future::block_on(async { self.table.lock().await });
+        let query = table.get(&self_)?;
 
         Ok(query
             .result
@@ -100,10 +111,12 @@ impl wired::ecs::types::HostEcsWorld for ScriptState {
         _self_: Resource<EcsWorld>,
         components: Vec<Resource<ComponentInstance>>,
     ) -> wasm_bridge::Result<Resource<Entity>> {
+        let mut table = future::block_on(async { self.table.lock().await });
+
         let components = components
             .iter()
             .map(|r| -> anyhow::Result<ComponentInstanceState> {
-                let instance = self.table.get(r)?;
+                let instance = table.get(r)?;
                 Ok(ComponentInstanceState {
                     component: instance.component,
                     instance: r.rep() as u64,
@@ -111,9 +124,10 @@ impl wired::ecs::types::HostEcsWorld for ScriptState {
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        let entity = self.table.push(Entity)?;
+        let entity = table.push(Entity)?;
 
-        self.sender.send(ScriptCommand::SpawnEntity(SpawnEntity {
+        let sender = future::block_on(async { self.sender.lock().await });
+        sender.send(ScriptCommand::SpawnEntity(SpawnEntity {
             id: entity.rep(),
             components,
         }))?;
@@ -125,10 +139,11 @@ impl wired::ecs::types::HostEcsWorld for ScriptState {
         &mut self,
         _self_: Resource<EcsWorld>,
     ) -> wasm_bridge::Result<Resource<Component>> {
-        let resource = self.table.push(Component)?;
+        let mut table = future::block_on(async { self.table.lock().await });
+        let resource = table.push(Component)?;
 
-        self.sender
-            .send(ScriptCommand::RegisterComponent(resource.rep()))?;
+        let sender = future::block_on(async { self.sender.lock().await });
+        sender.send(ScriptCommand::RegisterComponent(resource.rep()))?;
 
         Ok(resource)
     }
@@ -143,13 +158,15 @@ impl wired::ecs::types::HostEcsWorld for ScriptState {
             components: components.clone(),
             result: Default::default(),
         };
-        let resource = self.table.push(query)?;
 
-        self.sender
-            .send(ScriptCommand::RegisterQuery(RegisterQuery {
-                id: resource.rep(),
-                components,
-            }))?;
+        let mut table = future::block_on(async { self.table.lock().await });
+        let resource = table.push(query)?;
+
+        let sender = future::block_on(async { self.sender.lock().await });
+        sender.send(ScriptCommand::RegisterQuery(RegisterQuery {
+            id: resource.rep(),
+            components,
+        }))?;
 
         Ok(resource)
     }

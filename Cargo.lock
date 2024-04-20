@@ -2299,12 +2299,13 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.0.94"
+version = "1.0.95"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17f6e324229dc011159fcc089755d1e2e216a90d43a7dea6853ca740b84f35e7"
+checksum = "d32a725bc159af97c3e629873bb9f88fb8cf8a4867175f76dc987815ea07c83b"
 dependencies = [
  "jobserver",
  "libc",
+ "once_cell",
 ]
 
 [[package]]
@@ -2423,6 +2424,33 @@ dependencies = [
  "serde",
  "wasm-bindgen",
  "windows-targets 0.52.5",
+]
+
+[[package]]
+name = "ciborium"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42e69ffd6f0917f5c029256a24d0161db17cea3997d185db0d35926308770f0e"
+dependencies = [
+ "ciborium-io",
+ "ciborium-ll",
+ "serde",
+]
+
+[[package]]
+name = "ciborium-io"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05afea1e0a06c9be33d539b876f1ce3692f4afea2cb41f740e7743225ed1c757"
+
+[[package]]
+name = "ciborium-ll"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57663b653d948a338bfb3eeba9bb2fd5fcfaecb9e199e87e1eda4d9e8b240fd9"
+dependencies = [
+ "ciborium-io",
+ "half",
 ]
 
 [[package]]
@@ -8353,9 +8381,9 @@ dependencies = [
 
 [[package]]
 name = "revision"
-version = "0.5.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87eb86913082f8976b06d07a59f17df9120e6f38b882cf3fc5a45b4499e224b6"
+checksum = "588784c1d9453cfd2ce1b7aff06c903513677cf0e63779a0a3085ee8a44f5b17"
 dependencies = [
  "bincode",
  "chrono",
@@ -8371,9 +8399,9 @@ dependencies = [
 
 [[package]]
 name = "revision-derive"
-version = "0.5.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf996fc5f61f1dbec35799b5c00c6dda12e8862e8cb782ed24e10d0292e60ed3"
+checksum = "854ff0b6794d4e0aab5e4486870941caefe9f258e63cad2f21b49a6302377c85"
 dependencies = [
  "darling 0.20.8",
  "proc-macro-error",
@@ -8504,6 +8532,27 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "rmp"
+version = "0.8.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "228ed7c16fa39782c3b3468e974aec2795e9089153cd08ee2e9aefb3613334c4"
+dependencies = [
+ "byteorder",
+ "num-traits",
+ "paste",
+]
+
+[[package]]
+name = "rmpv"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e540282f11751956c82bc5529a7fb71b871b998fbf9cf06c2419b22e1b4350df"
+dependencies = [
+ "num-traits",
+ "rmp",
 ]
 
 [[package]]
@@ -9952,9 +10001,9 @@ checksum = "81cdd64d312baedb58e21336b31bc043b77e01cc99033ce76ef539f78e965ebc"
 
 [[package]]
 name = "surrealdb"
-version = "1.4.0"
+version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "009e5d423255fca9e82603af890b3fd373e4d2540c0059c56b92cd2e57f87409"
+checksum = "c45d00b61417f95754862c5d4cb0ef1ef51d285d38e3c1d2dec1cea600558c15"
 dependencies = [
  "async-channel 1.9.0",
  "bincode",
@@ -9974,8 +10023,8 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
- "surrealdb-core 1.4.1",
- "surrealdb-core 2.0.0-1.4.0",
+ "surrealdb-core 1.4.2",
+ "surrealdb-core 2.0.0-1.4.2",
  "thiserror",
  "tokio",
  "tracing",
@@ -9988,9 +10037,9 @@ dependencies = [
 
 [[package]]
 name = "surrealdb-core"
-version = "1.4.1"
+version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91a917d727e53e2d20ca93ad00b63020a1cc38857129ffcb163c19590e5f442f"
+checksum = "7a2f403dba761e0e3404f90334f8ff1454f1f308e88c84dd5dbcee52866ff30e"
 dependencies = [
  "addr",
  "any_ascii",
@@ -10058,9 +10107,9 @@ dependencies = [
 
 [[package]]
 name = "surrealdb-core"
-version = "2.0.0-1.4.0"
+version = "2.0.0-1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "287f28d22630b2b890abec459d658b164dbf4b0a686f5e1f80569400ff632a66"
+checksum = "c23c46ce1889c7238d10c66264f7283c68ae124e99161c7c3eec6f152cb6f691"
 dependencies = [
  "addr",
  "any_ascii",
@@ -10074,6 +10123,7 @@ dependencies = [
  "bytes",
  "cedar-policy",
  "chrono",
+ "ciborium",
  "deunicode",
  "dmp",
  "fst",
@@ -10100,6 +10150,7 @@ dependencies = [
  "regex",
  "revision",
  "ring 0.17.8",
+ "rmpv",
  "roaring",
  "rust-stemmers",
  "rust_decimal",
@@ -11158,7 +11209,7 @@ checksum = "4f186bd2dcf04330886ce82d6f33dd75a7bfcf69ecf5763b89fcde53b6ac9838"
 [[package]]
 name = "wasm-bridge"
 version = "0.4.0"
-source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=sync#7bec6cc075a7a6d22871a62b4bf218d1a6927357"
+source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=my-changes#ce44162a26ed8efc7bfa06bdcdbeb0bf8f5709e4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -11177,7 +11228,7 @@ dependencies = [
 [[package]]
 name = "wasm-bridge-macros"
 version = "0.4.0"
-source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=sync#7bec6cc075a7a6d22871a62b4bf218d1a6927357"
+source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=my-changes#ce44162a26ed8efc7bfa06bdcdbeb0bf8f5709e4"
 dependencies = [
  "anyhow",
  "heck 0.5.0",
@@ -11193,7 +11244,7 @@ dependencies = [
 [[package]]
 name = "wasm-bridge-wasi"
 version = "0.4.0"
-source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=sync#7bec6cc075a7a6d22871a62b4bf218d1a6927357"
+source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=my-changes#ce44162a26ed8efc7bfa06bdcdbeb0bf8f5709e4"
 dependencies = [
  "anyhow",
  "bytes",

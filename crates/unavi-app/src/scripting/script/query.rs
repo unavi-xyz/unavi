@@ -91,7 +91,9 @@ pub fn run_script_queries(
             let state = store.data_mut();
 
             let resource = Resource::<wired_ecs::Query>::new_own(*query_id);
-            let resource = state.table.get_mut(&resource).unwrap();
+
+            let mut table = future::block_on(async { state.table.lock().await });
+            let resource = table.get_mut(&resource).unwrap();
 
             resource.result = query_results;
         }

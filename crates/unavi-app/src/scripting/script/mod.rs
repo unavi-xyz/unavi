@@ -14,6 +14,7 @@ pub mod commands;
 mod host;
 pub mod load;
 pub mod query;
+pub mod resource_table;
 mod state;
 mod stream;
 

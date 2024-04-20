@@ -37,7 +37,7 @@ pub struct ScriptTaskOutput {
     pub store: Arc<Mutex<Store<ScriptState>>>,
 }
 
-// SAFETY: Script is used with Arc<Mutex<T>>, so uhhhh maybe this is fine
+// SAFETY: Script is used with Arc<Mutex<T>>, so uhhhh maybe this is fine?
 unsafe impl Send for Script {}
 
 #[derive(Component)]
@@ -107,14 +107,17 @@ pub fn load_scripts(
         pool.spawn(async move {
             let wasi = WasiCtxBuilder::new().stdout(stream).build();
 
-            let mut state = ScriptState {
-                sender: send_command,
+            let state = ScriptState {
+                sender: Arc::new(Mutex::new(send_command)),
+                table: Default::default(),
                 wasi_table: Default::default(),
                 wasi_ctx: wasi,
             };
 
             let ecs_world = state
-                .wasi_table
+                .table
+                .lock()
+                .await
                 .push(EcsWorld)
                 .map_err(|e| ScriptTaskErr::ResourceTable(anyhow::anyhow!(e)))?;
 

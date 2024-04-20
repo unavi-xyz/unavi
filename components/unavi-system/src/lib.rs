@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 
 use bindings::{
-    exports::wired::script::types::{Guest, GuestScript, Script, ScriptBorrow},
+    exports::wired::script::types::{Data, DataBorrow, Guest, GuestData},
     wired::ecs::types::{EcsWorld, Query},
 };
 use store::Store;
@@ -17,19 +17,19 @@ struct Count {
     value: usize,
 }
 
-struct ScriptImpl {
+struct DataImpl {
     store: RefCell<Store<Count>>,
     query: Query,
 }
 
-impl GuestScript for ScriptImpl {}
+impl GuestData for DataImpl {}
 
 struct UnaviSystem;
 
 impl Guest for UnaviSystem {
-    type Script = ScriptImpl;
+    type Data = DataImpl;
 
-    fn init(ecs_world: &EcsWorld) -> Script {
+    fn init(ecs_world: &EcsWorld) -> Data {
         let component = ecs_world.register_component();
         let query = ecs_world.register_query(&[&component]);
 
@@ -40,14 +40,14 @@ impl Guest for UnaviSystem {
             increment: 2,
         })]);
 
-        Script::new(ScriptImpl {
+        Data::new(DataImpl {
             store: store.into(),
             query,
         })
     }
 
-    fn update(_ecs_world: &EcsWorld, script: ScriptBorrow) {
-        let script: &ScriptImpl = script.get();
+    fn update(_ecs_world: &EcsWorld, script: DataBorrow) {
+        let script: &DataImpl = script.get();
 
         let mut store = script.store.borrow_mut();
 

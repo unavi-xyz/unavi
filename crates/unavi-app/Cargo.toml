@@ -27,8 +27,7 @@ dwn.workspace = true
 serde_json.workspace = true
 thiserror = "1.0.58"
 tracing.workspace = true
-wasm-bridge = { version = "0.4.0", features = ["async", "component-model"] }
-wasm-bridge-wasi = "0.4.0"
+wasm_component_layer = "0.1.16"
 wired-protocol.workspace = true
 xwt = "0.6.0"
 xwt-core = "0.2.2"
@@ -39,6 +38,7 @@ surrealdb = { workspace = true, features = ["kv-indxdb"] }
 tokio.workspace = true
 wasm-bindgen = "=0.2.91"
 wasm-bindgen-futures = "0.4.41"
+wasm_runtime_layer = { version = "0.3.0", features = ["tracing", "backend_web"] }
 web-sys = { version = "0.3.68", features = ["Location", "UrlSearchParams", "Window"] }
 xwt-web-sys = "0.6.0"
 
@@ -46,4 +46,6 @@ xwt-web-sys = "0.6.0"
 self_update = { version = "0.39.0", features = ["archive-zip"] }
 surrealdb = { workspace = true, features = ["kv-surrealkv"] }
 tokio = { workspace = true, features = ["rt-multi-thread"] }
+wasm_runtime_layer = { version = "0.3.0", features = ["tracing", "backend_wasmtime"] }
+wasmtime = { version = "18.0.0", features = ["component-model"] }
 wtransport.workspace = true

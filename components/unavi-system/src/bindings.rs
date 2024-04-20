@@ -452,40 +452,40 @@ pub mod exports {
 
                 #[derive(Debug)]
                 #[repr(transparent)]
-                pub struct Script {
-                    handle: _rt::Resource<Script>,
+                pub struct Data {
+                    handle: _rt::Resource<Data>,
                 }
 
-                type _ScriptRep<T> = Option<T>;
+                type _DataRep<T> = Option<T>;
 
-                impl Script {
+                impl Data {
                     /// Creates a new resource from the specified representation.
                     ///
                     /// This function will create a new resource handle by moving `val` onto
                     /// the heap and then passing that heap pointer to the component model to
-                    /// create a handle. The owned handle is then returned as `Script`.
-                    pub fn new<T: GuestScript>(val: T) -> Self {
+                    /// create a handle. The owned handle is then returned as `Data`.
+                    pub fn new<T: GuestData>(val: T) -> Self {
                         Self::type_guard::<T>();
-                        let val: _ScriptRep<T> = Some(val);
-                        let ptr: *mut _ScriptRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        let val: _DataRep<T> = Some(val);
+                        let ptr: *mut _DataRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
                         unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
                     }
 
                     /// Gets access to the underlying `T` which represents this resource.
-                    pub fn get<T: GuestScript>(&self) -> &T {
+                    pub fn get<T: GuestData>(&self) -> &T {
                         let ptr = unsafe { &*self.as_ptr::<T>() };
                         ptr.as_ref().unwrap()
                     }
 
                     /// Gets mutable access to the underlying `T` which represents this
                     /// resource.
-                    pub fn get_mut<T: GuestScript>(&mut self) -> &mut T {
+                    pub fn get_mut<T: GuestData>(&mut self) -> &mut T {
                         let ptr = unsafe { &mut *self.as_ptr::<T>() };
                         ptr.as_mut().unwrap()
                     }
 
                     /// Consumes this resource and returns the underlying `T`.
-                    pub fn into_inner<T: GuestScript>(self) -> T {
+                    pub fn into_inner<T: GuestData>(self) -> T {
                         let ptr = unsafe { &mut *self.as_ptr::<T>() };
                         ptr.take().unwrap()
                     }
@@ -507,7 +507,7 @@ pub mod exports {
                         _rt::Resource::handle(&self.handle)
                     }
 
-                    // It's theoretically possible to implement the `GuestScript` trait twice
+                    // It's theoretically possible to implement the `GuestData` trait twice
                     // so guard against using it with two different types here.
                     #[doc(hidden)]
                     fn type_guard<T: 'static>() {
@@ -526,22 +526,22 @@ pub mod exports {
                         }
                     }
 
-                    fn as_ptr<T: GuestScript>(&self) -> *mut _ScriptRep<T> {
-                        Script::type_guard::<T>();
+                    fn as_ptr<T: GuestData>(&self) -> *mut _DataRep<T> {
+                        Data::type_guard::<T>();
                         unsafe { T::_resource_rep(self.handle()).cast() }
                     }
                 }
 
-                /// A borrowed version of [`Script`] which represents a borrowed value
+                /// A borrowed version of [`Data`] which represents a borrowed value
                 /// with the lifetime `'a`.
                 #[derive(Debug)]
                 #[repr(transparent)]
-                pub struct ScriptBorrow<'a> {
+                pub struct DataBorrow<'a> {
                     rep: *mut u8,
-                    _marker: core::marker::PhantomData<&'a Script>,
+                    _marker: core::marker::PhantomData<&'a Data>,
                 }
 
-                impl<'a> ScriptBorrow<'a> {
+                impl<'a> DataBorrow<'a> {
                     #[doc(hidden)]
                     pub unsafe fn lift(rep: usize) -> Self {
                         Self {
@@ -551,7 +551,7 @@ pub mod exports {
                     }
 
                     /// Gets access to the underlying `T` in this resource.
-                    pub fn get<T: GuestScript>(&self) -> &T {
+                    pub fn get<T: GuestData>(&self) -> &T {
                         let ptr = unsafe { &mut *self.as_ptr::<T>() };
                         ptr.as_ref().unwrap()
                     }
@@ -559,13 +559,13 @@ pub mod exports {
                     // NB: mutable access is not allowed due to the component model allowing
                     // multiple borrows of the same resource.
 
-                    fn as_ptr<T: 'static>(&self) -> *mut _ScriptRep<T> {
-                        Script::type_guard::<T>();
+                    fn as_ptr<T: 'static>(&self) -> *mut _DataRep<T> {
+                        Data::type_guard::<T>();
                         self.rep.cast()
                     }
                 }
 
-                unsafe impl _rt::WasmResource for Script {
+                unsafe impl _rt::WasmResource for Data {
                     #[inline]
                     unsafe fn drop(_handle: u32) {
                         #[cfg(not(target_arch = "wasm32"))]
@@ -575,7 +575,7 @@ pub mod exports {
                         {
                             #[link(wasm_import_module = "[export]wired:script/types")]
                             extern "C" {
-                                #[link_name = "[resource-drop]script"]
+                                #[link_name = "[resource-drop]data"]
                                 fn drop(_: u32);
                             }
 
@@ -606,17 +606,17 @@ pub mod exports {
                             handle0 = super::super::super::super::wired::ecs::types::EcsWorld::from_handle(arg0 as u32);
                             &handle0
                         },
-                        ScriptBorrow::lift(arg1 as u32 as usize),
+                        DataBorrow::lift(arg1 as u32 as usize),
                     );
                 }
                 pub trait Guest {
-                    type Script: GuestScript;
+                    type Data: GuestData;
                     /// Called once to initialize the script.
-                    fn init(ecs_world: &EcsWorld) -> Script;
+                    fn init(ecs_world: &EcsWorld) -> Data;
                     /// Called every tick.
-                    fn update(ecs_world: &EcsWorld, script: ScriptBorrow<'_>);
+                    fn update(ecs_world: &EcsWorld, data: DataBorrow<'_>);
                 }
-                pub trait GuestScript: 'static {
+                pub trait GuestData: 'static {
                     #[doc(hidden)]
                     unsafe fn _resource_new(val: *mut u8) -> u32
                     where
@@ -629,7 +629,7 @@ pub mod exports {
                         {
                             #[link(wasm_import_module = "[export]wired:script/types")]
                             extern "C" {
-                                #[link_name = "[resource-new]script"]
+                                #[link_name = "[resource-new]data"]
                                 fn new(_: *mut u8) -> u32;
                             }
                             new(val)
@@ -648,7 +648,7 @@ pub mod exports {
                         {
                             #[link(wasm_import_module = "[export]wired:script/types")]
                             extern "C" {
-                                #[link_name = "[resource-rep]script"]
+                                #[link_name = "[resource-rep]data"]
                                 fn rep(_: u32) -> *mut u8;
                             }
                             unsafe { rep(handle) }
@@ -815,8 +815,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.21.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 710] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc9\x04\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 706] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc5\x04\x01A\x02\x01\
 A\x05\x01B\x1d\x04\0\x12component-instance\x03\x01\x04\0\x09component\x03\x01\x04\
 \0\x06entity\x03\x01\x04\0\x05query\x03\x01\x04\0\x09ecs-world\x03\x01\x01h\x01\x01\
 i\0\x01@\x01\x04self\x05\0\x06\x04\0\x15[method]component.new\x01\x07\x01h\x02\x01\
@@ -827,9 +827,9 @@ h\x03\x01i\x02\x01p\x06\x01o\x02\x0b\x0c\x01p\x0d\x01@\x01\x04self\x0a\0\x0e\x04
 lf\x10\x0acomponents\x13\0\x14\x04\0\x20[method]ecs-world.register-query\x01\x15\
 \x01@\x02\x04self\x10\x0acomponents\x0c\0\x0b\x04\0\x17[method]ecs-world.spawn\x01\
 \x16\x03\x01\x0fwired:ecs/types\x05\0\x02\x03\0\0\x09ecs-world\x01B\x0a\x02\x03\x02\
-\x01\x01\x04\0\x09ecs-world\x03\0\0\x04\0\x06script\x03\x01\x01h\x01\x01i\x02\x01\
-@\x01\x09ecs-world\x03\0\x04\x04\0\x04init\x01\x05\x01h\x02\x01@\x02\x09ecs-worl\
-d\x03\x06script\x06\x01\0\x04\0\x06update\x01\x07\x04\x01\x12wired:script/types\x05\
+\x01\x01\x04\0\x09ecs-world\x03\0\0\x04\0\x04data\x03\x01\x01h\x01\x01i\x02\x01@\
+\x01\x09ecs-world\x03\0\x04\x04\0\x04init\x01\x05\x01h\x02\x01@\x02\x09ecs-world\
+\x03\x04data\x06\x01\0\x04\0\x06update\x01\x07\x04\x01\x12wired:script/types\x05\
 \x02\x04\x01\x13unavi:system/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09\
 producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.201.0\x10wit-bindgen-rus\
 t\x060.21.0";

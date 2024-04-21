@@ -46,7 +46,7 @@ pub fn load_scripts(
             }
         };
 
-        let instance = match linker.instantiate(&mut store, &component) {
+        let instance = match linker.instantiate(store.as_context_mut(), &component) {
             Ok(i) => i,
             Err(e) => {
                 error!("Failed to instantiate component: {}", e);
@@ -67,7 +67,7 @@ pub fn load_scripts(
         let mut results = vec![Value::U8(0)];
 
         if let Err(e) = script.init.call(
-            &mut store,
+            store.as_context_mut(),
             &[Value::Borrow(ecs_world.clone())],
             &mut results,
         ) {
@@ -94,7 +94,7 @@ pub fn load_scripts(
         };
 
         if let Err(e) = script.update.call(
-            &mut store,
+            store.as_context_mut(),
             &[Value::Borrow(ecs_world), script_data_borrow],
             &mut [],
         ) {

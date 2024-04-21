@@ -1,6 +1,6 @@
 use anyhow::Result;
 use wasm_component_layer::{
-    Func, FuncType, Linker, ListType, ResourceOwn, ResourceType, Store, TupleType, TypeIdentifier,
+    AsContextMut, Func, FuncType, Linker, ListType, ResourceOwn, ResourceType, Store, TupleType,
     Value, ValueType,
 };
 
@@ -12,17 +12,20 @@ pub struct EcsWorld {}
 pub struct Entity {}
 pub struct Query {}
 
-pub fn add_to_host(
-    mut store: &mut Store<StoreData, EngineBackend>,
-    linker: &mut Linker,
-) -> Result<()> {
+pub enum WiredEcsCommand {
+    RegisterComponent,
+}
+
+pub fn add_to_host(store: &mut Store<StoreData, EngineBackend>, linker: &mut Linker) -> Result<()> {
+    // let (sender, reciever) = std::sync::mpsc::sync_channel(100);
+
     let component_instance_type = ResourceType::new::<ComponentInstance>(None);
 
     let component_type = ResourceType::new::<Component>(None);
     let component_new = {
         let component_instance_type = component_instance_type.clone();
         Func::new(
-            &mut store,
+            store.as_context_mut(),
             FuncType::new(
                 [ValueType::Borrow(component_type.clone())],
                 [ValueType::Own(component_instance_type.clone())],
@@ -41,7 +44,7 @@ pub fn add_to_host(
 
     let entity_type = ResourceType::new::<Entity>(None);
     let entity_insert = Func::new(
-        &mut store,
+        store.as_context_mut(),
         FuncType::new(
             [
                 ValueType::Borrow(entity_type.clone()),
@@ -57,7 +60,7 @@ pub fn add_to_host(
 
     let query_type = ResourceType::new::<Query>(None);
     let query_read = Func::new(
-        &mut store,
+        store.as_context_mut(),
         FuncType::new(
             [ValueType::Borrow(query_type.clone())],
             [ValueType::List(ListType::new(ValueType::Tuple(
@@ -79,33 +82,52 @@ pub fn add_to_host(
     );
 
     let ecs_world_type = ResourceType::new::<EcsWorld>(None);
-    let ecs_world_register_component = Func::new(
-        &mut store,
-        FuncType::new(
-            [ValueType::Borrow(ecs_world_type.clone())],
-            [ValueType::Own(component_type.clone())],
-        ),
-        move |_ctx, _args, _results| {
-            // TODO
-            Ok(())
-        },
-    );
-    let ecs_world_register_query = Func::new(
-        &mut store,
-        FuncType::new(
-            [
-                ValueType::Borrow(ecs_world_type.clone()),
-                ValueType::List(ListType::new(ValueType::Borrow(component_type.clone()))),
-            ],
-            [ValueType::Own(query_type.clone())],
-        ),
-        move |_ctx, _args, _results| {
-            // TODO
-            Ok(())
-        },
-    );
+    let ecs_world_register_component = {
+        let component_instance_type = component_instance_type.clone();
+        Func::new(
+            store.as_context_mut(),
+            FuncType::new(
+                [ValueType::Borrow(ecs_world_type.clone())],
+                [ValueType::Own(component_type.clone())],
+            ),
+            move |ctx, _args, results| {
+                // sender.send(WiredEcsCommand::RegisterComponent)?;
+
+                results[0] = Value::Own(ResourceOwn::new(
+                    ctx,
+                    ComponentInstance {},
+                    component_instance_type.clone(),
+                )?);
+
+                Ok(())
+            },
+        )
+    };
+    let ecs_world_register_query = {
+        let query_type = query_type.clone();
+        Func::new(
+            store.as_context_mut(),
+            FuncType::new(
+                [
+                    ValueType::Borrow(ecs_world_type.clone()),
+                    ValueType::List(ListType::new(ValueType::Borrow(component_type.clone()))),
+                ],
+                [ValueType::Own(query_type.clone())],
+            ),
+            move |ctx, _args, results| {
+                // let components = match &args[1] {
+                //     Value::List(list) => list,
+                //     _ => bail!("Wrong arg type."),
+                // };
+
+                results[0] = Value::Own(ResourceOwn::new(ctx, Query {}, query_type.clone())?);
+
+                Ok(())
+            },
+        )
+    };
     let ecs_world_spawn = Func::new(
-        &mut store,
+        store.as_context_mut(),
         FuncType::new(
             [
                 ValueType::Borrow(ecs_world_type.clone()),

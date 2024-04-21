@@ -8006,9 +8006,9 @@ dependencies = [
 
 [[package]]
 name = "raw-window-handle"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42a9830a0e1b9fb145ebb365b8bc4ccd75f290f98c0247deafbbe2c75cefb544"
+checksum = "8cc3bcbdb1ddfc11e700e62968e6b4cc9c75bb466464ad28fb61c5b2c964418b"
 
 [[package]]
 name = "rawpointer"
@@ -11146,7 +11146,7 @@ dependencies = [
 [[package]]
 name = "wasm_component_layer"
 version = "0.1.16"
-source = "git+https://github.com/kayhhh/wasm_component_layer.git#24a4dba8ecd525f1bebce9f0801f937539c669d1"
+source = "git+https://github.com/kayhhh/wasm_component_layer.git#dd46b91bd2a3897ab4ad7dda7fc36627dc1d7cac"
 dependencies = [
  "anyhow",
  "bytemuck",

@@ -1,9 +1,10 @@
 use anyhow::Result;
 use wasm_component_layer::{
-    Func, FuncType, Linker, ListType, ResourceOwn, ResourceType, Store, TupleType, Value, ValueType,
+    Func, FuncType, Linker, ListType, ResourceOwn, ResourceType, Store, TupleType, TypeIdentifier,
+    Value, ValueType,
 };
 
-use crate::scripting::load::{EngineBackend, ScriptData};
+use crate::scripting::load::{EngineBackend, StoreData};
 
 pub struct Component {}
 pub struct ComponentInstance {}
@@ -12,7 +13,7 @@ pub struct Entity {}
 pub struct Query {}
 
 pub fn add_to_host(
-    mut store: &mut Store<ScriptData, EngineBackend>,
+    mut store: &mut Store<StoreData, EngineBackend>,
     linker: &mut Linker,
 ) -> Result<()> {
     let component_instance_type = ResourceType::new::<ComponentInstance>(None);
@@ -26,7 +27,7 @@ pub fn add_to_host(
                 [ValueType::Borrow(component_type.clone())],
                 [ValueType::Own(component_instance_type.clone())],
             ),
-            move |ctx, args, results| {
+            move |ctx, _args, results| {
                 results[0] = Value::Own(ResourceOwn::new(
                     ctx,
                     ComponentInstance {},
@@ -48,7 +49,7 @@ pub fn add_to_host(
             ],
             [],
         ),
-        move |ctx, args, results| {
+        move |_ctx, _args, _results| {
             // TODO
             Ok(())
         },
@@ -71,7 +72,7 @@ pub fn add_to_host(
                 ),
             )))],
         ),
-        move |ctx, args, results| {
+        move |_ctx, _args, _results| {
             // TODO
             Ok(())
         },
@@ -84,7 +85,7 @@ pub fn add_to_host(
             [ValueType::Borrow(ecs_world_type.clone())],
             [ValueType::Own(component_type.clone())],
         ),
-        move |ctx, args, results| {
+        move |_ctx, _args, _results| {
             // TODO
             Ok(())
         },
@@ -98,7 +99,7 @@ pub fn add_to_host(
             ],
             [ValueType::Own(query_type.clone())],
         ),
-        move |ctx, args, results| {
+        move |_ctx, _args, _results| {
             // TODO
             Ok(())
         },
@@ -114,7 +115,7 @@ pub fn add_to_host(
             ],
             [ValueType::Own(entity_type.clone())],
         ),
-        move |ctx, args, results| {
+        move |_ctx, _args, _results| {
             // TODO
             Ok(())
         },

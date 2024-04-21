@@ -441,7 +441,7 @@ pub mod exports {
     pub mod wired {
         pub mod script {
             #[allow(clippy::all)]
-            pub mod types {
+            pub mod lifecycle {
                 #[used]
                 #[doc(hidden)]
                 #[cfg(target_arch = "wasm32")]
@@ -573,7 +573,7 @@ pub mod exports {
 
                         #[cfg(target_arch = "wasm32")]
                         {
-                            #[link(wasm_import_module = "[export]wired:script/types")]
+                            #[link(wasm_import_module = "[export]wired:script/lifecycle")]
                             extern "C" {
                                 #[link_name = "[resource-drop]data"]
                                 fn drop(_: u32);
@@ -627,7 +627,7 @@ pub mod exports {
 
                         #[cfg(target_arch = "wasm32")]
                         {
-                            #[link(wasm_import_module = "[export]wired:script/types")]
+                            #[link(wasm_import_module = "[export]wired:script/lifecycle")]
                             extern "C" {
                                 #[link_name = "[resource-new]data"]
                                 fn new(_: *mut u8) -> u32;
@@ -646,7 +646,7 @@ pub mod exports {
 
                         #[cfg(target_arch = "wasm32")]
                         {
-                            #[link(wasm_import_module = "[export]wired:script/types")]
+                            #[link(wasm_import_module = "[export]wired:script/lifecycle")]
                             extern "C" {
                                 #[link_name = "[resource-rep]data"]
                                 fn rep(_: u32) -> *mut u8;
@@ -657,21 +657,21 @@ pub mod exports {
                 }
                 #[doc(hidden)]
 
-                macro_rules! __export_wired_script_types_cabi{
+                macro_rules! __export_wired_script_lifecycle_cabi{
       ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
-        #[export_name = "wired:script/types#init"]
+        #[export_name = "wired:script/lifecycle#init"]
         unsafe extern "C" fn export_init(arg0: i32,) -> i32 {
           $($path_to_types)*::_export_init_cabi::<$ty>(arg0)
         }
-        #[export_name = "wired:script/types#update"]
+        #[export_name = "wired:script/lifecycle#update"]
         unsafe extern "C" fn export_update(arg0: i32,arg1: i32,) {
           $($path_to_types)*::_export_update_cabi::<$ty>(arg0, arg1)
         }
       };);
     }
                 #[doc(hidden)]
-                pub(crate) use __export_wired_script_types_cabi;
+                pub(crate) use __export_wired_script_lifecycle_cabi;
             }
         }
     }
@@ -806,7 +806,7 @@ mod _rt {
 macro_rules! __export_script_impl {
   ($ty:ident) => (self::export!($ty with_types_in self););
   ($ty:ident with_types_in $($path_to_types_root:tt)*) => (
-  $($path_to_types_root)*::exports::wired::script::types::__export_wired_script_types_cabi!($ty with_types_in $($path_to_types_root)*::exports::wired::script::types);
+  $($path_to_types_root)*::exports::wired::script::lifecycle::__export_wired_script_lifecycle_cabi!($ty with_types_in $($path_to_types_root)*::exports::wired::script::lifecycle);
   )
 }
 #[doc(inline)]
@@ -815,8 +815,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.21.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 706] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc5\x04\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 710] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc9\x04\x01A\x02\x01\
 A\x05\x01B\x1d\x04\0\x12component-instance\x03\x01\x04\0\x09component\x03\x01\x04\
 \0\x06entity\x03\x01\x04\0\x05query\x03\x01\x04\0\x09ecs-world\x03\x01\x01h\x01\x01\
 i\0\x01@\x01\x04self\x05\0\x06\x04\0\x15[method]component.new\x01\x07\x01h\x02\x01\
@@ -829,10 +829,10 @@ lf\x10\x0acomponents\x13\0\x14\x04\0\x20[method]ecs-world.register-query\x01\x15
 \x16\x03\x01\x0fwired:ecs/types\x05\0\x02\x03\0\0\x09ecs-world\x01B\x0a\x02\x03\x02\
 \x01\x01\x04\0\x09ecs-world\x03\0\0\x04\0\x04data\x03\x01\x01h\x01\x01i\x02\x01@\
 \x01\x09ecs-world\x03\0\x04\x04\0\x04init\x01\x05\x01h\x02\x01@\x02\x09ecs-world\
-\x03\x04data\x06\x01\0\x04\0\x06update\x01\x07\x04\x01\x12wired:script/types\x05\
-\x02\x04\x01\x13unavi:system/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09\
-producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.201.0\x10wit-bindgen-rus\
-t\x060.21.0";
+\x03\x04data\x06\x01\0\x04\0\x06update\x01\x07\x04\x01\x16wired:script/lifecycle\
+\x05\x02\x04\x01\x13unavi:system/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\
+\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.201.0\x10wit-bindgen\
+-rust\x060.21.0";
 
 #[inline(never)]
 #[doc(hidden)]

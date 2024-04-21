@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use wasm_component_layer::{Component, Linker, Store};
+use wasm_component_layer::{AsContextMut, Component, Linker, Store, Value};
 use wasm_runtime_layer::Engine;
 
 use crate::scripting::{host::add_host_script_apis, script::get_script_interface};
@@ -30,7 +30,7 @@ pub fn load_scripts(
         commands.entity(entity).insert(LoadedScript);
 
         let engine = Engine::new(EngineBackend::default());
-        let mut store = Store::new(&engine, ScriptData {});
+        let mut store = Store::new(&engine, StoreData {});
         let mut linker = Linker::default();
 
         if let Err(e) = add_host_script_apis(&mut store, &mut linker) {
@@ -54,14 +54,56 @@ pub fn load_scripts(
             }
         };
 
-        let script = match get_script_interface(&instance) {
+        let script = match get_script_interface(&mut store, &linker, &instance) {
             Ok(i) => i,
             Err(e) => {
                 error!("Failed to get script interface: {}", e);
                 continue;
             }
         };
+
+        let ecs_world = script.ecs_world.borrow(store.as_context_mut()).unwrap();
+
+        let mut results = vec![Value::U8(0)];
+
+        if let Err(e) = script.init.call(
+            &mut store,
+            &[Value::Borrow(ecs_world.clone())],
+            &mut results,
+        ) {
+            error!("Failed to call script init: {}", e);
+            continue;
+        }
+
+        info!("Script initialized!!!");
+
+        let script_data = match &results[0] {
+            Value::Own(own) => own,
+            _ => {
+                error!("Wrong script data value");
+                continue;
+            }
+        };
+
+        let script_data_borrow = match script_data.borrow(store.as_context_mut()) {
+            Ok(s) => Value::Borrow(s),
+            Err(e) => {
+                error!("Failed to borrow script data: {}", e);
+                continue;
+            }
+        };
+
+        if let Err(e) = script.update.call(
+            &mut store,
+            &[Value::Borrow(ecs_world), script_data_borrow],
+            &mut [],
+        ) {
+            error!("Failed to call script update: {}", e);
+            continue;
+        }
+
+        info!("Script updated!!!");
     }
 }
 
-pub struct ScriptData {}
+pub struct StoreData {}

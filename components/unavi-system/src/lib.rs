@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use bindings::{
     exports::wired::script::lifecycle::{Data, DataBorrow, Guest, GuestData},
-    wired::ecs::types::{EcsWorld, Query},
+    wired::ecs::types::EcsWorld,
 };
 use store::Store;
 
@@ -31,11 +31,11 @@ impl Guest for UnaviSystem {
 
     fn init(ecs_world: &EcsWorld) -> Data {
         let component = ecs_world.register_component();
-        // let query = ecs_world.register_query(&[&component]);
+        // let query = register_query(&[&component]);
         //
         // let mut store = Store::new(component);
         //
-        // ecs_world.spawn(vec![store.insert_new(Count {
+        // spawn(vec![store.insert_new(Count {
         //     value: 0,
         //     increment: 2,
         // })]);
@@ -46,7 +46,7 @@ impl Guest for UnaviSystem {
         })
     }
 
-    fn update(_ecs_world: &EcsWorld, script: DataBorrow) {
+    fn update(ecs_world: &EcsWorld, data: DataBorrow<'_>) {
         // let script: &DataImpl = script.get();
         //
         // let mut store = script.store.borrow_mut();

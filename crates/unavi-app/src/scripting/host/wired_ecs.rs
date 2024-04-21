@@ -83,7 +83,7 @@ pub fn add_to_host(store: &mut Store<StoreData, EngineBackend>, linker: &mut Lin
 
     let ecs_world_type = ResourceType::new::<EcsWorld>(None);
     let ecs_world_register_component = {
-        let component_instance_type = component_instance_type.clone();
+        let component_type = component_type.clone();
         Func::new(
             store.as_context_mut(),
             FuncType::new(
@@ -93,11 +93,8 @@ pub fn add_to_host(store: &mut Store<StoreData, EngineBackend>, linker: &mut Lin
             move |ctx, _args, results| {
                 // sender.send(WiredEcsCommand::RegisterComponent)?;
 
-                results[0] = Value::Own(ResourceOwn::new(
-                    ctx,
-                    ComponentInstance {},
-                    component_instance_type.clone(),
-                )?);
+                results[0] =
+                    Value::Own(ResourceOwn::new(ctx, Component {}, component_type.clone())?);
 
                 Ok(())
             },

@@ -1,12 +1,17 @@
-use bevy::prelude::*;
+use std::sync::Arc;
 
-use self::asset::Wasm;
+use bevy::prelude::*;
+use tokio::sync::Mutex;
+
+use self::{asset::Wasm, resource_table::ResourceTable};
 
 mod asset;
 mod host;
 mod load;
+mod resource_table;
 mod script;
 mod unavi_system;
+mod util;
 
 pub struct ScriptingPlugin;
 
@@ -23,4 +28,9 @@ impl Plugin for ScriptingPlugin {
 struct ScriptBundle {
     name: Name,
     wasm: Handle<Wasm>,
+}
+
+#[derive(Default)]
+pub struct StoreData {
+    pub resource_table: Arc<Mutex<ResourceTable>>,
 }

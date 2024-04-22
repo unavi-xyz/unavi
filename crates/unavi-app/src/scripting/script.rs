@@ -3,10 +3,7 @@ use wasm_component_layer::{
     AsContextMut, Func, Instance, Linker, ResourceOwn, ResourceType, Store,
 };
 
-use super::{
-    host::wired_ecs::EcsWorld,
-    load::{EngineBackend, StoreData},
-};
+use super::{host::wired_ecs::EcsWorld, load::EngineBackend, util::blocking_lock, StoreData};
 
 pub fn get_script_interface(
     store: &mut Store<StoreData, EngineBackend>,
@@ -35,7 +32,15 @@ pub fn get_script_interface(
         .resource("ecs-world")
         .ok_or(anyhow!("ecs-world not found"))?;
 
-    let ecs_world = ResourceOwn::new(store.as_context_mut(), EcsWorld {}, ecs_world_type.clone())?;
+    let resource_table = &store.data().resource_table.clone();
+    let mut resource_table = blocking_lock(resource_table);
+    let id = resource_table.next_id();
+
+    let ecs_world = ResourceOwn::new(
+        store.as_context_mut(),
+        EcsWorld { id },
+        ecs_world_type.clone(),
+    )?;
 
     Ok(ScriptInterface {
         data_type,

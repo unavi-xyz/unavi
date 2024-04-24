@@ -58,7 +58,7 @@ pub fn handle_wired_ecs_command(
 
                     *counter += 1;
 
-                    // SAFETY: Copied from the Bevy codebase idk 🔥🔥🔥
+                    // SAFETY: Copied from Bevy idk 🔥🔥🔥
                     let component_id = world.init_component_with_descriptor(unsafe {
                         ComponentDescriptor::new_with_layout(
                             format!("_GeneratedScriptComponent{}", *counter),
@@ -131,6 +131,8 @@ pub fn handle_wired_ecs_command(
                         let mut data = vec![instance.id as u64; len];
                         let ptr = data.as_mut_ptr();
 
+                        // SAFETY: `data` needs to match the component layout.
+                        // We get `len` from `info` so this should be fine.
                         unsafe {
                             let non_null = NonNull::new_unchecked(ptr.cast());
                             let owning_ptr = OwningPtr::new(non_null);

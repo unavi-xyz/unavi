@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use bevy::prelude::*;
 use wasm_component_layer::{
     AsContextMut, Func, Instance, Linker, ResourceOwn, ResourceType, Store,
 };
@@ -50,6 +51,7 @@ pub fn get_script_interface(
     })
 }
 
+#[derive(Component)]
 pub struct ScriptInterface {
     pub data_type: ResourceType,
     pub ecs_world: ResourceOwn,

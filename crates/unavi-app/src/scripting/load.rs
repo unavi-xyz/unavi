@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use wasm_component_layer::{AsContextMut, Component, Linker, Store, Value};
+use wasm_component_layer::{AsContextMut, Component, Linker, Store};
 use wasm_runtime_layer::Engine;
 
 use crate::scripting::{host::add_host_script_apis, script::get_script_interface, StoreData};
@@ -13,6 +13,12 @@ pub struct LoadedScript;
 pub type EngineBackend = wasmtime::Engine;
 #[cfg(target_family = "wasm")]
 pub type EngineBackend = wasm_runtime_layer::web::Engine;
+
+#[derive(Component)]
+pub struct WasmStore(pub Store<StoreData, EngineBackend>);
+
+#[derive(Component)]
+pub struct WiredScript();
 
 pub fn load_scripts(
     assets: Res<Assets<Wasm>>,
@@ -65,48 +71,8 @@ pub fn load_scripts(
             }
         };
 
-        let ecs_world = script.ecs_world.borrow(store.as_context_mut()).unwrap();
-
-        let mut results = vec![Value::U8(0)];
-
-        if let Err(e) = script.init.call(
-            store.as_context_mut(),
-            &[Value::Borrow(ecs_world.clone())],
-            &mut results,
-        ) {
-            error!("Failed to call script init: {}", e);
-            continue;
-        }
-
-        info!("Script initialized!!!");
-
-        let script_data = match &results[0] {
-            Value::Own(own) => own,
-            _ => {
-                error!("Wrong script data value");
-                continue;
-            }
-        };
-
-        let script_data_borrow = match script_data.borrow(store.as_context_mut()) {
-            Ok(s) => Value::Borrow(s),
-            Err(e) => {
-                error!("Failed to borrow script data: {}", e);
-                continue;
-            }
-        };
-
-        if let Err(e) = script.update.call(
-            store.as_context_mut(),
-            &[Value::Borrow(ecs_world), script_data_borrow],
-            &mut [],
-        ) {
-            error!("Failed to call script update: {}", e);
-            continue;
-        }
-
-        info!("Script updated!!!");
-
-        commands.entity(entity).insert(receiver);
+        commands
+            .entity(entity)
+            .insert((receiver, script, WasmStore(store)));
     }
 }

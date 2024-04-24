@@ -10759,6 +10759,7 @@ dependencies = [
  "bevy_xpbd_3d",
  "bytes",
  "clap",
+ "crossbeam",
  "didkit",
  "dwn",
  "rustls-pki-types",

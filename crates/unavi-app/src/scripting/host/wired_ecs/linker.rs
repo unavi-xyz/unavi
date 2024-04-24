@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use anyhow::{bail, Result};
-use tokio::sync::Mutex;
 use wasm_component_layer::{
     AsContext, AsContextMut, Func, FuncType, Linker, List, ListType, ResourceOwn, ResourceType,
     Store, TupleType, Value, ValueType,
@@ -39,8 +38,8 @@ pub fn add_to_host(
 ) -> Result<WiredEcsReceiver> {
     let resource_table = &store.data().resource_table.clone();
 
-    let (sender, receiver) = std::sync::mpsc::sync_channel(100);
-    let sender = Arc::new(Mutex::new(sender));
+    let (sender, receiver) = crossbeam::channel::bounded(256);
+    let sender = Arc::new(sender);
 
     let component_instance_type = ResourceType::new::<ComponentInstance>(None);
 
@@ -74,7 +73,6 @@ pub fn add_to_host(
                     component_instance_type.clone(),
                 )?;
 
-                let sender = blocking_lock(&sender);
                 sender.send(WiredEcsCommand::RegisterComponent { id })?;
 
                 results[0] = Value::Own(resource);
@@ -111,7 +109,6 @@ pub fn add_to_host(
                 };
                 let instance_rep: &ComponentInstance = instance.rep(&ctx)?;
 
-                let sender = blocking_lock(&sender);
                 sender.send(WiredEcsCommand::Insert {
                     entity: entity_rep.id,
                     instance: instance_rep.id,
@@ -168,7 +165,6 @@ pub fn add_to_host(
                     component_type.clone(),
                 )?;
 
-                let sender = blocking_lock(&sender);
                 sender.send(WiredEcsCommand::RegisterComponent { id })?;
 
                 results[0] = Value::Own(resource);
@@ -190,7 +186,7 @@ pub fn add_to_host(
                 [ValueType::Own(query_type.clone())],
             ),
             move |ctx, args, results| {
-                let components = match &args[1] {
+                let _components = match &args[1] {
                     Value::List(list) => list,
                     _ => bail!("invalid arg type"),
                 };
@@ -243,7 +239,6 @@ pub fn add_to_host(
                 let mut resource_table = blocking_lock(&resource_table);
                 let id = resource_table.next_id();
 
-                let sender = blocking_lock(&sender);
                 sender.send(WiredEcsCommand::Spawn { id, components })?;
 
                 let resource = ResourceOwn::new(ctx, Entity { id }, entity_type.clone())?;
@@ -275,5 +270,5 @@ pub fn add_to_host(
     interface.define_func("[method]ecs-world.register-query", ecs_world_register_query)?;
     interface.define_func("[method]ecs-world.spawn", ecs_world_spawn)?;
 
-    Ok(WiredEcsReceiver(Arc::new(Mutex::new(receiver))))
+    Ok(WiredEcsReceiver(receiver))
 }

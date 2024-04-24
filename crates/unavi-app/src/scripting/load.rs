@@ -1,13 +1,10 @@
-use std::sync::Arc;
-
 use bevy::prelude::*;
-use tokio::sync::Mutex;
 use wasm_component_layer::{AsContextMut, Component, Linker, Store, Value};
 use wasm_runtime_layer::Engine;
 
 use crate::scripting::{host::add_host_script_apis, script::get_script_interface, StoreData};
 
-use super::{asset::Wasm, host::HostApiReceivers};
+use super::asset::Wasm;
 
 #[derive(Component)]
 pub struct LoadedScript;
@@ -16,9 +13,6 @@ pub struct LoadedScript;
 pub type EngineBackend = wasmtime::Engine;
 #[cfg(target_family = "wasm")]
 pub type EngineBackend = wasm_runtime_layer::web::Engine;
-
-#[derive(Component)]
-pub struct Receivers(pub Arc<Mutex<HostApiReceivers>>);
 
 pub fn load_scripts(
     assets: Res<Assets<Wasm>>,
@@ -39,7 +33,7 @@ pub fn load_scripts(
         let mut store = Store::new(&engine, StoreData::default());
         let mut linker = Linker::default();
 
-        let receivers = match add_host_script_apis(&mut store, &mut linker) {
+        let receiver = match add_host_script_apis(&mut store, &mut linker) {
             Ok(r) => r,
             Err(e) => {
                 error!("Failed to add host APIs: {}", e);
@@ -113,8 +107,6 @@ pub fn load_scripts(
 
         info!("Script updated!!!");
 
-        commands
-            .entity(entity)
-            .insert(Receivers(Arc::new(Mutex::new(receivers))));
+        commands.entity(entity).insert(receiver);
     }
 }

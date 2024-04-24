@@ -436,6 +436,73 @@ pub mod wired {
             }
         }
     }
+    pub mod log {
+        #[allow(clippy::all)]
+        pub mod api {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            #[repr(u8)]
+            #[derive(Clone, Copy, Eq, PartialEq)]
+            pub enum LogLevel {
+                Debug,
+                Info,
+                Warn,
+                Error,
+            }
+            impl ::core::fmt::Debug for LogLevel {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        LogLevel::Debug => f.debug_tuple("LogLevel::Debug").finish(),
+                        LogLevel::Info => f.debug_tuple("LogLevel::Info").finish(),
+                        LogLevel::Warn => f.debug_tuple("LogLevel::Warn").finish(),
+                        LogLevel::Error => f.debug_tuple("LogLevel::Error").finish(),
+                    }
+                }
+            }
+
+            impl LogLevel {
+                pub(crate) unsafe fn _lift(val: u8) -> LogLevel {
+                    if !cfg!(debug_assertions) {
+                        return ::core::mem::transmute(val);
+                    }
+
+                    match val {
+                        0 => LogLevel::Debug,
+                        1 => LogLevel::Info,
+                        2 => LogLevel::Warn,
+                        3 => LogLevel::Error,
+
+                        _ => panic!("invalid enum discriminant"),
+                    }
+                }
+            }
+
+            #[allow(unused_unsafe, clippy::all)]
+            pub fn log(level: LogLevel, message: &str) {
+                unsafe {
+                    let vec0 = message;
+                    let ptr0 = vec0.as_ptr().cast::<u8>();
+                    let len0 = vec0.len();
+
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wired:log/api")]
+                    extern "C" {
+                        #[link_name = "log"]
+                        fn wit_import(_: i32, _: *mut u8, _: usize);
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(_: i32, _: *mut u8, _: usize) {
+                        unreachable!()
+                    }
+                    wit_import(level.clone() as i32, ptr0.cast_mut(), len0);
+                }
+            }
+        }
+    }
 }
 pub mod exports {
     pub mod wired {
@@ -815,9 +882,9 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.21.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 710] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc9\x04\x01A\x02\x01\
-A\x05\x01B\x1d\x04\0\x12component-instance\x03\x01\x04\0\x09component\x03\x01\x04\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 800] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa3\x05\x01A\x02\x01\
+A\x07\x01B\x1d\x04\0\x12component-instance\x03\x01\x04\0\x09component\x03\x01\x04\
 \0\x06entity\x03\x01\x04\0\x05query\x03\x01\x04\0\x09ecs-world\x03\x01\x01h\x01\x01\
 i\0\x01@\x01\x04self\x05\0\x06\x04\0\x15[method]component.new\x01\x07\x01h\x02\x01\
 @\x02\x04self\x08\x09component\x06\x01\0\x04\0\x15[method]entity.insert\x01\x09\x01\
@@ -826,13 +893,15 @@ h\x03\x01i\x02\x01p\x06\x01o\x02\x0b\x0c\x01p\x0d\x01@\x01\x04self\x0a\0\x0e\x04
 \0$[method]ecs-world.register-component\x01\x12\x01p\x05\x01i\x03\x01@\x02\x04se\
 lf\x10\x0acomponents\x13\0\x14\x04\0\x20[method]ecs-world.register-query\x01\x15\
 \x01@\x02\x04self\x10\x0acomponents\x0c\0\x0b\x04\0\x17[method]ecs-world.spawn\x01\
-\x16\x03\x01\x0fwired:ecs/types\x05\0\x02\x03\0\0\x09ecs-world\x01B\x0a\x02\x03\x02\
-\x01\x01\x04\0\x09ecs-world\x03\0\0\x04\0\x04data\x03\x01\x01h\x01\x01i\x02\x01@\
-\x01\x09ecs-world\x03\0\x04\x04\0\x04init\x01\x05\x01h\x02\x01@\x02\x09ecs-world\
-\x03\x04data\x06\x01\0\x04\0\x06update\x01\x07\x04\x01\x16wired:script/lifecycle\
-\x05\x02\x04\x01\x13unavi:system/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\
-\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.201.0\x10wit-bindgen\
--rust\x060.21.0";
+\x16\x03\x01\x0fwired:ecs/types\x05\0\x01B\x04\x01m\x04\x05debug\x04info\x04warn\
+\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\x07messages\x01\0\x04\
+\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x01\x02\x03\0\0\x09ecs-world\x01B\
+\x0a\x02\x03\x02\x01\x02\x04\0\x09ecs-world\x03\0\0\x04\0\x04data\x03\x01\x01h\x01\
+\x01i\x02\x01@\x01\x09ecs-world\x03\0\x04\x04\0\x04init\x01\x05\x01h\x02\x01@\x02\
+\x09ecs-world\x03\x04data\x06\x01\0\x04\0\x06update\x01\x07\x04\x01\x16wired:scr\
+ipt/lifecycle\x05\x03\x04\x01\x13unavi:system/script\x04\0\x0b\x0c\x01\0\x06scri\
+pt\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.201.0\x10\
+wit-bindgen-rust\x060.21.0";
 
 #[inline(never)]
 #[doc(hidden)]

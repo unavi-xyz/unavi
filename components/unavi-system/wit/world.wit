@@ -4,4 +4,5 @@ world script {
     include wired:script/script; 
 
     import wired:ecs/types;
+    import wired:log/api;
 }

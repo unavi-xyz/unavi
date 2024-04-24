@@ -20,7 +20,14 @@ impl Plugin for ScriptingPlugin {
         app.register_asset_loader(asset::WasmLoader)
             .init_asset::<Wasm>()
             .add_systems(Startup, unavi_system::spawn_unavi_system)
-            .add_systems(Update, load::load_scripts);
+            .add_systems(
+                Update,
+                (
+                    host::wired_ecs::add_wired_ecs_map,
+                    host::wired_ecs::handle_wired_ecs_command,
+                    load::load_scripts,
+                ),
+            );
     }
 }
 

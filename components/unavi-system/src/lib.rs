@@ -18,8 +18,8 @@ struct Count {
 }
 
 struct DataImpl {
-    // store: RefCell<Store<Count>>,
-    // query: Query,
+    store: RefCell<Store<Count>>,
+    query: Query,
 }
 
 impl GuestData for DataImpl {}
@@ -31,18 +31,18 @@ impl Guest for UnaviSystem {
 
     fn init(ecs_world: &EcsWorld) -> Data {
         let component = ecs_world.register_component();
-        // let query = ecs_world.register_query(&[&component]);
-        //
-        // let mut store = Store::new(component);
-        //
-        // ecs_world.spawn(vec![store.insert_new(Count {
-        //     value: 0,
-        //     increment: 2,
-        // })]);
+        let query = ecs_world.register_query(&[&component]);
+
+        let mut store = Store::new(component);
+
+        ecs_world.spawn(vec![store.insert_new(Count {
+            value: 0,
+            increment: 2,
+        })]);
 
         Data::new(DataImpl {
-            // store: store.into(),
-            // query,
+            store: store.into(),
+            query,
         })
     }
 

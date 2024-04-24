@@ -1,16 +1,14 @@
 use bevy::prelude::*;
-use tokio::sync::Mutex;
+use crossbeam::channel::Receiver;
 
 mod handler;
 mod linker;
-
-use std::sync::{mpsc::Receiver, Arc};
 
 pub use handler::*;
 pub use linker::*;
 
 #[derive(Component)]
-pub struct WiredEcsReceiver(pub Arc<Mutex<Receiver<WiredEcsCommand>>>);
+pub struct WiredEcsReceiver(pub Receiver<WiredEcsCommand>);
 
 pub enum WiredEcsCommand {
     Insert {

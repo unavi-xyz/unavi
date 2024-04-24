@@ -40,6 +40,8 @@ impl Guest for UnaviSystem {
             increment: 2,
         })]);
 
+        println!("system init");
+
         Data::new(DataImpl {
             store: store.into(),
             query,
@@ -47,21 +49,23 @@ impl Guest for UnaviSystem {
     }
 
     fn update(_ecs_world: &EcsWorld, data: DataBorrow) {
-        // let data: &DataImpl = data.get();
-        //
-        // let mut store = data.store.borrow_mut();
-        //
-        // for (_entity, components) in data.query.read() {
-        //     let count_component = components.first().unwrap();
-        //
-        //     let count = store.get(count_component).unwrap();
-        //     println!("Count: {}", count.value);
-        //
-        //     let mut count = count.clone();
-        //     count.value += count.increment;
-        //
-        //     store.insert(count_component, count)
-        // }
+        let data: &DataImpl = data.get();
+
+        println!("system update");
+
+        let mut store = data.store.borrow_mut();
+
+        for (_entity, components) in data.query.read() {
+            let count_component = components.first().unwrap();
+
+            let count = store.get(count_component).unwrap();
+            println!("Count: {}", count.value);
+
+            let mut count = count.clone();
+            count.value += count.increment;
+
+            store.insert(count_component, count)
+        }
     }
 }
 

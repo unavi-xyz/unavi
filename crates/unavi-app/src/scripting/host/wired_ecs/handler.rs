@@ -11,7 +11,7 @@ use bevy::{
 };
 use tokio::sync::Mutex;
 
-use crate::scripting::util::blocking_lock;
+
 
 use super::{WiredEcsCommand, WiredEcsReceiver};
 
@@ -43,11 +43,12 @@ pub fn handle_wired_ecs_command(
         .collect::<Vec<_>>();
 
     for (i, receiver) in receivers.iter().enumerate() {
-        let receiver = blocking_lock(receiver);
-
         while let Ok(command) = receiver.try_recv() {
             match command {
-                WiredEcsCommand::Insert { entity, instance } => {}
+                WiredEcsCommand::Insert {
+                    entity: _,
+                    instance: _,
+                } => {}
                 WiredEcsCommand::RegisterComponent { id } => {
                     let (_, map) = scripts.iter(world).nth(i).unwrap();
 

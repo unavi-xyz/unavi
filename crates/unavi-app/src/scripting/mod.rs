@@ -6,6 +6,7 @@ use tokio::sync::Mutex;
 use self::{asset::Wasm, resource_table::ResourceTable};
 
 mod asset;
+mod execution;
 mod host;
 mod load;
 mod resource_table;
@@ -23,6 +24,8 @@ impl Plugin for ScriptingPlugin {
             .add_systems(
                 Update,
                 (
+                    execution::init_scripts,
+                    execution::update_scripts,
                     host::wired_ecs::add_wired_ecs_map,
                     host::wired_ecs::handle_wired_ecs_command,
                     load::load_scripts,

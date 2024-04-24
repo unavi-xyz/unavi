@@ -22,6 +22,7 @@ bevy_vrm = "0.0.10"
 bevy_xpbd_3d = { version = "0.4.2", features = ["simd"] }
 bytes = "1.5.0"
 clap.workspace = true
+crossbeam = { version = "0.8.4", features = ["crossbeam-channel"] }
 didkit.workspace = true
 dwn.workspace = true
 serde_json.workspace = true

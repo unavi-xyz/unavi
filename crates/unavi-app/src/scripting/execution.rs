@@ -36,7 +36,23 @@ pub fn init_scripts(
     }
 }
 
-pub fn update_scripts(mut scripts: Query<(&ScriptInterface, &mut WasmStore, &ScriptData)>) {
+const UPDATE_HZ: f32 = 20.0;
+const UPDATE_DELTA: f32 = 1.0 / UPDATE_HZ;
+
+pub fn update_scripts(
+    mut last_update: Local<f32>,
+    mut scripts: Query<(&ScriptInterface, &mut WasmStore, &ScriptData)>,
+    time: Res<Time>,
+) {
+    let now = time.elapsed_seconds();
+    let delta = now - *last_update;
+
+    if delta < UPDATE_DELTA {
+        return;
+    }
+
+    *last_update = now;
+
     for (script, mut store, data) in scripts.iter_mut() {
         let script_data_borrow = match data.0.borrow(store.0.as_context_mut()) {
             Ok(s) => Value::Borrow(s),

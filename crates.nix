@@ -158,14 +158,16 @@ in
   buildInputs = commonArgs.buildInputs;
   nativeBuildInputs = commonArgs.nativeBuildInputs;
 
-  apps = {
-    unavi-app = flake-utils.lib.mkApp { drv = unavi-app; };
-    unavi-server = flake-utils.lib.mkApp { drv = unavi-server; };
-    unavi-web = flake-utils.lib.mkApp {
+  apps = rec {
+    app = flake-utils.lib.mkApp { drv = unavi-app; };
+    server = flake-utils.lib.mkApp { drv = unavi-server; };
+    web = flake-utils.lib.mkApp {
       drv = pkgs.writeShellScriptBin "unavi-web" ''
         ${pkgs.python3Minimal}/bin/python3 -m http.server --directory ${unavi-web} 8080
       '';
     };
+
+    default = app;
   };
   checks = {
     inherit cargoClippy cargoDoc cargoFmt;

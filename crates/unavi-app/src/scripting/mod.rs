@@ -28,6 +28,7 @@ impl Plugin for ScriptingPlugin {
                     execution::update_scripts,
                     host::wired_ecs::add_wired_ecs_map,
                     host::wired_ecs::handle_wired_ecs_command,
+                    host::wired_ecs::run_script_queries,
                     load::load_scripts,
                 ),
             );

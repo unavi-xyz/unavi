@@ -35,13 +35,11 @@ pub fn get_script_interface(
 
     let resource_table = &store.data().resource_table.clone();
     let mut resource_table = blocking_lock(resource_table);
-    let id = resource_table.next_id();
 
-    let ecs_world = ResourceOwn::new(
-        store.as_context_mut(),
-        EcsWorld { id },
-        ecs_world_type.clone(),
-    )?;
+    let (_, ecs_world) =
+        resource_table.push(store.as_context_mut(), ecs_world_type.clone(), |id| {
+            EcsWorld { id }
+        })?;
 
     Ok(ScriptInterface {
         data_type,

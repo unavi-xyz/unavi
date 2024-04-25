@@ -3,9 +3,11 @@ use crossbeam::channel::Receiver;
 
 mod handler;
 mod linker;
+mod query;
 
 pub use handler::*;
 pub use linker::*;
+pub use query::*;
 
 #[derive(Component)]
 pub struct WiredEcsReceiver(pub Receiver<WiredEcsCommand>);

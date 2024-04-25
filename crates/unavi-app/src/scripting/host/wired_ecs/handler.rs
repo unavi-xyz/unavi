@@ -1,26 +1,21 @@
-use std::{alloc::Layout, ptr::NonNull, sync::Arc};
+use std::{alloc::Layout, ptr::NonNull};
 
 use bevy::{
     ecs::{
         component::{ComponentDescriptor, ComponentInfo, StorageType},
-        world::FilteredEntityRef,
     },
     prelude::*,
     ptr::OwningPtr,
     utils::HashMap,
 };
-use tokio::sync::Mutex;
-
 
 
 use super::{WiredEcsCommand, WiredEcsReceiver};
 
-/// Maps wired-ecs resources to their Bevy counterparts.
-#[derive(Component, Debug, Default)]
+#[derive(Component, Default)]
 pub struct WiredEcsMap {
     pub components: HashMap<u32, ComponentInfo>,
     pub entities: HashMap<u32, Entity>,
-    pub queries: HashMap<u32, Arc<Mutex<QueryState<FilteredEntityRef<'static>>>>>,
 }
 
 pub fn add_wired_ecs_map(
@@ -74,13 +69,13 @@ pub fn handle_wired_ecs_command(
                     let (_, mut map) = scripts.iter_mut(world).nth(i).unwrap();
                     map.components.insert(id, info);
                 }
-                WiredEcsCommand::RegisterQuery { id, components } => {
+                WiredEcsCommand::RegisterQuery { id: _, components } => {
                     let (_, map) = scripts.iter(world).nth(i).unwrap();
 
-                    if map.queries.contains_key(&id) {
-                        warn!("Query {} already registered. Ignoring command.", id);
-                        return;
-                    }
+                    // if map.queries.contains_key(&id) {
+                    //     warn!("Query {} already registered. Ignoring command.", id);
+                    //     return;
+                    // }
 
                     let mut info_ids = Vec::new();
 
@@ -94,16 +89,16 @@ pub fn handle_wired_ecs_command(
                         };
                     }
 
-                    let mut builder = QueryBuilder::new(world);
+                    // let mut builder = QueryBuilder::new(world);
+                    //
+                    // for id in info_ids {
+                    //     builder.ref_id(id);
+                    // }
+                    //
+                    // let query = builder.build();
 
-                    for id in info_ids {
-                        builder.ref_id(id);
-                    }
-
-                    let query = builder.build();
-
-                    let (_, mut map) = scripts.iter_mut(world).nth(i).unwrap();
-                    map.queries.insert(id, Arc::new(Mutex::new(query)));
+                    // let (_, mut map) = scripts.iter_mut(world).nth(i).unwrap();
+                    // map.queries.insert(id, query);
                 }
                 WiredEcsCommand::Spawn { id, components } => {
                     let (_, map) = scripts.iter(world).nth(i).unwrap();
@@ -133,7 +128,7 @@ pub fn handle_wired_ecs_command(
                         let ptr = data.as_mut_ptr();
 
                         // SAFETY: `data` needs to match the component layout.
-                        // We get `len` from `info` so this should be fine.
+                        // We get `len` from `info` so this is always the case.
                         unsafe {
                             let non_null = NonNull::new_unchecked(ptr.cast());
                             let owning_ptr = OwningPtr::new(non_null);

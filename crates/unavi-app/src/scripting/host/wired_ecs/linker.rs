@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::{bail, Result};
 use wasm_component_layer::{
-    AsContext, AsContextMut, Func, FuncType, Linker, List, ListType, ResourceType, Store, Tuple,
+    AsContext, AsContextMut, Func, FuncType, Linker, List, ListType, ResourceType, Store,
     TupleType, Value, ValueType,
 };
 
@@ -138,47 +138,47 @@ pub fn add_to_host(
     );
     let query_result_type = ListType::new(ValueType::Tuple(entity_instances_type.clone()));
     let query_read = {
-        let resource_table = resource_table.clone();
-        let query_results = query_results.clone();
+        // let resource_table = resource_table.clone();
+        // let query_results = query_results.clone();
         Func::new(
             store.as_context_mut(),
             FuncType::new(
                 [ValueType::Borrow(query_type.clone())],
                 [ValueType::List(query_result_type.clone())],
             ),
-            move |ctx, args, results| {
-                let query_borrow = match &args[0] {
-                    Value::Borrow(r) => r,
-                    _ => bail!("invalid arg type"),
-                };
+            move |_ctx, _args, results| {
+                // let query_borrow = match &args[0] {
+                //     Value::Borrow(r) => r,
+                //     _ => bail!("invalid arg type"),
+                // };
+                //
+                // let ctx_ref = ctx.as_context();
+                // let query: &QueryResource = query_borrow.rep(&ctx_ref)?;
+                //
+                // let resource_table = blocking_lock(&resource_table);
+                // let query_results = blocking_lock(&query_results);
+                //
+                // let query_result = query_results.get(&query.id).unwrap();
 
-                let ctx_ref = ctx.as_context();
-                let query: &QueryResource = query_borrow.rep(&ctx_ref)?;
+                let result_list = Vec::new();
 
-                let resource_table = blocking_lock(&resource_table);
-                let query_results = blocking_lock(&query_results);
-
-                let query_result = query_results.get(&query.id).unwrap();
-
-                let mut result_list = Vec::new();
-
-                for result in query_result {
-                    let entity = resource_table.get(&result.entity).unwrap().to_owned();
-
-                    let instances = result
-                        .instances
-                        .iter()
-                        .map(|id| Value::Own(resource_table.get(id).unwrap().to_owned()))
-                        .collect::<Vec<_>>();
-
-                    let instances = List::new(instances_type.clone(), instances)?;
-
-                    let tuple = Tuple::new(
-                        entity_instances_type.clone(),
-                        [Value::Own(entity), Value::List(instances)],
-                    )?;
-                    result_list.push(Value::Tuple(tuple));
-                }
+                // for result in query_result {
+                //     let entity = resource_table.get(&result.entity).unwrap().to_owned();
+                //
+                //     let instances = result
+                //         .instances
+                //         .iter()
+                //         .map(|id| Value::Own(resource_table.get(id).unwrap().to_owned()))
+                //         .collect::<Vec<_>>();
+                //
+                //     let instances = List::new(instances_type.clone(), instances)?;
+                //
+                //     let tuple = Tuple::new(
+                //         entity_instances_type.clone(),
+                //         [Value::Own(entity), Value::List(instances)],
+                //     )?;
+                //     result_list.push(Value::Tuple(tuple));
+                // }
 
                 results[0] = Value::List(List::new(query_result_type.clone(), result_list)?);
 

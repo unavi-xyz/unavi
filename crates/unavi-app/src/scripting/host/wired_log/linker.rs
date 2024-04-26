@@ -29,7 +29,7 @@ pub fn add_to_host(store: &mut Store<StoreData, EngineBackend>, linker: &mut Lin
                 _ => bail!("invalid arg type"),
             };
 
-            let message = format!("Script: {}", message);
+            let message = format!("SCRIPT: {}", message);
 
             match level {
                 DEBUG => tracing::debug!("{}", message),

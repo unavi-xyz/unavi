@@ -4,7 +4,7 @@ use wasm_component_layer::{
     AsContextMut, Func, Instance, Linker, ResourceOwn, ResourceType, Store,
 };
 
-use super::{host::wired_ecs::EcsWorld, load::EngineBackend, util::blocking_lock, StoreData};
+use super::{host::wired_ecs::EcsWorldResource, load::EngineBackend, util::blocking_lock, StoreData};
 
 pub fn get_script_interface(
     store: &mut Store<StoreData, EngineBackend>,
@@ -38,7 +38,7 @@ pub fn get_script_interface(
 
     let (_, ecs_world) =
         resource_table.push(store.as_context_mut(), ecs_world_type.clone(), |id| {
-            EcsWorld { id }
+            EcsWorldResource { id }
         })?;
 
     Ok(ScriptInterface {

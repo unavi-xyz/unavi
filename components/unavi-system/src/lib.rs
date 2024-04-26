@@ -56,6 +56,8 @@ impl Guest for UnaviSystem {
 
         let mut store = data.store.borrow_mut();
 
+        log(LogLevel::Info, "updated");
+
         for (_entity, components) in data.query.read() {
             let count_component = components.first().unwrap();
 

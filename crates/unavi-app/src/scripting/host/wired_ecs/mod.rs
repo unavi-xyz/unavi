@@ -26,6 +26,6 @@ pub enum WiredEcsCommand {
     },
     Spawn {
         id: u32,
-        components: Vec<ComponentInstance>,
+        components: Vec<InstanceResource>,
     },
 }

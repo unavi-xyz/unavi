@@ -3,19 +3,48 @@ use std::{alloc::Layout, ptr::NonNull};
 use bevy::{
     ecs::{
         component::{ComponentDescriptor, ComponentInfo, StorageType},
+        world::FilteredEntityRef,
     },
     prelude::*,
     ptr::OwningPtr,
-    utils::HashMap,
+    utils::{HashMap, HashSet},
 };
+use crossbeam::channel::{Receiver, Sender};
 
+use super::{QueriedEntity, WiredEcsCommand, WiredEcsReceiver};
 
-use super::{WiredEcsCommand, WiredEcsReceiver};
-
-#[derive(Component, Default)]
+#[derive(Component)]
 pub struct WiredEcsMap {
     pub components: HashMap<u32, ComponentInfo>,
     pub entities: HashMap<u32, Entity>,
+    pub queries: HashSet<u32>,
+    pub query_receiver: Receiver<WiredQuery>,
+    pub query_receiver_results: Receiver<WiredQuery>,
+    pub query_sender: Sender<WiredQuery>,
+    pub query_sender_results: Sender<WiredQuery>,
+}
+
+impl Default for WiredEcsMap {
+    fn default() -> Self {
+        let (query_sender, query_receiver) = crossbeam::channel::unbounded();
+        let (query_sender_results, query_receiver_results) = crossbeam::channel::unbounded();
+
+        Self {
+            components: Default::default(),
+            entities: Default::default(),
+            queries: Default::default(),
+            query_receiver,
+            query_receiver_results,
+            query_sender,
+            query_sender_results,
+        }
+    }
+}
+
+pub struct WiredQuery {
+    pub id: u32,
+    pub result: Vec<QueriedEntity>,
+    pub state: QueryState<FilteredEntityRef<'static>>,
 }
 
 pub fn add_wired_ecs_map(
@@ -69,13 +98,13 @@ pub fn handle_wired_ecs_command(
                     let (_, mut map) = scripts.iter_mut(world).nth(i).unwrap();
                     map.components.insert(id, info);
                 }
-                WiredEcsCommand::RegisterQuery { id: _, components } => {
+                WiredEcsCommand::RegisterQuery { id, components } => {
                     let (_, map) = scripts.iter(world).nth(i).unwrap();
 
-                    // if map.queries.contains_key(&id) {
-                    //     warn!("Query {} already registered. Ignoring command.", id);
-                    //     return;
-                    // }
+                    if map.queries.contains(&id) {
+                        warn!("Query {} already registered. Ignoring command.", id);
+                        return;
+                    }
 
                     let mut info_ids = Vec::new();
 
@@ -89,16 +118,27 @@ pub fn handle_wired_ecs_command(
                         };
                     }
 
-                    // let mut builder = QueryBuilder::new(world);
-                    //
-                    // for id in info_ids {
-                    //     builder.ref_id(id);
-                    // }
-                    //
-                    // let query = builder.build();
+                    let mut builder = QueryBuilder::new(world);
 
-                    // let (_, mut map) = scripts.iter_mut(world).nth(i).unwrap();
-                    // map.queries.insert(id, query);
+                    for id in info_ids {
+                        builder.ref_id(id);
+                    }
+
+                    let state = builder.build();
+                    let query = WiredQuery {
+                        id,
+                        result: Default::default(),
+                        state,
+                    };
+
+                    let (_, mut map) = scripts.iter_mut(world).nth(i).unwrap();
+
+                    if let Err(e) = map.query_sender.send(query) {
+                        error!("Failed to send query: {}", e);
+                        continue;
+                    }
+
+                    map.queries.insert(id);
                 }
                 WiredEcsCommand::Spawn { id, components } => {
                     let (_, map) = scripts.iter(world).nth(i).unwrap();

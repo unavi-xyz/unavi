@@ -21,6 +21,10 @@ impl ResourceTable {
         self.resources.get(id)
     }
 
+    pub fn get_mut(&mut self, id: &u32) -> Option<&mut ResourceOwn> {
+        self.resources.get_mut(id)
+    }
+
     pub fn push<T: 'static + Send + Sync>(
         &mut self,
         ctx: StoreContextMut<StoreData, EngineBackend>,

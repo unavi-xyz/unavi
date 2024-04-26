@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashMap};
 use tokio::sync::Mutex;
 
-use self::{asset::Wasm, resource_table::ResourceTable};
+use self::{asset::Wasm, host::wired_ecs::QueriedEntity, resource_table::ResourceTable};
 
 mod asset;
 mod execution;
@@ -25,11 +25,14 @@ impl Plugin for ScriptingPlugin {
                 Update,
                 (
                     execution::init_scripts,
-                    execution::update_scripts,
                     host::wired_ecs::add_wired_ecs_map,
                     host::wired_ecs::handle_wired_ecs_command,
-                    host::wired_ecs::run_script_queries,
                     load::load_scripts,
+                    (
+                        host::wired_ecs::run_script_queries,
+                        execution::update_scripts,
+                    )
+                        .chain(),
                 ),
             );
     }
@@ -43,5 +46,6 @@ struct ScriptBundle {
 
 #[derive(Default)]
 pub struct StoreData {
+    pub query_results: Arc<Mutex<HashMap<u32, Vec<QueriedEntity>>>>,
     pub resource_table: Arc<Mutex<ResourceTable>>,
 }

@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use wasm_component_layer::{AsContextMut, ResourceOwn, Value};
 
 use super::{
-    host::wired_ecs::WiredEcsMap, load::WasmStore, script::ScriptInterface, util::blocking_lock,
+    host::wired_ecs::WiredEcsMap, load::WasmStores, script::ScriptInterface, util::blocking_lock,
 };
 
 #[derive(Component)]
@@ -10,15 +10,18 @@ pub struct ScriptData(ResourceOwn);
 
 pub fn init_scripts(
     mut commands: Commands,
-    mut scripts: Query<(Entity, &ScriptInterface, &mut WasmStore), Without<ScriptData>>,
+    mut scripts: Query<(Entity, &ScriptInterface), Without<ScriptData>>,
+    mut stores: NonSendMut<WasmStores>,
 ) {
-    for (entity, script, mut store) in scripts.iter_mut() {
-        let ecs_world = script.ecs_world.borrow(store.0.as_context_mut()).unwrap();
+    for (entity, script) in scripts.iter_mut() {
+        let store = stores.0.get_mut(&entity).unwrap();
+
+        let ecs_world = script.ecs_world.borrow(store.as_context_mut()).unwrap();
 
         let mut results = vec![Value::U8(0)];
 
         if let Err(e) = script.init.call(
-            store.0.as_context_mut(),
+            store.as_context_mut(),
             &[Value::Borrow(ecs_world.clone())],
             &mut results,
         ) {
@@ -43,7 +46,8 @@ const UPDATE_DELTA: f32 = 1.0 / UPDATE_HZ;
 
 pub fn update_scripts(
     mut last_update: Local<f32>,
-    mut scripts: Query<(&ScriptInterface, &mut WasmStore, &ScriptData, &WiredEcsMap)>,
+    mut scripts: Query<(Entity, &ScriptInterface, &ScriptData, &WiredEcsMap)>,
+    mut stores: NonSendMut<WasmStores>,
     time: Res<Time>,
 ) {
     let now = time.elapsed_seconds();
@@ -55,10 +59,12 @@ pub fn update_scripts(
 
     *last_update = now;
 
-    for (script, mut store, data, ecs) in scripts.iter_mut() {
+    for (entity, script, data, ecs) in scripts.iter_mut() {
+        let store = stores.0.get_mut(&entity).unwrap();
+
         // Process query results.
         {
-            let mut query_results = blocking_lock(&store.0.data().query_results);
+            let mut query_results = blocking_lock(&store.data().query_results);
 
             while let Ok(query) = ecs.query_receiver_results.try_recv() {
                 query_results.insert(query.id, query.result.clone());
@@ -70,7 +76,7 @@ pub fn update_scripts(
         }
 
         // Call update.
-        let script_data_borrow = match data.0.borrow(store.0.as_context_mut()) {
+        let script_data_borrow = match data.0.borrow(store.as_context_mut()) {
             Ok(s) => Value::Borrow(s),
             Err(e) => {
                 error!("Failed to borrow script data: {}", e);
@@ -78,7 +84,7 @@ pub fn update_scripts(
             }
         };
 
-        let ecs_world_borrow = match script.ecs_world.borrow(store.0.as_context_mut()) {
+        let ecs_world_borrow = match script.ecs_world.borrow(store.as_context_mut()) {
             Ok(r) => Value::Borrow(r),
             Err(e) => {
                 error!("Failed to borrow ecs world: {}", e);
@@ -87,7 +93,7 @@ pub fn update_scripts(
         };
 
         if let Err(e) = script.update.call(
-            store.0.as_context_mut(),
+            store.as_context_mut(),
             &[ecs_world_borrow, script_data_borrow],
             &mut [],
         ) {

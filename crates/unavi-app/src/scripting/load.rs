@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashMap};
 use wasm_component_layer::{AsContextMut, Component, Linker, Store};
 use wasm_runtime_layer::Engine;
 
@@ -14,15 +14,16 @@ pub type EngineBackend = wasmtime::Engine;
 #[cfg(target_family = "wasm")]
 pub type EngineBackend = wasm_runtime_layer::web::Engine;
 
-#[derive(Component)]
-pub struct WasmStore(pub Store<StoreData, EngineBackend>);
-
-#[derive(Component)]
-pub struct WiredScript();
+/// Store is `!Send` for the web backend.
+/// Because of this [WasmStores] is a [NonSend] resource, but we could change
+/// this when targeting native to allow for parallel script execution.
+#[derive(Default)]
+pub struct WasmStores(pub HashMap<Entity, Store<StoreData, EngineBackend>>);
 
 pub fn load_scripts(
     assets: Res<Assets<Wasm>>,
     mut commands: Commands,
+    mut stores: NonSendMut<WasmStores>,
     to_load: Query<(Entity, &Name, &Handle<Wasm>), Without<LoadedScript>>,
 ) {
     for (entity, name, handle) in to_load.iter() {
@@ -71,8 +72,8 @@ pub fn load_scripts(
             }
         };
 
-        commands
-            .entity(entity)
-            .insert((receiver, script, WasmStore(store)));
+        stores.0.insert(entity, store);
+
+        commands.entity(entity).insert((receiver, script));
     }
 }

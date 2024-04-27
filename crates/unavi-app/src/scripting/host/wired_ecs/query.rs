@@ -1,7 +1,5 @@
 use bevy::prelude::*;
 
-use crate::scripting::load::WasmStore;
-
 use super::{QueriedEntity, WiredEcsMap};
 
 #[derive(Component)]
@@ -9,12 +7,12 @@ pub struct QueryFuture;
 
 pub fn run_script_queries(
     world: &mut World,
-    scripts: &mut QueryState<(&mut WiredEcsMap, &WasmStore), Without<QueryFuture>>,
+    scripts: &mut QueryState<&mut WiredEcsMap, Without<QueryFuture>>,
 ) {
     let mut receivers = Vec::new();
     let mut senders = Vec::new();
 
-    for (map, _) in scripts.iter_mut(world) {
+    for map in scripts.iter_mut(world) {
         receivers.push(map.query_receiver.clone());
         senders.push(map.query_sender_results.clone());
     }
@@ -41,7 +39,7 @@ pub fn run_script_queries(
                     instances.push(data[0] as u32);
                 }
 
-                let (map, _) = scripts.iter(world).nth(i).unwrap();
+                let map = scripts.iter(world).nth(i).unwrap();
 
                 if let Some((id, _)) = map.entities.iter().find(|(_, ent)| **ent == entity.id()) {
                     query.result.push(QueriedEntity {

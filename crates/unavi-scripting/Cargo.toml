@@ -9,7 +9,7 @@ edition.workspace = true
 workspace = true
 
 [dependencies]
-anyhow = "1.0.82"
+anyhow.workspace = true
 bevy.workspace = true
 crossbeam = { version = "0.8.4", features = ["crossbeam-channel"] }
 wasm_component_layer = "0.1.16"

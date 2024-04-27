@@ -3,7 +3,7 @@ use wasm_component_layer::{
     AsContextMut, EnumType, Func, FuncType, Linker, Store, Value, ValueType,
 };
 
-use crate::scripting::{load::EngineBackend, StoreData};
+use crate::{load::EngineBackend, StoreData};
 
 const DEBUG: &str = "debug";
 const INFO: &str = "info";
@@ -32,10 +32,10 @@ pub fn add_to_host(store: &mut Store<StoreData, EngineBackend>, linker: &mut Lin
             let message = format!("SCRIPT: {}", message);
 
             match level {
-                DEBUG => tracing::debug!("{}", message),
-                INFO => tracing::info!("{}", message),
-                WARN => tracing::warn!("{}", message),
-                ERROR => tracing::error!("{}", message),
+                DEBUG => bevy::log::debug!("{}", message),
+                INFO => bevy::log::info!("{}", message),
+                WARN => bevy::log::warn!("{}", message),
+                ERROR => bevy::log::error!("{}", message),
                 _ => unreachable!(),
             };
 

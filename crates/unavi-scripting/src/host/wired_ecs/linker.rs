@@ -6,7 +6,7 @@ use wasm_component_layer::{
     TupleType, Value, ValueType,
 };
 
-use crate::scripting::{load::EngineBackend, StoreData};
+use crate::{load::EngineBackend, StoreData};
 
 use super::{WiredEcsCommand, WiredEcsReceiver};
 

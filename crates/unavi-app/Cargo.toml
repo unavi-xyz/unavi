@@ -8,45 +8,27 @@ edition.workspace = true
 [lints]
 workspace = true
 
-[features]
-default = []
-disable-cert-validation = ["wtransport/dangerous-configuration"]
-
 [dependencies]
-anyhow = "1.0.82"
-bevy = "0.13.1"
-bevy-tnua = "0.16.0"
-bevy-tnua-xpbd3d = "0.4.0"
-bevy_async_task = "0.1.0"
-bevy_vrm = "0.0.10"
-bevy_xpbd_3d = { version = "0.4.2", features = ["simd"] }
-bytes = "1.5.0"
+bevy.workspace = true
+bevy_xpbd_3d.workspace = true
 clap.workspace = true
-crossbeam = { version = "0.8.4", features = ["crossbeam-channel"] }
-didkit.workspace = true
 dwn.workspace = true
-serde_json.workspace = true
-thiserror = "1.0.58"
 tracing.workspace = true
-wasm_component_layer = "0.1.16"
-wired-protocol.workspace = true
-xwt = "0.6.0"
-xwt-core = "0.2.2"
+unavi-did = { path = "../unavi-did" }
+unavi-networking = { path = "../unavi-networking" }
+unavi-player = { path = "../unavi-player" }
+unavi-scripting = { path = "../unavi-scripting" }
+unavi-settings = { path = "../unavi-settings" }
+unavi-world = { path = "../unavi-world" }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-rustls-pki-types = { version = "1.4.1", features = ["web"] }
 surrealdb = { workspace = true, features = ["kv-indxdb"] }
 tokio.workspace = true
 wasm-bindgen = "=0.2.91"
 wasm-bindgen-futures = "0.4.41"
-wasm_runtime_layer = { version = "0.3.0", features = ["tracing", "backend_web"] }
 web-sys = { version = "0.3.68", features = ["Location", "UrlSearchParams", "Window"] }
-xwt-web-sys = "0.6.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 self_update = { version = "0.39.0", features = ["archive-zip"] }
 surrealdb = { workspace = true, features = ["kv-surrealkv"] }
 tokio = { workspace = true, features = ["rt-multi-thread"] }
-wasm_runtime_layer = { version = "0.3.0", features = ["tracing", "backend_wasmtime"] }
-wasmtime = { version = "18.0.0", features = ["component-model"] }
-wtransport.workspace = true

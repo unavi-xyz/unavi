@@ -1,0 +1,12 @@
+[package]
+name = "unavi-settings"
+version.workspace = true
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy.workspace = true

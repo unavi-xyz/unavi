@@ -1,38 +1,44 @@
 use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 use bevy_xpbd_3d::prelude::*;
 
-use crate::state::AppState;
-
 mod skybox;
 
 pub struct WorldPlugin;
 
 impl Plugin for WorldPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, load_home)
+        app.init_state::<WorldState>()
+            .add_systems(Startup, load_home)
             .add_systems(
-                OnEnter(AppState::InWorld),
+                OnEnter(WorldState::InWorld),
                 (setup_world, skybox::create_skybox),
             )
             .add_systems(
                 Update,
                 (skybox::add_skybox_to_cameras, skybox::process_cubemap)
-                    .run_if(in_state(AppState::InWorld)),
+                    .run_if(in_state(WorldState::InWorld)),
             );
     }
 }
 
+#[derive(Clone, Debug, Default, Eq, Hash, PartialEq, States)]
+pub enum WorldState {
+    #[default]
+    LoadingWorld,
+    InWorld,
+}
+
 /// Load the user's home world
-fn load_home(mut next_state: ResMut<NextState<AppState>>) {
-    next_state.set(AppState::InWorld);
+fn load_home(mut next_state: ResMut<NextState<WorldState>>) {
+    next_state.set(WorldState::InWorld);
 }
 
 fn setup_world(
-    mut commands: Commands,
-    mut ambient: ResMut<AmbientLight>,
     asset_server: Res<AssetServer>,
-    mut meshes: ResMut<Assets<Mesh>>,
+    mut ambient: ResMut<AmbientLight>,
+    mut commands: Commands,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut meshes: ResMut<Assets<Mesh>>,
 ) {
     ambient.color = Color::rgb(0.95, 0.95, 1.0);
     ambient.brightness = 40.0;

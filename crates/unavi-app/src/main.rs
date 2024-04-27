@@ -77,7 +77,6 @@ fn args_to_options(args: Args) -> StartOptions {
     StartOptions {
         debug_physics: args.debug,
         log_level,
-        ..Default::default()
     }
 }
 

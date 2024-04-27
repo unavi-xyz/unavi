@@ -1,0 +1,24 @@
+[package]
+name = "unavi-networking"
+version.workspace = true
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+disable-cert-validation = ["wtransport/dangerous-configuration"]
+
+[dependencies]
+bevy.workspace = true
+bevy_async_task.workspace = true
+xwt = "0.6.0"
+xwt-core = "0.2.2"
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+xwt-web-sys = "0.6.0"
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+wtransport.workspace = true

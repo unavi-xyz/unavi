@@ -6192,7 +6192,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c2a198fb6b0eada2a8df47933734e6d35d350665a33a3593d7164fa52c75c19"
 dependencies = [
  "cfg-if",
- "windows-targets 0.48.5",
+ "windows-targets 0.52.5",
 ]
 
 [[package]]
@@ -8719,9 +8719,6 @@ name = "rustls-pki-types"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "beb461507cee2c2ff151784c52762cf4d9ff6a61f3e80968600ed24fa837fa54"
-dependencies = [
- "web-time 1.1.0",
-]
 
 [[package]]
 name = "rustls-webpki"
@@ -8949,9 +8946,9 @@ checksum = "cd0b0ec5f1c1ca621c432a25813d8d60c88abe6d3e08a3eb9cf37d97a0fe3d73"
 
 [[package]]
 name = "serde"
-version = "1.0.198"
+version = "1.0.199"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9846a40c979031340571da2545a4e5b7c4163bdae79b301d5f86d03979451fcc"
+checksum = "0c9f6e76df036c77cd94996771fb40db98187f096dd0b9af39c6c6e452ba966a"
 dependencies = [
  "serde_derive",
 ]
@@ -8976,9 +8973,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.198"
+version = "1.0.199"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e88edab869b01783ba905e7d0153f9fc1a6505a96e4ad3018011eedb838566d9"
+checksum = "11bd257a6541e141e42ca6d24ae26f7714887b47e89aa739099104c7e4d3b7fc"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -10759,36 +10756,30 @@ dependencies = [
 name = "unavi-app"
 version = "0.0.3"
 dependencies = [
- "anyhow",
  "bevy",
- "bevy-tnua",
- "bevy-tnua-xpbd3d",
- "bevy_async_task",
- "bevy_vrm",
  "bevy_xpbd_3d",
- "bytes",
  "clap",
- "crossbeam",
- "didkit",
  "dwn",
- "rustls-pki-types",
  "self_update",
- "serde_json",
  "surrealdb",
- "thiserror",
  "tokio",
  "tracing",
+ "unavi-did",
+ "unavi-networking",
+ "unavi-player",
+ "unavi-scripting",
+ "unavi-settings",
+ "unavi-world",
  "wasm-bindgen",
  "wasm-bindgen-futures",
- "wasm_component_layer",
- "wasm_runtime_layer",
- "wasmtime",
  "web-sys",
- "wired-protocol",
- "wtransport",
- "xwt",
- "xwt-core",
- "xwt-web-sys",
+]
+
+[[package]]
+name = "unavi-did"
+version = "0.0.3"
+dependencies = [
+ "bevy",
 ]
 
 [[package]]
@@ -10797,6 +10788,41 @@ version = "0.0.3"
 dependencies = [
  "tracing",
  "wit-bindgen-rt",
+]
+
+[[package]]
+name = "unavi-networking"
+version = "0.0.3"
+dependencies = [
+ "bevy",
+ "bevy_async_task",
+ "wtransport",
+ "xwt",
+ "xwt-core",
+ "xwt-web-sys",
+]
+
+[[package]]
+name = "unavi-player"
+version = "0.0.3"
+dependencies = [
+ "bevy",
+ "bevy-tnua",
+ "bevy-tnua-xpbd3d",
+ "bevy_xpbd_3d",
+ "unavi-world",
+]
+
+[[package]]
+name = "unavi-scripting"
+version = "0.0.3"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "crossbeam",
+ "wasm_component_layer",
+ "wasm_runtime_layer",
+ "wasmtime",
 ]
 
 [[package]]
@@ -10821,10 +10847,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-settings"
+version = "0.0.3"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "unavi-system"
 version = "0.0.3"
 dependencies = [
  "wit-bindgen-rt",
+]
+
+[[package]]
+name = "unavi-world"
+version = "0.0.3"
+dependencies = [
+ "bevy",
+ "bevy_vrm",
+ "bevy_xpbd_3d",
 ]
 
 [[package]]

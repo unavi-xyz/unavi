@@ -2,7 +2,7 @@ use bevy::{prelude::*, utils::HashMap};
 use wasm_component_layer::{AsContextMut, Component, Linker, Store};
 use wasm_runtime_layer::Engine;
 
-use crate::scripting::{host::add_host_script_apis, script::get_script_interface, StoreData};
+use crate::{host::add_host_script_apis, script::get_script_interface, StoreData};
 
 use super::asset::Wasm;
 

@@ -3,7 +3,9 @@ use std::sync::Arc;
 use bevy::{prelude::*, utils::HashMap};
 use tokio::sync::Mutex;
 
-use self::{asset::Wasm, host::wired_ecs::QueriedEntity, resource_table::ResourceTable};
+use self::{
+    asset::Wasm, host::wired_ecs::QueriedEntity, load::WasmStores, resource_table::ResourceTable,
+};
 
 mod asset;
 mod execution;
@@ -20,6 +22,7 @@ impl Plugin for ScriptingPlugin {
     fn build(&self, app: &mut App) {
         app.register_asset_loader(asset::WasmLoader)
             .init_asset::<Wasm>()
+            .init_non_send_resource::<WasmStores>()
             .add_systems(Startup, unavi_system::spawn_unavi_system)
             .add_systems(
                 Update,

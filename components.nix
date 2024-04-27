@@ -23,7 +23,7 @@ let
 
       nativeBuildInputs = with pkgs; [ cargo-component ];
 
-      cargoBuildCommand = "cargo component build --profile wasm-release";
+      cargoBuildCommand = "cargo component build --profile wasm-release --target wasm32-unknown-unknown";
       cargoExtraArgs = "--locked -p ${pname}";
       doCheck = false;
       strictDeps = true;

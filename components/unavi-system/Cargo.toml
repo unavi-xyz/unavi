@@ -19,4 +19,5 @@ package = "unavi:system"
 
 [package.metadata.component.target.dependencies]
 "wired:ecs" = { path = "../../wired-protocol/spatial/wit/wired-ecs" }
+"wired:log" = { path = "../../wired-protocol/spatial/wit/wired-log" }
 "wired:script" = { path = "../../wired-protocol/spatial/wit/wired-script" }

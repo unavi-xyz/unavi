@@ -28,8 +28,4 @@ impl<T> Store<T> {
         self.insert(&instance, data);
         instance
     }
-
-    pub fn remove(&mut self, instance: &ComponentInstance) {
-        self.map.remove(&instance.handle());
-    }
 }

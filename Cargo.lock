@@ -10757,7 +10757,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-app"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "anyhow",
  "bevy",
@@ -10793,7 +10793,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-log"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "tracing",
  "wit-bindgen-rt",
@@ -10801,7 +10801,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-server"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "axum",
  "axum-server",
@@ -10822,7 +10822,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-system"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "wit-bindgen-rt",
 ]
@@ -12165,7 +12165,7 @@ dependencies = [
 
 [[package]]
 name = "wired-protocol"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "dwn",
  "jsonschema",

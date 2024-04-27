@@ -174,5 +174,6 @@ in
   };
   packages = {
     inherit unavi-app unavi-server unavi-web;
+    default = unavi-app;
   };
 }

@@ -10756,11 +10756,14 @@ dependencies = [
 name = "unavi-app"
 version = "0.0.3"
 dependencies = [
+ "anyhow",
  "bevy",
  "bevy_xpbd_3d",
  "clap",
  "dwn",
+ "reqwest 0.11.27",
  "self_update",
+ "semver",
  "surrealdb",
  "tokio",
  "tracing",

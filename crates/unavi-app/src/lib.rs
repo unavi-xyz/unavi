@@ -13,6 +13,9 @@ use bevy_xpbd_3d::plugins::{PhysicsDebugPlugin, PhysicsPlugins};
 use dwn::{actor::Actor, store::SurrealStore, DWN};
 use surrealdb::{engine::local::Db, Surreal};
 
+#[cfg(not(target_family = "wasm"))]
+pub mod update;
+
 pub struct StartOptions {
     pub debug_physics: bool,
     pub log_level: Level,

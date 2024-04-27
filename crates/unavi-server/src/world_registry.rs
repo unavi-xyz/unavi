@@ -18,7 +18,7 @@ use dwn::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
-use wired_protocol::registry::{registry_definition, REGISTRY_PROTOCOL_VERSION};
+use wired_protocol::protocols::world_registry::{registry_definition, REGISTRY_PROTOCOL_VERSION};
 
 const IDENTITY_PATH: &str = ".unavi/registry_identity.json";
 const KEY_FRAGMENT: &str = "key-0";

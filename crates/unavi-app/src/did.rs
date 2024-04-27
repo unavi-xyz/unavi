@@ -7,8 +7,11 @@ use dwn::{
     MessageReply,
 };
 use surrealdb::engine::local::Db;
-use wired_protocol::registry::{
-    registry_definition, registry_world_schema_url, World, REGISTRY_PROTOCOL_VERSION,
+use wired_protocol::{
+    protocols::world_registry::{
+        registry_definition, registry_world_schema_url, REGISTRY_PROTOCOL_VERSION,
+    },
+    schemas::world::World,
 };
 
 const ENV_REGISTRY_DID: Option<&str> = option_env!("UNAVI_REGISTRY_DID");

@@ -1,7 +1,6 @@
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use bevy::{prelude::*, utils::HashMap};
-use tokio::sync::Mutex;
 
 use self::{
     asset::Wasm, host::wired_ecs::QueriedEntity, load::WasmStores, resource_table::ResourceTable,
@@ -14,7 +13,6 @@ mod load;
 mod resource_table;
 mod script;
 mod unavi_system;
-mod util;
 
 pub struct ScriptingPlugin;
 
@@ -49,6 +47,6 @@ struct ScriptBundle {
 
 #[derive(Default)]
 pub struct StoreData {
-    pub query_results: Arc<Mutex<HashMap<u32, Vec<QueriedEntity>>>>,
-    pub resource_table: Arc<Mutex<ResourceTable>>,
+    pub query_results: Arc<RwLock<HashMap<u32, Vec<QueriedEntity>>>>,
+    pub resource_table: Arc<RwLock<ResourceTable>>,
 }

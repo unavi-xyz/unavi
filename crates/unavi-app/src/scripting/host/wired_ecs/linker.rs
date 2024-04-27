@@ -6,7 +6,7 @@ use wasm_component_layer::{
     TupleType, Value, ValueType,
 };
 
-use crate::scripting::{load::EngineBackend, util::blocking_lock, StoreData};
+use crate::scripting::{load::EngineBackend, StoreData};
 
 use super::{WiredEcsCommand, WiredEcsReceiver};
 
@@ -72,7 +72,7 @@ pub fn add_to_host(
                 let component_rep: &ComponentResource = component_borrow.rep(&ctx_ref)?;
                 let component = component_rep.id;
 
-                let mut resource_table = blocking_lock(&resource_table);
+                let mut resource_table = resource_table.write().unwrap();
 
                 let (id, resource) = resource_table.push(
                     ctx.as_context_mut(),
@@ -199,7 +199,7 @@ pub fn add_to_host(
                 [ValueType::Own(component_type.clone())],
             ),
             move |mut ctx, _args, results| {
-                let mut resource_table = blocking_lock(&resource_table);
+                let mut resource_table = resource_table.write().unwrap();
 
                 let (id, resource) =
                     resource_table.push(ctx.as_context_mut(), component_type.clone(), |id| {
@@ -247,8 +247,8 @@ pub fn add_to_host(
                     components.push(component_rep.id);
                 }
 
-                let mut resource_table = blocking_lock(&resource_table);
-                let mut query_results = blocking_lock(&query_results);
+                let mut resource_table = resource_table.write().unwrap();
+                let mut query_results = query_results.write().unwrap();
 
                 let (id, resource) =
                     resource_table.push(ctx, query_type.clone(), |id| QueryResource {
@@ -300,7 +300,7 @@ pub fn add_to_host(
                     })
                     .collect::<Result<Vec<_>>>()?;
 
-                let mut resource_table = blocking_lock(&resource_table);
+                let mut resource_table = resource_table.write().unwrap();
 
                 let (id, resource) =
                     resource_table.push(ctx, entity_type.clone(), |id| EntityResource { id })?;

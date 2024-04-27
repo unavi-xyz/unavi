@@ -1,9 +1,7 @@
 use bevy::prelude::*;
 use wasm_component_layer::{AsContextMut, ResourceOwn, Value};
 
-use super::{
-    host::wired_ecs::WiredEcsMap, load::WasmStores, script::ScriptInterface, util::blocking_lock,
-};
+use super::{host::wired_ecs::WiredEcsMap, load::WasmStores, script::ScriptInterface};
 
 #[derive(Component)]
 pub struct ScriptData(ResourceOwn);
@@ -64,7 +62,7 @@ pub fn update_scripts(
 
         // Process query results.
         {
-            let mut query_results = blocking_lock(&store.data().query_results);
+            let mut query_results = store.data().query_results.write().unwrap();
 
             while let Ok(query) = ecs.query_receiver_results.try_recv() {
                 query_results.insert(query.id, query.result.clone());

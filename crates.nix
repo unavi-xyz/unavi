@@ -14,7 +14,7 @@ let
     src = ./.;
     filter =
       path: type:
-      (lib.hasInfix "/assets/" path)
+      (lib.hasInfix "/crates/unavi-app/assets/" path)
       || (lib.hasInfix "/crates/unavi-app/public/" path)
       || (lib.hasSuffix ".html" path)
       || (lib.hasSuffix ".json" path)

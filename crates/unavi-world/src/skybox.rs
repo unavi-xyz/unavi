@@ -12,7 +12,7 @@ pub struct Cubemap {
 pub fn create_skybox(asset_server: Res<AssetServer>, mut commands: Commands) {
     commands.insert_resource(Cubemap {
         is_loaded: false,
-        image_handle: asset_server.load("images/skybox-1-512.png"),
+        image_handle: asset_server.load("images/skybox.png"),
     });
 }
 

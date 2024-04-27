@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./assets/images/block-logo.png" alt="UNAVI Logo" height="200" />
+  <img src="./crates/unavi-app/assets/images/logo.png" alt="UNAVI Logo" height="200" />
   <h1>UNAVI</h1>
   <strong>An open-source VR social platform.</strong>
 </div>

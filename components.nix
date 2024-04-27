@@ -65,10 +65,11 @@ let
       );
   };
 
+  assetOut = "crates/unavi-app/assets/components";
   generateAssetsScript = ''
-    rm -rf assets/components
-    mkdir -p assets/components
-    cp -r --no-preserve=mode ${self.packages.${localSystem}.components}/lib/* assets/components
+    rm -rf ${assetOut}
+    mkdir -p ${assetOut}
+    cp -r --no-preserve=mode ${self.packages.${localSystem}.components}/lib/* ${assetOut}
   '';
 in
 {

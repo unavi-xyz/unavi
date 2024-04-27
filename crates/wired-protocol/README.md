@@ -2,6 +2,6 @@
 
 <!-- cargo-rdme start -->
 
-Rust types for [wired-protocol](https://github.com/unavi-xyz/wired-protocol).
+Rust types for [The Wired](https://github.com/unavi-xyz/wired-protocol).
 
 <!-- cargo-rdme end -->

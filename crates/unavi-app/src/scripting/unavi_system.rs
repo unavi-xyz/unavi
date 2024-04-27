@@ -1,11 +1,12 @@
 use bevy::prelude::*;
 
-use super::{asset::Wasm, script::ScriptBundle};
+use super::{asset::Wasm, ScriptBundle};
 
 const UNAVI_SYSTEM: &str = "unavi_system";
 
 pub fn spawn_unavi_system(asset_server: Res<AssetServer>, mut commands: Commands) {
     let wasm = load_component_wasm(&asset_server, UNAVI_SYSTEM);
+
     commands.spawn(ScriptBundle {
         name: UNAVI_SYSTEM.into(),
         wasm,

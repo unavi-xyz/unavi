@@ -1,8 +1,11 @@
 use std::cell::RefCell;
 
 use bindings::{
-    exports::wired::script::types::{Guest, GuestScript, Script, ScriptBorrow},
-    wired::ecs::types::{EcsWorld, Query},
+    exports::wired::script::lifecycle::{Data, DataBorrow, Guest, GuestData},
+    wired::{
+        ecs::types::{EcsWorld, Query},
+        log::api::{log, LogLevel},
+    },
 };
 use store::Store;
 
@@ -17,19 +20,19 @@ struct Count {
     value: usize,
 }
 
-struct ScriptImpl {
+struct DataImpl {
     store: RefCell<Store<Count>>,
     query: Query,
 }
 
-impl GuestScript for ScriptImpl {}
+impl GuestData for DataImpl {}
 
 struct UnaviSystem;
 
 impl Guest for UnaviSystem {
-    type Script = ScriptImpl;
+    type Data = DataImpl;
 
-    fn init(ecs_world: &EcsWorld) -> Script {
+    fn init(ecs_world: &EcsWorld) -> Data {
         let component = ecs_world.register_component();
         let query = ecs_world.register_query(&[&component]);
 
@@ -40,22 +43,24 @@ impl Guest for UnaviSystem {
             increment: 2,
         })]);
 
-        Script::new(ScriptImpl {
+        log(LogLevel::Info, "initialized");
+
+        Data::new(DataImpl {
             store: store.into(),
             query,
         })
     }
 
-    fn update(_ecs_world: &EcsWorld, script: ScriptBorrow) {
-        let script: &ScriptImpl = script.get();
+    fn update(_ecs_world: &EcsWorld, data: DataBorrow) {
+        let data: &DataImpl = data.get();
 
-        let mut store = script.store.borrow_mut();
+        let mut store = data.store.borrow_mut();
 
-        for (_entity, components) in script.query.read() {
+        for (_entity, components) in data.query.read() {
             let count_component = components.first().unwrap();
 
             let count = store.get(count_component).unwrap();
-            println!("Count: {}", count.value);
+            log(LogLevel::Info, &format!("Count: {}", count.value));
 
             let mut count = count.clone();
             count.value += count.increment;

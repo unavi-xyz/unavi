@@ -10,10 +10,10 @@ pub fn registry_definition() -> ProtocolDefinition {
     serde_json::from_slice(REGISTRY_PROTOCOL_DEFINITION).unwrap()
 }
 
-pub fn registry_world_schema_url() -> String {
+pub fn registry_instance_schema_url() -> String {
     registry_definition()
         .types
-        .get("world")
+        .get("instance")
         .unwrap()
         .schema
         .clone()
@@ -31,8 +31,8 @@ mod tests {
     }
 
     #[test]
-    fn test_registry_world_schema() {
-        let schema = registry_world_schema_url();
+    fn test_registry_instance_schema() {
+        let schema = registry_instance_schema_url();
         assert!(!schema.is_empty())
     }
 }

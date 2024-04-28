@@ -1,3 +1,3 @@
 pub mod instance;
-pub mod record_link;
+pub mod instance_info;
 pub mod world;

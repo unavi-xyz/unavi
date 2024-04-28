@@ -3,6 +3,7 @@ use std::path::Path;
 use anyhow::{anyhow, Result};
 use self_update::{backends::github::ReleaseList, cargo_crate_version, self_replace::self_replace};
 use semver::Version;
+use zip::ZipArchive;
 
 const ASSETS_DIR: &str = "assets";
 const BIN_NAME: &str = "unavi-app";
@@ -62,19 +63,18 @@ pub fn check_for_updates(force: bool) -> Result<()> {
     std::fs::create_dir_all(UPDATE_DIR)?;
 
     let tmp_dir = Path::new(UPDATE_DIR);
-    let tmp_tarball_path = tmp_dir.join(&asset.name);
-    let tmp_tarball = std::fs::File::create(&tmp_tarball_path)?;
+    let tmp_zip_path = tmp_dir.join(&asset.name);
+    let tmp_zip = std::fs::File::create(&tmp_zip_path)?;
 
     self_update::Download::from_url(&asset.download_url)
         .set_header(reqwest::header::ACCEPT, "application/octet-stream".parse()?)
-        .download_to(&tmp_tarball)?;
+        .download_to(&tmp_zip)?;
 
-    let mut archive = self_update::Extract::from_source(&tmp_tarball_path);
-    let archive = archive.archive(self_update::ArchiveKind::Zip);
+    let tmp_zip = std::fs::File::open(tmp_zip_path)?;
+    let mut archive = ZipArchive::new(tmp_zip)?;
 
     let tmp_archive_path = tmp_dir.join("archive");
-    archive.extract_file(&tmp_archive_path, BIN_NAME)?;
-    archive.extract_file(&tmp_archive_path, ASSETS_DIR)?;
+    archive.extract(&tmp_archive_path)?;
 
     std::fs::remove_dir_all(ASSETS_DIR)?;
     let new_assets = tmp_archive_path.join(ASSETS_DIR);
@@ -82,6 +82,8 @@ pub fn check_for_updates(force: bool) -> Result<()> {
 
     let new_bin = tmp_archive_path.join(BIN_NAME);
     self_replace(new_bin)?;
+
+    std::fs::remove_dir_all(UPDATE_DIR)?;
 
     let exe = std::env::current_exe()?;
     std::process::Command::new(exe).spawn()?;

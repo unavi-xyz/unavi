@@ -73,9 +73,7 @@ let
 
     preBuild = components.generateAssetsScript;
     postInstall = ''
-      cp -r $out/bin $out
-      rm -r $out/bin
-      cp -r ./crates/unavi-app/assets $out
+      cp -r ./crates/unavi-app/assets $out/bin
     '';
   };
 

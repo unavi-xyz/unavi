@@ -57,6 +57,7 @@ jobs:
       - run: nix build .?submodules=1#packages.${{ matrix.attr }}-${{ inputs.channel }}
       - run: |
           cp -rL result tmp
+          chmod -R 755 tmp
           cd tmp
           zip -r ../${{ matrix.attr }}.zip .
 

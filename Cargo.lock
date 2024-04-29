@@ -10729,6 +10729,7 @@ dependencies = [
  "bevy",
  "bevy_async_task",
  "dwn",
+ "serde",
  "serde_json",
  "surrealdb",
  "wired-protocol",

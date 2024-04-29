@@ -2,19 +2,14 @@ use bevy::prelude::*;
 use dwn::{actor::Actor, store::SurrealStore};
 use surrealdb::engine::local::Db;
 
-mod home;
-mod instance;
-mod registry;
-mod world;
+mod create_record;
+pub mod registry;
 
 pub struct DwnPlugin;
 
 impl Plugin for DwnPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<instance::CreateInstance>().add_systems(
-            Update,
-            (world::handle_create_world, instance::handle_create_instance),
-        );
+        app.add_systems(Update, create_record::handle_create_record);
     }
 }
 

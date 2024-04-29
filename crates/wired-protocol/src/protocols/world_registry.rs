@@ -10,29 +10,13 @@ pub fn registry_definition() -> ProtocolDefinition {
     serde_json::from_slice(REGISTRY_PROTOCOL_DEFINITION).unwrap()
 }
 
-pub fn registry_instance_schema_url() -> String {
-    registry_definition()
-        .types
-        .get("instance")
-        .unwrap()
-        .schema
-        .clone()
-        .unwrap()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_registry_definition() {
+    fn test_definition() {
         let definition = registry_definition();
         assert!(!definition.protocol.is_empty())
-    }
-
-    #[test]
-    fn test_registry_instance_schema() {
-        let schema = registry_instance_schema_url();
-        assert!(!schema.is_empty())
     }
 }

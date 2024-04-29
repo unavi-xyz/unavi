@@ -1,5 +1,10 @@
 use serde::{Deserialize, Serialize};
 
+use super::util::schema_id;
+
+const INSTANCE_INFO_SCHEMA: &[u8] =
+    include_bytes!("../../../../wired-protocol/social/dwn/schemas/instance-info.json");
+
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct InstanceInfo {
     pub url: String,
@@ -9,14 +14,15 @@ pub struct InstanceInfo {
     pub max_players: Option<usize>,
 }
 
+pub fn instance_info_schema_url() -> String {
+    schema_id(INSTANCE_INFO_SCHEMA).unwrap()
+}
+
 #[cfg(test)]
 mod tests {
     use jsonschema::JSONSchema;
 
     use super::*;
-
-    const SCHEMA: &[u8] =
-        include_bytes!("../../../../wired-protocol/social/dwn/schemas/instance-info.json");
 
     #[test]
     fn test_schema() {
@@ -29,11 +35,17 @@ mod tests {
         let serialized = serde_json::to_vec(&instance).unwrap();
         let deserialized = serde_json::from_slice(&serialized).unwrap();
 
-        let schema = serde_json::from_slice(SCHEMA).unwrap();
+        let schema = serde_json::from_slice(INSTANCE_INFO_SCHEMA).unwrap();
         let schema = JSONSchema::compile(&schema).unwrap();
 
         if schema.validate(&deserialized).is_err() {
             panic!("Failed to validate");
         };
+    }
+
+    #[test]
+    fn test_schema_url() {
+        let url = instance_info_schema_url();
+        assert!(!url.is_empty());
     }
 }

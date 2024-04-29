@@ -113,6 +113,7 @@
             with pkgs;
             [
               cargo-component
+              cargo-machete
               cargo-rdme
               cargo-watch
               curl

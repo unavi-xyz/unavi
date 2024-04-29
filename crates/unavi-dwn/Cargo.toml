@@ -12,6 +12,7 @@ workspace = true
 bevy.workspace = true
 bevy_async_task.workspace = true
 dwn.workspace = true
+serde.workspace = true
 serde_json.workspace = true
 surrealdb.workspace = true
 wired-protocol = { path = "../wired-protocol" }

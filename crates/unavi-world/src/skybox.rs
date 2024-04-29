@@ -16,7 +16,6 @@ pub fn create_skybox(asset_server: Res<AssetServer>, mut commands: Commands) {
     });
 }
 
-/// Adds the Skybox component to all cameras
 pub fn add_skybox_to_cameras(
     mut commands: Commands,
     cubemap: ResMut<Cubemap>,

@@ -10819,6 +10819,7 @@ dependencies = [
  "bevy",
  "bevy_vrm",
  "bevy_xpbd_3d",
+ "unavi-did",
 ]
 
 [[package]]

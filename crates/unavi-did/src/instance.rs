@@ -22,7 +22,7 @@ pub fn handle_create_instance(
 ) {
     match task.poll() {
         AsyncTaskStatus::Idle => {
-            for event in events.read() {
+            if let Some(event) = events.read().next() {
                 let actor = actor.0.clone();
                 let instance = event.0.clone();
 

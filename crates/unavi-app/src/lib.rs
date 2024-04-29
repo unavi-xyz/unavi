@@ -12,6 +12,7 @@ use bevy::{
 use bevy_xpbd_3d::plugins::{PhysicsDebugPlugin, PhysicsPlugins};
 use dwn::{actor::Actor, store::SurrealStore, DWN};
 use surrealdb::{engine::local::Db, Surreal};
+use unavi_did::UserActor;
 
 #[cfg(not(target_family = "wasm"))]
 pub mod update;
@@ -36,7 +37,7 @@ pub async fn start(db: Surreal<Db>, opts: StartOptions) {
         .expect("Failed to create DWN store.");
 
     let dwn = Arc::new(DWN::from(store));
-    let _actor = Actor::new_did_key(dwn).expect("Failed to create DWN actor.");
+    let actor = Actor::new_did_key(dwn).expect("Failed to create DWN actor.");
 
     let mut meta_paths = HashSet::new();
     meta_paths.insert("images/dev-white.png".into());
@@ -45,13 +46,14 @@ pub async fn start(db: Surreal<Db>, opts: StartOptions) {
     let mut app = App::new();
 
     app.insert_resource(AssetMetaCheck::Paths(meta_paths))
+        .insert_resource(UserActor(actor))
         .add_plugins((
             DefaultPlugins.set(LogPlugin {
                 level: opts.log_level,
                 ..default()
             }),
             PhysicsPlugins::default(),
-            // unavi_did::DidPlugin,
+            unavi_did::DidPlugin,
             // unavi_networking::NetworkingPlugin,
             unavi_player::PlayerPlugin,
             // unavi_scripting::ScriptingPlugin,

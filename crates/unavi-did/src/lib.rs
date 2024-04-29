@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use dwn::{actor::Actor, store::SurrealStore};
 use surrealdb::engine::local::Db;
 
+mod home;
 mod instance;
 mod registry;
 mod world;

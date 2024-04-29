@@ -2,16 +2,16 @@ use serde::{Deserialize, Serialize};
 
 use super::{common::RecordLink, util::schema_id};
 
-const INSTANCE_SCHEMA: &[u8] =
-    include_bytes!("../../../../wired-protocol/social/dwn/schemas/instance.json");
+const HOME_SCHEMA: &[u8] =
+    include_bytes!("../../../../wired-protocol/social/dwn/schemas/home.json");
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct Instance {
+pub struct Home {
     pub world: RecordLink,
 }
 
-pub fn instance_schema_url() -> String {
-    schema_id(INSTANCE_SCHEMA).unwrap()
+pub fn home_schema_url() -> String {
+    schema_id(HOME_SCHEMA).unwrap()
 }
 
 #[cfg(test)]
@@ -22,17 +22,17 @@ mod tests {
 
     #[test]
     fn test_schema() {
-        let instance = Instance {
+        let home = Home {
             world: RecordLink {
                 did: "did:example:123".to_string(),
                 record: "abcde".to_string(),
             },
         };
 
-        let serialized = serde_json::to_vec(&instance).unwrap();
+        let serialized = serde_json::to_vec(&home).unwrap();
         let deserialized = serde_json::from_slice(&serialized).unwrap();
 
-        let schema = serde_json::from_slice(INSTANCE_SCHEMA).unwrap();
+        let schema = serde_json::from_slice(HOME_SCHEMA).unwrap();
         let schema = JSONSchema::compile(&schema).unwrap();
 
         if schema.validate(&deserialized).is_err() {
@@ -42,7 +42,7 @@ mod tests {
 
     #[test]
     fn test_schema_url() {
-        let url = instance_schema_url();
+        let url = home_schema_url();
         assert!(!url.is_empty());
     }
 }

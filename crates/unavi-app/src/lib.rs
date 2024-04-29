@@ -12,7 +12,7 @@ use bevy::{
 use bevy_xpbd_3d::plugins::{PhysicsDebugPlugin, PhysicsPlugins};
 use dwn::{actor::Actor, store::SurrealStore, DWN};
 use surrealdb::{engine::local::Db, Surreal};
-use unavi_did::UserActor;
+use unavi_dwn::UserActor;
 
 #[cfg(not(target_family = "wasm"))]
 pub mod update;
@@ -53,7 +53,7 @@ pub async fn start(db: Surreal<Db>, opts: StartOptions) {
                 ..default()
             }),
             PhysicsPlugins::default(),
-            unavi_did::DidPlugin,
+            unavi_dwn::DwnPlugin,
             // unavi_networking::NetworkingPlugin,
             unavi_player::PlayerPlugin,
             // unavi_scripting::ScriptingPlugin,

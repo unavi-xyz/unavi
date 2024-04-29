@@ -12,4 +12,4 @@ workspace = true
 bevy.workspace = true
 bevy_vrm = "0.0.10"
 bevy_xpbd_3d.workspace = true
-unavi-did = { path = "../unavi-did" }
+unavi-dwn = { path = "../unavi-dwn" }

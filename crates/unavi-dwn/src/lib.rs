@@ -7,9 +7,9 @@ mod instance;
 mod registry;
 mod world;
 
-pub struct DidPlugin;
+pub struct DwnPlugin;
 
-impl Plugin for DidPlugin {
+impl Plugin for DwnPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<instance::CreateInstance>().add_systems(
             Update,

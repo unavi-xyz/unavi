@@ -1,5 +1,5 @@
 [package]
-name = "unavi-did"
+name = "unavi-dwn"
 version.workspace = true
 license.workspace = true
 repository.workspace = true

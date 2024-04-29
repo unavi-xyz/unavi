@@ -10710,7 +10710,7 @@ dependencies = [
  "surrealdb",
  "tokio",
  "tracing",
- "unavi-did",
+ "unavi-dwn",
  "unavi-networking",
  "unavi-player",
  "unavi-scripting",
@@ -10723,7 +10723,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "unavi-did"
+name = "unavi-dwn"
 version = "0.0.3"
 dependencies = [
  "bevy",
@@ -10819,7 +10819,7 @@ dependencies = [
  "bevy",
  "bevy_vrm",
  "bevy_xpbd_3d",
- "unavi-did",
+ "unavi-dwn",
 ]
 
 [[package]]

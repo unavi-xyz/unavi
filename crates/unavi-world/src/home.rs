@@ -24,6 +24,8 @@ use wired_protocol::{
     },
 };
 
+use crate::{WorldInstance, WorldRecord};
+
 #[derive(Event, Default)]
 pub struct JoinHome;
 
@@ -41,11 +43,16 @@ pub enum JoinHomeError {
     Decode(#[from] base64::DecodeError),
 }
 
+pub struct JoinHomeResult {
+    instance: RecordLink,
+    world: RecordLink,
+}
+
 pub fn handle_join_home(
     actor: Res<UserActor>,
-    _commands: Commands,
+    mut commands: Commands,
     mut events: EventReader<JoinHome>,
-    mut task: AsyncTaskRunner<Result<(), JoinHomeError>>,
+    mut task: AsyncTaskRunner<Result<JoinHomeResult, JoinHomeError>>,
 ) {
     match task.poll() {
         AsyncTaskStatus::Idle => {
@@ -93,6 +100,8 @@ pub fn handle_join_home(
                             .process()
                             .await?;
 
+                        info!("Created new home world: {}", reply.record_id);
+
                         // Create home record.
                         let home = Home {
                             world: RecordLink {
@@ -113,7 +122,10 @@ pub fn handle_join_home(
                     };
 
                     // Create instance.
-                    let data = Instance { world: home.world };
+                    let data = Instance {
+                        world: home.world.clone(),
+                    };
+                    let registry = registry_did();
 
                     let reply = actor
                         .create_record()
@@ -125,22 +137,28 @@ pub fn handle_join_home(
                         .data(serde_json::to_vec(&data).unwrap())
                         .data_format(MediaType::Application(Application::Json))
                         .schema(instance_schema_url())
-                        .target(registry_did().to_string())
-                        .send(registry_did())
+                        .target(registry.to_string())
+                        .send(registry)
                         .await?;
 
                     info!("Created home instance: {}", reply.record_id);
 
-                    // TODO: join instance
-
-                    Ok(())
+                    Ok(JoinHomeResult {
+                        instance: RecordLink {
+                            record: reply.record_id,
+                            did: registry.to_string(),
+                        },
+                        world: home.world,
+                    })
                 });
             }
         }
         AsyncTaskStatus::Pending => {}
         AsyncTaskStatus::Finished(res) => {
             match res {
-                Ok(_) => {}
+                Ok(JoinHomeResult { instance, world }) => {
+                    commands.spawn((WorldInstance(instance), WorldRecord(world)));
+                }
                 Err(err) => {
                     error!("Failed to query record: {}", err);
                 }

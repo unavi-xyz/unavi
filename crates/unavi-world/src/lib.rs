@@ -39,4 +39,4 @@ pub enum WorldState {
 pub struct WorldRecord(pub RecordLink);
 
 #[derive(Component)]
-pub struct WorldHost(pub RecordLink);
+pub struct WorldInstance(pub RecordLink);

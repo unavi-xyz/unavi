@@ -5,10 +5,7 @@ use bevy_async_task::{AsyncTaskRunner, AsyncTaskStatus};
 use dwn::{
     actor::{MessageBuilder, ProcessMessageError},
     message::{
-        descriptor::{
-            iana_media_types::{Application, MediaType},
-            records::RecordsFilter,
-        },
+        descriptor::{iana_media_types::Application, records::RecordsFilter},
         Data,
     },
 };
@@ -60,6 +57,8 @@ pub fn handle_join_home(
                 let actor = actor.0.clone();
 
                 task.start(async move {
+                    let registry = registry_did();
+
                     // Query for user's home.
                     let reply = actor
                         .query_records(RecordsFilter {
@@ -88,14 +87,14 @@ pub fn handle_join_home(
                         // Create new world.
                         let data = World {
                             name: Some("Home".to_string()),
-                            host: Some(registry_did().to_string()),
+                            host: Some(registry.to_string()),
                             ..default()
                         };
 
                         let reply = actor
                             .create_record()
-                            .data_format(MediaType::Application(Application::Json))
                             .data(serde_json::to_vec(&data).unwrap())
+                            .data_format(Application::Json.into())
                             .schema(world_schema_url())
                             .process()
                             .await?;
@@ -112,8 +111,8 @@ pub fn handle_join_home(
 
                         actor
                             .create_record()
-                            .data_format(MediaType::Application(Application::Json))
                             .data(serde_json::to_vec(&home).unwrap())
+                            .data_format(Application::Json.into())
                             .schema(home_schema_url())
                             .process()
                             .await?;
@@ -125,7 +124,6 @@ pub fn handle_join_home(
                     let data = Instance {
                         world: home.world.clone(),
                     };
-                    let registry = registry_did();
 
                     let reply = actor
                         .create_record()
@@ -135,7 +133,7 @@ pub fn handle_join_home(
                             "instance".to_string(),
                         )
                         .data(serde_json::to_vec(&data).unwrap())
-                        .data_format(MediaType::Application(Application::Json))
+                        .data_format(Application::Json.into())
                         .schema(instance_schema_url())
                         .target(registry.to_string())
                         .send(registry)
@@ -160,7 +158,7 @@ pub fn handle_join_home(
                     commands.spawn((WorldInstance(instance), WorldRecord(world)));
                 }
                 Err(err) => {
-                    error!("Failed to query record: {}", err);
+                    error!("Failed to join home: {}", err);
                 }
             };
         }

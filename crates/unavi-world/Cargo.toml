@@ -9,7 +9,13 @@ edition.workspace = true
 workspace = true
 
 [dependencies]
+base64 = "0.22.0"
 bevy.workspace = true
+bevy_async_task.workspace = true
 bevy_vrm = "0.0.10"
 bevy_xpbd_3d.workspace = true
+dwn.workspace = true
+serde_json.workspace = true
+thiserror = "1.0.59"
 unavi-dwn = { path = "../unavi-dwn" }
+wired-protocol = { path = "../wired-protocol" }

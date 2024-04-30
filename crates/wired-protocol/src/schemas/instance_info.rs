@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::util::schema_id;
+use crate::util::get_schema_id;
 
 const INSTANCE_INFO_SCHEMA: &[u8] =
     include_bytes!("../../../../wired-protocol/social/dwn/schemas/instance-info.json");
@@ -15,7 +15,7 @@ pub struct InstanceInfo {
 }
 
 pub fn instance_info_schema_url() -> String {
-    schema_id(INSTANCE_INFO_SCHEMA).unwrap()
+    get_schema_id(INSTANCE_INFO_SCHEMA).unwrap()
 }
 
 #[cfg(test)]

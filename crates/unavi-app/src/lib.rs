@@ -14,6 +14,7 @@ use dwn::{actor::Actor, store::SurrealStore, DWN};
 use surrealdb::{engine::local::Db, Surreal};
 use unavi_dwn::UserActor;
 
+#[cfg(feature = "self_update")]
 #[cfg(not(target_family = "wasm"))]
 pub mod update;
 

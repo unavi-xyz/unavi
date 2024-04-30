@@ -54,15 +54,18 @@ const DB_PATH: &str = ".unavi/app-db";
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
-    let force_update = args.force_update;
 
-    tokio::task::spawn_blocking(move || {
-        if let Err(e) = unavi_app::update::check_for_updates(force_update) {
-            println!("Error while updating: {}", e);
-        }
-    })
-    .await
-    .unwrap();
+    #[cfg(feature = "self_update")]
+    {
+        let force_update = args.force_update;
+        tokio::task::spawn_blocking(move || {
+            if let Err(e) = unavi_app::update::check_for_updates(force_update) {
+                println!("Error while updating: {}", e);
+            }
+        })
+        .await
+        .unwrap();
+    }
 
     std::fs::create_dir_all(DB_PATH).expect("Failed to create database dir.");
 

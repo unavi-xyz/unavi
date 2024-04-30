@@ -1,75 +1,150 @@
-use bevy::{prelude::*, render::mesh::VertexAttributeValues};
-use bevy_xpbd_3d::prelude::*;
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
+use bevy::prelude::*;
 
-use crate::WorldState;
+use bevy_async_task::{AsyncTaskRunner, AsyncTaskStatus};
+use dwn::{
+    actor::{MessageBuilder, ProcessMessageError},
+    message::{
+        descriptor::{
+            iana_media_types::{Application, MediaType},
+            records::RecordsFilter,
+        },
+        Data,
+    },
+};
+use thiserror::Error;
+use unavi_dwn::{registry::registry_did, UserActor};
+use wired_protocol::{
+    protocols::world_registry::{registry_protocol_url, REGISTRY_PROTOCOL_VERSION},
+    schemas::{
+        common::RecordLink,
+        home::{home_schema_url, Home},
+        instance::{instance_schema_url, Instance},
+        world::{world_schema_url, World},
+    },
+};
 
-pub fn load_home(mut next_state: ResMut<NextState<WorldState>>) {
-    // Query for home world.
+#[derive(Event, Default)]
+pub struct JoinHome;
 
-    // If home not found, create new world.
-
-    // Create instance of world.
-
-    // Join instance.
-
-    next_state.set(WorldState::InWorld);
+pub fn join_home(mut writer: EventWriter<JoinHome>) {
+    writer.send_default();
 }
 
-pub fn setup_world(
-    asset_server: Res<AssetServer>,
-    mut ambient: ResMut<AmbientLight>,
-    mut commands: Commands,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut meshes: ResMut<Assets<Mesh>>,
+#[derive(Error, Debug)]
+pub enum JoinHomeError {
+    #[error(transparent)]
+    Process(#[from] ProcessMessageError),
+    #[error(transparent)]
+    Serde(#[from] serde_json::Error),
+    #[error(transparent)]
+    Decode(#[from] base64::DecodeError),
+}
+
+pub fn handle_join_home(
+    actor: Res<UserActor>,
+    _commands: Commands,
+    mut events: EventReader<JoinHome>,
+    mut task: AsyncTaskRunner<Result<(), JoinHomeError>>,
 ) {
-    ambient.color = Color::rgb(0.95, 0.95, 1.0);
-    ambient.brightness = 40.0;
+    match task.poll() {
+        AsyncTaskStatus::Idle => {
+            if events.read().next().is_some() {
+                let actor = actor.0.clone();
 
-    commands.spawn((
-        DirectionalLightBundle {
-            directional_light: DirectionalLight {
-                shadows_enabled: true,
-                illuminance: 5000.0,
-                color: Color::rgb(1.0, 1.0, 0.98),
-                ..default()
-            },
-            transform: Transform::from_xyz(-4.5, 10.0, 7.0).looking_at(Vec3::ZERO, Vec3::Y),
-            ..default()
-        },
-        bevy_vrm::mtoon::MtoonSun,
-    ));
+                task.start(async move {
+                    // Query for user's home.
+                    let reply = actor
+                        .query_records(RecordsFilter {
+                            schema: Some(home_schema_url()),
+                            ..default()
+                        })
+                        .process()
+                        .await?;
 
-    {
-        let ground_size = 30.0;
-        let ground_texture = asset_server.load("images/dev-white.png");
-        let ground_texture_scale = ground_size / 4.0;
+                    let home = if let Some(msg) = reply.entries.first() {
+                        // Query world.
+                        let data = match &msg.data {
+                            Some(Data::Base64(value)) => URL_SAFE_NO_PAD.decode(value)?,
+                            Some(Data::Encrypted(_data)) => {
+                                todo!("Home world data encrypted")
+                            }
+                            None => {
+                                todo!("Home world not found")
+                            }
+                        };
 
-        let mut ground_mesh = Mesh::from(Cuboid {
-            half_size: Vec3::new(ground_size / 2.0, 0.05, ground_size / 2.0),
-        });
+                        let home: Home = serde_json::from_slice(&data)?;
 
-        match ground_mesh.attribute_mut(Mesh::ATTRIBUTE_UV_0).unwrap() {
-            VertexAttributeValues::Float32x2(uvs) => {
-                for uv in uvs {
-                    uv[0] *= ground_texture_scale;
-                    uv[1] *= ground_texture_scale;
-                }
+                        home
+                    } else {
+                        // Create new world.
+                        let data = World {
+                            name: Some("Home".to_string()),
+                            host: Some(registry_did().to_string()),
+                            ..default()
+                        };
+
+                        let reply = actor
+                            .create_record()
+                            .data_format(MediaType::Application(Application::Json))
+                            .data(serde_json::to_vec(&data).unwrap())
+                            .schema(world_schema_url())
+                            .process()
+                            .await?;
+
+                        // Create home record.
+                        let home = Home {
+                            world: RecordLink {
+                                did: actor.did.clone(),
+                                record: reply.record_id,
+                            },
+                        };
+
+                        actor
+                            .create_record()
+                            .data_format(MediaType::Application(Application::Json))
+                            .data(serde_json::to_vec(&home).unwrap())
+                            .schema(home_schema_url())
+                            .process()
+                            .await?;
+
+                        home
+                    };
+
+                    // Create instance.
+                    let data = Instance { world: home.world };
+
+                    let reply = actor
+                        .create_record()
+                        .protocol(
+                            registry_protocol_url(),
+                            REGISTRY_PROTOCOL_VERSION,
+                            "instance".to_string(),
+                        )
+                        .data(serde_json::to_vec(&data).unwrap())
+                        .data_format(MediaType::Application(Application::Json))
+                        .schema(instance_schema_url())
+                        .target(registry_did().to_string())
+                        .send(registry_did())
+                        .await?;
+
+                    info!("Created home instance: {}", reply.record_id);
+
+                    // TODO: join instance
+
+                    Ok(())
+                });
             }
-            _ => panic!(),
         }
-
-        commands.spawn((
-            RigidBody::Static,
-            Collider::cuboid(ground_size, 0.05, ground_size),
-            PbrBundle {
-                mesh: meshes.add(ground_mesh),
-                material: materials.add(StandardMaterial {
-                    base_color_texture: Some(ground_texture.clone()),
-                    ..default()
-                }),
-                transform: Transform::from_xyz(0.0, -0.1, 0.0),
-                ..default()
-            },
-        ));
-    }
+        AsyncTaskStatus::Pending => {}
+        AsyncTaskStatus::Finished(res) => {
+            match res {
+                Ok(_) => {}
+                Err(err) => {
+                    error!("Failed to query record: {}", err);
+                }
+            };
+        }
+    };
 }

@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use super::{common::RecordLink, util::schema_id};
+use crate::util::get_schema_id;
+
+use super::common::RecordLink;
 
 const INSTANCE_SCHEMA: &[u8] =
     include_bytes!("../../../../wired-protocol/social/dwn/schemas/instance.json");
@@ -11,7 +13,7 @@ pub struct Instance {
 }
 
 pub fn instance_schema_url() -> String {
-    schema_id(INSTANCE_SCHEMA).unwrap()
+    get_schema_id(INSTANCE_SCHEMA).unwrap()
 }
 
 #[cfg(test)]

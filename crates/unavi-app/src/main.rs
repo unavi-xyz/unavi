@@ -14,7 +14,10 @@ pub async fn wasm_start() {
     let search = location.search().unwrap();
     let params = web_sys::UrlSearchParams::new_with_str(&search).unwrap();
 
-    let mut args = Args { debug: false };
+    let mut args = Args {
+        debug: false,
+        force_update: false,
+    };
 
     if let Some(value) = params.get("debug") {
         if let Ok(value) = value.parse() {

@@ -70,22 +70,39 @@ pub fn spawn_player(mut commands: Commands) {
     commands.entity(pitch).push_children(&[camera]);
 }
 
-pub fn apply_yaw(mut yaws: EventReader<YawEvent>, mut query: Query<&mut Transform, With<YawTag>>) {
-    if let Some(yaw) = yaws.read().next() {
-        for mut transform in query.iter_mut() {
-            transform.rotation = Quat::from_rotation_y(yaw.0);
-        }
+const CAM_LERP_FACTOR: f32 = 30.0;
+
+pub fn apply_yaw(
+    mut events: EventReader<YawEvent>,
+    mut query: Query<&mut Transform, With<YawTag>>,
+    mut target: Local<Quat>,
+    time: Res<Time>,
+) {
+    if let Some(yaw) = events.read().next() {
+        *target = Quat::from_rotation_y(yaw.0);
+    }
+
+    let s = time.delta_seconds() * CAM_LERP_FACTOR;
+
+    for mut transform in query.iter_mut() {
+        transform.rotation = transform.rotation.lerp(*target, s);
     }
 }
 
 pub fn apply_pitch(
-    mut pitches: EventReader<PitchEvent>,
+    mut events: EventReader<PitchEvent>,
     mut query: Query<&mut Transform, With<PitchTag>>,
+    mut target: Local<Quat>,
+    time: Res<Time>,
 ) {
-    if let Some(pitch) = pitches.read().next() {
-        for mut transform in query.iter_mut() {
-            transform.rotation = Quat::from_rotation_x(pitch.0);
-        }
+    if let Some(pitch) = events.read().next() {
+        *target = Quat::from_rotation_x(pitch.0);
+    }
+
+    let s = time.delta_seconds() * CAM_LERP_FACTOR;
+
+    for mut transform in query.iter_mut() {
+        transform.rotation = transform.rotation.lerp(*target, s);
     }
 }
 

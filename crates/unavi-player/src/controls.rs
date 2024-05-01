@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_tnua::prelude::*;
 use bevy_xpbd_3d::prelude::*;
 
-use super::look::{LookDirection, LookEntity, PitchEvent, YawEvent};
+use super::look::{LookDirection, PitchEvent, YawEvent};
 
 #[derive(Default)]
 pub struct InputState {
@@ -48,16 +48,13 @@ const SPAWN: Vec3 = Vec3::new(0.0, PLAYER_HEIGHT * 2.0, 0.0);
 pub fn spawn_player(mut commands: Commands) {
     let yaw = commands.spawn((TransformBundle::default(), YawTag)).id();
     let pitch = commands.spawn((TransformBundle::default(), PitchTag)).id();
-    let camera = commands
-        .spawn((Camera3dBundle::default(), LookDirection::default()))
-        .id();
+    let camera = commands.spawn(Camera3dBundle::default()).id();
 
     let body = commands
         .spawn((
             Collider::capsule(PLAYER_HEIGHT, PLAYER_WIDTH),
             ColliderDensity(10.0),
             LinearVelocity::default(),
-            LookEntity(camera),
             Player::default(),
             RigidBody::Dynamic,
             TnuaControllerBundle::default(),
@@ -93,22 +90,14 @@ pub fn apply_pitch(
 }
 
 pub fn move_player(
-    time: Res<Time>,
+    look_direction: Res<LookDirection>,
     mut last_time: Local<f32>,
-    mut players: Query<(&mut Player, &LookEntity, &mut TnuaController)>,
-    look_directions: Query<&LookDirection>,
+    mut players: Query<(&mut Player, &mut TnuaController)>,
+    time: Res<Time>,
 ) {
     let xz = Vec3::new(1.0, 0.0, 1.0);
 
-    for (mut player, look_entity, mut controller) in players.iter_mut() {
-        let look_direction = match look_directions.get(look_entity.0) {
-            Ok(d) => d,
-            Err(e) => {
-                error!("Failed to get look direction: {:?}", e);
-                continue;
-            }
-        };
-
+    for (mut player, mut controller) in players.iter_mut() {
         let forward = (look_direction.forward * xz).normalize();
         let right = (look_direction.right * xz).normalize();
 

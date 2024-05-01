@@ -10746,6 +10746,7 @@ dependencies = [
 name = "unavi-networking"
 version = "0.0.3"
 dependencies = [
+ "anyhow",
  "bevy",
  "bevy_async_task",
  "wtransport",

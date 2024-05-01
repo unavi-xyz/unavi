@@ -19,4 +19,4 @@ wasm_runtime_layer = { version = "0.3.0", features = ["tracing", "backend_web"] 
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 wasm_runtime_layer = { version = "0.3.0", features = ["tracing", "backend_wasmtime"] }
-wasmtime = { version = "18.0.0", features = ["component-model"] }
+wasmtime = { version = "20.0.0", features = ["component-model"] }

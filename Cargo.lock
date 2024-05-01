@@ -10751,8 +10751,8 @@ dependencies = [
  "bevy_async_task",
  "wtransport",
  "xwt",
- "xwt-core",
- "xwt-web-sys",
+ "xwt-core 0.2.2",
+ "xwt-web-sys 0.6.0",
 ]
 
 [[package]]
@@ -11580,6 +11580,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "web-sys-async-io"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65a1ea96a932ec2252276bc517eb4fccaebc0ecfea2faa49e242de769d188409"
+dependencies = [
+ "js-sys",
+ "tokio",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
 name = "web-sys-stream-utils"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12386,11 +12399,12 @@ checksum = "791978798f0597cfc70478424c2b4fdc2b7a8024aaff78497ef00f24ef674193"
 
 [[package]]
 name = "xwt"
-version = "0.6.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43bad271cba7b1d1b070bd5db6cb1e30aa91443ad04041d9ce1cb558cd452508"
+checksum = "abeef3e4ea0554b0aacdb9a04e90e21e389990b0160c53d2e46f3646091d09c0"
 dependencies = [
- "xwt-web-sys",
+ "cfg-if",
+ "xwt-web-sys 0.11.0",
  "xwt-wtransport",
 ]
 
@@ -12405,6 +12419,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "xwt-core"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7fc6cfb9e839435187a71872c0bd836b52bb4e74709b5aecbdb3d2b859294b0c"
+
+[[package]]
 name = "xwt-web-sys"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12415,19 +12435,35 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
- "web-sys-async-io",
+ "web-sys-async-io 0.3.1",
  "web-sys-stream-utils",
- "xwt-core",
+ "xwt-core 0.2.2",
+]
+
+[[package]]
+name = "xwt-web-sys"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e1e028f18e310bc2e8e3650ba9cbbf3b7a5b13277e8c0ded6a0d81b510ccc1a6"
+dependencies = [
+ "js-sys",
+ "tokio",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "web-sys-async-io 0.4.0",
+ "web-sys-stream-utils",
+ "xwt-core 0.4.0",
 ]
 
 [[package]]
 name = "xwt-wtransport"
-version = "0.2.8"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22cb5c3dc46a9a13126e585140b4e6577005e8f2e24fbe7c3d66922eb25beb4b"
+checksum = "b2fce19a4c3d5d5d59c01afc67cb7b3bffe254a1c1462a73b9cb0b1b49f9f49f"
 dependencies = [
  "wtransport",
- "xwt-core",
+ "xwt-core 0.4.0",
 ]
 
 [[package]]

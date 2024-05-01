@@ -54,6 +54,22 @@ pub fn read_mouse_input(
     }
 
     delta *= SENSITIVITY;
+
+    #[cfg(target_family = "wasm")]
+    {
+        // TODO: Move this to a one time check
+
+        // Adjust the sensitivity when running in Firefox.
+        // I think because of incorrect values within mouse move events.
+        let window = web_sys::window().unwrap();
+        let navigator = window.navigator().user_agent().unwrap();
+        let is_firefox = navigator.to_lowercase().contains("firefox");
+
+        if is_firefox {
+            delta *= 10.0;
+        }
+    }
+
     *yaw_pitch += delta;
 
     if yaw_pitch.y > PITCH_BOUND {

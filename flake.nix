@@ -122,7 +122,7 @@
             ++ crates.buildInputs
             ++ crates.nativeBuildInputs;
 
-          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath packages;
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath crates.buildInputs;
         };
 
         formatter = pkgs.nixfmt-rfc-style;

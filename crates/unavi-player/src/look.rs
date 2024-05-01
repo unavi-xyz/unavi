@@ -26,6 +26,7 @@ pub struct PitchEvent(pub f32);
 pub struct YawEvent(pub f32);
 
 const PITCH_BOUND: f32 = FRAC_PI_2 - 1E-3;
+const SENSITIVITY: f32 = 0.001;
 
 pub fn read_mouse_input(
     mut look_direction: ResMut<LookDirection>,
@@ -33,7 +34,6 @@ pub fn read_mouse_input(
     mut pitch_events: EventWriter<PitchEvent>,
     mut yaw_events: EventWriter<YawEvent>,
     mut yaw_pitch: Local<Vec2>,
-    time: Res<Time>,
     windows: Query<&Window>,
 ) {
     if mouse_motion_events.is_empty() {
@@ -53,7 +53,7 @@ pub fn read_mouse_input(
         delta -= motion.delta;
     }
 
-    delta *= time.delta_seconds() * 0.5;
+    delta *= SENSITIVITY;
     *yaw_pitch += delta;
 
     if yaw_pitch.y > PITCH_BOUND {

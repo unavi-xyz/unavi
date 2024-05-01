@@ -10,7 +10,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: AdityaGarg8/remove-unwanted-software@v2
+      - uses: AdityaGarg8/remove-unwanted-software@v3
         with:
           remove-android: true
           remove-codeql: true

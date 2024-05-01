@@ -1,15 +1,20 @@
+use anyhow::Result;
 use bevy::prelude::*;
 use bevy_async_task::{AsyncTaskRunner, AsyncTaskStatus};
 
 const WORLD_ADDRESS: &str = "https://127.0.0.1:3001";
 
+use xwt::current::{RecvStream, SendStream};
 #[cfg(target_family = "wasm")]
 use xwt_core::{
     traits::{Connecting, EndpointConnect, OpenBiStream, OpeningBiStream},
     Read, Write,
 };
 
-pub fn open_connection(mut task_executor: AsyncTaskRunner<String>, mut started: Local<bool>) {
+pub fn poll_connection_thread(
+    mut task_executor: AsyncTaskRunner<Result<()>>,
+    mut started: Local<bool>,
+) {
     match task_executor.poll() {
         AsyncTaskStatus::Idle => {
             if *started {
@@ -18,26 +23,31 @@ pub fn open_connection(mut task_executor: AsyncTaskRunner<String>, mut started: 
 
             *started = true;
 
-            task_executor.start(test_connection_wrapped());
+            task_executor.start(connection_thread());
         }
         AsyncTaskStatus::Pending => {}
-        AsyncTaskStatus::Finished(v) => {
-            println!("Received {v}");
+        AsyncTaskStatus::Finished(res) => {
+            if let Err(e) = res {
+                error!("Connection thread error: {}", e);
+            }
         }
     }
 }
 
-async fn test_connection_wrapped() -> String {
-    match test_connection().await {
-        Ok(v) => v,
-        Err(e) => {
-            error!("Failed to connect: {}", e);
-            String::new()
-        }
-    }
+async fn connection_thread() -> Result<()> {
+    let (mut send, mut recv) = open_connection(WORLD_ADDRESS).await?;
+
+    send.0.write(b"Hello, world!").await?;
+
+    let mut buf = [0; 10_000];
+    let n = recv.0.read(&mut buf).await?.unwrap();
+    let msg = std::str::from_utf8(&buf[..n])?;
+    info!("Got message from server: {}", msg);
+
+    Ok(())
 }
 
-async fn test_connection() -> Result<String, Box<dyn std::error::Error>> {
+async fn open_connection(addr: &str) -> Result<(SendStream, RecvStream)> {
     #[cfg(not(target_family = "wasm"))]
     let endpoint = {
         let config = wtransport::ClientConfig::builder().with_bind_default();
@@ -53,19 +63,14 @@ async fn test_connection() -> Result<String, Box<dyn std::error::Error>> {
             config.with_no_cert_validation()
         };
 
-        xwt::current::Endpoint(
-            wtransport::Endpoint::client(config.build())
-                .expect("Unable to build wtransport client"),
-        )
-        .0
+        xwt::current::Endpoint(wtransport::Endpoint::client(config.build())?).0
     };
 
     #[cfg(target_family = "wasm")]
     let endpoint = xwt_web_sys::Endpoint::default();
 
-    info!("Connecting to {}", WORLD_ADDRESS);
-
-    let connection = endpoint.connect(WORLD_ADDRESS).await?;
+    info!("Connecting to {}", addr);
+    let connection = endpoint.connect(addr).await?;
 
     #[cfg(target_family = "wasm")]
     let connection = connection.wait_connect().await?;
@@ -73,19 +78,10 @@ async fn test_connection() -> Result<String, Box<dyn std::error::Error>> {
     let opening = connection.open_bi().await?;
 
     #[cfg(not(target_family = "wasm"))]
-    let (mut send, mut recv) = opening.await?;
+    let (send, recv) = opening.await?;
 
     #[cfg(target_family = "wasm")]
-    let (mut send, mut recv) = opening.wait_bi().await?;
+    let (send, recv) = opening.wait_bi().await?;
 
-    info!("Opened bi stream");
-
-    send.write(b"Hello, world!").await.unwrap();
-
-    let mut buf = [0; 1024];
-    let n = recv.read(&mut buf).await.unwrap().unwrap();
-
-    let msg = std::str::from_utf8(&buf[..n]).unwrap();
-
-    Ok(String::from(msg))
+    Ok((SendStream(send), RecvStream(recv)))
 }

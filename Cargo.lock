@@ -10751,7 +10751,7 @@ dependencies = [
  "bevy_async_task",
  "wtransport",
  "xwt",
- "xwt-core",
+ "xwt-core 0.4.0",
  "xwt-web-sys",
 ]
 
@@ -12405,6 +12405,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "xwt-core"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7fc6cfb9e839435187a71872c0bd836b52bb4e74709b5aecbdb3d2b859294b0c"
+
+[[package]]
 name = "xwt-web-sys"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12417,7 +12423,7 @@ dependencies = [
  "web-sys",
  "web-sys-async-io",
  "web-sys-stream-utils",
- "xwt-core",
+ "xwt-core 0.2.2",
 ]
 
 [[package]]
@@ -12427,7 +12433,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "22cb5c3dc46a9a13126e585140b4e6577005e8f2e24fbe7c3d66922eb25beb4b"
 dependencies = [
  "wtransport",
- "xwt-core",
+ "xwt-core 0.2.2",
 ]
 
 [[package]]

@@ -108,7 +108,7 @@
         checks = crates.checks;
         packages = components.packages // crates.packages // deployments.packages;
 
-        devShells.default = craneLib.devShell {
+        devShells.default = craneLib.devShell rec {
           packages =
             with pkgs;
             [
@@ -116,14 +116,13 @@
               cargo-machete
               cargo-rdme
               cargo-watch
-              curl
               nodePackages.prettier
               rust-analyzer
             ]
             ++ crates.buildInputs
             ++ crates.nativeBuildInputs;
 
-          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath crates.buildInputs;
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath packages;
         };
 
         formatter = pkgs.nixfmt-rfc-style;

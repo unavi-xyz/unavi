@@ -46,9 +46,9 @@ let
       lib.optionals pkgs.stdenv.isLinux (
         with pkgs;
         [
-          alsa-lib.dev
+          alsa-lib
           libxkbcommon
-          openssl.dev
+          openssl
           udev
           vulkan-loader
           wayland
@@ -80,7 +80,7 @@ let
   unaviServerConfig = {
     inherit src;
 
-    buildInputs = with pkgs; [ openssl.dev ];
+    buildInputs = with pkgs; [ openssl ];
     nativeBuildInputs =
       clibs
       ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs; [ darwin.apple_sdk.frameworks.Cocoa ]);
@@ -116,8 +116,8 @@ let
   commonArgs = {
     inherit src;
 
-    buildInputs = unaviWebConfig.buildInputs ++ unaviServerConfig.buildInputs;
-    nativeBuildInputs = unaviWebConfig.nativeBuildInputs ++ unaviServerConfig.nativeBuildInputs;
+    buildInputs = unaviServerConfig.buildInputs ++ unaviWebConfig.buildInputs;
+    nativeBuildInputs = unaviServerConfig.nativeBuildInputs ++ unaviWebConfig.nativeBuildInputs;
 
     pname = "unavi";
     strictDeps = true;

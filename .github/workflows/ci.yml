@@ -18,6 +18,8 @@ jobs:
           remove-dotnet: true
           remove-haskell: true
 
+      - run: sudo apt-get install pkg-config libasound2-dev libudev-dev
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}

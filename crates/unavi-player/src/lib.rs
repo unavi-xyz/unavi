@@ -14,7 +14,7 @@ impl Plugin for PlayerPlugin {
             .insert_resource(input::InputMap::default())
             .add_event::<look::YawEvent>()
             .add_event::<look::PitchEvent>()
-            .init_resource::<look::MouseSettings>()
+            .init_resource::<look::LookDirection>()
             .add_systems(Startup, controls::spawn_player)
             .add_systems(
                 Update,
@@ -24,11 +24,7 @@ impl Plugin for PlayerPlugin {
                         .before(controls::move_player),
                     (
                         look::read_mouse_input,
-                        (
-                            look::set_look_direction,
-                            controls::apply_yaw,
-                            controls::apply_pitch,
-                        ),
+                        (controls::apply_yaw, controls::apply_pitch),
                         controls::move_player,
                     )
                         .chain(),

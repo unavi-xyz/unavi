@@ -88,6 +88,7 @@ pub async fn router(
     })]);
 
     let document = Arc::new(document);
+
     let router = Router::new().route(
         "/.well-known/did.json",
         get(|| async move { Json(document.clone()) }),

@@ -46,7 +46,7 @@ let
       lib.optionals pkgs.stdenv.isLinux (
         with pkgs;
         [
-          alsa-lib
+          alsa-lib.dev
           libxkbcommon
           openssl.dev
           udev
@@ -65,7 +65,7 @@ let
           darwin.apple_sdk.frameworks.Cocoa
         ]
       );
-    nativeBuildInputs = lib.optionals pkgs.stdenv.isLinux (with pkgs; [ alsa-lib.dev ]) ++ clibs;
+    nativeBuildInputs = clibs;
 
     cargoExtraArgs = "--locked -p unavi-app";
     pname = "unavi-app";

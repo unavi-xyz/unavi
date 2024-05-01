@@ -10763,6 +10763,7 @@ dependencies = [
  "bevy-tnua-xpbd3d",
  "bevy_xpbd_3d",
  "unavi-world",
+ "web-sys",
 ]
 
 [[package]]

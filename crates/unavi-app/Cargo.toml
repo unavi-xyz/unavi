@@ -34,7 +34,7 @@ web-sys = { workspace = true, features = ["Location", "UrlSearchParams", "Window
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 anyhow.workspace = true
-reqwest = "0.11.27"
+reqwest = "0.12.4"
 self_update = { version = "0.39.0", features = ["archive-zip"], optional = true }
 semver.workspace = true
 surrealdb = { workspace = true, features = ["kv-surrealkv"] }

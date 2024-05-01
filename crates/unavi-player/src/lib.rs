@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use bevy_tnua::prelude::*;
 use bevy_tnua_xpbd3d::TnuaXpbd3dPlugin;
-use unavi_world::WorldState;
 
 mod controls;
 mod input;
@@ -16,7 +15,7 @@ impl Plugin for PlayerPlugin {
             .add_event::<look::YawEvent>()
             .add_event::<look::PitchEvent>()
             .init_resource::<look::MouseSettings>()
-            .add_systems(OnEnter(WorldState::InWorld), controls::spawn_player)
+            .add_systems(Startup, controls::spawn_player)
             .add_systems(
                 Update,
                 (

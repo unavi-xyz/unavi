@@ -11568,9 +11568,9 @@ dependencies = [
 
 [[package]]
 name = "web-sys-async-io"
-version = "0.3.1"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffe72329eae3fbd1dc02e2d51dcfce3db196c9c6cea7517c847452878c4dd346"
+checksum = "65a1ea96a932ec2252276bc517eb4fccaebc0ecfea2faa49e242de769d188409"
 dependencies = [
  "js-sys",
  "tokio",
@@ -12386,29 +12386,26 @@ checksum = "791978798f0597cfc70478424c2b4fdc2b7a8024aaff78497ef00f24ef674193"
 
 [[package]]
 name = "xwt"
-version = "0.6.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43bad271cba7b1d1b070bd5db6cb1e30aa91443ad04041d9ce1cb558cd452508"
+checksum = "abeef3e4ea0554b0aacdb9a04e90e21e389990b0160c53d2e46f3646091d09c0"
 dependencies = [
+ "cfg-if",
  "xwt-web-sys",
  "xwt-wtransport",
 ]
 
 [[package]]
 name = "xwt-core"
-version = "0.2.2"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7bf44ee4af307907eaba5452e33d0bbe56d4104e2ee17a8f1d42b3b379d74fdf"
-dependencies = [
- "async-trait",
- "tokio",
-]
+checksum = "7fc6cfb9e839435187a71872c0bd836b52bb4e74709b5aecbdb3d2b859294b0c"
 
 [[package]]
 name = "xwt-web-sys"
-version = "0.6.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06d0204451b4b53e1a07abc3cd892d00a0024afb93bfb99a04b8877031539719"
+checksum = "e1e028f18e310bc2e8e3650ba9cbbf3b7a5b13277e8c0ded6a0d81b510ccc1a6"
 dependencies = [
  "js-sys",
  "tokio",
@@ -12422,9 +12419,9 @@ dependencies = [
 
 [[package]]
 name = "xwt-wtransport"
-version = "0.2.8"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22cb5c3dc46a9a13126e585140b4e6577005e8f2e24fbe7c3d66922eb25beb4b"
+checksum = "b2fce19a4c3d5d5d59c01afc67cb7b3bffe254a1c1462a73b9cb0b1b49f9f49f"
 dependencies = [
  "wtransport",
  "xwt-core",

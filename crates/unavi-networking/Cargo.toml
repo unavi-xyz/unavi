@@ -15,11 +15,11 @@ disable-cert-validation = ["wtransport/dangerous-configuration"]
 anyhow.workspace = true
 bevy.workspace = true
 bevy_async_task.workspace = true
-xwt = "0.6.0"
-xwt-core = "0.2.2"
+xwt = "0.13.0"
+xwt-core = "0.4.0"
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-xwt-web-sys = "0.6.0"
+xwt-web-sys = "0.11.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 wtransport.workspace = true

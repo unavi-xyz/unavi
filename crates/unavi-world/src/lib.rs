@@ -11,7 +11,10 @@ pub struct WorldPlugin;
 impl Plugin for WorldPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<JoinHome>()
-            .add_systems(Startup, (home::join_home, scene::setup_lights))
+            .add_systems(
+                Startup,
+                (skybox::create_skybox, home::join_home, scene::setup_lights),
+            )
             .add_systems(
                 Update,
                 (

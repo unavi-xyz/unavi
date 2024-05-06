@@ -10,7 +10,7 @@
       drv = pkgs.writeShellScriptBin "universal-apply" ''
         cd deployments/environments/universal
 
-        ${pkgs.terraform}/bin/terraform init \
+        ${pkgs.terraform}/bin/terraform init -upgrade \
           && ${pkgs.terraform}/bin/terraform apply -auto-approve
       '';
     };
@@ -30,7 +30,7 @@
       drv = pkgs.writeShellScriptBin "channel-apply" ''
         cd deployments/environments/channel
 
-        ${pkgs.terraform}/bin/terraform init \
+        ${pkgs.terraform}/bin/terraform init -upgrade \
           && ${pkgs.terraform}/bin/terraform apply -auto-approve
 
         mkdir -p ../../output/$TF_WORKSPACE

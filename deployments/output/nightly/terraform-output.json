@@ -4,15 +4,17 @@
     "type": [
       "object",
       {
-        "domain_server": "string",
+        "domain_social": "string",
         "domain_web": "string",
+        "domain_world": "string",
         "ip": "string",
         "name": "string"
       }
     ],
     "value": {
-      "domain_server": "server-nightly.unavi.xyz",
+      "domain_social": "nightly-social.unavi.xyz",
       "domain_web": "nightly.unavi.xyz",
+      "domain_world": "nightly-world.unavi.xyz",
       "ip": "159.65.46.69",
       "name": "unavi-server-nightly"
     }

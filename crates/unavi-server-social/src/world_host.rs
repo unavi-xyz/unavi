@@ -18,9 +18,11 @@ use dwn::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
-use wired_protocol::protocols::world_host::{world_host_definition, WORLD_HOST_PROTOCOL_VERSION};
+use wired_protocol::protocols::world_host::{
+    world_host_definition, world_host_protocol_url, WORLD_HOST_PROTOCOL_VERSION,
+};
 
-const IDENTITY_PATH: &str = ".unavi/world_host_identity.json";
+const IDENTITY_PATH: &str = ".unavi/unavi-server-social/world-host-identity.json";
 const KEY_FRAGMENT: &str = "key-0";
 
 pub async fn router(
@@ -66,7 +68,7 @@ pub async fn router(
         id: format!("{}#dwn", actor.did),
         type_: OneOrMany::One("DWN".to_string()),
         property_set: None,
-        service_endpoint: Some(OneOrMany::One(ServiceEndpoint::URI(dwn_url))),
+        service_endpoint: Some(OneOrMany::One(ServiceEndpoint::URI(dwn_url.clone()))),
     }]);
 
     document.verification_method = Some(vec![VerificationMethod::Map(VerificationMethodMap {
@@ -108,11 +110,26 @@ pub async fn router(
             .unwrap();
 
         if query.entries.is_empty() {
-            info!("Creating world world host v{}", WORLD_HOST_PROTOCOL_VERSION);
+            info!("Initializing world host v{}", WORLD_HOST_PROTOCOL_VERSION);
 
             actor
                 .register_protocol(definition)
                 .protocol_version(WORLD_HOST_PROTOCOL_VERSION)
+                .process()
+                .await
+                .unwrap();
+
+            let connect_url = format!("{}:3001", dwn_url);
+
+            actor
+                .create_record()
+                .protocol(
+                    world_host_protocol_url(),
+                    WORLD_HOST_PROTOCOL_VERSION,
+                    "connect-url".to_string(),
+                )
+                .data_format("text/plain".to_string())
+                .data(connect_url.into())
                 .process()
                 .await
                 .unwrap();

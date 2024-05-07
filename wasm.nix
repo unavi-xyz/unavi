@@ -13,7 +13,7 @@ let
 
   buildComponent =
     pname:
-    craneLib.buildPackage ({
+    craneLib.buildPackage {
       inherit pname;
 
       src = lib.cleanSourceWith {
@@ -27,9 +27,9 @@ let
       cargoExtraArgs = "--locked -p ${pname}";
       doCheck = false;
       strictDeps = true;
-    });
+    };
 
-  componentNames = lib.mapAttrsToList (name: _: name) (builtins.readDir ./components);
+  componentNames = lib.mapAttrsToList (name: _: name) (builtins.readDir ./wasm);
 
   components = pkgs.symlinkJoin {
     name = "components";
@@ -65,7 +65,7 @@ let
       );
   };
 
-  assetOut = "crates/unavi-app/assets/components";
+  assetOut = "apps/unavi-app/assets/components";
   generateAssetsScript = ''
     rm -rf ${assetOut}
     mkdir -p ${assetOut}

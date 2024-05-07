@@ -1,3 +1,3 @@
-# unavi-server
+# unavi-world-server
 
 <!-- cargo-rdme -->

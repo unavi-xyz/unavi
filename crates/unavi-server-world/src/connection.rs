@@ -2,8 +2,6 @@ use std::net::SocketAddr;
 use tracing::{error, info, info_span, Instrument};
 use wtransport::{endpoint::IncomingSession, Endpoint, Identity, ServerConfig};
 
-pub mod cert;
-
 pub struct WorldOptions<'a> {
     pub address: SocketAddr,
     pub identity: &'a Identity,

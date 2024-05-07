@@ -1,0 +1,20 @@
+[package]
+name = "unavi-server-social"
+version.workspace = true
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+[dependencies]
+axum = "0.7.5"
+axum-server = "0.6.0"
+clap.workspace = true
+didkit.workspace = true
+dwn-server = "0.0.8"
+dwn.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+surrealdb = { workspace = true, features = ["kv-surrealkv"] }
+tokio.workspace = true
+tracing.workspace = true
+wired-protocol = { path = "../wired-protocol" }

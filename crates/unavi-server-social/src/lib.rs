@@ -12,7 +12,7 @@ use tracing::info;
 
 mod world_host;
 
-const DB_DIR: &str = ".unavi/unavi-server-social/db";
+const DB_DIR: &str = ".unavi/server/social/db";
 
 #[derive(Debug, Clone)]
 pub struct ServerOptions {

@@ -22,7 +22,7 @@ use wired_protocol::protocols::world_host::{
     world_host_definition, world_host_protocol_url, WORLD_HOST_PROTOCOL_VERSION,
 };
 
-const IDENTITY_PATH: &str = ".unavi/unavi-server-social/world-host-identity.json";
+const IDENTITY_PATH: &str = ".unavi/server/social/world-host-identity.json";
 const KEY_FRAGMENT: &str = "key-0";
 
 pub async fn router(

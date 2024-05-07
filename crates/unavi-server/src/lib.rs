@@ -19,7 +19,7 @@ use tracing::{info, info_span, Instrument};
 
 mod did_host;
 mod world_host;
-mod world_registry;
+mod world_server;
 
 const DB_DIR: &str = ".unavi/server-db";
 
@@ -28,8 +28,8 @@ pub struct ServerOptions {
     pub domain: String,
     pub enable_did_host: bool,
     pub enable_dwn: bool,
+    pub enable_world_server: bool,
     pub enable_world_host: bool,
-    pub enable_world_registry: bool,
     pub port: u16,
 }
 
@@ -53,19 +53,19 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
         router = router.merge(dwn_server::router(dwn.clone()));
     }
 
-    if opts.enable_world_host {
+    if opts.enable_world_server {
         tokio::spawn(
             async move {
                 let addr = format!("0.0.0.0:{}", 3001);
-                let identity = world_host::cert::generate_tls_identity();
-                let options = world_host::WorldOptions {
+                let identity = world_server::cert::generate_tls_identity();
+                let options = world_server::WorldOptions {
                     address: addr.parse().unwrap(),
                     identity: &identity,
                 };
 
                 info!("Listening on {}", addr);
 
-                world_host::start_server(options)
+                world_server::start_server(options)
                     .await
                     .expect("failed to start server");
             }
@@ -73,15 +73,15 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
         );
     }
 
-    if opts.enable_world_registry {
-        let (registry_router, create_registry) =
-            world_registry::router(dwn, opts.domain.clone()).await;
+    if opts.enable_world_host {
+        let (world_host_router, create_world_host) =
+            world_host::router(dwn, opts.domain.clone()).await;
 
-        router = router.merge(registry_router);
+        router = router.merge(world_host_router);
 
         tokio::spawn(async move {
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-            create_registry.await;
+            create_world_host.await;
         });
     }
 

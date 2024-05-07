@@ -128,19 +128,19 @@ let
   cargoDoc = craneLib.cargoDoc (commonArgs // { inherit cargoArtifacts; });
   cargoFmt = craneLib.cargoFmt commonArgs;
 
-  registry = "did:web:localhost%3A3000";
+  world_host = "did:web:localhost%3A3000";
 
   mkAppEnv =
-    { registry }:
+    { world_host }:
     {
-      UNAVI_REGISTRY_DID = registry;
+      UNAVI_WORLD_HOST_DID = world_host;
     };
 
   unaviAppArtifacts = craneLib.buildDepsOnly unaviAppConfig;
   mkUnaviApp =
     input:
     craneLib.buildPackage (unaviAppConfig // { cargoArtifacts = unaviAppArtifacts; } // mkAppEnv input);
-  unavi-app = mkUnaviApp { inherit registry; };
+  unavi-app = mkUnaviApp { inherit world_host; };
 
   unaviWebArtifacts = craneLib.buildDepsOnly unaviWebConfig;
   mkUnaviWeb =
@@ -148,7 +148,7 @@ let
     craneLib.buildTrunkPackage (
       unaviWebConfig // { cargoArtifacts = unaviWebArtifacts; } // mkAppEnv input
     );
-  unavi-web = mkUnaviWeb { inherit registry; };
+  unavi-web = mkUnaviWeb { inherit world_host; };
 
   unavi-server = craneLib.buildPackage (unaviServerConfig);
 in

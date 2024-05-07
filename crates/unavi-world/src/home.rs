@@ -10,9 +10,9 @@ use dwn::{
     },
 };
 use thiserror::Error;
-use unavi_dwn::{registry::registry_did, UserActor};
+use unavi_dwn::{world_host::world_host_did, UserActor};
 use wired_protocol::{
-    protocols::world_registry::{registry_protocol_url, REGISTRY_PROTOCOL_VERSION},
+    protocols::world_host::{world_host_protocol_url, WORLD_HOST_PROTOCOL_VERSION},
     schemas::{
         common::RecordLink,
         home::{home_schema_url, Home},
@@ -57,7 +57,7 @@ pub fn handle_join_home(
                 let actor = actor.0.clone();
 
                 task.start(async move {
-                    let registry = registry_did();
+                    let world_host = world_host_did();
 
                     // Query for user's home.
                     let reply = actor
@@ -87,7 +87,7 @@ pub fn handle_join_home(
                         // Create new world.
                         let data = World {
                             name: Some("Home".to_string()),
-                            host: Some(registry.to_string()),
+                            host: Some(world_host.to_string()),
                             ..default()
                         };
 
@@ -128,15 +128,15 @@ pub fn handle_join_home(
                     let reply = actor
                         .create_record()
                         .protocol(
-                            registry_protocol_url(),
-                            REGISTRY_PROTOCOL_VERSION,
+                            world_host_protocol_url(),
+                            WORLD_HOST_PROTOCOL_VERSION,
                             "instance".to_string(),
                         )
                         .data(serde_json::to_vec(&data).unwrap())
                         .data_format(Application::Json.into())
                         .schema(instance_schema_url())
-                        .target(registry.to_string())
-                        .send(registry)
+                        .target(world_host.to_string())
+                        .send(world_host)
                         .await?;
 
                     info!("Created home instance: {}", reply.record_id);
@@ -144,7 +144,7 @@ pub fn handle_join_home(
                     Ok(JoinHomeResult {
                         instance: RecordLink {
                             record: reply.record_id,
-                            did: registry.to_string(),
+                            did: world_host.to_string(),
                         },
                         world: home.world,
                     })

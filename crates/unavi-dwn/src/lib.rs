@@ -4,7 +4,7 @@ use surrealdb::engine::local::Db;
 
 pub mod create_record;
 pub mod query_records;
-pub mod registry;
+pub mod world_host;
 
 pub struct DwnPlugin;
 

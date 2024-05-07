@@ -18,9 +18,9 @@ use dwn::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
-use wired_protocol::protocols::world_registry::{registry_definition, REGISTRY_PROTOCOL_VERSION};
+use wired_protocol::protocols::world_host::{world_host_definition, WORLD_HOST_PROTOCOL_VERSION};
 
-const IDENTITY_PATH: &str = ".unavi/registry_identity.json";
+const IDENTITY_PATH: &str = ".unavi/world_host_identity.json";
 const KEY_FRAGMENT: &str = "key-0";
 
 pub async fn router(
@@ -38,8 +38,8 @@ pub async fn router(
     let did = format!("did:web:{}", domain.clone().replace(':', "%3A"));
 
     let actor = if let Ok(identity) = std::fs::read_to_string(IDENTITY_PATH) {
-        let identity: RegistryIdentity =
-            serde_json::from_str(&identity).expect("Failed to parse registry identity");
+        let identity: WorldHostIdentity =
+            serde_json::from_str(&identity).expect("Failed to parse world host identity");
 
         if identity.did == did {
             Actor {
@@ -50,7 +50,7 @@ pub async fn router(
                 remotes: Vec::new(),
             }
         } else {
-            warn!("Registry DID mismatch. Overwriting identity file.");
+            warn!("World Host DID mismatch. Overwriting identity file.");
             std::fs::remove_file(IDENTITY_PATH).unwrap();
             create_identity(did, dwn)
         }
@@ -58,7 +58,7 @@ pub async fn router(
         create_identity(did, dwn)
     };
 
-    info!("Registry DID: {}", actor.did);
+    info!("World Host DID: {}", actor.did);
 
     let mut document = Document::new(&actor.did);
 
@@ -94,32 +94,32 @@ pub async fn router(
         get(|| async move { Json(document.clone()) }),
     );
 
-    let create_registry = async move {
-        let mut definition = registry_definition();
+    let create_world_host = async move {
+        let mut definition = world_host_definition();
         definition.published = true;
 
         let query = actor
             .query_protocols(ProtocolsFilter {
                 protocol: definition.protocol.clone(),
-                versions: vec![REGISTRY_PROTOCOL_VERSION],
+                versions: vec![WORLD_HOST_PROTOCOL_VERSION],
             })
             .process()
             .await
             .unwrap();
 
         if query.entries.is_empty() {
-            info!("Creating world registry v{}", REGISTRY_PROTOCOL_VERSION);
+            info!("Creating world world host v{}", WORLD_HOST_PROTOCOL_VERSION);
 
             actor
                 .register_protocol(definition)
-                .protocol_version(REGISTRY_PROTOCOL_VERSION)
+                .protocol_version(WORLD_HOST_PROTOCOL_VERSION)
                 .process()
                 .await
                 .unwrap();
         }
     };
 
-    (router, create_registry)
+    (router, create_world_host)
 }
 
 fn create_identity<D, M>(did: String, dwn: Arc<DWN<D, M>>) -> Actor<D, M>
@@ -134,7 +134,7 @@ where
     actor.authorization.key_id = key_id;
     actor.did = did;
 
-    let identity = RegistryIdentity {
+    let identity = WorldHostIdentity {
         did: actor.did.clone(),
         vc_key: actor.authorization.clone().into(),
     };
@@ -170,7 +170,7 @@ impl From<VcKey> for VerifiableCredential {
 }
 
 #[derive(Deserialize, Serialize)]
-struct RegistryIdentity {
+struct WorldHostIdentity {
     did: String,
     vc_key: VcKey,
 }

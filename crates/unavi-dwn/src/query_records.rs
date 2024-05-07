@@ -1,9 +1,7 @@
 use bevy::prelude::*;
 use bevy_async_task::{AsyncTaskRunner, AsyncTaskStatus};
 use dwn::{
-    actor::{MessageBuilder, ProcessMessageError},
-    message::descriptor::records::RecordsFilter,
-    reply::{MessageReply, QueryReply},
+    actor::ProcessMessageError, message::descriptor::records::RecordsFilter, reply::QueryReply,
 };
 
 use crate::UserActor;
@@ -36,10 +34,7 @@ pub fn handle_query_records(
                     let mut msg = actor.query_records(filter);
 
                     if let Some(target) = target {
-                        msg.send(&target).await.and_then(|reply| match reply {
-                            MessageReply::Query(r) => Ok(r),
-                            _ => Err(ProcessMessageError::InvalidReply),
-                        })
+                        msg.send(&target).await
                     } else {
                         msg.process().await
                     }

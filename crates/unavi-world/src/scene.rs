@@ -2,7 +2,7 @@ use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 use bevy_vrm::mtoon::MtoonSun;
 use bevy_xpbd_3d::prelude::*;
 
-use crate::{WorldInstance, WorldRecord};
+use crate::{InstanceRecord, WorldRecord};
 
 pub fn setup_lights(mut commands: Commands, mut ambient: ResMut<AmbientLight>) {
     ambient.brightness = 40.0;
@@ -32,7 +32,7 @@ pub fn create_world_scene(
         Entity,
         (
             With<WorldRecord>,
-            With<WorldInstance>,
+            With<InstanceRecord>,
             Without<Handle<Scene>>,
         ),
     >,

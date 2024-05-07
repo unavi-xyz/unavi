@@ -1,9 +1,6 @@
 use bevy::prelude::*;
 use bevy_async_task::{AsyncTaskRunner, AsyncTaskStatus};
-use dwn::{
-    actor::{records::WriteResponse, ProcessMessageError},
-    message::descriptor::iana_media_types::MediaType,
-};
+use dwn::actor::{records::WriteResponse, ProcessMessageError};
 
 use crate::UserActor;
 
@@ -11,7 +8,7 @@ use crate::UserActor;
 pub struct CreateRecord {
     pub record_id: Option<String>,
     pub data: Vec<u8>,
-    pub data_format: MediaType,
+    pub data_format: String,
     pub schema: Option<String>,
     pub published: bool,
 }

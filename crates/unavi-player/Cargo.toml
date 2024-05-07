@@ -15,5 +15,5 @@ bevy.workspace = true
 bevy_xpbd_3d.workspace = true
 unavi-world = { path = "../unavi-world" }
 
-[target.'cfg(not(target_family = "wasm"))'.dependencies]
+[target.'cfg(target_family = "wasm")'.dependencies]
 web-sys = { workspace = true, features = ["Navigator", "Window"] }

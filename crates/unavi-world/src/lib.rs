@@ -31,4 +31,7 @@ impl Plugin for WorldPlugin {
 pub struct WorldRecord(pub RecordLink);
 
 #[derive(Component)]
-pub struct WorldInstance(pub RecordLink);
+pub struct InstanceRecord(pub RecordLink);
+
+#[derive(Component)]
+pub struct InstanceServer(pub String);

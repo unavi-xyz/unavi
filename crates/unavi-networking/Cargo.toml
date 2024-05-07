@@ -11,7 +11,6 @@ workspace = true
 [dependencies]
 anyhow.workspace = true
 bevy.workspace = true
-bevy_async_task.workspace = true
 tracing.workspace = true
 unavi-world = { path = "../unavi-world" }
 xwt-core = "0.4.1"

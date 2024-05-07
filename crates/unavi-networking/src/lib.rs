@@ -28,7 +28,7 @@ pub fn poll_connections(
     for (entity, server) in to_open.iter() {
         let server = server.0.clone();
 
-        pool.spawn_local(async move {
+        pool.spawn(async move {
             if let Err(e) = connection_thread(&server).await {
                 error!("Instance connection error: {}", e)
             }
@@ -52,7 +52,9 @@ async fn connect(addr: &str) -> Result<impl Session> {
     let conn = crate::native::connect(addr).await?;
 
     #[cfg(target_family = "wasm")]
-    let conn = crate::web::connect(addr).await?;
+    let conn = crate::web::connect(addr)
+        .await
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
 
     Ok(conn)
 }

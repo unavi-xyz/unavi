@@ -48,7 +48,7 @@ struct Args {
     force_update: bool,
 }
 
-const DB_PATH: &str = ".unavi/unavi-app/db";
+const DB_PATH: &str = ".unavi/app/db";
 
 #[cfg(not(target_family = "wasm"))]
 #[tokio::main]

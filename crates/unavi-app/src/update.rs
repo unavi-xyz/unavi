@@ -7,7 +7,7 @@ use zip::ZipArchive;
 
 const ASSETS_DIR: &str = "assets";
 const BIN_NAME: &str = "unavi-app";
-const UPDATE_DIR: &str = ".unavi/update";
+const UPDATE_DIR: &str = ".unavi/app/update";
 
 /// Check for new Github releases and update if one is found.
 pub fn check_for_updates(force: bool) -> Result<()> {

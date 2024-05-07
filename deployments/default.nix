@@ -19,7 +19,7 @@ let
       domain
     ];
 
-  mkAppInput = resource: { registry = mkDidWeb resource.value.domain_server; };
+  mkAppInput = resource: { world_host = mkDidWeb resource.value.domain_server; };
 
   mkAppPackage = resource: self.crates.${localSystem}.mkUnaviApp (mkAppInput resource);
   mkWebPackage = resource: self.crates.${localSystem}.mkUnaviWeb (mkAppInput resource);

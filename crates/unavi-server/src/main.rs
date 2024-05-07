@@ -23,14 +23,14 @@ struct Args {
     #[arg(long)]
     enable_dwn: bool,
 
-    /// Hosts multiplayer instances of worlds within the connected registry.
+    /// Runs multiplayer instances of worlds from the connected DWN.
+    #[arg(long)]
+    enable_world_server: bool,
+
+    /// Creates a world host DID and DWN protocol.
+    /// Hosts the DID document over HTTP.
     #[arg(long)]
     enable_world_host: bool,
-
-    /// Creates a world registry within the DWN.
-    /// Hosts the registry DID document over HTTP.
-    #[arg(long)]
-    enable_world_registry: bool,
 
     #[arg(short, long, default_value = "3000")]
     port: u16,
@@ -56,8 +56,8 @@ async fn main() {
         domain,
         enable_did_host: args.enable_did_host,
         enable_dwn: args.enable_dwn,
+        enable_world_server: args.enable_world_server,
         enable_world_host: args.enable_world_host,
-        enable_world_registry: args.enable_world_registry,
         port: args.port,
     };
 

@@ -65,7 +65,7 @@ let
       );
   };
 
-  assetOut = "apps/unavi-app/assets/components";
+  assetOut = "crates/unavi-app/assets/components";
   generateAssetsScript = ''
     rm -rf ${assetOut}
     mkdir -p ${assetOut}

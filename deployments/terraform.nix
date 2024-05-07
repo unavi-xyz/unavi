@@ -1,9 +1,4 @@
-{
-  flake-utils,
-  localSystem,
-  pkgs,
-  ...
-}:
+{ flake-utils, pkgs, ... }:
 {
   apps = {
     tf-universal-apply = flake-utils.lib.mkApp {

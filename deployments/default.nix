@@ -86,8 +86,7 @@ let
   forEachResource =
     fn:
     map (
-      subdir:
-      map (resource: (fn) { inherit resource subdir; }) (builtins.attrValues (loadTfOutput subdir))
+      subdir: map (resource: fn { inherit resource subdir; }) (builtins.attrValues (loadTfOutput subdir))
     ) subdirs;
 
   nodeList = forEachResource mkNode;

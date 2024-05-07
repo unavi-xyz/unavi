@@ -33,7 +33,6 @@
       deploy-rs,
       nix-github-actions,
       nixpkgs,
-      nixpkgs-stable,
       crane,
       flake-utils,
       rust-overlay,
@@ -69,13 +68,13 @@
 
         craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
-        components = import ./components.nix (inputs // { inherit craneLib localSystem pkgs; });
+        wasm = import ./wasm.nix (inputs // { inherit craneLib localSystem pkgs; });
 
         crates = import ./crates.nix (
           inputs
           // {
             inherit
-              components
+              wasm
               craneLib
               localSystem
               pkgs
@@ -91,7 +90,7 @@
         inherit crates;
 
         apps =
-          components.apps
+          wasm.apps
           // crates.apps
           // terraform.apps
           // {
@@ -106,19 +105,18 @@
           };
 
         checks = crates.checks;
-        packages = components.packages // crates.packages // deployments.packages;
+        packages = wasm.packages // crates.packages // deployments.packages;
 
-        devShells.default = craneLib.devShell rec {
+        devShells.default = craneLib.devShell {
           packages =
-            with pkgs;
-            [
+            (with pkgs; [
               cargo-component
               cargo-machete
               cargo-rdme
               cargo-watch
               nodePackages.prettier
               rust-analyzer
-            ]
+            ])
             ++ crates.buildInputs
             ++ crates.nativeBuildInputs;
 

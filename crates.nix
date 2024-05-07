@@ -1,10 +1,8 @@
 {
   flake-utils,
-  components,
+  wasm,
   craneLib,
-  localSystem,
   pkgs,
-  self,
   ...
 }:
 let
@@ -23,13 +21,12 @@ let
   };
 
   clibs =
-    with pkgs;
-    [
+    (with pkgs; [
       clang
       cmake
       pkg-config
       rustPlatform.bindgenHook
-    ]
+    ])
     ++ lib.optionals (pkgs.stdenv.isLinux && pkgs.stdenv.hostPlatform.system != "aarch64-linux") (
       with pkgs;
       [
@@ -71,10 +68,32 @@ let
     pname = "unavi-app";
     strictDeps = true;
 
-    preBuild = components.generateAssetsScript;
+    preBuild = wasm.generateAssetsScript;
     postInstall = ''
       cp -r ./crates/unavi-app/assets $out/bin
     '';
+  };
+
+  unaviWebConfig = {
+    inherit src;
+
+    buildInputs = unaviAppConfig.buildInputs;
+    nativeBuildInputs =
+      (with pkgs; [
+        binaryen
+        trunk
+        wasm-bindgen-cli
+        wasm-tools
+      ])
+      ++ unaviAppConfig.nativeBuildInputs;
+
+    cargoExtraArgs = "--locked -p unavi-app";
+    pname = "web";
+    strictDeps = true;
+    trunkIndexPath = "./crates/unavi-app/index.html";
+    wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
+
+    preBuild = wasm.generateAssetsScript;
   };
 
   unaviServerConfig = {
@@ -88,29 +107,6 @@ let
     cargoExtraArgs = "--locked -p unavi-server";
     pname = "unavi-server";
     strictDeps = true;
-  };
-
-  unaviWebConfig = {
-    inherit src;
-
-    buildInputs = unaviAppConfig.buildInputs;
-    nativeBuildInputs =
-      with pkgs;
-      [
-        binaryen
-        trunk
-        wasm-bindgen-cli
-        wasm-tools
-      ]
-      ++ unaviAppConfig.nativeBuildInputs;
-
-    cargoExtraArgs = "--locked -p unavi-app";
-    pname = "web";
-    strictDeps = true;
-    trunkIndexPath = "./crates/unavi-app/index.html";
-    wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
-
-    preBuild = components.generateAssetsScript;
   };
 
   commonArgs = {
@@ -150,7 +146,7 @@ let
     );
   unavi-web = mkUnaviWeb { inherit world_host; };
 
-  unavi-server = craneLib.buildPackage (unaviServerConfig);
+  unavi-server = craneLib.buildPackage unaviServerConfig;
 in
 {
   inherit mkUnaviApp mkUnaviWeb;

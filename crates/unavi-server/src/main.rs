@@ -1,69 +1,87 @@
-use clap::Parser;
-use tracing::Level;
-use unavi_server::ServerOptions;
+//! Unified CLI tool for running UNAVI servers.
+//!
+//! ## Usage
+//!
+//! ```bash
+//! unavi-server --help
+//! ```
 
-#[derive(Parser, Debug)]
+use clap::{Parser, Subcommand};
+use tracing::{error, Level};
+
+#[derive(Parser)]
 #[command(version, about)]
 struct Args {
     /// Enables debug logging.
     #[arg(long)]
     debug: bool,
 
-    /// The domain of the server.
-    /// Used to generate DIDs for the server.
-    #[arg(long, default_value = "localhost:<port>")]
-    domain: String,
+    #[command(subcommand)]
+    command: Command,
+}
 
-    /// Provides login APIs for users to create and manage their DIDs.
-    /// Hosts user DID documents over HTTP.
-    #[arg(long)]
-    enable_did_host: bool,
+#[derive(Subcommand)]
+enum Command {
+    /// Social protocol.
+    /// Hosts a DWN, login APIs, and more.
+    Social {
+        #[arg(long, default_value = "localhost:<port>")]
+        domain: String,
 
-    /// Provides an HTTP API for the Decentralized Web Node (DWN).
-    #[arg(long)]
-    enable_dwn: bool,
+        /// Creates a world host and protocol within the DWN.
+        #[arg(long)]
+        enable_world_host: bool,
 
-    /// Runs multiplayer instances of worlds from the connected DWN.
-    #[arg(long)]
-    enable_world_server: bool,
-
-    /// Creates a world host DID and DWN protocol.
-    /// Hosts the DID document over HTTP.
-    #[arg(long)]
-    enable_world_host: bool,
-
-    #[arg(short, long, default_value = "3000")]
-    port: u16,
+        #[arg(short, long, default_value = "3000")]
+        port: u16,
+    },
+    /// World protocol.
+    /// Hosts multiplayer instances of worlds.
+    World {
+        #[arg(short, long, default_value = "3001")]
+        port: u16,
+    },
 }
 
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
 
-    let mut log = tracing_subscriber::fmt();
-    if args.debug {
-        log = log.with_max_level(Level::DEBUG);
-    }
-    log.init();
-
-    let domain = if args.domain == "localhost:<port>" {
-        format!("localhost:{}", args.port)
+    let log_level = if args.debug {
+        Level::DEBUG
     } else {
-        args.domain
+        Level::INFO
     };
+    tracing_subscriber::fmt().with_max_level(log_level).init();
 
-    let options = ServerOptions {
-        domain,
-        enable_did_host: args.enable_did_host,
-        enable_dwn: args.enable_dwn,
-        enable_world_server: args.enable_world_server,
-        enable_world_host: args.enable_world_host,
-        port: args.port,
-    };
+    match args.command {
+        Command::Social {
+            domain,
+            enable_world_host,
+            port,
+        } => {
+            let domain = if domain == "localhost:<port>" {
+                format!("localhost:{}", port)
+            } else {
+                domain
+            };
 
-    unavi_server::start(options)
-        .await
-        .expect("Failed to start server");
-
-    tokio::signal::ctrl_c().await.unwrap();
+            if let Err(e) = unavi_server_social::start(unavi_server_social::ServerOptions {
+                domain,
+                enable_world_host,
+                port,
+            })
+            .await
+            {
+                error!("{}", e);
+            };
+        }
+        Command::World { port } => {
+            if let Err(e) =
+                unavi_server_world::start(unavi_server_world::ServerOptions { port }).await
+            {
+                error!("{}", e);
+            };
+        }
+    }
 }

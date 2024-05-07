@@ -7,8 +7,8 @@
   ...
 }:
 let
-  portSocial = 3000;
-  portWorld = 3001;
+  portSocial = "3000";
+  portWorld = "3001";
 
   extraServerConfig = ''
     if ($request_method = 'OPTIONS') {

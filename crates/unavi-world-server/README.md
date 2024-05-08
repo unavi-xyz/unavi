@@ -1,4 +1,4 @@
-# unavi-server-world
+# unavi-world-server
 
 <!-- cargo-rdme start -->
 

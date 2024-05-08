@@ -85,8 +85,8 @@ in
   };
 
   systemd.services = {
-    unavi-server-social = {
-      description = "unavi-server-social";
+    unavi-social-server = {
+      description = "unavi-social-server";
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
@@ -94,8 +94,8 @@ in
         Restart = "always";
       };
     };
-    unavi-server-world = {
-      description = "unavi-server-world";
+    unavi-world-host = {
+      description = "unavi-world-host";
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {

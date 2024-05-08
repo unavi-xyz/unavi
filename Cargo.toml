@@ -16,6 +16,9 @@ type_complexity = "allow"
 
 [workspace.dependencies]
 anyhow = "1.0.82"
+axum = "0.7.5"
+axum-server = "0.6.0"
+base64 = "0.22.0"
 bevy = "0.13.1"
 bevy_async_task = "0.1.0"
 bevy_xpbd_3d = { version = "0.4.2", features = ["simd"] }

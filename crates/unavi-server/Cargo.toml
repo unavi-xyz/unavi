@@ -10,5 +10,6 @@ clap.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "signal"] }
 tracing-subscriber = "0.3.18"
 tracing.workspace = true
-unavi-server-social = { path = "../unavi-server-social" }
-unavi-server-world = { path = "../unavi-server-world" }
+unavi-social-server = { path = "../unavi-social-server" }
+unavi-world-host = { path = "../unavi-world-host" }
+unavi-world-server = { path = "../unavi-world-server" }

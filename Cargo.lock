@@ -10771,18 +10771,25 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "unavi-server-social",
- "unavi-server-world",
+ "unavi-social-server",
+ "unavi-world-host",
+ "unavi-world-server",
 ]
 
 [[package]]
-name = "unavi-server-social"
+name = "unavi-settings"
+version = "0.0.3"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
+name = "unavi-social-server"
 version = "0.0.3"
 dependencies = [
  "axum",
  "axum-server",
  "clap",
- "didkit",
  "dwn",
  "dwn-server",
  "serde",
@@ -10791,25 +10798,6 @@ dependencies = [
  "tokio",
  "tracing",
  "wired-protocol",
-]
-
-[[package]]
-name = "unavi-server-world"
-version = "0.0.3"
-dependencies = [
- "clap",
- "rcgen",
- "tokio",
- "tracing",
- "wired-protocol",
- "wtransport",
-]
-
-[[package]]
-name = "unavi-settings"
-version = "0.0.3"
-dependencies = [
- "bevy",
 ]
 
 [[package]]
@@ -10833,6 +10821,42 @@ dependencies = [
  "thiserror",
  "unavi-dwn",
  "wired-protocol",
+]
+
+[[package]]
+name = "unavi-world-host"
+version = "0.0.3"
+dependencies = [
+ "axum",
+ "axum-server",
+ "base64 0.22.1",
+ "clap",
+ "didkit",
+ "dwn",
+ "serde",
+ "serde_json",
+ "surrealdb",
+ "tokio",
+ "tracing",
+ "wired-protocol",
+]
+
+[[package]]
+name = "unavi-world-server"
+version = "0.0.3"
+dependencies = [
+ "axum",
+ "axum-server",
+ "clap",
+ "didkit",
+ "dwn",
+ "rcgen",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "wired-protocol",
+ "wtransport",
 ]
 
 [[package]]

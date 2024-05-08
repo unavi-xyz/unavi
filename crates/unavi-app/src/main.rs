@@ -48,8 +48,6 @@ struct Args {
     force_update: bool,
 }
 
-const DB_PATH: &str = ".unavi/app/db";
-
 #[cfg(not(target_family = "wasm"))]
 #[tokio::main]
 async fn main() {
@@ -67,9 +65,11 @@ async fn main() {
         .unwrap();
     }
 
-    std::fs::create_dir_all(DB_PATH).expect("Failed to create database dir.");
+    let db_path = format!("{}/db", unavi_app::ROOT_DIR);
 
-    let db = Surreal::new::<surrealdb::engine::local::SurrealKV>(DB_PATH)
+    std::fs::create_dir_all(&db_path).expect("Failed to create database dir.");
+
+    let db = Surreal::new::<surrealdb::engine::local::SurrealKV>(&db_path)
         .await
         .expect("Failed to create SurrealDB.");
 

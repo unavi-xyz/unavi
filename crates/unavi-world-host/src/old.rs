@@ -12,7 +12,7 @@ use didkit::{
 };
 use dwn::{
     actor::{Actor, VerifiableCredential},
-    message::descriptor::protocols::ProtocolsFilter,
+    message::descriptor::{protocols::ProtocolsFilter, records::RecordsFilter},
     store::{DataStore, MessageStore},
     DWN,
 };
@@ -95,47 +95,6 @@ pub async fn router(
         "/.well-known/did.json",
         get(|| async move { Json(document.clone()) }),
     );
-
-    let create_world_host = async move {
-        let mut definition = world_host_definition();
-        definition.published = true;
-
-        let query = actor
-            .query_protocols(ProtocolsFilter {
-                protocol: definition.protocol.clone(),
-                versions: vec![WORLD_HOST_PROTOCOL_VERSION],
-            })
-            .process()
-            .await
-            .unwrap();
-
-        if query.entries.is_empty() {
-            info!("Initializing world host v{}", WORLD_HOST_PROTOCOL_VERSION);
-
-            actor
-                .register_protocol(definition)
-                .protocol_version(WORLD_HOST_PROTOCOL_VERSION)
-                .process()
-                .await
-                .unwrap();
-
-            let connect_url = format!("{}:3001", dwn_url);
-
-            actor
-                .create_record()
-                .protocol(
-                    world_host_protocol_url(),
-                    WORLD_HOST_PROTOCOL_VERSION,
-                    "connect-url".to_string(),
-                )
-                .data_format("text/plain".to_string())
-                .data(connect_url.into())
-                .process()
-                .await
-                .unwrap();
-        }
-    };
-
     (router, create_world_host)
 }
 

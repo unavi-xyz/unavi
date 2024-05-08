@@ -5,9 +5,10 @@ use self_update::{backends::github::ReleaseList, cargo_crate_version, self_repla
 use semver::Version;
 use zip::ZipArchive;
 
+use crate::ROOT_DIR;
+
 const ASSETS_DIR: &str = "assets";
 const BIN_NAME: &str = "unavi-app";
-const UPDATE_DIR: &str = ".unavi/app/update";
 
 /// Check for new Github releases and update if one is found.
 pub fn check_for_updates(force: bool) -> Result<()> {
@@ -59,10 +60,12 @@ pub fn check_for_updates(force: bool) -> Result<()> {
 
     println!("Updating...");
 
-    let _ = std::fs::remove_dir_all(UPDATE_DIR);
-    std::fs::create_dir_all(UPDATE_DIR)?;
+    let update_dir = format!("{}/update", ROOT_DIR);
 
-    let tmp_dir = Path::new(UPDATE_DIR);
+    let _ = std::fs::remove_dir_all(&update_dir);
+    std::fs::create_dir_all(&update_dir)?;
+
+    let tmp_dir = Path::new(&update_dir);
     let tmp_zip_path = tmp_dir.join(&asset.name);
     let tmp_zip = std::fs::File::create(&tmp_zip_path)?;
 
@@ -83,7 +86,7 @@ pub fn check_for_updates(force: bool) -> Result<()> {
     let new_bin = tmp_archive_path.join(BIN_NAME);
     self_replace(new_bin)?;
 
-    std::fs::remove_dir_all(UPDATE_DIR)?;
+    std::fs::remove_dir_all(&update_dir)?;
 
     let exe = std::env::current_exe()?;
     std::process::Command::new(exe).spawn()?;

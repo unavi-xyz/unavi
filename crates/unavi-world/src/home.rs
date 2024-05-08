@@ -87,6 +87,8 @@ pub fn handle_join_home(
 
                         home
                     } else {
+                        info!("Creating new home world at host: {}", world_host);
+
                         // Create new world.
                         let data = World {
                             name: Some("Home".to_string()),
@@ -134,6 +136,8 @@ pub fn handle_join_home(
                         .target(world_host.to_string())
                         .send(world_host)
                         .await?;
+
+                    info!("connect_url_msgs: {:?}", connect_url_msgs);
 
                     let connect_url_msg = connect_url_msgs
                         .entries

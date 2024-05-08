@@ -22,22 +22,21 @@ struct Args {
 
 #[derive(Subcommand)]
 enum Command {
-    /// Social protocol.
+    /// Social server.
     /// Hosts a DWN, login APIs, and more.
     Social {
         #[arg(long, default_value = "localhost:<port>")]
         domain: String,
 
-        /// Creates a world host and protocol within the DWN.
-        #[arg(long)]
-        enable_world_host: bool,
-
         #[arg(short, long, default_value = "3000")]
         port: u16,
     },
-    /// World protocol.
+    /// World server.
     /// Hosts multiplayer instances of worlds.
     World {
+        #[arg(long, default_value = "localhost:<port>")]
+        domain: String,
+
         #[arg(short, long, default_value = "3001")]
         port: u16,
     },
@@ -55,30 +54,29 @@ async fn main() {
     tracing_subscriber::fmt().with_max_level(log_level).init();
 
     match args.command {
-        Command::Social {
-            domain,
-            enable_world_host,
-            port,
-        } => {
+        Command::Social { domain, port } => {
             let domain = if domain == "localhost:<port>" {
                 format!("localhost:{}", port)
             } else {
                 domain
             };
 
-            if let Err(e) = unavi_server_social::start(unavi_server_social::ServerOptions {
-                domain,
-                enable_world_host,
-                port,
-            })
-            .await
+            if let Err(e) =
+                unavi_social_server::start(unavi_social_server::ServerOptions { domain, port })
+                    .await
             {
                 error!("{}", e);
             };
         }
-        Command::World { port } => {
+        Command::World { domain, port } => {
+            let domain = if domain == "localhost:<port>" {
+                format!("localhost:{}", port)
+            } else {
+                domain
+            };
+
             if let Err(e) =
-                unavi_server_world::start(unavi_server_world::ServerOptions { port }).await
+                unavi_world_host::start(unavi_world_host::ServerOptions { domain, port }).await
             {
                 error!("{}", e);
             };

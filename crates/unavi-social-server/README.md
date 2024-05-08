@@ -1,4 +1,4 @@
-# unavi-server-social
+# unavi-social-server
 
 <!-- cargo-rdme start -->
 

@@ -9,7 +9,7 @@ edition.workspace = true
 workspace = true
 
 [dependencies]
-base64 = "0.22.0"
+base64.workspace = true
 bevy.workspace = true
 bevy_async_task.workspace = true
 bevy_vrm = "0.0.10"

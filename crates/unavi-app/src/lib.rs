@@ -14,6 +14,8 @@ use dwn::{actor::Actor, store::SurrealStore, DWN};
 use surrealdb::{engine::local::Db, Surreal};
 use unavi_dwn::UserActor;
 
+pub const ROOT_DIR: &str = ".unavi/app";
+
 #[cfg(feature = "self_update")]
 #[cfg(not(target_family = "wasm"))]
 pub mod update;

@@ -19,6 +19,7 @@ const ROOT_DIR: &str = ".unavi/server/world-host";
 #[derive(Debug, Clone)]
 pub struct ServerOptions {
     pub domain: String,
+    pub dwn_url: String,
     pub port: u16,
 }
 
@@ -38,7 +39,9 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
         format!("https://{}", opts.domain)
     };
 
-    let actor = identity::create_actor(opts.domain.clone(), dwn);
+    let mut actor = identity::create_actor(opts.domain.clone(), dwn);
+    actor.add_remote(dwn_url.clone());
+
     let document = identity::document::create_document(&actor, dwn_url.clone());
 
     let router = Router::new().route(
@@ -46,7 +49,9 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
         get(|| async move { Json(document.clone()) }),
     );
 
-    world_host::create_world_host(actor, &dwn_url).await;
+    world_host::create_world_host(&actor, &dwn_url).await;
+
+    actor.sync().await.unwrap();
 
     let addr = SocketAddr::new(Ipv4Addr::new(0, 0, 0, 0).into(), opts.port);
 

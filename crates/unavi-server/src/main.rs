@@ -37,6 +37,10 @@ enum Command {
         #[arg(long, default_value = "localhost:<port>")]
         domain: String,
 
+        /// The DWN to use for the world host.
+        #[arg(long, default_value = "http://localhost:3000")]
+        dwn_url: String,
+
         #[arg(short, long, default_value = "3001")]
         port: u16,
     },
@@ -68,15 +72,23 @@ async fn main() {
                 error!("{}", e);
             };
         }
-        Command::World { domain, port } => {
+        Command::World {
+            domain,
+            dwn_url,
+            port,
+        } => {
             let domain = if domain == "localhost:<port>" {
                 format!("localhost:{}", port)
             } else {
                 domain
             };
 
-            if let Err(e) =
-                unavi_world_host::start(unavi_world_host::ServerOptions { domain, port }).await
+            if let Err(e) = unavi_world_host::start(unavi_world_host::ServerOptions {
+                domain,
+                dwn_url,
+                port,
+            })
+            .await
             {
                 error!("{}", e);
             };

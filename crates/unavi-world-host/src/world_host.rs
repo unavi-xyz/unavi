@@ -12,7 +12,10 @@ use wired_protocol::protocols::world_host::{
     world_host_definition, world_host_protocol_url, WORLD_HOST_PROTOCOL_VERSION,
 };
 
-pub async fn create_world_host(actor: Actor<impl DataStore, impl MessageStore>, connect_url: &str) {
+pub async fn create_world_host(
+    actor: &Actor<impl DataStore, impl MessageStore>,
+    connect_url: &str,
+) {
     // Register protocol.
     let definition = world_host_definition();
 

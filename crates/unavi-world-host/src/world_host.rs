@@ -80,12 +80,23 @@ pub async fn create_world_host(
         });
 
         if let Some(found) = found {
-            let matches = match &found.data {
+            let data = match &found.data {
+                Some(data) => Some(data.clone()),
+                None => {
+                    let read = actor
+                        .read_record(found.record_id.clone())
+                        .process()
+                        .await
+                        .unwrap();
+                    read.record.data
+                }
+            };
+
+            let matches = match &data {
                 Some(url) => match url {
                     Data::Base64(encoded) => {
                         let url = URL_SAFE_NO_PAD.decode(encoded).unwrap();
                         let url = String::from_utf8_lossy(&url);
-                        info!("Current connect-url: {}", url);
                         url == connect_url
                     }
                     Data::Encrypted(_) => {
@@ -93,11 +104,14 @@ pub async fn create_world_host(
                         true
                     }
                 },
-                None => false,
+                None => {
+                    warn!("Connect URL record has no data.");
+                    false
+                }
             };
 
             if !matches {
-                info!("Updating connect-url to {}", connect_url);
+                info!("Updating connect URL to {}", connect_url);
 
                 actor
                     .update_record(found.record_id.clone(), found.entry_id().unwrap())

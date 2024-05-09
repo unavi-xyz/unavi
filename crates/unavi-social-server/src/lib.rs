@@ -29,7 +29,7 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
     let store = SurrealStore::new(db).await.unwrap();
     let dwn = Arc::new(DWN::from(store));
 
-    let addr = SocketAddr::new(Ipv4Addr::new(0, 0, 0, 0).into(), opts.port);
+    let addr = SocketAddr::new(Ipv4Addr::new(127, 0, 0, 1).into(), opts.port);
     let router = dwn_server::router(dwn.clone());
 
     info!("Listening on {}", addr);

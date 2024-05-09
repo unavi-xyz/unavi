@@ -14,7 +14,7 @@ use dwn::{
     store::{DataStore, MessageStore},
 };
 
-use crate::identity::KEY_FRAGMENT;
+use super::KEY_FRAGMENT;
 
 pub fn create_document(
     actor: &Actor<impl DataStore, impl MessageStore>,
@@ -46,8 +46,6 @@ pub fn create_document(
         fragment: Some(KEY_FRAGMENT.to_string()),
         ..Default::default()
     })]);
-
-    
 
     Arc::new(document)
 }

@@ -71,10 +71,10 @@ where
         } else {
             warn!("World Host DID mismatch. Overwriting identity file.");
             std::fs::remove_file(identity_path()).unwrap();
-            create_identity_file(did, dwn)
+            create_identity(did, dwn)
         }
     } else {
-        create_identity_file(did, dwn)
+        create_identity(did, dwn)
     };
 
     info!("World Host DID: {}", actor.did);
@@ -82,7 +82,7 @@ where
     actor
 }
 
-fn create_identity_file<D, M>(did: String, dwn: Arc<DWN<D, M>>) -> Actor<D, M>
+fn create_identity<D, M>(did: String, dwn: Arc<DWN<D, M>>) -> Actor<D, M>
 where
     D: DataStore,
     M: MessageStore,

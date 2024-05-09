@@ -5,13 +5,16 @@
 use std::{
     net::{Ipv4Addr, SocketAddr},
     sync::Arc,
+    time::Duration,
 };
 
 use axum::{routing::get, Json, Router};
 use dwn::{store::SurrealStore, DWN};
 use surrealdb::{engine::local::SurrealKV, Surreal};
+use tokio::time::sleep;
+use tracing::{error, info};
 
-mod identity;
+mod did;
 mod world_host;
 
 const ROOT_DIR: &str = ".unavi/server/world-host";
@@ -32,30 +35,37 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
     let store = SurrealStore::new(db).await.unwrap();
     let dwn = Arc::new(DWN::from(store));
 
-    let domain_name = &opts.domain.split(':').next().unwrap();
-    let dwn_url = if *domain_name == "localhost" {
-        format!("http://{}", opts.domain)
-    } else {
-        format!("https://{}", opts.domain)
-    };
+    let mut actor = did::create_actor(opts.domain.clone(), dwn);
 
-    let mut actor = identity::create_actor(opts.domain.clone(), dwn);
-    actor.add_remote(dwn_url.clone());
-
-    let document = identity::document::create_document(&actor, dwn_url.clone());
+    let document = did::document::create_document(&actor, opts.dwn_url.clone());
 
     let router = Router::new().route(
         "/.well-known/did.json",
         get(|| async move { Json(document.clone()) }),
     );
 
-    world_host::create_world_host(&actor, &dwn_url).await;
+    let addr = SocketAddr::new(Ipv4Addr::new(127, 0, 0, 1).into(), opts.port);
+    let server = tokio::spawn(axum_server::bind(addr).serve(router.into_make_service()));
 
-    actor.sync().await.unwrap();
+    // Server needs to be running, hosting the DID, before we can interact with DWN.
+    world_host::create_world_host(&actor, &opts.dwn_url).await;
 
-    let addr = SocketAddr::new(Ipv4Addr::new(0, 0, 0, 0).into(), opts.port);
+    actor.add_remote(opts.dwn_url);
 
-    axum_server::bind(addr)
-        .serve(router.into_make_service())
-        .await
+    let mut synced = false;
+
+    while !synced {
+        match actor.sync().await {
+            Ok(()) => {
+                info!("Sync successful.");
+                synced = true;
+            }
+            Err(e) => {
+                error!("Failed to sync: {}", e);
+                sleep(Duration::from_secs(3)).await;
+            }
+        }
+    }
+
+    server.await?
 }

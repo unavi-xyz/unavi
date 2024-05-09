@@ -10,6 +10,9 @@ let
   portSocial = "3000";
   portWorld = "3001";
 
+  urlSocial = "http://localhost:${portSocial}";
+  urlWorld = "http://localhost:${portWorld}";
+
   extraServerConfig = ''
     if ($request_method = 'OPTIONS') {
         add_header 'Access-Control-Allow-Headers' '*';
@@ -54,7 +57,7 @@ in
         http2 = true;
         locations = {
           "/" = {
-            proxyPass = "http://localhost:${portSocial}";
+            proxyPass = urlSocial;
             extraConfig = extraServerConfig;
           };
         };
@@ -65,7 +68,7 @@ in
         http2 = true;
         locations = {
           "/" = {
-            proxyPass = "http://localhost:${portWorld}";
+            proxyPass = urlWorld;
             extraConfig = extraServerConfig;
           };
         };
@@ -99,7 +102,7 @@ in
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
-        ExecStart = "${unavi-server}/bin/unavi-server --debug world -p ${portWorld}";
+        ExecStart = "${unavi-server}/bin/unavi-server --debug world -p ${portWorld} --dwn-url ${urlSocial}";
         Restart = "always";
       };
     };

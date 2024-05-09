@@ -7,13 +7,7 @@ edition.workspace = true
 
 [dependencies]
 axum-server.workspace = true
-axum.workspace = true
-clap.workspace = true
 dwn-server = "0.0.8"
 dwn.workspace = true
-serde.workspace = true
-serde_json.workspace = true
 surrealdb = { workspace = true, features = ["kv-surrealkv"] }
-tokio.workspace = true
 tracing.workspace = true
-wired-protocol = { path = "../wired-protocol" }

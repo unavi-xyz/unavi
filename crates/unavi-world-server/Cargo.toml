@@ -6,15 +6,12 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
-axum-server.workspace = true
-axum.workspace = true
-clap.workspace = true
 didkit.workspace = true
 dwn.workspace = true
 rcgen = "0.13.1"
 serde.workspace = true
 serde_json.workspace = true
-tokio.workspaced = true
+tokio.workspace = true
 tracing.workspace = true
 wired-protocol = { path = "../wired-protocol" }
 wtransport.workspace = true

@@ -77,21 +77,37 @@ async fn main() {
             dwn_url,
             port,
         } => {
-            let domain = if domain == "localhost:<port>" {
-                format!("localhost:{}", port)
-            } else {
-                domain
-            };
+            let results = tokio::join!(
+                // Run world server on UDP.
+                tokio::spawn(async move {
+                    unavi_world_server::start(unavi_world_server::ServerOptions { port }).await
+                }),
+                // Run world host on TCP.
+                tokio::spawn(async move {
+                    let domain = if domain == "localhost:<port>" {
+                        format!("localhost:{}", port)
+                    } else {
+                        domain
+                    };
 
-            if let Err(e) = unavi_world_host::start(unavi_world_host::ServerOptions {
-                domain,
-                dwn_url,
-                port,
-            })
-            .await
-            {
-                error!("{}", e);
-            };
+                    unavi_world_host::start(unavi_world_host::ServerOptions {
+                        domain,
+                        dwn_url,
+                        port,
+                    })
+                    .await
+                })
+            );
+
+            let results = [results.0, results.1];
+
+            for result in results {
+                match result {
+                    Ok(Ok(_)) => {}
+                    Ok(Err(e)) => error!("{}", e),
+                    Err(e) => error!("{}", e),
+                }
+            }
         }
     }
 }

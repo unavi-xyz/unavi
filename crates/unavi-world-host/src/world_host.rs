@@ -64,8 +64,8 @@ pub async fn create_world_host(
                 WORLD_HOST_PROTOCOL_VERSION,
                 "connect-url".to_string(),
             )
-            .data_format("text/plain".to_string())
             .data(connect_url.into())
+            .data_format("text/plain".to_string())
             .process()
             .await
             .unwrap();
@@ -85,6 +85,7 @@ pub async fn create_world_host(
                     Data::Base64(encoded) => {
                         let url = URL_SAFE_NO_PAD.decode(encoded).unwrap();
                         let url = String::from_utf8_lossy(&url);
+                        info!("Current connect-url: {}", url);
                         url == connect_url
                     }
                     Data::Encrypted(_) => {
@@ -92,18 +93,16 @@ pub async fn create_world_host(
                         true
                     }
                 },
-                _ => false,
+                None => false,
             };
 
             if !matches {
-                info!(
-                    "Connect URL out of data. Updating record to {}",
-                    connect_url
-                );
+                info!("Updating connect-url to {}", connect_url);
 
                 actor
                     .update_record(found.record_id.clone(), found.entry_id().unwrap())
                     .data(connect_url.into())
+                    .data_format("text/plain".to_string())
                     .process()
                     .await
                     .unwrap();

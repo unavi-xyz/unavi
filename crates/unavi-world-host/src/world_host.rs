@@ -66,6 +66,7 @@ pub async fn create_world_host(
             )
             .data(connect_url.into())
             .data_format("text/plain".to_string())
+            .published(true)
             .process()
             .await
             .unwrap();
@@ -97,6 +98,7 @@ pub async fn create_world_host(
                     Data::Base64(encoded) => {
                         let url = URL_SAFE_NO_PAD.decode(encoded).unwrap();
                         let url = String::from_utf8_lossy(&url);
+                        info!("Current connect URL: {}", url);
                         url == connect_url
                     }
                     Data::Encrypted(_) => {

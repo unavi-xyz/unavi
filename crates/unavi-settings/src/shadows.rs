@@ -86,7 +86,7 @@ pub fn set_shadow_config(
     .into();
 
     for mut config in directional_lights.iter_mut() {
-        config.bounds = target_config.bounds.clone();
+        config.bounds.clone_from(&target_config.bounds);
         config.minimum_distance = target_config.minimum_distance;
         config.overlap_proportion = target_config.overlap_proportion;
     }

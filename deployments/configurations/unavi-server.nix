@@ -1,7 +1,7 @@
 {
-  domain-social,
-  domain-world,
-  domain-web,
+  domainSocial,
+  domainWorld,
+  domainWeb,
   unavi-server,
   unavi-web,
   ...
@@ -41,7 +41,7 @@ in
 
   security.acme = {
     acceptTerms = true;
-    defaults.email = "admin@${domain-social}";
+    defaults.email = "admin@${domainSocial}";
   };
 
   services.nginx = {
@@ -51,7 +51,7 @@ in
     recommendedProxySettings = true;
     recommendedTlsSettings = true;
     virtualHosts = {
-      ${domain-social} = {
+      ${domainSocial} = {
         enableACME = true;
         forceSSL = true;
         http2 = true;
@@ -62,7 +62,7 @@ in
           };
         };
       };
-      ${domain-world} = {
+      ${domainWorld} = {
         enableACME = true;
         forceSSL = true;
         http2 = true;
@@ -73,7 +73,7 @@ in
           };
         };
       };
-      ${domain-web} = {
+      ${domainWeb} = {
         enableACME = true;
         forceSSL = true;
         http2 = true;
@@ -93,7 +93,7 @@ in
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
-        ExecStart = "${unavi-server}/bin/unavi-server --debug social -p ${portSocial} --domain ${domain-social} --enable-world-host";
+        ExecStart = "${unavi-server}/bin/unavi-server --debug social -p ${portSocial} --d ${domainSocial}";
         Restart = "always";
       };
     };
@@ -102,7 +102,7 @@ in
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
-        ExecStart = "${unavi-server}/bin/unavi-server --debug world -p ${portWorld} --dwn-url ${urlSocial}";
+        ExecStart = "${unavi-server}/bin/unavi-server --debug world -p ${portWorld} --d ${domainWorld} --dwn-url ${urlSocial}";
         Restart = "always";
       };
     };

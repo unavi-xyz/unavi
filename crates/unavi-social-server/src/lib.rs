@@ -7,26 +7,42 @@ use std::{
 };
 
 use dwn::{store::SurrealStore, DWN};
-use surrealdb::{engine::local::SurrealKV, Surreal};
+use surrealdb::{
+    engine::local::{Mem, SurrealKV},
+    Surreal,
+};
 use tracing::info;
-
-const ROOT_DIR: &str = ".unavi/server/social";
 
 #[derive(Debug, Clone)]
 pub struct ServerOptions {
     pub domain: String,
     pub port: u16,
+    pub storage: Storage,
+}
+
+#[derive(Debug, Clone)]
+pub enum Storage {
+    /// Path to a directory to store data within.
+    Path(String),
+    Memory,
 }
 
 pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
     let opts = Arc::new(opts);
 
-    let db_dir = format!("{}/db", ROOT_DIR);
+    let store = match &opts.storage {
+        Storage::Path(path) => {
+            let db_path = format!("{}/db", path);
+            std::fs::create_dir_all(&db_path).unwrap();
+            let db = Surreal::new::<SurrealKV>(db_path).await.unwrap();
+            SurrealStore::new(db).await.unwrap()
+        }
+        Storage::Memory => {
+            let db = Surreal::new::<Mem>(()).await.unwrap();
+            SurrealStore::new(db).await.unwrap()
+        }
+    };
 
-    std::fs::create_dir_all(&db_dir).unwrap();
-
-    let db = Surreal::new::<SurrealKV>(&db_dir).await.unwrap();
-    let store = SurrealStore::new(db).await.unwrap();
     let dwn = Arc::new(DWN::from(store));
 
     let addr = SocketAddr::new(Ipv4Addr::new(127, 0, 0, 1).into(), opts.port);

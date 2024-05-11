@@ -9,5 +9,5 @@ edition.workspace = true
 axum-server.workspace = true
 dwn-server = "0.0.8"
 dwn.workspace = true
-surrealdb = { workspace = true, features = ["kv-surrealkv"] }
+surrealdb = { workspace = true, features = ["kv-mem", "kv-surrealkv"] }
 tracing.workspace = true

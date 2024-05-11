@@ -19,7 +19,7 @@ let
       domain
     ];
 
-  mkAppInput = resource: { world_host = mkDidWeb resource.value.domain_social; };
+  mkAppInput = resource: { worldHostDid = mkDidWeb resource.value.domain_world; };
 
   mkAppPackage = resource: self.crates.${localSystem}.mkUnaviApp (mkAppInput resource);
   mkWebPackage = resource: self.crates.${localSystem}.mkUnaviWeb (mkAppInput resource);
@@ -64,9 +64,9 @@ let
               system = "x86_64-linux";
               modules = [ ./configurations/unavi-server.nix ];
               specialArgs = {
-                domain-social = resource.value.domain_social;
-                domain-world = resource.value.domain_world;
-                domain-web = resource.value.domain_web;
+                domainSocial = resource.value.domain_social;
+                domainWorld = resource.value.domain_world;
+                domainWeb = resource.value.domain_web;
                 unavi-server = self.packages.${system}."unavi-server-${subdir}";
                 unavi-web = self.packages.${system}."unavi-web-${subdir}";
               };

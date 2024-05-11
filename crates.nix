@@ -88,9 +88,9 @@ let
       ++ unaviAppConfig.nativeBuildInputs;
 
     cargoExtraArgs = "--locked -p unavi-app";
-    pname = "web";
+    pname = "unavi-web";
     strictDeps = true;
-    trunkIndexPath = "./crates/unavi-app/index.html";
+    trunkIndexPath = "crates/unavi-app/index.html";
     wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
 
     preBuild = wasm.generateAssetsScript;
@@ -124,19 +124,19 @@ let
   cargoDoc = craneLib.cargoDoc (commonArgs // { inherit cargoArtifacts; });
   cargoFmt = craneLib.cargoFmt commonArgs;
 
-  world_host = "did:web:localhost%3A3000";
+  worldHostDid = "did:web:localhost%3A3000";
 
   mkAppEnv =
-    { world_host }:
+    { worldHostDid }:
     {
-      UNAVI_WORLD_HOST_DID = world_host;
+      UNAVI_WORLD_HOST_DID = worldHostDid;
     };
 
   unaviAppArtifacts = craneLib.buildDepsOnly unaviAppConfig;
   mkUnaviApp =
     input:
     craneLib.buildPackage (unaviAppConfig // { cargoArtifacts = unaviAppArtifacts; } // mkAppEnv input);
-  unavi-app = mkUnaviApp { inherit world_host; };
+  unavi-app = mkUnaviApp { inherit worldHostDid; };
 
   unaviWebArtifacts = craneLib.buildDepsOnly unaviWebConfig;
   mkUnaviWeb =
@@ -144,7 +144,7 @@ let
     craneLib.buildTrunkPackage (
       unaviWebConfig // { cargoArtifacts = unaviWebArtifacts; } // mkAppEnv input
     );
-  unavi-web = mkUnaviWeb { inherit world_host; };
+  unavi-web = mkUnaviWeb { inherit worldHostDid; };
 
   unavi-server = craneLib.buildPackage unaviServerConfig;
 in

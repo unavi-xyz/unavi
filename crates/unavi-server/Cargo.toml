@@ -10,6 +10,11 @@ clap.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "signal"] }
 tracing-subscriber = "0.3.18"
 tracing.workspace = true
+serde.workspace = true
 unavi-social-server = { path = "../unavi-social-server" }
 unavi-world-host = { path = "../unavi-world-host" }
 unavi-world-server = { path = "../unavi-world-server" }
+
+[dev-dependencies]
+port_scanner = "0.1.5"
+tracing-test = { version = "0.2.4", features = ["no-env-filter"] }

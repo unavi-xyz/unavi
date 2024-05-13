@@ -35,7 +35,7 @@ pub async fn create_world_host(
         );
 
         actor
-            .register_protocol(definition)
+            .register_protocol(definition.clone())
             .protocol_version(WORLD_HOST_PROTOCOL_VERSION)
             .process()
             .await

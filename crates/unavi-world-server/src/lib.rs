@@ -7,7 +7,6 @@ use std::{
 
 mod cert;
 mod connection;
-mod world_host;
 
 #[derive(Debug, Clone)]
 pub struct ServerOptions {

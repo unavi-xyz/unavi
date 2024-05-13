@@ -1,7 +1,15 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
+use dwn::{
+    actor::{Actor, MessageBuilder},
+    message::descriptor::{protocols::ProtocolsFilter, records::RecordsFilter},
+    store::SurrealStore,
+    DWN,
+};
+use surrealdb::{engine::local::Mem, Surreal};
 use tracing_test::traced_test;
 use unavi_server::{Args, Command, Storage};
+use wired_protocol::protocols::world_host::{world_host_protocol_url, WORLD_HOST_PROTOCOL_VERSION};
 
 fn local_domain(port: u16) -> String {
     format!("localhost:{}", port)
@@ -42,6 +50,35 @@ async fn test_world_host() {
     tokio::time::sleep(Duration::from_secs(5)).await;
 
     assert!(logs_contain("Sync successful."));
+
+    // Can query protocols and records using world host DID.
+    let world_host_did = format!("did:web:localhost%3A{}", port_world);
+
+    let db = Surreal::new::<Mem>(()).await.unwrap();
+    let store = SurrealStore::new(db).await.unwrap();
+    let dwn = Arc::new(DWN::from(store));
+    let actor = Actor::new_did_key(dwn.clone()).unwrap();
+
+    let query_protocols = actor
+        .query_protocols(ProtocolsFilter {
+            protocol: world_host_protocol_url(),
+            versions: vec![WORLD_HOST_PROTOCOL_VERSION],
+        })
+        .target(world_host_did.clone())
+        .send(&world_host_did)
+        .await
+        .unwrap();
+    assert_eq!(query_protocols.status.code, 200);
+    assert!(!query_protocols.entries.is_empty());
+
+    let query_records = actor
+        .query_records(RecordsFilter::default())
+        .target(world_host_did.clone())
+        .send(&world_host_did)
+        .await
+        .unwrap();
+    assert_eq!(query_records.status.code, 200);
+    assert!(!query_records.entries.is_empty());
 
     social_task.abort();
     world_task.abort();

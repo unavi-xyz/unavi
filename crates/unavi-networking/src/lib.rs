@@ -1,5 +1,6 @@
 use anyhow::Result;
-use bevy::{prelude::*, tasks::AsyncComputeTaskPool};
+use bevy::prelude::*;
+use bevy_async_task::AsyncTaskPool;
 use unavi_world::InstanceServer;
 use xwt_core::base::Session;
 
@@ -12,19 +13,18 @@ pub struct NetworkingPlugin;
 
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, poll_connections);
+        app.add_systems(Update, connect_to_instances);
     }
 }
 
 #[derive(Component)]
 pub struct InstanceSession;
 
-pub fn poll_connections(
+pub fn connect_to_instances(
     mut commands: Commands,
+    mut pool: AsyncTaskPool<()>,
     to_open: Query<(Entity, &InstanceServer), Without<InstanceSession>>,
 ) {
-    let pool = AsyncComputeTaskPool::get();
-
     for (entity, server) in to_open.iter() {
         let server = server.0.clone();
 
@@ -32,8 +32,7 @@ pub fn poll_connections(
             if let Err(e) = connection_thread(&server).await {
                 error!("Instance connection error: {}", e)
             }
-        })
-        .detach();
+        });
 
         commands.entity(entity).insert(InstanceSession);
     }

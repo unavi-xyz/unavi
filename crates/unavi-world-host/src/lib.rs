@@ -10,7 +10,11 @@ use std::{
 
 use axum::{routing::get, Json, Router};
 use did::ActorOptions;
-use dwn::{store::SurrealStore, DWN};
+use dwn::{
+    actor::Actor,
+    store::{DataStore, MessageStore, SurrealStore},
+    DWN,
+};
 use surrealdb::{
     engine::local::{Mem, SurrealKV},
     Surreal,
@@ -70,10 +74,22 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
 
     tokio::time::sleep(Duration::from_secs(1)).await;
 
-    // Server needs to be running, hosting the DID, before we can interact with DWN.
-    world_host::create_world_host(&actor, &opts.dwn_url).await;
+    // Sync first.
+    sync_retry(&mut actor).await;
 
+    // Interact with DWN.
+    let connect_url = format!("https://{}", opts.domain);
+    world_host::create_world_host(&actor, &connect_url).await;
+
+    // Sync after.
+    sync_retry(&mut actor).await;
+
+    server.await?
+}
+
+async fn sync_retry(actor: &mut Actor<impl DataStore, impl MessageStore>) {
     let mut synced = false;
+    let mut delay = 3.0;
 
     while !synced {
         match actor.sync().await {
@@ -83,10 +99,9 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
             }
             Err(e) => {
                 error!("Failed to sync: {}", e);
-                tokio::time::sleep(Duration::from_secs(3)).await;
+                tokio::time::sleep(Duration::from_secs_f32(delay)).await;
+                delay *= 1.5;
             }
         }
     }
-
-    server.await?
 }

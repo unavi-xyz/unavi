@@ -3668,7 +3668,7 @@ checksum = "75b325c5dbd37f80359721ad39aca5a29fb04c89279657cffdda8736d0c0b9d2"
 [[package]]
 name = "dwn"
 version = "0.0.8"
-source = "git+https://github.com/unavi-xyz/dwn.git#23cd7900b915ab1743b43824fc95224bab7660d3"
+source = "git+https://github.com/unavi-xyz/dwn.git#daad913167aed8be2cd5d54b60a173023818bc30"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -10811,6 +10811,7 @@ version = "0.0.3"
 dependencies = [
  "anyhow",
  "bevy",
+ "bevy_async_task",
  "unavi-world",
  "wasm-bindgen-futures",
  "wtransport",

@@ -11,6 +11,7 @@ workspace = true
 [dependencies]
 anyhow.workspace = true
 bevy.workspace = true
+bevy_async_task.workspace = true
 unavi-world = { path = "../unavi-world" }
 xwt-core = "0.4.1"
 
@@ -21,3 +22,6 @@ xwt-web-sys = "0.11.0"
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 wtransport.workspace = true
 xwt-wtransport = "0.7.0"
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+wtransport = { workspace = true, features = ["dangerous-configuration"] }

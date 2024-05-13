@@ -22,6 +22,3 @@ xwt-web-sys = "0.11.0"
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 wtransport.workspace = true
 xwt-wtransport = "0.7.0"
-
-[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
-wtransport = { workspace = true, features = ["dangerous-configuration"] }

@@ -5,6 +5,8 @@ use std::{
     sync::Arc,
 };
 
+use tracing::info;
+
 mod cert;
 mod connection;
 
@@ -17,14 +19,15 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
     let opts = Arc::new(opts);
 
     let address = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), opts.port);
-
     let identity = cert::generate_tls_identity();
     let options = connection::WorldOptions {
         address,
         identity: &identity,
     };
 
+    info!("Listening on {}", address);
     connection::start_server(options).await.unwrap();
 
+    info!("Finished.");
     Ok(())
 }

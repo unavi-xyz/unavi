@@ -1,8 +1,12 @@
 use anyhow::Result;
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::tracing::Instrument};
 use bevy_async_task::AsyncTaskPool;
 use unavi_world::InstanceServer;
-use xwt_core::base::Session;
+use xwt_core::{
+    base::Session,
+    session::stream::{OpenBi, OpeningBi},
+    stream::Write,
+};
 
 #[cfg(not(target_family = "wasm"))]
 mod native;
@@ -26,26 +30,38 @@ pub fn connect_to_instances(
     to_open: Query<(Entity, &InstanceServer), Without<InstanceSession>>,
 ) {
     for (entity, server) in to_open.iter() {
-        let server = server.0.clone();
+        let address = server.0.clone();
+        let span = info_span!("Connection", address);
 
-        pool.spawn(async move {
-            if let Err(e) = connection_thread(&server).await {
-                error!("Instance connection error: {}", e)
+        pool.spawn(
+            async move {
+                if let Err(e) = connection_thread(&address).await {
+                    error!("{}", e)
+                }
             }
-        });
+            .instrument(span),
+        );
 
         commands.entity(entity).insert(InstanceSession);
     }
 }
 
 async fn connection_thread(addr: &str) -> Result<()> {
-    let _session = connect(addr).await?;
+    let session = connect(addr).await?;
+
+    info!("Opening bi stream.");
+    let opening = session.open_bi().await?;
+    let (mut send, recv) = opening.wait_bi().await?;
+
+    info!("Stream opened. Sending data.");
+    let data = "Hello from client!".to_string();
+    send.write(data.as_bytes()).await?;
 
     Ok(())
 }
 
 async fn connect(addr: &str) -> Result<impl Session> {
-    info!("Beginning connection process with {}", addr);
+    info!("Beginning connection process.");
 
     #[cfg(not(target_family = "wasm"))]
     let conn = crate::native::connect(addr).await?;

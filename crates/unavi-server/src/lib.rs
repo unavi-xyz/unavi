@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand, ValueEnum};
-use tracing::error;
+use tracing::{error, info_span, Instrument};
 
 #[derive(Parser)]
 #[command(version, about)]
@@ -94,32 +94,41 @@ pub async fn start(args: Args) {
             port,
             storage,
         } => {
+            let span_world_server = info_span!("world server");
+            let span_world_host = info_span!("world host");
+
             let results = tokio::join!(
                 // Run world server on UDP.
-                tokio::spawn(async move {
-                    unavi_world_server::start(unavi_world_server::ServerOptions { port }).await
-                }),
+                tokio::spawn(
+                    async move {
+                        unavi_world_server::start(unavi_world_server::ServerOptions { port }).await
+                    }
+                    .instrument(span_world_server)
+                ),
                 // Run world host on TCP.
-                tokio::spawn(async move {
-                    let domain = if domain == "localhost:<port>" {
-                        format!("localhost:{}", port)
-                    } else {
-                        domain
-                    };
+                tokio::spawn(
+                    async move {
+                        let domain = if domain == "localhost:<port>" {
+                            format!("localhost:{}", port)
+                        } else {
+                            domain
+                        };
 
-                    let storage = match storage {
-                        Storage::Filesystem => unavi_world_host::Storage::Path(path),
-                        Storage::Memory => unavi_world_host::Storage::Memory,
-                    };
+                        let storage = match storage {
+                            Storage::Filesystem => unavi_world_host::Storage::Path(path),
+                            Storage::Memory => unavi_world_host::Storage::Memory,
+                        };
 
-                    unavi_world_host::start(unavi_world_host::ServerOptions {
-                        storage,
-                        domain,
-                        dwn_url,
-                        port,
-                    })
-                    .await
-                })
+                        unavi_world_host::start(unavi_world_host::ServerOptions {
+                            storage,
+                            domain,
+                            dwn_url,
+                            port,
+                        })
+                        .await
+                    }
+                    .instrument(span_world_host)
+                )
             );
 
             let results = [results.0, results.1];

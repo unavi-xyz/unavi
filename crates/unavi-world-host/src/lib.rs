@@ -70,6 +70,7 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
     );
 
     let addr = SocketAddr::new(Ipv4Addr::new(127, 0, 0, 1).into(), opts.port);
+    info!("Starting world host on {}", addr);
     let server = tokio::spawn(axum_server::bind(addr).serve(router.into_make_service()));
 
     tokio::time::sleep(Duration::from_secs(1)).await;
@@ -84,7 +85,10 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
     // Sync after.
     sync_retry(&mut actor).await;
 
-    server.await?
+    server.await??;
+
+    info!("Finished.");
+    Ok(())
 }
 
 async fn sync_retry(actor: &mut Actor<impl DataStore, impl MessageStore>) {

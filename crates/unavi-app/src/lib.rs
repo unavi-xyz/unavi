@@ -57,7 +57,7 @@ pub async fn start(db: Surreal<Db>, opts: StartOptions) {
             }),
             PhysicsPlugins::default(),
             unavi_dwn::DwnPlugin,
-            // unavi_networking::NetworkingPlugin,
+            unavi_networking::NetworkingPlugin,
             unavi_player::PlayerPlugin,
             // unavi_scripting::ScriptingPlugin,
             unavi_settings::SettingsPlugin,

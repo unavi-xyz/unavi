@@ -137,8 +137,6 @@ pub fn handle_join_home(
                         .send(world_host)
                         .await?;
 
-                    info!("connect_url_msgs: {:?}", connect_url_msgs);
-
                     let connect_url_msg = connect_url_msgs
                         .entries
                         .iter()

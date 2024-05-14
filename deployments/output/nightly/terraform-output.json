@@ -4,7 +4,6 @@
     "type": [
       "object",
       {
-        "domain_social": "string",
         "domain_web": "string",
         "domain_world": "string",
         "ip": "string",
@@ -12,7 +11,6 @@
       }
     ],
     "value": {
-      "domain_social": "nightly-social.unavi.xyz",
       "domain_web": "nightly.unavi.xyz",
       "domain_world": "nightly-world.unavi.xyz",
       "ip": "159.65.46.69",

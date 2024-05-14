@@ -10850,6 +10850,8 @@ dependencies = [
  "clap",
  "dwn",
  "port_scanner",
+ "reqwest 0.11.27",
+ "serde_json",
  "surrealdb",
  "tokio",
  "tracing",

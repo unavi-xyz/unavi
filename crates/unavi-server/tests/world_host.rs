@@ -35,11 +35,13 @@ async fn test_world_host() {
         },
     };
 
+    let dwn_url = format!("http://{}", domain_social);
+
     let args_world = Args {
         debug: true,
         command: Command::World {
-            domain: domain_world,
-            dwn_url: format!("http://{}", domain_social),
+            domain: domain_world.clone(),
+            dwn_url: dwn_url.clone(),
             path: String::new(),
             port: port_world,
             storage: Storage::Memory,
@@ -50,6 +52,23 @@ async fn test_world_host() {
     let world_task = tokio::spawn(unavi_server::start(args_world));
     tokio::time::sleep(Duration::from_secs(5)).await;
 
+    // DID document is available.
+    let response = reqwest::get(format!("http://{}/.well-known/did.json", domain_world))
+        .await
+        .unwrap();
+    let json: serde_json::Value = response.json().await.unwrap();
+    let root = json.as_object().unwrap();
+    let service = root.get("service").unwrap().as_array().unwrap();
+    let service_endpoint = service[0]
+        .as_object()
+        .unwrap()
+        .get("serviceEndpoint")
+        .unwrap()
+        .as_str()
+        .unwrap();
+    assert_eq!(service_endpoint, dwn_url);
+
+    // World host synced with social server.
     assert!(logs_contain("Sync successful."));
 
     // Can query protocols and records using world host DID.

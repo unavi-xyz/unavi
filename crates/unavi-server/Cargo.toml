@@ -17,6 +17,8 @@ unavi-world-server = { path = "../unavi-world-server" }
 [dev-dependencies]
 dwn.workspace = true
 port_scanner = "0.1.5"
+reqwest.workspace = true
+serde_json.workspace = true
 surrealdb = { workspace = true, features = ["kv-mem"] }
 tracing-test = { version = "0.2.4", features = ["no-env-filter"] }
 wired-protocol = { path = "../wired-protocol" }

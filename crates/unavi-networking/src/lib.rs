@@ -2,12 +2,9 @@ use anyhow::Result;
 use bevy::{prelude::*, utils::tracing::Instrument};
 use bevy_async_task::AsyncTaskPool;
 use unavi_world::InstanceServer;
-use xwt_core::{
-    base::Session,
-    session::stream::{OpenBi, OpeningBi},
-    stream::Write,
-};
+use xwt_core::base::Session;
 
+mod handler;
 #[cfg(not(target_family = "wasm"))]
 mod native;
 #[cfg(target_family = "wasm")]
@@ -57,13 +54,7 @@ async fn connection_thread(addr: &str) -> Result<()> {
 
     let session = connect(&addr).await?;
 
-    info!("Opening bi stream.");
-    let opening = session.open_bi().await?;
-    let (mut send, _recv) = opening.wait_bi().await?;
-
-    info!("Stream opened. Sending data.");
-    let data = "Hello from client!".to_string();
-    send.write(data.as_bytes()).await?;
+    handler::handle_session(session).await?;
 
     Ok(())
 }

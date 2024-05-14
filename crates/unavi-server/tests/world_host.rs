@@ -10,6 +10,7 @@ use surrealdb::{engine::local::Mem, Surreal};
 use tracing_test::traced_test;
 use unavi_server::{Args, Command, Storage};
 use wired_protocol::protocols::world_host::{world_host_protocol_url, WORLD_HOST_PROTOCOL_VERSION};
+use wtransport::{ClientConfig, Endpoint};
 
 fn local_domain(port: u16) -> String {
     format!("localhost:{}", port)
@@ -79,6 +80,22 @@ async fn test_world_host() {
         .unwrap();
     assert_eq!(query_records.status.code, 200);
     assert!(!query_records.entries.is_empty());
+
+    // Can open WebTransport connection.
+    let config = ClientConfig::builder()
+        .with_bind_default()
+        .with_no_cert_validation()
+        .build();
+
+    let connection = Endpoint::client(config)
+        .unwrap()
+        .connect(format!("https://127.0.0.1:{}", port_world))
+        .await
+        .unwrap();
+
+    let mut stream = connection.open_bi().await.unwrap().await.unwrap();
+    stream.0.write_all(b"HELLO").await.unwrap();
+    stream.0.finish().await.unwrap();
 
     social_task.abort();
     world_task.abort();

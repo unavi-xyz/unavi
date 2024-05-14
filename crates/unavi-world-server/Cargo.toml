@@ -6,7 +6,7 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
-rcgen = "0.13.1"
+anyhow.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 wtransport.workspace = true

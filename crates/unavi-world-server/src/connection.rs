@@ -1,37 +1,14 @@
-use std::net::SocketAddr;
-use tracing::{error, info, info_span, Instrument};
-use wtransport::{endpoint::IncomingSession, Endpoint, Identity, ServerConfig};
+use anyhow::Result;
+use tracing::{error, info};
+use wtransport::endpoint::IncomingSession;
 
-pub struct WorldOptions<'a> {
-    pub address: SocketAddr,
-    pub identity: &'a Identity,
-}
-
-pub async fn start_server(opts: WorldOptions<'_>) -> Result<(), Box<dyn std::error::Error>> {
-    let config = ServerConfig::builder()
-        .with_bind_address(opts.address)
-        .with_identity(opts.identity)
-        .build();
-
-    let endpoint = Endpoint::server(config)?;
-
-    for id in 0.. {
-        let incoming_session = endpoint.accept().await;
-        tokio::spawn(handle_connection(incoming_session).instrument(info_span!("Connection", id)));
-    }
-
-    Ok(())
-}
-
-async fn handle_connection(incoming_session: IncomingSession) {
+pub async fn handle_connection(incoming_session: IncomingSession) {
     if let Err(e) = handle_connection_impl(incoming_session).await {
         error!("{}", e);
     }
 }
 
-async fn handle_connection_impl(
-    incoming_session: IncomingSession,
-) -> Result<(), Box<dyn std::error::Error>> {
+async fn handle_connection_impl(incoming_session: IncomingSession) -> Result<()> {
     let mut buffer = vec![0; 65536].into_boxed_slice();
 
     info!("Waiting for session request...");

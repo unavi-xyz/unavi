@@ -46,8 +46,16 @@ pub fn connect_to_instances(
     }
 }
 
+const LOCALHOST: &str = "https://localhost:";
+
 async fn connection_thread(addr: &str) -> Result<()> {
-    let session = connect(addr).await?;
+    let addr = if addr.starts_with(LOCALHOST) {
+        addr.replace(LOCALHOST, "https://127.0.0.1:")
+    } else {
+        addr.to_string()
+    };
+
+    let session = connect(&addr).await?;
 
     info!("Opening bi stream.");
     let opening = session.open_bi().await?;

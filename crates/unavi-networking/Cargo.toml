@@ -20,5 +20,5 @@ wasm-bindgen-futures.workspace = true
 xwt-web-sys = "0.11.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-wtransport.workspace = true
+wtransport = { workspace = true, features = ["dangerous-configuration"] }
 xwt-wtransport = "0.7.0"

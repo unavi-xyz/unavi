@@ -10859,6 +10859,7 @@ dependencies = [
  "unavi-world-host",
  "unavi-world-server",
  "wired-protocol",
+ "wtransport",
 ]
 
 [[package]]
@@ -10923,7 +10924,7 @@ dependencies = [
 name = "unavi-world-server"
 version = "0.0.3"
 dependencies = [
- "rcgen",
+ "anyhow",
  "tokio",
  "tracing",
  "wtransport",

@@ -99,12 +99,19 @@ pub async fn start(args: Args) {
 
             let results = tokio::join!(
                 // Run world server on UDP.
-                tokio::spawn(
-                    async move {
-                        unavi_world_server::start(unavi_world_server::ServerOptions { port }).await
-                    }
-                    .instrument(span_world_server)
-                ),
+                {
+                    let domain = domain.clone();
+                    tokio::spawn(
+                        async move {
+                            unavi_world_server::start(unavi_world_server::ServerOptions {
+                                port,
+                                domain,
+                            })
+                            .await
+                        }
+                        .instrument(span_world_server),
+                    )
+                },
                 // Run world host on TCP.
                 tokio::spawn(
                     async move {
@@ -120,10 +127,10 @@ pub async fn start(args: Args) {
                         };
 
                         unavi_world_host::start(unavi_world_host::ServerOptions {
-                            storage,
                             domain,
                             dwn_url,
                             port,
+                            storage,
                         })
                         .await
                     }

@@ -102,7 +102,7 @@ in
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
-        ExecStart = "${unavi-server}/bin/unavi-server --debug world -p ${portWorld} --d ${domainWorld} --dwn-url ${urlSocial}";
+        ExecStart = "${unavi-server}/bin/unavi-server --debug world -p ${portWorld} -d ${domainWorld} --dwn-url ${urlSocial}";
         Restart = "always";
       };
     };

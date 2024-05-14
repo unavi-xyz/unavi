@@ -51,7 +51,7 @@ async fn connection_thread(addr: &str) -> Result<()> {
 
     info!("Opening bi stream.");
     let opening = session.open_bi().await?;
-    let (mut send, recv) = opening.wait_bi().await?;
+    let (mut send, _recv) = opening.wait_bi().await?;
 
     info!("Stream opened. Sending data.");
     let data = "Hello from client!".to_string();

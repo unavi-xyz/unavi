@@ -18,15 +18,6 @@ resource "digitalocean_droplet" "unavi_server" {
   ]
 }
 
-resource "cloudflare_record" "subdomain_social" {
-  name    = terraform.workspace == "stable" ? "social" : "${terraform.workspace}-social"
-  proxied = true
-  ttl     = 1
-  type    = "A"
-  value   = digitalocean_droplet.unavi_server.ipv4_address
-  zone_id = var.cloudflare_zone_id
-}
-
 resource "cloudflare_record" "subdomain_world" {
   name    = terraform.workspace == "stable" ? "world" : "${terraform.workspace}-world"
   proxied = true
@@ -47,7 +38,6 @@ resource "cloudflare_record" "subdomain_web" {
 
 output "unavi_server" {
   value = {
-    domain_social = "${cloudflare_record.subdomain_social.name}.unavi.xyz"
     domain_world  = "${cloudflare_record.subdomain_world.name}.unavi.xyz"
     domain_web    = "${cloudflare_record.subdomain_web.name}.unavi.xyz"
     ip            = digitalocean_droplet.unavi_server.ipv4_address

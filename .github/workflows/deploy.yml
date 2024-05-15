@@ -31,6 +31,14 @@ jobs:
     # Must be ubuntu-20.04, see https://github.com/actions/runner-images/issues/6709
     runs-on: ubuntu-20.04
     steps:
+      - uses: AdityaGarg8/remove-unwanted-software@v3
+        with:
+          remove-android: true
+          remove-codeql: true
+          remove-docker-images: true
+          remove-dotnet: true
+          remove-haskell: true
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || github.ref }}

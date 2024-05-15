@@ -2187,6 +2187,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "capnp-futures"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5fac483cb34e3bc0be251dba7ce318f465143dd18f948c7bd7ad035f6fecfb1b"
+dependencies = [
+ "capnp",
+ "futures",
+]
+
+[[package]]
+name = "capnp-rpc"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "287cfab678fbdc6b382e86bfe8e2a9f8aeb3771b04c622ccbd700742c680f6e2"
+dependencies = [
+ "capnp",
+ "capnp-futures",
+ "futures",
+]
+
+[[package]]
 name = "capnpc"
 version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10836,10 +10857,15 @@ dependencies = [
  "anyhow",
  "bevy",
  "bevy_async_task",
+ "capnp",
+ "capnp-rpc",
+ "tokio",
  "unavi-world",
  "wasm-bindgen-futures",
+ "wired-world",
  "wtransport",
  "xwt-core",
+ "xwt-futures-io",
  "xwt-web-sys",
  "xwt-wtransport",
 ]
@@ -10951,9 +10977,15 @@ name = "unavi-world-server"
 version = "0.0.3"
 dependencies = [
  "anyhow",
+ "capnp",
+ "capnp-rpc",
  "tokio",
  "tracing",
+ "wired-world",
  "wtransport",
+ "xwt-core",
+ "xwt-futures-io",
+ "xwt-wtransport",
 ]
 
 [[package]]
@@ -12524,6 +12556,14 @@ name = "xwt-core"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1f98acac2f9398db512d6cc2d1fd12ce5e896192e9c961a83dd48d32c7fed8c"
+
+[[package]]
+name = "xwt-futures-io"
+version = "0.0.3"
+dependencies = [
+ "futures-io",
+ "xwt-core",
+]
 
 [[package]]
 name = "xwt-web-sys"

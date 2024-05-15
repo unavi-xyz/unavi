@@ -1,4 +1,5 @@
 [package]
+
 name = "unavi-networking"
 version.workspace = true
 license.workspace = true
@@ -12,8 +13,13 @@ workspace = true
 anyhow.workspace = true
 bevy.workspace = true
 bevy_async_task.workspace = true
+capnp-rpc.workspace = true
+capnp.workspace = true
+tokio.workspace = true
 unavi-world = { path = "../unavi-world" }
-xwt-core = "0.4.1"
+wired-world = { path = "../wired-world" }
+xwt-core.workspace = true
+xwt-futures-io = { path = "../xwt-futures-io" }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 wasm-bindgen-futures.workspace = true
@@ -21,4 +27,4 @@ xwt-web-sys = "0.11.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 wtransport = { workspace = true, features = ["dangerous-configuration"] }
-xwt-wtransport = "0.7.0"
+xwt-wtransport.workspace = true

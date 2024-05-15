@@ -7,6 +7,12 @@ edition.workspace = true
 
 [dependencies]
 anyhow.workspace = true
+capnp-rpc.workspace = true
+capnp.workspace = true
 tokio.workspace = true
 tracing.workspace = true
+wired-world = { path = "../wired-world" }
 wtransport.workspace = true
+xwt-core.workspace = true
+xwt-futures-io = { path = "../xwt-futures-io" }
+xwt-wtransport.workspace = true

@@ -21,5 +21,5 @@ reqwest.workspace = true
 serde_json.workspace = true
 surrealdb = { workspace = true, features = ["kv-mem"] }
 tracing-test = { version = "0.2.4", features = ["no-env-filter"] }
-wired-protocol = { path = "../wired-protocol" }
+wired-social = { path = "../wired-social" }
 wtransport = { workspace = true, features = ["dangerous-configuration"] }

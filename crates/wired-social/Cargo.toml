@@ -1,5 +1,5 @@
 [package]
-name = "wired-protocol"
+name = "wired-social"
 version.workspace = true
 license.workspace = true
 repository.workspace = true

@@ -11,7 +11,7 @@ use dwn::{
 };
 use thiserror::Error;
 use unavi_dwn::{world_host::world_host_did, UserActor};
-use wired_protocol::{
+use wired_social::{
     protocols::world_host::{world_host_protocol_url, WORLD_HOST_PROTOCOL_VERSION},
     schemas::{
         common::RecordLink,

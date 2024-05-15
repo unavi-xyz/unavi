@@ -8,7 +8,7 @@ use dwn::{
     store::{DataStore, MessageStore},
 };
 use tracing::{info, warn};
-use wired_protocol::protocols::world_host::{
+use wired_social::protocols::world_host::{
     world_host_definition, world_host_protocol_url, WORLD_HOST_PROTOCOL_VERSION,
 };
 

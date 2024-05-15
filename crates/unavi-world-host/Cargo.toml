@@ -16,4 +16,4 @@ serde_json.workspace = true
 surrealdb = { workspace = true, features = ["kv-mem", "kv-surrealkv"] }
 tokio.workspace = true
 tracing.workspace = true
-wired-protocol = { path = "../wired-protocol" }
+wired-social = { path = "../wired-social" }

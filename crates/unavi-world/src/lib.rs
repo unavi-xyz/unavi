@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use home::JoinHome;
-use wired_protocol::schemas::common::RecordLink;
+use wired_social::schemas::common::RecordLink;
 
 mod home;
 mod scene;

@@ -18,4 +18,4 @@ dwn.workspace = true
 serde_json.workspace = true
 thiserror = "1.0.59"
 unavi-dwn = { path = "../unavi-dwn" }
-wired-protocol = { path = "../wired-protocol" }
+wired-social = { path = "../wired-social" }

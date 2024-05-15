@@ -1,4 +1,4 @@
-# wired-protocol
+# wired-social
 
 <!-- cargo-rdme start -->
 

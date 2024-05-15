@@ -2178,6 +2178,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "capnp"
+version = "0.19.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e7c000b063857f2fa3178ff540dd92111f8cea880fd74f555bbda4eab909717"
+dependencies = [
+ "embedded-io",
+]
+
+[[package]]
+name = "capnpc"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c75ba30e0f08582d53c2f3710cf4bb65ff562614b1ba86906d7391adffe189ec"
+dependencies = [
+ "capnp",
+]
+
+[[package]]
 name = "cast5"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3821,6 +3839,12 @@ dependencies = [
  "subtle",
  "zeroize",
 ]
+
+[[package]]
+name = "embedded-io"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "edd0f118536f44f5ccd48bcb8b111bdc3de888b58c74639dfb034a357d0f206d"
 
 [[package]]
 name = "ena"
@@ -10860,7 +10884,7 @@ dependencies = [
  "unavi-social-server",
  "unavi-world-host",
  "unavi-world-server",
- "wired-protocol",
+ "wired-social",
  "wtransport",
 ]
 
@@ -10902,7 +10926,7 @@ dependencies = [
  "serde_json",
  "thiserror",
  "unavi-dwn",
- "wired-protocol",
+ "wired-social",
 ]
 
 [[package]]
@@ -10919,7 +10943,7 @@ dependencies = [
  "surrealdb",
  "tokio",
  "tracing",
- "wired-protocol",
+ "wired-social",
 ]
 
 [[package]]
@@ -12269,7 +12293,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "wired-protocol"
+name = "wired-social"
 version = "0.0.3"
 dependencies = [
  "dwn",
@@ -12277,6 +12301,14 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "wired-world"
+version = "0.0.3"
+dependencies = [
+ "capnp",
+ "capnpc",
 ]
 
 [[package]]

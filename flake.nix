@@ -110,6 +110,7 @@
         devShells.default = craneLib.devShell {
           packages =
             (with pkgs; [
+              capnproto
               cargo-component
               cargo-machete
               cargo-rdme

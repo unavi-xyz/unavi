@@ -9,7 +9,7 @@ use dwn::{
 use surrealdb::{engine::local::Mem, Surreal};
 use tracing_test::traced_test;
 use unavi_server::{Args, Command, Storage};
-use wired_protocol::protocols::world_host::{world_host_protocol_url, WORLD_HOST_PROTOCOL_VERSION};
+use wired_social::protocols::world_host::{world_host_protocol_url, WORLD_HOST_PROTOCOL_VERSION};
 use wtransport::{ClientConfig, Endpoint};
 
 fn local_domain(port: u16) -> String {

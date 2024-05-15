@@ -1,0 +1,3 @@
+# wired-world
+
+<!-- cargo-rdme -->

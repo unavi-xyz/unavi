@@ -1,12 +1,10 @@
 [package]
-name = "wired-world"
+name = "xwt-futures-io"
 version.workspace = true
 license.workspace = true
 repository.workspace = true
 edition.workspace = true
 
 [dependencies]
-capnp.workspace = true
-
-[build-dependencies]
-capnpc = "0.19.0"
+futures-io = "0.3.30"
+xwt-core.workspace = true

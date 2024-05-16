@@ -6,6 +6,8 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
+anyhow.workspace = true
+async-recursion = "1.1.1"
 clap.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "signal"] }
 tracing-subscriber = "0.3.18"

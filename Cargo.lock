@@ -10898,6 +10898,8 @@ dependencies = [
 name = "unavi-server"
 version = "0.0.3"
 dependencies = [
+ "anyhow",
+ "async-recursion",
  "clap",
  "dwn",
  "port_scanner",

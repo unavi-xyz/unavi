@@ -7,7 +7,7 @@
 //! ```
 
 use clap::Parser;
-use tracing::Level;
+use tracing::{error, Level};
 
 #[tokio::main]
 async fn main() {
@@ -20,5 +20,7 @@ async fn main() {
     };
     tracing_subscriber::fmt().with_max_level(log_level).init();
 
-    unavi_server::start(args).await;
+    if let Err(e) = unavi_server::start(args).await {
+        error!("{}", e);
+    };
 }

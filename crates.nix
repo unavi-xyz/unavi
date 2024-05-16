@@ -62,7 +62,7 @@ let
           darwin.apple_sdk.frameworks.Cocoa
         ]
       );
-    nativeBuildInputs = clibs;
+    nativeBuildInputs = (with pkgs; [ capnproto ]) ++ clibs;
 
     cargoExtraArgs = "--locked -p unavi-app";
     pname = "unavi-app";
@@ -101,7 +101,8 @@ let
 
     buildInputs = with pkgs; [ openssl ];
     nativeBuildInputs =
-      clibs
+      (with pkgs; [ capnproto ])
+      ++ clibs
       ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs; [ darwin.apple_sdk.frameworks.Cocoa ]);
 
     cargoExtraArgs = "--locked -p unavi-server";

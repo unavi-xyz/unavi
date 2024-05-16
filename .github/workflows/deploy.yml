@@ -68,4 +68,4 @@ jobs:
 
       - name: Deploy
         if: inputs.disable-deploy != true
-        run: nix develop -c nix-shell -p deploy-rs --command "deploy .?submodules=1#${{ env.TF_WORKSPACE }} --skip-checks"
+        run: nix run .?submodules=1#deploy

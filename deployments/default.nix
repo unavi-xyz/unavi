@@ -1,4 +1,5 @@
 {
+  flake-utils,
   deploy-rs,
   localSystem,
   nixpkgs,
@@ -93,6 +94,17 @@ let
   packageList = forEachResource mkPackages;
 in
 {
+  apps = {
+    deploy = flake-utils.lib.mkApp {
+      drv = pkgs.writeShellApplication {
+        name = "deploy";
+        runtimeInputs = [ pkgs.deploy-rs ];
+        text = ''
+          deploy ".?submodules=1#$TF_WORKSPACE" --skip-checks
+        '';
+      };
+    };
+  };
   checks = deploy-rs.lib.${localSystem}.deployChecks self.deploy;
   deploy.nodes = builtins.listToAttrs (builtins.concatLists nodeList);
   packages = builtins.listToAttrs (builtins.concatLists (builtins.concatLists packageList));

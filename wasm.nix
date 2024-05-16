@@ -77,13 +77,21 @@ in
 
   apps = {
     check-components = flake-utils.lib.mkApp {
-      drv = pkgs.writeShellScriptBin "check-components" (
-        lib.concatStringsSep " -p " ([ "cargo component check --locked" ] ++ componentNames)
-      );
+      drv = pkgs.writeShellApplication {
+        name = "check-components";
+        runtimeInputs = with pkgs; [
+          rust-bin.stable.latest.default
+          cargo-component
+        ];
+        text = lib.concatStringsSep " -p " ([ "cargo component check --locked" ] ++ componentNames);
+      };
     };
 
     generate-assets = flake-utils.lib.mkApp {
-      drv = pkgs.writeShellScriptBin "generate-assets" generateAssetsScript;
+      drv = pkgs.writeShellApplication {
+        name = "generate-assets";
+        text = generateAssetsScript;
+      };
     };
   };
 

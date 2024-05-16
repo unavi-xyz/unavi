@@ -93,6 +93,7 @@
           wasm.apps
           // crates.apps
           // terraform.apps
+          // deployments.apps
           // {
             generate-readme = flake-utils.lib.mkApp {
               drv = pkgs.writeShellScriptBin "generate-readme" ''
@@ -110,7 +111,6 @@
         devShells.default = craneLib.devShell {
           packages =
             (with pkgs; [
-              capnproto
               cargo-component
               cargo-machete
               cargo-rdme

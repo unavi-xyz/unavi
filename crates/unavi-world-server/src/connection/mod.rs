@@ -34,8 +34,7 @@ async fn handle_connection_impl(incoming_session: IncomingSession) -> Result<()>
                 let stream = stream?;
                 info!("Accepted BI stream");
 
-                #[allow(clippy::let_underscore_future)]
-                let _ = tokio::task::spawn_local(bi_stream::handle_bi_stream(stream)).instrument(info_span!("bi"));
+                 tokio::task::spawn_local(bi_stream::handle_bi_stream(stream).instrument(info_span!("bi")));
             }
             dgram = connection.receive_datagram() => {
                 let dgram = dgram?;

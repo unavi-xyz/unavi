@@ -94,8 +94,8 @@ pub async fn start(args: Args) {
             port,
             storage,
         } => {
-            let span_world_server = info_span!("world server");
-            let span_world_host = info_span!("world host");
+            let span_world_server = info_span!("WorldServer");
+            let span_world_host = info_span!("WorldHost");
 
             let results = tokio::join!(
                 // Run world server on UDP.

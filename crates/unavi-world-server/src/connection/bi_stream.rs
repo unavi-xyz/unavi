@@ -1,5 +1,5 @@
 use capnp_rpc::{rpc_twoparty_capnp::Side, twoparty::VatNetwork, RpcSystem};
-use tracing::error;
+use tracing::{debug, error};
 use xwt_futures_io::{read::ReadCompat, write::WriteCompat};
 use xwt_wtransport::{Connection, RecvStream, SendStream};
 
@@ -18,4 +18,6 @@ pub async fn handle_bi_stream((send, recv): (SendStream, RecvStream)) {
     if let Err(e) = rpc_system.await {
         error!("{}", e);
     };
+
+    debug!("Stream closed.");
 }

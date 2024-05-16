@@ -1,7 +1,8 @@
+use anyhow::Result;
 use clap::{Parser, Subcommand, ValueEnum};
-use tracing::{error, info_span, Instrument};
+use tracing::{debug, info_span, Instrument};
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 #[command(version, about)]
 pub struct Args {
     /// Enables debug logging.
@@ -12,8 +13,11 @@ pub struct Args {
     pub command: Command,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug)]
 pub enum Command {
+    /// Starts all servers with default settings.
+    /// Useful for development.
+    All,
     /// Social server.
     /// Hosts a DWN, login APIs, and more.
     Social {
@@ -52,14 +56,27 @@ pub enum Command {
     },
 }
 
-#[derive(ValueEnum, Clone)]
+#[derive(ValueEnum, Clone, Debug)]
 pub enum Storage {
     Filesystem,
     Memory,
 }
 
-pub async fn start(args: Args) {
+#[async_recursion::async_recursion]
+pub async fn start(args: Args) -> Result<()> {
+    debug!("Processing args: {:?}", args);
+
     match args.command {
+        Command::All => {
+            tokio::select! {
+                res = start(Args::parse_from(["unavi-server", "social"])) => {
+                    res?;
+                }
+                res = start(Args::parse_from(["unavi-server", "world"])) => {
+                    res?;
+                }
+            }
+        }
         Command::Social {
             domain,
             path,
@@ -77,15 +94,13 @@ pub async fn start(args: Args) {
                 Storage::Memory => unavi_social_server::Storage::Memory,
             };
 
-            if let Err(e) = unavi_social_server::start(unavi_social_server::ServerOptions {
+            unavi_social_server::start(unavi_social_server::ServerOptions {
                 domain,
                 port,
                 storage,
             })
-            .await
-            {
-                error!("{}", e);
-            };
+            .instrument(info_span!("Social"))
+            .await?;
         }
         Command::World {
             domain,
@@ -94,59 +109,41 @@ pub async fn start(args: Args) {
             port,
             storage,
         } => {
-            let span_world_server = info_span!("WorldServer");
-            let span_world_host = info_span!("WorldHost");
+            let domain = if domain == "localhost:<port>" {
+                format!("localhost:{}", port)
+            } else {
+                domain
+            };
 
-            let results = tokio::join!(
-                // Run world server on UDP.
-                {
-                    let domain = domain.clone();
-                    tokio::spawn(
-                        async move {
-                            unavi_world_server::start(unavi_world_server::ServerOptions {
-                                port,
-                                domain,
-                            })
-                            .await
-                        }
-                        .instrument(span_world_server),
-                    )
-                },
-                // Run world host on TCP.
-                tokio::spawn(
-                    async move {
-                        let domain = if domain == "localhost:<port>" {
-                            format!("localhost:{}", port)
-                        } else {
-                            domain
-                        };
+            let server_options = unavi_world_server::ServerOptions {
+                port,
+                domain: domain.clone(),
+            };
 
-                        let storage = match storage {
-                            Storage::Filesystem => unavi_world_host::Storage::Path(path),
-                            Storage::Memory => unavi_world_host::Storage::Memory,
-                        };
+            let storage = match storage {
+                Storage::Filesystem => unavi_world_host::Storage::Path(path),
+                Storage::Memory => unavi_world_host::Storage::Memory,
+            };
 
-                        unavi_world_host::start(unavi_world_host::ServerOptions {
-                            domain,
-                            dwn_url,
-                            port,
-                            storage,
-                        })
-                        .await
-                    }
-                    .instrument(span_world_host)
-                )
-            );
+            let host_options = unavi_world_host::ServerOptions {
+                domain,
+                dwn_url,
+                port,
+                storage,
+            };
 
-            let results = [results.0, results.1];
+            let span = info_span!("World");
 
-            for result in results {
-                match result {
-                    Ok(Ok(_)) => {}
-                    Ok(Err(e)) => error!("{}", e),
-                    Err(e) => error!("{}", e),
+            tokio::select! {
+                res = unavi_world_server::start(server_options).instrument(info_span!(parent: &span, "Server")) => {
+                    res?;
                 }
-            }
+                res = unavi_world_host::start(host_options).instrument(info_span!(parent: &span, "Host")) => {
+                    res?;
+                }
+            };
         }
-    }
+    };
+
+    Ok(())
 }

@@ -160,9 +160,13 @@ in
     app = flake-utils.lib.mkApp { drv = unavi-app; };
     server = flake-utils.lib.mkApp { drv = unavi-server; };
     web = flake-utils.lib.mkApp {
-      drv = pkgs.writeShellScriptBin "unavi-web" ''
-        ${pkgs.python3Minimal}/bin/python3 -m http.server --directory ${unavi-web} 8080
-      '';
+      drv = pkgs.writeShellApplication {
+        name = "unavi-web";
+        runtimeInputs = with pkgs; [ python3Minimal ];
+        text = ''
+          python3 -m http.server --directory ${unavi-web} 8080
+        '';
+      };
     };
 
     default = app;

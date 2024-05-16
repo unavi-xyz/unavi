@@ -96,12 +96,18 @@
           // deployments.apps
           // {
             generate-readme = flake-utils.lib.mkApp {
-              drv = pkgs.writeShellScriptBin "generate-readme" ''
-                cd crates
-                for folder in */; do
-                  (cd $folder && cargo rdme)
-                done
-              '';
+              drv = pkgs.writeShellApplication {
+                name = "generate-readme";
+                runtimeInputs = with pkgs; [
+                  rust-bin.stable.latest.default
+                  cargo-rdme
+                ];
+                text = ''
+                  cd crates
+                  for folder in */; do
+                    (cd $folder && cargo rdme)
+                  done'';
+              };
             };
           };
 

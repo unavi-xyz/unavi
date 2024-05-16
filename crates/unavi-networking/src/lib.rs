@@ -30,15 +30,15 @@ impl Default for Sessions {
             info!("Spawned session task.");
 
             while let Some(new_session) = receiver.recv().await {
-                let address = new_session.address;
-                let span = info_span!("Session", address);
+                let span = info_span!("Session", address = new_session.address);
 
                 tokio::task::spawn_local(
                     async move {
                         info!("Spawned session task.");
 
                         if let Err(e) =
-                            handler::instance_session(address, new_session.record_id).await
+                            handler::instance_session(new_session.address, new_session.record_id)
+                                .await
                         {
                             error!("{}", e);
                         }
@@ -55,6 +55,7 @@ impl Default for Sessions {
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(local);
         });
+
         #[cfg(target_family = "wasm")]
         let _ = wasm_bindgen_futures::future_to_promise(async move {
             let local = LocalSet::new();

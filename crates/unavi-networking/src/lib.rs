@@ -1,14 +1,9 @@
-use anyhow::Result;
 use bevy::{prelude::*, utils::tracing::Instrument};
-use bevy_async_task::AsyncTaskPool;
-use unavi_world::InstanceServer;
-use xwt_core::base::Session;
+use tokio::{sync::mpsc::UnboundedSender, task::LocalSet};
+use unavi_world::{InstanceRecord, InstanceServer};
 
+mod connect;
 mod handler;
-#[cfg(not(target_family = "wasm"))]
-mod native;
-#[cfg(target_family = "wasm")]
-mod web;
 
 pub struct NetworkingPlugin;
 
@@ -21,54 +16,73 @@ impl Plugin for NetworkingPlugin {
 #[derive(Component)]
 pub struct InstanceSession;
 
-pub fn connect_to_instances(
-    mut commands: Commands,
-    mut pool: AsyncTaskPool<()>,
-    to_open: Query<(Entity, &InstanceServer), Without<InstanceSession>>,
-) {
-    for (entity, server) in to_open.iter() {
-        let address = server.0.clone();
-        let span = info_span!("Connection", address);
+pub struct Sessions {
+    pub sender: UnboundedSender<NewSession>,
+}
 
-        pool.spawn(
-            async move {
-                if let Err(e) = connection_thread(&address).await {
-                    error!("{}", e)
-                }
+impl Default for Sessions {
+    fn default() -> Self {
+        let (sender, mut recv) = tokio::sync::mpsc::unbounded_channel::<NewSession>();
+
+        let task = async move {
+            info!("Spawned session task.");
+
+            while let Some(new_session) = recv.recv().await {
+                let address = new_session.address;
+                let span = info_span!("Session", address);
+
+                tokio::task::spawn_local(
+                    async move {
+                        info!("Spawned session task.");
+
+                        if let Err(e) =
+                            handler::instance_session(address, new_session.record_id).await
+                        {
+                            error!("{}", e);
+                        }
+                    }
+                    .instrument(span),
+                );
             }
-            .instrument(span),
-        );
+        };
 
-        commands.entity(entity).insert(InstanceSession);
+        #[cfg(not(target_family = "wasm"))]
+        std::thread::spawn(move || {
+            let local = LocalSet::new();
+            local.spawn_local(task);
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            rt.block_on(local);
+        });
+        #[cfg(target_family = "wasm")]
+        let _ = wasm_bindgen_futures::future_to_promise(async move {
+            let local = LocalSet::new();
+            local.run_until(task).await;
+            Ok(wasm_bindgen::JsValue::UNDEFINED)
+        });
+
+        Self { sender }
     }
 }
 
-const LOCALHOST: &str = "https://localhost:";
-
-async fn connection_thread(addr: &str) -> Result<()> {
-    let addr = if addr.starts_with(LOCALHOST) {
-        addr.replace(LOCALHOST, "https://127.0.0.1:")
-    } else {
-        addr.to_string()
-    };
-
-    let session = connect(&addr).await?;
-
-    handler::handle_session(session).await?;
-
-    Ok(())
+pub struct NewSession {
+    pub address: String,
+    pub record_id: String,
 }
 
-async fn connect(addr: &str) -> Result<impl Session> {
-    info!("Beginning connection process.");
+pub fn connect_to_instances(
+    mut commands: Commands,
+    sessions: NonSend<Sessions>,
+    to_open: Query<(Entity, &InstanceServer, &InstanceRecord), Without<InstanceSession>>,
+) {
+    for (entity, server, record) in to_open.iter() {
+        let address = server.0.clone();
+        let record_id = record.0.record_id.clone();
 
-    #[cfg(not(target_family = "wasm"))]
-    let conn = crate::native::connect(addr).await?;
+        if let Err(e) = sessions.sender.send(NewSession { address, record_id }) {
+            error!("{}", e);
+            continue;
+        }
 
-    #[cfg(target_family = "wasm")]
-    let conn = crate::web::connect(addr)
-        .await
-        .map_err(|e| anyhow::anyhow!("{}", e))?;
-
-    Ok(conn)
+        commands.entity(entity).insert(InstanceSession);
+    }
 }

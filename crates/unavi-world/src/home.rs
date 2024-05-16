@@ -110,7 +110,7 @@ pub fn handle_join_home(
                         let home = Home {
                             world: RecordLink {
                                 did: actor.did.clone(),
-                                record: reply.record_id,
+                                record_id: reply.record_id,
                             },
                         };
 
@@ -197,7 +197,7 @@ pub fn handle_join_home(
 
                     Ok(JoinHomeResult {
                         instance: RecordLink {
-                            record: instance_reply.record_id,
+                            record_id: instance_reply.record_id,
                             did: world_host.to_string(),
                         },
                         instance_server: connect_url,
@@ -220,8 +220,8 @@ pub fn handle_join_home(
                         WorldRecord(world),
                     ));
                 }
-                Err(err) => {
-                    error!("Failed to join home: {}", err);
+                Err(e) => {
+                    error!("{}", e);
                 }
             };
         }

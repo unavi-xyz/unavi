@@ -27,7 +27,7 @@ mod tests {
         let instance = Instance {
             world: RecordLink {
                 did: "did:example:123".to_string(),
-                record: "abcde".to_string(),
+                record_id: "abcde".to_string(),
             },
         };
 

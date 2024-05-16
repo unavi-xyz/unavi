@@ -33,6 +33,7 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
 
     for id in 0.. {
         let incoming_session = xwt_wtransport::IncomingSession(endpoint.accept().await);
+
         tokio::spawn(
             connection::handle_connection(incoming_session)
                 .instrument(info_span!("Connection", id)),

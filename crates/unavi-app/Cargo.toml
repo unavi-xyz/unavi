@@ -28,8 +28,8 @@ unavi-world = { path = "../unavi-world" }
 [target.'cfg(target_family = "wasm")'.dependencies]
 surrealdb = { workspace = true, features = ["kv-indxdb"] }
 tokio.workspace = true
-wasm-bindgen = "=0.2.91"
 wasm-bindgen-futures.workspace = true
+wasm-bindgen.workspace = true
 web-sys = { workspace = true, features = ["Location", "UrlSearchParams", "Window"] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]

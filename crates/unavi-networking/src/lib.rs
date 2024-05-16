@@ -9,25 +9,27 @@ pub struct NetworkingPlugin;
 
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, connect_to_instances);
+        app.init_resource::<Sessions>()
+            .add_systems(Update, connect_to_instances);
     }
 }
 
 #[derive(Component)]
 pub struct InstanceSession;
 
+#[derive(Resource)]
 pub struct Sessions {
     pub sender: UnboundedSender<NewSession>,
 }
 
 impl Default for Sessions {
     fn default() -> Self {
-        let (sender, mut recv) = tokio::sync::mpsc::unbounded_channel::<NewSession>();
+        let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel::<NewSession>();
 
         let task = async move {
             info!("Spawned session task.");
 
-            while let Some(new_session) = recv.recv().await {
+            while let Some(new_session) = receiver.recv().await {
                 let address = new_session.address;
                 let span = info_span!("Session", address);
 
@@ -71,7 +73,7 @@ pub struct NewSession {
 
 pub fn connect_to_instances(
     mut commands: Commands,
-    sessions: NonSend<Sessions>,
+    sessions: Res<Sessions>,
     to_open: Query<(Entity, &InstanceServer, &InstanceRecord), Without<InstanceSession>>,
 ) {
     for (entity, server, record) in to_open.iter() {

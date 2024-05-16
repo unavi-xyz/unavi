@@ -105,7 +105,7 @@
                 text = ''
                   cd crates
                   for folder in */; do
-                    (cd "$folder" && cargo rdme)
+                    (cd "$folder" && cargo rdme) || true
                   done'';
               };
             };

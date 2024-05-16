@@ -10,7 +10,7 @@ use surrealdb::{engine::local::Mem, Surreal};
 use tracing_test::traced_test;
 use unavi_server::{Args, Command, Storage};
 use wired_social::protocols::world_host::{world_host_protocol_url, WORLD_HOST_PROTOCOL_VERSION};
-use wtransport::{ClientConfig, Endpoint};
+use wtransport::{ClientConfig, Endpoint, VarInt};
 
 fn local_domain(port: u16) -> String {
     format!("localhost:{}", port)
@@ -112,9 +112,7 @@ async fn test_world_host() {
         .await
         .unwrap();
 
-    let mut stream = connection.open_bi().await.unwrap().await.unwrap();
-    stream.0.write_all(b"HELLO").await.unwrap();
-    stream.0.finish().await.unwrap();
+    connection.close(VarInt::from_u32(0), &[]);
 
     social_task.abort();
     world_task.abort();

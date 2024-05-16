@@ -7,7 +7,7 @@ use unavi_app::StartOptions;
 
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen::prelude::wasm_bindgen(start)]
-pub async fn wasm_start() {
+pub async fn start() {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
     let location = document.location().unwrap();
@@ -31,7 +31,7 @@ pub async fn wasm_start() {
 
     let opts = args_to_options(args);
 
-    unavi_app::start(db, opts).await
+    unavi_app::start(db, opts).await;
 }
 
 #[cfg(target_family = "wasm")]

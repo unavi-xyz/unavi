@@ -10861,6 +10861,7 @@ dependencies = [
  "capnp-rpc",
  "tokio",
  "unavi-world",
+ "wasm-bindgen",
  "wasm-bindgen-futures",
  "wired-world",
  "wtransport",

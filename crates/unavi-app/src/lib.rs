@@ -48,8 +48,7 @@ pub async fn start(db: Surreal<Db>, opts: StartOptions) {
 
     let mut app = App::new();
 
-    app.insert_non_send_resource(unavi_networking::Sessions::default())
-        .insert_resource(AssetMetaCheck::Paths(meta_paths))
+    app.insert_resource(AssetMetaCheck::Paths(meta_paths))
         .insert_resource(UserActor(actor))
         .add_plugins((
             DefaultPlugins.set(LogPlugin {

@@ -84,8 +84,9 @@ in
       drv = pkgs.writeShellApplication {
         name = "check-components";
         runtimeInputs = with pkgs; [
-          rust-bin.stable.latest.default
           cargo-component
+          mold
+          rust-bin.stable.latest.default
         ];
         text = lib.concatStringsSep " -p " ([ "cargo component check --locked" ] ++ componentNames);
       };

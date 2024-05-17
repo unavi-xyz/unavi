@@ -21,7 +21,11 @@ let
         filter = path: type: (lib.hasSuffix ".wit" path) || (craneLib.filterCargoSources path type);
       };
 
-      nativeBuildInputs = with pkgs; [ cargo-component ];
+      nativeBuildInputs = with pkgs; [
+        cargo-component
+        clang
+        mold
+      ];
 
       cargoBuildCommand = "cargo component build --profile wasm-release --target wasm32-unknown-unknown";
       cargoExtraArgs = "--locked -p ${pname}";

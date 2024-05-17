@@ -21,7 +21,7 @@ let
       || (craneLib.filterCargoSources path type);
   };
 
-  clibs =
+  commonNativeBuildInputs =
     (with pkgs; [
       clang
       cmake
@@ -33,6 +33,7 @@ let
       [
         glibc_multi
         glibc_multi.dev
+        mold
       ]
     )
     ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs; [ libiconv ]);
@@ -63,7 +64,7 @@ let
           darwin.apple_sdk.frameworks.Cocoa
         ]
       );
-    nativeBuildInputs = (with pkgs; [ capnproto ]) ++ clibs;
+    nativeBuildInputs = (with pkgs; [ capnproto ]) ++ commonNativeBuildInputs;
 
     cargoExtraArgs = "--locked -p unavi-app";
     pname = "unavi-app";
@@ -103,7 +104,7 @@ let
     buildInputs = with pkgs; [ openssl ];
     nativeBuildInputs =
       (with pkgs; [ capnproto ])
-      ++ clibs
+      ++ commonNativeBuildInputs
       ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs; [ darwin.apple_sdk.frameworks.Cocoa ]);
 
     cargoExtraArgs = "--locked -p unavi-server";

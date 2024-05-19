@@ -47,7 +47,7 @@ async fn handle_connection_impl<D: DataStore + 'static, M: MessageStore + 'stati
         tokio::select! {
             stream = session.accept_bi() => {
                 let stream = stream?;
-                info!("Accepted bi stream");
+                info!("Accepted bi stream.");
                 tokio::task::spawn_local(
                     bi_stream::handle_bi_stream(new_connection.id, dwn, stream).instrument(info_span!("bi"))
                 );

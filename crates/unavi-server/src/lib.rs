@@ -61,20 +61,37 @@ pub enum Storage {
     Memory,
 }
 
+#[derive(Clone)]
+pub struct StartOptions {
+    pub enable_remote_sync: bool,
+}
+
+impl Default for StartOptions {
+    fn default() -> Self {
+        Self {
+            enable_remote_sync: true,
+        }
+    }
+}
+
 #[async_recursion::async_recursion]
 pub async fn start(
     args: Args,
+    opts: StartOptions,
     dwn: Arc<DWN<impl DataStore + 'static, impl MessageStore + 'static>>,
 ) -> Result<()> {
     debug!("Processing args: {:?}", args);
 
     match args.command {
         Command::All => {
+            let mut opts = opts.clone();
+            opts.enable_remote_sync = false;
+
             tokio::select! {
-                res = start(Args::parse_from(["unavi-server", "social"]), dwn.clone()) => {
+                res = start(Args::parse_from(["unavi-server", "social"]), opts.clone(), dwn.clone()) => {
                     res?;
                 }
-                res = start(Args::parse_from(["unavi-server", "world"]), dwn) => {
+                res = start(Args::parse_from(["unavi-server", "world"]), opts, dwn) => {
                     res?;
                 }
             }
@@ -117,6 +134,7 @@ pub async fn start(
                 dwn,
                 port,
                 remote_dwn,
+                remote_sync: opts.enable_remote_sync,
                 storage,
             };
 

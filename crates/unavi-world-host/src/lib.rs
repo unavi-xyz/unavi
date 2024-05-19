@@ -27,6 +27,7 @@ pub struct ServerOptions<D: DataStore, M: MessageStore> {
     pub dwn: Arc<DWN<D, M>>,
     pub port: u16,
     pub remote_dwn: String,
+    pub remote_sync: bool,
     pub storage: Storage,
 }
 
@@ -43,7 +44,10 @@ pub async fn start(opts: ServerOptions<impl DataStore, impl MessageStore>) -> st
         dwn: opts.dwn,
         storage: opts.storage.clone(),
     });
-    actor.add_remote(opts.remote_dwn.clone());
+
+    if opts.remote_sync {
+        actor.add_remote(opts.remote_dwn.clone());
+    }
 
     let document = did::document::create_document(&actor, opts.remote_dwn.clone());
 
@@ -59,14 +63,18 @@ pub async fn start(opts: ServerOptions<impl DataStore, impl MessageStore>) -> st
     tokio::time::sleep(Duration::from_secs(1)).await;
 
     // Sync first.
-    sync_retry(&mut actor).await;
+    if opts.remote_sync {
+        sync_retry(&mut actor).await;
+    }
 
     // Interact with DWN.
     let connect_url = format!("https://{}", opts.domain);
     world_host::create_world_host(&actor, &connect_url).await;
 
     // Sync after.
-    sync_retry(&mut actor).await;
+    if opts.remote_sync {
+        sync_retry(&mut actor).await;
+    }
 
     server.await??;
 

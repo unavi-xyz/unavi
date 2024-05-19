@@ -1,40 +1,87 @@
 use std::sync::Arc;
 
+use anyhow::{bail, Result};
 use capnp::{capability::Promise, Error};
 use capnp_rpc::pry;
 use dwn::{
+    actor::Actor,
+    message::descriptor::Descriptor,
     store::{DataStore, MessageStore},
-    DWN,
 };
-use tracing::info;
+use tracing::{debug, info};
+use wired_social::protocols::world_host::world_host_protocol_url;
 use wired_world::world_server_capnp::world_server::{
     JoinInstanceParams, JoinInstanceResults, ListPlayersParams, ListPlayersResults, Server,
 };
 
 pub struct WorldServer<D: DataStore, M: MessageStore> {
+    pub actor: Arc<Actor<D, M>>,
     pub connection_id: usize,
-    pub dwn: Arc<DWN<D, M>>,
 }
 
-impl<D: DataStore, M: MessageStore> Server for WorldServer<D, M> {
+impl<D: DataStore + 'static, M: MessageStore + 'static> Server for WorldServer<D, M> {
     fn join_instance(
         &mut self,
         params: JoinInstanceParams,
-        _results: JoinInstanceResults,
+        mut results: JoinInstanceResults,
     ) -> Promise<(), Error> {
         let params = pry!(params.get());
         let instance = pry!(params.get_instance());
-        let record_id = pry!(pry!(instance.get_record_id()).to_str());
+        let record_id = pry!(pry!(instance.get_record_id()).to_string());
 
-        info!("Request to join instance: {}", record_id);
+        debug!("Request to join instance: {}", record_id);
 
-        // results.get().init_response().set_success();
+        let actor = self.actor.clone();
 
-        Promise::ok(())
+        Promise::from_future(async move {
+            let response = results.get().init_response();
+
+            match verify_instance(actor, record_id).await {
+                Ok(_) => {
+                    debug!("Instance verified.");
+                    response.init_success().set_ok(true);
+                }
+                Err(e) => {
+                    let e = e.to_string();
+                    debug!("Instance error {}", e);
+                    response.init_error(e.len() as u32).push_str(&e);
+                }
+            };
+
+            Ok(())
+        })
     }
 
     fn list_players(&mut self, _: ListPlayersParams, _: ListPlayersResults) -> Promise<(), Error> {
         info!("list_players");
         Promise::ok(())
     }
+}
+
+async fn verify_instance(
+    actor: Arc<Actor<impl DataStore, impl MessageStore>>,
+    record_id: String,
+) -> Result<()> {
+    let read = actor.read_record(record_id).process().await?;
+    debug!("Found record {}", read.record.record_id);
+
+    let descriptor = match &read.record.descriptor {
+        Descriptor::RecordsWrite(d) => d,
+        _ => bail!("Invalid descriptor type"),
+    };
+
+    if descriptor.protocol != Some(world_host_protocol_url()) {
+        debug!("Invalid instance protocol: {:?}", descriptor.protocol);
+        bail!("Invalid descriptor")
+    }
+
+    if descriptor.protocol_path != Some("instance".to_string()) {
+        debug!(
+            "Invalid instance protocol path: {:?}",
+            descriptor.protocol_path
+        );
+        bail!("Invalid descriptor")
+    }
+
+    Ok(())
 }

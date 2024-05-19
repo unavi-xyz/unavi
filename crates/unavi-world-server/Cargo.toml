@@ -12,6 +12,7 @@ capnp.workspace = true
 dwn.workspace = true
 tokio.workspace = true
 tracing.workspace = true
+wired-social = { path = "../wired-social" }
 wired-world = { path = "../wired-world" }
 wtransport.workspace = true
 xwt-core.workspace = true

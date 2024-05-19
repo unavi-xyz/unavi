@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use capnp_rpc::{rpc_twoparty_capnp::Side, twoparty::VatNetwork, RpcSystem};
 use dwn::{
+    actor::Actor,
     store::{DataStore, MessageStore},
     DWN,
 };
@@ -16,8 +17,13 @@ pub async fn handle_bi_stream<D: DataStore + 'static, M: MessageStore + 'static>
     dwn: Arc<DWN<D, M>>,
     (send, recv): (SendStream, RecvStream),
 ) {
+    let actor = Arc::new(Actor::new_did_key(dwn).unwrap());
+
     let world_server_client: wired_world::world_server_capnp::world_server::Client =
-        capnp_rpc::new_client(WorldServer { connection_id, dwn });
+        capnp_rpc::new_client(WorldServer {
+            connection_id,
+            actor,
+        });
 
     let reader = ReadCompat::<Connection>::new(recv);
     let writer = WriteCompat::<Connection>::new(send);

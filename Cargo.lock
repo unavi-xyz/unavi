@@ -11038,6 +11038,7 @@ dependencies = [
  "dwn",
  "tokio",
  "tracing",
+ "wired-social",
  "wired-world",
  "wtransport",
  "xwt-core",

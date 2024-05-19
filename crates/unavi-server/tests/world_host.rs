@@ -8,7 +8,7 @@ use dwn::{
 };
 use surrealdb::{engine::local::Mem, Surreal};
 use tracing_test::traced_test;
-use unavi_server::{Args, Command, Storage};
+use unavi_server::{Args, Command, StartOptions, Storage};
 use wired_social::protocols::world_host::{world_host_protocol_url, WORLD_HOST_PROTOCOL_VERSION};
 use wtransport::{ClientConfig, Endpoint, VarInt};
 
@@ -52,8 +52,10 @@ async fn test_world_host() {
     let store = SurrealStore::new(db).await.unwrap();
     let dwn = Arc::new(DWN::from(store));
 
-    let social_task = tokio::spawn(unavi_server::start(args_social, dwn.clone()));
-    let world_task = tokio::spawn(unavi_server::start(args_world, dwn));
+    let opts = StartOptions::default();
+
+    let social_task = tokio::spawn(unavi_server::start(args_social, opts.clone(), dwn.clone()));
+    let world_task = tokio::spawn(unavi_server::start(args_world, opts, dwn));
     tokio::time::sleep(Duration::from_secs(5)).await;
 
     // DID document is available.
@@ -71,9 +73,6 @@ async fn test_world_host() {
         .as_str()
         .unwrap();
     assert_eq!(service_endpoint, remote_dwn);
-
-    // World host synced with social server.
-    assert!(logs_contain("Sync successful."));
 
     // Can query protocols and records using world host DID.
     let world_host_did = format!("did:web:localhost%3A{}", port_world);

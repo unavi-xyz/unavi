@@ -15,7 +15,7 @@ use surrealdb::{
     Surreal,
 };
 use tracing::{error, Level};
-use unavi_server::Storage;
+use unavi_server::{StartOptions, Storage};
 
 #[tokio::main]
 async fn main() {
@@ -42,7 +42,7 @@ async fn main() {
     };
     let dwn = Arc::new(DWN::from(store));
 
-    if let Err(e) = unavi_server::start(args, dwn).await {
+    if let Err(e) = unavi_server::start(args, StartOptions::default(), dwn).await {
         error!("{}", e);
     };
 }

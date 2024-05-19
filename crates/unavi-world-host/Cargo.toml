@@ -13,7 +13,6 @@ didkit.workspace = true
 dwn.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-surrealdb = { workspace = true, features = ["kv-mem", "kv-surrealkv"] }
 tokio.workspace = true
 tracing.workspace = true
 wired-social = { path = "../wired-social" }

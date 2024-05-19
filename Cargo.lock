@@ -10986,7 +10986,6 @@ dependencies = [
  "axum-server",
  "dwn",
  "dwn-server",
- "surrealdb",
  "tracing",
 ]
 
@@ -11024,7 +11023,6 @@ dependencies = [
  "dwn",
  "serde",
  "serde_json",
- "surrealdb",
  "tokio",
  "tracing",
  "wired-social",
@@ -11037,6 +11035,7 @@ dependencies = [
  "anyhow",
  "capnp",
  "capnp-rpc",
+ "dwn",
  "tokio",
  "tracing",
  "wired-world",
@@ -12621,7 +12620,6 @@ version = "0.0.3"
 dependencies = [
  "anyhow",
  "futures-io",
- "tracing",
  "xwt-core",
 ]
 

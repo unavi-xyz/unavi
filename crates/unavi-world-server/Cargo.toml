@@ -9,6 +9,7 @@ edition.workspace = true
 anyhow.workspace = true
 capnp-rpc.workspace = true
 capnp.workspace = true
+dwn.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 wired-world = { path = "../wired-world" }

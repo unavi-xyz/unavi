@@ -5,6 +5,10 @@ use std::{
     sync::Arc,
 };
 
+use dwn::{
+    store::{DataStore, MessageStore},
+    DWN,
+};
 use tokio::task::LocalSet;
 use tracing::{debug, error, info, info_span, Instrument};
 use wtransport::{Endpoint, Identity, ServerConfig};
@@ -13,13 +17,16 @@ use xwt_wtransport::IncomingSession;
 mod connection;
 mod rpc;
 
-#[derive(Debug, Clone)]
-pub struct ServerOptions {
-    pub port: u16,
+#[derive(Clone)]
+pub struct ServerOptions<D: DataStore, M: MessageStore> {
     pub domain: String,
+    pub dwn: Arc<DWN<D, M>>,
+    pub port: u16,
 }
 
-pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
+pub async fn start<D: DataStore + 'static, M: MessageStore + 'static>(
+    opts: ServerOptions<D, M>,
+) -> std::io::Result<()> {
     let opts = Arc::new(opts);
 
     let address = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), opts.port);
@@ -41,6 +48,8 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
         let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel::<NewConnection>();
         threads.push(sender);
 
+        let dwn = opts.dwn.clone();
+
         std::thread::spawn(move || {
             let span_thread = info_span!("Thread", id = thread).entered();
 
@@ -56,9 +65,10 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
                     debug!("Handling connection {}", new_connection.id);
 
                     let span = info_span!("Connection", id = new_connection.id);
+                    let dwn = dwn.clone();
 
                     tokio::task::spawn_local(
-                        connection::handle_connection(new_connection).instrument(span),
+                        connection::handle_connection(new_connection, dwn).instrument(span),
                     );
                 }
             });

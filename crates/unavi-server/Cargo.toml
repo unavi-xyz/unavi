@@ -9,6 +9,8 @@ edition.workspace = true
 anyhow.workspace = true
 async-recursion = "1.1.1"
 clap.workspace = true
+dwn.workspace = true
+surrealdb = { workspace = true, features = ["kv-mem", "kv-surrealkv"] }
 tokio = { workspace = true, features = ["rt-multi-thread", "signal"] }
 tracing-subscriber = "0.3.18"
 tracing.workspace = true
@@ -17,11 +19,9 @@ unavi-world-host = { path = "../unavi-world-host" }
 unavi-world-server = { path = "../unavi-world-server" }
 
 [dev-dependencies]
-dwn.workspace = true
 port_scanner = "0.1.5"
 reqwest.workspace = true
 serde_json.workspace = true
-surrealdb = { workspace = true, features = ["kv-mem"] }
 tracing-test = { version = "0.2.4", features = ["no-env-filter"] }
 wired-social = { path = "../wired-social" }
 wtransport = { workspace = true, features = ["dangerous-configuration"] }

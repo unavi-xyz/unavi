@@ -6,47 +6,26 @@ use std::{
     sync::Arc,
 };
 
-use dwn::{store::SurrealStore, DWN};
-use surrealdb::{
-    engine::local::{Mem, SurrealKV},
-    Surreal,
+use dwn::{
+    store::{DataStore, MessageStore},
+    DWN,
 };
 use tracing::info;
 
-#[derive(Debug, Clone)]
-pub struct ServerOptions {
+#[derive(Clone)]
+pub struct ServerOptions<D: DataStore, M: MessageStore> {
     pub domain: String,
     pub port: u16,
-    pub storage: Storage,
+    pub dwn: Arc<DWN<D, M>>,
 }
 
-#[derive(Debug, Clone)]
-pub enum Storage {
-    /// Path to a directory to store data within.
-    Path(String),
-    Memory,
-}
-
-pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
+pub async fn start(
+    opts: ServerOptions<impl DataStore + 'static, impl MessageStore + 'static>,
+) -> std::io::Result<()> {
     let opts = Arc::new(opts);
 
-    let store = match &opts.storage {
-        Storage::Path(path) => {
-            let db_path = format!("{}/db", path);
-            std::fs::create_dir_all(&db_path).unwrap();
-            let db = Surreal::new::<SurrealKV>(db_path).await.unwrap();
-            SurrealStore::new(db).await.unwrap()
-        }
-        Storage::Memory => {
-            let db = Surreal::new::<Mem>(()).await.unwrap();
-            SurrealStore::new(db).await.unwrap()
-        }
-    };
-
-    let dwn = Arc::new(DWN::from(store));
-
     let addr = SocketAddr::new(Ipv4Addr::new(127, 0, 0, 1).into(), opts.port);
-    let router = dwn_server::router(dwn.clone());
+    let router = dwn_server::router(opts.dwn.clone());
 
     info!("Listening on {}", addr);
 

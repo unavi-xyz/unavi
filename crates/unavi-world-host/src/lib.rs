@@ -12,23 +12,21 @@ use axum::{routing::get, Json, Router};
 use did::ActorOptions;
 use dwn::{
     actor::Actor,
-    store::{DataStore, MessageStore, SurrealStore},
+    store::{DataStore, MessageStore},
     DWN,
 };
-use surrealdb::{
-    engine::local::{Mem, SurrealKV},
-    Surreal,
-};
+
 use tracing::{error, info};
 
 mod did;
 mod world_host;
 
-#[derive(Debug, Clone)]
-pub struct ServerOptions {
+#[derive(Clone)]
+pub struct ServerOptions<D: DataStore, M: MessageStore> {
     pub domain: String,
-    pub dwn_url: String,
+    pub dwn: Arc<DWN<D, M>>,
     pub port: u16,
+    pub remote_dwn: String,
     pub storage: Storage,
 }
 
@@ -39,30 +37,15 @@ pub enum Storage {
     Memory,
 }
 
-pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
-    let store = match &opts.storage {
-        Storage::Path(path) => {
-            let db_path = format!("{}/db", path);
-            std::fs::create_dir_all(&db_path).unwrap();
-            let db = Surreal::new::<SurrealKV>(db_path).await.unwrap();
-            SurrealStore::new(db).await.unwrap()
-        }
-        Storage::Memory => {
-            let db = Surreal::new::<Mem>(()).await.unwrap();
-            SurrealStore::new(db).await.unwrap()
-        }
-    };
-
-    let dwn = Arc::new(DWN::from(store));
-
+pub async fn start(opts: ServerOptions<impl DataStore, impl MessageStore>) -> std::io::Result<()> {
     let mut actor = did::create_actor(ActorOptions {
         domain: opts.domain.clone(),
-        dwn,
+        dwn: opts.dwn,
         storage: opts.storage.clone(),
     });
-    actor.add_remote(opts.dwn_url.clone());
+    actor.add_remote(opts.remote_dwn.clone());
 
-    let document = did::document::create_document(&actor, opts.dwn_url.clone());
+    let document = did::document::create_document(&actor, opts.remote_dwn.clone());
 
     let router = Router::new().route(
         "/.well-known/did.json",

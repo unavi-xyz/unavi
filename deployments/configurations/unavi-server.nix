@@ -94,7 +94,7 @@ in
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
-        ExecStart = "${unavi-server}/bin/unavi-server --debug world -p ${portWorld} -d ${domainWorld} --dwn-url ${domainWeb}";
+        ExecStart = "${unavi-server}/bin/unavi-server --debug world -p ${portWorld} -d ${domainWorld} --remote-dwn ${domainWeb}";
         Restart = "always";
       };
     };

@@ -30,7 +30,10 @@ impl<T: SendSpec> AsyncWrite for WriteCompat<T> {
         let write = async {
             match self.as_mut().send.borrow_mut().write(buf).await {
                 Ok(v) => Ok(v),
-                Err(_) => Ok(0),
+                Err(e) => Err(futures_io::Error::new(
+                    futures_io::ErrorKind::Other,
+                    anyhow::anyhow!("{}", e),
+                )),
             }
         };
         let mut pinned_write = pin!(write);

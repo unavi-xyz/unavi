@@ -38,7 +38,7 @@ let
     )
     ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs; [ libiconv ]);
 
-  unaviAppConfig = {
+  unaviAppConfig = rec {
     inherit src;
 
     buildInputs =
@@ -74,6 +74,8 @@ let
     postInstall = ''
       cp -r ./crates/unavi-app/assets $out/bin
     '';
+
+    LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
   };
 
   unaviWebConfig = {
@@ -98,7 +100,7 @@ let
     preBuild = wasm.generateAssetsScript;
   };
 
-  unaviServerConfig = {
+  unaviServerConfig = rec {
     inherit src;
 
     buildInputs = with pkgs; [ openssl ];
@@ -110,6 +112,8 @@ let
     cargoExtraArgs = "--locked -p unavi-server";
     pname = "unavi-server";
     strictDeps = true;
+
+    LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
   };
 
   commonArgs = {

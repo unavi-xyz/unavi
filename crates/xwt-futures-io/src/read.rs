@@ -30,7 +30,10 @@ impl<T: RecvSpec> AsyncRead for ReadCompat<T> {
         let read = async {
             match self.recv.borrow_mut().read(buf).await {
                 Ok(v) => Ok(v.unwrap_or_default()),
-                Err(_) => Ok(0),
+                Err(e) => Err(futures_io::Error::new(
+                    futures_io::ErrorKind::Other,
+                    anyhow::anyhow!("{}", e),
+                )),
             }
         };
         let mut pinned_read = pin!(read);

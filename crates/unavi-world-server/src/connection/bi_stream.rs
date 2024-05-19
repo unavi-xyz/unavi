@@ -5,9 +5,9 @@ use xwt_wtransport::{Connection, RecvStream, SendStream};
 
 use crate::rpc::world_server::WorldServer;
 
-pub async fn handle_bi_stream((send, recv): (SendStream, RecvStream)) {
+pub async fn handle_bi_stream(connection_id: usize, (send, recv): (SendStream, RecvStream)) {
     let world_server_client: wired_world::world_server_capnp::world_server::Client =
-        capnp_rpc::new_client(WorldServer {});
+        capnp_rpc::new_client(WorldServer { connection_id });
 
     let reader = ReadCompat::<Connection>::new(recv);
     let writer = WriteCompat::<Connection>::new(send);

@@ -42,7 +42,7 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
         threads.push(sender);
 
         std::thread::spawn(move || {
-            let _ = info_span!("Thread", id = thread).enter();
+            let span_thread = info_span!("Thread", id = thread).entered();
 
             let rt = tokio::runtime::Builder::new_current_thread()
                 .enable_all()
@@ -58,15 +58,15 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
                     let span = info_span!("Connection", id = new_connection.id);
 
                     tokio::task::spawn_local(
-                        connection::handle_connection(new_connection.incoming_session)
-                            .instrument(span),
+                        connection::handle_connection(new_connection).instrument(span),
                     );
                 }
             });
 
             rt.block_on(local);
 
-            debug!("Thread finished.")
+            debug!("Thread finished.");
+            span_thread.exit();
         });
     }
 

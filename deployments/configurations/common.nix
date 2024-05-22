@@ -39,6 +39,7 @@
 
   environment.systemPackages = with pkgs; [
     htop
+    openssl
     vim
   ];
 }

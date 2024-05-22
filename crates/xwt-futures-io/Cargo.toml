@@ -8,4 +8,5 @@ edition.workspace = true
 [dependencies]
 anyhow.workspace = true
 futures-io = "0.3.30"
+tracing.workspace = true
 xwt-core.workspace = true

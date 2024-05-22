@@ -19,7 +19,7 @@ pub struct Args {
     pub storage: Storage,
 
     /// Path to store data in, if storage is set to "filesystem".
-    #[arg(long, default_value = ".unavi/server/social")]
+    #[arg(long, default_value = ".unavi/server")]
     pub path: String,
 
     #[command(subcommand)]
@@ -52,6 +52,11 @@ pub enum Command {
 
         #[arg(short, long, default_value = "3001")]
         port: u16,
+
+        /// Maximum number of threads to use for connection handling.
+        /// Defaults to available parallelism.
+        #[arg(short, long)]
+        threads: Option<usize>,
     },
 }
 
@@ -109,8 +114,9 @@ pub async fn start(
         }
         Command::World {
             domain,
-            remote_dwn,
             port,
+            remote_dwn,
+            threads,
         } => {
             let domain = if domain == "localhost:<port>" {
                 format!("localhost:{}", port)
@@ -127,6 +133,7 @@ pub async fn start(
                 domain: domain.clone(),
                 dwn: dwn.clone(),
                 port,
+                threads,
             };
 
             let host_options = unavi_world_host::ServerOptions {

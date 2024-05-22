@@ -1,10 +1,11 @@
 use anyhow::Result;
 
+use wtransport::ClientConfig;
 use xwt_core::endpoint::connect::{Connect, Connecting};
 use xwt_wtransport::Connection;
 
 pub async fn connect(addr: &str) -> Result<Connection> {
-    let config = wtransport::ClientConfig::builder().with_bind_default();
+    let config = ClientConfig::builder().with_bind_default();
 
     let config = if addr.starts_with("https://127.0.0.1:") {
         config.with_no_cert_validation()

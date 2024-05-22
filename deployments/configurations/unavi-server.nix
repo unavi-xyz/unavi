@@ -85,7 +85,7 @@ in
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
-        ExecStart = "${unavi-server}/bin/unavi-server --debug social -p ${portSocial} -d ${domainWeb}";
+        ExecStart = "${unavi-server}/bin/unavi-server --debug social -d ${domainWeb} -p ${portSocial}";
         Restart = "always";
       };
     };
@@ -94,7 +94,7 @@ in
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
-        ExecStart = "${unavi-server}/bin/unavi-server --debug world -p ${portWorld} -d ${domainWorld} --remote-dwn ${domainWeb}";
+        ExecStart = "${unavi-server}/bin/unavi-server --debug world -d ${domainWorld} -p ${portWorld} --remote-dwn ${domainWeb}";
         Restart = "always";
       };
     };

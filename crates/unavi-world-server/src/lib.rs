@@ -11,7 +11,7 @@ use dwn::{
 };
 use tokio::task::LocalSet;
 use tracing::{debug, error, info, info_span, Instrument};
-use wtransport::{Endpoint, Identity, ServerConfig};
+use wtransport::{Identity, ServerConfig};
 use xwt_wtransport::IncomingSession;
 
 mod connection;
@@ -22,6 +22,7 @@ pub struct ServerOptions<D: DataStore, M: MessageStore> {
     pub domain: String,
     pub dwn: Arc<DWN<D, M>>,
     pub port: u16,
+    pub threads: Option<usize>,
 }
 
 pub async fn start<D: DataStore + 'static, M: MessageStore + 'static>(
@@ -33,13 +34,17 @@ pub async fn start<D: DataStore + 'static, M: MessageStore + 'static>(
 
     let config = ServerConfig::builder()
         .with_bind_address(address)
-        .with_identity(&Identity::self_signed(["localhost", "127.0.0.1", &opts.domain]).unwrap())
+        .with_identity(&Identity::self_signed([&address.to_string(), &opts.domain]).unwrap())
         .build();
 
-    let endpoint = Endpoint::server(config)?;
+    let endpoint = wtransport::Endpoint::server(config)?;
     let endpoint = xwt_wtransport::Endpoint(endpoint);
 
-    let num_threads = std::thread::available_parallelism().unwrap().into();
+    let max_threads = std::thread::available_parallelism().unwrap().into();
+    let num_threads = opts
+        .threads
+        .map(|t| t.min(max_threads))
+        .unwrap_or(max_threads);
     debug!("Spawning {} connection threads.", num_threads);
 
     let mut threads = Vec::new();

@@ -5,7 +5,9 @@ use std::{
     task::{Context, Poll},
 };
 
+use anyhow::anyhow;
 use futures_io::AsyncWrite;
+use tracing::warn;
 use xwt_core::{session::stream::SendSpec, stream::Write};
 
 pub struct WriteCompat<T: SendSpec> {
@@ -28,13 +30,15 @@ impl<T: SendSpec> AsyncWrite for WriteCompat<T> {
     ) -> Poll<futures_io::Result<usize>> {
         #[allow(clippy::await_holding_refcell_ref)]
         let write = async {
-            match self.as_mut().send.borrow_mut().write(buf).await {
-                Ok(v) => Ok(v),
-                Err(e) => Err(futures_io::Error::new(
-                    futures_io::ErrorKind::Other,
-                    anyhow::anyhow!("{}", e),
-                )),
-            }
+            self.as_mut()
+                .send
+                .borrow_mut()
+                .write(buf)
+                .await
+                .map_err(|e| {
+                    warn!("Stream write error: {}", e);
+                    futures_io::Error::new(futures_io::ErrorKind::Other, anyhow!("{}", e))
+                })
         };
         let mut pinned_write = pin!(write);
         pinned_write.as_mut().poll(cx)

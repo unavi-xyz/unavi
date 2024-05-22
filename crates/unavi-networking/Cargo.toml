@@ -12,7 +12,6 @@ workspace = true
 [dependencies]
 anyhow.workspace = true
 bevy.workspace = true
-bevy_async_task.workspace = true
 capnp-rpc.workspace = true
 capnp.workspace = true
 tokio.workspace = true

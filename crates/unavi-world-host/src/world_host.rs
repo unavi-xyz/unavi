@@ -119,6 +119,7 @@ pub async fn create_world_host(
                     .update_record(found.record_id.clone(), found.entry_id().unwrap())
                     .data(connect_url.into())
                     .data_format("text/plain".to_string())
+                    .published(true)
                     .process()
                     .await
                     .unwrap();

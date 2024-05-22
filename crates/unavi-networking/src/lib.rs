@@ -3,7 +3,7 @@ use tokio::{sync::mpsc::UnboundedSender, task::LocalSet};
 use unavi_world::{InstanceRecord, InstanceServer};
 
 mod connect;
-mod handler;
+pub mod handler;
 
 pub struct NetworkingPlugin;
 
@@ -27,21 +27,20 @@ impl Default for Sessions {
         let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel::<NewSession>();
 
         let task = async move {
-            info!("Spawned session task.");
-
             while let Some(new_session) = receiver.recv().await {
                 let span = info_span!("Session", address = new_session.address);
 
                 tokio::task::spawn_local(
                     async move {
-                        info!("Spawned session task.");
-
-                        if let Err(e) =
-                            handler::instance_session(new_session.address, new_session.record_id)
-                                .await
+                        match handler::handle_instance_session(
+                            &new_session.address,
+                            new_session.record_id,
+                        )
+                        .await
                         {
-                            error!("{}", e);
-                        }
+                            Ok(_) => info!("Graceful exit."),
+                            Err(e) => error!("{}", e),
+                        };
                     }
                     .instrument(span),
                 );

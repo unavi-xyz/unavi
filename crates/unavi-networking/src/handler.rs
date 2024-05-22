@@ -1,27 +1,20 @@
 use anyhow::{anyhow, Result};
-use bevy::log::info;
+use bevy::{
+    log::{debug, error, info, info_span},
+    utils::tracing::Instrument,
+};
 use capnp_rpc::{rpc_twoparty_capnp::Side, twoparty::VatNetwork, RpcSystem};
-use wired_world::world_server_capnp::world_server::Client;
+use wired_world::world_server_capnp::{result::Which, world_server::Client};
 use xwt_core::{base::Session, session::stream::OpeningBi};
 use xwt_futures_io::{read::ReadCompat, write::WriteCompat};
 
-pub async fn instance_session(address: String, record_id: String) -> Result<()> {
-    let session = start_session(&address).await?;
-    let world_server = create_world_server_rpc(session).await?;
+pub async fn handle_instance_session(address: &str, record_id: String) -> Result<()> {
+    let session = crate::connect::connect(address)
+        .await
+        .map_err(|e| anyhow!("{}", e))?;
+    info!("Started session.");
 
-    join_instance(&world_server, record_id).await?;
-
-    Ok(())
-}
-
-async fn create_world_server_rpc<T: Session + 'static>(session: T) -> Result<Client> {
-    info!("Opening bi stream.");
-    let opening = session.open_bi().await.map_err(|e| anyhow!("{}", e))?;
-    let (send, recv) = opening.wait_bi().await.map_err(|e| anyhow!("{}", e))?;
-    info!("Stream opened.");
-
-    let reader = ReadCompat::<T>::new(recv);
-    let writer = WriteCompat::<T>::new(send);
+    let (writer, reader) = open_stream(&session).await?;
 
     let rpc_network = VatNetwork::new(
         Box::pin(reader),
@@ -31,36 +24,50 @@ async fn create_world_server_rpc<T: Session + 'static>(session: T) -> Result<Cli
     );
     let mut rpc_system = RpcSystem::new(Box::new(rpc_network), None);
 
-    let world_server = rpc_system.bootstrap(Side::Server);
+    let world_server: Client = rpc_system.bootstrap(Side::Server);
 
-    tokio::task::spawn_local(rpc_system);
+    tokio::task::spawn_local(
+        async move {
+            match rpc_system.await {
+                Ok(_) => debug!("Graceful exit."),
+                Err(e) => error!("{}", e),
+            };
+        }
+        .instrument(info_span!("RPC")),
+    );
+    info!("Created world server RPC.");
 
-    Ok(world_server)
+    join_instance(&world_server, record_id).await?;
+
+    Ok(())
+}
+
+async fn open_stream<T: Session>(session: &T) -> Result<(WriteCompat<T>, ReadCompat<T>)> {
+    let (send, recv) = session.open_bi().await?.wait_bi().await?;
+
+    let writer = WriteCompat::<T>::new(send);
+    let reader = ReadCompat::<T>::new(recv);
+
+    Ok((writer, reader))
 }
 
 async fn join_instance(world_server: &Client, record_id: String) -> Result<()> {
     let mut request = world_server.join_instance_request();
     request.get().init_instance().set_record_id(record_id);
 
-    let reply = request.send().promise.await?;
-    let _response = reply.get()?.get_response()?;
+    let reply = request.send().promise.await.unwrap();
+    let response = reply.get().unwrap().get_response().unwrap();
 
-    Ok(())
-}
-
-const LOCALHOST: &str = "https://localhost:";
-
-async fn start_session(addr: &str) -> Result<impl Session> {
-    let addr = if addr.starts_with(LOCALHOST) {
-        addr.replace(LOCALHOST, "https://127.0.0.1:")
-    } else {
-        addr.to_string()
+    match response.which().unwrap() {
+        Which::Success(s) => {
+            let ok = s.unwrap().get_ok();
+            info!("Join success: {}", ok)
+        }
+        Which::Error(e) => {
+            let e = e.unwrap().to_str().unwrap();
+            error!("Join error: {}", e);
+        }
     };
 
-    info!("Beginning connection process.");
-    let session = crate::connect::connect(&addr)
-        .await
-        .map_err(|e| anyhow!("{}", e))?;
-
-    Ok(session)
+    Ok(())
 }

@@ -1,7 +1,7 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
-use capnp_rpc::{rpc_twoparty_capnp::Side, twoparty::VatNetwork, RpcSystem};
+
 use dwn::{
     actor::{Actor, MessageBuilder},
     message::{descriptor::records::RecordsFilter, Data},
@@ -15,9 +15,6 @@ use wired_social::{
     protocols::world_host::{world_host_protocol_url, WORLD_HOST_PROTOCOL_VERSION},
     schemas::{common::RecordLink, instance::Instance},
 };
-use wired_world::world_server_capnp::{result::Which, world_server::Client};
-use wtransport::ClientConfig;
-use xwt_futures_io::{read::ReadCompat, write::WriteCompat};
 
 mod utils;
 

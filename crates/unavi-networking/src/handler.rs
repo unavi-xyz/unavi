@@ -43,7 +43,13 @@ pub async fn handle_instance_session(address: &str, record_id: String) -> Result
 }
 
 async fn open_stream<T: Session>(session: &T) -> Result<(WriteCompat<T>, ReadCompat<T>)> {
-    let (send, recv) = session.open_bi().await?.wait_bi().await?;
+    let (send, recv) = session
+        .open_bi()
+        .await
+        .map_err(|e| anyhow!("{}", e))?
+        .wait_bi()
+        .await
+        .map_err(|e| anyhow!("{}", e))?;
 
     let writer = WriteCompat::<T>::new(send);
     let reader = ReadCompat::<T>::new(recv);
@@ -55,8 +61,12 @@ async fn join_instance(world_server: &Client, record_id: String) -> Result<()> {
     let mut request = world_server.join_instance_request();
     request.get().init_instance().set_record_id(record_id);
 
-    let reply = request.send().promise.await.unwrap();
-    let response = reply.get().unwrap().get_response().unwrap();
+    let reply = request.send().promise.await.map_err(|e| anyhow!("{}", e))?;
+    let response = reply
+        .get()
+        .map_err(|e| anyhow!("{}", e))?
+        .get_response()
+        .map_err(|e| anyhow!("{}", e))?;
 
     match response.which().unwrap() {
         Which::Success(s) => {

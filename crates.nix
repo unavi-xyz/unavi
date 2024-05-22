@@ -103,7 +103,15 @@ let
   unaviServerConfig = rec {
     inherit src;
 
-    buildInputs = with pkgs; [ openssl ];
+    buildInputs = lib.optionals pkgs.stdenv.isLinux (
+      with pkgs;
+      [
+        alsa-lib
+        openssl
+        udev
+      ]
+    );
+
     nativeBuildInputs =
       (with pkgs; [ capnproto ])
       ++ commonNativeBuildInputs

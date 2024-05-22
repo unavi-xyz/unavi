@@ -21,7 +21,7 @@ pub async fn handle_connection<D: DataStore + 'static, M: MessageStore + 'static
     dwn: Arc<DWN<D, M>>,
 ) {
     if let Err(e) = handle_connection_impl(new_connection, dwn).await {
-        error!("{}", e);
+        error!("Connection failed: {}", e);
     }
 }
 

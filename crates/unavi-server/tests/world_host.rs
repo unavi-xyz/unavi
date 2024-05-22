@@ -1,62 +1,37 @@
 use std::{sync::Arc, time::Duration};
 
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
+use capnp_rpc::{rpc_twoparty_capnp::Side, twoparty::VatNetwork, RpcSystem};
 use dwn::{
     actor::{Actor, MessageBuilder},
-    message::descriptor::{protocols::ProtocolsFilter, records::RecordsFilter},
+    message::{descriptor::records::RecordsFilter, Data},
     store::SurrealStore,
     DWN,
 };
 use surrealdb::{engine::local::Mem, Surreal};
+use tokio::task::LocalSet;
 use tracing_test::traced_test;
-use unavi_server::{Args, Command, StartOptions, Storage};
-use wired_social::protocols::world_host::{world_host_protocol_url, WORLD_HOST_PROTOCOL_VERSION};
-use wtransport::{ClientConfig, Endpoint, VarInt};
+use wired_social::{
+    protocols::world_host::{world_host_protocol_url, WORLD_HOST_PROTOCOL_VERSION},
+    schemas::{common::RecordLink, instance::Instance},
+};
+use wired_world::world_server_capnp::{result::Which, world_server::Client};
+use wtransport::ClientConfig;
+use xwt_futures_io::{read::ReadCompat, write::WriteCompat};
 
-fn local_domain(port: u16) -> String {
-    format!("localhost:{}", port)
-}
+mod utils;
 
 #[tokio::test]
 #[traced_test]
 async fn test_world_host() {
-    let port_social = port_scanner::request_open_port().unwrap();
-    let domain_social = local_domain(port_social);
-
-    let port_world = port_scanner::request_open_port().unwrap();
-    let domain_world = local_domain(port_world);
-
-    let args_social = Args {
-        debug: true,
-        path: String::new(),
-        storage: Storage::Memory,
-        command: Command::Social {
-            domain: domain_social.clone(),
-            port: port_social,
-        },
-    };
-
-    let remote_dwn = format!("http://{}", domain_social);
-
-    let args_world = Args {
-        debug: true,
-        path: String::new(),
-        storage: Storage::Memory,
-        command: Command::World {
-            domain: domain_world.clone(),
-            remote_dwn: remote_dwn.clone(),
-            port: port_world,
-        },
-    };
-
-    let db = Surreal::new::<Mem>(()).await.unwrap();
-    let store = SurrealStore::new(db).await.unwrap();
-    let dwn = Arc::new(DWN::from(store));
-
-    let opts = StartOptions::default();
-
-    let social_task = tokio::spawn(unavi_server::start(args_social, opts.clone(), dwn.clone()));
-    let world_task = tokio::spawn(unavi_server::start(args_world, opts, dwn));
-    tokio::time::sleep(Duration::from_secs(5)).await;
+    let utils::TestServer {
+        domain_social,
+        domain_world,
+        port_world,
+        task_social,
+        task_world,
+        ..
+    } = utils::setup_test_server().await;
 
     // DID document is available.
     let response = reqwest::get(format!("http://{}/.well-known/did.json", domain_world))
@@ -72,9 +47,9 @@ async fn test_world_host() {
         .unwrap()
         .as_str()
         .unwrap();
-    assert_eq!(service_endpoint, remote_dwn);
+    assert_eq!(service_endpoint, format!("http://{}", domain_social));
 
-    // Can query protocols and records using world host DID.
+    // Query connect URL using world host DID.
     let world_host_did = format!("did:web:localhost%3A{}", port_world);
 
     let db = Surreal::new::<Mem>(()).await.unwrap();
@@ -82,41 +57,84 @@ async fn test_world_host() {
     let dwn = Arc::new(DWN::from(store));
     let actor = Actor::new_did_key(dwn.clone()).unwrap();
 
-    let query_protocols = actor
-        .query_protocols(ProtocolsFilter {
-            protocol: world_host_protocol_url(),
-            versions: vec![WORLD_HOST_PROTOCOL_VERSION],
+    let query_records = actor
+        .query_records(RecordsFilter {
+            protocol: Some(world_host_protocol_url()),
+            protocol_version: Some(WORLD_HOST_PROTOCOL_VERSION),
+            ..Default::default()
         })
         .target(world_host_did.clone())
         .send(&world_host_did)
         .await
         .unwrap();
-    assert_eq!(query_protocols.status.code, 200);
-    assert!(!query_protocols.entries.is_empty());
+    assert_eq!(query_records.status.code, 200);
+    assert_eq!(query_records.entries.len(), 1);
 
-    let query_records = actor
-        .query_records(RecordsFilter::default())
+    let message = &query_records.entries[0];
+
+    let read = actor
+        .read_record(message.record_id.clone())
         .target(world_host_did.clone())
         .send(&world_host_did)
         .await
         .unwrap();
-    assert_eq!(query_records.status.code, 200);
-    assert!(!query_records.entries.is_empty());
 
-    // Can open WebTransport connection.
-    let config = ClientConfig::builder()
-        .with_bind_default()
-        .with_no_cert_validation()
-        .build();
+    let connect_url = match &read.record.data {
+        Some(Data::Base64(s)) => String::from_utf8(URL_SAFE_NO_PAD.decode(s).unwrap()).unwrap(),
+        Some(_) => unreachable!(),
+        None => panic!("No data"),
+    };
 
-    let connection = Endpoint::client(config)
-        .unwrap()
-        .connect(format!("https://127.0.0.1:{}", port_world))
+    // Create an instance.
+    let world_record_id = actor
+        .create_record()
+        .published(true)
+        .send(&world_host_did)
         .await
-        .unwrap();
+        .unwrap()
+        .record_id;
 
-    connection.close(VarInt::from_u32(0), &[]);
+    let instance_record_id = actor
+        .create_record()
+        .published(true)
+        .protocol(
+            world_host_protocol_url(),
+            WORLD_HOST_PROTOCOL_VERSION,
+            "instance".to_string(),
+        )
+        .data(
+            serde_json::to_vec(&Instance {
+                world: RecordLink {
+                    did: actor.did.clone(),
+                    record_id: world_record_id,
+                },
+            })
+            .unwrap(),
+        )
+        .data_format("application/json".to_string())
+        .target(world_host_did.clone())
+        .send(&world_host_did)
+        .await
+        .unwrap()
+        .record_id;
 
-    social_task.abort();
-    world_task.abort();
+    // Open WebTransport connection and join the instance.
+    LocalSet::default()
+        .run_until(async move {
+            unavi_networking::handler::handle_instance_session(&connect_url, instance_record_id)
+                .await
+                .unwrap();
+        })
+        .await;
+
+    if task_social.is_finished() {
+        panic!("Server finished")
+    }
+
+    if task_world.is_finished() {
+        panic!("Server finished")
+    }
+
+    task_social.abort();
+    task_world.abort();
 }

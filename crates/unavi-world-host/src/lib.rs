@@ -68,7 +68,14 @@ pub async fn start(opts: ServerOptions<impl DataStore, impl MessageStore>) -> st
     }
 
     // Interact with DWN.
-    let connect_url = format!("https://{}", opts.domain);
+    const LOCALHOST: &str = "localhost:";
+    let connect_domain = if opts.domain.starts_with(LOCALHOST) {
+        opts.domain.replace(LOCALHOST, "127.0.0.1:")
+    } else {
+        opts.domain
+    };
+    let connect_url = format!("https://{}", connect_domain);
+
     world_host::create_world_host(&actor, &connect_url).await;
 
     // Sync after.

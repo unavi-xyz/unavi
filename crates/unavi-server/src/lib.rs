@@ -19,7 +19,7 @@ pub struct Args {
     pub storage: Storage,
 
     /// Path to store data in, if storage is set to "filesystem".
-    #[arg(long, default_value = ".unavi/server")]
+    #[arg(long, default_value = ".unavi/server/<command>")]
     pub path: String,
 
     #[command(subcommand)]
@@ -30,6 +30,7 @@ pub struct Args {
 pub enum Command {
     /// Starts all servers with default settings.
     /// Useful for development.
+    /// Will use a separate database for the combined server.
     All,
     /// Social server.
     /// Hosts a DWN, login APIs, and more.

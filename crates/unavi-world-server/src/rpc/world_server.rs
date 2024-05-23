@@ -4,7 +4,7 @@ use anyhow::{bail, Result};
 use capnp::{capability::Promise, Error};
 use capnp_rpc::pry;
 use dwn::{
-    actor::Actor,
+    actor::{Actor, MessageBuilder},
     message::descriptor::Descriptor,
     store::{DataStore, MessageStore},
 };
@@ -14,9 +14,12 @@ use wired_world::world_server_capnp::world_server::{
     JoinInstanceParams, JoinInstanceResults, ListPlayersParams, ListPlayersResults, Server,
 };
 
+use crate::global_context::GlobalContext;
+
 pub struct WorldServer<D: DataStore, M: MessageStore> {
     pub actor: Arc<Actor<D, M>>,
     pub connection_id: usize,
+    pub context: Arc<GlobalContext<D, M>>,
 }
 
 impl<D: DataStore + 'static, M: MessageStore + 'static> Server for WorldServer<D, M> {
@@ -32,11 +35,12 @@ impl<D: DataStore + 'static, M: MessageStore + 'static> Server for WorldServer<D
         debug!("Request to join instance: {}", record_id);
 
         let actor = self.actor.clone();
+        let world_host_did = self.context.world_host_did.clone();
 
         Promise::from_future(async move {
             let response = results.get().init_response();
 
-            match verify_instance(actor, record_id).await {
+            match verify_instance(actor, world_host_did, record_id).await {
                 Ok(_) => {
                     debug!("Instance verified.");
                     response.init_success().set_ok(true);
@@ -60,9 +64,14 @@ impl<D: DataStore + 'static, M: MessageStore + 'static> Server for WorldServer<D
 
 async fn verify_instance(
     actor: Arc<Actor<impl DataStore, impl MessageStore>>,
+    world_host_did: String,
     record_id: String,
 ) -> Result<()> {
-    let read = actor.read_record(record_id).process().await?;
+    let read = actor
+        .read_record(record_id)
+        .target(world_host_did)
+        .process()
+        .await?;
     debug!("Found record {}", read.record.record_id);
 
     let descriptor = match &read.record.descriptor {

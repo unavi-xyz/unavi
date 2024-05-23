@@ -10913,6 +10913,7 @@ dependencies = [
  "bevy",
  "capnp",
  "capnp-rpc",
+ "thiserror",
  "tokio",
  "unavi-world",
  "wasm-bindgen",

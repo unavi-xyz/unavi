@@ -1,85 +1,27 @@
-use bevy::{prelude::*, utils::tracing::Instrument};
-use tokio::{
-    sync::mpsc::{UnboundedReceiver, UnboundedSender},
-    task::LocalSet,
-};
+use bevy::prelude::*;
+use session_runner::{InstanceAction, NewSession, SessionRunner};
+use tokio::sync::mpsc::UnboundedSender;
 use unavi_world::{InstanceRecord, InstanceServer};
 
-mod connect;
-pub mod handler;
+pub mod session_runner;
 
 pub struct NetworkingPlugin;
 
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Sessions>()
-            .add_systems(Update, connect_to_instances);
+        app.init_resource::<session_runner::SessionRunner>()
+            .add_systems(Update, (connect_to_instances, publish_transform));
     }
 }
 
 #[derive(Component)]
-pub struct InstanceSession {
+struct InstanceSession {
     pub sender: UnboundedSender<InstanceAction>,
 }
 
-#[derive(Resource)]
-pub struct Sessions {
-    pub sender: UnboundedSender<NewSession>,
-}
-
-impl Default for Sessions {
-    fn default() -> Self {
-        let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel::<NewSession>();
-
-        let task = async move {
-            while let Some(new_session) = receiver.recv().await {
-                let span = info_span!("Session", address = new_session.address);
-
-                tokio::task::spawn_local(
-                    async move {
-                        match handler::handle_session(new_session).await {
-                            Ok(_) => info!("Graceful exit."),
-                            Err(e) => error!("{}", e),
-                        };
-                    }
-                    .instrument(span),
-                );
-            }
-        };
-
-        #[cfg(not(target_family = "wasm"))]
-        std::thread::spawn(move || {
-            let local = LocalSet::new();
-            local.spawn_local(task);
-            let rt = tokio::runtime::Runtime::new().unwrap();
-            rt.block_on(local);
-        });
-
-        #[cfg(target_family = "wasm")]
-        let _ = wasm_bindgen_futures::future_to_promise(async move {
-            let local = LocalSet::new();
-            local.run_until(task).await;
-            Ok(wasm_bindgen::JsValue::UNDEFINED)
-        });
-
-        Self { sender }
-    }
-}
-
-pub struct NewSession {
-    pub action_receiver: UnboundedReceiver<InstanceAction>,
-    pub address: String,
-    pub record_id: String,
-}
-
-#[derive(Debug)]
-pub enum InstanceAction {
-    Close,
-}
-
-pub fn connect_to_instances(
+fn connect_to_instances(
     mut commands: Commands,
-    sessions: Res<Sessions>,
+    sessions: Res<SessionRunner>,
     to_open: Query<(Entity, &InstanceServer, &InstanceRecord), Without<InstanceSession>>,
 ) {
     for (entity, server, record) in to_open.iter() {
@@ -89,14 +31,50 @@ pub fn connect_to_instances(
         let (sender, receiver) = tokio::sync::mpsc::unbounded_channel::<InstanceAction>();
 
         if let Err(e) = sessions.sender.send(NewSession {
-            action_receiver: receiver,
             address,
+            receiver,
             record_id,
         }) {
             error!("{}", e);
             continue;
         }
 
-        commands.entity(entity).insert(InstanceSession { sender });
+        commands
+            .entity(entity)
+            .insert((InstanceSession { sender }, LastTransformPublish(0.0)));
+    }
+}
+
+/// How often to publish the player transform, in seconds.
+/// Determined by the server.
+#[derive(Component, Deref, DerefMut)]
+struct InstancePublishInterval(f32);
+
+#[derive(Component, Deref, DerefMut)]
+struct LastTransformPublish(f32);
+
+fn publish_transform(
+    time: Res<Time>,
+    mut sessions: Query<(
+        &InstanceSession,
+        &InstancePublishInterval,
+        &mut LastTransformPublish,
+    )>,
+) {
+    let elapsed = time.elapsed_seconds();
+
+    for (session, interval, mut last) in sessions.iter_mut() {
+        let delta = elapsed - last.0;
+
+        if delta > interval.0 {
+            **last = elapsed;
+        }
+
+        if let Err(e) = session
+            .sender
+            .send(InstanceAction::SendDatagram(Box::new([])))
+        {
+            error!("Failed to publish transform: {}", e);
+        }
     }
 }

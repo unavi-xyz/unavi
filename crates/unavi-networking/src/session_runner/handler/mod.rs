@@ -6,10 +6,13 @@ use bevy::{
 use capnp_rpc::{rpc_twoparty_capnp::Side, twoparty::VatNetwork, RpcSystem};
 use thiserror::Error;
 use wired_world::world_server_capnp::world_server::Client;
-use xwt_core::{base::Session, session::stream::OpeningBi};
+use xwt_core::{
+    base::Session,
+    session::{datagram::Send, stream::OpeningBi},
+};
 use xwt_futures_io::{read::ReadCompat, write::WriteCompat};
 
-use crate::{InstanceAction, NewSession};
+use super::{InstanceAction, NewSession};
 
 mod join_instance;
 
@@ -28,11 +31,11 @@ pub enum SessionError {
 pub async fn handle_session(
     NewSession {
         address,
-        mut action_receiver,
+        receiver: mut action_receiver,
         record_id,
     }: NewSession,
 ) -> Result<(), SessionError> {
-    let session = crate::connect::connect(&address)
+    let session = super::connect::connect(&address)
         .await
         .map_err(SessionError::Connect)?;
     info!("Started session.");
@@ -69,6 +72,11 @@ pub async fn handle_session(
 
         match action {
             InstanceAction::Close => break,
+            InstanceAction::SendDatagram(data) => {
+                if let Err(e) = session.send_datagram(data).await {
+                    error!("Failed to send datagram: {}", e);
+                };
+            }
         }
     }
 

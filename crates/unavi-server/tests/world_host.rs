@@ -11,7 +11,7 @@ use dwn::{
 use surrealdb::{engine::local::Mem, Surreal};
 use tokio::task::LocalSet;
 use tracing_test::traced_test;
-use unavi_networking::{InstanceAction, NewSession};
+use unavi_networking::session_runner::{InstanceAction, NewSession};
 use wired_social::{
     protocols::world_host::{world_host_protocol_url, WORLD_HOST_PROTOCOL_VERSION},
     schemas::{common::RecordLink, instance::Instance},
@@ -122,9 +122,9 @@ async fn test_world_host() {
     let local = LocalSet::default();
 
     local.spawn_local(async move {
-        unavi_networking::handler::handle_session(NewSession {
-            action_receiver: receiver,
+        unavi_networking::session_runner::handler::handle_session(NewSession {
             address: connect_url,
+            receiver,
             record_id: instance_record_id,
         })
         .await

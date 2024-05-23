@@ -30,12 +30,12 @@ async fn main() {
 
     if args.path == ".unavi/server/<command>" {
         let folder = match args.command {
-            Command::World { .. } => "/world",
-            Command::Social { .. } => "/social",
-            Command::All => "",
+            Command::World { .. } => "world",
+            Command::Social { .. } => "social",
+            Command::All => "all",
         };
 
-        args.path = format!(".unavi/server{}", folder);
+        args.path = format!(".unavi/server/{}", folder);
     }
 
     let store = match &args.storage {

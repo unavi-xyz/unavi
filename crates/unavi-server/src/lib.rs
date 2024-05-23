@@ -88,6 +88,8 @@ pub async fn start(
 ) -> Result<()> {
     debug!("Processing args: {:?}", args);
 
+    std::fs::create_dir_all(&args.path)?;
+
     match args.command {
         Command::All => {
             let mut opts = opts.clone();

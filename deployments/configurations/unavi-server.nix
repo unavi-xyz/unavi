@@ -1,6 +1,7 @@
 {
-  domainWorld,
   domainWeb,
+  domainWorld,
+  pkgs,
   unavi-server,
   unavi-web,
   ...
@@ -11,6 +12,7 @@ let
 
   urlSocial = "http://localhost:${portSocial}";
   urlWorld = "http://localhost:${portWorld}";
+  urlWeb = "https://${domainWeb}";
 
   extraServerConfig = ''
     if ($request_method = 'OPTIONS') {
@@ -80,21 +82,23 @@ in
   };
 
   systemd.services = {
-    unavi-social-server = {
-      description = "unavi-social-server";
+    unavi-social = {
+      description = "unavi-social";
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
+        Environment = [ "LD_LIBRARY_PATH=${pkgs.openssl.out}/lib" ];
         ExecStart = "${unavi-server}/bin/unavi-server --debug social -d ${domainWeb} -p ${portSocial}";
         Restart = "always";
       };
     };
-    unavi-world-host = {
-      description = "unavi-world-host";
+    unavi-world = {
+      description = "unavi-world";
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
-        ExecStart = "${unavi-server}/bin/unavi-server --debug world -d ${domainWorld} -p ${portWorld} --remote-dwn ${domainWeb}";
+        Environment = [ "LD_LIBRARY_PATH=${pkgs.openssl.out}/lib" ];
+        ExecStart = "${unavi-server}/bin/unavi-server --debug world -d ${domainWorld} -p ${portWorld} --remote-dwn ${urlWeb}";
         Restart = "always";
       };
     };

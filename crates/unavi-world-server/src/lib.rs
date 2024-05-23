@@ -14,7 +14,10 @@ use tracing::{debug, error, info, info_span, Instrument};
 use wtransport::{Identity, ServerConfig};
 use xwt_wtransport::IncomingSession;
 
+use crate::global_context::GlobalContext;
+
 mod connection;
+mod global_context;
 mod rpc;
 
 #[derive(Clone)]
@@ -40,6 +43,12 @@ pub async fn start<D: DataStore + 'static, M: MessageStore + 'static>(
     let endpoint = wtransport::Endpoint::server(config)?;
     let endpoint = xwt_wtransport::Endpoint(endpoint);
 
+    let context = Arc::new(GlobalContext {
+        dwn: opts.dwn.clone(),
+        instances: Default::default(),
+        world_host_did: format!("did:web:{}", opts.domain.clone().replace(':', "%3A")),
+    });
+
     let max_threads = std::thread::available_parallelism().unwrap().into();
     let num_threads = opts
         .threads
@@ -53,7 +62,7 @@ pub async fn start<D: DataStore + 'static, M: MessageStore + 'static>(
         let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel::<NewConnection>();
         threads.push(sender);
 
-        let dwn = opts.dwn.clone();
+        let context = context.clone();
 
         std::thread::spawn(move || {
             let span_thread = info_span!("Thread", id = thread).entered();
@@ -70,10 +79,10 @@ pub async fn start<D: DataStore + 'static, M: MessageStore + 'static>(
                     debug!("Handling connection {}", new_connection.id);
 
                     let span = info_span!("Connection", id = new_connection.id);
-                    let dwn = dwn.clone();
+                    let context = context.clone();
 
                     tokio::task::spawn_local(
-                        connection::handle_connection(new_connection, dwn).instrument(span),
+                        connection::context(new_connection, context).instrument(span),
                     );
                 }
             });

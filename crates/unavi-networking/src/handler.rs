@@ -8,8 +8,16 @@ use wired_world::world_server_capnp::{result::Which, world_server::Client};
 use xwt_core::{base::Session, session::stream::OpeningBi};
 use xwt_futures_io::{read::ReadCompat, write::WriteCompat};
 
-pub async fn handle_instance_session(address: &str, record_id: String) -> Result<()> {
-    let session = crate::connect::connect(address)
+use crate::{InstanceAction, NewSession};
+
+pub async fn handle_session(
+    NewSession {
+        address,
+        mut action_receiver,
+        record_id,
+    }: NewSession,
+) -> Result<()> {
+    let session = crate::connect::connect(&address)
         .await
         .map_err(|e| anyhow!("{}", e))?;
     info!("Started session.");
@@ -38,6 +46,14 @@ pub async fn handle_instance_session(address: &str, record_id: String) -> Result
     info!("Created world server RPC.");
 
     join_instance(&world_server, record_id).await?;
+
+    while let Some(action) = action_receiver.recv().await {
+        debug!("Handling action: {:?}", action);
+
+        match action {
+            InstanceAction::Close => break,
+        }
+    }
 
     Ok(())
 }

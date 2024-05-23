@@ -1,5 +1,8 @@
 use bevy::{prelude::*, utils::tracing::Instrument};
-use tokio::{sync::mpsc::UnboundedSender, task::LocalSet};
+use tokio::{
+    sync::mpsc::{UnboundedReceiver, UnboundedSender},
+    task::LocalSet,
+};
 use unavi_world::{InstanceRecord, InstanceServer};
 
 mod connect;
@@ -15,7 +18,9 @@ impl Plugin for NetworkingPlugin {
 }
 
 #[derive(Component)]
-pub struct InstanceSession;
+pub struct InstanceSession {
+    pub sender: UnboundedSender<InstanceAction>,
+}
 
 #[derive(Resource)]
 pub struct Sessions {
@@ -32,12 +37,7 @@ impl Default for Sessions {
 
                 tokio::task::spawn_local(
                     async move {
-                        match handler::handle_instance_session(
-                            &new_session.address,
-                            new_session.record_id,
-                        )
-                        .await
-                        {
+                        match handler::handle_session(new_session).await {
                             Ok(_) => info!("Graceful exit."),
                             Err(e) => error!("{}", e),
                         };
@@ -67,8 +67,14 @@ impl Default for Sessions {
 }
 
 pub struct NewSession {
+    pub action_receiver: UnboundedReceiver<InstanceAction>,
     pub address: String,
     pub record_id: String,
+}
+
+#[derive(Debug)]
+pub enum InstanceAction {
+    Close,
 }
 
 pub fn connect_to_instances(
@@ -80,11 +86,17 @@ pub fn connect_to_instances(
         let address = server.0.clone();
         let record_id = record.0.record_id.clone();
 
-        if let Err(e) = sessions.sender.send(NewSession { address, record_id }) {
+        let (sender, receiver) = tokio::sync::mpsc::unbounded_channel::<InstanceAction>();
+
+        if let Err(e) = sessions.sender.send(NewSession {
+            action_receiver: receiver,
+            address,
+            record_id,
+        }) {
             error!("{}", e);
             continue;
         }
 
-        commands.entity(entity).insert(InstanceSession);
+        commands.entity(entity).insert(InstanceSession { sender });
     }
 }

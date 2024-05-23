@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 
@@ -11,6 +11,7 @@ use dwn::{
 use surrealdb::{engine::local::Mem, Surreal};
 use tokio::task::LocalSet;
 use tracing_test::traced_test;
+use unavi_networking::{InstanceAction, NewSession};
 use wired_social::{
     protocols::world_host::{world_host_protocol_url, WORLD_HOST_PROTOCOL_VERSION},
     schemas::{common::RecordLink, instance::Instance},
@@ -116,11 +117,25 @@ async fn test_world_host() {
         .record_id;
 
     // Open WebTransport connection and join the instance.
-    LocalSet::default()
+    let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
+
+    let local = LocalSet::default();
+
+    local.spawn_local(async move {
+        unavi_networking::handler::handle_session(NewSession {
+            action_receiver: receiver,
+            address: connect_url,
+            record_id: instance_record_id,
+        })
+        .await
+        .unwrap();
+    });
+
+    local
         .run_until(async move {
-            unavi_networking::handler::handle_instance_session(&connect_url, instance_record_id)
-                .await
-                .unwrap();
+            tokio::time::sleep(Duration::from_secs(3)).await;
+
+            sender.send(InstanceAction::Close).unwrap();
         })
         .await;
 

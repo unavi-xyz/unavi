@@ -110,6 +110,7 @@ where
     let identity = serde_json::to_string(&identity).unwrap();
 
     if let Some(path) = path {
+        info!("Saving identity to {}", path);
         std::fs::write(path, identity).unwrap();
     }
 

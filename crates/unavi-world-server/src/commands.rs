@@ -6,8 +6,6 @@ use std::{
 use tokio::sync::mpsc::{error::SendError, UnboundedReceiver, UnboundedSender};
 use tracing::debug;
 
-const TICKRATE: f32 = 1.0 / 20.0;
-
 #[derive(Debug)]
 pub struct SessionMessage {
     pub command: SessionCommand,
@@ -32,8 +30,6 @@ pub async fn process_commands(
     sender: UnboundedSender<SessionMessage>,
     mut receiver: UnboundedReceiver<SessionMessage>,
 ) -> Result<(), SendError<SessionMessage>> {
-    let duration = Duration::from_secs_f32(TICKRATE);
-
     let mut instances = HashMap::<String, Instance>::default();
     let mut players = HashMap::<usize, Player>::default();
 
@@ -88,8 +84,6 @@ pub async fn process_commands(
                 player.transform = transform;
             }
         }
-
-        tokio::time::sleep(duration).await;
     }
 
     Ok(())

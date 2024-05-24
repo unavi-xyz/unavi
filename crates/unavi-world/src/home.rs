@@ -101,6 +101,7 @@ pub fn handle_join_home(
                             .data(serde_json::to_vec(&data).unwrap())
                             .data_format("application/json".to_string())
                             .schema(world_schema_url())
+                            .published(true)
                             .process()
                             .await?;
 
@@ -119,6 +120,7 @@ pub fn handle_join_home(
                             .data(serde_json::to_vec(&home).unwrap())
                             .data_format("application/json".to_string())
                             .schema(home_schema_url())
+                            .published(true)
                             .process()
                             .await?;
 
@@ -189,6 +191,7 @@ pub fn handle_join_home(
                         .data(serde_json::to_vec(&data).unwrap())
                         .data_format("application/json".to_string())
                         .schema(instance_schema_url())
+                        .published(true)
                         .target(world_host.to_string())
                         .send(world_host)
                         .await?;

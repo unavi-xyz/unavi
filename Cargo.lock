@@ -11043,6 +11043,7 @@ dependencies = [
  "capnp",
  "capnp-rpc",
  "dwn",
+ "thiserror",
  "tokio",
  "tracing",
  "wired-social",

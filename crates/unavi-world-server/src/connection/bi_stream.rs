@@ -4,6 +4,7 @@ use capnp_rpc::{rpc_twoparty_capnp::Side, twoparty::VatNetwork, RpcSystem};
 use dwn::{
     actor::Actor,
     store::{DataStore, MessageStore},
+    DWN,
 };
 use tracing::{debug, error};
 
@@ -15,15 +16,16 @@ use crate::{global_context::GlobalContext, rpc::world_server::WorldServer};
 
 pub async fn handle_bi_stream<D: DataStore + 'static, M: MessageStore + 'static>(
     connection_id: usize,
-    context: Arc<GlobalContext<D, M>>,
+    context: Arc<GlobalContext>,
+    dwn: Arc<DWN<D, M>>,
     (send, recv): (SendStream, RecvStream),
 ) {
-    let actor = Arc::new(Actor::new_did_key(context.dwn.clone()).unwrap());
+    let actor = Arc::new(Actor::new_did_key(dwn.clone()).unwrap());
 
     let rpc_client: Client = capnp_rpc::new_client(WorldServer {
         actor,
-        connection_id,
         context,
+        player_id: connection_id,
     });
 
     let reader = ReadCompat::<Connection>::new(recv);

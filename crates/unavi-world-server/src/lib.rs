@@ -16,6 +16,7 @@ use xwt_wtransport::IncomingSession;
 
 use crate::global_context::GlobalContext;
 
+mod commands;
 mod connection;
 mod global_context;
 mod rpc;
@@ -43,9 +44,10 @@ pub async fn start<D: DataStore + 'static, M: MessageStore + 'static>(
     let endpoint = wtransport::Endpoint::server(config)?;
     let endpoint = xwt_wtransport::Endpoint(endpoint);
 
+    let (command_sender, command_receiver) = tokio::sync::mpsc::unbounded_channel();
+
     let context = Arc::new(GlobalContext {
-        dwn: opts.dwn.clone(),
-        instances: Default::default(),
+        sender: command_sender.clone(),
         world_host_did: format!("did:web:{}", opts.domain.clone().replace(':', "%3A")),
     });
 
@@ -63,6 +65,7 @@ pub async fn start<D: DataStore + 'static, M: MessageStore + 'static>(
         threads.push(sender);
 
         let context = context.clone();
+        let dwn = opts.dwn.clone();
 
         std::thread::spawn(move || {
             let span_thread = info_span!("Thread", id = thread).entered();
@@ -80,9 +83,11 @@ pub async fn start<D: DataStore + 'static, M: MessageStore + 'static>(
 
                     let span = info_span!("Connection", id = new_connection.id);
                     let context = context.clone();
+                    let dwn = dwn.clone();
 
                     tokio::task::spawn_local(
-                        connection::context(new_connection, context).instrument(span),
+                        connection::handle_connection(new_connection, context, dwn)
+                            .instrument(span),
                     );
                 }
             });
@@ -93,6 +98,12 @@ pub async fn start<D: DataStore + 'static, M: MessageStore + 'static>(
             span_thread.exit();
         });
     }
+
+    tokio::spawn(async move {
+        if let Err(e) = commands::process_commands(command_sender, command_receiver).await {
+            panic!("{}", e);
+        };
+    });
 
     info!("Listening on {}", address);
 

@@ -10,6 +10,7 @@ anyhow.workspace = true
 capnp-rpc.workspace = true
 capnp.workspace = true
 dwn.workspace = true
+thiserror.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 wired-social = { path = "../wired-social" }

@@ -8,18 +8,21 @@ use dwn::{
     message::descriptor::Descriptor,
     store::{DataStore, MessageStore},
 };
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 use wired_social::protocols::world_host::world_host_protocol_url;
 use wired_world::world_server_capnp::world_server::{
     JoinInstanceParams, JoinInstanceResults, ListPlayersParams, ListPlayersResults, Server,
 };
 
-use crate::global_context::GlobalContext;
+use crate::{
+    commands::{SessionCommand, SessionMessage},
+    global_context::GlobalContext,
+};
 
 pub struct WorldServer<D: DataStore, M: MessageStore> {
     pub actor: Arc<Actor<D, M>>,
-    pub connection_id: usize,
-    pub context: Arc<GlobalContext<D, M>>,
+    pub player_id: usize,
+    pub context: Arc<GlobalContext>,
 }
 
 impl<D: DataStore + 'static, M: MessageStore + 'static> Server for WorldServer<D, M> {
@@ -35,14 +38,28 @@ impl<D: DataStore + 'static, M: MessageStore + 'static> Server for WorldServer<D
         debug!("Request to join instance: {}", record_id);
 
         let actor = self.actor.clone();
+        let player_id = self.player_id;
         let world_host_did = self.context.world_host_did.clone();
+        let context = self.context.clone();
 
         Promise::from_future(async move {
             let response = results.get().init_response();
 
-            match verify_instance(actor, world_host_did, record_id).await {
+            match verify_instance(actor, world_host_did, record_id.clone()).await {
                 Ok(_) => {
-                    debug!("Instance verified.");
+                    debug!("Instance {} verified.", record_id);
+
+                    context
+                        .sender
+                        .send(SessionMessage {
+                            command: SessionCommand::JoinInstance { id: record_id },
+                            player_id,
+                        })
+                        .map_err(|e| {
+                            error!("Send failed: {}", e);
+                            capnp::Error::from_kind(capnp::ErrorKind::Failed)
+                        })?;
+
                     response.init_success().set_ok(true);
                 }
                 Err(e) => {

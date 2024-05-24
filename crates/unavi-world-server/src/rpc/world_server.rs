@@ -1,17 +1,18 @@
 use std::sync::Arc;
 
 use anyhow::{bail, Result};
-use capnp::{capability::Promise, Error};
+use capnp::capability::Promise;
 use capnp_rpc::pry;
 use dwn::{
     actor::{Actor, MessageBuilder},
     message::descriptor::Descriptor,
     store::{DataStore, MessageStore},
 };
-use tracing::{debug, error, info};
+use tracing::{debug, error};
 use wired_social::protocols::world_host::world_host_protocol_url;
 use wired_world::world_server_capnp::world_server::{
-    JoinInstanceParams, JoinInstanceResults, ListPlayersParams, ListPlayersResults, Server,
+    JoinParams, JoinResults, LeaveParams, LeaveResults, PlayerParams, PlayerResults, PlayersParams,
+    PlayersResults, Server, TickrateParams, TickrateResults,
 };
 
 use crate::{
@@ -26,24 +27,19 @@ pub struct WorldServer<D: DataStore, M: MessageStore> {
 }
 
 impl<D: DataStore + 'static, M: MessageStore + 'static> Server for WorldServer<D, M> {
-    fn join_instance(
-        &mut self,
-        params: JoinInstanceParams,
-        mut results: JoinInstanceResults,
-    ) -> Promise<(), Error> {
+    fn join(&mut self, params: JoinParams, mut results: JoinResults) -> Promise<(), capnp::Error> {
         let params = pry!(params.get());
-        let instance = pry!(params.get_instance());
-        let record_id = pry!(pry!(instance.get_record_id()).to_string());
+        let record_id = pry!(pry!(params.get_record_id()).to_string());
 
         debug!("Request to join instance: {}", record_id);
 
         let actor = self.actor.clone();
+        let context = self.context.clone();
         let player_id = self.player_id;
         let world_host_did = self.context.world_host_did.clone();
-        let context = self.context.clone();
 
         Promise::from_future(async move {
-            let response = results.get().init_response();
+            let mut success = results.get().init_success();
 
             match verify_instance(actor, world_host_did, record_id.clone()).await {
                 Ok(_) => {
@@ -60,12 +56,12 @@ impl<D: DataStore + 'static, M: MessageStore + 'static> Server for WorldServer<D
                             capnp::Error::from_kind(capnp::ErrorKind::Failed)
                         })?;
 
-                    response.init_success().set_ok(true);
+                    success.set_success(());
                 }
                 Err(e) => {
                     let e = e.to_string();
                     debug!("Instance error {}", e);
-                    response.init_error(e.len() as u32).push_str(&e);
+                    success.init_error(e.len() as u32).push_str(&e);
                 }
             };
 
@@ -73,9 +69,39 @@ impl<D: DataStore + 'static, M: MessageStore + 'static> Server for WorldServer<D
         })
     }
 
-    fn list_players(&mut self, _: ListPlayersParams, _: ListPlayersResults) -> Promise<(), Error> {
-        info!("list_players");
-        Promise::ok(())
+    fn leave(&mut self, params: LeaveParams, _: LeaveResults) -> Promise<(), capnp::Error> {
+        let params = pry!(params.get());
+        let record_id = pry!(pry!(params.get_record_id()).to_string());
+
+        let context = self.context.clone();
+        let player_id = self.player_id;
+
+        Promise::from_future(async move {
+            context
+                .sender
+                .send(SessionMessage {
+                    command: SessionCommand::LeaveInstance { id: record_id },
+                    player_id,
+                })
+                .map_err(|e| {
+                    error!("Send failed: {}", e);
+                    capnp::Error::from_kind(capnp::ErrorKind::Failed)
+                })?;
+
+            Ok(())
+        })
+    }
+
+    fn players(&mut self, _: PlayersParams, _: PlayersResults) -> Promise<(), capnp::Error> {
+        todo!();
+    }
+
+    fn player(&mut self, _: PlayerParams, _: PlayerResults) -> Promise<(), capnp::Error> {
+        todo!();
+    }
+
+    fn tickrate(&mut self, _: TickrateParams, _: TickrateResults) -> Promise<(), capnp::Error> {
+        todo!();
     }
 }
 

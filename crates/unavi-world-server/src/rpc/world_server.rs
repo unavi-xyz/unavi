@@ -105,6 +105,7 @@ impl<D: DataStore + 'static, M: MessageStore + 'static> Server for WorldServer<D
     }
 }
 
+/// Verifies the provided `record_id` is a valid instance.
 async fn verify_instance(
     actor: Arc<Actor<impl DataStore, impl MessageStore>>,
     world_host_did: String,

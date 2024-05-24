@@ -87,8 +87,6 @@ pub fn handle_join_home(
 
                         home
                     } else {
-                        info!("Creating new home world at host: {}", world_host);
-
                         // Create new world.
                         let data = World {
                             name: Some("Home".to_string()),

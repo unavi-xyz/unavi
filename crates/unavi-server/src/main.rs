@@ -15,11 +15,12 @@ use surrealdb::{
     Surreal,
 };
 use tracing::{error, Level};
-use unavi_server::{Command, StartOptions, Storage};
+use unavi_server::{process_args::process_args, StartOptions, Storage};
 
 #[tokio::main]
 async fn main() {
     let mut args = unavi_server::Args::parse();
+    process_args(&mut args);
 
     let log_level = if args.debug {
         Level::DEBUG
@@ -27,16 +28,6 @@ async fn main() {
         Level::INFO
     };
     tracing_subscriber::fmt().with_max_level(log_level).init();
-
-    if args.path == ".unavi/server/<command>" {
-        let folder = match args.command {
-            Command::World { .. } => "world",
-            Command::Social { .. } => "social",
-            Command::All => "all",
-        };
-
-        args.path = format!(".unavi/server/{}", folder);
-    }
 
     let store = match &args.storage {
         Storage::Filesystem => {

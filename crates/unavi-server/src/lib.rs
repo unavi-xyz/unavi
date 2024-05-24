@@ -8,6 +8,8 @@ use dwn::{
 };
 use tracing::{debug, info_span, Instrument};
 
+pub mod process_args;
+
 #[derive(Parser, Debug)]
 #[command(version, about)]
 pub struct Args {
@@ -82,13 +84,13 @@ impl Default for StartOptions {
 
 #[async_recursion::async_recursion]
 pub async fn start(
-    args: Args,
+    mut args: Args,
     opts: StartOptions,
     dwn: Arc<DWN<impl DataStore + 'static, impl MessageStore + 'static>>,
 ) -> Result<()> {
-    debug!("Processing args: {:?}", args);
+    process_args::process_args(&mut args);
 
-    std::fs::create_dir_all(&args.path)?;
+    debug!("Processing args: {:?}", args);
 
     match args.command {
         Command::All => {

@@ -5,7 +5,7 @@ use thiserror::Error;
 use wired_world::world_server_capnp::{success::Which, world_server::Client};
 
 #[derive(Error, Debug)]
-pub enum JoinInstanceError {
+pub enum JoinError {
     #[error(transparent)]
     Capnp(#[from] capnp::Error),
     #[error(transparent)]
@@ -16,7 +16,7 @@ pub enum JoinInstanceError {
     Utf8(#[from] Utf8Error),
 }
 
-pub async fn join_instance(rpc: &Client, record_id: String) -> Result<(), JoinInstanceError> {
+pub async fn join(rpc: &Client, record_id: String) -> Result<(), JoinError> {
     let mut request = rpc.join_request();
     request.get().set_record_id(record_id);
 
@@ -29,7 +29,7 @@ pub async fn join_instance(rpc: &Client, record_id: String) -> Result<(), JoinIn
         }
         Which::Error(e) => {
             let e = e?.to_str()?;
-            return Err(JoinInstanceError::JoinDenied(e.to_string()));
+            return Err(JoinError::JoinDenied(e.to_string()));
         }
     };
 

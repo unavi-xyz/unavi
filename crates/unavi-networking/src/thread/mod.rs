@@ -1,4 +1,5 @@
 use bevy::{prelude::*, utils::tracing::Instrument};
+use capnp::message::HeapAllocator;
 use tokio::{
     sync::mpsc::{UnboundedReceiver, UnboundedSender},
     task::LocalSet,
@@ -22,13 +23,11 @@ pub struct NewSession {
     pub sender: UnboundedSender<SessionResponse>,
 }
 
-#[derive(Debug)]
 pub enum SessionRequest {
     Close,
-    SendDatagram(Box<[u8]>),
+    SendDatagram(capnp::message::Builder<HeapAllocator>),
 }
 
-#[derive(Debug)]
 pub enum SessionResponse {
     Tickrate(f32),
 }

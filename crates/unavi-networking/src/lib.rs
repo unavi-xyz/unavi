@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 use thread::{NetworkingThread, NewSession, SessionRequest, SessionResponse};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use unavi_player::Player;
 use unavi_world::{InstanceRecord, InstanceServer};
+use wired_world::datagram_capnp;
 
 mod thread;
 
@@ -79,23 +81,37 @@ fn handle_session_response(mut commands: Commands, mut sessions: Query<(Entity, 
 struct LastTransformPublish(f32);
 
 fn publish_transform(
-    time: Res<Time>,
     mut sessions: Query<(&Session, &Tickrate, &mut LastTransformPublish)>,
+    players: Query<&Transform, With<Player>>,
+    time: Res<Time>,
 ) {
     let elapsed = time.elapsed_seconds();
 
-    for (session, interval, mut last) in sessions.iter_mut() {
-        let delta = elapsed - last.0;
+    if let Some(transform) = players.iter().next() {
+        for (session, interval, mut last) in sessions.iter_mut() {
+            let delta = elapsed - last.0;
 
-        if delta > interval.0 {
-            **last = elapsed;
-        }
+            if delta > interval.0 {
+                **last = elapsed;
+            }
 
-        if let Err(e) = session
-            .sender
-            .send(SessionRequest::SendDatagram(Box::new([])))
-        {
-            error!("Failed to send: {}", e);
+            let mut msg = capnp::message::Builder::new_default();
+            let mut root = msg.init_root::<datagram_capnp::publish_transform::Builder>();
+
+            let mut translation = root.reborrow().init_translation();
+            translation.set_x(transform.translation.x);
+            translation.set_y(transform.translation.y);
+            translation.set_z(transform.translation.z);
+
+            let mut rotation = root.init_rotation();
+            rotation.set_x(transform.rotation.x);
+            rotation.set_y(transform.rotation.y);
+            rotation.set_z(transform.rotation.z);
+            rotation.set_w(transform.rotation.w);
+
+            if let Err(e) = session.sender.send(SessionRequest::SendDatagram(msg)) {
+                error!("Failed to send: {}", e);
+            }
         }
     }
 }

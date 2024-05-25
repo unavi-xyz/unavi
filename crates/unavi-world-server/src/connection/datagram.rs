@@ -24,10 +24,8 @@ pub async fn handle_datagram(
     context: Arc<GlobalContext>,
     dgram: Datagram,
 ) -> Result<(), HandleDiagramError> {
-    let message = capnp::serialize_packed::read_message(dgram.as_ref(), ReaderOptions::default())?;
-
-    let publish_transform = message.get_root::<datagram_capnp::publish_transform::Reader>()?;
-    let transform = publish_transform.get_transform()?;
+    let msg = capnp::serialize_packed::read_message(dgram.as_ref(), ReaderOptions::default())?;
+    let transform = msg.get_root::<datagram_capnp::publish_transform::Reader>()?;
 
     let translation = transform.get_translation()?;
     let translation = [

@@ -16,6 +16,7 @@ capnp-rpc.workspace = true
 capnp.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
+unavi-player = { path = "../unavi-player" }
 unavi-world = { path = "../unavi-world" }
 wired-world = { path = "../wired-world" }
 xwt-core.workspace = true

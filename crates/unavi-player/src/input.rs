@@ -1,7 +1,7 @@
 use bevy::input::keyboard::KeyCode;
 use bevy::prelude::*;
 
-use super::controls::Player;
+use super::Player;
 
 #[derive(Resource)]
 pub struct InputMap {

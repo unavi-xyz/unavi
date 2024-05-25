@@ -11020,6 +11020,7 @@ dependencies = [
  "capnp-rpc",
  "thiserror",
  "tokio",
+ "unavi-player",
  "unavi-world",
  "wasm-bindgen",
  "wasm-bindgen-futures",

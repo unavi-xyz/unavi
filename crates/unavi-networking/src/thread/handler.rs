@@ -75,11 +75,11 @@ pub async fn handle_session(
     sender.send(SessionResponse::Tickrate(tickrate))?;
 
     while let Some(action) = receiver.recv().await {
-        debug!("Handling action: {:?}", action);
-
         match action {
             SessionRequest::Close => break,
-            SessionRequest::SendDatagram(data) => {
+            SessionRequest::SendDatagram(builder) => {
+                let mut data = Vec::new();
+                capnp::serialize_packed::write_message(&mut data, &builder)?;
                 if let Err(e) = session.send_datagram(data).await {
                     error!("Failed to send datagram: {}", e);
                 };

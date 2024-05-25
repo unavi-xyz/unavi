@@ -2,6 +2,8 @@ use bevy::prelude::*;
 use bevy_tnua::prelude::*;
 use bevy_xpbd_3d::prelude::*;
 
+use crate::Player;
+
 use super::look::{LookDirection, PitchEvent, YawEvent};
 
 #[derive(Default)]
@@ -12,27 +14,6 @@ pub struct InputState {
     pub right: bool,
     pub jump: bool,
     pub sprint: bool,
-}
-
-#[derive(Component)]
-pub struct Player {
-    pub speed: f32,
-    pub sprint_speed: f32,
-    pub jump_height: f32,
-    pub velocity: Vec3,
-    pub input: InputState,
-}
-
-impl Default for Player {
-    fn default() -> Self {
-        Self {
-            speed: 7.0,
-            sprint_speed: 10.0,
-            jump_height: 2.0,
-            velocity: Vec3::ZERO,
-            input: InputState::default(),
-        }
-    }
 }
 
 #[derive(Component)]

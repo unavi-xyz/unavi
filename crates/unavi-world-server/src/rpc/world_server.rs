@@ -26,6 +26,8 @@ pub struct WorldServer<D: DataStore, M: MessageStore> {
     pub context: Arc<GlobalContext>,
 }
 
+pub const TICKRATE: f32 = 1.0 / 20.0;
+
 impl<D: DataStore + 'static, M: MessageStore + 'static> Server for WorldServer<D, M> {
     fn join(&mut self, params: JoinParams, mut results: JoinResults) -> Promise<(), capnp::Error> {
         let params = pry!(params.get());
@@ -100,8 +102,13 @@ impl<D: DataStore + 'static, M: MessageStore + 'static> Server for WorldServer<D
         todo!();
     }
 
-    fn tickrate(&mut self, _: TickrateParams, _: TickrateResults) -> Promise<(), capnp::Error> {
-        todo!();
+    fn tickrate(
+        &mut self,
+        _: TickrateParams,
+        mut results: TickrateResults,
+    ) -> Promise<(), capnp::Error> {
+        results.get().set_tickrate(TICKRATE);
+        Promise::ok(())
     }
 }
 

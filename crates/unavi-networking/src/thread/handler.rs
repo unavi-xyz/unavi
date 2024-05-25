@@ -5,6 +5,7 @@ use bevy::{
 };
 use capnp_rpc::{rpc_twoparty_capnp::Side, twoparty::VatNetwork, RpcSystem};
 use thiserror::Error;
+use tokio::sync::mpsc::error::SendError;
 use wired_world::world_server_capnp::world_server::Client;
 use xwt_core::{
     base::Session,
@@ -12,9 +13,9 @@ use xwt_core::{
 };
 use xwt_futures_io::{read::ReadCompat, write::WriteCompat};
 
-use super::{InstanceAction, NewSession};
+use crate::thread::SessionResponse;
 
-mod join_instance;
+use super::{rpc::join::JoinError, NewSession, SessionRequest};
 
 #[derive(Error, Debug)]
 pub enum SessionError {
@@ -23,16 +24,19 @@ pub enum SessionError {
     #[error("Failed to open WebTransport connection: {0}")]
     Connect(anyhow::Error),
     #[error(transparent)]
-    JoinInstance(#[from] join_instance::JoinInstanceError),
+    Join(#[from] JoinError),
     #[error("Failed to open stream: {0}")]
     OpenStream(anyhow::Error),
+    #[error(transparent)]
+    Send(#[from] SendError<SessionResponse>),
 }
 
 pub async fn handle_session(
     NewSession {
         address,
-        receiver: mut action_receiver,
+        mut receiver,
         record_id,
+        sender,
     }: NewSession,
 ) -> Result<(), SessionError> {
     let session = super::connect::connect(&address)
@@ -65,14 +69,17 @@ pub async fn handle_session(
     );
     info!("Created world server RPC.");
 
-    join_instance::join_instance(&world_server, record_id).await?;
+    super::rpc::join::join(&world_server, record_id.clone()).await?;
 
-    while let Some(action) = action_receiver.recv().await {
+    let tickrate = super::rpc::tickrate::tickrate(&world_server).await?;
+    sender.send(SessionResponse::Tickrate(tickrate))?;
+
+    while let Some(action) = receiver.recv().await {
         debug!("Handling action: {:?}", action);
 
         match action {
-            InstanceAction::Close => break,
-            InstanceAction::SendDatagram(data) => {
+            SessionRequest::Close => break,
+            SessionRequest::SendDatagram(data) => {
                 if let Err(e) = session.send_datagram(data).await {
                     error!("Failed to send datagram: {}", e);
                 };

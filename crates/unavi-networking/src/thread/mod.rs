@@ -4,27 +4,36 @@ use tokio::{
     task::LocalSet,
 };
 
+use self::handler::handle_session;
+
 mod connect;
-pub mod handler;
+mod handler;
+mod rpc;
 
 #[derive(Resource)]
-pub struct SessionRunner {
+pub struct NetworkingThread {
     pub sender: UnboundedSender<NewSession>,
 }
 
 pub struct NewSession {
     pub address: String,
-    pub receiver: UnboundedReceiver<InstanceAction>,
+    pub receiver: UnboundedReceiver<SessionRequest>,
     pub record_id: String,
+    pub sender: UnboundedSender<SessionResponse>,
 }
 
 #[derive(Debug)]
-pub enum InstanceAction {
+pub enum SessionRequest {
     Close,
     SendDatagram(Box<[u8]>),
 }
 
-impl Default for SessionRunner {
+#[derive(Debug)]
+pub enum SessionResponse {
+    Tickrate(f32),
+}
+
+impl Default for NetworkingThread {
     fn default() -> Self {
         let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel::<NewSession>();
 
@@ -34,7 +43,7 @@ impl Default for SessionRunner {
 
                 tokio::task::spawn_local(
                     async move {
-                        match handler::handle_session(new_session).await {
+                        match handle_session(new_session).await {
                             Ok(_) => info!("Graceful exit."),
                             Err(e) => error!("{}", e),
                         };

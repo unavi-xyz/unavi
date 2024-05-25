@@ -1,65 +1,86 @@
 use bevy::prelude::*;
-use session_runner::{InstanceAction, NewSession, SessionRunner};
-use tokio::sync::mpsc::UnboundedSender;
+use thread::{NetworkingThread, NewSession, SessionRequest, SessionResponse};
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use unavi_world::{InstanceRecord, InstanceServer};
 
-pub mod session_runner;
+mod thread;
 
 pub struct NetworkingPlugin;
 
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<session_runner::SessionRunner>()
-            .add_systems(Update, (connect_to_instances, publish_transform));
+        app.init_resource::<thread::NetworkingThread>().add_systems(
+            Update,
+            (
+                connect_to_instances,
+                handle_session_response,
+                publish_transform,
+            ),
+        );
     }
 }
 
 #[derive(Component)]
-struct InstanceSession {
-    pub sender: UnboundedSender<InstanceAction>,
+struct Session {
+    pub sender: UnboundedSender<SessionRequest>,
+    pub receiver: UnboundedReceiver<SessionResponse>,
 }
 
 fn connect_to_instances(
     mut commands: Commands,
-    sessions: Res<SessionRunner>,
-    to_open: Query<(Entity, &InstanceServer, &InstanceRecord), Without<InstanceSession>>,
+    runtime: Res<NetworkingThread>,
+    to_open: Query<(Entity, &InstanceServer, &InstanceRecord), Without<Session>>,
 ) {
     for (entity, server, record) in to_open.iter() {
         let address = server.0.clone();
         let record_id = record.0.record_id.clone();
 
-        let (sender, receiver) = tokio::sync::mpsc::unbounded_channel::<InstanceAction>();
+        let (send_req, recv_req) = tokio::sync::mpsc::unbounded_channel::<SessionRequest>();
+        let (send_res, recv_res) = tokio::sync::mpsc::unbounded_channel::<SessionResponse>();
 
-        if let Err(e) = sessions.sender.send(NewSession {
+        if let Err(e) = runtime.sender.send(NewSession {
             address,
-            receiver,
+            receiver: recv_req,
             record_id,
+            sender: send_res,
         }) {
             error!("{}", e);
             continue;
         }
 
-        commands
-            .entity(entity)
-            .insert((InstanceSession { sender }, LastTransformPublish(0.0)));
+        commands.entity(entity).insert((
+            Session {
+                receiver: recv_res,
+                sender: send_req,
+            },
+            LastTransformPublish(0.0),
+        ));
     }
 }
 
-/// How often to publish the player transform, in seconds.
-/// Determined by the server.
+/// Tickrate of the server, in seconds.
+/// We don't want to publish data faster than this rate.
 #[derive(Component, Deref, DerefMut)]
-struct InstancePublishInterval(f32);
+struct Tickrate(f32);
+
+fn handle_session_response(mut commands: Commands, mut sessions: Query<(Entity, &mut Session)>) {
+    for (entity, mut session) in sessions.iter_mut() {
+        if let Ok(res) = session.receiver.try_recv() {
+            match res {
+                SessionResponse::Tickrate(tickrate) => {
+                    commands.entity(entity).insert(Tickrate(tickrate))
+                }
+            };
+        }
+    }
+}
 
 #[derive(Component, Deref, DerefMut)]
 struct LastTransformPublish(f32);
 
 fn publish_transform(
     time: Res<Time>,
-    mut sessions: Query<(
-        &InstanceSession,
-        &InstancePublishInterval,
-        &mut LastTransformPublish,
-    )>,
+    mut sessions: Query<(&Session, &Tickrate, &mut LastTransformPublish)>,
 ) {
     let elapsed = time.elapsed_seconds();
 
@@ -72,9 +93,9 @@ fn publish_transform(
 
         if let Err(e) = session
             .sender
-            .send(InstanceAction::SendDatagram(Box::new([])))
+            .send(SessionRequest::SendDatagram(Box::new([])))
         {
-            error!("Failed to publish transform: {}", e);
+            error!("Failed to send: {}", e);
         }
     }
 }

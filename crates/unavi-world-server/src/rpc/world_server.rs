@@ -16,8 +16,8 @@ use wired_world::world_server_capnp::world_server::{
 };
 
 use crate::{
-    commands::{SessionCommand, SessionMessage},
     global_context::GlobalContext,
+    update_loop::{IncomingCommand, IncomingEvent, TICKRATE},
 };
 
 pub struct WorldServer<D: DataStore, M: MessageStore> {
@@ -25,8 +25,6 @@ pub struct WorldServer<D: DataStore, M: MessageStore> {
     pub player_id: usize,
     pub context: Arc<GlobalContext>,
 }
-
-pub const TICKRATE: f32 = 1.0 / 20.0;
 
 impl<D: DataStore + 'static, M: MessageStore + 'static> Server for WorldServer<D, M> {
     fn join(&mut self, params: JoinParams, mut results: JoinResults) -> Promise<(), capnp::Error> {
@@ -49,8 +47,8 @@ impl<D: DataStore + 'static, M: MessageStore + 'static> Server for WorldServer<D
 
                     context
                         .sender
-                        .send(SessionMessage {
-                            command: SessionCommand::JoinInstance { id: record_id },
+                        .send(IncomingEvent {
+                            command: IncomingCommand::JoinInstance { id: record_id },
                             player_id,
                         })
                         .map_err(|e| {
@@ -81,8 +79,8 @@ impl<D: DataStore + 'static, M: MessageStore + 'static> Server for WorldServer<D
         Promise::from_future(async move {
             context
                 .sender
-                .send(SessionMessage {
-                    command: SessionCommand::LeaveInstance { id: record_id },
+                .send(IncomingEvent {
+                    command: IncomingCommand::LeaveInstance { id: record_id },
                     player_id,
                 })
                 .map_err(|e| {

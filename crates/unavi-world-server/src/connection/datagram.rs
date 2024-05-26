@@ -7,8 +7,8 @@ use wired_world::datagram_capnp;
 use xwt_wtransport::Datagram;
 
 use crate::{
-    commands::{SessionCommand, SessionMessage, Transform},
     global_context::GlobalContext,
+    update_loop::{IncomingCommand, IncomingEvent, Transform},
 };
 
 #[derive(Error, Debug)]
@@ -16,7 +16,7 @@ pub enum HandleDiagramError {
     #[error(transparent)]
     Capnp(#[from] capnp::Error),
     #[error(transparent)]
-    Send(#[from] SendError<SessionMessage>),
+    Send(#[from] SendError<IncomingEvent>),
 }
 
 pub async fn handle_datagram(
@@ -42,8 +42,8 @@ pub async fn handle_datagram(
         rotation.get_w(),
     ];
 
-    context.sender.send(SessionMessage {
-        command: SessionCommand::SetTransform(Transform {
+    context.sender.send(IncomingEvent {
+        command: IncomingCommand::SetTransform(Transform {
             translation,
             rotation,
         }),

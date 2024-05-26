@@ -1,24 +1,26 @@
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use dwn::{
     store::{DataStore, MessageStore},
     DWN,
 };
 use tracing::{error, info, info_span, Instrument};
+
 use xwt_core::{
     endpoint::accept::{Accepting, Request},
     session::{datagram::Receive, stream::AcceptBi},
 };
 
 use crate::{
-    commands::{SessionCommand, SessionMessage},
     global_context::GlobalContext,
+    update_loop::{IncomingCommand, IncomingEvent},
     NewConnection,
 };
 
 mod bi_stream;
 mod datagram;
+mod event;
 
 pub async fn handle_connection<D: DataStore + 'static, M: MessageStore + 'static>(
     new_connection: NewConnection,
@@ -31,8 +33,8 @@ pub async fn handle_connection<D: DataStore + 'static, M: MessageStore + 'static
         error!("Connection failed: {}", e);
     }
 
-    context.sender.send(SessionMessage {
-        command: SessionCommand::Disconnect,
+    context.sender.send(IncomingEvent {
+        command: IncomingCommand::Disconnect,
         player_id,
     })?;
 
@@ -54,13 +56,24 @@ async fn handle_connection_impl<D: DataStore + 'static, M: MessageStore + 'stati
     );
     let session = session_request.ok().await?;
 
-    info!("Waiting for data from client...");
+    let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
+
+    context.sender.send(IncomingEvent {
+        player_id: new_connection.id,
+        command: IncomingCommand::NewPlayer { sender },
+    })?;
+
+    let mut event_context = event::EventContext::default();
 
     loop {
         let context = context.clone();
         let dwn = dwn.clone();
 
         tokio::select! {
+            event = receiver.recv() => {
+                let event = event.ok_or(anyhow!("Event channel closed"))?;
+                event::handle_event(event, &mut event_context, &session).await?;
+            }
             stream = session.accept_bi() => {
                 let stream = stream?;
                 info!("Accepted bi stream.");

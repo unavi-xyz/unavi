@@ -16,10 +16,10 @@ use xwt_wtransport::IncomingSession;
 
 use crate::global_context::GlobalContext;
 
-mod commands;
 mod connection;
 mod global_context;
 mod rpc;
+mod update_loop;
 
 #[derive(Clone)]
 pub struct ServerOptions<D: DataStore, M: MessageStore> {
@@ -44,10 +44,10 @@ pub async fn start<D: DataStore + 'static, M: MessageStore + 'static>(
     let endpoint = wtransport::Endpoint::server(config)?;
     let endpoint = xwt_wtransport::Endpoint(endpoint);
 
-    let (command_sender, command_receiver) = tokio::sync::mpsc::unbounded_channel();
+    let (send_cmd, recv_cmd) = tokio::sync::mpsc::unbounded_channel();
 
     let context = Arc::new(GlobalContext {
-        sender: command_sender.clone(),
+        sender: send_cmd.clone(),
         world_host_did: format!("did:web:{}", opts.domain.clone().replace(':', "%3A")),
     });
 
@@ -61,8 +61,8 @@ pub async fn start<D: DataStore + 'static, M: MessageStore + 'static>(
     let mut threads = Vec::new();
 
     for thread in 0..num_threads {
-        let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel::<NewConnection>();
-        threads.push(sender);
+        let (send_conn, mut recv_conn) = tokio::sync::mpsc::unbounded_channel::<NewConnection>();
+        threads.push(send_conn);
 
         let context = context.clone();
         let dwn = opts.dwn.clone();
@@ -78,7 +78,7 @@ pub async fn start<D: DataStore + 'static, M: MessageStore + 'static>(
             let local = LocalSet::new();
 
             local.spawn_local(async move {
-                while let Some(new_connection) = receiver.recv().await {
+                while let Some(new_connection) = recv_conn.recv().await {
                     debug!("Handling connection {}", new_connection.id);
 
                     let span = info_span!("Connection", id = new_connection.id);
@@ -100,7 +100,7 @@ pub async fn start<D: DataStore + 'static, M: MessageStore + 'static>(
     }
 
     tokio::spawn(async move {
-        if let Err(e) = commands::process_commands(command_sender, command_receiver).await {
+        if let Err(e) = update_loop::update_loop(send_cmd, recv_cmd).await {
             panic!("{}", e);
         };
     });

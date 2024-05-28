@@ -11,19 +11,14 @@ impl Plugin for AvatarPlugin {
             .add_systems(Startup, fallback::init_fallback_assets)
             .add_systems(
                 Update,
-                (fallback::spawn_fallbacks, fallback::despawn_fallbacks),
+                (
+                    fallback::despawn_fallback_children,
+                    fallback::remove_fallback_avatar,
+                    fallback::spawn_fallback_children,
+                ),
             );
     }
 }
-
-#[derive(Bundle, Default)]
-pub struct AvatarBundle {
-    avatar: Avatar,
-    fallback: FallbackAvatar,
-}
-
-#[derive(Component, Default)]
-pub struct Avatar;
 
 #[derive(Component, Default)]
 pub struct FallbackAvatar;

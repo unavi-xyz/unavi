@@ -1,8 +1,9 @@
 use bevy::prelude::*;
+use bevy_vrm::loader::Vrm;
 
 use crate::FallbackAvatar;
 
-const FALLBACK_RADIUS: f32 = 0.4;
+const FALLBACK_RADIUS: f32 = 0.35;
 const FALLBACK_HEIGHT: f32 = 1.8;
 const CAPSULE_LENGTH: f32 = FALLBACK_HEIGHT - (FALLBACK_RADIUS * 2.0);
 
@@ -19,7 +20,7 @@ pub fn init_fallback_assets(
 ) {
     let handle_mat = materials.add(StandardMaterial {
         alpha_mode: AlphaMode::Blend,
-        base_color: Color::rgba(0.5, 0.8, 1.0, 0.5),
+        base_color: Color::rgba(0.5, 0.8, 1.0, 0.4),
         perceptual_roughness: 1.0,
         unlit: true,
         ..Default::default()
@@ -30,10 +31,19 @@ pub fn init_fallback_assets(
     commands.insert_resource(FallbackMesh(handle_mesh));
 }
 
+pub fn remove_fallback_avatar(
+    mut commands: Commands,
+    avatars: Query<Entity, (With<FallbackAvatar>, With<Handle<Vrm>>)>,
+) {
+    for entity in avatars.iter() {
+        commands.entity(entity).remove::<FallbackAvatar>();
+    }
+}
+
 #[derive(Component)]
 pub struct FallbackChild;
 
-pub fn spawn_fallbacks(
+pub fn spawn_fallback_children(
     fallback_material: Res<FallbackMaterial>,
     fallback_mesh: Res<FallbackMesh>,
     fallbacks: Query<Entity, Added<FallbackAvatar>>,
@@ -54,7 +64,7 @@ pub fn spawn_fallbacks(
     }
 }
 
-pub fn despawn_fallbacks(
+pub fn despawn_fallback_children(
     children: Query<&Children>,
     fallback_children: Query<&FallbackChild>,
     mut commands: Commands,
@@ -79,12 +89,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_fallback_despawn() {
+    fn test_fallback_children() {
         let mut app = App::new();
 
         app.insert_resource(FallbackMaterial(Handle::default()))
             .insert_resource(FallbackMesh(Handle::default()))
-            .add_systems(Update, (spawn_fallbacks, despawn_fallbacks));
+            .add_systems(Update, (spawn_fallback_children, despawn_fallback_children));
 
         let entity = app.world.spawn(FallbackAvatar).id();
         app.update();

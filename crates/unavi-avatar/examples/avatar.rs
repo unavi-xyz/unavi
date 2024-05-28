@@ -47,5 +47,19 @@ fn setup_scene(
 }
 
 fn setup_avatar(mut commands: Commands) {
-    commands.spawn((TransformBundle::default(), AvatarBundle::default()));
+    let mut scene = commands.spawn(SceneBundle::default());
+
+    scene.with_children(|commands| {
+        commands.spawn((
+            AvatarBundle::default(),
+            TransformBundle::from_transform(Transform::from_xyz(-1.5, 0.0, 0.0)),
+            VisibilityBundle::default(),
+        ));
+
+        commands.spawn((
+            AvatarBundle::default(),
+            TransformBundle::from_transform(Transform::from_xyz(1.5, 0.0, 0.0)),
+            VisibilityBundle::default(),
+        ));
+    });
 }

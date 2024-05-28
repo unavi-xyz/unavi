@@ -70,7 +70,14 @@ fn handle_session_response(mut commands: Commands, mut sessions: Query<(Entity, 
         if let Ok(res) = session.receiver.try_recv() {
             match res {
                 SessionResponse::Tickrate(tickrate) => {
-                    commands.entity(entity).insert(Tickrate(tickrate))
+                    commands.entity(entity).insert(Tickrate(tickrate));
+                }
+                SessionResponse::PlayerTransform {
+                    player,
+                    rotation,
+                    translation,
+                } => {
+                    info!("Player: {}, translation: {:?}", player, translation);
                 }
             };
         }

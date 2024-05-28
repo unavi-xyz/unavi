@@ -30,6 +30,11 @@ pub enum SessionRequest {
 
 pub enum SessionResponse {
     Tickrate(f32),
+    PlayerTransform {
+        player: u16,
+        rotation: [f32; 4],
+        translation: [f32; 3],
+    },
 }
 
 impl Default for NetworkingThread {

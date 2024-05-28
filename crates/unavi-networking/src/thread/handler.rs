@@ -143,7 +143,7 @@ async fn handle_event(event: SessionRequest, session: &impl Session) -> Result<b
         }
     };
 
-    return Ok(false);
+    Ok(false)
 }
 
 async fn open_stream<T: Session>(session: &T) -> anyhow::Result<(WriteCompat<T>, ReadCompat<T>)> {

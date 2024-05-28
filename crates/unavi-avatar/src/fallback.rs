@@ -30,8 +30,8 @@ pub fn init_fallback_assets(
     commands.insert_resource(FallbackMesh(handle_mesh));
 }
 
-#[derive(Component, Deref)]
-pub struct FallbackChild(Entity);
+#[derive(Component)]
+pub struct FallbackChild;
 
 pub fn spawn_fallbacks(
     fallback_material: Res<FallbackMaterial>,
@@ -40,25 +40,37 @@ pub fn spawn_fallbacks(
     mut commands: Commands,
 ) {
     for entity in fallbacks.iter() {
-        let child = commands
-            .spawn(PbrBundle {
-                material: fallback_material.clone(),
-                mesh: fallback_mesh.clone(),
-                transform: Transform::from_xyz(0.0, FALLBACK_HEIGHT / 2.0, 0.0),
-                ..Default::default()
-            })
-            .id();
-
-        commands.entity(entity).insert(FallbackChild(child));
+        commands.entity(entity).with_children(|commands| {
+            commands.spawn((
+                FallbackChild,
+                PbrBundle {
+                    material: fallback_material.clone(),
+                    mesh: fallback_mesh.clone(),
+                    transform: Transform::from_xyz(0.0, FALLBACK_HEIGHT / 2.0, 0.0),
+                    ..Default::default()
+                },
+            ));
+        });
     }
 }
+
 pub fn despawn_fallbacks(
+    children: Query<&Children>,
+    fallback_children: Query<&FallbackChild>,
     mut commands: Commands,
-    removed: Query<(Entity, &FallbackChild), Without<FallbackAvatar>>,
+    mut removed: RemovedComponents<FallbackAvatar>,
 ) {
-    for (entity, child) in removed.iter() {
-        commands.entity(**child).despawn();
-        commands.entity(entity).remove::<FallbackChild>();
+    for entity in removed.read() {
+        let children = match children.get(entity) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
+
+        for child in children {
+            if fallback_children.contains(*child) {
+                commands.entity(*child).despawn();
+            }
+        }
     }
 }
 
@@ -77,16 +89,18 @@ mod tests {
         let entity = app.world.spawn(FallbackAvatar).id();
         app.update();
 
-        let child = app
+        let children = app
             .world
-            .get::<FallbackChild>(entity)
-            .expect("FallbackChild component not found")
-            .0;
+            .get::<Children>(entity)
+            .expect("Children component not found");
+        assert_eq!(children.len(), 1);
+
+        let child = children.iter().next().unwrap().clone();
+        assert!(app.world.get::<FallbackChild>(child).is_some());
 
         app.world.entity_mut(entity).remove::<FallbackAvatar>();
         app.update();
 
-        assert!(app.world.get::<FallbackChild>(entity).is_none());
         assert!(app.world.get_entity(child).is_none());
     }
 }

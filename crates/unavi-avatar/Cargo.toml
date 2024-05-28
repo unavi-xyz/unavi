@@ -1,0 +1,13 @@
+[package]
+name = "unavi-avatar"
+version.workspace = true
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy.workspace = true
+bevy_vrm.workspace = true

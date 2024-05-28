@@ -11015,6 +11015,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-avatar"
+version = "0.0.3"
+dependencies = [
+ "bevy",
+ "bevy_vrm",
+]
+
+[[package]]
 name = "unavi-dwn"
 version = "0.0.3"
 dependencies = [

@@ -30,7 +30,7 @@ pub fn spawn_loading_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    let mut entity = commands.spawn(SceneBundle::default());
+    let mut entity = commands.spawn((LoadingScene, SceneBundle::default()));
 
     entity.with_children(|builder| {
         let ground_size = 50.0;
@@ -68,6 +68,10 @@ pub fn spawn_loading_scene(
 }
 
 pub fn despawn_loading_scene(mut commands: Commands, scenes: Query<Entity, With<LoadingScene>>) {
+    if scenes.is_empty() {
+        warn!("No loading scene to despawn.");
+    }
+
     for entity in scenes.iter() {
         commands.entity(entity).despawn();
     }

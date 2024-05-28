@@ -105,7 +105,7 @@ mod tests {
             .expect("Children component not found");
         assert_eq!(children.len(), 1);
 
-        let child = children.iter().next().unwrap().clone();
+        let child = *children.iter().next().unwrap();
         assert!(app.world.get::<FallbackChild>(child).is_some());
 
         app.world.entity_mut(entity).remove::<FallbackAvatar>();

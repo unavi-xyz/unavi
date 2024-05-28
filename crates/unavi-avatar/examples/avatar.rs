@@ -90,7 +90,7 @@ fn load_avatar_two(
     for (entity, transform) in query.iter() {
         commands.entity(entity).insert(VrmBundle {
             scene_bundle: SceneBundle {
-                transform: transform.clone(),
+                transform: *transform,
                 ..Default::default()
             },
             vrm: asset_server.load("models/robot.vrm"),

@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_vrm::VrmPlugin;
 
+mod animation;
 mod fallback;
 
 pub struct AvatarPlugin;
@@ -12,6 +13,7 @@ impl Plugin for AvatarPlugin {
             .add_systems(
                 Update,
                 (
+                    animation::apply_avatar_animations,
                     fallback::despawn_fallback_children,
                     fallback::remove_fallback_avatar,
                     fallback::spawn_fallback_children,
@@ -22,3 +24,8 @@ impl Plugin for AvatarPlugin {
 
 #[derive(Component, Default)]
 pub struct FallbackAvatar;
+
+#[derive(Component)]
+pub struct AvatarAnimations {
+    pub walk: Handle<AnimationClip>,
+}

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_vrm::VrmBundle;
-use unavi_avatar::{AvatarPlugin, FallbackAvatar};
+use unavi_avatar::{AvatarAnimations, AvatarPlugin, FallbackAvatar};
 
 fn main() {
     App::new()
@@ -13,7 +13,7 @@ fn main() {
             PanOrbitCameraPlugin,
             AvatarPlugin,
         ))
-        .add_systems(Startup, (setup_avatar, setup_scene))
+        .add_systems(Startup, (setup_avatars, setup_scene))
         .add_systems(Update, load_avatar_two)
         .run();
 }
@@ -35,7 +35,7 @@ fn setup_scene(
     commands.spawn(PbrBundle {
         mesh: meshes.add(Mesh::from(Cuboid::new(10.0, 0.1, 10.0))),
         material: materials.add(StandardMaterial::default()),
-        transform: Transform::from_xyz(0.0, -0.1, 0.0),
+        transform: Transform::from_xyz(0.0, -0.05, 0.0),
         ..default()
     });
 
@@ -54,7 +54,10 @@ fn setup_scene(
 #[derive(Component)]
 struct AvatarTwo;
 
-fn setup_avatar(mut commands: Commands) {
+fn setup_avatars(asset_server: Res<AssetServer>, mut commands: Commands) {
+    let walk: Handle<AnimationClip> =
+        asset_server.load("models/character-animations.glb#Animation0");
+
     commands.spawn((
         FallbackAvatar,
         SpatialBundle {
@@ -64,6 +67,7 @@ fn setup_avatar(mut commands: Commands) {
     ));
 
     commands.spawn((
+        AvatarAnimations { walk },
         AvatarTwo,
         FallbackAvatar,
         SpatialBundle {

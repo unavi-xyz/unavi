@@ -37,9 +37,6 @@ pub enum Command {
     /// Social server.
     /// Hosts a DWN, login APIs, and more.
     Social {
-        #[arg(short, long, default_value = "localhost:<port>")]
-        domain: String,
-
         #[arg(short, long, default_value = "3000")]
         port: u16,
     },
@@ -106,14 +103,8 @@ pub async fn start(
                 }
             }
         }
-        Command::Social { domain, port } => {
-            let domain = if domain == "localhost:<port>" {
-                format!("localhost:{}", port)
-            } else {
-                domain
-            };
-
-            unavi_social_server::start(unavi_social_server::ServerOptions { domain, dwn, port })
+        Command::Social { port } => {
+            unavi_social_server::start(unavi_social_server::ServerOptions { dwn, port })
                 .instrument(info_span!("Social"))
                 .await?;
         }

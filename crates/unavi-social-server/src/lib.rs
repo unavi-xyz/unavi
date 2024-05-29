@@ -14,9 +14,8 @@ use tracing::info;
 
 #[derive(Clone)]
 pub struct ServerOptions<D: DataStore, M: MessageStore> {
-    pub domain: String,
-    pub port: u16,
     pub dwn: Arc<DWN<D, M>>,
+    pub port: u16,
 }
 
 pub async fn start(

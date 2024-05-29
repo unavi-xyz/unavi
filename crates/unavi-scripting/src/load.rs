@@ -64,7 +64,7 @@ pub fn load_scripts(
             }
         };
 
-        let script = match get_script_interface(&mut store, &linker, &instance) {
+        let script = match get_script_interface(&instance) {
             Ok(i) => i,
             Err(e) => {
                 error!("Failed to get script interface: {}", e);

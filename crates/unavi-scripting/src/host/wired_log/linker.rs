@@ -1,4 +1,5 @@
 use anyhow::{bail, Result};
+use bevy::log::{debug, error, info, warn};
 use wasm_component_layer::{
     AsContextMut, EnumType, Func, FuncType, Linker, Store, Value, ValueType,
 };
@@ -32,10 +33,10 @@ pub fn add_to_host(store: &mut Store<StoreData, EngineBackend>, linker: &mut Lin
             let message = format!("SCRIPT: {}", message);
 
             match level {
-                DEBUG => bevy::log::debug!("{}", message),
-                INFO => bevy::log::info!("{}", message),
-                WARN => bevy::log::warn!("{}", message),
-                ERROR => bevy::log::error!("{}", message),
+                DEBUG => debug!("{}", message),
+                INFO => info!("{}", message),
+                WARN => warn!("{}", message),
+                ERROR => error!("{}", message),
                 _ => unreachable!(),
             };
 

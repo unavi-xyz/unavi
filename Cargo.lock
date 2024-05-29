@@ -11113,7 +11113,6 @@ version = "0.0.3"
 dependencies = [
  "anyhow",
  "bevy",
- "crossbeam",
  "wasm_component_layer",
  "wasm_runtime_layer",
  "wasmtime",

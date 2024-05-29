@@ -1,16 +1,8 @@
 use anyhow::{anyhow, Result};
 use bevy::prelude::*;
-use wasm_component_layer::{
-    AsContextMut, Func, Instance, Linker, ResourceOwn, ResourceType, Store,
-};
+use wasm_component_layer::{Func, Instance, ResourceType};
 
-use super::{host::wired_ecs::EcsWorldResource, load::EngineBackend, StoreData};
-
-pub fn get_script_interface(
-    store: &mut Store<StoreData, EngineBackend>,
-    linker: &Linker,
-    instance: &Instance,
-) -> Result<ScriptInterface> {
+pub fn get_script_interface(instance: &Instance) -> Result<ScriptInterface> {
     let interface = instance
         .exports()
         .instance(&"wired:script/lifecycle".try_into()?)
@@ -26,24 +18,8 @@ pub fn get_script_interface(
         .func("update")
         .ok_or(anyhow!("update not found"))?;
 
-    let wired_ecs = linker
-        .instance(&"wired:ecs/types".try_into()?)
-        .ok_or(anyhow!("wired:ecs/types not found"))?;
-    let ecs_world_type = wired_ecs
-        .resource("ecs-world")
-        .ok_or(anyhow!("ecs-world not found"))?;
-
-    let resource_table = store.data().resource_table.clone();
-    let mut resource_table = resource_table.write().unwrap();
-
-    let (_, ecs_world) =
-        resource_table.push(store.as_context_mut(), ecs_world_type.clone(), |id| {
-            EcsWorldResource { id }
-        })?;
-
     Ok(ScriptInterface {
         data_type,
-        ecs_world,
         init,
         update,
     })
@@ -52,7 +28,6 @@ pub fn get_script_interface(
 #[derive(Component)]
 pub struct ScriptInterface {
     pub data_type: ResourceType,
-    pub ecs_world: ResourceOwn,
     pub init: Func,
     pub update: Func,
 }

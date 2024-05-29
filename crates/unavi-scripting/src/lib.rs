@@ -1,10 +1,8 @@
 use std::sync::{Arc, RwLock};
 
-use bevy::{prelude::*, utils::HashMap};
+use bevy::prelude::*;
 
-use self::{
-    asset::Wasm, host::wired_ecs::QueriedEntity, load::WasmStores, resource_table::ResourceTable,
-};
+use self::{asset::Wasm, load::WasmStores, resource_table::ResourceTable};
 
 mod asset;
 mod execution;
@@ -25,15 +23,8 @@ impl Plugin for ScriptingPlugin {
             .add_systems(
                 Update,
                 (
-                    execution::init_scripts,
-                    host::wired_ecs::add_wired_ecs_map,
-                    host::wired_ecs::handle_wired_ecs_command,
                     load::load_scripts,
-                    (
-                        host::wired_ecs::run_script_queries,
-                        execution::update_scripts,
-                    )
-                        .chain(),
+                    (execution::init_scripts, execution::update_scripts).chain(),
                 ),
             );
     }
@@ -47,6 +38,5 @@ struct ScriptBundle {
 
 #[derive(Default)]
 pub struct StoreData {
-    pub query_results: Arc<RwLock<HashMap<u32, Vec<QueriedEntity>>>>,
     pub resource_table: Arc<RwLock<ResourceTable>>,
 }

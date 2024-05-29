@@ -1,4 +1,5 @@
 {
+  domainDwn,
   domainWeb,
   domainWorld,
   pkgs,
@@ -12,7 +13,7 @@ let
 
   urlSocial = "http://localhost:${portSocial}";
   urlWorld = "http://localhost:${portWorld}";
-  urlWeb = "https://${domainWeb}";
+  urlDwn = "https://${domainDwn}";
 
   extraServerConfig = ''
     if ($request_method = 'OPTIONS') {
@@ -52,13 +53,13 @@ in
     recommendedProxySettings = true;
     recommendedTlsSettings = true;
     virtualHosts = {
-      ${domainWorld} = {
+      ${domainDwn} = {
         enableACME = true;
         forceSSL = true;
         http2 = true;
         locations = {
           "/" = {
-            proxyPass = urlWorld;
+            proxyPass = urlSocial;
             extraConfig = extraServerConfig;
           };
         };
@@ -72,8 +73,15 @@ in
           "/" = {
             index = "index.html";
           };
-          "~* ^/.*$" = {
-            proxyPass = urlSocial;
+        };
+      };
+      ${domainWorld} = {
+        enableACME = true;
+        forceSSL = true;
+        http2 = true;
+        locations = {
+          "/" = {
+            proxyPass = urlWorld;
             extraConfig = extraServerConfig;
           };
         };
@@ -88,7 +96,7 @@ in
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
         Environment = [ "LD_LIBRARY_PATH=${pkgs.openssl.out}/lib" ];
-        ExecStart = "${unavi-server}/bin/unavi-server --debug social -d ${domainWeb} -p ${portSocial}";
+        ExecStart = "${unavi-server}/bin/unavi-server --debug social -p ${portSocial}";
         Restart = "always";
       };
     };
@@ -98,7 +106,7 @@ in
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
         Environment = [ "LD_LIBRARY_PATH=${pkgs.openssl.out}/lib" ];
-        ExecStart = "${unavi-server}/bin/unavi-server --debug world -d ${domainWorld} -p ${portWorld} --remote-dwn ${urlWeb}";
+        ExecStart = "${unavi-server}/bin/unavi-server --debug world -d ${domainWorld} -p ${portWorld} --remote-dwn ${urlDwn}";
         Restart = "always";
       };
     };

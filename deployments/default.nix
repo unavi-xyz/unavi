@@ -65,8 +65,9 @@ let
               system = "x86_64-linux";
               modules = [ ./configurations/unavi-server.nix ];
               specialArgs = {
-                domainWorld = resource.value.domain_world;
+                domainDwn = resource.value.domain_dwn;
                 domainWeb = resource.value.domain_web;
+                domainWorld = resource.value.domain_world;
                 unavi-server = self.packages.${system}."unavi-server-${subdir}";
                 unavi-web = self.packages.${system}."unavi-web-${subdir}";
               };

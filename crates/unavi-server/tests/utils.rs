@@ -26,10 +26,7 @@ pub async fn setup_test_server() -> TestServer {
         debug: true,
         path: String::new(),
         storage: Storage::Memory,
-        command: Command::Social {
-            domain: domain_social.clone(),
-            port: port_social,
-        },
+        command: Command::Social { port: port_social },
     };
 
     let args_world = Args {

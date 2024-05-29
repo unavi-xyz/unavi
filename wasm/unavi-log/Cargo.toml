@@ -3,7 +3,7 @@ name = "unavi-log"
 version.workspace = true
 edition.workspace = true
 repository.workspace = true
-license.workspace = true
+license = "MIT OR Apache-2.0"
 
 [lib]
 crate-type = ["cdylib"]

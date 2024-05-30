@@ -1,5 +1,6 @@
 use bindings::{
     exports::wired::script::lifecycle::{Data, DataBorrow, Guest, GuestData},
+    wired::gltf::node::nodes,
     wired::log::api::{log, LogLevel},
 };
 
@@ -17,6 +18,8 @@ impl Guest for UnaviSystem {
 
     fn init() -> Data {
         log(LogLevel::Info, "initialized");
+
+        let _found_nodes = nodes();
 
         Data::new(DataImpl {})
     }

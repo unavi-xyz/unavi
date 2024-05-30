@@ -23,8 +23,9 @@ impl Plugin for ScriptingPlugin {
             .add_systems(
                 Update,
                 (
-                    load::load_scripts,
                     (execution::init_scripts, execution::update_scripts).chain(),
+                    host::wired_gltf::system::handle_wired_gltf_actions,
+                    load::load_scripts,
                 ),
             );
     }
@@ -40,3 +41,11 @@ struct ScriptBundle {
 pub struct StoreData {
     pub resource_table: Arc<RwLock<ResourceTable>>,
 }
+
+/// Marks an entity as being owned by the provided entity.
+///
+/// For example, entities spawned in by a script are owned by that script.
+/// The object the script belongs to owns the script.
+/// The player that spawned in the object owns the object.
+#[derive(Component, Deref)]
+pub struct Ownership(pub Entity);

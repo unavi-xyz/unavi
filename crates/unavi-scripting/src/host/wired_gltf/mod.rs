@@ -5,9 +5,9 @@ use wasm_component_layer::{Linker, Store};
 
 use crate::{load::EngineBackend, StoreData};
 
+pub mod handler;
 mod mesh;
 mod node;
-pub mod system;
 
 #[derive(Component, Deref, DerefMut)]
 pub struct WiredGltfReceiver(pub Receiver<WiredGltfAction>);

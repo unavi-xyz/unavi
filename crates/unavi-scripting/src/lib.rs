@@ -24,7 +24,7 @@ impl Plugin for ScriptingPlugin {
                 Update,
                 (
                     (execution::init_scripts, execution::update_scripts).chain(),
-                    host::wired_gltf::system::handle_wired_gltf_actions,
+                    host::wired_gltf::handler::handle_wired_gltf_actions,
                     load::load_scripts,
                 ),
             );

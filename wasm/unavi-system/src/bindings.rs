@@ -3,6 +3,903 @@
 #[allow(dead_code)]
 pub mod wired {
     #[allow(dead_code)]
+    pub mod gltf {
+        #[allow(dead_code, clippy::all)]
+        pub mod mesh {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Primitive {
+                handle: _rt::Resource<Primitive>,
+            }
+
+            impl Primitive {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for Primitive {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]primitive"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Mesh {
+                handle: _rt::Resource<Mesh>,
+            }
+
+            impl Mesh {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for Mesh {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]mesh"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            impl Primitive {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn id(&self) -> u32 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        extern "C" {
+                            #[link_name = "[method]primitive.id"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret as u32
+                    }
+                }
+            }
+            impl Primitive {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn indices(&self) -> _rt::Vec<u32> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        extern "C" {
+                            #[link_name = "[method]primitive.indices"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<*mut u8>();
+                        let l2 = *ptr0.add(4).cast::<usize>();
+                        let len3 = l2;
+                        _rt::Vec::from_raw_parts(l1.cast(), len3, len3)
+                    }
+                }
+            }
+            impl Primitive {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_indices(&self, value: &[u32]) {
+                    unsafe {
+                        let vec0 = value;
+                        let ptr0 = vec0.as_ptr().cast::<u8>();
+                        let len0 = vec0.len();
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        extern "C" {
+                            #[link_name = "[method]primitive.set-indices"]
+                            fn wit_import(_: i32, _: *mut u8, _: usize);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8, _: usize) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0.cast_mut(), len0);
+                    }
+                }
+            }
+            impl Primitive {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn positions(&self) -> _rt::Vec<f32> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        extern "C" {
+                            #[link_name = "[method]primitive.positions"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<*mut u8>();
+                        let l2 = *ptr0.add(4).cast::<usize>();
+                        let len3 = l2;
+                        _rt::Vec::from_raw_parts(l1.cast(), len3, len3)
+                    }
+                }
+            }
+            impl Primitive {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_positions(&self, value: &[f32]) {
+                    unsafe {
+                        let vec0 = value;
+                        let ptr0 = vec0.as_ptr().cast::<u8>();
+                        let len0 = vec0.len();
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        extern "C" {
+                            #[link_name = "[method]primitive.set-positions"]
+                            fn wit_import(_: i32, _: *mut u8, _: usize);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8, _: usize) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0.cast_mut(), len0);
+                    }
+                }
+            }
+            impl Primitive {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn normals(&self) -> _rt::Vec<f32> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        extern "C" {
+                            #[link_name = "[method]primitive.normals"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<*mut u8>();
+                        let l2 = *ptr0.add(4).cast::<usize>();
+                        let len3 = l2;
+                        _rt::Vec::from_raw_parts(l1.cast(), len3, len3)
+                    }
+                }
+            }
+            impl Primitive {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_normals(&self, value: &[f32]) {
+                    unsafe {
+                        let vec0 = value;
+                        let ptr0 = vec0.as_ptr().cast::<u8>();
+                        let len0 = vec0.len();
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        extern "C" {
+                            #[link_name = "[method]primitive.set-normals"]
+                            fn wit_import(_: i32, _: *mut u8, _: usize);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8, _: usize) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0.cast_mut(), len0);
+                    }
+                }
+            }
+            impl Primitive {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn uvs(&self) -> _rt::Vec<f32> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        extern "C" {
+                            #[link_name = "[method]primitive.uvs"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<*mut u8>();
+                        let l2 = *ptr0.add(4).cast::<usize>();
+                        let len3 = l2;
+                        _rt::Vec::from_raw_parts(l1.cast(), len3, len3)
+                    }
+                }
+            }
+            impl Primitive {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_uvs(&self, value: &[f32]) {
+                    unsafe {
+                        let vec0 = value;
+                        let ptr0 = vec0.as_ptr().cast::<u8>();
+                        let len0 = vec0.len();
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        extern "C" {
+                            #[link_name = "[method]primitive.set-uvs"]
+                            fn wit_import(_: i32, _: *mut u8, _: usize);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8, _: usize) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0.cast_mut(), len0);
+                    }
+                }
+            }
+            impl Mesh {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn id(&self) -> u32 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        extern "C" {
+                            #[link_name = "[method]mesh.id"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret as u32
+                    }
+                }
+            }
+            impl Mesh {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn name(&self) -> _rt::String {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        extern "C" {
+                            #[link_name = "[method]mesh.name"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<*mut u8>();
+                        let l2 = *ptr0.add(4).cast::<usize>();
+                        let len3 = l2;
+                        let bytes3 = _rt::Vec::from_raw_parts(l1.cast(), len3, len3);
+                        _rt::string_lift(bytes3)
+                    }
+                }
+            }
+            impl Mesh {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_name(&self, name: &str) {
+                    unsafe {
+                        let vec0 = name;
+                        let ptr0 = vec0.as_ptr().cast::<u8>();
+                        let len0 = vec0.len();
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        extern "C" {
+                            #[link_name = "[method]mesh.set-name"]
+                            fn wit_import(_: i32, _: *mut u8, _: usize);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8, _: usize) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0.cast_mut(), len0);
+                    }
+                }
+            }
+            impl Mesh {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn primitives(&self) -> _rt::Vec<Primitive> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        extern "C" {
+                            #[link_name = "[method]mesh.primitives"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<*mut u8>();
+                        let l2 = *ptr0.add(4).cast::<usize>();
+                        let base4 = l1;
+                        let len4 = l2;
+                        let mut result4 = _rt::Vec::with_capacity(len4);
+                        for i in 0..len4 {
+                            let base = base4.add(i * 4);
+                            let e4 = {
+                                let l3 = *base.add(0).cast::<i32>();
+
+                                Primitive::from_handle(l3 as u32)
+                            };
+                            result4.push(e4);
+                        }
+                        _rt::cabi_dealloc(base4, len4 * 4, 4);
+                        result4
+                    }
+                }
+            }
+            impl Mesh {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn create_primitive(&self) -> Primitive {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        extern "C" {
+                            #[link_name = "[method]mesh.create-primitive"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        Primitive::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Mesh {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn remove_primitive(&self, id: u32) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        extern "C" {
+                            #[link_name = "[method]mesh.remove-primitive"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_i32(&id));
+                    }
+                }
+            }
+            #[allow(unused_unsafe, clippy::all)]
+            pub fn meshes() -> _rt::Vec<Mesh> {
+                unsafe {
+                    #[repr(align(4))]
+                    struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                    let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                    let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wired:gltf/mesh")]
+                    extern "C" {
+                        #[link_name = "meshes"]
+                        fn wit_import(_: *mut u8);
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(_: *mut u8) {
+                        unreachable!()
+                    }
+                    wit_import(ptr0);
+                    let l1 = *ptr0.add(0).cast::<*mut u8>();
+                    let l2 = *ptr0.add(4).cast::<usize>();
+                    let base4 = l1;
+                    let len4 = l2;
+                    let mut result4 = _rt::Vec::with_capacity(len4);
+                    for i in 0..len4 {
+                        let base = base4.add(i * 4);
+                        let e4 = {
+                            let l3 = *base.add(0).cast::<i32>();
+
+                            Mesh::from_handle(l3 as u32)
+                        };
+                        result4.push(e4);
+                    }
+                    _rt::cabi_dealloc(base4, len4 * 4, 4);
+                    result4
+                }
+            }
+            #[allow(unused_unsafe, clippy::all)]
+            pub fn create_mesh() -> Mesh {
+                unsafe {
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wired:gltf/mesh")]
+                    extern "C" {
+                        #[link_name = "create-mesh"]
+                        fn wit_import() -> i32;
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import() -> i32 {
+                        unreachable!()
+                    }
+                    let ret = wit_import();
+                    Mesh::from_handle(ret as u32)
+                }
+            }
+            #[allow(unused_unsafe, clippy::all)]
+            pub fn remove_mesh(id: u32) {
+                unsafe {
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wired:gltf/mesh")]
+                    extern "C" {
+                        #[link_name = "remove-mesh"]
+                        fn wit_import(_: i32);
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(_: i32) {
+                        unreachable!()
+                    }
+                    wit_import(_rt::as_i32(&id));
+                }
+            }
+        }
+
+        #[allow(dead_code, clippy::all)]
+        pub mod node {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            pub type Mesh = super::super::super::wired::gltf::mesh::Mesh;
+            pub type Vec3 = super::super::super::wired::math::types::Vec3;
+            pub type Vec4 = super::super::super::wired::math::types::Vec4;
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            pub struct Transform {
+                pub translation: Vec3,
+                pub rotation: Vec4,
+                pub scale: Vec3,
+            }
+            impl ::core::fmt::Debug for Transform {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("Transform")
+                        .field("translation", &self.translation)
+                        .field("rotation", &self.rotation)
+                        .field("scale", &self.scale)
+                        .finish()
+                }
+            }
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Node {
+                handle: _rt::Resource<Node>,
+            }
+
+            impl Node {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for Node {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wired:gltf/node")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]node"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            impl Node {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn id(&self) -> u32 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/node")]
+                        extern "C" {
+                            #[link_name = "[method]node.id"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret as u32
+                    }
+                }
+            }
+            impl Node {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn transform(&self) -> Transform {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 40]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 40]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/node")]
+                        extern "C" {
+                            #[link_name = "[method]node.transform"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<f32>();
+                        let l2 = *ptr0.add(4).cast::<f32>();
+                        let l3 = *ptr0.add(8).cast::<f32>();
+                        let l4 = *ptr0.add(12).cast::<f32>();
+                        let l5 = *ptr0.add(16).cast::<f32>();
+                        let l6 = *ptr0.add(20).cast::<f32>();
+                        let l7 = *ptr0.add(24).cast::<f32>();
+                        let l8 = *ptr0.add(28).cast::<f32>();
+                        let l9 = *ptr0.add(32).cast::<f32>();
+                        let l10 = *ptr0.add(36).cast::<f32>();
+                        Transform {
+                            translation: super::super::super::wired::math::types::Vec3 {
+                                x: l1,
+                                y: l2,
+                                z: l3,
+                            },
+                            rotation: super::super::super::wired::math::types::Vec4 {
+                                x: l4,
+                                y: l5,
+                                z: l6,
+                                w: l7,
+                            },
+                            scale: super::super::super::wired::math::types::Vec3 {
+                                x: l8,
+                                y: l9,
+                                z: l10,
+                            },
+                        }
+                    }
+                }
+            }
+            impl Node {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_transform(&self, transform: Transform) {
+                    unsafe {
+                        let Transform {
+                            translation: translation0,
+                            rotation: rotation0,
+                            scale: scale0,
+                        } = transform;
+                        let super::super::super::wired::math::types::Vec3 {
+                            x: x1,
+                            y: y1,
+                            z: z1,
+                        } = translation0;
+                        let super::super::super::wired::math::types::Vec4 {
+                            x: x2,
+                            y: y2,
+                            z: z2,
+                            w: w2,
+                        } = rotation0;
+                        let super::super::super::wired::math::types::Vec3 {
+                            x: x3,
+                            y: y3,
+                            z: z3,
+                        } = scale0;
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/node")]
+                        extern "C" {
+                            #[link_name = "[method]node.set-transform"]
+                            fn wit_import(
+                                _: i32,
+                                _: f32,
+                                _: f32,
+                                _: f32,
+                                _: f32,
+                                _: f32,
+                                _: f32,
+                                _: f32,
+                                _: f32,
+                                _: f32,
+                                _: f32,
+                            );
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(
+                            _: i32,
+                            _: f32,
+                            _: f32,
+                            _: f32,
+                            _: f32,
+                            _: f32,
+                            _: f32,
+                            _: f32,
+                            _: f32,
+                            _: f32,
+                            _: f32,
+                        ) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            _rt::as_f32(x1),
+                            _rt::as_f32(y1),
+                            _rt::as_f32(z1),
+                            _rt::as_f32(x2),
+                            _rt::as_f32(y2),
+                            _rt::as_f32(z2),
+                            _rt::as_f32(w2),
+                            _rt::as_f32(x3),
+                            _rt::as_f32(y3),
+                            _rt::as_f32(z3),
+                        );
+                    }
+                }
+            }
+            impl Node {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn mesh(&self) -> Option<Mesh> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/node")]
+                        extern "C" {
+                            #[link_name = "[method]node.mesh"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<i32>();
+
+                                    super::super::super::wired::gltf::mesh::Mesh::from_handle(
+                                        l2 as u32,
+                                    )
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl Node {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_mesh(&self, mesh: Option<Mesh>) {
+                    unsafe {
+                        let (result0_0, result0_1) = match &mesh {
+                            Some(e) => (1i32, (e).take_handle() as i32),
+                            None => (0i32, 0i32),
+                        };
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/node")]
+                        extern "C" {
+                            #[link_name = "[method]node.set-mesh"]
+                            fn wit_import(_: i32, _: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, result0_0, result0_1);
+                    }
+                }
+            }
+            #[allow(unused_unsafe, clippy::all)]
+            pub fn nodes() -> _rt::Vec<Node> {
+                unsafe {
+                    #[repr(align(4))]
+                    struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                    let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                    let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wired:gltf/node")]
+                    extern "C" {
+                        #[link_name = "nodes"]
+                        fn wit_import(_: *mut u8);
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(_: *mut u8) {
+                        unreachable!()
+                    }
+                    wit_import(ptr0);
+                    let l1 = *ptr0.add(0).cast::<*mut u8>();
+                    let l2 = *ptr0.add(4).cast::<usize>();
+                    let base4 = l1;
+                    let len4 = l2;
+                    let mut result4 = _rt::Vec::with_capacity(len4);
+                    for i in 0..len4 {
+                        let base = base4.add(i * 4);
+                        let e4 = {
+                            let l3 = *base.add(0).cast::<i32>();
+
+                            Node::from_handle(l3 as u32)
+                        };
+                        result4.push(e4);
+                    }
+                    _rt::cabi_dealloc(base4, len4 * 4, 4);
+                    result4
+                }
+            }
+            #[allow(unused_unsafe, clippy::all)]
+            pub fn create_node() -> Node {
+                unsafe {
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wired:gltf/node")]
+                    extern "C" {
+                        #[link_name = "create-node"]
+                        fn wit_import() -> i32;
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import() -> i32 {
+                        unreachable!()
+                    }
+                    let ret = wit_import();
+                    Node::from_handle(ret as u32)
+                }
+            }
+            #[allow(unused_unsafe, clippy::all)]
+            pub fn remove_node(id: u32) {
+                unsafe {
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wired:gltf/node")]
+                    extern "C" {
+                        #[link_name = "remove-node"]
+                        fn wit_import(_: i32);
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(_: i32) {
+                        unreachable!()
+                    }
+                    wit_import(_rt::as_i32(&id));
+                }
+            }
+        }
+    }
+    #[allow(dead_code)]
     pub mod log {
         #[allow(dead_code, clippy::all)]
         pub mod api {
@@ -67,6 +964,51 @@ pub mod wired {
                         unreachable!()
                     }
                     wit_import(level.clone() as i32, ptr0.cast_mut(), len0);
+                }
+            }
+        }
+    }
+    #[allow(dead_code)]
+    pub mod math {
+        #[allow(dead_code, clippy::all)]
+        pub mod types {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            pub struct Vec3 {
+                pub x: f32,
+                pub y: f32,
+                pub z: f32,
+            }
+            impl ::core::fmt::Debug for Vec3 {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("Vec3")
+                        .field("x", &self.x)
+                        .field("y", &self.y)
+                        .field("z", &self.z)
+                        .finish()
+                }
+            }
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            pub struct Vec4 {
+                pub x: f32,
+                pub y: f32,
+                pub z: f32,
+                pub w: f32,
+            }
+            impl ::core::fmt::Debug for Vec4 {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("Vec4")
+                        .field("x", &self.x)
+                        .field("y", &self.y)
+                        .field("z", &self.z)
+                        .field("w", &self.w)
+                        .finish()
                 }
             }
         }
@@ -423,6 +1365,120 @@ mod _rt {
             }
         }
     }
+    pub use alloc_crate::string::String;
+    pub use alloc_crate::vec::Vec;
+    pub unsafe fn string_lift(bytes: Vec<u8>) -> String {
+        if cfg!(debug_assertions) {
+            String::from_utf8(bytes).unwrap()
+        } else {
+            String::from_utf8_unchecked(bytes)
+        }
+    }
+    pub unsafe fn cabi_dealloc(ptr: *mut u8, size: usize, align: usize) {
+        if size == 0 {
+            return;
+        }
+        let layout = alloc::Layout::from_size_align_unchecked(size, align);
+        alloc::dealloc(ptr as *mut u8, layout);
+    }
+
+    pub fn as_i32<T: AsI32>(t: T) -> i32 {
+        t.as_i32()
+    }
+
+    pub trait AsI32 {
+        fn as_i32(self) -> i32;
+    }
+
+    impl<'a, T: Copy + AsI32> AsI32 for &'a T {
+        fn as_i32(self) -> i32 {
+            (*self).as_i32()
+        }
+    }
+
+    impl AsI32 for i32 {
+        #[inline]
+        fn as_i32(self) -> i32 {
+            self as i32
+        }
+    }
+
+    impl AsI32 for u32 {
+        #[inline]
+        fn as_i32(self) -> i32 {
+            self as i32
+        }
+    }
+
+    impl AsI32 for i16 {
+        #[inline]
+        fn as_i32(self) -> i32 {
+            self as i32
+        }
+    }
+
+    impl AsI32 for u16 {
+        #[inline]
+        fn as_i32(self) -> i32 {
+            self as i32
+        }
+    }
+
+    impl AsI32 for i8 {
+        #[inline]
+        fn as_i32(self) -> i32 {
+            self as i32
+        }
+    }
+
+    impl AsI32 for u8 {
+        #[inline]
+        fn as_i32(self) -> i32 {
+            self as i32
+        }
+    }
+
+    impl AsI32 for char {
+        #[inline]
+        fn as_i32(self) -> i32 {
+            self as i32
+        }
+    }
+
+    impl AsI32 for usize {
+        #[inline]
+        fn as_i32(self) -> i32 {
+            self as i32
+        }
+    }
+
+    pub fn as_f32<T: AsF32>(t: T) -> f32 {
+        t.as_f32()
+    }
+
+    pub trait AsF32 {
+        fn as_f32(self) -> f32;
+    }
+
+    impl<'a, T: Copy + AsF32> AsF32 for &'a T {
+        fn as_f32(self) -> f32 {
+            (*self).as_f32()
+        }
+    }
+
+    impl AsF32 for f32 {
+        #[inline]
+        fn as_f32(self) -> f32 {
+            self as f32
+        }
+    }
+    pub unsafe fn invalid_enum_discriminant<T>() -> T {
+        if cfg!(debug_assertions) {
+            panic!("invalid enum discriminant")
+        } else {
+            core::hint::unreachable_unchecked()
+        }
+    }
     pub use alloc_crate::boxed::Box;
 
     #[cfg(target_arch = "wasm32")]
@@ -430,6 +1486,7 @@ mod _rt {
         wit_bindgen_rt::run_ctors_once();
     }
     extern crate alloc as alloc_crate;
+    pub use alloc_crate::alloc;
 }
 
 /// Generates `#[no_mangle]` functions to export the specified type as the
@@ -463,15 +1520,43 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 326] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc9\x01\x01A\x02\x01\
-A\x04\x01B\x04\x01m\x04\x05debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\
-\0\0\x01@\x02\x05level\x01\x07messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwir\
-ed:log/api\x05\0\x01B\x07\x04\0\x04data\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x04ini\
-t\x01\x02\x01h\0\x01@\x01\x04data\x03\x01\0\x04\0\x06update\x01\x04\x04\x01\x16w\
-ired:script/lifecycle\x05\x01\x04\x01\x13unavi:system/script\x04\0\x0b\x0c\x01\0\
-\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070\
-.208.1\x10wit-bindgen-rust\x060.25.0";
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1560] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x9b\x0b\x01A\x02\x01\
+A\x0d\x01B*\x04\0\x09primitive\x03\x01\x04\0\x04mesh\x03\x01\x01h\0\x01@\x01\x04\
+self\x02\0y\x04\0\x14[method]primitive.id\x01\x03\x01py\x01@\x01\x04self\x02\0\x04\
+\x04\0\x19[method]primitive.indices\x01\x05\x01@\x02\x04self\x02\x05value\x04\x01\
+\0\x04\0\x1d[method]primitive.set-indices\x01\x06\x01pv\x01@\x01\x04self\x02\0\x07\
+\x04\0\x1b[method]primitive.positions\x01\x08\x01@\x02\x04self\x02\x05value\x07\x01\
+\0\x04\0\x1f[method]primitive.set-positions\x01\x09\x04\0\x19[method]primitive.n\
+ormals\x01\x08\x04\0\x1d[method]primitive.set-normals\x01\x09\x04\0\x15[method]p\
+rimitive.uvs\x01\x08\x04\0\x19[method]primitive.set-uvs\x01\x09\x01h\x01\x01@\x01\
+\x04self\x0a\0y\x04\0\x0f[method]mesh.id\x01\x0b\x01@\x01\x04self\x0a\0s\x04\0\x11\
+[method]mesh.name\x01\x0c\x01@\x02\x04self\x0a\x04names\x01\0\x04\0\x15[method]m\
+esh.set-name\x01\x0d\x01i\0\x01p\x0e\x01@\x01\x04self\x0a\0\x0f\x04\0\x17[method\
+]mesh.primitives\x01\x10\x01@\x01\x04self\x0a\0\x0e\x04\0\x1d[method]mesh.create\
+-primitive\x01\x11\x01@\x02\x04self\x0a\x02idy\x01\0\x04\0\x1d[method]mesh.remov\
+e-primitive\x01\x12\x01i\x01\x01p\x13\x01@\0\0\x14\x04\0\x06meshes\x01\x15\x01@\0\
+\0\x13\x04\0\x0bcreate-mesh\x01\x16\x01@\x01\x02idy\x01\0\x04\0\x0bremove-mesh\x01\
+\x17\x03\x01\x0fwired:gltf/mesh\x05\0\x01B\x06\x01r\x02\x01xv\x01yv\x04\0\x04vec\
+2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\x02\x01r\x04\x01xv\x01y\
+v\x01zv\x01wv\x04\0\x04vec4\x03\0\x04\x03\x01\x10wired:math/types\x05\x01\x02\x03\
+\0\0\x04mesh\x02\x03\0\x01\x04vec3\x02\x03\0\x01\x04vec4\x01B\x1e\x02\x03\x02\x01\
+\x02\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x03\x04\0\x04vec3\x03\0\x02\x02\x03\x02\
+\x01\x04\x04\0\x04vec4\x03\0\x04\x01r\x03\x0btranslation\x03\x08rotation\x05\x05\
+scale\x03\x04\0\x09transform\x03\0\x06\x04\0\x04node\x03\x01\x01h\x08\x01@\x01\x04\
+self\x09\0y\x04\0\x0f[method]node.id\x01\x0a\x01@\x01\x04self\x09\0\x07\x04\0\x16\
+[method]node.transform\x01\x0b\x01@\x02\x04self\x09\x09transform\x07\x01\0\x04\0\
+\x1a[method]node.set-transform\x01\x0c\x01i\x01\x01k\x0d\x01@\x01\x04self\x09\0\x0e\
+\x04\0\x11[method]node.mesh\x01\x0f\x01@\x02\x04self\x09\x04mesh\x0e\x01\0\x04\0\
+\x15[method]node.set-mesh\x01\x10\x01i\x08\x01p\x11\x01@\0\0\x12\x04\0\x05nodes\x01\
+\x13\x01@\0\0\x11\x04\0\x0bcreate-node\x01\x14\x01@\x01\x02idy\x01\0\x04\0\x0bre\
+move-node\x01\x15\x03\x01\x0fwired:gltf/node\x05\x05\x01B\x04\x01m\x04\x05debug\x04\
+info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\x07messag\
+es\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x06\x01B\x07\x04\0\x04\
+data\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x04init\x01\x02\x01h\0\x01@\x01\x04data\x03\
+\x01\0\x04\0\x06update\x01\x04\x04\x01\x16wired:script/lifecycle\x05\x07\x04\x01\
+\x13unavi:system/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\
+\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

@@ -29,10 +29,10 @@ impl ResourceTable {
         &mut self,
         ctx: StoreContextMut<StoreData, EngineBackend>,
         resource_type: ResourceType,
-        get_value: impl Fn(u32) -> T,
+        create_value: impl Fn(u32) -> T,
     ) -> Result<(u32, ResourceOwn)> {
         let id = self.next_id();
-        let value = get_value(id);
+        let value = create_value(id);
         let resource = ResourceOwn::new(ctx, value, resource_type)?;
         self.resources.insert(id, resource.clone());
         Ok((id, resource))

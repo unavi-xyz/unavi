@@ -25,7 +25,7 @@ pub fn query_node_data(
             if let Some(found) = data.nodes.get_mut(&id.0) {
                 found.clone_from(transform);
             } else {
-                data.nodes.insert(id.0, transform.clone());
+                data.nodes.insert(id.0, *transform);
             }
         }
     }

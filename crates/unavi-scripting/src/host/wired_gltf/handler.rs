@@ -5,7 +5,7 @@ use crate::Ownership;
 use super::{WiredGltfAction, WiredGltfReceiver};
 
 #[derive(Component, Debug)]
-pub struct NodeId(u32);
+pub struct NodeId(pub u32);
 
 pub fn handle_wired_gltf_actions(
     mut commands: Commands,

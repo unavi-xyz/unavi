@@ -9,7 +9,7 @@ pub struct SettingsPlugin;
 impl Plugin for SettingsPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(UserSettings::default()).add_systems(
-            Update,
+            FixedUpdate,
             shadows::set_shadow_config.run_if(shadow_quality_changed()),
         );
     }

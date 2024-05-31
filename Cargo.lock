@@ -10538,6 +10538,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-wired-gltf"
+version = "0.0.3"
+dependencies = [
+ "bevy",
+ "unavi-scripting",
+ "wit-bindgen-rt",
+]
+
+[[package]]
 name = "thiserror"
 version = "1.0.61"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11114,6 +11123,9 @@ dependencies = [
  "anyhow",
  "bevy",
  "crossbeam",
+ "tokio",
+ "tracing",
+ "tracing-test",
  "wasm_component_layer",
  "wasm_runtime_layer",
  "wasmtime",

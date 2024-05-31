@@ -25,6 +25,10 @@ impl ResourceTable {
         self.resources.get_mut(id)
     }
 
+    pub fn remove(&mut self, id: &u32) -> Option<ResourceOwn> {
+        self.resources.remove(id)
+    }
+
     pub fn push<T: 'static + Send + Sync>(
         &mut self,
         ctx: StoreContextMut<StoreData, EngineBackend>,

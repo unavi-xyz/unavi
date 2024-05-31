@@ -21,9 +21,14 @@ impl Plugin for ScriptingPlugin {
             .init_non_send_resource::<WasmStores>()
             .add_systems(Startup, unavi_system::spawn_unavi_system)
             .add_systems(
-                Update,
+                FixedUpdate,
                 (
-                    (execution::init_scripts, execution::update_scripts).chain(),
+                    (
+                        host::wired_gltf::query::query_node_data,
+                        execution::init_scripts,
+                        execution::update_scripts,
+                    )
+                        .chain(),
                     host::wired_gltf::handler::handle_wired_gltf_actions,
                     load::load_scripts,
                 ),

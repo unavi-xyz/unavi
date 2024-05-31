@@ -76,6 +76,6 @@ pub fn load_scripts(
 
         commands
             .entity(entity)
-            .insert((host.wired_gltf_receiver, script));
+            .insert((host.wired_gltf_components, script));
     }
 }

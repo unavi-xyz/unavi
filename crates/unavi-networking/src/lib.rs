@@ -12,7 +12,7 @@ pub struct NetworkingPlugin;
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<thread::NetworkingThread>().add_systems(
-            Update,
+            FixedUpdate,
             (
                 connect_to_instances,
                 handle_session_response,

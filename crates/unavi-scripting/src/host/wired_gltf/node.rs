@@ -1,71 +1,152 @@
-use anyhow::Result;
+use std::sync::{Arc, RwLock};
+
+use anyhow::{bail, Result};
 use crossbeam::channel::Sender;
 use wasm_component_layer::{
-    AsContextMut, Func, FuncType, Linker, List, ListType, ResourceType, Store, Value, ValueType,
+    AsContext, AsContextMut, Func, FuncType, Linker, List, ListType, ResourceType, Store, Value,
+    ValueType,
 };
 
 use crate::{load::EngineBackend, StoreData};
 
-use super::WiredGltfAction;
+use super::{Data, WiredGltfAction};
 
 #[derive(Clone)]
 pub struct NodeResource {
     pub id: u32,
 }
 
+#[derive(Default)]
+struct LocalData {
+    nodes: Vec<u32>,
+}
+
 pub fn add_to_host(
     store: &mut Store<StoreData, EngineBackend>,
     linker: &mut Linker,
     sender: Sender<WiredGltfAction>,
+    data: Arc<RwLock<Data>>,
 ) -> Result<()> {
+    let resource_table = store.data().resource_table.clone();
     let interface = linker.define_instance("wired:gltf/node".try_into()?)?;
 
-    let resource_table = store.data().resource_table.clone();
+    let local_data = Arc::new(RwLock::new(LocalData::default()));
 
     let node_type = ResourceType::new::<NodeResource>(None);
     let nodes_list_type = ListType::new(ValueType::Own(node_type.clone()));
 
-    // TODO:
-    //  - actions
-    //      - send create / remove messages over channel to bevy system
-    //      - read messages and apply them to ECS
-    //  - queries
-    //      - query node transform data each frame, copy it into Mutex
-    //      - use Mutex here for nodes query
-    //  - for other data, like names, we can maintain a version here, and copy it into ECS when
-    //  changed
+    let node_id_fn = {
+        Func::new(
+            store.as_context_mut(),
+            FuncType::new([ValueType::Borrow(node_type.clone())], [ValueType::U32]),
+            move |ctx, args, results| {
+                let resource = match &args[0] {
+                    Value::Borrow(r) => r,
+                    _ => bail!("invalid arg"),
+                };
 
-    let nodes = Func::new(
-        store.as_context_mut(),
-        FuncType::new([], [ValueType::List(nodes_list_type.clone())]),
-        move |_ctx, _args, results| {
-            results[0] = Value::List(List::new(nodes_list_type.clone(), []).unwrap());
+                let ctx_ref = ctx.as_context();
+                let node: &NodeResource = resource.rep(&ctx_ref)?;
 
-            Ok(())
-        },
-    );
+                results[0] = Value::U32(node.id);
 
-    let create_node = Func::new(
-        store.as_context_mut(),
-        FuncType::new([], [ValueType::Own(node_type.clone())]),
-        move |mut ctx, _args, results| {
-            let mut resource_table = resource_table.write().unwrap();
+                Ok(())
+            },
+        )
+    };
 
-            let (id, resource) =
-                resource_table.push(ctx.as_context_mut(), node_type.clone(), |id| {
-                    NodeResource { id }
-                })?;
+    let nodes_fn = {
+        let local_data = local_data.clone();
+        let resource_table = resource_table.clone();
+        Func::new(
+            store.as_context_mut(),
+            FuncType::new([], [ValueType::List(nodes_list_type.clone())]),
+            move |_ctx, _args, results| {
+                let local_data = local_data.read().unwrap();
+                let resource_table = resource_table.read().unwrap();
 
-            sender.send(WiredGltfAction::CreateNode { id })?;
+                let nodes = local_data
+                    .nodes
+                    .iter()
+                    .map(|num| {
+                        let res = resource_table.get(num).expect("node resource not found");
+                        Value::Own(res.clone())
+                    })
+                    .collect::<Vec<_>>();
 
-            results[0] = Value::Own(resource);
+                results[0] = Value::List(
+                    List::new(nodes_list_type.clone(), []).expect("failed to create list"),
+                );
 
-            Ok(())
-        },
-    );
+                Ok(())
+            },
+        )
+    };
 
-    interface.define_func("nodes", nodes)?;
-    interface.define_func("create-node", create_node)?;
+    let create_node_fn = {
+        let local_data = local_data.clone();
+        let node_type = node_type.clone();
+        let resource_table = resource_table.clone();
+        let sender = sender.clone();
+        Func::new(
+            store.as_context_mut(),
+            FuncType::new([], [ValueType::Own(node_type.clone())]),
+            move |mut ctx, _args, results| {
+                let mut local_data = local_data.write().unwrap();
+                let mut resource_table = resource_table.write().unwrap();
+
+                let (id, resource) =
+                    resource_table.push(ctx.as_context_mut(), node_type.clone(), |id| {
+                        NodeResource { id }
+                    })?;
+
+                local_data.nodes.push(id);
+
+                sender.send(WiredGltfAction::CreateNode { id })?;
+
+                results[0] = Value::Own(resource);
+
+                Ok(())
+            },
+        )
+    };
+
+    let remove_node_fn = {
+        let local_data = local_data.clone();
+        let resource_table = resource_table.clone();
+        let sender = sender.clone();
+        Func::new(
+            store.as_context_mut(),
+            FuncType::new([ValueType::U32], []),
+            move |_ctx, args, _results| {
+                let id = match args[0] {
+                    Value::U32(num) => num,
+                    _ => bail!("invalid arg"),
+                };
+
+                let mut local_data = local_data.write().unwrap();
+                let mut resource_table = resource_table.write().unwrap();
+
+                sender.send(WiredGltfAction::RemoveNode { id })?;
+
+                if let Some(index) = local_data.nodes.iter().find(|item| **item == id) {
+                    let index = *index as usize;
+                    local_data.nodes.remove(index);
+                }
+
+                resource_table.remove(&id);
+
+                Ok(())
+            },
+        )
+    };
+
+    interface.define_resource("node", node_type)?;
+    interface.define_func("[method]node.id", node_id_fn)?;
+
+    interface.define_func("nodes", nodes_fn)?;
+    interface.define_func("create-node", create_node_fn)?;
+    interface.define_func("remove-node", remove_node_fn)?;
 
     Ok(())
 }

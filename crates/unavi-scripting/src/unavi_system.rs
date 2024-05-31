@@ -13,7 +13,7 @@ pub fn spawn_unavi_system(asset_server: Res<AssetServer>, mut commands: Commands
     });
 }
 
-fn load_component_wasm(asset_server: &AssetServer, name: &str) -> Handle<Wasm> {
+pub fn load_component_wasm(asset_server: &AssetServer, name: &str) -> Handle<Wasm> {
     let path = format!("components/{}_{}.wasm", name, env!("CARGO_PKG_VERSION"));
     asset_server.load(path)
 }

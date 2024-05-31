@@ -1775,8 +1775,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1949] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa0\x0e\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1952] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa3\x0e\x01A\x02\x01\
 A\x10\x01B\x06\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01\
 zv\x04\0\x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04vec4\x03\0\x04\
 \x03\x01\x10wired:math/types\x05\0\x02\x03\0\0\x04vec4\x01B\x12\x02\x03\x02\x01\x01\
@@ -1819,9 +1819,9 @@ debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\
 messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x08\x01B\x07\x04\
 \0\x04data\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x04init\x01\x02\x01h\0\x01@\x01\x04\
 data\x03\x01\0\x04\0\x06update\x01\x04\x04\x01\x16wired:script/lifecycle\x05\x09\
-\x04\x01\x13unavi:system/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09prod\
-ucers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x06\
-0.25.0";
+\x04\x01\x16test:wired-gltf/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09p\
+roducers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\
+\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

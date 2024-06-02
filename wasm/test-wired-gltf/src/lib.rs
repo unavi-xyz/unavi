@@ -1,6 +1,6 @@
 use bindings::{
     exports::wired::script::lifecycle::{Data, DataBorrow, Guest, GuestData},
-    wired::gltf::node::{create_node, nodes},
+    wired::gltf::node::{create_node, list_nodes, remove_node},
 };
 
 use crate::bindings::wired::log::api::{log, LogLevel};
@@ -21,10 +21,10 @@ impl Guest for Script {
         log(LogLevel::Info, "Hello from script!");
 
         let node = create_node();
-        let found_nodes = nodes();
+        let found_nodes = list_nodes();
 
         if found_nodes.len() != 1 {
-            let err = format!("found nodes len: {}, expected 1", found_nodes.len());
+            let err = format!("found list_nodes len: {}, expected 1", found_nodes.len());
             panic(&err);
         }
 
@@ -36,6 +36,14 @@ impl Guest for Script {
             );
             panic(&err);
         };
+
+        remove_node(node);
+        let found_nodes = list_nodes();
+
+        if found_nodes.len() != 0 {
+            let err = format!("found list_nodes len: {}, expected 0", found_nodes.len());
+            panic(&err);
+        }
 
         Data::new(DataImpl {})
     }

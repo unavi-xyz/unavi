@@ -39,4 +39,4 @@ self_update = { version = "0.39.0", features = ["archive-zip"], optional = true 
 semver.workspace = true
 surrealdb = { workspace = true, features = ["kv-surrealkv"] }
 tokio = { workspace = true, features = ["rt-multi-thread"] }
-zip = { version = "1.1.1", default-features = false, features = ["deflate"] }
+zip = { version = "2.1.1", default-features = false, features = ["deflate"] }

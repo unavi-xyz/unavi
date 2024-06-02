@@ -1,7 +1,7 @@
 use bindings::{
     exports::wired::script::lifecycle::{Data, DataBorrow, Guest, GuestData},
     wired::{
-        gltf::node::{create_node, nodes},
+        gltf::node::{create_node, list_nodes},
         log::api::{log, LogLevel},
     },
 };
@@ -22,7 +22,7 @@ impl Guest for UnaviSystem {
         log(LogLevel::Info, "initializing...");
 
         let node = create_node();
-        let found_nodes = nodes();
+        let found_nodes = list_nodes();
 
         if found_nodes.is_empty() {
             log(LogLevel::Error, "found 0 nodes")

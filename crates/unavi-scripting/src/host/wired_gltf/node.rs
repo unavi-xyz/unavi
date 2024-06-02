@@ -1,6 +1,7 @@
 use std::sync::{Arc, RwLock};
 
 use anyhow::{bail, Result};
+use bevy::utils::{HashMap, HashSet};
 use crossbeam::channel::Sender;
 use wasm_component_layer::{
     AsContext, AsContextMut, Func, FuncType, Linker, List, ListType, ResourceType, Store, Value,
@@ -18,8 +19,9 @@ pub struct NodeResource {
 
 #[derive(Default)]
 struct LocalData {
-    node_refs: Vec<u32>,
-    nodes: Vec<u32>,
+    /// Maps node ID -> node ref IDs
+    node_refs: HashMap<u32, HashSet<u32>>,
+    nodes: HashSet<u32>,
 }
 
 pub fn add_to_host(
@@ -42,7 +44,7 @@ pub fn add_to_host(
             FuncType::new([ValueType::Borrow(node_type.clone())], [ValueType::U32]),
             move |ctx, args, results| {
                 let resource = match &args[0] {
-                    Value::Borrow(r) => r,
+                    Value::Borrow(v) => v,
                     _ => bail!("invalid arg"),
                 };
 
@@ -77,7 +79,15 @@ pub fn add_to_host(
                                 NodeResource { id: num }
                             })?;
 
-                        local_data.node_refs.push(id);
+                        let refs = match local_data.node_refs.get_mut(&num) {
+                            Some(r) => r,
+                            None => {
+                                local_data.node_refs.insert(num, HashSet::default());
+                                local_data.node_refs.get_mut(&num).unwrap()
+                            }
+                        };
+
+                        refs.insert(id);
 
                         Ok(Value::Own(resource))
                     })
@@ -109,7 +119,7 @@ pub fn add_to_host(
                         NodeResource { id }
                     })?;
 
-                local_data.nodes.push(id);
+                local_data.nodes.insert(id);
 
                 sender.send(WiredGltfAction::CreateNode { id })?;
 
@@ -126,24 +136,25 @@ pub fn add_to_host(
         let sender = sender.clone();
         Func::new(
             store.as_context_mut(),
-            FuncType::new([ValueType::U32], []),
-            move |_ctx, args, _results| {
-                let id = match args[0] {
-                    Value::U32(num) => num,
+            FuncType::new([ValueType::Own(node_type.clone())], []),
+            move |ctx, args, _results| {
+                let resource = match &args[0] {
+                    Value::Own(v) => v,
                     _ => bail!("invalid arg"),
                 };
 
                 let mut local_data = local_data.write().unwrap();
                 let mut resource_table = resource_table.write().unwrap();
 
-                sender.send(WiredGltfAction::RemoveNode { id })?;
+                let ctx_ref = ctx.as_context();
+                let node: &NodeResource = resource.rep(&ctx_ref)?;
 
-                if let Some(index) = local_data.nodes.iter().find(|item| **item == id) {
-                    let index = *index as usize;
-                    local_data.nodes.remove(index);
-                }
+                sender.send(WiredGltfAction::RemoveNode { id: node.id })?;
 
-                resource_table.remove(&id);
+                local_data.node_refs.remove(&node.id);
+                local_data.nodes.remove(&node.id);
+
+                resource_table.remove(&node.id);
 
                 Ok(())
             },
@@ -153,7 +164,7 @@ pub fn add_to_host(
     interface.define_resource("node", node_type)?;
     interface.define_func("[method]node.id", node_id_fn)?;
 
-    interface.define_func("nodes", nodes_fn)?;
+    interface.define_func("list-nodes", nodes_fn)?;
     interface.define_func("create-node", create_node_fn)?;
     interface.define_func("remove-node", remove_node_fn)?;
 

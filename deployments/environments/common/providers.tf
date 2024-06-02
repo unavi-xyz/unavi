@@ -19,11 +19,11 @@ terraform {
   required_providers {
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "4.30.0"
+      version = "4.34.0"
     }
     digitalocean = {
       source  = "digitalocean/digitalocean"
-      version = "2.37.1"
+      version = "2.39.1"
     }
   }
 }

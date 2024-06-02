@@ -101,10 +101,8 @@ mod tests {
         let len = loaded_scripts.iter(&app.world).len();
         assert_eq!(len, 1);
 
-        tokio::time::sleep(Duration::from_secs_f32(0.2)).await;
-        app.update();
-
-        tokio::time::sleep(Duration::from_secs_f32(0.2)).await;
-        app.update();
+        assert!(logs_contain("Hello from script!"));
+        assert!(!logs_contain("error"));
+        assert!(!logs_contain("ERROR"));
     }
 }

@@ -18,6 +18,7 @@ pub struct NodeResource {
 
 #[derive(Default)]
 struct LocalData {
+    node_refs: Vec<u32>,
     nodes: Vec<u32>,
 }
 
@@ -57,25 +58,33 @@ pub fn add_to_host(
 
     let nodes_fn = {
         let local_data = local_data.clone();
+        let node_type = node_type.clone();
         let resource_table = resource_table.clone();
         Func::new(
             store.as_context_mut(),
             FuncType::new([], [ValueType::List(nodes_list_type.clone())]),
-            move |_ctx, _args, results| {
-                let local_data = local_data.read().unwrap();
-                let resource_table = resource_table.read().unwrap();
+            move |mut ctx, _args, results| {
+                let mut local_data = local_data.write().unwrap();
+                let mut resource_table = resource_table.write().unwrap();
 
                 let nodes = local_data
                     .nodes
-                    .iter()
-                    .map(|num| {
-                        let res = resource_table.get(num).expect("node resource not found");
-                        Value::Own(res.clone())
+                    .clone()
+                    .into_iter()
+                    .map(|num| -> Result<_, _> {
+                        let (id, resource) =
+                            resource_table.push(ctx.as_context_mut(), node_type.clone(), |_| {
+                                NodeResource { id: num }
+                            })?;
+
+                        local_data.node_refs.push(id);
+
+                        Ok(Value::Own(resource))
                     })
-                    .collect::<Vec<_>>();
+                    .collect::<Result<Vec<_>, anyhow::Error>>()?;
 
                 results[0] = Value::List(
-                    List::new(nodes_list_type.clone(), []).expect("failed to create list"),
+                    List::new(nodes_list_type.clone(), nodes).expect("failed to create list"),
                 );
 
                 Ok(())

@@ -44,7 +44,7 @@ impl Guest for Script {
 }
 
 fn panic(err: &str) {
-    log(LogLevel::Error, &err);
+    log(LogLevel::Error, err);
     panic!("{}", err);
 }
 

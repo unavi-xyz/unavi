@@ -61,10 +61,16 @@ pub fn test_nodes() {
         panic_log(&err);
     }
 
-    // TODO: wasm_component_layer crashes when returning None https://github.com/DouglasDwyer/wasm_component_layer/issues/16
+    // TODO: wasm_component_layer panics when returning None https://github.com/DouglasDwyer/wasm_component_layer/issues/16
     // let parent = node_2.parent();
     // if parent.is_some() {
     //     let err = format!("parent is Some: {:?}", parent);
     //     panic_log(&err);
     // }
+
+    let found_nodes = list_nodes();
+    if found_nodes.len() != 2 {
+        let err = format!("found list_nodes len: {}, expected 2", found_nodes.len());
+        panic_log(&err);
+    }
 }

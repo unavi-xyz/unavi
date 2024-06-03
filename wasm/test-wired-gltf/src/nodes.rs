@@ -24,7 +24,7 @@ pub fn test_nodes() {
     remove_node(node);
     let found_nodes = list_nodes();
 
-    if found_nodes.len() != 0 {
+    if !found_nodes.is_empty() {
         let err = format!("found list_nodes len: {}, expected 0", found_nodes.len());
         panic_log(&err);
     }

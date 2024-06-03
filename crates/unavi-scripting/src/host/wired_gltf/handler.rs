@@ -16,28 +16,30 @@ pub fn handle_wired_gltf_actions(
         while let Ok(msg) = receiver.try_recv() {
             match msg {
                 WiredGltfAction::CreateNode { id } => {
-                    commands.spawn((Ownership(entity), NodeId(id), SpatialBundle::default()));
+                    if find_node(&nodes, id).is_some() {
+                        warn!("Node {} already exists.", id);
+                    } else {
+                        commands.spawn((Ownership(entity), NodeId(id), SpatialBundle::default()));
+                    }
                 }
                 WiredGltfAction::RemoveNode { id } => {
-                    if let Some((ent, ..)) = nodes.iter().find(|(_, nid)| nid.0 == id) {
+                    if let Some(ent) = find_node(&nodes, id) {
                         commands.entity(ent).despawn_recursive();
+                    } else {
+                        warn!("Node {} does not exist", id);
                     }
                 }
                 WiredGltfAction::SetParent { id, parent } => {
-                    if let Some((ent, ..)) = nodes.iter().find(|(_, nid)| nid.0 == id) {
-                        match parent {
-                            Some(parent) => match nodes.iter().find(|(_, nid)| nid.0 == parent) {
-                                Some((ent_parent, ..)) => {
-                                    commands.entity(ent_parent).push_children(&[ent]);
-                                }
-                                None => {
-                                    commands.entity(ent).remove_parent();
-                                }
-                            },
-                            None => {
+                    if let Some(ent) = find_node(&nodes, id) {
+                        if let Some(parent) = parent {
+                            if let Some(parent_ent) = find_node(&nodes, parent) {
+                                commands.entity(parent_ent).push_children(&[ent]);
+                            } else {
                                 commands.entity(ent).remove_parent();
                             }
-                        };
+                        } else {
+                            commands.entity(ent).remove_parent();
+                        }
                     }
                 }
             }
@@ -45,14 +47,17 @@ pub fn handle_wired_gltf_actions(
     }
 }
 
+fn find_node(nodes: &Query<(Entity, &NodeId)>, id: u32) -> Option<Entity> {
+    nodes
+        .iter()
+        .find_map(|(ent, nid)| if nid.0 == id { Some(ent) } else { None })
+}
+
 #[cfg(test)]
 mod tests {
     use crossbeam::channel::Sender;
 
     use super::*;
-
-    // TODO: More testing, this is input from untrusted user scripts.
-    // Test when values are unexpected - duplicate IDs, missing IDs, etc.
 
     fn setup_test() -> (App, Sender<WiredGltfAction>) {
         let mut app = App::new();
@@ -78,6 +83,20 @@ mod tests {
     }
 
     #[test]
+    fn create_node_duplicate_id() {
+        let (mut app, send) = setup_test();
+
+        let id = 0;
+        app.world.spawn(NodeId(id));
+
+        send.send(WiredGltfAction::CreateNode { id }).unwrap();
+        app.update();
+
+        let mut nodes = app.world.query::<&NodeId>();
+        assert!(nodes.iter(&app.world).len() == 1);
+    }
+
+    #[test]
     fn remove_node() {
         let (mut app, send) = setup_test();
 
@@ -88,6 +107,14 @@ mod tests {
         app.update();
 
         assert!(app.world.get_entity(ent).is_none());
+    }
+
+    #[test]
+    fn remove_invalid_node() {
+        let (mut app, send) = setup_test();
+
+        send.send(WiredGltfAction::RemoveNode { id: 0 }).unwrap();
+        app.update();
     }
 
     #[test]
@@ -136,5 +163,21 @@ mod tests {
         app.update();
 
         assert!(app.world.get::<Children>(parent_ent).is_none());
+    }
+
+    #[test]
+    fn set_invalid_parent() {
+        let (mut app, send) = setup_test();
+
+        let parent_id = 0;
+        let child_id = 1;
+        app.world.spawn(NodeId(child_id));
+
+        send.send(WiredGltfAction::SetParent {
+            id: child_id,
+            parent: Some(parent_id),
+        })
+        .unwrap();
+        app.update();
     }
 }

@@ -4,6 +4,7 @@ use crate::bindings::wired::log::api::{log, LogLevel};
 
 #[allow(warnings)]
 mod bindings;
+mod impls;
 mod nodes;
 
 struct DataImpl {}

@@ -130,6 +130,7 @@ pub fn add_to_host(
 
     let node_add_child_fn = {
         let local_data = local_data.clone();
+        let sender = sender.clone();
         Func::new(
             store.as_context_mut(),
             FuncType::new(
@@ -161,8 +162,21 @@ pub fn add_to_host(
                 }
 
                 if let Some(data) = local_data.nodes.get_mut(&child_node.id) {
+                    if let Some(prev_id) = data.parent {
+                        if let Some(prev_data) = local_data.nodes.get_mut(&prev_id) {
+                            prev_data.children.remove(&child_node.id);
+                        }
+                    }
+                }
+
+                if let Some(data) = local_data.nodes.get_mut(&child_node.id) {
                     data.parent = Some(parent_node.id);
                 }
+
+                sender.send(WiredGltfAction::SetParent {
+                    id: child_node.id,
+                    parent: Some(parent_node.id),
+                })?;
 
                 Ok(())
             },
@@ -171,6 +185,7 @@ pub fn add_to_host(
 
     let node_remove_child_fn = {
         let local_data = local_data.clone();
+        let sender = sender.clone();
         Func::new(
             store.as_context_mut(),
             FuncType::new(
@@ -204,6 +219,11 @@ pub fn add_to_host(
                 if let Some(data) = local_data.nodes.get_mut(&child_node.id) {
                     data.parent = None;
                 }
+
+                sender.send(WiredGltfAction::SetParent {
+                    id: child_node.id,
+                    parent: None,
+                })?;
 
                 Ok(())
             },

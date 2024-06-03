@@ -18,6 +18,7 @@ pub struct WiredGltfReceiver(pub Receiver<WiredGltfAction>);
 pub enum WiredGltfAction {
     CreateNode { id: u32 },
     RemoveNode { id: u32 },
+    SetParent { id: u32, parent: Option<u32> },
 }
 
 #[derive(Component, Deref, DerefMut)]

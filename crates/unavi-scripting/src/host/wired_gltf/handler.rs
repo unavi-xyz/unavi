@@ -5,6 +5,15 @@ use crate::Owner;
 use super::{WiredGltfAction, WiredGltfReceiver};
 
 #[derive(Component, Debug)]
+pub struct MeshId(pub u32);
+
+#[derive(Bundle)]
+pub struct WiredMeshBundle {
+    id: MeshId,
+    owner: Owner,
+}
+
+#[derive(Component, Debug)]
 pub struct NodeId(pub u32);
 
 #[derive(Bundle)]
@@ -17,13 +26,23 @@ pub struct WiredNodeBundle {
 pub fn handle_wired_gltf_actions(
     mut commands: Commands,
     mut transforms: Query<&mut Transform>,
+    meshes: Query<(Entity, &MeshId)>,
     nodes: Query<(Entity, &NodeId)>,
     scripts: Query<(Entity, &WiredGltfReceiver)>,
 ) {
     for (entity, receiver) in scripts.iter() {
         while let Ok(msg) = receiver.try_recv() {
             match msg {
-                WiredGltfAction::CreateMesh { id } => {}
+                WiredGltfAction::CreateMesh { id } => {
+                    if find_mesh(&meshes, id).is_some() {
+                        warn!("Mesh {} already exists.", id);
+                    } else {
+                        commands.spawn(WiredMeshBundle {
+                            id: MeshId(id),
+                            owner: Owner(entity),
+                        });
+                    }
+                }
                 WiredGltfAction::CreateNode { id } => {
                     if find_node(&nodes, id).is_some() {
                         warn!("Node {} already exists.", id);
@@ -35,7 +54,13 @@ pub fn handle_wired_gltf_actions(
                         });
                     }
                 }
-                WiredGltfAction::RemoveMesh { id } => {}
+                WiredGltfAction::RemoveMesh { id } => {
+                    if let Some(ent) = find_mesh(&meshes, id) {
+                        commands.entity(ent).despawn_recursive();
+                    } else {
+                        warn!("Mesh {} does not exist", id);
+                    }
+                }
                 WiredGltfAction::RemoveNode { id } => {
                     if let Some(ent) = find_node(&nodes, id) {
                         commands.entity(ent).despawn_recursive();
@@ -73,6 +98,12 @@ fn find_node(nodes: &Query<(Entity, &NodeId)>, id: u32) -> Option<Entity> {
         .find_map(|(ent, nid)| if nid.0 == id { Some(ent) } else { None })
 }
 
+fn find_mesh(meshes: &Query<(Entity, &MeshId)>, id: u32) -> Option<Entity> {
+    meshes
+        .iter()
+        .find_map(|(ent, mid)| if mid.0 == id { Some(ent) } else { None })
+}
+
 #[cfg(test)]
 mod tests {
     use crossbeam::channel::Sender;
@@ -89,6 +120,7 @@ mod tests {
         (app, send)
     }
 
+    // Node
     #[test]
     fn create_node() {
         let (mut app, send) = setup_test();
@@ -219,5 +251,54 @@ mod tests {
         app.update();
 
         assert_eq!(app.world.get::<Transform>(ent).unwrap(), &transform);
+    }
+
+    // Mesh
+    #[test]
+    fn create_mesh() {
+        let (mut app, send) = setup_test();
+
+        let id = 0;
+        send.send(WiredGltfAction::CreateMesh { id }).unwrap();
+        app.update();
+
+        let mut meshes = app.world.query::<&MeshId>();
+        let mesh_id = meshes.single(&app.world);
+        assert_eq!(mesh_id.0, id);
+    }
+
+    #[test]
+    fn create_mesh_duplicate_id() {
+        let (mut app, send) = setup_test();
+
+        let id = 0;
+        app.world.spawn(MeshId(id));
+
+        send.send(WiredGltfAction::CreateMesh { id }).unwrap();
+        app.update();
+
+        let mut meshes = app.world.query::<&MeshId>();
+        assert!(meshes.iter(&app.world).len() == 1);
+    }
+
+    #[test]
+    fn remove_mesh() {
+        let (mut app, send) = setup_test();
+
+        let id = 0;
+        let ent = app.world.spawn(MeshId(id)).id();
+
+        send.send(WiredGltfAction::RemoveMesh { id }).unwrap();
+        app.update();
+
+        assert!(app.world.get_entity(ent).is_none());
+    }
+
+    #[test]
+    fn remove_invalid_mesh() {
+        let (mut app, send) = setup_test();
+
+        send.send(WiredGltfAction::RemoveMesh { id: 0 }).unwrap();
+        app.update();
     }
 }

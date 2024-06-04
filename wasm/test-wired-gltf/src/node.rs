@@ -3,7 +3,7 @@ use crate::{
     panic_log,
 };
 
-pub fn test_nodes() {
+pub fn test_node_api() {
     let node = create_node();
     let found_nodes = list_nodes();
 

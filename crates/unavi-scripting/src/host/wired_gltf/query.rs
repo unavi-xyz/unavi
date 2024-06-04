@@ -1,11 +1,11 @@
 use bevy::prelude::*;
 
-use crate::Ownership;
+use crate::Owner;
 
 use super::{handler::NodeId, WiredGltfData};
 
 pub fn query_node_data(
-    nodes: Query<(&Ownership, &NodeId, &Transform)>,
+    nodes: Query<(&Owner, &NodeId, &Transform)>,
     scripts: Query<(Entity, &WiredGltfData)>,
 ) {
     for (entity, data) in scripts.iter() {

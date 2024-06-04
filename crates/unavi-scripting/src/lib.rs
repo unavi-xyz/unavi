@@ -50,4 +50,4 @@ pub struct StoreData {
 /// Marks an entity as being "owned" by another entity.
 /// For example, entities spawned in by a script are owned by that script.
 #[derive(Component, Deref)]
-pub struct Ownership(pub Entity);
+pub struct Owner(pub Entity);

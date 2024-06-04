@@ -1,14 +1,22 @@
 use bevy::prelude::*;
 
-use crate::Ownership;
+use crate::Owner;
 
 use super::{WiredGltfAction, WiredGltfReceiver};
 
 #[derive(Component, Debug)]
 pub struct NodeId(pub u32);
 
+#[derive(Bundle)]
+pub struct WiredNodeBundle {
+    id: NodeId,
+    owner: Owner,
+    spatial: SpatialBundle,
+}
+
 pub fn handle_wired_gltf_actions(
     mut commands: Commands,
+    mut transforms: Query<&mut Transform>,
     nodes: Query<(Entity, &NodeId)>,
     scripts: Query<(Entity, &WiredGltfReceiver)>,
 ) {
@@ -19,7 +27,11 @@ pub fn handle_wired_gltf_actions(
                     if find_node(&nodes, id).is_some() {
                         warn!("Node {} already exists.", id);
                     } else {
-                        commands.spawn((Ownership(entity), NodeId(id), SpatialBundle::default()));
+                        commands.spawn(WiredNodeBundle {
+                            id: NodeId(id),
+                            owner: Owner(entity),
+                            spatial: SpatialBundle::default(),
+                        });
                     }
                 }
                 WiredGltfAction::RemoveNode { id } => {
@@ -40,6 +52,12 @@ pub fn handle_wired_gltf_actions(
                         } else {
                             commands.entity(ent).remove_parent();
                         }
+                    }
+                }
+                WiredGltfAction::SetTransform { id, transform } => {
+                    if let Some(ent) = find_node(&nodes, id) {
+                        let mut node_transform = transforms.get_mut(ent).unwrap();
+                        node_transform.clone_from(&transform);
                     }
                 }
             }
@@ -179,5 +197,28 @@ mod tests {
         })
         .unwrap();
         app.update();
+    }
+
+    #[test]
+    fn set_transform() {
+        let (mut app, send) = setup_test();
+
+        let id = 0;
+        let ent = app.world.spawn((NodeId(id), SpatialBundle::default())).id();
+
+        let transform = Transform {
+            translation: Vec3::splat(1.0),
+            rotation: Quat::from_xyzw(0.1, 0.2, 0.3, 0.4),
+            scale: Vec3::splat(3.0),
+        };
+
+        send.send(WiredGltfAction::SetTransform {
+            id,
+            transform: transform.clone(),
+        })
+        .unwrap();
+        app.update();
+
+        assert_eq!(app.world.get::<Transform>(ent).unwrap(), &transform);
     }
 }

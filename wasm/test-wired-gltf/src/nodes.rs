@@ -1,5 +1,5 @@
 use crate::{
-    bindings::wired::gltf::node::{create_node, list_nodes, remove_node},
+    bindings::wired::gltf::node::{create_node, list_nodes, remove_node, Transform},
     panic_log,
 };
 
@@ -71,6 +71,18 @@ pub fn test_nodes() {
     let found_nodes = list_nodes();
     if found_nodes.len() != 2 {
         let err = format!("found list_nodes len: {}, expected 2", found_nodes.len());
+        panic_log(&err);
+    }
+
+    node.set_transform(Transform::default());
+
+    let transform = node.transform();
+    if transform != Transform::default() {
+        let err = format!(
+            "transform {:?} does not match expected {:?}",
+            transform,
+            Transform::default()
+        );
         panic_log(&err);
     }
 }

@@ -1,11 +1,14 @@
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 
 use anyhow::{anyhow, bail, Result};
-use bevy::utils::{HashMap, HashSet};
+use bevy::{
+    prelude::*,
+    utils::{HashMap, HashSet},
+};
 use crossbeam::channel::Sender;
 use wasm_component_layer::{
     AsContext, AsContextMut, Func, FuncType, Linker, List, ListType, OptionType, OptionValue,
-    ResourceType, Store, StoreContextMut, Value, ValueType,
+    Record, RecordType, ResourceType, Store, StoreContextMut, Value, ValueType,
 };
 
 use crate::{load::EngineBackend, resource_table::ResourceTable, StoreData};
@@ -42,6 +45,7 @@ struct NodeData {
     children: HashSet<u32>,
     parent: Option<u32>,
     resources: HashSet<u32>,
+    transform: Transform,
 }
 
 pub fn add_to_host(
@@ -58,6 +62,35 @@ pub fn add_to_host(
     let node_type = ResourceType::new::<NodeResource>(None);
     let node_list_type = ListType::new(ValueType::Own(node_type.clone()));
     let node_option_type = OptionType::new(ValueType::Own(node_type.clone()));
+
+    let vec3_type = RecordType::new(
+        None,
+        [
+            ("x", ValueType::F32),
+            ("y", ValueType::F32),
+            ("z", ValueType::F32),
+        ]
+        .into_iter(),
+    )?;
+    let vec4_type = RecordType::new(
+        None,
+        [
+            ("x", ValueType::F32),
+            ("y", ValueType::F32),
+            ("z", ValueType::F32),
+            ("w", ValueType::F32),
+        ]
+        .into_iter(),
+    )?;
+    let transform_type = RecordType::new(
+        None,
+        [
+            ("translation", ValueType::Record(vec3_type.clone())),
+            ("rotation", ValueType::Record(vec4_type.clone())),
+            ("scale", ValueType::Record(vec3_type.clone())),
+        ]
+        .into_iter(),
+    )?;
 
     let node_id_fn = {
         Func::new(
@@ -277,6 +310,192 @@ pub fn add_to_host(
         )
     };
 
+    let node_transform_fn = {
+        let local_data = local_data.clone();
+        let node_type = node_type.clone();
+        let transform_type = transform_type.clone();
+        let vec3_type = vec3_type.clone();
+        let vec4_type = vec4_type.clone();
+        Func::new(
+            store.as_context_mut(),
+            FuncType::new(
+                [ValueType::Borrow(node_type.clone())],
+                [ValueType::Record(transform_type.clone())],
+            ),
+            move |ctx, args, results| {
+                let resource = match &args[0] {
+                    Value::Borrow(v) => v,
+                    _ => bail!("invalid arg"),
+                };
+
+                let ctx_ref = ctx.as_context();
+                let node: &NodeResource = resource.rep(&ctx_ref)?;
+
+                let local_data = local_data.read().unwrap();
+
+                if let Some(data) = local_data.nodes.get(&node.id) {
+                    let tr = data.transform;
+
+                    let translation = Record::new(
+                        vec3_type.clone(),
+                        [
+                            ("x", Value::F32(tr.translation.x)),
+                            ("y", Value::F32(tr.translation.y)),
+                            ("z", Value::F32(tr.translation.z)),
+                        ]
+                        .into_iter(),
+                    )?;
+                    let rotation = Record::new(
+                        vec4_type.clone(),
+                        [
+                            ("x", Value::F32(tr.rotation.x)),
+                            ("y", Value::F32(tr.rotation.y)),
+                            ("z", Value::F32(tr.rotation.z)),
+                            ("w", Value::F32(tr.rotation.w)),
+                        ]
+                        .into_iter(),
+                    )?;
+                    let scale = Record::new(
+                        vec3_type.clone(),
+                        [
+                            ("x", Value::F32(tr.scale.x)),
+                            ("y", Value::F32(tr.scale.y)),
+                            ("z", Value::F32(tr.scale.z)),
+                        ]
+                        .into_iter(),
+                    )?;
+                    let record = Record::new(
+                        transform_type.clone(),
+                        [
+                            ("translation", Value::Record(translation)),
+                            ("rotation", Value::Record(rotation)),
+                            ("scale", Value::Record(scale)),
+                        ]
+                        .into_iter(),
+                    )?;
+
+                    results[0] = Value::Record(record);
+                }
+
+                Ok(())
+            },
+        )
+    };
+
+    let node_set_transform_fn = {
+        let local_data = local_data.clone();
+        let node_type = node_type.clone();
+        let sender = sender.clone();
+        Func::new(
+            store.as_context_mut(),
+            FuncType::new(
+                [
+                    ValueType::Borrow(node_type.clone()),
+                    ValueType::Record(transform_type.clone()),
+                ],
+                [],
+            ),
+            move |ctx, args, _results| {
+                let resource = match &args[0] {
+                    Value::Borrow(v) => v,
+                    _ => bail!("invalid arg"),
+                };
+
+                let transform = match &args[1] {
+                    Value::Record(v) => v,
+                    _ => bail!("invalid arg"),
+                };
+
+                let ctx_ref = ctx.as_context();
+                let node: &NodeResource = resource.rep(&ctx_ref)?;
+
+                let mut local_data = local_data.write().unwrap();
+
+                if let Some(data) = local_data.nodes.get_mut(&node.id) {
+                    let translation = match transform.field("translation").unwrap() {
+                        Value::Record(v) => v,
+                        _ => bail!("invalid arg"),
+                    };
+                    let rotation = match transform.field("rotation").unwrap() {
+                        Value::Record(v) => v,
+                        _ => bail!("invalid arg"),
+                    };
+                    let scale = match transform.field("scale").unwrap() {
+                        Value::Record(v) => v,
+                        _ => bail!("invalid arg"),
+                    };
+
+                    let tr_x = match translation.field("x").unwrap() {
+                        Value::F32(v) => v,
+                        _ => bail!("invalid arg"),
+                    };
+                    let tr_y = match translation.field("y").unwrap() {
+                        Value::F32(v) => v,
+                        _ => bail!("invalid arg"),
+                    };
+                    let tr_z = match translation.field("z").unwrap() {
+                        Value::F32(v) => v,
+                        _ => bail!("invalid arg"),
+                    };
+
+                    let rot_x = match rotation.field("x").unwrap() {
+                        Value::F32(v) => v,
+                        _ => bail!("invalid arg"),
+                    };
+                    let rot_y = match rotation.field("y").unwrap() {
+                        Value::F32(v) => v,
+                        _ => bail!("invalid arg"),
+                    };
+                    let rot_z = match rotation.field("z").unwrap() {
+                        Value::F32(v) => v,
+                        _ => bail!("invalid arg"),
+                    };
+                    let rot_w = match rotation.field("w").unwrap() {
+                        Value::F32(v) => v,
+                        _ => bail!("invalid arg"),
+                    };
+
+                    let scale_x = match scale.field("x").unwrap() {
+                        Value::F32(v) => v,
+                        _ => bail!("invalid arg"),
+                    };
+                    let scale_y = match scale.field("y").unwrap() {
+                        Value::F32(v) => v,
+                        _ => bail!("invalid arg"),
+                    };
+                    let scale_z = match scale.field("z").unwrap() {
+                        Value::F32(v) => v,
+                        _ => bail!("invalid arg"),
+                    };
+
+                    data.transform.translation.x = tr_x;
+                    data.transform.translation.y = tr_y;
+                    data.transform.translation.z = tr_z;
+
+                    data.transform.rotation.x = rot_x;
+                    data.transform.rotation.y = rot_y;
+                    data.transform.rotation.z = rot_z;
+                    data.transform.rotation.w = rot_w;
+
+                    data.transform.scale.x = scale_x;
+                    data.transform.scale.y = scale_y;
+                    data.transform.scale.z = scale_z;
+
+                    sender.send(WiredGltfAction::SetTransform {
+                        id: node.id,
+                        transform: Transform {
+                            translation: Vec3::new(tr_x, tr_y, tr_z),
+                            rotation: Quat::from_xyzw(rot_x, rot_y, rot_z, rot_w),
+                            scale: Vec3::new(scale_x, scale_y, scale_z),
+                        },
+                    })?;
+                }
+
+                Ok(())
+            },
+        )
+    };
+
     let list_nodes_fn = {
         let local_data = local_data.clone();
         let node_type = node_type.clone();
@@ -386,6 +605,8 @@ pub fn add_to_host(
     interface.define_func("[method]node.add-child", node_add_child_fn)?;
     interface.define_func("[method]node.remove-child", node_remove_child_fn)?;
     interface.define_func("[method]node.parent", node_parent_fn)?;
+    interface.define_func("[method]node.transform", node_transform_fn)?;
+    interface.define_func("[method]node.set-transform", node_set_transform_fn)?;
 
     interface.define_func("list-nodes", list_nodes_fn)?;
     interface.define_func("create-node", create_node_fn)?;

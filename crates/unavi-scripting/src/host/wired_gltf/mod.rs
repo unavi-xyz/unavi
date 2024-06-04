@@ -19,6 +19,7 @@ pub enum WiredGltfAction {
     CreateNode { id: u32 },
     RemoveNode { id: u32 },
     SetParent { id: u32, parent: Option<u32> },
+    SetTransform { id: u32, transform: Transform },
 }
 
 #[derive(Component, Deref, DerefMut)]

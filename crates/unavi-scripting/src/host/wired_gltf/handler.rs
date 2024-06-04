@@ -23,6 +23,7 @@ pub fn handle_wired_gltf_actions(
     for (entity, receiver) in scripts.iter() {
         while let Ok(msg) = receiver.try_recv() {
             match msg {
+                WiredGltfAction::CreateMesh { id } => {}
                 WiredGltfAction::CreateNode { id } => {
                     if find_node(&nodes, id).is_some() {
                         warn!("Node {} already exists.", id);
@@ -34,6 +35,7 @@ pub fn handle_wired_gltf_actions(
                         });
                     }
                 }
+                WiredGltfAction::RemoveMesh { id } => {}
                 WiredGltfAction::RemoveNode { id } => {
                     if let Some(ent) = find_node(&nodes, id) {
                         commands.entity(ent).despawn_recursive();
@@ -41,7 +43,7 @@ pub fn handle_wired_gltf_actions(
                         warn!("Node {} does not exist", id);
                     }
                 }
-                WiredGltfAction::SetParent { id, parent } => {
+                WiredGltfAction::SetNodeParent { id, parent } => {
                     if let Some(ent) = find_node(&nodes, id) {
                         if let Some(parent) = parent {
                             if let Some(parent_ent) = find_node(&nodes, parent) {
@@ -54,7 +56,7 @@ pub fn handle_wired_gltf_actions(
                         }
                     }
                 }
-                WiredGltfAction::SetTransform { id, transform } => {
+                WiredGltfAction::SetNodeTransform { id, transform } => {
                     if let Some(ent) = find_node(&nodes, id) {
                         let mut node_transform = transforms.get_mut(ent).unwrap();
                         node_transform.clone_from(&transform);
@@ -145,7 +147,7 @@ mod tests {
         let child_id = 1;
         let child_ent = app.world.spawn(NodeId(child_id)).id();
 
-        send.send(WiredGltfAction::SetParent {
+        send.send(WiredGltfAction::SetNodeParent {
             id: child_id,
             parent: Some(parent_id),
         })
@@ -173,7 +175,7 @@ mod tests {
         let children = app.world.get::<Children>(parent_ent).unwrap();
         assert!(children.contains(&child_ent));
 
-        send.send(WiredGltfAction::SetParent {
+        send.send(WiredGltfAction::SetNodeParent {
             id: child_id,
             parent: None,
         })
@@ -191,7 +193,7 @@ mod tests {
         let child_id = 1;
         app.world.spawn(NodeId(child_id));
 
-        send.send(WiredGltfAction::SetParent {
+        send.send(WiredGltfAction::SetNodeParent {
             id: child_id,
             parent: Some(parent_id),
         })
@@ -212,7 +214,7 @@ mod tests {
             scale: Vec3::splat(3.0),
         };
 
-        send.send(WiredGltfAction::SetTransform {
+        send.send(WiredGltfAction::SetNodeTransform {
             id,
             transform: transform,
         })

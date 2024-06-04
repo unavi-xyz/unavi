@@ -1,10 +1,7 @@
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 
 use anyhow::{anyhow, bail, Result};
-use bevy::{
-    prelude::*,
-    utils::{HashMap, HashSet},
-};
+use bevy::prelude::*;
 use crossbeam::channel::Sender;
 use wasm_component_layer::{
     AsContext, AsContextMut, Func, FuncType, Linker, List, ListType, OptionType, OptionValue,
@@ -13,7 +10,7 @@ use wasm_component_layer::{
 
 use crate::{load::EngineBackend, resource_table::ResourceTable, StoreData};
 
-use super::{Data, WiredGltfAction};
+use super::{EcsData, LocalData, NodeData, WiredGltfAction};
 
 #[derive(Clone)]
 pub struct NodeResource {
@@ -26,38 +23,15 @@ impl NodeResource {
     }
 }
 
-#[derive(Default)]
-struct LocalData {
-    next_id: u32,
-    nodes: HashMap<u32, NodeData>,
-}
-
-impl LocalData {
-    fn new_id(&mut self) -> u32 {
-        let id = self.next_id;
-        self.next_id += 1;
-        id
-    }
-}
-
-#[derive(Default)]
-struct NodeData {
-    children: HashSet<u32>,
-    parent: Option<u32>,
-    resources: HashSet<u32>,
-    transform: Transform,
-}
-
 pub fn add_to_host(
     store: &mut Store<StoreData, EngineBackend>,
     linker: &mut Linker,
     sender: Sender<WiredGltfAction>,
-    data: Arc<RwLock<Data>>,
+    local_data: Arc<RwLock<LocalData>>,
+    data: Arc<RwLock<EcsData>>,
 ) -> Result<()> {
     let resource_table = store.data().resource_table.clone();
     let interface = linker.define_instance("wired:gltf/node".try_into()?)?;
-
-    let local_data = Arc::new(RwLock::new(LocalData::default()));
 
     let node_type = ResourceType::new::<NodeResource>(None);
     let node_list_type = ListType::new(ValueType::Own(node_type.clone()));
@@ -206,7 +180,7 @@ pub fn add_to_host(
                     data.parent = Some(parent_node.id);
                 }
 
-                sender.send(WiredGltfAction::SetParent {
+                sender.send(WiredGltfAction::SetNodeParent {
                     id: child_node.id,
                     parent: Some(parent_node.id),
                 })?;
@@ -253,7 +227,7 @@ pub fn add_to_host(
                     data.parent = None;
                 }
 
-                sender.send(WiredGltfAction::SetParent {
+                sender.send(WiredGltfAction::SetNodeParent {
                     id: child_node.id,
                     parent: None,
                 })?;
@@ -481,7 +455,7 @@ pub fn add_to_host(
                     data.transform.scale.y = scale_y;
                     data.transform.scale.z = scale_z;
 
-                    sender.send(WiredGltfAction::SetTransform {
+                    sender.send(WiredGltfAction::SetNodeTransform {
                         id: node.id,
                         transform: Transform {
                             translation: Vec3::new(tr_x, tr_y, tr_z),

@@ -22,7 +22,7 @@ impl Guest for Script {
         log(LogLevel::Info, "Hello from script!");
 
         node::test_node_api();
-        // mesh::test_mesh_api();
+        mesh::test_mesh_api();
 
         Data::new(DataImpl {})
     }

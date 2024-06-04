@@ -214,7 +214,7 @@ mod tests {
 
         send.send(WiredGltfAction::SetTransform {
             id,
-            transform: transform.clone(),
+            transform: transform,
         })
         .unwrap();
         app.update();

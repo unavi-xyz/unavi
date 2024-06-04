@@ -214,11 +214,8 @@ mod tests {
             scale: Vec3::splat(3.0),
         };
 
-        send.send(WiredGltfAction::SetNodeTransform {
-            id,
-            transform: transform,
-        })
-        .unwrap();
+        send.send(WiredGltfAction::SetNodeTransform { id, transform })
+            .unwrap();
         app.update();
 
         assert_eq!(app.world.get::<Transform>(ent).unwrap(), &transform);

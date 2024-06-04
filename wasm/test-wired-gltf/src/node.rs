@@ -1,33 +1,17 @@
 use crate::{
-    bindings::wired::gltf::node::{create_node, list_nodes, remove_node, Transform},
+    bindings::wired::gltf::node::{create_node, list_nodes, remove_node, Node, Transform},
     panic_log,
+    property_tests::{test_property, Property},
 };
 
+impl Property for Node {
+    fn id(&self) -> u32 {
+        self.id()
+    }
+}
+
 pub fn test_node_api() {
-    let node = create_node();
-    let found_nodes = list_nodes();
-
-    if found_nodes.len() != 1 {
-        let err = format!("found list_nodes len: {}, expected 1", found_nodes.len());
-        panic_log(&err);
-    }
-
-    if found_nodes[0].id() != node.id() {
-        let err = format!(
-            "found node id: {}, expected: {}",
-            found_nodes[0].id(),
-            node.id()
-        );
-        panic_log(&err);
-    };
-
-    remove_node(node);
-    let found_nodes = list_nodes();
-
-    if !found_nodes.is_empty() {
-        let err = format!("found list_nodes len: {}, expected 0", found_nodes.len());
-        panic_log(&err);
-    }
+    test_property(list_nodes, create_node, remove_node);
 
     let node = create_node();
     let node_2 = create_node();

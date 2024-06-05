@@ -21,8 +21,10 @@ pub struct WiredGltfReceiver(pub Receiver<WiredGltfAction>);
 pub enum WiredGltfAction {
     CreateMesh { id: u32 },
     CreateNode { id: u32 },
+    CreatePrimitive { id: u32, mesh: u32 },
     RemoveMesh { id: u32 },
     RemoveNode { id: u32 },
+    RemovePrimitive { id: u32, mesh: u32 },
     SetNodeParent { id: u32, parent: Option<u32> },
     SetNodeTransform { id: u32, transform: Transform },
 }
@@ -60,6 +62,12 @@ struct NodeData {
 
 #[derive(Default)]
 struct MeshData {
+    primitives: HashMap<u32, PrimitiveData>,
+    resources: HashSet<u32>,
+}
+
+#[derive(Default)]
+struct PrimitiveData {
     resources: HashSet<u32>,
 }
 
@@ -72,8 +80,14 @@ pub fn add_to_host(
 
     let local_data = Arc::new(RwLock::new(LocalData::default()));
 
+    node::add_to_host(
+        store,
+        linker,
+        send.clone(),
+        local_data.clone(),
+        data.clone(),
+    )?;
     mesh::add_to_host(store, linker, send.clone(), local_data.clone())?;
-    node::add_to_host(store, linker, send, local_data, data.clone())?;
 
     Ok((WiredGltfReceiver(recv), WiredGltfData(data)))
 }

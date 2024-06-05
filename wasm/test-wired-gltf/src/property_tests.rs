@@ -1,4 +1,7 @@
-use crate::panic_log;
+use crate::{
+    bindings::wired::log::api::{log, LogLevel},
+    panic_log,
+};
 
 pub trait Property {
     fn id(&self) -> u32;
@@ -9,7 +12,11 @@ pub fn test_property<T: Property>(
     create: impl Fn() -> T,
     remove: impl Fn(T),
 ) {
+    log(LogLevel::Debug, "starting property tests");
+
+    log(LogLevel::Debug, "calling create");
     let item = create();
+    log(LogLevel::Debug, "calling list");
     let found_items = list();
 
     if found_items.len() != 1 {
@@ -29,7 +36,9 @@ pub fn test_property<T: Property>(
         panic_log(&err);
     };
 
+    log(LogLevel::Debug, "calling remove");
     remove(item);
+    log(LogLevel::Debug, "calling list");
     let found_items = list();
 
     if !found_items.is_empty() {
@@ -39,4 +48,6 @@ pub fn test_property<T: Property>(
         );
         panic_log(&err);
     }
+
+    log(LogLevel::Debug, "completed property tests");
 }

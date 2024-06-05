@@ -9,18 +9,13 @@ use wasm_component_layer::{
 
 use crate::{load::EngineBackend, resource_table::ResourceTable, StoreData};
 
-use super::{LocalData, MeshData, WiredGltfAction};
+use super::{LocalData, MeshData, PrimitiveData, WiredGltfAction};
 
 #[derive(Clone)]
-pub struct MeshResource {
-    id: u32,
-}
+pub struct MeshResource(u32);
 
-impl MeshResource {
-    fn new(id: u32) -> Self {
-        Self { id }
-    }
-}
+#[derive(Clone)]
+pub struct PrimitiveResource(u32);
 
 pub fn add_to_host(
     store: &mut Store<StoreData, EngineBackend>,
@@ -33,12 +28,59 @@ pub fn add_to_host(
 
     let mesh_type = ResourceType::new::<MeshResource>(None);
     let mesh_list_type = ListType::new(ValueType::Own(mesh_type.clone()));
+    let primitive_type = ResourceType::new::<PrimitiveResource>(None);
+    let primitive_list_type = ListType::new(ValueType::Own(primitive_type.clone()));
 
-    let mesh_id_fn = {
+    let primitive_id_fn = Func::new(
+        store.as_context_mut(),
+        FuncType::new(
+            [ValueType::Borrow(primitive_type.clone())],
+            [ValueType::U32],
+        ),
+        move |ctx, args, results| {
+            let resource = match &args[0] {
+                Value::Borrow(v) => v,
+                _ => bail!("invalid arg"),
+            };
+
+            let ctx_ref = ctx.as_context();
+            let primitive: &PrimitiveResource = resource.rep(&ctx_ref)?;
+
+            results[0] = Value::U32(primitive.0);
+
+            Ok(())
+        },
+    );
+
+    let mesh_id_fn = Func::new(
+        store.as_context_mut(),
+        FuncType::new([ValueType::Borrow(mesh_type.clone())], [ValueType::U32]),
+        move |ctx, args, results| {
+            let resource = match &args[0] {
+                Value::Borrow(v) => v,
+                _ => bail!("invalid arg"),
+            };
+
+            let ctx_ref = ctx.as_context();
+            let mesh: &MeshResource = resource.rep(&ctx_ref)?;
+
+            results[0] = Value::U32(mesh.0);
+
+            Ok(())
+        },
+    );
+
+    let mesh_list_primitives_fn = {
+        let local_data = local_data.clone();
+        let primitive_type = primitive_type.clone();
+        let resource_table = resource_table.clone();
         Func::new(
             store.as_context_mut(),
-            FuncType::new([ValueType::Borrow(mesh_type.clone())], [ValueType::U32]),
-            move |ctx, args, results| {
+            FuncType::new(
+                [ValueType::Borrow(mesh_type.clone())],
+                [ValueType::List(primitive_list_type.clone())],
+            ),
+            move |mut ctx, args, results| {
                 let resource = match &args[0] {
                     Value::Borrow(v) => v,
                     _ => bail!("invalid arg"),
@@ -46,8 +88,130 @@ pub fn add_to_host(
 
                 let ctx_ref = ctx.as_context();
                 let mesh: &MeshResource = resource.rep(&ctx_ref)?;
+                let mesh_id = mesh.0;
 
-                results[0] = Value::U32(mesh.id);
+                let mut local_data = local_data.write().unwrap();
+                let mut resource_table = resource_table.write().unwrap();
+
+                if let Some(data) = local_data.meshes.get(&mesh_id) {
+                    let primitives = data
+                        .primitives
+                        .keys()
+                        .copied()
+                        .collect::<Vec<_>>()
+                        .into_iter()
+                        .map(|id| {
+                            create_primitive_resource(
+                                id,
+                                mesh_id,
+                                &primitive_type,
+                                &mut ctx,
+                                &mut local_data,
+                                &mut resource_table,
+                            )
+                        })
+                        .collect::<Result<Vec<_>>>()?;
+
+                    results[0] = Value::List(List::new(primitive_list_type.clone(), primitives)?);
+                }
+
+                Ok(())
+            },
+        )
+    };
+
+    let mesh_create_primitive_fn = {
+        let local_data = local_data.clone();
+        let primitive_type = primitive_type.clone();
+        let resource_table = resource_table.clone();
+        let sender = sender.clone();
+        Func::new(
+            store.as_context_mut(),
+            FuncType::new(
+                [ValueType::Borrow(mesh_type.clone())],
+                [ValueType::Own(primitive_type.clone())],
+            ),
+            move |mut ctx, args, results| {
+                let resource = match &args[0] {
+                    Value::Borrow(v) => v,
+                    _ => bail!("invalid arg"),
+                };
+
+                let ctx_ref = ctx.as_context();
+                let mesh: &MeshResource = resource.rep(&ctx_ref)?;
+                let mesh_id = mesh.0;
+
+                let mut local_data = local_data.write().unwrap();
+                let mut resource_table = resource_table.write().unwrap();
+
+                let id = local_data.new_id();
+
+                if let Some(data) = local_data.meshes.get_mut(&mesh_id) {
+                    data.primitives.insert(id, PrimitiveData::default());
+
+                    sender.send(WiredGltfAction::CreatePrimitive { id, mesh: mesh_id })?;
+
+                    let value = create_primitive_resource(
+                        id,
+                        mesh_id,
+                        &primitive_type,
+                        &mut ctx,
+                        &mut local_data,
+                        &mut resource_table,
+                    )?;
+
+                    results[0] = value;
+                }
+
+                Ok(())
+            },
+        )
+    };
+
+    let mesh_remove_primitive_fn = {
+        let local_data = local_data.clone();
+        let primitive_type = primitive_type.clone();
+        let resource_table = resource_table.clone();
+        let sender = sender.clone();
+        Func::new(
+            store.as_context_mut(),
+            FuncType::new(
+                [
+                    ValueType::Borrow(mesh_type.clone()),
+                    ValueType::Own(primitive_type.clone()),
+                ],
+                [],
+            ),
+            move |ctx, args, _results| {
+                let mesh_res = match &args[0] {
+                    Value::Borrow(v) => v,
+                    _ => bail!("invalid arg"),
+                };
+
+                let primitive_res = match &args[1] {
+                    Value::Own(v) => v,
+                    _ => bail!("invalid arg"),
+                };
+
+                let ctx_ref = ctx.as_context();
+                let mesh: &MeshResource = mesh_res.rep(&ctx_ref)?;
+                let primitive: &PrimitiveResource = primitive_res.rep(&ctx_ref)?;
+
+                sender.send(WiredGltfAction::RemovePrimitive {
+                    id: primitive.0,
+                    mesh: mesh.0,
+                })?;
+
+                let mut local_data = local_data.write().unwrap();
+                let mut resource_table = resource_table.write().unwrap();
+
+                if let Some(data) = local_data.meshes.get_mut(&mesh.0) {
+                    if let Some(primitive_data) = data.primitives.remove(&primitive.0) {
+                        for id in primitive_data.resources {
+                            resource_table.remove(&id);
+                        }
+                    }
+                }
 
                 Ok(())
             },
@@ -141,23 +305,35 @@ pub fn add_to_host(
                 let mut local_data = local_data.write().unwrap();
                 let mut resource_table = resource_table.write().unwrap();
 
-                sender.send(WiredGltfAction::RemoveMesh { id: mesh.id })?;
+                sender.send(WiredGltfAction::RemoveMesh { id: mesh.0 })?;
 
-                if let Some(data) = local_data.meshes.remove(&mesh.id) {
+                if let Some(data) = local_data.meshes.remove(&mesh.0) {
                     for id in data.resources {
                         resource_table.remove(&id);
                     }
-                };
 
-                // TODO: Remove material (?)
+                    for p_data in data.primitives.values() {
+                        // TODO: move into a function with mesh_remove_primitive_fn logic
+
+                        for id in &p_data.resources {
+                            resource_table.remove(id);
+                        }
+                    }
+                };
 
                 Ok(())
             },
         )
     };
 
+    interface.define_resource("primitive", primitive_type)?;
+    interface.define_func("[method]primitive.id", primitive_id_fn)?;
+
     interface.define_resource("mesh", mesh_type)?;
     interface.define_func("[method]mesh.id", mesh_id_fn)?;
+    interface.define_func("[method]mesh.list-primitives", mesh_list_primitives_fn)?;
+    interface.define_func("[method]mesh.create-primitive", mesh_create_primitive_fn)?;
+    interface.define_func("[method]mesh.remove-primitive", mesh_remove_primitive_fn)?;
 
     interface.define_func("list-meshes", list_meshes_fn)?;
     interface.define_func("create-mesh", create_mesh_fn)?;
@@ -166,7 +342,6 @@ pub fn add_to_host(
     Ok(())
 }
 
-/// Creates a new mesh resource for the given mesh ID.
 fn create_mesh_resource(
     id: u32,
     mesh_type: &ResourceType,
@@ -176,7 +351,7 @@ fn create_mesh_resource(
 ) -> anyhow::Result<Value> {
     let (res_id, resource) =
         resource_table.push(ctx.as_context_mut(), mesh_type.clone(), |_| {
-            MeshResource::new(id)
+            MeshResource(id)
         })?;
 
     let data = local_data
@@ -185,6 +360,37 @@ fn create_mesh_resource(
         .ok_or(anyhow!("Mesh not found"))?;
 
     data.resources.insert(res_id);
+
+    Ok(Value::Own(resource))
+}
+
+fn create_primitive_resource(
+    id: u32,
+    mesh_id: u32,
+    primitive_type: &ResourceType,
+    ctx: &mut StoreContextMut<StoreData, EngineBackend>,
+    local_data: &mut RwLockWriteGuard<LocalData>,
+    resource_table: &mut RwLockWriteGuard<ResourceTable>,
+) -> anyhow::Result<Value> {
+    let (res_id, resource) =
+        resource_table.push(ctx.as_context_mut(), primitive_type.clone(), |_| {
+            PrimitiveResource(id)
+        })?;
+
+    let mesh_data = local_data
+        .meshes
+        .get_mut(&mesh_id)
+        .ok_or(anyhow!("Mesh not found"))?;
+
+    let primitive_data = match mesh_data.primitives.get_mut(&id) {
+        Some(d) => d,
+        None => {
+            mesh_data.primitives.insert(id, PrimitiveData::default());
+            mesh_data.primitives.get_mut(&id).unwrap()
+        }
+    };
+
+    primitive_data.resources.insert(res_id);
 
     Ok(Value::Own(resource))
 }

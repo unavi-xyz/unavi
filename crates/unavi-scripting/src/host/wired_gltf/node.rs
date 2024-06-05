@@ -589,7 +589,6 @@ pub fn add_to_host(
     Ok(())
 }
 
-/// Creates a new node resource for the given node ID.
 fn create_node_resource(
     id: u32,
     node_type: &ResourceType,

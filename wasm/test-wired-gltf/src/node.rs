@@ -1,5 +1,8 @@
 use crate::{
-    bindings::wired::gltf::node::{create_node, list_nodes, remove_node, Node, Transform},
+    bindings::wired::{
+        gltf::node::{create_node, list_nodes, remove_node, Node, Transform},
+        log::api::{log, LogLevel},
+    },
     panic_log,
     property_tests::{test_property, Property},
 };
@@ -11,6 +14,7 @@ impl Property for Node {
 }
 
 pub fn test_node_api() {
+    log(LogLevel::Debug, "testing node");
     test_property(list_nodes, create_node, remove_node);
 
     let node = create_node();

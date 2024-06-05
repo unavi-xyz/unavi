@@ -341,56 +341,6 @@ pub mod wired {
             }
             impl Primitive {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn indices(&self) -> _rt::Vec<u32> {
-                    unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
-                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/mesh")]
-                        extern "C" {
-                            #[link_name = "[method]primitive.indices"]
-                            fn wit_import(_: i32, _: *mut u8);
-                        }
-
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: *mut u8) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, ptr0);
-                        let l1 = *ptr0.add(0).cast::<*mut u8>();
-                        let l2 = *ptr0.add(4).cast::<usize>();
-                        let len3 = l2;
-                        _rt::Vec::from_raw_parts(l1.cast(), len3, len3)
-                    }
-                }
-            }
-            impl Primitive {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn set_indices(&self, value: &[u32]) {
-                    unsafe {
-                        let vec0 = value;
-                        let ptr0 = vec0.as_ptr().cast::<u8>();
-                        let len0 = vec0.len();
-
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/mesh")]
-                        extern "C" {
-                            #[link_name = "[method]primitive.set-indices"]
-                            fn wit_import(_: i32, _: *mut u8, _: usize);
-                        }
-
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: *mut u8, _: usize) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, ptr0.cast_mut(), len0);
-                    }
-                }
-            }
-            impl Primitive {
-                #[allow(unused_unsafe, clippy::all)]
                 pub fn material(&self) -> Material {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
@@ -432,28 +382,24 @@ pub mod wired {
             }
             impl Primitive {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn normals(&self) -> _rt::Vec<f32> {
+                pub fn set_indices(&self, value: &[u32]) {
                     unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
-                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        let vec0 = value;
+                        let ptr0 = vec0.as_ptr().cast::<u8>();
+                        let len0 = vec0.len();
+
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:gltf/mesh")]
                         extern "C" {
-                            #[link_name = "[method]primitive.normals"]
-                            fn wit_import(_: i32, _: *mut u8);
+                            #[link_name = "[method]primitive.set-indices"]
+                            fn wit_import(_: i32, _: *mut u8, _: usize);
                         }
 
                         #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: *mut u8) {
+                        fn wit_import(_: i32, _: *mut u8, _: usize) {
                             unreachable!()
                         }
-                        wit_import((self).handle() as i32, ptr0);
-                        let l1 = *ptr0.add(0).cast::<*mut u8>();
-                        let l2 = *ptr0.add(4).cast::<usize>();
-                        let len3 = l2;
-                        _rt::Vec::from_raw_parts(l1.cast(), len3, len3)
+                        wit_import((self).handle() as i32, ptr0.cast_mut(), len0);
                     }
                 }
             }
@@ -482,33 +428,6 @@ pub mod wired {
             }
             impl Primitive {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn positions(&self) -> _rt::Vec<f32> {
-                    unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
-                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/mesh")]
-                        extern "C" {
-                            #[link_name = "[method]primitive.positions"]
-                            fn wit_import(_: i32, _: *mut u8);
-                        }
-
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: *mut u8) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, ptr0);
-                        let l1 = *ptr0.add(0).cast::<*mut u8>();
-                        let l2 = *ptr0.add(4).cast::<usize>();
-                        let len3 = l2;
-                        _rt::Vec::from_raw_parts(l1.cast(), len3, len3)
-                    }
-                }
-            }
-            impl Primitive {
-                #[allow(unused_unsafe, clippy::all)]
                 pub fn set_positions(&self, value: &[f32]) {
                     unsafe {
                         let vec0 = value;
@@ -527,33 +446,6 @@ pub mod wired {
                             unreachable!()
                         }
                         wit_import((self).handle() as i32, ptr0.cast_mut(), len0);
-                    }
-                }
-            }
-            impl Primitive {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn uvs(&self) -> _rt::Vec<f32> {
-                    unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
-                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/mesh")]
-                        extern "C" {
-                            #[link_name = "[method]primitive.uvs"]
-                            fn wit_import(_: i32, _: *mut u8);
-                        }
-
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: *mut u8) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, ptr0);
-                        let l1 = *ptr0.add(0).cast::<*mut u8>();
-                        let l2 = *ptr0.add(4).cast::<usize>();
-                        let len3 = l2;
-                        _rt::Vec::from_raw_parts(l1.cast(), len3, len3)
                     }
                 }
             }
@@ -653,7 +545,7 @@ pub mod wired {
             }
             impl Mesh {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn primitives(&self) -> _rt::Vec<Primitive> {
+                pub fn list_primitives(&self) -> _rt::Vec<Primitive> {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
@@ -662,7 +554,7 @@ pub mod wired {
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:gltf/mesh")]
                         extern "C" {
-                            #[link_name = "[method]mesh.primitives"]
+                            #[link_name = "[method]mesh.list-primitives"]
                             fn wit_import(_: i32, _: *mut u8);
                         }
 
@@ -893,6 +785,57 @@ pub mod wired {
                         }
                         let ret = wit_import((self).handle() as i32);
                         ret as u32
+                    }
+                }
+            }
+            impl Node {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn name(&self) -> _rt::String {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/node")]
+                        extern "C" {
+                            #[link_name = "[method]node.name"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<*mut u8>();
+                        let l2 = *ptr0.add(4).cast::<usize>();
+                        let len3 = l2;
+                        let bytes3 = _rt::Vec::from_raw_parts(l1.cast(), len3, len3);
+                        _rt::string_lift(bytes3)
+                    }
+                }
+            }
+            impl Node {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_name(&self, value: &str) {
+                    unsafe {
+                        let vec0 = value;
+                        let ptr0 = vec0.as_ptr().cast::<u8>();
+                        let len0 = vec0.len();
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/node")]
+                        extern "C" {
+                            #[link_name = "[method]node.set-name"]
+                            fn wit_import(_: i32, _: *mut u8, _: usize);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8, _: usize) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0.cast_mut(), len0);
                     }
                 }
             }
@@ -1823,8 +1766,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 2136] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xdb\x0f\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 2078] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa1\x0f\x01A\x02\x01\
 A\x10\x01B\x06\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01\
 zv\x04\0\x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04vec4\x03\0\x04\
 \x03\x01\x10wired:math/types\x05\0\x02\x03\0\0\x04vec4\x01B\x12\x02\x03\x02\x01\x01\
@@ -1834,46 +1777,45 @@ od]material.color\x01\x05\x01@\x02\x04self\x03\x05value\x01\x01\0\x04\0\x1a[meth
 od]material.set-color\x01\x06\x01i\x02\x01p\x07\x01@\0\0\x08\x04\0\x0elist-mater\
 ials\x01\x09\x01@\0\0\x07\x04\0\x0fcreate-material\x01\x0a\x01@\x01\x05value\x07\
 \x01\0\x04\0\x0fremove-material\x01\x0b\x03\x01\x13wired:gltf/material\x05\x02\x02\
-\x03\0\x01\x08material\x01B2\x02\x03\x02\x01\x03\x04\0\x08material\x03\0\0\x04\0\
+\x03\0\x01\x08material\x01B,\x02\x03\x02\x01\x03\x04\0\x08material\x03\0\0\x04\0\
 \x09primitive\x03\x01\x04\0\x04mesh\x03\x01\x01h\x02\x01@\x01\x04self\x04\0y\x04\
-\0\x14[method]primitive.id\x01\x05\x01py\x01@\x01\x04self\x04\0\x06\x04\0\x19[me\
-thod]primitive.indices\x01\x07\x01@\x02\x04self\x04\x05value\x06\x01\0\x04\0\x1d\
-[method]primitive.set-indices\x01\x08\x01i\x01\x01@\x01\x04self\x04\0\x09\x04\0\x1a\
-[method]primitive.material\x01\x0a\x01h\x01\x01@\x02\x04self\x04\x05value\x0b\x01\
-\0\x04\0\x1e[method]primitive.set-material\x01\x0c\x01pv\x01@\x01\x04self\x04\0\x0d\
-\x04\0\x19[method]primitive.normals\x01\x0e\x01@\x02\x04self\x04\x05value\x0d\x01\
-\0\x04\0\x1d[method]primitive.set-normals\x01\x0f\x04\0\x1b[method]primitive.pos\
-itions\x01\x0e\x04\0\x1f[method]primitive.set-positions\x01\x0f\x04\0\x15[method\
-]primitive.uvs\x01\x0e\x04\0\x19[method]primitive.set-uvs\x01\x0f\x01h\x03\x01@\x01\
-\x04self\x10\0y\x04\0\x0f[method]mesh.id\x01\x11\x01@\x01\x04self\x10\0s\x04\0\x11\
-[method]mesh.name\x01\x12\x01@\x02\x04self\x10\x05values\x01\0\x04\0\x15[method]\
-mesh.set-name\x01\x13\x01i\x02\x01p\x14\x01@\x01\x04self\x10\0\x15\x04\0\x17[met\
-hod]mesh.primitives\x01\x16\x01@\x01\x04self\x10\0\x14\x04\0\x1d[method]mesh.cre\
-ate-primitive\x01\x17\x01@\x02\x04self\x10\x05value\x14\x01\0\x04\0\x1d[method]m\
-esh.remove-primitive\x01\x18\x01i\x03\x01p\x19\x01@\0\0\x1a\x04\0\x0blist-meshes\
-\x01\x1b\x01@\0\0\x19\x04\0\x0bcreate-mesh\x01\x1c\x01@\x01\x05value\x19\x01\0\x04\
-\0\x0bremove-mesh\x01\x1d\x03\x01\x0fwired:gltf/mesh\x05\x04\x02\x03\0\x02\x04me\
-sh\x02\x03\0\0\x04vec3\x01B(\x02\x03\x02\x01\x05\x04\0\x04mesh\x03\0\0\x02\x03\x02\
-\x01\x06\x04\0\x04vec3\x03\0\x02\x02\x03\x02\x01\x01\x04\0\x04vec4\x03\0\x04\x01\
-r\x03\x0btranslation\x03\x08rotation\x05\x05scale\x03\x04\0\x09transform\x03\0\x06\
-\x04\0\x04node\x03\x01\x01h\x08\x01@\x01\x04self\x09\0y\x04\0\x0f[method]node.id\
-\x01\x0a\x01i\x08\x01p\x0b\x01@\x01\x04self\x09\0\x0c\x04\0\x15[method]node.chil\
-dren\x01\x0d\x01@\x02\x04self\x09\x05value\x09\x01\0\x04\0\x16[method]node.add-c\
-hild\x01\x0e\x04\0\x19[method]node.remove-child\x01\x0e\x01k\x0b\x01@\x01\x04sel\
-f\x09\0\x0f\x04\0\x13[method]node.parent\x01\x10\x01@\x01\x04self\x09\0\x07\x04\0\
-\x16[method]node.transform\x01\x11\x01@\x02\x04self\x09\x05value\x07\x01\0\x04\0\
-\x1a[method]node.set-transform\x01\x12\x01i\x01\x01k\x13\x01@\x01\x04self\x09\0\x14\
-\x04\0\x11[method]node.mesh\x01\x15\x01h\x01\x01k\x16\x01@\x02\x04self\x09\x05va\
-lue\x17\x01\0\x04\0\x15[method]node.set-mesh\x01\x18\x01@\0\0\x0c\x04\0\x0alist-\
-nodes\x01\x19\x01@\0\0\x0b\x04\0\x0bcreate-node\x01\x1a\x01@\x01\x05value\x0b\x01\
-\0\x04\0\x0bremove-node\x01\x1b\x03\x01\x0fwired:gltf/node\x05\x07\x01B\x04\x01m\
-\x04\x05debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\x05le\
-vel\x01\x07messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x08\x01\
-B\x07\x04\0\x04data\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x04init\x01\x02\x01h\0\x01\
-@\x01\x04data\x03\x01\0\x04\0\x06update\x01\x04\x04\x01\x16wired:script/lifecycl\
-e\x05\x09\x04\x01\x16test:wired-gltf/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\
-\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bind\
-gen-rust\x060.25.0";
+\0\x14[method]primitive.id\x01\x05\x01i\x01\x01@\x01\x04self\x04\0\x06\x04\0\x1a\
+[method]primitive.material\x01\x07\x01h\x01\x01@\x02\x04self\x04\x05value\x08\x01\
+\0\x04\0\x1e[method]primitive.set-material\x01\x09\x01py\x01@\x02\x04self\x04\x05\
+value\x0a\x01\0\x04\0\x1d[method]primitive.set-indices\x01\x0b\x01pv\x01@\x02\x04\
+self\x04\x05value\x0c\x01\0\x04\0\x1d[method]primitive.set-normals\x01\x0d\x04\0\
+\x1f[method]primitive.set-positions\x01\x0d\x04\0\x19[method]primitive.set-uvs\x01\
+\x0d\x01h\x03\x01@\x01\x04self\x0e\0y\x04\0\x0f[method]mesh.id\x01\x0f\x01@\x01\x04\
+self\x0e\0s\x04\0\x11[method]mesh.name\x01\x10\x01@\x02\x04self\x0e\x05values\x01\
+\0\x04\0\x15[method]mesh.set-name\x01\x11\x01i\x02\x01p\x12\x01@\x01\x04self\x0e\
+\0\x13\x04\0\x1c[method]mesh.list-primitives\x01\x14\x01@\x01\x04self\x0e\0\x12\x04\
+\0\x1d[method]mesh.create-primitive\x01\x15\x01@\x02\x04self\x0e\x05value\x12\x01\
+\0\x04\0\x1d[method]mesh.remove-primitive\x01\x16\x01i\x03\x01p\x17\x01@\0\0\x18\
+\x04\0\x0blist-meshes\x01\x19\x01@\0\0\x17\x04\0\x0bcreate-mesh\x01\x1a\x01@\x01\
+\x05value\x17\x01\0\x04\0\x0bremove-mesh\x01\x1b\x03\x01\x0fwired:gltf/mesh\x05\x04\
+\x02\x03\0\x02\x04mesh\x02\x03\0\0\x04vec3\x01B,\x02\x03\x02\x01\x05\x04\0\x04me\
+sh\x03\0\0\x02\x03\x02\x01\x06\x04\0\x04vec3\x03\0\x02\x02\x03\x02\x01\x01\x04\0\
+\x04vec4\x03\0\x04\x01r\x03\x0btranslation\x03\x08rotation\x05\x05scale\x03\x04\0\
+\x09transform\x03\0\x06\x04\0\x04node\x03\x01\x01h\x08\x01@\x01\x04self\x09\0y\x04\
+\0\x0f[method]node.id\x01\x0a\x01@\x01\x04self\x09\0s\x04\0\x11[method]node.name\
+\x01\x0b\x01@\x02\x04self\x09\x05values\x01\0\x04\0\x15[method]node.set-name\x01\
+\x0c\x01i\x08\x01p\x0d\x01@\x01\x04self\x09\0\x0e\x04\0\x15[method]node.children\
+\x01\x0f\x01@\x02\x04self\x09\x05value\x09\x01\0\x04\0\x16[method]node.add-child\
+\x01\x10\x04\0\x19[method]node.remove-child\x01\x10\x01k\x0d\x01@\x01\x04self\x09\
+\0\x11\x04\0\x13[method]node.parent\x01\x12\x01@\x01\x04self\x09\0\x07\x04\0\x16\
+[method]node.transform\x01\x13\x01@\x02\x04self\x09\x05value\x07\x01\0\x04\0\x1a\
+[method]node.set-transform\x01\x14\x01i\x01\x01k\x15\x01@\x01\x04self\x09\0\x16\x04\
+\0\x11[method]node.mesh\x01\x17\x01h\x01\x01k\x18\x01@\x02\x04self\x09\x05value\x19\
+\x01\0\x04\0\x15[method]node.set-mesh\x01\x1a\x01@\0\0\x0e\x04\0\x0alist-nodes\x01\
+\x1b\x01@\0\0\x0d\x04\0\x0bcreate-node\x01\x1c\x01@\x01\x05value\x0d\x01\0\x04\0\
+\x0bremove-node\x01\x1d\x03\x01\x0fwired:gltf/node\x05\x07\x01B\x04\x01m\x04\x05\
+debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\x07\
+messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x08\x01B\x07\x04\
+\0\x04data\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x04init\x01\x02\x01h\0\x01@\x01\x04\
+data\x03\x01\0\x04\0\x06update\x01\x04\x04\x01\x16wired:script/lifecycle\x05\x09\
+\x04\x01\x16test:wired-gltf/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09p\
+roducers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\
+\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

@@ -54,6 +54,7 @@ pub fn handle_wired_gltf_actions(
                         });
                     }
                 }
+                WiredGltfAction::CreatePrimitive { id, mesh } => {}
                 WiredGltfAction::RemoveMesh { id } => {
                     if let Some(ent) = find_mesh(&meshes, id) {
                         commands.entity(ent).despawn_recursive();
@@ -68,6 +69,7 @@ pub fn handle_wired_gltf_actions(
                         warn!("Node {} does not exist", id);
                     }
                 }
+                WiredGltfAction::RemovePrimitive { id, mesh } => {}
                 WiredGltfAction::SetNodeParent { id, parent } => {
                     if let Some(ent) = find_node(&nodes, id) {
                         if let Some(parent) = parent {
@@ -301,4 +303,6 @@ mod tests {
         send.send(WiredGltfAction::RemoveMesh { id: 0 }).unwrap();
         app.update();
     }
+
+    // Primitive
 }

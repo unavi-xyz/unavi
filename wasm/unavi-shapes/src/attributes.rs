@@ -6,8 +6,7 @@ pub fn set_attributes(primitive: &Primitive, mesh: TriMesh<f32>) {
     let positions = mesh
         .coords
         .iter()
-        .map(|v| [v[0], v[1], v[2]])
-        .flatten()
+        .flat_map(|v| [v[0], v[1], v[2]])
         .collect::<Vec<_>>();
     primitive.set_positions(&positions);
 
@@ -16,8 +15,7 @@ pub fn set_attributes(primitive: &Primitive, mesh: TriMesh<f32>) {
         .as_ref()
         .unwrap()
         .iter()
-        .map(|v| [v[0], v[1], v[2]])
-        .flatten()
+        .flat_map(|v| [v[0], v[1], v[2]])
         .collect::<Vec<_>>();
     primitive.set_normals(&normals);
 
@@ -26,8 +24,7 @@ pub fn set_attributes(primitive: &Primitive, mesh: TriMesh<f32>) {
         .as_ref()
         .unwrap()
         .iter()
-        .map(|v| [v[0], v[1], v[2]])
-        .flatten()
+        .flat_map(|v| [v[0], v[1], v[2]])
         .collect::<Vec<_>>();
     primitive.set_uvs(&uvs);
 

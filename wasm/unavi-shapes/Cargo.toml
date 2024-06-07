@@ -1,0 +1,23 @@
+[package]
+name = "unavi-shapes"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+license = "MIT OR Apache-2.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+ncollide3d = "0.33.0"
+wit-bindgen-rt.workspace = true
+
+[package.metadata.component]
+package = "unavi:shapes"
+
+[package.metadata.component.target.dependencies]
+"wired:gltf" = { path = "../../wired-protocol/spatial/wit/wired-gltf" }
+"wired:math" = { path = "../../wired-protocol/spatial/wit/wired-math" }

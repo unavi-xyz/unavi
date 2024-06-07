@@ -51,7 +51,7 @@ let
         #
         # Example:
         # dependencies:
-        #   unavi:ecs/api: ${buildComponent "unavi-ecs"}/lib/unavi_ecs.wasm
+        #   unavi:foo/bar: ${buildComponent "unavi-foo"}/lib/unavi_foo.wasm
         config = pkgs.writeText "config.yml" '''';
       in
       lib.concatStrings (

@@ -1772,7 +1772,7 @@ dependencies = [
  "fxhash",
  "indexmap 2.2.6",
  "itertools 0.12.1",
- "nalgebra",
+ "nalgebra 0.32.5",
  "parry3d",
  "parry3d-f64",
 ]
@@ -6805,6 +6805,22 @@ dependencies = [
 
 [[package]]
 name = "nalgebra"
+version = "0.30.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4fb2d0de08694bed883320212c18ee3008576bfe8c306f4c3c4a58b4876998be"
+dependencies = [
+ "approx 0.5.1",
+ "matrixmultiply",
+ "nalgebra-macros 0.1.0",
+ "num-complex",
+ "num-rational",
+ "num-traits",
+ "simba 0.7.3",
+ "typenum",
+]
+
+[[package]]
+name = "nalgebra"
 version = "0.32.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ea4908d4f23254adda3daa60ffef0f1ac7b8c3e9a864cf3cc154b251908a2ef"
@@ -6812,12 +6828,23 @@ dependencies = [
  "approx 0.5.1",
  "glam",
  "matrixmultiply",
- "nalgebra-macros",
+ "nalgebra-macros 0.2.1",
  "num-complex",
  "num-rational",
  "num-traits",
- "simba",
+ "simba 0.8.1",
  "typenum",
+]
+
+[[package]]
+name = "nalgebra-macros"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "01fcc0b8149b4632adc89ac3b7b31a12fb6099a0317a4eb2ebff574ef7de7218"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -6864,6 +6891,25 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "tempfile",
+]
+
+[[package]]
+name = "ncollide3d"
+version = "0.33.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "599e8a61eafc48602c423095f6a5b83283b26acbfd4aea5ff9c26f66cee985b5"
+dependencies = [
+ "approx 0.5.1",
+ "bitflags 1.3.2",
+ "downcast-rs",
+ "either",
+ "nalgebra 0.30.1",
+ "num-traits",
+ "petgraph",
+ "simba 0.7.3",
+ "slab",
+ "slotmap",
+ "smallvec",
 ]
 
 [[package]]
@@ -7475,12 +7521,12 @@ dependencies = [
  "bitflags 1.3.2",
  "downcast-rs",
  "either",
- "nalgebra",
+ "nalgebra 0.32.5",
  "num-derive 0.4.2",
  "num-traits",
  "rayon",
  "rustc-hash",
- "simba",
+ "simba 0.8.1",
  "slab",
  "smallvec",
  "spade",
@@ -7497,12 +7543,12 @@ dependencies = [
  "bitflags 1.3.2",
  "downcast-rs",
  "either",
- "nalgebra",
+ "nalgebra 0.32.5",
  "num-derive 0.4.2",
  "num-traits",
  "rayon",
  "rustc-hash",
- "simba",
+ "simba 0.8.1",
  "slab",
  "smallvec",
  "spade",
@@ -9516,6 +9562,19 @@ dependencies = [
 
 [[package]]
 name = "simba"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f3fd720c48c53cace224ae62bef1bbff363a70c68c4802a78b5cc6159618176"
+dependencies = [
+ "approx 0.5.1",
+ "num-complex",
+ "num-traits",
+ "paste",
+ "wide",
+]
+
+[[package]]
+name = "simba"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "061507c94fc6ab4ba1c9a0305018408e312e17c041eb63bef8aa726fa33aceae"
@@ -11267,6 +11326,14 @@ name = "unavi-settings"
 version = "0.0.3"
 dependencies = [
  "bevy",
+]
+
+[[package]]
+name = "unavi-shapes"
+version = "0.0.3"
+dependencies = [
+ "ncollide3d",
+ "wit-bindgen-rt",
 ]
 
 [[package]]

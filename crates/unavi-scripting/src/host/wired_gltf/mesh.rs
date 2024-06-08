@@ -197,10 +197,7 @@ pub fn add_to_host(
                 let mesh: &MeshResource = mesh_res.rep(&ctx_ref)?;
                 let primitive: &PrimitiveResource = primitive_res.rep(&ctx_ref)?;
 
-                sender.send(WiredGltfAction::RemovePrimitive {
-                    id: primitive.0,
-                    mesh: mesh.0,
-                })?;
+                sender.send(WiredGltfAction::RemovePrimitive { id: primitive.0 })?;
 
                 let mut local_data = local_data.write().unwrap();
                 let mut resource_table = resource_table.write().unwrap();

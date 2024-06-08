@@ -5,15 +5,6 @@ use crate::Owner;
 use super::{WiredGltfAction, WiredGltfReceiver};
 
 #[derive(Component, Debug)]
-pub struct MeshId(pub u32);
-
-#[derive(Bundle)]
-pub struct WiredMeshBundle {
-    id: MeshId,
-    owner: Owner,
-}
-
-#[derive(Component, Debug)]
 pub struct NodeId(pub u32);
 
 #[derive(Bundle)]
@@ -23,12 +14,32 @@ pub struct WiredNodeBundle {
     spatial: SpatialBundle,
 }
 
+#[derive(Component, Debug)]
+pub struct MeshId(pub u32);
+
+#[derive(Bundle)]
+pub struct WiredMeshBundle {
+    id: MeshId,
+    owner: Owner,
+}
+
+#[derive(Component, Debug)]
+pub struct PrimitiveId(pub u32);
+
+#[derive(Bundle)]
+pub struct WiredPrimitiveBundle {
+    id: PrimitiveId,
+    mesh: MeshId,
+    owner: Owner,
+}
+
 pub fn handle_wired_gltf_actions(
     mut commands: Commands,
     mut transforms: Query<&mut Transform>,
-    meshes: Query<(Entity, &MeshId)>,
-    nodes: Query<(Entity, &NodeId)>,
     scripts: Query<(Entity, &WiredGltfReceiver)>,
+    nodes: Query<(Entity, &NodeId)>,
+    meshes: Query<(Entity, &MeshId)>,
+    primitives: Query<(Entity, &PrimitiveId)>,
 ) {
     for (entity, receiver) in scripts.iter() {
         while let Ok(msg) = receiver.try_recv() {
@@ -54,7 +65,19 @@ pub fn handle_wired_gltf_actions(
                         });
                     }
                 }
-                WiredGltfAction::CreatePrimitive { id, mesh } => {}
+                WiredGltfAction::CreatePrimitive { id, mesh } => {
+                    if find_mesh(&meshes, mesh).is_none() {
+                        warn!("Mesh {} node found.", id);
+                    } else if find_primitive(&primitives, id).is_some() {
+                        warn!("Primitive {} already exists.", id);
+                    } else {
+                        commands.spawn(WiredPrimitiveBundle {
+                            id: PrimitiveId(id),
+                            mesh: MeshId(mesh),
+                            owner: Owner(entity),
+                        });
+                    }
+                }
                 WiredGltfAction::RemoveMesh { id } => {
                     if let Some(ent) = find_mesh(&meshes, id) {
                         commands.entity(ent).despawn_recursive();
@@ -69,7 +92,13 @@ pub fn handle_wired_gltf_actions(
                         warn!("Node {} does not exist", id);
                     }
                 }
-                WiredGltfAction::RemovePrimitive { id, mesh } => {}
+                WiredGltfAction::RemovePrimitive { id } => {
+                    if let Some(ent) = find_primitive(&primitives, id) {
+                        commands.entity(ent).despawn_recursive();
+                    } else {
+                        warn!("Primitive {} does not exist", id);
+                    }
+                }
                 WiredGltfAction::SetNodeParent { id, parent } => {
                     if let Some(ent) = find_node(&nodes, id) {
                         if let Some(parent) = parent {
@@ -106,6 +135,12 @@ fn find_mesh(meshes: &Query<(Entity, &MeshId)>, id: u32) -> Option<Entity> {
         .find_map(|(ent, mid)| if mid.0 == id { Some(ent) } else { None })
 }
 
+fn find_primitive(primitives: &Query<(Entity, &PrimitiveId)>, id: u32) -> Option<Entity> {
+    primitives
+        .iter()
+        .find_map(|(ent, mid)| if mid.0 == id { Some(ent) } else { None })
+}
+
 #[cfg(test)]
 mod tests {
     use crossbeam::channel::Sender;
@@ -132,8 +167,8 @@ mod tests {
         app.update();
 
         let mut nodes = app.world.query::<&NodeId>();
-        let node_id = nodes.single(&app.world);
-        assert_eq!(node_id.0, id);
+        let found_id = nodes.single(&app.world);
+        assert_eq!(found_id.0, id);
     }
 
     #[test]
@@ -265,8 +300,8 @@ mod tests {
         app.update();
 
         let mut meshes = app.world.query::<&MeshId>();
-        let mesh_id = meshes.single(&app.world);
-        assert_eq!(mesh_id.0, id);
+        let found_id = meshes.single(&app.world);
+        assert_eq!(found_id.0, id);
     }
 
     #[test]
@@ -305,4 +340,74 @@ mod tests {
     }
 
     // Primitive
+    #[test]
+    fn create_primitive() {
+        let (mut app, send) = setup_test();
+
+        let mesh = 0;
+        app.world.spawn(MeshId(mesh));
+
+        let id = 1;
+        send.send(WiredGltfAction::CreatePrimitive { id, mesh })
+            .unwrap();
+        app.update();
+
+        let mut primitives = app.world.query::<&PrimitiveId>();
+        let found_id = primitives.single(&app.world);
+        assert_eq!(found_id.0, id);
+    }
+
+    #[test]
+    fn create_primitive_invalid_mesh() {
+        let (mut app, send) = setup_test();
+
+        let mesh = 0;
+        let id = 1;
+        send.send(WiredGltfAction::CreatePrimitive { id, mesh })
+            .unwrap();
+        app.update();
+
+        let mut primitives = app.world.query::<&PrimitiveId>();
+        assert_eq!(primitives.iter(&app.world).len(), 0);
+    }
+
+    #[test]
+    fn create_primitive_duplicate_id() {
+        let (mut app, send) = setup_test();
+
+        let mesh = 0;
+        app.world.spawn(MeshId(mesh));
+
+        let id = 1;
+        app.world.spawn(PrimitiveId(id));
+
+        send.send(WiredGltfAction::CreatePrimitive { id, mesh })
+            .unwrap();
+        app.update();
+
+        let mut primitives = app.world.query::<&PrimitiveId>();
+        assert!(primitives.iter(&app.world).len() == 1);
+    }
+
+    #[test]
+    fn remove_primitive() {
+        let (mut app, send) = setup_test();
+
+        let id = 0;
+        let ent = app.world.spawn(PrimitiveId(id)).id();
+
+        send.send(WiredGltfAction::RemovePrimitive { id }).unwrap();
+        app.update();
+
+        assert!(app.world.get_entity(ent).is_none());
+    }
+
+    #[test]
+    fn remove_invalid_primitive() {
+        let (mut app, send) = setup_test();
+
+        send.send(WiredGltfAction::RemovePrimitive { id: 0 })
+            .unwrap();
+        app.update();
+    }
 }

@@ -24,7 +24,7 @@ pub enum WiredGltfAction {
     CreatePrimitive { id: u32, mesh: u32 },
     RemoveMesh { id: u32 },
     RemoveNode { id: u32 },
-    RemovePrimitive { id: u32, mesh: u32 },
+    RemovePrimitive { id: u32 },
     SetNodeParent { id: u32, parent: Option<u32> },
     SetNodeTransform { id: u32, transform: Transform },
 }

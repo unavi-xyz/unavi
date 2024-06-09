@@ -110,6 +110,7 @@ mod tests {
             },
         ))
         .init_asset::<Mesh>()
+        .init_asset::<StandardMaterial>()
         .init_asset::<Wasm>()
         .init_asset_loader::<WasmLoader>()
         .init_non_send_resource::<WasmStores>();

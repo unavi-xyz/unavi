@@ -7,10 +7,13 @@ const UNAVI_SYSTEM: &str = "unavi_system";
 pub fn spawn_unavi_system(asset_server: Res<AssetServer>, mut commands: Commands) {
     let wasm = load_component_wasm(&asset_server, UNAVI_SYSTEM);
 
-    commands.spawn(ScriptBundle {
-        name: UNAVI_SYSTEM.into(),
-        wasm,
-    });
+    commands.spawn((
+        ScriptBundle {
+            name: UNAVI_SYSTEM.into(),
+            wasm,
+        },
+        SpatialBundle::default(),
+    ));
 }
 
 pub fn load_component_wasm(asset_server: &AssetServer, name: &str) -> Handle<Wasm> {

@@ -10,28 +10,27 @@ use wasm_component_layer::{
 
 use crate::{load::EngineBackend, resource_table::ResourceTable, StoreData};
 
-use super::{EcsData, LocalData, NodeData, WiredGltfAction};
+use super::{
+    local_data::{LocalData, NodeData},
+    mesh::{create_mesh_resource, MeshResource},
+    EcsData, SharedTypes, WiredGltfAction,
+};
 
 #[derive(Clone)]
-pub struct NodeResource {
-    id: u32,
-}
-
-impl NodeResource {
-    fn new(id: u32) -> Self {
-        Self { id }
-    }
-}
+pub struct NodeResource(pub u32);
 
 pub fn add_to_host(
     store: &mut Store<StoreData, EngineBackend>,
     linker: &mut Linker,
+    shared_types: &SharedTypes,
     sender: Sender<WiredGltfAction>,
     local_data: Arc<RwLock<LocalData>>,
-    data: Arc<RwLock<EcsData>>,
+    ecs_data: Arc<RwLock<EcsData>>,
 ) -> Result<()> {
     let resource_table = store.data().resource_table.clone();
     let interface = linker.define_instance("wired:gltf/node".try_into()?)?;
+
+    let mesh_type = &shared_types.mesh_type;
 
     let node_type = ResourceType::new::<NodeResource>(None);
     let node_list_type = ListType::new(ValueType::Own(node_type.clone()));
@@ -79,7 +78,7 @@ pub fn add_to_host(
                 let ctx_ref = ctx.as_context();
                 let node: &NodeResource = resource.rep(&ctx_ref)?;
 
-                results[0] = Value::U32(node.id);
+                results[0] = Value::U32(node.0);
 
                 Ok(())
             },
@@ -109,7 +108,7 @@ pub fn add_to_host(
                 let mut local_data = local_data.write().unwrap();
                 let mut resource_table = resource_table.write().unwrap();
 
-                if let Some(data) = local_data.nodes.get(&node.id) {
+                if let Some(data) = local_data.nodes.get(&node.0) {
                     let children = data
                         .children
                         .clone()
@@ -164,25 +163,25 @@ pub fn add_to_host(
 
                 let mut local_data = local_data.write().unwrap();
 
-                if let Some(data) = local_data.nodes.get_mut(&parent_node.id) {
-                    data.children.insert(child_node.id);
+                if let Some(data) = local_data.nodes.get_mut(&parent_node.0) {
+                    data.children.insert(child_node.0);
                 }
 
-                if let Some(data) = local_data.nodes.get_mut(&child_node.id) {
+                if let Some(data) = local_data.nodes.get_mut(&child_node.0) {
                     if let Some(prev_id) = data.parent {
                         if let Some(prev_data) = local_data.nodes.get_mut(&prev_id) {
-                            prev_data.children.remove(&child_node.id);
+                            prev_data.children.remove(&child_node.0);
                         }
                     }
                 }
 
-                if let Some(data) = local_data.nodes.get_mut(&child_node.id) {
-                    data.parent = Some(parent_node.id);
+                if let Some(data) = local_data.nodes.get_mut(&child_node.0) {
+                    data.parent = Some(parent_node.0);
                 }
 
                 sender.send(WiredGltfAction::SetNodeParent {
-                    id: child_node.id,
-                    parent: Some(parent_node.id),
+                    id: child_node.0,
+                    parent: Some(parent_node.0),
                 })?;
 
                 Ok(())
@@ -219,16 +218,16 @@ pub fn add_to_host(
 
                 let mut local_data = local_data.write().unwrap();
 
-                if let Some(data) = local_data.nodes.get_mut(&parent_node.id) {
-                    data.children.remove(&child_node.id);
+                if let Some(data) = local_data.nodes.get_mut(&parent_node.0) {
+                    data.children.remove(&child_node.0);
                 }
 
-                if let Some(data) = local_data.nodes.get_mut(&child_node.id) {
+                if let Some(data) = local_data.nodes.get_mut(&child_node.0) {
                     data.parent = None;
                 }
 
                 sender.send(WiredGltfAction::SetNodeParent {
-                    id: child_node.id,
+                    id: child_node.0,
                     parent: None,
                 })?;
 
@@ -259,7 +258,7 @@ pub fn add_to_host(
                 let mut local_data = local_data.write().unwrap();
                 let mut resource_table = resource_table.write().unwrap();
 
-                if let Some(data) = local_data.nodes.get(&node.id) {
+                if let Some(data) = local_data.nodes.get(&node.0) {
                     let value = match data.parent {
                         Some(parent) => {
                             let value = create_node_resource(
@@ -307,7 +306,7 @@ pub fn add_to_host(
 
                 let local_data = local_data.read().unwrap();
 
-                if let Some(data) = local_data.nodes.get(&node.id) {
+                if let Some(data) = local_data.nodes.get(&node.0) {
                     let tr = data.transform;
 
                     let translation = Record::new(
@@ -385,7 +384,7 @@ pub fn add_to_host(
 
                 let mut local_data = local_data.write().unwrap();
 
-                if let Some(data) = local_data.nodes.get_mut(&node.id) {
+                if let Some(data) = local_data.nodes.get_mut(&node.0) {
                     let translation = match transform.field("translation").unwrap() {
                         Value::Record(v) => v,
                         _ => bail!("invalid arg"),
@@ -456,13 +455,116 @@ pub fn add_to_host(
                     data.transform.scale.z = scale_z;
 
                     sender.send(WiredGltfAction::SetNodeTransform {
-                        id: node.id,
+                        id: node.0,
                         transform: Transform {
                             translation: Vec3::new(tr_x, tr_y, tr_z),
                             rotation: Quat::from_xyzw(rot_x, rot_y, rot_z, rot_w),
                             scale: Vec3::new(scale_x, scale_y, scale_z),
                         },
                     })?;
+                }
+
+                Ok(())
+            },
+        )
+    };
+
+    let node_mesh_fn = {
+        let local_data = local_data.clone();
+        let mesh_type = mesh_type.clone();
+        let resource_table = resource_table.clone();
+
+        let mesh_option_type = OptionType::new(ValueType::Own(mesh_type.clone()));
+
+        Func::new(
+            store.as_context_mut(),
+            FuncType::new(
+                [ValueType::Borrow(node_type.clone())],
+                [ValueType::Option(mesh_option_type.clone())],
+            ),
+            move |mut ctx, args, results| {
+                let resource = match &args[0] {
+                    Value::Borrow(v) => v,
+                    _ => bail!("invalid arg"),
+                };
+
+                let ctx_ref = ctx.as_context();
+                let node: &NodeResource = resource.rep(&ctx_ref)?;
+
+                let mut local_data = local_data.write().unwrap();
+                let mut resource_table = resource_table.write().unwrap();
+
+                if let Some(data) = local_data.nodes.get_mut(&node.0) {
+                    let mesh_res = match data.mesh {
+                        Some(mesh_id) => Some(create_mesh_resource(
+                            mesh_id,
+                            &mesh_type,
+                            &mut ctx.as_context_mut(),
+                            &mut local_data,
+                            &mut resource_table,
+                        )?),
+
+                        None => None,
+                    };
+
+                    results[0] =
+                        Value::Option(OptionValue::new(mesh_option_type.clone(), mesh_res)?);
+                }
+
+                Ok(())
+            },
+        )
+    };
+
+    let node_set_mesh_fn = {
+        let local_data = local_data.clone();
+        let sender = sender.clone();
+        Func::new(
+            store.as_context_mut(),
+            FuncType::new(
+                [
+                    ValueType::Borrow(node_type.clone()),
+                    ValueType::Option(OptionType::new(ValueType::Borrow(mesh_type.clone()))),
+                ],
+                [],
+            ),
+            move |ctx, args, _results| {
+                let node_res = match &args[0] {
+                    Value::Borrow(v) => v,
+                    _ => bail!("invalid arg"),
+                };
+
+                let mesh_res = match &args[1] {
+                    Value::Option(v) => v,
+                    _ => bail!("invalid arg"),
+                };
+
+                let ctx_ref = ctx.as_context();
+                let node: &NodeResource = node_res.rep(&ctx_ref)?;
+
+                if mesh_res.is_none() {
+                    sender.send(WiredGltfAction::SetNodeMesh {
+                        id: node.0,
+                        mesh: None,
+                    })?;
+                } else {
+                    let mesh_res = match mesh_res.as_ref().unwrap() {
+                        Value::Borrow(v) => v,
+                        _ => bail!("invalid arg"),
+                    };
+
+                    let mesh: &MeshResource = mesh_res.rep(&ctx_ref)?;
+
+                    sender.send(WiredGltfAction::SetNodeMesh {
+                        id: node.0,
+                        mesh: Some(mesh.0),
+                    })?;
+
+                    let mut local_data = local_data.write().unwrap();
+
+                    if let Some(data) = local_data.nodes.get_mut(&node.0) {
+                        data.mesh = Some(mesh.0);
+                    }
                 }
 
                 Ok(())
@@ -557,15 +659,15 @@ pub fn add_to_host(
                 let mut local_data = local_data.write().unwrap();
                 let mut resource_table = resource_table.write().unwrap();
 
-                sender.send(WiredGltfAction::RemoveNode { id: node.id })?;
+                sender.send(WiredGltfAction::RemoveNode { id: node.0 })?;
 
-                if let Some(data) = local_data.nodes.remove(&node.id) {
+                if let Some(data) = local_data.nodes.remove(&node.0) {
                     for id in data.resources {
                         resource_table.remove(&id);
                     }
                 };
 
-                // TODO: Remove children
+                // TODO: Remove children (?)
                 // TODO: Remove mesh (?)
 
                 Ok(())
@@ -581,6 +683,8 @@ pub fn add_to_host(
     interface.define_func("[method]node.parent", node_parent_fn)?;
     interface.define_func("[method]node.transform", node_transform_fn)?;
     interface.define_func("[method]node.set-transform", node_set_transform_fn)?;
+    interface.define_func("[method]node.mesh", node_mesh_fn)?;
+    interface.define_func("[method]node.set-mesh", node_set_mesh_fn)?;
 
     interface.define_func("list-nodes", list_nodes_fn)?;
     interface.define_func("create-node", create_node_fn)?;
@@ -598,7 +702,7 @@ fn create_node_resource(
 ) -> anyhow::Result<Value> {
     let (res_id, resource) =
         resource_table.push(ctx.as_context_mut(), node_type.clone(), |_| {
-            NodeResource::new(id)
+            NodeResource(id)
         })?;
 
     let data = local_data

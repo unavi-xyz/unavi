@@ -1,16 +1,16 @@
 use std::sync::{Arc, RwLock};
 
 use anyhow::Result;
-use bevy::{
-    prelude::*,
-    utils::{HashMap, HashSet},
-};
+use bevy::{prelude::*, utils::HashMap};
 use crossbeam::channel::Receiver;
-use wasm_component_layer::{Linker, Store};
+use wasm_component_layer::{Linker, ResourceType, Store};
 
 use crate::{load::EngineBackend, StoreData};
 
+use self::{local_data::LocalData, mesh::MeshResource};
+
 pub mod handler;
+mod local_data;
 mod mesh;
 mod node;
 pub mod query;
@@ -25,6 +25,7 @@ pub enum WiredGltfAction {
     RemoveMesh { id: u32 },
     RemoveNode { id: u32 },
     RemovePrimitive { id: u32 },
+    SetNodeMesh { id: u32, mesh: Option<u32> },
     SetNodeParent { id: u32, parent: Option<u32> },
     SetNodeTransform { id: u32, transform: Transform },
     SetPrimitiveIndices { id: u32, value: Vec<u32> },
@@ -41,38 +42,15 @@ pub struct EcsData {
     nodes: HashMap<u32, Transform>,
 }
 
-#[derive(Default)]
-struct LocalData {
-    next_id: u32,
-    nodes: HashMap<u32, NodeData>,
-    meshes: HashMap<u32, MeshData>,
+struct SharedTypes {
+    mesh_type: ResourceType,
 }
 
-impl LocalData {
-    fn new_id(&mut self) -> u32 {
-        let id = self.next_id;
-        self.next_id += 1;
-        id
+impl Default for SharedTypes {
+    fn default() -> Self {
+        let mesh_type = ResourceType::new::<MeshResource>(None);
+        Self { mesh_type }
     }
-}
-
-#[derive(Default)]
-struct NodeData {
-    children: HashSet<u32>,
-    parent: Option<u32>,
-    resources: HashSet<u32>,
-    transform: Transform,
-}
-
-#[derive(Default)]
-struct MeshData {
-    primitives: HashMap<u32, PrimitiveData>,
-    resources: HashSet<u32>,
-}
-
-#[derive(Default)]
-struct PrimitiveData {
-    resources: HashSet<u32>,
 }
 
 pub fn add_to_host(
@@ -83,15 +61,23 @@ pub fn add_to_host(
     let (send, recv) = crossbeam::channel::bounded::<WiredGltfAction>(100);
 
     let local_data = Arc::new(RwLock::new(LocalData::default()));
+    let shared_types = SharedTypes::default();
 
     node::add_to_host(
         store,
         linker,
+        &shared_types,
         send.clone(),
         local_data.clone(),
         data.clone(),
     )?;
-    mesh::add_to_host(store, linker, send.clone(), local_data.clone())?;
+    mesh::add_to_host(
+        store,
+        linker,
+        &shared_types,
+        send.clone(),
+        local_data.clone(),
+    )?;
 
     Ok((WiredGltfReceiver(recv), WiredGltfData(data)))
 }

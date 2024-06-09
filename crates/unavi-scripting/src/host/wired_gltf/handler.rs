@@ -167,7 +167,7 @@ pub fn handle_wired_gltf_actions(
                             let mut to_remove = Vec::new();
 
                             for id in node_primitives.keys() {
-                                if primitives.iter().find(|(pid, _)| pid == id).is_none() {
+                                if !primitives.iter().any(|(pid, _)| pid == id) {
                                     to_remove.push(*id);
                                 }
                             }

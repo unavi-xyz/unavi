@@ -6,18 +6,22 @@ use super::{load::WasmStores, script::ScriptInterface};
 #[derive(Component)]
 pub struct ScriptData(ResourceOwn);
 
+#[derive(Component)]
+pub struct FailedToInit;
+
 pub fn init_scripts(
     mut commands: Commands,
-    mut scripts: Query<(Entity, &ScriptInterface), Without<ScriptData>>,
+    mut to_init: Query<(Entity, &ScriptInterface), (Without<ScriptData>, Without<FailedToInit>)>,
     mut stores: NonSendMut<WasmStores>,
 ) {
-    for (entity, script) in scripts.iter_mut() {
+    for (entity, script) in to_init.iter_mut() {
         let store = stores.0.get_mut(&entity).unwrap();
 
         let mut results = vec![Value::U8(0)];
 
         if let Err(e) = script.init.call(store.as_context_mut(), &[], &mut results) {
             error!("Failed to init script: {}", e);
+            commands.entity(entity).insert(FailedToInit);
             continue;
         }
 
@@ -25,6 +29,7 @@ pub fn init_scripts(
             Value::Own(own) => own,
             _ => {
                 error!("Wrong script data value");
+                commands.entity(entity).insert(FailedToInit);
                 continue;
             }
         };

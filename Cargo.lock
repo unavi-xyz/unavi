@@ -4082,6 +4082,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-wired-gltf"
+version = "0.0.3"
+dependencies = [
+ "bevy",
+ "unavi-scripting",
+ "wit-bindgen-rt",
+]
+
+[[package]]
 name = "exr"
 version = "1.72.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11282,6 +11291,7 @@ version = "0.0.3"
 dependencies = [
  "anyhow",
  "bevy",
+ "bevy_panorbit_camera",
  "crossbeam",
  "tokio",
  "tracing",

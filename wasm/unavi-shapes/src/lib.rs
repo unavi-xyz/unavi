@@ -15,7 +15,7 @@ mod bindings;
 struct UnaviShapes;
 
 impl Guest for UnaviShapes {
-    fn cuboid(size: Vec3) -> Mesh {
+    fn create_cuboid(size: Vec3) -> Mesh {
         let mesh = create_mesh();
         let primitive = mesh.create_primitive();
 
@@ -27,7 +27,7 @@ impl Guest for UnaviShapes {
         mesh
     }
 
-    fn sphere(radius: f32, sectors: u32, stacks: u32) -> Mesh {
+    fn create_sphere(radius: f32, sectors: u32, stacks: u32) -> Mesh {
         let mesh = create_mesh();
         let primitive = mesh.create_primitive();
 

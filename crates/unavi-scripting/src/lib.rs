@@ -4,7 +4,7 @@ use bevy::prelude::*;
 
 use self::{asset::Wasm, load::WasmStores, resource_table::ResourceTable};
 
-mod asset;
+pub mod asset;
 mod execution;
 mod host;
 mod load;
@@ -37,9 +37,9 @@ impl Plugin for ScriptingPlugin {
 }
 
 #[derive(Bundle)]
-struct ScriptBundle {
-    name: Name,
-    wasm: Handle<Wasm>,
+pub struct ScriptBundle {
+    pub name: Name,
+    pub wasm: Handle<Wasm>,
 }
 
 #[derive(Default)]

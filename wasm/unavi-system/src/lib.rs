@@ -8,6 +8,7 @@ use bindings::{
 
 #[allow(warnings)]
 mod bindings;
+mod impls;
 
 struct DataImpl {}
 

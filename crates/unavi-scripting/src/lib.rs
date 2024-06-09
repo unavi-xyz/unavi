@@ -10,7 +10,6 @@ mod host;
 mod load;
 mod resource_table;
 mod script;
-mod unavi_system;
 
 pub struct ScriptingPlugin;
 
@@ -19,7 +18,6 @@ impl Plugin for ScriptingPlugin {
         app.register_asset_loader(asset::WasmLoader)
             .init_asset::<Wasm>()
             .init_non_send_resource::<WasmStores>()
-            .add_systems(Startup, unavi_system::spawn_unavi_system)
             .add_systems(
                 FixedUpdate,
                 (

@@ -16,6 +16,7 @@ use unavi_dwn::UserActor;
 
 pub const ROOT_DIR: &str = ".unavi/app";
 
+mod unavi_system;
 #[cfg(feature = "self_update")]
 #[cfg(not(target_family = "wasm"))]
 pub mod update;
@@ -62,7 +63,8 @@ pub async fn start(db: Surreal<Db>, opts: StartOptions) {
             unavi_scripting::ScriptingPlugin,
             unavi_settings::SettingsPlugin,
             unavi_world::WorldPlugin,
-        ));
+        ))
+        .add_systems(Startup, unavi_system::spawn_unavi_system);
 
     if opts.debug_physics {
         app.add_plugins(PhysicsDebugPlugin::default());

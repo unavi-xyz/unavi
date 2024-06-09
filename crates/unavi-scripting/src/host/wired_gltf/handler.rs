@@ -4,6 +4,7 @@ use bevy::{
         mesh::{Indices, PrimitiveTopology, VertexAttributeValues},
         render_asset::RenderAssetUsages,
     },
+    utils::HashMap,
 };
 
 use crate::Owner;
@@ -15,18 +16,42 @@ pub struct NodeId(pub u32);
 
 #[derive(Bundle)]
 pub struct WiredNodeBundle {
-    id: NodeId,
-    owner: Owner,
-    spatial: SpatialBundle,
+    pub id: NodeId,
+    pub owner: Owner,
+    pub spatial: SpatialBundle,
+    pub primitives: NodePrimitives,
 }
+
+impl WiredNodeBundle {
+    pub fn new(id: u32, owner: Entity) -> Self {
+        Self {
+            id: NodeId(id),
+            owner: Owner(owner),
+            primitives: NodePrimitives::default(),
+            spatial: SpatialBundle::default(),
+        }
+    }
+}
+
+#[derive(Component, Default, Deref, DerefMut)]
+pub struct NodePrimitives(pub HashMap<u32, Entity>);
 
 #[derive(Component, Debug)]
 pub struct MeshId(pub u32);
 
 #[derive(Bundle)]
 pub struct WiredMeshBundle {
-    id: MeshId,
-    owner: Owner,
+    pub id: MeshId,
+    pub owner: Owner,
+}
+
+impl WiredMeshBundle {
+    pub fn new(id: u32, owner: Entity) -> Self {
+        Self {
+            id: MeshId(id),
+            owner: Owner(owner),
+        }
+    }
 }
 
 #[derive(Component, Debug)]
@@ -34,20 +59,20 @@ pub struct PrimitiveId(pub u32);
 
 #[derive(Bundle)]
 pub struct WiredPrimitiveBundle {
-    handle: Handle<Mesh>,
-    id: PrimitiveId,
-    mesh: MeshId,
-    owner: Owner,
+    pub handle: Handle<Mesh>,
+    pub id: PrimitiveId,
+    pub mesh: MeshId,
+    pub owner: Owner,
 }
 
 pub fn handle_wired_gltf_actions(
+    meshes: Query<(Entity, &MeshId)>,
     mut commands: Commands,
     mut mesh_assets: ResMut<Assets<Mesh>>,
+    mut nodes: Query<(Entity, &NodeId, &mut NodePrimitives)>,
     mut transforms: Query<&mut Transform>,
+    primitives: Query<(Entity, &PrimitiveId, &MeshId, &Handle<Mesh>)>,
     scripts: Query<(Entity, &WiredGltfReceiver)>,
-    nodes: Query<(Entity, &NodeId)>,
-    meshes: Query<(Entity, &MeshId)>,
-    primitives: Query<(Entity, &PrimitiveId, &Handle<Mesh>)>,
 ) {
     for (entity, receiver) in scripts.iter() {
         while let Ok(msg) = receiver.try_recv() {
@@ -56,21 +81,14 @@ pub fn handle_wired_gltf_actions(
                     if find_mesh(&meshes, id).is_some() {
                         warn!("Mesh {} already exists.", id);
                     } else {
-                        commands.spawn(WiredMeshBundle {
-                            id: MeshId(id),
-                            owner: Owner(entity),
-                        });
+                        commands.spawn(WiredMeshBundle::new(id, entity));
                     }
                 }
                 WiredGltfAction::CreateNode { id } => {
-                    if find_node(&nodes, id).is_some() {
+                    if find_node(&mut nodes, id).is_some() {
                         warn!("Node {} already exists.", id);
                     } else {
-                        commands.spawn(WiredNodeBundle {
-                            id: NodeId(id),
-                            owner: Owner(entity),
-                            spatial: SpatialBundle::default(),
-                        });
+                        commands.spawn(WiredNodeBundle::new(id, entity));
                     }
                 }
                 WiredGltfAction::CreatePrimitive { id, mesh } => {
@@ -98,7 +116,7 @@ pub fn handle_wired_gltf_actions(
                     }
                 }
                 WiredGltfAction::RemoveNode { id } => {
-                    if let Some(ent) = find_node(&nodes, id) {
+                    if let Some((ent, ..)) = find_node(&mut nodes, id) {
                         commands.entity(ent).despawn_recursive();
                     } else {
                         warn!("Node {} does not exist", id);
@@ -112,9 +130,9 @@ pub fn handle_wired_gltf_actions(
                     }
                 }
                 WiredGltfAction::SetNodeParent { id, parent } => {
-                    if let Some(ent) = find_node(&nodes, id) {
+                    if let Some((ent, ..)) = find_node(&mut nodes, id) {
                         if let Some(parent) = parent {
-                            if let Some(parent_ent) = find_node(&nodes, parent) {
+                            if let Some((parent_ent, ..)) = find_node(&mut nodes, parent) {
                                 commands.entity(parent_ent).push_children(&[ent]);
                             } else {
                                 commands.entity(ent).remove_parent();
@@ -122,15 +140,63 @@ pub fn handle_wired_gltf_actions(
                         } else {
                             commands.entity(ent).remove_parent();
                         }
+                    } else {
+                        warn!("Node {} does not exist", id);
                     }
                 }
                 WiredGltfAction::SetNodeTransform { id, transform } => {
-                    if let Some(ent) = find_node(&nodes, id) {
+                    if let Some((ent, ..)) = find_node(&mut nodes, id) {
                         let mut node_transform = transforms.get_mut(ent).unwrap();
                         node_transform.clone_from(&transform);
                     }
                 }
-                WiredGltfAction::SetNodeMesh { id, mesh } => {}
+                WiredGltfAction::SetNodeMesh { id, mesh } => {
+                    if let Some((ent, mut node_primitives)) = find_node(&mut nodes, id) {
+                        if let Some(mesh) = mesh {
+                            let primitives = primitives
+                                .iter()
+                                .filter_map(|(_, pid, m, handle)| {
+                                    if m.0 == mesh {
+                                        Some((pid.0, handle))
+                                    } else {
+                                        None
+                                    }
+                                })
+                                .collect::<Vec<_>>();
+
+                            let mut to_remove = Vec::new();
+
+                            for id in node_primitives.keys() {
+                                if primitives.iter().find(|(pid, _)| pid == id).is_none() {
+                                    to_remove.push(*id);
+                                }
+                            }
+
+                            for id in to_remove {
+                                let ent = node_primitives.remove(&id).unwrap();
+                                commands.entity(ent).despawn();
+                            }
+
+                            for (id, handle) in primitives {
+                                if node_primitives.contains_key(&id) {
+                                    continue;
+                                }
+
+                                let primitive_ent = commands.spawn(handle.clone()).id();
+                                commands.entity(ent).add_child(primitive_ent);
+                                node_primitives.insert(id, primitive_ent);
+                            }
+                        } else {
+                            for ent in node_primitives.values() {
+                                commands.entity(*ent).despawn();
+                            }
+
+                            node_primitives.clear();
+                        }
+                    } else {
+                        warn!("Node {} does not exist", id);
+                    }
+                }
                 WiredGltfAction::SetPrimitiveIndices { id, value } => {
                     if let Some((_, handle)) = find_primitive(&primitives, id) {
                         let mesh = mesh_assets.get_mut(handle).unwrap();
@@ -192,10 +258,17 @@ pub fn handle_wired_gltf_actions(
     }
 }
 
-fn find_node(nodes: &Query<(Entity, &NodeId)>, id: u32) -> Option<Entity> {
-    nodes
-        .iter()
-        .find_map(|(ent, nid)| if nid.0 == id { Some(ent) } else { None })
+fn find_node<'a>(
+    nodes: &'a mut Query<(Entity, &NodeId, &mut NodePrimitives)>,
+    id: u32,
+) -> Option<(Entity, Mut<'a, NodePrimitives>)> {
+    nodes.iter_mut().find_map(|(ent, nid, primitives)| {
+        if nid.0 == id {
+            Some((ent, primitives))
+        } else {
+            None
+        }
+    })
 }
 
 fn find_mesh(meshes: &Query<(Entity, &MeshId)>, id: u32) -> Option<Entity> {
@@ -204,13 +277,13 @@ fn find_mesh(meshes: &Query<(Entity, &MeshId)>, id: u32) -> Option<Entity> {
         .find_map(|(ent, mid)| if mid.0 == id { Some(ent) } else { None })
 }
 
-fn find_primitive(
-    primitives: &Query<(Entity, &PrimitiveId, &Handle<Mesh>)>,
+fn find_primitive<'a>(
+    primitives: &'a Query<(Entity, &PrimitiveId, &MeshId, &Handle<Mesh>)>,
     id: u32,
-) -> Option<(Entity, Handle<Mesh>)> {
-    primitives.iter().find_map(|(ent, pid, handle)| {
+) -> Option<(Entity, &'a Handle<Mesh>)> {
+    primitives.iter().find_map(|(ent, pid, _, handle)| {
         if pid.0 == id {
-            Some((ent, handle.clone()))
+            Some((ent, handle))
         } else {
             None
         }
@@ -254,8 +327,10 @@ mod tests {
     fn create_node_duplicate_id() {
         let (mut app, send) = setup_test();
 
+        let owner = app.world.spawn(()).id();
+
         let id = 0;
-        app.world.spawn(NodeId(id));
+        app.world.spawn(WiredNodeBundle::new(id, owner));
 
         send.send(WiredGltfAction::CreateNode { id }).unwrap();
         app.update();
@@ -268,8 +343,10 @@ mod tests {
     fn remove_node() {
         let (mut app, send) = setup_test();
 
+        let owner = app.world.spawn(()).id();
+
         let id = 0;
-        let ent = app.world.spawn(NodeId(id)).id();
+        let ent = app.world.spawn(WiredNodeBundle::new(id, owner)).id();
 
         send.send(WiredGltfAction::RemoveNode { id }).unwrap();
         app.update();
@@ -286,14 +363,16 @@ mod tests {
     }
 
     #[test]
-    fn set_parent_some() {
+    fn set_node_parent_some() {
         let (mut app, send) = setup_test();
 
+        let owner = app.world.spawn(()).id();
+
         let parent_id = 0;
-        let parent_ent = app.world.spawn(NodeId(parent_id)).id();
+        let parent_ent = app.world.spawn(WiredNodeBundle::new(parent_id, owner)).id();
 
         let child_id = 1;
-        let child_ent = app.world.spawn(NodeId(child_id)).id();
+        let child_ent = app.world.spawn(WiredNodeBundle::new(child_id, owner)).id();
 
         send.send(WiredGltfAction::SetNodeParent {
             id: child_id,
@@ -307,16 +386,18 @@ mod tests {
     }
 
     #[test]
-    fn set_parent_none() {
+    fn set_node_parent_none() {
         let (mut app, send) = setup_test();
 
+        let owner = app.world.spawn(()).id();
+
         let parent_id = 0;
-        let parent_ent = app.world.spawn(NodeId(parent_id)).id();
+        let parent_ent = app.world.spawn(WiredNodeBundle::new(parent_id, owner)).id();
 
         let child_id = 1;
         let mut child_ent = None;
         app.world.entity_mut(parent_ent).with_children(|builder| {
-            child_ent = Some(builder.spawn(NodeId(child_id)).id());
+            child_ent = Some(builder.spawn(WiredNodeBundle::new(child_id, owner)).id());
         });
         let child_ent = child_ent.unwrap();
 
@@ -334,12 +415,14 @@ mod tests {
     }
 
     #[test]
-    fn set_invalid_parent() {
+    fn set_node_invalid_parent() {
         let (mut app, send) = setup_test();
+
+        let owner = app.world.spawn(()).id();
 
         let parent_id = 0;
         let child_id = 1;
-        app.world.spawn(NodeId(child_id));
+        app.world.spawn(WiredNodeBundle::new(child_id, owner));
 
         send.send(WiredGltfAction::SetNodeParent {
             id: child_id,
@@ -350,11 +433,13 @@ mod tests {
     }
 
     #[test]
-    fn set_transform() {
+    fn set_node_transform() {
         let (mut app, send) = setup_test();
 
+        let owner = app.world.spawn(()).id();
+
         let id = 0;
-        let ent = app.world.spawn((NodeId(id), SpatialBundle::default())).id();
+        let ent = app.world.spawn(WiredNodeBundle::new(id, owner)).id();
 
         let transform = Transform {
             translation: Vec3::splat(1.0),
@@ -367,6 +452,85 @@ mod tests {
         app.update();
 
         assert_eq!(app.world.get::<Transform>(ent).unwrap(), &transform);
+    }
+
+    #[test]
+    fn set_node_mesh_some() {
+        let (mut app, send) = setup_test();
+
+        let owner = app.world.spawn(()).id();
+
+        let id = 0;
+        let ent = app.world.spawn(WiredNodeBundle::new(id, owner)).id();
+
+        let mesh_id = 1;
+        app.world.spawn(WiredMeshBundle::new(mesh_id, owner));
+
+        let handle = Handle::default();
+        let primitive_id = 2;
+        app.world.spawn(WiredPrimitiveBundle {
+            handle: handle.clone(),
+            id: PrimitiveId(primitive_id),
+            mesh: MeshId(mesh_id),
+            owner: Owner(owner),
+        });
+
+        send.send(WiredGltfAction::SetNodeMesh {
+            id,
+            mesh: Some(mesh_id),
+        })
+        .unwrap();
+        app.update();
+
+        let node_primitives = app.world.get::<NodePrimitives>(ent).unwrap();
+        let primitive_ent = node_primitives[&primitive_id];
+
+        let found_handle = app.world.get::<Handle<Mesh>>(primitive_ent).unwrap();
+        assert_eq!(*found_handle, handle);
+    }
+
+    #[test]
+    fn set_node_mesh_none() {
+        let (mut app, send) = setup_test();
+
+        let owner = app.world.spawn(()).id();
+
+        let mesh_id = 1;
+        app.world.spawn(WiredMeshBundle::new(mesh_id, owner));
+
+        let handle = Handle::default();
+        let primitive_id = 2;
+        app.world.spawn(WiredPrimitiveBundle {
+            handle: handle.clone(),
+            id: PrimitiveId(primitive_id),
+            mesh: MeshId(mesh_id),
+            owner: Owner(owner),
+        });
+
+        let primitive_ent = app.world.spawn(handle).id();
+
+        let mut primitives = NodePrimitives::default();
+        primitives.insert(primitive_id, primitive_ent);
+
+        let id = 0;
+        let ent = app
+            .world
+            .spawn(WiredNodeBundle {
+                id: NodeId(id),
+                owner: Owner(owner),
+                spatial: SpatialBundle::default(),
+                primitives,
+            })
+            .id();
+
+        send.send(WiredGltfAction::SetNodeMesh { id, mesh: None })
+            .unwrap();
+        app.update();
+
+        let node_primitives = app.world.get::<NodePrimitives>(ent).unwrap();
+        assert!(node_primitives.is_empty());
+
+        assert!(app.world.get_entity(primitive_ent).is_none());
     }
 
     // Mesh

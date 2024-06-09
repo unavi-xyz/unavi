@@ -93,7 +93,7 @@ pub fn handle_wired_gltf_actions(
                 }
                 WiredGltfAction::CreatePrimitive { id, mesh } => {
                     if find_mesh(&meshes, mesh).is_none() {
-                        warn!("Mesh {} node found.", id);
+                        warn!("Mesh {} not found.", id);
                     } else if find_primitive(&primitives, id).is_some() {
                         warn!("Primitive {} already exists.", id);
                     } else {

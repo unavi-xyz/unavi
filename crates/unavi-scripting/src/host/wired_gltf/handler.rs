@@ -130,6 +130,7 @@ pub fn handle_wired_gltf_actions(
                         node_transform.clone_from(&transform);
                     }
                 }
+                WiredGltfAction::SetNodeMesh { id, mesh } => {}
                 WiredGltfAction::SetPrimitiveIndices { id, value } => {
                     if let Some((_, handle)) = find_primitive(&primitives, id) {
                         let mesh = mesh_assets.get_mut(handle).unwrap();
@@ -685,6 +686,7 @@ mod tests {
 
         // Idk how to read values here, so we just test the length.
         let len = mesh.attribute(Mesh::ATTRIBUTE_UV_0).unwrap().len();
+
         assert_eq!(len, value.len() / 2);
     }
 }

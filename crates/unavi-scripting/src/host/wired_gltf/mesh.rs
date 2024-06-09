@@ -9,24 +9,29 @@ use wasm_component_layer::{
 
 use crate::{load::EngineBackend, resource_table::ResourceTable, StoreData};
 
-use super::{LocalData, MeshData, PrimitiveData, WiredGltfAction};
+use super::{
+    local_data::{LocalData, MeshData, PrimitiveData},
+    SharedTypes, WiredGltfAction,
+};
 
 #[derive(Clone)]
-pub struct MeshResource(u32);
+pub struct MeshResource(pub u32);
 
 #[derive(Clone)]
-pub struct PrimitiveResource(u32);
+pub struct PrimitiveResource(pub u32);
 
 pub fn add_to_host(
     store: &mut Store<StoreData, EngineBackend>,
     linker: &mut Linker,
+    shared_types: &SharedTypes,
     sender: Sender<WiredGltfAction>,
     local_data: Arc<RwLock<LocalData>>,
 ) -> Result<()> {
     let resource_table = store.data().resource_table.clone();
     let interface = linker.define_instance("wired:gltf/mesh".try_into()?)?;
 
-    let mesh_type = ResourceType::new::<MeshResource>(None);
+    let mesh_type = &shared_types.mesh_type;
+
     let mesh_list_type = ListType::new(ValueType::Own(mesh_type.clone()));
     let primitive_type = ResourceType::new::<PrimitiveResource>(None);
     let primitive_list_type = ListType::new(ValueType::Own(primitive_type.clone()));
@@ -476,7 +481,7 @@ pub fn add_to_host(
     )?;
     interface.define_func("[method]primitive.set-uvs", primitive_set_uvs_fn)?;
 
-    interface.define_resource("mesh", mesh_type)?;
+    interface.define_resource("mesh", mesh_type.clone())?;
     interface.define_func("[method]mesh.id", mesh_id_fn)?;
     interface.define_func("[method]mesh.list-primitives", mesh_list_primitives_fn)?;
     interface.define_func("[method]mesh.create-primitive", mesh_create_primitive_fn)?;
@@ -489,7 +494,7 @@ pub fn add_to_host(
     Ok(())
 }
 
-fn create_mesh_resource(
+pub fn create_mesh_resource(
     id: u32,
     mesh_type: &ResourceType,
     ctx: &mut StoreContextMut<StoreData, EngineBackend>,

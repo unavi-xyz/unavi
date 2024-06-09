@@ -75,7 +75,12 @@ pub fn handle_wired_gltf_actions(
     scripts: Query<(Entity, &WiredGltfReceiver)>,
 ) {
     for (entity, receiver) in scripts.iter() {
-        while let Ok(msg) = receiver.try_recv() {
+        // We only take 1 message per frame, as we must wait for deferred commands to be run before
+        // processing subsequent messages. For example, after creating a node we must wait for
+        // that entity to be spawned so other messages can query that entity if needed.
+        // A better solution would likely be to use the World directly, but we are using a few convienece methods
+        // provided by Commands, so for now this is fine.
+        if let Ok(msg) = receiver.try_recv() {
             match msg {
                 WiredGltfAction::CreateMesh { id } => {
                     let span = info_span!("CreateMesh", id);

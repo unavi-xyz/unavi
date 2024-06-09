@@ -24,7 +24,7 @@ pub fn set_attributes(primitive: &Primitive, mesh: TriMesh<f32>) {
         .as_ref()
         .unwrap()
         .iter()
-        .flat_map(|v| [v[0], v[1], v[2]])
+        .flat_map(|v| [v[0], v[1]])
         .collect::<Vec<_>>();
     primitive.set_uvs(&uvs);
 

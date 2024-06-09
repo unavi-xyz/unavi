@@ -59,21 +59,29 @@ pub struct PrimitiveId(pub u32);
 
 #[derive(Bundle)]
 pub struct WiredPrimitiveBundle {
-    pub handle: Handle<Mesh>,
     pub id: PrimitiveId,
     pub mesh: MeshId,
+    pub mesh_handle: Handle<Mesh>,
     pub owner: Owner,
 }
 
 pub fn handle_wired_gltf_actions(
     meshes: Query<(Entity, &MeshId)>,
     mut commands: Commands,
+    mut default_material: Local<Option<Handle<StandardMaterial>>>,
+    mut material_assets: ResMut<Assets<StandardMaterial>>,
     mut mesh_assets: ResMut<Assets<Mesh>>,
     mut nodes: Query<(Entity, &NodeId, &mut NodePrimitives)>,
     mut transforms: Query<&mut Transform>,
     primitives: Query<(Entity, &PrimitiveId, &MeshId, &Handle<Mesh>)>,
     scripts: Query<(Entity, &WiredGltfReceiver)>,
 ) {
+    if default_material.is_none() {
+        *default_material = Some(material_assets.add(StandardMaterial::default()));
+    }
+
+    let default_material = default_material.as_ref().unwrap();
+
     for (entity, receiver) in scripts.iter() {
         // We only take 1 message per frame, as we must wait for deferred commands to be run before
         // processing subsequent messages. For example, after creating a node we must wait for
@@ -115,15 +123,19 @@ pub fn handle_wired_gltf_actions(
                     } else if find_primitive(&primitives, id).is_some() {
                         warn!("Primitive {} already exists.", id);
                     } else {
-                        commands.spawn(WiredPrimitiveBundle {
-                            id: PrimitiveId(id),
-                            mesh: MeshId(mesh),
-                            owner: Owner(entity),
-                            handle: mesh_assets.add(Mesh::new(
-                                PrimitiveTopology::TriangleList,
-                                RenderAssetUsages::all(),
-                            )),
-                        });
+                        commands.spawn((
+                            SpatialBundle::default(),
+                            WiredPrimitiveBundle {
+                                id: PrimitiveId(id),
+                                mesh: MeshId(mesh),
+                                owner: Owner(entity),
+                                mesh_handle: mesh_assets.add(Mesh::new(
+                                    PrimitiveTopology::TriangleList,
+                                    RenderAssetUsages::all(),
+                                )),
+                            },
+                            default_material.clone(),
+                        ));
                     }
 
                     drop(s);
@@ -371,6 +383,7 @@ mod tests {
 
         app.add_plugins(AssetPlugin::default())
             .init_asset::<Mesh>()
+            .init_asset::<StandardMaterial>()
             .add_systems(Update, handle_wired_gltf_actions);
 
         let (send, recv) = crossbeam::channel::unbounded();
@@ -539,7 +552,7 @@ mod tests {
         let handle = Handle::default();
         let primitive_id = 2;
         app.world.spawn(WiredPrimitiveBundle {
-            handle: handle.clone(),
+            mesh_handle: handle.clone(),
             id: PrimitiveId(primitive_id),
             mesh: MeshId(mesh_id),
             owner: Owner(owner),
@@ -571,7 +584,7 @@ mod tests {
         let handle = Handle::default();
         let primitive_id = 2;
         app.world.spawn(WiredPrimitiveBundle {
-            handle: handle.clone(),
+            mesh_handle: handle.clone(),
             id: PrimitiveId(primitive_id),
             mesh: MeshId(mesh_id),
             owner: Owner(owner),
@@ -697,7 +710,7 @@ mod tests {
         app.world.spawn(WiredPrimitiveBundle {
             id: PrimitiveId(id),
             mesh: MeshId(mesh),
-            handle: Default::default(),
+            mesh_handle: Default::default(),
             owner: Owner(owner),
         });
 
@@ -724,7 +737,7 @@ mod tests {
             .spawn(WiredPrimitiveBundle {
                 id: PrimitiveId(id),
                 mesh: MeshId(mesh),
-                handle: Default::default(),
+                mesh_handle: Default::default(),
                 owner: Owner(owner),
             })
             .id();
@@ -763,7 +776,7 @@ mod tests {
         app.world.spawn(WiredPrimitiveBundle {
             id: PrimitiveId(id),
             mesh: MeshId(mesh),
-            handle: handle.clone(),
+            mesh_handle: handle.clone(),
             owner: Owner(owner),
         });
 
@@ -806,7 +819,7 @@ mod tests {
         app.world.spawn(WiredPrimitiveBundle {
             id: PrimitiveId(id),
             mesh: MeshId(mesh),
-            handle: handle.clone(),
+            mesh_handle: handle.clone(),
             owner: Owner(owner),
         });
 
@@ -854,7 +867,7 @@ mod tests {
         app.world.spawn(WiredPrimitiveBundle {
             id: PrimitiveId(id),
             mesh: MeshId(mesh),
-            handle: handle.clone(),
+            mesh_handle: handle.clone(),
             owner: Owner(owner),
         });
 
@@ -902,7 +915,7 @@ mod tests {
         app.world.spawn(WiredPrimitiveBundle {
             id: PrimitiveId(id),
             mesh: MeshId(mesh),
-            handle: handle.clone(),
+            mesh_handle: handle.clone(),
             owner: Owner(owner),
         });
 

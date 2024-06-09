@@ -52,7 +52,10 @@ let
         # Example:
         # dependencies:
         #   unavi:foo/bar: ${buildComponent "unavi-foo"}/lib/unavi_foo.wasm
-        config = pkgs.writeText "config.yml" '''';
+        config = pkgs.writeText "config.yml" ''
+          dependencies:
+            unavi:shapes/api: ${buildComponent "unavi-shapes"}/lib/unavi_shapes.wasm
+        '';
       in
       lib.concatStrings (
         map (

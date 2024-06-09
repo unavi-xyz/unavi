@@ -759,52 +759,53 @@ pub mod exports {
                 pub type Vec3 = super::super::super::super::wired::math::types::Vec3;
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_cuboid_cabi<T: Guest>(
+                pub unsafe fn _export_create_cuboid_cabi<T: Guest>(
                     arg0: f32,
                     arg1: f32,
                     arg2: f32,
                 ) -> i32 {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
-                    let result0 = T::cuboid(super::super::super::super::wired::math::types::Vec3 {
-                        x: arg0,
-                        y: arg1,
-                        z: arg2,
-                    });
+                    let result0 =
+                        T::create_cuboid(super::super::super::super::wired::math::types::Vec3 {
+                            x: arg0,
+                            y: arg1,
+                            z: arg2,
+                        });
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_sphere_cabi<T: Guest>(
+                pub unsafe fn _export_create_sphere_cabi<T: Guest>(
                     arg0: f32,
                     arg1: i32,
                     arg2: i32,
                 ) -> i32 {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
-                    let result0 = T::sphere(arg0, arg1 as u32, arg2 as u32);
+                    let result0 = T::create_sphere(arg0, arg1 as u32, arg2 as u32);
                     (result0).take_handle() as i32
                 }
                 pub trait Guest {
-                    fn cuboid(size: Vec3) -> Mesh;
+                    fn create_cuboid(size: Vec3) -> Mesh;
                     /// Creates a UV sphere with the given number of
                     /// longitudinal sectors and latitudinal stacks, aka horizontal and vertical resolution.
                     ///
                     /// A good default is `32` sectors and `18` stacks.
-                    fn sphere(radius: f32, sectors: u32, stacks: u32) -> Mesh;
+                    fn create_sphere(radius: f32, sectors: u32, stacks: u32) -> Mesh;
                 }
                 #[doc(hidden)]
 
                 macro_rules! __export_unavi_shapes_api_cabi{
       ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
-        #[export_name = "unavi:shapes/api#cuboid"]
-        unsafe extern "C" fn export_cuboid(arg0: f32,arg1: f32,arg2: f32,) -> i32 {
-          $($path_to_types)*::_export_cuboid_cabi::<$ty>(arg0, arg1, arg2)
+        #[export_name = "unavi:shapes/api#create-cuboid"]
+        unsafe extern "C" fn export_create_cuboid(arg0: f32,arg1: f32,arg2: f32,) -> i32 {
+          $($path_to_types)*::_export_create_cuboid_cabi::<$ty>(arg0, arg1, arg2)
         }
-        #[export_name = "unavi:shapes/api#sphere"]
-        unsafe extern "C" fn export_sphere(arg0: f32,arg1: i32,arg2: i32,) -> i32 {
-          $($path_to_types)*::_export_sphere_cabi::<$ty>(arg0, arg1, arg2)
+        #[export_name = "unavi:shapes/api#create-sphere"]
+        unsafe extern "C" fn export_create_sphere(arg0: f32,arg1: i32,arg2: i32,) -> i32 {
+          $($path_to_types)*::_export_create_sphere_cabi::<$ty>(arg0, arg1, arg2)
         }
       };);
     }
@@ -987,8 +988,8 @@ pub(crate) use __export_shapes_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:shapes:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1387] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xee\x09\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1401] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xfc\x09\x01A\x02\x01\
 A\x0c\x01B\x06\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01\
 zv\x04\0\x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04vec4\x03\0\x04\
 \x03\x01\x10wired:math/types\x05\0\x02\x03\0\0\x04vec4\x01B\x12\x02\x03\x02\x01\x01\
@@ -1016,10 +1017,11 @@ self\x0e\0s\x04\0\x11[method]mesh.name\x01\x10\x01@\x02\x04self\x0e\x05values\x0
 \x05value\x17\x01\0\x04\0\x0bremove-mesh\x01\x1b\x03\x01\x0fwired:gltf/mesh\x05\x04\
 \x02\x03\0\x02\x04mesh\x02\x03\0\0\x04vec3\x01B\x09\x02\x03\x02\x01\x05\x04\0\x04\
 mesh\x03\0\0\x02\x03\x02\x01\x06\x04\0\x04vec3\x03\0\x02\x01i\x01\x01@\x01\x04si\
-ze\x03\0\x04\x04\0\x06cuboid\x01\x05\x01@\x03\x06radiusv\x07sectorsy\x06stacksy\0\
-\x04\x04\0\x06sphere\x01\x06\x04\x01\x10unavi:shapes/api\x05\x07\x04\x01\x13unav\
-i:shapes/shapes\x04\0\x0b\x0c\x01\0\x06shapes\x03\0\0\0G\x09producers\x01\x0cpro\
-cessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+ze\x03\0\x04\x04\0\x0dcreate-cuboid\x01\x05\x01@\x03\x06radiusv\x07sectorsy\x06s\
+tacksy\0\x04\x04\0\x0dcreate-sphere\x01\x06\x04\x01\x10unavi:shapes/api\x05\x07\x04\
+\x01\x13unavi:shapes/shapes\x04\0\x0b\x0c\x01\0\x06shapes\x03\0\0\0G\x09producer\
+s\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.2\
+5.0";
 
 #[inline(never)]
 #[doc(hidden)]

@@ -10,11 +10,11 @@ interface api {
   use wired:gltf/mesh.{mesh};
   use wired:math/types.{vec3};
 
-  cuboid: func(size: vec3) -> mesh;
+  create-cuboid: func(size: vec3) -> mesh;
 
   // Creates a UV sphere with the given number of
   // longitudinal sectors and latitudinal stacks, aka horizontal and vertical resolution.
   // 
   // A good default is `32` sectors and `18` stacks.
-  sphere: func(radius: f32, sectors: u32, stacks: u32) -> mesh;
+  create-sphere: func(radius: f32, sectors: u32, stacks: u32) -> mesh;
 }

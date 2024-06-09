@@ -82,7 +82,7 @@ pub fn handle_wired_gltf_actions(
     let default_material = default_material.as_ref().unwrap();
 
     let scripts = scripts
-        .iter(&world)
+        .iter(world)
         .map(|(e, r)| (e, r.0.clone()))
         .collect::<Vec<_>>();
 

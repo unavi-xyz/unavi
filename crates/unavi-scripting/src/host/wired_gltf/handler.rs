@@ -1,4 +1,10 @@
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    render::{
+        mesh::{Indices, PrimitiveTopology, VertexAttributeValues},
+        render_asset::RenderAssetUsages,
+    },
+};
 
 use crate::Owner;
 
@@ -28,6 +34,7 @@ pub struct PrimitiveId(pub u32);
 
 #[derive(Bundle)]
 pub struct WiredPrimitiveBundle {
+    handle: Handle<Mesh>,
     id: PrimitiveId,
     mesh: MeshId,
     owner: Owner,
@@ -35,11 +42,12 @@ pub struct WiredPrimitiveBundle {
 
 pub fn handle_wired_gltf_actions(
     mut commands: Commands,
+    mut mesh_assets: ResMut<Assets<Mesh>>,
     mut transforms: Query<&mut Transform>,
     scripts: Query<(Entity, &WiredGltfReceiver)>,
     nodes: Query<(Entity, &NodeId)>,
     meshes: Query<(Entity, &MeshId)>,
-    primitives: Query<(Entity, &PrimitiveId)>,
+    primitives: Query<(Entity, &PrimitiveId, &Handle<Mesh>)>,
 ) {
     for (entity, receiver) in scripts.iter() {
         while let Ok(msg) = receiver.try_recv() {
@@ -75,6 +83,10 @@ pub fn handle_wired_gltf_actions(
                             id: PrimitiveId(id),
                             mesh: MeshId(mesh),
                             owner: Owner(entity),
+                            handle: mesh_assets.add(Mesh::new(
+                                PrimitiveTopology::TriangleList,
+                                RenderAssetUsages::all(),
+                            )),
                         });
                     }
                 }
@@ -93,7 +105,7 @@ pub fn handle_wired_gltf_actions(
                     }
                 }
                 WiredGltfAction::RemovePrimitive { id } => {
-                    if let Some(ent) = find_primitive(&primitives, id) {
+                    if let Some((ent, ..)) = find_primitive(&primitives, id) {
                         commands.entity(ent).despawn_recursive();
                     } else {
                         warn!("Primitive {} does not exist", id);
@@ -118,6 +130,62 @@ pub fn handle_wired_gltf_actions(
                         node_transform.clone_from(&transform);
                     }
                 }
+                WiredGltfAction::SetPrimitiveIndices { id, value } => {
+                    if let Some((_, handle)) = find_primitive(&primitives, id) {
+                        let mesh = mesh_assets.get_mut(handle).unwrap();
+                        mesh.insert_indices(Indices::U32(value));
+                    } else {
+                        warn!("Primitive {} does not exist", id);
+                    }
+                }
+                WiredGltfAction::SetPrimitiveNormals { id, value } => {
+                    if let Some((_, handle)) = find_primitive(&primitives, id) {
+                        let mesh = mesh_assets.get_mut(handle).unwrap();
+
+                        let value = value
+                            .chunks(3)
+                            .map(|x| [x[0], x[1], x[2]])
+                            .collect::<Vec<_>>();
+
+                        mesh.insert_attribute(
+                            Mesh::ATTRIBUTE_NORMAL,
+                            VertexAttributeValues::Float32x3(value),
+                        );
+                    } else {
+                        warn!("Primitive {} does not exist", id);
+                    }
+                }
+                WiredGltfAction::SetPrimitivePositions { id, value } => {
+                    if let Some((_, handle)) = find_primitive(&primitives, id) {
+                        let mesh = mesh_assets.get_mut(handle).unwrap();
+
+                        let value = value
+                            .chunks(3)
+                            .map(|x| [x[0], x[1], x[2]])
+                            .collect::<Vec<_>>();
+
+                        mesh.insert_attribute(
+                            Mesh::ATTRIBUTE_POSITION,
+                            VertexAttributeValues::Float32x3(value),
+                        );
+                    } else {
+                        warn!("Primitive {} does not exist", id);
+                    }
+                }
+                WiredGltfAction::SetPrimitiveUvs { id, value } => {
+                    if let Some((_, handle)) = find_primitive(&primitives, id) {
+                        let mesh = mesh_assets.get_mut(handle).unwrap();
+
+                        let value = value.chunks(2).map(|x| [x[0], x[1]]).collect::<Vec<_>>();
+
+                        mesh.insert_attribute(
+                            Mesh::ATTRIBUTE_UV_0,
+                            VertexAttributeValues::Float32x2(value),
+                        );
+                    } else {
+                        warn!("Primitive {} does not exist", id);
+                    }
+                }
             }
         }
     }
@@ -135,10 +203,17 @@ fn find_mesh(meshes: &Query<(Entity, &MeshId)>, id: u32) -> Option<Entity> {
         .find_map(|(ent, mid)| if mid.0 == id { Some(ent) } else { None })
 }
 
-fn find_primitive(primitives: &Query<(Entity, &PrimitiveId)>, id: u32) -> Option<Entity> {
-    primitives
-        .iter()
-        .find_map(|(ent, mid)| if mid.0 == id { Some(ent) } else { None })
+fn find_primitive(
+    primitives: &Query<(Entity, &PrimitiveId, &Handle<Mesh>)>,
+    id: u32,
+) -> Option<(Entity, Handle<Mesh>)> {
+    primitives.iter().find_map(|(ent, pid, handle)| {
+        if pid.0 == id {
+            Some((ent, handle.clone()))
+        } else {
+            None
+        }
+    })
 }
 
 #[cfg(test)]
@@ -149,7 +224,10 @@ mod tests {
 
     fn setup_test() -> (App, Sender<WiredGltfAction>) {
         let mut app = App::new();
-        app.add_systems(Update, handle_wired_gltf_actions);
+
+        app.add_plugins(AssetPlugin::default())
+            .init_asset::<Mesh>()
+            .add_systems(Update, handle_wired_gltf_actions);
 
         let (send, recv) = crossbeam::channel::unbounded();
         app.world.spawn(WiredGltfReceiver(recv));
@@ -375,11 +453,18 @@ mod tests {
     fn create_primitive_duplicate_id() {
         let (mut app, send) = setup_test();
 
+        let owner = app.world.spawn(()).id();
+
         let mesh = 0;
         app.world.spawn(MeshId(mesh));
 
         let id = 1;
-        app.world.spawn(PrimitiveId(id));
+        app.world.spawn(WiredPrimitiveBundle {
+            id: PrimitiveId(id),
+            mesh: MeshId(mesh),
+            handle: Default::default(),
+            owner: Owner(owner),
+        });
 
         send.send(WiredGltfAction::CreatePrimitive { id, mesh })
             .unwrap();
@@ -393,8 +478,21 @@ mod tests {
     fn remove_primitive() {
         let (mut app, send) = setup_test();
 
-        let id = 0;
-        let ent = app.world.spawn(PrimitiveId(id)).id();
+        let owner = app.world.spawn(()).id();
+
+        let mesh = 0;
+        app.world.spawn(MeshId(mesh));
+
+        let id = 1;
+        let ent = app
+            .world
+            .spawn(WiredPrimitiveBundle {
+                id: PrimitiveId(id),
+                mesh: MeshId(mesh),
+                handle: Default::default(),
+                owner: Owner(owner),
+            })
+            .id();
 
         send.send(WiredGltfAction::RemovePrimitive { id }).unwrap();
         app.update();
@@ -409,5 +507,184 @@ mod tests {
         send.send(WiredGltfAction::RemovePrimitive { id: 0 })
             .unwrap();
         app.update();
+    }
+
+    #[test]
+    fn set_primitive_indices() {
+        let (mut app, send) = setup_test();
+
+        let owner = app.world.spawn(()).id();
+
+        let mesh = 0;
+        app.world.spawn(MeshId(mesh));
+
+        let mut meshes = app.world.get_resource_mut::<Assets<Mesh>>().unwrap();
+        let handle = meshes.add(Mesh::new(
+            PrimitiveTopology::TriangleList,
+            RenderAssetUsages::all(),
+        ));
+
+        let id = 1;
+        app.world.spawn(WiredPrimitiveBundle {
+            id: PrimitiveId(id),
+            mesh: MeshId(mesh),
+            handle: handle.clone(),
+            owner: Owner(owner),
+        });
+
+        let value = vec![0, 1, 2, 3, 4, 5];
+
+        send.send(WiredGltfAction::SetPrimitiveIndices {
+            id,
+            value: value.clone(),
+        })
+        .unwrap();
+        app.update();
+
+        let meshes = app.world.get_resource::<Assets<Mesh>>().unwrap();
+        let mesh = meshes.get(handle).unwrap();
+
+        let indices = match mesh.indices().unwrap() {
+            Indices::U32(v) => v,
+            _ => panic!(),
+        };
+
+        assert_eq!(indices.as_slice(), value.as_slice());
+    }
+
+    #[test]
+    fn set_primitive_normals() {
+        let (mut app, send) = setup_test();
+
+        let owner = app.world.spawn(()).id();
+
+        let mesh = 0;
+        app.world.spawn(MeshId(mesh));
+
+        let mut meshes = app.world.get_resource_mut::<Assets<Mesh>>().unwrap();
+        let handle = meshes.add(Mesh::new(
+            PrimitiveTopology::TriangleList,
+            RenderAssetUsages::all(),
+        ));
+
+        let id = 1;
+        app.world.spawn(WiredPrimitiveBundle {
+            id: PrimitiveId(id),
+            mesh: MeshId(mesh),
+            handle: handle.clone(),
+            owner: Owner(owner),
+        });
+
+        let value = vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
+
+        send.send(WiredGltfAction::SetPrimitiveNormals {
+            id,
+            value: value.clone(),
+        })
+        .unwrap();
+        app.update();
+
+        let meshes = app.world.get_resource::<Assets<Mesh>>().unwrap();
+        let mesh = meshes.get(handle).unwrap();
+
+        let attr = mesh
+            .attribute(Mesh::ATTRIBUTE_NORMAL)
+            .unwrap()
+            .as_float3()
+            .unwrap()
+            .to_vec()
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>();
+
+        assert_eq!(attr, value);
+    }
+
+    #[test]
+    fn set_primitive_positions() {
+        let (mut app, send) = setup_test();
+
+        let owner = app.world.spawn(()).id();
+
+        let mesh = 0;
+        app.world.spawn(MeshId(mesh));
+
+        let mut meshes = app.world.get_resource_mut::<Assets<Mesh>>().unwrap();
+        let handle = meshes.add(Mesh::new(
+            PrimitiveTopology::TriangleList,
+            RenderAssetUsages::all(),
+        ));
+
+        let id = 1;
+        app.world.spawn(WiredPrimitiveBundle {
+            id: PrimitiveId(id),
+            mesh: MeshId(mesh),
+            handle: handle.clone(),
+            owner: Owner(owner),
+        });
+
+        let value = vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
+
+        send.send(WiredGltfAction::SetPrimitivePositions {
+            id,
+            value: value.clone(),
+        })
+        .unwrap();
+        app.update();
+
+        let meshes = app.world.get_resource::<Assets<Mesh>>().unwrap();
+        let mesh = meshes.get(handle).unwrap();
+
+        let attr = mesh
+            .attribute(Mesh::ATTRIBUTE_POSITION)
+            .unwrap()
+            .as_float3()
+            .unwrap()
+            .to_vec()
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>();
+
+        assert_eq!(attr, value);
+    }
+
+    #[test]
+    fn set_primitive_uvs() {
+        let (mut app, send) = setup_test();
+
+        let owner = app.world.spawn(()).id();
+
+        let mesh = 0;
+        app.world.spawn(MeshId(mesh));
+
+        let mut meshes = app.world.get_resource_mut::<Assets<Mesh>>().unwrap();
+        let handle = meshes.add(Mesh::new(
+            PrimitiveTopology::TriangleList,
+            RenderAssetUsages::all(),
+        ));
+
+        let id = 1;
+        app.world.spawn(WiredPrimitiveBundle {
+            id: PrimitiveId(id),
+            mesh: MeshId(mesh),
+            handle: handle.clone(),
+            owner: Owner(owner),
+        });
+
+        let value = vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
+
+        send.send(WiredGltfAction::SetPrimitiveUvs {
+            id,
+            value: value.clone(),
+        })
+        .unwrap();
+        app.update();
+
+        let meshes = app.world.get_resource::<Assets<Mesh>>().unwrap();
+        let mesh = meshes.get(handle).unwrap();
+
+        // Idk how to read values here, so we just test the length.
+        let len = mesh.attribute(Mesh::ATTRIBUTE_UV_0).unwrap().len();
+        assert_eq!(len, value.len() / 2);
     }
 }

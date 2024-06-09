@@ -27,6 +27,10 @@ pub enum WiredGltfAction {
     RemovePrimitive { id: u32 },
     SetNodeParent { id: u32, parent: Option<u32> },
     SetNodeTransform { id: u32, transform: Transform },
+    SetPrimitiveIndices { id: u32, value: Vec<u32> },
+    SetPrimitiveNormals { id: u32, value: Vec<f32> },
+    SetPrimitivePositions { id: u32, value: Vec<f32> },
+    SetPrimitiveUvs { id: u32, value: Vec<f32> },
 }
 
 #[derive(Component, Deref, DerefMut)]
@@ -118,11 +122,11 @@ mod tests {
                 file_path: "../unavi-app/assets".to_string(),
                 ..Default::default()
             },
-        ));
-
-        app.init_asset::<Wasm>();
-        app.init_asset_loader::<WasmLoader>();
-        app.init_non_send_resource::<WasmStores>();
+        ))
+        .init_asset::<Mesh>()
+        .init_asset::<Wasm>()
+        .init_asset_loader::<WasmLoader>()
+        .init_non_send_resource::<WasmStores>();
 
         app.add_systems(
             Update,

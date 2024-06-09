@@ -28,4 +28,10 @@ pub fn test_mesh_api() {
     let create = || mesh.create_primitive();
     let remove = |v| mesh.remove_primitive(v);
     test_property(list, create, remove);
+
+    let primitive = mesh.create_primitive();
+    primitive.set_indices(&[0, 1, 2]);
+    primitive.set_normals(&[0.0, 1.0, 2.0]);
+    primitive.set_positions(&[0.0, 1.0, 2.0]);
+    primitive.set_uvs(&[0.0, 1.0, 2.0]);
 }

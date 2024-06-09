@@ -31,6 +31,9 @@ pub fn add_to_host(
     let primitive_type = ResourceType::new::<PrimitiveResource>(None);
     let primitive_list_type = ListType::new(ValueType::Own(primitive_type.clone()));
 
+    let f32_list_type = ListType::new(ValueType::F32);
+    let u32_list_type = ListType::new(ValueType::U32);
+
     let primitive_id_fn = Func::new(
         store.as_context_mut(),
         FuncType::new(
@@ -51,6 +54,146 @@ pub fn add_to_host(
             Ok(())
         },
     );
+
+    let primitive_set_indices_fn = {
+        let sender = sender.clone();
+        Func::new(
+            store.as_context_mut(),
+            FuncType::new(
+                [
+                    ValueType::Borrow(primitive_type.clone()),
+                    ValueType::List(u32_list_type.clone()),
+                ],
+                [],
+            ),
+            move |ctx, args, _results| {
+                let resource = match &args[0] {
+                    Value::Borrow(v) => v,
+                    _ => bail!("invalid arg"),
+                };
+
+                let value: Vec<u32> = match &args[1] {
+                    Value::List(v) => v.typed().unwrap().to_vec(),
+                    _ => bail!("invalid arg"),
+                };
+
+                let ctx_ref = ctx.as_context();
+                let primitive: &PrimitiveResource = resource.rep(&ctx_ref)?;
+
+                sender.send(WiredGltfAction::SetPrimitiveIndices {
+                    id: primitive.0,
+                    value,
+                })?;
+
+                Ok(())
+            },
+        )
+    };
+
+    let primitive_set_normals_fn = {
+        let sender = sender.clone();
+        Func::new(
+            store.as_context_mut(),
+            FuncType::new(
+                [
+                    ValueType::Borrow(primitive_type.clone()),
+                    ValueType::List(f32_list_type.clone()),
+                ],
+                [],
+            ),
+            move |ctx, args, _results| {
+                let resource = match &args[0] {
+                    Value::Borrow(v) => v,
+                    _ => bail!("invalid arg"),
+                };
+
+                let value: Vec<f32> = match &args[1] {
+                    Value::List(v) => v.typed().unwrap().to_vec(),
+                    _ => bail!("invalid arg"),
+                };
+
+                let ctx_ref = ctx.as_context();
+                let primitive: &PrimitiveResource = resource.rep(&ctx_ref)?;
+
+                sender.send(WiredGltfAction::SetPrimitiveNormals {
+                    id: primitive.0,
+                    value,
+                })?;
+
+                Ok(())
+            },
+        )
+    };
+
+    let primitive_set_positions_fn = {
+        let sender = sender.clone();
+        Func::new(
+            store.as_context_mut(),
+            FuncType::new(
+                [
+                    ValueType::Borrow(primitive_type.clone()),
+                    ValueType::List(f32_list_type.clone()),
+                ],
+                [],
+            ),
+            move |ctx, args, _results| {
+                let resource = match &args[0] {
+                    Value::Borrow(v) => v,
+                    _ => bail!("invalid arg"),
+                };
+
+                let value: Vec<f32> = match &args[1] {
+                    Value::List(v) => v.typed().unwrap().to_vec(),
+                    _ => bail!("invalid arg"),
+                };
+
+                let ctx_ref = ctx.as_context();
+                let primitive: &PrimitiveResource = resource.rep(&ctx_ref)?;
+
+                sender.send(WiredGltfAction::SetPrimitivePositions {
+                    id: primitive.0,
+                    value,
+                })?;
+
+                Ok(())
+            },
+        )
+    };
+
+    let primitive_set_uvs_fn = {
+        let sender = sender.clone();
+        Func::new(
+            store.as_context_mut(),
+            FuncType::new(
+                [
+                    ValueType::Borrow(primitive_type.clone()),
+                    ValueType::List(f32_list_type.clone()),
+                ],
+                [],
+            ),
+            move |ctx, args, _results| {
+                let resource = match &args[0] {
+                    Value::Borrow(v) => v,
+                    _ => bail!("invalid arg"),
+                };
+
+                let value: Vec<f32> = match &args[1] {
+                    Value::List(v) => v.typed().unwrap().to_vec(),
+                    _ => bail!("invalid arg"),
+                };
+
+                let ctx_ref = ctx.as_context();
+                let primitive: &PrimitiveResource = resource.rep(&ctx_ref)?;
+
+                sender.send(WiredGltfAction::SetPrimitiveUvs {
+                    id: primitive.0,
+                    value,
+                })?;
+
+                Ok(())
+            },
+        )
+    };
 
     let mesh_id_fn = Func::new(
         store.as_context_mut(),
@@ -325,6 +468,13 @@ pub fn add_to_host(
 
     interface.define_resource("primitive", primitive_type)?;
     interface.define_func("[method]primitive.id", primitive_id_fn)?;
+    interface.define_func("[method]primitive.set-indices", primitive_set_indices_fn)?;
+    interface.define_func("[method]primitive.set-normals", primitive_set_normals_fn)?;
+    interface.define_func(
+        "[method]primitive.set-positions",
+        primitive_set_positions_fn,
+    )?;
+    interface.define_func("[method]primitive.set-uvs", primitive_set_uvs_fn)?;
 
     interface.define_resource("mesh", mesh_type)?;
     interface.define_func("[method]mesh.id", mesh_id_fn)?;

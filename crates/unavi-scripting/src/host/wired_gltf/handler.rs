@@ -78,22 +78,35 @@ pub fn handle_wired_gltf_actions(
         while let Ok(msg) = receiver.try_recv() {
             match msg {
                 WiredGltfAction::CreateMesh { id } => {
+                    let span = info_span!("CreateMesh", id);
+                    let s = span.entered();
+
                     if find_mesh(&meshes, id).is_some() {
                         warn!("Mesh {} already exists.", id);
                     } else {
                         commands.spawn(WiredMeshBundle::new(id, entity));
                     }
+
+                    drop(s);
                 }
                 WiredGltfAction::CreateNode { id } => {
+                    let span = info_span!("CreateNode", id);
+                    let s = span.entered();
+
                     if find_node(&mut nodes, id).is_some() {
                         warn!("Node {} already exists.", id);
                     } else {
                         commands.spawn(WiredNodeBundle::new(id, entity));
                     }
+
+                    drop(s);
                 }
                 WiredGltfAction::CreatePrimitive { id, mesh } => {
+                    let span = info_span!("CreatePrimitive", id, mesh);
+                    let s = span.entered();
+
                     if find_mesh(&meshes, mesh).is_none() {
-                        warn!("Mesh {} not found.", id);
+                        warn!("Mesh {} not found.", mesh);
                     } else if find_primitive(&primitives, id).is_some() {
                         warn!("Primitive {} already exists.", id);
                     } else {
@@ -107,29 +120,49 @@ pub fn handle_wired_gltf_actions(
                             )),
                         });
                     }
+
+                    drop(s);
                 }
                 WiredGltfAction::RemoveMesh { id } => {
+                    let span = info_span!("RemoveMesh", id);
+                    let s = span.entered();
+
                     if let Some(ent) = find_mesh(&meshes, id) {
                         commands.entity(ent).despawn_recursive();
                     } else {
                         warn!("Mesh {} does not exist", id);
                     }
+
+                    drop(s);
                 }
                 WiredGltfAction::RemoveNode { id } => {
+                    let span = info_span!("RemoveNode", id);
+                    let s = span.entered();
+
                     if let Some((ent, ..)) = find_node(&mut nodes, id) {
                         commands.entity(ent).despawn_recursive();
                     } else {
                         warn!("Node {} does not exist", id);
                     }
+
+                    drop(s);
                 }
                 WiredGltfAction::RemovePrimitive { id } => {
+                    let span = info_span!("RemovePrimitive", id);
+                    let s = span.entered();
+
                     if let Some((ent, ..)) = find_primitive(&primitives, id) {
                         commands.entity(ent).despawn_recursive();
                     } else {
                         warn!("Primitive {} does not exist", id);
                     }
+
+                    drop(s);
                 }
                 WiredGltfAction::SetNodeParent { id, parent } => {
+                    let span = info_span!("SetNodeParent", id, parent);
+                    let s = span.entered();
+
                     if let Some((ent, ..)) = find_node(&mut nodes, id) {
                         if let Some(parent) = parent {
                             if let Some((parent_ent, ..)) = find_node(&mut nodes, parent) {
@@ -143,14 +176,24 @@ pub fn handle_wired_gltf_actions(
                     } else {
                         warn!("Node {} does not exist", id);
                     }
+
+                    drop(s);
                 }
                 WiredGltfAction::SetNodeTransform { id, transform } => {
+                    let span = info_span!("SetNodeTransform", id);
+                    let s = span.entered();
+
                     if let Some((ent, ..)) = find_node(&mut nodes, id) {
                         let mut node_transform = transforms.get_mut(ent).unwrap();
                         node_transform.clone_from(&transform);
                     }
+
+                    drop(s);
                 }
                 WiredGltfAction::SetNodeMesh { id, mesh } => {
+                    let span = info_span!("SetNodeMesh", id, mesh);
+                    let s = span.entered();
+
                     if let Some((ent, mut node_primitives)) = find_node(&mut nodes, id) {
                         if let Some(mesh) = mesh {
                             let primitives = primitives
@@ -196,16 +239,26 @@ pub fn handle_wired_gltf_actions(
                     } else {
                         warn!("Node {} does not exist", id);
                     }
+
+                    drop(s);
                 }
                 WiredGltfAction::SetPrimitiveIndices { id, value } => {
+                    let span = info_span!("SetPrimitiveIndices", id);
+                    let s = span.entered();
+
                     if let Some((_, handle)) = find_primitive(&primitives, id) {
                         let mesh = mesh_assets.get_mut(handle).unwrap();
                         mesh.insert_indices(Indices::U32(value));
                     } else {
                         warn!("Primitive {} does not exist", id);
                     }
+
+                    drop(s);
                 }
                 WiredGltfAction::SetPrimitiveNormals { id, value } => {
+                    let span = info_span!("SetPrimitiveNormals", id);
+                    let s = span.entered();
+
                     if let Some((_, handle)) = find_primitive(&primitives, id) {
                         let mesh = mesh_assets.get_mut(handle).unwrap();
 
@@ -221,8 +274,13 @@ pub fn handle_wired_gltf_actions(
                     } else {
                         warn!("Primitive {} does not exist", id);
                     }
+
+                    drop(s);
                 }
                 WiredGltfAction::SetPrimitivePositions { id, value } => {
+                    let span = info_span!("SetPrimitivePositions", id);
+                    let s = span.entered();
+
                     if let Some((_, handle)) = find_primitive(&primitives, id) {
                         let mesh = mesh_assets.get_mut(handle).unwrap();
 
@@ -238,8 +296,13 @@ pub fn handle_wired_gltf_actions(
                     } else {
                         warn!("Primitive {} does not exist", id);
                     }
+
+                    drop(s);
                 }
                 WiredGltfAction::SetPrimitiveUvs { id, value } => {
+                    let span = info_span!("SetPrimitiveUvs", id);
+                    let s = span.entered();
+
                     if let Some((_, handle)) = find_primitive(&primitives, id) {
                         let mesh = mesh_assets.get_mut(handle).unwrap();
 
@@ -252,8 +315,10 @@ pub fn handle_wired_gltf_actions(
                     } else {
                         warn!("Primitive {} does not exist", id);
                     }
+
+                    drop(s);
                 }
-            }
+            };
         }
     }
 }

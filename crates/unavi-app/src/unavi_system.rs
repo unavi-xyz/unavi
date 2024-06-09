@@ -1,6 +1,5 @@
 use bevy::prelude::*;
-
-use super::{asset::Wasm, ScriptBundle};
+use unavi_scripting::{asset::Wasm, ScriptBundle};
 
 const UNAVI_SYSTEM: &str = "unavi_system";
 

@@ -18,6 +18,7 @@ pub mod query;
 #[derive(Component, Deref, DerefMut)]
 pub struct WiredGltfReceiver(pub Receiver<WiredGltfAction>);
 
+#[derive(Debug)]
 pub enum WiredGltfAction {
     CreateMesh { id: u32 },
     CreateNode { id: u32 },
@@ -91,11 +92,15 @@ mod tests {
     use crate::{
         asset::{Wasm, WasmLoader},
         load::{LoadedScript, WasmStores},
-        unavi_system::load_component_wasm,
         ScriptBundle,
     };
 
     use super::*;
+
+    fn load_component_wasm(asset_server: &AssetServer, name: &str) -> Handle<Wasm> {
+        let path = format!("components/{}_{}.wasm", name, env!("CARGO_PKG_VERSION"));
+        asset_server.load(path)
+    }
 
     #[tokio::test]
     #[traced_test]

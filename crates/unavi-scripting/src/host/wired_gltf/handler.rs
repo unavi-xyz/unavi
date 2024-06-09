@@ -66,38 +66,37 @@ pub struct WiredPrimitiveBundle {
 }
 
 pub fn handle_wired_gltf_actions(
-    meshes: Query<(Entity, &MeshId)>,
-    mut commands: Commands,
+    world: &mut World,
     mut default_material: Local<Option<Handle<StandardMaterial>>>,
-    mut material_assets: ResMut<Assets<StandardMaterial>>,
-    mut mesh_assets: ResMut<Assets<Mesh>>,
-    mut nodes: Query<(Entity, &NodeId, &mut NodePrimitives)>,
-    mut transforms: Query<&mut Transform>,
-    primitives: Query<(Entity, &PrimitiveId, &MeshId, &Handle<Mesh>)>,
-    scripts: Query<(Entity, &WiredGltfReceiver)>,
+    meshes: &mut QueryState<(Entity, &MeshId)>,
+    nodes: &mut QueryState<(Entity, &NodeId, &mut NodePrimitives)>,
+    primitives: &mut QueryState<(Entity, &PrimitiveId, &MeshId, &Handle<Mesh>)>,
+    scripts: &mut QueryState<(Entity, &WiredGltfReceiver)>,
+    transforms: &mut QueryState<&mut Transform>,
 ) {
     if default_material.is_none() {
+        let mut material_assets = world.resource_mut::<Assets<StandardMaterial>>();
         *default_material = Some(material_assets.add(StandardMaterial::default()));
     }
 
     let default_material = default_material.as_ref().unwrap();
 
-    for (entity, receiver) in scripts.iter() {
-        // We only take 1 message per frame, as we must wait for deferred commands to be run before
-        // processing subsequent messages. For example, after creating a node we must wait for
-        // that entity to be spawned so other messages can query that entity if needed.
-        // A better solution would likely be to use the World directly, but we are using a few convenience methods
-        // provided by Commands, so for now this is fine.
-        if let Ok(msg) = receiver.try_recv() {
+    let scripts = scripts
+        .iter(&world)
+        .map(|(e, r)| (e, r.0.clone()))
+        .collect::<Vec<_>>();
+
+    for (entity, receiver) in scripts {
+        while let Ok(msg) = receiver.try_recv() {
             match msg {
                 WiredGltfAction::CreateMesh { id } => {
                     let span = info_span!("CreateMesh", id);
                     let s = span.entered();
 
-                    if find_mesh(&meshes, id).is_some() {
+                    if find_mesh(meshes, id, world).is_some() {
                         warn!("Mesh {} already exists.", id);
                     } else {
-                        commands.spawn(WiredMeshBundle::new(id, entity));
+                        world.spawn(WiredMeshBundle::new(id, entity));
                     }
 
                     drop(s);
@@ -106,10 +105,11 @@ pub fn handle_wired_gltf_actions(
                     let span = info_span!("CreateNode", id);
                     let s = span.entered();
 
-                    if find_node(&mut nodes, id).is_some() {
+                    if find_node(nodes, id, world).is_some() {
                         warn!("Node {} already exists.", id);
                     } else {
-                        commands.spawn(WiredNodeBundle::new(id, entity));
+                        let node_ent = world.spawn(WiredNodeBundle::new(id, entity)).id();
+                        world.entity_mut(entity).add_child(node_ent);
                     }
 
                     drop(s);
@@ -118,24 +118,23 @@ pub fn handle_wired_gltf_actions(
                     let span = info_span!("CreatePrimitive", id, mesh);
                     let s = span.entered();
 
-                    if find_mesh(&meshes, mesh).is_none() {
+                    if find_mesh(meshes, mesh, world).is_none() {
                         warn!("Mesh {} not found.", mesh);
-                    } else if find_primitive(&primitives, id).is_some() {
+                    } else if find_primitive(primitives, id, world).is_some() {
                         warn!("Primitive {} already exists.", id);
                     } else {
-                        commands.spawn((
-                            SpatialBundle::default(),
-                            WiredPrimitiveBundle {
-                                id: PrimitiveId(id),
-                                mesh: MeshId(mesh),
-                                owner: Owner(entity),
-                                mesh_handle: mesh_assets.add(Mesh::new(
-                                    PrimitiveTopology::TriangleList,
-                                    RenderAssetUsages::all(),
-                                )),
-                            },
-                            default_material.clone(),
+                        let mut mesh_assets = world.resource_mut::<Assets<Mesh>>();
+                        let mesh_handle = mesh_assets.add(Mesh::new(
+                            PrimitiveTopology::TriangleList,
+                            RenderAssetUsages::all(),
                         ));
+
+                        world.spawn(WiredPrimitiveBundle {
+                            id: PrimitiveId(id),
+                            mesh: MeshId(mesh),
+                            owner: Owner(entity),
+                            mesh_handle,
+                        });
                     }
 
                     drop(s);
@@ -144,8 +143,8 @@ pub fn handle_wired_gltf_actions(
                     let span = info_span!("RemoveMesh", id);
                     let s = span.entered();
 
-                    if let Some(ent) = find_mesh(&meshes, id) {
-                        commands.entity(ent).despawn_recursive();
+                    if let Some(ent) = find_mesh(meshes, id, world) {
+                        world.entity_mut(ent).despawn_recursive();
                     } else {
                         warn!("Mesh {} does not exist", id);
                     }
@@ -156,8 +155,8 @@ pub fn handle_wired_gltf_actions(
                     let span = info_span!("RemoveNode", id);
                     let s = span.entered();
 
-                    if let Some((ent, ..)) = find_node(&mut nodes, id) {
-                        commands.entity(ent).despawn_recursive();
+                    if let Some((ent, ..)) = find_node(nodes, id, world) {
+                        world.entity_mut(ent).despawn_recursive();
                     } else {
                         warn!("Node {} does not exist", id);
                     }
@@ -168,8 +167,8 @@ pub fn handle_wired_gltf_actions(
                     let span = info_span!("RemovePrimitive", id);
                     let s = span.entered();
 
-                    if let Some((ent, ..)) = find_primitive(&primitives, id) {
-                        commands.entity(ent).despawn_recursive();
+                    if let Some((ent, ..)) = find_primitive(primitives, id, world) {
+                        world.entity_mut(ent).despawn_recursive();
                     } else {
                         warn!("Primitive {} does not exist", id);
                     }
@@ -180,15 +179,15 @@ pub fn handle_wired_gltf_actions(
                     let span = info_span!("SetNodeParent", id, parent);
                     let s = span.entered();
 
-                    if let Some((ent, ..)) = find_node(&mut nodes, id) {
+                    if let Some((ent, ..)) = find_node(nodes, id, world) {
                         if let Some(parent) = parent {
-                            if let Some((parent_ent, ..)) = find_node(&mut nodes, parent) {
-                                commands.entity(parent_ent).push_children(&[ent]);
+                            if let Some((parent_ent, ..)) = find_node(nodes, parent, world) {
+                                world.entity_mut(parent_ent).push_children(&[ent]);
                             } else {
-                                commands.entity(ent).remove_parent();
+                                world.entity_mut(ent).remove_parent();
                             }
                         } else {
-                            commands.entity(ent).remove_parent();
+                            world.entity_mut(ent).remove_parent();
                         }
                     } else {
                         warn!("Node {} does not exist", id);
@@ -200,8 +199,8 @@ pub fn handle_wired_gltf_actions(
                     let span = info_span!("SetNodeTransform", id);
                     let s = span.entered();
 
-                    if let Some((ent, ..)) = find_node(&mut nodes, id) {
-                        let mut node_transform = transforms.get_mut(ent).unwrap();
+                    if let Some((ent, ..)) = find_node(nodes, id, world) {
+                        let mut node_transform = transforms.get_mut(world, ent).unwrap();
                         node_transform.clone_from(&transform);
                     }
 
@@ -211,30 +210,38 @@ pub fn handle_wired_gltf_actions(
                     let span = info_span!("SetNodeMesh", id, mesh);
                     let s = span.entered();
 
-                    if let Some((ent, mut node_primitives)) = find_node(&mut nodes, id) {
-                        if let Some(mesh) = mesh {
-                            let primitives = primitives
-                                .iter()
-                                .filter_map(|(_, pid, m, handle)| {
-                                    if m.0 == mesh {
-                                        Some((pid.0, handle))
-                                    } else {
-                                        None
-                                    }
-                                })
-                                .collect::<Vec<_>>();
+                    let primitives = mesh.map(|mesh| {
+                        primitives
+                            .iter(world)
+                            .filter_map(|(_, pid, m, handle)| {
+                                if m.0 == mesh {
+                                    Some((pid.0, handle.clone()))
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect::<Vec<_>>()
+                    });
 
-                            let mut to_remove = Vec::new();
+                    if let Some((ent, mut node_primitives)) = find_node(nodes, id, world) {
+                        let mut to_add = Vec::new();
+                        let mut to_remove = Vec::new();
+                        let mut new_primitives = Vec::new();
+
+                        if mesh.is_some() {
+                            let primitives = primitives.unwrap();
+
+                            let mut to_remove_ids = Vec::new();
 
                             for id in node_primitives.keys() {
                                 if !primitives.iter().any(|(pid, _)| pid == id) {
-                                    to_remove.push(*id);
+                                    to_remove_ids.push(*id);
                                 }
                             }
 
-                            for id in to_remove {
+                            for id in to_remove_ids {
                                 let ent = node_primitives.remove(&id).unwrap();
-                                commands.entity(ent).despawn();
+                                to_remove.push(ent);
                             }
 
                             for (id, handle) in primitives {
@@ -242,16 +249,40 @@ pub fn handle_wired_gltf_actions(
                                     continue;
                                 }
 
-                                let primitive_ent = commands.spawn(handle.clone()).id();
-                                commands.entity(ent).add_child(primitive_ent);
-                                node_primitives.insert(id, primitive_ent);
+                                to_add.push((id, handle.clone()));
                             }
                         } else {
                             for ent in node_primitives.values() {
-                                commands.entity(*ent).despawn();
+                                to_remove.push(*ent);
                             }
 
                             node_primitives.clear();
+                        }
+
+                        drop(node_primitives);
+
+                        for ent in to_remove {
+                            world.entity_mut(ent).despawn();
+                        }
+
+                        for (id, handle) in to_add {
+                            let primitive_ent = world
+                                .spawn(MaterialMeshBundle {
+                                    material: default_material.clone(),
+                                    mesh: handle.clone(),
+                                    ..Default::default()
+                                })
+                                .id();
+
+                            world.entity_mut(ent).add_child(primitive_ent);
+
+                            new_primitives.push((id, primitive_ent));
+                        }
+
+                        let (_, mut node_primitives) = find_node(nodes, id, world).unwrap();
+
+                        for (id, primitive_ent) in new_primitives {
+                            node_primitives.insert(id, primitive_ent);
                         }
                     } else {
                         warn!("Node {} does not exist", id);
@@ -263,7 +294,9 @@ pub fn handle_wired_gltf_actions(
                     let span = info_span!("SetPrimitiveIndices", id);
                     let s = span.entered();
 
-                    if let Some((_, handle)) = find_primitive(&primitives, id) {
+                    if let Some((_, handle)) = find_primitive(primitives, id, world) {
+                        let handle = handle.clone();
+                        let mut mesh_assets = world.resource_mut::<Assets<Mesh>>();
                         let mesh = mesh_assets.get_mut(handle).unwrap();
                         mesh.insert_indices(Indices::U32(value));
                     } else {
@@ -276,7 +309,9 @@ pub fn handle_wired_gltf_actions(
                     let span = info_span!("SetPrimitiveNormals", id);
                     let s = span.entered();
 
-                    if let Some((_, handle)) = find_primitive(&primitives, id) {
+                    if let Some((_, handle)) = find_primitive(primitives, id, world) {
+                        let handle = handle.clone();
+                        let mut mesh_assets = world.resource_mut::<Assets<Mesh>>();
                         let mesh = mesh_assets.get_mut(handle).unwrap();
 
                         let value = value
@@ -298,7 +333,9 @@ pub fn handle_wired_gltf_actions(
                     let span = info_span!("SetPrimitivePositions", id);
                     let s = span.entered();
 
-                    if let Some((_, handle)) = find_primitive(&primitives, id) {
+                    if let Some((_, handle)) = find_primitive(primitives, id, world) {
+                        let handle = handle.clone();
+                        let mut mesh_assets = world.resource_mut::<Assets<Mesh>>();
                         let mesh = mesh_assets.get_mut(handle).unwrap();
 
                         let value = value
@@ -320,15 +357,21 @@ pub fn handle_wired_gltf_actions(
                     let span = info_span!("SetPrimitiveUvs", id);
                     let s = span.entered();
 
-                    if let Some((_, handle)) = find_primitive(&primitives, id) {
+                    if let Some((_, handle)) = find_primitive(primitives, id, world) {
+                        let handle = handle.clone();
+                        let mut mesh_assets = world.resource_mut::<Assets<Mesh>>();
                         let mesh = mesh_assets.get_mut(handle).unwrap();
 
-                        let value = value.chunks(2).map(|x| [x[0], x[1]]).collect::<Vec<_>>();
+                        if value.len() % 2 != 0 {
+                            warn!("UVs do not have an even length! Got: {}", value.len());
+                        } else {
+                            let value = value.chunks(2).map(|x| [x[0], x[1]]).collect::<Vec<_>>();
 
-                        mesh.insert_attribute(
-                            Mesh::ATTRIBUTE_UV_0,
-                            VertexAttributeValues::Float32x2(value),
-                        );
+                            mesh.insert_attribute(
+                                Mesh::ATTRIBUTE_UV_0,
+                                VertexAttributeValues::Float32x2(value),
+                            );
+                        }
                     } else {
                         warn!("Primitive {} does not exist", id);
                     }
@@ -341,10 +384,11 @@ pub fn handle_wired_gltf_actions(
 }
 
 fn find_node<'a>(
-    nodes: &'a mut Query<(Entity, &NodeId, &mut NodePrimitives)>,
+    nodes: &'a mut QueryState<(Entity, &NodeId, &mut NodePrimitives)>,
     id: u32,
+    world: &'a mut World,
 ) -> Option<(Entity, Mut<'a, NodePrimitives>)> {
-    nodes.iter_mut().find_map(|(ent, nid, primitives)| {
+    nodes.iter_mut(world).find_map(|(ent, nid, primitives)| {
         if nid.0 == id {
             Some((ent, primitives))
         } else {
@@ -353,17 +397,18 @@ fn find_node<'a>(
     })
 }
 
-fn find_mesh(meshes: &Query<(Entity, &MeshId)>, id: u32) -> Option<Entity> {
+fn find_mesh(meshes: &mut QueryState<(Entity, &MeshId)>, id: u32, world: &World) -> Option<Entity> {
     meshes
-        .iter()
+        .iter(world)
         .find_map(|(ent, mid)| if mid.0 == id { Some(ent) } else { None })
 }
 
 fn find_primitive<'a>(
-    primitives: &'a Query<(Entity, &PrimitiveId, &MeshId, &Handle<Mesh>)>,
+    primitives: &'a mut QueryState<(Entity, &PrimitiveId, &MeshId, &Handle<Mesh>)>,
     id: u32,
+    world: &'a World,
 ) -> Option<(Entity, &'a Handle<Mesh>)> {
-    primitives.iter().find_map(|(ent, pid, _, handle)| {
+    primitives.iter(world).find_map(|(ent, pid, _, handle)| {
         if pid.0 == id {
             Some((ent, handle))
         } else {
@@ -590,7 +635,13 @@ mod tests {
             owner: Owner(owner),
         });
 
-        let primitive_ent = app.world.spawn(handle).id();
+        let primitive_ent = app
+            .world
+            .spawn(MaterialMeshBundle::<StandardMaterial> {
+                mesh: handle,
+                ..Default::default()
+            })
+            .id();
 
         let mut primitives = NodePrimitives::default();
         primitives.insert(primitive_id, primitive_ent);
@@ -766,7 +817,7 @@ mod tests {
         let mesh = 0;
         app.world.spawn(MeshId(mesh));
 
-        let mut meshes = app.world.get_resource_mut::<Assets<Mesh>>().unwrap();
+        let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
         let handle = meshes.add(Mesh::new(
             PrimitiveTopology::TriangleList,
             RenderAssetUsages::all(),
@@ -789,7 +840,7 @@ mod tests {
         .unwrap();
         app.update();
 
-        let meshes = app.world.get_resource::<Assets<Mesh>>().unwrap();
+        let meshes = app.world.resource::<Assets<Mesh>>();
         let mesh = meshes.get(handle).unwrap();
 
         let indices = match mesh.indices().unwrap() {
@@ -809,7 +860,7 @@ mod tests {
         let mesh = 0;
         app.world.spawn(MeshId(mesh));
 
-        let mut meshes = app.world.get_resource_mut::<Assets<Mesh>>().unwrap();
+        let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
         let handle = meshes.add(Mesh::new(
             PrimitiveTopology::TriangleList,
             RenderAssetUsages::all(),
@@ -832,7 +883,7 @@ mod tests {
         .unwrap();
         app.update();
 
-        let meshes = app.world.get_resource::<Assets<Mesh>>().unwrap();
+        let meshes = app.world.resource::<Assets<Mesh>>();
         let mesh = meshes.get(handle).unwrap();
 
         let attr = mesh
@@ -857,7 +908,7 @@ mod tests {
         let mesh = 0;
         app.world.spawn(MeshId(mesh));
 
-        let mut meshes = app.world.get_resource_mut::<Assets<Mesh>>().unwrap();
+        let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
         let handle = meshes.add(Mesh::new(
             PrimitiveTopology::TriangleList,
             RenderAssetUsages::all(),
@@ -880,7 +931,7 @@ mod tests {
         .unwrap();
         app.update();
 
-        let meshes = app.world.get_resource::<Assets<Mesh>>().unwrap();
+        let meshes = app.world.resource::<Assets<Mesh>>();
         let mesh = meshes.get(handle).unwrap();
 
         let attr = mesh
@@ -905,7 +956,7 @@ mod tests {
         let mesh = 0;
         app.world.spawn(MeshId(mesh));
 
-        let mut meshes = app.world.get_resource_mut::<Assets<Mesh>>().unwrap();
+        let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
         let handle = meshes.add(Mesh::new(
             PrimitiveTopology::TriangleList,
             RenderAssetUsages::all(),
@@ -928,7 +979,7 @@ mod tests {
         .unwrap();
         app.update();
 
-        let meshes = app.world.get_resource::<Assets<Mesh>>().unwrap();
+        let meshes = app.world.resource::<Assets<Mesh>>();
         let mesh = meshes.get(handle).unwrap();
 
         // Idk how to read values here, so we just test the length.

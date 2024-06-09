@@ -43,8 +43,11 @@ pub fn load_script(asset_server: Res<AssetServer>, mut commands: Commands) {
     let path = format!("components/{}_{}.wasm", NAME, env!("CARGO_PKG_VERSION"));
     let wasm = asset_server.load(path);
 
-    commands.spawn(ScriptBundle {
-        name: NAME.into(),
-        wasm,
-    });
+    commands.spawn((
+        ScriptBundle {
+            name: NAME.into(),
+            wasm,
+        },
+        SpatialBundle::default(),
+    ));
 }

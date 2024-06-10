@@ -6,11 +6,13 @@ use bindings::{
         math::types::Vec3,
     },
 };
-use ncollide3d::na::Vector3;
+use parry3d::shape::Ball;
+use shapes::cuboid::make_cuboid;
 
 mod attributes;
 #[allow(warnings)]
 mod bindings;
+mod shapes;
 
 struct UnaviShapes;
 
@@ -19,10 +21,7 @@ impl Guest for UnaviShapes {
         let mesh = create_mesh();
         let primitive = mesh.create_primitive();
 
-        let extents = Vector3::new(size.x, size.y, size.z);
-        let shape = ncollide3d::procedural::cuboid(&extents);
-
-        set_attributes(&primitive, shape);
+        make_cuboid(&size, &primitive);
 
         mesh
     }
@@ -31,9 +30,9 @@ impl Guest for UnaviShapes {
         let mesh = create_mesh();
         let primitive = mesh.create_primitive();
 
-        let shape = ncollide3d::procedural::sphere(radius * 2.0, sectors, stacks, true);
+        let shape = Ball::new(radius);
 
-        set_attributes(&primitive, shape);
+        set_attributes(&primitive, shape.to_trimesh(sectors, stacks));
 
         mesh
     }

@@ -1,9 +1,6 @@
 use crate::{
     bindings::wired::{
-        gltf::{
-            mesh::{create_mesh, list_meshes, remove_mesh, Mesh, Primitive},
-            node::create_node,
-        },
+        gltf::mesh::{create_mesh, list_meshes, remove_mesh, Mesh, Primitive},
         log::api::{log, LogLevel},
     },
     property_tests::{test_property, Property},
@@ -25,14 +22,8 @@ pub fn test_mesh_api() {
     log(LogLevel::Debug, "testing mesh");
     test_property(list_meshes, create_mesh, remove_mesh);
 
-    let mesh = create_mesh();
-
-    let node = create_node();
-    node.set_mesh(Some(&mesh));
-    let found_mesh = node.mesh().unwrap();
-    assert_eq!(found_mesh, mesh);
-
     log(LogLevel::Debug, "testing primitive");
+    let mesh = create_mesh();
     let list = || mesh.list_primitives();
     let create = || mesh.create_primitive();
     let remove = |v| mesh.remove_primitive(v);

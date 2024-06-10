@@ -54,7 +54,7 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
-      - run: nix build .?submodules=1#packages.${{ matrix.attr }}-${{ inputs.channel }}
+      - run: nix build -L .?submodules=1#packages.${{ matrix.attr }}-${{ inputs.channel }}
       - run: |
           cp -rL result tmp
           chmod -R 755 tmp

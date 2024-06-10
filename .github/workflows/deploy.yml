@@ -67,11 +67,11 @@ jobs:
 
       - name: Build server
         if: inputs.disable-deploy != true
-        run: nix build .?submodules=1#unavi-server
+        run: nix build -L .?submodules=1#unavi-server
 
       - name: Build web
         if: inputs.disable-deploy != true
-        run: nix build .?submodules=1#unavi-web
+        run: nix build -L .?submodules=1#unavi-web
 
       - name: Deploy
         if: inputs.disable-deploy != true

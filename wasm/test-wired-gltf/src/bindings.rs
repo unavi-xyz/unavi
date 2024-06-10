@@ -1359,6 +1359,7 @@ pub mod exports {
                 static __FORCE_SECTION_REF: fn() =
                     super::super::super::super::__link_custom_section_describing_imports;
                 use super::super::super::super::_rt;
+                /// Arbitrary script data persisted between updates.
 
                 #[derive(Debug)]
                 #[repr(transparent)]
@@ -1510,17 +1511,17 @@ pub mod exports {
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_update_cabi<T: Guest>(arg0: i32) {
+                pub unsafe fn _export_update_cabi<T: Guest>(arg0: f32, arg1: i32) {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
-                    T::update(DataBorrow::lift(arg0 as u32 as usize));
+                    T::update(arg0, DataBorrow::lift(arg1 as u32 as usize));
                 }
                 pub trait Guest {
                     type Data: GuestData;
                     /// Called once to initialize the script.
                     fn init() -> Data;
                     /// Called every tick.
-                    fn update(data: DataBorrow<'_>);
+                    fn update(delta: f32, data: DataBorrow<'_>);
                 }
                 pub trait GuestData: 'static {
                     #[doc(hidden)]
@@ -1577,8 +1578,8 @@ pub mod exports {
           $($path_to_types)*::_export_init_cabi::<$ty>()
         }
         #[export_name = "wired:script/lifecycle#update"]
-        unsafe extern "C" fn export_update(arg0: i32,) {
-          $($path_to_types)*::_export_update_cabi::<$ty>(arg0)
+        unsafe extern "C" fn export_update(arg0: f32,arg1: i32,) {
+          $($path_to_types)*::_export_update_cabi::<$ty>(arg0, arg1)
         }
 
         const _: () = {
@@ -1781,8 +1782,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 2115] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc6\x0f\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 2122] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xcd\x0f\x01A\x02\x01\
 A\x10\x01B\x06\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01\
 zv\x04\0\x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04vec4\x03\0\x04\
 \x03\x01\x10wired:math/types\x05\0\x02\x03\0\0\x04vec4\x01B\x12\x02\x03\x02\x01\x01\
@@ -1827,10 +1828,11 @@ hod]node.remove-mesh\x01\x1a\x01@\0\0\x0e\x04\0\x0alist-nodes\x01\x1b\x01@\0\0\x
 \x1d\x03\x01\x0fwired:gltf/node\x05\x07\x01B\x04\x01m\x04\x05debug\x04info\x04wa\
 rn\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\x07messages\x01\0\x04\
 \0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x08\x01B\x07\x04\0\x04data\x03\x01\
-\x01i\0\x01@\0\0\x01\x04\0\x04init\x01\x02\x01h\0\x01@\x01\x04data\x03\x01\0\x04\
-\0\x06update\x01\x04\x04\x01\x16wired:script/lifecycle\x05\x09\x04\x01\x16test:w\
-ired-gltf/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0cpr\
-ocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+\x01i\0\x01@\0\0\x01\x04\0\x04init\x01\x02\x01h\0\x01@\x02\x05deltav\x04data\x03\
+\x01\0\x04\0\x06update\x01\x04\x04\x01\x16wired:script/lifecycle\x05\x09\x04\x01\
+\x16test:wired-gltf/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producers\
+\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25\
+.0";
 
 #[inline(never)]
 #[doc(hidden)]

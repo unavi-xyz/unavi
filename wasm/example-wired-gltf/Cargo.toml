@@ -12,6 +12,7 @@ crate-type = ["cdylib"]
 workspace = true
 
 [dependencies]
+glam = "0.28.0"
 wit-bindgen-rt.workspace = true
 
 [dev-dependencies]

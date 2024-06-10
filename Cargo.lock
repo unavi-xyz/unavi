@@ -1258,7 +1258,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c5d366a775e7a88c9d1328e8f56709b3d78bef60aeec2403fe3f57e88f519c5c"
 dependencies = [
  "bevy",
- "glam",
+ "glam 0.25.0",
  "gltf_kun",
  "image 0.25.1",
  "serde_json",
@@ -1368,7 +1368,7 @@ version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f06daa26ffb82d90ba772256c0ba286f6c305c392f6976c9822717974805837c"
 dependencies = [
- "glam",
+ "glam 0.25.0",
  "serde",
 ]
 
@@ -1378,7 +1378,7 @@ version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a0d7ef7f2a826d0b19f059035831ce00a5e930435cc53c61e045773d0483f67a"
 dependencies = [
- "glam",
+ "glam 0.25.0",
 ]
 
 [[package]]
@@ -1446,7 +1446,7 @@ dependencies = [
  "bevy_utils",
  "downcast-rs",
  "erased-serde",
- "glam",
+ "glam 0.25.0",
  "serde",
  "smol_str",
  "thiserror",
@@ -3964,7 +3964,7 @@ checksum = "95ed933078d2e659745df651f4c180511cd582e5b9414ff896e7d50d207e3103"
 dependencies = [
  "const_panic",
  "encase_derive",
- "glam",
+ "glam 0.25.0",
  "thiserror",
 ]
 
@@ -4086,6 +4086,7 @@ name = "example-wired-gltf"
 version = "0.0.3"
 dependencies = [
  "bevy",
+ "glam 0.28.0",
  "unavi-scripting",
  "wit-bindgen-rt",
 ]
@@ -4680,6 +4681,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "glam"
+version = "0.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "779ae4bf7e8421cf91c0b3b64e7e8b40b862fba4d393f59150042de7c4965a94"
+
+[[package]]
 name = "glob"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4756,7 +4763,7 @@ checksum = "93129831eb223c7639973b4a605a9c899f16672dff05c261ba540316436cdad1"
 dependencies = [
  "base64 0.22.1",
  "byteorder",
- "glam",
+ "glam 0.25.0",
  "gltf",
  "petgraph",
  "serde",
@@ -5052,7 +5059,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f33ddb7f7143d9e703c072e88b98cd8b9719f174137a671429351bd2ee43c02a"
 dependencies = [
  "constgebra",
- "glam",
+ "glam 0.25.0",
 ]
 
 [[package]]
@@ -6819,7 +6826,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ea4908d4f23254adda3daa60ffef0f1ac7b8c3e9a864cf3cc154b251908a2ef"
 dependencies = [
  "approx 0.5.1",
- "glam",
+ "glam 0.25.0",
  "matrixmultiply",
  "nalgebra-macros",
  "num-complex",

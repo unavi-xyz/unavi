@@ -27,7 +27,7 @@ impl Guest for Script {
         Data::new(DataImpl {})
     }
 
-    fn update(_data: DataBorrow) {}
+    fn update(_delta: f32, _data: DataBorrow) {}
 }
 
 fn panic_log(err: &str) {

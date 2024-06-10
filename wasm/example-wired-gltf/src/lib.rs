@@ -1,7 +1,10 @@
 use bindings::{
     exports::wired::script::lifecycle::{Data, DataBorrow, Guest, GuestData},
-    unavi::shapes::api::create_cuboid,
-    wired::{gltf::node::create_node, math::types::Vec3},
+    unavi::shapes::api::{create_cuboid, create_sphere},
+    wired::{
+        gltf::node::{create_node, Transform},
+        math::types::Vec3,
+    },
 };
 
 use crate::bindings::wired::log::api::{log, LogLevel};
@@ -24,7 +27,15 @@ impl Guest for Script {
 
         let node = create_node();
         let mesh = create_cuboid(Vec3::splat(1.0));
-        node.set_mesh(Some(&mesh));
+        node.set_mesh(&mesh);
+
+        let node = create_node();
+        node.set_transform(Transform {
+            translation: Vec3::splat(1.5),
+            ..Default::default()
+        });
+        let mesh = create_sphere(0.5, 32, 18);
+        node.set_mesh(&mesh);
 
         Data::new(DataImpl {})
     }

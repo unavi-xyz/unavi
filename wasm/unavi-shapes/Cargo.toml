@@ -12,7 +12,7 @@ crate-type = ["cdylib"]
 workspace = true
 
 [dependencies]
-ncollide3d = "0.33.0"
+parry3d = "0.15.1"
 wit-bindgen-rt.workspace = true
 
 [package.metadata.component]

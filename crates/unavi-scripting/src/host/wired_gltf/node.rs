@@ -524,7 +524,7 @@ pub fn add_to_host(
             FuncType::new(
                 [
                     ValueType::Borrow(node_type.clone()),
-                    ValueType::Option(OptionType::new(ValueType::Borrow(mesh_type.clone()))),
+                    ValueType::Borrow(mesh_type.clone()),
                 ],
                 [],
             ),
@@ -535,36 +535,54 @@ pub fn add_to_host(
                 };
 
                 let mesh_res = match &args[1] {
-                    Value::Option(v) => v,
+                    Value::Borrow(v) => v,
+                    _ => bail!("invalid arg"),
+                };
+
+                let ctx_ref = ctx.as_context();
+                let node: &NodeResource = node_res.rep(&ctx_ref)?;
+                let mesh: &MeshResource = mesh_res.rep(&ctx_ref)?;
+
+                sender.send(WiredGltfAction::SetNodeMesh {
+                    id: node.0,
+                    mesh: Some(mesh.0),
+                })?;
+
+                let mut local_data = local_data.write().unwrap();
+
+                if let Some(data) = local_data.nodes.get_mut(&node.0) {
+                    data.mesh = Some(mesh.0);
+                }
+
+                Ok(())
+            },
+        )
+    };
+
+    let node_remove_mesh_fn = {
+        let local_data = local_data.clone();
+        let sender = sender.clone();
+        Func::new(
+            store.as_context_mut(),
+            FuncType::new([ValueType::Borrow(node_type.clone())], []),
+            move |ctx, args, _results| {
+                let node_res = match &args[0] {
+                    Value::Borrow(v) => v,
                     _ => bail!("invalid arg"),
                 };
 
                 let ctx_ref = ctx.as_context();
                 let node: &NodeResource = node_res.rep(&ctx_ref)?;
 
-                if mesh_res.is_none() {
-                    sender.send(WiredGltfAction::SetNodeMesh {
-                        id: node.0,
-                        mesh: None,
-                    })?;
-                } else {
-                    let mesh_res = match mesh_res.as_ref().unwrap() {
-                        Value::Borrow(v) => v,
-                        _ => bail!("invalid arg"),
-                    };
+                sender.send(WiredGltfAction::SetNodeMesh {
+                    id: node.0,
+                    mesh: None,
+                })?;
 
-                    let mesh: &MeshResource = mesh_res.rep(&ctx_ref)?;
+                let mut local_data = local_data.write().unwrap();
 
-                    sender.send(WiredGltfAction::SetNodeMesh {
-                        id: node.0,
-                        mesh: Some(mesh.0),
-                    })?;
-
-                    let mut local_data = local_data.write().unwrap();
-
-                    if let Some(data) = local_data.nodes.get_mut(&node.0) {
-                        data.mesh = Some(mesh.0);
-                    }
+                if let Some(data) = local_data.nodes.get_mut(&node.0) {
+                    data.mesh = None;
                 }
 
                 Ok(())
@@ -685,6 +703,7 @@ pub fn add_to_host(
     interface.define_func("[method]node.set-transform", node_set_transform_fn)?;
     interface.define_func("[method]node.mesh", node_mesh_fn)?;
     interface.define_func("[method]node.set-mesh", node_set_mesh_fn)?;
+    interface.define_func("[method]node.remove-mesh", node_remove_mesh_fn)?;
 
     interface.define_func("list-nodes", list_nodes_fn)?;
     interface.define_func("create-node", create_node_fn)?;

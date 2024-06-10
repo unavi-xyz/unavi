@@ -1,6 +1,9 @@
 use crate::{
     bindings::wired::{
-        gltf::node::{create_node, list_nodes, remove_node, Node, Transform},
+        gltf::{
+            mesh::{create_mesh, remove_mesh},
+            node::{create_node, list_nodes, remove_node, Node, Transform},
+        },
         log::api::{log, LogLevel},
     },
     panic_log,
@@ -73,4 +76,26 @@ pub fn test_node_api() {
         );
         panic_log(&err);
     }
+
+    let mesh = create_mesh();
+    let node = create_node();
+    node.set_mesh(&mesh);
+
+    let found_mesh = node.mesh();
+    if found_mesh.is_none() {
+        let err = format!("found mesh is none",);
+        panic_log(&err);
+    }
+
+    let found_mesh = found_mesh.unwrap();
+    if found_mesh != mesh {
+        let err = format!(
+            "found mesh {} does not match expected {}",
+            found_mesh.id(),
+            mesh.id()
+        );
+        panic_log(&err);
+    }
+
+    remove_mesh(mesh);
 }

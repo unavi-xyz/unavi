@@ -83,7 +83,7 @@ pub fn test_node_api() {
 
     let found_mesh = node.mesh();
     if found_mesh.is_none() {
-        let err = format!("found mesh is none",);
+        let err = "found mesh is none".to_string();
         panic_log(&err);
     }
 

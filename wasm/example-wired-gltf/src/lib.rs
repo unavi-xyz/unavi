@@ -1,11 +1,12 @@
 use bindings::{
     exports::wired::script::lifecycle::{Data, DataBorrow, Guest, GuestData},
-    unavi::shapes::api::{create_cuboid, create_sphere},
+    unavi::shapes::api::create_cuboid,
     wired::{
-        gltf::node::{create_node, Transform},
+        gltf::node::{create_node, Node},
         math::types::Vec3,
     },
 };
+use glam::Quat;
 
 use crate::bindings::wired::log::api::{log, LogLevel};
 
@@ -13,7 +14,9 @@ use crate::bindings::wired::log::api::{log, LogLevel};
 mod bindings;
 mod impls;
 
-struct DataImpl {}
+struct DataImpl {
+    node: Node,
+}
 
 impl GuestData for DataImpl {}
 
@@ -29,18 +32,30 @@ impl Guest for Script {
         let mesh = create_cuboid(Vec3::splat(1.0));
         node.set_mesh(&mesh);
 
-        let node = create_node();
-        node.set_transform(Transform {
-            translation: Vec3::splat(1.5),
-            ..Default::default()
-        });
-        let mesh = create_sphere(0.5, 32, 18);
-        node.set_mesh(&mesh);
-
-        Data::new(DataImpl {})
+        Data::new(DataImpl { node })
     }
 
-    fn update(_data: DataBorrow) {}
+    fn update(delta: f32, data: DataBorrow) {
+        let data = data.get::<DataImpl>();
+
+        let mut transform = data.node.transform();
+
+        let mut quat = Quat::from_xyzw(
+            transform.rotation.x,
+            transform.rotation.y,
+            transform.rotation.z,
+            transform.rotation.w,
+        );
+
+        quat *= Quat::from_rotation_y(delta);
+
+        transform.rotation.x = quat.x;
+        transform.rotation.y = quat.y;
+        transform.rotation.z = quat.z;
+        transform.rotation.w = quat.w;
+
+        data.node.set_transform(transform);
+    }
 }
 
 bindings::export!(Script with_types_in bindings);

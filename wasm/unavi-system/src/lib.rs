@@ -36,9 +36,7 @@ impl Guest for UnaviSystem {
         Data::new(DataImpl {})
     }
 
-    fn update(data: DataBorrow) {
-        let _data: &DataImpl = data.get();
-    }
+    fn update(_delta: f32, _data: DataBorrow) {}
 }
 
 bindings::export!(UnaviSystem with_types_in bindings);

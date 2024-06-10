@@ -38,7 +38,7 @@ pub fn init_scripts(
     }
 }
 
-const UPDATE_HZ: f32 = 20.0;
+const UPDATE_HZ: f32 = 60.0;
 const UPDATE_DELTA: f32 = 1.0 / UPDATE_HZ;
 
 pub fn update_scripts(
@@ -67,10 +67,11 @@ pub fn update_scripts(
             }
         };
 
-        if let Err(e) = script
-            .update
-            .call(store.as_context_mut(), &[script_data_borrow], &mut [])
-        {
+        if let Err(e) = script.update.call(
+            store.as_context_mut(),
+            &[Value::F32(delta), script_data_borrow],
+            &mut [],
+        ) {
             error!("Failed to call script update: {}", e);
         }
     }

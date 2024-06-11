@@ -150,7 +150,7 @@ pub fn add_to_host(
 
                     sender.send(WiredGltfAction::SetMaterialColor {
                         id: material.0,
-                        color: data.color.clone(),
+                        color: data.color,
                     })?;
                 }
 

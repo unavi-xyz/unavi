@@ -7,6 +7,7 @@ use bevy::{
 pub struct LocalData {
     next_id: u32,
     pub nodes: HashMap<u32, NodeData>,
+    pub materials: HashMap<u32, MaterialData>,
     pub meshes: HashMap<u32, MeshData>,
 }
 
@@ -35,5 +36,11 @@ pub struct MeshData {
 
 #[derive(Default)]
 pub struct PrimitiveData {
+    pub resources: HashSet<u32>,
+}
+
+#[derive(Default)]
+pub struct MaterialData {
+    pub color: Color,
     pub resources: HashSet<u32>,
 }

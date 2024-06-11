@@ -45,7 +45,6 @@ pub async fn start(db: Surreal<Db>, opts: StartOptions) {
 
     let mut meta_paths = HashSet::new();
     meta_paths.insert("images/dev-white.png".into());
-    meta_paths.insert("images/skybox.png".into());
 
     let mut app = App::new();
 

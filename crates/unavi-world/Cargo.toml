@@ -12,7 +12,6 @@ workspace = true
 base64.workspace = true
 bevy.workspace = true
 bevy_async_task.workspace = true
-bevy_atmosphere = "0.9.1"
 bevy_vrm.workspace = true
 bevy_xpbd_3d.workspace = true
 dwn.workspace = true
@@ -20,3 +19,6 @@ serde_json.workspace = true
 thiserror.workspace = true
 unavi-dwn = { path = "../unavi-dwn" }
 wired-social = { path = "../wired-social" }
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+bevy_atmosphere = "0.9.1"

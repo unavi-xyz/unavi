@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_atmosphere::plugin::{AtmosphereCamera, AtmospherePlugin};
 use home::JoinHome;
 use wired_social::schemas::common::RecordLink;
 
@@ -11,14 +10,16 @@ pub struct WorldPlugin;
 
 impl Plugin for WorldPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(AtmospherePlugin)
-            .add_event::<JoinHome>()
+        #[cfg(not(target_family = "wasm"))]
+        app.add_plugins(bevy_atmosphere::plugin::AtmospherePlugin)
+            .add_systems(Update, add_atmosphere_cameras);
+
+        app.add_event::<JoinHome>()
             .init_state::<WorldState>()
             .add_systems(Startup, (home::join_home, scene::setup_lights))
             .add_systems(
                 Update,
                 (
-                    add_atmosphere_cameras,
                     home::handle_join_home,
                     scene::create_world_scene,
                     loading::set_loading_state,
@@ -45,11 +46,20 @@ pub struct InstanceRecord(pub RecordLink);
 #[derive(Component)]
 pub struct InstanceServer(pub String);
 
+#[cfg(not(target_family = "wasm"))]
 fn add_atmosphere_cameras(
     mut commands: Commands,
-    cameras: Query<Entity, (With<Camera3d>, Without<AtmosphereCamera>)>,
+    cameras: Query<
+        Entity,
+        (
+            With<Camera3d>,
+            Without<bevy_atmosphere::plugin::AtmosphereCamera>,
+        ),
+    >,
 ) {
     for entity in cameras.iter() {
-        commands.entity(entity).insert(AtmosphereCamera::default());
+        commands
+            .entity(entity)
+            .insert(bevy_atmosphere::plugin::AtmosphereCamera::default());
     }
 }

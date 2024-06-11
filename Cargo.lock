@@ -5437,6 +5437,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "indexmap-nostd"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e04e2fd2b8188ea827b32ef11de88377086d690286ab35747ef7f9bf3ccb590"
+
+[[package]]
 name = "indicatif"
 version = "0.17.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11268,6 +11274,7 @@ dependencies = [
  "tracing-test",
  "wasm_component_layer",
  "wasm_runtime_layer",
+ "wasmi",
  "wasmtime",
 ]
 
@@ -11736,24 +11743,42 @@ source = "git+https://github.com/kayhhh/wasm_runtime_layer.git#31e296cb645fa5dea
 dependencies = [
  "anyhow",
  "fxhash",
- "js-sys",
  "ref-cast",
- "slab",
  "smallvec",
  "tracing",
- "wasm-bindgen",
- "wasmparser 0.118.2",
+ "wasmi",
  "wasmtime",
 ]
 
 [[package]]
-name = "wasmparser"
-version = "0.118.2"
+name = "wasmi"
+version = "0.31.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77f1154f1ab868e2a01d9834a805faca7bf8b50d041b4ca714d005d0dab1c50c"
+checksum = "77a8281d1d660cdf54c76a3efa9ddd0c270cada1383a995db3ccb43d166456c7"
 dependencies = [
- "indexmap 2.2.6",
- "semver",
+ "smallvec",
+ "spin 0.9.8",
+ "wasmi_arena",
+ "wasmi_core",
+ "wasmparser-nostd",
+]
+
+[[package]]
+name = "wasmi_arena"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "104a7f73be44570cac297b3035d76b169d6599637631cf37a1703326a0727073"
+
+[[package]]
+name = "wasmi_core"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dcf1a7db34bff95b85c261002720c00c3a6168256dcb93041d3fa2054d19856a"
+dependencies = [
+ "downcast-rs",
+ "libm",
+ "num-traits",
+ "paste",
 ]
 
 [[package]]
@@ -11776,6 +11801,15 @@ dependencies = [
  "bitflags 2.5.0",
  "indexmap 2.2.6",
  "semver",
+]
+
+[[package]]
+name = "wasmparser-nostd"
+version = "0.100.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5a015fe95f3504a94bb1462c717aae75253e39b9dd6c3fb1062c934535c64aa"
+dependencies = [
+ "indexmap-nostd",
 ]
 
 [[package]]

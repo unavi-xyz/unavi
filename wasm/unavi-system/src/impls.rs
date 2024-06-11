@@ -4,7 +4,7 @@ use crate::bindings::wired::{
         mesh::{Mesh, Primitive},
         node::{Node, Transform},
     },
-    math::types::{Vec3, Vec4},
+    math::types::{Quat, Vec3},
 };
 
 impl PartialEq for Material {
@@ -51,17 +51,17 @@ impl Vec3 {
     }
 }
 
-impl PartialEq for Vec4 {
+impl PartialEq for Quat {
     fn eq(&self, other: &Self) -> bool {
         (self.x == other.x) && (self.y == other.y) && (self.z == other.z) && (self.w == other.w)
     }
 }
-impl Default for Vec4 {
+impl Default for Quat {
     fn default() -> Self {
         Self::splat(0.0)
     }
 }
-impl Vec4 {
+impl Quat {
     pub fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
         Self { x, y, z, w }
     }
@@ -82,7 +82,7 @@ impl Default for Transform {
     fn default() -> Self {
         Self {
             translation: Vec3::default(),
-            rotation: Vec4::new(0.0, 0.0, 0.0, 1.0),
+            rotation: Quat::new(0.0, 0.0, 0.0, 1.0),
             scale: Vec3::splat(1.0),
         }
     }

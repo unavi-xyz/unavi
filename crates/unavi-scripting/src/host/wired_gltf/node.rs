@@ -45,7 +45,7 @@ pub fn add_to_host(
         ]
         .into_iter(),
     )?;
-    let vec4_type = RecordType::new(
+    let quat_type = RecordType::new(
         None,
         [
             ("x", ValueType::F32),
@@ -59,7 +59,7 @@ pub fn add_to_host(
         None,
         [
             ("translation", ValueType::Record(vec3_type.clone())),
-            ("rotation", ValueType::Record(vec4_type.clone())),
+            ("rotation", ValueType::Record(quat_type.clone())),
             ("scale", ValueType::Record(vec3_type.clone())),
         ]
         .into_iter(),
@@ -288,7 +288,7 @@ pub fn add_to_host(
         let node_type = node_type.clone();
         let transform_type = transform_type.clone();
         let vec3_type = vec3_type.clone();
-        let vec4_type = vec4_type.clone();
+        let vec4_type = quat_type.clone();
         Func::new(
             store.as_context_mut(),
             FuncType::new(

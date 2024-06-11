@@ -5,6 +5,7 @@ use crate::bindings::wired::log::api::{log, LogLevel};
 #[allow(warnings)]
 mod bindings;
 mod impls;
+mod material;
 mod mesh;
 mod node;
 mod property_tests;
@@ -21,8 +22,9 @@ impl Guest for Script {
     fn init() -> Data {
         log(LogLevel::Info, "Hello from script!");
 
-        node::test_node_api();
+        material::test_material_api();
         mesh::test_mesh_api();
+        node::test_node_api();
 
         Data::new(DataImpl {})
     }

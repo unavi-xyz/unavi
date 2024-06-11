@@ -12,7 +12,24 @@ pub mod wired {
             static __FORCE_SECTION_REF: fn() =
                 super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
-            pub type Vec4 = super::super::super::wired::math::types::Vec4;
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            pub struct Color {
+                pub r: f32,
+                pub g: f32,
+                pub b: f32,
+                pub a: f32,
+            }
+            impl ::core::fmt::Debug for Color {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("Color")
+                        .field("r", &self.r)
+                        .field("g", &self.g)
+                        .field("b", &self.b)
+                        .field("a", &self.a)
+                        .finish()
+                }
+            }
             /// A reference to a material.
 
             #[derive(Debug)]
@@ -81,7 +98,7 @@ pub mod wired {
             }
             impl Material {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn color(&self) -> Vec4 {
+                pub fn color(&self) -> Color {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
@@ -103,24 +120,24 @@ pub mod wired {
                         let l2 = *ptr0.add(4).cast::<f32>();
                         let l3 = *ptr0.add(8).cast::<f32>();
                         let l4 = *ptr0.add(12).cast::<f32>();
-                        super::super::super::wired::math::types::Vec4 {
-                            x: l1,
-                            y: l2,
-                            z: l3,
-                            w: l4,
+                        Color {
+                            r: l1,
+                            g: l2,
+                            b: l3,
+                            a: l4,
                         }
                     }
                 }
             }
             impl Material {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn set_color(&self, value: Vec4) {
+                pub fn set_color(&self, value: Color) {
                     unsafe {
-                        let super::super::super::wired::math::types::Vec4 {
-                            x: x0,
-                            y: y0,
-                            z: z0,
-                            w: w0,
+                        let Color {
+                            r: r0,
+                            g: g0,
+                            b: b0,
+                            a: a0,
                         } = value;
 
                         #[cfg(target_arch = "wasm32")]
@@ -136,10 +153,10 @@ pub mod wired {
                         }
                         wit_import(
                             (self).handle() as i32,
-                            _rt::as_f32(x0),
-                            _rt::as_f32(y0),
-                            _rt::as_f32(z0),
-                            _rt::as_f32(w0),
+                            _rt::as_f32(r0),
+                            _rt::as_f32(g0),
+                            _rt::as_f32(b0),
+                            _rt::as_f32(a0),
                         );
                     }
                 }
@@ -705,12 +722,12 @@ pub mod wired {
             use super::super::super::_rt;
             pub type Mesh = super::super::super::wired::gltf::mesh::Mesh;
             pub type Vec3 = super::super::super::wired::math::types::Vec3;
-            pub type Vec4 = super::super::super::wired::math::types::Vec4;
+            pub type Quat = super::super::super::wired::math::types::Quat;
             #[repr(C)]
             #[derive(Clone, Copy)]
             pub struct Transform {
                 pub translation: Vec3,
-                pub rotation: Vec4,
+                pub rotation: Quat,
                 pub scale: Vec3,
             }
             impl ::core::fmt::Debug for Transform {
@@ -988,7 +1005,7 @@ pub mod wired {
                                 y: l2,
                                 z: l3,
                             },
-                            rotation: super::super::super::wired::math::types::Vec4 {
+                            rotation: super::super::super::wired::math::types::Quat {
                                 x: l4,
                                 y: l5,
                                 z: l6,
@@ -1017,7 +1034,7 @@ pub mod wired {
                             y: y1,
                             z: z1,
                         } = translation0;
-                        let super::super::super::wired::math::types::Vec4 {
+                        let super::super::super::wired::math::types::Quat {
                             x: x2,
                             y: y2,
                             z: z2,
@@ -1326,15 +1343,15 @@ pub mod wired {
             }
             #[repr(C)]
             #[derive(Clone, Copy)]
-            pub struct Vec4 {
+            pub struct Quat {
                 pub x: f32,
                 pub y: f32,
                 pub z: f32,
                 pub w: f32,
             }
-            impl ::core::fmt::Debug for Vec4 {
+            impl ::core::fmt::Debug for Quat {
                 fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    f.debug_struct("Vec4")
+                    f.debug_struct("Quat")
                         .field("x", &self.x)
                         .field("y", &self.y)
                         .field("z", &self.z)
@@ -1782,57 +1799,57 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 2122] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xcd\x0f\x01A\x02\x01\
-A\x10\x01B\x06\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01\
-zv\x04\0\x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04vec4\x03\0\x04\
-\x03\x01\x10wired:math/types\x05\0\x02\x03\0\0\x04vec4\x01B\x12\x02\x03\x02\x01\x01\
-\x04\0\x04vec4\x03\0\0\x04\0\x08material\x03\x01\x01h\x02\x01@\x01\x04self\x03\0\
-y\x04\0\x13[method]material.id\x01\x04\x01@\x01\x04self\x03\0\x01\x04\0\x16[meth\
-od]material.color\x01\x05\x01@\x02\x04self\x03\x05value\x01\x01\0\x04\0\x1a[meth\
-od]material.set-color\x01\x06\x01i\x02\x01p\x07\x01@\0\0\x08\x04\0\x0elist-mater\
-ials\x01\x09\x01@\0\0\x07\x04\0\x0fcreate-material\x01\x0a\x01@\x01\x05value\x07\
-\x01\0\x04\0\x0fremove-material\x01\x0b\x03\x01\x13wired:gltf/material\x05\x02\x02\
-\x03\0\x01\x08material\x01B,\x02\x03\x02\x01\x03\x04\0\x08material\x03\0\0\x04\0\
-\x09primitive\x03\x01\x04\0\x04mesh\x03\x01\x01h\x02\x01@\x01\x04self\x04\0y\x04\
-\0\x14[method]primitive.id\x01\x05\x01i\x01\x01@\x01\x04self\x04\0\x06\x04\0\x1a\
-[method]primitive.material\x01\x07\x01h\x01\x01@\x02\x04self\x04\x05value\x08\x01\
-\0\x04\0\x1e[method]primitive.set-material\x01\x09\x01py\x01@\x02\x04self\x04\x05\
-value\x0a\x01\0\x04\0\x1d[method]primitive.set-indices\x01\x0b\x01pv\x01@\x02\x04\
-self\x04\x05value\x0c\x01\0\x04\0\x1d[method]primitive.set-normals\x01\x0d\x04\0\
-\x1f[method]primitive.set-positions\x01\x0d\x04\0\x19[method]primitive.set-uvs\x01\
-\x0d\x01h\x03\x01@\x01\x04self\x0e\0y\x04\0\x0f[method]mesh.id\x01\x0f\x01@\x01\x04\
-self\x0e\0s\x04\0\x11[method]mesh.name\x01\x10\x01@\x02\x04self\x0e\x05values\x01\
-\0\x04\0\x15[method]mesh.set-name\x01\x11\x01i\x02\x01p\x12\x01@\x01\x04self\x0e\
-\0\x13\x04\0\x1c[method]mesh.list-primitives\x01\x14\x01@\x01\x04self\x0e\0\x12\x04\
-\0\x1d[method]mesh.create-primitive\x01\x15\x01@\x02\x04self\x0e\x05value\x12\x01\
-\0\x04\0\x1d[method]mesh.remove-primitive\x01\x16\x01i\x03\x01p\x17\x01@\0\0\x18\
-\x04\0\x0blist-meshes\x01\x19\x01@\0\0\x17\x04\0\x0bcreate-mesh\x01\x1a\x01@\x01\
-\x05value\x17\x01\0\x04\0\x0bremove-mesh\x01\x1b\x03\x01\x0fwired:gltf/mesh\x05\x04\
-\x02\x03\0\x02\x04mesh\x02\x03\0\0\x04vec3\x01B-\x02\x03\x02\x01\x05\x04\0\x04me\
-sh\x03\0\0\x02\x03\x02\x01\x06\x04\0\x04vec3\x03\0\x02\x02\x03\x02\x01\x01\x04\0\
-\x04vec4\x03\0\x04\x01r\x03\x0btranslation\x03\x08rotation\x05\x05scale\x03\x04\0\
-\x09transform\x03\0\x06\x04\0\x04node\x03\x01\x01h\x08\x01@\x01\x04self\x09\0y\x04\
-\0\x0f[method]node.id\x01\x0a\x01@\x01\x04self\x09\0s\x04\0\x11[method]node.name\
-\x01\x0b\x01@\x02\x04self\x09\x05values\x01\0\x04\0\x15[method]node.set-name\x01\
-\x0c\x01i\x08\x01p\x0d\x01@\x01\x04self\x09\0\x0e\x04\0\x15[method]node.children\
-\x01\x0f\x01@\x02\x04self\x09\x05value\x09\x01\0\x04\0\x16[method]node.add-child\
-\x01\x10\x04\0\x19[method]node.remove-child\x01\x10\x01k\x0d\x01@\x01\x04self\x09\
-\0\x11\x04\0\x13[method]node.parent\x01\x12\x01@\x01\x04self\x09\0\x07\x04\0\x16\
-[method]node.transform\x01\x13\x01@\x02\x04self\x09\x05value\x07\x01\0\x04\0\x1a\
-[method]node.set-transform\x01\x14\x01i\x01\x01k\x15\x01@\x01\x04self\x09\0\x16\x04\
-\0\x11[method]node.mesh\x01\x17\x01h\x01\x01@\x02\x04self\x09\x05value\x18\x01\0\
-\x04\0\x15[method]node.set-mesh\x01\x19\x01@\x01\x04self\x09\x01\0\x04\0\x18[met\
-hod]node.remove-mesh\x01\x1a\x01@\0\0\x0e\x04\0\x0alist-nodes\x01\x1b\x01@\0\0\x0d\
-\x04\0\x0bcreate-node\x01\x1c\x01@\x01\x05value\x0d\x01\0\x04\0\x0bremove-node\x01\
-\x1d\x03\x01\x0fwired:gltf/node\x05\x07\x01B\x04\x01m\x04\x05debug\x04info\x04wa\
-rn\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\x07messages\x01\0\x04\
-\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x08\x01B\x07\x04\0\x04data\x03\x01\
-\x01i\0\x01@\0\0\x01\x04\0\x04init\x01\x02\x01h\0\x01@\x02\x05deltav\x04data\x03\
-\x01\0\x04\0\x06update\x01\x04\x04\x01\x16wired:script/lifecycle\x05\x09\x04\x01\
-\x16test:wired-gltf/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producers\
-\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25\
-.0";
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 2133] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xd8\x0f\x01A\x02\x01\
+A\x10\x01B\x12\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
+material\x03\x01\x01h\x02\x01@\x01\x04self\x03\0y\x04\0\x13[method]material.id\x01\
+\x04\x01@\x01\x04self\x03\0\x01\x04\0\x16[method]material.color\x01\x05\x01@\x02\
+\x04self\x03\x05value\x01\x01\0\x04\0\x1a[method]material.set-color\x01\x06\x01i\
+\x02\x01p\x07\x01@\0\0\x08\x04\0\x0elist-materials\x01\x09\x01@\0\0\x07\x04\0\x0f\
+create-material\x01\x0a\x01@\x01\x05value\x07\x01\0\x04\0\x0fremove-material\x01\
+\x0b\x03\x01\x13wired:gltf/material\x05\0\x02\x03\0\0\x08material\x01B,\x02\x03\x02\
+\x01\x01\x04\0\x08material\x03\0\0\x04\0\x09primitive\x03\x01\x04\0\x04mesh\x03\x01\
+\x01h\x02\x01@\x01\x04self\x04\0y\x04\0\x14[method]primitive.id\x01\x05\x01i\x01\
+\x01@\x01\x04self\x04\0\x06\x04\0\x1a[method]primitive.material\x01\x07\x01h\x01\
+\x01@\x02\x04self\x04\x05value\x08\x01\0\x04\0\x1e[method]primitive.set-material\
+\x01\x09\x01py\x01@\x02\x04self\x04\x05value\x0a\x01\0\x04\0\x1d[method]primitiv\
+e.set-indices\x01\x0b\x01pv\x01@\x02\x04self\x04\x05value\x0c\x01\0\x04\0\x1d[me\
+thod]primitive.set-normals\x01\x0d\x04\0\x1f[method]primitive.set-positions\x01\x0d\
+\x04\0\x19[method]primitive.set-uvs\x01\x0d\x01h\x03\x01@\x01\x04self\x0e\0y\x04\
+\0\x0f[method]mesh.id\x01\x0f\x01@\x01\x04self\x0e\0s\x04\0\x11[method]mesh.name\
+\x01\x10\x01@\x02\x04self\x0e\x05values\x01\0\x04\0\x15[method]mesh.set-name\x01\
+\x11\x01i\x02\x01p\x12\x01@\x01\x04self\x0e\0\x13\x04\0\x1c[method]mesh.list-pri\
+mitives\x01\x14\x01@\x01\x04self\x0e\0\x12\x04\0\x1d[method]mesh.create-primitiv\
+e\x01\x15\x01@\x02\x04self\x0e\x05value\x12\x01\0\x04\0\x1d[method]mesh.remove-p\
+rimitive\x01\x16\x01i\x03\x01p\x17\x01@\0\0\x18\x04\0\x0blist-meshes\x01\x19\x01\
+@\0\0\x17\x04\0\x0bcreate-mesh\x01\x1a\x01@\x01\x05value\x17\x01\0\x04\0\x0bremo\
+ve-mesh\x01\x1b\x03\x01\x0fwired:gltf/mesh\x05\x02\x01B\x06\x01r\x02\x01xv\x01yv\
+\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\x02\x01r\x04\
+\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x03\x01\x10wired:math/types\x05\
+\x03\x02\x03\0\x01\x04mesh\x02\x03\0\x02\x04vec3\x02\x03\0\x02\x04quat\x01B-\x02\
+\x03\x02\x01\x04\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\x02\
+\x02\x03\x02\x01\x06\x04\0\x04quat\x03\0\x04\x01r\x03\x0btranslation\x03\x08rota\
+tion\x05\x05scale\x03\x04\0\x09transform\x03\0\x06\x04\0\x04node\x03\x01\x01h\x08\
+\x01@\x01\x04self\x09\0y\x04\0\x0f[method]node.id\x01\x0a\x01@\x01\x04self\x09\0\
+s\x04\0\x11[method]node.name\x01\x0b\x01@\x02\x04self\x09\x05values\x01\0\x04\0\x15\
+[method]node.set-name\x01\x0c\x01i\x08\x01p\x0d\x01@\x01\x04self\x09\0\x0e\x04\0\
+\x15[method]node.children\x01\x0f\x01@\x02\x04self\x09\x05value\x09\x01\0\x04\0\x16\
+[method]node.add-child\x01\x10\x04\0\x19[method]node.remove-child\x01\x10\x01k\x0d\
+\x01@\x01\x04self\x09\0\x11\x04\0\x13[method]node.parent\x01\x12\x01@\x01\x04sel\
+f\x09\0\x07\x04\0\x16[method]node.transform\x01\x13\x01@\x02\x04self\x09\x05valu\
+e\x07\x01\0\x04\0\x1a[method]node.set-transform\x01\x14\x01i\x01\x01k\x15\x01@\x01\
+\x04self\x09\0\x16\x04\0\x11[method]node.mesh\x01\x17\x01h\x01\x01@\x02\x04self\x09\
+\x05value\x18\x01\0\x04\0\x15[method]node.set-mesh\x01\x19\x01@\x01\x04self\x09\x01\
+\0\x04\0\x18[method]node.remove-mesh\x01\x1a\x01@\0\0\x0e\x04\0\x0alist-nodes\x01\
+\x1b\x01@\0\0\x0d\x04\0\x0bcreate-node\x01\x1c\x01@\x01\x05value\x0d\x01\0\x04\0\
+\x0bremove-node\x01\x1d\x03\x01\x0fwired:gltf/node\x05\x07\x01B\x04\x01m\x04\x05\
+debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\x07\
+messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x08\x01B\x07\x04\
+\0\x04data\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x04init\x01\x02\x01h\0\x01@\x02\x05\
+deltav\x04data\x03\x01\0\x04\0\x06update\x01\x04\x04\x01\x16wired:script/lifecyc\
+le\x05\x09\x04\x01\x16test:wired-gltf/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\
+\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bi\
+ndgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

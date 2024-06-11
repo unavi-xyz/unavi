@@ -61,14 +61,33 @@ pub struct PrimitiveId(pub u32);
 pub struct WiredPrimitiveBundle {
     pub id: PrimitiveId,
     pub mesh: MeshId,
-    pub mesh_handle: Handle<Mesh>,
+    pub handle: Handle<Mesh>,
     pub owner: Owner,
+}
+
+#[derive(Component, Debug)]
+pub struct MaterialId(pub u32);
+
+#[derive(Bundle)]
+pub struct WiredMaterialBundle {
+    pub id: MaterialId,
+    pub handle: Handle<StandardMaterial>,
+}
+
+impl WiredMaterialBundle {
+    pub fn new(id: u32, handle: Handle<StandardMaterial>) -> Self {
+        Self {
+            id: MaterialId(id),
+            handle,
+        }
+    }
 }
 
 pub fn handle_wired_gltf_actions(
     world: &mut World,
-    mut default_material: Local<Option<Handle<StandardMaterial>>>,
+    materials: &mut QueryState<(Entity, &MaterialId, &Handle<StandardMaterial>)>,
     meshes: &mut QueryState<(Entity, &MeshId)>,
+    mut default_material: Local<Option<Handle<StandardMaterial>>>,
     nodes: &mut QueryState<(Entity, &NodeId, &mut NodePrimitives)>,
     primitives: &mut QueryState<(Entity, &PrimitiveId, &MeshId, &Handle<Mesh>)>,
     scripts: &mut QueryState<(Entity, &WiredGltfReceiver)>,
@@ -89,6 +108,20 @@ pub fn handle_wired_gltf_actions(
     for (entity, receiver) in scripts {
         while let Ok(msg) = receiver.try_recv() {
             match msg {
+                WiredGltfAction::CreateMaterial { id } => {
+                    let span = info_span!("CreateMaterial", id);
+                    let s = span.entered();
+
+                    if find_material(materials, id, world).is_some() {
+                        warn!("Material {} already exists.", id);
+                    } else {
+                        let mut material_assets = world.resource_mut::<Assets<StandardMaterial>>();
+                        let handle = material_assets.add(StandardMaterial::default());
+                        world.spawn(WiredMaterialBundle::new(id, handle));
+                    }
+
+                    drop(s);
+                }
                 WiredGltfAction::CreateMesh { id } => {
                     let span = info_span!("CreateMesh", id);
                     let s = span.entered();
@@ -133,8 +166,20 @@ pub fn handle_wired_gltf_actions(
                             id: PrimitiveId(id),
                             mesh: MeshId(mesh),
                             owner: Owner(entity),
-                            mesh_handle,
+                            handle: mesh_handle,
                         });
+                    }
+
+                    drop(s);
+                }
+                WiredGltfAction::RemoveMaterial { id } => {
+                    let span = info_span!("RemoveMaterial", id);
+                    let s = span.entered();
+
+                    if let Some((ent, ..)) = find_material(materials, id, world) {
+                        world.entity_mut(ent).despawn_recursive();
+                    } else {
+                        warn!("Material {} does not exist", id);
                     }
 
                     drop(s);
@@ -171,6 +216,20 @@ pub fn handle_wired_gltf_actions(
                         world.entity_mut(ent).despawn_recursive();
                     } else {
                         warn!("Primitive {} does not exist", id);
+                    }
+
+                    drop(s);
+                }
+                WiredGltfAction::SetMaterialColor { id, color } => {
+                    let span = info_span!("SetMaterialColor", id);
+                    let s = span.entered();
+
+                    if let Some((_, handle)) = find_material(materials, id, world) {
+                        let handle = handle.clone();
+                        let mut material_assets = world.resource_mut::<Assets<StandardMaterial>>();
+                        let material = material_assets.get_mut(handle).unwrap();
+
+                        material.base_color = color;
                     }
 
                     drop(s);
@@ -417,6 +476,20 @@ fn find_primitive<'a>(
     })
 }
 
+fn find_material<'a>(
+    materials: &'a mut QueryState<(Entity, &MaterialId, &Handle<StandardMaterial>)>,
+    id: u32,
+    world: &'a World,
+) -> Option<(Entity, &'a Handle<StandardMaterial>)> {
+    materials.iter(world).find_map(|(ent, mid, handle)| {
+        if mid.0 == id {
+            Some((ent, handle))
+        } else {
+            None
+        }
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use crossbeam::channel::Sender;
@@ -597,7 +670,7 @@ mod tests {
         let handle = Handle::default();
         let primitive_id = 2;
         app.world.spawn(WiredPrimitiveBundle {
-            mesh_handle: handle.clone(),
+            handle: handle.clone(),
             id: PrimitiveId(primitive_id),
             mesh: MeshId(mesh_id),
             owner: Owner(owner),
@@ -629,7 +702,7 @@ mod tests {
         let handle = Handle::default();
         let primitive_id = 2;
         app.world.spawn(WiredPrimitiveBundle {
-            mesh_handle: handle.clone(),
+            handle: handle.clone(),
             id: PrimitiveId(primitive_id),
             mesh: MeshId(mesh_id),
             owner: Owner(owner),
@@ -761,7 +834,7 @@ mod tests {
         app.world.spawn(WiredPrimitiveBundle {
             id: PrimitiveId(id),
             mesh: MeshId(mesh),
-            mesh_handle: Default::default(),
+            handle: Default::default(),
             owner: Owner(owner),
         });
 
@@ -788,7 +861,7 @@ mod tests {
             .spawn(WiredPrimitiveBundle {
                 id: PrimitiveId(id),
                 mesh: MeshId(mesh),
-                mesh_handle: Default::default(),
+                handle: Default::default(),
                 owner: Owner(owner),
             })
             .id();
@@ -827,7 +900,7 @@ mod tests {
         app.world.spawn(WiredPrimitiveBundle {
             id: PrimitiveId(id),
             mesh: MeshId(mesh),
-            mesh_handle: handle.clone(),
+            handle: handle.clone(),
             owner: Owner(owner),
         });
 
@@ -870,7 +943,7 @@ mod tests {
         app.world.spawn(WiredPrimitiveBundle {
             id: PrimitiveId(id),
             mesh: MeshId(mesh),
-            mesh_handle: handle.clone(),
+            handle: handle.clone(),
             owner: Owner(owner),
         });
 
@@ -918,7 +991,7 @@ mod tests {
         app.world.spawn(WiredPrimitiveBundle {
             id: PrimitiveId(id),
             mesh: MeshId(mesh),
-            mesh_handle: handle.clone(),
+            handle: handle.clone(),
             owner: Owner(owner),
         });
 
@@ -966,7 +1039,7 @@ mod tests {
         app.world.spawn(WiredPrimitiveBundle {
             id: PrimitiveId(id),
             mesh: MeshId(mesh),
-            mesh_handle: handle.clone(),
+            handle: handle.clone(),
             owner: Owner(owner),
         });
 
@@ -987,4 +1060,65 @@ mod tests {
 
         assert_eq!(len, value.len() / 2);
     }
+
+    // Material
+    #[test]
+    fn create_material() {
+        let (mut app, send) = setup_test();
+
+        let id = 0;
+        send.send(WiredGltfAction::CreateMaterial { id }).unwrap();
+        app.update();
+
+        let mut materials = app
+            .world
+            .query::<(&MaterialId, &Handle<StandardMaterial>)>();
+        let (found_id, ..) = materials.single(&app.world);
+        assert_eq!(found_id.0, id);
+    }
+
+    #[test]
+    fn create_material_duplicate_id() {
+        let (mut app, send) = setup_test();
+
+        let mut material_assets = app.world.resource_mut::<Assets<StandardMaterial>>();
+        let handle = material_assets.add(StandardMaterial::default());
+
+        let id = 0;
+        app.world.spawn((MaterialId(id), handle));
+
+        send.send(WiredGltfAction::CreateMaterial { id }).unwrap();
+        app.update();
+
+        let mut materials = app.world.query::<&MaterialId>();
+        assert!(materials.iter(&app.world).len() == 1);
+    }
+
+    #[test]
+    fn remove_material() {
+        let (mut app, send) = setup_test();
+
+        let mut material_assets = app.world.resource_mut::<Assets<StandardMaterial>>();
+        let handle = material_assets.add(StandardMaterial::default());
+
+        let id = 0;
+        let ent = app.world.spawn((MaterialId(id), handle)).id();
+
+        send.send(WiredGltfAction::RemoveMaterial { id }).unwrap();
+        app.update();
+
+        assert!(app.world.get_entity(ent).is_none());
+    }
+
+    #[test]
+    fn remove_invalid_material() {
+        let (mut app, send) = setup_test();
+
+        send.send(WiredGltfAction::RemoveMaterial { id: 0 })
+            .unwrap();
+        app.update();
+    }
+
+    #[test]
+    fn set_material_color() {}
 }

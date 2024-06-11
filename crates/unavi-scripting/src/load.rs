@@ -12,7 +12,7 @@ pub struct LoadedScript;
 #[cfg(not(target_family = "wasm"))]
 pub type EngineBackend = wasmtime::Engine;
 #[cfg(target_family = "wasm")]
-pub type EngineBackend = wasm_runtime_layer::web::Engine;
+pub type EngineBackend = wasmi::Engine;
 
 /// Store is `!Send` for the web backend.
 /// Because of this [WasmStores] is a [NonSend] resource, but we could change

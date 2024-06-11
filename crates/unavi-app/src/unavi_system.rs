@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use unavi_scripting::{asset::Wasm, ScriptBundle};
 
-const UNAVI_SYSTEM: &str = "unavi_system";
+const UNAVI_SYSTEM: &str = "example_wired_gltf";
 
 pub fn spawn_unavi_system(asset_server: Res<AssetServer>, mut commands: Commands) {
     let wasm = load_component_wasm(&asset_server, UNAVI_SYSTEM);

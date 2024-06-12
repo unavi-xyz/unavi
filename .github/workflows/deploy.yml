@@ -27,7 +27,56 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  build-server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: AdityaGarg8/remove-unwanted-software@v3
+        with:
+          remove-android: true
+          remove-codeql: true
+          remove-docker-images: true
+          remove-dotnet: true
+          remove-haskell: true
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          submodules: true
+
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Build server
+        if: inputs.disable-deploy != true
+        run: nix build -L .?submodules=1#unavi-server
+
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: AdityaGarg8/remove-unwanted-software@v3
+        with:
+          remove-android: true
+          remove-codeql: true
+          remove-docker-images: true
+          remove-dotnet: true
+          remove-haskell: true
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          submodules: true
+
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Build web
+        if: inputs.disable-deploy != true
+        run: nix build -L .?submodules=1#unavi-web
+
   deploy:
+    needs:
+      - build-server
+      - build-web
     runs-on: ubuntu-latest
     steps:
       - uses: AdityaGarg8/remove-unwanted-software@v3
@@ -64,14 +113,6 @@ jobs:
         with:
           message: "chore: update terraform output"
           default_author: github_actions
-
-      - name: Build server
-        if: inputs.disable-deploy != true
-        run: nix build -L .?submodules=1#unavi-server
-
-      - name: Build web
-        if: inputs.disable-deploy != true
-        run: nix build -L .?submodules=1#unavi-web
 
       - name: Deploy
         if: inputs.disable-deploy != true

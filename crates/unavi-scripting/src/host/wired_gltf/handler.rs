@@ -1275,7 +1275,7 @@ mod tests {
 
         let color = Color::rgba(0.1, 0.2, 0.3, 0.4);
 
-        send.send(WiredGltfAction::SetMaterialColor { id, color: color })
+        send.send(WiredGltfAction::SetMaterialColor { id, color })
             .unwrap();
         app.update();
 

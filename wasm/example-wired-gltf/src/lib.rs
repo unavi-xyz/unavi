@@ -1,38 +1,30 @@
 use bindings::{
-    exports::wired::script::lifecycle::{Data, DataBorrow, Guest, GuestData},
+    exports::wired::script::types::{Guest, GuestScript},
     unavi::shapes::api::create_cuboid,
     wired::{
         gltf::{
             material::{create_material, Color},
             node::{create_node, Node},
         },
+        log::api::{log, LogLevel},
         math::types::Vec3,
     },
 };
 use glam::Quat;
 
-use crate::bindings::wired::log::api::{log, LogLevel};
-
 #[allow(warnings)]
 mod bindings;
 mod impls;
 
-struct DataImpl {
+struct Script {
     node: Node,
 }
 
-impl GuestData for DataImpl {}
-
-struct Script;
-
-impl Guest for Script {
-    type Data = DataImpl;
-
-    fn init() -> Data {
+impl GuestScript for Script {
+    fn new() -> Self {
         log(LogLevel::Info, "Hello from example-wired-gltf!");
 
         let node = create_node();
-
         let mesh = create_cuboid(Vec3::splat(1.0));
 
         let material = create_material();
@@ -43,19 +35,17 @@ impl Guest for Script {
             a: 1.0,
         });
 
-        // for primitive in mesh.list_primitives() {
-        //     primitive.set_material(&material);
-        // }
+        for primitive in mesh.list_primitives() {
+            primitive.set_material(&material);
+        }
 
         node.set_mesh(&mesh);
 
-        Data::new(DataImpl { node })
+        Script { node }
     }
 
-    fn update(delta: f32, data: DataBorrow) {
-        let data = data.get::<DataImpl>();
-
-        let mut transform = data.node.transform();
+    fn update(&self, delta: f32) {
+        let mut transform = self.node.transform();
 
         let mut quat = Quat::from_xyzw(
             transform.rotation.x,
@@ -70,9 +60,13 @@ impl Guest for Script {
         transform.rotation.y = quat.y;
         transform.rotation.z = quat.z;
         transform.rotation.w = quat.w;
-
-        data.node.set_transform(transform);
     }
 }
 
-bindings::export!(Script with_types_in bindings);
+struct Api;
+
+impl Guest for Api {
+    type Script = Script;
+}
+
+bindings::export!(Api with_types_in bindings);

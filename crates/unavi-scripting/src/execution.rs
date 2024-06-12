@@ -4,14 +4,17 @@ use wasm_component_layer::{AsContextMut, ResourceOwn, Value};
 use super::{load::WasmStores, script::ScriptInterface};
 
 #[derive(Component)]
-pub struct ScriptData(ResourceOwn);
+pub struct ScriptResource(ResourceOwn);
 
 #[derive(Component)]
 pub struct FailedToInit;
 
 pub fn init_scripts(
     mut commands: Commands,
-    mut to_init: Query<(Entity, &ScriptInterface), (Without<ScriptData>, Without<FailedToInit>)>,
+    mut to_init: Query<
+        (Entity, &ScriptInterface),
+        (Without<ScriptResource>, Without<FailedToInit>),
+    >,
     mut stores: NonSendMut<WasmStores>,
 ) {
     for (entity, script) in to_init.iter_mut() {
@@ -19,13 +22,16 @@ pub fn init_scripts(
 
         let mut results = vec![Value::U8(0)];
 
-        if let Err(e) = script.init.call(store.as_context_mut(), &[], &mut results) {
+        if let Err(e) = script
+            .construct
+            .call(store.as_context_mut(), &[], &mut results)
+        {
             error!("Failed to init script: {}", e);
             commands.entity(entity).insert(FailedToInit);
             continue;
         }
 
-        let script_data = match results.remove(0) {
+        let script_resource = match results.remove(0) {
             Value::Own(own) => own,
             _ => {
                 error!("Wrong script data value");
@@ -34,7 +40,9 @@ pub fn init_scripts(
             }
         };
 
-        commands.entity(entity).insert(ScriptData(script_data));
+        commands
+            .entity(entity)
+            .insert(ScriptResource(script_resource));
     }
 }
 
@@ -43,7 +51,7 @@ const UPDATE_DELTA: f32 = 1.0 / UPDATE_HZ;
 
 pub fn update_scripts(
     mut last_update: Local<f32>,
-    mut scripts: Query<(Entity, &ScriptInterface, &ScriptData)>,
+    mut scripts: Query<(Entity, &ScriptInterface, &ScriptResource)>,
     mut stores: NonSendMut<WasmStores>,
     time: Res<Time>,
 ) {
@@ -56,10 +64,10 @@ pub fn update_scripts(
 
     *last_update = now;
 
-    for (entity, script, data) in scripts.iter_mut() {
+    for (entity, script, resource) in scripts.iter_mut() {
         let store = stores.0.get_mut(&entity).unwrap();
 
-        let script_data_borrow = match data.0.borrow(store.as_context_mut()) {
+        let script_resource = match resource.0.borrow(store.as_context_mut()) {
             Ok(s) => Value::Borrow(s),
             Err(e) => {
                 error!("Failed to borrow script data: {}", e);
@@ -69,7 +77,7 @@ pub fn update_scripts(
 
         if let Err(e) = script.update.call(
             store.as_context_mut(),
-            &[Value::F32(delta), script_data_borrow],
+            &[script_resource, Value::F32(delta)],
             &mut [],
         ) {
             error!("Failed to call script update: {}", e);

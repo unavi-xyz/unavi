@@ -1,42 +1,24 @@
-use bindings::{
-    exports::wired::script::lifecycle::{Data, DataBorrow, Guest, GuestData},
-    wired::{
-        gltf::node::{create_node, list_nodes},
-        log::api::{log, LogLevel},
-    },
-};
+use bindings::exports::wired::script::types::{Guest, GuestScript};
 
 #[allow(warnings)]
 mod bindings;
 mod impls;
 
-struct DataImpl {}
+#[derive(Default)]
+struct Script {}
 
-impl GuestData for DataImpl {}
-
-struct UnaviSystem;
-
-impl Guest for UnaviSystem {
-    type Data = DataImpl;
-
-    fn init() -> Data {
-        log(LogLevel::Info, "initializing...");
-
-        let node = create_node();
-        let found_nodes = list_nodes();
-
-        if found_nodes.is_empty() {
-            log(LogLevel::Error, "found 0 nodes")
-        } else if found_nodes[0].id() != node.id() {
-            log(LogLevel::Error, "created node not in found_nodes!")
-        }
-
-        log(LogLevel::Info, "initialized!");
-
-        Data::new(DataImpl {})
+impl GuestScript for Script {
+    fn new() -> Self {
+        Script::default()
     }
 
-    fn update(_delta: f32, _data: DataBorrow) {}
+    fn update(&self, _delta: f32) {}
 }
 
-bindings::export!(UnaviSystem with_types_in bindings);
+struct Api;
+
+impl Guest for Api {
+    type Script = Script;
+}
+
+bindings::export!(Api with_types_in bindings);

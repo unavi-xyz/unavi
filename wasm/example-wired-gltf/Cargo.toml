@@ -15,10 +15,6 @@ workspace = true
 glam = "0.28.0"
 wit-bindgen-rt.workspace = true
 
-[dev-dependencies]
-bevy.workspace = true
-unavi-scripting = { path = "../../crates/unavi-scripting" }
-
 [package.metadata.component]
 package = "example:wired-gltf"
 

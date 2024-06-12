@@ -314,7 +314,7 @@ pub fn handle_wired_gltf_actions(
                                     continue;
                                 }
 
-                                to_add.push((id, handle_mesh.clone(), material.clone()));
+                                to_add.push((id, handle_mesh.clone(), material));
                             }
                         } else {
                             for ent in node_primitives.values() {
@@ -1275,11 +1275,8 @@ mod tests {
 
         let color = Color::rgba(0.1, 0.2, 0.3, 0.4);
 
-        send.send(WiredGltfAction::SetMaterialColor {
-            id,
-            color: color.clone(),
-        })
-        .unwrap();
+        send.send(WiredGltfAction::SetMaterialColor { id, color: color })
+            .unwrap();
         app.update();
 
         let material_assets = app.world.resource::<Assets<StandardMaterial>>();

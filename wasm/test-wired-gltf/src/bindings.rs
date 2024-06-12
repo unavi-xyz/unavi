@@ -1369,51 +1369,51 @@ pub mod exports {
         #[allow(dead_code)]
         pub mod script {
             #[allow(dead_code, clippy::all)]
-            pub mod lifecycle {
+            pub mod types {
                 #[used]
                 #[doc(hidden)]
                 #[cfg(target_arch = "wasm32")]
                 static __FORCE_SECTION_REF: fn() =
                     super::super::super::super::__link_custom_section_describing_imports;
                 use super::super::super::super::_rt;
-                /// Arbitrary script data persisted between updates.
+                /// Script resource that will be instantiated by the host.
 
                 #[derive(Debug)]
                 #[repr(transparent)]
-                pub struct Data {
-                    handle: _rt::Resource<Data>,
+                pub struct Script {
+                    handle: _rt::Resource<Script>,
                 }
 
-                type _DataRep<T> = Option<T>;
+                type _ScriptRep<T> = Option<T>;
 
-                impl Data {
+                impl Script {
                     /// Creates a new resource from the specified representation.
                     ///
                     /// This function will create a new resource handle by moving `val` onto
                     /// the heap and then passing that heap pointer to the component model to
-                    /// create a handle. The owned handle is then returned as `Data`.
-                    pub fn new<T: GuestData>(val: T) -> Self {
+                    /// create a handle. The owned handle is then returned as `Script`.
+                    pub fn new<T: GuestScript>(val: T) -> Self {
                         Self::type_guard::<T>();
-                        let val: _DataRep<T> = Some(val);
-                        let ptr: *mut _DataRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        let val: _ScriptRep<T> = Some(val);
+                        let ptr: *mut _ScriptRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
                         unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
                     }
 
                     /// Gets access to the underlying `T` which represents this resource.
-                    pub fn get<T: GuestData>(&self) -> &T {
+                    pub fn get<T: GuestScript>(&self) -> &T {
                         let ptr = unsafe { &*self.as_ptr::<T>() };
                         ptr.as_ref().unwrap()
                     }
 
                     /// Gets mutable access to the underlying `T` which represents this
                     /// resource.
-                    pub fn get_mut<T: GuestData>(&mut self) -> &mut T {
+                    pub fn get_mut<T: GuestScript>(&mut self) -> &mut T {
                         let ptr = unsafe { &mut *self.as_ptr::<T>() };
                         ptr.as_mut().unwrap()
                     }
 
                     /// Consumes this resource and returns the underlying `T`.
-                    pub fn into_inner<T: GuestData>(self) -> T {
+                    pub fn into_inner<T: GuestScript>(self) -> T {
                         let ptr = unsafe { &mut *self.as_ptr::<T>() };
                         ptr.take().unwrap()
                     }
@@ -1435,7 +1435,7 @@ pub mod exports {
                         _rt::Resource::handle(&self.handle)
                     }
 
-                    // It's theoretically possible to implement the `GuestData` trait twice
+                    // It's theoretically possible to implement the `GuestScript` trait twice
                     // so guard against using it with two different types here.
                     #[doc(hidden)]
                     fn type_guard<T: 'static>() {
@@ -1457,25 +1457,25 @@ pub mod exports {
                     #[doc(hidden)]
                     pub unsafe fn dtor<T: 'static>(handle: *mut u8) {
                         Self::type_guard::<T>();
-                        let _ = _rt::Box::from_raw(handle as *mut _DataRep<T>);
+                        let _ = _rt::Box::from_raw(handle as *mut _ScriptRep<T>);
                     }
 
-                    fn as_ptr<T: GuestData>(&self) -> *mut _DataRep<T> {
-                        Data::type_guard::<T>();
+                    fn as_ptr<T: GuestScript>(&self) -> *mut _ScriptRep<T> {
+                        Script::type_guard::<T>();
                         T::_resource_rep(self.handle()).cast()
                     }
                 }
 
-                /// A borrowed version of [`Data`] which represents a borrowed value
+                /// A borrowed version of [`Script`] which represents a borrowed value
                 /// with the lifetime `'a`.
                 #[derive(Debug)]
                 #[repr(transparent)]
-                pub struct DataBorrow<'a> {
+                pub struct ScriptBorrow<'a> {
                     rep: *mut u8,
-                    _marker: core::marker::PhantomData<&'a Data>,
+                    _marker: core::marker::PhantomData<&'a Script>,
                 }
 
-                impl<'a> DataBorrow<'a> {
+                impl<'a> ScriptBorrow<'a> {
                     #[doc(hidden)]
                     pub unsafe fn lift(rep: usize) -> Self {
                         Self {
@@ -1485,7 +1485,7 @@ pub mod exports {
                     }
 
                     /// Gets access to the underlying `T` in this resource.
-                    pub fn get<T: GuestData>(&self) -> &T {
+                    pub fn get<T: GuestScript>(&self) -> &T {
                         let ptr = unsafe { &mut *self.as_ptr::<T>() };
                         ptr.as_ref().unwrap()
                     }
@@ -1493,13 +1493,13 @@ pub mod exports {
                     // NB: mutable access is not allowed due to the component model allowing
                     // multiple borrows of the same resource.
 
-                    fn as_ptr<T: 'static>(&self) -> *mut _DataRep<T> {
-                        Data::type_guard::<T>();
+                    fn as_ptr<T: 'static>(&self) -> *mut _ScriptRep<T> {
+                        Script::type_guard::<T>();
                         self.rep.cast()
                     }
                 }
 
-                unsafe impl _rt::WasmResource for Data {
+                unsafe impl _rt::WasmResource for Script {
                     #[inline]
                     unsafe fn drop(_handle: u32) {
                         #[cfg(not(target_arch = "wasm32"))]
@@ -1507,9 +1507,9 @@ pub mod exports {
 
                         #[cfg(target_arch = "wasm32")]
                         {
-                            #[link(wasm_import_module = "[export]wired:script/lifecycle")]
+                            #[link(wasm_import_module = "[export]wired:script/types")]
                             extern "C" {
-                                #[link_name = "[resource-drop]data"]
+                                #[link_name = "[resource-drop]script"]
                                 fn drop(_: u32);
                             }
 
@@ -1520,27 +1520,26 @@ pub mod exports {
 
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_init_cabi<T: Guest>() -> i32 {
+                pub unsafe fn _export_constructor_script_cabi<T: GuestScript>() -> i32 {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
-                    let result0 = T::init();
+                    let result0 = Script::new(T::new());
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_update_cabi<T: Guest>(arg0: f32, arg1: i32) {
+                pub unsafe fn _export_method_script_update_cabi<T: GuestScript>(
+                    arg0: *mut u8,
+                    arg1: f32,
+                ) {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
-                    T::update(arg0, DataBorrow::lift(arg1 as u32 as usize));
+                    T::update(ScriptBorrow::lift(arg0 as u32 as usize).get(), arg1);
                 }
                 pub trait Guest {
-                    type Data: GuestData;
-                    /// Called once to initialize the script.
-                    fn init() -> Data;
-                    /// Called every tick.
-                    fn update(delta: f32, data: DataBorrow<'_>);
+                    type Script: GuestScript;
                 }
-                pub trait GuestData: 'static {
+                pub trait GuestScript: 'static {
                     #[doc(hidden)]
                     unsafe fn _resource_new(val: *mut u8) -> u32
                     where
@@ -1554,9 +1553,9 @@ pub mod exports {
 
                         #[cfg(target_arch = "wasm32")]
                         {
-                            #[link(wasm_import_module = "[export]wired:script/lifecycle")]
+                            #[link(wasm_import_module = "[export]wired:script/types")]
                             extern "C" {
-                                #[link_name = "[resource-new]data"]
+                                #[link_name = "[resource-new]script"]
                                 fn new(_: *mut u8) -> u32;
                             }
                             new(val)
@@ -1576,36 +1575,40 @@ pub mod exports {
 
                         #[cfg(target_arch = "wasm32")]
                         {
-                            #[link(wasm_import_module = "[export]wired:script/lifecycle")]
+                            #[link(wasm_import_module = "[export]wired:script/types")]
                             extern "C" {
-                                #[link_name = "[resource-rep]data"]
+                                #[link_name = "[resource-rep]script"]
                                 fn rep(_: u32) -> *mut u8;
                             }
                             unsafe { rep(handle) }
                         }
                     }
+
+                    fn new() -> Self;
+                    /// Called every tick.
+                    fn update(&self, delta: f32);
                 }
                 #[doc(hidden)]
 
-                macro_rules! __export_wired_script_lifecycle_cabi{
+                macro_rules! __export_wired_script_types_cabi{
       ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
-        #[export_name = "wired:script/lifecycle#init"]
-        unsafe extern "C" fn export_init() -> i32 {
-          $($path_to_types)*::_export_init_cabi::<$ty>()
+        #[export_name = "wired:script/types#[constructor]script"]
+        unsafe extern "C" fn export_constructor_script() -> i32 {
+          $($path_to_types)*::_export_constructor_script_cabi::<<$ty as $($path_to_types)*::Guest>::Script>()
         }
-        #[export_name = "wired:script/lifecycle#update"]
-        unsafe extern "C" fn export_update(arg0: f32,arg1: i32,) {
-          $($path_to_types)*::_export_update_cabi::<$ty>(arg0, arg1)
+        #[export_name = "wired:script/types#[method]script.update"]
+        unsafe extern "C" fn export_method_script_update(arg0: *mut u8,arg1: f32,) {
+          $($path_to_types)*::_export_method_script_update_cabi::<<$ty as $($path_to_types)*::Guest>::Script>(arg0, arg1)
         }
 
         const _: () = {
           #[doc(hidden)]
-          #[export_name = "wired:script/lifecycle#[dtor]data"]
+          #[export_name = "wired:script/types#[dtor]script"]
           #[allow(non_snake_case)]
           unsafe extern "C" fn dtor(rep: *mut u8) {
-            $($path_to_types)*::Data::dtor::<
-            <$ty as $($path_to_types)*::Guest>::Data
+            $($path_to_types)*::Script::dtor::<
+            <$ty as $($path_to_types)*::Guest>::Script
             >(rep)
           }
         };
@@ -1613,7 +1616,7 @@ pub mod exports {
       };);
     }
                 #[doc(hidden)]
-                pub(crate) use __export_wired_script_lifecycle_cabi;
+                pub(crate) use __export_wired_script_types_cabi;
             }
         }
     }
@@ -1790,7 +1793,7 @@ mod _rt {
 macro_rules! __export_script_impl {
   ($ty:ident) => (self::export!($ty with_types_in self););
   ($ty:ident with_types_in $($path_to_types_root:tt)*) => (
-  $($path_to_types_root)*::exports::wired::script::lifecycle::__export_wired_script_lifecycle_cabi!($ty with_types_in $($path_to_types_root)*::exports::wired::script::lifecycle);
+  $($path_to_types_root)*::exports::wired::script::types::__export_wired_script_types_cabi!($ty with_types_in $($path_to_types_root)*::exports::wired::script::types);
   )
 }
 #[doc(inline)]
@@ -1799,8 +1802,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 2133] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xd8\x0f\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 2161] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xf4\x0f\x01A\x02\x01\
 A\x10\x01B\x12\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
 material\x03\x01\x01h\x02\x01@\x01\x04self\x03\0y\x04\0\x13[method]material.id\x01\
 \x04\x01@\x01\x04self\x03\0\x01\x04\0\x16[method]material.color\x01\x05\x01@\x02\
@@ -1845,11 +1848,11 @@ e\x07\x01\0\x04\0\x1a[method]node.set-transform\x01\x14\x01i\x01\x01k\x15\x01@\x
 \x0bremove-node\x01\x1d\x03\x01\x0fwired:gltf/node\x05\x07\x01B\x04\x01m\x04\x05\
 debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\x07\
 messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x08\x01B\x07\x04\
-\0\x04data\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x04init\x01\x02\x01h\0\x01@\x02\x05\
-deltav\x04data\x03\x01\0\x04\0\x06update\x01\x04\x04\x01\x16wired:script/lifecyc\
-le\x05\x09\x04\x01\x16test:wired-gltf/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\
-\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bi\
-ndgen-rust\x060.25.0";
+\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01\
+h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\
+\x01\x12wired:script/types\x05\x09\x04\x01\x16test:wired-gltf/script\x04\0\x0b\x0c\
+\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-componen\
+t\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

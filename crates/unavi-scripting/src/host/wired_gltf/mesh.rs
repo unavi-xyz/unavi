@@ -3,8 +3,8 @@ use std::sync::{Arc, RwLock, RwLockWriteGuard};
 use anyhow::{anyhow, bail, Result};
 use crossbeam::channel::Sender;
 use wasm_component_layer::{
-    AsContext, AsContextMut, Func, FuncType, Linker, List, ListType, OptionType, ResourceType,
-    Store, StoreContextMut, Value, ValueType,
+    AsContext, AsContextMut, Func, FuncType, Linker, List, ListType, ResourceType, Store,
+    StoreContextMut, Value, ValueType,
 };
 
 use crate::{load::EngineBackend, resource_table::ResourceTable, StoreData};

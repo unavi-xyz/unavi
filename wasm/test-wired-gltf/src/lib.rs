@@ -1,4 +1,4 @@
-use bindings::exports::wired::script::lifecycle::{Data, DataBorrow, Guest, GuestData};
+use bindings::exports::wired::script::types::{Guest, GuestScript};
 
 use crate::bindings::wired::log::api::{log, LogLevel};
 
@@ -10,26 +10,21 @@ mod mesh;
 mod node;
 mod property_tests;
 
-struct DataImpl {}
+#[derive(Default)]
+struct Script {}
 
-impl GuestData for DataImpl {}
-
-struct Script;
-
-impl Guest for Script {
-    type Data = DataImpl;
-
-    fn init() -> Data {
+impl GuestScript for Script {
+    fn new() -> Self {
         log(LogLevel::Info, "Hello from script!");
 
         material::test_material_api();
         mesh::test_mesh_api();
         node::test_node_api();
 
-        Data::new(DataImpl {})
+        Script::default()
     }
 
-    fn update(_delta: f32, _data: DataBorrow) {}
+    fn update(&self, _delta: f32) {}
 }
 
 fn panic_log(err: &str) {
@@ -37,4 +32,10 @@ fn panic_log(err: &str) {
     panic!("{}", err);
 }
 
-bindings::export!(Script with_types_in bindings);
+struct Api;
+
+impl Guest for Api {
+    type Script = Script;
+}
+
+bindings::export!(Api with_types_in bindings);

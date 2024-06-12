@@ -1,5 +1,5 @@
 use anyhow::{bail, Result};
-use bevy::log::{debug, error, info, warn};
+use bevy::log::{debug, error, info, info_span, warn};
 use wasm_component_layer::{
     AsContextMut, EnumType, Func, FuncType, Linker, Store, Value, ValueType,
 };
@@ -13,7 +13,11 @@ const ERROR: &str = "error";
 
 const LEVELS: [&str; 4] = [DEBUG, INFO, WARN, ERROR];
 
-pub fn add_to_host(store: &mut Store<StoreData, EngineBackend>, linker: &mut Linker) -> Result<()> {
+pub fn add_to_host(
+    name: String,
+    store: &mut Store<StoreData, EngineBackend>,
+    linker: &mut Linker,
+) -> Result<()> {
     let log_level = EnumType::new(None, LEVELS)?;
 
     let log = Func::new(
@@ -30,7 +34,8 @@ pub fn add_to_host(store: &mut Store<StoreData, EngineBackend>, linker: &mut Lin
                 _ => bail!("invalid arg type"),
             };
 
-            let message = format!("SCRIPT: {}", message);
+            let span = info_span!("Script", name);
+            let span = span.enter();
 
             match level {
                 DEBUG => debug!("{}", message),
@@ -39,6 +44,8 @@ pub fn add_to_host(store: &mut Store<StoreData, EngineBackend>, linker: &mut Lin
                 ERROR => error!("{}", message),
                 _ => unreachable!(),
             };
+
+            drop(span);
 
             Ok(())
         },

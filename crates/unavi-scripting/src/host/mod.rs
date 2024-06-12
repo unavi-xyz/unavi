@@ -13,11 +13,12 @@ pub struct HostScriptResults {
 }
 
 pub fn add_host_script_apis(
+    name: String,
     store: &mut Store<StoreData, EngineBackend>,
     linker: &mut Linker,
 ) -> Result<HostScriptResults> {
     let wired_gltf_components = wired_gltf::add_to_host(store, linker)?;
-    wired_log::add_to_host(store, linker)?;
+    wired_log::add_to_host(name, store, linker)?;
 
     Ok(HostScriptResults {
         wired_gltf_components,

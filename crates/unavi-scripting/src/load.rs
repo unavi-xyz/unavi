@@ -40,7 +40,7 @@ pub fn load_scripts(
         let mut store = Store::new(&engine, StoreData::default());
         let mut linker = Linker::default();
 
-        let host = match add_host_script_apis(&mut store, &mut linker) {
+        let host = match add_host_script_apis(name.to_string(), &mut store, &mut linker) {
             Ok(r) => r,
             Err(e) => {
                 error!("Failed to add host APIs: {}", e);

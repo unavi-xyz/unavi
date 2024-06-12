@@ -1,6 +1,9 @@
 use crate::{
     bindings::wired::{
-        gltf::mesh::{create_mesh, list_meshes, remove_mesh, Mesh, Primitive},
+        gltf::{
+            material::create_material,
+            mesh::{create_mesh, list_meshes, remove_mesh, Mesh, Primitive},
+        },
         log::api::{log, LogLevel},
     },
     property_tests::{test_property, Property},
@@ -33,5 +36,8 @@ pub fn test_mesh_api() {
     primitive.set_indices(&[0, 1, 2]);
     primitive.set_normals(&[0.0, 1.0, 2.0]);
     primitive.set_positions(&[0.0, 1.0, 2.0]);
-    primitive.set_uvs(&[0.0, 1.0, 2.0]);
+    primitive.set_uvs(&[0.0, 1.0]);
+
+    let material = create_material();
+    primitive.set_material(&material);
 }

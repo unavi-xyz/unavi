@@ -3,14 +3,15 @@ use std::sync::{Arc, RwLock, RwLockWriteGuard};
 use anyhow::{anyhow, bail, Result};
 use crossbeam::channel::Sender;
 use wasm_component_layer::{
-    AsContext, AsContextMut, Func, FuncType, Linker, List, ListType, ResourceType, Store,
-    StoreContextMut, Value, ValueType,
+    AsContext, AsContextMut, Func, FuncType, Linker, List, ListType, OptionType, ResourceType,
+    Store, StoreContextMut, Value, ValueType,
 };
 
 use crate::{load::EngineBackend, resource_table::ResourceTable, StoreData};
 
 use super::{
     local_data::{LocalData, MeshData, PrimitiveData},
+    material::MaterialResource,
     SharedTypes, WiredGltfAction,
 };
 
@@ -30,6 +31,7 @@ pub fn add_to_host(
     let resource_table = store.data().resource_table.clone();
     let interface = linker.define_instance("wired:gltf/mesh".try_into()?)?;
 
+    let material_type = &shared_types.material_type;
     let mesh_type = &shared_types.mesh_type;
 
     let mesh_list_type = ListType::new(ValueType::Own(mesh_type.clone()));
@@ -193,6 +195,66 @@ pub fn add_to_host(
                 sender.send(WiredGltfAction::SetPrimitiveUvs {
                     id: primitive.0,
                     value,
+                })?;
+
+                Ok(())
+            },
+        )
+    };
+
+    let primitive_material_fn = {
+        let local_data = local_data.clone();
+        Func::new(
+            store.as_context_mut(),
+            FuncType::new(
+                [ValueType::Borrow(primitive_type.clone())],
+                [ValueType::Borrow(material_type.clone())],
+            ),
+            move |ctx, args, _results| {
+                let resource = match &args[0] {
+                    Value::Borrow(v) => v,
+                    _ => bail!("invalid arg"),
+                };
+
+                let ctx_ref = ctx.as_context();
+                let _primitive: &PrimitiveResource = resource.rep(&ctx_ref)?;
+
+                let _local_data = local_data.read().unwrap();
+
+                todo!();
+            },
+        )
+    };
+
+    let primitive_set_material_fn = {
+        let sender = sender.clone();
+        Func::new(
+            store.as_context_mut(),
+            FuncType::new(
+                [
+                    ValueType::Borrow(primitive_type.clone()),
+                    ValueType::Borrow(material_type.clone()),
+                ],
+                [],
+            ),
+            move |ctx, args, _results| {
+                let res_primitive = match &args[0] {
+                    Value::Borrow(v) => v,
+                    _ => bail!("invalid arg"),
+                };
+
+                let res_material = match &args[1] {
+                    Value::Borrow(v) => v,
+                    _ => bail!("invalid arg"),
+                };
+
+                let ctx_ref = ctx.as_context();
+                let primitive: &PrimitiveResource = res_primitive.rep(&ctx_ref)?;
+                let material: &MaterialResource = res_material.rep(&ctx_ref)?;
+
+                sender.send(WiredGltfAction::SetPrimitiveMaterial {
+                    id: primitive.0,
+                    material: material.0,
                 })?;
 
                 Ok(())
@@ -480,6 +542,8 @@ pub fn add_to_host(
         primitive_set_positions_fn,
     )?;
     interface.define_func("[method]primitive.set-uvs", primitive_set_uvs_fn)?;
+    interface.define_func("[method]primitive.material", primitive_material_fn)?;
+    interface.define_func("[method]primitive.set-material", primitive_set_material_fn)?;
 
     interface.define_resource("mesh", mesh_type.clone())?;
     interface.define_func("[method]mesh.id", mesh_id_fn)?;

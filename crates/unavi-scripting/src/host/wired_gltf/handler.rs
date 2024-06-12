@@ -11,7 +11,7 @@ use crate::Owner;
 
 use super::{WiredGltfAction, WiredGltfReceiver};
 
-#[derive(Component, Debug)]
+#[derive(Component, Clone, Copy, Debug)]
 pub struct NodeId(pub u32);
 
 #[derive(Bundle)]
@@ -36,7 +36,7 @@ impl WiredNodeBundle {
 #[derive(Component, Default, Deref, DerefMut)]
 pub struct NodePrimitives(pub HashMap<u32, Entity>);
 
-#[derive(Component, Debug)]
+#[derive(Component, Clone, Copy, Debug)]
 pub struct MeshId(pub u32);
 
 #[derive(Bundle)]
@@ -54,18 +54,18 @@ impl WiredMeshBundle {
     }
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Clone, Copy, Debug)]
 pub struct PrimitiveId(pub u32);
 
 #[derive(Bundle)]
 pub struct WiredPrimitiveBundle {
+    pub handle_mesh: Handle<Mesh>,
     pub id: PrimitiveId,
     pub mesh: MeshId,
-    pub handle: Handle<Mesh>,
     pub owner: Owner,
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Clone, Copy, Debug)]
 pub struct MaterialId(pub u32);
 
 #[derive(Bundle)]
@@ -86,10 +86,16 @@ impl WiredMaterialBundle {
 pub fn handle_wired_gltf_actions(
     world: &mut World,
     materials: &mut QueryState<(Entity, &MaterialId, &Handle<StandardMaterial>)>,
-    meshes: &mut QueryState<(Entity, &MeshId)>,
+    meshes: &mut QueryState<(Entity, &MeshId), Without<PrimitiveId>>,
     mut default_material: Local<Option<Handle<StandardMaterial>>>,
     nodes: &mut QueryState<(Entity, &NodeId, &mut NodePrimitives)>,
-    primitives: &mut QueryState<(Entity, &PrimitiveId, &MeshId, &Handle<Mesh>)>,
+    primitives: &mut QueryState<(
+        Entity,
+        &PrimitiveId,
+        &MeshId,
+        &Handle<Mesh>,
+        Option<&MaterialId>,
+    )>,
     scripts: &mut QueryState<(Entity, &WiredGltfReceiver)>,
     transforms: &mut QueryState<&mut Transform>,
 ) {
@@ -166,7 +172,7 @@ pub fn handle_wired_gltf_actions(
                             id: PrimitiveId(id),
                             mesh: MeshId(mesh),
                             owner: Owner(entity),
-                            handle: mesh_handle,
+                            handle_mesh: mesh_handle,
                         });
                     }
 
@@ -272,9 +278,9 @@ pub fn handle_wired_gltf_actions(
                     let primitives = mesh.map(|mesh| {
                         primitives
                             .iter(world)
-                            .filter_map(|(_, pid, m, handle)| {
+                            .filter_map(|(_, pid, m, handle_mesh, material)| {
                                 if m.0 == mesh {
-                                    Some((pid.0, handle.clone()))
+                                    Some((pid.0, handle_mesh.clone(), material.copied()))
                                 } else {
                                     None
                                 }
@@ -293,7 +299,7 @@ pub fn handle_wired_gltf_actions(
                             let mut to_remove_ids = Vec::new();
 
                             for id in node_primitives.keys() {
-                                if !primitives.iter().any(|(pid, _)| pid == id) {
+                                if !primitives.iter().any(|(pid, ..)| pid == id) {
                                     to_remove_ids.push(*id);
                                 }
                             }
@@ -303,12 +309,12 @@ pub fn handle_wired_gltf_actions(
                                 to_remove.push(ent);
                             }
 
-                            for (id, handle) in primitives {
+                            for (id, handle_mesh, material) in primitives {
                                 if node_primitives.contains_key(&id) {
                                     continue;
                                 }
 
-                                to_add.push((id, handle.clone()));
+                                to_add.push((id, handle_mesh.clone(), material.clone()));
                             }
                         } else {
                             for ent in node_primitives.values() {
@@ -324,10 +330,24 @@ pub fn handle_wired_gltf_actions(
                             world.entity_mut(ent).despawn();
                         }
 
-                        for (id, handle) in to_add {
+                        for (id, handle, material_id) in to_add {
+                            let material = if let Some(material_id) = material_id {
+                                if let Some((_, handle_material)) =
+                                    find_material(materials, material_id.0, world)
+                                {
+                                    warn!("Material {} set", material_id.0);
+                                    handle_material.clone()
+                                } else {
+                                    warn!("Material {} does not exist", material_id.0);
+                                    default_material.clone()
+                                }
+                            } else {
+                                default_material.clone()
+                            };
+
                             let primitive_ent = world
                                 .spawn(MaterialMeshBundle {
-                                    material: default_material.clone(),
+                                    material,
                                     mesh: handle.clone(),
                                     ..Default::default()
                                 })
@@ -353,11 +373,28 @@ pub fn handle_wired_gltf_actions(
                     let span = info_span!("SetPrimitiveIndices", id);
                     let s = span.entered();
 
-                    if let Some((_, handle)) = find_primitive(primitives, id, world) {
-                        let handle = handle.clone();
+                    if let Some((_, handle_mesh, _)) = find_primitive(primitives, id, world) {
+                        let handle = handle_mesh.clone();
                         let mut mesh_assets = world.resource_mut::<Assets<Mesh>>();
                         let mesh = mesh_assets.get_mut(handle).unwrap();
                         mesh.insert_indices(Indices::U32(value));
+                    } else {
+                        warn!("Primitive {} does not exist", id);
+                    }
+
+                    drop(s);
+                }
+                WiredGltfAction::SetPrimitiveMaterial { id, material } => {
+                    let span = info_span!("SetPrimitiveMaterial", id, material);
+                    let s = span.entered();
+
+                    if let Some((ent, ..)) = find_primitive(primitives, id, world) {
+                        if let Some((_, handle)) = find_material(materials, material, world) {
+                            let handle = handle.clone();
+                            world.entity_mut(ent).insert(handle);
+                        } else {
+                            warn!("Material {} does not exist", material);
+                        }
                     } else {
                         warn!("Primitive {} does not exist", id);
                     }
@@ -368,8 +405,8 @@ pub fn handle_wired_gltf_actions(
                     let span = info_span!("SetPrimitiveNormals", id);
                     let s = span.entered();
 
-                    if let Some((_, handle)) = find_primitive(primitives, id, world) {
-                        let handle = handle.clone();
+                    if let Some((_, handle_mesh, _)) = find_primitive(primitives, id, world) {
+                        let handle = handle_mesh.clone();
                         let mut mesh_assets = world.resource_mut::<Assets<Mesh>>();
                         let mesh = mesh_assets.get_mut(handle).unwrap();
 
@@ -392,8 +429,8 @@ pub fn handle_wired_gltf_actions(
                     let span = info_span!("SetPrimitivePositions", id);
                     let s = span.entered();
 
-                    if let Some((_, handle)) = find_primitive(primitives, id, world) {
-                        let handle = handle.clone();
+                    if let Some((_, handle_mesh, _)) = find_primitive(primitives, id, world) {
+                        let handle = handle_mesh.clone();
                         let mut mesh_assets = world.resource_mut::<Assets<Mesh>>();
                         let mesh = mesh_assets.get_mut(handle).unwrap();
 
@@ -416,8 +453,8 @@ pub fn handle_wired_gltf_actions(
                     let span = info_span!("SetPrimitiveUvs", id);
                     let s = span.entered();
 
-                    if let Some((_, handle)) = find_primitive(primitives, id, world) {
-                        let handle = handle.clone();
+                    if let Some((_, handle_mesh, _)) = find_primitive(primitives, id, world) {
+                        let handle = handle_mesh.clone();
                         let mut mesh_assets = world.resource_mut::<Assets<Mesh>>();
                         let mesh = mesh_assets.get_mut(handle).unwrap();
 
@@ -456,24 +493,36 @@ fn find_node<'a>(
     })
 }
 
-fn find_mesh(meshes: &mut QueryState<(Entity, &MeshId)>, id: u32, world: &World) -> Option<Entity> {
+fn find_mesh(
+    meshes: &mut QueryState<(Entity, &MeshId), Without<PrimitiveId>>,
+    id: u32,
+    world: &World,
+) -> Option<Entity> {
     meshes
         .iter(world)
         .find_map(|(ent, mid)| if mid.0 == id { Some(ent) } else { None })
 }
 
 fn find_primitive<'a>(
-    primitives: &'a mut QueryState<(Entity, &PrimitiveId, &MeshId, &Handle<Mesh>)>,
+    primitives: &'a mut QueryState<(
+        Entity,
+        &PrimitiveId,
+        &MeshId,
+        &Handle<Mesh>,
+        Option<&MaterialId>,
+    )>,
     id: u32,
     world: &'a World,
-) -> Option<(Entity, &'a Handle<Mesh>)> {
-    primitives.iter(world).find_map(|(ent, pid, _, handle)| {
-        if pid.0 == id {
-            Some((ent, handle))
-        } else {
-            None
-        }
-    })
+) -> Option<(Entity, &'a Handle<Mesh>, Option<&'a MaterialId>)> {
+    primitives
+        .iter(world)
+        .find_map(|(ent, pid, _, handle_mesh, material)| {
+            if pid.0 == id {
+                Some((ent, handle_mesh, material))
+            } else {
+                None
+            }
+        })
 }
 
 fn find_material<'a>(
@@ -493,6 +542,7 @@ fn find_material<'a>(
 #[cfg(test)]
 mod tests {
     use crossbeam::channel::Sender;
+    use tracing_test::traced_test;
 
     use super::*;
 
@@ -512,6 +562,7 @@ mod tests {
 
     // Node
     #[test]
+    #[traced_test]
     fn create_node() {
         let (mut app, send) = setup_test();
 
@@ -525,6 +576,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn create_node_duplicate_id() {
         let (mut app, send) = setup_test();
 
@@ -541,6 +593,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn remove_node() {
         let (mut app, send) = setup_test();
 
@@ -556,6 +609,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn remove_invalid_node() {
         let (mut app, send) = setup_test();
 
@@ -564,6 +618,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn set_node_parent_some() {
         let (mut app, send) = setup_test();
 
@@ -587,6 +642,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn set_node_parent_none() {
         let (mut app, send) = setup_test();
 
@@ -616,6 +672,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn set_node_invalid_parent() {
         let (mut app, send) = setup_test();
 
@@ -634,6 +691,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn set_node_transform() {
         let (mut app, send) = setup_test();
 
@@ -656,6 +714,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn set_node_mesh_some() {
         let (mut app, send) = setup_test();
 
@@ -667,14 +726,24 @@ mod tests {
         let mesh_id = 1;
         app.world.spawn(WiredMeshBundle::new(mesh_id, owner));
 
-        let handle = Handle::default();
-        let primitive_id = 2;
-        app.world.spawn(WiredPrimitiveBundle {
-            handle: handle.clone(),
-            id: PrimitiveId(primitive_id),
-            mesh: MeshId(mesh_id),
-            owner: Owner(owner),
+        let material_id = 2;
+        let handle_material = Handle::default();
+        app.world.spawn(WiredMaterialBundle {
+            id: MaterialId(material_id),
+            handle: handle_material.clone(),
         });
+
+        let handle_mesh = Handle::default();
+        let primitive_id = 3;
+        app.world.spawn((
+            WiredPrimitiveBundle {
+                handle_mesh: handle_mesh.clone(),
+                id: PrimitiveId(primitive_id),
+                mesh: MeshId(mesh_id),
+                owner: Owner(owner),
+            },
+            MaterialId(material_id),
+        ));
 
         send.send(WiredGltfAction::SetNodeMesh {
             id,
@@ -686,11 +755,18 @@ mod tests {
         let node_primitives = app.world.get::<NodePrimitives>(ent).unwrap();
         let primitive_ent = node_primitives[&primitive_id];
 
-        let found_handle = app.world.get::<Handle<Mesh>>(primitive_ent).unwrap();
-        assert_eq!(*found_handle, handle);
+        let found_mesh = app.world.get::<Handle<Mesh>>(primitive_ent).unwrap();
+        assert_eq!(*found_mesh, handle_mesh);
+
+        let found_material = app
+            .world
+            .get::<Handle<StandardMaterial>>(primitive_ent)
+            .unwrap();
+        assert_eq!(*found_material, handle_material);
     }
 
     #[test]
+    #[traced_test]
     fn set_node_mesh_none() {
         let (mut app, send) = setup_test();
 
@@ -702,7 +778,7 @@ mod tests {
         let handle = Handle::default();
         let primitive_id = 2;
         app.world.spawn(WiredPrimitiveBundle {
-            handle: handle.clone(),
+            handle_mesh: handle.clone(),
             id: PrimitiveId(primitive_id),
             mesh: MeshId(mesh_id),
             owner: Owner(owner),
@@ -742,6 +818,7 @@ mod tests {
 
     // Mesh
     #[test]
+    #[traced_test]
     fn create_mesh() {
         let (mut app, send) = setup_test();
 
@@ -755,6 +832,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn create_mesh_duplicate_id() {
         let (mut app, send) = setup_test();
 
@@ -769,6 +847,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn remove_mesh() {
         let (mut app, send) = setup_test();
 
@@ -782,6 +861,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn remove_invalid_mesh() {
         let (mut app, send) = setup_test();
 
@@ -791,6 +871,7 @@ mod tests {
 
     // Primitive
     #[test]
+    #[traced_test]
     fn create_primitive() {
         let (mut app, send) = setup_test();
 
@@ -808,6 +889,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn create_primitive_invalid_mesh() {
         let (mut app, send) = setup_test();
 
@@ -822,6 +904,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn create_primitive_duplicate_id() {
         let (mut app, send) = setup_test();
 
@@ -834,7 +917,7 @@ mod tests {
         app.world.spawn(WiredPrimitiveBundle {
             id: PrimitiveId(id),
             mesh: MeshId(mesh),
-            handle: Default::default(),
+            handle_mesh: Default::default(),
             owner: Owner(owner),
         });
 
@@ -847,6 +930,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn remove_primitive() {
         let (mut app, send) = setup_test();
 
@@ -861,7 +945,7 @@ mod tests {
             .spawn(WiredPrimitiveBundle {
                 id: PrimitiveId(id),
                 mesh: MeshId(mesh),
-                handle: Default::default(),
+                handle_mesh: Default::default(),
                 owner: Owner(owner),
             })
             .id();
@@ -873,6 +957,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn remove_invalid_primitive() {
         let (mut app, send) = setup_test();
 
@@ -882,6 +967,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn set_primitive_indices() {
         let (mut app, send) = setup_test();
 
@@ -900,7 +986,7 @@ mod tests {
         app.world.spawn(WiredPrimitiveBundle {
             id: PrimitiveId(id),
             mesh: MeshId(mesh),
-            handle: handle.clone(),
+            handle_mesh: handle.clone(),
             owner: Owner(owner),
         });
 
@@ -925,6 +1011,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn set_primitive_normals() {
         let (mut app, send) = setup_test();
 
@@ -943,7 +1030,7 @@ mod tests {
         app.world.spawn(WiredPrimitiveBundle {
             id: PrimitiveId(id),
             mesh: MeshId(mesh),
-            handle: handle.clone(),
+            handle_mesh: handle.clone(),
             owner: Owner(owner),
         });
 
@@ -973,6 +1060,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn set_primitive_positions() {
         let (mut app, send) = setup_test();
 
@@ -991,7 +1079,7 @@ mod tests {
         app.world.spawn(WiredPrimitiveBundle {
             id: PrimitiveId(id),
             mesh: MeshId(mesh),
-            handle: handle.clone(),
+            handle_mesh: handle.clone(),
             owner: Owner(owner),
         });
 
@@ -1021,6 +1109,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn set_primitive_uvs() {
         let (mut app, send) = setup_test();
 
@@ -1039,7 +1128,7 @@ mod tests {
         app.world.spawn(WiredPrimitiveBundle {
             id: PrimitiveId(id),
             mesh: MeshId(mesh),
-            handle: handle.clone(),
+            handle_mesh: handle.clone(),
             owner: Owner(owner),
         });
 
@@ -1061,8 +1150,59 @@ mod tests {
         assert_eq!(len, value.len() / 2);
     }
 
+    #[test]
+    #[traced_test]
+    fn set_primitive_material() {
+        let (mut app, send) = setup_test();
+
+        let owner = app.world.spawn(()).id();
+
+        let mesh = 0;
+        app.world.spawn(MeshId(mesh));
+
+        let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
+        let handle_mesh = meshes.add(Mesh::new(
+            PrimitiveTopology::TriangleList,
+            RenderAssetUsages::all(),
+        ));
+
+        let primitive = 1;
+        let primitive_ent = app
+            .world
+            .spawn(WiredPrimitiveBundle {
+                id: PrimitiveId(primitive),
+                mesh: MeshId(mesh),
+                handle_mesh: handle_mesh.clone(),
+                owner: Owner(owner),
+            })
+            .id();
+
+        let mut materials = app.world.resource_mut::<Assets<StandardMaterial>>();
+        let handle_material = materials.add(StandardMaterial::default());
+
+        let material = 3;
+        app.world.spawn(WiredMaterialBundle {
+            id: MaterialId(material),
+            handle: handle_material.clone(),
+        });
+
+        send.send(WiredGltfAction::SetPrimitiveMaterial {
+            id: primitive,
+            material,
+        })
+        .unwrap();
+        app.update();
+
+        let found_handle = app
+            .world
+            .get::<Handle<StandardMaterial>>(primitive_ent)
+            .unwrap();
+        assert_eq!(*found_handle, handle_material);
+    }
+
     // Material
     #[test]
+    #[traced_test]
     fn create_material() {
         let (mut app, send) = setup_test();
 
@@ -1078,6 +1218,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn create_material_duplicate_id() {
         let (mut app, send) = setup_test();
 
@@ -1095,6 +1236,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn remove_material() {
         let (mut app, send) = setup_test();
 
@@ -1111,6 +1253,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn remove_invalid_material() {
         let (mut app, send) = setup_test();
 
@@ -1120,5 +1263,27 @@ mod tests {
     }
 
     #[test]
-    fn set_material_color() {}
+    #[traced_test]
+    fn set_material_color() {
+        let (mut app, send) = setup_test();
+
+        let mut material_assets = app.world.resource_mut::<Assets<StandardMaterial>>();
+        let handle = material_assets.add(StandardMaterial::default());
+
+        let id = 0;
+        app.world.spawn((MaterialId(id), handle.clone()));
+
+        let color = Color::rgba(0.1, 0.2, 0.3, 0.4);
+
+        send.send(WiredGltfAction::SetMaterialColor {
+            id,
+            color: color.clone(),
+        })
+        .unwrap();
+        app.update();
+
+        let material_assets = app.world.resource::<Assets<StandardMaterial>>();
+        let material = material_assets.get(handle).unwrap();
+        assert_eq!(material.base_color, color);
+    }
 }

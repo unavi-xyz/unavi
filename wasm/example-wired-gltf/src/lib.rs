@@ -22,11 +22,13 @@ struct Script {
 
 impl GuestScript for Script {
     fn new() -> Self {
-        log(LogLevel::Info, "Hello from example-wired-gltf!");
-
+        log(LogLevel::Info, "Creating node");
         let node = create_node();
+
+        log(LogLevel::Info, "Creating mesh");
         let mesh = create_cuboid(Vec3::splat(1.0));
 
+        log(LogLevel::Info, "Creating material");
         let material = create_material();
         material.set_color(Color {
             r: 1.0,
@@ -35,10 +37,12 @@ impl GuestScript for Script {
             a: 1.0,
         });
 
-        for primitive in mesh.list_primitives() {
-            primitive.set_material(&material);
-        }
+        // log(LogLevel::Info, "Setting material");
+        // for primitive in mesh.list_primitives() {
+        //     primitive.set_material(&material);
+        // }
 
+        log(LogLevel::Info, "Setting mesh");
         node.set_mesh(&mesh);
 
         Script { node }
@@ -60,6 +64,8 @@ impl GuestScript for Script {
         transform.rotation.y = quat.y;
         transform.rotation.z = quat.z;
         transform.rotation.w = quat.w;
+
+        self.node.set_transform(transform);
     }
 }
 

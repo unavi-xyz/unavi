@@ -58,9 +58,7 @@ lto = true
 [profile.wasm-release]
 inherits = "release"
 codegen-units = 1
-debug = false
 opt-level = "s"
-strip = true
 
 [patch.crates-io]
 dwn = { git = "https://github.com/unavi-xyz/dwn.git" }

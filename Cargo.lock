@@ -4085,9 +4085,7 @@ dependencies = [
 name = "example-wired-gltf"
 version = "0.0.3"
 dependencies = [
- "bevy",
  "glam 0.28.0",
- "unavi-scripting",
  "wit-bindgen-rt",
 ]
 

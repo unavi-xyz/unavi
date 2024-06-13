@@ -153,12 +153,7 @@ let
     craneLib.buildPackage (unaviAppConfig // { cargoArtifacts = unaviAppArtifacts; } // mkAppEnv input);
   unavi-app = mkUnaviApp { inherit worldHostDid; };
 
-  unaviWebArtifacts = craneLib.buildDepsOnly unaviWebConfig;
-  mkUnaviWeb =
-    input:
-    craneLib.buildTrunkPackage (
-      unaviWebConfig // { cargoArtifacts = unaviWebArtifacts; } // mkAppEnv input
-    );
+  mkUnaviWeb = input: craneLib.buildTrunkPackage (unaviWebConfig // mkAppEnv input);
   unavi-web = mkUnaviWeb { inherit worldHostDid; };
 
   unavi-server = craneLib.buildPackage unaviServerConfig;

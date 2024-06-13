@@ -55,9 +55,14 @@ opt-level = 3
 [profile.release]
 lto = true
 
-[profile.wasm-release]
+[profile.release-wasm]
 inherits = "release"
 codegen-units = 1
+opt-level = "s"
+
+[profile.release-web]
+inherits = "release"
+lto = false
 opt-level = "s"
 
 [patch.crates-io]

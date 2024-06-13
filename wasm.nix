@@ -27,7 +27,7 @@ let
         mold
       ];
 
-      cargoBuildCommand = "cargo component build --profile wasm-release --target wasm32-unknown-unknown";
+      cargoBuildCommand = "cargo component build --profile release-wasm --target wasm32-unknown-unknown";
       cargoExtraArgs = "--locked -p ${pname}";
       doCheck = false;
       strictDeps = true;

@@ -98,6 +98,8 @@ let
     wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
 
     preBuild = wasm.generateAssetsScript;
+
+    CARGO_PROFILE = "release-web";
   };
 
   unaviServerConfig = rec {

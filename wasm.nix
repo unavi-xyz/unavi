@@ -1,13 +1,31 @@
 {
   craneLib,
   flake-utils,
-  localSystem,
   pkgs,
-  self,
   ...
 }:
 let
   lib = pkgs.lib;
+
+  wac-cli = pkgs.rustPlatform.buildRustPackage rec {
+    pname = "wac-cli";
+    version = "0.3.0";
+
+    src = pkgs.fetchFromGitHub {
+      owner = "bytecodealliance";
+      repo = "wac";
+      rev = "v${version}";
+      sha256 = "sha256-xv+lSsJ+SSRovJ0mt8/AbEjEdyaRvO3qzY44ih9oSF0=";
+    };
+
+    cargoHash = "sha256-+hmTsTfcxygdU/pDTkmkuQgujEOR1+H8YZG4ScVBKcc=";
+
+    nativeBuildInputs = [ pkgs.pkg-config ];
+
+    buildInputs = [
+      pkgs.openssl
+    ] ++ lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.SystemConfiguration ];
+  };
 
   crate = craneLib.crateNameFromCargoToml { cargoToml = ./Cargo.toml; };
 
@@ -39,35 +57,59 @@ let
     name = "components";
     paths = map buildComponent componentNames;
 
-    nativeBuildInputs = with pkgs; [ wasm-tools ];
+    nativeBuildInputs = [
+      wac-cli
+      pkgs.wasm-tools
+    ];
 
     postBuild =
       let
-        # We must manually keep this updated for WASM component dependencies.
-        # `wasm-tools compose` says it can search directories automatically for dependencies,
-        # but I've never gotten it to work.
-        #
-        # This could maybe be automated if you extract the interface from each component wit definition.
-        #
-        # Example:
-        # dependencies:
-        #   unavi:foo/bar: ${buildComponent "unavi-foo"}/lib/unavi_foo.wasm
-        config = pkgs.writeText "config.yml" ''
-          dependencies:
-            unavi:shapes/api: ${buildComponent "unavi-shapes"}/lib/unavi_shapes.wasm
-        '';
+        processName =
+          name:
+          let
+            parts = lib.strings.splitString "-" name;
+            namespace = builtins.elemAt parts 0;
+            packageParts = builtins.tail parts;
+            package = lib.concatStringsSep "-" packageParts;
+
+            inName = lib.replaceStrings [ "-" ] [ "_" ] name;
+
+            inFile = "$out/lib/${inName}.wasm";
+            outDir = "$out/lib/${crate.version}/${namespace}";
+            outFile = "${outDir}/${package}.wasm";
+          in
+          {
+            inherit inFile outDir outFile;
+          };
       in
       lib.concatStrings (
         map (
           name:
           let
-            wasm_name = lib.replaceStrings [ "-" ] [ "_" ] name;
-            out_name = "${wasm_name}_${crate.version}";
+            processed = processName name;
           in
           ''
-            (wasm-tools compose --config ${config} -o $out/lib/${out_name}.wasm $out/lib/${wasm_name}.wasm && rm $out/lib/${wasm_name}.wasm) || \
-            mv $out/lib/${wasm_name}.wasm $out/lib/${out_name}.wasm
+            mkdir -p ${processed.outDir}
+            mv ${processed.inFile} ${processed.outFile}
           ''
+        ) componentNames
+        ++ map (
+          name:
+          let
+            processed = processName name;
+            tmpFile = "${processed.outFile}.tmp";
+          in
+          lib.concatStrings (
+            map (
+              targetName:
+              let
+                targetProcessed = processName targetName;
+              in
+              ''
+                (wac plug --plug ${targetProcessed.outFile} -o ${tmpFile} ${processed.outFile} && mv ${tmpFile} ${processed.outFile}) || true
+              ''
+            ) componentNames
+          )
         ) componentNames
       );
   };
@@ -76,11 +118,11 @@ let
   generateAssetsScript = ''
     rm -rf ${assetOut}
     mkdir -p ${assetOut}
-    cp -r --no-preserve=mode ${self.packages.${localSystem}.components}/lib/* ${assetOut}
+    cp -r --no-preserve=mode ${components}/lib/* ${assetOut}
   '';
 in
 {
-  inherit generateAssetsScript;
+  inherit generateAssetsScript wac-cli;
 
   apps = {
     check-components = flake-utils.lib.mkApp {

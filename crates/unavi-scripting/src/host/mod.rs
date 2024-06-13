@@ -38,11 +38,6 @@ mod tests {
         ScriptBundle,
     };
 
-    fn load_component_wasm(asset_server: &AssetServer, name: &str) -> Handle<Wasm> {
-        let path = format!("components/{}_{}.wasm", name, env!("CARGO_PKG_VERSION"));
-        asset_server.load(path)
-    }
-
     pub async fn test_script(name: &str) {
         let mut app = App::new();
 
@@ -71,13 +66,8 @@ mod tests {
                 .chain(),
         );
 
-        let asset_server = app.world.get_resource_mut::<AssetServer>().unwrap();
-        let wasm = load_component_wasm(&asset_server, name);
-
-        app.world.spawn(ScriptBundle {
-            name: name.into(),
-            wasm,
-        });
+        let asset_server = app.world.get_resource::<AssetServer>().unwrap();
+        app.world.spawn(ScriptBundle::load(name, asset_server));
 
         for _ in 0..5 {
             tokio::time::sleep(Duration::from_secs_f32(0.2)).await;
@@ -92,7 +82,7 @@ mod tests {
     #[tokio::test]
     #[traced_test]
     async fn test_wired_gltf() {
-        test_script("test_wired_gltf").await;
+        test_script("test:wired-gltf").await;
         assert!(logs_contain("Hello from script!"));
         assert!(!logs_contain("error"));
         assert!(!logs_contain("ERROR"));
@@ -101,7 +91,7 @@ mod tests {
     #[tokio::test]
     #[traced_test]
     async fn test_example_wired_gltf() {
-        test_script("example_wired_gltf").await;
+        test_script("example:wired-gltf").await;
         assert!(!logs_contain("error"));
         assert!(!logs_contain("ERROR"));
     }

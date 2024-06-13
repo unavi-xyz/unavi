@@ -124,6 +124,7 @@
               nodePackages.prettier
               rust-analyzer
             ])
+            ++ [ wasm.wac-cli ]
             ++ crates.buildInputs
             ++ crates.nativeBuildInputs;
 

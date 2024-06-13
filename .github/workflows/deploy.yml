@@ -71,7 +71,7 @@ jobs:
 
       - name: Build web
         if: inputs.disable-deploy != true
-        run: nix build -L .?submodules=1#unavi-web
+        run: nix build -L --option build-cores 2 .?submodules=1#unavi-web
 
   deploy:
     needs:

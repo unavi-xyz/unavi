@@ -40,6 +40,26 @@ pub struct ScriptBundle {
     pub wasm: Handle<Wasm>,
 }
 
+impl ScriptBundle {
+    /// Loads a give WASM script from the assets folder, in the `namespace:package` format.
+    pub fn load(name: &str, asset_server: &AssetServer) -> Self {
+        let (namespace, package) = name.split_once(':').unwrap();
+
+        let path = format!(
+            "components/{}/{}/{}.wasm",
+            env!("CARGO_PKG_VERSION"),
+            namespace,
+            package
+        );
+        let wasm = asset_server.load(path);
+
+        Self {
+            name: name.into(),
+            wasm,
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct StoreData {
     pub resource_table: Arc<RwLock<ResourceTable>>,

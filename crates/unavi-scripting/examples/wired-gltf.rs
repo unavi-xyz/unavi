@@ -37,17 +37,9 @@ fn setup_scene(mut ambient: ResMut<AmbientLight>, mut commands: Commands) {
     ));
 }
 
-const NAME: &str = "example_wired_gltf";
-
 pub fn load_script(asset_server: Res<AssetServer>, mut commands: Commands) {
-    let path = format!("components/{}_{}.wasm", NAME, env!("CARGO_PKG_VERSION"));
-    let wasm = asset_server.load(path);
-
     commands.spawn((
-        ScriptBundle {
-            name: NAME.into(),
-            wasm,
-        },
+        ScriptBundle::load("example:wired-gltf", &asset_server),
         SpatialBundle::default(),
     ));
 }

@@ -52,7 +52,7 @@ pub fn test_node_api() {
         panic_log(&err);
     }
 
-    // TODO: wasm_component_layer panics when returning None https://github.com/DouglasDwyer/wasm_component_layer/issues/16
+    // TODO: Can't return none<resource>?
     // let parent = node_2.parent();
     // if parent.is_some() {
     //     let err = format!("parent is Some: {:?}", parent);

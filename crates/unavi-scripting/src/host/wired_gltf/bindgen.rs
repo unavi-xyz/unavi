@@ -1,7 +1,7 @@
 use bevy::utils::HashSet;
 
 use self::wired::{
-    gltf::node::Transform,
+    gltf::{material::Color, node::Transform},
     math::types::{Quat, Vec3},
 };
 
@@ -19,6 +19,18 @@ wasm_bridge::component::bindgen!({
 #[derive(Default)]
 pub struct Material {
     pub name: String,
+    pub color: Color,
+}
+
+impl Default for Color {
+    fn default() -> Self {
+        Self {
+            r: 0.0,
+            g: 0.0,
+            b: 0.0,
+            a: 1.0,
+        }
+    }
 }
 
 #[derive(Default)]

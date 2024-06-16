@@ -26,7 +26,7 @@ impl HostNode for StoreState {
 
     fn mesh(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<Option<Resource<Mesh>>> {
         let node = self.table.get(&self_)?;
-        Ok(node.mesh.map(|mesh| Resource::new_borrow(mesh)))
+        Ok(node.mesh.map(Resource::new_own))
     }
     fn set_mesh(
         &mut self,
@@ -46,7 +46,7 @@ impl HostNode for StoreState {
 
     fn parent(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<Option<Resource<Node>>> {
         let node = self.table.get(&self_)?;
-        Ok(node.parent.map(|rep| Resource::new_own(rep)))
+        Ok(node.parent.map(Resource::new_own))
     }
     fn children(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<Vec<Resource<Node>>> {
         let node = self.table.get_mut(&self_)?;
@@ -103,7 +103,7 @@ impl HostNode for StoreState {
 
     fn transform(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<Transform> {
         let node = self.table.get(&self_)?;
-        Ok(node.transform.clone())
+        Ok(node.transform)
     }
     fn set_transform(
         &mut self,
@@ -138,11 +138,7 @@ impl HostNode for StoreState {
         Ok(())
     }
 
-    fn drop(&mut self, rep: Resource<Node>) -> wasm_bridge::Result<()> {
-        self.sender
-            .send(WiredGltfAction::RemoveNode { id: rep.rep() })?;
-
-        self.table.delete(rep)?;
+    fn drop(&mut self, _rep: Resource<Node>) -> wasm_bridge::Result<()> {
         Ok(())
     }
 }

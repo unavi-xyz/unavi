@@ -1137,39 +1137,24 @@ pub mod wired {
             }
             impl Node {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn set_mesh(&self, value: &Mesh) {
+                pub fn set_mesh(&self, value: Option<&Mesh>) {
                     unsafe {
+                        let (result0_0, result0_1) = match value {
+                            Some(e) => (1i32, (e).handle() as i32),
+                            None => (0i32, 0i32),
+                        };
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:gltf/node")]
                         extern "C" {
                             #[link_name = "[method]node.set-mesh"]
-                            fn wit_import(_: i32, _: i32);
+                            fn wit_import(_: i32, _: i32, _: i32);
                         }
 
                         #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32) {
+                        fn wit_import(_: i32, _: i32, _: i32) {
                             unreachable!()
                         }
-                        wit_import((self).handle() as i32, (value).handle() as i32);
-                    }
-                }
-            }
-            impl Node {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn remove_mesh(&self) {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/node")]
-                        extern "C" {
-                            #[link_name = "[method]node.remove-mesh"]
-                            fn wit_import(_: i32);
-                        }
-
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32);
+                        wit_import((self).handle() as i32, result0_0, result0_1);
                     }
                 }
             }
@@ -1802,8 +1787,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 2158] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xf1\x0f\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 2121] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xcc\x0f\x01A\x02\x01\
 A\x10\x01B\x12\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
 material\x03\x01\x01h\x02\x01@\x01\x04self\x03\0y\x04\0\x13[method]material.id\x01\
 \x04\x01@\x01\x04self\x03\0\x01\x04\0\x16[method]material.color\x01\x05\x01@\x02\
@@ -1829,7 +1814,7 @@ rimitive\x01\x16\x01i\x03\x01p\x17\x01@\0\0\x18\x04\0\x0blist-meshes\x01\x19\x01
 ve-mesh\x01\x1b\x03\x01\x0fwired:gltf/mesh\x05\x02\x01B\x06\x01r\x02\x01xv\x01yv\
 \x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\x02\x01r\x04\
 \x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x03\x01\x10wired:math/types\x05\
-\x03\x02\x03\0\x01\x04mesh\x02\x03\0\x02\x04vec3\x02\x03\0\x02\x04quat\x01B-\x02\
+\x03\x02\x03\0\x01\x04mesh\x02\x03\0\x02\x04vec3\x02\x03\0\x02\x04quat\x01B,\x02\
 \x03\x02\x01\x04\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\x02\
 \x02\x03\x02\x01\x06\x04\0\x04quat\x03\0\x04\x01r\x03\x0btranslation\x03\x08rota\
 tion\x05\x05scale\x03\x04\0\x09transform\x03\0\x06\x04\0\x04node\x03\x01\x01h\x08\
@@ -1841,18 +1826,17 @@ s\x04\0\x11[method]node.name\x01\x0b\x01@\x02\x04self\x09\x05values\x01\0\x04\0\
 \x01@\x01\x04self\x09\0\x11\x04\0\x13[method]node.parent\x01\x12\x01@\x01\x04sel\
 f\x09\0\x07\x04\0\x16[method]node.transform\x01\x13\x01@\x02\x04self\x09\x05valu\
 e\x07\x01\0\x04\0\x1a[method]node.set-transform\x01\x14\x01i\x01\x01k\x15\x01@\x01\
-\x04self\x09\0\x16\x04\0\x11[method]node.mesh\x01\x17\x01h\x01\x01@\x02\x04self\x09\
-\x05value\x18\x01\0\x04\0\x15[method]node.set-mesh\x01\x19\x01@\x01\x04self\x09\x01\
-\0\x04\0\x18[method]node.remove-mesh\x01\x1a\x01@\0\0\x0e\x04\0\x0alist-nodes\x01\
-\x1b\x01@\0\0\x0d\x04\0\x0bcreate-node\x01\x1c\x01@\x01\x05value\x0d\x01\0\x04\0\
-\x0bremove-node\x01\x1d\x03\x01\x0fwired:gltf/node\x05\x07\x01B\x04\x01m\x04\x05\
-debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\x07\
-messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x08\x01B\x07\x04\
-\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01\
-h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\
-\x01\x12wired:script/types\x05\x09\x04\x01\x13unavi:system/script\x04\0\x0b\x0c\x01\
-\0\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x07\
-0.208.1\x10wit-bindgen-rust\x060.25.0";
+\x04self\x09\0\x16\x04\0\x11[method]node.mesh\x01\x17\x01h\x01\x01k\x18\x01@\x02\
+\x04self\x09\x05value\x19\x01\0\x04\0\x15[method]node.set-mesh\x01\x1a\x01@\0\0\x0e\
+\x04\0\x0alist-nodes\x01\x1b\x01@\0\0\x0d\x04\0\x0bcreate-node\x01\x1c\x01@\x01\x05\
+value\x0d\x01\0\x04\0\x0bremove-node\x01\x1d\x03\x01\x0fwired:gltf/node\x05\x07\x01\
+B\x04\x01m\x04\x05debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\
+\x02\x05level\x01\x07messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/ap\
+i\x05\x08\x01B\x07\x04\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constru\
+ctor]script\x01\x02\x01h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[method\
+]script.update\x01\x04\x04\x01\x12wired:script/types\x05\x09\x04\x01\x13unavi:sy\
+stem/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0cprocess\
+ed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

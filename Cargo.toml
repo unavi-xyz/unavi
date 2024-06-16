@@ -67,5 +67,4 @@ opt-level = "s"
 
 [patch.crates-io]
 dwn = { git = "https://github.com/unavi-xyz/dwn.git" }
-wasm_component_layer = { git = "https://github.com/kayhhh/wasm_component_layer.git" }
-wasm_runtime_layer = { git = "https://github.com/kayhhh/wasm_runtime_layer.git" }
+wasm-bridge = { git = "https://github.com/kajacx/wasm-bridge.git" }

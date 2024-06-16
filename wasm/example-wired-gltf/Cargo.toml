@@ -8,9 +8,6 @@ license = "MIT OR Apache-2.0"
 [lib]
 crate-type = ["cdylib"]
 
-[lints]
-workspace = true
-
 [dependencies]
 glam = "0.28.0"
 wit-bindgen-rt.workspace = true

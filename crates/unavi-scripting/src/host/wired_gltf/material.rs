@@ -8,7 +8,7 @@ use wasm_component_layer::{
     ResourceType, Store, StoreContextMut, Value, ValueType,
 };
 
-use crate::{load::EngineBackend, resource_table::ResourceTable, StoreData};
+use crate::{load::EngineBackend, resource_table::ResourceTable, State};
 
 use super::{
     local_data::{LocalData, MaterialData},
@@ -19,7 +19,7 @@ use super::{
 pub struct MaterialResource(pub u32);
 
 pub fn add_to_host(
-    store: &mut Store<StoreData, EngineBackend>,
+    store: &mut Store<State, EngineBackend>,
     linker: &mut Linker,
     shared_types: &SharedTypes,
     sender: Sender<WiredGltfAction>,
@@ -277,7 +277,7 @@ pub fn add_to_host(
 pub fn create_material_resource(
     id: u32,
     material_type: &ResourceType,
-    ctx: &mut StoreContextMut<StoreData, EngineBackend>,
+    ctx: &mut StoreContextMut<State, EngineBackend>,
     local_data: &mut RwLockWriteGuard<LocalData>,
     resource_table: &mut RwLockWriteGuard<ResourceTable>,
 ) -> anyhow::Result<Value> {

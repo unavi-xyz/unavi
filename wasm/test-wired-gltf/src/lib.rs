@@ -15,16 +15,18 @@ struct Script {}
 
 impl GuestScript for Script {
     fn new() -> Self {
-        log(LogLevel::Info, "Hello from script!");
+        log(LogLevel::Info, "Called script construct!");
 
-        material::test_material_api();
-        mesh::test_mesh_api();
+        // material::test_material_api();
+        // mesh::test_mesh_api();
         node::test_node_api();
 
         Script::default()
     }
 
-    fn update(&self, _delta: f32) {}
+    fn update(&self, _delta: f32) {
+        log(LogLevel::Info, "Called script update!");
+    }
 }
 
 fn panic_log(err: &str) {

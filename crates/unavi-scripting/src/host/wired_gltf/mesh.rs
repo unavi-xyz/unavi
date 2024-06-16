@@ -20,7 +20,7 @@ impl HostPrimitive for StoreState {
         self_: Resource<Primitive>,
     ) -> wasm_bridge::Result<Option<Resource<Material>>> {
         let primitive = self.table.get(&self_)?;
-        Ok(primitive.material.map(|rep| Resource::new_own(rep)))
+        Ok(primitive.material.map(Resource::new_own))
     }
     fn set_material(
         &mut self,
@@ -79,18 +79,7 @@ impl HostPrimitive for StoreState {
         Ok(())
     }
 
-    fn drop(&mut self, rep: Resource<Primitive>) -> wasm_bridge::Result<()> {
-        let primitive = self.table.get_mut(&rep)?;
-
-        let resource = Resource::<Mesh>::new_borrow(primitive.mesh);
-        let mesh = self.table.get_mut(&resource)?;
-        mesh.primitives.remove(&rep.rep());
-
-        self.sender
-            .send(WiredGltfAction::RemoveMesh { id: rep.rep() })?;
-
-        self.table.delete(rep)?;
-
+    fn drop(&mut self, _rep: Resource<Primitive>) -> wasm_bridge::Result<()> {
         Ok(())
     }
 }
@@ -168,12 +157,7 @@ impl HostMesh for StoreState {
         Ok(())
     }
 
-    fn drop(&mut self, rep: Resource<Mesh>) -> wasm_bridge::Result<()> {
-        self.sender
-            .send(WiredGltfAction::RemovePrimitive { id: rep.rep() })?;
-
-        self.table.delete(rep)?;
-
+    fn drop(&mut self, _rep: Resource<Mesh>) -> wasm_bridge::Result<()> {
         Ok(())
     }
 }

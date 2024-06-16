@@ -1,297 +1,88 @@
-use std::sync::{Arc, RwLock, RwLockWriteGuard};
-
-use anyhow::{anyhow, bail, Result};
-use bevy::render::color::Color;
-use crossbeam::channel::Sender;
-use wasm_component_layer::{
-    AsContext, AsContextMut, Func, FuncType, Linker, List, ListType, Record, RecordType,
-    ResourceType, Store, StoreContextMut, Value, ValueType,
-};
-
-use crate::{load::EngineBackend, resource_table::ResourceTable, State};
+use crate::StoreState;
+use wasm_bridge::component::Resource;
 
 use super::{
-    local_data::{LocalData, MaterialData},
-    SharedTypes, WiredGltfAction,
+    bindgen::wired::gltf::material::{Color, Host, HostMaterial, Material},
+    WiredGltfAction,
 };
 
-#[derive(Clone)]
-pub struct MaterialResource(pub u32);
+impl HostMaterial for StoreState {
+    fn id(&mut self, self_: Resource<Material>) -> wasm_bridge::Result<u32> {
+        Ok(self_.rep())
+    }
 
-pub fn add_to_host(
-    store: &mut Store<State, EngineBackend>,
-    linker: &mut Linker,
-    shared_types: &SharedTypes,
-    sender: Sender<WiredGltfAction>,
-    local_data: Arc<RwLock<LocalData>>,
-) -> Result<()> {
-    let resource_table = store.data().resource_table.clone();
-    let interface = linker.define_instance("wired:gltf/material".try_into()?)?;
+    fn name(&mut self, self_: Resource<Material>) -> wasm_bridge::Result<String> {
+        let material = self.table.get(&self_)?;
+        Ok(material.name.clone())
+    }
+    fn set_name(&mut self, self_: Resource<Material>, value: String) -> wasm_bridge::Result<()> {
+        let material = self.table.get_mut(&self_)?;
+        material.name = value;
+        Ok(())
+    }
 
-    let material_type = &shared_types.material_type;
+    fn color(&mut self, self_: Resource<Material>) -> wasm_bridge::Result<Color> {
+        let material = self.table.get(&self_)?;
+        Ok(material.color)
+    }
+    fn set_color(&mut self, self_: Resource<Material>, value: Color) -> wasm_bridge::Result<()> {
+        let material = self.table.get_mut(&self_)?;
+        material.color = value;
 
-    let material_list_type = ListType::new(ValueType::Own(material_type.clone()));
-    let color_type = RecordType::new(
-        None,
-        [
-            ("r", ValueType::F32),
-            ("g", ValueType::F32),
-            ("b", ValueType::F32),
-            ("a", ValueType::F32),
-        ]
-        .into_iter(),
-    )?;
-
-    let material_id_fn = Func::new(
-        store.as_context_mut(),
-        FuncType::new([ValueType::Borrow(material_type.clone())], [ValueType::U32]),
-        move |ctx, args, results| {
-            let resource = match &args[0] {
-                Value::Borrow(v) => v,
-                _ => bail!("invalid arg"),
-            };
-
-            let ctx_ref = ctx.as_context();
-            let material: &MaterialResource = resource.rep(&ctx_ref)?;
-
-            results[0] = Value::U32(material.0);
-
-            Ok(())
-        },
-    );
-
-    let material_color_fn = {
-        let color_type = color_type.clone();
-        let local_data = local_data.clone();
-        Func::new(
-            store.as_context_mut(),
-            FuncType::new(
-                [ValueType::Borrow(material_type.clone())],
-                [ValueType::Record(color_type.clone())],
+        self.sender.send(WiredGltfAction::SetMaterialColor {
+            id: self_.rep(),
+            color: bevy::prelude::Color::rgba(
+                material.color.r,
+                material.color.g,
+                material.color.b,
+                material.color.a,
             ),
-            move |ctx, args, results| {
-                let resource = match &args[0] {
-                    Value::Borrow(v) => v,
-                    _ => bail!("invalid arg"),
-                };
-
-                let ctx_ref = ctx.as_context();
-                let material: &MaterialResource = resource.rep(&ctx_ref)?;
-
-                let local_data = local_data.read().unwrap();
-
-                if let Some(data) = local_data.materials.get(&material.0) {
-                    let record = Record::new(
-                        color_type.clone(),
-                        [
-                            ("r", Value::F32(data.color.r())),
-                            ("g", Value::F32(data.color.g())),
-                            ("b", Value::F32(data.color.b())),
-                            ("a", Value::F32(data.color.a())),
-                        ]
-                        .into_iter(),
-                    )?;
-
-                    results[0] = Value::Record(record);
-                }
-
-                Ok(())
-            },
-        )
-    };
-
-    let material_set_color_fn = {
-        let local_data = local_data.clone();
-        let sender = sender.clone();
-        Func::new(
-            store.as_context_mut(),
-            FuncType::new(
-                [
-                    ValueType::Borrow(material_type.clone()),
-                    ValueType::Record(color_type.clone()),
-                ],
-                [],
-            ),
-            move |ctx, args, _results| {
-                let resource = match &args[0] {
-                    Value::Borrow(v) => v,
-                    _ => bail!("invalid arg"),
-                };
-
-                let color = match &args[1] {
-                    Value::Record(v) => v,
-                    _ => bail!("invalid arg"),
-                };
-
-                let ctx_ref = ctx.as_context();
-                let material: &MaterialResource = resource.rep(&ctx_ref)?;
-
-                let mut local_data = local_data.write().unwrap();
-
-                if let Some(data) = local_data.materials.get_mut(&material.0) {
-                    let r = match color.field("r").unwrap() {
-                        Value::F32(v) => v,
-                        _ => bail!("invalid arg"),
-                    };
-                    let g = match color.field("g").unwrap() {
-                        Value::F32(v) => v,
-                        _ => bail!("invalid arg"),
-                    };
-                    let b = match color.field("b").unwrap() {
-                        Value::F32(v) => v,
-                        _ => bail!("invalid arg"),
-                    };
-                    let a = match color.field("a").unwrap() {
-                        Value::F32(v) => v,
-                        _ => bail!("invalid arg"),
-                    };
-
-                    data.color = Color::rgba_from_array([r, g, b, a]);
-
-                    sender.send(WiredGltfAction::SetMaterialColor {
-                        id: material.0,
-                        color: data.color,
-                    })?;
-                }
-
-                Ok(())
-            },
-        )
-    };
-
-    let list_materials_fn = {
-        let local_data = local_data.clone();
-        let material_type = material_type.clone();
-        let resource_table = resource_table.clone();
-        Func::new(
-            store.as_context_mut(),
-            FuncType::new([], [ValueType::List(material_list_type.clone())]),
-            move |mut ctx, _args, results| {
-                let mut local_data = local_data.write().unwrap();
-                let mut resource_table = resource_table.write().unwrap();
-
-                let materials = local_data
-                    .materials
-                    .keys()
-                    .copied()
-                    .collect::<Vec<_>>()
-                    .into_iter()
-                    .map(|id| {
-                        create_material_resource(
-                            id,
-                            &material_type,
-                            &mut ctx,
-                            &mut local_data,
-                            &mut resource_table,
-                        )
-                    })
-                    .collect::<anyhow::Result<Vec<_>>>()?;
-
-                results[0] = Value::List(
-                    List::new(material_list_type.clone(), materials)
-                        .expect("failed to create list"),
-                );
-
-                Ok(())
-            },
-        )
-    };
-
-    let create_material_fn = {
-        let local_data = local_data.clone();
-        let material_type = material_type.clone();
-        let resource_table = resource_table.clone();
-        let sender = sender.clone();
-        Func::new(
-            store.as_context_mut(),
-            FuncType::new([], [ValueType::Own(material_type.clone())]),
-            move |mut ctx, _args, results| {
-                let mut local_data = local_data.write().unwrap();
-                let mut resource_table = resource_table.write().unwrap();
-
-                let id = local_data.new_id();
-                local_data.materials.insert(id, MaterialData::default());
-                sender.send(WiredGltfAction::CreateMaterial { id })?;
-
-                let value = create_material_resource(
-                    id,
-                    &material_type,
-                    &mut ctx,
-                    &mut local_data,
-                    &mut resource_table,
-                )?;
-
-                results[0] = value;
-
-                Ok(())
-            },
-        )
-    };
-
-    let remove_material_fn = {
-        let local_data = local_data.clone();
-        let resource_table = resource_table.clone();
-        let sender = sender.clone();
-        Func::new(
-            store.as_context_mut(),
-            FuncType::new([ValueType::Own(material_type.clone())], []),
-            move |ctx, args, _results| {
-                let resource = match &args[0] {
-                    Value::Own(v) => v,
-                    _ => bail!("invalid arg"),
-                };
-
-                let ctx_ref = ctx.as_context();
-                let material: &MaterialResource = resource.rep(&ctx_ref)?;
-
-                let mut local_data = local_data.write().unwrap();
-                let mut resource_table = resource_table.write().unwrap();
-
-                if let Some(data) = local_data.materials.remove(&material.0) {
-                    for id in data.resources {
-                        resource_table.remove(&id);
-                    }
-
-                    // TODO: Remove textures (?)
-                };
-
-                sender.send(WiredGltfAction::RemoveMaterial { id: material.0 })?;
-
-                Ok(())
-            },
-        )
-    };
-
-    interface.define_resource("material", material_type.clone())?;
-    interface.define_func("[method]material.id", material_id_fn)?;
-    interface.define_func("[method]material.color", material_color_fn)?;
-    interface.define_func("[method]material.set-color", material_set_color_fn)?;
-
-    interface.define_func("list-materials", list_materials_fn)?;
-    interface.define_func("create-material", create_material_fn)?;
-    interface.define_func("remove-material", remove_material_fn)?;
-
-    Ok(())
-}
-
-pub fn create_material_resource(
-    id: u32,
-    material_type: &ResourceType,
-    ctx: &mut StoreContextMut<State, EngineBackend>,
-    local_data: &mut RwLockWriteGuard<LocalData>,
-    resource_table: &mut RwLockWriteGuard<ResourceTable>,
-) -> anyhow::Result<Value> {
-    let (res_id, resource) =
-        resource_table.push(ctx.as_context_mut(), material_type.clone(), |_| {
-            MaterialResource(id)
         })?;
 
-    let data = local_data
-        .materials
-        .get_mut(&id)
-        .ok_or(anyhow!("Material not found"))?;
+        Ok(())
+    }
 
-    data.resources.insert(res_id);
+    fn drop(&mut self, _rep: Resource<Material>) -> wasm_bridge::Result<()> {
+        Ok(())
+    }
+}
 
-    Ok(Value::Own(resource))
+impl Host for StoreState {
+    fn list_materials(&mut self) -> wasm_bridge::Result<Vec<Resource<Material>>> {
+        Ok(self
+            .materials
+            .iter()
+            .map(|rep| Resource::new_own(*rep))
+            .collect())
+    }
+
+    fn create_material(&mut self) -> wasm_bridge::Result<Resource<Material>> {
+        let resource = self.table.push(Material::default())?;
+        let material_rep = resource.rep();
+        self.materials.push(material_rep);
+
+        self.sender
+            .send(WiredGltfAction::CreateMaterial { id: material_rep })?;
+
+        Ok(Resource::new_own(material_rep))
+    }
+
+    fn remove_material(&mut self, value: Resource<Material>) -> wasm_bridge::Result<()> {
+        let rep = value.rep();
+        self.table.delete(value)?;
+
+        let index =
+            self.materials
+                .iter()
+                .enumerate()
+                .find_map(|(i, item)| if *item == rep { Some(i) } else { None });
+        if let Some(index) = index {
+            self.materials.remove(index);
+        }
+
+        self.sender
+            .send(WiredGltfAction::RemoveMaterial { id: rep })?;
+
+        Ok(())
+    }
 }

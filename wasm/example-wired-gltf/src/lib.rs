@@ -4,7 +4,6 @@ use bindings::{
     wired::{
         gltf::{
             material::{create_material, Color},
-            mesh::create_mesh,
             node::{create_node, Node},
         },
         log::api::{log, LogLevel},
@@ -29,19 +28,19 @@ impl GuestScript for Script {
         log(LogLevel::Info, "Creating mesh");
         let mesh = create_cuboid(Vec3::splat(1.0));
 
-        // log(LogLevel::Info, "Creating material");
-        // let material = create_material();
-        // material.set_color(Color {
-        //     r: 1.0,
-        //     g: 0.5,
-        //     b: 0.9,
-        //     a: 1.0,
-        // });
-        //
-        // log(LogLevel::Info, "Setting material");
-        // for primitive in mesh.list_primitives() {
-        //     primitive.set_material(&material);
-        // }
+        log(LogLevel::Info, "Creating material");
+        let material = create_material();
+        material.set_color(Color {
+            r: 1.0,
+            g: 0.5,
+            b: 0.9,
+            a: 1.0,
+        });
+
+        log(LogLevel::Info, "Setting material");
+        for primitive in mesh.list_primitives() {
+            primitive.set_material(Some(&material));
+        }
 
         log(LogLevel::Info, "Setting mesh");
         node.set_mesh(Some(&mesh));

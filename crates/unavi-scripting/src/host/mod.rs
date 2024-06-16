@@ -27,6 +27,8 @@ mod tests {
         ScriptBundle,
     };
 
+    const UPDATES: usize = 5;
+
     pub async fn test_script(name: &str) {
         let mut app = App::new();
 
@@ -58,7 +60,7 @@ mod tests {
         let asset_server = app.world.get_resource::<AssetServer>().unwrap();
         app.world.spawn(ScriptBundle::load(name, asset_server));
 
-        for _ in 0..5 {
+        for _ in 0..UPDATES {
             tokio::time::sleep(Duration::from_secs_f32(0.2)).await;
             app.update();
         }
@@ -74,8 +76,26 @@ mod tests {
         test_script("test:wired-gltf").await;
         assert!(!logs_contain("ERROR"));
         assert!(!logs_contain("error"));
-        assert!(logs_contain("Called script init"));
-        assert!(logs_contain("Called script update"));
+
+        logs_assert(|logs| {
+            let mut found_constructs = 0;
+            let mut found_updates = 0;
+
+            for log in logs {
+                if log.contains("Called script construct") {
+                    found_constructs += 1;
+                }
+
+                if log.contains("Called script update") {
+                    found_updates += 1;
+                }
+            }
+
+            assert_eq!(found_constructs, 1);
+            assert_eq!(found_updates, UPDATES - 1);
+
+            Ok(())
+        });
     }
 
     #[tokio::test]

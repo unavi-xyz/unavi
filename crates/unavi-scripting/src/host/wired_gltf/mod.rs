@@ -7,6 +7,7 @@ use crate::StoreState;
 
 pub mod bindgen;
 pub mod handler;
+mod material;
 mod mesh;
 mod node;
 
@@ -35,6 +36,7 @@ pub enum WiredGltfAction {
 }
 
 pub fn add_to_host(linker: &mut Linker<StoreState>) -> Result<()> {
+    bindgen::wired::gltf::material::add_to_linker(linker, |s| s)?;
     bindgen::wired::gltf::mesh::add_to_linker(linker, |s| s)?;
     bindgen::wired::gltf::node::add_to_linker(linker, |s| s)?;
     Ok(())

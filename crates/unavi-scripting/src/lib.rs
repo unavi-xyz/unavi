@@ -1,15 +1,18 @@
-use std::sync::{Arc, RwLock};
-
 use bevy::prelude::*;
+use wasm_bridge::component::ResourceTable;
 
-use self::{asset::Wasm, load::WasmStores, resource_table::ResourceTable};
+use self::{asset::Wasm, load::Scripts};
 
 pub mod asset;
 mod execution;
 mod host;
 mod load;
-mod resource_table;
-mod script;
+
+mod wired_script {
+    wasm_bridge::component::bindgen!({
+        path: "../../wired-protocol/spatial/wit/wired-script"
+    });
+}
 
 pub struct ScriptingPlugin;
 
@@ -17,17 +20,17 @@ impl Plugin for ScriptingPlugin {
     fn build(&self, app: &mut App) {
         app.register_asset_loader(asset::WasmLoader)
             .init_asset::<Wasm>()
-            .init_non_send_resource::<WasmStores>()
+            .init_non_send_resource::<Scripts>()
             .add_systems(
                 FixedUpdate,
                 (
                     (
-                        host::wired_gltf::query::query_node_data,
+                        // host::wired_gltf::query::query_node_data,
                         execution::init_scripts,
                         execution::update_scripts,
                     )
                         .chain(),
-                    host::wired_gltf::handler::handle_wired_gltf_actions,
+                    // host::wired_gltf::handler::handle_wired_gltf_actions,
                     load::load_scripts,
                 ),
             );
@@ -61,11 +64,10 @@ impl ScriptBundle {
 }
 
 #[derive(Default)]
-pub struct StoreData {
-    pub resource_table: Arc<RwLock<ResourceTable>>,
+pub struct State {
+    pub name: String,
+    pub table: ResourceTable,
+    pub materials: Vec<u32>,
+    pub meshes: Vec<u32>,
+    pub nodes: Vec<u32>,
 }
-
-/// Marks an entity as being "owned" by another entity.
-/// For example, entities spawned in by a script are owned by that script.
-#[derive(Component, Deref)]
-pub struct Owner(pub Entity);

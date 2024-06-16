@@ -3,6 +3,8 @@ package unavi:system;
 world script {
     include wired:script/script; 
 
+    import wired:gltf/material;
+    import wired:gltf/mesh;
     import wired:gltf/node;
     import wired:log/api;
 }

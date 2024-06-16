@@ -1,28 +1,17 @@
 use anyhow::Result;
-use wasm_component_layer::{Linker, Store};
+use wasm_bridge::component::Linker;
 
-use self::wired_gltf::{WiredGltfData, WiredGltfReceiver};
+// use self::wired_gltf::{WiredGltfData, WiredGltfReceiver};
 
-use super::{load::EngineBackend, StoreData};
+use super::State;
 
 pub mod wired_gltf;
 mod wired_log;
 
-pub struct HostScriptResults {
-    pub wired_gltf_components: (WiredGltfReceiver, WiredGltfData),
-}
-
-pub fn add_host_script_apis(
-    name: String,
-    store: &mut Store<StoreData, EngineBackend>,
-    linker: &mut Linker,
-) -> Result<HostScriptResults> {
-    let wired_gltf_components = wired_gltf::add_to_host(store, linker)?;
-    wired_log::add_to_host(name, store, linker)?;
-
-    Ok(HostScriptResults {
-        wired_gltf_components,
-    })
+pub fn add_host_script_apis(linker: &mut Linker<State>) -> Result<()> {
+    wired_gltf::add_to_host(linker)?;
+    wired_log::add_to_host(linker)?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -34,7 +23,7 @@ mod tests {
 
     use crate::{
         asset::{Wasm, WasmLoader},
-        load::{LoadedScript, WasmStores},
+        load::{LoadedScript, Scripts},
         ScriptBundle,
     };
 
@@ -52,16 +41,16 @@ mod tests {
         .init_asset::<StandardMaterial>()
         .init_asset::<Wasm>()
         .init_asset_loader::<WasmLoader>()
-        .init_non_send_resource::<WasmStores>();
+        .init_non_send_resource::<Scripts>();
 
         app.add_systems(
             Update,
             (
                 crate::load::load_scripts,
-                crate::host::wired_gltf::query::query_node_data,
+                // crate::host::wired_gltf::query::query_node_data,
                 crate::execution::init_scripts,
                 crate::execution::update_scripts,
-                super::wired_gltf::handler::handle_wired_gltf_actions,
+                // super::wired_gltf::handler::handle_wired_gltf_actions,
             )
                 .chain(),
         );
@@ -83,16 +72,17 @@ mod tests {
     #[traced_test]
     async fn test_wired_gltf() {
         test_script("test:wired-gltf").await;
-        assert!(logs_contain("Hello from script!"));
-        assert!(!logs_contain("error"));
         assert!(!logs_contain("ERROR"));
+        assert!(!logs_contain("error"));
+        assert!(logs_contain("Called script init"));
+        assert!(logs_contain("Called script update"));
     }
 
     #[tokio::test]
     #[traced_test]
     async fn test_example_wired_gltf() {
         test_script("example:wired-gltf").await;
-        assert!(!logs_contain("error"));
         assert!(!logs_contain("ERROR"));
+        assert!(!logs_contain("error"));
     }
 }

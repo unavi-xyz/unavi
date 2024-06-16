@@ -79,7 +79,7 @@ pub fn test_node_api() {
 
     let mesh = create_mesh();
     let node = create_node();
-    node.set_mesh(&mesh);
+    node.set_mesh(Some(&mesh));
 
     let found_mesh = node.mesh();
     if found_mesh.is_none() {

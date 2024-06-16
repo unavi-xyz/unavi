@@ -3,18 +3,12 @@ use std::sync::{Arc, RwLock};
 use anyhow::Result;
 use bevy::{prelude::*, utils::HashMap};
 use crossbeam::channel::Receiver;
-use wasm_component_layer::{Linker, ResourceType, Store};
+use wasm_bridge::component::Linker;
 
-use crate::{load::EngineBackend, StoreData};
+use crate::State;
 
-use self::{local_data::LocalData, material::MaterialResource, mesh::MeshResource};
-
-pub mod handler;
-mod local_data;
-mod material;
-mod mesh;
+pub mod bindgen;
 mod node;
-pub mod query;
 
 #[derive(Component, Deref, DerefMut)]
 pub struct WiredGltfReceiver(pub Receiver<WiredGltfAction>);
@@ -48,54 +42,7 @@ pub struct EcsData {
     nodes: HashMap<u32, Transform>,
 }
 
-struct SharedTypes {
-    material_type: ResourceType,
-    mesh_type: ResourceType,
-}
-
-impl Default for SharedTypes {
-    fn default() -> Self {
-        let material_type = ResourceType::new::<MaterialResource>(None);
-        let mesh_type = ResourceType::new::<MeshResource>(None);
-        Self {
-            material_type,
-            mesh_type,
-        }
-    }
-}
-
-pub fn add_to_host(
-    store: &mut Store<StoreData, EngineBackend>,
-    linker: &mut Linker,
-) -> Result<(WiredGltfReceiver, WiredGltfData)> {
-    let data = Arc::new(RwLock::new(EcsData::default()));
-    let (send, recv) = crossbeam::channel::bounded::<WiredGltfAction>(100);
-
-    let local_data = Arc::new(RwLock::new(LocalData::default()));
-    let shared_types = SharedTypes::default();
-
-    node::add_to_host(
-        store,
-        linker,
-        &shared_types,
-        send.clone(),
-        local_data.clone(),
-        data.clone(),
-    )?;
-    mesh::add_to_host(
-        store,
-        linker,
-        &shared_types,
-        send.clone(),
-        local_data.clone(),
-    )?;
-    material::add_to_host(
-        store,
-        linker,
-        &shared_types,
-        send.clone(),
-        local_data.clone(),
-    )?;
-
-    Ok((WiredGltfReceiver(recv), WiredGltfData(data)))
+pub fn add_to_host(linker: &mut Linker<State>) -> Result<()> {
+    bindgen::wired::gltf::node::add_to_linker(linker, |s| s)?;
+    Ok(())
 }

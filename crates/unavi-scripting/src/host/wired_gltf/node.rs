@@ -1,13 +1,15 @@
+use crate::StoreState;
 use wasm_bridge::component::Resource;
 
-use crate::State;
-
-use super::bindgen::wired::gltf::{
-    mesh::Mesh,
-    node::{Host, HostNode, Node, Transform},
+use super::{
+    bindgen::wired::gltf::{
+        mesh::Mesh,
+        node::{Host, HostNode, Node, Transform},
+    },
+    WiredGltfAction,
 };
 
-impl HostNode for State {
+impl HostNode for StoreState {
     fn id(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<u32> {
         Ok(self_.rep())
     }
@@ -33,6 +35,12 @@ impl HostNode for State {
     ) -> wasm_bridge::Result<()> {
         let node = self.table.get_mut(&self_)?;
         node.mesh = value.map(|v| v.rep());
+
+        self.sender.send(WiredGltfAction::SetNodeMesh {
+            id: self_.rep(),
+            mesh: node.mesh,
+        })?;
+
         Ok(())
     }
 
@@ -70,6 +78,11 @@ impl HostNode for State {
         let child = self.table.get_mut(&value)?;
         child.parent = Some(rep);
 
+        self.sender.send(WiredGltfAction::SetNodeParent {
+            id: value.rep(),
+            parent: child.parent,
+        })?;
+
         Ok(())
     }
     fn remove_child(
@@ -79,6 +92,12 @@ impl HostNode for State {
     ) -> wasm_bridge::Result<()> {
         let node = self.table.get_mut(&self_)?;
         node.children.remove(&value.rep());
+
+        self.sender.send(WiredGltfAction::SetNodeParent {
+            id: self_.rep(),
+            parent: None,
+        })?;
+
         Ok(())
     }
 
@@ -93,16 +112,42 @@ impl HostNode for State {
     ) -> wasm_bridge::Result<()> {
         let node = self.table.get_mut(&self_)?;
         node.transform = value;
+
+        self.sender.send(WiredGltfAction::SetNodeTransform {
+            id: self_.rep(),
+            transform: bevy::prelude::Transform {
+                translation: bevy::prelude::Vec3::new(
+                    node.transform.translation.x,
+                    node.transform.translation.y,
+                    node.transform.translation.z,
+                ),
+                rotation: bevy::prelude::Quat::from_xyzw(
+                    node.transform.rotation.x,
+                    node.transform.rotation.y,
+                    node.transform.rotation.z,
+                    node.transform.rotation.w,
+                ),
+                scale: bevy::prelude::Vec3::new(
+                    node.transform.scale.x,
+                    node.transform.scale.y,
+                    node.transform.scale.z,
+                ),
+            },
+        })?;
+
         Ok(())
     }
 
     fn drop(&mut self, rep: Resource<Node>) -> wasm_bridge::Result<()> {
+        self.sender
+            .send(WiredGltfAction::RemoveNode { id: rep.rep() })?;
+
         self.table.delete(rep)?;
         Ok(())
     }
 }
 
-impl Host for State {
+impl Host for StoreState {
     fn list_nodes(&mut self) -> wasm_bridge::Result<Vec<Resource<Node>>> {
         Ok(self
             .nodes
@@ -113,8 +158,13 @@ impl Host for State {
 
     fn create_node(&mut self) -> wasm_bridge::Result<Resource<Node>> {
         let resource = self.table.push(Node::default())?;
-        self.nodes.push(resource.rep());
-        Ok(resource)
+        let node_rep = resource.rep();
+        self.nodes.push(node_rep);
+
+        self.sender
+            .send(WiredGltfAction::CreateNode { id: node_rep })?;
+
+        Ok(Resource::new_own(node_rep))
     }
 
     fn remove_node(&mut self, value: Resource<Node>) -> wasm_bridge::Result<()> {
@@ -129,6 +179,9 @@ impl Host for State {
         if let Some(index) = index {
             self.nodes.remove(index);
         }
+
+        self.sender.send(WiredGltfAction::RemoveNode { id: rep })?;
+
         Ok(())
     }
 }

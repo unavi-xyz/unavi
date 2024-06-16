@@ -11,6 +11,7 @@ wasm_bridge::component::bindgen!({
     with: {
         "wired:gltf/material/material": Material,
         "wired:gltf/mesh/mesh": Mesh,
+        "wired:gltf/mesh/primitive": Primitive,
         "wired:gltf/node/node": Node,
     }
 });
@@ -23,6 +24,13 @@ pub struct Material {
 #[derive(Default)]
 pub struct Mesh {
     pub name: String,
+    pub primitives: HashSet<u32>,
+}
+
+#[derive(Default)]
+pub struct Primitive {
+    pub material: Option<u32>,
+    pub mesh: u32,
 }
 
 #[derive(Default)]

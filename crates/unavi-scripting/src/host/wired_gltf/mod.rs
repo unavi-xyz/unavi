@@ -1,13 +1,13 @@
-use std::sync::{Arc, RwLock};
-
 use anyhow::Result;
-use bevy::{prelude::*, utils::HashMap};
+use bevy::prelude::*;
 use crossbeam::channel::Receiver;
 use wasm_bridge::component::Linker;
 
-use crate::State;
+use crate::StoreState;
 
 pub mod bindgen;
+pub mod handler;
+mod mesh;
 mod node;
 
 #[derive(Component, Deref, DerefMut)]
@@ -28,21 +28,14 @@ pub enum WiredGltfAction {
     SetNodeParent { id: u32, parent: Option<u32> },
     SetNodeTransform { id: u32, transform: Transform },
     SetPrimitiveIndices { id: u32, value: Vec<u32> },
-    SetPrimitiveMaterial { id: u32, material: u32 },
+    SetPrimitiveMaterial { id: u32, material: Option<u32> },
     SetPrimitiveNormals { id: u32, value: Vec<f32> },
     SetPrimitivePositions { id: u32, value: Vec<f32> },
     SetPrimitiveUvs { id: u32, value: Vec<f32> },
 }
 
-#[derive(Component, Deref, DerefMut)]
-pub struct WiredGltfData(pub Arc<RwLock<EcsData>>);
-
-#[derive(Default)]
-pub struct EcsData {
-    nodes: HashMap<u32, Transform>,
-}
-
-pub fn add_to_host(linker: &mut Linker<State>) -> Result<()> {
+pub fn add_to_host(linker: &mut Linker<StoreState>) -> Result<()> {
+    bindgen::wired::gltf::mesh::add_to_linker(linker, |s| s)?;
     bindgen::wired::gltf::node::add_to_linker(linker, |s| s)?;
     Ok(())
 }

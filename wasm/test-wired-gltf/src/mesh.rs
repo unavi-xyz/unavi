@@ -39,7 +39,7 @@ pub fn test_mesh_api() {
     primitive.set_uvs(&[0.0, 1.0]);
 
     let material = create_material();
-    primitive.set_material(&material);
+    primitive.set_material(Some(&material));
 
     // let found_material = primitive.material();
     // if found_material != material {}

@@ -1,4 +1,6 @@
 use bevy::prelude::*;
+use crossbeam::channel::{Receiver, Sender};
+use host::wired_gltf::WiredGltfAction;
 use wasm_bridge::component::ResourceTable;
 
 use self::{asset::Wasm, load::Scripts};
@@ -24,13 +26,8 @@ impl Plugin for ScriptingPlugin {
             .add_systems(
                 FixedUpdate,
                 (
-                    (
-                        // host::wired_gltf::query::query_node_data,
-                        execution::init_scripts,
-                        execution::update_scripts,
-                    )
-                        .chain(),
-                    // host::wired_gltf::handler::handle_wired_gltf_actions,
+                    (execution::init_scripts, execution::update_scripts).chain(),
+                    host::wired_gltf::handler::handle_wired_gltf_actions,
                     load::load_scripts,
                 ),
             );
@@ -63,11 +60,31 @@ impl ScriptBundle {
     }
 }
 
-#[derive(Default)]
-pub struct State {
+pub struct StoreState {
     pub name: String,
+    pub sender: Sender<WiredGltfAction>,
     pub table: ResourceTable,
     pub materials: Vec<u32>,
     pub meshes: Vec<u32>,
     pub nodes: Vec<u32>,
+    pub primitives: Vec<u32>,
+}
+
+impl StoreState {
+    pub fn new(name: String) -> (Self, Receiver<WiredGltfAction>) {
+        let (sender, recv) = crossbeam::channel::bounded(100);
+
+        (
+            Self {
+                materials: Vec::default(),
+                meshes: Vec::default(),
+                name,
+                nodes: Vec::default(),
+                primitives: Vec::default(),
+                sender,
+                table: ResourceTable::default(),
+            },
+            recv,
+        )
+    }
 }

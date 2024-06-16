@@ -1,7 +1,22 @@
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{
+    asset::{Assets, Handle},
+    core::Name,
+    ecs::{
+        component::Component,
+        entity::Entity,
+        query::Without,
+        system::{Commands, NonSendMut, Query, Res},
+    },
+    log::{error, info},
+    utils::HashMap,
+};
 use wasm_bridge::{component::Linker, Config, Engine, Store};
 
-use crate::{host::add_host_script_apis, wired_script::Script, State};
+use crate::{
+    host::{add_host_script_apis, wired_gltf::WiredGltfReceiver},
+    wired_script::Script,
+    StoreState,
+};
 
 use super::asset::Wasm;
 
@@ -12,7 +27,7 @@ pub struct LoadedScript;
 /// Because of this we use a [NonSend] resource, but we could change
 /// this when targeting native to allow for parallel script execution.
 #[derive(Default)]
-pub struct Scripts(pub HashMap<Entity, (Script, Store<State>)>);
+pub struct Scripts(pub HashMap<Entity, (Script, Store<StoreState>)>);
 
 pub fn load_scripts(
     assets: Res<Assets<Wasm>>,
@@ -39,13 +54,9 @@ pub fn load_scripts(
         };
 
         let mut linker = Linker::new(&engine);
-        let mut store = Store::new(
-            &engine,
-            State {
-                name: name.to_string(),
-                ..default()
-            },
-        );
+
+        let (state, recv) = StoreState::new(name.to_string());
+        let mut store = Store::new(&engine, state);
 
         match add_host_script_apis(&mut linker) {
             Ok(r) => r,
@@ -83,6 +94,8 @@ pub fn load_scripts(
         };
 
         stores.0.insert(entity, (script, store));
-        commands.entity(entity).insert(LoadedScript);
+        commands
+            .entity(entity)
+            .insert((LoadedScript, WiredGltfReceiver(recv)));
     }
 }

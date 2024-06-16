@@ -3,12 +3,12 @@ use wasm_bridge::component::Linker;
 
 // use self::wired_gltf::{WiredGltfData, WiredGltfReceiver};
 
-use super::State;
+use super::StoreState;
 
 pub mod wired_gltf;
 mod wired_log;
 
-pub fn add_host_script_apis(linker: &mut Linker<State>) -> Result<()> {
+pub fn add_host_script_apis(linker: &mut Linker<StoreState>) -> Result<()> {
     wired_gltf::add_to_host(linker)?;
     wired_log::add_to_host(linker)?;
     Ok(())

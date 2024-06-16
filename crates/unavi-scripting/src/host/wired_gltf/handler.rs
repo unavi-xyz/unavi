@@ -7,8 +7,6 @@ use bevy::{
     utils::HashMap,
 };
 
-use crate::Owner;
-
 use super::{WiredGltfAction, WiredGltfReceiver};
 
 #[derive(Component, Clone, Copy, Debug)]
@@ -17,16 +15,14 @@ pub struct NodeId(pub u32);
 #[derive(Bundle)]
 pub struct WiredNodeBundle {
     pub id: NodeId,
-    pub owner: Owner,
     pub spatial: SpatialBundle,
     pub primitives: NodePrimitives,
 }
 
 impl WiredNodeBundle {
-    pub fn new(id: u32, owner: Entity) -> Self {
+    pub fn new(id: u32) -> Self {
         Self {
             id: NodeId(id),
-            owner: Owner(owner),
             primitives: NodePrimitives::default(),
             spatial: SpatialBundle::default(),
         }
@@ -42,15 +38,11 @@ pub struct MeshId(pub u32);
 #[derive(Bundle)]
 pub struct WiredMeshBundle {
     pub id: MeshId,
-    pub owner: Owner,
 }
 
 impl WiredMeshBundle {
-    pub fn new(id: u32, owner: Entity) -> Self {
-        Self {
-            id: MeshId(id),
-            owner: Owner(owner),
-        }
+    pub fn new(id: u32) -> Self {
+        Self { id: MeshId(id) }
     }
 }
 
@@ -62,7 +54,6 @@ pub struct WiredPrimitiveBundle {
     pub handle_mesh: Handle<Mesh>,
     pub id: PrimitiveId,
     pub mesh: MeshId,
-    pub owner: Owner,
 }
 
 #[derive(Component, Clone, Copy, Debug)]
@@ -135,7 +126,7 @@ pub fn handle_wired_gltf_actions(
                     if find_mesh(meshes, id, world).is_some() {
                         warn!("Mesh {} already exists.", id);
                     } else {
-                        world.spawn(WiredMeshBundle::new(id, entity));
+                        world.spawn(WiredMeshBundle::new(id));
                     }
 
                     drop(s);
@@ -147,7 +138,7 @@ pub fn handle_wired_gltf_actions(
                     if find_node(nodes, id, world).is_some() {
                         warn!("Node {} already exists.", id);
                     } else {
-                        let node_ent = world.spawn(WiredNodeBundle::new(id, entity)).id();
+                        let node_ent = world.spawn(WiredNodeBundle::new(id)).id();
                         world.entity_mut(entity).add_child(node_ent);
                     }
 
@@ -171,7 +162,6 @@ pub fn handle_wired_gltf_actions(
                         world.spawn(WiredPrimitiveBundle {
                             id: PrimitiveId(id),
                             mesh: MeshId(mesh),
-                            owner: Owner(entity),
                             handle_mesh: mesh_handle,
                         });
                     }
@@ -389,11 +379,15 @@ pub fn handle_wired_gltf_actions(
                     let s = span.entered();
 
                     if let Some((ent, ..)) = find_primitive(primitives, id, world) {
-                        if let Some((_, handle)) = find_material(materials, material, world) {
-                            let handle = handle.clone();
-                            world.entity_mut(ent).insert(handle);
+                        if let Some(material) = material {
+                            if let Some((_, handle)) = find_material(materials, material, world) {
+                                let handle = handle.clone();
+                                world.entity_mut(ent).insert(handle);
+                            } else {
+                                warn!("Material {} does not exist", material);
+                            }
                         } else {
-                            warn!("Material {} does not exist", material);
+                            world.entity_mut(ent).insert(default_material.clone());
                         }
                     } else {
                         warn!("Primitive {} does not exist", id);
@@ -580,10 +574,8 @@ mod tests {
     fn create_node_duplicate_id() {
         let (mut app, send) = setup_test();
 
-        let owner = app.world.spawn(()).id();
-
         let id = 0;
-        app.world.spawn(WiredNodeBundle::new(id, owner));
+        app.world.spawn(WiredNodeBundle::new(id));
 
         send.send(WiredGltfAction::CreateNode { id }).unwrap();
         app.update();
@@ -597,10 +589,8 @@ mod tests {
     fn remove_node() {
         let (mut app, send) = setup_test();
 
-        let owner = app.world.spawn(()).id();
-
         let id = 0;
-        let ent = app.world.spawn(WiredNodeBundle::new(id, owner)).id();
+        let ent = app.world.spawn(WiredNodeBundle::new(id)).id();
 
         send.send(WiredGltfAction::RemoveNode { id }).unwrap();
         app.update();
@@ -622,13 +612,11 @@ mod tests {
     fn set_node_parent_some() {
         let (mut app, send) = setup_test();
 
-        let owner = app.world.spawn(()).id();
-
         let parent_id = 0;
-        let parent_ent = app.world.spawn(WiredNodeBundle::new(parent_id, owner)).id();
+        let parent_ent = app.world.spawn(WiredNodeBundle::new(parent_id)).id();
 
         let child_id = 1;
-        let child_ent = app.world.spawn(WiredNodeBundle::new(child_id, owner)).id();
+        let child_ent = app.world.spawn(WiredNodeBundle::new(child_id)).id();
 
         send.send(WiredGltfAction::SetNodeParent {
             id: child_id,
@@ -646,15 +634,13 @@ mod tests {
     fn set_node_parent_none() {
         let (mut app, send) = setup_test();
 
-        let owner = app.world.spawn(()).id();
-
         let parent_id = 0;
-        let parent_ent = app.world.spawn(WiredNodeBundle::new(parent_id, owner)).id();
+        let parent_ent = app.world.spawn(WiredNodeBundle::new(parent_id)).id();
 
         let child_id = 1;
         let mut child_ent = None;
         app.world.entity_mut(parent_ent).with_children(|builder| {
-            child_ent = Some(builder.spawn(WiredNodeBundle::new(child_id, owner)).id());
+            child_ent = Some(builder.spawn(WiredNodeBundle::new(child_id)).id());
         });
         let child_ent = child_ent.unwrap();
 
@@ -676,11 +662,9 @@ mod tests {
     fn set_node_invalid_parent() {
         let (mut app, send) = setup_test();
 
-        let owner = app.world.spawn(()).id();
-
         let parent_id = 0;
         let child_id = 1;
-        app.world.spawn(WiredNodeBundle::new(child_id, owner));
+        app.world.spawn(WiredNodeBundle::new(child_id));
 
         send.send(WiredGltfAction::SetNodeParent {
             id: child_id,
@@ -695,10 +679,8 @@ mod tests {
     fn set_node_transform() {
         let (mut app, send) = setup_test();
 
-        let owner = app.world.spawn(()).id();
-
         let id = 0;
-        let ent = app.world.spawn(WiredNodeBundle::new(id, owner)).id();
+        let ent = app.world.spawn(WiredNodeBundle::new(id)).id();
 
         let transform = Transform {
             translation: Vec3::splat(1.0),
@@ -718,13 +700,11 @@ mod tests {
     fn set_node_mesh_some() {
         let (mut app, send) = setup_test();
 
-        let owner = app.world.spawn(()).id();
-
         let id = 0;
-        let ent = app.world.spawn(WiredNodeBundle::new(id, owner)).id();
+        let ent = app.world.spawn(WiredNodeBundle::new(id)).id();
 
         let mesh_id = 1;
-        app.world.spawn(WiredMeshBundle::new(mesh_id, owner));
+        app.world.spawn(WiredMeshBundle::new(mesh_id));
 
         let material_id = 2;
         let handle_material = Handle::default();
@@ -740,7 +720,6 @@ mod tests {
                 handle_mesh: handle_mesh.clone(),
                 id: PrimitiveId(primitive_id),
                 mesh: MeshId(mesh_id),
-                owner: Owner(owner),
             },
             MaterialId(material_id),
         ));
@@ -770,10 +749,8 @@ mod tests {
     fn set_node_mesh_none() {
         let (mut app, send) = setup_test();
 
-        let owner = app.world.spawn(()).id();
-
         let mesh_id = 1;
-        app.world.spawn(WiredMeshBundle::new(mesh_id, owner));
+        app.world.spawn(WiredMeshBundle::new(mesh_id));
 
         let handle = Handle::default();
         let primitive_id = 2;
@@ -781,7 +758,6 @@ mod tests {
             handle_mesh: handle.clone(),
             id: PrimitiveId(primitive_id),
             mesh: MeshId(mesh_id),
-            owner: Owner(owner),
         });
 
         let primitive_ent = app
@@ -800,7 +776,6 @@ mod tests {
             .world
             .spawn(WiredNodeBundle {
                 id: NodeId(id),
-                owner: Owner(owner),
                 spatial: SpatialBundle::default(),
                 primitives,
             })
@@ -908,8 +883,6 @@ mod tests {
     fn create_primitive_duplicate_id() {
         let (mut app, send) = setup_test();
 
-        let owner = app.world.spawn(()).id();
-
         let mesh = 0;
         app.world.spawn(MeshId(mesh));
 
@@ -918,7 +891,6 @@ mod tests {
             id: PrimitiveId(id),
             mesh: MeshId(mesh),
             handle_mesh: Default::default(),
-            owner: Owner(owner),
         });
 
         send.send(WiredGltfAction::CreatePrimitive { id, mesh })
@@ -934,8 +906,6 @@ mod tests {
     fn remove_primitive() {
         let (mut app, send) = setup_test();
 
-        let owner = app.world.spawn(()).id();
-
         let mesh = 0;
         app.world.spawn(MeshId(mesh));
 
@@ -946,7 +916,6 @@ mod tests {
                 id: PrimitiveId(id),
                 mesh: MeshId(mesh),
                 handle_mesh: Default::default(),
-                owner: Owner(owner),
             })
             .id();
 
@@ -971,8 +940,6 @@ mod tests {
     fn set_primitive_indices() {
         let (mut app, send) = setup_test();
 
-        let owner = app.world.spawn(()).id();
-
         let mesh = 0;
         app.world.spawn(MeshId(mesh));
 
@@ -987,7 +954,6 @@ mod tests {
             id: PrimitiveId(id),
             mesh: MeshId(mesh),
             handle_mesh: handle.clone(),
-            owner: Owner(owner),
         });
 
         let value = vec![0, 1, 2, 3, 4, 5];
@@ -1015,8 +981,6 @@ mod tests {
     fn set_primitive_normals() {
         let (mut app, send) = setup_test();
 
-        let owner = app.world.spawn(()).id();
-
         let mesh = 0;
         app.world.spawn(MeshId(mesh));
 
@@ -1031,7 +995,6 @@ mod tests {
             id: PrimitiveId(id),
             mesh: MeshId(mesh),
             handle_mesh: handle.clone(),
-            owner: Owner(owner),
         });
 
         let value = vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
@@ -1064,8 +1027,6 @@ mod tests {
     fn set_primitive_positions() {
         let (mut app, send) = setup_test();
 
-        let owner = app.world.spawn(()).id();
-
         let mesh = 0;
         app.world.spawn(MeshId(mesh));
 
@@ -1080,7 +1041,6 @@ mod tests {
             id: PrimitiveId(id),
             mesh: MeshId(mesh),
             handle_mesh: handle.clone(),
-            owner: Owner(owner),
         });
 
         let value = vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
@@ -1113,8 +1073,6 @@ mod tests {
     fn set_primitive_uvs() {
         let (mut app, send) = setup_test();
 
-        let owner = app.world.spawn(()).id();
-
         let mesh = 0;
         app.world.spawn(MeshId(mesh));
 
@@ -1129,7 +1087,6 @@ mod tests {
             id: PrimitiveId(id),
             mesh: MeshId(mesh),
             handle_mesh: handle.clone(),
-            owner: Owner(owner),
         });
 
         let value = vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
@@ -1155,8 +1112,6 @@ mod tests {
     fn set_primitive_material() {
         let (mut app, send) = setup_test();
 
-        let owner = app.world.spawn(()).id();
-
         let mesh = 0;
         app.world.spawn(MeshId(mesh));
 
@@ -1173,7 +1128,6 @@ mod tests {
                 id: PrimitiveId(primitive),
                 mesh: MeshId(mesh),
                 handle_mesh: handle_mesh.clone(),
-                owner: Owner(owner),
             })
             .id();
 
@@ -1188,7 +1142,7 @@ mod tests {
 
         send.send(WiredGltfAction::SetPrimitiveMaterial {
             id: primitive,
-            material,
+            material: Some(material),
         })
         .unwrap();
         app.update();

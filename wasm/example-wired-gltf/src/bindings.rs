@@ -425,42 +425,60 @@ pub mod wired {
             }
             impl Primitive {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn material(&self) -> Material {
+                pub fn material(&self) -> Option<Material> {
                     unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:gltf/mesh")]
                         extern "C" {
                             #[link_name = "[method]primitive.material"]
-                            fn wit_import(_: i32) -> i32;
+                            fn wit_import(_: i32, _: *mut u8);
                         }
 
                         #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32) -> i32 {
+                        fn wit_import(_: i32, _: *mut u8) {
                             unreachable!()
                         }
-                        let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::gltf::material::Material::from_handle(
-                            ret as u32,
-                        )
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<i32>();
+
+                                    super::super::super::wired::gltf::material::Material::from_handle(l2 as u32)
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
                     }
                 }
             }
             impl Primitive {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn set_material(&self, value: &Material) {
+                pub fn set_material(&self, value: Option<&Material>) {
                     unsafe {
+                        let (result0_0, result0_1) = match value {
+                            Some(e) => (1i32, (e).handle() as i32),
+                            None => (0i32, 0i32),
+                        };
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:gltf/mesh")]
                         extern "C" {
                             #[link_name = "[method]primitive.set-material"]
-                            fn wit_import(_: i32, _: i32);
+                            fn wit_import(_: i32, _: i32, _: i32);
                         }
 
                         #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32) {
+                        fn wit_import(_: i32, _: i32, _: i32) {
                             unreachable!()
                         }
-                        wit_import((self).handle() as i32, (value).handle() as i32);
+                        wit_import((self).handle() as i32, result0_0, result0_1);
                     }
                 }
             }
@@ -1798,6 +1816,13 @@ mod _rt {
         let layout = alloc::Layout::from_size_align_unchecked(size, align);
         alloc::dealloc(ptr as *mut u8, layout);
     }
+    pub unsafe fn invalid_enum_discriminant<T>() -> T {
+        if cfg!(debug_assertions) {
+            panic!("invalid enum discriminant")
+        } else {
+            core::hint::unreachable_unchecked()
+        }
+    }
     pub use alloc_crate::string::String;
     pub unsafe fn string_lift(bytes: Vec<u8>) -> String {
         if cfg!(debug_assertions) {
@@ -1876,13 +1901,6 @@ mod _rt {
             self as i32
         }
     }
-    pub unsafe fn invalid_enum_discriminant<T>() -> T {
-        if cfg!(debug_assertions) {
-            panic!("invalid enum discriminant")
-        } else {
-            core::hint::unreachable_unchecked()
-        }
-    }
     pub use alloc_crate::boxed::Box;
 
     #[cfg(target_arch = "wasm32")]
@@ -1924,60 +1942,60 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 2261] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xd8\x10\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 2267] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xde\x10\x01A\x02\x01\
 A\x12\x01B\x12\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
 material\x03\x01\x01h\x02\x01@\x01\x04self\x03\0y\x04\0\x13[method]material.id\x01\
 \x04\x01@\x01\x04self\x03\0\x01\x04\0\x16[method]material.color\x01\x05\x01@\x02\
 \x04self\x03\x05value\x01\x01\0\x04\0\x1a[method]material.set-color\x01\x06\x01i\
 \x02\x01p\x07\x01@\0\0\x08\x04\0\x0elist-materials\x01\x09\x01@\0\0\x07\x04\0\x0f\
 create-material\x01\x0a\x01@\x01\x05value\x07\x01\0\x04\0\x0fremove-material\x01\
-\x0b\x03\x01\x13wired:gltf/material\x05\0\x02\x03\0\0\x08material\x01B,\x02\x03\x02\
+\x0b\x03\x01\x13wired:gltf/material\x05\0\x02\x03\0\0\x08material\x01B.\x02\x03\x02\
 \x01\x01\x04\0\x08material\x03\0\0\x04\0\x09primitive\x03\x01\x04\0\x04mesh\x03\x01\
 \x01h\x02\x01@\x01\x04self\x04\0y\x04\0\x14[method]primitive.id\x01\x05\x01i\x01\
-\x01@\x01\x04self\x04\0\x06\x04\0\x1a[method]primitive.material\x01\x07\x01h\x01\
-\x01@\x02\x04self\x04\x05value\x08\x01\0\x04\0\x1e[method]primitive.set-material\
-\x01\x09\x01py\x01@\x02\x04self\x04\x05value\x0a\x01\0\x04\0\x1d[method]primitiv\
-e.set-indices\x01\x0b\x01pv\x01@\x02\x04self\x04\x05value\x0c\x01\0\x04\0\x1d[me\
-thod]primitive.set-normals\x01\x0d\x04\0\x1f[method]primitive.set-positions\x01\x0d\
-\x04\0\x19[method]primitive.set-uvs\x01\x0d\x01h\x03\x01@\x01\x04self\x0e\0y\x04\
-\0\x0f[method]mesh.id\x01\x0f\x01@\x01\x04self\x0e\0s\x04\0\x11[method]mesh.name\
-\x01\x10\x01@\x02\x04self\x0e\x05values\x01\0\x04\0\x15[method]mesh.set-name\x01\
-\x11\x01i\x02\x01p\x12\x01@\x01\x04self\x0e\0\x13\x04\0\x1c[method]mesh.list-pri\
-mitives\x01\x14\x01@\x01\x04self\x0e\0\x12\x04\0\x1d[method]mesh.create-primitiv\
-e\x01\x15\x01@\x02\x04self\x0e\x05value\x12\x01\0\x04\0\x1d[method]mesh.remove-p\
-rimitive\x01\x16\x01i\x03\x01p\x17\x01@\0\0\x18\x04\0\x0blist-meshes\x01\x19\x01\
-@\0\0\x17\x04\0\x0bcreate-mesh\x01\x1a\x01@\x01\x05value\x17\x01\0\x04\0\x0bremo\
-ve-mesh\x01\x1b\x03\x01\x0fwired:gltf/mesh\x05\x02\x01B\x06\x01r\x02\x01xv\x01yv\
-\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\x02\x01r\x04\
-\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x03\x01\x10wired:math/types\x05\
-\x03\x02\x03\0\x01\x04mesh\x02\x03\0\x02\x04vec3\x01B\x09\x02\x03\x02\x01\x04\x04\
-\0\x04mesh\x03\0\0\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\x02\x01i\x01\x01@\x01\
-\x04size\x03\0\x04\x04\0\x0dcreate-cuboid\x01\x05\x01@\x03\x06radiusv\x07sectors\
-y\x06stacksy\0\x04\x04\0\x0dcreate-sphere\x01\x06\x03\x01\x10unavi:shapes/api\x05\
-\x06\x02\x03\0\x02\x04quat\x01B,\x02\x03\x02\x01\x04\x04\0\x04mesh\x03\0\0\x02\x03\
-\x02\x01\x05\x04\0\x04vec3\x03\0\x02\x02\x03\x02\x01\x07\x04\0\x04quat\x03\0\x04\
-\x01r\x03\x0btranslation\x03\x08rotation\x05\x05scale\x03\x04\0\x09transform\x03\
-\0\x06\x04\0\x04node\x03\x01\x01h\x08\x01@\x01\x04self\x09\0y\x04\0\x0f[method]n\
-ode.id\x01\x0a\x01@\x01\x04self\x09\0s\x04\0\x11[method]node.name\x01\x0b\x01@\x02\
-\x04self\x09\x05values\x01\0\x04\0\x15[method]node.set-name\x01\x0c\x01i\x08\x01\
-p\x0d\x01@\x01\x04self\x09\0\x0e\x04\0\x15[method]node.children\x01\x0f\x01@\x02\
-\x04self\x09\x05value\x09\x01\0\x04\0\x16[method]node.add-child\x01\x10\x04\0\x19\
-[method]node.remove-child\x01\x10\x01k\x0d\x01@\x01\x04self\x09\0\x11\x04\0\x13[\
-method]node.parent\x01\x12\x01@\x01\x04self\x09\0\x07\x04\0\x16[method]node.tran\
-sform\x01\x13\x01@\x02\x04self\x09\x05value\x07\x01\0\x04\0\x1a[method]node.set-\
-transform\x01\x14\x01i\x01\x01k\x15\x01@\x01\x04self\x09\0\x16\x04\0\x11[method]\
-node.mesh\x01\x17\x01h\x01\x01k\x18\x01@\x02\x04self\x09\x05value\x19\x01\0\x04\0\
-\x15[method]node.set-mesh\x01\x1a\x01@\0\0\x0e\x04\0\x0alist-nodes\x01\x1b\x01@\0\
-\0\x0d\x04\0\x0bcreate-node\x01\x1c\x01@\x01\x05value\x0d\x01\0\x04\0\x0bremove-\
-node\x01\x1d\x03\x01\x0fwired:gltf/node\x05\x08\x01B\x04\x01m\x04\x05debug\x04in\
-fo\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\x07messages\
-\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x09\x01B\x07\x04\0\x06s\
-cript\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01h\0\x01\
-@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\x01\
-\x12wired:script/types\x05\x0a\x04\x01\x19example:wired-gltf/script\x04\0\x0b\x0c\
-\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-componen\
-t\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+\x01k\x06\x01@\x01\x04self\x04\0\x07\x04\0\x1a[method]primitive.material\x01\x08\
+\x01h\x01\x01k\x09\x01@\x02\x04self\x04\x05value\x0a\x01\0\x04\0\x1e[method]prim\
+itive.set-material\x01\x0b\x01py\x01@\x02\x04self\x04\x05value\x0c\x01\0\x04\0\x1d\
+[method]primitive.set-indices\x01\x0d\x01pv\x01@\x02\x04self\x04\x05value\x0e\x01\
+\0\x04\0\x1d[method]primitive.set-normals\x01\x0f\x04\0\x1f[method]primitive.set\
+-positions\x01\x0f\x04\0\x19[method]primitive.set-uvs\x01\x0f\x01h\x03\x01@\x01\x04\
+self\x10\0y\x04\0\x0f[method]mesh.id\x01\x11\x01@\x01\x04self\x10\0s\x04\0\x11[m\
+ethod]mesh.name\x01\x12\x01@\x02\x04self\x10\x05values\x01\0\x04\0\x15[method]me\
+sh.set-name\x01\x13\x01i\x02\x01p\x14\x01@\x01\x04self\x10\0\x15\x04\0\x1c[metho\
+d]mesh.list-primitives\x01\x16\x01@\x01\x04self\x10\0\x14\x04\0\x1d[method]mesh.\
+create-primitive\x01\x17\x01@\x02\x04self\x10\x05value\x14\x01\0\x04\0\x1d[metho\
+d]mesh.remove-primitive\x01\x18\x01i\x03\x01p\x19\x01@\0\0\x1a\x04\0\x0blist-mes\
+hes\x01\x1b\x01@\0\0\x19\x04\0\x0bcreate-mesh\x01\x1c\x01@\x01\x05value\x19\x01\0\
+\x04\0\x0bremove-mesh\x01\x1d\x03\x01\x0fwired:gltf/mesh\x05\x02\x01B\x06\x01r\x02\
+\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\
+\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x03\x01\x10wired:m\
+ath/types\x05\x03\x02\x03\0\x01\x04mesh\x02\x03\0\x02\x04vec3\x01B\x09\x02\x03\x02\
+\x01\x04\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\x02\x01i\x01\
+\x01@\x01\x04size\x03\0\x04\x04\0\x0dcreate-cuboid\x01\x05\x01@\x03\x06radiusv\x07\
+sectorsy\x06stacksy\0\x04\x04\0\x0dcreate-sphere\x01\x06\x03\x01\x10unavi:shapes\
+/api\x05\x06\x02\x03\0\x02\x04quat\x01B,\x02\x03\x02\x01\x04\x04\0\x04mesh\x03\0\
+\0\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\x02\x02\x03\x02\x01\x07\x04\0\x04quat\
+\x03\0\x04\x01r\x03\x0btranslation\x03\x08rotation\x05\x05scale\x03\x04\0\x09tra\
+nsform\x03\0\x06\x04\0\x04node\x03\x01\x01h\x08\x01@\x01\x04self\x09\0y\x04\0\x0f\
+[method]node.id\x01\x0a\x01@\x01\x04self\x09\0s\x04\0\x11[method]node.name\x01\x0b\
+\x01@\x02\x04self\x09\x05values\x01\0\x04\0\x15[method]node.set-name\x01\x0c\x01\
+i\x08\x01p\x0d\x01@\x01\x04self\x09\0\x0e\x04\0\x15[method]node.children\x01\x0f\
+\x01@\x02\x04self\x09\x05value\x09\x01\0\x04\0\x16[method]node.add-child\x01\x10\
+\x04\0\x19[method]node.remove-child\x01\x10\x01k\x0d\x01@\x01\x04self\x09\0\x11\x04\
+\0\x13[method]node.parent\x01\x12\x01@\x01\x04self\x09\0\x07\x04\0\x16[method]no\
+de.transform\x01\x13\x01@\x02\x04self\x09\x05value\x07\x01\0\x04\0\x1a[method]no\
+de.set-transform\x01\x14\x01i\x01\x01k\x15\x01@\x01\x04self\x09\0\x16\x04\0\x11[\
+method]node.mesh\x01\x17\x01h\x01\x01k\x18\x01@\x02\x04self\x09\x05value\x19\x01\
+\0\x04\0\x15[method]node.set-mesh\x01\x1a\x01@\0\0\x0e\x04\0\x0alist-nodes\x01\x1b\
+\x01@\0\0\x0d\x04\0\x0bcreate-node\x01\x1c\x01@\x01\x05value\x0d\x01\0\x04\0\x0b\
+remove-node\x01\x1d\x03\x01\x0fwired:gltf/node\x05\x08\x01B\x04\x01m\x04\x05debu\
+g\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\x07m\
+essages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x09\x01B\x07\x04\
+\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01\
+h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\
+\x01\x12wired:script/types\x05\x0a\x04\x01\x19example:wired-gltf/script\x04\0\x0b\
+\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-comp\
+onent\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

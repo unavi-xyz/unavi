@@ -17,8 +17,8 @@ impl GuestScript for Script {
     fn new() -> Self {
         log(LogLevel::Info, "Called script construct!");
 
-        // material::test_material_api();
-        // mesh::test_mesh_api();
+        material::test_material_api();
+        mesh::test_mesh_api();
         node::test_node_api();
 
         Script::default()

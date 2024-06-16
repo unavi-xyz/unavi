@@ -1,130 +1,218 @@
 use wasm_bridge::component::Resource;
 
-use crate::State;
+use crate::StoreState;
 
-use super::bindgen::wired::gltf::{
-    mesh::Mesh,
-    node::{Host, HostNode, Node, Transform},
+use super::{
+    bindgen::{
+        wired::gltf::mesh::{Host, HostMesh, HostPrimitive, Mesh, Primitive},
+        Material,
+    },
+    WiredGltfAction,
 };
 
-impl HostNode for State {
-    fn name(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<String> {
-        let node = self.table.get(&self_)?;
-        Ok(node.name.clone())
-    }
-    fn set_name(&mut self, self_: Resource<Node>, value: String) -> wasm_bridge::Result<()> {
-        let node = self.table.get_mut(&self_)?;
-        node.name = value;
-        Ok(())
+impl HostPrimitive for StoreState {
+    fn id(&mut self, self_: Resource<Primitive>) -> wasm_bridge::Result<u32> {
+        Ok(self_.rep())
     }
 
-    fn mesh(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<Option<Resource<Mesh>>> {
-        let node = self.table.get(&self_)?;
-        Ok(node.mesh.map(|mesh| Resource::new_borrow(mesh)))
-    }
-    fn set_mesh(
+    fn material(
         &mut self,
-        self_: Resource<Node>,
-        value: Option<Resource<Mesh>>,
-    ) -> wasm_bridge::Result<()> {
-        let node = self.table.get_mut(&self_)?;
-        node.mesh = value.map(|v| v.rep());
-        Ok(())
+        self_: Resource<Primitive>,
+    ) -> wasm_bridge::Result<Option<Resource<Material>>> {
+        let primitive = self.table.get(&self_)?;
+        Ok(primitive.material.map(|rep| Resource::new_own(rep)))
     }
-
-    fn parent(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<Option<Resource<Node>>> {
-        let node = self.table.get(&self_)?;
-        Ok(node.parent.map(|rep| Resource::new_own(rep)))
-    }
-    fn children(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<Vec<Resource<Node>>> {
-        let node = self.table.get_mut(&self_)?;
-        Ok(node
-            .children
-            .iter()
-            .map(|rep| Resource::new_own(*rep))
-            .collect())
-    }
-    fn add_child(
+    fn set_material(
         &mut self,
-        self_: Resource<Node>,
-        value: Resource<Node>,
+        self_: Resource<Primitive>,
+        value: Option<Resource<Material>>,
     ) -> wasm_bridge::Result<()> {
-        let rep = self_.rep();
+        let primitive = self.table.get_mut(&self_)?;
+        primitive.material = value.map(|v| v.rep());
 
-        // Add child to children.
-        let node = self.table.get_mut(&self_)?;
-        node.children.insert(value.rep());
-
-        // Remove child from old parent's children.
-        let child = self.table.get(&value)?;
-        if let Some(parent_rep) = child.parent {
-            let parent_res = Resource::new_borrow(parent_rep);
-            self.remove_child(parent_res, self_)?;
-        }
-
-        // Set parent.
-        let child = self.table.get_mut(&value)?;
-        child.parent = Some(rep);
+        self.sender.send(WiredGltfAction::SetPrimitiveMaterial {
+            id: self_.rep(),
+            material: primitive.material,
+        })?;
 
         Ok(())
     }
-    fn remove_child(
+
+    fn set_indices(
         &mut self,
-        self_: Resource<Node>,
-        value: Resource<Node>,
+        self_: Resource<Primitive>,
+        value: Vec<u32>,
     ) -> wasm_bridge::Result<()> {
-        let node = self.table.get_mut(&self_)?;
-        node.children.remove(&value.rep());
+        self.sender.send(WiredGltfAction::SetPrimitiveIndices {
+            id: self_.rep(),
+            value,
+        })?;
         Ok(())
     }
-
-    fn transform(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<Transform> {
-        let node = self.table.get(&self_)?;
-        Ok(node.transform.clone())
-    }
-    fn set_transform(
+    fn set_positions(
         &mut self,
-        self_: Resource<Node>,
-        value: Transform,
+        self_: Resource<Primitive>,
+        value: Vec<f32>,
     ) -> wasm_bridge::Result<()> {
-        let node = self.table.get_mut(&self_)?;
-        node.transform = value;
+        self.sender.send(WiredGltfAction::SetPrimitivePositions {
+            id: self_.rep(),
+            value,
+        })?;
+        Ok(())
+    }
+    fn set_normals(
+        &mut self,
+        self_: Resource<Primitive>,
+        value: Vec<f32>,
+    ) -> wasm_bridge::Result<()> {
+        self.sender.send(WiredGltfAction::SetPrimitiveNormals {
+            id: self_.rep(),
+            value,
+        })?;
+        Ok(())
+    }
+    fn set_uvs(&mut self, self_: Resource<Primitive>, value: Vec<f32>) -> wasm_bridge::Result<()> {
+        self.sender.send(WiredGltfAction::SetPrimitiveUvs {
+            id: self_.rep(),
+            value,
+        })?;
         Ok(())
     }
 
-    fn drop(&mut self, rep: Resource<Node>) -> wasm_bridge::Result<()> {
+    fn drop(&mut self, rep: Resource<Primitive>) -> wasm_bridge::Result<()> {
+        let primitive = self.table.get_mut(&rep)?;
+
+        let resource = Resource::<Mesh>::new_borrow(primitive.mesh);
+        let mesh = self.table.get_mut(&resource)?;
+        mesh.primitives.remove(&rep.rep());
+
+        self.sender
+            .send(WiredGltfAction::RemoveMesh { id: rep.rep() })?;
+
         self.table.delete(rep)?;
+
         Ok(())
     }
 }
 
-impl Host for State {
-    fn list_nodes(&mut self) -> wasm_bridge::Result<Vec<Resource<Node>>> {
-        Ok(self
-            .nodes
+impl HostMesh for StoreState {
+    fn id(&mut self, self_: Resource<Mesh>) -> wasm_bridge::Result<u32> {
+        Ok(self_.rep())
+    }
+
+    fn name(&mut self, self_: Resource<Mesh>) -> wasm_bridge::Result<String> {
+        let mesh = self.table.get(&self_)?;
+        Ok(mesh.name.clone())
+    }
+    fn set_name(&mut self, self_: Resource<Mesh>, value: String) -> wasm_bridge::Result<()> {
+        let mesh = self.table.get_mut(&self_)?;
+        mesh.name = value;
+
+        Ok(())
+    }
+
+    fn list_primitives(
+        &mut self,
+        self_: Resource<Mesh>,
+    ) -> wasm_bridge::Result<Vec<wasm_bridge::component::Resource<Primitive>>> {
+        let mesh = self.table.get_mut(&self_)?;
+        Ok(mesh
+            .primitives
             .iter()
             .map(|rep| Resource::new_own(*rep))
             .collect())
     }
 
-    fn create_node(&mut self) -> wasm_bridge::Result<Resource<Node>> {
-        let resource = self.table.push(Node::default())?;
-        self.nodes.push(resource.rep());
-        Ok(resource)
+    fn create_primitive(
+        &mut self,
+        self_: Resource<Mesh>,
+    ) -> wasm_bridge::Result<wasm_bridge::component::Resource<Primitive>> {
+        let resource = self.table.push(Primitive::default())?;
+        let primitive_rep = resource.rep();
+        self.primitives.push(primitive_rep);
+
+        let mesh = self.table.get_mut(&self_)?;
+        mesh.primitives.insert(primitive_rep);
+
+        self.sender.send(WiredGltfAction::CreatePrimitive {
+            id: primitive_rep,
+            mesh: self_.rep(),
+        })?;
+
+        Ok(Resource::new_own(primitive_rep))
     }
 
-    fn remove_node(&mut self, value: Resource<Node>) -> wasm_bridge::Result<()> {
+    fn remove_primitive(
+        &mut self,
+        self_: Resource<Mesh>,
+        value: Resource<Primitive>,
+    ) -> wasm_bridge::Result<()> {
         let rep = value.rep();
         self.table.delete(value)?;
 
         let index =
-            self.nodes
+            self.primitives
                 .iter()
                 .enumerate()
                 .find_map(|(i, item)| if *item == rep { Some(i) } else { None });
         if let Some(index) = index {
-            self.nodes.remove(index);
+            self.primitives.remove(index);
         }
+
+        let mesh = self.table.get_mut(&self_)?;
+        mesh.primitives.remove(&rep);
+
+        self.sender
+            .send(WiredGltfAction::RemovePrimitive { id: rep })?;
+
+        Ok(())
+    }
+
+    fn drop(&mut self, rep: Resource<Mesh>) -> wasm_bridge::Result<()> {
+        self.sender
+            .send(WiredGltfAction::RemovePrimitive { id: rep.rep() })?;
+
+        self.table.delete(rep)?;
+
+        Ok(())
+    }
+}
+
+impl Host for StoreState {
+    fn list_meshes(&mut self) -> wasm_bridge::Result<Vec<Resource<Mesh>>> {
+        Ok(self
+            .meshes
+            .iter()
+            .map(|rep| Resource::new_own(*rep))
+            .collect())
+    }
+
+    fn create_mesh(&mut self) -> wasm_bridge::Result<Resource<Mesh>> {
+        let resource = self.table.push(Mesh::default())?;
+        let mesh_rep = resource.rep();
+        self.meshes.push(mesh_rep);
+
+        self.sender
+            .send(WiredGltfAction::CreateMesh { id: mesh_rep })?;
+
+        Ok(Resource::new_own(mesh_rep))
+    }
+
+    fn remove_mesh(&mut self, value: Resource<Mesh>) -> wasm_bridge::Result<()> {
+        let rep = value.rep();
+        self.table.delete(value)?;
+
+        let index =
+            self.meshes
+                .iter()
+                .enumerate()
+                .find_map(|(i, item)| if *item == rep { Some(i) } else { None });
+        if let Some(index) = index {
+            self.meshes.remove(index);
+        }
+
+        self.sender.send(WiredGltfAction::RemoveMesh { id: rep })?;
+
         Ok(())
     }
 }

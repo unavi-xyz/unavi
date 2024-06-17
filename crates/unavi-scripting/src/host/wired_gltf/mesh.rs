@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use wasm_bridge::component::Resource;
 
 use crate::StoreState;
@@ -19,7 +20,7 @@ impl HostPrimitive for StoreState {
         &mut self,
         self_: Resource<Primitive>,
     ) -> wasm_bridge::Result<Option<Resource<Material>>> {
-        let primitive = self.table.get(&self_)?;
+        let primitive = self.table.get(&self_).map_err(|e| anyhow!("{:?}", e))?;
         Ok(primitive.material.map(Resource::new_own))
     }
     fn set_material(
@@ -27,7 +28,7 @@ impl HostPrimitive for StoreState {
         self_: Resource<Primitive>,
         value: Option<Resource<Material>>,
     ) -> wasm_bridge::Result<()> {
-        let primitive = self.table.get_mut(&self_)?;
+        let primitive = self.table.get_mut(&self_).map_err(|e| anyhow!("{:?}", e))?;
         primitive.material = value.map(|v| v.rep());
 
         self.sender.send(WiredGltfAction::SetPrimitiveMaterial {
@@ -90,11 +91,11 @@ impl HostMesh for StoreState {
     }
 
     fn name(&mut self, self_: Resource<Mesh>) -> wasm_bridge::Result<String> {
-        let mesh = self.table.get(&self_)?;
+        let mesh = self.table.get(&self_).map_err(|e| anyhow!("{:?}", e))?;
         Ok(mesh.name.clone())
     }
     fn set_name(&mut self, self_: Resource<Mesh>, value: String) -> wasm_bridge::Result<()> {
-        let mesh = self.table.get_mut(&self_)?;
+        let mesh = self.table.get_mut(&self_).map_err(|e| anyhow!("{:?}", e))?;
         mesh.name = value;
 
         Ok(())
@@ -103,8 +104,8 @@ impl HostMesh for StoreState {
     fn list_primitives(
         &mut self,
         self_: Resource<Mesh>,
-    ) -> wasm_bridge::Result<Vec<wasm_bridge::component::Resource<Primitive>>> {
-        let mesh = self.table.get_mut(&self_)?;
+    ) -> wasm_bridge::Result<Vec<Resource<Primitive>>> {
+        let mesh = self.table.get_mut(&self_).map_err(|e| anyhow!("{:?}", e))?;
         Ok(mesh
             .primitives
             .iter()
@@ -115,12 +116,15 @@ impl HostMesh for StoreState {
     fn create_primitive(
         &mut self,
         self_: Resource<Mesh>,
-    ) -> wasm_bridge::Result<wasm_bridge::component::Resource<Primitive>> {
-        let resource = self.table.push(Primitive::default())?;
+    ) -> wasm_bridge::Result<Resource<Primitive>> {
+        let resource = self
+            .table
+            .push(Primitive::default())
+            .map_err(|e| anyhow!("{:?}", e))?;
         let primitive_rep = resource.rep();
         self.primitives.push(primitive_rep);
 
-        let mesh = self.table.get_mut(&self_)?;
+        let mesh = self.table.get_mut(&self_).map_err(|e| anyhow!("{:?}", e))?;
         mesh.primitives.insert(primitive_rep);
 
         self.sender.send(WiredGltfAction::CreatePrimitive {
@@ -137,7 +141,7 @@ impl HostMesh for StoreState {
         value: Resource<Primitive>,
     ) -> wasm_bridge::Result<()> {
         let rep = value.rep();
-        self.table.delete(value)?;
+        self.table.delete(value).map_err(|e| anyhow!("{:?}", e))?;
 
         let index =
             self.primitives
@@ -148,7 +152,7 @@ impl HostMesh for StoreState {
             self.primitives.remove(index);
         }
 
-        let mesh = self.table.get_mut(&self_)?;
+        let mesh = self.table.get_mut(&self_).map_err(|e| anyhow!("{:?}", e))?;
         mesh.primitives.remove(&rep);
 
         self.sender
@@ -172,7 +176,10 @@ impl Host for StoreState {
     }
 
     fn create_mesh(&mut self) -> wasm_bridge::Result<Resource<Mesh>> {
-        let resource = self.table.push(Mesh::default())?;
+        let resource = self
+            .table
+            .push(Mesh::default())
+            .map_err(|e| anyhow!("{:?}", e))?;
         let mesh_rep = resource.rep();
         self.meshes.push(mesh_rep);
 
@@ -184,7 +191,7 @@ impl Host for StoreState {
 
     fn remove_mesh(&mut self, value: Resource<Mesh>) -> wasm_bridge::Result<()> {
         let rep = value.rep();
-        self.table.delete(value)?;
+        self.table.delete(value).map_err(|e| anyhow!("{:?}", e))?;
 
         let index =
             self.meshes

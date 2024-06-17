@@ -1,16 +1,9 @@
-use bevy::{
-    asset::{Assets, Handle},
-    core::Name,
-    ecs::{
-        component::Component,
-        entity::Entity,
-        query::Without,
-        system::{Commands, NonSendMut, Query, Res},
-    },
-    log::{error, info},
-    utils::HashMap,
-};
-use wasm_bridge::{component::Linker, Config, Engine, Store};
+use std::sync::Arc;
+
+use bevy::{prelude::*, utils::HashMap};
+use bevy_async_task::{AsyncTaskPool, AsyncTaskStatus};
+use tokio::sync::Mutex;
+use wasm_bridge::{component::Linker, AsContextMut, Config, Engine, Store};
 
 use crate::{
     host::{add_host_script_apis, wired_gltf::WiredGltfReceiver},
@@ -23,17 +16,19 @@ use super::asset::Wasm;
 #[derive(Component)]
 pub struct LoadedScript;
 
-/// This is `!Send` for the web backend.
-/// Because of this we use a [NonSend] resource, but we could change
-/// this when targeting native to allow for parallel script execution.
-#[derive(Default)]
-pub struct Scripts(pub HashMap<Entity, (Script, Store<StoreState>)>);
+/// Script was processed to begin loading.
+#[derive(Component)]
+pub struct ProcessedScript;
+
+#[derive(Default, Deref)]
+pub struct Scripts(pub Arc<Mutex<HashMap<Entity, (Script, Store<StoreState>)>>>);
 
 pub fn load_scripts(
     assets: Res<Assets<Wasm>>,
     mut commands: Commands,
-    mut stores: NonSendMut<Scripts>,
-    to_load: Query<(Entity, &Name, &Handle<Wasm>), Without<LoadedScript>>,
+    mut pool: AsyncTaskPool<anyhow::Result<Entity>>,
+    scripts: NonSendMut<Scripts>,
+    to_load: Query<(Entity, &Name, &Handle<Wasm>), Without<ProcessedScript>>,
 ) {
     for (entity, name, handle) in to_load.iter() {
         let wasm = match assets.get(handle) {
@@ -42,8 +37,11 @@ pub fn load_scripts(
         };
 
         info!("Loading script: {}", name);
+        commands.entity(entity).insert(ProcessedScript);
 
-        let config = Config::new();
+        let mut config = Config::new();
+        config.async_support(true);
+        config.wasm_component_model(true);
 
         let engine = match Engine::new(&config) {
             Ok(v) => v,
@@ -53,49 +51,45 @@ pub fn load_scripts(
             }
         };
 
-        let mut linker = Linker::new(&engine);
-
         let (state, recv) = StoreState::new(name.to_string());
         let mut store = Store::new(&engine, state);
+        let mut linker = Linker::new(store.engine());
 
-        match add_host_script_apis(&mut linker) {
-            Ok(r) => r,
-            Err(e) => {
-                error!("Failed to add host APIs: {}", e);
-                continue;
-            }
-        };
+        let bytes = wasm.0.clone();
+        let scripts = scripts.clone();
 
-        // TODO: Move to async loading + instantiation
-        #[allow(deprecated)]
-        let component = match wasm_bridge::component::Component::new(&engine, &wasm.0) {
-            Ok(c) => c,
-            Err(e) => {
-                error!("Failed to create component: {}", e);
-                continue;
-            }
-        };
+        pool.spawn(async move {
+            wasm_bridge_wasi::add_to_linker_async(&mut linker)?;
+            add_host_script_apis(&mut linker)?;
 
-        #[allow(deprecated)]
-        let instance = match linker.instantiate(&mut store, &component) {
-            Ok(i) => i,
-            Err(e) => {
-                error!("Failed to instantiate component: {}", e);
-                continue;
-            }
-        };
+            let component =
+                wasm_bridge::component::Component::new_safe(store.engine(), &bytes).await?;
 
-        let script = match super::wired_script::Script::new(&mut store, &instance) {
-            Ok(v) => v,
-            Err(e) => {
-                error!("Failed to construct script resource: {}", e);
-                continue;
-            }
-        };
+            let (script, _) =
+                Script::instantiate_async(store.as_context_mut(), &component, &mut linker).await?;
 
-        stores.0.insert(entity, (script, store));
-        commands
-            .entity(entity)
-            .insert((LoadedScript, WiredGltfReceiver(recv)));
+            let mut scripts = scripts.lock().await;
+            scripts.insert(entity, (script, store));
+
+            Ok(entity)
+        });
+
+        commands.entity(entity).insert(WiredGltfReceiver(recv));
+    }
+
+    for task in pool.iter_poll() {
+        if let AsyncTaskStatus::Finished(res) = task {
+            let entity = match res {
+                Ok(v) => v,
+                Err(e) => {
+                    error!("Failed to load script: {}", e);
+                    continue;
+                }
+            };
+
+            info!("Loaded script!");
+
+            commands.entity(entity).insert(LoadedScript);
+        }
     }
 }

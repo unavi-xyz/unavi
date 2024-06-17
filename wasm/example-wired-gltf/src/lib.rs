@@ -22,6 +22,8 @@ struct Script {
 
 impl GuestScript for Script {
     fn new() -> Self {
+        println!("println: Constructing script!");
+
         log(LogLevel::Info, "Creating node");
         let node = create_node();
 

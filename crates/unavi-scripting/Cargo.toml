@@ -11,11 +11,13 @@ workspace = true
 [dependencies]
 anyhow.workspace = true
 bevy.workspace = true
+bevy_async_task.workspace = true
 crossbeam = { version = "0.8.4", features = ["crossbeam-channel"] }
-wasm-bridge = { version = "0.4.0", features = ["component-model", "async"] }
+tokio.workspace = true
+wasm-bridge = { git = "https://github.com/kayhhh/wasm-bridge.git", branch = "send-table", features = ["component-model", "async"] }
+wasm-bridge-wasi = { git = "https://github.com/kayhhh/wasm-bridge.git", branch = "send-table" }
 
 [dev-dependencies]
 bevy_panorbit_camera.workspace = true
-tokio.workspace = true
 tracing-test = { workspace = true, features = ["no-env-filter"] }
 tracing.workspace = true

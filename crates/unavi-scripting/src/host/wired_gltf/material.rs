@@ -1,4 +1,5 @@
 use crate::StoreState;
+use anyhow::anyhow;
 use wasm_bridge::component::Resource;
 
 use super::{
@@ -12,21 +13,21 @@ impl HostMaterial for StoreState {
     }
 
     fn name(&mut self, self_: Resource<Material>) -> wasm_bridge::Result<String> {
-        let material = self.table.get(&self_)?;
+        let material = self.table.get(&self_).map_err(|e| anyhow!("{:?}", e))?;
         Ok(material.name.clone())
     }
     fn set_name(&mut self, self_: Resource<Material>, value: String) -> wasm_bridge::Result<()> {
-        let material = self.table.get_mut(&self_)?;
+        let material = self.table.get_mut(&self_).map_err(|e| anyhow!("{:?}", e))?;
         material.name = value;
         Ok(())
     }
 
     fn color(&mut self, self_: Resource<Material>) -> wasm_bridge::Result<Color> {
-        let material = self.table.get(&self_)?;
+        let material = self.table.get(&self_).map_err(|e| anyhow!("{:?}", e))?;
         Ok(material.color)
     }
     fn set_color(&mut self, self_: Resource<Material>, value: Color) -> wasm_bridge::Result<()> {
-        let material = self.table.get_mut(&self_)?;
+        let material = self.table.get_mut(&self_).map_err(|e| anyhow!("{:?}", e))?;
         material.color = value;
 
         self.sender.send(WiredGltfAction::SetMaterialColor {
@@ -57,7 +58,10 @@ impl Host for StoreState {
     }
 
     fn create_material(&mut self) -> wasm_bridge::Result<Resource<Material>> {
-        let resource = self.table.push(Material::default())?;
+        let resource = self
+            .table
+            .push(Material::default())
+            .map_err(|e| anyhow!("{:?}", e))?;
         let material_rep = resource.rep();
         self.materials.push(material_rep);
 
@@ -69,7 +73,7 @@ impl Host for StoreState {
 
     fn remove_material(&mut self, value: Resource<Material>) -> wasm_bridge::Result<()> {
         let rep = value.rep();
-        self.table.delete(value)?;
+        self.table.delete(value).map_err(|e| anyhow!("{:?}", e))?;
 
         let index =
             self.materials

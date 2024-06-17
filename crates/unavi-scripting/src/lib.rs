@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use crossbeam::channel::{Receiver, Sender};
 use host::wired_gltf::WiredGltfAction;
 use wasm_bridge::component::ResourceTable;
+use wasm_bridge_wasi::{WasiCtx, WasiCtxBuilder, WasiView};
 
 use self::{asset::Wasm, load::Scripts};
 
@@ -12,7 +13,8 @@ mod load;
 
 mod wired_script {
     wasm_bridge::component::bindgen!({
-        path: "../../wired-protocol/spatial/wit/wired-script"
+        path: "../../wired-protocol/spatial/wit/wired-script",
+        async: true,
     });
 }
 
@@ -61,18 +63,32 @@ impl ScriptBundle {
 }
 
 pub struct StoreState {
-    pub name: String,
-    pub sender: Sender<WiredGltfAction>,
-    pub table: ResourceTable,
     pub materials: Vec<u32>,
     pub meshes: Vec<u32>,
+    pub name: String,
     pub nodes: Vec<u32>,
     pub primitives: Vec<u32>,
+    pub sender: Sender<WiredGltfAction>,
+    pub table: ResourceTable,
+    pub wasi: WasiCtx,
+    pub wasi_table: wasm_bridge_wasi::ResourceTable,
+}
+
+impl WasiView for StoreState {
+    fn table(&mut self) -> &mut wasm_bridge_wasi::ResourceTable {
+        &mut self.wasi_table
+    }
+
+    fn ctx(&mut self) -> &mut WasiCtx {
+        &mut self.wasi
+    }
 }
 
 impl StoreState {
     pub fn new(name: String) -> (Self, Receiver<WiredGltfAction>) {
         let (sender, recv) = crossbeam::channel::bounded(100);
+
+        let wasi = WasiCtxBuilder::new().inherit_stdout().build();
 
         (
             Self {
@@ -83,6 +99,8 @@ impl StoreState {
                 primitives: Vec::default(),
                 sender,
                 table: ResourceTable::default(),
+                wasi,
+                wasi_table: wasm_bridge_wasi::ResourceTable::default(),
             },
             recv,
         )

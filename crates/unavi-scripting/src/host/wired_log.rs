@@ -4,11 +4,13 @@ use wasm_bridge::component::Linker;
 
 use crate::StoreState;
 
-use self::wired::log::api::{Host, LogLevel};
+use self::bindgen::wired::log::api::{Host, LogLevel};
 
-wasm_bridge::component::bindgen!({
-    path: "../../wired-protocol/spatial/wit/wired-log"
-});
+mod bindgen {
+    wasm_bridge::component::bindgen!({
+        path: "../../wired-protocol/spatial/wit/wired-log"
+    });
+}
 
 impl Host for StoreState {
     fn log(&mut self, level: LogLevel, message: String) -> wasm_bridge::Result<()> {
@@ -29,6 +31,6 @@ impl Host for StoreState {
 }
 
 pub fn add_to_host(linker: &mut Linker<StoreState>) -> Result<()> {
-    self::wired::log::api::add_to_linker(linker, |s| s)?;
+    bindgen::wired::log::api::add_to_linker(linker, |s| s)?;
     Ok(())
 }

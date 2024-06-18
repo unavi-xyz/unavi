@@ -3,7 +3,7 @@ use std::sync::Arc;
 use bevy::{prelude::*, utils::HashMap};
 use bevy_async_task::{AsyncTaskPool, AsyncTaskStatus};
 use tokio::sync::Mutex;
-use wasm_bridge::{component::Linker, AsContextMut, Config, Engine, Store};
+use wasm_bridge::{component::Linker, Config, Engine, Store};
 
 use crate::{
     host::{add_host_script_apis, wired_gltf::WiredGltfReceiver},
@@ -66,7 +66,7 @@ pub fn load_scripts(
                 wasm_bridge::component::Component::new_safe(store.engine(), &bytes).await?;
 
             let (script, _) =
-                Script::instantiate_async(store.as_context_mut(), &component, &mut linker).await?;
+                Script::instantiate_async(&mut store, &component, &mut linker).await?;
 
             let mut scripts = scripts.lock().await;
             scripts.insert(entity, (script, store));

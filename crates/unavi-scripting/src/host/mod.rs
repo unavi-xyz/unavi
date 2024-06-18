@@ -49,10 +49,9 @@ mod tests {
             Update,
             (
                 crate::load::load_scripts,
-                // crate::host::wired_gltf::query::query_node_data,
                 crate::execution::init_scripts,
                 crate::execution::update_scripts,
-                // super::wired_gltf::handler::handle_wired_gltf_actions,
+                super::wired_gltf::handler::handle_wired_gltf_actions,
             )
                 .chain(),
         );

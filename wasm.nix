@@ -130,6 +130,7 @@ in
         name = "check-components";
         runtimeInputs = with pkgs; [
           cargo-component
+          clang
           mold
           rust-bin.stable.latest.default
         ];

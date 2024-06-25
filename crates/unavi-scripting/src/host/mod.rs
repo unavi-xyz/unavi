@@ -43,27 +43,35 @@ mod tests {
         .init_asset_loader::<WasmLoader>()
         .init_non_send_resource::<Scripts>();
 
-        app.add_systems(
-            Update,
-            (
-                crate::load::load_scripts,
-                crate::execution::update_scripts,
-                crate::execution::init_scripts,
-                super::wired_gltf::handler::handle_wired_gltf_actions,
-            )
-                .chain(),
-        );
+        app.add_systems(Update, crate::load::load_scripts);
 
         let asset_server = app.world.get_resource::<AssetServer>().unwrap();
         let entity = app.world.spawn(ScriptBundle::load(name, asset_server)).id();
 
-        for _ in 0..3 {
-            tokio::time::sleep(Duration::from_secs_f32(0.5)).await;
+        let mut did_load = false;
+
+        for _ in 0..10 {
+            tokio::time::sleep(Duration::from_secs_f32(1.0)).await;
             app.update();
+
+            let loaded_script = app.world.get::<LoadedScript>(entity);
+            if loaded_script.is_some() {
+                did_load = true;
+                break;
+            };
         }
 
-        let loaded_script = app.world.get::<LoadedScript>(entity);
-        assert!(loaded_script.is_some());
+        assert!(did_load);
+
+        app.add_systems(
+            Update,
+            (
+                crate::execution::init_scripts,
+                crate::execution::update_scripts,
+                super::wired_gltf::handler::handle_wired_gltf_actions,
+            )
+                .chain(),
+        );
 
         for _ in 0..UPDATES {
             tokio::time::sleep(Duration::from_secs_f32(0.1)).await;

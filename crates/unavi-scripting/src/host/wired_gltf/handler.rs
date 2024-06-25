@@ -173,7 +173,7 @@ pub fn handle_wired_gltf_actions(
                         // Update any nodes using this mesh.
                         let mut to_adds = Vec::new();
 
-                        for (node_ent, _, node_mesh) in nodes.iter(&world) {
+                        for (node_ent, _, node_mesh) in nodes.iter(world) {
                             if node_mesh.id == Some(mesh) {
                                 let material_id = None;
                                 let to_add = vec![(id, mesh_handle.clone(), material_id)];
@@ -186,7 +186,7 @@ pub fn handle_wired_gltf_actions(
                                 node_ent,
                                 to_add,
                                 materials,
-                                &default_material,
+                                default_material,
                                 world,
                             );
 
@@ -368,7 +368,7 @@ pub fn handle_wired_gltf_actions(
                         }
 
                         let new_primitives =
-                            spawn_primitives(node_ent, to_add, materials, &default_material, world);
+                            spawn_primitives(node_ent, to_add, materials, default_material, world);
 
                         let (_, mut node_mesh) = find_node(nodes, id, world).unwrap();
 
@@ -401,15 +401,30 @@ pub fn handle_wired_gltf_actions(
                     let s = span.entered();
 
                     if let Some((ent, ..)) = find_primitive(primitives, id, world) {
-                        if let Some(material) = material {
+                        let material_handle = if let Some(material) = material {
                             if let Some((_, handle)) = find_material(materials, material, world) {
-                                let handle = handle.clone();
-                                world.entity_mut(ent).insert(handle);
+                                handle.clone()
                             } else {
                                 warn!("Material {} does not exist", material);
+                                default_material.clone()
                             }
                         } else {
-                            world.entity_mut(ent).insert(default_material.clone());
+                            default_material.clone()
+                        };
+
+                        world.entity_mut(ent).insert(material_handle.clone());
+
+                        // Update all nodes using this primitive.
+                        let mut to_update = Vec::new();
+
+                        for (_, _, node_mesh) in nodes.iter(world) {
+                            if let Some(ent) = node_mesh.primitives.get(&id) {
+                                to_update.push(*ent);
+                            }
+                        }
+
+                        for ent in to_update {
+                            world.entity_mut(ent).insert(material_handle.clone());
                         }
                     } else {
                         warn!("Primitive {} does not exist", id);
@@ -495,10 +510,10 @@ pub fn handle_wired_gltf_actions(
     }
 }
 
-fn spawn_primitives<'a>(
+fn spawn_primitives(
     node_ent: Entity,
     to_add: Vec<(u32, Handle<Mesh>, Option<MaterialId>)>,
-    materials: &'a mut QueryState<(Entity, &MaterialId, &Handle<StandardMaterial>)>,
+    materials: &mut QueryState<(Entity, &MaterialId, &Handle<StandardMaterial>)>,
     default_material: &Handle<StandardMaterial>,
     world: &mut World,
 ) -> Vec<(u32, Entity)> {
@@ -1403,7 +1418,7 @@ mod tests {
         assert_eq!(node_mesh.id, Some(mesh_id));
         assert_eq!(node_mesh.primitives.len(), 1);
 
-        let primitive_ent = node_mesh.primitives[&primitive_id].clone();
+        let primitive_ent = node_mesh.primitives[&primitive_id];
         let handle = app
             .world
             .get::<Handle<StandardMaterial>>(primitive_ent)

@@ -10,7 +10,6 @@ async fn test_world_host() {
         domain_world,
         task_social,
         task_world,
-        ..
     } = utils::setup_test_server().await;
 
     // DID document is available.

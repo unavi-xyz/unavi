@@ -155,8 +155,10 @@ impl HostMesh for StoreState {
         let mesh = self.table.get_mut(&self_).map_err(|e| anyhow!("{:?}", e))?;
         mesh.primitives.remove(&rep);
 
-        self.sender
-            .send(WiredGltfAction::RemovePrimitive { id: rep })?;
+        self.sender.send(WiredGltfAction::RemovePrimitive {
+            id: rep,
+            mesh: self_.rep(),
+        })?;
 
         Ok(())
     }

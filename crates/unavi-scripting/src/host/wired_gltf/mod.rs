@@ -23,7 +23,7 @@ pub enum WiredGltfAction {
     RemoveMaterial { id: u32 },
     RemoveMesh { id: u32 },
     RemoveNode { id: u32 },
-    RemovePrimitive { id: u32 },
+    RemovePrimitive { id: u32, mesh: u32 },
     SetMaterialColor { id: u32, color: Color },
     SetNodeMesh { id: u32, mesh: Option<u32> },
     SetNodeParent { id: u32, parent: Option<u32> },

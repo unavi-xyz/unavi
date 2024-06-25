@@ -38,7 +38,6 @@ jobs:
           remove-dotnet: true
           remove-haskell: true
           remove-large-packages: true
-          remove-swapfile: true
 
       - uses: actions/checkout@v4
         with:
@@ -63,7 +62,6 @@ jobs:
           remove-dotnet: true
           remove-haskell: true
           remove-large-packages: true
-          remove-swapfile: true
 
       - uses: actions/checkout@v4
         with:
@@ -91,7 +89,6 @@ jobs:
           remove-dotnet: true
           remove-haskell: true
           remove-large-packages: true
-          remove-swapfile: true
 
       - uses: actions/checkout@v4
         with:

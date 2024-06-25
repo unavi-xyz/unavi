@@ -88,7 +88,7 @@ impl StoreState {
     pub fn new(name: String) -> (Self, Receiver<WiredGltfAction>) {
         let (sender, recv) = crossbeam::channel::bounded(100);
 
-        let wasi = WasiCtxBuilder::new().inherit_stdout().build();
+        let wasi = WasiCtxBuilder::new().build();
 
         (
             Self {

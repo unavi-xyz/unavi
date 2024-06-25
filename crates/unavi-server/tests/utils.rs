@@ -9,8 +9,6 @@ use unavi_server::{Args, Command, StartOptions, Storage};
 pub struct TestServer {
     pub domain_social: String,
     pub domain_world: String,
-    pub port_social: u16,
-    pub port_world: u16,
     pub task_social: JoinHandle<Result<()>>,
     pub task_world: JoinHandle<Result<()>>,
 }
@@ -55,8 +53,6 @@ pub async fn setup_test_server() -> TestServer {
     TestServer {
         domain_social,
         domain_world,
-        port_social,
-        port_world,
         task_social,
         task_world,
     }

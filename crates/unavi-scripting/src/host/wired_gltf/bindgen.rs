@@ -42,7 +42,6 @@ pub struct Mesh {
 #[derive(Default)]
 pub struct Primitive {
     pub material: Option<u32>,
-    pub mesh: u32,
 }
 
 #[derive(Default)]

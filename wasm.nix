@@ -104,9 +104,27 @@ let
               targetName:
               let
                 targetProcessed = processName targetName;
+
+                script = pkgs.writers.writeBash "script" ''
+                  OUTPUT=$(wac plug --plug ${targetProcessed.outFile} -o ${tmpFile} ${processed.outFile} 2>&1 >/dev/null)
+
+                  if [ $? -eq 0 ]; then
+                    mv ${tmpFile} ${processed.outFile}
+                    echo "Plugged ${targetProcessed.outFile} -> ${processed.outFile}"
+                  else
+                    if echo "$OUTPUT" | grep -q "no matching imports"; then
+                        echo "Continuing despite 'no matching imports' error."
+                    else
+                        echo "Failed to plug ${targetProcessed.outFile} -> ${processed.outFile}"
+                        echo "$OUTPUT"
+                        exit 1
+                    fi
+                  fi
+                '';
+
               in
               ''
-                (wac plug --plug ${targetProcessed.outFile} -o ${tmpFile} ${processed.outFile} && mv ${tmpFile} ${processed.outFile}) || true
+                bash ${script}
               ''
             ) componentNames
           )

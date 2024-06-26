@@ -1,4 +1,4 @@
-const SCHEMAS: &str = "../../wired-protocol/world/schemas";
+const SCHEMAS: &str = "../../wired-protocol/spatial/capnp";
 
 fn main() {
     capnpc::CompilerCommand::new()

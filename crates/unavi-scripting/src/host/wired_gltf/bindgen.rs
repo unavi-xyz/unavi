@@ -1,10 +1,5 @@
-use bevy::{
-    math::{Quat, Vec3},
-    utils::HashSet,
-};
-use wasm_bridge::component::{Resource, ResourceTable, ResourceTableError};
-
-use crate::host::wired_math::{quat::QuatRes, transform::Transform, vec3::Vec3Res};
+use bevy::utils::HashSet;
+use wired::math::types::{Quat, Transform, Vec3};
 
 use self::wired::gltf::material::Color;
 
@@ -16,9 +11,6 @@ wasm_bridge::component::bindgen!({
         "wired:gltf/mesh/mesh": Mesh,
         "wired:gltf/mesh/primitive": Primitive,
         "wired:gltf/node/node": Node,
-        "wired:math/types/vec3": crate::host::wired_math::vec3::Vec3Res,
-        "wired:math/types/quat": crate::host::wired_math::quat::QuatRes,
-        "wired:math/types/transform": crate::host::wired_math::transform::Transform,
     }
 });
 
@@ -50,32 +42,46 @@ pub struct Primitive {
     pub material: Option<u32>,
 }
 
+#[derive(Default)]
 pub struct Node {
     pub children: HashSet<u32>,
     pub mesh: Option<u32>,
     pub name: String,
     pub parent: Option<u32>,
-    pub transform: Resource<Transform>,
+    pub transform: Transform,
 }
 
-impl Node {
-    pub fn try_new(table: &mut ResourceTable) -> Result<Self, ResourceTableError> {
-        let rotation = table.push(QuatRes::new(Quat::default()))?;
-        let scale = table.push(Vec3Res::new(Vec3::splat(1.0)))?;
-        let translation = table.push(Vec3Res::new(Vec3::default()))?;
+impl Default for Transform {
+    fn default() -> Self {
+        Self {
+            rotation: Quat::default(),
+            scale: Vec3 {
+                x: 1.0,
+                y: 1.0,
+                z: 1.0,
+            },
+            translation: Vec3::default(),
+        }
+    }
+}
 
-        let transform = table.push(Transform {
-            translation,
-            rotation,
-            scale,
-        })?;
+impl Default for Quat {
+    fn default() -> Self {
+        Self {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+            w: 1.0,
+        }
+    }
+}
 
-        Ok(Self {
-            children: HashSet::default(),
-            mesh: None,
-            name: String::default(),
-            parent: None,
-            transform,
-        })
+impl Default for Vec3 {
+    fn default() -> Self {
+        Self {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        }
     }
 }

@@ -10,7 +10,7 @@ use super::wired::math::types::HostQuat;
 pub struct QuatRes {
     pub data: Quat,
     pub dirty: Cell<bool>,
-    ref_count: usize,
+    ref_count: Cell<usize>,
 }
 
 impl QuatRes {
@@ -18,8 +18,13 @@ impl QuatRes {
         Self {
             data,
             dirty: Cell::new(true),
-            ref_count: 1,
+            ref_count: Cell::new(1),
         }
+    }
+
+    pub fn new_own(&self, rep: u32) -> Resource<Self> {
+        self.ref_count.set(self.ref_count.get() + 1);
+        Resource::new_own(rep)
     }
 }
 
@@ -131,8 +136,43 @@ impl HostQuat for StoreState {
         Ok(())
     }
 
-    fn drop(&mut self, _rep: Resource<QuatRes>) -> wasm_bridge::Result<()> {
-        // TODO: reference count resources, remove from table on drop if 0
+    fn drop(&mut self, rep: Resource<QuatRes>) -> wasm_bridge::Result<()> {
+        let res = self.table.get(&rep)?;
+        res.ref_count.set(res.ref_count.get() - 1);
+
+        if res.ref_count.get() == 0 {
+            self.table.delete(rep)?;
+        }
+
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use tracing_test::traced_test;
+    use wasm_bridge::component::ResourceTable;
+
+    #[test]
+    #[traced_test]
+    fn test_drop() {
+        let mut table = ResourceTable::default();
+
+        let res = table.push(QuatRes::new(Quat::default())).unwrap();
+        let rep = res.rep();
+
+        let quat = table.get(&res).unwrap();
+        let res_2 = quat.new_own(rep);
+
+        let found = table.get(&res_2);
+        assert!(found.is_ok());
+
+        assert_eq!(quat.ref_count.get(), 0);
+
+        let dummy = Resource::<QuatRes>::new_own(rep);
+        let found = table.get(&dummy);
+        assert!(found.is_err());
     }
 }

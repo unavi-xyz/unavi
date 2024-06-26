@@ -102,9 +102,41 @@ impl HostNode for StoreState {
         Ok(())
     }
 
-    fn transform(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<Resource<Transform>> {
+    fn transform(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<Transform> {
         let node = self.table.get(&self_)?;
-        Ok(Resource::new_own(node.transform.rep()))
+        Ok(node.transform)
+    }
+    fn set_transform(
+        &mut self,
+        self_: Resource<Node>,
+        value: Transform,
+    ) -> wasm_bridge::Result<()> {
+        let node = self.table.get_mut(&self_)?;
+        node.transform = value;
+
+        self.sender.send(WiredGltfAction::SetNodeTransform {
+            id: self_.rep(),
+            transform: bevy::prelude::Transform {
+                translation: bevy::prelude::Vec3::new(
+                    node.transform.translation.x,
+                    node.transform.translation.y,
+                    node.transform.translation.z,
+                ),
+                rotation: bevy::prelude::Quat::from_xyzw(
+                    node.transform.rotation.x,
+                    node.transform.rotation.y,
+                    node.transform.rotation.z,
+                    node.transform.rotation.w,
+                ),
+                scale: bevy::prelude::Vec3::new(
+                    node.transform.scale.x,
+                    node.transform.scale.y,
+                    node.transform.scale.z,
+                ),
+            },
+        })?;
+
+        Ok(())
     }
 
     fn drop(&mut self, _rep: Resource<Node>) -> wasm_bridge::Result<()> {
@@ -122,7 +154,7 @@ impl Host for StoreState {
     }
 
     fn create_node(&mut self) -> wasm_bridge::Result<Resource<Node>> {
-        let node = Node::try_new(&mut self.table)?;
+        let node = Node::default();
         let resource = self.table.push(node)?;
         let node_rep = resource.rep();
         self.nodes.push(resource);

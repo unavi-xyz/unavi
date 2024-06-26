@@ -1261,7 +1261,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c5d366a775e7a88c9d1328e8f56709b3d78bef60aeec2403fe3f57e88f519c5c"
 dependencies = [
  "bevy",
- "glam",
+ "glam 0.25.0",
  "gltf_kun",
  "image 0.25.1",
  "serde_json",
@@ -1371,7 +1371,7 @@ version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f06daa26ffb82d90ba772256c0ba286f6c305c392f6976c9822717974805837c"
 dependencies = [
- "glam",
+ "glam 0.25.0",
  "serde",
 ]
 
@@ -1381,7 +1381,7 @@ version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a0d7ef7f2a826d0b19f059035831ce00a5e930435cc53c61e045773d0483f67a"
 dependencies = [
- "glam",
+ "glam 0.25.0",
 ]
 
 [[package]]
@@ -1449,7 +1449,7 @@ dependencies = [
  "bevy_utils",
  "downcast-rs",
  "erased-serde",
- "glam",
+ "glam 0.25.0",
  "serde",
  "smol_str",
  "thiserror",
@@ -1808,7 +1808,7 @@ dependencies = [
  "bitflags 2.5.0",
  "cexpr",
  "clang-sys",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "lazy_static",
  "lazycell",
  "proc-macro2",
@@ -4015,7 +4015,7 @@ checksum = "95ed933078d2e659745df651f4c180511cd582e5b9414ff896e7d50d207e3103"
 dependencies = [
  "const_panic",
  "encase_derive",
- "glam",
+ "glam 0.25.0",
  "thiserror",
 ]
 
@@ -4136,6 +4136,7 @@ dependencies = [
 name = "example-wired-gltf"
 version = "0.0.3"
 dependencies = [
+ "glam 0.28.0",
  "wit-bindgen-rt",
 ]
 
@@ -4750,6 +4751,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "glam"
+version = "0.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "779ae4bf7e8421cf91c0b3b64e7e8b40b862fba4d393f59150042de7c4965a94"
+
+[[package]]
 name = "glob"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4826,7 +4833,7 @@ checksum = "93129831eb223c7639973b4a605a9c899f16672dff05c261ba540316436cdad1"
 dependencies = [
  "base64 0.22.1",
  "byteorder",
- "glam",
+ "glam 0.25.0",
  "gltf",
  "petgraph",
  "serde",
@@ -5128,7 +5135,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f33ddb7f7143d9e703c072e88b98cd8b9719f174137a671429351bd2ee43c02a"
 dependencies = [
  "constgebra",
- "glam",
+ "glam 0.25.0",
 ]
 
 [[package]]
@@ -5252,7 +5259,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.4.10",
+ "socket2 0.5.7",
  "tokio",
  "tower-service",
  "tracing",
@@ -7031,7 +7038,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7b5c17de023a86f59ed79891b2e5d5a94c705dbe904a5b5c9c952ea6221b03e4"
 dependencies = [
  "approx 0.5.1",
- "glam",
+ "glam 0.25.0",
  "matrixmultiply",
  "nalgebra-macros",
  "num-complex",

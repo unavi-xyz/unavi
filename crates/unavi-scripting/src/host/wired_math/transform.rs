@@ -70,7 +70,8 @@ impl HostTransform for StoreState {
 
     fn rotation(&mut self, self_: Resource<Transform>) -> wasm_bridge::Result<Resource<QuatRes>> {
         let res = self.table.get(&self_)?;
-        Ok(Resource::new_own(res.rotation.rep()))
+        let rotation = self.table.get(&res.rotation)?;
+        Ok(rotation.new_own(res.rotation.rep()))
     }
     fn scale(&mut self, self_: Resource<Transform>) -> wasm_bridge::Result<Resource<Vec3Res>> {
         let res = self.table.get(&self_)?;

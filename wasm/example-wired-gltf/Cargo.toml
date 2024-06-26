@@ -9,6 +9,7 @@ license = "MIT OR Apache-2.0"
 crate-type = ["cdylib"]
 
 [dependencies]
+glam = "0.28.0"
 wit-bindgen-rt.workspace = true
 
 [package.metadata.component]

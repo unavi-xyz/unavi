@@ -1,7 +1,7 @@
 use bevy::math::{Quat, Vec3};
 use wasm_bridge::component::{Resource, ResourceTable, ResourceTableError};
 
-use crate::StoreState;
+use crate::state::StoreState;
 
 use super::{quat::QuatRes, vec3::Vec3Res, wired::math::types::HostTransform};
 

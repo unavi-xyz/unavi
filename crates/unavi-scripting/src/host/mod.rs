@@ -1,7 +1,7 @@
 use anyhow::Result;
 use wasm_bridge::component::Linker;
 
-use super::StoreState;
+use super::state::StoreState;
 
 pub mod wired_gltf;
 mod wired_log;

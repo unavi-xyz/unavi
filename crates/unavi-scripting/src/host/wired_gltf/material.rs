@@ -1,5 +1,6 @@
-use crate::StoreState;
 use wasm_bridge::component::Resource;
+
+use crate::state::StoreState;
 
 use super::{
     bindgen::wired::gltf::material::{Color, Host, HostMaterial, Material},
@@ -52,14 +53,14 @@ impl Host for StoreState {
         Ok(self
             .materials
             .iter()
-            .map(|rep| Resource::new_own(*rep))
+            .map(|res| Resource::new_own(res.rep()))
             .collect())
     }
 
     fn create_material(&mut self) -> wasm_bridge::Result<Resource<Material>> {
         let resource = self.table.push(Material::default())?;
         let material_rep = resource.rep();
-        self.materials.push(material_rep);
+        self.materials.push(resource);
 
         self.sender
             .send(WiredGltfAction::CreateMaterial { id: material_rep })?;
@@ -71,11 +72,13 @@ impl Host for StoreState {
         let rep = value.rep();
         self.table.delete(value)?;
 
-        let index =
-            self.materials
-                .iter()
-                .enumerate()
-                .find_map(|(i, item)| if *item == rep { Some(i) } else { None });
+        let index = self.materials.iter().enumerate().find_map(|(i, item)| {
+            if item.rep() == rep {
+                Some(i)
+            } else {
+                None
+            }
+        });
         if let Some(index) = index {
             self.materials.remove(index);
         }

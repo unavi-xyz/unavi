@@ -2,7 +2,7 @@ use anyhow::Result;
 use wasm_bridge::component::Linker;
 use wired::math::types::Host;
 
-use crate::StoreState;
+use crate::state::StoreState;
 
 pub mod quat;
 pub mod transform;

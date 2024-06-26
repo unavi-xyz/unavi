@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crossbeam::channel::Receiver;
 use wasm_bridge::component::Linker;
 
-use crate::StoreState;
+use crate::state::StoreState;
 
 pub mod bindgen;
 pub mod handler;

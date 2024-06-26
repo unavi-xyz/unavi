@@ -1,6 +1,6 @@
 use wasm_bridge::component::Resource;
 
-use crate::StoreState;
+use crate::state::StoreState;
 
 use super::{
     bindgen::{
@@ -118,7 +118,7 @@ impl HostMesh for StoreState {
     ) -> wasm_bridge::Result<Resource<Primitive>> {
         let resource = self.table.push(Primitive::default())?;
         let primitive_rep = resource.rep();
-        self.primitives.push(primitive_rep);
+        self.primitives.push(resource);
 
         let mesh = self.table.get_mut(&self_)?;
         mesh.primitives.insert(primitive_rep);
@@ -139,11 +139,13 @@ impl HostMesh for StoreState {
         let rep = value.rep();
         self.table.delete(value)?;
 
-        let index =
-            self.primitives
-                .iter()
-                .enumerate()
-                .find_map(|(i, item)| if *item == rep { Some(i) } else { None });
+        let index = self.primitives.iter().enumerate().find_map(|(i, item)| {
+            if item.rep() == rep {
+                Some(i)
+            } else {
+                None
+            }
+        });
         if let Some(index) = index {
             self.primitives.remove(index);
         }
@@ -169,14 +171,14 @@ impl Host for StoreState {
         Ok(self
             .meshes
             .iter()
-            .map(|rep| Resource::new_own(*rep))
+            .map(|res| Resource::new_own(res.rep()))
             .collect())
     }
 
     fn create_mesh(&mut self) -> wasm_bridge::Result<Resource<Mesh>> {
         let resource = self.table.push(Mesh::default())?;
         let mesh_rep = resource.rep();
-        self.meshes.push(mesh_rep);
+        self.meshes.push(resource);
 
         self.sender
             .send(WiredGltfAction::CreateMesh { id: mesh_rep })?;
@@ -192,7 +194,7 @@ impl Host for StoreState {
             self.meshes
                 .iter()
                 .enumerate()
-                .find_map(|(i, item)| if *item == rep { Some(i) } else { None });
+                .find_map(|(i, item)| if item.rep() == rep { Some(i) } else { None });
         if let Some(index) = index {
             self.meshes.remove(index);
         }

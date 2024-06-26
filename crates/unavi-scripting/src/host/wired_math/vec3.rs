@@ -3,7 +3,7 @@ use std::cell::Cell;
 use bevy::math::Vec3;
 use wasm_bridge::component::Resource;
 
-use crate::StoreState;
+use crate::state::StoreState;
 
 use super::wired::math::types::HostVec3;
 

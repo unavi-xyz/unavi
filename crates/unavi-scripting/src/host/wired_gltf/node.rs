@@ -1,5 +1,6 @@
-use crate::StoreState;
 use wasm_bridge::component::Resource;
+
+use crate::state::StoreState;
 
 use super::{
     bindgen::wired::gltf::{

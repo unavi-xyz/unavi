@@ -67,7 +67,7 @@ pub fn update_scripts(
             let mut scripts = scripts.lock().await;
             let (script, store) = scripts.get_mut(&entity).unwrap();
 
-            let span = trace_span!("ScriptUpdate", name = name.to_string());
+            let span = trace_span!("ScriptUpdate", name = name.to_string(), delta);
             let span = span.enter();
 
             trace!("begin");

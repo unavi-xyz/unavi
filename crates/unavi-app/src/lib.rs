@@ -51,10 +51,19 @@ pub async fn start(db: Surreal<Db>, opts: StartOptions) {
     app.insert_resource(AssetMetaCheck::Paths(meta_paths))
         .insert_resource(UserActor(actor))
         .add_plugins((
-            DefaultPlugins.set(LogPlugin {
-                level: opts.log_level,
-                ..default()
-            }),
+            DefaultPlugins
+                .set(LogPlugin {
+                    level: opts.log_level,
+                    ..default()
+                })
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        prevent_default_event_handling: true,
+                        title: "UNAVI".to_string(),
+                        ..default()
+                    }),
+                    ..default()
+                }),
             PhysicsPlugins::default(),
             unavi_dwn::DwnPlugin,
             unavi_networking::NetworkingPlugin,

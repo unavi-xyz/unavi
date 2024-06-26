@@ -7,6 +7,6 @@ edition.workspace = true
 
 [dependencies]
 axum-server.workspace = true
-dwn-server = "0.0.8"
+dwn-server = "0.0.9"
 dwn.workspace = true
 tracing.workspace = true

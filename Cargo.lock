@@ -3831,8 +3831,9 @@ checksum = "75b325c5dbd37f80359721ad39aca5a29fb04c89279657cffdda8736d0c0b9d2"
 
 [[package]]
 name = "dwn"
-version = "0.0.8"
-source = "git+https://github.com/unavi-xyz/dwn.git#e66d0cb3fe721657de11ed99c6b14f40fb7f33e8"
+version = "0.0.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2e460881eed3bfd302503d66d22c4e45ccf2f0315944e5cf837714bc1782ce9d"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -3857,9 +3858,9 @@ dependencies = [
 
 [[package]]
 name = "dwn-server"
-version = "0.0.8"
+version = "0.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf3d80e917853a793204584c5d267e8c7a6d206ce0778b5a976299c00f9b4fdf"
+checksum = "309b14270a35aa6883475c91df755e8307a2b77cc3b40f8a093ea599a8c8e96e"
 dependencies = [
  "axum",
  "dwn",

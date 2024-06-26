@@ -1808,7 +1808,7 @@ dependencies = [
  "bitflags 2.5.0",
  "cexpr",
  "clang-sys",
- "itertools 0.12.1",
+ "itertools 0.10.5",
  "lazy_static",
  "lazycell",
  "proc-macro2",
@@ -5252,7 +5252,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.5.7",
+ "socket2 0.4.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -11896,7 +11896,7 @@ checksum = "af190c94f2773fdb3729c55b007a722abb5384da03bc0986df4c289bf5567e96"
 [[package]]
 name = "wasm-bridge"
 version = "0.4.0"
-source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=send-table#c677675e9aeaa5beb3a6aa8c6f5674e417e85605"
+source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=all#e7a4bae56ae38b651d7516fac685f710a5ad9b45"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -11905,6 +11905,7 @@ dependencies = [
  "js-sys",
  "ref-cast",
  "slab",
+ "thiserror",
  "try-lock",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -11916,7 +11917,7 @@ dependencies = [
 [[package]]
 name = "wasm-bridge-macros"
 version = "0.4.0"
-source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=send-table#c677675e9aeaa5beb3a6aa8c6f5674e417e85605"
+source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=all#e7a4bae56ae38b651d7516fac685f710a5ad9b45"
 dependencies = [
  "anyhow",
  "heck 0.5.0",
@@ -11932,7 +11933,7 @@ dependencies = [
 [[package]]
 name = "wasm-bridge-wasi"
 version = "0.4.0"
-source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=send-table#c677675e9aeaa5beb3a6aa8c6f5674e417e85605"
+source = "git+https://github.com/kayhhh/wasm-bridge.git?branch=all#e7a4bae56ae38b651d7516fac685f710a5ad9b45"
 dependencies = [
  "anyhow",
  "bytes",

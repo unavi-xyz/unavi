@@ -14,8 +14,8 @@ bevy.workspace = true
 bevy_async_task.workspace = true
 crossbeam = { version = "0.8.4", features = ["crossbeam-channel"] }
 tokio.workspace = true
-wasm-bridge = { git = "https://github.com/kayhhh/wasm-bridge.git", branch = "send-table", features = ["component-model", "async"] }
-wasm-bridge-wasi = { git = "https://github.com/kayhhh/wasm-bridge.git", branch = "send-table" }
+wasm-bridge = { git = "https://github.com/kayhhh/wasm-bridge.git", branch = "all", features = ["component-model", "async"] }
+wasm-bridge-wasi = { git = "https://github.com/kayhhh/wasm-bridge.git", branch = "all" }
 
 [dev-dependencies]
 bevy_panorbit_camera.workspace = true

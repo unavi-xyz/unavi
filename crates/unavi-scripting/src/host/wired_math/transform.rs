@@ -24,7 +24,7 @@ impl Transform {
             translation.dirty.set(false);
         }
 
-        let rotation = table.get(&self.translation)?;
+        let rotation = table.get(&self.rotation)?;
         if rotation.dirty.get() {
             dirty = true;
             rotation.dirty.set(false);
@@ -105,5 +105,61 @@ impl HostTransform for StoreState {
 
     fn drop(&mut self, _rep: Resource<Transform>) -> wasm_bridge::Result<()> {
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_clean() {
+        let mut table = ResourceTable::default();
+
+        let rotation = table.push(QuatRes::new(Quat::default())).unwrap();
+        let scale = table.push(Vec3Res::new(Vec3::default())).unwrap();
+        let translation = table.push(Vec3Res::new(Vec3::default())).unwrap();
+
+        let transform = Transform {
+            rotation,
+            scale,
+            translation,
+        };
+
+        let rotation_quat = table.get_mut(&transform.rotation).unwrap();
+        rotation_quat.dirty.set(true);
+        assert!(transform.clean(&table).unwrap());
+        let rotation_quat = table.get(&transform.rotation).unwrap();
+        assert!(!rotation_quat.dirty.get());
+        assert!(!transform.clean(&table).unwrap());
+
+        let scale_vec = table.get_mut(&transform.scale).unwrap();
+        scale_vec.dirty.set(true);
+        assert!(transform.clean(&table).unwrap());
+        let scale_vec = table.get(&transform.scale).unwrap();
+        assert!(!scale_vec.dirty.get());
+        assert!(!transform.clean(&table).unwrap());
+
+        let translation_vec = table.get_mut(&transform.translation).unwrap();
+        translation_vec.dirty.set(true);
+        assert!(transform.clean(&table).unwrap());
+        let transform_vec = table.get(&transform.scale).unwrap();
+        assert!(!transform_vec.dirty.get());
+        assert!(!transform.clean(&table).unwrap());
+
+        let rotation_quat = table.get_mut(&transform.rotation).unwrap();
+        rotation_quat.dirty.set(true);
+        let scale_vec = table.get_mut(&transform.scale).unwrap();
+        scale_vec.dirty.set(true);
+        let translation_vec = table.get_mut(&transform.translation).unwrap();
+        translation_vec.dirty.set(true);
+        assert!(transform.clean(&table).unwrap());
+        let rotation_quat = table.get(&transform.rotation).unwrap();
+        assert!(!rotation_quat.dirty.get());
+        let scale_vec = table.get(&transform.scale).unwrap();
+        assert!(!scale_vec.dirty.get());
+        let transform_vec = table.get(&transform.scale).unwrap();
+        assert!(!transform_vec.dirty.get());
+        assert!(!transform.clean(&table).unwrap());
     }
 }

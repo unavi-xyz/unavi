@@ -13,8 +13,8 @@ pub struct ScriptResource(ResourceAny);
 
 pub fn init_scripts(
     mut commands: Commands,
-    mut to_init: Query<
-        Entity,
+    to_init: Query<
+        (Entity, &Name),
         (
             With<LoadedScript>,
             Without<FailedToInit>,
@@ -23,16 +23,26 @@ pub fn init_scripts(
     >,
     scripts: NonSendMut<Scripts>,
 ) {
-    for entity in to_init.iter_mut() {
+    for (entity, name) in to_init.iter() {
         let res = block_on(async {
             let mut scripts = scripts.lock().await;
             let (script, store) = scripts.get_mut(&entity).unwrap();
 
-            script
+            let span = info_span!("ScriptInit", name = name.to_string());
+            let span = span.enter();
+
+            info!("begin");
+
+            let res = script
                 .wired_script_types()
                 .script()
                 .call_constructor(store)
-                .await
+                .await;
+
+            info!("end");
+            drop(span);
+
+            res
         });
 
         if let Err(e) = res {
@@ -45,36 +55,33 @@ pub fn init_scripts(
     }
 }
 
-const UPDATE_HZ: f32 = 60.0;
-const UPDATE_DELTA: f32 = 1.0 / UPDATE_HZ;
-
 pub fn update_scripts(
-    mut last_update: Local<f32>,
-    mut to_update: Query<(Entity, &ScriptResource)>,
+    mut to_update: Query<(Entity, &Name, &ScriptResource)>,
     scripts: NonSendMut<Scripts>,
     time: Res<Time>,
 ) {
-    let now = time.elapsed_seconds();
-    let delta = now - *last_update;
+    let delta = time.delta_seconds();
 
-    if delta < UPDATE_DELTA {
-        return;
-    }
-
-    *last_update = now;
-
-    for (entity, res) in to_update.iter_mut() {
+    for (entity, name, res) in to_update.iter_mut() {
         let res: anyhow::Result<_> = block_on(async {
             let mut scripts = scripts.lock().await;
             let (script, store) = scripts.get_mut(&entity).unwrap();
 
-            script
+            let span = trace_span!("ScriptUpdate", name = name.to_string());
+            let span = span.enter();
+
+            trace!("begin");
+
+            let res = script
                 .wired_script_types()
                 .script()
                 .call_update(store.as_context_mut(), res.0, delta)
-                .await?;
+                .await;
 
-            Ok(())
+            trace!("end");
+            drop(span);
+
+            res
         });
 
         if let Err(e) = res {

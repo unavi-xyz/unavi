@@ -1,7 +1,7 @@
 use bevy::{prelude::*, tasks::block_on};
 use wasm_bridge::{component::ResourceAny, AsContextMut};
 
-use crate::{host::wired_gltf::handler::NodeId, load::LoadedScript};
+use crate::load::LoadedScript;
 
 use super::load::Scripts;
 
@@ -53,7 +53,6 @@ pub fn update_scripts(
     mut to_update: Query<(Entity, &ScriptResource)>,
     scripts: NonSendMut<Scripts>,
     time: Res<Time>,
-    mut nodes: Query<(&mut Transform, &NodeId)>,
 ) {
     let now = time.elapsed_seconds();
     let delta = now - *last_update;
@@ -74,33 +73,6 @@ pub fn update_scripts(
                 .script()
                 .call_update(store.as_context_mut(), res.0, delta)
                 .await?;
-
-            let state = store.data();
-
-            for res in state.nodes.iter() {
-                let node = state.table.get(res)?;
-                let transform = state.table.get(&node.transform)?;
-
-                if transform.clean(&state.table)? {
-                    let rep = res.rep();
-
-                    let translation = state.table.get(&transform.translation)?;
-                    let rotation = state.table.get(&transform.rotation)?;
-                    let scale = state.table.get(&transform.scale)?;
-
-                    if let Some(mut target) =
-                        nodes
-                            .iter_mut()
-                            .find_map(|(t, id)| if id.0 == rep { Some(t) } else { None })
-                    {
-                        target.translation.clone_from(&translation.data);
-                        target.rotation.clone_from(&rotation.data);
-                        target.scale.clone_from(&scale.data);
-                    } else {
-                        warn!("Node {} not found", rep)
-                    };
-                }
-            }
 
             Ok(())
         });

@@ -33,7 +33,7 @@ pub fn make_cuboid(size: &Vec3, primitive: &Primitive) {
         [0.5, -0.5, -0.5],
     ]
     .into_iter()
-    .flat_map(|v| [v[0] * size.x(), v[1] * size.y(), v[2] * size.z()])
+    .flat_map(|v| [v[0] * size.x, v[1] * size.y, v[2] * size.z])
     .collect::<Vec<_>>();
 
     let normals = [

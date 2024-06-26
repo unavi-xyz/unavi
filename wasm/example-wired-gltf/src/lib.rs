@@ -9,12 +9,13 @@ use bindings::{
             node::{create_node, Node},
         },
         log::api::{log, LogLevel},
-        math::types::{Quat, Vec3},
+        math::types::Vec3,
     },
 };
 
 #[allow(warnings)]
 mod bindings;
+mod wired_math_impls;
 
 struct Script {
     color_delta: RefCell<Color>,
@@ -77,9 +78,23 @@ impl GuestScript for Script {
 
         self.material.set_color(color);
 
-        let transform = self.node.transform();
-        let rot = transform.rotation();
-        rot.mul(&Quat::from_rotation_y(delta));
+        let mut transform = self.node.transform();
+
+        let mut quat = glam::Quat::from_xyzw(
+            transform.rotation.x,
+            transform.rotation.y,
+            transform.rotation.z,
+            transform.rotation.w,
+        );
+
+        quat *= glam::Quat::from_rotation_y(delta);
+
+        transform.rotation.x = quat.x;
+        transform.rotation.y = quat.y;
+        transform.rotation.z = quat.z;
+        transform.rotation.w = quat.w;
+
+        self.node.set_transform(transform);
     }
 }
 

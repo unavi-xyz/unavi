@@ -31,6 +31,8 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
 
+      - run: nix develop -c cargo deny check
+
       - run: nix run .?submodules=1#check-components
       - uses: EndBug/add-and-commit@v9
         with:

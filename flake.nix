@@ -118,6 +118,7 @@
           packages =
             (with pkgs; [
               cargo-component
+              cargo-deny
               cargo-machete
               cargo-rdme
               cargo-watch

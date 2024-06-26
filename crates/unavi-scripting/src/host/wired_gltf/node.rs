@@ -102,41 +102,9 @@ impl HostNode for StoreState {
         Ok(())
     }
 
-    fn transform(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<Transform> {
+    fn transform(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<Resource<Transform>> {
         let node = self.table.get(&self_).map_err(|e| anyhow!("{:?}", e))?;
-        Ok(node.transform)
-    }
-    fn set_transform(
-        &mut self,
-        self_: Resource<Node>,
-        value: Transform,
-    ) -> wasm_bridge::Result<()> {
-        let node = self.table.get_mut(&self_).map_err(|e| anyhow!("{:?}", e))?;
-        node.transform = value;
-
-        self.sender.send(WiredGltfAction::SetNodeTransform {
-            id: self_.rep(),
-            transform: bevy::prelude::Transform {
-                translation: bevy::prelude::Vec3::new(
-                    node.transform.translation.x,
-                    node.transform.translation.y,
-                    node.transform.translation.z,
-                ),
-                rotation: bevy::prelude::Quat::from_xyzw(
-                    node.transform.rotation.x,
-                    node.transform.rotation.y,
-                    node.transform.rotation.z,
-                    node.transform.rotation.w,
-                ),
-                scale: bevy::prelude::Vec3::new(
-                    node.transform.scale.x,
-                    node.transform.scale.y,
-                    node.transform.scale.z,
-                ),
-            },
-        })?;
-
-        Ok(())
+        Ok(Resource::new_own(node.transform.rep()))
     }
 
     fn drop(&mut self, _rep: Resource<Node>) -> wasm_bridge::Result<()> {
@@ -149,17 +117,15 @@ impl Host for StoreState {
         Ok(self
             .nodes
             .iter()
-            .map(|rep| Resource::new_own(*rep))
+            .map(|res| Resource::new_own(res.rep()))
             .collect())
     }
 
     fn create_node(&mut self) -> wasm_bridge::Result<Resource<Node>> {
-        let resource = self
-            .table
-            .push(Node::default())
-            .map_err(|e| anyhow!("{:?}", e))?;
+        let node = Node::try_new(&mut self.table)?;
+        let resource = self.table.push(node).map_err(|e| anyhow!("{:?}", e))?;
         let node_rep = resource.rep();
-        self.nodes.push(node_rep);
+        self.nodes.push(resource);
 
         self.sender
             .send(WiredGltfAction::CreateNode { id: node_rep })?;
@@ -175,7 +141,7 @@ impl Host for StoreState {
             self.nodes
                 .iter()
                 .enumerate()
-                .find_map(|(i, item)| if *item == rep { Some(i) } else { None });
+                .find_map(|(i, item)| if item.rep() == rep { Some(i) } else { None });
         if let Some(index) = index {
             self.nodes.remove(index);
         }

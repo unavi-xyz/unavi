@@ -4,11 +4,12 @@ use crate::bindings::wired::log::api::{log, LogLevel};
 
 #[allow(warnings)]
 mod bindings;
-mod impls;
 mod material;
 mod mesh;
 mod node;
 mod property_tests;
+mod wired_gltf_impls;
+mod wired_math_impls;
 
 #[derive(Default)]
 struct Script {}

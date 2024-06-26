@@ -5,10 +5,12 @@ use super::StoreState;
 
 pub mod wired_gltf;
 mod wired_log;
+mod wired_math;
 
 pub fn add_host_script_apis(linker: &mut Linker<StoreState>) -> Result<()> {
-    wired_gltf::add_to_host(linker)?;
     wired_log::add_to_host(linker)?;
+    wired_math::add_to_host(linker)?;
+    wired_gltf::add_to_host(linker)?;
     Ok(())
 }
 

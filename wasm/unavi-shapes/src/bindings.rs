@@ -790,38 +790,824 @@ pub mod wired {
             #[cfg(target_arch = "wasm32")]
             static __FORCE_SECTION_REF: fn() =
                 super::super::super::__link_custom_section_describing_imports;
-            #[repr(C)]
-            #[derive(Clone, Copy)]
+            use super::super::super::_rt;
+
+            #[derive(Debug)]
+            #[repr(transparent)]
             pub struct Vec3 {
-                pub x: f32,
-                pub y: f32,
-                pub z: f32,
+                handle: _rt::Resource<Vec3>,
             }
-            impl ::core::fmt::Debug for Vec3 {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    f.debug_struct("Vec3")
-                        .field("x", &self.x)
-                        .field("y", &self.y)
-                        .field("z", &self.z)
-                        .finish()
+
+            impl Vec3 {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
                 }
             }
-            #[repr(C)]
-            #[derive(Clone, Copy)]
-            pub struct Quat {
-                pub x: f32,
-                pub y: f32,
-                pub z: f32,
-                pub w: f32,
+
+            unsafe impl _rt::WasmResource for Vec3 {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]vec3"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
             }
-            impl ::core::fmt::Debug for Quat {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    f.debug_struct("Quat")
-                        .field("x", &self.x)
-                        .field("y", &self.y)
-                        .field("z", &self.z)
-                        .field("w", &self.w)
-                        .finish()
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Quat {
+                handle: _rt::Resource<Quat>,
+            }
+
+            impl Quat {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for Quat {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]quat"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Transform {
+                handle: _rt::Resource<Transform>,
+            }
+
+            impl Transform {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for Transform {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]transform"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            impl Vec3 {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn new(x: f32, y: f32, z: f32) -> Self {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[constructor]vec3"]
+                            fn wit_import(_: f32, _: f32, _: f32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: f32, _: f32, _: f32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import(_rt::as_f32(&x), _rt::as_f32(&y), _rt::as_f32(&z));
+                        Vec3::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Vec3 {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn default() -> Vec3 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[static]vec3.default"]
+                            fn wit_import() -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import() -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import();
+                        Vec3::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Vec3 {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn splat(value: f32) -> Vec3 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[static]vec3.splat"]
+                            fn wit_import(_: f32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: f32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import(_rt::as_f32(&value));
+                        Vec3::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Vec3 {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn xyz(&self) -> (f32, f32, f32) {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]vec3.xyz"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<f32>();
+                        let l2 = *ptr0.add(4).cast::<f32>();
+                        let l3 = *ptr0.add(8).cast::<f32>();
+                        (l1, l2, l3)
+                    }
+                }
+            }
+            impl Vec3 {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn x(&self) -> f32 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]vec3.x"]
+                            fn wit_import(_: i32) -> f32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> f32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret
+                    }
+                }
+            }
+            impl Vec3 {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn y(&self) -> f32 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]vec3.y"]
+                            fn wit_import(_: i32) -> f32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> f32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret
+                    }
+                }
+            }
+            impl Vec3 {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn z(&self) -> f32 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]vec3.z"]
+                            fn wit_import(_: i32) -> f32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> f32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret
+                    }
+                }
+            }
+            impl Vec3 {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set(&self, x: f32, y: f32, z: f32) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]vec3.set"]
+                            fn wit_import(_: i32, _: f32, _: f32, _: f32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32, _: f32, _: f32) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            _rt::as_f32(&x),
+                            _rt::as_f32(&y),
+                            _rt::as_f32(&z),
+                        );
+                    }
+                }
+            }
+            impl Vec3 {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_x(&self, x: f32) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]vec3.set-x"]
+                            fn wit_import(_: i32, _: f32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_f32(&x));
+                    }
+                }
+            }
+            impl Vec3 {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_y(&self, y: f32) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]vec3.set-y"]
+                            fn wit_import(_: i32, _: f32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_f32(&y));
+                    }
+                }
+            }
+            impl Vec3 {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_z(&self, z: f32) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]vec3.set-z"]
+                            fn wit_import(_: i32, _: f32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_f32(&z));
+                    }
+                }
+            }
+            impl Vec3 {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn eq(&self, other: &Vec3) -> bool {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]vec3.eq"]
+                            fn wit_import(_: i32, _: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32, (other).handle() as i32);
+                        _rt::bool_lift(ret as u8)
+                    }
+                }
+            }
+            impl Quat {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[constructor]quat"]
+                            fn wit_import(_: f32, _: f32, _: f32, _: f32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: f32, _: f32, _: f32, _: f32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import(
+                            _rt::as_f32(&x),
+                            _rt::as_f32(&y),
+                            _rt::as_f32(&z),
+                            _rt::as_f32(&w),
+                        );
+                        Quat::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Quat {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn default() -> Quat {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[static]quat.default"]
+                            fn wit_import() -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import() -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import();
+                        Quat::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Quat {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Creates a quaternion from the `angle` (in radians) around the Y axis.
+                pub fn from_rotation_y(angle: f32) -> Quat {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[static]quat.from-rotation-y"]
+                            fn wit_import(_: f32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: f32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import(_rt::as_f32(&angle));
+                        Quat::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Quat {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn xyzw(&self) -> (f32, f32, f32, f32) {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]quat.xyzw"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<f32>();
+                        let l2 = *ptr0.add(4).cast::<f32>();
+                        let l3 = *ptr0.add(8).cast::<f32>();
+                        let l4 = *ptr0.add(12).cast::<f32>();
+                        (l1, l2, l3, l4)
+                    }
+                }
+            }
+            impl Quat {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn x(&self) -> f32 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]quat.x"]
+                            fn wit_import(_: i32) -> f32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> f32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret
+                    }
+                }
+            }
+            impl Quat {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn y(&self) -> f32 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]quat.y"]
+                            fn wit_import(_: i32) -> f32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> f32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret
+                    }
+                }
+            }
+            impl Quat {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn z(&self) -> f32 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]quat.z"]
+                            fn wit_import(_: i32) -> f32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> f32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret
+                    }
+                }
+            }
+            impl Quat {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn w(&self) -> f32 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]quat.w"]
+                            fn wit_import(_: i32) -> f32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> f32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret
+                    }
+                }
+            }
+            impl Quat {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set(&self, x: f32, y: f32, z: f32, w: f32) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]quat.set"]
+                            fn wit_import(_: i32, _: f32, _: f32, _: f32, _: f32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32, _: f32, _: f32, _: f32) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            _rt::as_f32(&x),
+                            _rt::as_f32(&y),
+                            _rt::as_f32(&z),
+                            _rt::as_f32(&w),
+                        );
+                    }
+                }
+            }
+            impl Quat {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_x(&self, x: f32) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]quat.set-x"]
+                            fn wit_import(_: i32, _: f32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_f32(&x));
+                    }
+                }
+            }
+            impl Quat {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_y(&self, y: f32) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]quat.set-y"]
+                            fn wit_import(_: i32, _: f32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_f32(&y));
+                    }
+                }
+            }
+            impl Quat {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_z(&self, z: f32) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]quat.set-z"]
+                            fn wit_import(_: i32, _: f32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_f32(&z));
+                    }
+                }
+            }
+            impl Quat {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_w(&self, w: f32) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]quat.set-w"]
+                            fn wit_import(_: i32, _: f32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_f32(&w));
+                    }
+                }
+            }
+            impl Quat {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn eq(&self, other: &Quat) -> bool {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]quat.eq"]
+                            fn wit_import(_: i32, _: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32, (other).handle() as i32);
+                        _rt::bool_lift(ret as u8)
+                    }
+                }
+            }
+            impl Quat {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn mul(&self, other: &Quat) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]quat.mul"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, (other).handle() as i32);
+                    }
+                }
+            }
+            impl Transform {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn new(translation: Vec3, rotation: Quat, scale: Vec3) -> Self {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[constructor]transform"]
+                            fn wit_import(_: i32, _: i32, _: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32, _: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import(
+                            (&translation).take_handle() as i32,
+                            (&rotation).take_handle() as i32,
+                            (&scale).take_handle() as i32,
+                        );
+                        Transform::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Transform {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn default() -> Transform {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[static]transform.default"]
+                            fn wit_import() -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import() -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import();
+                        Transform::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Transform {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn rotation(&self) -> Quat {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]transform.rotation"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        Quat::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Transform {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn scale(&self) -> Vec3 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]transform.scale"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        Vec3::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Transform {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn translation(&self) -> Vec3 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]transform.translation"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        Vec3::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Transform {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn eq(&self, other: &Transform) -> bool {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:math/types")]
+                        extern "C" {
+                            #[link_name = "[method]transform.eq"]
+                            fn wit_import(_: i32, _: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32, (other).handle() as i32);
+                        _rt::bool_lift(ret as u8)
+                    }
                 }
             }
         }
@@ -845,19 +1631,14 @@ pub mod exports {
                 pub type Vec3 = super::super::super::super::wired::math::types::Vec3;
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_create_cuboid_cabi<T: Guest>(
-                    arg0: f32,
-                    arg1: f32,
-                    arg2: f32,
-                ) -> i32 {
+                pub unsafe fn _export_create_cuboid_cabi<T: Guest>(arg0: i32) -> i32 {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
-                    let result0 =
-                        T::create_cuboid(super::super::super::super::wired::math::types::Vec3 {
-                            x: arg0,
-                            y: arg1,
-                            z: arg2,
-                        });
+                    let result0 = T::create_cuboid(
+                        super::super::super::super::wired::math::types::Vec3::from_handle(
+                            arg0 as u32,
+                        ),
+                    );
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
@@ -886,8 +1667,8 @@ pub mod exports {
       ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
         #[export_name = "unavi:shapes/api#create-cuboid"]
-        unsafe extern "C" fn export_create_cuboid(arg0: f32,arg1: f32,arg2: f32,) -> i32 {
-          $($path_to_types)*::_export_create_cuboid_cabi::<$ty>(arg0, arg1, arg2)
+        unsafe extern "C" fn export_create_cuboid(arg0: i32,) -> i32 {
+          $($path_to_types)*::_export_create_cuboid_cabi::<$ty>(arg0)
         }
         #[export_name = "unavi:shapes/api#create-sphere"]
         unsafe extern "C" fn export_create_sphere(arg0: f32,arg1: i32,arg2: i32,) -> i32 {
@@ -1041,6 +1822,17 @@ mod _rt {
             core::hint::unreachable_unchecked()
         }
     }
+    pub unsafe fn bool_lift(val: u8) -> bool {
+        if cfg!(debug_assertions) {
+            match val {
+                0 => false,
+                1 => true,
+                _ => panic!("invalid bool discriminant"),
+            }
+        } else {
+            val != 0
+        }
+    }
 
     #[cfg(target_arch = "wasm32")]
     pub fn run_ctors_once() {
@@ -1081,8 +1873,8 @@ pub(crate) use __export_shapes_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:shapes:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1494] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xd9\x0a\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 2643] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xd6\x13\x01A\x02\x01\
 A\x0b\x01B\x16\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
 material\x03\x01\x01h\x02\x01@\x01\x04self\x03\0y\x04\0\x13[method]material.id\x01\
 \x04\x01@\x01\x04self\x03\0s\x04\0\x15[method]material.name\x01\x05\x01@\x02\x04\
@@ -1107,16 +1899,41 @@ mitives\x01\x16\x01@\x01\x04self\x10\0\x14\x04\0\x1d[method]mesh.create-primitiv
 e\x01\x17\x01@\x02\x04self\x10\x05value\x14\x01\0\x04\0\x1d[method]mesh.remove-p\
 rimitive\x01\x18\x01i\x03\x01p\x19\x01@\0\0\x1a\x04\0\x0blist-meshes\x01\x1b\x01\
 @\0\0\x19\x04\0\x0bcreate-mesh\x01\x1c\x01@\x01\x05value\x19\x01\0\x04\0\x0bremo\
-ve-mesh\x01\x1d\x03\x01\x0fwired:gltf/mesh\x05\x02\x01B\x06\x01r\x02\x01xv\x01yv\
-\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\x02\x01r\x04\
-\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x03\x01\x10wired:math/types\x05\
-\x03\x02\x03\0\x01\x04mesh\x02\x03\0\x02\x04vec3\x01B\x09\x02\x03\x02\x01\x04\x04\
-\0\x04mesh\x03\0\0\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\x02\x01i\x01\x01@\x01\
-\x04size\x03\0\x04\x04\0\x0dcreate-cuboid\x01\x05\x01@\x03\x06radiusv\x07sectors\
-y\x06stacksy\0\x04\x04\0\x0dcreate-sphere\x01\x06\x04\x01\x10unavi:shapes/api\x05\
-\x06\x04\x01\x13unavi:shapes/shapes\x04\0\x0b\x0c\x01\0\x06shapes\x03\0\0\0G\x09\
-producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rus\
-t\x060.25.0";
+ve-mesh\x01\x1d\x03\x01\x0fwired:gltf/mesh\x05\x02\x01BG\x04\0\x04vec3\x03\x01\x04\
+\0\x04quat\x03\x01\x04\0\x09transform\x03\x01\x01i\0\x01@\x03\x01xv\x01yv\x01zv\0\
+\x03\x04\0\x11[constructor]vec3\x01\x04\x01@\0\0\x03\x04\0\x14[static]vec3.defau\
+lt\x01\x05\x01@\x01\x05valuev\0\x03\x04\0\x12[static]vec3.splat\x01\x06\x01h\0\x01\
+o\x03vvv\x01@\x01\x04self\x07\0\x08\x04\0\x10[method]vec3.xyz\x01\x09\x01@\x01\x04\
+self\x07\0v\x04\0\x0e[method]vec3.x\x01\x0a\x04\0\x0e[method]vec3.y\x01\x0a\x04\0\
+\x0e[method]vec3.z\x01\x0a\x01@\x04\x04self\x07\x01xv\x01yv\x01zv\x01\0\x04\0\x10\
+[method]vec3.set\x01\x0b\x01@\x02\x04self\x07\x01xv\x01\0\x04\0\x12[method]vec3.\
+set-x\x01\x0c\x01@\x02\x04self\x07\x01yv\x01\0\x04\0\x12[method]vec3.set-y\x01\x0d\
+\x01@\x02\x04self\x07\x01zv\x01\0\x04\0\x12[method]vec3.set-z\x01\x0e\x01@\x02\x04\
+self\x07\x05other\x07\0\x7f\x04\0\x0f[method]vec3.eq\x01\x0f\x01i\x01\x01@\x04\x01\
+xv\x01yv\x01zv\x01wv\0\x10\x04\0\x11[constructor]quat\x01\x11\x01@\0\0\x10\x04\0\
+\x14[static]quat.default\x01\x12\x01@\x01\x05anglev\0\x10\x04\0\x1c[static]quat.\
+from-rotation-y\x01\x13\x01h\x01\x01o\x04vvvv\x01@\x01\x04self\x14\0\x15\x04\0\x11\
+[method]quat.xyzw\x01\x16\x01@\x01\x04self\x14\0v\x04\0\x0e[method]quat.x\x01\x17\
+\x04\0\x0e[method]quat.y\x01\x17\x04\0\x0e[method]quat.z\x01\x17\x04\0\x0e[metho\
+d]quat.w\x01\x17\x01@\x05\x04self\x14\x01xv\x01yv\x01zv\x01wv\x01\0\x04\0\x10[me\
+thod]quat.set\x01\x18\x01@\x02\x04self\x14\x01xv\x01\0\x04\0\x12[method]quat.set\
+-x\x01\x19\x01@\x02\x04self\x14\x01yv\x01\0\x04\0\x12[method]quat.set-y\x01\x1a\x01\
+@\x02\x04self\x14\x01zv\x01\0\x04\0\x12[method]quat.set-z\x01\x1b\x01@\x02\x04se\
+lf\x14\x01wv\x01\0\x04\0\x12[method]quat.set-w\x01\x1c\x01@\x02\x04self\x14\x05o\
+ther\x14\0\x7f\x04\0\x0f[method]quat.eq\x01\x1d\x01@\x02\x04self\x14\x05other\x14\
+\x01\0\x04\0\x10[method]quat.mul\x01\x1e\x01i\x02\x01@\x03\x0btranslation\x03\x08\
+rotation\x10\x05scale\x03\0\x1f\x04\0\x16[constructor]transform\x01\x20\x01@\0\0\
+\x1f\x04\0\x19[static]transform.default\x01!\x01h\x02\x01@\x01\x04self\"\0\x10\x04\
+\0\x1a[method]transform.rotation\x01#\x01@\x01\x04self\"\0\x03\x04\0\x17[method]\
+transform.scale\x01$\x04\0\x1d[method]transform.translation\x01$\x01@\x02\x04sel\
+f\"\x05other\"\0\x7f\x04\0\x14[method]transform.eq\x01%\x03\x01\x10wired:math/ty\
+pes\x05\x03\x02\x03\0\x01\x04mesh\x02\x03\0\x02\x04vec3\x01B\x0a\x02\x03\x02\x01\
+\x04\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\x02\x01i\x03\x01\
+i\x01\x01@\x01\x04size\x04\0\x05\x04\0\x0dcreate-cuboid\x01\x06\x01@\x03\x06radi\
+usv\x07sectorsy\x06stacksy\0\x05\x04\0\x0dcreate-sphere\x01\x07\x04\x01\x10unavi\
+:shapes/api\x05\x06\x04\x01\x13unavi:shapes/shapes\x04\0\x0b\x0c\x01\0\x06shapes\
+\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10\
+wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

@@ -9,7 +9,7 @@ members = [
 version = "0.0.3"
 edition = "2021"
 repository = "https://github.com/unavi-xyz/unavi"
-license = "GPL-3.0-or-later"
+license = "MPL-2.0"
 
 [workspace.lints.clippy]
 type_complexity = "allow"

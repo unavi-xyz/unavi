@@ -31,7 +31,7 @@ The app is built using [Bevy](https://bevyengine.org/) and makes heavy use of [W
 Multiplayer is handled by self-hostable servers acting as relays for communication between players.
 UNAVI provides both a web app and native build.
 
-This project is still early, any feedback or contributions are really appreciated!
+This project is still early, any feedback or contributions are greatly appreciated!
 Come join the [Discord](https://discord.gg/cazUfCCgHJ) and say hi!
 
 ## ❄️ Development (with Nix)

@@ -22,7 +22,6 @@ pub fn test_node_api() {
 
     let node = create_node();
     let node_2 = create_node();
-
     node.add_child(&node_2);
 
     let children = node.children();
@@ -64,8 +63,6 @@ pub fn test_node_api() {
         let err = format!("found list_nodes len: {}, expected 2", found_nodes.len());
         panic_log(&err);
     }
-
-    node.set_transform(Transform::default());
 
     let transform = node.transform();
     if transform != Transform::default() {

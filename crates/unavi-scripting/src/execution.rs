@@ -1,5 +1,5 @@
 use bevy::{prelude::*, tasks::block_on};
-use wasm_bridge::component::ResourceAny;
+use wasm_bridge::{component::ResourceAny, AsContextMut};
 
 use crate::load::LoadedScript;
 
@@ -64,15 +64,28 @@ pub fn update_scripts(
     *last_update = now;
 
     for (entity, res) in to_update.iter_mut() {
-        let res = block_on(async {
+        let res: anyhow::Result<_> = block_on(async {
             let mut scripts = scripts.lock().await;
             let (script, store) = scripts.get_mut(&entity).unwrap();
 
             script
                 .wired_script_types()
                 .script()
-                .call_update(store, res.0, delta)
-                .await
+                .call_update(store.as_context_mut(), res.0, delta)
+                .await?;
+
+            let state = store.data();
+
+            for res in state.nodes.iter() {
+                let node = state.table.get(res)?;
+                let transform = state.table.get(&node.transform)?;
+
+                if transform.clean(&state.table)? {
+                    // TODO: Update ecs
+                }
+            }
+
+            Ok(())
         });
 
         if let Err(e) = res {

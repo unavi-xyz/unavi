@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use crossbeam::channel::{Receiver, Sender};
-use host::wired_gltf::WiredGltfAction;
-use wasm_bridge::component::ResourceTable;
+use host::wired_gltf::{bindgen::Node, WiredGltfAction};
+use wasm_bridge::component::{Resource, ResourceTable};
 use wasm_bridge_wasi::{WasiCtx, WasiCtxBuilder, WasiView};
 
 use self::{asset::Wasm, load::Scripts};
@@ -66,7 +66,7 @@ pub struct StoreState {
     pub materials: Vec<u32>,
     pub meshes: Vec<u32>,
     pub name: String,
-    pub nodes: Vec<u32>,
+    pub nodes: Vec<Resource<Node>>,
     pub primitives: Vec<u32>,
     pub sender: Sender<WiredGltfAction>,
     pub table: ResourceTable,

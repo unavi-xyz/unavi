@@ -2,7 +2,7 @@ use anyhow::Result;
 use bevy::log::{debug, error, info, info_span, warn};
 use wasm_bridge::component::Linker;
 
-use crate::StoreState;
+use crate::state::StoreState;
 
 use self::bindgen::wired::log::api::{Host, LogLevel};
 

@@ -7,8 +7,8 @@ use wasm_bridge::{component::Linker, Config, Engine, Store};
 
 use crate::{
     host::{add_host_script_apis, wired_gltf::WiredGltfReceiver},
+    state::StoreState,
     wired_script::Script,
-    StoreState,
 };
 
 use super::asset::Wasm;

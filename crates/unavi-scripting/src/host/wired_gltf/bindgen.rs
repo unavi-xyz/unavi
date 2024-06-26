@@ -2,8 +2,7 @@ use bevy::{
     math::{Quat, Vec3},
     utils::HashSet,
 };
-use wasm_bridge::component::Resource;
-use wasm_bridge_wasi::ResourceTable;
+use wasm_bridge::component::{Resource, ResourceTable, ResourceTableError};
 
 use crate::host::wired_math::{quat::QuatRes, transform::Transform, vec3::Vec3Res};
 
@@ -60,7 +59,7 @@ pub struct Node {
 }
 
 impl Node {
-    pub fn try_new(table: &mut ResourceTable) -> wasm_bridge::Result<Self> {
+    pub fn try_new(table: &mut ResourceTable) -> Result<Self, ResourceTableError> {
         let rotation = table.push(QuatRes::new(Quat::default()))?;
         let scale = table.push(Vec3Res::new(Vec3::splat(1.0)))?;
         let translation = table.push(Vec3Res::new(Vec3::default()))?;

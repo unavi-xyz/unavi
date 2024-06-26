@@ -1,6 +1,5 @@
 use bevy::math::{Quat, Vec3};
-use wasm_bridge::component::Resource;
-use wasm_bridge_wasi::{ResourceTable, ResourceTableError};
+use wasm_bridge::component::{Resource, ResourceTable, ResourceTableError};
 
 use crate::StoreState;
 

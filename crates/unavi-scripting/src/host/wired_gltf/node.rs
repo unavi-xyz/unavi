@@ -1,5 +1,4 @@
 use crate::StoreState;
-use anyhow::anyhow;
 use wasm_bridge::component::Resource;
 
 use super::{
@@ -16,17 +15,17 @@ impl HostNode for StoreState {
     }
 
     fn name(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<String> {
-        let node = self.table.get(&self_).map_err(|e| anyhow!("{:?}", e))?;
+        let node = self.table.get(&self_)?;
         Ok(node.name.clone())
     }
     fn set_name(&mut self, self_: Resource<Node>, value: String) -> wasm_bridge::Result<()> {
-        let node = self.table.get_mut(&self_).map_err(|e| anyhow!("{:?}", e))?;
+        let node = self.table.get_mut(&self_)?;
         node.name = value;
         Ok(())
     }
 
     fn mesh(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<Option<Resource<Mesh>>> {
-        let node = self.table.get(&self_).map_err(|e| anyhow!("{:?}", e))?;
+        let node = self.table.get(&self_)?;
         Ok(node.mesh.map(Resource::new_own))
     }
     fn set_mesh(
@@ -34,7 +33,7 @@ impl HostNode for StoreState {
         self_: Resource<Node>,
         value: Option<Resource<Mesh>>,
     ) -> wasm_bridge::Result<()> {
-        let node = self.table.get_mut(&self_).map_err(|e| anyhow!("{:?}", e))?;
+        let node = self.table.get_mut(&self_)?;
         node.mesh = value.map(|v| v.rep());
 
         self.sender.send(WiredGltfAction::SetNodeMesh {
@@ -46,11 +45,11 @@ impl HostNode for StoreState {
     }
 
     fn parent(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<Option<Resource<Node>>> {
-        let node = self.table.get(&self_).map_err(|e| anyhow!("{:?}", e))?;
+        let node = self.table.get(&self_)?;
         Ok(node.parent.map(Resource::new_own))
     }
     fn children(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<Vec<Resource<Node>>> {
-        let node = self.table.get_mut(&self_).map_err(|e| anyhow!("{:?}", e))?;
+        let node = self.table.get_mut(&self_)?;
         Ok(node
             .children
             .iter()
@@ -65,18 +64,18 @@ impl HostNode for StoreState {
         let rep = self_.rep();
 
         // Add child to children.
-        let node = self.table.get_mut(&self_).map_err(|e| anyhow!("{:?}", e))?;
+        let node = self.table.get_mut(&self_)?;
         node.children.insert(value.rep());
 
         // Remove child from old parent's children.
-        let child = self.table.get(&value).map_err(|e| anyhow!("{:?}", e))?;
+        let child = self.table.get(&value)?;
         if let Some(parent_rep) = child.parent {
             let parent_res = Resource::new_own(parent_rep);
             self.remove_child(parent_res, self_)?;
         }
 
         // Set parent.
-        let child = self.table.get_mut(&value).map_err(|e| anyhow!("{:?}", e))?;
+        let child = self.table.get_mut(&value)?;
         child.parent = Some(rep);
 
         self.sender.send(WiredGltfAction::SetNodeParent {
@@ -91,7 +90,7 @@ impl HostNode for StoreState {
         self_: Resource<Node>,
         value: Resource<Node>,
     ) -> wasm_bridge::Result<()> {
-        let node = self.table.get_mut(&self_).map_err(|e| anyhow!("{:?}", e))?;
+        let node = self.table.get_mut(&self_)?;
         node.children.remove(&value.rep());
 
         self.sender.send(WiredGltfAction::SetNodeParent {
@@ -103,7 +102,7 @@ impl HostNode for StoreState {
     }
 
     fn transform(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<Resource<Transform>> {
-        let node = self.table.get(&self_).map_err(|e| anyhow!("{:?}", e))?;
+        let node = self.table.get(&self_)?;
         Ok(Resource::new_own(node.transform.rep()))
     }
 
@@ -123,7 +122,7 @@ impl Host for StoreState {
 
     fn create_node(&mut self) -> wasm_bridge::Result<Resource<Node>> {
         let node = Node::try_new(&mut self.table)?;
-        let resource = self.table.push(node).map_err(|e| anyhow!("{:?}", e))?;
+        let resource = self.table.push(node)?;
         let node_rep = resource.rep();
         self.nodes.push(resource);
 
@@ -135,7 +134,7 @@ impl Host for StoreState {
 
     fn remove_node(&mut self, value: Resource<Node>) -> wasm_bridge::Result<()> {
         let rep = value.rep();
-        self.table.delete(value).map_err(|e| anyhow!("{:?}", e))?;
+        self.table.delete(value)?;
 
         let index =
             self.nodes

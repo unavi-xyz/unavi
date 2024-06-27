@@ -25,13 +25,13 @@ pub fn init_scripts(
 ) {
     for (entity, name) in to_init.iter() {
         let res = block_on(async {
-            let mut scripts = scripts.lock().await;
-            let (script, store) = scripts.get_mut(&entity).unwrap();
-
             let span = info_span!("ScriptInit", name = name.to_string());
             let span = span.enter();
 
-            info!("begin");
+            info!("Initializing script");
+
+            let mut scripts = scripts.lock().unwrap();
+            let (script, store) = scripts.get_mut(&entity).unwrap();
 
             let res = script
                 .wired_script_types()
@@ -39,7 +39,7 @@ pub fn init_scripts(
                 .call_constructor(store)
                 .await;
 
-            info!("end");
+            info!("Done");
             drop(span);
 
             res
@@ -64,13 +64,13 @@ pub fn update_scripts(
 
     for (entity, name, res) in to_update.iter_mut() {
         let res: anyhow::Result<_> = block_on(async {
-            let mut scripts = scripts.lock().await;
-            let (script, store) = scripts.get_mut(&entity).unwrap();
-
             let span = trace_span!("ScriptUpdate", name = name.to_string(), delta);
             let span = span.enter();
 
-            trace!("begin");
+            trace!("Updating script");
+
+            let mut scripts = scripts.lock().unwrap();
+            let (script, store) = scripts.get_mut(&entity).unwrap();
 
             let res = script
                 .wired_script_types()
@@ -78,7 +78,7 @@ pub fn update_scripts(
                 .call_update(store.as_context_mut(), res.0, delta)
                 .await;
 
-            trace!("end");
+            trace!("Done");
             drop(span);
 
             res

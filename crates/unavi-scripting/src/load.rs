@@ -1,8 +1,7 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use bevy::{prelude::*, utils::HashMap};
 use bevy_async_task::{AsyncTaskPool, AsyncTaskStatus};
-use tokio::sync::Mutex;
 use wasm_bridge::{component::Linker, Config, Engine, Store};
 
 use crate::{
@@ -68,7 +67,7 @@ pub fn load_scripts(
             let (script, _) =
                 Script::instantiate_async(&mut store, &component, &mut linker).await?;
 
-            let mut scripts = scripts.lock().await;
+            let mut scripts = scripts.lock().unwrap();
             scripts.insert(entity, (script, store));
 
             Ok(entity)

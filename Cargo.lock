@@ -4136,6 +4136,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-wired-input"
+version = "0.0.3"
+dependencies = [
+ "wit-bindgen-rt",
+]
+
+[[package]]
 name = "exr"
 version = "1.72.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

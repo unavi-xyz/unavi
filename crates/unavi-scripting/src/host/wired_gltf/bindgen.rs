@@ -1,5 +1,8 @@
 use bevy::utils::HashSet;
+use wasm_bridge::component::Resource;
 use wired::math::types::{Quat, Transform, Vec3};
+
+use crate::host::wired_input::handler::SpatialHandler;
 
 use self::wired::gltf::material::Color;
 
@@ -45,6 +48,7 @@ pub struct Primitive {
 #[derive(Default)]
 pub struct Node {
     pub children: HashSet<u32>,
+    pub handlers: Vec<Resource<SpatialHandler>>,
     pub mesh: Option<u32>,
     pub name: String,
     pub parent: Option<u32>,

@@ -14,9 +14,9 @@ mod attributes;
 mod bindings;
 mod shapes;
 
-struct UnaviShapes;
+struct Api;
 
-impl Guest for UnaviShapes {
+impl Guest for Api {
     fn create_cuboid(size: Vec3) -> Mesh {
         let mesh = create_mesh();
         let primitive = mesh.create_primitive();
@@ -38,4 +38,4 @@ impl Guest for UnaviShapes {
     }
 }
 
-bindings::export!(UnaviShapes with_types_in bindings);
+bindings::export!(Api with_types_in bindings);

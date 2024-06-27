@@ -4,11 +4,13 @@ use wasm_bridge::component::Linker;
 use super::state::StoreState;
 
 pub mod wired_gltf;
+mod wired_input;
 mod wired_log;
 
 pub fn add_host_script_apis(linker: &mut Linker<StoreState>) -> Result<()> {
-    wired_log::add_to_host(linker)?;
     wired_gltf::add_to_host(linker)?;
+    wired_input::add_to_host(linker)?;
+    wired_log::add_to_host(linker)?;
     Ok(())
 }
 
@@ -111,6 +113,14 @@ mod tests {
     #[traced_test]
     async fn example_wired_gltf() {
         test_script("example:wired-gltf").await;
+        assert!(!logs_contain("ERROR"));
+        assert!(!logs_contain("error"));
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn example_wired_input() {
+        test_script("example:wired-input").await;
         assert!(!logs_contain("ERROR"));
         assert!(!logs_contain("error"));
     }

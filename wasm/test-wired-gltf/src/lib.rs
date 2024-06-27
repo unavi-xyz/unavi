@@ -35,10 +35,10 @@ fn panic_log(err: &str) {
     panic!("{}", err);
 }
 
-struct Api;
+struct Types;
 
-impl Guest for Api {
+impl Guest for Types {
     type Script = Script;
 }
 
-bindings::export!(Api with_types_in bindings);
+bindings::export!(Types with_types_in bindings);

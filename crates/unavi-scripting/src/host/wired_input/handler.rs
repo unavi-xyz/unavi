@@ -7,12 +7,13 @@ use super::wired::input::{
     types::InputEvent,
 };
 
-pub struct SpatialHandler;
+#[derive(Default)]
+pub struct SpatialHandler {}
 
 impl HostSpatialHandler for StoreState {
     fn new(&mut self, node: Resource<Node>) -> wasm_bridge::Result<Resource<SpatialHandler>> {
-        let handler = SpatialHandler;
-        let res = self.table.push_child(handler, &node)?;
+        let handler = SpatialHandler::default();
+        let res = self.table.push(handler)?;
         let rep = res.rep();
 
         let node = self.table.get_mut(&node)?;
@@ -28,7 +29,8 @@ impl HostSpatialHandler for StoreState {
         Ok(None)
     }
 
-    fn drop(&mut self, _rep: Resource<SpatialHandler>) -> wasm_bridge::Result<()> {
+    fn drop(&mut self, rep: Resource<SpatialHandler>) -> wasm_bridge::Result<()> {
+        self.table.delete(rep)?;
         Ok(())
     }
 }

@@ -20,4 +20,5 @@ package = "example:wired-input"
 "wired:input" = { path = "../../wired-protocol/spatial/wit/wired-input" }
 "wired:log" = { path = "../../wired-protocol/spatial/wit/wired-log" }
 "wired:math" = { path = "../../wired-protocol/spatial/wit/wired-math" }
+"wired:physics" = { path = "../../wired-protocol/spatial/wit/wired-physics" }
 "wired:script" = { path = "../../wired-protocol/spatial/wit/wired-script" }

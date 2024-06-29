@@ -1,5 +1,5 @@
 [package]
-name = "unavi-shapes"
+name = "example-wired-physics"
 version.workspace = true
 edition.workspace = true
 repository.workspace = true
@@ -9,13 +9,15 @@ license.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-parry3d = "0.15.1"
 wit-bindgen-rt.workspace = true
 
 [package.metadata.component]
-package = "unavi:shapes"
+package = "example:wired-physics"
 
 [package.metadata.component.target.dependencies]
+"unavi:shapes" = { path = "../unavi-shapes/wit" }
 "wired:gltf" = { path = "../../wired-protocol/spatial/wit/wired-gltf" }
+"wired:log" = { path = "../../wired-protocol/spatial/wit/wired-log" }
 "wired:math" = { path = "../../wired-protocol/spatial/wit/wired-math" }
 "wired:physics" = { path = "../../wired-protocol/spatial/wit/wired-physics" }
+"wired:script" = { path = "../../wired-protocol/spatial/wit/wired-script" }

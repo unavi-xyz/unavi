@@ -791,6 +791,8 @@ pub mod wired {
             use super::super::super::_rt;
             pub type Mesh = super::super::super::wired::gltf::mesh::Mesh;
             pub type Transform = super::super::super::wired::math::types::Transform;
+            pub type Collider = super::super::super::wired::physics::types::Collider;
+            pub type RigidBody = super::super::super::wired::physics::types::RigidBody;
             /// A reference to a node.
 
             #[derive(Debug)]
@@ -1210,6 +1212,124 @@ pub mod wired {
                     }
                 }
             }
+            impl Node {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn collider(&self) -> Option<Collider> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/node")]
+                        extern "C" {
+                            #[link_name = "[method]node.collider"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<i32>();
+
+                                    super::super::super::wired::physics::types::Collider::from_handle(l2 as u32)
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl Node {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_collider(&self, value: Option<&Collider>) {
+                    unsafe {
+                        let (result0_0, result0_1) = match value {
+                            Some(e) => (1i32, (e).handle() as i32),
+                            None => (0i32, 0i32),
+                        };
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/node")]
+                        extern "C" {
+                            #[link_name = "[method]node.set-collider"]
+                            fn wit_import(_: i32, _: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, result0_0, result0_1);
+                    }
+                }
+            }
+            impl Node {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn rigid_body(&self) -> Option<RigidBody> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/node")]
+                        extern "C" {
+                            #[link_name = "[method]node.rigid-body"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<i32>();
+
+                                    super::super::super::wired::physics::types::RigidBody::from_handle(l2 as u32)
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl Node {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_rigid_body(&self, value: Option<&RigidBody>) {
+                    unsafe {
+                        let (result0_0, result0_1) = match value {
+                            Some(e) => (1i32, (e).handle() as i32),
+                            None => (0i32, 0i32),
+                        };
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:gltf/node")]
+                        extern "C" {
+                            #[link_name = "[method]node.set-rigid-body"]
+                            fn wit_import(_: i32, _: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, result0_0, result0_1);
+                    }
+                }
+            }
             #[allow(unused_unsafe, clippy::all)]
             pub fn list_nodes() -> _rt::Vec<Node> {
                 unsafe {
@@ -1410,6 +1530,409 @@ pub mod wired {
                         .field("scale", &self.scale)
                         .field("translation", &self.translation)
                         .finish()
+                }
+            }
+        }
+    }
+    #[allow(dead_code)]
+    pub mod physics {
+        #[allow(dead_code, clippy::all)]
+        pub mod types {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            pub type Vec3 = super::super::super::wired::math::types::Vec3;
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Collider {
+                handle: _rt::Resource<Collider>,
+            }
+
+            impl Collider {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for Collider {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wired:physics/types")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]collider"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            pub struct Cuboid {
+                pub x_len: f32,
+                pub y_len: f32,
+                pub z_len: f32,
+            }
+            impl ::core::fmt::Debug for Cuboid {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("Cuboid")
+                        .field("x-len", &self.x_len)
+                        .field("y-len", &self.y_len)
+                        .field("z-len", &self.z_len)
+                        .finish()
+                }
+            }
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            pub struct Sphere {
+                pub radius: f32,
+            }
+            impl ::core::fmt::Debug for Sphere {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("Sphere")
+                        .field("radius", &self.radius)
+                        .finish()
+                }
+            }
+            #[derive(Clone, Copy)]
+            pub enum Shape {
+                Cuboid(Cuboid),
+                Sphere(Sphere),
+            }
+            impl ::core::fmt::Debug for Shape {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        Shape::Cuboid(e) => f.debug_tuple("Shape::Cuboid").field(e).finish(),
+                        Shape::Sphere(e) => f.debug_tuple("Shape::Sphere").field(e).finish(),
+                    }
+                }
+            }
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct RigidBody {
+                handle: _rt::Resource<RigidBody>,
+            }
+
+            impl RigidBody {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for RigidBody {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wired:physics/types")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]rigid-body"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            #[repr(u8)]
+            #[derive(Clone, Copy, Eq, PartialEq)]
+            pub enum RigidBodyType {
+                Dynamic,
+                Fixed,
+                Kinematic,
+            }
+            impl ::core::fmt::Debug for RigidBodyType {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        RigidBodyType::Dynamic => f.debug_tuple("RigidBodyType::Dynamic").finish(),
+                        RigidBodyType::Fixed => f.debug_tuple("RigidBodyType::Fixed").finish(),
+                        RigidBodyType::Kinematic => {
+                            f.debug_tuple("RigidBodyType::Kinematic").finish()
+                        }
+                    }
+                }
+            }
+
+            impl RigidBodyType {
+                #[doc(hidden)]
+                pub unsafe fn _lift(val: u8) -> RigidBodyType {
+                    if !cfg!(debug_assertions) {
+                        return ::core::mem::transmute(val);
+                    }
+
+                    match val {
+                        0 => RigidBodyType::Dynamic,
+                        1 => RigidBodyType::Fixed,
+                        2 => RigidBodyType::Kinematic,
+
+                        _ => panic!("invalid enum discriminant"),
+                    }
+                }
+            }
+
+            impl Collider {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn new(shape: Shape) -> Self {
+                    unsafe {
+                        let (result2_0, result2_1, result2_2, result2_3) = match shape {
+                            Shape::Cuboid(e) => {
+                                let Cuboid {
+                                    x_len: x_len0,
+                                    y_len: y_len0,
+                                    z_len: z_len0,
+                                } = e;
+
+                                (
+                                    0i32,
+                                    _rt::as_f32(x_len0),
+                                    _rt::as_f32(y_len0),
+                                    _rt::as_f32(z_len0),
+                                )
+                            }
+                            Shape::Sphere(e) => {
+                                let Sphere { radius: radius1 } = e;
+
+                                (1i32, _rt::as_f32(radius1), 0.0f32, 0.0f32)
+                            }
+                        };
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:physics/types")]
+                        extern "C" {
+                            #[link_name = "[constructor]collider"]
+                            fn wit_import(_: i32, _: f32, _: f32, _: f32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32, _: f32, _: f32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import(result2_0, result2_1, result2_2, result2_3);
+                        Collider::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Collider {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn density(&self) -> f32 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:physics/types")]
+                        extern "C" {
+                            #[link_name = "[method]collider.density"]
+                            fn wit_import(_: i32) -> f32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> f32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret
+                    }
+                }
+            }
+            impl Collider {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_density(&self, value: f32) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:physics/types")]
+                        extern "C" {
+                            #[link_name = "[method]collider.set-density"]
+                            fn wit_import(_: i32, _: f32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_f32(&value));
+                    }
+                }
+            }
+            impl RigidBody {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn new(rigid_body_type: RigidBodyType) -> Self {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:physics/types")]
+                        extern "C" {
+                            #[link_name = "[constructor]rigid-body"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import(rigid_body_type.clone() as i32);
+                        RigidBody::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl RigidBody {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn angvel(&self) -> Vec3 {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:physics/types")]
+                        extern "C" {
+                            #[link_name = "[method]rigid-body.angvel"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<f32>();
+                        let l2 = *ptr0.add(4).cast::<f32>();
+                        let l3 = *ptr0.add(8).cast::<f32>();
+                        super::super::super::wired::math::types::Vec3 {
+                            x: l1,
+                            y: l2,
+                            z: l3,
+                        }
+                    }
+                }
+            }
+            impl RigidBody {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_angvel(&self, value: Vec3) {
+                    unsafe {
+                        let super::super::super::wired::math::types::Vec3 {
+                            x: x0,
+                            y: y0,
+                            z: z0,
+                        } = value;
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:physics/types")]
+                        extern "C" {
+                            #[link_name = "[method]rigid-body.set-angvel"]
+                            fn wit_import(_: i32, _: f32, _: f32, _: f32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32, _: f32, _: f32) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            _rt::as_f32(x0),
+                            _rt::as_f32(y0),
+                            _rt::as_f32(z0),
+                        );
+                    }
+                }
+            }
+            impl RigidBody {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn linvel(&self) -> Vec3 {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:physics/types")]
+                        extern "C" {
+                            #[link_name = "[method]rigid-body.linvel"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<f32>();
+                        let l2 = *ptr0.add(4).cast::<f32>();
+                        let l3 = *ptr0.add(8).cast::<f32>();
+                        super::super::super::wired::math::types::Vec3 {
+                            x: l1,
+                            y: l2,
+                            z: l3,
+                        }
+                    }
+                }
+            }
+            impl RigidBody {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_linvel(&self, value: Vec3) {
+                    unsafe {
+                        let super::super::super::wired::math::types::Vec3 {
+                            x: x0,
+                            y: y0,
+                            z: z0,
+                        } = value;
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:physics/types")]
+                        extern "C" {
+                            #[link_name = "[method]rigid-body.set-linvel"]
+                            fn wit_import(_: i32, _: f32, _: f32, _: f32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32, _: f32, _: f32) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            _rt::as_f32(x0),
+                            _rt::as_f32(y0),
+                            _rt::as_f32(z0),
+                        );
+                    }
                 }
             }
         }
@@ -1854,9 +2377,9 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 2179] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x86\x10\x01A\x02\x01\
-A\x0f\x01B\x16\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 3013] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc8\x16\x01A\x02\x01\
+A\x14\x01B\x16\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
 material\x03\x01\x01h\x02\x01@\x01\x04self\x03\0y\x04\0\x13[method]material.id\x01\
 \x04\x01@\x01\x04self\x03\0s\x04\0\x15[method]material.name\x01\x05\x01@\x02\x04\
 self\x03\x05values\x01\0\x04\0\x19[method]material.set-name\x01\x06\x01@\x01\x04\
@@ -1883,28 +2406,47 @@ rimitive\x01\x18\x01i\x03\x01p\x19\x01@\0\0\x1a\x04\0\x0blist-meshes\x01\x1b\x01
 ve-mesh\x01\x1d\x03\x01\x0fwired:gltf/mesh\x05\x02\x01B\x06\x01r\x03\x01xv\x01yv\
 \x01zv\x04\0\x04vec3\x03\0\0\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\
 \x02\x01r\x03\x08rotation\x03\x05scale\x01\x0btranslation\x01\x04\0\x09transform\
-\x03\0\x04\x03\x01\x10wired:math/types\x05\x03\x02\x03\0\x01\x04mesh\x02\x03\0\x02\
-\x09transform\x01B(\x02\x03\x02\x01\x04\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x05\
-\x04\0\x09transform\x03\0\x02\x04\0\x04node\x03\x01\x01h\x04\x01@\x01\x04self\x05\
-\0y\x04\0\x0f[method]node.id\x01\x06\x01@\x01\x04self\x05\0s\x04\0\x11[method]no\
-de.name\x01\x07\x01@\x02\x04self\x05\x05values\x01\0\x04\0\x15[method]node.set-n\
-ame\x01\x08\x01i\x04\x01p\x09\x01@\x01\x04self\x05\0\x0a\x04\0\x15[method]node.c\
-hildren\x01\x0b\x01@\x02\x04self\x05\x05value\x05\x01\0\x04\0\x16[method]node.ad\
-d-child\x01\x0c\x04\0\x19[method]node.remove-child\x01\x0c\x01k\x09\x01@\x01\x04\
-self\x05\0\x0d\x04\0\x13[method]node.parent\x01\x0e\x01@\x01\x04self\x05\0\x03\x04\
-\0\x16[method]node.transform\x01\x0f\x01@\x02\x04self\x05\x05value\x03\x01\0\x04\
-\0\x1a[method]node.set-transform\x01\x10\x01i\x01\x01k\x11\x01@\x01\x04self\x05\0\
-\x12\x04\0\x11[method]node.mesh\x01\x13\x01h\x01\x01k\x14\x01@\x02\x04self\x05\x05\
-value\x15\x01\0\x04\0\x15[method]node.set-mesh\x01\x16\x01@\0\0\x0a\x04\0\x0alis\
-t-nodes\x01\x17\x01@\0\0\x09\x04\0\x0bcreate-node\x01\x18\x01@\x01\x05value\x09\x01\
-\0\x04\0\x0bremove-node\x01\x19\x03\x01\x0fwired:gltf/node\x05\x06\x01B\x04\x01m\
-\x04\x05debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\x05le\
-vel\x01\x07messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x07\x01\
-B\x07\x04\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\
-\x02\x01h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\
-\x04\x04\x01\x12wired:script/types\x05\x08\x04\x01\x13unavi:system/script\x04\0\x0b\
-\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-comp\
-onent\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+\x03\0\x04\x03\x01\x10wired:math/types\x05\x03\x02\x03\0\x02\x04vec3\x01B\x1e\x02\
+\x03\x02\x01\x04\x04\0\x04vec3\x03\0\0\x04\0\x08collider\x03\x01\x01r\x03\x05x-l\
+env\x05y-lenv\x05z-lenv\x04\0\x06cuboid\x03\0\x03\x01r\x01\x06radiusv\x04\0\x06s\
+phere\x03\0\x05\x01q\x02\x06cuboid\x01\x04\0\x06sphere\x01\x06\0\x04\0\x05shape\x03\
+\0\x07\x04\0\x0arigid-body\x03\x01\x01m\x03\x07dynamic\x05fixed\x09kinematic\x04\
+\0\x0frigid-body-type\x03\0\x0a\x01i\x02\x01@\x01\x05shape\x08\0\x0c\x04\0\x15[c\
+onstructor]collider\x01\x0d\x01h\x02\x01@\x01\x04self\x0e\0v\x04\0\x18[method]co\
+llider.density\x01\x0f\x01@\x02\x04self\x0e\x05valuev\x01\0\x04\0\x1c[method]col\
+lider.set-density\x01\x10\x01i\x09\x01@\x01\x0frigid-body-type\x0b\0\x11\x04\0\x17\
+[constructor]rigid-body\x01\x12\x01h\x09\x01@\x01\x04self\x13\0\x01\x04\0\x19[me\
+thod]rigid-body.angvel\x01\x14\x01@\x02\x04self\x13\x05value\x01\x01\0\x04\0\x1d\
+[method]rigid-body.set-angvel\x01\x15\x04\0\x19[method]rigid-body.linvel\x01\x14\
+\x04\0\x1d[method]rigid-body.set-linvel\x01\x15\x03\x01\x13wired:physics/types\x05\
+\x05\x02\x03\0\x01\x04mesh\x02\x03\0\x02\x09transform\x02\x03\0\x03\x08collider\x02\
+\x03\0\x03\x0arigid-body\x01B<\x02\x03\x02\x01\x06\x04\0\x04mesh\x03\0\0\x02\x03\
+\x02\x01\x07\x04\0\x09transform\x03\0\x02\x02\x03\x02\x01\x08\x04\0\x08collider\x03\
+\0\x04\x02\x03\x02\x01\x09\x04\0\x0arigid-body\x03\0\x06\x04\0\x04node\x03\x01\x01\
+h\x08\x01@\x01\x04self\x09\0y\x04\0\x0f[method]node.id\x01\x0a\x01@\x01\x04self\x09\
+\0s\x04\0\x11[method]node.name\x01\x0b\x01@\x02\x04self\x09\x05values\x01\0\x04\0\
+\x15[method]node.set-name\x01\x0c\x01i\x08\x01p\x0d\x01@\x01\x04self\x09\0\x0e\x04\
+\0\x15[method]node.children\x01\x0f\x01@\x02\x04self\x09\x05value\x09\x01\0\x04\0\
+\x16[method]node.add-child\x01\x10\x04\0\x19[method]node.remove-child\x01\x10\x01\
+k\x0d\x01@\x01\x04self\x09\0\x11\x04\0\x13[method]node.parent\x01\x12\x01@\x01\x04\
+self\x09\0\x03\x04\0\x16[method]node.transform\x01\x13\x01@\x02\x04self\x09\x05v\
+alue\x03\x01\0\x04\0\x1a[method]node.set-transform\x01\x14\x01i\x01\x01k\x15\x01\
+@\x01\x04self\x09\0\x16\x04\0\x11[method]node.mesh\x01\x17\x01h\x01\x01k\x18\x01\
+@\x02\x04self\x09\x05value\x19\x01\0\x04\0\x15[method]node.set-mesh\x01\x1a\x01i\
+\x05\x01k\x1b\x01@\x01\x04self\x09\0\x1c\x04\0\x15[method]node.collider\x01\x1d\x01\
+h\x05\x01k\x1e\x01@\x02\x04self\x09\x05value\x1f\x01\0\x04\0\x19[method]node.set\
+-collider\x01\x20\x01i\x07\x01k!\x01@\x01\x04self\x09\0\"\x04\0\x17[method]node.\
+rigid-body\x01#\x01h\x07\x01k$\x01@\x02\x04self\x09\x05value%\x01\0\x04\0\x1b[me\
+thod]node.set-rigid-body\x01&\x01@\0\0\x0e\x04\0\x0alist-nodes\x01'\x01@\0\0\x0d\
+\x04\0\x0bcreate-node\x01(\x01@\x01\x05value\x0d\x01\0\x04\0\x0bremove-node\x01)\
+\x03\x01\x0fwired:gltf/node\x05\x0a\x01B\x04\x01m\x04\x05debug\x04info\x04warn\x05\
+error\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\x07messages\x01\0\x04\0\x03\
+log\x01\x02\x03\x01\x0dwired:log/api\x05\x0b\x01B\x07\x04\0\x06script\x03\x01\x01\
+i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01h\0\x01@\x02\x04self\x03\
+\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\x01\x12wired:script/\
+types\x05\x0c\x04\x01\x13unavi:system/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\
+\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bi\
+ndgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

@@ -139,6 +139,34 @@ impl HostNode for StoreState {
         Ok(())
     }
 
+    fn collider(
+        &mut self,
+        self_: Resource<Node>,
+    ) -> wasm_bridge::Result<Option<Resource<super::bindgen::wired::gltf::node::Collider>>> {
+        todo!();
+    }
+    fn set_collider(
+        &mut self,
+        self_: Resource<Node>,
+        value: Option<Resource<super::bindgen::wired::gltf::node::Collider>>,
+    ) -> wasm_bridge::Result<()> {
+        todo!();
+    }
+
+    fn rigid_body(
+        &mut self,
+        self_: Resource<Node>,
+    ) -> wasm_bridge::Result<Option<Resource<super::bindgen::wired::gltf::node::RigidBody>>> {
+        todo!();
+    }
+    fn set_rigid_body(
+        &mut self,
+        self_: Resource<Node>,
+        value: Option<Resource<super::bindgen::wired::gltf::node::RigidBody>>,
+    ) -> wasm_bridge::Result<()> {
+        todo!();
+    }
+
     fn drop(&mut self, _rep: Resource<Node>) -> wasm_bridge::Result<()> {
         Ok(())
     }

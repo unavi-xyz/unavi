@@ -12,6 +12,7 @@ workspace = true
 anyhow.workspace = true
 bevy.workspace = true
 bevy_async_task.workspace = true
+bevy_xpbd_3d.workspace = true
 crossbeam = { version = "0.8.4", features = ["crossbeam-channel"] }
 tokio.workspace = true
 wasm-bridge = { git = "https://github.com/kayhhh/wasm-bridge.git", branch = "all", features = ["component-model", "async"] }

@@ -11,7 +11,6 @@ fn main() {
             }),
             PanOrbitCameraPlugin,
             ScriptingPlugin,
-
         ))
         .add_systems(Startup, (setup_scene, load_script))
         .run();

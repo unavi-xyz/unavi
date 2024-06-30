@@ -49,7 +49,7 @@ jobs:
 
       - name: Build server
         if: inputs.disable-deploy != true
-        run: nix build -L --option build-cores 1 .?submodules=1#unavi-server
+        run: nix build -L .?submodules=1#unavi-server
 
   build-web:
     runs-on: ubuntu-latest
@@ -73,7 +73,7 @@ jobs:
 
       - name: Build web
         if: inputs.disable-deploy != true
-        run: nix build -L --option build-cores 1 .?submodules=1#unavi-web
+        run: nix build -L .?submodules=1#unavi-web
 
   deploy:
     needs:

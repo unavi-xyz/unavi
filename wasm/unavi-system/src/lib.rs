@@ -2,8 +2,8 @@ use bindings::exports::wired::script::types::{Guest, GuestScript};
 
 #[allow(warnings)]
 mod bindings;
-mod wired_scene_impls;
 mod wired_math_impls;
+mod wired_scene_impls;
 
 #[derive(Default)]
 struct Script {}

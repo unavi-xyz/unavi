@@ -1,7 +1,7 @@
 use crate::{
     bindings::wired::{
-        scene::material::{create_material, list_materials, remove_material, Material},
         log::api::{log, LogLevel},
+        scene::material::{create_material, list_materials, remove_material, Material},
     },
     property_tests::{test_property, Property},
 };

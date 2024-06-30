@@ -2,8 +2,8 @@ use attributes::set_attributes;
 use bindings::{
     exports::unavi::shapes::api::Guest,
     wired::{
-        scene::mesh::{create_mesh, Mesh},
         math::types::Vec3,
+        scene::mesh::{create_mesh, Mesh},
     },
 };
 use parry3d::shape::Ball;

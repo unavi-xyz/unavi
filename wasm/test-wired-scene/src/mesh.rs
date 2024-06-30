@@ -1,6 +1,6 @@
 use crate::{
     bindings::wired::{
-        gltf::{
+        scene::{
             material::create_material,
             mesh::{create_mesh, list_meshes, remove_mesh, Mesh, Primitive},
         },

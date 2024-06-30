@@ -10,10 +10,10 @@ wasm_bridge::component::bindgen!({
     path: "../../wired-protocol/spatial/wit/wired-input",
     world: "host",
     with: {
-        "wired:gltf/material/material": super::wired_gltf::material::Material,
-        "wired:gltf/mesh/mesh": super::wired_gltf::mesh::Mesh,
-        "wired:gltf/mesh/primitive": super::wired_gltf::mesh::Primitive,
-        "wired:gltf/node/node": super::wired_gltf::node::Node,
+        "wired:scene/material/material": super::wired_scene::material::Material,
+        "wired:scene/mesh/mesh": super::wired_scene::mesh::Mesh,
+        "wired:scene/mesh/primitive": super::wired_scene::mesh::Primitive,
+        "wired:scene/node/node": super::wired_scene::node::Node,
         "wired:input/handler/spatial-handler": spatial_handler::SpatialHandler,
     }
 });

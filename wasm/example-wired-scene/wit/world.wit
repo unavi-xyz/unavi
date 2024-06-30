@@ -1,8 +1,9 @@
-package unavi:system;
+package example:wired-scene;
 
 world script {
     include wired:script/script; 
 
+    import unavi:shapes/api;
     import wired:scene/material;
     import wired:scene/mesh;
     import wired:scene/node;

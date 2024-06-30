@@ -3,7 +3,7 @@ use parry3d::{
     na::{Point3, Vector3},
 };
 
-use crate::bindings::wired::gltf::mesh::Primitive;
+use crate::bindings::wired::scene::mesh::Primitive;
 
 pub fn set_attributes(
     primitive: &Primitive,

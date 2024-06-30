@@ -1,6 +1,6 @@
 use crate::{
     bindings::wired::{
-        gltf::material::{create_material, list_materials, remove_material, Material},
+        scene::material::{create_material, list_materials, remove_material, Material},
         log::api::{log, LogLevel},
     },
     property_tests::{test_property, Property},

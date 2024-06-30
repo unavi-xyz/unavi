@@ -39,7 +39,7 @@ fn setup_scene(mut ambient: ResMut<AmbientLight>, mut commands: Commands) {
 
 pub fn load_script(asset_server: Res<AssetServer>, mut commands: Commands) {
     commands.spawn((
-        ScriptBundle::load("example:wired-gltf", &asset_server),
+        ScriptBundle::load("example:wired-scene", &asset_server),
         SpatialBundle::default(),
     ));
 }

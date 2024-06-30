@@ -2,7 +2,7 @@ use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
     unavi::shapes::api::create_cuboid,
     wired::{
-        gltf::{material::create_material, node::create_node},
+        scene::{material::create_material, node::create_node},
         input::handler::SpatialHandler,
         log::api::{log, LogLevel},
         math::types::Vec3,

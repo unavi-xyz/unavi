@@ -15,7 +15,7 @@ wit-bindgen-rt.workspace = true
 package = "unavi:system"
 
 [package.metadata.component.target.dependencies]
-"wired:gltf" = { path = "../../wired-protocol/spatial/wit/wired-gltf" }
+"wired:scene" = { path = "../../wired-protocol/spatial/wit/wired-scene" }
 "wired:log" = { path = "../../wired-protocol/spatial/wit/wired-log" }
 "wired:math" = { path = "../../wired-protocol/spatial/wit/wired-math" }
 "wired:physics" = { path = "../../wired-protocol/spatial/wit/wired-physics" }

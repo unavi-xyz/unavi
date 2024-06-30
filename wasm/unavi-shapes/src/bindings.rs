@@ -3,7 +3,68 @@
 #[allow(dead_code)]
 pub mod wired {
     #[allow(dead_code)]
-    pub mod gltf {
+    pub mod math {
+        #[allow(dead_code, clippy::all)]
+        pub mod types {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            pub struct Vec3 {
+                pub x: f32,
+                pub y: f32,
+                pub z: f32,
+            }
+            impl ::core::fmt::Debug for Vec3 {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("Vec3")
+                        .field("x", &self.x)
+                        .field("y", &self.y)
+                        .field("z", &self.z)
+                        .finish()
+                }
+            }
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            pub struct Quat {
+                pub x: f32,
+                pub y: f32,
+                pub z: f32,
+                pub w: f32,
+            }
+            impl ::core::fmt::Debug for Quat {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("Quat")
+                        .field("x", &self.x)
+                        .field("y", &self.y)
+                        .field("z", &self.z)
+                        .field("w", &self.w)
+                        .finish()
+                }
+            }
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            pub struct Transform {
+                pub rotation: Quat,
+                pub scale: Vec3,
+                pub translation: Vec3,
+            }
+            impl ::core::fmt::Debug for Transform {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("Transform")
+                        .field("rotation", &self.rotation)
+                        .field("scale", &self.scale)
+                        .field("translation", &self.translation)
+                        .finish()
+                }
+            }
+        }
+    }
+    #[allow(dead_code)]
+    pub mod scene {
         #[allow(dead_code, clippy::all)]
         pub mod material {
             #[used]
@@ -65,7 +126,7 @@ pub mod wired {
 
                     #[cfg(target_arch = "wasm32")]
                     {
-                        #[link(wasm_import_module = "wired:gltf/material")]
+                        #[link(wasm_import_module = "wired:scene/material")]
                         extern "C" {
                             #[link_name = "[resource-drop]material"]
                             fn drop(_: u32);
@@ -81,7 +142,7 @@ pub mod wired {
                 pub fn id(&self) -> u32 {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/material")]
+                        #[link(wasm_import_module = "wired:scene/material")]
                         extern "C" {
                             #[link_name = "[method]material.id"]
                             fn wit_import(_: i32) -> i32;
@@ -105,7 +166,7 @@ pub mod wired {
                         let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/material")]
+                        #[link(wasm_import_module = "wired:scene/material")]
                         extern "C" {
                             #[link_name = "[method]material.name"]
                             fn wit_import(_: i32, _: *mut u8);
@@ -133,7 +194,7 @@ pub mod wired {
                         let len0 = vec0.len();
 
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/material")]
+                        #[link(wasm_import_module = "wired:scene/material")]
                         extern "C" {
                             #[link_name = "[method]material.set-name"]
                             fn wit_import(_: i32, _: *mut u8, _: usize);
@@ -156,7 +217,7 @@ pub mod wired {
                         let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/material")]
+                        #[link(wasm_import_module = "wired:scene/material")]
                         extern "C" {
                             #[link_name = "[method]material.color"]
                             fn wit_import(_: i32, _: *mut u8);
@@ -192,7 +253,7 @@ pub mod wired {
                         } = value;
 
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/material")]
+                        #[link(wasm_import_module = "wired:scene/material")]
                         extern "C" {
                             #[link_name = "[method]material.set-color"]
                             fn wit_import(_: i32, _: f32, _: f32, _: f32, _: f32);
@@ -220,7 +281,7 @@ pub mod wired {
                     let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                     let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "wired:gltf/material")]
+                    #[link(wasm_import_module = "wired:scene/material")]
                     extern "C" {
                         #[link_name = "list-materials"]
                         fn wit_import(_: *mut u8);
@@ -253,7 +314,7 @@ pub mod wired {
             pub fn create_material() -> Material {
                 unsafe {
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "wired:gltf/material")]
+                    #[link(wasm_import_module = "wired:scene/material")]
                     extern "C" {
                         #[link_name = "create-material"]
                         fn wit_import() -> i32;
@@ -271,7 +332,7 @@ pub mod wired {
             pub fn remove_material(value: Material) {
                 unsafe {
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "wired:gltf/material")]
+                    #[link(wasm_import_module = "wired:scene/material")]
                     extern "C" {
                         #[link_name = "remove-material"]
                         fn wit_import(_: i32);
@@ -294,7 +355,7 @@ pub mod wired {
             static __FORCE_SECTION_REF: fn() =
                 super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
-            pub type Material = super::super::super::wired::gltf::material::Material;
+            pub type Material = super::super::super::wired::scene::material::Material;
             /// A reference to a primitive.
 
             #[derive(Debug)]
@@ -330,7 +391,7 @@ pub mod wired {
 
                     #[cfg(target_arch = "wasm32")]
                     {
-                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        #[link(wasm_import_module = "wired:scene/mesh")]
                         extern "C" {
                             #[link_name = "[resource-drop]primitive"]
                             fn drop(_: u32);
@@ -376,7 +437,7 @@ pub mod wired {
 
                     #[cfg(target_arch = "wasm32")]
                     {
-                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        #[link(wasm_import_module = "wired:scene/mesh")]
                         extern "C" {
                             #[link_name = "[resource-drop]mesh"]
                             fn drop(_: u32);
@@ -392,7 +453,7 @@ pub mod wired {
                 pub fn id(&self) -> u32 {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        #[link(wasm_import_module = "wired:scene/mesh")]
                         extern "C" {
                             #[link_name = "[method]primitive.id"]
                             fn wit_import(_: i32) -> i32;
@@ -416,7 +477,7 @@ pub mod wired {
                         let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        #[link(wasm_import_module = "wired:scene/mesh")]
                         extern "C" {
                             #[link_name = "[method]primitive.material"]
                             fn wit_import(_: i32, _: *mut u8);
@@ -434,7 +495,7 @@ pub mod wired {
                                 let e = {
                                     let l2 = *ptr0.add(4).cast::<i32>();
 
-                                    super::super::super::wired::gltf::material::Material::from_handle(l2 as u32)
+                                    super::super::super::wired::scene::material::Material::from_handle(l2 as u32)
                                 };
                                 Some(e)
                             }
@@ -452,7 +513,7 @@ pub mod wired {
                             None => (0i32, 0i32),
                         };
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        #[link(wasm_import_module = "wired:scene/mesh")]
                         extern "C" {
                             #[link_name = "[method]primitive.set-material"]
                             fn wit_import(_: i32, _: i32, _: i32);
@@ -475,7 +536,7 @@ pub mod wired {
                         let len0 = vec0.len();
 
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        #[link(wasm_import_module = "wired:scene/mesh")]
                         extern "C" {
                             #[link_name = "[method]primitive.set-indices"]
                             fn wit_import(_: i32, _: *mut u8, _: usize);
@@ -498,7 +559,7 @@ pub mod wired {
                         let len0 = vec0.len();
 
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        #[link(wasm_import_module = "wired:scene/mesh")]
                         extern "C" {
                             #[link_name = "[method]primitive.set-normals"]
                             fn wit_import(_: i32, _: *mut u8, _: usize);
@@ -521,7 +582,7 @@ pub mod wired {
                         let len0 = vec0.len();
 
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        #[link(wasm_import_module = "wired:scene/mesh")]
                         extern "C" {
                             #[link_name = "[method]primitive.set-positions"]
                             fn wit_import(_: i32, _: *mut u8, _: usize);
@@ -544,7 +605,7 @@ pub mod wired {
                         let len0 = vec0.len();
 
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        #[link(wasm_import_module = "wired:scene/mesh")]
                         extern "C" {
                             #[link_name = "[method]primitive.set-uvs"]
                             fn wit_import(_: i32, _: *mut u8, _: usize);
@@ -563,7 +624,7 @@ pub mod wired {
                 pub fn id(&self) -> u32 {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        #[link(wasm_import_module = "wired:scene/mesh")]
                         extern "C" {
                             #[link_name = "[method]mesh.id"]
                             fn wit_import(_: i32) -> i32;
@@ -587,7 +648,7 @@ pub mod wired {
                         let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        #[link(wasm_import_module = "wired:scene/mesh")]
                         extern "C" {
                             #[link_name = "[method]mesh.name"]
                             fn wit_import(_: i32, _: *mut u8);
@@ -615,7 +676,7 @@ pub mod wired {
                         let len0 = vec0.len();
 
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        #[link(wasm_import_module = "wired:scene/mesh")]
                         extern "C" {
                             #[link_name = "[method]mesh.set-name"]
                             fn wit_import(_: i32, _: *mut u8, _: usize);
@@ -638,7 +699,7 @@ pub mod wired {
                         let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        #[link(wasm_import_module = "wired:scene/mesh")]
                         extern "C" {
                             #[link_name = "[method]mesh.list-primitives"]
                             fn wit_import(_: i32, _: *mut u8);
@@ -673,7 +734,7 @@ pub mod wired {
                 pub fn create_primitive(&self) -> Primitive {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        #[link(wasm_import_module = "wired:scene/mesh")]
                         extern "C" {
                             #[link_name = "[method]mesh.create-primitive"]
                             fn wit_import(_: i32) -> i32;
@@ -693,7 +754,7 @@ pub mod wired {
                 pub fn remove_primitive(&self, value: Primitive) {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:gltf/mesh")]
+                        #[link(wasm_import_module = "wired:scene/mesh")]
                         extern "C" {
                             #[link_name = "[method]mesh.remove-primitive"]
                             fn wit_import(_: i32, _: i32);
@@ -715,7 +776,7 @@ pub mod wired {
                     let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                     let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "wired:gltf/mesh")]
+                    #[link(wasm_import_module = "wired:scene/mesh")]
                     extern "C" {
                         #[link_name = "list-meshes"]
                         fn wit_import(_: *mut u8);
@@ -748,7 +809,7 @@ pub mod wired {
             pub fn create_mesh() -> Mesh {
                 unsafe {
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "wired:gltf/mesh")]
+                    #[link(wasm_import_module = "wired:scene/mesh")]
                     extern "C" {
                         #[link_name = "create-mesh"]
                         fn wit_import() -> i32;
@@ -766,7 +827,7 @@ pub mod wired {
             pub fn remove_mesh(value: Mesh) {
                 unsafe {
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "wired:gltf/mesh")]
+                    #[link(wasm_import_module = "wired:scene/mesh")]
                     extern "C" {
                         #[link_name = "remove-mesh"]
                         fn wit_import(_: i32);
@@ -777,67 +838,6 @@ pub mod wired {
                         unreachable!()
                     }
                     wit_import((&value).take_handle() as i32);
-                }
-            }
-        }
-    }
-    #[allow(dead_code)]
-    pub mod math {
-        #[allow(dead_code, clippy::all)]
-        pub mod types {
-            #[used]
-            #[doc(hidden)]
-            #[cfg(target_arch = "wasm32")]
-            static __FORCE_SECTION_REF: fn() =
-                super::super::super::__link_custom_section_describing_imports;
-            #[repr(C)]
-            #[derive(Clone, Copy)]
-            pub struct Vec3 {
-                pub x: f32,
-                pub y: f32,
-                pub z: f32,
-            }
-            impl ::core::fmt::Debug for Vec3 {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    f.debug_struct("Vec3")
-                        .field("x", &self.x)
-                        .field("y", &self.y)
-                        .field("z", &self.z)
-                        .finish()
-                }
-            }
-            #[repr(C)]
-            #[derive(Clone, Copy)]
-            pub struct Quat {
-                pub x: f32,
-                pub y: f32,
-                pub z: f32,
-                pub w: f32,
-            }
-            impl ::core::fmt::Debug for Quat {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    f.debug_struct("Quat")
-                        .field("x", &self.x)
-                        .field("y", &self.y)
-                        .field("z", &self.z)
-                        .field("w", &self.w)
-                        .finish()
-                }
-            }
-            #[repr(C)]
-            #[derive(Clone, Copy)]
-            pub struct Transform {
-                pub rotation: Quat,
-                pub scale: Vec3,
-                pub translation: Vec3,
-            }
-            impl ::core::fmt::Debug for Transform {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    f.debug_struct("Transform")
-                        .field("rotation", &self.rotation)
-                        .field("scale", &self.scale)
-                        .field("translation", &self.translation)
-                        .finish()
                 }
             }
         }
@@ -857,7 +857,7 @@ pub mod exports {
                 static __FORCE_SECTION_REF: fn() =
                     super::super::super::super::__link_custom_section_describing_imports;
                 use super::super::super::super::_rt;
-                pub type Mesh = super::super::super::super::wired::gltf::mesh::Mesh;
+                pub type Mesh = super::super::super::super::wired::scene::mesh::Mesh;
                 pub type Vec3 = super::super::super::super::wired::math::types::Vec3;
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
@@ -1097,8 +1097,8 @@ pub(crate) use __export_shapes_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:shapes:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1523] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xf6\x0a\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1525] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xf8\x0a\x01A\x02\x01\
 A\x0b\x01B\x16\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
 material\x03\x01\x01h\x02\x01@\x01\x04self\x03\0y\x04\0\x13[method]material.id\x01\
 \x04\x01@\x01\x04self\x03\0s\x04\0\x15[method]material.name\x01\x05\x01@\x02\x04\
@@ -1106,8 +1106,8 @@ self\x03\x05values\x01\0\x04\0\x19[method]material.set-name\x01\x06\x01@\x01\x04
 self\x03\0\x01\x04\0\x16[method]material.color\x01\x07\x01@\x02\x04self\x03\x05v\
 alue\x01\x01\0\x04\0\x1a[method]material.set-color\x01\x08\x01i\x02\x01p\x09\x01\
 @\0\0\x0a\x04\0\x0elist-materials\x01\x0b\x01@\0\0\x09\x04\0\x0fcreate-material\x01\
-\x0c\x01@\x01\x05value\x09\x01\0\x04\0\x0fremove-material\x01\x0d\x03\x01\x13wir\
-ed:gltf/material\x05\0\x02\x03\0\0\x08material\x01B.\x02\x03\x02\x01\x01\x04\0\x08\
+\x0c\x01@\x01\x05value\x09\x01\0\x04\0\x0fremove-material\x01\x0d\x03\x01\x14wir\
+ed:scene/material\x05\0\x02\x03\0\0\x08material\x01B.\x02\x03\x02\x01\x01\x04\0\x08\
 material\x03\0\0\x04\0\x09primitive\x03\x01\x04\0\x04mesh\x03\x01\x01h\x02\x01@\x01\
 \x04self\x04\0y\x04\0\x14[method]primitive.id\x01\x05\x01i\x01\x01k\x06\x01@\x01\
 \x04self\x04\0\x07\x04\0\x1a[method]primitive.material\x01\x08\x01h\x01\x01k\x09\
@@ -1123,16 +1123,16 @@ mitives\x01\x16\x01@\x01\x04self\x10\0\x14\x04\0\x1d[method]mesh.create-primitiv
 e\x01\x17\x01@\x02\x04self\x10\x05value\x14\x01\0\x04\0\x1d[method]mesh.remove-p\
 rimitive\x01\x18\x01i\x03\x01p\x19\x01@\0\0\x1a\x04\0\x0blist-meshes\x01\x1b\x01\
 @\0\0\x19\x04\0\x0bcreate-mesh\x01\x1c\x01@\x01\x05value\x19\x01\0\x04\0\x0bremo\
-ve-mesh\x01\x1d\x03\x01\x0fwired:gltf/mesh\x05\x02\x01B\x06\x01r\x03\x01xv\x01yv\
-\x01zv\x04\0\x04vec3\x03\0\0\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\
-\x02\x01r\x03\x08rotation\x03\x05scale\x01\x0btranslation\x01\x04\0\x09transform\
-\x03\0\x04\x03\x01\x10wired:math/types\x05\x03\x02\x03\0\x01\x04mesh\x02\x03\0\x02\
-\x04vec3\x01B\x09\x02\x03\x02\x01\x04\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x05\x04\
-\0\x04vec3\x03\0\x02\x01i\x01\x01@\x01\x04size\x03\0\x04\x04\0\x0dcreate-cuboid\x01\
-\x05\x01@\x03\x06radiusv\x07sectorsy\x06stacksy\0\x04\x04\0\x0dcreate-sphere\x01\
-\x06\x04\x01\x10unavi:shapes/api\x05\x06\x04\x01\x13unavi:shapes/shapes\x04\0\x0b\
-\x0c\x01\0\x06shapes\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-comp\
-onent\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+ve-mesh\x01\x1d\x03\x01\x10wired:scene/mesh\x05\x02\x01B\x06\x01r\x03\x01xv\x01y\
+v\x01zv\x04\0\x04vec3\x03\0\0\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\
+\0\x02\x01r\x03\x08rotation\x03\x05scale\x01\x0btranslation\x01\x04\0\x09transfo\
+rm\x03\0\x04\x03\x01\x10wired:math/types\x05\x03\x02\x03\0\x01\x04mesh\x02\x03\0\
+\x02\x04vec3\x01B\x09\x02\x03\x02\x01\x04\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x05\
+\x04\0\x04vec3\x03\0\x02\x01i\x01\x01@\x01\x04size\x03\0\x04\x04\0\x0dcreate-cub\
+oid\x01\x05\x01@\x03\x06radiusv\x07sectorsy\x06stacksy\0\x04\x04\0\x0dcreate-sph\
+ere\x01\x06\x04\x01\x10unavi:shapes/api\x05\x06\x04\x01\x13unavi:shapes/shapes\x04\
+\0\x0b\x0c\x01\0\x06shapes\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwi\
+t-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

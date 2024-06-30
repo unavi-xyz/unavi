@@ -4,12 +4,12 @@ use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
     unavi::shapes::api::create_cuboid,
     wired::{
-        gltf::{
+        log::api::{log, LogLevel},
+        math::types::Vec3,
+        scene::{
             material::{create_material, Color, Material},
             node::{create_node, Node},
         },
-        log::api::{log, LogLevel},
-        math::types::Vec3,
     },
 };
 

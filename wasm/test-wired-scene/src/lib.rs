@@ -8,7 +8,7 @@ mod material;
 mod mesh;
 mod node;
 mod property_tests;
-mod wired_gltf_impls;
+mod wired_scene_impls;
 mod wired_math_impls;
 
 #[derive(Default)]

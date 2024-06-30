@@ -2,9 +2,9 @@ use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
     unavi::shapes::api::{create_cuboid, create_sphere},
     wired::{
-        gltf::node::create_node,
         math::types::Vec3,
         physics::types::{Collider, RigidBody, RigidBodyType, Shape, Sphere},
+        scene::node::create_node,
     },
 };
 

@@ -8,8 +8,8 @@ mod material;
 mod mesh;
 mod node;
 mod property_tests;
-mod wired_scene_impls;
 mod wired_math_impls;
+mod wired_scene_impls;
 
 #[derive(Default)]
 struct Script {}

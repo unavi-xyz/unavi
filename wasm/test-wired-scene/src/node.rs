@@ -1,10 +1,10 @@
 use crate::{
     bindings::wired::{
+        log::api::{log, LogLevel},
         scene::{
             mesh::{create_mesh, remove_mesh},
             node::{create_node, list_nodes, remove_node, Node, Transform},
         },
-        log::api::{log, LogLevel},
     },
     panic_log,
     property_tests::{test_property, Property},

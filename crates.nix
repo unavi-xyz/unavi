@@ -139,7 +139,8 @@ let
   cargoArtifacts = craneLib.buildDepsOnly commonArgs;
   cargoClippy = craneLib.cargoClippy (commonArgs // { inherit cargoArtifacts; });
   cargoDoc = craneLib.cargoDoc (commonArgs // { inherit cargoArtifacts; });
-  cargoFmt = craneLib.cargoFmt commonArgs;
+  cargoFmt = craneLib.cargoFmt (commonArgs // { inherit cargoArtifacts; });
+  cargoTarpaulin = craneLib.cargoTarpaulin (commonArgs // { inherit cargoArtifacts; });
 
   worldHostDid = "did:web:localhost%3A3000";
 
@@ -182,7 +183,12 @@ in
     default = app;
   };
   checks = {
-    inherit cargoClippy cargoDoc cargoFmt;
+    inherit
+      cargoClippy
+      cargoDoc
+      cargoFmt
+      cargoTarpaulin
+      ;
   };
   packages = {
     inherit unavi-app unavi-server unavi-web;

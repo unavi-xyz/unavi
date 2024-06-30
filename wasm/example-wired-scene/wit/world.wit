@@ -1,11 +1,7 @@
 package example:wired-scene;
 
 world script {
-    include wired:script/script; 
+    include wired:prelude/script; 
 
     import unavi:shapes/api;
-    import wired:scene/material;
-    import wired:scene/mesh;
-    import wired:scene/node;
-    import wired:log/api;
 }

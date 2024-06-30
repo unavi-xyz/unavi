@@ -6,5 +6,4 @@ world script {
     import unavi:shapes/api;
     import wired:gltf/node;
     import wired:log/api;
-    import wired:physics/types;
 }

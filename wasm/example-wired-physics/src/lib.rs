@@ -20,7 +20,7 @@ impl GuestScript for Script {
         let size = Vec3::new(10.0, 0.5, 10.0);
 
         let node = create_node();
-        let mesh = create_cuboid(size.clone());
+        let mesh = create_cuboid(size);
         node.set_mesh(Some(&mesh));
 
         let collider = Collider::new(Shape::Cuboid(size));

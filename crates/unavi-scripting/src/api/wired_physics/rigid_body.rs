@@ -8,7 +8,7 @@ use super::wired::{
 };
 
 pub struct RigidBody {
-    rigid_body_type: RigidBodyType,
+    pub rigid_body_type: RigidBodyType,
 }
 
 impl RigidBody {

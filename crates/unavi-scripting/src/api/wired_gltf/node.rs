@@ -5,7 +5,10 @@ use crate::{
     actions::ScriptAction,
     api::{
         wired_input::spatial_handler::SpatialHandler,
-        wired_physics::wired::physics::types::{Cuboid, Shape, Sphere},
+        wired_physics::wired::{
+            math::types::Vec3,
+            physics::types::{RigidBodyType, Shape, Sphere},
+        },
     },
     state::StoreState,
 };
@@ -180,11 +183,7 @@ impl HostNode for StoreState {
 
             let collider = match collider.shape {
                 Shape::Sphere(Sphere { radius }) => bevy_xpbd_3d::prelude::Collider::sphere(radius),
-                Shape::Cuboid(Cuboid {
-                    x_len,
-                    y_len,
-                    z_len,
-                }) => bevy_xpbd_3d::prelude::Collider::cuboid(x_len, y_len, z_len),
+                Shape::Cuboid(Vec3 { x, y, z }) => bevy_xpbd_3d::prelude::Collider::cuboid(x, y, z),
             };
 
             self.sender.send(ScriptAction::SetNodeCollider {
@@ -220,6 +219,26 @@ impl HostNode for StoreState {
         self_: Resource<Node>,
         value: Option<Resource<RigidBody>>,
     ) -> wasm_bridge::Result<()> {
+        if let Some(value) = &value {
+            let rigid_body = self.table.get(value)?;
+
+            let rigid_body = match rigid_body.rigid_body_type {
+                RigidBodyType::Dynamic => bevy_xpbd_3d::prelude::RigidBody::Dynamic,
+                RigidBodyType::Fixed => bevy_xpbd_3d::prelude::RigidBody::Static,
+                RigidBodyType::Kinematic => bevy_xpbd_3d::prelude::RigidBody::Kinematic,
+            };
+
+            self.sender.send(ScriptAction::SetNodeRigidBody {
+                id: self_.rep(),
+                rigid_body: Some(rigid_body),
+            })?;
+        } else {
+            self.sender.send(ScriptAction::SetNodeRigidBody {
+                id: self_.rep(),
+                rigid_body: None,
+            })?;
+        }
+
         let node = self.table.get_mut(&self_)?;
         node.rigid_body = value;
         Ok(())

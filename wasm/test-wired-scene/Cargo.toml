@@ -19,8 +19,10 @@ unavi-scripting = { path = "../../crates/unavi-scripting" }
 package = "test:wired-scene"
 
 [package.metadata.component.target.dependencies]
-"wired:scene" = { path = "../../wired-protocol/spatial/wit/wired-scene" }
+"wired:input" = { path = "../../wired-protocol/spatial/wit/wired-input" }
 "wired:log" = { path = "../../wired-protocol/spatial/wit/wired-log" }
 "wired:math" = { path = "../../wired-protocol/spatial/wit/wired-math" }
 "wired:physics" = { path = "../../wired-protocol/spatial/wit/wired-physics" }
+"wired:prelude" = { path = "../../wired-protocol/spatial/wit/wired-prelude" }
+"wired:scene" = { path = "../../wired-protocol/spatial/wit/wired-scene" }
 "wired:script" = { path = "../../wired-protocol/spatial/wit/wired-script" }

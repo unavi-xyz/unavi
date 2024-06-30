@@ -16,9 +16,10 @@ package = "example:wired-input"
 
 [package.metadata.component.target.dependencies]
 "unavi:shapes" = { path = "../unavi-shapes/wit" }
-"wired:scene" = { path = "../../wired-protocol/spatial/wit/wired-scene" }
 "wired:input" = { path = "../../wired-protocol/spatial/wit/wired-input" }
 "wired:log" = { path = "../../wired-protocol/spatial/wit/wired-log" }
 "wired:math" = { path = "../../wired-protocol/spatial/wit/wired-math" }
 "wired:physics" = { path = "../../wired-protocol/spatial/wit/wired-physics" }
+"wired:prelude" = { path = "../../wired-protocol/spatial/wit/wired-prelude" }
+"wired:scene" = { path = "../../wired-protocol/spatial/wit/wired-scene" }
 "wired:script" = { path = "../../wired-protocol/spatial/wit/wired-script" }

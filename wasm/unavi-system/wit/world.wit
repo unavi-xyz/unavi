@@ -1,10 +1,5 @@
 package unavi:system;
 
 world script {
-    include wired:script/script; 
-
-    import wired:scene/material;
-    import wired:scene/mesh;
-    import wired:scene/node;
-    import wired:log/api;
+    include wired:prelude/script; 
 }

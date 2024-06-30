@@ -70,6 +70,903 @@ pub mod unavi {
 #[allow(dead_code)]
 pub mod wired {
     #[allow(dead_code)]
+    pub mod input {
+        #[allow(dead_code, clippy::all)]
+        pub mod types {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            pub type Vec3 = super::super::super::wired::math::types::Vec3;
+            pub type Quat = super::super::super::wired::math::types::Quat;
+            #[repr(u8)]
+            #[derive(Clone, Copy, Eq, PartialEq)]
+            pub enum HandSide {
+                Left,
+                Right,
+            }
+            impl ::core::fmt::Debug for HandSide {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        HandSide::Left => f.debug_tuple("HandSide::Left").finish(),
+                        HandSide::Right => f.debug_tuple("HandSide::Right").finish(),
+                    }
+                }
+            }
+
+            impl HandSide {
+                #[doc(hidden)]
+                pub unsafe fn _lift(val: u8) -> HandSide {
+                    if !cfg!(debug_assertions) {
+                        return ::core::mem::transmute(val);
+                    }
+
+                    match val {
+                        0 => HandSide::Left,
+                        1 => HandSide::Right,
+
+                        _ => panic!("invalid enum discriminant"),
+                    }
+                }
+            }
+
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            pub struct Joint {
+                pub translation: Vec3,
+                pub rotation: Quat,
+                pub radius: f32,
+            }
+            impl ::core::fmt::Debug for Joint {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("Joint")
+                        .field("translation", &self.translation)
+                        .field("rotation", &self.rotation)
+                        .field("radius", &self.radius)
+                        .finish()
+                }
+            }
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            pub struct Finger {
+                pub tip: Joint,
+                pub distal: Joint,
+                pub proximal: Joint,
+                pub metacarpal: Joint,
+            }
+            impl ::core::fmt::Debug for Finger {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("Finger")
+                        .field("tip", &self.tip)
+                        .field("distal", &self.distal)
+                        .field("proximal", &self.proximal)
+                        .field("metacarpal", &self.metacarpal)
+                        .finish()
+                }
+            }
+            /// Hand tracking data.
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            pub struct Hand {
+                pub side: HandSide,
+                pub thumb: Finger,
+                pub index: Finger,
+                pub middle: Finger,
+                pub ring: Finger,
+                pub little: Finger,
+                pub palm: Joint,
+                pub wrist: Joint,
+                pub elbow: Option<Joint>,
+            }
+            impl ::core::fmt::Debug for Hand {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("Hand")
+                        .field("side", &self.side)
+                        .field("thumb", &self.thumb)
+                        .field("index", &self.index)
+                        .field("middle", &self.middle)
+                        .field("ring", &self.ring)
+                        .field("little", &self.little)
+                        .field("palm", &self.palm)
+                        .field("wrist", &self.wrist)
+                        .field("elbow", &self.elbow)
+                        .finish()
+                }
+            }
+            /// A line with an origin and a direction.
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            pub struct Ray {
+                pub origin: Vec3,
+                pub orientation: Quat,
+            }
+            impl ::core::fmt::Debug for Ray {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("Ray")
+                        .field("origin", &self.origin)
+                        .field("orientation", &self.orientation)
+                        .finish()
+                }
+            }
+            /// A single point of interaction, such as the tip of a stylus.
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            pub struct Tip {
+                pub origin: Vec3,
+                pub orientation: Quat,
+                pub radius: f32,
+            }
+            impl ::core::fmt::Debug for Tip {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("Tip")
+                        .field("origin", &self.origin)
+                        .field("orientation", &self.orientation)
+                        .field("radius", &self.radius)
+                        .finish()
+                }
+            }
+            #[derive(Clone, Copy)]
+            pub enum InputType {
+                Hand(Hand),
+                Ray(Ray),
+                Tip(Tip),
+            }
+            impl ::core::fmt::Debug for InputType {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        InputType::Hand(e) => f.debug_tuple("InputType::Hand").field(e).finish(),
+                        InputType::Ray(e) => f.debug_tuple("InputType::Ray").field(e).finish(),
+                        InputType::Tip(e) => f.debug_tuple("InputType::Tip").field(e).finish(),
+                    }
+                }
+            }
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            pub struct InputEvent {
+                /// Unique id for the event.
+                pub id: u64,
+                /// Spatial input data.
+                pub input: InputType,
+                /// Distance from the input method to the handler.
+                pub distance: f32,
+                /// How many handlers received the event before this one.
+                pub order: u32,
+            }
+            impl ::core::fmt::Debug for InputEvent {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("InputEvent")
+                        .field("id", &self.id)
+                        .field("input", &self.input)
+                        .field("distance", &self.distance)
+                        .field("order", &self.order)
+                        .finish()
+                }
+            }
+        }
+
+        #[allow(dead_code, clippy::all)]
+        pub mod handler {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            pub type InputEvent = super::super::super::wired::input::types::InputEvent;
+            pub type Node = super::super::super::wired::scene::node::Node;
+            /// Input handler.
+            /// Represents an object in 3D space that can react to input.
+            /// Handlers can optionally capture the input method, stopping propagation to other handlers.
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct SpatialHandler {
+                handle: _rt::Resource<SpatialHandler>,
+            }
+
+            impl SpatialHandler {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for SpatialHandler {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wired:input/handler")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]spatial-handler"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            impl SpatialHandler {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn new(node: &Node) -> Self {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:input/handler")]
+                        extern "C" {
+                            #[link_name = "[constructor]spatial-handler"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((node).handle() as i32);
+                        SpatialHandler::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl SpatialHandler {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Handle the next recieved input event.
+                /// Events only last for one tick.
+                pub fn handle_input(&self) -> Option<InputEvent> {
+                    unsafe {
+                        #[repr(align(8))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 776]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 776]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:input/handler")]
+                        extern "C" {
+                            #[link_name = "[method]spatial-handler.handle-input"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    let l2 = *ptr0.add(8).cast::<i64>();
+                                    let l3 = i32::from(*ptr0.add(16).cast::<u8>());
+                                    use super::super::super::wired::input::types::InputType as V205;
+                                    let v205 = match l3 {
+                                        0 => {
+                                            let e205 = {
+                                                let l4 = i32::from(*ptr0.add(20).cast::<u8>());
+                                                let l5 = *ptr0.add(24).cast::<f32>();
+                                                let l6 = *ptr0.add(28).cast::<f32>();
+                                                let l7 = *ptr0.add(32).cast::<f32>();
+                                                let l8 = *ptr0.add(36).cast::<f32>();
+                                                let l9 = *ptr0.add(40).cast::<f32>();
+                                                let l10 = *ptr0.add(44).cast::<f32>();
+                                                let l11 = *ptr0.add(48).cast::<f32>();
+                                                let l12 = *ptr0.add(52).cast::<f32>();
+                                                let l13 = *ptr0.add(56).cast::<f32>();
+                                                let l14 = *ptr0.add(60).cast::<f32>();
+                                                let l15 = *ptr0.add(64).cast::<f32>();
+                                                let l16 = *ptr0.add(68).cast::<f32>();
+                                                let l17 = *ptr0.add(72).cast::<f32>();
+                                                let l18 = *ptr0.add(76).cast::<f32>();
+                                                let l19 = *ptr0.add(80).cast::<f32>();
+                                                let l20 = *ptr0.add(84).cast::<f32>();
+                                                let l21 = *ptr0.add(88).cast::<f32>();
+                                                let l22 = *ptr0.add(92).cast::<f32>();
+                                                let l23 = *ptr0.add(96).cast::<f32>();
+                                                let l24 = *ptr0.add(100).cast::<f32>();
+                                                let l25 = *ptr0.add(104).cast::<f32>();
+                                                let l26 = *ptr0.add(108).cast::<f32>();
+                                                let l27 = *ptr0.add(112).cast::<f32>();
+                                                let l28 = *ptr0.add(116).cast::<f32>();
+                                                let l29 = *ptr0.add(120).cast::<f32>();
+                                                let l30 = *ptr0.add(124).cast::<f32>();
+                                                let l31 = *ptr0.add(128).cast::<f32>();
+                                                let l32 = *ptr0.add(132).cast::<f32>();
+                                                let l33 = *ptr0.add(136).cast::<f32>();
+                                                let l34 = *ptr0.add(140).cast::<f32>();
+                                                let l35 = *ptr0.add(144).cast::<f32>();
+                                                let l36 = *ptr0.add(148).cast::<f32>();
+                                                let l37 = *ptr0.add(152).cast::<f32>();
+                                                let l38 = *ptr0.add(156).cast::<f32>();
+                                                let l39 = *ptr0.add(160).cast::<f32>();
+                                                let l40 = *ptr0.add(164).cast::<f32>();
+                                                let l41 = *ptr0.add(168).cast::<f32>();
+                                                let l42 = *ptr0.add(172).cast::<f32>();
+                                                let l43 = *ptr0.add(176).cast::<f32>();
+                                                let l44 = *ptr0.add(180).cast::<f32>();
+                                                let l45 = *ptr0.add(184).cast::<f32>();
+                                                let l46 = *ptr0.add(188).cast::<f32>();
+                                                let l47 = *ptr0.add(192).cast::<f32>();
+                                                let l48 = *ptr0.add(196).cast::<f32>();
+                                                let l49 = *ptr0.add(200).cast::<f32>();
+                                                let l50 = *ptr0.add(204).cast::<f32>();
+                                                let l51 = *ptr0.add(208).cast::<f32>();
+                                                let l52 = *ptr0.add(212).cast::<f32>();
+                                                let l53 = *ptr0.add(216).cast::<f32>();
+                                                let l54 = *ptr0.add(220).cast::<f32>();
+                                                let l55 = *ptr0.add(224).cast::<f32>();
+                                                let l56 = *ptr0.add(228).cast::<f32>();
+                                                let l57 = *ptr0.add(232).cast::<f32>();
+                                                let l58 = *ptr0.add(236).cast::<f32>();
+                                                let l59 = *ptr0.add(240).cast::<f32>();
+                                                let l60 = *ptr0.add(244).cast::<f32>();
+                                                let l61 = *ptr0.add(248).cast::<f32>();
+                                                let l62 = *ptr0.add(252).cast::<f32>();
+                                                let l63 = *ptr0.add(256).cast::<f32>();
+                                                let l64 = *ptr0.add(260).cast::<f32>();
+                                                let l65 = *ptr0.add(264).cast::<f32>();
+                                                let l66 = *ptr0.add(268).cast::<f32>();
+                                                let l67 = *ptr0.add(272).cast::<f32>();
+                                                let l68 = *ptr0.add(276).cast::<f32>();
+                                                let l69 = *ptr0.add(280).cast::<f32>();
+                                                let l70 = *ptr0.add(284).cast::<f32>();
+                                                let l71 = *ptr0.add(288).cast::<f32>();
+                                                let l72 = *ptr0.add(292).cast::<f32>();
+                                                let l73 = *ptr0.add(296).cast::<f32>();
+                                                let l74 = *ptr0.add(300).cast::<f32>();
+                                                let l75 = *ptr0.add(304).cast::<f32>();
+                                                let l76 = *ptr0.add(308).cast::<f32>();
+                                                let l77 = *ptr0.add(312).cast::<f32>();
+                                                let l78 = *ptr0.add(316).cast::<f32>();
+                                                let l79 = *ptr0.add(320).cast::<f32>();
+                                                let l80 = *ptr0.add(324).cast::<f32>();
+                                                let l81 = *ptr0.add(328).cast::<f32>();
+                                                let l82 = *ptr0.add(332).cast::<f32>();
+                                                let l83 = *ptr0.add(336).cast::<f32>();
+                                                let l84 = *ptr0.add(340).cast::<f32>();
+                                                let l85 = *ptr0.add(344).cast::<f32>();
+                                                let l86 = *ptr0.add(348).cast::<f32>();
+                                                let l87 = *ptr0.add(352).cast::<f32>();
+                                                let l88 = *ptr0.add(356).cast::<f32>();
+                                                let l89 = *ptr0.add(360).cast::<f32>();
+                                                let l90 = *ptr0.add(364).cast::<f32>();
+                                                let l91 = *ptr0.add(368).cast::<f32>();
+                                                let l92 = *ptr0.add(372).cast::<f32>();
+                                                let l93 = *ptr0.add(376).cast::<f32>();
+                                                let l94 = *ptr0.add(380).cast::<f32>();
+                                                let l95 = *ptr0.add(384).cast::<f32>();
+                                                let l96 = *ptr0.add(388).cast::<f32>();
+                                                let l97 = *ptr0.add(392).cast::<f32>();
+                                                let l98 = *ptr0.add(396).cast::<f32>();
+                                                let l99 = *ptr0.add(400).cast::<f32>();
+                                                let l100 = *ptr0.add(404).cast::<f32>();
+                                                let l101 = *ptr0.add(408).cast::<f32>();
+                                                let l102 = *ptr0.add(412).cast::<f32>();
+                                                let l103 = *ptr0.add(416).cast::<f32>();
+                                                let l104 = *ptr0.add(420).cast::<f32>();
+                                                let l105 = *ptr0.add(424).cast::<f32>();
+                                                let l106 = *ptr0.add(428).cast::<f32>();
+                                                let l107 = *ptr0.add(432).cast::<f32>();
+                                                let l108 = *ptr0.add(436).cast::<f32>();
+                                                let l109 = *ptr0.add(440).cast::<f32>();
+                                                let l110 = *ptr0.add(444).cast::<f32>();
+                                                let l111 = *ptr0.add(448).cast::<f32>();
+                                                let l112 = *ptr0.add(452).cast::<f32>();
+                                                let l113 = *ptr0.add(456).cast::<f32>();
+                                                let l114 = *ptr0.add(460).cast::<f32>();
+                                                let l115 = *ptr0.add(464).cast::<f32>();
+                                                let l116 = *ptr0.add(468).cast::<f32>();
+                                                let l117 = *ptr0.add(472).cast::<f32>();
+                                                let l118 = *ptr0.add(476).cast::<f32>();
+                                                let l119 = *ptr0.add(480).cast::<f32>();
+                                                let l120 = *ptr0.add(484).cast::<f32>();
+                                                let l121 = *ptr0.add(488).cast::<f32>();
+                                                let l122 = *ptr0.add(492).cast::<f32>();
+                                                let l123 = *ptr0.add(496).cast::<f32>();
+                                                let l124 = *ptr0.add(500).cast::<f32>();
+                                                let l125 = *ptr0.add(504).cast::<f32>();
+                                                let l126 = *ptr0.add(508).cast::<f32>();
+                                                let l127 = *ptr0.add(512).cast::<f32>();
+                                                let l128 = *ptr0.add(516).cast::<f32>();
+                                                let l129 = *ptr0.add(520).cast::<f32>();
+                                                let l130 = *ptr0.add(524).cast::<f32>();
+                                                let l131 = *ptr0.add(528).cast::<f32>();
+                                                let l132 = *ptr0.add(532).cast::<f32>();
+                                                let l133 = *ptr0.add(536).cast::<f32>();
+                                                let l134 = *ptr0.add(540).cast::<f32>();
+                                                let l135 = *ptr0.add(544).cast::<f32>();
+                                                let l136 = *ptr0.add(548).cast::<f32>();
+                                                let l137 = *ptr0.add(552).cast::<f32>();
+                                                let l138 = *ptr0.add(556).cast::<f32>();
+                                                let l139 = *ptr0.add(560).cast::<f32>();
+                                                let l140 = *ptr0.add(564).cast::<f32>();
+                                                let l141 = *ptr0.add(568).cast::<f32>();
+                                                let l142 = *ptr0.add(572).cast::<f32>();
+                                                let l143 = *ptr0.add(576).cast::<f32>();
+                                                let l144 = *ptr0.add(580).cast::<f32>();
+                                                let l145 = *ptr0.add(584).cast::<f32>();
+                                                let l146 = *ptr0.add(588).cast::<f32>();
+                                                let l147 = *ptr0.add(592).cast::<f32>();
+                                                let l148 = *ptr0.add(596).cast::<f32>();
+                                                let l149 = *ptr0.add(600).cast::<f32>();
+                                                let l150 = *ptr0.add(604).cast::<f32>();
+                                                let l151 = *ptr0.add(608).cast::<f32>();
+                                                let l152 = *ptr0.add(612).cast::<f32>();
+                                                let l153 = *ptr0.add(616).cast::<f32>();
+                                                let l154 = *ptr0.add(620).cast::<f32>();
+                                                let l155 = *ptr0.add(624).cast::<f32>();
+                                                let l156 = *ptr0.add(628).cast::<f32>();
+                                                let l157 = *ptr0.add(632).cast::<f32>();
+                                                let l158 = *ptr0.add(636).cast::<f32>();
+                                                let l159 = *ptr0.add(640).cast::<f32>();
+                                                let l160 = *ptr0.add(644).cast::<f32>();
+                                                let l161 = *ptr0.add(648).cast::<f32>();
+                                                let l162 = *ptr0.add(652).cast::<f32>();
+                                                let l163 = *ptr0.add(656).cast::<f32>();
+                                                let l164 = *ptr0.add(660).cast::<f32>();
+                                                let l165 = *ptr0.add(664).cast::<f32>();
+                                                let l166 = *ptr0.add(668).cast::<f32>();
+                                                let l167 = *ptr0.add(672).cast::<f32>();
+                                                let l168 = *ptr0.add(676).cast::<f32>();
+                                                let l169 = *ptr0.add(680).cast::<f32>();
+                                                let l170 = *ptr0.add(684).cast::<f32>();
+                                                let l171 = *ptr0.add(688).cast::<f32>();
+                                                let l172 = *ptr0.add(692).cast::<f32>();
+                                                let l173 = *ptr0.add(696).cast::<f32>();
+                                                let l174 = *ptr0.add(700).cast::<f32>();
+                                                let l175 = *ptr0.add(704).cast::<f32>();
+                                                let l176 = *ptr0.add(708).cast::<f32>();
+                                                let l177 = *ptr0.add(712).cast::<f32>();
+                                                let l178 = *ptr0.add(716).cast::<f32>();
+                                                let l179 = *ptr0.add(720).cast::<f32>();
+                                                let l180 = *ptr0.add(724).cast::<f32>();
+                                                let l181 = i32::from(*ptr0.add(728).cast::<u8>());
+
+                                                super::super::super::wired::input::types::Hand{
+                          side: super::super::super::wired::input::types::HandSide::_lift(l4 as u8),
+                          thumb: super::super::super::wired::input::types::Finger{
+                            tip: super::super::super::wired::input::types::Joint{
+                              translation: super::super::super::wired::math::types::Vec3{
+                                x: l5,
+                                y: l6,
+                                z: l7,
+                              },
+                              rotation: super::super::super::wired::math::types::Quat{
+                                x: l8,
+                                y: l9,
+                                z: l10,
+                                w: l11,
+                              },
+                              radius: l12,
+                            },
+                            distal: super::super::super::wired::input::types::Joint{
+                              translation: super::super::super::wired::math::types::Vec3{
+                                x: l13,
+                                y: l14,
+                                z: l15,
+                              },
+                              rotation: super::super::super::wired::math::types::Quat{
+                                x: l16,
+                                y: l17,
+                                z: l18,
+                                w: l19,
+                              },
+                              radius: l20,
+                            },
+                            proximal: super::super::super::wired::input::types::Joint{
+                              translation: super::super::super::wired::math::types::Vec3{
+                                x: l21,
+                                y: l22,
+                                z: l23,
+                              },
+                              rotation: super::super::super::wired::math::types::Quat{
+                                x: l24,
+                                y: l25,
+                                z: l26,
+                                w: l27,
+                              },
+                              radius: l28,
+                            },
+                            metacarpal: super::super::super::wired::input::types::Joint{
+                              translation: super::super::super::wired::math::types::Vec3{
+                                x: l29,
+                                y: l30,
+                                z: l31,
+                              },
+                              rotation: super::super::super::wired::math::types::Quat{
+                                x: l32,
+                                y: l33,
+                                z: l34,
+                                w: l35,
+                              },
+                              radius: l36,
+                            },
+                          },
+                          index: super::super::super::wired::input::types::Finger{
+                            tip: super::super::super::wired::input::types::Joint{
+                              translation: super::super::super::wired::math::types::Vec3{
+                                x: l37,
+                                y: l38,
+                                z: l39,
+                              },
+                              rotation: super::super::super::wired::math::types::Quat{
+                                x: l40,
+                                y: l41,
+                                z: l42,
+                                w: l43,
+                              },
+                              radius: l44,
+                            },
+                            distal: super::super::super::wired::input::types::Joint{
+                              translation: super::super::super::wired::math::types::Vec3{
+                                x: l45,
+                                y: l46,
+                                z: l47,
+                              },
+                              rotation: super::super::super::wired::math::types::Quat{
+                                x: l48,
+                                y: l49,
+                                z: l50,
+                                w: l51,
+                              },
+                              radius: l52,
+                            },
+                            proximal: super::super::super::wired::input::types::Joint{
+                              translation: super::super::super::wired::math::types::Vec3{
+                                x: l53,
+                                y: l54,
+                                z: l55,
+                              },
+                              rotation: super::super::super::wired::math::types::Quat{
+                                x: l56,
+                                y: l57,
+                                z: l58,
+                                w: l59,
+                              },
+                              radius: l60,
+                            },
+                            metacarpal: super::super::super::wired::input::types::Joint{
+                              translation: super::super::super::wired::math::types::Vec3{
+                                x: l61,
+                                y: l62,
+                                z: l63,
+                              },
+                              rotation: super::super::super::wired::math::types::Quat{
+                                x: l64,
+                                y: l65,
+                                z: l66,
+                                w: l67,
+                              },
+                              radius: l68,
+                            },
+                          },
+                          middle: super::super::super::wired::input::types::Finger{
+                            tip: super::super::super::wired::input::types::Joint{
+                              translation: super::super::super::wired::math::types::Vec3{
+                                x: l69,
+                                y: l70,
+                                z: l71,
+                              },
+                              rotation: super::super::super::wired::math::types::Quat{
+                                x: l72,
+                                y: l73,
+                                z: l74,
+                                w: l75,
+                              },
+                              radius: l76,
+                            },
+                            distal: super::super::super::wired::input::types::Joint{
+                              translation: super::super::super::wired::math::types::Vec3{
+                                x: l77,
+                                y: l78,
+                                z: l79,
+                              },
+                              rotation: super::super::super::wired::math::types::Quat{
+                                x: l80,
+                                y: l81,
+                                z: l82,
+                                w: l83,
+                              },
+                              radius: l84,
+                            },
+                            proximal: super::super::super::wired::input::types::Joint{
+                              translation: super::super::super::wired::math::types::Vec3{
+                                x: l85,
+                                y: l86,
+                                z: l87,
+                              },
+                              rotation: super::super::super::wired::math::types::Quat{
+                                x: l88,
+                                y: l89,
+                                z: l90,
+                                w: l91,
+                              },
+                              radius: l92,
+                            },
+                            metacarpal: super::super::super::wired::input::types::Joint{
+                              translation: super::super::super::wired::math::types::Vec3{
+                                x: l93,
+                                y: l94,
+                                z: l95,
+                              },
+                              rotation: super::super::super::wired::math::types::Quat{
+                                x: l96,
+                                y: l97,
+                                z: l98,
+                                w: l99,
+                              },
+                              radius: l100,
+                            },
+                          },
+                          ring: super::super::super::wired::input::types::Finger{
+                            tip: super::super::super::wired::input::types::Joint{
+                              translation: super::super::super::wired::math::types::Vec3{
+                                x: l101,
+                                y: l102,
+                                z: l103,
+                              },
+                              rotation: super::super::super::wired::math::types::Quat{
+                                x: l104,
+                                y: l105,
+                                z: l106,
+                                w: l107,
+                              },
+                              radius: l108,
+                            },
+                            distal: super::super::super::wired::input::types::Joint{
+                              translation: super::super::super::wired::math::types::Vec3{
+                                x: l109,
+                                y: l110,
+                                z: l111,
+                              },
+                              rotation: super::super::super::wired::math::types::Quat{
+                                x: l112,
+                                y: l113,
+                                z: l114,
+                                w: l115,
+                              },
+                              radius: l116,
+                            },
+                            proximal: super::super::super::wired::input::types::Joint{
+                              translation: super::super::super::wired::math::types::Vec3{
+                                x: l117,
+                                y: l118,
+                                z: l119,
+                              },
+                              rotation: super::super::super::wired::math::types::Quat{
+                                x: l120,
+                                y: l121,
+                                z: l122,
+                                w: l123,
+                              },
+                              radius: l124,
+                            },
+                            metacarpal: super::super::super::wired::input::types::Joint{
+                              translation: super::super::super::wired::math::types::Vec3{
+                                x: l125,
+                                y: l126,
+                                z: l127,
+                              },
+                              rotation: super::super::super::wired::math::types::Quat{
+                                x: l128,
+                                y: l129,
+                                z: l130,
+                                w: l131,
+                              },
+                              radius: l132,
+                            },
+                          },
+                          little: super::super::super::wired::input::types::Finger{
+                            tip: super::super::super::wired::input::types::Joint{
+                              translation: super::super::super::wired::math::types::Vec3{
+                                x: l133,
+                                y: l134,
+                                z: l135,
+                              },
+                              rotation: super::super::super::wired::math::types::Quat{
+                                x: l136,
+                                y: l137,
+                                z: l138,
+                                w: l139,
+                              },
+                              radius: l140,
+                            },
+                            distal: super::super::super::wired::input::types::Joint{
+                              translation: super::super::super::wired::math::types::Vec3{
+                                x: l141,
+                                y: l142,
+                                z: l143,
+                              },
+                              rotation: super::super::super::wired::math::types::Quat{
+                                x: l144,
+                                y: l145,
+                                z: l146,
+                                w: l147,
+                              },
+                              radius: l148,
+                            },
+                            proximal: super::super::super::wired::input::types::Joint{
+                              translation: super::super::super::wired::math::types::Vec3{
+                                x: l149,
+                                y: l150,
+                                z: l151,
+                              },
+                              rotation: super::super::super::wired::math::types::Quat{
+                                x: l152,
+                                y: l153,
+                                z: l154,
+                                w: l155,
+                              },
+                              radius: l156,
+                            },
+                            metacarpal: super::super::super::wired::input::types::Joint{
+                              translation: super::super::super::wired::math::types::Vec3{
+                                x: l157,
+                                y: l158,
+                                z: l159,
+                              },
+                              rotation: super::super::super::wired::math::types::Quat{
+                                x: l160,
+                                y: l161,
+                                z: l162,
+                                w: l163,
+                              },
+                              radius: l164,
+                            },
+                          },
+                          palm: super::super::super::wired::input::types::Joint{
+                            translation: super::super::super::wired::math::types::Vec3{
+                              x: l165,
+                              y: l166,
+                              z: l167,
+                            },
+                            rotation: super::super::super::wired::math::types::Quat{
+                              x: l168,
+                              y: l169,
+                              z: l170,
+                              w: l171,
+                            },
+                            radius: l172,
+                          },
+                          wrist: super::super::super::wired::input::types::Joint{
+                            translation: super::super::super::wired::math::types::Vec3{
+                              x: l173,
+                              y: l174,
+                              z: l175,
+                            },
+                            rotation: super::super::super::wired::math::types::Quat{
+                              x: l176,
+                              y: l177,
+                              z: l178,
+                              w: l179,
+                            },
+                            radius: l180,
+                          },
+                          elbow: match l181 {
+                            0 => None,
+                            1 => {
+                              let e = {
+                                let l182 = *ptr0.add(732).cast::<f32>();
+                                let l183 = *ptr0.add(736).cast::<f32>();
+                                let l184 = *ptr0.add(740).cast::<f32>();
+                                let l185 = *ptr0.add(744).cast::<f32>();
+                                let l186 = *ptr0.add(748).cast::<f32>();
+                                let l187 = *ptr0.add(752).cast::<f32>();
+                                let l188 = *ptr0.add(756).cast::<f32>();
+                                let l189 = *ptr0.add(760).cast::<f32>();
+
+                                super::super::super::wired::input::types::Joint{
+                                  translation: super::super::super::wired::math::types::Vec3{
+                                    x: l182,
+                                    y: l183,
+                                    z: l184,
+                                  },
+                                  rotation: super::super::super::wired::math::types::Quat{
+                                    x: l185,
+                                    y: l186,
+                                    z: l187,
+                                    w: l188,
+                                  },
+                                  radius: l189,
+                                }
+                              };
+                              Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                          },
+                        }
+                                            };
+                                            V205::Hand(e205)
+                                        }
+                                        1 => {
+                                            let e205 = {
+                                                let l190 = *ptr0.add(20).cast::<f32>();
+                                                let l191 = *ptr0.add(24).cast::<f32>();
+                                                let l192 = *ptr0.add(28).cast::<f32>();
+                                                let l193 = *ptr0.add(32).cast::<f32>();
+                                                let l194 = *ptr0.add(36).cast::<f32>();
+                                                let l195 = *ptr0.add(40).cast::<f32>();
+                                                let l196 = *ptr0.add(44).cast::<f32>();
+
+                                                super::super::super::wired::input::types::Ray{
+                          origin: super::super::super::wired::math::types::Vec3{
+                            x: l190,
+                            y: l191,
+                            z: l192,
+                          },
+                          orientation: super::super::super::wired::math::types::Quat{
+                            x: l193,
+                            y: l194,
+                            z: l195,
+                            w: l196,
+                          },
+                        }
+                                            };
+                                            V205::Ray(e205)
+                                        }
+                                        n => {
+                                            debug_assert_eq!(n, 2, "invalid enum discriminant");
+                                            let e205 = {
+                                                let l197 = *ptr0.add(20).cast::<f32>();
+                                                let l198 = *ptr0.add(24).cast::<f32>();
+                                                let l199 = *ptr0.add(28).cast::<f32>();
+                                                let l200 = *ptr0.add(32).cast::<f32>();
+                                                let l201 = *ptr0.add(36).cast::<f32>();
+                                                let l202 = *ptr0.add(40).cast::<f32>();
+                                                let l203 = *ptr0.add(44).cast::<f32>();
+                                                let l204 = *ptr0.add(48).cast::<f32>();
+
+                                                super::super::super::wired::input::types::Tip{
+                          origin: super::super::super::wired::math::types::Vec3{
+                            x: l197,
+                            y: l198,
+                            z: l199,
+                          },
+                          orientation: super::super::super::wired::math::types::Quat{
+                            x: l200,
+                            y: l201,
+                            z: l202,
+                            w: l203,
+                          },
+                          radius: l204,
+                        }
+                                            };
+                                            V205::Tip(e205)
+                                        }
+                                    };
+                                    let l206 = *ptr0.add(764).cast::<f32>();
+                                    let l207 = *ptr0.add(768).cast::<i32>();
+
+                                    super::super::super::wired::input::types::InputEvent {
+                                        id: l2 as u64,
+                                        input: v205,
+                                        distance: l206,
+                                        order: l207 as u32,
+                                    }
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+        }
+    }
+    #[allow(dead_code)]
     pub mod log {
         #[allow(dead_code, clippy::all)]
         pub mod api {
@@ -2493,9 +3390,9 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 3121] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xb4\x17\x01A\x02\x01\
-A\x16\x01B\x16\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 3767] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xba\x1c\x01A\x02\x01\
+A\x1d\x01B\x16\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
 material\x03\x01\x01h\x02\x01@\x01\x04self\x03\0y\x04\0\x13[method]material.id\x01\
 \x04\x01@\x01\x04self\x03\0s\x04\0\x15[method]material.name\x01\x05\x01@\x02\x04\
 self\x03\x05values\x01\0\x04\0\x19[method]material.set-name\x01\x06\x01@\x01\x04\
@@ -2526,46 +3423,61 @@ rm\x03\0\x04\x03\x01\x10wired:math/types\x05\x03\x02\x03\0\x01\x04mesh\x02\x03\0
 \x02\x04vec3\x01B\x09\x02\x03\x02\x01\x04\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x05\
 \x04\0\x04vec3\x03\0\x02\x01i\x01\x01@\x01\x04size\x03\0\x04\x04\0\x0dcreate-cub\
 oid\x01\x05\x01@\x03\x06radiusv\x07sectorsy\x06stacksy\0\x04\x04\0\x0dcreate-sph\
-ere\x01\x06\x03\x01\x10unavi:shapes/api\x05\x06\x01B\x1c\x02\x03\x02\x01\x05\x04\
-\0\x04vec3\x03\0\0\x04\0\x08collider\x03\x01\x01r\x01\x06radiusv\x04\0\x06sphere\
-\x03\0\x03\x01q\x02\x06cuboid\x01\x01\0\x06sphere\x01\x04\0\x04\0\x05shape\x03\0\
-\x05\x04\0\x0arigid-body\x03\x01\x01m\x03\x07dynamic\x05fixed\x09kinematic\x04\0\
-\x0frigid-body-type\x03\0\x08\x01i\x02\x01@\x01\x05shape\x06\0\x0a\x04\0\x15[con\
-structor]collider\x01\x0b\x01h\x02\x01@\x01\x04self\x0c\0v\x04\0\x18[method]coll\
-ider.density\x01\x0d\x01@\x02\x04self\x0c\x05valuev\x01\0\x04\0\x1c[method]colli\
-der.set-density\x01\x0e\x01i\x07\x01@\x01\x0frigid-body-type\x09\0\x0f\x04\0\x17\
-[constructor]rigid-body\x01\x10\x01h\x07\x01@\x01\x04self\x11\0\x01\x04\0\x19[me\
-thod]rigid-body.angvel\x01\x12\x01@\x02\x04self\x11\x05value\x01\x01\0\x04\0\x1d\
-[method]rigid-body.set-angvel\x01\x13\x04\0\x19[method]rigid-body.linvel\x01\x12\
-\x04\0\x1d[method]rigid-body.set-linvel\x01\x13\x03\x01\x13wired:physics/types\x05\
-\x07\x02\x03\0\x02\x09transform\x02\x03\0\x04\x08collider\x02\x03\0\x04\x0arigid\
--body\x01B<\x02\x03\x02\x01\x04\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x08\x04\0\x09\
-transform\x03\0\x02\x02\x03\x02\x01\x09\x04\0\x08collider\x03\0\x04\x02\x03\x02\x01\
-\x0a\x04\0\x0arigid-body\x03\0\x06\x04\0\x04node\x03\x01\x01h\x08\x01@\x01\x04se\
-lf\x09\0y\x04\0\x0f[method]node.id\x01\x0a\x01@\x01\x04self\x09\0s\x04\0\x11[met\
-hod]node.name\x01\x0b\x01@\x02\x04self\x09\x05values\x01\0\x04\0\x15[method]node\
-.set-name\x01\x0c\x01i\x08\x01p\x0d\x01@\x01\x04self\x09\0\x0e\x04\0\x15[method]\
-node.children\x01\x0f\x01@\x02\x04self\x09\x05value\x09\x01\0\x04\0\x16[method]n\
-ode.add-child\x01\x10\x04\0\x19[method]node.remove-child\x01\x10\x01k\x0d\x01@\x01\
-\x04self\x09\0\x11\x04\0\x13[method]node.parent\x01\x12\x01@\x01\x04self\x09\0\x03\
-\x04\0\x16[method]node.transform\x01\x13\x01@\x02\x04self\x09\x05value\x03\x01\0\
-\x04\0\x1a[method]node.set-transform\x01\x14\x01i\x01\x01k\x15\x01@\x01\x04self\x09\
-\0\x16\x04\0\x11[method]node.mesh\x01\x17\x01h\x01\x01k\x18\x01@\x02\x04self\x09\
-\x05value\x19\x01\0\x04\0\x15[method]node.set-mesh\x01\x1a\x01i\x05\x01k\x1b\x01\
-@\x01\x04self\x09\0\x1c\x04\0\x15[method]node.collider\x01\x1d\x01h\x05\x01k\x1e\
-\x01@\x02\x04self\x09\x05value\x1f\x01\0\x04\0\x19[method]node.set-collider\x01\x20\
-\x01i\x07\x01k!\x01@\x01\x04self\x09\0\"\x04\0\x17[method]node.rigid-body\x01#\x01\
-h\x07\x01k$\x01@\x02\x04self\x09\x05value%\x01\0\x04\0\x1b[method]node.set-rigid\
--body\x01&\x01@\0\0\x0e\x04\0\x0alist-nodes\x01'\x01@\0\0\x0d\x04\0\x0bcreate-no\
-de\x01(\x01@\x01\x05value\x0d\x01\0\x04\0\x0bremove-node\x01)\x03\x01\x10wired:s\
-cene/node\x05\x0b\x01B\x04\x01m\x04\x05debug\x04info\x04warn\x05error\x04\0\x09l\
-og-level\x03\0\0\x01@\x02\x05level\x01\x07messages\x01\0\x04\0\x03log\x01\x02\x03\
-\x01\x0dwired:log/api\x05\x0c\x01B\x07\x04\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\
-\x04\0\x13[constructor]script\x01\x02\x01h\0\x01@\x02\x04self\x03\x05deltav\x01\0\
-\x04\0\x15[method]script.update\x01\x04\x04\x01\x12wired:script/types\x05\x0d\x04\
-\x01\x1aexample:wired-scene/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09p\
-roducers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\
-\x060.25.0";
+ere\x01\x06\x03\x01\x10unavi:shapes/api\x05\x06\x02\x03\0\x02\x04quat\x01B\x15\x02\
+\x03\x02\x01\x05\x04\0\x04vec3\x03\0\0\x02\x03\x02\x01\x07\x04\0\x04quat\x03\0\x02\
+\x01m\x02\x04left\x05right\x04\0\x09hand-side\x03\0\x04\x01r\x03\x0btranslation\x01\
+\x08rotation\x03\x06radiusv\x04\0\x05joint\x03\0\x06\x01r\x04\x03tip\x07\x06dist\
+al\x07\x08proximal\x07\x0ametacarpal\x07\x04\0\x06finger\x03\0\x08\x01k\x07\x01r\
+\x09\x04side\x05\x05thumb\x09\x05index\x09\x06middle\x09\x04ring\x09\x06little\x09\
+\x04palm\x07\x05wrist\x07\x05elbow\x0a\x04\0\x04hand\x03\0\x0b\x01r\x02\x06origi\
+n\x01\x0borientation\x03\x04\0\x03ray\x03\0\x0d\x01r\x03\x06origin\x01\x0borient\
+ation\x03\x06radiusv\x04\0\x03tip\x03\0\x0f\x01q\x03\x04hand\x01\x0c\0\x03ray\x01\
+\x0e\0\x03tip\x01\x10\0\x04\0\x0ainput-type\x03\0\x11\x01r\x04\x02idw\x05input\x12\
+\x08distancev\x05ordery\x04\0\x0binput-event\x03\0\x13\x03\x01\x11wired:input/ty\
+pes\x05\x08\x01B\x1c\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\0\x04\0\x08collider\
+\x03\x01\x01r\x01\x06radiusv\x04\0\x06sphere\x03\0\x03\x01q\x02\x06cuboid\x01\x01\
+\0\x06sphere\x01\x04\0\x04\0\x05shape\x03\0\x05\x04\0\x0arigid-body\x03\x01\x01m\
+\x03\x07dynamic\x05fixed\x09kinematic\x04\0\x0frigid-body-type\x03\0\x08\x01i\x02\
+\x01@\x01\x05shape\x06\0\x0a\x04\0\x15[constructor]collider\x01\x0b\x01h\x02\x01\
+@\x01\x04self\x0c\0v\x04\0\x18[method]collider.density\x01\x0d\x01@\x02\x04self\x0c\
+\x05valuev\x01\0\x04\0\x1c[method]collider.set-density\x01\x0e\x01i\x07\x01@\x01\
+\x0frigid-body-type\x09\0\x0f\x04\0\x17[constructor]rigid-body\x01\x10\x01h\x07\x01\
+@\x01\x04self\x11\0\x01\x04\0\x19[method]rigid-body.angvel\x01\x12\x01@\x02\x04s\
+elf\x11\x05value\x01\x01\0\x04\0\x1d[method]rigid-body.set-angvel\x01\x13\x04\0\x19\
+[method]rigid-body.linvel\x01\x12\x04\0\x1d[method]rigid-body.set-linvel\x01\x13\
+\x03\x01\x13wired:physics/types\x05\x09\x02\x03\0\x02\x09transform\x02\x03\0\x05\
+\x08collider\x02\x03\0\x05\x0arigid-body\x01B<\x02\x03\x02\x01\x04\x04\0\x04mesh\
+\x03\0\0\x02\x03\x02\x01\x0a\x04\0\x09transform\x03\0\x02\x02\x03\x02\x01\x0b\x04\
+\0\x08collider\x03\0\x04\x02\x03\x02\x01\x0c\x04\0\x0arigid-body\x03\0\x06\x04\0\
+\x04node\x03\x01\x01h\x08\x01@\x01\x04self\x09\0y\x04\0\x0f[method]node.id\x01\x0a\
+\x01@\x01\x04self\x09\0s\x04\0\x11[method]node.name\x01\x0b\x01@\x02\x04self\x09\
+\x05values\x01\0\x04\0\x15[method]node.set-name\x01\x0c\x01i\x08\x01p\x0d\x01@\x01\
+\x04self\x09\0\x0e\x04\0\x15[method]node.children\x01\x0f\x01@\x02\x04self\x09\x05\
+value\x09\x01\0\x04\0\x16[method]node.add-child\x01\x10\x04\0\x19[method]node.re\
+move-child\x01\x10\x01k\x0d\x01@\x01\x04self\x09\0\x11\x04\0\x13[method]node.par\
+ent\x01\x12\x01@\x01\x04self\x09\0\x03\x04\0\x16[method]node.transform\x01\x13\x01\
+@\x02\x04self\x09\x05value\x03\x01\0\x04\0\x1a[method]node.set-transform\x01\x14\
+\x01i\x01\x01k\x15\x01@\x01\x04self\x09\0\x16\x04\0\x11[method]node.mesh\x01\x17\
+\x01h\x01\x01k\x18\x01@\x02\x04self\x09\x05value\x19\x01\0\x04\0\x15[method]node\
+.set-mesh\x01\x1a\x01i\x05\x01k\x1b\x01@\x01\x04self\x09\0\x1c\x04\0\x15[method]\
+node.collider\x01\x1d\x01h\x05\x01k\x1e\x01@\x02\x04self\x09\x05value\x1f\x01\0\x04\
+\0\x19[method]node.set-collider\x01\x20\x01i\x07\x01k!\x01@\x01\x04self\x09\0\"\x04\
+\0\x17[method]node.rigid-body\x01#\x01h\x07\x01k$\x01@\x02\x04self\x09\x05value%\
+\x01\0\x04\0\x1b[method]node.set-rigid-body\x01&\x01@\0\0\x0e\x04\0\x0alist-node\
+s\x01'\x01@\0\0\x0d\x04\0\x0bcreate-node\x01(\x01@\x01\x05value\x0d\x01\0\x04\0\x0b\
+remove-node\x01)\x03\x01\x10wired:scene/node\x05\x0d\x02\x03\0\x04\x0binput-even\
+t\x02\x03\0\x06\x04node\x01B\x0d\x02\x03\x02\x01\x0e\x04\0\x0binput-event\x03\0\0\
+\x02\x03\x02\x01\x0f\x04\0\x04node\x03\0\x02\x04\0\x0fspatial-handler\x03\x01\x01\
+h\x03\x01i\x04\x01@\x01\x04node\x05\0\x06\x04\0\x1c[constructor]spatial-handler\x01\
+\x07\x01h\x04\x01k\x01\x01@\x01\x04self\x08\0\x09\x04\0$[method]spatial-handler.\
+handle-input\x01\x0a\x03\x01\x13wired:input/handler\x05\x10\x01B\x04\x01m\x04\x05\
+debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\x07\
+messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x11\x01B\x07\x04\
+\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01\
+h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\
+\x01\x12wired:script/types\x05\x12\x04\x01\x1aexample:wired-scene/script\x04\0\x0b\
+\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-comp\
+onent\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::bindings::wired::gltf::{
+use crate::bindings::wired::scene::{
     material::Material,
     mesh::{Mesh, Primitive},
     node::Node,

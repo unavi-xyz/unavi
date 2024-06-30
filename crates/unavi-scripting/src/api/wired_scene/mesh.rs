@@ -3,7 +3,7 @@ use wasm_bridge::component::Resource;
 
 use crate::{actions::ScriptAction, state::StoreState};
 
-use super::wired::gltf::mesh::{Host, HostMesh, HostPrimitive, Material};
+use super::wired::scene::mesh::{Host, HostMesh, HostPrimitive, Material};
 
 #[derive(Default)]
 pub struct Mesh {

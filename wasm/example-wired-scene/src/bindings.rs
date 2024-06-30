@@ -2493,8 +2493,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 3123] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xb6\x17\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 3121] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xb4\x17\x01A\x02\x01\
 A\x16\x01B\x16\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
 material\x03\x01\x01h\x02\x01@\x01\x04self\x03\0y\x04\0\x13[method]material.id\x01\
 \x04\x01@\x01\x04self\x03\0s\x04\0\x15[method]material.name\x01\x05\x01@\x02\x04\
@@ -2563,9 +2563,9 @@ og-level\x03\0\0\x01@\x02\x05level\x01\x07messages\x01\0\x04\0\x03log\x01\x02\x0
 \x01\x0dwired:log/api\x05\x0c\x01B\x07\x04\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\
 \x04\0\x13[constructor]script\x01\x02\x01h\0\x01@\x02\x04self\x03\x05deltav\x01\0\
 \x04\0\x15[method]script.update\x01\x04\x04\x01\x12wired:script/types\x05\x0d\x04\
-\x01\x1cexample:wired-physics/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09\
-producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rus\
-t\x060.25.0";
+\x01\x1aexample:wired-scene/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09p\
+roducers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\
+\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

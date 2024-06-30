@@ -14,11 +14,11 @@ use crate::{
 };
 
 use super::wired::{
-    gltf::{
+    physics::types::{Collider, RigidBody},
+    scene::{
         mesh::Mesh,
         node::{Host, HostNode, Transform},
     },
-    physics::types::{Collider, RigidBody},
 };
 
 #[derive(Default)]

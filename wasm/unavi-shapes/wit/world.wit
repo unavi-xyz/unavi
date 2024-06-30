@@ -1,13 +1,13 @@
 package unavi:shapes;
 
 world shapes {
-    import wired:gltf/mesh;
+    import wired:scene/mesh;
 
     export api;
 }
 
 interface api {
-  use wired:gltf/mesh.{mesh};
+  use wired:scene/mesh.{mesh};
   use wired:math/types.{vec3};
 
   create-cuboid: func(size: vec3) -> mesh;

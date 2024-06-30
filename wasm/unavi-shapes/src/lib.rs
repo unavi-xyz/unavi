@@ -2,7 +2,7 @@ use attributes::set_attributes;
 use bindings::{
     exports::unavi::shapes::api::Guest,
     wired::{
-        gltf::mesh::{create_mesh, Mesh},
+        scene::mesh::{create_mesh, Mesh},
         math::types::Vec3,
     },
 };

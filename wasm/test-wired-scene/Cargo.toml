@@ -1,5 +1,5 @@
 [package]
-name = "example-wired-gltf"
+name = "test-wired-scene"
 version.workspace = true
 edition.workspace = true
 repository.workspace = true
@@ -9,15 +9,17 @@ license.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-glam = "0.28.0"
 wit-bindgen-rt.workspace = true
 
+[dev-dependencies]
+bevy.workspace = true
+unavi-scripting = { path = "../../crates/unavi-scripting" }
+
 [package.metadata.component]
-package = "example:wired-gltf"
+package = "test:wired-scene"
 
 [package.metadata.component.target.dependencies]
-"unavi:shapes" = { path = "../unavi-shapes/wit" }
-"wired:gltf" = { path = "../../wired-protocol/spatial/wit/wired-gltf" }
+"wired:scene" = { path = "../../wired-protocol/spatial/wit/wired-scene" }
 "wired:log" = { path = "../../wired-protocol/spatial/wit/wired-log" }
 "wired:math" = { path = "../../wired-protocol/spatial/wit/wired-math" }
 "wired:physics" = { path = "../../wired-protocol/spatial/wit/wired-physics" }

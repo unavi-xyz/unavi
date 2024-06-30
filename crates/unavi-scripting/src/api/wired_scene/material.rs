@@ -2,7 +2,7 @@ use wasm_bridge::component::Resource;
 
 use crate::{actions::ScriptAction, state::StoreState};
 
-use super::wired::gltf::material::{Color, Host, HostMaterial};
+use super::wired::scene::material::{Color, Host, HostMaterial};
 
 #[derive(Default)]
 pub struct Material {

@@ -1,4 +1,4 @@
-use crate::bindings::wired::{gltf::mesh::Primitive, math::types::Vec3};
+use crate::bindings::wired::{scene::mesh::Primitive, math::types::Vec3};
 
 pub fn make_cuboid(size: &Vec3, primitive: &Primitive) {
     let indices = [

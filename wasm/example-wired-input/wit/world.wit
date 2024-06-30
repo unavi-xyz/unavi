@@ -4,9 +4,9 @@ world script {
     include wired:script/script; 
 
     import unavi:shapes/api;
-    import wired:gltf/material;
-    import wired:gltf/mesh;
-    import wired:gltf/node;
+    import wired:scene/material;
+    import wired:scene/mesh;
+    import wired:scene/node;
     import wired:input/handler;
     import wired:log/api;
 }

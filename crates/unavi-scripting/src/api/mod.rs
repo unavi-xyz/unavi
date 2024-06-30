@@ -3,13 +3,13 @@ use wasm_bridge::component::Linker;
 
 use super::state::StoreState;
 
-pub mod wired_gltf;
 mod wired_input;
 mod wired_log;
 pub mod wired_physics;
+pub mod wired_scene;
 
 pub fn add_host_apis(linker: &mut Linker<StoreState>) -> Result<()> {
-    wired_gltf::add_to_linker(linker)?;
+    wired_scene::add_to_linker(linker)?;
     wired_input::add_to_linker(linker)?;
     wired_log::add_to_linker(linker)?;
     wired_physics::add_to_linker(linker)?;
@@ -85,8 +85,8 @@ mod tests {
 
     #[tokio::test]
     #[traced_test]
-    async fn test_wired_gltf() {
-        test_script("test:wired-gltf").await;
+    async fn test_wired_scene() {
+        test_script("test:wired-scene").await;
         assert!(!logs_contain("ERROR"));
         assert!(!logs_contain("error"));
 
@@ -113,8 +113,8 @@ mod tests {
 
     #[tokio::test]
     #[traced_test]
-    async fn example_wired_gltf() {
-        test_script("example:wired-gltf").await;
+    async fn example_wired_scene() {
+        test_script("example:wired-scene").await;
         assert!(!logs_contain("ERROR"));
         assert!(!logs_contain("error"));
     }

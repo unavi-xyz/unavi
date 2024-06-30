@@ -1,4 +1,4 @@
-package unavi:system;
+package test:wired-scene;
 
 world script {
     include wired:script/script; 

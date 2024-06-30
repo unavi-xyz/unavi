@@ -4,8 +4,8 @@ use wired::physics::types::Host;
 
 use crate::state::StoreState;
 
-mod collider;
-mod rigid_body;
+pub mod collider;
+pub mod rigid_body;
 
 wasm_bridge::component::bindgen!({
     path: "../../wired-protocol/spatial/wit/wired-physics",
@@ -18,7 +18,7 @@ wasm_bridge::component::bindgen!({
 
 impl Host for StoreState {}
 
-pub fn add_to_host(linker: &mut Linker<StoreState>) -> Result<()> {
+pub fn add_to_linker(linker: &mut Linker<StoreState>) -> Result<()> {
     wired::physics::types::add_to_linker(linker, |s| s)?;
     Ok(())
 }

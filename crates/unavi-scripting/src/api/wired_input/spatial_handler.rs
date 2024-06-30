@@ -17,7 +17,7 @@ impl HostSpatialHandler for StoreState {
         let rep = res.rep();
 
         let node = self.table.get_mut(&node)?;
-        node.handlers.push(res);
+        node.input_handlers.push(res);
 
         Ok(Resource::new_own(rep))
     }

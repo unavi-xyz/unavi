@@ -21,15 +21,15 @@ impl GuestScript for Script {
         node.set_mesh(Some(&mesh));
 
         let collider = Collider::new(Shape::Cuboid(Cuboid {
-            x_len: 10.0,
-            y_len: 0.5,
-            z_len: 10.0,
+            x_len: 1.0,
+            y_len: 1.0,
+            z_len: 1.0,
         }));
 
         let rigid_body = RigidBody::new(RigidBodyType::Fixed);
 
-        // node.set_collider(Some(&collider));
-        // node.set_rigid_body(Some(&rigid_body));
+        node.set_collider(Some(&collider));
+        node.set_rigid_body(Some(&rigid_body));
 
         Script {}
     }

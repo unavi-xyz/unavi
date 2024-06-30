@@ -1,26 +1,34 @@
-use bevy::utils::HashSet;
-use wasm_bridge::component::Resource;
-use wired::math::types::{Quat, Transform, Vec3};
+use anyhow::Result;
+use wasm_bridge::component::Linker;
+use wired::{
+    gltf::{material::Color, node::Transform},
+    math::types::{Quat, Vec3},
+};
 
-use crate::host::wired_input::handler::SpatialHandler;
+use crate::state::StoreState;
 
-use self::wired::gltf::material::Color;
+pub mod material;
+pub mod mesh;
+pub mod node;
 
 wasm_bridge::component::bindgen!({
     path: "../../wired-protocol/spatial/wit/wired-gltf",
     world: "host",
     with: {
-        "wired:gltf/material/material": Material,
-        "wired:gltf/mesh/mesh": Mesh,
-        "wired:gltf/mesh/primitive": Primitive,
-        "wired:gltf/node/node": Node,
+        "wired:gltf/material/material": material::Material,
+        "wired:gltf/mesh/mesh": mesh::Mesh,
+        "wired:gltf/mesh/primitive": mesh::Primitive,
+        "wired:gltf/node/node": node::Node,
+        "wired:physics/types/collider": super::wired_physics::collider::Collider,
+        "wired:physics/types/rigid-body": super::wired_physics::rigid_body::RigidBody,
     }
 });
 
-#[derive(Default)]
-pub struct Material {
-    pub name: String,
-    pub color: Color,
+pub fn add_to_linker(linker: &mut Linker<StoreState>) -> Result<()> {
+    wired::gltf::material::add_to_linker(linker, |s| s)?;
+    wired::gltf::mesh::add_to_linker(linker, |s| s)?;
+    wired::gltf::node::add_to_linker(linker, |s| s)?;
+    Ok(())
 }
 
 impl Default for Color {
@@ -32,27 +40,6 @@ impl Default for Color {
             a: 1.0,
         }
     }
-}
-
-#[derive(Default)]
-pub struct Mesh {
-    pub name: String,
-    pub primitives: HashSet<u32>,
-}
-
-#[derive(Default)]
-pub struct Primitive {
-    pub material: Option<u32>,
-}
-
-#[derive(Default)]
-pub struct Node {
-    pub children: HashSet<u32>,
-    pub handlers: Vec<Resource<SpatialHandler>>,
-    pub mesh: Option<u32>,
-    pub name: String,
-    pub parent: Option<u32>,
-    pub transform: Transform,
 }
 
 impl Default for Transform {

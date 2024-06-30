@@ -6,13 +6,13 @@ use super::state::StoreState;
 pub mod wired_gltf;
 mod wired_input;
 mod wired_log;
-mod wired_physics;
+pub mod wired_physics;
 
-pub fn add_host_script_apis(linker: &mut Linker<StoreState>) -> Result<()> {
-    wired_gltf::add_to_host(linker)?;
-    wired_input::add_to_host(linker)?;
-    wired_log::add_to_host(linker)?;
-    wired_physics::add_to_host(linker)?;
+pub fn add_host_apis(linker: &mut Linker<StoreState>) -> Result<()> {
+    wired_gltf::add_to_linker(linker)?;
+    wired_input::add_to_linker(linker)?;
+    wired_log::add_to_linker(linker)?;
+    wired_physics::add_to_linker(linker)?;
     Ok(())
 }
 
@@ -72,7 +72,7 @@ mod tests {
             (
                 crate::execution::init_scripts,
                 crate::execution::update_scripts,
-                super::wired_gltf::handler::handle_wired_gltf_actions,
+                crate::actions::handler::handle_actions,
             )
                 .chain(),
         );

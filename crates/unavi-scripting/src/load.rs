@@ -4,11 +4,7 @@ use bevy::{prelude::*, utils::HashMap};
 use bevy_async_task::{AsyncTaskPool, AsyncTaskStatus};
 use wasm_bridge::{component::Linker, Config, Engine, Store};
 
-use crate::{
-    host::{add_host_script_apis, wired_gltf::WiredGltfReceiver},
-    state::StoreState,
-    wired_script::Script,
-};
+use crate::{actions::ActionReceiver, api::add_host_apis, state::StoreState, wired_script::Script};
 
 use super::asset::Wasm;
 
@@ -59,7 +55,7 @@ pub fn load_scripts(
 
         pool.spawn(async move {
             wasm_bridge_wasi::add_to_linker_async(&mut linker)?;
-            add_host_script_apis(&mut linker)?;
+            add_host_apis(&mut linker)?;
 
             let component =
                 wasm_bridge::component::Component::new_safe(store.engine(), &bytes).await?;
@@ -73,7 +69,7 @@ pub fn load_scripts(
             Ok(entity)
         });
 
-        commands.entity(entity).insert(WiredGltfReceiver(recv));
+        commands.entity(entity).insert(ActionReceiver(recv));
     }
 
     for task in pool.iter_poll() {

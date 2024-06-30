@@ -7,7 +7,7 @@ use bevy::{
     utils::HashMap,
 };
 
-use super::{WiredGltfAction, WiredGltfReceiver};
+use super::{ActionReceiver, ScriptAction};
 
 #[derive(Component, Clone, Copy, Debug)]
 pub struct NodeId(pub u32);
@@ -77,7 +77,7 @@ impl WiredMaterialBundle {
     }
 }
 
-pub fn handle_wired_gltf_actions(
+pub fn handle_actions(
     world: &mut World,
     materials: &mut QueryState<(Entity, &MaterialId, &Handle<StandardMaterial>)>,
     meshes: &mut QueryState<(Entity, &MeshId), Without<PrimitiveId>>,
@@ -90,7 +90,7 @@ pub fn handle_wired_gltf_actions(
         &Handle<Mesh>,
         Option<&MaterialId>,
     )>,
-    scripts: &mut QueryState<(Entity, &WiredGltfReceiver)>,
+    scripts: &mut QueryState<(Entity, &ActionReceiver)>,
     transforms: &mut QueryState<&mut Transform>,
 ) {
     if default_material.is_none() {
@@ -110,7 +110,7 @@ pub fn handle_wired_gltf_actions(
             trace!("handling: {:?}", msg);
 
             match msg {
-                WiredGltfAction::CreateMaterial { id } => {
+                ScriptAction::CreateMaterial { id } => {
                     let span = info_span!("CreateMaterial", id);
                     let s = span.entered();
 
@@ -124,7 +124,7 @@ pub fn handle_wired_gltf_actions(
 
                     drop(s);
                 }
-                WiredGltfAction::CreateMesh { id } => {
+                ScriptAction::CreateMesh { id } => {
                     let span = info_span!("CreateMesh", id);
                     let s = span.entered();
 
@@ -136,7 +136,7 @@ pub fn handle_wired_gltf_actions(
 
                     drop(s);
                 }
-                WiredGltfAction::CreateNode { id } => {
+                ScriptAction::CreateNode { id } => {
                     let span = info_span!("CreateNode", id);
                     let s = span.entered();
 
@@ -149,7 +149,7 @@ pub fn handle_wired_gltf_actions(
 
                     drop(s);
                 }
-                WiredGltfAction::CreatePrimitive { id, mesh } => {
+                ScriptAction::CreatePrimitive { id, mesh } => {
                     let span = info_span!("CreatePrimitive", id, mesh);
                     let s = span.entered();
 
@@ -200,7 +200,7 @@ pub fn handle_wired_gltf_actions(
 
                     drop(s);
                 }
-                WiredGltfAction::RemoveMaterial { id } => {
+                ScriptAction::RemoveMaterial { id } => {
                     let span = info_span!("RemoveMaterial", id);
                     let s = span.entered();
 
@@ -212,7 +212,7 @@ pub fn handle_wired_gltf_actions(
 
                     drop(s);
                 }
-                WiredGltfAction::RemoveMesh { id } => {
+                ScriptAction::RemoveMesh { id } => {
                     let span = info_span!("RemoveMesh", id);
                     let s = span.entered();
 
@@ -224,7 +224,7 @@ pub fn handle_wired_gltf_actions(
 
                     drop(s);
                 }
-                WiredGltfAction::RemoveNode { id } => {
+                ScriptAction::RemoveNode { id } => {
                     let span = info_span!("RemoveNode", id);
                     let s = span.entered();
 
@@ -236,7 +236,7 @@ pub fn handle_wired_gltf_actions(
 
                     drop(s);
                 }
-                WiredGltfAction::RemovePrimitive { id, mesh } => {
+                ScriptAction::RemovePrimitive { id, mesh } => {
                     let span = info_span!("RemovePrimitive", id);
                     let s = span.entered();
 
@@ -262,7 +262,7 @@ pub fn handle_wired_gltf_actions(
 
                     drop(s);
                 }
-                WiredGltfAction::SetMaterialColor { id, color } => {
+                ScriptAction::SetMaterialColor { id, color } => {
                     let span = info_span!("SetMaterialColor", id);
                     let s = span.entered();
 
@@ -276,7 +276,7 @@ pub fn handle_wired_gltf_actions(
 
                     drop(s);
                 }
-                WiredGltfAction::SetNodeParent { id, parent } => {
+                ScriptAction::SetNodeParent { id, parent } => {
                     let span = info_span!("SetNodeParent", id, parent);
                     let s = span.entered();
 
@@ -296,7 +296,7 @@ pub fn handle_wired_gltf_actions(
 
                     drop(s);
                 }
-                WiredGltfAction::SetNodeTransform { id, transform } => {
+                ScriptAction::SetNodeTransform { id, transform } => {
                     let span = info_span!("SetNodeTransform", id);
                     let s = span.entered();
 
@@ -307,7 +307,7 @@ pub fn handle_wired_gltf_actions(
 
                     drop(s);
                 }
-                WiredGltfAction::SetNodeMesh { id, mesh } => {
+                ScriptAction::SetNodeMesh { id, mesh } => {
                     let span = info_span!("SetNodeMesh", id, mesh);
                     let s = span.entered();
 
@@ -381,7 +381,7 @@ pub fn handle_wired_gltf_actions(
 
                     drop(s);
                 }
-                WiredGltfAction::SetPrimitiveIndices { id, value } => {
+                ScriptAction::SetPrimitiveIndices { id, value } => {
                     let span = info_span!("SetPrimitiveIndices", id);
                     let s = span.entered();
 
@@ -396,7 +396,7 @@ pub fn handle_wired_gltf_actions(
 
                     drop(s);
                 }
-                WiredGltfAction::SetPrimitiveMaterial { id, material } => {
+                ScriptAction::SetPrimitiveMaterial { id, material } => {
                     let span = info_span!("SetPrimitiveMaterial", id, material);
                     let s = span.entered();
 
@@ -432,7 +432,7 @@ pub fn handle_wired_gltf_actions(
 
                     drop(s);
                 }
-                WiredGltfAction::SetPrimitiveNormals { id, value } => {
+                ScriptAction::SetPrimitiveNormals { id, value } => {
                     let span = info_span!("SetPrimitiveNormals", id);
                     let s = span.entered();
 
@@ -456,7 +456,7 @@ pub fn handle_wired_gltf_actions(
 
                     drop(s);
                 }
-                WiredGltfAction::SetPrimitivePositions { id, value } => {
+                ScriptAction::SetPrimitivePositions { id, value } => {
                     let span = info_span!("SetPrimitivePositions", id);
                     let s = span.entered();
 
@@ -480,7 +480,7 @@ pub fn handle_wired_gltf_actions(
 
                     drop(s);
                 }
-                WiredGltfAction::SetPrimitiveUvs { id, value } => {
+                ScriptAction::SetPrimitiveUvs { id, value } => {
                     let span = info_span!("SetPrimitiveUvs", id);
                     let s = span.entered();
 
@@ -615,16 +615,16 @@ mod tests {
 
     use super::*;
 
-    fn setup_test() -> (App, Sender<WiredGltfAction>) {
+    fn setup_test() -> (App, Sender<ScriptAction>) {
         let mut app = App::new();
 
         app.add_plugins(AssetPlugin::default())
             .init_asset::<Mesh>()
             .init_asset::<StandardMaterial>()
-            .add_systems(Update, handle_wired_gltf_actions);
+            .add_systems(Update, handle_actions);
 
         let (send, recv) = crossbeam::channel::unbounded();
-        app.world.spawn(WiredGltfReceiver(recv));
+        app.world.spawn(ActionReceiver(recv));
 
         (app, send)
     }
@@ -636,7 +636,7 @@ mod tests {
         let (mut app, send) = setup_test();
 
         let id = 0;
-        send.send(WiredGltfAction::CreateNode { id }).unwrap();
+        send.send(ScriptAction::CreateNode { id }).unwrap();
         app.update();
 
         let mut nodes = app.world.query::<&NodeId>();
@@ -652,7 +652,7 @@ mod tests {
         let id = 0;
         app.world.spawn(WiredNodeBundle::new(id));
 
-        send.send(WiredGltfAction::CreateNode { id }).unwrap();
+        send.send(ScriptAction::CreateNode { id }).unwrap();
         app.update();
 
         let mut nodes = app.world.query::<&NodeId>();
@@ -667,7 +667,7 @@ mod tests {
         let id = 0;
         let ent = app.world.spawn(WiredNodeBundle::new(id)).id();
 
-        send.send(WiredGltfAction::RemoveNode { id }).unwrap();
+        send.send(ScriptAction::RemoveNode { id }).unwrap();
         app.update();
 
         assert!(app.world.get_entity(ent).is_none());
@@ -678,7 +678,7 @@ mod tests {
     fn remove_invalid_node() {
         let (mut app, send) = setup_test();
 
-        send.send(WiredGltfAction::RemoveNode { id: 0 }).unwrap();
+        send.send(ScriptAction::RemoveNode { id: 0 }).unwrap();
         app.update();
     }
 
@@ -693,7 +693,7 @@ mod tests {
         let child_id = 1;
         let child_ent = app.world.spawn(WiredNodeBundle::new(child_id)).id();
 
-        send.send(WiredGltfAction::SetNodeParent {
+        send.send(ScriptAction::SetNodeParent {
             id: child_id,
             parent: Some(parent_id),
         })
@@ -722,7 +722,7 @@ mod tests {
         let children = app.world.get::<Children>(parent_ent).unwrap();
         assert!(children.contains(&child_ent));
 
-        send.send(WiredGltfAction::SetNodeParent {
+        send.send(ScriptAction::SetNodeParent {
             id: child_id,
             parent: None,
         })
@@ -741,7 +741,7 @@ mod tests {
         let child_id = 1;
         app.world.spawn(WiredNodeBundle::new(child_id));
 
-        send.send(WiredGltfAction::SetNodeParent {
+        send.send(ScriptAction::SetNodeParent {
             id: child_id,
             parent: Some(parent_id),
         })
@@ -763,7 +763,7 @@ mod tests {
             scale: Vec3::splat(3.0),
         };
 
-        send.send(WiredGltfAction::SetNodeTransform { id, transform })
+        send.send(ScriptAction::SetNodeTransform { id, transform })
             .unwrap();
         app.update();
 
@@ -799,7 +799,7 @@ mod tests {
             MaterialId(material_id),
         ));
 
-        send.send(WiredGltfAction::SetNodeMesh {
+        send.send(ScriptAction::SetNodeMesh {
             id,
             mesh: Some(mesh_id),
         })
@@ -858,7 +858,7 @@ mod tests {
             })
             .id();
 
-        send.send(WiredGltfAction::SetNodeMesh { id, mesh: None })
+        send.send(ScriptAction::SetNodeMesh { id, mesh: None })
             .unwrap();
         app.update();
 
@@ -876,7 +876,7 @@ mod tests {
         let (mut app, send) = setup_test();
 
         let id = 0;
-        send.send(WiredGltfAction::CreateMesh { id }).unwrap();
+        send.send(ScriptAction::CreateMesh { id }).unwrap();
         app.update();
 
         let mut meshes = app.world.query::<&MeshId>();
@@ -892,7 +892,7 @@ mod tests {
         let id = 0;
         app.world.spawn(MeshId(id));
 
-        send.send(WiredGltfAction::CreateMesh { id }).unwrap();
+        send.send(ScriptAction::CreateMesh { id }).unwrap();
         app.update();
 
         let mut meshes = app.world.query::<&MeshId>();
@@ -907,7 +907,7 @@ mod tests {
         let id = 0;
         let ent = app.world.spawn(MeshId(id)).id();
 
-        send.send(WiredGltfAction::RemoveMesh { id }).unwrap();
+        send.send(ScriptAction::RemoveMesh { id }).unwrap();
         app.update();
 
         assert!(app.world.get_entity(ent).is_none());
@@ -918,7 +918,7 @@ mod tests {
     fn remove_invalid_mesh() {
         let (mut app, send) = setup_test();
 
-        send.send(WiredGltfAction::RemoveMesh { id: 0 }).unwrap();
+        send.send(ScriptAction::RemoveMesh { id: 0 }).unwrap();
         app.update();
     }
 
@@ -932,7 +932,7 @@ mod tests {
         app.world.spawn(MeshId(mesh));
 
         let id = 1;
-        send.send(WiredGltfAction::CreatePrimitive { id, mesh })
+        send.send(ScriptAction::CreatePrimitive { id, mesh })
             .unwrap();
         app.update();
 
@@ -948,7 +948,7 @@ mod tests {
 
         let mesh = 0;
         let id = 1;
-        send.send(WiredGltfAction::CreatePrimitive { id, mesh })
+        send.send(ScriptAction::CreatePrimitive { id, mesh })
             .unwrap();
         app.update();
 
@@ -971,7 +971,7 @@ mod tests {
             handle_mesh: Default::default(),
         });
 
-        send.send(WiredGltfAction::CreatePrimitive { id, mesh })
+        send.send(ScriptAction::CreatePrimitive { id, mesh })
             .unwrap();
         app.update();
 
@@ -997,7 +997,7 @@ mod tests {
             })
             .id();
 
-        send.send(WiredGltfAction::RemovePrimitive { id, mesh })
+        send.send(ScriptAction::RemovePrimitive { id, mesh })
             .unwrap();
         app.update();
 
@@ -1009,7 +1009,7 @@ mod tests {
     fn remove_invalid_primitive() {
         let (mut app, send) = setup_test();
 
-        send.send(WiredGltfAction::RemovePrimitive { id: 1, mesh: 0 })
+        send.send(ScriptAction::RemovePrimitive { id: 1, mesh: 0 })
             .unwrap();
         app.update();
     }
@@ -1037,7 +1037,7 @@ mod tests {
 
         let value = vec![0, 1, 2, 3, 4, 5];
 
-        send.send(WiredGltfAction::SetPrimitiveIndices {
+        send.send(ScriptAction::SetPrimitiveIndices {
             id,
             value: value.clone(),
         })
@@ -1078,7 +1078,7 @@ mod tests {
 
         let value = vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
 
-        send.send(WiredGltfAction::SetPrimitiveNormals {
+        send.send(ScriptAction::SetPrimitiveNormals {
             id,
             value: value.clone(),
         })
@@ -1124,7 +1124,7 @@ mod tests {
 
         let value = vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
 
-        send.send(WiredGltfAction::SetPrimitivePositions {
+        send.send(ScriptAction::SetPrimitivePositions {
             id,
             value: value.clone(),
         })
@@ -1170,7 +1170,7 @@ mod tests {
 
         let value = vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
 
-        send.send(WiredGltfAction::SetPrimitiveUvs {
+        send.send(ScriptAction::SetPrimitiveUvs {
             id,
             value: value.clone(),
         })
@@ -1219,7 +1219,7 @@ mod tests {
             handle: handle_material.clone(),
         });
 
-        send.send(WiredGltfAction::SetPrimitiveMaterial {
+        send.send(ScriptAction::SetPrimitiveMaterial {
             id: primitive,
             material: Some(material),
         })
@@ -1240,7 +1240,7 @@ mod tests {
         let (mut app, send) = setup_test();
 
         let id = 0;
-        send.send(WiredGltfAction::CreateMaterial { id }).unwrap();
+        send.send(ScriptAction::CreateMaterial { id }).unwrap();
         app.update();
 
         let mut materials = app
@@ -1261,7 +1261,7 @@ mod tests {
         let id = 0;
         app.world.spawn((MaterialId(id), handle));
 
-        send.send(WiredGltfAction::CreateMaterial { id }).unwrap();
+        send.send(ScriptAction::CreateMaterial { id }).unwrap();
         app.update();
 
         let mut materials = app.world.query::<&MaterialId>();
@@ -1279,7 +1279,7 @@ mod tests {
         let id = 0;
         let ent = app.world.spawn((MaterialId(id), handle)).id();
 
-        send.send(WiredGltfAction::RemoveMaterial { id }).unwrap();
+        send.send(ScriptAction::RemoveMaterial { id }).unwrap();
         app.update();
 
         assert!(app.world.get_entity(ent).is_none());
@@ -1290,8 +1290,7 @@ mod tests {
     fn remove_invalid_material() {
         let (mut app, send) = setup_test();
 
-        send.send(WiredGltfAction::RemoveMaterial { id: 0 })
-            .unwrap();
+        send.send(ScriptAction::RemoveMaterial { id: 0 }).unwrap();
         app.update();
     }
 
@@ -1308,7 +1307,7 @@ mod tests {
 
         let color = Color::rgba(0.1, 0.2, 0.3, 0.4);
 
-        send.send(WiredGltfAction::SetMaterialColor { id, color })
+        send.send(ScriptAction::SetMaterialColor { id, color })
             .unwrap();
         app.update();
 
@@ -1327,18 +1326,16 @@ mod tests {
         let mesh_id = 1;
         let primitive_id = 2;
 
-        send.send(WiredGltfAction::CreateNode { id: node_id })
-            .unwrap();
-        send.send(WiredGltfAction::CreateMesh { id: mesh_id })
-            .unwrap();
+        send.send(ScriptAction::CreateNode { id: node_id }).unwrap();
+        send.send(ScriptAction::CreateMesh { id: mesh_id }).unwrap();
 
-        send.send(WiredGltfAction::SetNodeMesh {
+        send.send(ScriptAction::SetNodeMesh {
             id: node_id,
             mesh: Some(mesh_id),
         })
         .unwrap();
 
-        send.send(WiredGltfAction::CreatePrimitive {
+        send.send(ScriptAction::CreatePrimitive {
             id: primitive_id,
             mesh: mesh_id,
         })
@@ -1352,7 +1349,7 @@ mod tests {
         assert_eq!(node_mesh.primitives.len(), 1);
         assert!(node_mesh.primitives.contains_key(&primitive_id));
 
-        send.send(WiredGltfAction::RemovePrimitive {
+        send.send(ScriptAction::RemovePrimitive {
             id: primitive_id,
             mesh: mesh_id,
         })
@@ -1376,24 +1373,22 @@ mod tests {
         let primitive_id = 2;
         let material_id = 3;
 
-        send.send(WiredGltfAction::CreateNode { id: node_id })
-            .unwrap();
-        send.send(WiredGltfAction::CreateMesh { id: mesh_id })
-            .unwrap();
-        send.send(WiredGltfAction::SetNodeMesh {
+        send.send(ScriptAction::CreateNode { id: node_id }).unwrap();
+        send.send(ScriptAction::CreateMesh { id: mesh_id }).unwrap();
+        send.send(ScriptAction::SetNodeMesh {
             id: node_id,
             mesh: Some(mesh_id),
         })
         .unwrap();
 
-        send.send(WiredGltfAction::CreatePrimitive {
+        send.send(ScriptAction::CreatePrimitive {
             id: primitive_id,
             mesh: mesh_id,
         })
         .unwrap();
-        send.send(WiredGltfAction::CreateMaterial { id: material_id })
+        send.send(ScriptAction::CreateMaterial { id: material_id })
             .unwrap();
-        send.send(WiredGltfAction::SetPrimitiveMaterial {
+        send.send(ScriptAction::SetPrimitiveMaterial {
             id: primitive_id,
             material: Some(material_id),
         })
@@ -1405,7 +1400,7 @@ mod tests {
             blue: 0.78,
             alpha: 0.6,
         };
-        send.send(WiredGltfAction::SetMaterialColor {
+        send.send(ScriptAction::SetMaterialColor {
             id: material_id,
             color,
         })

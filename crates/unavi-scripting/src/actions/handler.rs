@@ -952,7 +952,7 @@ mod tests {
 
         send.send(ScriptAction::SetNodeRigidBody {
             id,
-            rigid_body: Some(rigid_body.clone()),
+            rigid_body: Some(rigid_body),
         })
         .unwrap();
         app.update();

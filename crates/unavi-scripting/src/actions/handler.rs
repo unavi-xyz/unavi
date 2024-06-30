@@ -6,6 +6,7 @@ use bevy::{
     },
     utils::HashMap,
 };
+use bevy_xpbd_3d::prelude::*;
 
 use super::{ActionReceiver, ScriptAction};
 
@@ -276,6 +277,22 @@ pub fn handle_actions(
 
                     drop(s);
                 }
+                ScriptAction::SetNodeCollider { id, collider } => {
+                    let span = info_span!("SetNodeCollider", id);
+                    let s = span.entered();
+
+                    if let Some((ent, ..)) = find_node(nodes, id, world) {
+                        if let Some(collider) = collider {
+                            world.entity_mut(ent).insert(collider);
+                        } else {
+                            world.entity_mut(ent).remove::<Collider>();
+                        }
+                    } else {
+                        warn!("Node {} does not exist", id);
+                    }
+
+                    drop(s);
+                }
                 ScriptAction::SetNodeParent { id, parent } => {
                     let span = info_span!("SetNodeParent", id, parent);
                     let s = span.entered();
@@ -289,6 +306,22 @@ pub fn handle_actions(
                             }
                         } else {
                             world.entity_mut(ent).remove_parent();
+                        }
+                    } else {
+                        warn!("Node {} does not exist", id);
+                    }
+
+                    drop(s);
+                }
+                ScriptAction::SetNodeRigidBody { id, rigid_body } => {
+                    let span = info_span!("SetNodeRigidBody", id);
+                    let s = span.entered();
+
+                    if let Some((ent, ..)) = find_node(nodes, id, world) {
+                        if let Some(rigid_body) = rigid_body {
+                            world.entity_mut(ent).insert(rigid_body);
+                        } else {
+                            world.entity_mut(ent).remove::<RigidBody>();
                         }
                     } else {
                         warn!("Node {} does not exist", id);
@@ -867,6 +900,85 @@ mod tests {
         assert!(node_mesh.primitives.is_empty());
 
         assert!(app.world.get_entity(primitive_ent).is_none());
+    }
+
+    #[test]
+    #[traced_test]
+    fn set_node_collider_some() {
+        let (mut app, send) = setup_test();
+
+        let id = 0;
+        let ent = app.world.spawn(WiredNodeBundle::new(id)).id();
+
+        let collider = Collider::sphere(0.5);
+
+        send.send(ScriptAction::SetNodeCollider {
+            id,
+            collider: Some(collider.clone()),
+        })
+        .unwrap();
+        app.update();
+
+        assert!(app.world.get::<Collider>(ent).is_some());
+    }
+
+    #[test]
+    #[traced_test]
+    fn set_node_collider_none() {
+        let (mut app, send) = setup_test();
+
+        let id = 0;
+        let ent = app
+            .world
+            .spawn((WiredNodeBundle::new(id), Collider::sphere(0.5)))
+            .id();
+
+        send.send(ScriptAction::SetNodeCollider { id, collider: None })
+            .unwrap();
+        app.update();
+
+        assert!(app.world.get::<Collider>(ent).is_none());
+    }
+
+    #[test]
+    #[traced_test]
+    fn set_node_rigid_body_some() {
+        let (mut app, send) = setup_test();
+
+        let id = 0;
+        let ent = app.world.spawn(WiredNodeBundle::new(id)).id();
+
+        let rigid_body = RigidBody::Dynamic;
+
+        send.send(ScriptAction::SetNodeRigidBody {
+            id,
+            rigid_body: Some(rigid_body.clone()),
+        })
+        .unwrap();
+        app.update();
+
+        assert!(app.world.get::<RigidBody>(ent).is_some());
+    }
+
+    #[test]
+    #[traced_test]
+    fn set_node_rigid_body_none() {
+        let (mut app, send) = setup_test();
+
+        let id = 0;
+        let ent = app
+            .world
+            .spawn((WiredNodeBundle::new(id), RigidBody::Dynamic))
+            .id();
+
+        send.send(ScriptAction::SetNodeRigidBody {
+            id,
+            rigid_body: None,
+        })
+        .unwrap();
+        app.update();
+
+        assert!(app.world.get::<RigidBody>(ent).is_none());
     }
 
     // Mesh

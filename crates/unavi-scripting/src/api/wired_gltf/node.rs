@@ -2,7 +2,12 @@ use bevy::utils::HashSet;
 use wasm_bridge::component::Resource;
 
 use crate::{
-    actions::ScriptAction, api::wired_input::spatial_handler::SpatialHandler, state::StoreState,
+    actions::ScriptAction,
+    api::{
+        wired_input::spatial_handler::SpatialHandler,
+        wired_physics::wired::physics::types::{Cuboid, Shape, Sphere},
+    },
+    state::StoreState,
 };
 
 use super::wired::{
@@ -170,8 +175,32 @@ impl HostNode for StoreState {
         self_: Resource<Node>,
         value: Option<Resource<Collider>>,
     ) -> wasm_bridge::Result<()> {
+        if let Some(value) = &value {
+            let collider = self.table.get(value)?;
+
+            let collider = match collider.shape {
+                Shape::Sphere(Sphere { radius }) => bevy_xpbd_3d::prelude::Collider::sphere(radius),
+                Shape::Cuboid(Cuboid {
+                    x_len,
+                    y_len,
+                    z_len,
+                }) => bevy_xpbd_3d::prelude::Collider::cuboid(x_len, y_len, z_len),
+            };
+
+            self.sender.send(ScriptAction::SetNodeCollider {
+                id: self_.rep(),
+                collider: Some(collider),
+            })?;
+        } else {
+            self.sender.send(ScriptAction::SetNodeCollider {
+                id: self_.rep(),
+                collider: None,
+            })?;
+        }
+
         let node = self.table.get_mut(&self_)?;
         node.collider = value;
+
         Ok(())
     }
 

@@ -5,8 +5,8 @@ use crate::state::StoreState;
 use super::wired::physics::types::{HostCollider, Shape};
 
 pub struct Collider {
-    density: f32,
-    shape: Shape,
+    pub density: f32,
+    pub shape: Shape,
 }
 
 impl Collider {

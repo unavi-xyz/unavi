@@ -2,9 +2,10 @@ use bevy::prelude::*;
 
 use self::{asset::Wasm, load::Scripts};
 
+mod actions;
+mod api;
 pub mod asset;
 mod execution;
-mod host;
 mod load;
 mod state;
 
@@ -26,7 +27,7 @@ impl Plugin for ScriptingPlugin {
                 FixedUpdate,
                 (
                     (execution::init_scripts, execution::update_scripts).chain(),
-                    host::wired_gltf::handler::handle_wired_gltf_actions,
+                    actions::handler::handle_actions,
                     load::load_scripts,
                 ),
             );

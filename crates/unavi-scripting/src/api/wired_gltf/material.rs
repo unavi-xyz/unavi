@@ -1,11 +1,14 @@
 use wasm_bridge::component::Resource;
 
-use crate::state::StoreState;
+use crate::{actions::ScriptAction, state::StoreState};
 
-use super::{
-    bindgen::wired::gltf::material::{Color, Host, HostMaterial, Material},
-    WiredGltfAction,
-};
+use super::wired::gltf::material::{Color, Host, HostMaterial};
+
+#[derive(Default)]
+pub struct Material {
+    pub name: String,
+    pub color: Color,
+}
 
 impl HostMaterial for StoreState {
     fn id(&mut self, self_: Resource<Material>) -> wasm_bridge::Result<u32> {
@@ -30,7 +33,7 @@ impl HostMaterial for StoreState {
         let material = self.table.get_mut(&self_)?;
         material.color = value;
 
-        self.sender.send(WiredGltfAction::SetMaterialColor {
+        self.sender.send(ScriptAction::SetMaterialColor {
             id: self_.rep(),
             color: bevy::prelude::Color::rgba(
                 material.color.r,
@@ -63,7 +66,7 @@ impl Host for StoreState {
         self.materials.push(resource);
 
         self.sender
-            .send(WiredGltfAction::CreateMaterial { id: material_rep })?;
+            .send(ScriptAction::CreateMaterial { id: material_rep })?;
 
         Ok(Resource::new_own(material_rep))
     }
@@ -83,8 +86,7 @@ impl Host for StoreState {
             self.materials.remove(index);
         }
 
-        self.sender
-            .send(WiredGltfAction::RemoveMaterial { id: rep })?;
+        self.sender.send(ScriptAction::RemoveMaterial { id: rep })?;
 
         Ok(())
     }

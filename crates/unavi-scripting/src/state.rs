@@ -2,9 +2,13 @@ use crossbeam::channel::{Receiver, Sender};
 use wasm_bridge::component::{Resource, ResourceTable};
 use wasm_bridge_wasi::{WasiCtx, WasiCtxBuilder, WasiView};
 
-use crate::host::wired_gltf::{
-    bindgen::{Material, Mesh, Node, Primitive},
-    WiredGltfAction,
+use crate::{
+    actions::ScriptAction,
+    api::wired_gltf::wired::gltf::{
+        material::Material,
+        mesh::{Mesh, Primitive},
+        node::Node,
+    },
 };
 
 pub struct StoreState {
@@ -13,7 +17,7 @@ pub struct StoreState {
     pub name: String,
     pub nodes: Vec<Resource<Node>>,
     pub primitives: Vec<Resource<Primitive>>,
-    pub sender: Sender<WiredGltfAction>,
+    pub sender: Sender<ScriptAction>,
     pub table: ResourceTable,
     pub wasi: WasiCtx,
     pub wasi_table: wasm_bridge_wasi::ResourceTable,
@@ -30,8 +34,8 @@ impl WasiView for StoreState {
 }
 
 impl StoreState {
-    pub fn new(name: String) -> (Self, Receiver<WiredGltfAction>) {
-        let (sender, recv) = crossbeam::channel::bounded(100);
+    pub fn new(name: String) -> (Self, Receiver<ScriptAction>) {
+        let (sender, recv) = crossbeam::channel::bounded(255);
 
         let wasi = WasiCtxBuilder::new().build();
 

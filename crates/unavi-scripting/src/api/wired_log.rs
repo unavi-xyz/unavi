@@ -30,7 +30,7 @@ impl Host for StoreState {
     }
 }
 
-pub fn add_to_host(linker: &mut Linker<StoreState>) -> Result<()> {
+pub fn add_to_linker(linker: &mut Linker<StoreState>) -> Result<()> {
     bindgen::wired::log::api::add_to_linker(linker, |s| s)?;
     Ok(())
 }

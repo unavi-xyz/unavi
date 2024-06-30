@@ -1,14 +1,29 @@
+use bevy::utils::HashSet;
 use wasm_bridge::component::Resource;
 
-use crate::state::StoreState;
-
-use super::{
-    bindgen::wired::gltf::{
-        mesh::Mesh,
-        node::{Host, HostNode, Node, Transform},
-    },
-    WiredGltfAction,
+use crate::{
+    actions::ScriptAction, api::wired_input::spatial_handler::SpatialHandler, state::StoreState,
 };
+
+use super::wired::{
+    gltf::{
+        mesh::Mesh,
+        node::{Host, HostNode, Transform},
+    },
+    physics::types::{Collider, RigidBody},
+};
+
+#[derive(Default)]
+pub struct Node {
+    pub children: HashSet<u32>,
+    pub collider: Option<Resource<Collider>>,
+    pub input_handlers: Vec<Resource<SpatialHandler>>,
+    pub mesh: Option<u32>,
+    pub name: String,
+    pub parent: Option<u32>,
+    pub rigid_body: Option<Resource<RigidBody>>,
+    pub transform: Transform,
+}
 
 impl HostNode for StoreState {
     fn id(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<u32> {
@@ -37,7 +52,7 @@ impl HostNode for StoreState {
         let node = self.table.get_mut(&self_)?;
         node.mesh = value.map(|v| v.rep());
 
-        self.sender.send(WiredGltfAction::SetNodeMesh {
+        self.sender.send(ScriptAction::SetNodeMesh {
             id: self_.rep(),
             mesh: node.mesh,
         })?;
@@ -79,7 +94,7 @@ impl HostNode for StoreState {
         let child = self.table.get_mut(&value)?;
         child.parent = Some(rep);
 
-        self.sender.send(WiredGltfAction::SetNodeParent {
+        self.sender.send(ScriptAction::SetNodeParent {
             id: value.rep(),
             parent: child.parent,
         })?;
@@ -94,7 +109,7 @@ impl HostNode for StoreState {
         let node = self.table.get_mut(&self_)?;
         node.children.remove(&value.rep());
 
-        self.sender.send(WiredGltfAction::SetNodeParent {
+        self.sender.send(ScriptAction::SetNodeParent {
             id: self_.rep(),
             parent: None,
         })?;
@@ -114,7 +129,7 @@ impl HostNode for StoreState {
         let node = self.table.get_mut(&self_)?;
         node.transform = value;
 
-        self.sender.send(WiredGltfAction::SetNodeTransform {
+        self.sender.send(ScriptAction::SetNodeTransform {
             id: self_.rep(),
             transform: bevy::prelude::Transform {
                 translation: bevy::prelude::Vec3::new(
@@ -142,29 +157,43 @@ impl HostNode for StoreState {
     fn collider(
         &mut self,
         self_: Resource<Node>,
-    ) -> wasm_bridge::Result<Option<Resource<super::bindgen::wired::gltf::node::Collider>>> {
-        todo!();
+    ) -> wasm_bridge::Result<Option<Resource<Collider>>> {
+        let node = self.table.get(&self_)?;
+        let res = node
+            .collider
+            .as_ref()
+            .map(|res| Resource::new_own(res.rep()));
+        Ok(res)
     }
     fn set_collider(
         &mut self,
         self_: Resource<Node>,
-        value: Option<Resource<super::bindgen::wired::gltf::node::Collider>>,
+        value: Option<Resource<Collider>>,
     ) -> wasm_bridge::Result<()> {
-        todo!();
+        let node = self.table.get_mut(&self_)?;
+        node.collider = value;
+        Ok(())
     }
 
     fn rigid_body(
         &mut self,
         self_: Resource<Node>,
-    ) -> wasm_bridge::Result<Option<Resource<super::bindgen::wired::gltf::node::RigidBody>>> {
-        todo!();
+    ) -> wasm_bridge::Result<Option<Resource<RigidBody>>> {
+        let node = self.table.get(&self_)?;
+        let res = node
+            .rigid_body
+            .as_ref()
+            .map(|res| Resource::new_own(res.rep()));
+        Ok(res)
     }
     fn set_rigid_body(
         &mut self,
         self_: Resource<Node>,
-        value: Option<Resource<super::bindgen::wired::gltf::node::RigidBody>>,
+        value: Option<Resource<RigidBody>>,
     ) -> wasm_bridge::Result<()> {
-        todo!();
+        let node = self.table.get_mut(&self_)?;
+        node.rigid_body = value;
+        Ok(())
     }
 
     fn drop(&mut self, _rep: Resource<Node>) -> wasm_bridge::Result<()> {
@@ -188,7 +217,7 @@ impl Host for StoreState {
         self.nodes.push(resource);
 
         self.sender
-            .send(WiredGltfAction::CreateNode { id: node_rep })?;
+            .send(ScriptAction::CreateNode { id: node_rep })?;
 
         Ok(Resource::new_own(node_rep))
     }
@@ -206,7 +235,7 @@ impl Host for StoreState {
             self.nodes.remove(index);
         }
 
-        self.sender.send(WiredGltfAction::RemoveNode { id: rep })?;
+        self.sender.send(ScriptAction::RemoveNode { id: rep })?;
 
         Ok(())
     }

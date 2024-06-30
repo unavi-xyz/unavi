@@ -1,14 +1,20 @@
+use bevy::utils::HashSet;
 use wasm_bridge::component::Resource;
 
-use crate::state::StoreState;
+use crate::{actions::ScriptAction, state::StoreState};
 
-use super::{
-    bindgen::{
-        wired::gltf::mesh::{Host, HostMesh, HostPrimitive, Mesh, Primitive},
-        Material,
-    },
-    WiredGltfAction,
-};
+use super::wired::gltf::mesh::{Host, HostMesh, HostPrimitive, Material};
+
+#[derive(Default)]
+pub struct Mesh {
+    pub name: String,
+    pub primitives: HashSet<u32>,
+}
+
+#[derive(Default)]
+pub struct Primitive {
+    pub material: Option<u32>,
+}
 
 impl HostPrimitive for StoreState {
     fn id(&mut self, self_: Resource<Primitive>) -> wasm_bridge::Result<u32> {
@@ -30,7 +36,7 @@ impl HostPrimitive for StoreState {
         let primitive = self.table.get_mut(&self_)?;
         primitive.material = value.map(|v| v.rep());
 
-        self.sender.send(WiredGltfAction::SetPrimitiveMaterial {
+        self.sender.send(ScriptAction::SetPrimitiveMaterial {
             id: self_.rep(),
             material: primitive.material,
         })?;
@@ -43,7 +49,7 @@ impl HostPrimitive for StoreState {
         self_: Resource<Primitive>,
         value: Vec<u32>,
     ) -> wasm_bridge::Result<()> {
-        self.sender.send(WiredGltfAction::SetPrimitiveIndices {
+        self.sender.send(ScriptAction::SetPrimitiveIndices {
             id: self_.rep(),
             value,
         })?;
@@ -54,7 +60,7 @@ impl HostPrimitive for StoreState {
         self_: Resource<Primitive>,
         value: Vec<f32>,
     ) -> wasm_bridge::Result<()> {
-        self.sender.send(WiredGltfAction::SetPrimitivePositions {
+        self.sender.send(ScriptAction::SetPrimitivePositions {
             id: self_.rep(),
             value,
         })?;
@@ -65,14 +71,14 @@ impl HostPrimitive for StoreState {
         self_: Resource<Primitive>,
         value: Vec<f32>,
     ) -> wasm_bridge::Result<()> {
-        self.sender.send(WiredGltfAction::SetPrimitiveNormals {
+        self.sender.send(ScriptAction::SetPrimitiveNormals {
             id: self_.rep(),
             value,
         })?;
         Ok(())
     }
     fn set_uvs(&mut self, self_: Resource<Primitive>, value: Vec<f32>) -> wasm_bridge::Result<()> {
-        self.sender.send(WiredGltfAction::SetPrimitiveUvs {
+        self.sender.send(ScriptAction::SetPrimitiveUvs {
             id: self_.rep(),
             value,
         })?;
@@ -123,7 +129,7 @@ impl HostMesh for StoreState {
         let mesh = self.table.get_mut(&self_)?;
         mesh.primitives.insert(primitive_rep);
 
-        self.sender.send(WiredGltfAction::CreatePrimitive {
+        self.sender.send(ScriptAction::CreatePrimitive {
             id: primitive_rep,
             mesh: self_.rep(),
         })?;
@@ -153,7 +159,7 @@ impl HostMesh for StoreState {
         let mesh = self.table.get_mut(&self_)?;
         mesh.primitives.remove(&rep);
 
-        self.sender.send(WiredGltfAction::RemovePrimitive {
+        self.sender.send(ScriptAction::RemovePrimitive {
             id: rep,
             mesh: self_.rep(),
         })?;
@@ -181,7 +187,7 @@ impl Host for StoreState {
         self.meshes.push(resource);
 
         self.sender
-            .send(WiredGltfAction::CreateMesh { id: mesh_rep })?;
+            .send(ScriptAction::CreateMesh { id: mesh_rep })?;
 
         Ok(Resource::new_own(mesh_rep))
     }
@@ -199,7 +205,7 @@ impl Host for StoreState {
             self.meshes.remove(index);
         }
 
-        self.sender.send(WiredGltfAction::RemoveMesh { id: rep })?;
+        self.sender.send(ScriptAction::RemoveMesh { id: rep })?;
 
         Ok(())
     }

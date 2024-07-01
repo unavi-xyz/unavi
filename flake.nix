@@ -159,8 +159,8 @@
               )
               (
                 nixpkgs.lib.getAttrs [
+                  flake-utils.lib.system.aarch64-darwin
                   flake-utils.lib.system.x86_64-linux
-                  flake-utils.lib.system.x86_64-darwin
                 ] self.packages
               );
         };

@@ -1,19 +1,34 @@
+use std::cell::Cell;
+
 use wasm_bridge::component::Resource;
 
-use crate::state::StoreState;
+use crate::{
+    api::utils::{RefCount, RefResource},
+    state::StoreState,
+};
 
 use super::wired::physics::types::{HostCollider, Shape};
 
 pub struct Collider {
     pub density: f32,
     pub shape: Shape,
+    ref_count: Cell<usize>,
 }
 
+impl RefCount for Collider {
+    fn ref_count<'a>(&'a self) -> &'a Cell<usize> {
+        &self.ref_count
+    }
+}
+
+impl RefResource for Collider {}
+
 impl Collider {
-    fn new(shape: Shape) -> Self {
+    pub fn new(shape: Shape) -> Self {
         Self {
             density: 1.0,
             shape,
+            ref_count: Cell::new(1),
         }
     }
 }
@@ -21,11 +36,9 @@ impl Collider {
 impl HostCollider for StoreState {
     fn new(&mut self, shape: Shape) -> wasm_bridge::Result<Resource<Collider>> {
         let collider = Collider::new(shape);
-
-        let res = self.table.push(collider)?;
-        let rep = res.rep();
-
-        Ok(Resource::new_own(rep))
+        let table_res = self.table.push(collider)?;
+        let res = Collider::from_res(&table_res, &self.table)?;
+        Ok(res)
     }
 
     fn density(&mut self, self_: Resource<Collider>) -> wasm_bridge::Result<f32> {
@@ -38,7 +51,27 @@ impl HostCollider for StoreState {
         Ok(())
     }
 
-    fn drop(&mut self, _rep: Resource<Collider>) -> wasm_bridge::Result<()> {
-        Ok(())
+    fn drop(&mut self, rep: Resource<Collider>) -> wasm_bridge::Result<()> {
+        Collider::handle_drop(rep, &mut self.table)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tracing_test::traced_test;
+
+    use crate::api::wired_physics::wired::physics::types::Sphere;
+
+    use super::*;
+
+    #[test]
+    #[traced_test]
+    fn test_drop() {
+        let (mut state, _) = StoreState::new("test_drop".to_string());
+
+        let shape = Shape::Sphere(Sphere { radius: 0.5 });
+        let res = HostCollider::new(&mut state, shape).unwrap();
+
+        crate::api::utils::tests::test_drop(&mut state, res);
     }
 }

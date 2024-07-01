@@ -3,6 +3,7 @@ use wasm_bridge::component::Linker;
 
 use super::state::StoreState;
 
+mod utils;
 mod wired_input;
 mod wired_log;
 pub mod wired_physics;

@@ -46,6 +46,15 @@ jobs:
     name: ${{ matrix.attr }}
     runs-on: ${{ matrix.os }}
     steps:
+      - uses: AdityaGarg8/remove-unwanted-software@v3
+        with:
+          remove-android: true
+          remove-codeql: true
+          remove-docker-images: true
+          remove-dotnet: true
+          remove-haskell: true
+          remove-large-packages: true
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || github.ref }}

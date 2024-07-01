@@ -7,8 +7,12 @@ use bevy::{
     utils::HashMap,
 };
 use bevy_xpbd_3d::prelude::*;
+use unavi_constants::layers::WORLD_LAYER;
 
 use super::{ActionReceiver, ScriptAction};
+
+#[derive(Component)]
+pub struct InputHandler;
 
 #[derive(Component, Clone, Copy, Debug)]
 pub struct NodeId(pub u32);
@@ -283,9 +287,31 @@ pub fn handle_actions(
 
                     if let Some((ent, ..)) = find_node(nodes, id, world) {
                         if let Some(collider) = collider {
-                            world.entity_mut(ent).insert(collider);
+                            world.entity_mut(ent).insert((
+                                collider,
+                                CollisionLayers {
+                                    memberships: WORLD_LAYER,
+                                    ..default()
+                                },
+                            ));
                         } else {
                             world.entity_mut(ent).remove::<Collider>();
+                        }
+                    } else {
+                        warn!("Node {} does not exist", id);
+                    }
+
+                    drop(s);
+                }
+                ScriptAction::SetNodeInputHandler { id, handler } => {
+                    let span = info_span!("SetNodeInputHandler", id);
+                    let s = span.entered();
+
+                    if let Some((ent, ..)) = find_node(nodes, id, world) {
+                        if handler.is_some() {
+                            world.entity_mut(ent).insert(InputHandler);
+                        } else {
+                            world.entity_mut(ent).remove::<InputHandler>();
                         }
                     } else {
                         warn!("Node {} does not exist", id);

@@ -4,7 +4,8 @@ use wasm_bridge::component::Resource;
 use crate::{
     actions::ScriptAction,
     api::{
-        wired_input::spatial_handler::SpatialHandler,
+        utils::RefResource,
+        wired_input::input_handler::InputHandler,
         wired_physics::wired::{
             math::types::Vec3,
             physics::types::{RigidBodyType, Shape, Sphere},
@@ -25,7 +26,7 @@ use super::wired::{
 pub struct Node {
     pub children: HashSet<u32>,
     pub collider: Option<Resource<Collider>>,
-    pub input_handlers: Vec<Resource<SpatialHandler>>,
+    pub input_handler: Option<Resource<InputHandler>>,
     pub mesh: Option<u32>,
     pub name: String,
     pub parent: Option<u32>,
@@ -241,6 +242,31 @@ impl HostNode for StoreState {
 
         let node = self.table.get_mut(&self_)?;
         node.rigid_body = value;
+        Ok(())
+    }
+
+    fn input_handler(
+        &mut self,
+        self_: Resource<Node>,
+    ) -> wasm_bridge::Result<Option<Resource<InputHandler>>> {
+        let node = self.table.get(&self_)?;
+
+        let res = if let Some(r) = &node.input_handler {
+            let res = InputHandler::from_res(&r, &self.table)?;
+            Some(res)
+        } else {
+            None
+        };
+
+        Ok(res)
+    }
+    fn set_input_handler(
+        &mut self,
+        self_: Resource<Node>,
+        value: Option<Resource<InputHandler>>,
+    ) -> wasm_bridge::Result<()> {
+        let node = self.table.get_mut(&self_)?;
+        node.input_handler = value;
         Ok(())
     }
 

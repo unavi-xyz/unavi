@@ -2,10 +2,14 @@ use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
     unavi::shapes::api::create_cuboid,
     wired::{
-        input::handler::SpatialHandler,
+        input::handler::InputHandler,
         log::api::{log, LogLevel},
         math::types::Vec3,
-        scene::{material::create_material, node::create_node},
+        physics::types::{Collider, Shape},
+        scene::{
+            material::{create_material, Material},
+            node::create_node,
+        },
     },
 };
 
@@ -14,13 +18,19 @@ mod bindings;
 mod wired_math_impls;
 
 struct Script {
-    handler: SpatialHandler,
+    handler: InputHandler,
+    material: Material,
 }
 
 impl GuestScript for Script {
     fn new() -> Self {
         let node = create_node();
-        let mesh = create_cuboid(Vec3::splat(1.0));
+
+        let size = Vec3::splat(1.0);
+        let collider = Collider::new(Shape::Cuboid(size));
+        node.set_collider(Some(&collider));
+
+        let mesh = create_cuboid(size.clone());
         node.set_mesh(Some(&mesh));
 
         let material = create_material();
@@ -28,19 +38,19 @@ impl GuestScript for Script {
             primitive.set_material(Some(&material));
         }
 
-        log(LogLevel::Info, "Registering spatial handler");
+        log(LogLevel::Info, "Registering input handler");
+        let handler = InputHandler::new();
+        node.set_input_handler(Some(&handler));
 
-        let handler = SpatialHandler::new(&node);
-
-        Script { handler }
+        Script { handler, material }
     }
 
     fn update(&self, _delta: f32) {
         while let Some(event) = self.handler.handle_input() {
-            log(
-                LogLevel::Info,
-                &format!("Handling input event: {:?}", event),
-            );
+            log(LogLevel::Info, &format!("Got input: {:?}", event));
+
+            let mut color = self.material.color();
+            color.b += 0.1;
         }
     }
 }

@@ -15,12 +15,13 @@ wasm_bridge::component::bindgen!({
     path: "../../wired-protocol/spatial/wit/wired-scene",
     world: "host",
     with: {
+        "wired:input/handler/input-handler": super::wired_input::input_handler::InputHandler,
+        "wired:physics/types/collider": super::wired_physics::collider::Collider,
+        "wired:physics/types/rigid-body": super::wired_physics::rigid_body::RigidBody,
         "wired:scene/material/material": material::Material,
         "wired:scene/mesh/mesh": mesh::Mesh,
         "wired:scene/mesh/primitive": mesh::Primitive,
         "wired:scene/node/node": node::Node,
-        "wired:physics/types/collider": super::wired_physics::collider::Collider,
-        "wired:physics/types/rigid-body": super::wired_physics::rigid_body::RigidBody,
     }
 });
 

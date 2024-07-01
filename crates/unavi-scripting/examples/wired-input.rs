@@ -1,5 +1,6 @@
 use bevy::prelude::*;
-use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
+use bevy_xpbd_3d::prelude::*;
+use unavi_player::PlayerPlugin;
 use unavi_scripting::{ScriptBundle, ScriptingPlugin};
 
 fn main() {
@@ -9,7 +10,9 @@ fn main() {
                 file_path: "../unavi-app/assets".to_string(),
                 ..Default::default()
             }),
-            PanOrbitCameraPlugin,
+            PhysicsDebugPlugin::default(),
+            PhysicsPlugins::default(),
+            PlayerPlugin,
             ScriptingPlugin,
         ))
         .add_systems(Startup, (setup_scene, load_script))
@@ -25,15 +28,13 @@ fn setup_scene(mut ambient: ResMut<AmbientLight>, mut commands: Commands) {
         ..Default::default()
     });
 
-    let mut transform = Transform::from_xyz(0.0, 3.0, -10.0);
-    transform.look_at(Vec3::new(0.0, 0.5, 0.0), Vec3::new(0.0, 1.0, 0.0));
-
     commands.spawn((
-        Camera3dBundle {
-            transform,
-            ..Default::default()
+        SpatialBundle {
+            transform: Transform::from_xyz(0.0, -1.0, 0.0),
+            ..default()
         },
-        PanOrbitCamera::default(),
+        Collider::cuboid(20.0, 0.5, 20.0),
+        RigidBody::Static,
     ));
 }
 

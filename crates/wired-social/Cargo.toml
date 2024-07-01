@@ -12,4 +12,4 @@ serde.workspace = true
 serde_json.workspace = true
 
 [dev-dependencies]
-jsonschema = { version = "0.17.1", features = ["draft201909", "draft202012"] }
+jsonschema = { version = "0.18.0", features = ["draft201909", "draft202012"] }

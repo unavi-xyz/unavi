@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 use bevy_tnua::prelude::*;
 use bevy_xpbd_3d::prelude::*;
+use unavi_constants::layers::LOCAL_PLAYER_LAYER;
 
-use crate::Player;
+use crate::{Player, PlayerCamera};
 
 use super::look::{LookDirection, PitchEvent, YawEvent};
 
@@ -29,12 +30,18 @@ const SPAWN: Vec3 = Vec3::new(0.0, PLAYER_HEIGHT * 2.0, 0.0);
 pub fn spawn_player(mut commands: Commands) {
     let yaw = commands.spawn((TransformBundle::default(), YawTag)).id();
     let pitch = commands.spawn((TransformBundle::default(), PitchTag)).id();
-    let camera = commands.spawn(Camera3dBundle::default()).id();
+    let camera = commands
+        .spawn((Camera3dBundle::default(), PlayerCamera))
+        .id();
 
     let body = commands
         .spawn((
             Collider::capsule(PLAYER_HEIGHT, PLAYER_WIDTH),
             ColliderDensity(10.0),
+            CollisionLayers {
+                memberships: LOCAL_PLAYER_LAYER,
+                ..default()
+            },
             LinearVelocity::default(),
             Player::default(),
             RigidBody::Dynamic,

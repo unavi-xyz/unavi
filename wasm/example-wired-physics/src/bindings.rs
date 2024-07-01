@@ -254,18 +254,14 @@ pub mod wired {
                 super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type InputEvent = super::super::super::wired::input::types::InputEvent;
-            pub type Node = super::super::super::wired::scene::node::Node;
-            /// Input handler.
-            /// Represents an object in 3D space that can react to input.
-            /// Handlers can optionally capture the input method, stopping propagation to other handlers.
 
             #[derive(Debug)]
             #[repr(transparent)]
-            pub struct SpatialHandler {
-                handle: _rt::Resource<SpatialHandler>,
+            pub struct InputHandler {
+                handle: _rt::Resource<InputHandler>,
             }
 
-            impl SpatialHandler {
+            impl InputHandler {
                 #[doc(hidden)]
                 pub unsafe fn from_handle(handle: u32) -> Self {
                     Self {
@@ -284,7 +280,7 @@ pub mod wired {
                 }
             }
 
-            unsafe impl _rt::WasmResource for SpatialHandler {
+            unsafe impl _rt::WasmResource for InputHandler {
                 #[inline]
                 unsafe fn drop(_handle: u32) {
                     #[cfg(not(target_arch = "wasm32"))]
@@ -294,7 +290,7 @@ pub mod wired {
                     {
                         #[link(wasm_import_module = "wired:input/handler")]
                         extern "C" {
-                            #[link_name = "[resource-drop]spatial-handler"]
+                            #[link_name = "[resource-drop]input-handler"]
                             fn drop(_: u32);
                         }
 
@@ -303,27 +299,27 @@ pub mod wired {
                 }
             }
 
-            impl SpatialHandler {
+            impl InputHandler {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn new(node: &Node) -> Self {
+                pub fn new() -> Self {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:input/handler")]
                         extern "C" {
-                            #[link_name = "[constructor]spatial-handler"]
-                            fn wit_import(_: i32) -> i32;
+                            #[link_name = "[constructor]input-handler"]
+                            fn wit_import() -> i32;
                         }
 
                         #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32) -> i32 {
+                        fn wit_import() -> i32 {
                             unreachable!()
                         }
-                        let ret = wit_import((node).handle() as i32);
-                        SpatialHandler::from_handle(ret as u32)
+                        let ret = wit_import();
+                        InputHandler::from_handle(ret as u32)
                     }
                 }
             }
-            impl SpatialHandler {
+            impl InputHandler {
                 #[allow(unused_unsafe, clippy::all)]
                 /// Handle the next recieved input event.
                 /// Events only last for one tick.
@@ -336,7 +332,7 @@ pub mod wired {
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:input/handler")]
                         extern "C" {
-                            #[link_name = "[method]spatial-handler.handle-input"]
+                            #[link_name = "[method]input-handler.handle-input"]
                             fn wit_import(_: i32, _: *mut u8);
                         }
 
@@ -2266,6 +2262,7 @@ pub mod wired {
                 super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Mesh = super::super::super::wired::scene::mesh::Mesh;
+            pub type InputHandler = super::super::super::wired::input::handler::InputHandler;
             pub type Transform = super::super::super::wired::math::types::Transform;
             pub type Collider = super::super::super::wired::physics::types::Collider;
             pub type RigidBody = super::super::super::wired::physics::types::RigidBody;
@@ -2795,6 +2792,65 @@ pub mod wired {
                         #[link(wasm_import_module = "wired:scene/node")]
                         extern "C" {
                             #[link_name = "[method]node.set-rigid-body"]
+                            fn wit_import(_: i32, _: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, result0_0, result0_1);
+                    }
+                }
+            }
+            impl Node {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn input_handler(&self) -> Option<InputHandler> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:scene/node")]
+                        extern "C" {
+                            #[link_name = "[method]node.input-handler"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<i32>();
+
+                                    super::super::super::wired::input::handler::InputHandler::from_handle(l2 as u32)
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl Node {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_input_handler(&self, value: Option<&InputHandler>) {
+                    unsafe {
+                        let (result0_0, result0_1) = match value {
+                            Some(e) => (1i32, (e).handle() as i32),
+                            None => (0i32, 0i32),
+                        };
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:scene/node")]
+                        extern "C" {
+                            #[link_name = "[method]node.set-input-handler"]
                             fn wit_import(_: i32, _: i32, _: i32);
                         }
 
@@ -3390,8 +3446,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 3769] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xbc\x1c\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 3879] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xaa\x1d\x01A\x02\x01\
 A\x1d\x01B\x16\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
 material\x03\x01\x01h\x02\x01@\x01\x04self\x03\0y\x04\0\x13[method]material.id\x01\
 \x04\x01@\x01\x04self\x03\0s\x04\0\x15[method]material.name\x01\x05\x01@\x02\x04\
@@ -3434,10 +3490,16 @@ n\x01\x0borientation\x03\x04\0\x03ray\x03\0\x0d\x01r\x03\x06origin\x01\x0borient
 ation\x03\x06radiusv\x04\0\x03tip\x03\0\x0f\x01q\x03\x04hand\x01\x0c\0\x03ray\x01\
 \x0e\0\x03tip\x01\x10\0\x04\0\x0ainput-type\x03\0\x11\x01r\x04\x02idw\x05input\x12\
 \x08distancev\x05ordery\x04\0\x0binput-event\x03\0\x13\x03\x01\x11wired:input/ty\
-pes\x05\x08\x01B\x1c\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\0\x04\0\x08collider\
-\x03\x01\x01r\x01\x06radiusv\x04\0\x06sphere\x03\0\x03\x01q\x02\x06cuboid\x01\x01\
-\0\x06sphere\x01\x04\0\x04\0\x05shape\x03\0\x05\x04\0\x0arigid-body\x03\x01\x01m\
-\x03\x07dynamic\x05fixed\x09kinematic\x04\0\x0frigid-body-type\x03\0\x08\x01i\x02\
+pes\x05\x08\x02\x03\0\x04\x0binput-event\x01B\x0a\x02\x03\x02\x01\x09\x04\0\x0bi\
+nput-event\x03\0\0\x04\0\x0dinput-handler\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\x1a\
+[constructor]input-handler\x01\x04\x01h\x02\x01k\x01\x01@\x01\x04self\x05\0\x06\x04\
+\0\"[method]input-handler.handle-input\x01\x07\x03\x01\x13wired:input/handler\x05\
+\x0a\x01B\x04\x01m\x04\x05debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\
+\0\x01@\x02\x05level\x01\x07messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired\
+:log/api\x05\x0b\x01B\x1c\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\0\x04\0\x08col\
+lider\x03\x01\x01r\x01\x06radiusv\x04\0\x06sphere\x03\0\x03\x01q\x02\x06cuboid\x01\
+\x01\0\x06sphere\x01\x04\0\x04\0\x05shape\x03\0\x05\x04\0\x0arigid-body\x03\x01\x01\
+m\x03\x07dynamic\x05fixed\x09kinematic\x04\0\x0frigid-body-type\x03\0\x08\x01i\x02\
 \x01@\x01\x05shape\x06\0\x0a\x04\0\x15[constructor]collider\x01\x0b\x01h\x02\x01\
 @\x01\x04self\x0c\0v\x04\0\x18[method]collider.density\x01\x0d\x01@\x02\x04self\x0c\
 \x05valuev\x01\0\x04\0\x1c[method]collider.set-density\x01\x0e\x01i\x07\x01@\x01\
@@ -3445,39 +3507,35 @@ pes\x05\x08\x01B\x1c\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\0\x04\0\x08collider
 @\x01\x04self\x11\0\x01\x04\0\x19[method]rigid-body.angvel\x01\x12\x01@\x02\x04s\
 elf\x11\x05value\x01\x01\0\x04\0\x1d[method]rigid-body.set-angvel\x01\x13\x04\0\x19\
 [method]rigid-body.linvel\x01\x12\x04\0\x1d[method]rigid-body.set-linvel\x01\x13\
-\x03\x01\x13wired:physics/types\x05\x09\x02\x03\0\x02\x09transform\x02\x03\0\x05\
-\x08collider\x02\x03\0\x05\x0arigid-body\x01B<\x02\x03\x02\x01\x04\x04\0\x04mesh\
-\x03\0\0\x02\x03\x02\x01\x0a\x04\0\x09transform\x03\0\x02\x02\x03\x02\x01\x0b\x04\
-\0\x08collider\x03\0\x04\x02\x03\x02\x01\x0c\x04\0\x0arigid-body\x03\0\x06\x04\0\
-\x04node\x03\x01\x01h\x08\x01@\x01\x04self\x09\0y\x04\0\x0f[method]node.id\x01\x0a\
-\x01@\x01\x04self\x09\0s\x04\0\x11[method]node.name\x01\x0b\x01@\x02\x04self\x09\
-\x05values\x01\0\x04\0\x15[method]node.set-name\x01\x0c\x01i\x08\x01p\x0d\x01@\x01\
-\x04self\x09\0\x0e\x04\0\x15[method]node.children\x01\x0f\x01@\x02\x04self\x09\x05\
-value\x09\x01\0\x04\0\x16[method]node.add-child\x01\x10\x04\0\x19[method]node.re\
-move-child\x01\x10\x01k\x0d\x01@\x01\x04self\x09\0\x11\x04\0\x13[method]node.par\
-ent\x01\x12\x01@\x01\x04self\x09\0\x03\x04\0\x16[method]node.transform\x01\x13\x01\
-@\x02\x04self\x09\x05value\x03\x01\0\x04\0\x1a[method]node.set-transform\x01\x14\
-\x01i\x01\x01k\x15\x01@\x01\x04self\x09\0\x16\x04\0\x11[method]node.mesh\x01\x17\
-\x01h\x01\x01k\x18\x01@\x02\x04self\x09\x05value\x19\x01\0\x04\0\x15[method]node\
-.set-mesh\x01\x1a\x01i\x05\x01k\x1b\x01@\x01\x04self\x09\0\x1c\x04\0\x15[method]\
-node.collider\x01\x1d\x01h\x05\x01k\x1e\x01@\x02\x04self\x09\x05value\x1f\x01\0\x04\
-\0\x19[method]node.set-collider\x01\x20\x01i\x07\x01k!\x01@\x01\x04self\x09\0\"\x04\
-\0\x17[method]node.rigid-body\x01#\x01h\x07\x01k$\x01@\x02\x04self\x09\x05value%\
-\x01\0\x04\0\x1b[method]node.set-rigid-body\x01&\x01@\0\0\x0e\x04\0\x0alist-node\
-s\x01'\x01@\0\0\x0d\x04\0\x0bcreate-node\x01(\x01@\x01\x05value\x0d\x01\0\x04\0\x0b\
-remove-node\x01)\x03\x01\x10wired:scene/node\x05\x0d\x02\x03\0\x04\x0binput-even\
-t\x02\x03\0\x06\x04node\x01B\x0d\x02\x03\x02\x01\x0e\x04\0\x0binput-event\x03\0\0\
-\x02\x03\x02\x01\x0f\x04\0\x04node\x03\0\x02\x04\0\x0fspatial-handler\x03\x01\x01\
-h\x03\x01i\x04\x01@\x01\x04node\x05\0\x06\x04\0\x1c[constructor]spatial-handler\x01\
-\x07\x01h\x04\x01k\x01\x01@\x01\x04self\x08\0\x09\x04\0$[method]spatial-handler.\
-handle-input\x01\x0a\x03\x01\x13wired:input/handler\x05\x10\x01B\x04\x01m\x04\x05\
-debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\x07\
-messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x11\x01B\x07\x04\
-\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01\
-h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\
-\x01\x12wired:script/types\x05\x12\x04\x01\x1cexample:wired-physics/script\x04\0\
-\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-\
-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+\x03\x01\x13wired:physics/types\x05\x0c\x02\x03\0\x05\x0dinput-handler\x02\x03\0\
+\x02\x09transform\x02\x03\0\x07\x08collider\x02\x03\0\x07\x0arigid-body\x01BF\x02\
+\x03\x02\x01\x04\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x0d\x04\0\x0dinput-handle\
+r\x03\0\x02\x02\x03\x02\x01\x0e\x04\0\x09transform\x03\0\x04\x02\x03\x02\x01\x0f\
+\x04\0\x08collider\x03\0\x06\x02\x03\x02\x01\x10\x04\0\x0arigid-body\x03\0\x08\x04\
+\0\x04node\x03\x01\x01h\x0a\x01@\x01\x04self\x0b\0y\x04\0\x0f[method]node.id\x01\
+\x0c\x01@\x01\x04self\x0b\0s\x04\0\x11[method]node.name\x01\x0d\x01@\x02\x04self\
+\x0b\x05values\x01\0\x04\0\x15[method]node.set-name\x01\x0e\x01i\x0a\x01p\x0f\x01\
+@\x01\x04self\x0b\0\x10\x04\0\x15[method]node.children\x01\x11\x01@\x02\x04self\x0b\
+\x05value\x0b\x01\0\x04\0\x16[method]node.add-child\x01\x12\x04\0\x19[method]nod\
+e.remove-child\x01\x12\x01k\x0f\x01@\x01\x04self\x0b\0\x13\x04\0\x13[method]node\
+.parent\x01\x14\x01@\x01\x04self\x0b\0\x05\x04\0\x16[method]node.transform\x01\x15\
+\x01@\x02\x04self\x0b\x05value\x05\x01\0\x04\0\x1a[method]node.set-transform\x01\
+\x16\x01i\x01\x01k\x17\x01@\x01\x04self\x0b\0\x18\x04\0\x11[method]node.mesh\x01\
+\x19\x01h\x01\x01k\x1a\x01@\x02\x04self\x0b\x05value\x1b\x01\0\x04\0\x15[method]\
+node.set-mesh\x01\x1c\x01i\x07\x01k\x1d\x01@\x01\x04self\x0b\0\x1e\x04\0\x15[met\
+hod]node.collider\x01\x1f\x01h\x07\x01k\x20\x01@\x02\x04self\x0b\x05value!\x01\0\
+\x04\0\x19[method]node.set-collider\x01\"\x01i\x09\x01k#\x01@\x01\x04self\x0b\0$\
+\x04\0\x17[method]node.rigid-body\x01%\x01h\x09\x01k&\x01@\x02\x04self\x0b\x05va\
+lue'\x01\0\x04\0\x1b[method]node.set-rigid-body\x01(\x01i\x03\x01k)\x01@\x01\x04\
+self\x0b\0*\x04\0\x1a[method]node.input-handler\x01+\x01h\x03\x01k,\x01@\x02\x04\
+self\x0b\x05value-\x01\0\x04\0\x1e[method]node.set-input-handler\x01.\x01@\0\0\x10\
+\x04\0\x0alist-nodes\x01/\x01@\0\0\x0f\x04\0\x0bcreate-node\x010\x01@\x01\x05val\
+ue\x0f\x01\0\x04\0\x0bremove-node\x011\x03\x01\x10wired:scene/node\x05\x11\x01B\x07\
+\x04\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\
+\x01h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\
+\x04\x01\x12wired:script/types\x05\x12\x04\x01\x1cexample:wired-physics/script\x04\
+\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwi\
+t-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

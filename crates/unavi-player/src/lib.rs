@@ -20,6 +20,7 @@ impl Plugin for PlayerPlugin {
             .add_systems(
                 Update,
                 (
+                    input::handle_raycast_input,
                     look::grab_mouse,
                     (controls::void_teleport, input::read_keyboard_input)
                         .before(controls::move_player),
@@ -54,3 +55,6 @@ impl Default for Player {
         }
     }
 }
+
+#[derive(Component)]
+pub struct PlayerCamera;

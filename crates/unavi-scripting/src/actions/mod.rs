@@ -43,6 +43,10 @@ pub enum ScriptAction {
         id: u32,
         collider: Option<Collider>,
     },
+    SetNodeInputHandler {
+        id: u32,
+        handler: Option<()>,
+    },
     SetNodeMesh {
         id: u32,
         mesh: Option<u32>,

@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
+use bevy_xpbd_3d::plugins::PhysicsPlugins;
 use unavi_scripting::{ScriptBundle, ScriptingPlugin};
 
 fn main() {
@@ -10,6 +11,7 @@ fn main() {
                 ..Default::default()
             }),
             PanOrbitCameraPlugin,
+            PhysicsPlugins::default(),
             ScriptingPlugin,
         ))
         .add_systems(Startup, (setup_scene, load_script))

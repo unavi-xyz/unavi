@@ -13,6 +13,8 @@ bevy-tnua = "0.18.0"
 bevy-tnua-xpbd3d = "0.4.0"
 bevy.workspace = true
 bevy_xpbd_3d.workspace = true
+unavi-constants = { path = "../unavi-constants" }
+unavi-scripting = { path = "../unavi-scripting" }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 web-sys = { workspace = true, features = ["Navigator", "Window"] }

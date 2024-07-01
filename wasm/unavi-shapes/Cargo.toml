@@ -16,6 +16,7 @@ wit-bindgen-rt.workspace = true
 package = "unavi:shapes"
 
 [package.metadata.component.target.dependencies]
+"wired:input" = { path = "../../wired-protocol/spatial/wit/wired-input" }
 "wired:math" = { path = "../../wired-protocol/spatial/wit/wired-math" }
 "wired:physics" = { path = "../../wired-protocol/spatial/wit/wired-physics" }
 "wired:scene" = { path = "../../wired-protocol/spatial/wit/wired-scene" }

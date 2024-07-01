@@ -11361,6 +11361,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-constants"
+version = "0.0.3"
+dependencies = [
+ "bevy_xpbd_3d",
+]
+
+[[package]]
 name = "unavi-dwn"
 version = "0.0.3"
 dependencies = [
@@ -11400,6 +11407,8 @@ dependencies = [
  "bevy-tnua",
  "bevy-tnua-xpbd3d",
  "bevy_xpbd_3d",
+ "unavi-constants",
+ "unavi-scripting",
  "web-sys",
 ]
 
@@ -11416,6 +11425,8 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-test",
+ "unavi-constants",
+ "unavi-player",
  "wasm-bridge",
  "wasm-bridge-wasi",
 ]

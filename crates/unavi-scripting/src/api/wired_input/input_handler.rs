@@ -14,7 +14,7 @@ pub struct InputHandler {
 }
 
 impl RefCount for InputHandler {
-    fn ref_count<'a>(&'a self) -> &'a Cell<usize> {
+    fn ref_count(&self) -> &Cell<usize> {
         &self.ref_count
     }
 }

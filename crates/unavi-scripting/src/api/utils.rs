@@ -4,7 +4,7 @@ use bevy::log::warn;
 use wasm_bridge::component::{Resource, ResourceTable, ResourceTableError};
 
 pub trait RefCount {
-    fn ref_count<'a>(&'a self) -> &'a Cell<usize>;
+    fn ref_count(&self) -> &Cell<usize>;
 
     fn increment(&self) -> usize {
         let count = self.ref_count();

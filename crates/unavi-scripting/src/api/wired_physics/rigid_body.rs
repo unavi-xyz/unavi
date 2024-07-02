@@ -31,7 +31,7 @@ impl RigidBody {
 }
 
 impl RefCount for RigidBody {
-    fn ref_count<'a>(&'a self) -> &'a Cell<usize> {
+    fn ref_count(&self) -> &Cell<usize> {
         &self.ref_count
     }
 }

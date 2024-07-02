@@ -30,7 +30,7 @@ impl GuestScript for Script {
         let collider = Collider::new(Shape::Cuboid(size));
         node.set_collider(Some(&collider));
 
-        let mesh = create_cuboid(size.clone());
+        let mesh = create_cuboid(size);
         node.set_mesh(Some(&mesh));
 
         let material = create_material();

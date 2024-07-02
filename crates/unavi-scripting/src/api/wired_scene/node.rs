@@ -252,7 +252,7 @@ impl HostNode for StoreState {
         let node = self.table.get(&self_)?;
 
         let res = if let Some(r) = &node.input_handler {
-            let res = InputHandler::from_res(&r, &self.table)?;
+            let res = InputHandler::from_res(r, &self.table)?;
             Some(res)
         } else {
             None

@@ -9,6 +9,7 @@ license.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
+rand = "0.8.5"
 wit-bindgen-rt.workspace = true
 
 [package.metadata.component]

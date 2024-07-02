@@ -7,11 +7,12 @@ use bindings::{
         math::types::Vec3,
         physics::types::{Collider, Shape},
         scene::{
-            material::{create_material, Material},
+            material::{create_material, Color, Material},
             node::create_node,
         },
     },
 };
+use rand::Rng;
 
 #[allow(warnings)]
 mod bindings;
@@ -49,8 +50,13 @@ impl GuestScript for Script {
         while let Some(event) = self.handler.handle_input() {
             log(LogLevel::Info, &format!("Got input: {:?}", event));
 
-            let mut color = self.material.color();
-            color.b += 0.1;
+            let mut rng = rand::thread_rng();
+            let r = rng.gen_range(0.0..1.0);
+            let g = rng.gen_range(0.0..1.0);
+            let b = rng.gen_range(0.0..1.0);
+            let a = rng.gen_range(0.2..1.0);
+
+            self.material.set_color(Color { r, g, b, a });
         }
     }
 }

@@ -1,5 +1,6 @@
 use std::cell::Cell;
 
+use crossbeam::channel::{Receiver, Sender};
 use wasm_bridge::component::Resource;
 
 use crate::{
@@ -7,9 +8,24 @@ use crate::{
     state::StoreState,
 };
 
-use super::wired::input::{handler::HostInputHandler, types::InputEvent};
+use super::wired::{
+    input::{
+        handler::HostInputHandler,
+        types::{InputEvent, InputType, Ray},
+    },
+    math::types::{Quat, Vec3},
+};
+
+pub enum ScriptInputEvent {
+    Raycast {
+        origin: bevy::math::Vec3,
+        orientation: bevy::math::Quat,
+    },
+}
 
 pub struct InputHandler {
+    pub sender: Sender<ScriptInputEvent>,
+    receiver: Receiver<ScriptInputEvent>,
     ref_count: Cell<usize>,
 }
 
@@ -23,8 +39,12 @@ impl RefResource for InputHandler {}
 
 impl InputHandler {
     pub fn new() -> Self {
+        let (sender, receiver) = crossbeam::channel::bounded(10);
+
         Self {
+            receiver,
             ref_count: Cell::new(1),
+            sender,
         }
     }
 }
@@ -39,9 +59,45 @@ impl HostInputHandler for StoreState {
 
     fn handle_input(
         &mut self,
-        _self_: Resource<InputHandler>,
+        self_: Resource<InputHandler>,
     ) -> wasm_bridge::Result<Option<InputEvent>> {
-        Ok(None)
+        let data = self.table.get(&self_)?;
+
+        if let Ok(event) = data.receiver.try_recv() {
+            let e = match event {
+                ScriptInputEvent::Raycast {
+                    origin,
+                    orientation,
+                } => {
+                    let origin = Vec3 {
+                        x: origin.x,
+                        y: origin.y,
+                        z: origin.z,
+                    };
+
+                    let orientation = Quat {
+                        x: orientation.x,
+                        y: orientation.y,
+                        z: orientation.z,
+                        w: orientation.w,
+                    };
+
+                    InputEvent {
+                        id: 0,
+                        input: InputType::Ray(Ray {
+                            origin,
+                            orientation,
+                        }),
+                        order: 0,
+                        distance: 0.0,
+                    }
+                }
+            };
+
+            Ok(Some(e))
+        } else {
+            Ok(None)
+        }
     }
 
     fn drop(&mut self, rep: Resource<InputHandler>) -> wasm_bridge::Result<()> {

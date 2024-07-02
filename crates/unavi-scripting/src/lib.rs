@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use self::{asset::Wasm, load::Scripts};
 
 pub mod actions;
-mod api;
+pub mod api;
 pub mod asset;
 mod execution;
 mod load;

@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use bevy_xpbd_3d::prelude::*;
-use crossbeam::channel::Receiver;
+use crossbeam::channel::{Receiver, Sender};
+
+use crate::api::wired_input::input_handler::ScriptInputEvent;
 
 pub mod handler;
 
@@ -45,7 +47,7 @@ pub enum ScriptAction {
     },
     SetNodeInputHandler {
         id: u32,
-        handler: Option<()>,
+        handler: Option<Sender<ScriptInputEvent>>,
     },
     SetNodeMesh {
         id: u32,

@@ -265,8 +265,21 @@ impl HostNode for StoreState {
         self_: Resource<Node>,
         value: Option<Resource<InputHandler>>,
     ) -> wasm_bridge::Result<()> {
+        let handler = if let Some(value) = &value {
+            let data = self.table.get(value)?;
+            Some(data.sender.clone())
+        } else {
+            None
+        };
+
         let node = self.table.get_mut(&self_)?;
         node.input_handler = value;
+
+        self.sender.send(ScriptAction::SetNodeInputHandler {
+            id: self_.rep(),
+            handler,
+        })?;
+
         Ok(())
     }
 

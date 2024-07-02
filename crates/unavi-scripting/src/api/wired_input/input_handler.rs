@@ -37,6 +37,12 @@ impl RefCount for InputHandler {
 
 impl RefResource for InputHandler {}
 
+impl Default for InputHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InputHandler {
     pub fn new() -> Self {
         let (sender, receiver) = crossbeam::channel::bounded(10);

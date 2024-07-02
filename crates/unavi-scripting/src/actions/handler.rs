@@ -7,12 +7,15 @@ use bevy::{
     utils::HashMap,
 };
 use bevy_xpbd_3d::prelude::*;
+use crossbeam::channel::Sender;
 use unavi_constants::layers::WORLD_LAYER;
+
+use crate::api::wired_input::input_handler::ScriptInputEvent;
 
 use super::{ActionReceiver, ScriptAction};
 
-#[derive(Component)]
-pub struct InputHandler;
+#[derive(Component, Deref)]
+pub struct InputHandler(pub Sender<ScriptInputEvent>);
 
 #[derive(Component, Clone, Copy, Debug)]
 pub struct NodeId(pub u32);
@@ -308,8 +311,8 @@ pub fn handle_actions(
                     let s = span.entered();
 
                     if let Some((ent, ..)) = find_node(nodes, id, world) {
-                        if handler.is_some() {
-                            world.entity_mut(ent).insert(InputHandler);
+                        if let Some(sender) = handler {
+                            world.entity_mut(ent).insert(InputHandler(sender));
                         } else {
                             world.entity_mut(ent).remove::<InputHandler>();
                         }

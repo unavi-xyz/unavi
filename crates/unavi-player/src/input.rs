@@ -2,7 +2,9 @@ use bevy::input::keyboard::KeyCode;
 use bevy::prelude::*;
 use bevy_xpbd_3d::prelude::*;
 use unavi_constants::layers::{OTHER_PLAYER_LAYER, WORLD_LAYER};
-use unavi_scripting::actions::handler::NodeId;
+use unavi_scripting::{
+    actions::handler::InputHandler, api::wired_input::input_handler::ScriptInputEvent,
+};
 
 use crate::PlayerCamera;
 
@@ -53,27 +55,18 @@ const RAYCAST_DISTANCE: f32 = 10.0;
 pub fn handle_raycast_input(
     camera: Query<&GlobalTransform, With<PlayerCamera>>,
     mouse: Res<ButtonInput<MouseButton>>,
-    mut draw_ray: Local<(Vec3, Vec3)>,
-    mut gizmos: Gizmos,
-    nodes: Query<(Entity, &NodeId)>,
+    nodes: Query<(Entity, &InputHandler)>,
     query: SpatialQuery,
 ) {
     if camera.is_empty() {
         return;
     }
 
-    gizmos.arrow(draw_ray.0, draw_ray.1, Color::BLUE);
-
     if mouse.just_pressed(MouseButton::Left) {
         let transform = camera.single();
         let (_, rotation, translation) = transform.to_scale_rotation_translation();
 
         let direction = rotation.normalize() * Direction3d::NEG_Z;
-
-        // TODO: Raycast from cursor location if not pointer-locked.
-
-        let end = translation + direction * RAYCAST_DISTANCE;
-        *draw_ray = (translation, end);
 
         if let Some(hit) = query.cast_ray(
             translation,
@@ -85,11 +78,16 @@ pub fn handle_raycast_input(
                 ..default()
             },
         ) {
-            for (ent, id) in nodes.iter() {
-                // TODO: Recursive check to see if children were hit.
+            for (ent, handler) in nodes.iter() {
+                // TODO: Recursive check if children were hit.
 
                 if hit.entity == ent {
-                    info!("Hit node: {:?}", id);
+                    if let Err(e) = handler.send(ScriptInputEvent::Raycast {
+                        origin: translation,
+                        orientation: rotation,
+                    }) {
+                        error!("Failed to send script input event: {}", e);
+                    };
                     break;
                 }
             }

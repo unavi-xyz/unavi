@@ -1,19 +1,27 @@
-use bindings::exports::wired::script::types::{Guest, GuestScript};
+use bindings::{
+    exports::wired::script::types::{Guest, GuestScript},
+    unavi::vscreen::screen::Screen,
+};
 
 #[allow(warnings)]
 mod bindings;
 mod wired_math_impls;
 mod wired_scene_impls;
 
-#[derive(Default)]
-struct Script {}
+struct Script {
+    screen: Screen,
+}
 
 impl GuestScript for Script {
     fn new() -> Self {
-        Script::default()
+        Script {
+            screen: Screen::new(),
+        }
     }
 
-    fn update(&self, _delta: f32) {}
+    fn update(&self, delta: f32) {
+        self.screen.update(delta);
+    }
 }
 
 struct Types;

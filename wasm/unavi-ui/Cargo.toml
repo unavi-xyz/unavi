@@ -1,5 +1,5 @@
 [package]
-name = "unavi-system"
+name = "unavi-ui"
 version.workspace = true
 edition.workspace = true
 repository.workspace = true
@@ -12,10 +12,9 @@ crate-type = ["cdylib"]
 wit-bindgen-rt.workspace = true
 
 [package.metadata.component]
-package = "unavi:system"
+package = "unavi:ui"
 
 [package.metadata.component.target.dependencies]
-"unavi:vscreen" = { path = "../unavi-vscreen/wit" }
 "wired:input" = { path = "../../wired-protocol/spatial/wit/wired-input" }
 "wired:log" = { path = "../../wired-protocol/spatial/wit/wired-log" }
 "wired:math" = { path = "../../wired-protocol/spatial/wit/wired-math" }

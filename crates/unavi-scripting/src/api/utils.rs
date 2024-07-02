@@ -27,7 +27,7 @@ pub trait RefCount {
     }
 }
 
-pub trait RefResource: RefCount + Sized + 'static {
+pub trait RefResource: RefCount + Send + Sized + 'static {
     fn new_own(&self, rep: u32) -> Resource<Self> {
         self.increment();
         Resource::new_own(rep)

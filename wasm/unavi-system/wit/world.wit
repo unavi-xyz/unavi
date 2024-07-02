@@ -2,4 +2,6 @@ package unavi:system;
 
 world script {
     include wired:prelude/script; 
+
+    import unavi:vscreen/screen;
 }

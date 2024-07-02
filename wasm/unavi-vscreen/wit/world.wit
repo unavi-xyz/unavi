@@ -1,0 +1,30 @@
+package unavi:vscreen;
+
+world lib {
+    include wired:prelude/imports; 
+
+    export screen;
+}
+
+interface screen {
+  use wired:scene/node.{node};
+
+  resource screen {
+    constructor();
+
+    add-module: func(module: module);
+
+    visible: func() -> bool;
+    set-visible: func(value: bool);
+
+    update: func(delta: f32);
+  }
+
+  resource module {
+    constructor();
+
+    root: func() -> node;
+
+    update: func(delta: f32);
+  }
+}

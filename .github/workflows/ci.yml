@@ -24,7 +24,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           submodules: true
 
-      - uses: DeterminateSystems/flake-checker-action@v7
+      - uses: DeterminateSystems/flake-checker-action@v8
 
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main

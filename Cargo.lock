@@ -5249,7 +5249,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.4.10",
+ "socket2 0.5.7",
  "tokio",
  "tower-service",
  "tracing",
@@ -5320,6 +5320,22 @@ dependencies = [
  "native-tls",
  "tokio",
  "tokio-native-tls",
+]
+
+[[package]]
+name = "hyper-tls"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "70206fc6890eaca9fde8a0bf71caa2ddfc9fe045ac9e5c70df101a7dbde866e0"
+dependencies = [
+ "bytes",
+ "http-body-util",
+ "hyper 1.3.1",
+ "hyper-util",
+ "native-tls",
+ "tokio",
+ "tokio-native-tls",
+ "tower-service",
 ]
 
 [[package]]
@@ -8637,7 +8653,7 @@ dependencies = [
  "http-body 0.4.6",
  "hyper 0.14.29",
  "hyper-rustls 0.24.2",
- "hyper-tls",
+ "hyper-tls 0.5.0",
  "ipnet",
  "js-sys",
  "log",
@@ -8684,11 +8700,13 @@ dependencies = [
  "http-body-util",
  "hyper 1.3.1",
  "hyper-rustls 0.27.2",
+ "hyper-tls 0.6.0",
  "hyper-util",
  "ipnet",
  "js-sys",
  "log",
  "mime",
+ "native-tls",
  "once_cell",
  "percent-encoding",
  "pin-project-lite",
@@ -8702,6 +8720,7 @@ dependencies = [
  "sync_wrapper 1.0.1",
  "system-configuration",
  "tokio",
+ "tokio-native-tls",
  "tokio-rustls 0.26.0",
  "tower-service",
  "url",
@@ -11332,7 +11351,7 @@ dependencies = [
  "bevy_xpbd_3d",
  "clap",
  "dwn",
- "reqwest 0.11.27",
+ "reqwest 0.12.5",
  "self_update",
  "semver",
  "surrealdb",
@@ -11442,7 +11461,7 @@ dependencies = [
  "clap",
  "dwn",
  "port_scanner",
- "reqwest 0.11.27",
+ "reqwest 0.12.5",
  "serde_json",
  "surrealdb",
  "tokio",

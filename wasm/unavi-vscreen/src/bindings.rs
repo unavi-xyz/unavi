@@ -896,75 +896,6 @@ pub mod wired {
         }
     }
     #[allow(dead_code)]
-    pub mod log {
-        #[allow(dead_code, clippy::all)]
-        pub mod api {
-            #[used]
-            #[doc(hidden)]
-            #[cfg(target_arch = "wasm32")]
-            static __FORCE_SECTION_REF: fn() =
-                super::super::super::__link_custom_section_describing_imports;
-            #[repr(u8)]
-            #[derive(Clone, Copy, Eq, PartialEq)]
-            pub enum LogLevel {
-                Debug,
-                Info,
-                Warn,
-                Error,
-            }
-            impl ::core::fmt::Debug for LogLevel {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    match self {
-                        LogLevel::Debug => f.debug_tuple("LogLevel::Debug").finish(),
-                        LogLevel::Info => f.debug_tuple("LogLevel::Info").finish(),
-                        LogLevel::Warn => f.debug_tuple("LogLevel::Warn").finish(),
-                        LogLevel::Error => f.debug_tuple("LogLevel::Error").finish(),
-                    }
-                }
-            }
-
-            impl LogLevel {
-                #[doc(hidden)]
-                pub unsafe fn _lift(val: u8) -> LogLevel {
-                    if !cfg!(debug_assertions) {
-                        return ::core::mem::transmute(val);
-                    }
-
-                    match val {
-                        0 => LogLevel::Debug,
-                        1 => LogLevel::Info,
-                        2 => LogLevel::Warn,
-                        3 => LogLevel::Error,
-
-                        _ => panic!("invalid enum discriminant"),
-                    }
-                }
-            }
-
-            #[allow(unused_unsafe, clippy::all)]
-            pub fn log(level: LogLevel, message: &str) {
-                unsafe {
-                    let vec0 = message;
-                    let ptr0 = vec0.as_ptr().cast::<u8>();
-                    let len0 = vec0.len();
-
-                    #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "wired:log/api")]
-                    extern "C" {
-                        #[link_name = "log"]
-                        fn wit_import(_: i32, _: *mut u8, _: usize);
-                    }
-
-                    #[cfg(not(target_arch = "wasm32"))]
-                    fn wit_import(_: i32, _: *mut u8, _: usize) {
-                        unreachable!()
-                    }
-                    wit_import(level.clone() as i32, ptr0.cast_mut(), len0);
-                }
-            }
-        }
-    }
-    #[allow(dead_code)]
     pub mod math {
         #[allow(dead_code, clippy::all)]
         pub mod types {
@@ -1435,7 +1366,6 @@ pub mod wired {
                         .finish()
                 }
             }
-            /// A reference to a material.
 
             #[derive(Debug)]
             #[repr(transparent)]
@@ -1700,7 +1630,6 @@ pub mod wired {
                 super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Material = super::super::super::wired::scene::material::Material;
-            /// A reference to a primitive.
 
             #[derive(Debug)]
             #[repr(transparent)]
@@ -1745,8 +1674,6 @@ pub mod wired {
                     }
                 }
             }
-
-            /// A reference to a mesh.
 
             #[derive(Debug)]
             #[repr(transparent)]
@@ -2199,7 +2126,6 @@ pub mod wired {
             pub type Transform = super::super::super::wired::math::types::Transform;
             pub type Collider = super::super::super::wired::physics::types::Collider;
             pub type RigidBody = super::super::super::wired::physics::types::RigidBody;
-            /// A reference to a node.
 
             #[derive(Debug)]
             #[repr(transparent)]
@@ -3616,9 +3542,9 @@ pub(crate) use __export_lib_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:lib:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4021] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xbb\x1e\x01A\x02\x01\
-A\x1c\x01B\x16\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 3931] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xe1\x1d\x01A\x02\x01\
+A\x1a\x01B\x16\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
 material\x03\x01\x01h\x02\x01@\x01\x04self\x03\0y\x04\0\x13[method]material.id\x01\
 \x04\x01@\x01\x04self\x03\0s\x04\0\x15[method]material.name\x01\x05\x01@\x02\x04\
 self\x03\x05values\x01\0\x04\0\x19[method]material.set-name\x01\x06\x01@\x01\x04\
@@ -3695,20 +3621,18 @@ k&\x01@\x02\x04self\x0b\x05value'\x01\0\x04\0\x1b[method]node.set-rigid-body\x01
 +\x01h\x03\x01k,\x01@\x02\x04self\x0b\x05value-\x01\0\x04\0\x1e[method]node.set-\
 input-handler\x01.\x01@\0\0\x10\x04\0\x0alist-nodes\x01/\x01@\0\0\x0f\x04\0\x0bc\
 reate-node\x010\x01@\x01\x05value\x0f\x01\0\x04\0\x0bremove-node\x011\x03\x01\x10\
-wired:scene/node\x05\x0f\x01B\x04\x01m\x04\x05debug\x04info\x04warn\x05error\x04\
-\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\x07messages\x01\0\x04\0\x03log\x01\
-\x02\x03\x01\x0dwired:log/api\x05\x10\x02\x03\0\x06\x04node\x01B\x19\x02\x03\x02\
-\x01\x11\x04\0\x04node\x03\0\0\x04\0\x06screen\x03\x01\x04\0\x06module\x03\x01\x01\
-i\x02\x01@\0\0\x04\x04\0\x13[constructor]screen\x01\x05\x01h\x02\x01i\x03\x01@\x02\
-\x04self\x06\x06module\x07\x01\0\x04\0\x19[method]screen.add-module\x01\x08\x01@\
-\x01\x04self\x06\0\x7f\x04\0\x16[method]screen.visible\x01\x09\x01@\x02\x04self\x06\
-\x05value\x7f\x01\0\x04\0\x1a[method]screen.set-visible\x01\x0a\x01@\x02\x04self\
-\x06\x05deltav\x01\0\x04\0\x15[method]screen.update\x01\x0b\x01@\0\0\x07\x04\0\x13\
-[constructor]module\x01\x0c\x01h\x03\x01i\x01\x01@\x01\x04self\x0d\0\x0e\x04\0\x13\
-[method]module.root\x01\x0f\x01@\x02\x04self\x0d\x05deltav\x01\0\x04\0\x15[metho\
-d]module.update\x01\x10\x04\x01\x14unavi:vscreen/screen\x05\x12\x04\x01\x11unavi\
-:vscreen/lib\x04\0\x0b\x09\x01\0\x03lib\x03\0\0\0G\x09producers\x01\x0cprocessed\
--by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+wired:scene/node\x05\x0f\x02\x03\0\x06\x04node\x01B\x19\x02\x03\x02\x01\x10\x04\0\
+\x04node\x03\0\0\x04\0\x06screen\x03\x01\x04\0\x06module\x03\x01\x01i\x02\x01@\0\
+\0\x04\x04\0\x13[constructor]screen\x01\x05\x01h\x02\x01i\x03\x01@\x02\x04self\x06\
+\x06module\x07\x01\0\x04\0\x19[method]screen.add-module\x01\x08\x01@\x01\x04self\
+\x06\0\x7f\x04\0\x16[method]screen.visible\x01\x09\x01@\x02\x04self\x06\x05value\
+\x7f\x01\0\x04\0\x1a[method]screen.set-visible\x01\x0a\x01@\x02\x04self\x06\x05d\
+eltav\x01\0\x04\0\x15[method]screen.update\x01\x0b\x01@\0\0\x07\x04\0\x13[constr\
+uctor]module\x01\x0c\x01h\x03\x01i\x01\x01@\x01\x04self\x0d\0\x0e\x04\0\x13[meth\
+od]module.root\x01\x0f\x01@\x02\x04self\x0d\x05deltav\x01\0\x04\0\x15[method]mod\
+ule.update\x01\x10\x04\x01\x14unavi:vscreen/screen\x05\x11\x04\x01\x11unavi:vscr\
+een/lib\x04\0\x0b\x09\x01\0\x03lib\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\
+\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

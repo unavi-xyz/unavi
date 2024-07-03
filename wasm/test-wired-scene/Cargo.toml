@@ -11,10 +11,6 @@ crate-type = ["cdylib"]
 [dependencies]
 wit-bindgen-rt.workspace = true
 
-[dev-dependencies]
-bevy.workspace = true
-unavi-scripting = { path = "../../crates/unavi-scripting" }
-
 [package.metadata.component]
 package = "test:wired-scene"
 
@@ -23,6 +19,7 @@ package = "test:wired-scene"
 "wired:log" = { path = "../../wired-protocol/spatial/wit/wired-log" }
 "wired:math" = { path = "../../wired-protocol/spatial/wit/wired-math" }
 "wired:physics" = { path = "../../wired-protocol/spatial/wit/wired-physics" }
+"wired:player" = { path = "../../wired-protocol/spatial/wit/wired-player" }
 "wired:prelude" = { path = "../../wired-protocol/spatial/wit/wired-prelude" }
 "wired:scene" = { path = "../../wired-protocol/spatial/wit/wired-scene" }
 "wired:script" = { path = "../../wired-protocol/spatial/wit/wired-script" }

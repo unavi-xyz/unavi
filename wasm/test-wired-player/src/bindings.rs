@@ -3548,8 +3548,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4108] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x8f\x1f\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4109] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x90\x1f\x01A\x02\x01\
 A\x1e\x01B\x06\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\0\x01r\x04\x01xv\x01\
 yv\x01zv\x01wv\x04\0\x04quat\x03\0\x02\x01r\x03\x08rotation\x03\x05scale\x01\x0b\
 translation\x01\x04\0\x09transform\x03\0\x04\x03\x01\x10wired:math/types\x05\0\x02\
@@ -3640,9 +3640,9 @@ ight-lower-arm\x02\x0aright-hand\x02\x0eleft-upper-leg\x02\x0eleft-lower-leg\x02
 wired:player/api\x05\x12\x01B\x07\x04\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\
 \0\x13[constructor]script\x01\x02\x01h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\
 \0\x15[method]script.update\x01\x04\x04\x01\x12wired:script/types\x05\x13\x04\x01\
-\x17test:wired-scene/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producer\
-s\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.2\
-5.0";
+\x18test:wired-player/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09produce\
+rs\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.\
+25.0";
 
 #[inline(never)]
 #[doc(hidden)]

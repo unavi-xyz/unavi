@@ -10834,11 +10834,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-wired-player"
+version = "0.0.3"
+dependencies = [
+ "wit-bindgen-rt",
+]
+
+[[package]]
 name = "test-wired-scene"
 version = "0.0.3"
 dependencies = [
- "bevy",
- "unavi-scripting",
  "wit-bindgen-rt",
 ]
 

@@ -1,8 +1,6 @@
 package unavi:ui;
 
 world lib {
-    include wired:prelude/imports; 
-
     export layout;
 }
 

@@ -12,6 +12,7 @@ repository = "https://github.com/unavi-xyz/unavi"
 license = "MPL-2.0"
 
 [workspace.lints.clippy]
+too_many_arguments = "allow"
 type_complexity = "allow"
 
 [workspace.dependencies]

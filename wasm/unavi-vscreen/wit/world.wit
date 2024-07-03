@@ -1,8 +1,6 @@
 package unavi:vscreen;
 
 world lib {
-    include wired:prelude/imports; 
-
     export screen;
 }
 

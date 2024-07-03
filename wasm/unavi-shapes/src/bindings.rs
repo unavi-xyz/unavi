@@ -91,7 +91,6 @@ pub mod wired {
                         .finish()
                 }
             }
-            /// A reference to a material.
 
             #[derive(Debug)]
             #[repr(transparent)]
@@ -356,7 +355,6 @@ pub mod wired {
                 super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Material = super::super::super::wired::scene::material::Material;
-            /// A reference to a primitive.
 
             #[derive(Debug)]
             #[repr(transparent)]
@@ -401,8 +399,6 @@ pub mod wired {
                     }
                 }
             }
-
-            /// A reference to a mesh.
 
             #[derive(Debug)]
             #[repr(transparent)]

@@ -423,8 +423,6 @@ pub fn handle_actions(
                             node_mesh.primitives.clear();
                         }
 
-                        drop(node_mesh);
-
                         for ent in to_remove {
                             world.entity_mut(ent).despawn();
                         }
@@ -1234,9 +1232,9 @@ mod tests {
             .unwrap()
             .as_float3()
             .unwrap()
-            .to_vec()
-            .into_iter()
+            .iter()
             .flatten()
+            .copied()
             .collect::<Vec<_>>();
 
         assert_eq!(attr, value);
@@ -1280,9 +1278,9 @@ mod tests {
             .unwrap()
             .as_float3()
             .unwrap()
-            .to_vec()
-            .into_iter()
+            .iter()
             .flatten()
+            .copied()
             .collect::<Vec<_>>();
 
         assert_eq!(attr, value);

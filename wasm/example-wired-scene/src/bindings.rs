@@ -1475,6 +1475,250 @@ pub mod wired {
         }
     }
     #[allow(dead_code)]
+    pub mod player {
+        #[allow(dead_code, clippy::all)]
+        pub mod api {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            pub type Node = super::super::super::wired::scene::node::Node;
+            pub struct Skeleton {
+                pub head: Node,
+                pub spine: Node,
+                pub hips: Node,
+                pub left_upper_arm: Node,
+                pub left_lower_arm: Node,
+                pub left_hand: Node,
+                pub right_upper_arm: Node,
+                pub right_lower_arm: Node,
+                pub right_hand: Node,
+                pub left_upper_leg: Node,
+                pub left_lower_leg: Node,
+                pub left_foot: Node,
+                pub right_upper_leg: Node,
+                pub right_lower_leg: Node,
+                pub right_foot: Node,
+            }
+            impl ::core::fmt::Debug for Skeleton {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("Skeleton")
+                        .field("head", &self.head)
+                        .field("spine", &self.spine)
+                        .field("hips", &self.hips)
+                        .field("left-upper-arm", &self.left_upper_arm)
+                        .field("left-lower-arm", &self.left_lower_arm)
+                        .field("left-hand", &self.left_hand)
+                        .field("right-upper-arm", &self.right_upper_arm)
+                        .field("right-lower-arm", &self.right_lower_arm)
+                        .field("right-hand", &self.right_hand)
+                        .field("left-upper-leg", &self.left_upper_leg)
+                        .field("left-lower-leg", &self.left_lower_leg)
+                        .field("left-foot", &self.left_foot)
+                        .field("right-upper-leg", &self.right_upper_leg)
+                        .field("right-lower-leg", &self.right_lower_leg)
+                        .field("right-foot", &self.right_foot)
+                        .finish()
+                }
+            }
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Player {
+                handle: _rt::Resource<Player>,
+            }
+
+            impl Player {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for Player {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wired:player/api")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]player"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            impl Player {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn skeleton(&self) -> Skeleton {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 60]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 60]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:player/api")]
+                        extern "C" {
+                            #[link_name = "[method]player.skeleton"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<i32>();
+                        let l2 = *ptr0.add(4).cast::<i32>();
+                        let l3 = *ptr0.add(8).cast::<i32>();
+                        let l4 = *ptr0.add(12).cast::<i32>();
+                        let l5 = *ptr0.add(16).cast::<i32>();
+                        let l6 = *ptr0.add(20).cast::<i32>();
+                        let l7 = *ptr0.add(24).cast::<i32>();
+                        let l8 = *ptr0.add(28).cast::<i32>();
+                        let l9 = *ptr0.add(32).cast::<i32>();
+                        let l10 = *ptr0.add(36).cast::<i32>();
+                        let l11 = *ptr0.add(40).cast::<i32>();
+                        let l12 = *ptr0.add(44).cast::<i32>();
+                        let l13 = *ptr0.add(48).cast::<i32>();
+                        let l14 = *ptr0.add(52).cast::<i32>();
+                        let l15 = *ptr0.add(56).cast::<i32>();
+                        Skeleton {
+                            head: super::super::super::wired::scene::node::Node::from_handle(
+                                l1 as u32,
+                            ),
+                            spine: super::super::super::wired::scene::node::Node::from_handle(
+                                l2 as u32,
+                            ),
+                            hips: super::super::super::wired::scene::node::Node::from_handle(
+                                l3 as u32,
+                            ),
+                            left_upper_arm:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l4 as u32,
+                                ),
+                            left_lower_arm:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l5 as u32,
+                                ),
+                            left_hand: super::super::super::wired::scene::node::Node::from_handle(
+                                l6 as u32,
+                            ),
+                            right_upper_arm:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l7 as u32,
+                                ),
+                            right_lower_arm:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l8 as u32,
+                                ),
+                            right_hand: super::super::super::wired::scene::node::Node::from_handle(
+                                l9 as u32,
+                            ),
+                            left_upper_leg:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l10 as u32,
+                                ),
+                            left_lower_leg:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l11 as u32,
+                                ),
+                            left_foot: super::super::super::wired::scene::node::Node::from_handle(
+                                l12 as u32,
+                            ),
+                            right_upper_leg:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l13 as u32,
+                                ),
+                            right_lower_leg:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l14 as u32,
+                                ),
+                            right_foot: super::super::super::wired::scene::node::Node::from_handle(
+                                l15 as u32,
+                            ),
+                        }
+                    }
+                }
+            }
+            #[allow(unused_unsafe, clippy::all)]
+            pub fn list_players() -> _rt::Vec<Player> {
+                unsafe {
+                    #[repr(align(4))]
+                    struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                    let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                    let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wired:player/api")]
+                    extern "C" {
+                        #[link_name = "list-players"]
+                        fn wit_import(_: *mut u8);
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(_: *mut u8) {
+                        unreachable!()
+                    }
+                    wit_import(ptr0);
+                    let l1 = *ptr0.add(0).cast::<*mut u8>();
+                    let l2 = *ptr0.add(4).cast::<usize>();
+                    let base4 = l1;
+                    let len4 = l2;
+                    let mut result4 = _rt::Vec::with_capacity(len4);
+                    for i in 0..len4 {
+                        let base = base4.add(i * 4);
+                        let e4 = {
+                            let l3 = *base.add(0).cast::<i32>();
+
+                            Player::from_handle(l3 as u32)
+                        };
+                        result4.push(e4);
+                    }
+                    _rt::cabi_dealloc(base4, len4 * 4, 4);
+                    result4
+                }
+            }
+            #[allow(unused_unsafe, clippy::all)]
+            pub fn local_player() -> Player {
+                unsafe {
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wired:player/api")]
+                    extern "C" {
+                        #[link_name = "local-player"]
+                        fn wit_import() -> i32;
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import() -> i32 {
+                        unreachable!()
+                    }
+                    let ret = wit_import();
+                    Player::from_handle(ret as u32)
+                }
+            }
+        }
+    }
+    #[allow(dead_code)]
     pub mod scene {
         #[allow(dead_code, clippy::all)]
         pub mod material {
@@ -1502,7 +1746,6 @@ pub mod wired {
                         .finish()
                 }
             }
-            /// A reference to a material.
 
             #[derive(Debug)]
             #[repr(transparent)]
@@ -1767,7 +2010,6 @@ pub mod wired {
                 super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Material = super::super::super::wired::scene::material::Material;
-            /// A reference to a primitive.
 
             #[derive(Debug)]
             #[repr(transparent)]
@@ -1812,8 +2054,6 @@ pub mod wired {
                     }
                 }
             }
-
-            /// A reference to a mesh.
 
             #[derive(Debug)]
             #[repr(transparent)]
@@ -2266,7 +2506,6 @@ pub mod wired {
             pub type Transform = super::super::super::wired::math::types::Transform;
             pub type Collider = super::super::super::wired::physics::types::Collider;
             pub type RigidBody = super::super::super::wired::physics::types::RigidBody;
-            /// A reference to a node.
 
             #[derive(Debug)]
             #[repr(transparent)]
@@ -3446,9 +3685,9 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 3877] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa8\x1d\x01A\x02\x01\
-A\x1d\x01B\x16\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4245] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x98\x20\x01A\x02\x01\
+A\x20\x01B\x16\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
 material\x03\x01\x01h\x02\x01@\x01\x04self\x03\0y\x04\0\x13[method]material.id\x01\
 \x04\x01@\x01\x04self\x03\0s\x04\0\x15[method]material.name\x01\x05\x01@\x02\x04\
 self\x03\x05values\x01\0\x04\0\x19[method]material.set-name\x01\x06\x01@\x01\x04\
@@ -3530,12 +3769,20 @@ lue'\x01\0\x04\0\x1b[method]node.set-rigid-body\x01(\x01i\x03\x01k)\x01@\x01\x04
 self\x0b\0*\x04\0\x1a[method]node.input-handler\x01+\x01h\x03\x01k,\x01@\x02\x04\
 self\x0b\x05value-\x01\0\x04\0\x1e[method]node.set-input-handler\x01.\x01@\0\0\x10\
 \x04\0\x0alist-nodes\x01/\x01@\0\0\x0f\x04\0\x0bcreate-node\x010\x01@\x01\x05val\
-ue\x0f\x01\0\x04\0\x0bremove-node\x011\x03\x01\x10wired:scene/node\x05\x11\x01B\x07\
-\x04\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\
-\x01h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\
-\x04\x01\x12wired:script/types\x05\x12\x04\x01\x1aexample:wired-scene/script\x04\
-\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwi\
-t-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+ue\x0f\x01\0\x04\0\x0bremove-node\x011\x03\x01\x10wired:scene/node\x05\x11\x02\x03\
+\0\x08\x04node\x01B\x0f\x02\x03\x02\x01\x12\x04\0\x04node\x03\0\0\x01i\x01\x01r\x0f\
+\x04head\x02\x05spine\x02\x04hips\x02\x0eleft-upper-arm\x02\x0eleft-lower-arm\x02\
+\x09left-hand\x02\x0fright-upper-arm\x02\x0fright-lower-arm\x02\x0aright-hand\x02\
+\x0eleft-upper-leg\x02\x0eleft-lower-leg\x02\x09left-foot\x02\x0fright-upper-leg\
+\x02\x0fright-lower-leg\x02\x0aright-foot\x02\x04\0\x08skeleton\x03\0\x03\x04\0\x06\
+player\x03\x01\x01h\x05\x01@\x01\x04self\x06\0\x04\x04\0\x17[method]player.skele\
+ton\x01\x07\x01i\x05\x01p\x08\x01@\0\0\x09\x04\0\x0clist-players\x01\x0a\x01@\0\0\
+\x08\x04\0\x0clocal-player\x01\x0b\x03\x01\x10wired:player/api\x05\x13\x01B\x07\x04\
+\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01\
+h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\
+\x01\x12wired:script/types\x05\x14\x04\x01\x1aexample:wired-scene/script\x04\0\x0b\
+\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-comp\
+onent\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

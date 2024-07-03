@@ -7,6 +7,7 @@ mod utils;
 pub mod wired_input;
 mod wired_log;
 pub mod wired_physics;
+mod wired_player;
 pub mod wired_scene;
 
 pub fn add_host_apis(linker: &mut Linker<StoreState>) -> Result<()> {

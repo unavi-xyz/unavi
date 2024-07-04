@@ -4,7 +4,7 @@ use crate::{actions::ScriptAction, state::StoreState};
 
 use super::wired::scene::material::{Color, Host, HostMaterial};
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Material {
     pub name: String,
     pub color: Color,

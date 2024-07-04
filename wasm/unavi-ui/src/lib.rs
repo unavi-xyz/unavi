@@ -1,6 +1,10 @@
 #[allow(warnings)]
 mod bindings;
 
-struct Layout;
+mod button;
+mod container;
+mod grid;
 
-bindings::export!(Layout with_types_in bindings);
+struct GuestImpl;
+
+bindings::export!(GuestImpl with_types_in bindings);

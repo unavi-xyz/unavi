@@ -22,7 +22,7 @@ use super::wired::{
     },
 };
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Node {
     pub children: HashSet<u32>,
     pub collider: Option<Resource<Collider>>,

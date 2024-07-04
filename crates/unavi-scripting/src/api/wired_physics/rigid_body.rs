@@ -12,6 +12,7 @@ use super::wired::{
     physics::types::{HostRigidBody, RigidBodyType},
 };
 
+#[derive(Debug)]
 pub struct RigidBody {
     angvel: bevy::math::Vec3,
     linvel: bevy::math::Vec3,

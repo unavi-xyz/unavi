@@ -136,4 +136,12 @@ mod tests {
         assert!(!logs_contain("ERROR"));
         assert!(!logs_contain("error"));
     }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn example_unavi_ui() {
+        test_script("example:unavi-ui").await;
+        assert!(!logs_contain("ERROR"));
+        assert!(!logs_contain("error"));
+    }
 }

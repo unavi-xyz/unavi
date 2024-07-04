@@ -23,6 +23,7 @@ pub enum ScriptInputEvent {
     },
 }
 
+#[derive(Debug)]
 pub struct InputHandler {
     pub sender: Sender<ScriptInputEvent>,
     receiver: Receiver<ScriptInputEvent>,

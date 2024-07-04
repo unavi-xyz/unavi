@@ -9,6 +9,7 @@ use crate::{
 
 use super::wired::physics::types::{HostCollider, Shape};
 
+#[derive(Debug)]
 pub struct Collider {
     pub density: f32,
     pub shape: Shape,

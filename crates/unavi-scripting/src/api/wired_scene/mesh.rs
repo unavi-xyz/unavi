@@ -5,13 +5,13 @@ use crate::{actions::ScriptAction, state::StoreState};
 
 use super::wired::scene::mesh::{Host, HostMesh, HostPrimitive, Material};
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Mesh {
     pub name: String,
     pub primitives: HashSet<u32>,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Primitive {
     pub material: Option<u32>,
 }

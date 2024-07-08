@@ -3,7 +3,7 @@ use std::cell::Cell;
 use wasm_bridge::component::Resource;
 
 use crate::{
-    api::utils::{RefCount, RefResource},
+    api::utils::{RefCount, RefCountCell, RefResource},
     state::StoreState,
 };
 
@@ -13,7 +13,7 @@ use super::wired::physics::types::{HostCollider, Shape};
 pub struct Collider {
     pub density: f32,
     pub shape: Shape,
-    ref_count: Cell<usize>,
+    ref_count: RefCountCell,
 }
 
 impl RefCount for Collider {
@@ -29,7 +29,7 @@ impl Collider {
         Self {
             density: 1.0,
             shape,
-            ref_count: Cell::new(1),
+            ref_count: RefCountCell::default(),
         }
     }
 }
@@ -53,7 +53,8 @@ impl HostCollider for StoreState {
     }
 
     fn drop(&mut self, rep: Resource<Collider>) -> wasm_bridge::Result<()> {
-        Collider::handle_drop(rep, &mut self.table)
+        Collider::handle_drop(rep, &mut self.table)?;
+        Ok(())
     }
 }
 
@@ -74,5 +75,16 @@ mod tests {
         let res = HostCollider::new(&mut state, shape).unwrap();
 
         crate::api::utils::tests::test_drop(&mut state, res);
+    }
+
+    #[test]
+    #[traced_test]
+    fn test_new() {
+        let (mut state, _) = StoreState::new("test_new".to_string());
+
+        let shape = Shape::Sphere(Sphere { radius: 0.5 });
+        let res = HostCollider::new(&mut state, shape).unwrap();
+
+        crate::api::utils::tests::test_new(&mut state, res);
     }
 }

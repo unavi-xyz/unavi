@@ -2,7 +2,7 @@ use std::cell::{Cell, RefCell};
 
 use bindings::{
     exports::unavi::vscreen::screen::{Guest, GuestModule, GuestScreen, Module as ModuleRes},
-    wired::scene::node::{create_node, Node},
+    wired::scene::node::Node,
 };
 
 #[allow(warnings)]
@@ -51,7 +51,7 @@ struct Module {
 
 impl GuestModule for Module {
     fn new() -> Self {
-        let root = create_node();
+        let root = Node::new();
 
         Self { root }
     }

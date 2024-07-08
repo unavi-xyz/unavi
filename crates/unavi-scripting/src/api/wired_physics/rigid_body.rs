@@ -3,7 +3,7 @@ use std::cell::Cell;
 use wasm_bridge::component::Resource;
 
 use crate::{
-    api::utils::{RefCount, RefResource},
+    api::utils::{RefCount, RefCountCell, RefResource},
     state::StoreState,
 };
 
@@ -17,7 +17,7 @@ pub struct RigidBody {
     angvel: bevy::math::Vec3,
     linvel: bevy::math::Vec3,
     pub rigid_body_type: RigidBodyType,
-    ref_count: Cell<usize>,
+    ref_count: RefCountCell,
 }
 
 impl RigidBody {
@@ -25,7 +25,7 @@ impl RigidBody {
         Self {
             angvel: bevy::math::Vec3::default(),
             linvel: bevy::math::Vec3::default(),
-            ref_count: Cell::new(1),
+            ref_count: RefCountCell::default(),
             rigid_body_type,
         }
     }
@@ -84,7 +84,8 @@ impl HostRigidBody for StoreState {
     }
 
     fn drop(&mut self, rep: Resource<RigidBody>) -> wasm_bridge::Result<()> {
-        RigidBody::handle_drop(rep, &mut self.table)
+        RigidBody::handle_drop(rep, &mut self.table)?;
+        Ok(())
     }
 }
 
@@ -102,5 +103,15 @@ mod tests {
         let res = HostRigidBody::new(&mut state, RigidBodyType::Dynamic).unwrap();
 
         crate::api::utils::tests::test_drop(&mut state, res);
+    }
+
+    #[test]
+    #[traced_test]
+    fn test_new() {
+        let (mut state, _) = StoreState::new("test_new".to_string());
+
+        let res = HostRigidBody::new(&mut state, RigidBodyType::Dynamic).unwrap();
+
+        crate::api::utils::tests::test_new(&mut state, res);
     }
 }

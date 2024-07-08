@@ -6,7 +6,7 @@ use crate::{
             container::{ContainerBorrow, GuestContainer},
             grid::{Direction, Guest, GuestGrid},
         },
-        wired::scene::node::{create_node, Node},
+        wired::scene::node::Node,
     },
     container::Container,
     GuestImpl,
@@ -28,7 +28,7 @@ impl GuestGrid for Grid {
     fn new() -> Self {
         Self {
             container: Container::new(),
-            node: create_node(),
+            node: Node::new(),
             columns: Cell::new(1),
             rows: Cell::new(1),
             direction: Cell::new(Direction::Xyz),

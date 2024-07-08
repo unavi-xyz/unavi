@@ -25,24 +25,16 @@ pub fn init_scripts(
 ) {
     for (entity, name) in to_init.iter() {
         let res = block_on(async {
-            let span = info_span!("ScriptInit", name = name.to_string());
-            let span = span.enter();
-
-            info!("Initializing script");
+            info!("Initializing script {}", name);
 
             let mut scripts = scripts.lock().unwrap();
             let (script, store) = scripts.get_mut(&entity).unwrap();
 
-            let res = script
+            script
                 .wired_script_types()
                 .script()
                 .call_constructor(store)
-                .await;
-
-            info!("Done");
-            drop(span);
-
-            res
+                .await
         });
 
         if let Err(e) = res {

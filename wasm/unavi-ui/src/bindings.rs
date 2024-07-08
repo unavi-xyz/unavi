@@ -1413,6 +1413,26 @@ pub mod wired {
 
             impl Material {
                 #[allow(unused_unsafe, clippy::all)]
+                pub fn new() -> Self {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:scene/material")]
+                        extern "C" {
+                            #[link_name = "[constructor]material"]
+                            fn wit_import() -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import() -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import();
+                        Material::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Material {
+                #[allow(unused_unsafe, clippy::all)]
                 pub fn id(&self) -> u32 {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
@@ -1545,78 +1565,6 @@ pub mod wired {
                             _rt::as_f32(a0),
                         );
                     }
-                }
-            }
-            #[allow(unused_unsafe, clippy::all)]
-            pub fn list_materials() -> _rt::Vec<Material> {
-                unsafe {
-                    #[repr(align(4))]
-                    struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                    let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
-                    let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                    #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "wired:scene/material")]
-                    extern "C" {
-                        #[link_name = "list-materials"]
-                        fn wit_import(_: *mut u8);
-                    }
-
-                    #[cfg(not(target_arch = "wasm32"))]
-                    fn wit_import(_: *mut u8) {
-                        unreachable!()
-                    }
-                    wit_import(ptr0);
-                    let l1 = *ptr0.add(0).cast::<*mut u8>();
-                    let l2 = *ptr0.add(4).cast::<usize>();
-                    let base4 = l1;
-                    let len4 = l2;
-                    let mut result4 = _rt::Vec::with_capacity(len4);
-                    for i in 0..len4 {
-                        let base = base4.add(i * 4);
-                        let e4 = {
-                            let l3 = *base.add(0).cast::<i32>();
-
-                            Material::from_handle(l3 as u32)
-                        };
-                        result4.push(e4);
-                    }
-                    _rt::cabi_dealloc(base4, len4 * 4, 4);
-                    result4
-                }
-            }
-            #[allow(unused_unsafe, clippy::all)]
-            pub fn create_material() -> Material {
-                unsafe {
-                    #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "wired:scene/material")]
-                    extern "C" {
-                        #[link_name = "create-material"]
-                        fn wit_import() -> i32;
-                    }
-
-                    #[cfg(not(target_arch = "wasm32"))]
-                    fn wit_import() -> i32 {
-                        unreachable!()
-                    }
-                    let ret = wit_import();
-                    Material::from_handle(ret as u32)
-                }
-            }
-            #[allow(unused_unsafe, clippy::all)]
-            pub fn remove_material(value: Material) {
-                unsafe {
-                    #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "wired:scene/material")]
-                    extern "C" {
-                        #[link_name = "remove-material"]
-                        fn wit_import(_: i32);
-                    }
-
-                    #[cfg(not(target_arch = "wasm32"))]
-                    fn wit_import(_: i32) {
-                        unreachable!()
-                    }
-                    wit_import((&value).take_handle() as i32);
                 }
             }
         }
@@ -1892,6 +1840,26 @@ pub mod wired {
             }
             impl Mesh {
                 #[allow(unused_unsafe, clippy::all)]
+                pub fn new() -> Self {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:scene/mesh")]
+                        extern "C" {
+                            #[link_name = "[constructor]mesh"]
+                            fn wit_import() -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import() -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import();
+                        Mesh::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Mesh {
+                #[allow(unused_unsafe, clippy::all)]
                 pub fn id(&self) -> u32 {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
@@ -2022,7 +1990,7 @@ pub mod wired {
             }
             impl Mesh {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn remove_primitive(&self, value: Primitive) {
+                pub fn remove_primitive(&self, value: &Primitive) {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/mesh")]
@@ -2035,80 +2003,8 @@ pub mod wired {
                         fn wit_import(_: i32, _: i32) {
                             unreachable!()
                         }
-                        wit_import((self).handle() as i32, (&value).take_handle() as i32);
+                        wit_import((self).handle() as i32, (value).handle() as i32);
                     }
-                }
-            }
-            #[allow(unused_unsafe, clippy::all)]
-            pub fn list_meshes() -> _rt::Vec<Mesh> {
-                unsafe {
-                    #[repr(align(4))]
-                    struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                    let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
-                    let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                    #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "wired:scene/mesh")]
-                    extern "C" {
-                        #[link_name = "list-meshes"]
-                        fn wit_import(_: *mut u8);
-                    }
-
-                    #[cfg(not(target_arch = "wasm32"))]
-                    fn wit_import(_: *mut u8) {
-                        unreachable!()
-                    }
-                    wit_import(ptr0);
-                    let l1 = *ptr0.add(0).cast::<*mut u8>();
-                    let l2 = *ptr0.add(4).cast::<usize>();
-                    let base4 = l1;
-                    let len4 = l2;
-                    let mut result4 = _rt::Vec::with_capacity(len4);
-                    for i in 0..len4 {
-                        let base = base4.add(i * 4);
-                        let e4 = {
-                            let l3 = *base.add(0).cast::<i32>();
-
-                            Mesh::from_handle(l3 as u32)
-                        };
-                        result4.push(e4);
-                    }
-                    _rt::cabi_dealloc(base4, len4 * 4, 4);
-                    result4
-                }
-            }
-            #[allow(unused_unsafe, clippy::all)]
-            pub fn create_mesh() -> Mesh {
-                unsafe {
-                    #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "wired:scene/mesh")]
-                    extern "C" {
-                        #[link_name = "create-mesh"]
-                        fn wit_import() -> i32;
-                    }
-
-                    #[cfg(not(target_arch = "wasm32"))]
-                    fn wit_import() -> i32 {
-                        unreachable!()
-                    }
-                    let ret = wit_import();
-                    Mesh::from_handle(ret as u32)
-                }
-            }
-            #[allow(unused_unsafe, clippy::all)]
-            pub fn remove_mesh(value: Mesh) {
-                unsafe {
-                    #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "wired:scene/mesh")]
-                    extern "C" {
-                        #[link_name = "remove-mesh"]
-                        fn wit_import(_: i32);
-                    }
-
-                    #[cfg(not(target_arch = "wasm32"))]
-                    fn wit_import(_: i32) {
-                        unreachable!()
-                    }
-                    wit_import((&value).take_handle() as i32);
                 }
             }
         }
@@ -2171,6 +2067,26 @@ pub mod wired {
                 }
             }
 
+            impl Node {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn new() -> Self {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:scene/node")]
+                        extern "C" {
+                            #[link_name = "[constructor]node"]
+                            fn wit_import() -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import() -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import();
+                        Node::from_handle(ret as u32)
+                    }
+                }
+            }
             impl Node {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn id(&self) -> u32 {
@@ -2719,78 +2635,6 @@ pub mod wired {
                         }
                         wit_import((self).handle() as i32, result0_0, result0_1);
                     }
-                }
-            }
-            #[allow(unused_unsafe, clippy::all)]
-            pub fn list_nodes() -> _rt::Vec<Node> {
-                unsafe {
-                    #[repr(align(4))]
-                    struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                    let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
-                    let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                    #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "wired:scene/node")]
-                    extern "C" {
-                        #[link_name = "list-nodes"]
-                        fn wit_import(_: *mut u8);
-                    }
-
-                    #[cfg(not(target_arch = "wasm32"))]
-                    fn wit_import(_: *mut u8) {
-                        unreachable!()
-                    }
-                    wit_import(ptr0);
-                    let l1 = *ptr0.add(0).cast::<*mut u8>();
-                    let l2 = *ptr0.add(4).cast::<usize>();
-                    let base4 = l1;
-                    let len4 = l2;
-                    let mut result4 = _rt::Vec::with_capacity(len4);
-                    for i in 0..len4 {
-                        let base = base4.add(i * 4);
-                        let e4 = {
-                            let l3 = *base.add(0).cast::<i32>();
-
-                            Node::from_handle(l3 as u32)
-                        };
-                        result4.push(e4);
-                    }
-                    _rt::cabi_dealloc(base4, len4 * 4, 4);
-                    result4
-                }
-            }
-            #[allow(unused_unsafe, clippy::all)]
-            pub fn create_node() -> Node {
-                unsafe {
-                    #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "wired:scene/node")]
-                    extern "C" {
-                        #[link_name = "create-node"]
-                        fn wit_import() -> i32;
-                    }
-
-                    #[cfg(not(target_arch = "wasm32"))]
-                    fn wit_import() -> i32 {
-                        unreachable!()
-                    }
-                    let ret = wit_import();
-                    Node::from_handle(ret as u32)
-                }
-            }
-            #[allow(unused_unsafe, clippy::all)]
-            pub fn remove_node(value: Node) {
-                unsafe {
-                    #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "wired:scene/node")]
-                    extern "C" {
-                        #[link_name = "remove-node"]
-                        fn wit_import(_: i32);
-                    }
-
-                    #[cfg(not(target_arch = "wasm32"))]
-                    fn wit_import(_: i32) {
-                        unreachable!()
-                    }
-                    wit_import((&value).take_handle() as i32);
                 }
             }
         }
@@ -4138,19 +3982,19 @@ mod _rt {
             self as f32
         }
     }
-    pub unsafe fn cabi_dealloc(ptr: *mut u8, size: usize, align: usize) {
-        if size == 0 {
-            return;
-        }
-        let layout = alloc::Layout::from_size_align_unchecked(size, align);
-        alloc::dealloc(ptr as *mut u8, layout);
-    }
     pub unsafe fn invalid_enum_discriminant<T>() -> T {
         if cfg!(debug_assertions) {
             panic!("invalid enum discriminant")
         } else {
             core::hint::unreachable_unchecked()
         }
+    }
+    pub unsafe fn cabi_dealloc(ptr: *mut u8, size: usize, align: usize) {
+        if size == 0 {
+            return;
+        }
+        let layout = alloc::Layout::from_size_align_unchecked(size, align);
+        alloc::dealloc(ptr as *mut u8, layout);
     }
     pub use alloc_crate::boxed::Box;
 
@@ -4265,115 +4109,111 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4764] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa0$\x01A\x02\x01A\x1f\
-\x01B\x16\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08mater\
-ial\x03\x01\x01h\x02\x01@\x01\x04self\x03\0y\x04\0\x13[method]material.id\x01\x04\
-\x01@\x01\x04self\x03\0s\x04\0\x15[method]material.name\x01\x05\x01@\x02\x04self\
-\x03\x05values\x01\0\x04\0\x19[method]material.set-name\x01\x06\x01@\x01\x04self\
-\x03\0\x01\x04\0\x16[method]material.color\x01\x07\x01@\x02\x04self\x03\x05value\
-\x01\x01\0\x04\0\x1a[method]material.set-color\x01\x08\x01i\x02\x01p\x09\x01@\0\0\
-\x0a\x04\0\x0elist-materials\x01\x0b\x01@\0\0\x09\x04\0\x0fcreate-material\x01\x0c\
-\x01@\x01\x05value\x09\x01\0\x04\0\x0fremove-material\x01\x0d\x03\x01\x14wired:s\
-cene/material\x05\0\x02\x03\0\0\x08material\x01B.\x02\x03\x02\x01\x01\x04\0\x08m\
-aterial\x03\0\0\x04\0\x09primitive\x03\x01\x04\0\x04mesh\x03\x01\x01h\x02\x01@\x01\
-\x04self\x04\0y\x04\0\x14[method]primitive.id\x01\x05\x01i\x01\x01k\x06\x01@\x01\
-\x04self\x04\0\x07\x04\0\x1a[method]primitive.material\x01\x08\x01h\x01\x01k\x09\
-\x01@\x02\x04self\x04\x05value\x0a\x01\0\x04\0\x1e[method]primitive.set-material\
-\x01\x0b\x01py\x01@\x02\x04self\x04\x05value\x0c\x01\0\x04\0\x1d[method]primitiv\
-e.set-indices\x01\x0d\x01pv\x01@\x02\x04self\x04\x05value\x0e\x01\0\x04\0\x1d[me\
-thod]primitive.set-normals\x01\x0f\x04\0\x1f[method]primitive.set-positions\x01\x0f\
-\x04\0\x19[method]primitive.set-uvs\x01\x0f\x01h\x03\x01@\x01\x04self\x10\0y\x04\
-\0\x0f[method]mesh.id\x01\x11\x01@\x01\x04self\x10\0s\x04\0\x11[method]mesh.name\
-\x01\x12\x01@\x02\x04self\x10\x05values\x01\0\x04\0\x15[method]mesh.set-name\x01\
-\x13\x01i\x02\x01p\x14\x01@\x01\x04self\x10\0\x15\x04\0\x1c[method]mesh.list-pri\
-mitives\x01\x16\x01@\x01\x04self\x10\0\x14\x04\0\x1d[method]mesh.create-primitiv\
-e\x01\x17\x01@\x02\x04self\x10\x05value\x14\x01\0\x04\0\x1d[method]mesh.remove-p\
-rimitive\x01\x18\x01i\x03\x01p\x19\x01@\0\0\x1a\x04\0\x0blist-meshes\x01\x1b\x01\
-@\0\0\x19\x04\0\x0bcreate-mesh\x01\x1c\x01@\x01\x05value\x19\x01\0\x04\0\x0bremo\
-ve-mesh\x01\x1d\x03\x01\x10wired:scene/mesh\x05\x02\x01B\x06\x01r\x03\x01xv\x01y\
-v\x01zv\x04\0\x04vec3\x03\0\0\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\
-\0\x02\x01r\x03\x08rotation\x03\x05scale\x01\x0btranslation\x01\x04\0\x09transfo\
-rm\x03\0\x04\x03\x01\x10wired:math/types\x05\x03\x02\x03\0\x02\x04vec3\x02\x03\0\
-\x02\x04quat\x01B\x15\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\0\x02\x03\x02\x01\x05\
-\x04\0\x04quat\x03\0\x02\x01m\x02\x04left\x05right\x04\0\x09hand-side\x03\0\x04\x01\
-r\x03\x0btranslation\x01\x08rotation\x03\x06radiusv\x04\0\x05joint\x03\0\x06\x01\
-r\x04\x03tip\x07\x06distal\x07\x08proximal\x07\x0ametacarpal\x07\x04\0\x06finger\
-\x03\0\x08\x01k\x07\x01r\x09\x04side\x05\x05thumb\x09\x05index\x09\x06middle\x09\
-\x04ring\x09\x06little\x09\x04palm\x07\x05wrist\x07\x05elbow\x0a\x04\0\x04hand\x03\
-\0\x0b\x01r\x02\x06origin\x01\x0borientation\x03\x04\0\x03ray\x03\0\x0d\x01r\x03\
-\x06origin\x01\x0borientation\x03\x06radiusv\x04\0\x03tip\x03\0\x0f\x01q\x03\x04\
-hand\x01\x0c\0\x03ray\x01\x0e\0\x03tip\x01\x10\0\x04\0\x0ainput-type\x03\0\x11\x01\
-r\x04\x02idw\x05input\x12\x08distancev\x05ordery\x04\0\x0binput-event\x03\0\x13\x03\
-\x01\x11wired:input/types\x05\x06\x02\x03\0\x03\x0binput-event\x01B\x0a\x02\x03\x02\
-\x01\x07\x04\0\x0binput-event\x03\0\0\x04\0\x0dinput-handler\x03\x01\x01i\x02\x01\
-@\0\0\x03\x04\0\x1a[constructor]input-handler\x01\x04\x01h\x02\x01k\x01\x01@\x01\
-\x04self\x05\0\x06\x04\0\"[method]input-handler.handle-input\x01\x07\x03\x01\x13\
-wired:input/handler\x05\x08\x01B\x1c\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\0\x04\
-\0\x08collider\x03\x01\x01r\x01\x06radiusv\x04\0\x06sphere\x03\0\x03\x01q\x02\x06\
-cuboid\x01\x01\0\x06sphere\x01\x04\0\x04\0\x05shape\x03\0\x05\x04\0\x0arigid-bod\
-y\x03\x01\x01m\x03\x07dynamic\x05fixed\x09kinematic\x04\0\x0frigid-body-type\x03\
-\0\x08\x01i\x02\x01@\x01\x05shape\x06\0\x0a\x04\0\x15[constructor]collider\x01\x0b\
-\x01h\x02\x01@\x01\x04self\x0c\0v\x04\0\x18[method]collider.density\x01\x0d\x01@\
-\x02\x04self\x0c\x05valuev\x01\0\x04\0\x1c[method]collider.set-density\x01\x0e\x01\
-i\x07\x01@\x01\x0frigid-body-type\x09\0\x0f\x04\0\x17[constructor]rigid-body\x01\
-\x10\x01h\x07\x01@\x01\x04self\x11\0\x01\x04\0\x19[method]rigid-body.angvel\x01\x12\
-\x01@\x02\x04self\x11\x05value\x01\x01\0\x04\0\x1d[method]rigid-body.set-angvel\x01\
-\x13\x04\0\x19[method]rigid-body.linvel\x01\x12\x04\0\x1d[method]rigid-body.set-\
-linvel\x01\x13\x03\x01\x13wired:physics/types\x05\x09\x02\x03\0\x01\x04mesh\x02\x03\
-\0\x04\x0dinput-handler\x02\x03\0\x02\x09transform\x02\x03\0\x05\x08collider\x02\
-\x03\0\x05\x0arigid-body\x01BF\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\0\x02\x03\
-\x02\x01\x0b\x04\0\x0dinput-handler\x03\0\x02\x02\x03\x02\x01\x0c\x04\0\x09trans\
-form\x03\0\x04\x02\x03\x02\x01\x0d\x04\0\x08collider\x03\0\x06\x02\x03\x02\x01\x0e\
-\x04\0\x0arigid-body\x03\0\x08\x04\0\x04node\x03\x01\x01h\x0a\x01@\x01\x04self\x0b\
-\0y\x04\0\x0f[method]node.id\x01\x0c\x01@\x01\x04self\x0b\0s\x04\0\x11[method]no\
-de.name\x01\x0d\x01@\x02\x04self\x0b\x05values\x01\0\x04\0\x15[method]node.set-n\
-ame\x01\x0e\x01i\x0a\x01p\x0f\x01@\x01\x04self\x0b\0\x10\x04\0\x15[method]node.c\
-hildren\x01\x11\x01@\x02\x04self\x0b\x05value\x0b\x01\0\x04\0\x16[method]node.ad\
-d-child\x01\x12\x04\0\x19[method]node.remove-child\x01\x12\x01k\x0f\x01@\x01\x04\
-self\x0b\0\x13\x04\0\x13[method]node.parent\x01\x14\x01@\x01\x04self\x0b\0\x05\x04\
-\0\x16[method]node.transform\x01\x15\x01@\x02\x04self\x0b\x05value\x05\x01\0\x04\
-\0\x1a[method]node.set-transform\x01\x16\x01i\x01\x01k\x17\x01@\x01\x04self\x0b\0\
-\x18\x04\0\x11[method]node.mesh\x01\x19\x01h\x01\x01k\x1a\x01@\x02\x04self\x0b\x05\
-value\x1b\x01\0\x04\0\x15[method]node.set-mesh\x01\x1c\x01i\x07\x01k\x1d\x01@\x01\
-\x04self\x0b\0\x1e\x04\0\x15[method]node.collider\x01\x1f\x01h\x07\x01k\x20\x01@\
-\x02\x04self\x0b\x05value!\x01\0\x04\0\x19[method]node.set-collider\x01\"\x01i\x09\
-\x01k#\x01@\x01\x04self\x0b\0$\x04\0\x17[method]node.rigid-body\x01%\x01h\x09\x01\
-k&\x01@\x02\x04self\x0b\x05value'\x01\0\x04\0\x1b[method]node.set-rigid-body\x01\
-(\x01i\x03\x01k)\x01@\x01\x04self\x0b\0*\x04\0\x1a[method]node.input-handler\x01\
-+\x01h\x03\x01k,\x01@\x02\x04self\x0b\x05value-\x01\0\x04\0\x1e[method]node.set-\
-input-handler\x01.\x01@\0\0\x10\x04\0\x0alist-nodes\x01/\x01@\0\0\x0f\x04\0\x0bc\
-reate-node\x010\x01@\x01\x05value\x0f\x01\0\x04\0\x0bremove-node\x011\x03\x01\x10\
-wired:scene/node\x05\x0f\x02\x03\0\x06\x04node\x01B\x1c\x02\x03\x02\x01\x10\x04\0\
-\x04node\x03\0\0\x04\0\x09container\x03\x01\x01m\x03\x06center\x03end\x05start\x04\
-\0\x09alignment\x03\0\x03\x01i\x02\x01@\0\0\x05\x04\0\x16[constructor]container\x01\
-\x06\x01h\x02\x01i\x01\x01@\x01\x04self\x07\0\x08\x04\0\x16[method]container.roo\
-t\x01\x09\x01@\x01\x04self\x07\0v\x04\0\x17[method]container.x-len\x01\x0a\x04\0\
-\x17[method]container.y-len\x01\x0a\x04\0\x17[method]container.z-len\x01\x0a\x01\
-@\x02\x04self\x07\x05valuev\x01\0\x04\0\x1b[method]container.set-x-len\x01\x0b\x04\
-\0\x1b[method]container.set-y-len\x01\x0b\x04\0\x1b[method]container.set-z-len\x01\
-\x0b\x01@\x01\x04self\x07\0\x04\x04\0\x19[method]container.align-x\x01\x0c\x04\0\
-\x19[method]container.align-y\x01\x0c\x04\0\x19[method]container.align-z\x01\x0c\
-\x01@\x02\x04self\x07\x05value\x04\x01\0\x04\0\x1d[method]container.set-align-x\x01\
-\x0d\x04\0\x1d[method]container.set-align-y\x01\x0d\x04\0\x1d[method]container.s\
-et-align-z\x01\x0d\x04\x01\x12unavi:ui/container\x05\x11\x02\x03\0\x07\x09contai\
-ner\x01B\x0a\x02\x03\x02\x01\x12\x04\0\x09container\x03\0\0\x04\0\x06button\x03\x01\
-\x01i\x02\x01@\0\0\x03\x04\0\x13[constructor]button\x01\x04\x01h\x02\x01i\x01\x01\
-@\x01\x04self\x05\0\x06\x04\0\x13[method]button.root\x01\x07\x04\x01\x0funavi:ui\
-/button\x05\x13\x01B\x1d\x02\x03\x02\x01\x12\x04\0\x09container\x03\0\0\x04\0\x04\
-grid\x03\x01\x01m\x07\x01x\x01y\x01z\x02xy\x02xz\x02yz\x03xyz\x04\0\x09direction\
-\x03\0\x03\x01i\x02\x01@\0\0\x05\x04\0\x11[constructor]grid\x01\x06\x01h\x02\x01\
-i\x01\x01@\x01\x04self\x07\0\x08\x04\0\x11[method]grid.root\x01\x09\x01@\x01\x04\
-self\x07\0y\x04\0\x14[method]grid.columns\x01\x0a\x01@\x02\x04self\x07\x05valuey\
-\x01\0\x04\0\x18[method]grid.set-columns\x01\x0b\x04\0\x11[method]grid.rows\x01\x0a\
-\x04\0\x15[method]grid.set-rows\x01\x0b\x01@\x01\x04self\x07\0\x04\x04\0\x16[met\
-hod]grid.direction\x01\x0c\x01@\x02\x04self\x07\x05value\x04\x01\0\x04\0\x1a[met\
-hod]grid.set-direction\x01\x0d\x01h\x01\x01@\x02\x04self\x07\x04item\x0e\x01\0\x04\
-\0\x15[method]grid.add-item\x01\x0f\x04\0\x18[method]grid.remove-item\x01\x0f\x01\
-p\x08\x01@\x01\x04self\x07\0\x10\x04\0\x17[method]grid.list-items\x01\x11\x04\x01\
-\x0dunavi:ui/grid\x05\x14\x04\x01\x0eunavi:ui/guest\x04\0\x0b\x0b\x01\0\x05guest\
-\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10\
-wit-bindgen-rust\x060.25.0";
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4623] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x93#\x01A\x02\x01A\x1f\
+\x01B\x11\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08mater\
+ial\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\x15[constructor]material\x01\x04\x01h\x02\
+\x01@\x01\x04self\x05\0y\x04\0\x13[method]material.id\x01\x06\x01@\x01\x04self\x05\
+\0s\x04\0\x15[method]material.name\x01\x07\x01@\x02\x04self\x05\x05values\x01\0\x04\
+\0\x19[method]material.set-name\x01\x08\x01@\x01\x04self\x05\0\x01\x04\0\x16[met\
+hod]material.color\x01\x09\x01@\x02\x04self\x05\x05value\x01\x01\0\x04\0\x1a[met\
+hod]material.set-color\x01\x0a\x03\x01\x14wired:scene/material\x05\0\x02\x03\0\0\
+\x08material\x01B)\x02\x03\x02\x01\x01\x04\0\x08material\x03\0\0\x04\0\x09primit\
+ive\x03\x01\x04\0\x04mesh\x03\x01\x01h\x02\x01@\x01\x04self\x04\0y\x04\0\x14[met\
+hod]primitive.id\x01\x05\x01i\x01\x01k\x06\x01@\x01\x04self\x04\0\x07\x04\0\x1a[\
+method]primitive.material\x01\x08\x01h\x01\x01k\x09\x01@\x02\x04self\x04\x05valu\
+e\x0a\x01\0\x04\0\x1e[method]primitive.set-material\x01\x0b\x01py\x01@\x02\x04se\
+lf\x04\x05value\x0c\x01\0\x04\0\x1d[method]primitive.set-indices\x01\x0d\x01pv\x01\
+@\x02\x04self\x04\x05value\x0e\x01\0\x04\0\x1d[method]primitive.set-normals\x01\x0f\
+\x04\0\x1f[method]primitive.set-positions\x01\x0f\x04\0\x19[method]primitive.set\
+-uvs\x01\x0f\x01i\x03\x01@\0\0\x10\x04\0\x11[constructor]mesh\x01\x11\x01h\x03\x01\
+@\x01\x04self\x12\0y\x04\0\x0f[method]mesh.id\x01\x13\x01@\x01\x04self\x12\0s\x04\
+\0\x11[method]mesh.name\x01\x14\x01@\x02\x04self\x12\x05values\x01\0\x04\0\x15[m\
+ethod]mesh.set-name\x01\x15\x01i\x02\x01p\x16\x01@\x01\x04self\x12\0\x17\x04\0\x1c\
+[method]mesh.list-primitives\x01\x18\x01@\x01\x04self\x12\0\x16\x04\0\x1d[method\
+]mesh.create-primitive\x01\x19\x01@\x02\x04self\x12\x05value\x04\x01\0\x04\0\x1d\
+[method]mesh.remove-primitive\x01\x1a\x03\x01\x10wired:scene/mesh\x05\x02\x01B\x06\
+\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\0\x01r\x04\x01xv\x01yv\x01zv\x01\
+wv\x04\0\x04quat\x03\0\x02\x01r\x03\x08rotation\x03\x05scale\x01\x0btranslation\x01\
+\x04\0\x09transform\x03\0\x04\x03\x01\x10wired:math/types\x05\x03\x02\x03\0\x02\x04\
+vec3\x02\x03\0\x02\x04quat\x01B\x15\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\0\x02\
+\x03\x02\x01\x05\x04\0\x04quat\x03\0\x02\x01m\x02\x04left\x05right\x04\0\x09hand\
+-side\x03\0\x04\x01r\x03\x0btranslation\x01\x08rotation\x03\x06radiusv\x04\0\x05\
+joint\x03\0\x06\x01r\x04\x03tip\x07\x06distal\x07\x08proximal\x07\x0ametacarpal\x07\
+\x04\0\x06finger\x03\0\x08\x01k\x07\x01r\x09\x04side\x05\x05thumb\x09\x05index\x09\
+\x06middle\x09\x04ring\x09\x06little\x09\x04palm\x07\x05wrist\x07\x05elbow\x0a\x04\
+\0\x04hand\x03\0\x0b\x01r\x02\x06origin\x01\x0borientation\x03\x04\0\x03ray\x03\0\
+\x0d\x01r\x03\x06origin\x01\x0borientation\x03\x06radiusv\x04\0\x03tip\x03\0\x0f\
+\x01q\x03\x04hand\x01\x0c\0\x03ray\x01\x0e\0\x03tip\x01\x10\0\x04\0\x0ainput-typ\
+e\x03\0\x11\x01r\x04\x02idw\x05input\x12\x08distancev\x05ordery\x04\0\x0binput-e\
+vent\x03\0\x13\x03\x01\x11wired:input/types\x05\x06\x02\x03\0\x03\x0binput-event\
+\x01B\x0a\x02\x03\x02\x01\x07\x04\0\x0binput-event\x03\0\0\x04\0\x0dinput-handle\
+r\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\x1a[constructor]input-handler\x01\x04\x01h\
+\x02\x01k\x01\x01@\x01\x04self\x05\0\x06\x04\0\"[method]input-handler.handle-inp\
+ut\x01\x07\x03\x01\x13wired:input/handler\x05\x08\x01B\x1c\x02\x03\x02\x01\x04\x04\
+\0\x04vec3\x03\0\0\x04\0\x08collider\x03\x01\x01r\x01\x06radiusv\x04\0\x06sphere\
+\x03\0\x03\x01q\x02\x06cuboid\x01\x01\0\x06sphere\x01\x04\0\x04\0\x05shape\x03\0\
+\x05\x04\0\x0arigid-body\x03\x01\x01m\x03\x07dynamic\x05fixed\x09kinematic\x04\0\
+\x0frigid-body-type\x03\0\x08\x01i\x02\x01@\x01\x05shape\x06\0\x0a\x04\0\x15[con\
+structor]collider\x01\x0b\x01h\x02\x01@\x01\x04self\x0c\0v\x04\0\x18[method]coll\
+ider.density\x01\x0d\x01@\x02\x04self\x0c\x05valuev\x01\0\x04\0\x1c[method]colli\
+der.set-density\x01\x0e\x01i\x07\x01@\x01\x0frigid-body-type\x09\0\x0f\x04\0\x17\
+[constructor]rigid-body\x01\x10\x01h\x07\x01@\x01\x04self\x11\0\x01\x04\0\x19[me\
+thod]rigid-body.angvel\x01\x12\x01@\x02\x04self\x11\x05value\x01\x01\0\x04\0\x1d\
+[method]rigid-body.set-angvel\x01\x13\x04\0\x19[method]rigid-body.linvel\x01\x12\
+\x04\0\x1d[method]rigid-body.set-linvel\x01\x13\x03\x01\x13wired:physics/types\x05\
+\x09\x02\x03\0\x01\x04mesh\x02\x03\0\x04\x0dinput-handler\x02\x03\0\x02\x09trans\
+form\x02\x03\0\x05\x08collider\x02\x03\0\x05\x0arigid-body\x01BB\x02\x03\x02\x01\
+\x0a\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x0dinput-handler\x03\0\x02\x02\
+\x03\x02\x01\x0c\x04\0\x09transform\x03\0\x04\x02\x03\x02\x01\x0d\x04\0\x08colli\
+der\x03\0\x06\x02\x03\x02\x01\x0e\x04\0\x0arigid-body\x03\0\x08\x04\0\x04node\x03\
+\x01\x01i\x0a\x01@\0\0\x0b\x04\0\x11[constructor]node\x01\x0c\x01h\x0a\x01@\x01\x04\
+self\x0d\0y\x04\0\x0f[method]node.id\x01\x0e\x01@\x01\x04self\x0d\0s\x04\0\x11[m\
+ethod]node.name\x01\x0f\x01@\x02\x04self\x0d\x05values\x01\0\x04\0\x15[method]no\
+de.set-name\x01\x10\x01p\x0b\x01@\x01\x04self\x0d\0\x11\x04\0\x15[method]node.ch\
+ildren\x01\x12\x01@\x02\x04self\x0d\x05value\x0d\x01\0\x04\0\x16[method]node.add\
+-child\x01\x13\x04\0\x19[method]node.remove-child\x01\x13\x01k\x0b\x01@\x01\x04s\
+elf\x0d\0\x14\x04\0\x13[method]node.parent\x01\x15\x01@\x01\x04self\x0d\0\x05\x04\
+\0\x16[method]node.transform\x01\x16\x01@\x02\x04self\x0d\x05value\x05\x01\0\x04\
+\0\x1a[method]node.set-transform\x01\x17\x01i\x01\x01k\x18\x01@\x01\x04self\x0d\0\
+\x19\x04\0\x11[method]node.mesh\x01\x1a\x01h\x01\x01k\x1b\x01@\x02\x04self\x0d\x05\
+value\x1c\x01\0\x04\0\x15[method]node.set-mesh\x01\x1d\x01i\x07\x01k\x1e\x01@\x01\
+\x04self\x0d\0\x1f\x04\0\x15[method]node.collider\x01\x20\x01h\x07\x01k!\x01@\x02\
+\x04self\x0d\x05value\"\x01\0\x04\0\x19[method]node.set-collider\x01#\x01i\x09\x01\
+k$\x01@\x01\x04self\x0d\0%\x04\0\x17[method]node.rigid-body\x01&\x01h\x09\x01k'\x01\
+@\x02\x04self\x0d\x05value(\x01\0\x04\0\x1b[method]node.set-rigid-body\x01)\x01i\
+\x03\x01k*\x01@\x01\x04self\x0d\0+\x04\0\x1a[method]node.input-handler\x01,\x01h\
+\x03\x01k-\x01@\x02\x04self\x0d\x05value.\x01\0\x04\0\x1e[method]node.set-input-\
+handler\x01/\x03\x01\x10wired:scene/node\x05\x0f\x02\x03\0\x06\x04node\x01B\x1c\x02\
+\x03\x02\x01\x10\x04\0\x04node\x03\0\0\x04\0\x09container\x03\x01\x01m\x03\x06ce\
+nter\x03end\x05start\x04\0\x09alignment\x03\0\x03\x01i\x02\x01@\0\0\x05\x04\0\x16\
+[constructor]container\x01\x06\x01h\x02\x01i\x01\x01@\x01\x04self\x07\0\x08\x04\0\
+\x16[method]container.root\x01\x09\x01@\x01\x04self\x07\0v\x04\0\x17[method]cont\
+ainer.x-len\x01\x0a\x04\0\x17[method]container.y-len\x01\x0a\x04\0\x17[method]co\
+ntainer.z-len\x01\x0a\x01@\x02\x04self\x07\x05valuev\x01\0\x04\0\x1b[method]cont\
+ainer.set-x-len\x01\x0b\x04\0\x1b[method]container.set-y-len\x01\x0b\x04\0\x1b[m\
+ethod]container.set-z-len\x01\x0b\x01@\x01\x04self\x07\0\x04\x04\0\x19[method]co\
+ntainer.align-x\x01\x0c\x04\0\x19[method]container.align-y\x01\x0c\x04\0\x19[met\
+hod]container.align-z\x01\x0c\x01@\x02\x04self\x07\x05value\x04\x01\0\x04\0\x1d[\
+method]container.set-align-x\x01\x0d\x04\0\x1d[method]container.set-align-y\x01\x0d\
+\x04\0\x1d[method]container.set-align-z\x01\x0d\x04\x01\x12unavi:ui/container\x05\
+\x11\x02\x03\0\x07\x09container\x01B\x0a\x02\x03\x02\x01\x12\x04\0\x09container\x03\
+\0\0\x04\0\x06button\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\x13[constructor]button\x01\
+\x04\x01h\x02\x01i\x01\x01@\x01\x04self\x05\0\x06\x04\0\x13[method]button.root\x01\
+\x07\x04\x01\x0funavi:ui/button\x05\x13\x01B\x1d\x02\x03\x02\x01\x12\x04\0\x09co\
+ntainer\x03\0\0\x04\0\x04grid\x03\x01\x01m\x07\x01x\x01y\x01z\x02xy\x02xz\x02yz\x03\
+xyz\x04\0\x09direction\x03\0\x03\x01i\x02\x01@\0\0\x05\x04\0\x11[constructor]gri\
+d\x01\x06\x01h\x02\x01i\x01\x01@\x01\x04self\x07\0\x08\x04\0\x11[method]grid.roo\
+t\x01\x09\x01@\x01\x04self\x07\0y\x04\0\x14[method]grid.columns\x01\x0a\x01@\x02\
+\x04self\x07\x05valuey\x01\0\x04\0\x18[method]grid.set-columns\x01\x0b\x04\0\x11\
+[method]grid.rows\x01\x0a\x04\0\x15[method]grid.set-rows\x01\x0b\x01@\x01\x04sel\
+f\x07\0\x04\x04\0\x16[method]grid.direction\x01\x0c\x01@\x02\x04self\x07\x05valu\
+e\x04\x01\0\x04\0\x1a[method]grid.set-direction\x01\x0d\x01h\x01\x01@\x02\x04sel\
+f\x07\x04item\x0e\x01\0\x04\0\x15[method]grid.add-item\x01\x0f\x04\0\x18[method]\
+grid.remove-item\x01\x0f\x01p\x08\x01@\x01\x04self\x07\0\x10\x04\0\x17[method]gr\
+id.list-items\x01\x11\x04\x01\x0dunavi:ui/grid\x05\x14\x04\x01\x0eunavi:ui/guest\
+\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0d\
+wit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

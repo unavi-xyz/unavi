@@ -3,7 +3,7 @@ use std::cell::Cell;
 use crate::{
     bindings::{
         exports::unavi::ui::container::{Alignment, Guest, GuestContainer},
-        wired::scene::node::{create_node, Node},
+        wired::scene::node::Node,
     },
     GuestImpl,
 };
@@ -25,7 +25,7 @@ pub struct Container {
 impl GuestContainer for Container {
     fn new() -> Self {
         Self {
-            node: create_node(),
+            node: Node::new(),
             x_len: Cell::new(1.0),
             y_len: Cell::new(1.0),
             z_len: Cell::new(1.0),

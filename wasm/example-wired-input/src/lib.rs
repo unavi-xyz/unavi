@@ -7,8 +7,8 @@ use bindings::{
         math::types::Vec3,
         physics::types::{Collider, Shape},
         scene::{
-            material::{create_material, Color, Material},
-            node::create_node,
+            material::{Color, Material},
+            node::Node,
         },
     },
 };
@@ -25,7 +25,7 @@ struct Script {
 
 impl GuestScript for Script {
     fn new() -> Self {
-        let node = create_node();
+        let node = Node::new();
 
         let size = Vec3::splat(1.0);
         let collider = Collider::new(Shape::Cuboid(size));
@@ -34,7 +34,7 @@ impl GuestScript for Script {
         let mesh = create_cuboid(size);
         node.set_mesh(Some(&mesh));
 
-        let material = create_material();
+        let material = Material::new();
         for primitive in mesh.list_primitives() {
             primitive.set_material(Some(&material));
         }

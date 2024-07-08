@@ -1,10 +1,7 @@
 use attributes::set_attributes;
 use bindings::{
     exports::unavi::shapes::api::Guest,
-    wired::{
-        math::types::Vec3,
-        scene::mesh::{create_mesh, Mesh},
-    },
+    wired::{math::types::Vec3, scene::mesh::Mesh},
 };
 use parry3d::shape::Ball;
 use shapes::cuboid::make_cuboid;
@@ -18,7 +15,7 @@ struct Api;
 
 impl Guest for Api {
     fn create_cuboid(size: Vec3) -> Mesh {
-        let mesh = create_mesh();
+        let mesh = Mesh::new();
         let primitive = mesh.create_primitive();
 
         make_cuboid(&size, &primitive);
@@ -27,7 +24,7 @@ impl Guest for Api {
     }
 
     fn create_sphere(radius: f32, sectors: u32, stacks: u32) -> Mesh {
-        let mesh = create_mesh();
+        let mesh = Mesh::new();
         let primitive = mesh.create_primitive();
 
         let shape = Ball::new(radius);

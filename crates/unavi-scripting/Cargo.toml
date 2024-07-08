@@ -21,6 +21,7 @@ wasm-bridge-wasi = { git = "https://github.com/kayhhh/wasm-bridge.git", branch =
 
 [dev-dependencies]
 bevy_panorbit_camera.workspace = true
+concat-idents = "1.1.5"
 tracing-test = { workspace = true, features = ["no-env-filter"] }
 tracing.workspace = true
 unavi-player = { path = "../unavi-player" }

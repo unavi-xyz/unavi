@@ -4,7 +4,7 @@ use wasm_bridge_wasi::{WasiCtx, WasiCtxBuilder, WasiView};
 
 use crate::{
     actions::ScriptAction,
-    api::wired_scene::wired::scene::{
+    api::wired_scene::gltf::{
         material::Material,
         mesh::{Mesh, Primitive},
         node::Node,

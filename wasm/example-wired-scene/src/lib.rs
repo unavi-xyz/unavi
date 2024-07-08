@@ -7,8 +7,8 @@ use bindings::{
         log::api::{log, LogLevel},
         math::types::Vec3,
         scene::{
-            material::{create_material, Color, Material},
-            node::{create_node, Node},
+            material::{Color, Material},
+            node::Node,
         },
     },
 };
@@ -26,7 +26,7 @@ struct Script {
 impl GuestScript for Script {
     fn new() -> Self {
         log(LogLevel::Info, "Creating node");
-        let node = create_node();
+        let node = Node::new();
 
         log(LogLevel::Info, "Creating mesh");
         let mesh = create_cuboid(Vec3::splat(1.0));
@@ -35,7 +35,7 @@ impl GuestScript for Script {
         node.set_mesh(Some(&mesh));
 
         log(LogLevel::Info, "Creating material");
-        let material = create_material();
+        let material = Material::new();
 
         log(LogLevel::Info, "Setting color");
         material.set_color(Color {

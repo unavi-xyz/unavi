@@ -2,8 +2,9 @@ use crate::{
     bindings::wired::{
         log::api::{log, LogLevel},
         scene::{
-            mesh::{create_mesh, remove_mesh},
-            node::{create_node, list_nodes, remove_node, Node, Transform},
+            gltf::Gltf,
+            mesh::Mesh,
+            node::{Node, Transform},
         },
     },
     panic_log,
@@ -18,10 +19,18 @@ impl Property for Node {
 
 pub fn test_node_api() {
     log(LogLevel::Debug, "testing node");
-    test_property(list_nodes, create_node, remove_node);
 
-    let node = create_node();
-    let node_2 = create_node();
+    let document = Gltf::new();
+
+    test_property(
+        Node::new,
+        |v| document.add_node(v),
+        || document.list_nodes(),
+        |v| document.remove_node(v),
+    );
+
+    let node = Node::new();
+    let node_2 = Node::new();
     node.add_child(&node_2);
 
     let children = node.children();
@@ -58,7 +67,7 @@ pub fn test_node_api() {
     //     panic_log(&err);
     // }
 
-    let found_nodes = list_nodes();
+    let found_nodes = document.list_nodes();
     if found_nodes.len() != 2 {
         let err = format!("found list_nodes len: {}, expected 2", found_nodes.len());
         panic_log(&err);
@@ -74,8 +83,8 @@ pub fn test_node_api() {
         panic_log(&err);
     }
 
-    let mesh = create_mesh();
-    let node = create_node();
+    let mesh = Mesh::new();
+    let node = Node::new();
     node.set_mesh(Some(&mesh));
 
     let found_mesh = node.mesh();
@@ -93,6 +102,4 @@ pub fn test_node_api() {
         );
         panic_log(&err);
     }
-
-    remove_mesh(mesh);
 }

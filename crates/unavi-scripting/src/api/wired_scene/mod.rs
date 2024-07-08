@@ -7,28 +7,30 @@ use wired::{
 
 use crate::state::StoreState;
 
-pub mod material;
-pub mod mesh;
-pub mod node;
+pub mod gltf;
 
 wasm_bridge::component::bindgen!({
     path: "../../wired-protocol/spatial/wit/wired-scene",
-    world: "host",
     with: {
         "wired:input/handler/input-handler": super::wired_input::input_handler::InputHandler,
         "wired:physics/types/collider": super::wired_physics::collider::Collider,
         "wired:physics/types/rigid-body": super::wired_physics::rigid_body::RigidBody,
-        "wired:scene/material/material": material::Material,
-        "wired:scene/mesh/mesh": mesh::Mesh,
-        "wired:scene/mesh/primitive": mesh::Primitive,
-        "wired:scene/node/node": node::Node,
+        "wired:scene/gltf/gltf": gltf::document::GltfDocument,
+        "wired:scene/material/material": gltf::material::Material,
+        "wired:scene/mesh/mesh": gltf::mesh::Mesh,
+        "wired:scene/mesh/primitive": gltf::mesh::Primitive,
+        "wired:scene/node/node": gltf::node::Node,
+        "wired:scene/scene/scene": gltf::scene::Scene,
     }
 });
 
 pub fn add_to_linker(linker: &mut Linker<StoreState>) -> Result<()> {
+    wired::scene::gltf::add_to_linker(linker, |s| s)?;
+    // wired::scene::glxf::add_to_linker(linker, |s| s)?;
     wired::scene::material::add_to_linker(linker, |s| s)?;
     wired::scene::mesh::add_to_linker(linker, |s| s)?;
     wired::scene::node::add_to_linker(linker, |s| s)?;
+    wired::scene::scene::add_to_linker(linker, |s| s)?;
     Ok(())
 }
 

@@ -1,10 +1,12 @@
+use std::cell::Cell;
+
 use bevy::utils::HashSet;
 use wasm_bridge::component::Resource;
 
 use crate::{
     actions::ScriptAction,
     api::{
-        utils::RefResource,
+        utils::{RefCount, RefCountCell, RefResource},
         wired_input::input_handler::InputHandler,
         wired_physics::wired::{
             math::types::Vec3,
@@ -14,7 +16,7 @@ use crate::{
     state::StoreState,
 };
 
-use super::wired::{
+use crate::api::wired_scene::wired::{
     physics::types::{Collider, RigidBody},
     scene::{
         mesh::Mesh,
@@ -32,9 +34,30 @@ pub struct Node {
     pub parent: Option<u32>,
     pub rigid_body: Option<Resource<RigidBody>>,
     pub transform: Transform,
+    ref_count: RefCountCell,
 }
 
+impl RefCount for Node {
+    fn ref_count(&self) -> &Cell<usize> {
+        &self.ref_count
+    }
+}
+
+impl RefResource for Node {}
+
 impl HostNode for StoreState {
+    fn new(&mut self) -> wasm_bridge::Result<Resource<Node>> {
+        let node = Node::default();
+        let table_res = self.table.push(node)?;
+        let res = Node::from_res(&table_res, &self.table)?;
+        self.nodes.push(table_res);
+
+        self.sender
+            .send(ScriptAction::CreateNode { id: res.rep() })?;
+
+        Ok(res)
+    }
+
     fn id(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<u32> {
         Ok(self_.rep())
     }
@@ -51,7 +74,11 @@ impl HostNode for StoreState {
 
     fn mesh(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<Option<Resource<Mesh>>> {
         let node = self.table.get(&self_)?;
-        Ok(node.mesh.map(Resource::new_own))
+        let mesh = match node.mesh {
+            Some(m) => Some(Mesh::from_rep(m, &self.table)?),
+            None => None,
+        };
+        Ok(mesh)
     }
     fn set_mesh(
         &mut self,
@@ -71,15 +98,20 @@ impl HostNode for StoreState {
 
     fn parent(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<Option<Resource<Node>>> {
         let node = self.table.get(&self_)?;
-        Ok(node.parent.map(Resource::new_own))
+        let parent = match node.parent {
+            Some(p) => Some(Node::from_rep(p, &self.table)?),
+            None => None,
+        };
+        Ok(parent)
     }
     fn children(&mut self, self_: Resource<Node>) -> wasm_bridge::Result<Vec<Resource<Node>>> {
-        let node = self.table.get_mut(&self_)?;
-        Ok(node
+        let node = self.table.get(&self_)?;
+        let children = node
             .children
             .iter()
-            .map(|rep| Resource::new_own(*rep))
-            .collect())
+            .map(|rep| Node::from_rep(*rep, &self.table))
+            .collect::<Result<_, _>>()?;
+        Ok(children)
     }
     fn add_child(
         &mut self,
@@ -168,10 +200,10 @@ impl HostNode for StoreState {
         self_: Resource<Node>,
     ) -> wasm_bridge::Result<Option<Resource<Collider>>> {
         let node = self.table.get(&self_)?;
-        let res = node
-            .collider
-            .as_ref()
-            .map(|res| Resource::new_own(res.rep()));
+        let res = match &node.collider {
+            Some(res) => Some(Collider::from_res(res, &self.table)?),
+            None => None,
+        };
         Ok(res)
     }
     fn set_collider(
@@ -209,10 +241,10 @@ impl HostNode for StoreState {
         self_: Resource<Node>,
     ) -> wasm_bridge::Result<Option<Resource<RigidBody>>> {
         let node = self.table.get(&self_)?;
-        let res = node
-            .rigid_body
-            .as_ref()
-            .map(|res| Resource::new_own(res.rep()));
+        let res = match &node.rigid_body {
+            Some(res) => Some(RigidBody::from_res(res, &self.table)?),
+            None => None,
+        };
         Ok(res)
     }
     fn set_rigid_body(
@@ -283,47 +315,32 @@ impl HostNode for StoreState {
         Ok(())
     }
 
-    fn drop(&mut self, _rep: Resource<Node>) -> wasm_bridge::Result<()> {
+    fn drop(&mut self, rep: Resource<Node>) -> wasm_bridge::Result<()> {
+        let id = rep.rep();
+        let deleted = Node::handle_drop(rep, &mut self.table)?;
+
+        if deleted {
+            let index = self.nodes.iter().enumerate().find_map(|(i, item)| {
+                if item.rep() == id {
+                    Some(i)
+                } else {
+                    None
+                }
+            });
+            if let Some(index) = index {
+                self.nodes.remove(index);
+            }
+
+            self.sender.send(ScriptAction::RemoveNode { id })?;
+        }
+
         Ok(())
     }
 }
 
-impl Host for StoreState {
-    fn list_nodes(&mut self) -> wasm_bridge::Result<Vec<Resource<Node>>> {
-        Ok(self
-            .nodes
-            .iter()
-            .map(|res| Resource::new_own(res.rep()))
-            .collect())
-    }
+impl Host for StoreState {}
 
-    fn create_node(&mut self) -> wasm_bridge::Result<Resource<Node>> {
-        let node = Node::default();
-        let resource = self.table.push(node)?;
-        let node_rep = resource.rep();
-        self.nodes.push(resource);
-
-        self.sender
-            .send(ScriptAction::CreateNode { id: node_rep })?;
-
-        Ok(Resource::new_own(node_rep))
-    }
-
-    fn remove_node(&mut self, value: Resource<Node>) -> wasm_bridge::Result<()> {
-        let rep = value.rep();
-        self.table.delete(value)?;
-
-        let index =
-            self.nodes
-                .iter()
-                .enumerate()
-                .find_map(|(i, item)| if item.rep() == rep { Some(i) } else { None });
-        if let Some(index) = index {
-            self.nodes.remove(index);
-        }
-
-        self.sender.send(ScriptAction::RemoveNode { id: rep })?;
-
-        Ok(())
-    }
+#[cfg(test)]
+mod tests {
+    crate::generate_resource_tests!(Node);
 }

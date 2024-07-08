@@ -60,8 +60,7 @@ pub fn load_scripts(
             let component =
                 wasm_bridge::component::Component::new_safe(store.engine(), &bytes).await?;
 
-            let (script, _) =
-                Script::instantiate_async(&mut store, &component, &mut linker).await?;
+            let (script, _) = Script::instantiate_async(&mut store, &component, &linker).await?;
 
             let mut scripts = scripts.lock().unwrap();
             scripts.insert(entity, (script, store));

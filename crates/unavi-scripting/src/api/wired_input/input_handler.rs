@@ -4,7 +4,7 @@ use crossbeam::channel::{Receiver, Sender};
 use wasm_bridge::component::Resource;
 
 use crate::{
-    api::utils::{RefCount, RefResource},
+    api::utils::{RefCount, RefCountCell, RefResource},
     state::StoreState,
 };
 
@@ -27,7 +27,7 @@ pub enum ScriptInputEvent {
 pub struct InputHandler {
     pub sender: Sender<ScriptInputEvent>,
     receiver: Receiver<ScriptInputEvent>,
-    ref_count: Cell<usize>,
+    ref_count: RefCountCell,
 }
 
 impl RefCount for InputHandler {
@@ -50,7 +50,7 @@ impl InputHandler {
 
         Self {
             receiver,
-            ref_count: Cell::new(1),
+            ref_count: RefCountCell::default(),
             sender,
         }
     }
@@ -108,7 +108,8 @@ impl HostInputHandler for StoreState {
     }
 
     fn drop(&mut self, rep: Resource<InputHandler>) -> wasm_bridge::Result<()> {
-        InputHandler::handle_drop(rep, &mut self.table)
+        InputHandler::handle_drop(rep, &mut self.table)?;
+        Ok(())
     }
 }
 
@@ -126,5 +127,15 @@ mod tests {
         let res = HostInputHandler::new(&mut state).unwrap();
 
         crate::api::utils::tests::test_drop(&mut state, res);
+    }
+
+    #[test]
+    #[traced_test]
+    fn test_new() {
+        let (mut state, _) = StoreState::new("test_new".to_string());
+
+        let res = HostInputHandler::new(&mut state).unwrap();
+
+        crate::api::utils::tests::test_new(&mut state, res);
     }
 }

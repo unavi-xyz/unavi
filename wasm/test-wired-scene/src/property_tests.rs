@@ -8,14 +8,17 @@ pub trait Property {
 }
 
 pub fn test_property<T: Property>(
-    list: impl Fn() -> Vec<T>,
     create: impl Fn() -> T,
-    remove: impl Fn(T),
+    add: impl Fn(&T),
+    list: impl Fn() -> Vec<T>,
+    remove: impl Fn(&T),
 ) {
     log(LogLevel::Debug, "starting property tests");
 
     log(LogLevel::Debug, "calling create");
     let item = create();
+    log(LogLevel::Debug, "calling add");
+    add(&item);
     log(LogLevel::Debug, "calling list");
     let found_items = list();
 
@@ -37,7 +40,7 @@ pub fn test_property<T: Property>(
     };
 
     log(LogLevel::Debug, "calling remove");
-    remove(item);
+    remove(&item);
     log(LogLevel::Debug, "calling list");
     let found_items = list();
 

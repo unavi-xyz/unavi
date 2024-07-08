@@ -5,6 +5,6 @@ wasm_bridge::component::bindgen!({
     world: "host",
     with: {
         "wired:player/api/player": player::Player,
-        "wired:scene/node/node": crate::api::wired_scene::gltf::node::Node,
+        "wired:scene/node/node": crate::api::wired_scene::gltf::node::NodeRes,
     }
 });

@@ -48,6 +48,7 @@ pub fn init_scripts(
 }
 
 pub fn update_scripts(
+    mut commands: Commands,
     mut to_update: Query<(Entity, &Name, &ScriptResource)>,
     scripts: NonSendMut<Scripts>,
     time: Res<Time>,
@@ -69,6 +70,8 @@ pub fn update_scripts(
                 .script()
                 .call_update(store.as_context_mut(), res.0, delta)
                 .await;
+
+            commands.append(&mut store.data_mut().commands);
 
             trace!("Done");
             drop(span);

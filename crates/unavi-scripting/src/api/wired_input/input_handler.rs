@@ -1,5 +1,6 @@
 use std::cell::Cell;
 
+use bevy::prelude::{Component, Deref};
 use crossbeam::channel::{Receiver, Sender};
 use wasm_bridge::component::Resource;
 
@@ -22,6 +23,9 @@ pub enum ScriptInputEvent {
         orientation: bevy::math::Quat,
     },
 }
+
+#[derive(Component, Deref)]
+pub struct InputHandlerSender(pub Sender<ScriptInputEvent>);
 
 #[derive(Debug)]
 pub struct InputHandler {
@@ -122,7 +126,7 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_drop() {
-        let (mut state, _) = StoreState::new("test_drop".to_string());
+        let mut state = StoreState::new("test_drop".to_string());
 
         let res = HostInputHandler::new(&mut state).unwrap();
 
@@ -132,7 +136,7 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_new() {
-        let (mut state, _) = StoreState::new("test_new".to_string());
+        let mut state = StoreState::new("test_new".to_string());
 
         let res = HostInputHandler::new(&mut state).unwrap();
 

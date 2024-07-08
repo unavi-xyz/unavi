@@ -26,7 +26,7 @@ pub fn test_node_api() {
         Node::new,
         |v| document.add_node(v),
         || document.list_nodes(),
-        |v| document.remove_node(v),
+        |v| document.remove_node(&v),
     );
 
     let node = Node::new();

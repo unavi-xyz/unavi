@@ -69,7 +69,7 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_drop() {
-        let (mut state, _) = StoreState::new("test_drop".to_string());
+        let mut state = StoreState::new("test_drop".to_string());
 
         let shape = Shape::Sphere(Sphere { radius: 0.5 });
         let res = HostCollider::new(&mut state, shape).unwrap();
@@ -80,7 +80,7 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_new() {
-        let (mut state, _) = StoreState::new("test_new".to_string());
+        let mut state = StoreState::new("test_new".to_string());
 
         let shape = Shape::Sphere(Sphere { radius: 0.5 });
         let res = HostCollider::new(&mut state, shape).unwrap();

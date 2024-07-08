@@ -74,7 +74,6 @@ mod tests {
             (
                 crate::execution::init_scripts,
                 crate::execution::update_scripts,
-                crate::actions::handler::handle_actions,
             )
                 .chain(),
         );

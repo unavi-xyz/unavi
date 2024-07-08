@@ -21,6 +21,6 @@ pub fn test_material_api() {
         Material::new,
         |v| document.add_material(v),
         || document.list_materials(),
-        |v| document.remove_material(v),
+        |v| document.remove_material(&v),
     );
 }

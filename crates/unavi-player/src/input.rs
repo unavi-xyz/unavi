@@ -2,9 +2,7 @@ use bevy::input::keyboard::KeyCode;
 use bevy::prelude::*;
 use bevy_xpbd_3d::prelude::*;
 use unavi_constants::layers::{OTHER_PLAYER_LAYER, WORLD_LAYER};
-use unavi_scripting::{
-    actions::handler::InputHandler, api::wired_input::input_handler::ScriptInputEvent,
-};
+use unavi_scripting::api::wired_input::input_handler::{InputHandlerSender, ScriptInputEvent};
 
 use crate::PlayerCamera;
 
@@ -55,7 +53,7 @@ const RAYCAST_DISTANCE: f32 = 10.0;
 pub fn handle_raycast_input(
     camera: Query<&GlobalTransform, With<PlayerCamera>>,
     mouse: Res<ButtonInput<MouseButton>>,
-    nodes: Query<(Entity, &InputHandler)>,
+    nodes: Query<(Entity, &InputHandlerSender)>,
     query: SpatialQuery,
 ) {
     if camera.is_empty() {

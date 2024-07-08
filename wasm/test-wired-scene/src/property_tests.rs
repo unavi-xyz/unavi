@@ -11,7 +11,7 @@ pub fn test_property<T: Property>(
     create: impl Fn() -> T,
     add: impl Fn(&T),
     list: impl Fn() -> Vec<T>,
-    remove: impl Fn(&T),
+    remove: impl Fn(T),
 ) {
     log(LogLevel::Debug, "starting property tests");
 
@@ -40,7 +40,7 @@ pub fn test_property<T: Property>(
     };
 
     log(LogLevel::Debug, "calling remove");
-    remove(&item);
+    remove(item);
     log(LogLevel::Debug, "calling list");
     let found_items = list();
 

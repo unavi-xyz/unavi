@@ -98,7 +98,7 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_drop() {
-        let (mut state, _) = StoreState::new("test_drop".to_string());
+        let mut state = StoreState::new("test_drop".to_string());
 
         let res = HostRigidBody::new(&mut state, RigidBodyType::Dynamic).unwrap();
 
@@ -108,7 +108,7 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_new() {
-        let (mut state, _) = StoreState::new("test_new".to_string());
+        let mut state = StoreState::new("test_new".to_string());
 
         let res = HostRigidBody::new(&mut state, RigidBodyType::Dynamic).unwrap();
 

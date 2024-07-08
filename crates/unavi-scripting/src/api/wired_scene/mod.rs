@@ -16,11 +16,11 @@ wasm_bridge::component::bindgen!({
         "wired:physics/types/collider": super::wired_physics::collider::Collider,
         "wired:physics/types/rigid-body": super::wired_physics::rigid_body::RigidBody,
         "wired:scene/gltf/gltf": gltf::document::GltfDocument,
-        "wired:scene/material/material": gltf::material::Material,
-        "wired:scene/mesh/mesh": gltf::mesh::Mesh,
-        "wired:scene/mesh/primitive": gltf::mesh::Primitive,
-        "wired:scene/node/node": gltf::node::Node,
-        "wired:scene/scene/scene": gltf::scene::Scene,
+        "wired:scene/material/material": gltf::material::MaterialRes,
+        "wired:scene/mesh/mesh": gltf::mesh::MeshRes,
+        "wired:scene/mesh/primitive": gltf::mesh::PrimitiveRes,
+        "wired:scene/node/node": gltf::node::NodeRes,
+        "wired:scene/scene/scene": gltf::scene::SceneRes,
     }
 });
 

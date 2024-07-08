@@ -1,23 +1,13 @@
-use crossbeam::channel::{Receiver, Sender};
-use wasm_bridge::component::{Resource, ResourceTable};
+use std::sync::{Arc, RwLock};
+
+use bevy::{ecs::system::CommandQueue, prelude::*, utils::HashMap};
+use wasm_bridge::component::ResourceTable;
 use wasm_bridge_wasi::{WasiCtx, WasiCtxBuilder, WasiView};
 
-use crate::{
-    actions::ScriptAction,
-    api::wired_scene::gltf::{
-        material::Material,
-        mesh::{Mesh, Primitive},
-        node::Node,
-    },
-};
-
 pub struct StoreState {
-    pub materials: Vec<Resource<Material>>,
-    pub meshes: Vec<Resource<Mesh>>,
+    pub commands: CommandQueue,
+    pub entities: EntityMaps,
     pub name: String,
-    pub nodes: Vec<Resource<Node>>,
-    pub primitives: Vec<Resource<Primitive>>,
-    pub sender: Sender<ScriptAction>,
     pub table: ResourceTable,
     pub wasi: WasiCtx,
     pub wasi_table: wasm_bridge_wasi::ResourceTable,
@@ -34,24 +24,64 @@ impl WasiView for StoreState {
 }
 
 impl StoreState {
-    pub fn new(name: String) -> (Self, Receiver<ScriptAction>) {
-        let (sender, recv) = crossbeam::channel::bounded(255);
-
+    pub fn new(name: String) -> Self {
         let wasi = WasiCtxBuilder::new().build();
 
-        (
-            Self {
-                materials: Vec::default(),
-                meshes: Vec::default(),
-                name,
-                nodes: Vec::default(),
-                primitives: Vec::default(),
-                sender,
-                table: ResourceTable::default(),
-                wasi,
-                wasi_table: wasm_bridge_wasi::ResourceTable::default(),
-            },
-            recv,
-        )
+        Self {
+            commands: CommandQueue::default(),
+            entities: EntityMaps::default(),
+            name,
+            table: ResourceTable::default(),
+            wasi,
+            wasi_table: wasm_bridge_wasi::ResourceTable::default(),
+        }
     }
+
+    /// Inserts a component into the given node.
+    pub fn node_insert<T: Component>(&mut self, node: u32, value: T) {
+        let nodes = self.entities.nodes.clone();
+
+        self.commands.push(move |world: &mut World| {
+            let nodes = nodes.read().unwrap();
+            let entity = nodes.get(&node).unwrap();
+            let mut entity = world.entity_mut(*entity);
+            entity.insert(value);
+        });
+    }
+
+    /// Inserts a component into the given node if the value is `Some`.
+    /// If the value is `None`, removes the component from the entity.
+    pub fn node_insert_option<T: Component>(&mut self, node: u32, value: Option<T>) {
+        let nodes = self.entities.nodes.clone();
+
+        self.commands.push(move |world: &mut World| {
+            let nodes = nodes.read().unwrap();
+            let entity = nodes.get(&node).unwrap();
+            let mut entity = world.entity_mut(*entity);
+
+            if let Some(value) = value {
+                entity.insert(value);
+            } else {
+                entity.remove::<T>();
+            }
+        });
+    }
+}
+
+#[derive(Default)]
+pub struct EntityMaps {
+    pub materials: Arc<RwLock<HashMap<u32, MaterialState>>>,
+    pub nodes: Arc<RwLock<HashMap<u32, Entity>>>,
+    pub primitives: Arc<RwLock<HashMap<u32, PrimitiveState>>>,
+    pub scenes: Arc<RwLock<HashMap<u32, Entity>>>,
+}
+
+pub struct MaterialState {
+    pub entity: Entity,
+    pub handle: Handle<StandardMaterial>,
+}
+
+pub struct PrimitiveState {
+    pub entity: Entity,
+    pub handle: Handle<Mesh>,
 }

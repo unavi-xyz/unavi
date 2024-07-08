@@ -4,7 +4,7 @@ use bevy::{prelude::*, utils::HashMap};
 use bevy_async_task::{AsyncTaskPool, AsyncTaskStatus};
 use wasm_bridge::{component::Linker, Config, Engine, Store};
 
-use crate::{actions::ActionReceiver, api::add_host_apis, state::StoreState, wired_script::Script};
+use crate::{api::add_host_apis, state::StoreState, wired_script::Script};
 
 use super::asset::Wasm;
 
@@ -46,7 +46,7 @@ pub fn load_scripts(
             }
         };
 
-        let (state, recv) = StoreState::new(name.to_string());
+        let state = StoreState::new(name.to_string());
         let mut store = Store::new(&engine, state);
         let mut linker = Linker::new(store.engine());
 
@@ -68,7 +68,7 @@ pub fn load_scripts(
             Ok(entity)
         });
 
-        commands.entity(entity).insert(ActionReceiver(recv));
+        commands.entity(entity);
     }
 
     for task in pool.iter_poll() {

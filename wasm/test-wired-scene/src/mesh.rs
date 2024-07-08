@@ -31,7 +31,7 @@ pub fn test_mesh_api() {
         Mesh::new,
         |v| document.add_mesh(v),
         || document.list_meshes(),
-        |v| document.remove_mesh(v),
+        |v| document.remove_mesh(&v),
     );
 
     log(LogLevel::Debug, "testing primitive");

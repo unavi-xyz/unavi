@@ -3116,7 +3116,7 @@ pub mod wired {
             }
             impl Mesh {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn remove_primitive(&self, value: &Primitive) {
+                pub fn remove_primitive(&self, value: Primitive) {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/mesh")]
@@ -3129,7 +3129,7 @@ pub mod wired {
                         fn wit_import(_: i32, _: i32) {
                             unreachable!()
                         }
-                        wit_import((self).handle() as i32, (value).handle() as i32);
+                        wit_import((self).handle() as i32, (&value).take_handle() as i32);
                     }
                 }
             }
@@ -5912,7 +5912,7 @@ self\x12\0y\x04\0\x0f[method]mesh.id\x01\x13\x01@\x01\x04self\x12\0s\x04\0\x11[m
 ethod]mesh.name\x01\x14\x01@\x02\x04self\x12\x05values\x01\0\x04\0\x15[method]me\
 sh.set-name\x01\x15\x01i\x02\x01p\x16\x01@\x01\x04self\x12\0\x17\x04\0\x1c[metho\
 d]mesh.list-primitives\x01\x18\x01@\x01\x04self\x12\0\x16\x04\0\x1d[method]mesh.\
-create-primitive\x01\x19\x01@\x02\x04self\x12\x05value\x04\x01\0\x04\0\x1d[metho\
+create-primitive\x01\x19\x01@\x02\x04self\x12\x05value\x16\x01\0\x04\0\x1d[metho\
 d]mesh.remove-primitive\x01\x1a\x03\x01\x10wired:scene/mesh\x05\x02\x01B\x06\x01\
 r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\0\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\
 \0\x04quat\x03\0\x02\x01r\x03\x08rotation\x03\x05scale\x01\x0btranslation\x01\x04\

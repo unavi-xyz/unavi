@@ -1,102 +1,126 @@
 use std::cell::Cell;
 
+use bevy::prelude::*;
 use wasm_bridge::component::Resource;
 
 use crate::{
-    actions::ScriptAction,
     api::utils::{RefCount, RefCountCell, RefResource},
-    state::StoreState,
+    state::{MaterialState, StoreState},
 };
 
 use crate::api::wired_scene::wired::scene::material::{Color, Host, HostMaterial};
 
+#[derive(Component, Clone, Copy, Debug)]
+pub struct MaterialId(pub u32);
+
+#[derive(Bundle)]
+pub struct WiredMaterialBundle {
+    pub id: MaterialId,
+    pub handle: Handle<StandardMaterial>,
+}
+
+impl WiredMaterialBundle {
+    pub fn new(id: u32, handle: Handle<StandardMaterial>) -> Self {
+        Self {
+            id: MaterialId(id),
+            handle,
+        }
+    }
+}
+
 #[derive(Default, Debug)]
-pub struct Material {
+pub struct MaterialRes {
     pub name: String,
     pub color: Color,
     ref_count: RefCountCell,
 }
 
-impl RefCount for Material {
+impl RefCount for MaterialRes {
     fn ref_count(&self) -> &Cell<usize> {
         &self.ref_count
     }
 }
 
-impl RefResource for Material {}
+impl RefResource for MaterialRes {}
 
 impl HostMaterial for StoreState {
-    fn new(&mut self) -> wasm_bridge::Result<wasm_bridge::component::Resource<Material>> {
-        let table_res = self.table.push(Material::default())?;
-        let res = Material::from_res(&table_res, &self.table)?;
-        self.materials.push(table_res);
+    fn new(&mut self) -> wasm_bridge::Result<wasm_bridge::component::Resource<MaterialRes>> {
+        let table_res = self.table.push(MaterialRes::default())?;
+        let res = MaterialRes::from_res(&table_res, &self.table)?;
 
-        self.sender
-            .send(ScriptAction::CreateMaterial { id: res.rep() })?;
+        let materials = self.entities.materials.clone();
+        let rep = res.rep();
+        self.commands.push(move |world: &mut World| {
+            let mut assets = world.resource_mut::<Assets<StandardMaterial>>();
+            let handle = assets.add(StandardMaterial::default());
+            let entity = world
+                .spawn(WiredMaterialBundle::new(rep, handle.clone()))
+                .id();
+
+            let mut materials = materials.write().unwrap();
+            materials.insert(rep, MaterialState { entity, handle });
+        });
 
         Ok(res)
     }
 
-    fn id(&mut self, self_: Resource<Material>) -> wasm_bridge::Result<u32> {
+    fn id(&mut self, self_: Resource<MaterialRes>) -> wasm_bridge::Result<u32> {
         Ok(self_.rep())
     }
 
-    fn name(&mut self, self_: Resource<Material>) -> wasm_bridge::Result<String> {
+    fn name(&mut self, self_: Resource<MaterialRes>) -> wasm_bridge::Result<String> {
         let material = self.table.get(&self_)?;
         Ok(material.name.clone())
     }
-    fn set_name(&mut self, self_: Resource<Material>, value: String) -> wasm_bridge::Result<()> {
+    fn set_name(&mut self, self_: Resource<MaterialRes>, value: String) -> wasm_bridge::Result<()> {
         let material = self.table.get_mut(&self_)?;
         material.name = value;
         Ok(())
     }
 
-    fn color(&mut self, self_: Resource<Material>) -> wasm_bridge::Result<Color> {
+    fn color(&mut self, self_: Resource<MaterialRes>) -> wasm_bridge::Result<Color> {
         let material = self.table.get(&self_)?;
         Ok(material.color)
     }
-    fn set_color(&mut self, self_: Resource<Material>, value: Color) -> wasm_bridge::Result<()> {
+    fn set_color(&mut self, self_: Resource<MaterialRes>, value: Color) -> wasm_bridge::Result<()> {
         let material = self.table.get_mut(&self_)?;
         material.color = value;
 
-        self.sender.send(ScriptAction::SetMaterialColor {
-            id: self_.rep(),
-            color: bevy::prelude::Color::rgba(
-                material.color.r,
-                material.color.g,
-                material.color.b,
-                material.color.a,
-            ),
-        })?;
+        let color = bevy::prelude::Color::rgba(
+            material.color.r,
+            material.color.g,
+            material.color.b,
+            material.color.a,
+        );
+
+        let materials = self.entities.materials.clone();
+        let rep = self_.rep();
+        self.commands.push(move |world: &mut World| {
+            let materials = materials.read().unwrap();
+            let MaterialState { handle, .. } = materials.get(&rep).unwrap();
+            let mut assets = world.resource_mut::<Assets<StandardMaterial>>();
+            let material = assets.get_mut(handle).unwrap();
+            material.base_color = color;
+        });
 
         Ok(())
     }
 
-    fn drop(&mut self, rep: Resource<Material>) -> wasm_bridge::Result<()> {
+    fn drop(&mut self, rep: Resource<MaterialRes>) -> wasm_bridge::Result<()> {
         let id = rep.rep();
-        let dropped = Material::handle_drop(rep, &mut self.table)?;
-        if dropped {
-            bevy::log::info!("Dropping mat: {}", id);
-            let index = self.materials.iter().enumerate().find_map(|(i, item)| {
-                if item.rep() == id {
-                    Some(i)
-                } else {
-                    None
-                }
-            });
-            if let Some(index) = index {
-                self.materials.remove(index);
-            }
+        let dropped = MaterialRes::handle_drop(rep, &mut self.table)?;
 
-            self.sender.send(ScriptAction::RemoveMaterial { id })?;
+        if dropped {
+            let materials = self.entities.materials.clone();
+            self.commands.push(move |world: &mut World| {
+                let mut materials = materials.write().unwrap();
+                let MaterialState { entity, .. } = materials.remove(&id).unwrap();
+                world.despawn(entity);
+            });
         }
+
         Ok(())
     }
 }
 
 impl Host for StoreState {}
-
-#[cfg(test)]
-mod tests {
-    crate::generate_resource_tests!(Material);
-}

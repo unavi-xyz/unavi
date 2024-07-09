@@ -20,7 +20,7 @@ pub fn init_fallback_assets(
 ) {
     let handle_mat = materials.add(StandardMaterial {
         alpha_mode: AlphaMode::Blend,
-        base_color: Color::rgba(0.5, 0.8, 1.0, 0.4),
+        base_color: Color::linear_rgba(0.5, 0.8, 1.0, 0.4),
         perceptual_roughness: 1.0,
         unlit: true,
         ..Default::default()
@@ -96,21 +96,23 @@ mod tests {
             .insert_resource(FallbackMesh(Handle::default()))
             .add_systems(Update, (spawn_fallback_children, despawn_fallback_children));
 
-        let entity = app.world.spawn(FallbackAvatar).id();
+        let entity = app.world_mut().spawn(FallbackAvatar).id();
         app.update();
 
         let children = app
-            .world
+            .world()
             .get::<Children>(entity)
             .expect("Children component not found");
         assert_eq!(children.len(), 1);
 
         let child = *children.iter().next().unwrap();
-        assert!(app.world.get::<FallbackChild>(child).is_some());
+        assert!(app.world().get::<FallbackChild>(child).is_some());
 
-        app.world.entity_mut(entity).remove::<FallbackAvatar>();
+        app.world_mut()
+            .entity_mut(entity)
+            .remove::<FallbackAvatar>();
         app.update();
 
-        assert!(app.world.get_entity(child).is_none());
+        assert!(app.world().get_entity(child).is_none());
     }
 }

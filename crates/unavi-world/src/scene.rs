@@ -6,14 +6,14 @@ use crate::{InstanceRecord, WorldRecord};
 
 pub fn setup_lights(mut commands: Commands, mut ambient: ResMut<AmbientLight>) {
     ambient.brightness = 40.0;
-    ambient.color = Color::rgb(0.95, 0.95, 1.0);
+    ambient.color = Color::linear_rgb(0.95, 0.95, 1.0);
 
     commands.spawn((
         DirectionalLightBundle {
             directional_light: DirectionalLight {
                 shadows_enabled: true,
                 illuminance: 5000.0,
-                color: Color::rgb(1.0, 1.0, 0.98),
+                color: Color::linear_rgb(1.0, 1.0, 0.98),
                 ..default()
             },
             transform: Transform::from_xyz(-4.5, 10.0, 7.0).looking_at(Vec3::ZERO, Vec3::Y),

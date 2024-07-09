@@ -239,11 +239,10 @@ impl HostNode for StoreState {
             let child_ent = nodes.get(&child_rep).unwrap();
             let parent_ent = nodes.get(&parent_rep).unwrap();
 
-            // TODO: Bevy 0.14
-            // world.commands().push(PushChild {
-            //     child: *child_ent,
-            //     parent: *parent_ent,
-            // });
+            world
+                .commands()
+                .entity(*parent_ent)
+                .push_children(&[*child_ent]);
         });
 
         Ok(())
@@ -262,9 +261,7 @@ impl HostNode for StoreState {
         self.commands.push(move |world: &mut World| {
             let nodes = nodes.read().unwrap();
             let child_ent = nodes.get(&child_rep).unwrap();
-
-            // TODO: Bevy 0.14
-            // world.commands().push(RemoveParent { child: *child_ent });
+            world.commands().entity(*child_ent).remove_parent();
         });
 
         Ok(())

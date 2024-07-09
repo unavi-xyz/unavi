@@ -21,4 +21,4 @@ unavi-dwn = { path = "../unavi-dwn" }
 wired-social = { path = "../wired-social" }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-bevy_atmosphere = "0.9.1"
+bevy_atmosphere = "0.10.0"

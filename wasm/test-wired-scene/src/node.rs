@@ -30,7 +30,11 @@ pub fn test_node_api() {
     );
 
     let node = Node::new();
+    document.add_node(&node);
+
     let node_2 = Node::new();
+    document.add_node(&node_2);
+
     node.add_child(&node_2);
 
     let children = node.children();

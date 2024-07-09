@@ -25,7 +25,7 @@ fn setup_scene(
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     ambient.brightness = 100.0;
-    ambient.color = Color::rgb(0.95, 0.95, 1.0);
+    ambient.color = Color::linear_rgb(0.95, 0.95, 1.0);
 
     commands.spawn(DirectionalLightBundle {
         transform: Transform::from_xyz(4.5, 10.0, -7.0).looking_at(Vec3::ZERO, Vec3::Y),

@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 
-use bevy::{ecs::system::CommandQueue, prelude::*, utils::HashMap};
+use bevy::{ecs::world::CommandQueue, prelude::*, utils::HashMap};
 use wasm_bridge::component::ResourceTable;
 use wasm_bridge_wasi::{WasiCtx, WasiCtxBuilder, WasiView};
 

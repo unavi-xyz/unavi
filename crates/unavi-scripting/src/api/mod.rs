@@ -51,8 +51,9 @@ mod tests {
 
         app.add_systems(Update, crate::load::load_scripts);
 
-        let asset_server = app.world.get_resource::<AssetServer>().unwrap();
-        let entity = app.world.spawn(ScriptBundle::load(name, asset_server)).id();
+        let world = app.world_mut();
+        let asset_server = world.get_resource::<AssetServer>().unwrap();
+        let entity = world.spawn(ScriptBundle::load(name, asset_server)).id();
 
         let mut did_load = false;
 
@@ -60,7 +61,7 @@ mod tests {
             tokio::time::sleep(Duration::from_secs_f32(1.0)).await;
             app.update();
 
-            let loaded_script = app.world.get::<LoadedScript>(entity);
+            let loaded_script = app.world().get::<LoadedScript>(entity);
             if loaded_script.is_some() {
                 did_load = true;
                 break;

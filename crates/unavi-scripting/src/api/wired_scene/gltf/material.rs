@@ -86,7 +86,7 @@ impl HostMaterial for StoreState {
         let material = self.table.get_mut(&self_)?;
         material.color = value;
 
-        let color = bevy::prelude::Color::rgba(
+        let color = bevy::prelude::Color::linear_rgba(
             material.color.r,
             material.color.g,
             material.color.b,

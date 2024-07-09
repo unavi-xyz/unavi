@@ -1,20 +1,19 @@
 use bevy::prelude::*;
-use bevy_vrm::HumanoidBones;
 
 use crate::AvatarAnimations;
 
 mod mixamo;
 
 pub fn apply_avatar_animations(
-    avatars: Query<(&AvatarAnimations, &HumanoidBones)>,
+    avatars: Query<&AvatarAnimations>,
     clips: Res<Assets<AnimationClip>>,
 ) {
-    for (handle, _bones) in avatars.iter() {
-        let _walk = match clips.get(handle.walk.id()) {
+    for animations in avatars.iter() {
+        let _walk = match clips.get(animations.walk.id()) {
             Some(a) => a,
             None => continue,
         };
 
-        // TODO: Update to Bevy 0.14 to continue work on this, current API makes things difficult.
+        // TODO: Update to Bevy 0.14 to continue work on this, animations got change.
     }
 }

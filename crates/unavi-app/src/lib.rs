@@ -48,10 +48,13 @@ pub async fn start(db: Surreal<Db>, opts: StartOptions) {
 
     let mut app = App::new();
 
-    app.insert_resource(AssetMetaCheck::Paths(meta_paths))
-        .insert_resource(UserActor(actor))
+    app.insert_resource(UserActor(actor))
         .add_plugins((
             DefaultPlugins
+                .set(AssetPlugin {
+                    meta_check: AssetMetaCheck::Paths(meta_paths),
+                    ..default()
+                })
                 .set(LogPlugin {
                     level: opts.log_level,
                     ..default()

@@ -64,7 +64,7 @@ pub fn handle_raycast_input(
         let transform = camera.single();
         let (_, rotation, translation) = transform.to_scale_rotation_translation();
 
-        let direction = rotation.normalize() * Direction3d::NEG_Z;
+        let direction = rotation.normalize() * Dir3::NEG_Z;
 
         if let Some(hit) = query.cast_ray(
             translation,

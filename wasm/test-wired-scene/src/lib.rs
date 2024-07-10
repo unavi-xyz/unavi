@@ -8,6 +8,7 @@ mod material;
 mod mesh;
 mod node;
 mod property_tests;
+mod scene;
 mod wired_math_impls;
 mod wired_scene_impls;
 
@@ -21,6 +22,7 @@ impl GuestScript for Script {
         material::test_material_api();
         mesh::test_mesh_api();
         node::test_node_api();
+        scene::test_scene_api();
 
         Script::default()
     }

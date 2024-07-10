@@ -30,10 +30,11 @@ impl HostScene for StoreState {
         let table_res = self.table.push(node)?;
         let res = SceneRes::from_res(&table_res, &self.table)?;
 
-        // self.sender
-        //     .send(ScriptAction::CreateScene { id: res.rep() })?;
-
         Ok(res)
+    }
+
+    fn id(&mut self, self_: Resource<SceneRes>) -> wasm_bridge::Result<u32> {
+        Ok(self_.rep())
     }
 
     fn nodes(&mut self, self_: Resource<SceneRes>) -> wasm_bridge::Result<Vec<Resource<NodeRes>>> {

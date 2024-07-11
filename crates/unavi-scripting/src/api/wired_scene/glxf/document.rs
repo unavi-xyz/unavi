@@ -237,6 +237,7 @@ impl HostGlxf for StoreState {
 
 impl Host for StoreState {
     fn get_root(&mut self) -> wasm_bridge::Result<Resource<GlxfDocument>> {
-        todo!()
+        let res = GlxfDocument::from_res(&self.root_glxf, &self.table)?;
+        Ok(res)
     }
 }

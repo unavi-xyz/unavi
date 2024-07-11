@@ -19,12 +19,12 @@ use super::{asset_gltf::GltfAssetRes, asset_glxf::GlxfAssetRes};
 pub struct GlxfNodeId(pub u32);
 
 #[derive(Bundle)]
-pub struct WiredNodeBundle {
+pub struct GlxfNodeBundle {
     pub id: GlxfNodeId,
     pub spatial: SpatialBundle,
 }
 
-impl WiredNodeBundle {
+impl GlxfNodeBundle {
     pub fn new(id: u32) -> Self {
         Self {
             id: GlxfNodeId(id),
@@ -66,7 +66,7 @@ impl HostGlxfNode for StoreState {
 
         let glxf_nodes = self.entities.glxf_nodes.clone();
         self.commands.push(move |world: &mut World| {
-            let entity = world.spawn(WiredNodeBundle::new(rep)).id();
+            let entity = world.spawn(GlxfNodeBundle::new(rep)).id();
             let mut nodes = glxf_nodes.write().unwrap();
             nodes.insert(rep, entity);
         });
@@ -159,20 +159,71 @@ impl HostGlxfNode for StoreState {
     ) -> wasm_bridge::Result<()> {
         let data = self.table.get_mut(&self_)?;
 
+        // Clear previous children.
+        let rep = self_.rep();
+        let glxf_nodes = self.entities.glxf_nodes.clone();
+        self.commands.push(move |world: &mut World| {
+            let glxf_nodes = glxf_nodes.read().unwrap();
+            let node_ent = glxf_nodes.get(&rep).unwrap();
+            world.commands().entity(*node_ent).clear_children();
+        });
+
         match value {
             None => {
                 data.children = None;
             }
             Some(ChildrenBorrow::Asset(AssetBorrow::Gltf(res))) => {
-                data.children = Some(NodeChildren::AssetGltf(res.rep()))
+                let asset_rep = res.rep();
+
+                let assets = self.entities.assets.clone();
+                let glxf_nodes = self.entities.glxf_nodes.clone();
+                self.commands.push(move |world: &mut World| {
+                    let assets = assets.read().unwrap();
+                    let asset_ent = assets.get(&asset_rep).unwrap();
+
+                    let glxf_nodes = glxf_nodes.read().unwrap();
+                    let node_ent = glxf_nodes.get(&rep).unwrap();
+
+                    world.commands().entity(*asset_ent).set_parent(*node_ent);
+                });
+
+                data.children = Some(NodeChildren::AssetGltf(asset_rep));
             }
             Some(ChildrenBorrow::Asset(AssetBorrow::Glxf(res))) => {
-                data.children = Some(NodeChildren::AssetGlxf(res.rep()))
+                let asset_rep = res.rep();
+
+                let assets = self.entities.assets.clone();
+                let glxf_nodes = self.entities.glxf_nodes.clone();
+                self.commands.push(move |world: &mut World| {
+                    let assets = assets.read().unwrap();
+                    let asset_ent = assets.get(&asset_rep).unwrap();
+
+                    let glxf_nodes = glxf_nodes.read().unwrap();
+                    let node_ent = glxf_nodes.get(&rep).unwrap();
+
+                    world.commands().entity(*asset_ent).set_parent(*node_ent);
+                });
+
+                data.children = Some(NodeChildren::AssetGlxf(res.rep()));
             }
             Some(ChildrenBorrow::Nodes(nodes)) => {
-                data.children = Some(NodeChildren::Nodes(
-                    nodes.iter().map(|res| res.rep()).collect(),
-                ))
+                let node_reps = nodes.iter().map(|res| res.rep()).collect::<HashSet<_>>();
+
+                {
+                    let glxf_nodes = self.entities.glxf_nodes.clone();
+                    let node_reps = node_reps.clone();
+                    self.commands.push(move |world: &mut World| {
+                        let glxf_nodes = glxf_nodes.read().unwrap();
+                        let root_ent = glxf_nodes.get(&rep).unwrap();
+
+                        for node_rep in node_reps {
+                            let node_ent = glxf_nodes.get(&node_rep).unwrap();
+                            world.commands().entity(*node_ent).set_parent(*root_ent);
+                        }
+                    });
+                }
+
+                data.children = Some(NodeChildren::Nodes(node_reps));
             }
         }
 

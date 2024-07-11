@@ -60,6 +60,7 @@ impl HostCollider for StoreState {
 
 #[cfg(test)]
 mod tests {
+    use bevy::prelude::*;
     use tracing_test::traced_test;
 
     use crate::api::wired_physics::wired::physics::types::Sphere;
@@ -69,7 +70,9 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_drop() {
-        let mut state = StoreState::new("test_drop".to_string());
+        let mut world = World::default();
+        let ent = world.spawn(()).id();
+        let mut state = StoreState::new("test_drop".to_string(), ent);
 
         let shape = Shape::Sphere(Sphere { radius: 0.5 });
         let res = HostCollider::new(&mut state, shape).unwrap();
@@ -80,7 +83,9 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_new() {
-        let mut state = StoreState::new("test_new".to_string());
+        let mut world = World::default();
+        let ent = world.spawn(()).id();
+        let mut state = StoreState::new("test_new".to_string(), ent);
 
         let shape = Shape::Sphere(Sphere { radius: 0.5 });
         let res = HostCollider::new(&mut state, shape).unwrap();

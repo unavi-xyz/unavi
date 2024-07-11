@@ -1,3 +1,4 @@
+use bevy::prelude::*;
 use wasm_bridge::component::Resource;
 
 use crate::{
@@ -36,6 +37,15 @@ impl HostGlxf for StoreState {
         let node = GlxfDocument::default();
         let table_res = self.table.push(node)?;
         let res = GlxfDocument::from_res(&table_res, &self.table)?;
+
+        let documents = self.entities.documents.clone();
+        let rep = res.rep();
+        self.commands.push(move |world: &mut World| {
+            let entity = world.spawn(SpatialBundle::default()).id();
+            let mut documents = documents.write().unwrap();
+            documents.insert(rep, entity);
+        });
+
         Ok(res)
     }
 
@@ -134,7 +144,33 @@ impl HostGlxf for StoreState {
         value: Option<Resource<GlxfSceneRes>>,
     ) -> wasm_bridge::Result<()> {
         let data = self.table.get_mut(&self_)?;
+
+        if let Some(prev) = data.active_scene {
+            let glxf_scenes = self.entities.glxf_scenes.clone();
+            self.commands.push(move |world: &mut World| {
+                let glxf_scenes = glxf_scenes.read().unwrap();
+                let prev_ent = glxf_scenes.get(&prev).unwrap();
+                world.commands().entity(*prev_ent).remove_parent();
+            });
+        }
+
         data.active_scene = value.map(|res| res.rep());
+
+        if let Some(scene_rep) = data.active_scene {
+            let documents = self.entities.documents.clone();
+            let glxf_scenes = self.entities.glxf_scenes.clone();
+            let root_rep = self_.rep();
+            self.commands.push(move |world: &mut World| {
+                let documents = documents.read().unwrap();
+                let root_ent = documents.get(&root_rep).unwrap();
+
+                let glxf_scenes = glxf_scenes.read().unwrap();
+                let scene_ent = glxf_scenes.get(&scene_rep).unwrap();
+
+                world.commands().entity(*scene_ent).set_parent(*root_ent);
+            });
+        }
+
         Ok(())
     }
 
@@ -230,7 +266,18 @@ impl HostGlxf for StoreState {
     }
 
     fn drop(&mut self, rep: Resource<GlxfDocument>) -> wasm_bridge::Result<()> {
-        GlxfDocument::handle_drop(rep, &mut self.table)?;
+        let id = rep.rep();
+        let dropped = GlxfDocument::handle_drop(rep, &mut self.table)?;
+
+        if dropped {
+            let documents = self.entities.documents.clone();
+            self.commands.push(move |world: &mut World| {
+                let mut nodes = documents.write().unwrap();
+                let entity = nodes.remove(&id).unwrap();
+                world.despawn(entity);
+            });
+        }
+
         Ok(())
     }
 }

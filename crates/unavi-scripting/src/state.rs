@@ -9,8 +9,8 @@ use crate::api::wired_scene::glxf::document::GlxfDocument;
 pub struct StoreState {
     pub commands: CommandQueue,
     pub entities: EntityMaps,
-    pub root_glxf: Resource<GlxfDocument>,
     pub name: String,
+    pub root_glxf: Resource<GlxfDocument>,
     pub table: ResourceTable,
     pub wasi: WasiCtx,
     pub wasi_table: wasm_bridge_wasi::ResourceTable,
@@ -27,13 +27,26 @@ impl WasiView for StoreState {
 }
 
 impl StoreState {
-    pub fn new(name: String) -> Self {
+    pub fn new(name: String, root_ent: Entity) -> Self {
         let mut table = ResourceTable::default();
         let root_glxf = table.push(GlxfDocument::default()).unwrap();
 
+        let entities = EntityMaps::default();
+        let mut commands = CommandQueue::default();
+
+        let documents = entities.documents.clone();
+        let rep = root_glxf.rep();
+        commands.push(move |world: &mut World| {
+            world.commands().entity(root_ent).with_children(|parent| {
+                let entity = parent.spawn(SpatialBundle::default()).id();
+                let mut documents = documents.write().unwrap();
+                documents.insert(rep, entity);
+            });
+        });
+
         Self {
-            commands: CommandQueue::default(),
-            entities: EntityMaps::default(),
+            commands,
+            entities,
             name,
             root_glxf,
             table,
@@ -75,6 +88,8 @@ impl StoreState {
 
 #[derive(Default)]
 pub struct EntityMaps {
+    pub assets: Arc<RwLock<HashMap<u32, Entity>>>,
+    pub documents: Arc<RwLock<HashMap<u32, Entity>>>,
     pub glxf_nodes: Arc<RwLock<HashMap<u32, Entity>>>,
     pub glxf_scenes: Arc<RwLock<HashMap<u32, Entity>>>,
     pub materials: Arc<RwLock<HashMap<u32, MaterialState>>>,

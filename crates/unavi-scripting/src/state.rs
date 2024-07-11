@@ -1,12 +1,15 @@
 use std::sync::{Arc, RwLock};
 
 use bevy::{ecs::world::CommandQueue, prelude::*, utils::HashMap};
-use wasm_bridge::component::ResourceTable;
+use wasm_bridge::component::{Resource, ResourceTable};
 use wasm_bridge_wasi::{WasiCtx, WasiCtxBuilder, WasiView};
+
+use crate::api::wired_scene::glxf::document::GlxfDocument;
 
 pub struct StoreState {
     pub commands: CommandQueue,
     pub entities: EntityMaps,
+    pub root_glxf: Resource<GlxfDocument>,
     pub name: String,
     pub table: ResourceTable,
     pub wasi: WasiCtx,
@@ -25,14 +28,16 @@ impl WasiView for StoreState {
 
 impl StoreState {
     pub fn new(name: String) -> Self {
-        let wasi = WasiCtxBuilder::new().build();
+        let mut table = ResourceTable::default();
+        let root_glxf = table.push(GlxfDocument::default()).unwrap();
 
         Self {
             commands: CommandQueue::default(),
             entities: EntityMaps::default(),
             name,
-            table: ResourceTable::default(),
-            wasi,
+            root_glxf,
+            table,
+            wasi: WasiCtxBuilder::new().build(),
             wasi_table: wasm_bridge_wasi::ResourceTable::default(),
         }
     }

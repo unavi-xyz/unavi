@@ -6,10 +6,14 @@ use wasm_bridge::component::Resource;
 use crate::{
     api::{
         utils::{RefCount, RefCountCell, RefResource},
-        wired_scene::wired::scene::glxf::{Children, ChildrenBorrow, HostGlxfNode, Transform},
+        wired_scene::wired::scene::glxf::{
+            Asset, AssetBorrow, Children, ChildrenBorrow, HostGlxfNode, Transform,
+        },
     },
     state::StoreState,
 };
+
+use super::{asset_gltf::GltfAssetRes, asset_glxf::GlxfAssetRes};
 
 #[derive(Component, Clone, Copy, Debug)]
 pub struct GlxfNodeId(pub u32);
@@ -31,11 +35,18 @@ impl WiredNodeBundle {
 
 #[derive(Default, Debug)]
 pub struct GlxfNodeRes {
-    pub children: HashSet<u32>,
-    pub name: String,
-    pub parent: Option<u32>,
-    pub transform: Transform,
+    children: Option<NodeChildren>,
+    name: String,
+    parent: Option<u32>,
+    transform: Transform,
     ref_count: RefCountCell,
+}
+
+#[derive(Debug)]
+enum NodeChildren {
+    AssetGltf(u32),
+    AssetGlxf(u32),
+    Nodes(HashSet<u32>),
 }
 
 impl RefCount for GlxfNodeRes {
@@ -117,22 +128,55 @@ impl HostGlxfNode for StoreState {
         &mut self,
         self_: Resource<GlxfNodeRes>,
     ) -> wasm_bridge::Result<Option<Resource<GlxfNodeRes>>> {
-        let node = self.table.get(&self_)?;
-        let parent = match node.parent {
+        let data = self.table.get(&self_)?;
+        let parent = match data.parent {
             Some(p) => Some(GlxfNodeRes::from_rep(p, &self.table)?),
             None => None,
         };
         Ok(parent)
     }
     fn children(&mut self, self_: Resource<GlxfNodeRes>) -> wasm_bridge::Result<Option<Children>> {
-        todo!();
+        let data = self.table.get(&self_)?;
+        match &data.children {
+            None => Ok(None),
+            Some(NodeChildren::AssetGltf(rep)) => Ok(Some(Children::Asset(Asset::Gltf(
+                GltfAssetRes::from_rep(*rep, &self.table)?,
+            )))),
+            Some(NodeChildren::AssetGlxf(rep)) => Ok(Some(Children::Asset(Asset::Glxf(
+                GlxfAssetRes::from_rep(*rep, &self.table)?,
+            )))),
+            Some(NodeChildren::Nodes(reps)) => Ok(Some(Children::Nodes(
+                reps.iter()
+                    .map(|rep| GlxfNodeRes::from_rep(*rep, &self.table))
+                    .collect::<Result<Vec<_>, _>>()?,
+            ))),
+        }
     }
     fn set_children(
         &mut self,
         self_: Resource<GlxfNodeRes>,
         value: Option<ChildrenBorrow>,
     ) -> wasm_bridge::Result<()> {
-        todo!();
+        let data = self.table.get_mut(&self_)?;
+
+        match value {
+            None => {
+                data.children = None;
+            }
+            Some(ChildrenBorrow::Asset(AssetBorrow::Gltf(res))) => {
+                data.children = Some(NodeChildren::AssetGltf(res.rep()))
+            }
+            Some(ChildrenBorrow::Asset(AssetBorrow::Glxf(res))) => {
+                data.children = Some(NodeChildren::AssetGlxf(res.rep()))
+            }
+            Some(ChildrenBorrow::Nodes(nodes)) => {
+                data.children = Some(NodeChildren::Nodes(
+                    nodes.iter().map(|res| res.rep()).collect(),
+                ))
+            }
+        }
+
+        Ok(())
     }
 
     fn drop(&mut self, rep: Resource<GlxfNodeRes>) -> wasm_bridge::Result<()> {

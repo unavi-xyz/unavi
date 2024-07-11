@@ -11,6 +11,7 @@ use crate::{
 
 use super::{document::GlxfDocument, node::GlxfNodeRes};
 
+#[derive(Debug)]
 pub struct GlxfAssetRes {
     document: Resource<GlxfDocument>,
     nodes: Vec<Resource<GlxfNodeRes>>,

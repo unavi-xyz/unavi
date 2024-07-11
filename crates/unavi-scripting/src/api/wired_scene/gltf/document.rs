@@ -11,7 +11,7 @@ use crate::{
 
 use super::{material::MaterialRes, mesh::MeshRes, node::NodeRes, scene::SceneRes};
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct GltfDocument {
     pub active_scene: Option<Resource<SceneRes>>,
     pub default_scene: Option<Resource<SceneRes>>,

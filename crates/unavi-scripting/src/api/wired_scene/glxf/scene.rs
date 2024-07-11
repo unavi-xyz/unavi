@@ -29,7 +29,7 @@ impl GlxfSceneBundle {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct GlxfSceneRes {
     name: String,
     nodes: Vec<Resource<GlxfNodeRes>>,

@@ -13,12 +13,12 @@ use super::{material::MaterialRes, mesh::MeshRes, node::NodeRes, scene::SceneRes
 
 #[derive(Default)]
 pub struct GltfDocument {
-    pub active_scene: Option<u32>,
-    pub default_scene: Option<u32>,
-    pub materials: Vec<u32>,
-    pub meshes: Vec<u32>,
-    pub nodes: Vec<u32>,
-    pub scenes: Vec<u32>,
+    pub active_scene: Option<Resource<SceneRes>>,
+    pub default_scene: Option<Resource<SceneRes>>,
+    pub materials: Vec<Resource<MaterialRes>>,
+    pub meshes: Vec<Resource<MeshRes>>,
+    pub nodes: Vec<Resource<NodeRes>>,
+    pub scenes: Vec<Resource<SceneRes>>,
     ref_count: RefCountCell,
 }
 
@@ -34,7 +34,7 @@ impl HostGltf for StoreState {
     fn new(&mut self) -> wasm_bridge::Result<Resource<GltfDocument>> {
         let node = GltfDocument::default();
         let table_res = self.table.push(node)?;
-        let res = GltfDocument::from_res(&table_res, &self.table)?;
+        let res = self.clone_res(&table_res)?;
 
         let documents = self.entities.documents.clone();
         let rep = res.rep();
@@ -54,30 +54,35 @@ impl HostGltf for StoreState {
         let data = self.table.get(&self_)?;
         Ok(data
             .active_scene
-            .and_then(|rep| SceneRes::from_rep(rep, &self.table).ok()))
+            .as_ref()
+            .and_then(|res| self.clone_res(res).ok()))
     }
     fn set_active_scene(
         &mut self,
         self_: Resource<GltfDocument>,
         value: Option<Resource<SceneRes>>,
     ) -> wasm_bridge::Result<()> {
+        let res = value.and_then(|v| self.clone_res(&v).ok());
+
         let data = self.table.get_mut(&self_)?;
 
-        if let Some(prev) = data.active_scene {
+        if let Some(prev) = &data.active_scene {
+            let prev_rep = prev.rep();
             let scenes = self.entities.scenes.clone();
             self.commands.push(move |world: &mut World| {
                 let scenes = scenes.read().unwrap();
-                let prev_ent = scenes.get(&prev).unwrap();
+                let prev_ent = scenes.get(&prev_rep).unwrap();
                 world.entity_mut(*prev_ent).remove_parent();
             });
         }
 
-        data.active_scene = value.map(|res| res.rep());
+        data.active_scene = res;
 
-        if let Some(scene_rep) = data.active_scene {
+        if let Some(active_scene) = &data.active_scene {
             let documents = self.entities.documents.clone();
-            let scenes = self.entities.scenes.clone();
             let root_rep = self_.rep();
+            let scene_rep = active_scene.rep();
+            let scenes = self.entities.scenes.clone();
             self.commands.push(move |world: &mut World| {
                 let documents = documents.read().unwrap();
                 let root_ent = documents.get(&root_rep).unwrap();
@@ -99,15 +104,17 @@ impl HostGltf for StoreState {
         let data = self.table.get(&self_)?;
         Ok(data
             .default_scene
-            .and_then(|rep| SceneRes::from_rep(rep, &self.table).ok()))
+            .as_ref()
+            .and_then(|res| self.clone_res(res).ok()))
     }
     fn set_default_scene(
         &mut self,
         self_: Resource<GltfDocument>,
         value: Resource<SceneRes>,
     ) -> wasm_bridge::Result<()> {
+        let res = self.clone_res(&value)?;
         let data = self.table.get_mut(&self_)?;
-        data.default_scene = Some(value.rep());
+        data.default_scene = Some(res);
         Ok(())
     }
 
@@ -119,7 +126,7 @@ impl HostGltf for StoreState {
         let materials = data
             .materials
             .iter()
-            .map(|rep| MaterialRes::from_rep(*rep, &self.table))
+            .map(|res| self.clone_res(res))
             .collect::<Result<_, _>>()?;
         Ok(materials)
     }
@@ -128,8 +135,9 @@ impl HostGltf for StoreState {
         self_: Resource<GltfDocument>,
         value: Resource<MaterialRes>,
     ) -> wasm_bridge::Result<()> {
+        let res = self.clone_res(&value)?;
         let data = self.table.get_mut(&self_)?;
-        data.materials.push(value.rep());
+        data.materials.push(res);
         Ok(())
     }
     fn remove_material(
@@ -138,12 +146,10 @@ impl HostGltf for StoreState {
         value: Resource<MaterialRes>,
     ) -> wasm_bridge::Result<()> {
         let data = self.table.get_mut(&self_)?;
-        data.materials = data
-            .materials
+        data.materials
             .iter()
-            .copied()
-            .filter(|rep| *rep != value.rep())
-            .collect();
+            .position(|r| r.rep() == value.rep())
+            .map(|index| data.materials.remove(index));
         Ok(())
     }
 
@@ -155,7 +161,7 @@ impl HostGltf for StoreState {
         let meshes = data
             .meshes
             .iter()
-            .map(|rep| MeshRes::from_rep(*rep, &self.table))
+            .map(|res| self.clone_res(res))
             .collect::<Result<_, _>>()?;
         Ok(meshes)
     }
@@ -164,8 +170,9 @@ impl HostGltf for StoreState {
         self_: Resource<GltfDocument>,
         value: Resource<MeshRes>,
     ) -> wasm_bridge::Result<()> {
+        let res = self.clone_res(&value)?;
         let data = self.table.get_mut(&self_)?;
-        data.meshes.push(value.rep());
+        data.meshes.push(res);
         Ok(())
     }
     fn remove_mesh(
@@ -174,12 +181,10 @@ impl HostGltf for StoreState {
         value: Resource<MeshRes>,
     ) -> wasm_bridge::Result<()> {
         let data = self.table.get_mut(&self_)?;
-        data.meshes = data
-            .meshes
+        data.meshes
             .iter()
-            .copied()
-            .filter(|rep| *rep != value.rep())
-            .collect();
+            .position(|r| r.rep() == value.rep())
+            .map(|index| data.meshes.remove(index));
         Ok(())
     }
 
@@ -191,7 +196,7 @@ impl HostGltf for StoreState {
         let nodes = data
             .nodes
             .iter()
-            .map(|rep| NodeRes::from_rep(*rep, &self.table))
+            .map(|res| self.clone_res(res))
             .collect::<Result<_, _>>()?;
         Ok(nodes)
     }
@@ -200,8 +205,9 @@ impl HostGltf for StoreState {
         self_: Resource<GltfDocument>,
         value: Resource<NodeRes>,
     ) -> wasm_bridge::Result<()> {
+        let res = self.clone_res(&value)?;
         let data = self.table.get_mut(&self_)?;
-        data.nodes.push(value.rep());
+        data.nodes.push(res);
         Ok(())
     }
     fn remove_node(
@@ -210,12 +216,10 @@ impl HostGltf for StoreState {
         value: Resource<NodeRes>,
     ) -> wasm_bridge::Result<()> {
         let data = self.table.get_mut(&self_)?;
-        data.nodes = data
-            .nodes
+        data.nodes
             .iter()
-            .copied()
-            .filter(|rep| *rep != value.rep())
-            .collect();
+            .position(|r| r.rep() == value.rep())
+            .map(|index| data.nodes.remove(index));
         Ok(())
     }
 
@@ -227,7 +231,7 @@ impl HostGltf for StoreState {
         let scenes = data
             .scenes
             .iter()
-            .map(|rep| SceneRes::from_rep(*rep, &self.table))
+            .map(|res| self.clone_res(res))
             .collect::<Result<_, _>>()?;
         Ok(scenes)
     }
@@ -236,8 +240,9 @@ impl HostGltf for StoreState {
         self_: Resource<GltfDocument>,
         value: Resource<SceneRes>,
     ) -> wasm_bridge::Result<()> {
+        let res = self.clone_res(&value)?;
         let data = self.table.get_mut(&self_)?;
-        data.scenes.push(value.rep());
+        data.scenes.push(res);
         Ok(())
     }
     fn remove_scene(
@@ -246,12 +251,10 @@ impl HostGltf for StoreState {
         value: Resource<SceneRes>,
     ) -> wasm_bridge::Result<()> {
         let data = self.table.get_mut(&self_)?;
-        data.scenes = data
-            .scenes
+        data.scenes
             .iter()
-            .copied()
-            .filter(|rep| *rep != value.rep())
-            .collect();
+            .position(|r| r.rep() == value.rep())
+            .map(|index| data.scenes.remove(index));
         Ok(())
     }
 

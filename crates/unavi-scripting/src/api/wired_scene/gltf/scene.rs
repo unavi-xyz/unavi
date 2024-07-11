@@ -31,7 +31,7 @@ impl GltfSceneBundle {
 
 #[derive(Default)]
 pub struct SceneRes {
-    pub nodes: Vec<u32>,
+    pub nodes: Vec<Resource<NodeRes>>,
     name: String,
     ref_count: RefCountCell,
 }
@@ -48,7 +48,7 @@ impl HostScene for StoreState {
     fn new(&mut self) -> wasm_bridge::Result<Resource<SceneRes>> {
         let node = SceneRes::default();
         let table_res = self.table.push(node)?;
-        let res = SceneRes::from_res(&table_res, &self.table)?;
+        let res = self.clone_res(&table_res)?;
 
         let rep = res.rep();
         let scenes = self.entities.scenes.clone();
@@ -80,7 +80,7 @@ impl HostScene for StoreState {
         let nodes = data
             .nodes
             .iter()
-            .map(|rep| NodeRes::from_rep(*rep, &self.table))
+            .map(|res| self.clone_res(res))
             .collect::<Result<_, _>>()?;
         Ok(nodes)
     }
@@ -92,8 +92,9 @@ impl HostScene for StoreState {
         let scene_rep = self_.rep();
         let node_rep = value.rep();
 
+        let res = self.clone_res(&value)?;
         let data = self.table.get_mut(&self_)?;
-        data.nodes.push(node_rep);
+        data.nodes.push(res);
 
         let nodes = self.entities.nodes.clone();
         let scenes = self.entities.scenes.clone();
@@ -117,12 +118,10 @@ impl HostScene for StoreState {
         let node_rep = value.rep();
 
         let data = self.table.get_mut(&self_)?;
-        data.nodes = data
-            .nodes
+        data.nodes
             .iter()
-            .copied()
-            .filter(|rep| *rep != value.rep())
-            .collect();
+            .position(|r| r.rep() == node_rep)
+            .map(|index| data.nodes.remove(index));
 
         let nodes = self.entities.nodes.clone();
         self.commands.push(move |world: &mut World| {
@@ -155,11 +154,14 @@ impl Host for StoreState {}
 
 #[cfg(test)]
 mod tests {
+    use tracing_test::traced_test;
+
     use crate::api::wired_scene::{gltf::node::NodeId, wired::scene::node::HostNode};
 
     use super::*;
 
     #[test]
+    #[traced_test]
     fn test_new() {
         let mut world = World::new();
         let root_ent = world.spawn_empty().id();
@@ -175,6 +177,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn test_add_node() {
         let mut world = World::new();
         let root_ent = world.spawn_empty().id();
@@ -193,6 +196,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn test_remove_node() {
         let mut world = World::new();
         let root_ent = world.spawn_empty().id();
@@ -200,12 +204,13 @@ mod tests {
 
         let scene = HostScene::new(&mut state).unwrap();
         let node = HostNode::new(&mut state).unwrap();
-        HostScene::add_node(
-            &mut state,
-            Resource::new_own(scene.rep()),
-            Resource::new_own(node.rep()),
-        )
-        .unwrap();
+
+        {
+            let scene = state.clone_res(&scene).unwrap();
+            let node = state.clone_res(&node).unwrap();
+            HostScene::add_node(&mut state, scene, node).unwrap();
+        }
+
         HostScene::remove_node(&mut state, scene, node).unwrap();
 
         world.commands().append(&mut state.commands);
@@ -216,6 +221,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn test_nodes() {
         let mut world = World::new();
         let root_ent = world.spawn_empty().id();
@@ -223,21 +229,26 @@ mod tests {
 
         let scene = HostScene::new(&mut state).unwrap();
         let node = HostNode::new(&mut state).unwrap();
-        let node_rep = node.rep();
-        HostScene::add_node(
-            &mut state,
-            Resource::new_own(scene.rep()),
-            Resource::new_own(node.rep()),
-        )
-        .unwrap();
 
-        let nodes = HostScene::nodes(&mut state, Resource::new_own(scene.rep())).unwrap();
-        assert_eq!(nodes.len(), 1);
-        assert_eq!(nodes[0].rep(), node_rep);
+        {
+            let scene = state.clone_res(&scene).unwrap();
+            let node = state.clone_res(&node).unwrap();
+            HostScene::add_node(&mut state, scene, node).unwrap();
+        }
 
-        HostScene::remove_node(&mut state, Resource::new_own(scene.rep()), node).unwrap();
+        {
+            let scene = state.clone_res(&scene).unwrap();
+            let nodes = HostScene::nodes(&mut state, scene).unwrap();
+            assert_eq!(nodes.len(), 1);
+            assert_eq!(nodes[0].rep(), node.rep());
+        }
 
-        let nodes = HostScene::nodes(&mut state, Resource::new_own(scene.rep())).unwrap();
+        {
+            let scene = state.clone_res(&scene).unwrap();
+            HostScene::remove_node(&mut state, scene, node).unwrap();
+        }
+
+        let nodes = HostScene::nodes(&mut state, scene).unwrap();
         assert!(nodes.is_empty());
     }
 }

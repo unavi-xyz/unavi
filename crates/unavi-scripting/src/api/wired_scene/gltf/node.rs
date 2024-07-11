@@ -1,9 +1,6 @@
 use std::cell::Cell;
 
-use bevy::{
-    prelude::*,
-    utils::{HashMap, HashSet},
-};
+use bevy::{prelude::*, utils::HashMap};
 use wasm_bridge::component::Resource;
 
 use crate::{
@@ -51,12 +48,12 @@ impl WiredNodeBundle {
 
 #[derive(Default, Debug)]
 pub struct NodeRes {
-    pub children: HashSet<u32>,
+    pub children: Vec<Resource<NodeRes>>,
     pub collider: Option<Resource<Collider>>,
     pub input_handler: Option<Resource<InputHandler>>,
-    pub mesh: Option<u32>,
+    pub mesh: Option<Resource<MeshRes>>,
     pub name: String,
-    pub parent: Option<u32>,
+    pub parent: Option<Resource<NodeRes>>,
     pub rigid_body: Option<Resource<RigidBody>>,
     pub transform: Transform,
     ref_count: RefCountCell,
@@ -74,7 +71,7 @@ impl HostNode for StoreState {
     fn new(&mut self) -> wasm_bridge::Result<Resource<NodeRes>> {
         let node = NodeRes::default();
         let table_res = self.table.push(node)?;
-        let res = NodeRes::from_res(&table_res, &self.table)?;
+        let res = self.clone_res(&table_res)?;
         let rep = res.rep();
 
         let nodes = self.entities.nodes.clone();
@@ -103,8 +100,8 @@ impl HostNode for StoreState {
 
     fn mesh(&mut self, self_: Resource<NodeRes>) -> wasm_bridge::Result<Option<Resource<MeshRes>>> {
         let node = self.table.get(&self_)?;
-        let mesh = match node.mesh {
-            Some(m) => Some(MeshRes::from_rep(m, &self.table)?),
+        let mesh = match &node.mesh {
+            Some(m) => Some(self.clone_res(m)?),
             None => None,
         };
         Ok(mesh)
@@ -117,28 +114,32 @@ impl HostNode for StoreState {
         let rep = self_.rep();
 
         let node = self.table.get(&self_)?;
-        let prev_mesh_rep = node.mesh;
-        if let Some(prev_mesh_rep) = prev_mesh_rep {
-            let mesh = self
-                .table
-                .get_mut::<MeshRes>(&Resource::new_own(prev_mesh_rep))?;
-            mesh.nodes.remove(&rep);
+        let prev_mesh = &node.mesh;
+        if let Some(prev_mesh) = prev_mesh {
+            let prev_mesh = self.clone_res(prev_mesh)?;
+            let mesh = self.table.get_mut(&prev_mesh)?;
+            mesh.nodes
+                .iter()
+                .position(|r| r.rep() == rep)
+                .map(|index| mesh.nodes.remove(index));
         }
 
         let mut primitive_ids = Vec::new();
         if let Some(mesh_res) = &value {
-            let mesh = self.table.get_mut::<MeshRes>(mesh_res)?;
-            mesh.nodes.insert(rep);
+            let res = self.clone_res(&self_)?;
+            let mesh = self.table.get_mut(mesh_res)?;
+            mesh.nodes.push(res);
 
             for p in mesh.primitives.iter() {
-                primitive_ids.push(*p);
+                primitive_ids.push(p.rep());
             }
         }
 
+        let res = value.and_then(|v| self.clone_res(&v).ok());
         let node = self.table.get_mut(&self_)?;
-        node.mesh = value.map(|v| v.rep());
+        node.mesh = res;
 
-        let mesh_rep = node.mesh;
+        let mesh_rep = node.mesh.as_ref().map(|res| res.rep());
         let primitives = self.entities.primitives.clone();
         let nodes = self.entities.nodes.clone();
         self.commands.push(move |world: &mut World| {
@@ -175,9 +176,9 @@ impl HostNode for StoreState {
             let mut node_ent = world.entity_mut(*node_ent);
 
             // Add new mesh.
-            if let Some(mesh_rep) = mesh_rep {
+            if let Some(id) = mesh_rep {
                 node_ent.insert(NodeMesh {
-                    id: mesh_rep,
+                    id,
                     node_primitives,
                 });
             } else {
@@ -192,9 +193,9 @@ impl HostNode for StoreState {
         &mut self,
         self_: Resource<NodeRes>,
     ) -> wasm_bridge::Result<Option<Resource<NodeRes>>> {
-        let node = self.table.get(&self_)?;
-        let parent = match node.parent {
-            Some(p) => Some(NodeRes::from_rep(p, &self.table)?),
+        let data = self.table.get(&self_)?;
+        let parent = match &data.parent {
+            Some(r) => Some(self.clone_res(r)?),
             None => None,
         };
         Ok(parent)
@@ -207,7 +208,7 @@ impl HostNode for StoreState {
         let children = node
             .children
             .iter()
-            .map(|rep| NodeRes::from_rep(*rep, &self.table))
+            .map(|res| self.clone_res(res))
             .collect::<Result<_, _>>()?;
         Ok(children)
     }
@@ -220,19 +221,22 @@ impl HostNode for StoreState {
         let parent_rep = self_.rep();
 
         // Add child to children.
+        let res = self.clone_res(&value)?;
         let node = self.table.get_mut(&self_)?;
-        node.children.insert(child_rep);
+        node.children.push(res);
 
         // Remove child from old parent's children.
         let child = self.table.get(&value)?;
-        if let Some(parent_rep) = child.parent {
-            let parent_res = Resource::new_own(parent_rep);
-            self.remove_child(parent_res, self_)?;
+        if let Some(parent) = &child.parent {
+            let parent_res = self.clone_res(parent)?;
+            let child_res = self.clone_res(&value)?;
+            self.remove_child(parent_res, child_res)?;
         }
 
         // Set parent.
+        let parent_res = self.clone_res(&self_)?;
         let child = self.table.get_mut(&value)?;
-        child.parent = Some(parent_rep);
+        child.parent = Some(parent_res);
 
         // Update ECS.
         let nodes = self.entities.nodes.clone();
@@ -254,7 +258,10 @@ impl HostNode for StoreState {
         let child_rep = value.rep();
 
         let node = self.table.get_mut(&self_)?;
-        node.children.remove(&child_rep);
+        node.children
+            .iter()
+            .position(|r| r.rep() == child_rep)
+            .map(|index| node.children.remove(index));
 
         let nodes = self.entities.nodes.clone();
         self.commands.push(move |world: &mut World| {

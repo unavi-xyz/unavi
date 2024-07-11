@@ -92,12 +92,12 @@ impl HostNode for StoreState {
     }
 
     fn name(&mut self, self_: Resource<NodeRes>) -> wasm_bridge::Result<String> {
-        let node = self.table.get(&self_)?;
-        Ok(node.name.clone())
+        let data = self.table.get(&self_)?;
+        Ok(data.name.clone())
     }
     fn set_name(&mut self, self_: Resource<NodeRes>, value: String) -> wasm_bridge::Result<()> {
-        let node = self.table.get_mut(&self_)?;
-        node.name = value;
+        let data = self.table.get_mut(&self_)?;
+        data.name = value;
         Ok(())
     }
 

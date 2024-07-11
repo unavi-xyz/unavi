@@ -70,6 +70,8 @@ impl StoreState {
 
 #[derive(Default)]
 pub struct EntityMaps {
+    pub glxf_nodes: Arc<RwLock<HashMap<u32, Entity>>>,
+    pub glxf_scenes: Arc<RwLock<HashMap<u32, Entity>>>,
     pub materials: Arc<RwLock<HashMap<u32, MaterialState>>>,
     pub nodes: Arc<RwLock<HashMap<u32, Entity>>>,
     pub primitives: Arc<RwLock<HashMap<u32, PrimitiveState>>>,

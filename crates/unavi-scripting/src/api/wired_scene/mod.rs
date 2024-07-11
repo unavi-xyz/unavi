@@ -8,6 +8,7 @@ use wired::{
 use crate::state::StoreState;
 
 pub mod gltf;
+pub mod glxf;
 
 wasm_bridge::component::bindgen!({
     path: "../../wired-protocol/spatial/wit/wired-scene",
@@ -16,6 +17,11 @@ wasm_bridge::component::bindgen!({
         "wired:physics/types/collider": super::wired_physics::collider::Collider,
         "wired:physics/types/rigid-body": super::wired_physics::rigid_body::RigidBody,
         "wired:scene/gltf/gltf": gltf::document::GltfDocument,
+        "wired:scene/glxf/asset-gltf": glxf::asset_gltf::GltfAssetRes,
+        "wired:scene/glxf/asset-glxf": glxf::asset_glxf::GlxfAssetRes,
+        "wired:scene/glxf/glxf": glxf::document::GlxfDocument,
+        "wired:scene/glxf/glxf-node": glxf::node::GlxfNodeRes,
+        "wired:scene/glxf/glxf-scene": glxf::scene::GlxfSceneRes,
         "wired:scene/material/material": gltf::material::MaterialRes,
         "wired:scene/mesh/mesh": gltf::mesh::MeshRes,
         "wired:scene/mesh/primitive": gltf::mesh::PrimitiveRes,
@@ -26,7 +32,7 @@ wasm_bridge::component::bindgen!({
 
 pub fn add_to_linker(linker: &mut Linker<StoreState>) -> Result<()> {
     wired::scene::gltf::add_to_linker(linker, |s| s)?;
-    // wired::scene::glxf::add_to_linker(linker, |s| s)?;
+    wired::scene::glxf::add_to_linker(linker, |s| s)?;
     wired::scene::material::add_to_linker(linker, |s| s)?;
     wired::scene::mesh::add_to_linker(linker, |s| s)?;
     wired::scene::node::add_to_linker(linker, |s| s)?;

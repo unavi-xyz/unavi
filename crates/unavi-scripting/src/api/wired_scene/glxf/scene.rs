@@ -4,90 +4,93 @@ use wasm_bridge::component::Resource;
 use crate::{
     api::{
         utils::{RefCount, RefCountCell, RefResource},
-        wired_scene::wired::scene::scene::{Host, HostScene},
+        wired_scene::wired::scene::glxf::HostGlxfScene,
     },
     state::StoreState,
 };
 
-use super::node::NodeRes;
+use super::node::GlxfNodeRes;
 
 #[derive(Component, Clone, Copy, Debug)]
-pub struct SceneId(pub u32);
+pub struct GlxfSceneId(pub u32);
 
 #[derive(Bundle)]
-pub struct WiredSceneBundle {
-    pub id: SceneId,
+pub struct WiredGlxfSceneBundle {
+    pub id: GlxfSceneId,
     pub scene: SceneBundle,
 }
 
-impl WiredSceneBundle {
+impl WiredGlxfSceneBundle {
     pub fn new(id: u32) -> Self {
         Self {
-            id: SceneId(id),
+            id: GlxfSceneId(id),
             scene: SceneBundle::default(),
         }
     }
 }
 
 #[derive(Default)]
-pub struct SceneRes {
+pub struct GlxfSceneRes {
     pub nodes: Vec<u32>,
-    name: String,
     ref_count: RefCountCell,
 }
 
-impl RefCount for SceneRes {
+impl RefCount for GlxfSceneRes {
     fn ref_count(&self) -> &std::cell::Cell<usize> {
         &self.ref_count
     }
 }
 
-impl RefResource for SceneRes {}
+impl RefResource for GlxfSceneRes {}
 
-impl HostScene for StoreState {
-    fn new(&mut self) -> wasm_bridge::Result<Resource<SceneRes>> {
-        let node = SceneRes::default();
+impl HostGlxfScene for StoreState {
+    fn new(&mut self) -> wasm_bridge::Result<Resource<GlxfSceneRes>> {
+        let node = GlxfSceneRes::default();
         let table_res = self.table.push(node)?;
-        let res = SceneRes::from_res(&table_res, &self.table)?;
+        let res = GlxfSceneRes::from_res(&table_res, &self.table)?;
 
         let rep = res.rep();
-        let scenes = self.entities.scenes.clone();
+        let glxf_scenes = self.entities.glxf_scenes.clone();
         self.commands.push(move |world: &mut World| {
-            let entity = world.spawn(WiredSceneBundle::new(rep)).id();
-            let mut scenes = scenes.write().unwrap();
+            let entity = world.spawn(WiredGlxfSceneBundle::new(rep)).id();
+            let mut scenes = glxf_scenes.write().unwrap();
             scenes.insert(rep, entity);
         });
 
         Ok(res)
     }
 
-    fn id(&mut self, self_: Resource<SceneRes>) -> wasm_bridge::Result<u32> {
+    fn id(&mut self, self_: Resource<GlxfSceneRes>) -> wasm_bridge::Result<u32> {
         Ok(self_.rep())
     }
 
-    fn name(&mut self, self_: Resource<SceneRes>) -> wasm_bridge::Result<String> {
-        let data = self.table.get(&self_)?;
-        Ok(data.name.clone())
+    fn name(&mut self, self_: Resource<GlxfSceneRes>) -> wasm_bridge::Result<String> {
+        todo!()
     }
-    fn set_name(&mut self, self_: Resource<SceneRes>, value: String) -> wasm_bridge::Result<()> {
-        let data = self.table.get_mut(&self_)?;
-        data.name = value;
-        Ok(())
+    fn set_name(
+        &mut self,
+        self_: Resource<GlxfSceneRes>,
+        value: String,
+    ) -> wasm_bridge::Result<()> {
+        todo!()
     }
 
-    fn nodes(&mut self, self_: Resource<SceneRes>) -> wasm_bridge::Result<Vec<Resource<NodeRes>>> {
+    fn nodes(
+        &mut self,
+        self_: Resource<GlxfSceneRes>,
+    ) -> wasm_bridge::Result<Vec<Resource<GlxfNodeRes>>> {
         let data = self.table.get(&self_)?;
         let nodes = data
             .nodes
             .iter()
-            .map(|rep| NodeRes::from_rep(*rep, &self.table))
+            .map(|rep| GlxfNodeRes::from_rep(*rep, &self.table))
             .collect::<Result<_, _>>()?;
         Ok(nodes)
     }
     fn add_node(
         &mut self,
-        self_: Resource<SceneRes>,
-        value: Resource<NodeRes>,
+        self_: Resource<GlxfSceneRes>,
+        value: Resource<GlxfNodeRes>,
     ) -> wasm_bridge::Result<()> {
         let scene_rep = self_.rep();
         let node_rep = value.rep();
@@ -95,13 +98,13 @@ impl HostScene for StoreState {
         let data = self.table.get_mut(&self_)?;
         data.nodes.push(node_rep);
 
-        let nodes = self.entities.nodes.clone();
-        let scenes = self.entities.scenes.clone();
+        let glxf_nodes = self.entities.glxf_nodes.clone();
+        let glxf_scenes = self.entities.glxf_scenes.clone();
         self.commands.push(move |world: &mut World| {
-            let scenes = scenes.read().unwrap();
+            let scenes = glxf_scenes.read().unwrap();
             let scene_ent = scenes.get(&scene_rep).unwrap();
 
-            let nodes = nodes.read().unwrap();
+            let nodes = glxf_nodes.read().unwrap();
             let node_ent = nodes.get(&node_rep).unwrap();
 
             world
@@ -114,8 +117,8 @@ impl HostScene for StoreState {
     }
     fn remove_node(
         &mut self,
-        self_: Resource<SceneRes>,
-        value: Resource<NodeRes>,
+        self_: Resource<GlxfSceneRes>,
+        value: Resource<GlxfNodeRes>,
     ) -> wasm_bridge::Result<()> {
         let scene_rep = self_.rep();
         let node_rep = value.rep();
@@ -128,13 +131,13 @@ impl HostScene for StoreState {
             .filter(|rep| *rep != value.rep())
             .collect();
 
-        let nodes = self.entities.nodes.clone();
-        let scenes = self.entities.scenes.clone();
+        let glxf_nodes = self.entities.glxf_nodes.clone();
+        let glxf_scenes = self.entities.glxf_scenes.clone();
         self.commands.push(move |world: &mut World| {
-            let scenes = scenes.read().unwrap();
+            let scenes = glxf_scenes.read().unwrap();
             let scene_ent = scenes.get(&scene_rep).unwrap();
 
-            let nodes = nodes.read().unwrap();
+            let nodes = glxf_nodes.read().unwrap();
             let node_ent = nodes.get(&node_rep).unwrap();
 
             world
@@ -146,14 +149,14 @@ impl HostScene for StoreState {
         Ok(())
     }
 
-    fn drop(&mut self, rep: Resource<SceneRes>) -> wasm_bridge::Result<()> {
+    fn drop(&mut self, rep: Resource<GlxfSceneRes>) -> wasm_bridge::Result<()> {
         let id = rep.rep();
-        let dropped = SceneRes::handle_drop(rep, &mut self.table)?;
+        let dropped = GlxfSceneRes::handle_drop(rep, &mut self.table)?;
 
         if dropped {
-            let scenes = self.entities.scenes.clone();
+            let glxf_scenes = self.entities.glxf_scenes.clone();
             self.commands.push(move |world: &mut World| {
-                let mut scenes = scenes.write().unwrap();
+                let mut scenes = glxf_scenes.write().unwrap();
                 let entity = scenes.remove(&id).unwrap();
                 world.despawn(entity);
             });
@@ -162,5 +165,3 @@ impl HostScene for StoreState {
         Ok(())
     }
 }
-
-impl Host for StoreState {}

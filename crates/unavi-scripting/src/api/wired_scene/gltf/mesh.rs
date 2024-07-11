@@ -6,7 +6,6 @@ use bevy::{
         mesh::{Indices, PrimitiveTopology, VertexAttributeValues},
         render_asset::RenderAssetUsages,
     },
-    utils::HashSet,
 };
 use wasm_bridge::component::Resource;
 
@@ -17,17 +16,20 @@ use crate::{
 
 use crate::api::wired_scene::wired::scene::mesh::{Host, HostMesh, HostPrimitive, Material};
 
-use super::node::NodeMesh;
+use super::{
+    material::MaterialRes,
+    node::{NodeMesh, NodeRes},
+};
 
 #[derive(Component, Clone, Copy, Debug)]
 pub struct MeshId(pub u32);
 
 #[derive(Bundle)]
-pub struct WiredMeshBundle {
+pub struct GltfMeshBundle {
     pub id: MeshId,
 }
 
-impl WiredMeshBundle {
+impl GltfMeshBundle {
     pub fn new(id: u32) -> Self {
         Self { id: MeshId(id) }
     }
@@ -47,8 +49,8 @@ pub struct GltfPrimitiveBundle {
 pub struct MeshRes {
     pub name: String,
     /// Nodes that are using this mesh.
-    pub nodes: HashSet<u32>,
-    pub primitives: HashSet<u32>,
+    pub nodes: Vec<Resource<NodeRes>>,
+    pub primitives: Vec<Resource<PrimitiveRes>>,
     ref_count: RefCountCell,
 }
 
@@ -62,13 +64,22 @@ impl RefResource for MeshRes {}
 
 #[derive(Default, Debug)]
 pub struct PrimitiveRes {
-    pub material: Option<u32>,
+    pub material: Option<Resource<MaterialRes>>,
+    ref_count: RefCountCell,
 }
+
+impl RefCount for PrimitiveRes {
+    fn ref_count(&self) -> &Cell<usize> {
+        &self.ref_count
+    }
+}
+
+impl RefResource for PrimitiveRes {}
 
 impl HostMesh for StoreState {
     fn new(&mut self) -> wasm_bridge::Result<Resource<MeshRes>> {
         let table_res = self.table.push(MeshRes::default())?;
-        let res = MeshRes::from_res(&table_res, &self.table)?;
+        let res = self.clone_res(&table_res)?;
         Ok(res)
     }
 
@@ -90,12 +101,12 @@ impl HostMesh for StoreState {
         &mut self,
         self_: Resource<MeshRes>,
     ) -> wasm_bridge::Result<Vec<Resource<PrimitiveRes>>> {
-        let mesh = self.table.get_mut(&self_)?;
+        let mesh = self.table.get(&self_)?;
         Ok(mesh
             .primitives
             .iter()
-            .map(|rep| Resource::new_own(*rep))
-            .collect())
+            .map(|res| self.clone_res(res))
+            .collect::<Result<_, _>>()?)
     }
     fn create_primitive(
         &mut self,
@@ -104,10 +115,11 @@ impl HostMesh for StoreState {
         let resource = self.table.push(PrimitiveRes::default())?;
         let primitive_rep = resource.rep();
 
+        let res = self.clone_res(&resource)?;
         let mesh = self.table.get_mut(&self_)?;
-        mesh.primitives.insert(primitive_rep);
+        mesh.primitives.push(res);
 
-        let mesh_nodes = mesh.nodes.clone();
+        let mesh_nodes = mesh.nodes.iter().map(|res| res.rep()).collect::<Vec<_>>();
         let nodes = self.entities.nodes.clone();
         let primitives = self.entities.primitives.clone();
         self.commands.push(move |world: &mut World| {
@@ -151,9 +163,12 @@ impl HostMesh for StoreState {
         self.table.delete(value)?;
 
         let mesh = self.table.get_mut(&self_)?;
-        mesh.primitives.remove(&rep);
+        mesh.primitives
+            .iter()
+            .position(|r| r.rep() == rep)
+            .map(|index| mesh.primitives.remove(index));
 
-        let node_ids = mesh.nodes.clone();
+        let node_ids = mesh.nodes.iter().map(|res| res.rep()).collect::<Vec<_>>();
         let nodes = self.entities.nodes.clone();
         self.commands.push(move |world: &mut World| {
             // Remove node primitives.
@@ -191,8 +206,8 @@ impl HostPrimitive for StoreState {
         self_: Resource<PrimitiveRes>,
     ) -> wasm_bridge::Result<Option<Resource<Material>>> {
         let primitive = self.table.get(&self_)?;
-        let material = match primitive.material {
-            Some(m) => Some(Material::from_rep(m, &self.table)?),
+        let material = match &primitive.material {
+            Some(m) => Some(self.clone_res(m)?),
             None => None,
         };
         Ok(material)
@@ -202,8 +217,9 @@ impl HostPrimitive for StoreState {
         self_: Resource<PrimitiveRes>,
         value: Option<Resource<Material>>,
     ) -> wasm_bridge::Result<()> {
+        let res = value.and_then(|v| self.clone_res(&v).ok());
         let primitive = self.table.get_mut(&self_)?;
-        primitive.material = value.map(|v| v.rep());
+        primitive.material = res;
 
         // TODO: set node primitive materials
 

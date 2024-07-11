@@ -10868,9 +10868,9 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "surrealdb"
-version = "1.5.3"
+version = "1.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31819be880ed2c134afc1350dc29c22b1f1d9b93715d25eac07ba65677235eed"
+checksum = "430b7d33686ece41796236416707398574da147f78c6b4e5dc9a10592907029b"
 dependencies = [
  "async-channel 1.9.0",
  "bincode",
@@ -10890,8 +10890,8 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
- "surrealdb-core 1.5.0",
- "surrealdb-core 2.0.0-1.5.3",
+ "surrealdb-core 1.5.1",
+ "surrealdb-core 2.0.0-1.5.4",
  "thiserror",
  "tokio",
  "tracing",
@@ -10904,9 +10904,9 @@ dependencies = [
 
 [[package]]
 name = "surrealdb-core"
-version = "1.5.0"
+version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d765dbd25b093d89242c4eef253f49d9f026a6acf47b6dee07f86209a78a4080"
+checksum = "c3e0c2ab384286d025809460c65e6e24aef7919a6bfb98e961828d687560c2b8"
 dependencies = [
  "addr",
  "any_ascii",
@@ -10975,9 +10975,9 @@ dependencies = [
 
 [[package]]
 name = "surrealdb-core"
-version = "2.0.0-1.5.3"
+version = "2.0.0-1.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9fce39d305d5ef3f81bf4e08b97675bb00b90d0a72df2dc952af0fa98c405e19"
+checksum = "4da0070ee77cc4a6938000a365c3c2cf0233708d2ac16feb680a6d90a3535025"
 dependencies = [
  "addr",
  "ahash 0.8.11",
@@ -12379,9 +12379,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-encoder"
-version = "0.212.0"
+version = "0.213.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "501940df4418b8929eb6d52f1aade1fdd15a5b86c92453cb696e3c906bd3fc33"
+checksum = "850e4e6a56413a8f33567741a2388c8f6dafd841a939d945c7248671a8739dd8"
 dependencies = [
  "leb128",
 ]
@@ -12764,22 +12764,22 @@ dependencies = [
 
 [[package]]
 name = "wast"
-version = "212.0.0"
+version = "213.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4606a05fb0aae5d11dd7d8280a640d88a63ee019360ba9be552da3d294b8d1f5"
+checksum = "cd051172bc72db3567b039f710f27d6d80f358b8333088eb4c4c12dac2a4d993"
 dependencies = [
  "bumpalo",
  "leb128",
  "memchr",
  "unicode-width",
- "wasm-encoder 0.212.0",
+ "wasm-encoder 0.213.0",
 ]
 
 [[package]]
 name = "wat"
-version = "1.212.0"
+version = "1.213.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c74ca7f93f11a5d6eed8499f2a8daaad6e225cab0151bc25a091fff3b987532f"
+checksum = "5be77619385eca699d204399d2ffc9b1dfda1df3320266773d2d664ecb06cf3e"
 dependencies = [
  "wast",
 ]

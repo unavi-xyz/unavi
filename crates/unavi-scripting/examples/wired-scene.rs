@@ -1,22 +1,16 @@
-use bevy::{log::LogPlugin, prelude::*};
+use bevy::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_xpbd_3d::plugins::PhysicsPlugins;
-use tracing::Level;
 use unavi_scripting::{ScriptBundle, ScriptingPlugin};
 
 fn main() {
     App::new()
         .add_plugins((
-            DefaultPlugins
-                .set(AssetPlugin {
-                    file_path: "../unavi-app/assets".to_string(),
-                    ..default()
-                })
-                .set(LogPlugin {
-                    level: Level::DEBUG,
-                    ..default()
-                }),
+            DefaultPlugins.set(AssetPlugin {
+                file_path: "../unavi-app/assets".to_string(),
+                ..default()
+            }),
             WorldInspectorPlugin::default(),
             PanOrbitCameraPlugin,
             PhysicsPlugins::default(),

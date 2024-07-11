@@ -165,7 +165,10 @@ impl HostNode for StoreState {
                 let PrimitiveState { handle, .. } = primitives.get(&p).unwrap();
 
                 let p_ent = world
-                    .spawn((SpatialBundle::default(), handle.clone()))
+                    .spawn(PbrBundle {
+                        mesh: handle.clone(),
+                        ..default()
+                    })
                     .set_parent(*node_ent)
                     .id();
                 node_primitives.insert(p, p_ent);

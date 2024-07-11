@@ -143,7 +143,10 @@ impl HostMesh for StoreState {
                 let node_ent = nodes.get(&node_id).unwrap();
 
                 let p_ent = world
-                    .spawn((SpatialBundle::default(), handle.clone()))
+                    .spawn(PbrBundle {
+                        mesh: handle.clone(),
+                        ..default()
+                    })
                     .set_parent(*node_ent)
                     .id();
 
@@ -296,6 +299,7 @@ impl HostPrimitive for StoreState {
         self.commands.push(move |world: &mut World| {
             let primitives = primitives.read().unwrap();
             let PrimitiveState { handle, .. } = primitives.get(&rep).unwrap();
+
             let mut assets = world.resource_mut::<Assets<Mesh>>();
             let mesh = assets.get_mut(handle).unwrap();
 

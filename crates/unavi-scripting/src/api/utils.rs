@@ -1,6 +1,9 @@
 use std::cell::Cell;
 
-use bevy::{log::warn, prelude::Deref};
+use bevy::{
+    log::{debug, warn},
+    prelude::Deref,
+};
 use wasm_bridge::component::{Resource, ResourceTable, ResourceTableError};
 
 /// A `Cell<usize>` used for reference counting.
@@ -43,9 +46,6 @@ pub trait RefCount {
     }
 }
 
-// TODO: Could we use `Rc<Node>` instead of `Node` for resource implementation, rather than
-// implementing Rc functionality ourselves?
-
 /// A WASM resource that uses reference counting for its lifecycle.
 /// This allows multiple copies of a resource to be created for the same data, while
 /// ensuring the data is only dropped once all references are dropped.
@@ -78,6 +78,7 @@ pub trait RefResource: RefCount + Send + Sized + 'static {
 
         // Table owns a copy of the resource, so we delete when it is the only ref left.
         if count == 1 {
+            debug!("Dropping res {}", res.rep());
             table.delete(res)?;
             Ok(true)
         } else {

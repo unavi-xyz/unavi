@@ -1,10 +1,10 @@
 use std::sync::{Arc, RwLock};
 
 use bevy::{ecs::world::CommandQueue, prelude::*, utils::HashMap};
-use wasm_bridge::component::{Resource, ResourceTable};
+use wasm_bridge::component::{Resource, ResourceTable, ResourceTableError};
 use wasm_bridge_wasi::{WasiCtx, WasiCtxBuilder, WasiView};
 
-use crate::api::wired_scene::glxf::document::GlxfDocument;
+use crate::api::{utils::RefResource, wired_scene::glxf::document::GlxfDocument};
 
 pub struct StoreState {
     pub commands: CommandQueue,
@@ -53,6 +53,13 @@ impl StoreState {
             wasi: WasiCtxBuilder::new().build(),
             wasi_table: wasm_bridge_wasi::ResourceTable::default(),
         }
+    }
+
+    pub fn clone_res<T: RefResource>(
+        &self,
+        res: &Resource<T>,
+    ) -> Result<Resource<T>, ResourceTableError> {
+        T::from_res(res, &self.table)
     }
 
     /// Inserts a component into the given node.

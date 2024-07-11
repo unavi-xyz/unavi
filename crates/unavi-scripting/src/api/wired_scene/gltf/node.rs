@@ -156,21 +156,23 @@ impl HostNode for StoreState {
                 world.despawn(e);
             }
 
-            let mut node_ent = world.entity_mut(*node_ent);
             let mut node_primitives = HashMap::new();
 
             // Add new node primitives.
-            node_ent.with_children(|world| {
-                let primitives = primitives.read().unwrap();
-                for p in primitive_ids {
-                    let PrimitiveState { handle, .. } = primitives.get(&p).unwrap();
+            let primitives = primitives.read().unwrap();
+            for p in primitive_ids {
+                let PrimitiveState { handle, .. } = primitives.get(&p).unwrap();
 
-                    let p_ent = world.spawn((SpatialBundle::default(), handle.clone())).id();
-                    node_primitives.insert(p, p_ent);
+                let p_ent = world
+                    .spawn((SpatialBundle::default(), handle.clone()))
+                    .set_parent(*node_ent)
+                    .id();
+                node_primitives.insert(p, p_ent);
 
-                    // TODO: add material
-                }
-            });
+                // TODO: add material
+            }
+
+            let mut node_ent = world.entity_mut(*node_ent);
 
             // Add new mesh.
             if let Some(mesh_rep) = mesh_rep {
@@ -433,11 +435,14 @@ impl Host for StoreState {}
 
 #[cfg(test)]
 mod tests {
+    use tracing_test::traced_test;
+
     use crate::api::wired_scene::wired::scene::mesh::HostMesh;
 
     use super::*;
 
     #[test]
+    #[traced_test]
     fn test_new() {
         let mut world = World::new();
         let root_ent = world.spawn_empty().id();
@@ -455,6 +460,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn test_set_mesh() {
         let mut world = World::new();
         world.init_resource::<Assets<Mesh>>();
@@ -471,11 +477,13 @@ mod tests {
         world.commands().append(&mut state.commands);
         world.flush_commands();
 
-        let node_mesh = world.query::<&NodeMesh>().single(&world);
+        let (node_mesh, node_children) = world.query::<(&NodeMesh, &Children)>().single(&world);
         assert_eq!(node_mesh.node_primitives.len(), 1);
 
         let primitive_ent = node_mesh.node_primitives.values().next().unwrap();
         let _ = world.get::<Handle<Mesh>>(*primitive_ent).unwrap();
+        let _ = world.get::<GlobalTransform>(*primitive_ent).unwrap();
+        assert!(node_children.contains(primitive_ent));
 
         // Remove mesh.
         HostNode::set_mesh(&mut state, node, None).unwrap();
@@ -485,5 +493,10 @@ mod tests {
 
         let node_mesh = world.query::<&NodeMesh>().get_single(&world);
         assert!(node_mesh.is_err());
+
+        assert!(!logs_contain("ERROR"));
+        assert!(!logs_contain("error"));
+        assert!(!logs_contain("WARN"));
+        assert!(!logs_contain("warn"));
     }
 }

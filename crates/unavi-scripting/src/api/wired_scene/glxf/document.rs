@@ -15,12 +15,12 @@ use super::{
 
 #[derive(Default)]
 pub struct GlxfDocument {
-    pub active_scene: Option<u32>,
-    pub assets_gltf: Vec<u32>,
-    pub assets_glxf: Vec<u32>,
-    pub default_scene: Option<u32>,
-    pub nodes: Vec<u32>,
-    pub scenes: Vec<u32>,
+    pub active_scene: Option<Resource<GlxfSceneRes>>,
+    pub assets_gltf: Vec<Resource<GltfAssetRes>>,
+    pub assets_glxf: Vec<Resource<GlxfAssetRes>>,
+    pub default_scene: Option<Resource<GlxfSceneRes>>,
+    pub nodes: Vec<Resource<GlxfNodeRes>>,
+    pub scenes: Vec<Resource<GlxfSceneRes>>,
     ref_count: RefCountCell,
 }
 
@@ -36,7 +36,7 @@ impl HostGlxf for StoreState {
     fn new(&mut self) -> wasm_bridge::Result<Resource<GlxfDocument>> {
         let node = GlxfDocument::default();
         let table_res = self.table.push(node)?;
-        let res = GlxfDocument::from_res(&table_res, &self.table)?;
+        let res = self.clone_res(&table_res)?;
 
         let documents = self.entities.documents.clone();
         let rep = res.rep();
@@ -54,16 +54,12 @@ impl HostGlxf for StoreState {
         let assets_glxf = data
             .assets_glxf
             .iter()
-            .map(|rep| -> wasm_bridge::Result<_> {
-                Ok(Asset::Glxf(GlxfAssetRes::from_rep(*rep, &self.table)?))
-            })
+            .map(|res| -> wasm_bridge::Result<_> { Ok(Asset::Glxf(self.clone_res(res)?)) })
             .collect::<Result<Vec<_>, _>>()?;
         let assets_gltf = data
             .assets_gltf
             .iter()
-            .map(|rep| -> wasm_bridge::Result<_> {
-                Ok(Asset::Gltf(GltfAssetRes::from_rep(*rep, &self.table)?))
-            })
+            .map(|res| -> wasm_bridge::Result<_> { Ok(Asset::Gltf(self.clone_res(res)?)) })
             .collect::<Result<Vec<_>, _>>()?;
 
         let mut assets = assets_glxf;
@@ -87,14 +83,16 @@ impl HostGlxf for StoreState {
         self_: Resource<GlxfDocument>,
         value: AssetBorrow,
     ) -> wasm_bridge::Result<()> {
-        let data = self.table.get_mut(&self_)?;
-
         match value {
             AssetBorrow::Gltf(res) => {
-                data.assets_gltf.push(res.rep());
+                let res = self.clone_res(&res)?;
+                let data = self.table.get_mut(&self_)?;
+                data.assets_gltf.push(res);
             }
             AssetBorrow::Glxf(res) => {
-                data.assets_glxf.push(res.rep());
+                let res = self.clone_res(&res)?;
+                let data = self.table.get_mut(&self_)?;
+                data.assets_glxf.push(res);
             }
         }
 
@@ -109,20 +107,16 @@ impl HostGlxf for StoreState {
 
         match value {
             AssetBorrow::Gltf(res) => {
-                data.assets_gltf = data
-                    .assets_gltf
+                data.assets_gltf
                     .iter()
-                    .copied()
-                    .filter(|rep| *rep != res.rep())
-                    .collect();
+                    .position(|r| r.rep() == res.rep())
+                    .map(|index| data.assets_gltf.remove(index));
             }
             AssetBorrow::Glxf(res) => {
-                data.assets_glxf = data
-                    .assets_glxf
+                data.assets_glxf
                     .iter()
-                    .copied()
-                    .filter(|rep| *rep != res.rep())
-                    .collect();
+                    .position(|r| r.rep() == res.rep())
+                    .map(|index| data.assets_glxf.remove(index));
             }
         }
 
@@ -136,27 +130,32 @@ impl HostGlxf for StoreState {
         let data = self.table.get(&self_)?;
         Ok(data
             .active_scene
-            .and_then(|rep| GlxfSceneRes::from_rep(rep, &self.table).ok()))
+            .as_ref()
+            .and_then(|res| self.clone_res(res).ok()))
     }
     fn set_active_scene(
         &mut self,
         self_: Resource<GlxfDocument>,
         value: Option<Resource<GlxfSceneRes>>,
     ) -> wasm_bridge::Result<()> {
+        let value = value.as_ref().and_then(|res| self.clone_res(res).ok());
+
         let data = self.table.get_mut(&self_)?;
 
-        if let Some(prev) = data.active_scene {
+        if let Some(prev) = &data.active_scene {
+            let prev_rep = prev.rep();
             let glxf_scenes = self.entities.glxf_scenes.clone();
             self.commands.push(move |world: &mut World| {
                 let glxf_scenes = glxf_scenes.read().unwrap();
-                let prev_ent = glxf_scenes.get(&prev).unwrap();
+                let prev_ent = glxf_scenes.get(&prev_rep).unwrap();
                 world.entity_mut(*prev_ent).remove_parent();
             });
         }
 
-        data.active_scene = value.map(|res| res.rep());
+        data.active_scene = value;
 
-        if let Some(scene_rep) = data.active_scene {
+        if let Some(active_scene) = &data.active_scene {
+            let scene_rep = active_scene.rep();
             let documents = self.entities.documents.clone();
             let glxf_scenes = self.entities.glxf_scenes.clone();
             let root_rep = self_.rep();
@@ -181,15 +180,17 @@ impl HostGlxf for StoreState {
         let data = self.table.get(&self_)?;
         Ok(data
             .default_scene
-            .and_then(|rep| GlxfSceneRes::from_rep(rep, &self.table).ok()))
+            .as_ref()
+            .and_then(|res| self.clone_res(res).ok()))
     }
     fn set_default_scene(
         &mut self,
         self_: Resource<GlxfDocument>,
         value: Resource<GlxfSceneRes>,
     ) -> wasm_bridge::Result<()> {
+        let res = self.clone_res(&value)?;
         let data = self.table.get_mut(&self_)?;
-        data.default_scene = Some(value.rep());
+        data.default_scene = Some(res);
         Ok(())
     }
 
@@ -201,7 +202,7 @@ impl HostGlxf for StoreState {
         let nodes = data
             .nodes
             .iter()
-            .map(|rep| GlxfNodeRes::from_rep(*rep, &self.table))
+            .map(|res| self.clone_res(res))
             .collect::<Result<_, _>>()?;
         Ok(nodes)
     }
@@ -210,8 +211,9 @@ impl HostGlxf for StoreState {
         self_: Resource<GlxfDocument>,
         value: Resource<GlxfNodeRes>,
     ) -> wasm_bridge::Result<()> {
+        let res = self.clone_res(&value)?;
         let data = self.table.get_mut(&self_)?;
-        data.nodes.push(value.rep());
+        data.nodes.push(res);
         Ok(())
     }
     fn remove_node(
@@ -220,12 +222,10 @@ impl HostGlxf for StoreState {
         value: Resource<GlxfNodeRes>,
     ) -> wasm_bridge::Result<()> {
         let data = self.table.get_mut(&self_)?;
-        data.nodes = data
-            .nodes
+        data.nodes
             .iter()
-            .copied()
-            .filter(|rep| *rep != value.rep())
-            .collect();
+            .position(|r| r.rep() == value.rep())
+            .map(|index| data.nodes.remove(index));
         Ok(())
     }
 
@@ -237,7 +237,7 @@ impl HostGlxf for StoreState {
         let scenes = data
             .scenes
             .iter()
-            .map(|rep| GlxfSceneRes::from_rep(*rep, &self.table))
+            .map(|res| self.clone_res(res))
             .collect::<Result<_, _>>()?;
         Ok(scenes)
     }
@@ -246,8 +246,9 @@ impl HostGlxf for StoreState {
         self_: Resource<GlxfDocument>,
         value: Resource<GlxfSceneRes>,
     ) -> wasm_bridge::Result<()> {
+        let res = self.clone_res(&value)?;
         let data = self.table.get_mut(&self_)?;
-        data.scenes.push(value.rep());
+        data.scenes.push(res);
         Ok(())
     }
     fn remove_scene(
@@ -256,12 +257,10 @@ impl HostGlxf for StoreState {
         value: Resource<GlxfSceneRes>,
     ) -> wasm_bridge::Result<()> {
         let data = self.table.get_mut(&self_)?;
-        data.scenes = data
-            .scenes
+        data.scenes
             .iter()
-            .copied()
-            .filter(|rep| *rep != value.rep())
-            .collect();
+            .position(|r| r.rep() == value.rep())
+            .map(|index| data.scenes.remove(index));
         Ok(())
     }
 
@@ -284,7 +283,7 @@ impl HostGlxf for StoreState {
 
 impl Host for StoreState {
     fn get_root(&mut self) -> wasm_bridge::Result<Resource<GlxfDocument>> {
-        let res = GlxfDocument::from_res(&self.root_glxf, &self.table)?;
+        let res = self.clone_res(&self.root_glxf)?;
         Ok(res)
     }
 }

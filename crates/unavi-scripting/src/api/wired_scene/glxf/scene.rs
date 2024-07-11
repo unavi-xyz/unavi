@@ -31,7 +31,8 @@ impl GlxfSceneBundle {
 
 #[derive(Default)]
 pub struct GlxfSceneRes {
-    pub nodes: Vec<u32>,
+    name: String,
+    nodes: Vec<u32>,
     ref_count: RefCountCell,
 }
 
@@ -65,14 +66,17 @@ impl HostGlxfScene for StoreState {
     }
 
     fn name(&mut self, self_: Resource<GlxfSceneRes>) -> wasm_bridge::Result<String> {
-        todo!()
+        let data = self.table.get(&self_)?;
+        Ok(data.name.clone())
     }
     fn set_name(
         &mut self,
         self_: Resource<GlxfSceneRes>,
         value: String,
     ) -> wasm_bridge::Result<()> {
-        todo!()
+        let data = self.table.get_mut(&self_)?;
+        data.name = value;
+        Ok(())
     }
 
     fn nodes(
@@ -107,7 +111,7 @@ impl HostGlxfScene for StoreState {
             let nodes = glxf_nodes.read().unwrap();
             let node_ent = nodes.get(&node_rep).unwrap();
 
-            world.commands().entity(*node_ent).set_parent(*scene_ent);
+            world.entity_mut(*node_ent).set_parent(*scene_ent);
         });
 
         Ok(())
@@ -137,10 +141,7 @@ impl HostGlxfScene for StoreState {
             let nodes = glxf_nodes.read().unwrap();
             let node_ent = nodes.get(&node_rep).unwrap();
 
-            world
-                .commands()
-                .entity(*scene_ent)
-                .remove_children(&[*node_ent]);
+            world.entity_mut(*scene_ent).remove_children(&[*node_ent]);
         });
 
         Ok(())
@@ -160,5 +161,98 @@ impl HostGlxfScene for StoreState {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::api::wired_scene::{glxf::node::GlxfNodeId, wired::scene::glxf::HostGlxfNode};
+
+    use super::*;
+
+    #[test]
+    fn test_new() {
+        let mut world = World::new();
+        let root_ent = world.spawn_empty().id();
+        let mut state = StoreState::new("test".to_string(), root_ent);
+
+        let _ = HostGlxfScene::new(&mut state).unwrap();
+
+        world.commands().append(&mut state.commands);
+        world.flush_commands();
+
+        let (found_id, _) = world
+            .query::<(&GlxfSceneId, &Handle<Scene>)>()
+            .single(&world);
+        assert_eq!(found_id.0, 1);
+    }
+
+    #[test]
+    fn test_add_node() {
+        let mut world = World::new();
+        let root_ent = world.spawn_empty().id();
+        let mut state = StoreState::new("test".to_string(), root_ent);
+
+        let scene = HostGlxfScene::new(&mut state).unwrap();
+        let node = HostGlxfNode::new(&mut state).unwrap();
+        HostGlxfScene::add_node(&mut state, scene, node).unwrap();
+
+        world.commands().append(&mut state.commands);
+        world.flush_commands();
+
+        let (node_ent, _) = world.query::<(Entity, &GlxfNodeId)>().single(&world);
+        let (scene_children, _) = world.query::<(&Children, &GlxfSceneId)>().single(&world);
+        assert!(scene_children.contains(&node_ent));
+    }
+
+    #[test]
+    fn test_remove_node() {
+        let mut world = World::new();
+        let root_ent = world.spawn_empty().id();
+        let mut state = StoreState::new("test".to_string(), root_ent);
+
+        let scene = HostGlxfScene::new(&mut state).unwrap();
+        let node = HostGlxfNode::new(&mut state).unwrap();
+        HostGlxfScene::add_node(
+            &mut state,
+            Resource::new_own(scene.rep()),
+            Resource::new_own(node.rep()),
+        )
+        .unwrap();
+        HostGlxfScene::remove_node(&mut state, scene, node).unwrap();
+
+        world.commands().append(&mut state.commands);
+        world.flush_commands();
+
+        let children_query = world
+            .query::<(&Children, &GlxfSceneId)>()
+            .get_single(&world);
+        assert!(children_query.is_err());
+    }
+
+    #[test]
+    fn test_nodes() {
+        let mut world = World::new();
+        let root_ent = world.spawn_empty().id();
+        let mut state = StoreState::new("test".to_string(), root_ent);
+
+        let scene = HostGlxfScene::new(&mut state).unwrap();
+        let node = HostGlxfNode::new(&mut state).unwrap();
+        let node_rep = node.rep();
+        HostGlxfScene::add_node(
+            &mut state,
+            Resource::new_own(scene.rep()),
+            Resource::new_own(node.rep()),
+        )
+        .unwrap();
+
+        let nodes = HostGlxfScene::nodes(&mut state, Resource::new_own(scene.rep())).unwrap();
+        assert_eq!(nodes.len(), 1);
+        assert_eq!(nodes[0].rep(), node_rep);
+
+        HostGlxfScene::remove_node(&mut state, Resource::new_own(scene.rep()), node).unwrap();
+
+        let nodes = HostGlxfScene::nodes(&mut state, Resource::new_own(scene.rep())).unwrap();
+        assert!(nodes.is_empty());
     }
 }

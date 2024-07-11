@@ -239,10 +239,7 @@ impl HostNode for StoreState {
             let child_ent = nodes.get(&child_rep).unwrap();
             let parent_ent = nodes.get(&parent_rep).unwrap();
 
-            world
-                .commands()
-                .entity(*parent_ent)
-                .push_children(&[*child_ent]);
+            world.entity_mut(*parent_ent).push_children(&[*child_ent]);
         });
 
         Ok(())
@@ -261,7 +258,7 @@ impl HostNode for StoreState {
         self.commands.push(move |world: &mut World| {
             let nodes = nodes.read().unwrap();
             let child_ent = nodes.get(&child_rep).unwrap();
-            world.commands().entity(*child_ent).remove_parent();
+            world.entity_mut(*child_ent).remove_parent();
         });
 
         Ok(())
@@ -433,3 +430,60 @@ impl HostNode for StoreState {
 }
 
 impl Host for StoreState {}
+
+#[cfg(test)]
+mod tests {
+    use crate::api::wired_scene::wired::scene::mesh::HostMesh;
+
+    use super::*;
+
+    #[test]
+    fn test_new() {
+        let mut world = World::new();
+        let root_ent = world.spawn_empty().id();
+        let mut state = StoreState::new("test".to_string(), root_ent);
+
+        let _ = HostNode::new(&mut state).unwrap();
+
+        world.commands().append(&mut state.commands);
+        world.flush_commands();
+
+        let (found_id, _) = world
+            .query::<(&NodeId, &bevy::prelude::Transform)>()
+            .single(&world);
+        assert_eq!(found_id.0, 1);
+    }
+
+    #[test]
+    fn test_set_mesh() {
+        let mut world = World::new();
+        world.init_resource::<Assets<Mesh>>();
+
+        let root_ent = world.spawn_empty().id();
+        let mut state = StoreState::new("test".to_string(), root_ent);
+
+        // Set mesh.
+        let node = HostNode::new(&mut state).unwrap();
+        let mesh = HostMesh::new(&mut state).unwrap();
+        let _ = HostMesh::create_primitive(&mut state, Resource::new_own(mesh.rep())).unwrap();
+        HostNode::set_mesh(&mut state, Resource::new_own(node.rep()), Some(mesh)).unwrap();
+
+        world.commands().append(&mut state.commands);
+        world.flush_commands();
+
+        let node_mesh = world.query::<&NodeMesh>().single(&world);
+        assert_eq!(node_mesh.node_primitives.len(), 1);
+
+        let primitive_ent = node_mesh.node_primitives.values().next().unwrap();
+        let _ = world.get::<Handle<Mesh>>(*primitive_ent).unwrap();
+
+        // Remove mesh.
+        HostNode::set_mesh(&mut state, node, None).unwrap();
+
+        world.commands().append(&mut state.commands);
+        world.flush_commands();
+
+        let node_mesh = world.query::<&NodeMesh>().get_single(&world);
+        assert!(node_mesh.is_err());
+    }
+}

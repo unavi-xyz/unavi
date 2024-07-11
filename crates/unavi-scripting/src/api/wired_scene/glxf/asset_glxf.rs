@@ -50,7 +50,7 @@ impl HostAssetGlxf for StoreState {
 
             let documents = documents.read().unwrap();
             let doc_ent = documents.get(&doc_rep).unwrap();
-            world.commands().entity(*doc_ent).set_parent(entity);
+            world.entity_mut(*doc_ent).set_parent(entity);
         });
 
         Ok(res)

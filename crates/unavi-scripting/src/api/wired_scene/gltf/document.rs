@@ -68,7 +68,7 @@ impl HostGltf for StoreState {
             self.commands.push(move |world: &mut World| {
                 let scenes = scenes.read().unwrap();
                 let prev_ent = scenes.get(&prev).unwrap();
-                world.commands().entity(*prev_ent).remove_parent();
+                world.entity_mut(*prev_ent).remove_parent();
             });
         }
 
@@ -85,7 +85,7 @@ impl HostGltf for StoreState {
                 let scenes = scenes.read().unwrap();
                 let scene_ent = scenes.get(&scene_rep).unwrap();
 
-                world.commands().entity(*scene_ent).set_parent(*root_ent);
+                world.entity_mut(*scene_ent).set_parent(*root_ent);
             });
         }
 

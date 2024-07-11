@@ -12,7 +12,7 @@ use wasm_bridge::component::Resource;
 
 use crate::{
     api::utils::{RefCount, RefCountCell, RefResource},
-    state::{MaterialState, PrimitiveState, StoreState},
+    state::{PrimitiveState, StoreState},
 };
 
 use crate::api::wired_scene::wired::scene::mesh::{Host, HostMesh, HostPrimitive, Material};
@@ -108,7 +108,6 @@ impl HostMesh for StoreState {
         mesh.primitives.insert(primitive_rep);
 
         let mesh_nodes = mesh.nodes.clone();
-        let mesh_rep = self_.rep();
         let nodes = self.entities.nodes.clone();
         let primitives = self.entities.primitives.clone();
         self.commands.push(move |world: &mut World| {
@@ -118,19 +117,10 @@ impl HostMesh for StoreState {
                 RenderAssetUsages::all(),
             ));
 
-            let entity = world
-                .spawn(GltfPrimitiveBundle {
-                    id: PrimitiveId(primitive_rep),
-                    mesh: MeshId(mesh_rep),
-                    handle: handle.clone(),
-                })
-                .id();
-
             let mut primitives = primitives.write().unwrap();
             primitives.insert(
                 primitive_rep,
                 PrimitiveState {
-                    entity,
                     handle: handle.clone(),
                 },
             );
@@ -138,18 +128,15 @@ impl HostMesh for StoreState {
             // Create node primitives.
             let nodes = nodes.read().unwrap();
             for node_id in mesh_nodes {
-                let entity = nodes.get(&node_id).unwrap();
+                let node_ent = nodes.get(&node_id).unwrap();
 
-                let mut p_ent = None;
+                let p_ent = world
+                    .spawn((SpatialBundle::default(), handle.clone()))
+                    .set_parent(*node_ent)
+                    .id();
 
-                world.entity_mut(*entity).with_children(|world| {
-                    p_ent = Some(world.spawn((SpatialBundle::default(), handle.clone())).id());
-                });
-
-                let mut node_mesh = world.get_mut::<NodeMesh>(*entity).unwrap();
-                node_mesh
-                    .node_primitives
-                    .insert(primitive_rep, p_ent.take().unwrap());
+                let mut node_mesh = world.get_mut::<NodeMesh>(*node_ent).unwrap();
+                node_mesh.node_primitives.insert(primitive_rep, p_ent);
             }
         });
 
@@ -168,12 +155,7 @@ impl HostMesh for StoreState {
 
         let node_ids = mesh.nodes.clone();
         let nodes = self.entities.nodes.clone();
-        let primitives = self.entities.primitives.clone();
         self.commands.push(move |world: &mut World| {
-            let mut primitives = primitives.write().unwrap();
-            let PrimitiveState { entity, .. } = primitives.get_mut(&rep).unwrap();
-            world.despawn(*entity);
-
             // Remove node primitives.
             let nodes = nodes.read().unwrap();
             for node_id in node_ids {
@@ -223,24 +205,7 @@ impl HostPrimitive for StoreState {
         let primitive = self.table.get_mut(&self_)?;
         primitive.material = value.map(|v| v.rep());
 
-        let material_rep = primitive.material;
-        let materials = self.entities.materials.clone();
-        let primitives = self.entities.primitives.clone();
-        let rep = self_.rep();
-        self.commands.push(move |world: &mut World| {
-            let primitives = primitives.read().unwrap();
-            let PrimitiveState { entity, .. } = primitives.get(&rep).unwrap();
-            let mut entity = world.entity_mut(*entity);
-
-            if let Some(material_rep) = material_rep {
-                let materials = materials.read().unwrap();
-                let MaterialState { handle, .. } = materials.get(&material_rep).unwrap();
-                entity.insert(handle.clone());
-            } else {
-                // TODO: add default material
-                entity.remove::<Handle<StandardMaterial>>();
-            }
-        });
+        // TODO: set node primitive materials
 
         Ok(())
     }

@@ -104,6 +104,5 @@ pub struct MaterialState {
 }
 
 pub struct PrimitiveState {
-    pub entity: Entity,
     pub handle: Handle<Mesh>,
 }

@@ -4,7 +4,6 @@ use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
     unavi::shapes::api::create_cuboid,
     wired::{
-        log::api::{log, LogLevel},
         math::types::Vec3,
         scene::{
             gltf::Gltf,
@@ -28,36 +27,28 @@ struct Script {
 
 impl GuestScript for Script {
     fn new() -> Self {
-        log(LogLevel::Info, "Getting root");
         let glxf = get_root();
 
-        log(LogLevel::Info, "Creating glxf scene");
         let glxf_scene = GlxfScene::new();
         glxf.set_active_scene(Some(&glxf_scene));
 
-        log(LogLevel::Info, "Creating glxf node");
         let glxf_node = GlxfNode::new();
         glxf_scene.add_node(&glxf_node);
 
-        log(LogLevel::Info, "Creating gltf asset");
         let gltf = Gltf::new();
         let asset_gltf = AssetGltf::new(&gltf);
         let children = ChildrenBorrow::Asset(AssetBorrow::Gltf(&asset_gltf));
         glxf_node.set_children(Some(&children));
 
-        log(LogLevel::Info, "Creating gltf scene");
         let scene = Scene::new();
         gltf.set_active_scene(Some(&scene));
 
-        log(LogLevel::Info, "Creating gltf node");
         let node = Node::new();
         scene.add_node(&node);
 
-        log(LogLevel::Info, "Creating mesh");
         let mesh = create_cuboid(Vec3::splat(1.0));
         node.set_mesh(Some(&mesh));
 
-        log(LogLevel::Info, "Creating material");
         let material = Material::new();
         material.set_color(Color {
             r: 1.0,

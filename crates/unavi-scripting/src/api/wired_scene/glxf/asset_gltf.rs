@@ -12,6 +12,7 @@ use crate::{
     state::StoreState,
 };
 
+#[derive(Debug)]
 pub struct GltfAssetRes {
     document: Resource<GltfDocument>,
     nodes: Vec<Resource<NodeRes>>,

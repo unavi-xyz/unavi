@@ -13,7 +13,7 @@ use super::{
     asset_gltf::GltfAssetRes, asset_glxf::GlxfAssetRes, node::GlxfNodeRes, scene::GlxfSceneRes,
 };
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct GlxfDocument {
     pub active_scene: Option<Resource<GlxfSceneRes>>,
     pub assets_gltf: Vec<Resource<GltfAssetRes>>,

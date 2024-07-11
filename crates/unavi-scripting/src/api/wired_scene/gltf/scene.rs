@@ -29,7 +29,7 @@ impl GltfSceneBundle {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct SceneRes {
     pub nodes: Vec<Resource<NodeRes>>,
     name: String,

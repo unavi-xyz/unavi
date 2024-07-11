@@ -8,7 +8,7 @@ fn main() {
         .add_plugins((
             DefaultPlugins.set(AssetPlugin {
                 file_path: "../unavi-app/assets".to_string(),
-                ..Default::default()
+                ..default()
             }),
             PanOrbitCameraPlugin,
             PhysicsPlugins::default(),

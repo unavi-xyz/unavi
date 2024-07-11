@@ -15,12 +15,12 @@ use super::node::GlxfNodeRes;
 pub struct GlxfSceneId(pub u32);
 
 #[derive(Bundle)]
-pub struct WiredGlxfSceneBundle {
+pub struct GlxfSceneBundle {
     pub id: GlxfSceneId,
     pub scene: SceneBundle,
 }
 
-impl WiredGlxfSceneBundle {
+impl GlxfSceneBundle {
     pub fn new(id: u32) -> Self {
         Self {
             id: GlxfSceneId(id),
@@ -52,7 +52,7 @@ impl HostGlxfScene for StoreState {
         let rep = res.rep();
         let glxf_scenes = self.entities.glxf_scenes.clone();
         self.commands.push(move |world: &mut World| {
-            let entity = world.spawn(WiredGlxfSceneBundle::new(rep)).id();
+            let entity = world.spawn(GlxfSceneBundle::new(rep)).id();
             let mut scenes = glxf_scenes.write().unwrap();
             scenes.insert(rep, entity);
         });
@@ -107,10 +107,7 @@ impl HostGlxfScene for StoreState {
             let nodes = glxf_nodes.read().unwrap();
             let node_ent = nodes.get(&node_rep).unwrap();
 
-            world
-                .commands()
-                .entity(*scene_ent)
-                .push_children(&[*node_ent]);
+            world.commands().entity(*node_ent).set_parent(*scene_ent);
         });
 
         Ok(())

@@ -1,3 +1,4 @@
+use bevy::prelude::*;
 use wasm_bridge::component::Resource;
 
 use crate::{
@@ -29,13 +30,29 @@ impl HostAssetGlxf for StoreState {
         &mut self,
         document: Resource<GlxfDocument>,
     ) -> wasm_bridge::Result<Resource<GlxfAssetRes>> {
+        let doc_rep = document.rep();
+
         let data = GlxfAssetRes {
-            document: document.rep(),
+            document: doc_rep,
             nodes: Vec::default(),
             ref_count: RefCountCell::default(),
         };
         let table_res = self.table.push(data)?;
         let res = GlxfAssetRes::from_res(&table_res, &self.table)?;
+
+        let assets = self.entities.assets.clone();
+        let documents = self.entities.documents.clone();
+        let rep = res.rep();
+        self.commands.push(move |world: &mut World| {
+            let entity = world.spawn(SpatialBundle::default()).id();
+            let mut assets = assets.write().unwrap();
+            assets.insert(rep, entity);
+
+            let documents = documents.read().unwrap();
+            let doc_ent = documents.get(&doc_rep).unwrap();
+            world.commands().entity(*doc_ent).set_parent(entity);
+        });
+
         Ok(res)
     }
 
@@ -85,7 +102,18 @@ impl HostAssetGlxf for StoreState {
     }
 
     fn drop(&mut self, rep: Resource<GlxfAssetRes>) -> wasm_bridge::Result<()> {
-        GlxfAssetRes::handle_drop(rep, &mut self.table)?;
+        let id = rep.rep();
+        let dropped = GlxfAssetRes::handle_drop(rep, &mut self.table)?;
+
+        if dropped {
+            let assets = self.entities.assets.clone();
+            self.commands.push(move |world: &mut World| {
+                let mut assets = assets.write().unwrap();
+                let entity = assets.remove(&id).unwrap();
+                world.despawn(entity);
+            });
+        }
+
         Ok(())
     }
 }

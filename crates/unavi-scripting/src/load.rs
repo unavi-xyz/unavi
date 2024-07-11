@@ -46,7 +46,7 @@ pub fn load_scripts(
             }
         };
 
-        let state = StoreState::new(name.to_string());
+        let state = StoreState::new(name.to_string(), entity);
         let mut store = Store::new(&engine, state);
         let mut linker = Linker::new(store.engine());
 
@@ -67,8 +67,6 @@ pub fn load_scripts(
 
             Ok(entity)
         });
-
-        commands.entity(entity);
     }
 
     for task in pool.iter_poll() {

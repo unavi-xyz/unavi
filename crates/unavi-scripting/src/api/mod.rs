@@ -91,6 +91,8 @@ mod tests {
         test_script("test:wired-scene").await;
         assert!(!logs_contain("ERROR"));
         assert!(!logs_contain("error"));
+        assert!(!logs_contain("WARN"));
+        assert!(!logs_contain("warn"));
 
         logs_assert(|logs| {
             let mut found_constructs = 0;
@@ -119,6 +121,8 @@ mod tests {
         test_script("example:wired-scene").await;
         assert!(!logs_contain("ERROR"));
         assert!(!logs_contain("error"));
+        assert!(!logs_contain("WARN"));
+        assert!(!logs_contain("warn"));
     }
 
     #[tokio::test]
@@ -127,6 +131,8 @@ mod tests {
         test_script("example:wired-input").await;
         assert!(!logs_contain("ERROR"));
         assert!(!logs_contain("error"));
+        assert!(!logs_contain("WARN"));
+        assert!(!logs_contain("warn"));
     }
 
     #[tokio::test]
@@ -135,6 +141,8 @@ mod tests {
         test_script("example:wired-physics").await;
         assert!(!logs_contain("ERROR"));
         assert!(!logs_contain("error"));
+        assert!(!logs_contain("WARN"));
+        assert!(!logs_contain("warn"));
     }
 
     #[tokio::test]
@@ -143,5 +151,7 @@ mod tests {
         test_script("example:unavi-ui").await;
         assert!(!logs_contain("ERROR"));
         assert!(!logs_contain("error"));
+        assert!(!logs_contain("WARN"));
+        assert!(!logs_contain("warn"));
     }
 }

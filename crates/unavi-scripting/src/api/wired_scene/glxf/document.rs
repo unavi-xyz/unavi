@@ -150,7 +150,7 @@ impl HostGlxf for StoreState {
             self.commands.push(move |world: &mut World| {
                 let glxf_scenes = glxf_scenes.read().unwrap();
                 let prev_ent = glxf_scenes.get(&prev).unwrap();
-                world.commands().entity(*prev_ent).remove_parent();
+                world.entity_mut(*prev_ent).remove_parent();
             });
         }
 
@@ -167,7 +167,7 @@ impl HostGlxf for StoreState {
                 let glxf_scenes = glxf_scenes.read().unwrap();
                 let scene_ent = glxf_scenes.get(&scene_rep).unwrap();
 
-                world.commands().entity(*scene_ent).set_parent(*root_ent);
+                world.entity_mut(*scene_ent).set_parent(*root_ent);
             });
         }
 

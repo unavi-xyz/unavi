@@ -37,7 +37,7 @@ impl WiredMeshBundle {
 pub struct PrimitiveId(pub u32);
 
 #[derive(Bundle)]
-pub struct WiredPrimitiveBundle {
+pub struct GltfPrimitiveBundle {
     pub handle: Handle<Mesh>,
     pub id: PrimitiveId,
     pub mesh: MeshId,
@@ -119,7 +119,7 @@ impl HostMesh for StoreState {
             ));
 
             let entity = world
-                .spawn(WiredPrimitiveBundle {
+                .spawn(GltfPrimitiveBundle {
                     id: PrimitiveId(primitive_rep),
                     mesh: MeshId(mesh_rep),
                     handle: handle.clone(),
@@ -338,3 +338,20 @@ impl HostPrimitive for StoreState {
 }
 
 impl Host for StoreState {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new() {
+        let mut world = World::new();
+        let root_ent = world.spawn_empty().id();
+        let mut state = StoreState::new("test".to_string(), root_ent);
+
+        let _ = HostMesh::new(&mut state).unwrap();
+
+        world.commands().append(&mut state.commands);
+        world.flush_commands();
+    }
+}

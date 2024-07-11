@@ -104,7 +104,7 @@ impl HostScene for StoreState {
             let nodes = nodes.read().unwrap();
             let node_ent = nodes.get(&node_rep).unwrap();
 
-            world.commands().entity(*node_ent).set_parent(*scene_ent);
+            world.entity_mut(*node_ent).set_parent(*scene_ent);
         });
 
         Ok(())
@@ -128,7 +128,7 @@ impl HostScene for StoreState {
         self.commands.push(move |world: &mut World| {
             let nodes = nodes.read().unwrap();
             let node_ent = nodes.get(&node_rep).unwrap();
-            world.commands().entity(*node_ent).remove_parent();
+            world.entity_mut(*node_ent).remove_parent();
         });
 
         Ok(())
@@ -170,8 +170,8 @@ mod tests {
         world.commands().append(&mut state.commands);
         world.flush_commands();
 
-        let found_scene_id = world.query::<&SceneId>().single(&world);
-        assert_eq!(found_scene_id.0, 1);
+        let (found_id, _) = world.query::<(&SceneId, &Handle<Scene>)>().single(&world);
+        assert_eq!(found_id.0, 1);
     }
 
     #[test]

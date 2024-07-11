@@ -165,7 +165,7 @@ impl HostGlxfNode for StoreState {
         self.commands.push(move |world: &mut World| {
             let glxf_nodes = glxf_nodes.read().unwrap();
             let node_ent = glxf_nodes.get(&rep).unwrap();
-            world.commands().entity(*node_ent).clear_children();
+            world.entity_mut(*node_ent).clear_children();
         });
 
         match value {
@@ -184,7 +184,7 @@ impl HostGlxfNode for StoreState {
                     let glxf_nodes = glxf_nodes.read().unwrap();
                     let node_ent = glxf_nodes.get(&rep).unwrap();
 
-                    world.commands().entity(*asset_ent).set_parent(*node_ent);
+                    world.entity_mut(*asset_ent).set_parent(*node_ent);
                 });
 
                 data.children = Some(NodeChildren::AssetGltf(asset_rep));
@@ -201,7 +201,7 @@ impl HostGlxfNode for StoreState {
                     let glxf_nodes = glxf_nodes.read().unwrap();
                     let node_ent = glxf_nodes.get(&rep).unwrap();
 
-                    world.commands().entity(*asset_ent).set_parent(*node_ent);
+                    world.entity_mut(*asset_ent).set_parent(*node_ent);
                 });
 
                 data.children = Some(NodeChildren::AssetGlxf(res.rep()));
@@ -218,7 +218,7 @@ impl HostGlxfNode for StoreState {
 
                         for node_rep in node_reps {
                             let node_ent = glxf_nodes.get(&node_rep).unwrap();
-                            world.commands().entity(*node_ent).set_parent(*root_ent);
+                            world.entity_mut(*node_ent).set_parent(*root_ent);
                         }
                     });
                 }
@@ -244,5 +244,27 @@ impl HostGlxfNode for StoreState {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new() {
+        let mut world = World::new();
+        let root_ent = world.spawn_empty().id();
+        let mut state = StoreState::new("test".to_string(), root_ent);
+
+        let _ = HostGlxfNode::new(&mut state).unwrap();
+
+        world.commands().append(&mut state.commands);
+        world.flush_commands();
+
+        let (found_id, _) = world
+            .query::<(&GlxfNodeId, &bevy::prelude::Transform)>()
+            .single(&world);
+        assert_eq!(found_id.0, 1);
     }
 }

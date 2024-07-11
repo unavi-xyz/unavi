@@ -37,16 +37,16 @@ impl GlxfNodeBundle {
 pub struct GlxfNodeRes {
     children: Option<NodeChildren>,
     name: String,
-    parent: Option<u32>,
+    parent: Option<Resource<GlxfNodeRes>>,
     transform: Transform,
     ref_count: RefCountCell,
 }
 
 #[derive(Debug)]
 enum NodeChildren {
-    AssetGltf(u32),
-    AssetGlxf(u32),
-    Nodes(HashSet<u32>),
+    AssetGltf(Resource<GltfAssetRes>),
+    AssetGlxf(Resource<GlxfAssetRes>),
+    Nodes(Vec<Resource<GlxfNodeRes>>),
 }
 
 impl RefCount for GlxfNodeRes {
@@ -61,7 +61,7 @@ impl HostGlxfNode for StoreState {
     fn new(&mut self) -> wasm_bridge::Result<Resource<GlxfNodeRes>> {
         let node = GlxfNodeRes::default();
         let table_res = self.table.push(node)?;
-        let res = GlxfNodeRes::from_res(&table_res, &self.table)?;
+        let res = self.clone_res(&table_res)?;
         let rep = res.rep();
 
         let glxf_nodes = self.entities.glxf_nodes.clone();
@@ -129,8 +129,8 @@ impl HostGlxfNode for StoreState {
         self_: Resource<GlxfNodeRes>,
     ) -> wasm_bridge::Result<Option<Resource<GlxfNodeRes>>> {
         let data = self.table.get(&self_)?;
-        let parent = match data.parent {
-            Some(p) => Some(GlxfNodeRes::from_rep(p, &self.table)?),
+        let parent = match &data.parent {
+            Some(p) => Some(self.clone_res(p)?),
             None => None,
         };
         Ok(parent)
@@ -139,15 +139,15 @@ impl HostGlxfNode for StoreState {
         let data = self.table.get(&self_)?;
         match &data.children {
             None => Ok(None),
-            Some(NodeChildren::AssetGltf(rep)) => Ok(Some(Children::Asset(Asset::Gltf(
-                GltfAssetRes::from_rep(*rep, &self.table)?,
-            )))),
-            Some(NodeChildren::AssetGlxf(rep)) => Ok(Some(Children::Asset(Asset::Glxf(
-                GlxfAssetRes::from_rep(*rep, &self.table)?,
-            )))),
+            Some(NodeChildren::AssetGltf(res)) => {
+                Ok(Some(Children::Asset(Asset::Gltf(self.clone_res(res)?))))
+            }
+            Some(NodeChildren::AssetGlxf(res)) => {
+                Ok(Some(Children::Asset(Asset::Glxf(self.clone_res(res)?))))
+            }
             Some(NodeChildren::Nodes(reps)) => Ok(Some(Children::Nodes(
                 reps.iter()
-                    .map(|rep| GlxfNodeRes::from_rep(*rep, &self.table))
+                    .map(|res| self.clone_res(res))
                     .collect::<Result<Vec<_>, _>>()?,
             ))),
         }
@@ -157,8 +157,6 @@ impl HostGlxfNode for StoreState {
         self_: Resource<GlxfNodeRes>,
         value: Option<ChildrenBorrow>,
     ) -> wasm_bridge::Result<()> {
-        let data = self.table.get_mut(&self_)?;
-
         // Clear previous children.
         let rep = self_.rep();
         let glxf_nodes = self.entities.glxf_nodes.clone();
@@ -170,6 +168,7 @@ impl HostGlxfNode for StoreState {
 
         match value {
             None => {
+                let data = self.table.get_mut(&self_)?;
                 data.children = None;
             }
             Some(ChildrenBorrow::Asset(AssetBorrow::Gltf(res))) => {
@@ -187,7 +186,9 @@ impl HostGlxfNode for StoreState {
                     world.entity_mut(*asset_ent).set_parent(*node_ent);
                 });
 
-                data.children = Some(NodeChildren::AssetGltf(asset_rep));
+                let children = NodeChildren::AssetGltf(self.clone_res(&res)?);
+                let data = self.table.get_mut(&self_)?;
+                data.children = Some(children);
             }
             Some(ChildrenBorrow::Asset(AssetBorrow::Glxf(res))) => {
                 let asset_rep = res.rep();
@@ -204,7 +205,9 @@ impl HostGlxfNode for StoreState {
                     world.entity_mut(*asset_ent).set_parent(*node_ent);
                 });
 
-                data.children = Some(NodeChildren::AssetGlxf(res.rep()));
+                let children = NodeChildren::AssetGlxf(self.clone_res(&res)?);
+                let data = self.table.get_mut(&self_)?;
+                data.children = Some(children);
             }
             Some(ChildrenBorrow::Nodes(nodes)) => {
                 let node_reps = nodes.iter().map(|res| res.rep()).collect::<HashSet<_>>();
@@ -223,7 +226,14 @@ impl HostGlxfNode for StoreState {
                     });
                 }
 
-                data.children = Some(NodeChildren::Nodes(node_reps));
+                let children = NodeChildren::Nodes(
+                    nodes
+                        .iter()
+                        .map(|res| self.clone_res(res))
+                        .collect::<Result<_, _>>()?,
+                );
+                let data = self.table.get_mut(&self_)?;
+                data.children = Some(children);
             }
         }
 

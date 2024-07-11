@@ -29,7 +29,8 @@ impl WasiView for StoreState {
 impl StoreState {
     pub fn new(name: String, root_ent: Entity) -> Self {
         let mut table = ResourceTable::default();
-        let root_glxf = table.push(GlxfDocument::default()).unwrap();
+        let table_res = table.push(GlxfDocument::default()).unwrap();
+        let root_glxf = GlxfDocument::from_res(&table_res, &table).unwrap();
 
         let entities = EntityMaps::default();
         let mut commands = CommandQueue::default();

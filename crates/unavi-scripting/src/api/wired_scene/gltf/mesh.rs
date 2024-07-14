@@ -62,10 +62,21 @@ impl RefCount for MeshRes {
 
 impl RefResource for MeshRes {}
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct PrimitiveRes {
     pub material: Option<Resource<MaterialRes>>,
+    mesh: u32,
     ref_count: RefCountCell,
+}
+
+impl PrimitiveRes {
+    pub fn new(mesh: &Resource<MeshRes>) -> Self {
+        Self {
+            material: None,
+            mesh: mesh.rep(),
+            ref_count: RefCountCell::default(),
+        }
+    }
 }
 
 impl RefCount for PrimitiveRes {
@@ -112,7 +123,7 @@ impl HostMesh for StoreState {
         &mut self,
         self_: Resource<MeshRes>,
     ) -> wasm_bridge::Result<Resource<PrimitiveRes>> {
-        let resource = self.table.push(PrimitiveRes::default())?;
+        let resource = self.table.push(PrimitiveRes::new(&self_))?;
         let primitive_rep = resource.rep();
 
         let res = self.clone_res(&resource)?;
@@ -220,11 +231,42 @@ impl HostPrimitive for StoreState {
         self_: Resource<PrimitiveRes>,
         value: Option<Resource<Material>>,
     ) -> wasm_bridge::Result<()> {
+        let material_rep = value.as_ref().map(|r| r.rep());
+
         let res = value.and_then(|v| self.clone_res(&v).ok());
         let primitive = self.table.get_mut(&self_)?;
         primitive.material = res;
 
-        // TODO: set node primitive materials
+        let mesh = Resource::<MeshRes>::new_own(primitive.mesh);
+        let mesh = self.table.get(&mesh)?;
+
+        let mesh_nodes = mesh.nodes.iter().map(|r| r.rep()).collect::<Vec<_>>();
+
+        let materials = self.entities.materials.clone();
+        let nodes = self.entities.nodes.clone();
+        let rep = self_.rep();
+        self.commands.push(move |world: &mut World| {
+            let materials = materials.read().unwrap();
+            let nodes = nodes.read().unwrap();
+
+            let material = material_rep.map(|r| materials.get(&r).unwrap().handle.clone());
+
+            for nid in mesh_nodes {
+                let node_ent = nodes.get(&nid).unwrap(); // TODO: is this unwrap safe?
+                let node_mesh = world.get::<NodeMesh>(*node_ent).unwrap();
+
+                for (pid, p_ent) in node_mesh.node_primitives.clone() {
+                    if pid == rep {
+                        if let Some(material) = &material {
+                            world.entity_mut(p_ent).insert(material.clone());
+                        } else {
+                            // TODO: default material
+                            world.entity_mut(p_ent).remove::<Handle<StandardMaterial>>();
+                        }
+                    }
+                }
+            }
+        });
 
         Ok(())
     }

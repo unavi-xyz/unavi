@@ -12,7 +12,7 @@ use crate::{
             physics::types::{RigidBodyType, Shape, Sphere},
         },
     },
-    state::{PrimitiveState, StoreState},
+    state::{MaterialState, PrimitiveState, StoreState},
 };
 
 use crate::api::wired_scene::wired::{
@@ -130,8 +130,12 @@ impl HostNode for StoreState {
             let mesh = self.table.get_mut(mesh_res)?;
             mesh.nodes.push(res);
 
+            let mesh = self.table.get(mesh_res)?;
             for p in mesh.primitives.iter() {
-                primitive_ids.push(p.rep());
+                let p_data = self.table.get(p).unwrap();
+                let material_id = p_data.material.as_ref().map(|r| r.rep());
+
+                primitive_ids.push((p.rep(), material_id));
             }
         }
 
@@ -139,9 +143,10 @@ impl HostNode for StoreState {
         let node = self.table.get_mut(&self_)?;
         node.mesh = res;
 
+        let materials = self.entities.materials.clone();
         let mesh_rep = node.mesh.as_ref().map(|res| res.rep());
-        let primitives = self.entities.primitives.clone();
         let nodes = self.entities.nodes.clone();
+        let primitives = self.entities.primitives.clone();
         self.commands.push(move |world: &mut World| {
             let nodes = nodes.read().unwrap();
             let node_ent = nodes.get(&rep).unwrap();
@@ -160,9 +165,10 @@ impl HostNode for StoreState {
             let mut node_primitives = HashMap::new();
 
             // Add new node primitives.
+            let materials = materials.read().unwrap();
             let primitives = primitives.read().unwrap();
-            for p in primitive_ids {
-                let PrimitiveState { handle, .. } = primitives.get(&p).unwrap();
+            for (primitive_id, material_id) in primitive_ids {
+                let PrimitiveState { handle, .. } = primitives.get(&primitive_id).unwrap();
 
                 let p_ent = world
                     .spawn(PbrBundle {
@@ -171,9 +177,14 @@ impl HostNode for StoreState {
                     })
                     .set_parent(*node_ent)
                     .id();
-                node_primitives.insert(p, p_ent);
+                node_primitives.insert(primitive_id, p_ent);
 
-                // TODO: add material
+                if let Some(material_id) = material_id {
+                    let MaterialState { handle, .. } = materials.get(&material_id).unwrap();
+                    world.entity_mut(p_ent).insert(handle.clone());
+                } else {
+                    // TODO: default material
+                }
             }
 
             let mut node_ent = world.entity_mut(*node_ent);

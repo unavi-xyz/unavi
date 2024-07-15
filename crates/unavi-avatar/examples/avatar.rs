@@ -1,14 +1,14 @@
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_vrm::VrmBundle;
-use unavi_avatar::{AvatarAnimations, AvatarPlugin, FallbackAvatar};
+use unavi_avatar::{animation::AvatarAnimations, AvatarBundle, AvatarPlugin, FallbackAvatar};
 
 fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins.set(AssetPlugin {
                 file_path: "../unavi-app/assets".to_string(),
-                ..Default::default()
+                ..default()
             }),
             PanOrbitCameraPlugin,
             AvatarPlugin,
@@ -29,7 +29,7 @@ fn setup_scene(
 
     commands.spawn(DirectionalLightBundle {
         transform: Transform::from_xyz(4.5, 10.0, -7.0).looking_at(Vec3::ZERO, Vec3::Y),
-        ..Default::default()
+        ..default()
     });
 
     commands.spawn(PbrBundle {
@@ -45,7 +45,7 @@ fn setup_scene(
     commands.spawn((
         Camera3dBundle {
             transform,
-            ..Default::default()
+            ..default()
         },
         PanOrbitCamera::default(),
     ));
@@ -55,24 +55,31 @@ fn setup_scene(
 struct AvatarTwo;
 
 fn setup_avatars(asset_server: Res<AssetServer>, mut commands: Commands) {
+    let idle: Handle<AnimationClip> =
+        asset_server.load("models/character-animations.glb#Animation1");
     let walk: Handle<AnimationClip> =
         asset_server.load("models/character-animations.glb#Animation0");
 
+    // Fallback only.
     commands.spawn((
         FallbackAvatar,
         SpatialBundle {
             transform: Transform::from_xyz(-1.5, 0.0, 0.0),
-            ..Default::default()
+            ..default()
         },
     ));
 
+    // Fallback -> loaded avatar.
     commands.spawn((
-        AvatarAnimations { walk },
         AvatarTwo,
-        FallbackAvatar,
-        SpatialBundle {
-            transform: Transform::from_xyz(1.5, 0.0, 0.0),
-            ..Default::default()
+        AvatarBundle {
+            animation_player: AnimationPlayer::default(),
+            animations: AvatarAnimations { idle, walk },
+            fallback: FallbackAvatar,
+            spatial: SpatialBundle {
+                transform: Transform::from_xyz(1.5, 0.0, 0.0),
+                ..default()
+            },
         },
     ));
 }
@@ -85,7 +92,7 @@ fn load_avatar_two(
     query: Query<(Entity, &Transform), With<AvatarTwo>>,
     time: Res<Time>,
 ) {
-    if *done || time.elapsed_seconds() < 2.0 {
+    if *done || time.elapsed_seconds() < 1.5 {
         return;
     }
 
@@ -95,10 +102,10 @@ fn load_avatar_two(
         commands.entity(entity).insert(VrmBundle {
             scene_bundle: SceneBundle {
                 transform: *transform,
-                ..Default::default()
+                ..default()
             },
             vrm: asset_server.load("models/robot.vrm"),
-            ..Default::default()
+            ..default()
         });
     }
 }

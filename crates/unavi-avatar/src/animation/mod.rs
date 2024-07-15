@@ -1,19 +1,45 @@
 use bevy::prelude::*;
-
-use crate::AvatarAnimations;
+use mixamo::MixamoAnimationTargets;
 
 mod mixamo;
 
-pub fn apply_avatar_animations(
-    avatars: Query<&AvatarAnimations>,
-    clips: Res<Assets<AnimationClip>>,
+#[derive(Component)]
+pub struct AvatarAnimations {
+    pub idle: Handle<AnimationClip>,
+    pub walk: Handle<AnimationClip>,
+}
+
+#[derive(Component)]
+pub struct AvatarAnimationNodes {
+    pub idle: AnimationNodeIndex,
+    pub walk: AnimationNodeIndex,
+}
+
+pub fn create_animation_graph(
+    assets: Res<Assets<AnimationClip>>,
+    avatars: Query<(Entity, &AvatarAnimations), Without<AvatarAnimationNodes>>,
+    commands: Commands,
 ) {
-    for animations in avatars.iter() {
-        let _walk = match clips.get(animations.walk.id()) {
-            Some(a) => a,
+    for (entity, animations) in avatars.iter() {
+        let idle = match assets.get(&animations.idle) {
+            Some(v) => v,
             None => continue,
         };
 
-        // TODO: Update to Bevy 0.14 to continue work on this, animations got change.
+        let mixamo_targets = MixamoAnimationTargets::default();
+
+        // let mut graph = AnimationGraph::default();
+        // let idle = graph.add_clip(idle, 1.0, graph.root);
+        // let walk = graph.add_clip(walk, 1.0, graph.root);
+        //
+        // commands
+        //     .entity(entity)
+        //     .insert(AvatarAnimationNodes { idle, walk });
+    }
+}
+
+pub fn apply_avatar_animations(mut avatars: Query<(&AvatarAnimationNodes, &mut AnimationPlayer)>) {
+    for (animations, mut player) in avatars.iter_mut() {
+        player.play(animations.idle);
     }
 }

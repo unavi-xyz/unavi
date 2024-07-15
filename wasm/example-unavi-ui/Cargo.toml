@@ -15,6 +15,7 @@ wit-bindgen-rt.workspace = true
 package = "example:unavi-ui"
 
 [package.metadata.component.target.dependencies]
+"unavi:scene" = { path = "../unavi-scene/wit" }
 "unavi:ui" = { path = "../unavi-ui/wit" }
 "wired:input" = { path = "../../wired-protocol/spatial/wit/wired-input" }
 "wired:log" = { path = "../../wired-protocol/spatial/wit/wired-log" }

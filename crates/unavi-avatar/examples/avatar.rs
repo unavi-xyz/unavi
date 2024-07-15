@@ -56,9 +56,9 @@ struct AvatarTwo;
 
 fn setup_avatars(asset_server: Res<AssetServer>, mut commands: Commands) {
     let idle: Handle<AnimationClip> =
-        asset_server.load("models/character-animations.glb#Animation1");
-    let walk: Handle<AnimationClip> =
         asset_server.load("models/character-animations.glb#Animation0");
+    let walk: Handle<AnimationClip> =
+        asset_server.load("models/character-animations.glb#Animation1");
 
     // Fallback only.
     commands.spawn((
@@ -80,6 +80,7 @@ fn setup_avatars(asset_server: Res<AssetServer>, mut commands: Commands) {
                 transform: Transform::from_xyz(1.5, 0.0, 0.0),
                 ..default()
             },
+            transitions: AnimationTransitions::default(),
         },
     ));
 }

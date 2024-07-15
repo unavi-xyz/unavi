@@ -14,6 +14,7 @@ let
       path: type:
       (lib.hasInfix "/crates/unavi-app/assets/" path)
       || (lib.hasInfix "/crates/unavi-app/public/" path)
+      || (lib.hasInfix "/wired-protocol" path)
       || (lib.hasSuffix ".capnp" path)
       || (lib.hasSuffix ".html" path)
       || (lib.hasSuffix ".json" path)

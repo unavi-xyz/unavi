@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_vrm::VrmBundle;
 use unavi_avatar::{animation::AvatarAnimations, AvatarBundle, AvatarPlugin, FallbackAvatar};
@@ -10,6 +11,7 @@ fn main() {
                 file_path: "../unavi-app/assets".to_string(),
                 ..default()
             }),
+            WorldInspectorPlugin::default(),
             PanOrbitCameraPlugin,
             AvatarPlugin,
         ))
@@ -62,6 +64,7 @@ fn setup_avatars(asset_server: Res<AssetServer>, mut commands: Commands) {
 
     // Fallback only.
     commands.spawn((
+        Name::new("Avatar1"),
         FallbackAvatar,
         SpatialBundle {
             transform: Transform::from_xyz(-1.5, 0.0, 0.0),
@@ -71,6 +74,7 @@ fn setup_avatars(asset_server: Res<AssetServer>, mut commands: Commands) {
 
     // Fallback -> loaded avatar.
     commands.spawn((
+        Name::new("Avatar2"),
         AvatarTwo,
         AvatarBundle {
             animation_player: AnimationPlayer::default(),

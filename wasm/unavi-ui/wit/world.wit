@@ -1,8 +1,6 @@
 package unavi:ui;
 
 world guest {
-    import unavi:scene/api;
-
     export container;
     export button;
     export grid;

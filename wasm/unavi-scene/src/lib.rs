@@ -1,5 +1,5 @@
 use bindings::{
-    exports::unavi::scene::types::{Guest, Scene, SceneBorrow},
+    exports::unavi::scene::api::{Guest, Scene, SceneBorrow},
     wired::scene::glxf::{get_root, Asset, AssetBorrow, Children, GlxfScene},
 };
 use scene::SceneImpl;

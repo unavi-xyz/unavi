@@ -407,6 +407,70 @@ pub mod unavi {
             }
         }
     }
+    #[allow(dead_code)]
+    pub mod shapes {
+        #[allow(dead_code, clippy::all)]
+        pub mod api {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            pub type Mesh = super::super::super::wired::scene::mesh::Mesh;
+            pub type Vec3 = super::super::super::wired::math::types::Vec3;
+            #[allow(unused_unsafe, clippy::all)]
+            pub fn create_cuboid(size: Vec3) -> Mesh {
+                unsafe {
+                    let super::super::super::wired::math::types::Vec3 {
+                        x: x0,
+                        y: y0,
+                        z: z0,
+                    } = size;
+
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "unavi:shapes/api")]
+                    extern "C" {
+                        #[link_name = "create-cuboid"]
+                        fn wit_import(_: f32, _: f32, _: f32) -> i32;
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(_: f32, _: f32, _: f32) -> i32 {
+                        unreachable!()
+                    }
+                    let ret = wit_import(_rt::as_f32(x0), _rt::as_f32(y0), _rt::as_f32(z0));
+                    super::super::super::wired::scene::mesh::Mesh::from_handle(ret as u32)
+                }
+            }
+            #[allow(unused_unsafe, clippy::all)]
+            /// Creates a UV sphere with the given number of
+            /// longitudinal sectors and latitudinal stacks, aka horizontal and vertical resolution.
+            ///
+            /// A good default is `32` sectors and `18` stacks.
+            pub fn create_sphere(radius: f32, sectors: u32, stacks: u32) -> Mesh {
+                unsafe {
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "unavi:shapes/api")]
+                    extern "C" {
+                        #[link_name = "create-sphere"]
+                        fn wit_import(_: f32, _: i32, _: i32) -> i32;
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(_: f32, _: i32, _: i32) -> i32 {
+                        unreachable!()
+                    }
+                    let ret = wit_import(
+                        _rt::as_f32(&radius),
+                        _rt::as_i32(&sectors),
+                        _rt::as_i32(&stacks),
+                    );
+                    super::super::super::wired::scene::mesh::Mesh::from_handle(ret as u32)
+                }
+            }
+        }
+    }
 }
 #[allow(dead_code)]
 pub mod wired {
@@ -3051,57 +3115,54 @@ pub mod wired {
 #[allow(dead_code)]
 pub mod exports {
     #[allow(dead_code)]
-    pub mod unavi {
+    pub mod wired {
         #[allow(dead_code)]
-        pub mod ui {
+        pub mod script {
             #[allow(dead_code, clippy::all)]
-            pub mod container {
+            pub mod types {
                 #[used]
                 #[doc(hidden)]
                 #[cfg(target_arch = "wasm32")]
                 static __FORCE_SECTION_REF: fn() =
                     super::super::super::super::__link_custom_section_describing_imports;
                 use super::super::super::super::_rt;
-                pub type Node = super::super::super::super::wired::scene::node::Node;
-                /// Represents an area of space.
-                /// Child contents should not exceed its bounds.
 
                 #[derive(Debug)]
                 #[repr(transparent)]
-                pub struct Container {
-                    handle: _rt::Resource<Container>,
+                pub struct Script {
+                    handle: _rt::Resource<Script>,
                 }
 
-                type _ContainerRep<T> = Option<T>;
+                type _ScriptRep<T> = Option<T>;
 
-                impl Container {
+                impl Script {
                     /// Creates a new resource from the specified representation.
                     ///
                     /// This function will create a new resource handle by moving `val` onto
                     /// the heap and then passing that heap pointer to the component model to
-                    /// create a handle. The owned handle is then returned as `Container`.
-                    pub fn new<T: GuestContainer>(val: T) -> Self {
+                    /// create a handle. The owned handle is then returned as `Script`.
+                    pub fn new<T: GuestScript>(val: T) -> Self {
                         Self::type_guard::<T>();
-                        let val: _ContainerRep<T> = Some(val);
-                        let ptr: *mut _ContainerRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        let val: _ScriptRep<T> = Some(val);
+                        let ptr: *mut _ScriptRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
                         unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
                     }
 
                     /// Gets access to the underlying `T` which represents this resource.
-                    pub fn get<T: GuestContainer>(&self) -> &T {
+                    pub fn get<T: GuestScript>(&self) -> &T {
                         let ptr = unsafe { &*self.as_ptr::<T>() };
                         ptr.as_ref().unwrap()
                     }
 
                     /// Gets mutable access to the underlying `T` which represents this
                     /// resource.
-                    pub fn get_mut<T: GuestContainer>(&mut self) -> &mut T {
+                    pub fn get_mut<T: GuestScript>(&mut self) -> &mut T {
                         let ptr = unsafe { &mut *self.as_ptr::<T>() };
                         ptr.as_mut().unwrap()
                     }
 
                     /// Consumes this resource and returns the underlying `T`.
-                    pub fn into_inner<T: GuestContainer>(self) -> T {
+                    pub fn into_inner<T: GuestScript>(self) -> T {
                         let ptr = unsafe { &mut *self.as_ptr::<T>() };
                         ptr.take().unwrap()
                     }
@@ -3123,7 +3184,7 @@ pub mod exports {
                         _rt::Resource::handle(&self.handle)
                     }
 
-                    // It's theoretically possible to implement the `GuestContainer` trait twice
+                    // It's theoretically possible to implement the `GuestScript` trait twice
                     // so guard against using it with two different types here.
                     #[doc(hidden)]
                     fn type_guard<T: 'static>() {
@@ -3145,25 +3206,25 @@ pub mod exports {
                     #[doc(hidden)]
                     pub unsafe fn dtor<T: 'static>(handle: *mut u8) {
                         Self::type_guard::<T>();
-                        let _ = _rt::Box::from_raw(handle as *mut _ContainerRep<T>);
+                        let _ = _rt::Box::from_raw(handle as *mut _ScriptRep<T>);
                     }
 
-                    fn as_ptr<T: GuestContainer>(&self) -> *mut _ContainerRep<T> {
-                        Container::type_guard::<T>();
+                    fn as_ptr<T: GuestScript>(&self) -> *mut _ScriptRep<T> {
+                        Script::type_guard::<T>();
                         T::_resource_rep(self.handle()).cast()
                     }
                 }
 
-                /// A borrowed version of [`Container`] which represents a borrowed value
+                /// A borrowed version of [`Script`] which represents a borrowed value
                 /// with the lifetime `'a`.
                 #[derive(Debug)]
                 #[repr(transparent)]
-                pub struct ContainerBorrow<'a> {
+                pub struct ScriptBorrow<'a> {
                     rep: *mut u8,
-                    _marker: core::marker::PhantomData<&'a Container>,
+                    _marker: core::marker::PhantomData<&'a Script>,
                 }
 
-                impl<'a> ContainerBorrow<'a> {
+                impl<'a> ScriptBorrow<'a> {
                     #[doc(hidden)]
                     pub unsafe fn lift(rep: usize) -> Self {
                         Self {
@@ -3173,7 +3234,7 @@ pub mod exports {
                     }
 
                     /// Gets access to the underlying `T` in this resource.
-                    pub fn get<T: GuestContainer>(&self) -> &T {
+                    pub fn get<T: GuestScript>(&self) -> &T {
                         let ptr = unsafe { &mut *self.as_ptr::<T>() };
                         ptr.as_ref().unwrap()
                     }
@@ -3181,13 +3242,13 @@ pub mod exports {
                     // NB: mutable access is not allowed due to the component model allowing
                     // multiple borrows of the same resource.
 
-                    fn as_ptr<T: 'static>(&self) -> *mut _ContainerRep<T> {
-                        Container::type_guard::<T>();
+                    fn as_ptr<T: 'static>(&self) -> *mut _ScriptRep<T> {
+                        Script::type_guard::<T>();
                         self.rep.cast()
                     }
                 }
 
-                unsafe impl _rt::WasmResource for Container {
+                unsafe impl _rt::WasmResource for Script {
                     #[inline]
                     unsafe fn drop(_handle: u32) {
                         #[cfg(not(target_arch = "wasm32"))]
@@ -3195,9 +3256,9 @@ pub mod exports {
 
                         #[cfg(target_arch = "wasm32")]
                         {
-                            #[link(wasm_import_module = "[export]unavi:ui/container")]
+                            #[link(wasm_import_module = "[export]wired:script/types")]
                             extern "C" {
-                                #[link_name = "[resource-drop]container"]
+                                #[link_name = "[resource-drop]script"]
                                 fn drop(_: u32);
                             }
 
@@ -3206,191 +3267,28 @@ pub mod exports {
                     }
                 }
 
-                #[repr(u8)]
-                #[derive(Clone, Copy, Eq, PartialEq)]
-                pub enum Alignment {
-                    Center,
-                    End,
-                    Start,
-                }
-                impl ::core::fmt::Debug for Alignment {
-                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                        match self {
-                            Alignment::Center => f.debug_tuple("Alignment::Center").finish(),
-                            Alignment::End => f.debug_tuple("Alignment::End").finish(),
-                            Alignment::Start => f.debug_tuple("Alignment::Start").finish(),
-                        }
-                    }
-                }
-
-                impl Alignment {
-                    #[doc(hidden)]
-                    pub unsafe fn _lift(val: u8) -> Alignment {
-                        if !cfg!(debug_assertions) {
-                            return ::core::mem::transmute(val);
-                        }
-
-                        match val {
-                            0 => Alignment::Center,
-                            1 => Alignment::End,
-                            2 => Alignment::Start,
-
-                            _ => panic!("invalid enum discriminant"),
-                        }
-                    }
-                }
-
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_constructor_container_cabi<T: GuestContainer>() -> i32 {
+                pub unsafe fn _export_constructor_script_cabi<T: GuestScript>() -> i32 {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
-                    let result0 = Container::new(T::new());
+                    let result0 = Script::new(T::new());
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_container_root_cabi<T: GuestContainer>(
-                    arg0: *mut u8,
-                ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::root(ContainerBorrow::lift(arg0 as u32 as usize).get());
-                    (result0).take_handle() as i32
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_container_x_len_cabi<T: GuestContainer>(
-                    arg0: *mut u8,
-                ) -> f32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::x_len(ContainerBorrow::lift(arg0 as u32 as usize).get());
-                    _rt::as_f32(result0)
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_container_y_len_cabi<T: GuestContainer>(
-                    arg0: *mut u8,
-                ) -> f32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::y_len(ContainerBorrow::lift(arg0 as u32 as usize).get());
-                    _rt::as_f32(result0)
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_container_z_len_cabi<T: GuestContainer>(
-                    arg0: *mut u8,
-                ) -> f32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::z_len(ContainerBorrow::lift(arg0 as u32 as usize).get());
-                    _rt::as_f32(result0)
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_container_set_x_len_cabi<T: GuestContainer>(
+                pub unsafe fn _export_method_script_update_cabi<T: GuestScript>(
                     arg0: *mut u8,
                     arg1: f32,
                 ) {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
-                    T::set_x_len(ContainerBorrow::lift(arg0 as u32 as usize).get(), arg1);
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_container_set_y_len_cabi<T: GuestContainer>(
-                    arg0: *mut u8,
-                    arg1: f32,
-                ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    T::set_y_len(ContainerBorrow::lift(arg0 as u32 as usize).get(), arg1);
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_container_set_z_len_cabi<T: GuestContainer>(
-                    arg0: *mut u8,
-                    arg1: f32,
-                ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    T::set_z_len(ContainerBorrow::lift(arg0 as u32 as usize).get(), arg1);
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_container_align_x_cabi<T: GuestContainer>(
-                    arg0: *mut u8,
-                ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::align_x(ContainerBorrow::lift(arg0 as u32 as usize).get());
-                    result0.clone() as i32
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_container_align_y_cabi<T: GuestContainer>(
-                    arg0: *mut u8,
-                ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::align_y(ContainerBorrow::lift(arg0 as u32 as usize).get());
-                    result0.clone() as i32
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_container_align_z_cabi<T: GuestContainer>(
-                    arg0: *mut u8,
-                ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::align_z(ContainerBorrow::lift(arg0 as u32 as usize).get());
-                    result0.clone() as i32
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_container_set_align_x_cabi<T: GuestContainer>(
-                    arg0: *mut u8,
-                    arg1: i32,
-                ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    T::set_align_x(
-                        ContainerBorrow::lift(arg0 as u32 as usize).get(),
-                        Alignment::_lift(arg1 as u8),
-                    );
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_container_set_align_y_cabi<T: GuestContainer>(
-                    arg0: *mut u8,
-                    arg1: i32,
-                ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    T::set_align_y(
-                        ContainerBorrow::lift(arg0 as u32 as usize).get(),
-                        Alignment::_lift(arg1 as u8),
-                    );
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_container_set_align_z_cabi<T: GuestContainer>(
-                    arg0: *mut u8,
-                    arg1: i32,
-                ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    T::set_align_z(
-                        ContainerBorrow::lift(arg0 as u32 as usize).get(),
-                        Alignment::_lift(arg1 as u8),
-                    );
+                    T::update(ScriptBorrow::lift(arg0 as u32 as usize).get(), arg1);
                 }
                 pub trait Guest {
-                    type Container: GuestContainer;
+                    type Script: GuestScript;
                 }
-                pub trait GuestContainer: 'static {
+                pub trait GuestScript: 'static {
                     #[doc(hidden)]
                     unsafe fn _resource_new(val: *mut u8) -> u32
                     where
@@ -3404,9 +3302,9 @@ pub mod exports {
 
                         #[cfg(target_arch = "wasm32")]
                         {
-                            #[link(wasm_import_module = "[export]unavi:ui/container")]
+                            #[link(wasm_import_module = "[export]wired:script/types")]
                             extern "C" {
-                                #[link_name = "[resource-new]container"]
+                                #[link_name = "[resource-new]script"]
                                 fn new(_: *mut u8) -> u32;
                             }
                             new(val)
@@ -3426,9 +3324,9 @@ pub mod exports {
 
                         #[cfg(target_arch = "wasm32")]
                         {
-                            #[link(wasm_import_module = "[export]unavi:ui/container")]
+                            #[link(wasm_import_module = "[export]wired:script/types")]
                             extern "C" {
-                                #[link_name = "[resource-rep]container"]
+                                #[link_name = "[resource-rep]script"]
                                 fn rep(_: u32) -> *mut u8;
                             }
                             unsafe { rep(handle) }
@@ -3436,830 +3334,38 @@ pub mod exports {
                     }
 
                     fn new() -> Self;
-                    /// The root node, positioned according to the `alignment` of the container.
-                    fn root(&self) -> Node;
-                    fn x_len(&self) -> f32;
-                    fn y_len(&self) -> f32;
-                    fn z_len(&self) -> f32;
-                    fn set_x_len(&self, value: f32);
-                    fn set_y_len(&self, value: f32);
-                    fn set_z_len(&self, value: f32);
-                    fn align_x(&self) -> Alignment;
-                    fn align_y(&self) -> Alignment;
-                    fn align_z(&self) -> Alignment;
-                    fn set_align_x(&self, value: Alignment);
-                    fn set_align_y(&self, value: Alignment);
-                    fn set_align_z(&self, value: Alignment);
+                    /// Called every tick.
+                    fn update(&self, delta: f32);
                 }
                 #[doc(hidden)]
 
-                macro_rules! __export_unavi_ui_container_cabi{
-  ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
+                macro_rules! __export_wired_script_types_cabi{
+      ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
-    #[export_name = "unavi:ui/container#[constructor]container"]
-    unsafe extern "C" fn export_constructor_container() -> i32 {
-      $($path_to_types)*::_export_constructor_container_cabi::<<$ty as $($path_to_types)*::Guest>::Container>()
-    }
-    #[export_name = "unavi:ui/container#[method]container.root"]
-    unsafe extern "C" fn export_method_container_root(arg0: *mut u8,) -> i32 {
-      $($path_to_types)*::_export_method_container_root_cabi::<<$ty as $($path_to_types)*::Guest>::Container>(arg0)
-    }
-    #[export_name = "unavi:ui/container#[method]container.x-len"]
-    unsafe extern "C" fn export_method_container_x_len(arg0: *mut u8,) -> f32 {
-      $($path_to_types)*::_export_method_container_x_len_cabi::<<$ty as $($path_to_types)*::Guest>::Container>(arg0)
-    }
-    #[export_name = "unavi:ui/container#[method]container.y-len"]
-    unsafe extern "C" fn export_method_container_y_len(arg0: *mut u8,) -> f32 {
-      $($path_to_types)*::_export_method_container_y_len_cabi::<<$ty as $($path_to_types)*::Guest>::Container>(arg0)
-    }
-    #[export_name = "unavi:ui/container#[method]container.z-len"]
-    unsafe extern "C" fn export_method_container_z_len(arg0: *mut u8,) -> f32 {
-      $($path_to_types)*::_export_method_container_z_len_cabi::<<$ty as $($path_to_types)*::Guest>::Container>(arg0)
-    }
-    #[export_name = "unavi:ui/container#[method]container.set-x-len"]
-    unsafe extern "C" fn export_method_container_set_x_len(arg0: *mut u8,arg1: f32,) {
-      $($path_to_types)*::_export_method_container_set_x_len_cabi::<<$ty as $($path_to_types)*::Guest>::Container>(arg0, arg1)
-    }
-    #[export_name = "unavi:ui/container#[method]container.set-y-len"]
-    unsafe extern "C" fn export_method_container_set_y_len(arg0: *mut u8,arg1: f32,) {
-      $($path_to_types)*::_export_method_container_set_y_len_cabi::<<$ty as $($path_to_types)*::Guest>::Container>(arg0, arg1)
-    }
-    #[export_name = "unavi:ui/container#[method]container.set-z-len"]
-    unsafe extern "C" fn export_method_container_set_z_len(arg0: *mut u8,arg1: f32,) {
-      $($path_to_types)*::_export_method_container_set_z_len_cabi::<<$ty as $($path_to_types)*::Guest>::Container>(arg0, arg1)
-    }
-    #[export_name = "unavi:ui/container#[method]container.align-x"]
-    unsafe extern "C" fn export_method_container_align_x(arg0: *mut u8,) -> i32 {
-      $($path_to_types)*::_export_method_container_align_x_cabi::<<$ty as $($path_to_types)*::Guest>::Container>(arg0)
-    }
-    #[export_name = "unavi:ui/container#[method]container.align-y"]
-    unsafe extern "C" fn export_method_container_align_y(arg0: *mut u8,) -> i32 {
-      $($path_to_types)*::_export_method_container_align_y_cabi::<<$ty as $($path_to_types)*::Guest>::Container>(arg0)
-    }
-    #[export_name = "unavi:ui/container#[method]container.align-z"]
-    unsafe extern "C" fn export_method_container_align_z(arg0: *mut u8,) -> i32 {
-      $($path_to_types)*::_export_method_container_align_z_cabi::<<$ty as $($path_to_types)*::Guest>::Container>(arg0)
-    }
-    #[export_name = "unavi:ui/container#[method]container.set-align-x"]
-    unsafe extern "C" fn export_method_container_set_align_x(arg0: *mut u8,arg1: i32,) {
-      $($path_to_types)*::_export_method_container_set_align_x_cabi::<<$ty as $($path_to_types)*::Guest>::Container>(arg0, arg1)
-    }
-    #[export_name = "unavi:ui/container#[method]container.set-align-y"]
-    unsafe extern "C" fn export_method_container_set_align_y(arg0: *mut u8,arg1: i32,) {
-      $($path_to_types)*::_export_method_container_set_align_y_cabi::<<$ty as $($path_to_types)*::Guest>::Container>(arg0, arg1)
-    }
-    #[export_name = "unavi:ui/container#[method]container.set-align-z"]
-    unsafe extern "C" fn export_method_container_set_align_z(arg0: *mut u8,arg1: i32,) {
-      $($path_to_types)*::_export_method_container_set_align_z_cabi::<<$ty as $($path_to_types)*::Guest>::Container>(arg0, arg1)
-    }
+        #[export_name = "wired:script/types#[constructor]script"]
+        unsafe extern "C" fn export_constructor_script() -> i32 {
+          $($path_to_types)*::_export_constructor_script_cabi::<<$ty as $($path_to_types)*::Guest>::Script>()
+        }
+        #[export_name = "wired:script/types#[method]script.update"]
+        unsafe extern "C" fn export_method_script_update(arg0: *mut u8,arg1: f32,) {
+          $($path_to_types)*::_export_method_script_update_cabi::<<$ty as $($path_to_types)*::Guest>::Script>(arg0, arg1)
+        }
 
-    const _: () = {
-      #[doc(hidden)]
-      #[export_name = "unavi:ui/container#[dtor]container"]
-      #[allow(non_snake_case)]
-      unsafe extern "C" fn dtor(rep: *mut u8) {
-        $($path_to_types)*::Container::dtor::<
-        <$ty as $($path_to_types)*::Guest>::Container
-        >(rep)
-      }
-    };
+        const _: () = {
+          #[doc(hidden)]
+          #[export_name = "wired:script/types#[dtor]script"]
+          #[allow(non_snake_case)]
+          unsafe extern "C" fn dtor(rep: *mut u8) {
+            $($path_to_types)*::Script::dtor::<
+            <$ty as $($path_to_types)*::Guest>::Script
+            >(rep)
+          }
+        };
 
-  };);
-}
+      };);
+    }
                 #[doc(hidden)]
-                pub(crate) use __export_unavi_ui_container_cabi;
-            }
-
-            #[allow(dead_code, clippy::all)]
-            pub mod button {
-                #[used]
-                #[doc(hidden)]
-                #[cfg(target_arch = "wasm32")]
-                static __FORCE_SECTION_REF: fn() =
-                    super::super::super::super::__link_custom_section_describing_imports;
-                use super::super::super::super::_rt;
-                pub type Container =
-                    super::super::super::super::exports::unavi::ui::container::Container;
-                pub type ContainerBorrow<'a> =
-                    super::super::super::super::exports::unavi::ui::container::ContainerBorrow<'a>;
-                /// 3d interactable button.
-                /// Fills the space of its root container.
-
-                #[derive(Debug)]
-                #[repr(transparent)]
-                pub struct Button {
-                    handle: _rt::Resource<Button>,
-                }
-
-                type _ButtonRep<T> = Option<T>;
-
-                impl Button {
-                    /// Creates a new resource from the specified representation.
-                    ///
-                    /// This function will create a new resource handle by moving `val` onto
-                    /// the heap and then passing that heap pointer to the component model to
-                    /// create a handle. The owned handle is then returned as `Button`.
-                    pub fn new<T: GuestButton>(val: T) -> Self {
-                        Self::type_guard::<T>();
-                        let val: _ButtonRep<T> = Some(val);
-                        let ptr: *mut _ButtonRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
-                        unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
-                    }
-
-                    /// Gets access to the underlying `T` which represents this resource.
-                    pub fn get<T: GuestButton>(&self) -> &T {
-                        let ptr = unsafe { &*self.as_ptr::<T>() };
-                        ptr.as_ref().unwrap()
-                    }
-
-                    /// Gets mutable access to the underlying `T` which represents this
-                    /// resource.
-                    pub fn get_mut<T: GuestButton>(&mut self) -> &mut T {
-                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
-                        ptr.as_mut().unwrap()
-                    }
-
-                    /// Consumes this resource and returns the underlying `T`.
-                    pub fn into_inner<T: GuestButton>(self) -> T {
-                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
-                        ptr.take().unwrap()
-                    }
-
-                    #[doc(hidden)]
-                    pub unsafe fn from_handle(handle: u32) -> Self {
-                        Self {
-                            handle: _rt::Resource::from_handle(handle),
-                        }
-                    }
-
-                    #[doc(hidden)]
-                    pub fn take_handle(&self) -> u32 {
-                        _rt::Resource::take_handle(&self.handle)
-                    }
-
-                    #[doc(hidden)]
-                    pub fn handle(&self) -> u32 {
-                        _rt::Resource::handle(&self.handle)
-                    }
-
-                    // It's theoretically possible to implement the `GuestButton` trait twice
-                    // so guard against using it with two different types here.
-                    #[doc(hidden)]
-                    fn type_guard<T: 'static>() {
-                        use core::any::TypeId;
-                        static mut LAST_TYPE: Option<TypeId> = None;
-                        unsafe {
-                            assert!(!cfg!(target_feature = "threads"));
-                            let id = TypeId::of::<T>();
-                            match LAST_TYPE {
-                                Some(ty) => assert!(
-                                    ty == id,
-                                    "cannot use two types with this resource type"
-                                ),
-                                None => LAST_TYPE = Some(id),
-                            }
-                        }
-                    }
-
-                    #[doc(hidden)]
-                    pub unsafe fn dtor<T: 'static>(handle: *mut u8) {
-                        Self::type_guard::<T>();
-                        let _ = _rt::Box::from_raw(handle as *mut _ButtonRep<T>);
-                    }
-
-                    fn as_ptr<T: GuestButton>(&self) -> *mut _ButtonRep<T> {
-                        Button::type_guard::<T>();
-                        T::_resource_rep(self.handle()).cast()
-                    }
-                }
-
-                /// A borrowed version of [`Button`] which represents a borrowed value
-                /// with the lifetime `'a`.
-                #[derive(Debug)]
-                #[repr(transparent)]
-                pub struct ButtonBorrow<'a> {
-                    rep: *mut u8,
-                    _marker: core::marker::PhantomData<&'a Button>,
-                }
-
-                impl<'a> ButtonBorrow<'a> {
-                    #[doc(hidden)]
-                    pub unsafe fn lift(rep: usize) -> Self {
-                        Self {
-                            rep: rep as *mut u8,
-                            _marker: core::marker::PhantomData,
-                        }
-                    }
-
-                    /// Gets access to the underlying `T` in this resource.
-                    pub fn get<T: GuestButton>(&self) -> &T {
-                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
-                        ptr.as_ref().unwrap()
-                    }
-
-                    // NB: mutable access is not allowed due to the component model allowing
-                    // multiple borrows of the same resource.
-
-                    fn as_ptr<T: 'static>(&self) -> *mut _ButtonRep<T> {
-                        Button::type_guard::<T>();
-                        self.rep.cast()
-                    }
-                }
-
-                unsafe impl _rt::WasmResource for Button {
-                    #[inline]
-                    unsafe fn drop(_handle: u32) {
-                        #[cfg(not(target_arch = "wasm32"))]
-                        unreachable!();
-
-                        #[cfg(target_arch = "wasm32")]
-                        {
-                            #[link(wasm_import_module = "[export]unavi:ui/button")]
-                            extern "C" {
-                                #[link_name = "[resource-drop]button"]
-                                fn drop(_: u32);
-                            }
-
-                            drop(_handle);
-                        }
-                    }
-                }
-
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_constructor_button_cabi<T: GuestButton>() -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = Button::new(T::new());
-                    (result0).take_handle() as i32
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_button_root_cabi<T: GuestButton>(
-                    arg0: *mut u8,
-                ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::root(ButtonBorrow::lift(arg0 as u32 as usize).get());
-                    (result0).take_handle() as i32
-                }
-                pub trait Guest {
-                    type Button: GuestButton;
-                }
-                pub trait GuestButton: 'static {
-                    #[doc(hidden)]
-                    unsafe fn _resource_new(val: *mut u8) -> u32
-                    where
-                        Self: Sized,
-                    {
-                        #[cfg(not(target_arch = "wasm32"))]
-                        {
-                            let _ = val;
-                            unreachable!();
-                        }
-
-                        #[cfg(target_arch = "wasm32")]
-                        {
-                            #[link(wasm_import_module = "[export]unavi:ui/button")]
-                            extern "C" {
-                                #[link_name = "[resource-new]button"]
-                                fn new(_: *mut u8) -> u32;
-                            }
-                            new(val)
-                        }
-                    }
-
-                    #[doc(hidden)]
-                    fn _resource_rep(handle: u32) -> *mut u8
-                    where
-                        Self: Sized,
-                    {
-                        #[cfg(not(target_arch = "wasm32"))]
-                        {
-                            let _ = handle;
-                            unreachable!();
-                        }
-
-                        #[cfg(target_arch = "wasm32")]
-                        {
-                            #[link(wasm_import_module = "[export]unavi:ui/button")]
-                            extern "C" {
-                                #[link_name = "[resource-rep]button"]
-                                fn rep(_: u32) -> *mut u8;
-                            }
-                            unsafe { rep(handle) }
-                        }
-                    }
-
-                    fn new() -> Self;
-                    fn root(&self) -> Container;
-                }
-                #[doc(hidden)]
-
-                macro_rules! __export_unavi_ui_button_cabi{
-  ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
-
-    #[export_name = "unavi:ui/button#[constructor]button"]
-    unsafe extern "C" fn export_constructor_button() -> i32 {
-      $($path_to_types)*::_export_constructor_button_cabi::<<$ty as $($path_to_types)*::Guest>::Button>()
-    }
-    #[export_name = "unavi:ui/button#[method]button.root"]
-    unsafe extern "C" fn export_method_button_root(arg0: *mut u8,) -> i32 {
-      $($path_to_types)*::_export_method_button_root_cabi::<<$ty as $($path_to_types)*::Guest>::Button>(arg0)
-    }
-
-    const _: () = {
-      #[doc(hidden)]
-      #[export_name = "unavi:ui/button#[dtor]button"]
-      #[allow(non_snake_case)]
-      unsafe extern "C" fn dtor(rep: *mut u8) {
-        $($path_to_types)*::Button::dtor::<
-        <$ty as $($path_to_types)*::Guest>::Button
-        >(rep)
-      }
-    };
-
-  };);
-}
-                #[doc(hidden)]
-                pub(crate) use __export_unavi_ui_button_cabi;
-            }
-
-            #[allow(dead_code, clippy::all)]
-            pub mod grid {
-                #[used]
-                #[doc(hidden)]
-                #[cfg(target_arch = "wasm32")]
-                static __FORCE_SECTION_REF: fn() =
-                    super::super::super::super::__link_custom_section_describing_imports;
-                use super::super::super::super::_rt;
-                pub type Container =
-                    super::super::super::super::exports::unavi::ui::container::Container;
-                pub type ContainerBorrow<'a> =
-                    super::super::super::super::exports::unavi::ui::container::ContainerBorrow<'a>;
-                /// A grid will evenly space it's children in a grid across the given directions.
-
-                #[derive(Debug)]
-                #[repr(transparent)]
-                pub struct Grid {
-                    handle: _rt::Resource<Grid>,
-                }
-
-                type _GridRep<T> = Option<T>;
-
-                impl Grid {
-                    /// Creates a new resource from the specified representation.
-                    ///
-                    /// This function will create a new resource handle by moving `val` onto
-                    /// the heap and then passing that heap pointer to the component model to
-                    /// create a handle. The owned handle is then returned as `Grid`.
-                    pub fn new<T: GuestGrid>(val: T) -> Self {
-                        Self::type_guard::<T>();
-                        let val: _GridRep<T> = Some(val);
-                        let ptr: *mut _GridRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
-                        unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
-                    }
-
-                    /// Gets access to the underlying `T` which represents this resource.
-                    pub fn get<T: GuestGrid>(&self) -> &T {
-                        let ptr = unsafe { &*self.as_ptr::<T>() };
-                        ptr.as_ref().unwrap()
-                    }
-
-                    /// Gets mutable access to the underlying `T` which represents this
-                    /// resource.
-                    pub fn get_mut<T: GuestGrid>(&mut self) -> &mut T {
-                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
-                        ptr.as_mut().unwrap()
-                    }
-
-                    /// Consumes this resource and returns the underlying `T`.
-                    pub fn into_inner<T: GuestGrid>(self) -> T {
-                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
-                        ptr.take().unwrap()
-                    }
-
-                    #[doc(hidden)]
-                    pub unsafe fn from_handle(handle: u32) -> Self {
-                        Self {
-                            handle: _rt::Resource::from_handle(handle),
-                        }
-                    }
-
-                    #[doc(hidden)]
-                    pub fn take_handle(&self) -> u32 {
-                        _rt::Resource::take_handle(&self.handle)
-                    }
-
-                    #[doc(hidden)]
-                    pub fn handle(&self) -> u32 {
-                        _rt::Resource::handle(&self.handle)
-                    }
-
-                    // It's theoretically possible to implement the `GuestGrid` trait twice
-                    // so guard against using it with two different types here.
-                    #[doc(hidden)]
-                    fn type_guard<T: 'static>() {
-                        use core::any::TypeId;
-                        static mut LAST_TYPE: Option<TypeId> = None;
-                        unsafe {
-                            assert!(!cfg!(target_feature = "threads"));
-                            let id = TypeId::of::<T>();
-                            match LAST_TYPE {
-                                Some(ty) => assert!(
-                                    ty == id,
-                                    "cannot use two types with this resource type"
-                                ),
-                                None => LAST_TYPE = Some(id),
-                            }
-                        }
-                    }
-
-                    #[doc(hidden)]
-                    pub unsafe fn dtor<T: 'static>(handle: *mut u8) {
-                        Self::type_guard::<T>();
-                        let _ = _rt::Box::from_raw(handle as *mut _GridRep<T>);
-                    }
-
-                    fn as_ptr<T: GuestGrid>(&self) -> *mut _GridRep<T> {
-                        Grid::type_guard::<T>();
-                        T::_resource_rep(self.handle()).cast()
-                    }
-                }
-
-                /// A borrowed version of [`Grid`] which represents a borrowed value
-                /// with the lifetime `'a`.
-                #[derive(Debug)]
-                #[repr(transparent)]
-                pub struct GridBorrow<'a> {
-                    rep: *mut u8,
-                    _marker: core::marker::PhantomData<&'a Grid>,
-                }
-
-                impl<'a> GridBorrow<'a> {
-                    #[doc(hidden)]
-                    pub unsafe fn lift(rep: usize) -> Self {
-                        Self {
-                            rep: rep as *mut u8,
-                            _marker: core::marker::PhantomData,
-                        }
-                    }
-
-                    /// Gets access to the underlying `T` in this resource.
-                    pub fn get<T: GuestGrid>(&self) -> &T {
-                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
-                        ptr.as_ref().unwrap()
-                    }
-
-                    // NB: mutable access is not allowed due to the component model allowing
-                    // multiple borrows of the same resource.
-
-                    fn as_ptr<T: 'static>(&self) -> *mut _GridRep<T> {
-                        Grid::type_guard::<T>();
-                        self.rep.cast()
-                    }
-                }
-
-                unsafe impl _rt::WasmResource for Grid {
-                    #[inline]
-                    unsafe fn drop(_handle: u32) {
-                        #[cfg(not(target_arch = "wasm32"))]
-                        unreachable!();
-
-                        #[cfg(target_arch = "wasm32")]
-                        {
-                            #[link(wasm_import_module = "[export]unavi:ui/grid")]
-                            extern "C" {
-                                #[link_name = "[resource-drop]grid"]
-                                fn drop(_: u32);
-                            }
-
-                            drop(_handle);
-                        }
-                    }
-                }
-
-                #[repr(u8)]
-                #[derive(Clone, Copy, Eq, PartialEq)]
-                pub enum Direction {
-                    X,
-                    Y,
-                    Z,
-                    Xy,
-                    Xz,
-                    Yz,
-                    Xyz,
-                }
-                impl ::core::fmt::Debug for Direction {
-                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                        match self {
-                            Direction::X => f.debug_tuple("Direction::X").finish(),
-                            Direction::Y => f.debug_tuple("Direction::Y").finish(),
-                            Direction::Z => f.debug_tuple("Direction::Z").finish(),
-                            Direction::Xy => f.debug_tuple("Direction::Xy").finish(),
-                            Direction::Xz => f.debug_tuple("Direction::Xz").finish(),
-                            Direction::Yz => f.debug_tuple("Direction::Yz").finish(),
-                            Direction::Xyz => f.debug_tuple("Direction::Xyz").finish(),
-                        }
-                    }
-                }
-
-                impl Direction {
-                    #[doc(hidden)]
-                    pub unsafe fn _lift(val: u8) -> Direction {
-                        if !cfg!(debug_assertions) {
-                            return ::core::mem::transmute(val);
-                        }
-
-                        match val {
-                            0 => Direction::X,
-                            1 => Direction::Y,
-                            2 => Direction::Z,
-                            3 => Direction::Xy,
-                            4 => Direction::Xz,
-                            5 => Direction::Yz,
-                            6 => Direction::Xyz,
-
-                            _ => panic!("invalid enum discriminant"),
-                        }
-                    }
-                }
-
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_constructor_grid_cabi<T: GuestGrid>() -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = Grid::new(T::new());
-                    (result0).take_handle() as i32
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_grid_root_cabi<T: GuestGrid>(arg0: *mut u8) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::root(GridBorrow::lift(arg0 as u32 as usize).get());
-                    (result0).take_handle() as i32
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_grid_columns_cabi<T: GuestGrid>(arg0: *mut u8) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::columns(GridBorrow::lift(arg0 as u32 as usize).get());
-                    _rt::as_i32(result0)
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_grid_set_columns_cabi<T: GuestGrid>(
-                    arg0: *mut u8,
-                    arg1: i32,
-                ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    T::set_columns(GridBorrow::lift(arg0 as u32 as usize).get(), arg1 as u32);
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_grid_rows_cabi<T: GuestGrid>(arg0: *mut u8) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::rows(GridBorrow::lift(arg0 as u32 as usize).get());
-                    _rt::as_i32(result0)
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_grid_set_rows_cabi<T: GuestGrid>(
-                    arg0: *mut u8,
-                    arg1: i32,
-                ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    T::set_rows(GridBorrow::lift(arg0 as u32 as usize).get(), arg1 as u32);
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_grid_direction_cabi<T: GuestGrid>(
-                    arg0: *mut u8,
-                ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::direction(GridBorrow::lift(arg0 as u32 as usize).get());
-                    result0.clone() as i32
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_grid_set_direction_cabi<T: GuestGrid>(
-                    arg0: *mut u8,
-                    arg1: i32,
-                ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    T::set_direction(
-                        GridBorrow::lift(arg0 as u32 as usize).get(),
-                        Direction::_lift(arg1 as u8),
-                    );
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_grid_add_item_cabi<T: GuestGrid>(
-                    arg0: *mut u8,
-                    arg1: i32,
-                ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    T::add_item(
-                        GridBorrow::lift(arg0 as u32 as usize).get(),
-                        ContainerBorrow::lift(arg1 as u32 as usize),
-                    );
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_grid_remove_item_cabi<T: GuestGrid>(
-                    arg0: *mut u8,
-                    arg1: i32,
-                ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    T::remove_item(
-                        GridBorrow::lift(arg0 as u32 as usize).get(),
-                        ContainerBorrow::lift(arg1 as u32 as usize),
-                    );
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_grid_list_items_cabi<T: GuestGrid>(
-                    arg0: *mut u8,
-                ) -> *mut u8 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::list_items(GridBorrow::lift(arg0 as u32 as usize).get());
-                    let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
-                    let vec2 = result0;
-                    let len2 = vec2.len();
-                    let layout2 = _rt::alloc::Layout::from_size_align_unchecked(vec2.len() * 4, 4);
-                    let result2 = if layout2.size() != 0 {
-                        let ptr = _rt::alloc::alloc(layout2).cast::<u8>();
-                        if ptr.is_null() {
-                            _rt::alloc::handle_alloc_error(layout2);
-                        }
-                        ptr
-                    } else {
-                        {
-                            ::core::ptr::null_mut()
-                        }
-                    };
-                    for (i, e) in vec2.into_iter().enumerate() {
-                        let base = result2.add(i * 4);
-                        {
-                            *base.add(0).cast::<i32>() = (e).take_handle() as i32;
-                        }
-                    }
-                    *ptr1.add(4).cast::<usize>() = len2;
-                    *ptr1.add(0).cast::<*mut u8>() = result2;
-                    ptr1
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn __post_return_method_grid_list_items<T: GuestGrid>(arg0: *mut u8) {
-                    let l0 = *arg0.add(0).cast::<*mut u8>();
-                    let l1 = *arg0.add(4).cast::<usize>();
-                    let base2 = l0;
-                    let len2 = l1;
-                    _rt::cabi_dealloc(base2, len2 * 4, 4);
-                }
-                pub trait Guest {
-                    type Grid: GuestGrid;
-                }
-                pub trait GuestGrid: 'static {
-                    #[doc(hidden)]
-                    unsafe fn _resource_new(val: *mut u8) -> u32
-                    where
-                        Self: Sized,
-                    {
-                        #[cfg(not(target_arch = "wasm32"))]
-                        {
-                            let _ = val;
-                            unreachable!();
-                        }
-
-                        #[cfg(target_arch = "wasm32")]
-                        {
-                            #[link(wasm_import_module = "[export]unavi:ui/grid")]
-                            extern "C" {
-                                #[link_name = "[resource-new]grid"]
-                                fn new(_: *mut u8) -> u32;
-                            }
-                            new(val)
-                        }
-                    }
-
-                    #[doc(hidden)]
-                    fn _resource_rep(handle: u32) -> *mut u8
-                    where
-                        Self: Sized,
-                    {
-                        #[cfg(not(target_arch = "wasm32"))]
-                        {
-                            let _ = handle;
-                            unreachable!();
-                        }
-
-                        #[cfg(target_arch = "wasm32")]
-                        {
-                            #[link(wasm_import_module = "[export]unavi:ui/grid")]
-                            extern "C" {
-                                #[link_name = "[resource-rep]grid"]
-                                fn rep(_: u32) -> *mut u8;
-                            }
-                            unsafe { rep(handle) }
-                        }
-                    }
-
-                    fn new() -> Self;
-                    fn root(&self) -> Container;
-                    fn columns(&self) -> u32;
-                    fn set_columns(&self, value: u32);
-                    fn rows(&self) -> u32;
-                    fn set_rows(&self, value: u32);
-                    fn direction(&self) -> Direction;
-                    fn set_direction(&self, value: Direction);
-                    fn add_item(&self, item: ContainerBorrow<'_>);
-                    fn remove_item(&self, item: ContainerBorrow<'_>);
-                    fn list_items(&self) -> _rt::Vec<Container>;
-                }
-                #[doc(hidden)]
-
-                macro_rules! __export_unavi_ui_grid_cabi{
-  ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
-
-    #[export_name = "unavi:ui/grid#[constructor]grid"]
-    unsafe extern "C" fn export_constructor_grid() -> i32 {
-      $($path_to_types)*::_export_constructor_grid_cabi::<<$ty as $($path_to_types)*::Guest>::Grid>()
-    }
-    #[export_name = "unavi:ui/grid#[method]grid.root"]
-    unsafe extern "C" fn export_method_grid_root(arg0: *mut u8,) -> i32 {
-      $($path_to_types)*::_export_method_grid_root_cabi::<<$ty as $($path_to_types)*::Guest>::Grid>(arg0)
-    }
-    #[export_name = "unavi:ui/grid#[method]grid.columns"]
-    unsafe extern "C" fn export_method_grid_columns(arg0: *mut u8,) -> i32 {
-      $($path_to_types)*::_export_method_grid_columns_cabi::<<$ty as $($path_to_types)*::Guest>::Grid>(arg0)
-    }
-    #[export_name = "unavi:ui/grid#[method]grid.set-columns"]
-    unsafe extern "C" fn export_method_grid_set_columns(arg0: *mut u8,arg1: i32,) {
-      $($path_to_types)*::_export_method_grid_set_columns_cabi::<<$ty as $($path_to_types)*::Guest>::Grid>(arg0, arg1)
-    }
-    #[export_name = "unavi:ui/grid#[method]grid.rows"]
-    unsafe extern "C" fn export_method_grid_rows(arg0: *mut u8,) -> i32 {
-      $($path_to_types)*::_export_method_grid_rows_cabi::<<$ty as $($path_to_types)*::Guest>::Grid>(arg0)
-    }
-    #[export_name = "unavi:ui/grid#[method]grid.set-rows"]
-    unsafe extern "C" fn export_method_grid_set_rows(arg0: *mut u8,arg1: i32,) {
-      $($path_to_types)*::_export_method_grid_set_rows_cabi::<<$ty as $($path_to_types)*::Guest>::Grid>(arg0, arg1)
-    }
-    #[export_name = "unavi:ui/grid#[method]grid.direction"]
-    unsafe extern "C" fn export_method_grid_direction(arg0: *mut u8,) -> i32 {
-      $($path_to_types)*::_export_method_grid_direction_cabi::<<$ty as $($path_to_types)*::Guest>::Grid>(arg0)
-    }
-    #[export_name = "unavi:ui/grid#[method]grid.set-direction"]
-    unsafe extern "C" fn export_method_grid_set_direction(arg0: *mut u8,arg1: i32,) {
-      $($path_to_types)*::_export_method_grid_set_direction_cabi::<<$ty as $($path_to_types)*::Guest>::Grid>(arg0, arg1)
-    }
-    #[export_name = "unavi:ui/grid#[method]grid.add-item"]
-    unsafe extern "C" fn export_method_grid_add_item(arg0: *mut u8,arg1: i32,) {
-      $($path_to_types)*::_export_method_grid_add_item_cabi::<<$ty as $($path_to_types)*::Guest>::Grid>(arg0, arg1)
-    }
-    #[export_name = "unavi:ui/grid#[method]grid.remove-item"]
-    unsafe extern "C" fn export_method_grid_remove_item(arg0: *mut u8,arg1: i32,) {
-      $($path_to_types)*::_export_method_grid_remove_item_cabi::<<$ty as $($path_to_types)*::Guest>::Grid>(arg0, arg1)
-    }
-    #[export_name = "unavi:ui/grid#[method]grid.list-items"]
-    unsafe extern "C" fn export_method_grid_list_items(arg0: *mut u8,) -> *mut u8 {
-      $($path_to_types)*::_export_method_grid_list_items_cabi::<<$ty as $($path_to_types)*::Guest>::Grid>(arg0)
-    }
-    #[export_name = "cabi_post_unavi:ui/grid#[method]grid.list-items"]
-    unsafe extern "C" fn _post_return_method_grid_list_items(arg0: *mut u8,) {
-      $($path_to_types)*::__post_return_method_grid_list_items::<<$ty as $($path_to_types)*::Guest>::Grid>(arg0)
-    }
-
-    const _: () = {
-      #[doc(hidden)]
-      #[export_name = "unavi:ui/grid#[dtor]grid"]
-      #[allow(non_snake_case)]
-      unsafe extern "C" fn dtor(rep: *mut u8) {
-        $($path_to_types)*::Grid::dtor::<
-        <$ty as $($path_to_types)*::Guest>::Grid
-        >(rep)
-      }
-    };
-
-  };);
-}
-                #[doc(hidden)]
-                pub(crate) use __export_unavi_ui_grid_cabi;
-                #[repr(align(4))]
-                struct _RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                pub(crate) use __export_wired_script_types_cabi;
             }
         }
     }
@@ -4415,12 +3521,6 @@ mod _rt {
             val != 0
         }
     }
-    pub use alloc_crate::boxed::Box;
-
-    #[cfg(target_arch = "wasm32")]
-    pub fn run_ctors_once() {
-        wit_bindgen_rt::run_ctors_once();
-    }
 
     pub fn as_i32<T: AsI32>(t: T) -> i32 {
         t.as_i32()
@@ -4491,8 +3591,14 @@ mod _rt {
             self as i32
         }
     }
-    pub use alloc_crate::alloc;
+    pub use alloc_crate::boxed::Box;
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn run_ctors_once() {
+        wit_bindgen_rt::run_ctors_once();
+    }
     extern crate alloc as alloc_crate;
+    pub use alloc_crate::alloc;
 }
 
 /// Generates `#[no_mangle]` functions to export the specified type as the
@@ -4514,33 +3620,31 @@ mod _rt {
 #[allow(unused_macros)]
 #[doc(hidden)]
 
-macro_rules! __export_guest_impl {
+macro_rules! __export_script_impl {
   ($ty:ident) => (self::export!($ty with_types_in self););
   ($ty:ident with_types_in $($path_to_types_root:tt)*) => (
-  $($path_to_types_root)*::exports::unavi::ui::container::__export_unavi_ui_container_cabi!($ty with_types_in $($path_to_types_root)*::exports::unavi::ui::container);
-  $($path_to_types_root)*::exports::unavi::ui::button::__export_unavi_ui_button_cabi!($ty with_types_in $($path_to_types_root)*::exports::unavi::ui::button);
-  $($path_to_types_root)*::exports::unavi::ui::grid::__export_unavi_ui_grid_cabi!($ty with_types_in $($path_to_types_root)*::exports::unavi::ui::grid);
+  $($path_to_types_root)*::exports::wired::script::types::__export_wired_script_types_cabi!($ty with_types_in $($path_to_types_root)*::exports::wired::script::types);
   )
 }
 #[doc(inline)]
-pub(crate) use __export_guest_impl as export;
+pub(crate) use __export_script_impl as export;
 
 #[cfg(target_arch = "wasm32")]
-#[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
+#[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 5088] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xe4&\x01A\x02\x01A!\x01\
-B\x06\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\0\x01r\x04\x01xv\x01yv\x01z\
-v\x01wv\x04\0\x04quat\x03\0\x02\x01r\x03\x08rotation\x03\x05scale\x01\x0btransla\
-tion\x01\x04\0\x09transform\x03\0\x04\x03\x01\x10wired:math/types\x05\0\x01B\x11\
-\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08material\x03\x01\
-\x01i\x02\x01@\0\0\x03\x04\0\x15[constructor]material\x01\x04\x01h\x02\x01@\x01\x04\
-self\x05\0y\x04\0\x13[method]material.id\x01\x06\x01@\x01\x04self\x05\0s\x04\0\x15\
-[method]material.name\x01\x07\x01@\x02\x04self\x05\x05values\x01\0\x04\0\x19[met\
-hod]material.set-name\x01\x08\x01@\x01\x04self\x05\0\x01\x04\0\x16[method]materi\
-al.color\x01\x09\x01@\x02\x04self\x05\x05value\x01\x01\0\x04\0\x1a[method]materi\
-al.set-color\x01\x0a\x03\x01\x14wired:scene/material\x05\x01\x02\x03\0\x01\x08ma\
-terial\x01B)\x02\x03\x02\x01\x02\x04\0\x08material\x03\0\0\x04\0\x09primitive\x03\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4120] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x9b\x1f\x01A\x02\x01\
+A\x1e\x01B\x06\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\0\x01r\x04\x01xv\x01\
+yv\x01zv\x01wv\x04\0\x04quat\x03\0\x02\x01r\x03\x08rotation\x03\x05scale\x01\x0b\
+translation\x01\x04\0\x09transform\x03\0\x04\x03\x01\x10wired:math/types\x05\0\x01\
+B\x11\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08material\x03\
+\x01\x01i\x02\x01@\0\0\x03\x04\0\x15[constructor]material\x01\x04\x01h\x02\x01@\x01\
+\x04self\x05\0y\x04\0\x13[method]material.id\x01\x06\x01@\x01\x04self\x05\0s\x04\
+\0\x15[method]material.name\x01\x07\x01@\x02\x04self\x05\x05values\x01\0\x04\0\x19\
+[method]material.set-name\x01\x08\x01@\x01\x04self\x05\0\x01\x04\0\x16[method]ma\
+terial.color\x01\x09\x01@\x02\x04self\x05\x05value\x01\x01\0\x04\0\x1a[method]ma\
+terial.set-color\x01\x0a\x03\x01\x14wired:scene/material\x05\x01\x02\x03\0\x01\x08\
+material\x01B)\x02\x03\x02\x01\x02\x04\0\x08material\x03\0\0\x04\0\x09primitive\x03\
 \x01\x04\0\x04mesh\x03\x01\x01h\x02\x01@\x01\x04self\x04\0y\x04\0\x14[method]pri\
 mitive.id\x01\x05\x01i\x01\x01k\x06\x01@\x01\x04self\x04\0\x07\x04\0\x1a[method]\
 primitive.material\x01\x08\x01h\x01\x01k\x09\x01@\x02\x04self\x04\x05value\x0a\x01\
@@ -4614,36 +3718,15 @@ ue\x01\x01\0\x04\0\x1b[method]scene.set-transform\x01\x0e\x01@\x01\x04self\x07\0
 \x7f\x04\0\x14[method]scene.active\x01\x0f\x01@\x02\x04self\x07\x05value\x7f\x01\
 \0\x04\0\x18[method]scene.set-active\x01\x10\x01p\x05\x01@\0\0\x11\x04\0\x0blist\
 -scenes\x01\x12\x01@\x01\x05value\x07\x01\0\x04\0\x09add-scene\x01\x13\x04\0\x0c\
-remove-scene\x01\x13\x03\x01\x0funavi:scene/api\x05\x11\x01B\x1c\x02\x03\x02\x01\
-\x10\x04\0\x04node\x03\0\0\x04\0\x09container\x03\x01\x01m\x03\x06center\x03end\x05\
-start\x04\0\x09alignment\x03\0\x03\x01i\x02\x01@\0\0\x05\x04\0\x16[constructor]c\
-ontainer\x01\x06\x01h\x02\x01i\x01\x01@\x01\x04self\x07\0\x08\x04\0\x16[method]c\
-ontainer.root\x01\x09\x01@\x01\x04self\x07\0v\x04\0\x17[method]container.x-len\x01\
-\x0a\x04\0\x17[method]container.y-len\x01\x0a\x04\0\x17[method]container.z-len\x01\
-\x0a\x01@\x02\x04self\x07\x05valuev\x01\0\x04\0\x1b[method]container.set-x-len\x01\
-\x0b\x04\0\x1b[method]container.set-y-len\x01\x0b\x04\0\x1b[method]container.set\
--z-len\x01\x0b\x01@\x01\x04self\x07\0\x04\x04\0\x19[method]container.align-x\x01\
-\x0c\x04\0\x19[method]container.align-y\x01\x0c\x04\0\x19[method]container.align\
--z\x01\x0c\x01@\x02\x04self\x07\x05value\x04\x01\0\x04\0\x1d[method]container.se\
-t-align-x\x01\x0d\x04\0\x1d[method]container.set-align-y\x01\x0d\x04\0\x1d[metho\
-d]container.set-align-z\x01\x0d\x04\x01\x12unavi:ui/container\x05\x12\x02\x03\0\x08\
-\x09container\x01B\x0a\x02\x03\x02\x01\x13\x04\0\x09container\x03\0\0\x04\0\x06b\
-utton\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\x13[constructor]button\x01\x04\x01h\x02\
-\x01i\x01\x01@\x01\x04self\x05\0\x06\x04\0\x13[method]button.root\x01\x07\x04\x01\
-\x0funavi:ui/button\x05\x14\x01B\x1d\x02\x03\x02\x01\x13\x04\0\x09container\x03\0\
-\0\x04\0\x04grid\x03\x01\x01m\x07\x01x\x01y\x01z\x02xy\x02xz\x02yz\x03xyz\x04\0\x09\
-direction\x03\0\x03\x01i\x02\x01@\0\0\x05\x04\0\x11[constructor]grid\x01\x06\x01\
-h\x02\x01i\x01\x01@\x01\x04self\x07\0\x08\x04\0\x11[method]grid.root\x01\x09\x01\
-@\x01\x04self\x07\0y\x04\0\x14[method]grid.columns\x01\x0a\x01@\x02\x04self\x07\x05\
-valuey\x01\0\x04\0\x18[method]grid.set-columns\x01\x0b\x04\0\x11[method]grid.row\
-s\x01\x0a\x04\0\x15[method]grid.set-rows\x01\x0b\x01@\x01\x04self\x07\0\x04\x04\0\
-\x16[method]grid.direction\x01\x0c\x01@\x02\x04self\x07\x05value\x04\x01\0\x04\0\
-\x1a[method]grid.set-direction\x01\x0d\x01h\x01\x01@\x02\x04self\x07\x04item\x0e\
-\x01\0\x04\0\x15[method]grid.add-item\x01\x0f\x04\0\x18[method]grid.remove-item\x01\
-\x0f\x01p\x08\x01@\x01\x04self\x07\0\x10\x04\0\x17[method]grid.list-items\x01\x11\
-\x04\x01\x0dunavi:ui/grid\x05\x15\x04\x01\x0eunavi:ui/guest\x04\0\x0b\x0b\x01\0\x05\
-guest\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.\
-1\x10wit-bindgen-rust\x060.25.0";
+remove-scene\x01\x13\x03\x01\x0funavi:scene/api\x05\x11\x01B\x09\x02\x03\x02\x01\
+\x0a\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\x02\x01i\x01\x01\
+@\x01\x04size\x03\0\x04\x04\0\x0dcreate-cuboid\x01\x05\x01@\x03\x06radiusv\x07se\
+ctorsy\x06stacksy\0\x04\x04\0\x0dcreate-sphere\x01\x06\x03\x01\x10unavi:shapes/a\
+pi\x05\x12\x01B\x07\x04\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constr\
+uctor]script\x01\x02\x01h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[metho\
+d]script.update\x01\x04\x04\x01\x12wired:script/types\x05\x13\x04\x01\x1aexample\
+:unavi-scene/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0c\
+processed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

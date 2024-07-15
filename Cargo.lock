@@ -11848,6 +11848,7 @@ dependencies = [
  "bevy_panorbit_camera",
  "bevy_vrm",
  "paste",
+ "serde_json",
 ]
 
 [[package]]

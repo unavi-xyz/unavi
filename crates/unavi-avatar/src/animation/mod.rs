@@ -1,7 +1,12 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
 use mixamo::MixamoAnimationTargets;
+use vrm::VrmAnimationTargets;
 
+mod bone_chain;
 mod mixamo;
+mod vrm;
 
 #[derive(Component)]
 pub struct AvatarAnimations {
@@ -16,30 +21,70 @@ pub struct AvatarAnimationNodes {
 }
 
 pub fn create_animation_graph(
-    assets: Res<Assets<AnimationClip>>,
+    mut assets: ResMut<Assets<AnimationClip>>,
     avatars: Query<(Entity, &AvatarAnimations), Without<AvatarAnimationNodes>>,
-    commands: Commands,
+    mut commands: Commands,
 ) {
     for (entity, animations) in avatars.iter() {
-        let idle = match assets.get(&animations.idle) {
-            Some(v) => v,
-            None => continue,
-        };
-
-        let mixamo_targets = MixamoAnimationTargets::default();
-
-        // let mut graph = AnimationGraph::default();
-        // let idle = graph.add_clip(idle, 1.0, graph.root);
-        // let walk = graph.add_clip(walk, 1.0, graph.root);
-        //
-        // commands
-        //     .entity(entity)
-        //     .insert(AvatarAnimationNodes { idle, walk });
+        if let Some(nodes) = create_animation_nodes(&mut assets, animations) {
+            commands.entity(entity).insert(nodes);
+        }
     }
 }
 
-pub fn apply_avatar_animations(mut avatars: Query<(&AvatarAnimationNodes, &mut AnimationPlayer)>) {
-    for (animations, mut player) in avatars.iter_mut() {
-        player.play(animations.idle);
+fn create_animation_nodes(
+    assets: &mut Assets<AnimationClip>,
+    animations: &AvatarAnimations,
+) -> Option<AvatarAnimationNodes> {
+    let mut graph = AnimationGraph::default();
+
+    let idle = add_animation_clip(assets, &mut graph, &animations.idle)?;
+    let walk = add_animation_clip(assets, &mut graph, &animations.walk)?;
+
+    Some(AvatarAnimationNodes { idle, walk })
+}
+
+fn add_animation_clip(
+    assets: &mut Assets<AnimationClip>,
+    graph: &mut AnimationGraph,
+    handle: &Handle<AnimationClip>,
+) -> Option<AnimationNodeIndex> {
+    let clip = assets.get_mut(handle)?;
+
+    let mixamo_targets = MixamoAnimationTargets::default();
+    let vrm_targets = VrmAnimationTargets::default();
+
+    let curves = clip.curves_mut();
+
+    for (name, target) in mixamo_targets.0 {
+        if let Some(curve) = curves.remove(&target) {
+            let vrm_target = vrm_targets.0[&name];
+            curves.insert(vrm_target, curve);
+        }
+    }
+
+    Some(graph.add_clip(handle.clone(), 1.0, graph.root))
+}
+
+#[derive(Component)]
+pub struct Idle;
+
+pub fn play_avatar_animations(
+    mut commands: Commands,
+    mut avatars: Query<
+        (
+            Entity,
+            &AvatarAnimationNodes,
+            &mut AnimationTransitions,
+            &mut AnimationPlayer,
+        ),
+        Without<Idle>,
+    >,
+) {
+    for (entity, animations, mut transitions, mut player) in avatars.iter_mut() {
+        transitions
+            .play(&mut player, animations.idle, Duration::ZERO)
+            .repeat();
+        commands.entity(entity).insert(Idle);
     }
 }

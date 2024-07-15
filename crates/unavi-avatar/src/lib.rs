@@ -13,9 +13,9 @@ impl Plugin for AvatarPlugin {
             .register_type::<bevy_vrm::SpringBones>()
             .add_systems(Startup, fallback::init_fallback_assets)
             .add_systems(
-                FixedUpdate,
+                Update,
                 (
-                    animation::apply_avatar_animations,
+                    animation::play_avatar_animations,
                     animation::create_animation_graph,
                     fallback::despawn_fallback_children,
                     fallback::remove_fallback_avatar,
@@ -31,6 +31,7 @@ pub struct AvatarBundle {
     pub animations: AvatarAnimations,
     pub fallback: FallbackAvatar,
     pub spatial: SpatialBundle,
+    pub transitions: AnimationTransitions,
 }
 
 #[derive(Component, Default)]

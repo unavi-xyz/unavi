@@ -1,5 +1,7 @@
-use bevy::{animation::AnimationTargetId, prelude::*, utils::HashMap};
+use bevy::{animation::AnimationTargetId, utils::HashMap};
 use bevy_vrm::BoneName;
+
+use crate::animation::bone_chain::BoneChain;
 
 pub struct MixamoAnimationTargets(pub HashMap<BoneName, AnimationTargetId>);
 
@@ -65,56 +67,30 @@ macro_rules! leg {
 impl Default for MixamoAnimationTargets {
     fn default() -> Self {
         let mut map = HashMap::default();
-        let mut chain = BoneChain::default();
+        let mut chain = BoneChain::new(vec!["Armature".to_string()], "mixamorig:");
 
         map.insert(BoneName::Hips, chain.push_target("Hips"));
 
-        {
-            let mut chain = chain.clone();
-
-            map.insert(BoneName::Spine, chain.push_target("Spine"));
-            map.insert(BoneName::Chest, chain.push_target("Spine1"));
-            map.insert(BoneName::UpperChest, chain.push_target("Spine2"));
-
-            {
-                let mut chain = chain.clone();
-
-                map.insert(BoneName::Neck, chain.push_target("Neck"));
-                map.insert(BoneName::Head, chain.push_target("Head"));
-            }
-
-            arm!(map, chain, Left);
-            arm!(map, chain, Right);
-        }
-
         leg!(map, chain, Left);
         leg!(map, chain, Right);
+
+        map.insert(BoneName::Spine, chain.push_target("Spine"));
+        map.insert(BoneName::Chest, chain.push_target("Spine1"));
+        map.insert(BoneName::UpperChest, chain.push_target("Spine2"));
+
+        arm!(map, chain, Left);
+        arm!(map, chain, Right);
+
+        map.insert(BoneName::Neck, chain.push_target("Neck"));
+        map.insert(BoneName::Head, chain.push_target("Head"));
 
         Self(map)
     }
 }
 
-#[derive(Default, Clone)]
-struct BoneChain<'a>(Vec<&'a str>);
-
-impl<'a> BoneChain<'a> {
-    fn push_target(&mut self, name: &'a str) -> AnimationTargetId {
-        self.0.push(name);
-        self.target()
-    }
-
-    fn target(&self) -> AnimationTargetId {
-        let mut names: Vec<Name> = vec!["Armature".into()];
-        for value in self.0.iter() {
-            names.push(format!("mixamorig:{}", value).into());
-        }
-        AnimationTargetId::from_names(names.iter())
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use bevy::{gltf::GltfPlugin, render::mesh::skinning::SkinnedMeshInverseBindposes};
+    use bevy::{gltf::GltfPlugin, prelude::*, render::mesh::skinning::SkinnedMeshInverseBindposes};
 
     use super::*;
 

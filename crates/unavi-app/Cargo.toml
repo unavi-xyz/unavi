@@ -35,7 +35,7 @@ web-sys = { workspace = true, features = ["Location", "UrlSearchParams", "Window
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 anyhow.workspace = true
 reqwest.workspace = true
-self_update = { version = "0.39.0", features = ["archive-zip"], optional = true }
+self_update = { version = "0.41.0", features = ["archive-zip"], optional = true }
 semver.workspace = true
 surrealdb = { workspace = true, features = ["kv-surrealkv"] }
 tokio = { workspace = true, features = ["rt-multi-thread"] }

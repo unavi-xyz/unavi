@@ -4931,7 +4931,7 @@ pub mod exports {
         #[allow(dead_code)]
         pub mod scene {
             #[allow(dead_code, clippy::all)]
-            pub mod types {
+            pub mod api {
                 #[used]
                 #[doc(hidden)]
                 #[cfg(target_arch = "wasm32")]
@@ -5073,7 +5073,7 @@ pub mod exports {
 
                         #[cfg(target_arch = "wasm32")]
                         {
-                            #[link(wasm_import_module = "[export]unavi:scene/types")]
+                            #[link(wasm_import_module = "[export]unavi:scene/api")]
                             extern "C" {
                                 #[link_name = "[resource-drop]scene"]
                                 fn drop(_: u32);
@@ -5347,7 +5347,7 @@ pub mod exports {
 
                         #[cfg(target_arch = "wasm32")]
                         {
-                            #[link(wasm_import_module = "[export]unavi:scene/types")]
+                            #[link(wasm_import_module = "[export]unavi:scene/api")]
                             extern "C" {
                                 #[link_name = "[resource-new]scene"]
                                 fn new(_: *mut u8) -> u32;
@@ -5369,7 +5369,7 @@ pub mod exports {
 
                         #[cfg(target_arch = "wasm32")]
                         {
-                            #[link(wasm_import_module = "[export]unavi:scene/types")]
+                            #[link(wasm_import_module = "[export]unavi:scene/api")]
                             extern "C" {
                                 #[link_name = "[resource-rep]scene"]
                                 fn rep(_: u32) -> *mut u8;
@@ -5389,65 +5389,65 @@ pub mod exports {
                 }
                 #[doc(hidden)]
 
-                macro_rules! __export_unavi_scene_types_cabi{
+                macro_rules! __export_unavi_scene_api_cabi{
   ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
-    #[export_name = "unavi:scene/types#list-scenes"]
+    #[export_name = "unavi:scene/api#list-scenes"]
     unsafe extern "C" fn export_list_scenes() -> *mut u8 {
       $($path_to_types)*::_export_list_scenes_cabi::<$ty>()
     }
-    #[export_name = "cabi_post_unavi:scene/types#list-scenes"]
+    #[export_name = "cabi_post_unavi:scene/api#list-scenes"]
     unsafe extern "C" fn _post_return_list_scenes(arg0: *mut u8,) {
       $($path_to_types)*::__post_return_list_scenes::<$ty>(arg0)
     }
-    #[export_name = "unavi:scene/types#add-scene"]
+    #[export_name = "unavi:scene/api#add-scene"]
     unsafe extern "C" fn export_add_scene(arg0: i32,) {
       $($path_to_types)*::_export_add_scene_cabi::<$ty>(arg0)
     }
-    #[export_name = "unavi:scene/types#remove-scene"]
+    #[export_name = "unavi:scene/api#remove-scene"]
     unsafe extern "C" fn export_remove_scene(arg0: i32,) {
       $($path_to_types)*::_export_remove_scene_cabi::<$ty>(arg0)
     }
-    #[export_name = "unavi:scene/types#[constructor]scene"]
+    #[export_name = "unavi:scene/api#[constructor]scene"]
     unsafe extern "C" fn export_constructor_scene() -> i32 {
       $($path_to_types)*::_export_constructor_scene_cabi::<<$ty as $($path_to_types)*::Guest>::Scene>()
     }
-    #[export_name = "unavi:scene/types#[method]scene.list-nodes"]
+    #[export_name = "unavi:scene/api#[method]scene.list-nodes"]
     unsafe extern "C" fn export_method_scene_list_nodes(arg0: *mut u8,) -> *mut u8 {
       $($path_to_types)*::_export_method_scene_list_nodes_cabi::<<$ty as $($path_to_types)*::Guest>::Scene>(arg0)
     }
-    #[export_name = "cabi_post_unavi:scene/types#[method]scene.list-nodes"]
+    #[export_name = "cabi_post_unavi:scene/api#[method]scene.list-nodes"]
     unsafe extern "C" fn _post_return_method_scene_list_nodes(arg0: *mut u8,) {
       $($path_to_types)*::__post_return_method_scene_list_nodes::<<$ty as $($path_to_types)*::Guest>::Scene>(arg0)
     }
-    #[export_name = "unavi:scene/types#[method]scene.add-node"]
+    #[export_name = "unavi:scene/api#[method]scene.add-node"]
     unsafe extern "C" fn export_method_scene_add_node(arg0: *mut u8,arg1: i32,) {
       $($path_to_types)*::_export_method_scene_add_node_cabi::<<$ty as $($path_to_types)*::Guest>::Scene>(arg0, arg1)
     }
-    #[export_name = "unavi:scene/types#[method]scene.remove-node"]
+    #[export_name = "unavi:scene/api#[method]scene.remove-node"]
     unsafe extern "C" fn export_method_scene_remove_node(arg0: *mut u8,arg1: i32,) {
       $($path_to_types)*::_export_method_scene_remove_node_cabi::<<$ty as $($path_to_types)*::Guest>::Scene>(arg0, arg1)
     }
-    #[export_name = "unavi:scene/types#[method]scene.transform"]
+    #[export_name = "unavi:scene/api#[method]scene.transform"]
     unsafe extern "C" fn export_method_scene_transform(arg0: *mut u8,) -> *mut u8 {
       $($path_to_types)*::_export_method_scene_transform_cabi::<<$ty as $($path_to_types)*::Guest>::Scene>(arg0)
     }
-    #[export_name = "unavi:scene/types#[method]scene.set-transform"]
+    #[export_name = "unavi:scene/api#[method]scene.set-transform"]
     unsafe extern "C" fn export_method_scene_set_transform(arg0: *mut u8,arg1: f32,arg2: f32,arg3: f32,arg4: f32,arg5: f32,arg6: f32,arg7: f32,arg8: f32,arg9: f32,arg10: f32,) {
       $($path_to_types)*::_export_method_scene_set_transform_cabi::<<$ty as $($path_to_types)*::Guest>::Scene>(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10)
     }
-    #[export_name = "unavi:scene/types#[method]scene.active"]
+    #[export_name = "unavi:scene/api#[method]scene.active"]
     unsafe extern "C" fn export_method_scene_active(arg0: *mut u8,) -> i32 {
       $($path_to_types)*::_export_method_scene_active_cabi::<<$ty as $($path_to_types)*::Guest>::Scene>(arg0)
     }
-    #[export_name = "unavi:scene/types#[method]scene.set-active"]
+    #[export_name = "unavi:scene/api#[method]scene.set-active"]
     unsafe extern "C" fn export_method_scene_set_active(arg0: *mut u8,arg1: i32,) {
       $($path_to_types)*::_export_method_scene_set_active_cabi::<<$ty as $($path_to_types)*::Guest>::Scene>(arg0, arg1)
     }
 
     const _: () = {
       #[doc(hidden)]
-      #[export_name = "unavi:scene/types#[dtor]scene"]
+      #[export_name = "unavi:scene/api#[dtor]scene"]
       #[allow(non_snake_case)]
       unsafe extern "C" fn dtor(rep: *mut u8) {
         $($path_to_types)*::Scene::dtor::<
@@ -5459,7 +5459,7 @@ pub mod exports {
   };);
 }
                 #[doc(hidden)]
-                pub(crate) use __export_unavi_scene_types_cabi;
+                pub(crate) use __export_unavi_scene_api_cabi;
                 #[repr(align(4))]
                 struct _RetArea([::core::mem::MaybeUninit<u8>; 40]);
                 static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 40]);
@@ -5650,7 +5650,7 @@ mod _rt {
 macro_rules! __export_guest_impl {
   ($ty:ident) => (self::export!($ty with_types_in self););
   ($ty:ident with_types_in $($path_to_types_root:tt)*) => (
-  $($path_to_types_root)*::exports::unavi::scene::types::__export_unavi_scene_types_cabi!($ty with_types_in $($path_to_types_root)*::exports::unavi::scene::types);
+  $($path_to_types_root)*::exports::unavi::scene::api::__export_unavi_scene_api_cabi!($ty with_types_in $($path_to_types_root)*::exports::unavi::scene::api);
   )
 }
 #[doc(inline)]
@@ -5659,8 +5659,8 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6994] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xd65\x01A\x02\x01A\"\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6992] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xd45\x01A\x02\x01A\"\
 \x01B\x06\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\0\x01r\x04\x01xv\x01yv\x01\
 zv\x01wv\x04\0\x04quat\x03\0\x02\x01r\x03\x08rotation\x03\x05scale\x01\x0btransl\
 ation\x01\x04\0\x09transform\x03\0\x04\x03\x01\x10wired:math/types\x05\0\x01B\x11\
@@ -5813,7 +5813,7 @@ thod]scene.set-transform\x01\x0e\x01@\x01\x04self\x07\0\x7f\x04\0\x14[method]sce
 ne.active\x01\x0f\x01@\x02\x04self\x07\x05value\x7f\x01\0\x04\0\x18[method]scene\
 .set-active\x01\x10\x01p\x05\x01@\0\0\x11\x04\0\x0blist-scenes\x01\x12\x01@\x01\x05\
 value\x07\x01\0\x04\0\x09add-scene\x01\x13\x04\0\x0cremove-scene\x01\x13\x04\x01\
-\x11unavi:scene/types\x05\x16\x04\x01\x11unavi:scene/guest\x04\0\x0b\x0b\x01\0\x05\
+\x0funavi:scene/api\x05\x16\x04\x01\x11unavi:scene/guest\x04\0\x0b\x0b\x01\0\x05\
 guest\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.\
 1\x10wit-bindgen-rust\x060.25.0";
 

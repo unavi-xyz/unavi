@@ -1,5 +1,5 @@
 use crate::bindings::{
-    exports::unavi::scene::types::GuestScene,
+    exports::unavi::scene::api::GuestScene,
     wired::{
         math::types::Transform,
         scene::{

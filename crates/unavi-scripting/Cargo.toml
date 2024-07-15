@@ -20,7 +20,7 @@ wasm-bridge = { git = "https://github.com/kayhhh/wasm-bridge.git", branch = "all
 wasm-bridge-wasi = { git = "https://github.com/kayhhh/wasm-bridge.git", branch = "all" }
 
 [dev-dependencies]
-bevy-inspector-egui = "0.25.1"
+bevy-inspector-egui.workspace = true
 bevy_panorbit_camera.workspace = true
 concat-idents = "1.1.5"
 tracing-test = { workspace = true, features = ["no-env-filter"] }

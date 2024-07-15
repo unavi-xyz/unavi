@@ -15,4 +15,5 @@ paste = "1.0.15"
 serde_json.workspace = true
 
 [dev-dependencies]
+bevy-inspector-egui.workspace = true
 bevy_panorbit_camera.workspace = true

@@ -11,6 +11,7 @@ workspace = true
 [dependencies]
 bevy.workspace = true
 bevy_vrm.workspace = true
+paste = "1.0.15"
 
 [dev-dependencies]
 bevy_panorbit_camera.workspace = true

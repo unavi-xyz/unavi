@@ -19,7 +19,7 @@ impl GuestScript for Script {
         add_scene(&scene);
 
         let button = Button::new();
-        scene.add_node(&button.root().root());
+        // scene.add_node(&button.root().root());
 
         Script { button }
     }

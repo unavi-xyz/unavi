@@ -1,6 +1,6 @@
-use animation::AvatarAnimations;
+use animation::AvatarAnimationClips;
 use bevy::prelude::*;
-use bevy_vrm::VrmPlugin;
+use bevy_vrm::VrmPlugins;
 
 pub mod animation;
 mod fallback;
@@ -9,8 +9,7 @@ pub struct AvatarPlugin;
 
 impl Plugin for AvatarPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(VrmPlugin)
-            .register_type::<bevy_vrm::SpringBones>()
+        app.add_plugins(VrmPlugins)
             .add_systems(Startup, fallback::init_fallback_assets)
             .add_systems(
                 Update,
@@ -27,11 +26,9 @@ impl Plugin for AvatarPlugin {
 
 #[derive(Bundle)]
 pub struct AvatarBundle {
-    pub animation_player: AnimationPlayer,
-    pub animations: AvatarAnimations,
+    pub animations: AvatarAnimationClips,
     pub fallback: FallbackAvatar,
     pub spatial: SpatialBundle,
-    pub transitions: AnimationTransitions,
 }
 
 #[derive(Component, Default)]

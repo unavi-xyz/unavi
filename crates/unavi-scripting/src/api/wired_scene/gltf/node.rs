@@ -343,12 +343,8 @@ impl HostNode for StoreState {
             Some(value) => {
                 let collider = self.table.get(value)?;
                 let collider = match collider.shape {
-                    Shape::Sphere(Sphere { radius }) => {
-                        bevy_xpbd_3d::prelude::Collider::sphere(radius)
-                    }
-                    Shape::Cuboid(Vec3 { x, y, z }) => {
-                        bevy_xpbd_3d::prelude::Collider::cuboid(x, y, z)
-                    }
+                    Shape::Sphere(Sphere { radius }) => avian3d::prelude::Collider::sphere(radius),
+                    Shape::Cuboid(Vec3 { x, y, z }) => avian3d::prelude::Collider::cuboid(x, y, z),
                 };
                 Some(collider)
             }
@@ -383,9 +379,9 @@ impl HostNode for StoreState {
             Some(value) => {
                 let rigid_body = self.table.get(value)?;
                 let rigid_body = match rigid_body.rigid_body_type {
-                    RigidBodyType::Dynamic => bevy_xpbd_3d::prelude::RigidBody::Dynamic,
-                    RigidBodyType::Fixed => bevy_xpbd_3d::prelude::RigidBody::Static,
-                    RigidBodyType::Kinematic => bevy_xpbd_3d::prelude::RigidBody::Kinematic,
+                    RigidBodyType::Dynamic => avian3d::prelude::RigidBody::Dynamic,
+                    RigidBodyType::Fixed => avian3d::prelude::RigidBody::Static,
+                    RigidBodyType::Kinematic => avian3d::prelude::RigidBody::Kinematic,
                 };
                 Some(rigid_body)
             }

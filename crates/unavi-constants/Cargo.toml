@@ -9,4 +9,4 @@ edition.workspace = true
 workspace = true
 
 [dependencies]
-bevy_xpbd_3d.workspace = true
+avian3d.workspace = true

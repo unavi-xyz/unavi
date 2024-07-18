@@ -1,5 +1,5 @@
+use avian3d::prelude::*;
 use bevy::{prelude::*, render::mesh::VertexAttributeValues};
-use bevy_xpbd_3d::{components::RigidBody, plugins::collision::Collider};
 
 use crate::{InstanceRecord, InstanceServer, WorldState};
 

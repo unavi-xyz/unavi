@@ -17,6 +17,7 @@ type_complexity = "allow"
 
 [workspace.dependencies]
 anyhow = "1.0.82"
+avian3d = { version = "0.1.0", features = ["simd"] }
 axum = "0.7.5"
 axum-server = "0.6.0"
 base64 = "0.22.0"
@@ -25,7 +26,6 @@ bevy-inspector-egui = "0.25.1"
 bevy_async_task = "0.2.0"
 bevy_panorbit_camera = "0.19.0"
 bevy_vrm = { git = "https://github.com/unavi-xyz/bevy_vrm" }
-bevy_xpbd_3d = { version = "0.5.0", features = ["simd"] }
 capnp = "0.19.4"
 capnp-rpc = "0.19.1"
 clap = { version = "4.5.4", features = ["derive"] }

@@ -1,7 +1,5 @@
 use bevy::{animation::AnimationTargetId, utils::HashMap};
-use bevy_vrm::BoneName;
-
-use crate::animation::bone_chain::BoneChain;
+use bevy_vrm::{animations::target_chain::TargetChain, BoneName};
 
 pub struct MixamoAnimationTargets(pub HashMap<BoneName, AnimationTargetId>);
 
@@ -67,7 +65,10 @@ macro_rules! leg {
 impl Default for MixamoAnimationTargets {
     fn default() -> Self {
         let mut map = HashMap::default();
-        let mut chain = BoneChain::new(vec!["Armature".to_string()], "mixamorig:");
+        let mut chain = TargetChain {
+            names: vec!["Armature".to_string()],
+            prefix: "mixamorig:",
+        };
 
         map.insert(BoneName::Hips, chain.push_target("Hips"));
 

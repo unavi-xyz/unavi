@@ -1,43 +1,57 @@
 use std::time::Duration;
 
-use bevy::{ecs::system::RunSystemOnce, prelude::*};
+use bevy::prelude::*;
+use bevy_vrm::animations::vrm::VRM_ANIMATION_TARGETS;
 use mixamo::MixamoAnimationTargets;
-use vrm::VrmAnimationTargets;
 
-mod bone_chain;
 mod mixamo;
-mod vrm;
 
-#[derive(Component)]
-pub struct AvatarAnimations {
+#[derive(Component, Clone)]
+pub struct AvatarAnimationClips {
     pub idle: Handle<AnimationClip>,
     pub walk: Handle<AnimationClip>,
 }
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct AvatarAnimationNodes {
     pub idle: AnimationNodeIndex,
     pub walk: AnimationNodeIndex,
 }
 
+#[derive(Component)]
+pub struct CreatedAnimationGraph;
+
 pub fn create_animation_graph(
-    avatars: Query<(&AvatarAnimations, &Handle<Scene>), Without<AvatarAnimationNodes>>,
-    mut scenes: ResMut<Assets<Scene>>,
+    avatars: Query<(Entity, &AvatarAnimationClips), Without<Handle<AnimationGraph>>>,
+    mut clips: ResMut<Assets<AnimationClip>>,
+    mut commands: Commands,
+    mut graphs: ResMut<Assets<AnimationGraph>>,
 ) {
-    for (animations, scene_handle) in avatars.iter() {
-        let scene = match scenes.get_mut(scene_handle) {
-            Some(v) => v,
+    for (entity, animations) in avatars.iter() {
+        let (graph, nodes) = match create_animation_nodes(&mut clips, animations) {
+            Some(n) => n,
             None => continue,
         };
 
+        let graph = graphs.add(graph);
+
+        commands.entity(entity).insert((graph, nodes));
+
+        // TODO: How to query VRM AnimationPlayer entity from this world?
+        // - Run hook in loader?
+        // - Query player -> Check if in vrm scene?
+
         // scene.world.run_system_once(
-        //     |players: Query<(Entity, &AnimationPlayer)>,
-        //      mut clips: ResMut<Assets<AnimationClip>>,
-        //      mut commands: Commands| {
-        //         for (entity, player) in players.iter() {
-        //             if let Some(nodes) = create_animation_nodes(&mut clips, animations) {
-        //                 commands.entity(entity).insert(nodes);
-        //             }
+        //     move |mut commands: Commands, mut players: Query<Entity, With<AnimationPlayer>>| {
+        //         debug_assert!(!players.is_empty(), "Avatar scene has no AnimationPlayers");
+        //
+        //         for entity in players.iter_mut() {
+        //             info!("Added graph to player: {}", entity);
+        //             commands.entity(entity).insert((
+        //                 AnimationTransitions::default(),
+        //                 graph.clone(),
+        //                 nodes.clone(),
+        //             ));
         //         }
         //     },
         // );
@@ -45,32 +59,31 @@ pub fn create_animation_graph(
 }
 
 fn create_animation_nodes(
-    assets: &mut Assets<AnimationClip>,
-    animations: &AvatarAnimations,
-) -> Option<AvatarAnimationNodes> {
+    clips: &mut Assets<AnimationClip>,
+    animations: &AvatarAnimationClips,
+) -> Option<(AnimationGraph, AvatarAnimationNodes)> {
     let mut graph = AnimationGraph::default();
 
-    let idle = add_animation_clip(assets, &mut graph, &animations.idle)?;
-    let walk = add_animation_clip(assets, &mut graph, &animations.walk)?;
+    let idle = add_animation_clip(clips, &mut graph, &animations.idle)?;
+    let walk = add_animation_clip(clips, &mut graph, &animations.walk)?;
 
-    Some(AvatarAnimationNodes { idle, walk })
+    Some((graph, AvatarAnimationNodes { idle, walk }))
 }
 
 fn add_animation_clip(
-    assets: &mut Assets<AnimationClip>,
+    clips: &mut Assets<AnimationClip>,
     graph: &mut AnimationGraph,
     handle: &Handle<AnimationClip>,
 ) -> Option<AnimationNodeIndex> {
-    let clip = assets.get_mut(handle)?;
+    let clip = clips.get_mut(handle)?;
 
     let mixamo_targets = MixamoAnimationTargets::default();
-    let vrm_targets = VrmAnimationTargets::default();
 
     let curves = clip.curves_mut();
 
     for (name, target) in mixamo_targets.0 {
         if let Some(curve) = curves.remove(&target) {
-            let vrm_target = vrm_targets.0[&name];
+            let vrm_target = VRM_ANIMATION_TARGETS[&name];
             curves.insert(vrm_target, curve);
         }
     }
@@ -82,21 +95,21 @@ fn add_animation_clip(
 pub struct Idle;
 
 pub fn play_avatar_animations(
+    avatars: Query<(&Handle<AnimationGraph>, &AvatarAnimationNodes)>,
     mut commands: Commands,
-    mut avatars: Query<
-        (
-            Entity,
-            &AvatarAnimationNodes,
-            &mut AnimationTransitions,
-            &mut AnimationPlayer,
-        ),
-        Without<Idle>,
-    >,
+    mut new_players: Query<(Entity, &mut AnimationPlayer, &Parent), Added<AnimationPlayer>>,
 ) {
-    for (entity, animations, mut transitions, mut player) in avatars.iter_mut() {
-        transitions
-            .play(&mut player, animations.idle, Duration::ZERO)
-            .repeat();
-        commands.entity(entity).insert(Idle);
+    for (entity, mut player, parent) in new_players.iter_mut() {
+        if let Ok((graph, nodes)) = avatars.get(parent.get()) {
+            let mut transitions = AnimationTransitions::default();
+
+            transitions
+                .play(&mut player, nodes.idle, Duration::ZERO)
+                .repeat();
+
+            commands
+                .entity(entity)
+                .insert((graph.clone(), nodes.clone(), transitions));
+        }
     }
 }

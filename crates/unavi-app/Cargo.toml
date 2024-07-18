@@ -13,8 +13,8 @@ self_update = ["dep:self_update"]
 workspace = true
 
 [dependencies]
+avian3d.workspace = true
 bevy = { workspace = true, features = ["wayland"] }
-bevy_xpbd_3d.workspace = true
 clap.workspace = true
 dwn.workspace = true
 tracing.workspace = true

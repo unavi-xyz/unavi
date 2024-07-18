@@ -10,9 +10,9 @@ workspace = true
 
 [dependencies]
 anyhow.workspace = true
+avian3d.workspace = true
 bevy.workspace = true
 bevy_async_task.workspace = true
-bevy_xpbd_3d.workspace = true
 crossbeam = { version = "0.8.4", features = ["crossbeam-channel"] }
 tokio.workspace = true
 unavi-constants = { path = "../unavi-constants" }

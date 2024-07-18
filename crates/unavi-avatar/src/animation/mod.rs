@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use bevy::prelude::*;
+use bevy::{ecs::system::RunSystemOnce, prelude::*};
 use mixamo::MixamoAnimationTargets;
 use vrm::VrmAnimationTargets;
 
@@ -21,14 +21,26 @@ pub struct AvatarAnimationNodes {
 }
 
 pub fn create_animation_graph(
-    mut assets: ResMut<Assets<AnimationClip>>,
-    avatars: Query<(Entity, &AvatarAnimations), Without<AvatarAnimationNodes>>,
-    mut commands: Commands,
+    avatars: Query<(&AvatarAnimations, &Handle<Scene>), Without<AvatarAnimationNodes>>,
+    mut scenes: ResMut<Assets<Scene>>,
 ) {
-    for (entity, animations) in avatars.iter() {
-        if let Some(nodes) = create_animation_nodes(&mut assets, animations) {
-            commands.entity(entity).insert(nodes);
-        }
+    for (animations, scene_handle) in avatars.iter() {
+        let scene = match scenes.get_mut(scene_handle) {
+            Some(v) => v,
+            None => continue,
+        };
+
+        // scene.world.run_system_once(
+        //     |players: Query<(Entity, &AnimationPlayer)>,
+        //      mut clips: ResMut<Assets<AnimationClip>>,
+        //      mut commands: Commands| {
+        //         for (entity, player) in players.iter() {
+        //             if let Some(nodes) = create_animation_nodes(&mut clips, animations) {
+        //                 commands.entity(entity).insert(nodes);
+        //             }
+        //         }
+        //     },
+        // );
     }
 }
 

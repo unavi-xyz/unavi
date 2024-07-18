@@ -9,7 +9,7 @@ use bevy::{
     utils::HashSet,
 };
 
-use bevy_xpbd_3d::plugins::{PhysicsDebugPlugin, PhysicsPlugins};
+use avian3d::prelude::*;
 use dwn::{actor::Actor, store::SurrealStore, DWN};
 use surrealdb::{engine::local::Db, Surreal};
 use unavi_dwn::UserActor;

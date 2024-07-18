@@ -1,6 +1,6 @@
+use avian3d::prelude::{PhysicsDebugPlugin, PhysicsPlugins};
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use bevy_xpbd_3d::plugins::{PhysicsDebugPlugin, PhysicsPlugins};
 use unavi_scripting::{ScriptBundle, ScriptingPlugin};
 
 fn main() {

@@ -1,7 +1,7 @@
+use avian3d::PhysicsPlugins;
 use bevy::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use bevy_xpbd_3d::plugins::PhysicsPlugins;
 use unavi_scripting::{ScriptBundle, ScriptingPlugin};
 
 fn main() {

@@ -1,6 +1,6 @@
+use avian3d::prelude::*;
 use bevy::prelude::*;
 use bevy_tnua::prelude::*;
-use bevy_xpbd_3d::prelude::*;
 use unavi_constants::layers::LOCAL_PLAYER_LAYER;
 
 use crate::{Player, PlayerCamera};

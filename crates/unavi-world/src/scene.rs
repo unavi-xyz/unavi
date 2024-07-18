@@ -1,6 +1,6 @@
+use avian3d::prelude::*;
 use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 use bevy_vrm::mtoon::MtoonSun;
-use bevy_xpbd_3d::prelude::*;
 
 use crate::{InstanceRecord, WorldRecord};
 

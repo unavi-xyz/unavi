@@ -64,7 +64,7 @@ fn setup_avatars(asset_server: Res<AssetServer>, mut commands: Commands) {
 
     // Fallback only.
     commands.spawn((
-        Name::new("Avatar1"),
+        Name::new("Fallback only"),
         FallbackAvatar,
         SpatialBundle {
             transform: Transform::from_xyz(-1.5, 0.0, 0.0),

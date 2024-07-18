@@ -36,25 +36,6 @@ pub fn create_animation_graph(
         let graph = graphs.add(graph);
 
         commands.entity(entity).insert((graph, nodes));
-
-        // TODO: How to query VRM AnimationPlayer entity from this world?
-        // - Run hook in loader?
-        // - Query player -> Check if in vrm scene?
-
-        // scene.world.run_system_once(
-        //     move |mut commands: Commands, mut players: Query<Entity, With<AnimationPlayer>>| {
-        //         debug_assert!(!players.is_empty(), "Avatar scene has no AnimationPlayers");
-        //
-        //         for entity in players.iter_mut() {
-        //             info!("Added graph to player: {}", entity);
-        //             commands.entity(entity).insert((
-        //                 AnimationTransitions::default(),
-        //                 graph.clone(),
-        //                 nodes.clone(),
-        //             ));
-        //         }
-        //     },
-        // );
     }
 }
 

@@ -11,6 +11,7 @@ workspace = true
 [dependencies]
 bevy.workspace = true
 bevy_vrm.workspace = true
+lazy_static = "1.5.0"
 paste = "1.0.15"
 serde_json.workspace = true
 

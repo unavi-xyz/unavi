@@ -1,25 +1,26 @@
+use std::{cell::RefCell, rc::Rc};
+
 use bevy::{animation::AnimationTargetId, utils::HashMap};
 use bevy_vrm::{animations::target_chain::TargetChain, BoneName};
-
-pub struct MixamoAnimationTargets(pub HashMap<BoneName, AnimationTargetId>);
+use lazy_static::lazy_static;
 
 macro_rules! finger {
-    ($map:ident, $chain:ident, $side:ident, $finger_vrm:ident, $finger_chain:ident) => {
+    ($chain:ident, $side:ident, $finger_vrm:ident, $finger_chain:ident) => {
         paste::paste! {
             {
                 let mut chain = $chain.clone();
 
-                $map.insert(
+                chain.push_bone(
                     BoneName::[<$side $finger_vrm Proximal>],
-                    chain.push_target(concat!(stringify!($side), "Hand", stringify!($finger_chain), "1")),
+                    concat!("mixamorig:", stringify!($side), "Hand", stringify!($finger_chain), "1"),
                 );
-                $map.insert(
+                chain.push_bone(
                     BoneName::[<$side $finger_vrm Intermediate>],
-                    chain.push_target(concat!(stringify!($side), "Hand", stringify!($finger_chain), "2")),
+                    concat!("mixamorig:", stringify!($side), "Hand", stringify!($finger_chain), "2"),
                 );
-                $map.insert(
+                chain.push_bone(
                     BoneName::[<$side $finger_vrm Distal>],
-                    chain.push_target(concat!(stringify!($side), "Hand", stringify!($finger_chain), "3")),
+                    concat!("mixamorig:", stringify!($side), "Hand", stringify!($finger_chain), "3"),
                 );
             }
         }
@@ -27,66 +28,110 @@ macro_rules! finger {
 }
 
 macro_rules! arm {
-    ($map:ident, $chain:ident, $side:ident) => {
+    ($chain:ident, $side:ident) => {
         paste::paste! {
             {
                 let mut chain = $chain.clone();
 
-                $map.insert(BoneName::[<$side Shoulder>], chain.push_target(concat!(stringify!($side), "Shoulder")));
-                $map.insert(BoneName::[<$side UpperArm>], chain.push_target(concat!(stringify!($side), "Arm")));
-                $map.insert(BoneName::[<$side LowerArm>], chain.push_target(concat!(stringify!($side), "ForeArm")));
-                $map.insert(BoneName::[<$side Hand>], chain.push_target(concat!(stringify!($side), "Hand")));
+                chain.push_bone(BoneName::[<$side Shoulder>], concat!("mixamorig:", stringify!($side), "Shoulder"));
+                chain.push_bone(BoneName::[<$side UpperArm>], concat!("mixamorig:", stringify!($side), "Arm"));
+                chain.push_bone(BoneName::[<$side LowerArm>], concat!("mixamorig:", stringify!($side), "ForeArm"));
+                chain.push_bone(BoneName::[<$side Hand>], concat!("mixamorig:", stringify!($side), "Hand"));
 
-                finger!($map, chain, $side, Thumb, Thumb);
-                finger!($map, chain, $side, Index, Index);
-                finger!($map, chain, $side, Middle, Middle);
-                finger!($map, chain, $side, Ring, Ring);
-                finger!($map, chain, $side, Little, Pinky);
+                finger!(chain, $side, Thumb, Thumb);
+                finger!(chain, $side, Index, Index);
+                finger!(chain, $side, Middle, Middle);
+                finger!(chain, $side, Ring, Ring);
+                finger!(chain, $side, Little, Pinky);
             }
         }
     };
 }
 
 macro_rules! leg {
-    ($map:ident, $chain:ident, $side:ident) => {
+    ($chain:ident, $side:ident) => {
         paste::paste! {
             {
                 let mut chain = $chain.clone();
 
-                $map.insert(BoneName::[<$side UpperLeg>], chain.push_target(concat!(stringify!($side), "UpLeg")));
-                $map.insert(BoneName::[<$side LowerLeg>], chain.push_target(concat!(stringify!($side), "Leg")));
-                $map.insert(BoneName::[<$side Foot>], chain.push_target(concat!(stringify!($side), "Foot")));
-                $map.insert(BoneName::[<$side Toes>], chain.push_target(concat!(stringify!($side), "ToeBase")));
+                chain.push_bone(BoneName::[<$side UpperLeg>], concat!("mixamorig:", stringify!($side), "UpLeg"));
+                chain.push_bone(BoneName::[<$side LowerLeg>], concat!("mixamorig:", stringify!($side), "Leg"));
+                chain.push_bone(BoneName::[<$side Foot>], concat!("mixamorig:", stringify!($side), "Foot"));
+                chain.push_bone(BoneName::[<$side Toes>], concat!("mixamorig:", stringify!($side), "ToeBase"));
             }
         }
     };
 }
 
-impl Default for MixamoAnimationTargets {
-    fn default() -> Self {
-        let mut map = HashMap::default();
-        let mut chain = TargetChain {
-            names: vec!["Armature".to_string()],
-            prefix: "mixamorig:",
-        };
+/// Wrapper around [TargetChain].
+/// Allows us to re-use code for both [MIXAMO_ANIMATION_TARGETS] and [MIXAMO_BONE_NAMES].
+#[derive(Clone)]
+struct ChainWrapper<'a> {
+    chain: TargetChain,
+    names: Rc<RefCell<HashMap<BoneName, &'a str>>>,
+    targets: Rc<RefCell<HashMap<BoneName, AnimationTargetId>>>,
+}
 
-        map.insert(BoneName::Hips, chain.push_target("Hips"));
-
-        leg!(map, chain, Left);
-        leg!(map, chain, Right);
-
-        map.insert(BoneName::Spine, chain.push_target("Spine"));
-        map.insert(BoneName::Chest, chain.push_target("Spine1"));
-        map.insert(BoneName::UpperChest, chain.push_target("Spine2"));
-
-        arm!(map, chain, Left);
-        arm!(map, chain, Right);
-
-        map.insert(BoneName::Neck, chain.push_target("Neck"));
-        map.insert(BoneName::Head, chain.push_target("Head"));
-
-        Self(map)
+impl<'a> ChainWrapper<'a> {
+    fn new(chain: TargetChain) -> Self {
+        Self {
+            chain,
+            names: Default::default(),
+            targets: Default::default(),
+        }
     }
+
+    fn push_bone(&mut self, bone: BoneName, name: &'a str) {
+        self.names.borrow_mut().insert(bone.clone(), name);
+        let target = self.chain.push_target(name.to_string());
+        self.targets.borrow_mut().insert(bone, target);
+    }
+
+    fn into_maps(
+        self,
+    ) -> (
+        HashMap<BoneName, &'a str>,
+        HashMap<BoneName, AnimationTargetId>,
+    ) {
+        (self.names.take(), self.targets.take())
+    }
+}
+
+fn create_chain() -> ChainWrapper<'static> {
+    let mut chain = TargetChain::default();
+    chain.push_target("Armature".to_string());
+
+    let mut chain = ChainWrapper::new(chain);
+
+    chain.push_bone(BoneName::Hips, "mixamorig:Hips");
+
+    leg!(chain, Left);
+    leg!(chain, Right);
+
+    chain.push_bone(BoneName::Spine, "mixamorig:Spine");
+    chain.push_bone(BoneName::Chest, "mixamorig:Spine1");
+    chain.push_bone(BoneName::UpperChest, "mixamorig:Spine2");
+
+    arm!(chain, Left);
+    arm!(chain, Right);
+
+    chain.push_bone(BoneName::Neck, "mixamorig:Neck");
+    chain.push_bone(BoneName::Head, "mixamorig:Head");
+
+    chain
+}
+
+lazy_static! {
+    pub static ref MIXAMO_ANIMATION_TARGETS: HashMap<BoneName, AnimationTargetId> = {
+        let chain = create_chain();
+        let (_, targets) = chain.into_maps();
+        targets
+    };
+    pub static ref MIXAMO_BONE_NAMES: HashMap<BoneName, &'static str> = {
+        let chain = create_chain();
+        let (names, _) = chain.into_maps();
+        names
+    };
 }
 
 #[cfg(test)]
@@ -127,10 +172,8 @@ mod tests {
                 }
 
                 if let Some((_, clip)) = assets.iter().next() {
-                    let targets = MixamoAnimationTargets::default();
-
-                    for (name, target) in targets.0.into_iter() {
-                        assert!(clip.curves_for_target(target).is_some(), "name={:?}", name);
+                    for (name, target) in MIXAMO_ANIMATION_TARGETS.iter() {
+                        assert!(clip.curves_for_target(*target).is_some(), "name={:?}", name);
                     }
 
                     exit.send_default();

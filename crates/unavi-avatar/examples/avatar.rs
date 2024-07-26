@@ -1,8 +1,11 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashMap};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_vrm::VrmBundle;
-use unavi_avatar::{animation::AvatarAnimationClips, AvatarBundle, AvatarPlugin, FallbackAvatar};
+use unavi_avatar::{
+    animation::{AnimationName, AvatarAnimation, AvatarAnimations},
+    AvatarBundle, AvatarPlugin, FallbackAvatar,
+};
 
 fn main() {
     App::new()
@@ -16,8 +19,12 @@ fn main() {
             AvatarPlugin,
         ))
         .add_systems(Startup, (setup_avatars, setup_scene))
-        .add_systems(Update, load_avatar_two)
+        .add_systems(Update, (draw_gizmo, load_avatar_two))
         .run();
+}
+
+fn draw_gizmo(mut gizmos: Gizmos) {
+    gizmos.axes(Transform::default(), 1.0);
 }
 
 fn setup_scene(
@@ -57,10 +64,43 @@ fn setup_scene(
 struct AvatarTwo;
 
 fn setup_avatars(asset_server: Res<AssetServer>, mut commands: Commands) {
-    let idle: Handle<AnimationClip> =
-        asset_server.load("models/character-animations.glb#Animation0");
-    let walk: Handle<AnimationClip> =
-        asset_server.load("models/character-animations.glb#Animation1");
+    let mut clips = HashMap::default();
+
+    clips.insert(
+        AnimationName::Falling,
+        AvatarAnimation {
+            clip: asset_server.load("models/character-animations.glb#Animation0"),
+            gltf: asset_server.load("models/character-animations.glb"),
+        },
+    );
+    clips.insert(
+        AnimationName::Idle,
+        AvatarAnimation {
+            clip: asset_server.load("models/character-animations.glb#Animation1"),
+            gltf: asset_server.load("models/character-animations.glb"),
+        },
+    );
+    clips.insert(
+        AnimationName::WalkLeft,
+        AvatarAnimation {
+            clip: asset_server.load("models/character-animations.glb#Animation2"),
+            gltf: asset_server.load("models/character-animations.glb"),
+        },
+    );
+    clips.insert(
+        AnimationName::WalkRight,
+        AvatarAnimation {
+            clip: asset_server.load("models/character-animations.glb#Animation3"),
+            gltf: asset_server.load("models/character-animations.glb"),
+        },
+    );
+    clips.insert(
+        AnimationName::Walk,
+        AvatarAnimation {
+            clip: asset_server.load("models/character-animations.glb#Animation5"),
+            gltf: asset_server.load("models/character-animations.glb"),
+        },
+    );
 
     // Fallback only.
     commands.spawn((
@@ -77,7 +117,7 @@ fn setup_avatars(asset_server: Res<AssetServer>, mut commands: Commands) {
         AvatarTwo,
         Name::new("Avatar2"),
         AvatarBundle {
-            animations: AvatarAnimationClips { idle, walk },
+            animations: AvatarAnimations(clips),
             fallback: FallbackAvatar,
             spatial: SpatialBundle {
                 transform: Transform::from_xyz(1.5, 0.0, 0.0),

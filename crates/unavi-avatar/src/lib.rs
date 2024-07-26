@@ -1,4 +1,4 @@
-use animation::AvatarAnimationClips;
+use animation::AvatarAnimations;
 use bevy::prelude::*;
 use bevy_vrm::VrmPlugins;
 
@@ -26,7 +26,7 @@ impl Plugin for AvatarPlugin {
 
 #[derive(Bundle)]
 pub struct AvatarBundle {
-    pub animations: AvatarAnimationClips,
+    pub animations: AvatarAnimations,
     pub fallback: FallbackAvatar,
     pub spatial: SpatialBundle,
 }

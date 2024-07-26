@@ -61,7 +61,7 @@
         rustToolchain = pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
           targets = [
             "wasm32-unknown-unknown"
-            "wasm32-wasi"
+            "wasm32-wasip1"
           ];
         };
 

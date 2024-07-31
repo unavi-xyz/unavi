@@ -11853,7 +11853,6 @@ dependencies = [
  "bevy_egui",
  "bevy_panorbit_camera",
  "bevy_vrm",
- "lazy_static",
  "paste",
  "serde_json",
 ]

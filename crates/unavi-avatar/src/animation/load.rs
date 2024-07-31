@@ -3,7 +3,7 @@ use bevy_vrm::animations::vrm::VRM_ANIMATION_TARGETS;
 
 use super::{
     mixamo::{MIXAMO_ANIMATION_TARGETS, MIXAMO_BONE_NAMES},
-    AnimationName, AvatarAnimations,
+    AnimationName, AvatarAnimationClips,
 };
 
 #[derive(Component, Clone)]
@@ -13,7 +13,7 @@ pub struct AvatarAnimationNodes(pub HashMap<AnimationName, AnimationNodeIndex>);
 pub struct CreatedAnimationGraph;
 
 pub fn load_animation_nodes(
-    avatars: Query<(Entity, &AvatarAnimations), Without<Handle<AnimationGraph>>>,
+    avatars: Query<(Entity, &AvatarAnimationClips), Without<Handle<AnimationGraph>>>,
     mut clips: ResMut<Assets<AnimationClip>>,
     mut commands: Commands,
     mut gltfs: ResMut<Assets<Gltf>>,

@@ -1,8 +1,7 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, sync::LazyLock};
 
 use bevy::{animation::AnimationTargetId, utils::HashMap};
 use bevy_vrm::{animations::target_chain::TargetChain, BoneName};
-use lazy_static::lazy_static;
 
 macro_rules! finger {
     ($chain:ident, $side:ident, $finger_vrm:ident, $finger_chain:ident) => {
@@ -121,18 +120,18 @@ fn create_chain() -> ChainWrapper<'static> {
     chain
 }
 
-lazy_static! {
-    pub static ref MIXAMO_ANIMATION_TARGETS: HashMap<BoneName, AnimationTargetId> = {
+pub static MIXAMO_ANIMATION_TARGETS: LazyLock<HashMap<BoneName, AnimationTargetId>> =
+    LazyLock::new(|| {
         let chain = create_chain();
         let (_, targets) = chain.into_maps();
         targets
-    };
-    pub static ref MIXAMO_BONE_NAMES: HashMap<BoneName, &'static str> = {
-        let chain = create_chain();
-        let (names, _) = chain.into_maps();
-        names
-    };
-}
+    });
+
+pub static MIXAMO_BONE_NAMES: LazyLock<HashMap<BoneName, &'static str>> = LazyLock::new(|| {
+    let chain = create_chain();
+    let (names, _) = chain.into_maps();
+    names
+});
 
 #[cfg(test)]
 mod tests {

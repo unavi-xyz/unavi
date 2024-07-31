@@ -17,4 +17,5 @@ serde_json.workspace = true
 
 [dev-dependencies]
 bevy-inspector-egui.workspace = true
+bevy_egui = "0.28.0"
 bevy_panorbit_camera.workspace = true

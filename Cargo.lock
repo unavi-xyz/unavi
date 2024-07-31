@@ -11850,6 +11850,7 @@ version = "0.0.3"
 dependencies = [
  "bevy",
  "bevy-inspector-egui",
+ "bevy_egui",
  "bevy_panorbit_camera",
  "bevy_vrm",
  "lazy_static",

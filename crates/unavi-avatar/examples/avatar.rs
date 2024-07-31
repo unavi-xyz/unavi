@@ -1,3 +1,4 @@
+use avian3d::{debug_render::PhysicsDebugPlugin, PhysicsPlugins};
 use bevy::{prelude::*, utils::HashMap};
 use bevy_egui::{EguiContexts, EguiPlugin};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
@@ -5,7 +6,7 @@ use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_vrm::VrmBundle;
 use unavi_avatar::{
     animation::{AnimationName, AvatarAnimation, AvatarAnimations},
-    AvatarBundle, AvatarPlugin, FallbackAvatar,
+    AvatarBundle, AvatarPlugin,
 };
 
 fn main() {
@@ -17,6 +18,8 @@ fn main() {
             }),
             EguiPlugin,
             PanOrbitCameraPlugin,
+            PhysicsDebugPlugin::default(),
+            PhysicsPlugins::default(),
             WorldInspectorPlugin::default(),
             AvatarPlugin,
         ))
@@ -125,13 +128,9 @@ fn setup_avatars(asset_server: Res<AssetServer>, mut commands: Commands) {
     );
 
     commands.spawn((
-        Name::new("Avatar"),
+        AvatarBundle::new(AvatarAnimations(clips)),
         MoveDir::default(),
-        AvatarBundle {
-            animations: AvatarAnimations(clips),
-            fallback: FallbackAvatar,
-            spatial: SpatialBundle::default(),
-        },
+        Name::new("Avatar"),
     ));
 }
 

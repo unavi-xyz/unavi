@@ -1,4 +1,5 @@
 use bevy::{prelude::*, utils::HashMap};
+use bevy_egui::{EguiContexts, EguiPlugin};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_vrm::VrmBundle;
@@ -14,17 +15,41 @@ fn main() {
                 file_path: "../unavi-app/assets".to_string(),
                 ..default()
             }),
-            WorldInspectorPlugin::default(),
+            EguiPlugin,
             PanOrbitCameraPlugin,
+            WorldInspectorPlugin::default(),
             AvatarPlugin,
         ))
+        .init_resource::<Settings>()
         .add_systems(Startup, (setup_avatars, setup_scene))
-        .add_systems(Update, (draw_gizmo, load_avatar_two))
+        .add_systems(Update, (draw_gizmo, draw_ui, load_avatar, move_avatar))
         .run();
 }
 
 fn draw_gizmo(mut gizmos: Gizmos) {
     gizmos.axes(Transform::default(), 1.0);
+}
+
+#[derive(Resource)]
+struct Settings {
+    move_x: bool,
+    move_z: bool,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            move_x: false,
+            move_z: true,
+        }
+    }
+}
+
+fn draw_ui(mut contexts: EguiContexts, mut settings: ResMut<Settings>) {
+    bevy_egui::egui::Window::new("Settings").show(contexts.ctx_mut(), |ui| {
+        ui.checkbox(&mut settings.move_x, "Move X");
+        ui.checkbox(&mut settings.move_z, "Move Z");
+    });
 }
 
 fn setup_scene(
@@ -59,9 +84,6 @@ fn setup_scene(
         PanOrbitCamera::default(),
     ));
 }
-
-#[derive(Component)]
-struct AvatarTwo;
 
 fn setup_avatars(asset_server: Res<AssetServer>, mut commands: Commands) {
     let mut clips = HashMap::default();
@@ -102,37 +124,29 @@ fn setup_avatars(asset_server: Res<AssetServer>, mut commands: Commands) {
         },
     );
 
-    // Fallback only.
     commands.spawn((
-        Name::new("Fallback only"),
-        FallbackAvatar,
-        SpatialBundle {
-            transform: Transform::from_xyz(-1.5, 0.0, 0.0),
-            ..default()
-        },
-    ));
-
-    // Fallback -> loaded avatar.
-    commands.spawn((
-        AvatarTwo,
-        Name::new("Avatar2"),
+        Name::new("Avatar"),
+        MoveDir::default(),
         AvatarBundle {
             animations: AvatarAnimations(clips),
             fallback: FallbackAvatar,
-            spatial: SpatialBundle {
-                transform: Transform::from_xyz(1.5, 0.0, 0.0),
-                ..default()
-            },
+            spatial: SpatialBundle::default(),
         },
     ));
 }
 
+#[derive(Component, Default)]
+struct MoveDir {
+    x: f32,
+    z: f32,
+}
+
 /// Simulate an avatar that takes some time to load, showing a fallback in it's place.
-fn load_avatar_two(
+fn load_avatar(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
     mut done: Local<bool>,
-    query: Query<(Entity, &Transform), With<AvatarTwo>>,
+    query: Query<(Entity, &Transform), With<AvatarAnimations>>,
     time: Res<Time>,
 ) {
     if *done || time.elapsed_seconds() < 1.5 {
@@ -150,5 +164,46 @@ fn load_avatar_two(
             vrm: asset_server.load("models/robot.vrm"),
             ..default()
         });
+    }
+}
+
+fn move_avatar(
+    mut transforms: Query<(&mut MoveDir, &mut Transform)>,
+    settings: Res<Settings>,
+    time: Res<Time>,
+) {
+    let delta = time.delta_seconds();
+
+    for (mut dir, mut transform) in transforms.iter_mut() {
+        if settings.move_x {
+            if dir.x == 0.0 {
+                dir.x = 1.0;
+            }
+        } else {
+            dir.x = 0.0;
+        }
+
+        if settings.move_z {
+            if dir.z == 0.0 {
+                dir.z = 1.0;
+            }
+        } else {
+            dir.z = 0.0;
+        }
+
+        transform.translation.x += dir.x * delta;
+        transform.translation.z += dir.z * delta;
+
+        if (dir.x.is_sign_positive() && transform.translation.x > 1.0)
+            || (dir.x.is_sign_negative() && transform.translation.x < -1.0)
+        {
+            dir.x = -dir.x;
+        }
+
+        if (dir.z.is_sign_positive() && transform.translation.z > 1.0)
+            || (dir.z.is_sign_negative() && transform.translation.z < -1.0)
+        {
+            dir.z = -dir.z;
+        }
     }
 }

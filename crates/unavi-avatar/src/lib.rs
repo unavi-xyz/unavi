@@ -14,8 +14,8 @@ impl Plugin for AvatarPlugin {
             .add_systems(
                 Update,
                 (
+                    animation::load::load_animation_nodes,
                     animation::play_avatar_animations,
-                    animation::create_animation_graph,
                     fallback::despawn_fallback_children,
                     fallback::remove_fallback_avatar,
                     fallback::spawn_fallback_children,

@@ -1,4 +1,3 @@
-use avian3d::parry::na::RealField;
 use bevy::{prelude::*, utils::HashMap};
 
 pub mod load;
@@ -45,19 +44,12 @@ pub fn init_animations(
     }
 }
 
-const MAX_IDLE_VELOCITY: f32 = 0.3;
-
-// Rate at which animations transition.
-const IDLE_RATE: f32 = 2.0;
-const WALK_RATE: f32 = 2.0;
+const WEIGHT_THRESHOLD: f32 = 0.02;
 
 pub fn play_avatar_animations(
-    time: Res<Time>,
     mut avatars: Query<(&AvatarAnimationNodes, &AverageVelocity, &Transform)>,
     mut animation_players: Query<(&mut AnimationPlayer, &Parent)>,
 ) {
-    let delta = time.delta_seconds();
-
     for (mut player, parent) in animation_players.iter_mut() {
         if let Ok((nodes, avg, transform)) = avatars.get_mut(**parent) {
             for node in nodes.0.values() {
@@ -67,20 +59,6 @@ pub fn play_avatar_animations(
                 }
             }
 
-            // Idle.
-            let idle = player.animation_mut(nodes.0[&AnimationName::Idle]).unwrap();
-            let idle_weight = idle.weight();
-            // info!("idle: {}", idle_weight);
-
-            if avg.velocity.abs().element_sum() < MAX_IDLE_VELOCITY {
-                if idle_weight < 1.0 {
-                    idle.set_weight(idle_weight + (IDLE_RATE * delta));
-                }
-            } else if idle_weight > 0.0 {
-                idle.set_weight(idle_weight - (IDLE_RATE * delta));
-            }
-
-            // Walk.
             let dir_forward = transform.rotation.mul_vec3(Vec3 {
                 x: 0.0,
                 y: 0.0,
@@ -98,55 +76,61 @@ pub fn play_avatar_animations(
             let forward = vel_forward.element_sum();
             let left = vel_left.element_sum();
 
+            // Left walk.
+            let mut l_walk_weight = left.max(0.0);
+
+            if l_walk_weight < WEIGHT_THRESHOLD {
+                l_walk_weight = 0.0;
+            }
+
+            player
+                .animation_mut(nodes.0[&AnimationName::WalkLeft])
+                .unwrap()
+                .set_weight(l_walk_weight);
+
+            // Right walk.
+            let mut r_walk_weight = left.min(0.0).abs();
+
+            if r_walk_weight < WEIGHT_THRESHOLD {
+                r_walk_weight = 0.0;
+            }
+
+            player
+                .animation_mut(nodes.0[&AnimationName::WalkRight])
+                .unwrap()
+                .set_weight(r_walk_weight);
+
+            // Walk.
+            let mut walk_weight = forward.abs();
+
+            walk_weight -= left.abs();
+
+            if walk_weight < WEIGHT_THRESHOLD {
+                walk_weight = 0.0;
+            }
+
             let walk = player.animation_mut(nodes.0[&AnimationName::Walk]).unwrap();
-            let walk_weight = walk.weight();
-            // info!("walk: {}", walk_weight);
 
-            let forward_bool = forward.is_sign_positive();
-
-            if forward_bool {
+            if forward.is_sign_positive() {
                 walk.set_speed(1.0);
             } else {
                 walk.set_speed(-1.0);
             }
 
-            if forward.abs() > MAX_IDLE_VELOCITY {
-                if walk_weight < 1.0 {
-                    walk.set_weight(walk_weight + (WALK_RATE * delta));
-                }
-            } else if walk_weight > 0.0 {
-                walk.set_weight(walk_weight - (WALK_RATE * delta));
+            walk.set_weight(walk_weight);
+
+            // Idle.
+            let mut idle_weight = 1.0;
+            idle_weight -= l_walk_weight;
+            idle_weight -= r_walk_weight;
+            idle_weight -= walk_weight;
+
+            if idle_weight < WEIGHT_THRESHOLD {
+                idle_weight = 0.0;
             }
 
-            // Left walk.
-            let l_walk = player
-                .animation_mut(nodes.0[&AnimationName::WalkLeft])
-                .unwrap();
-            let l_walk_weight = l_walk.weight();
-            // info!("l walk: {}", l_walk_weight);
-
-            if left > MAX_IDLE_VELOCITY {
-                if l_walk_weight < 1.0 {
-                    l_walk.set_weight(l_walk_weight + (WALK_RATE * delta));
-                }
-            } else if l_walk_weight > 0.0 {
-                l_walk.set_weight(l_walk_weight - (WALK_RATE * delta));
-            }
-
-            // Right walk.
-            let r_walk = player
-                .animation_mut(nodes.0[&AnimationName::WalkRight])
-                .unwrap();
-            let r_walk_weight = r_walk.weight();
-            // info!("r walk: {}", r_walk_weight);
-
-            if (-left) > MAX_IDLE_VELOCITY {
-                if r_walk_weight < 1.0 {
-                    r_walk.set_weight(r_walk_weight + (WALK_RATE * delta));
-                }
-            } else if r_walk_weight > 0.0 {
-                r_walk.set_weight(r_walk_weight - (WALK_RATE * delta));
-            }
+            let idle = player.animation_mut(nodes.0[&AnimationName::Idle]).unwrap();
+            idle.set_weight(idle_weight);
         }
     }
 }

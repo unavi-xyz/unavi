@@ -5,7 +5,7 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_vrm::VrmBundle;
 use unavi_avatar::{
-    animation::{AnimationName, AvatarAnimation, AvatarAnimations},
+    animation::{AnimationName, AvatarAnimation, AvatarAnimationClips},
     AvatarBundle, AvatarPlugin,
 };
 
@@ -37,6 +37,7 @@ fn draw_gizmo(mut gizmos: Gizmos) {
 struct Settings {
     move_x: bool,
     move_z: bool,
+    rotate: bool,
 }
 
 impl Default for Settings {
@@ -44,6 +45,7 @@ impl Default for Settings {
         Self {
             move_x: false,
             move_z: true,
+            rotate: false,
         }
     }
 }
@@ -52,6 +54,7 @@ fn draw_ui(mut contexts: EguiContexts, mut settings: ResMut<Settings>) {
     bevy_egui::egui::Window::new("Settings").show(contexts.ctx_mut(), |ui| {
         ui.checkbox(&mut settings.move_x, "Move X");
         ui.checkbox(&mut settings.move_z, "Move Z");
+        ui.checkbox(&mut settings.rotate, "Rotate");
     });
 }
 
@@ -128,7 +131,7 @@ fn setup_avatars(asset_server: Res<AssetServer>, mut commands: Commands) {
     );
 
     commands.spawn((
-        AvatarBundle::new(AvatarAnimations(clips)),
+        AvatarBundle::new(AvatarAnimationClips(clips)),
         MoveDir::default(),
         Name::new("Avatar"),
     ));
@@ -145,7 +148,7 @@ fn load_avatar(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
     mut done: Local<bool>,
-    query: Query<(Entity, &Transform), With<AvatarAnimations>>,
+    query: Query<(Entity, &Transform), With<AvatarAnimationClips>>,
     time: Res<Time>,
 ) {
     if *done || time.elapsed_seconds() < 1.5 {
@@ -188,6 +191,10 @@ fn move_avatar(
             }
         } else {
             dir.z = 0.0;
+        }
+
+        if settings.rotate {
+            transform.rotation *= Quat::from_rotation_y(delta);
         }
 
         transform.translation.x += dir.x * delta;

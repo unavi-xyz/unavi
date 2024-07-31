@@ -11848,6 +11848,7 @@ dependencies = [
 name = "unavi-avatar"
 version = "0.0.3"
 dependencies = [
+ "avian3d",
  "bevy",
  "bevy-inspector-egui",
  "bevy_egui",

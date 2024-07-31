@@ -9,6 +9,7 @@ edition.workspace = true
 workspace = true
 
 [dependencies]
+avian3d.workspace = true
 bevy.workspace = true
 bevy_vrm.workspace = true
 paste = "1.0.15"

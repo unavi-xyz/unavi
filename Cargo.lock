@@ -1170,6 +1170,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_basic_portals"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e94a067848ae2387370898d4ca4b6f82491d5cc7ec11b6ffd65c755a610588f"
+dependencies = [
+ "bevy_app",
+ "bevy_asset",
+ "bevy_color",
+ "bevy_core_pipeline",
+ "bevy_ecs",
+ "bevy_hierarchy",
+ "bevy_math",
+ "bevy_pbr",
+ "bevy_reflect",
+ "bevy_render",
+ "bevy_transform",
+ "bevy_window",
+ "tracing",
+]
+
+[[package]]
 name = "bevy_color"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11905,6 +11926,9 @@ dependencies = [
  "bevy",
  "bevy-tnua",
  "bevy-tnua-avian3d",
+ "bevy_basic_portals",
+ "bevy_vrm",
+ "unavi-avatar",
  "unavi-constants",
  "unavi-scripting",
  "web-sys",

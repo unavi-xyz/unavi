@@ -29,7 +29,7 @@ pub struct AvatarAnimation {
     pub gltf: Handle<Gltf>,
 }
 
-pub fn init_animations(
+pub(crate) fn init_animations(
     animation_nodes: Query<&Handle<AnimationGraph>, With<AvatarAnimationNodes>>,
     mut animation_players: Query<(Entity, &Parent), Added<AnimationPlayer>>,
     mut commands: Commands,
@@ -52,7 +52,7 @@ const ALPHA_FACTOR: f32 = 0.01;
 const VELOCITY_FACTOR: f32 = 2.0;
 const WEIGHT_THRESHOLD: f32 = 0.02;
 
-pub fn play_avatar_animations(
+pub(crate) fn play_avatar_animations(
     time: Res<Time>,
     mut avatars: Query<(&AvatarAnimationNodes, &AverageVelocity, &Transform)>,
     mut animation_players: Query<(&mut AnimationWeights, &mut AnimationPlayer, &Parent)>,
@@ -146,9 +146,6 @@ pub fn play_avatar_animations(
                 nodes,
                 &mut weights,
             );
-
-            info!("idle {}", idle_weight);
-            info!("walk {}", walk_weight);
         }
     }
 }

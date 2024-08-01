@@ -12,7 +12,7 @@ pub struct AvatarAnimationNodes(pub HashMap<AnimationName, AnimationNodeIndex>);
 #[derive(Component)]
 pub struct CreatedAnimationGraph;
 
-pub fn load_animation_nodes(
+pub(crate) fn load_animation_nodes(
     avatars: Query<(Entity, &AvatarAnimationClips), Without<Handle<AnimationGraph>>>,
     mut clips: ResMut<Assets<AnimationClip>>,
     mut commands: Commands,

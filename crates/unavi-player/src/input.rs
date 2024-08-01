@@ -16,7 +16,6 @@ pub struct InputMap {
     pub key_right: KeyCode,
     pub key_jump: KeyCode,
     pub key_sprint: KeyCode,
-    pub key_crouch: KeyCode,
 }
 
 impl Default for InputMap {
@@ -28,7 +27,6 @@ impl Default for InputMap {
             key_right: KeyCode::KeyD,
             key_jump: KeyCode::Space,
             key_sprint: KeyCode::ShiftLeft,
-            key_crouch: KeyCode::ControlLeft,
         }
     }
 }

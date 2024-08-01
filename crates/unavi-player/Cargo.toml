@@ -13,8 +13,13 @@ avian3d.workspace = true
 bevy-tnua = "0.19.0"
 bevy-tnua-avian3d = "0.1.0"
 bevy.workspace = true
+bevy_vrm.workspace = true
+unavi-avatar = { path = "../unavi-avatar" }
 unavi-constants = { path = "../unavi-constants" }
 unavi-scripting = { path = "../unavi-scripting" }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 web-sys = { workspace = true, features = ["Navigator", "Window"] }
+
+[dev-dependencies]
+bevy_basic_portals = "0.6.0"

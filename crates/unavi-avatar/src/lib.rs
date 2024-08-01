@@ -1,12 +1,15 @@
 use animation::AvatarAnimationClips;
-use avian3d::prelude::*;
 use bevy::prelude::*;
 use bevy_vrm::VrmPlugins;
-use velocity::AverageVelocity;
 
 pub mod animation;
+mod defaults;
 mod fallback;
 mod velocity;
+
+pub use defaults::*;
+pub use fallback::FallbackAvatar;
+pub use velocity::AverageVelocity;
 
 pub struct AvatarPlugin;
 
@@ -32,28 +35,16 @@ impl Plugin for AvatarPlugin {
 #[derive(Bundle)]
 pub struct AvatarBundle {
     pub animations: AvatarAnimationClips,
-    pub collider: Collider,
     pub fallback: FallbackAvatar,
-    pub rigid_body: RigidBody,
-    pub spatial: SpatialBundle,
     pub velocity: AverageVelocity,
 }
-
-const PLAYER_RADIUS: f32 = 0.2;
-const PLAYER_HEIGHT: f32 = 0.8;
 
 impl AvatarBundle {
     pub fn new(animations: AvatarAnimationClips) -> Self {
         Self {
             animations,
-            collider: Collider::capsule(PLAYER_RADIUS, PLAYER_HEIGHT),
             fallback: FallbackAvatar,
-            rigid_body: RigidBody::Kinematic,
-            spatial: SpatialBundle::default(),
             velocity: AverageVelocity::default(),
         }
     }
 }
-
-#[derive(Component, Default)]
-pub struct FallbackAvatar;

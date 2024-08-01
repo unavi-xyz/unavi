@@ -1,11 +1,12 @@
 use bevy::prelude::*;
 use bevy_vrm::loader::Vrm;
 
-use crate::FallbackAvatar;
-
 const FALLBACK_RADIUS: f32 = 0.35;
 const FALLBACK_HEIGHT: f32 = 1.8;
 const CAPSULE_LENGTH: f32 = FALLBACK_HEIGHT - (FALLBACK_RADIUS * 2.0);
+
+#[derive(Component, Default)]
+pub struct FallbackAvatar;
 
 #[derive(Resource, Deref)]
 pub struct FallbackMaterial(Handle<StandardMaterial>);

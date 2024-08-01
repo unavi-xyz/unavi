@@ -1,12 +1,12 @@
 use avian3d::{debug_render::PhysicsDebugPlugin, PhysicsPlugins};
-use bevy::{prelude::*, utils::HashMap};
+use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPlugin};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_vrm::VrmBundle;
 use unavi_avatar::{
-    animation::{AnimationName, AvatarAnimation, AvatarAnimationClips},
-    AvatarBundle, AvatarPlugin,
+    animation::AvatarAnimationClips, default_character_animations, default_vrm, AvatarBundle,
+    AvatarPlugin,
 };
 
 fn main() {
@@ -92,46 +92,9 @@ fn setup_scene(
 }
 
 fn setup_avatars(asset_server: Res<AssetServer>, mut commands: Commands) {
-    let mut clips = HashMap::default();
-
-    clips.insert(
-        AnimationName::Falling,
-        AvatarAnimation {
-            clip: asset_server.load("models/character-animations.glb#Animation0"),
-            gltf: asset_server.load("models/character-animations.glb"),
-        },
-    );
-    clips.insert(
-        AnimationName::Idle,
-        AvatarAnimation {
-            clip: asset_server.load("models/character-animations.glb#Animation1"),
-            gltf: asset_server.load("models/character-animations.glb"),
-        },
-    );
-    clips.insert(
-        AnimationName::WalkLeft,
-        AvatarAnimation {
-            clip: asset_server.load("models/character-animations.glb#Animation2"),
-            gltf: asset_server.load("models/character-animations.glb"),
-        },
-    );
-    clips.insert(
-        AnimationName::WalkRight,
-        AvatarAnimation {
-            clip: asset_server.load("models/character-animations.glb#Animation3"),
-            gltf: asset_server.load("models/character-animations.glb"),
-        },
-    );
-    clips.insert(
-        AnimationName::Walk,
-        AvatarAnimation {
-            clip: asset_server.load("models/character-animations.glb#Animation5"),
-            gltf: asset_server.load("models/character-animations.glb"),
-        },
-    );
-
     commands.spawn((
-        AvatarBundle::new(AvatarAnimationClips(clips)),
+        AvatarBundle::new(default_character_animations(&asset_server)),
+        SpatialBundle::default(),
         MoveDir::default(),
         Name::new("Avatar"),
     ));
@@ -163,7 +126,7 @@ fn load_avatar(
                 transform: *transform,
                 ..default()
             },
-            vrm: asset_server.load("models/robot.vrm"),
+            vrm: default_vrm(&asset_server),
             ..default()
         });
     }

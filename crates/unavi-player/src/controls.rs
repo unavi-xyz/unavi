@@ -1,9 +1,8 @@
 use avian3d::prelude::*;
 use bevy::prelude::*;
 use bevy_tnua::prelude::*;
-use unavi_constants::layers::LOCAL_PLAYER_LAYER;
 
-use crate::{Player, PlayerCamera};
+use crate::{Player, PLAYER_HEIGHT, SPAWN};
 
 use super::look::{LookDirection, PitchEvent, YawEvent};
 
@@ -22,41 +21,6 @@ pub struct YawTag;
 
 #[derive(Component)]
 pub struct PitchTag;
-
-const PLAYER_HEIGHT: f32 = 1.6;
-const PLAYER_WIDTH: f32 = 0.6;
-const SPAWN: Vec3 = Vec3::new(0.0, PLAYER_HEIGHT * 2.0, 0.0);
-
-pub fn spawn_player(mut commands: Commands) {
-    let yaw = commands.spawn((TransformBundle::default(), YawTag)).id();
-    let pitch = commands.spawn((TransformBundle::default(), PitchTag)).id();
-    let camera = commands
-        .spawn((Camera3dBundle::default(), PlayerCamera))
-        .id();
-
-    let body = commands
-        .spawn((
-            Collider::capsule(PLAYER_HEIGHT, PLAYER_WIDTH),
-            ColliderDensity(10.0),
-            CollisionLayers {
-                memberships: LOCAL_PLAYER_LAYER,
-                ..default()
-            },
-            LinearVelocity::default(),
-            Player::default(),
-            RigidBody::Dynamic,
-            TnuaControllerBundle::default(),
-            TransformBundle {
-                global: GlobalTransform::from_translation(SPAWN),
-                ..default()
-            },
-        ))
-        .id();
-
-    commands.entity(body).push_children(&[yaw]);
-    commands.entity(yaw).push_children(&[pitch]);
-    commands.entity(pitch).push_children(&[camera]);
-}
 
 const CAM_LERP_FACTOR: f32 = 30.0;
 
@@ -139,7 +103,7 @@ pub fn move_player(
         controller.basis(TnuaBuiltinWalk {
             coyote_time: 0.2,
             desired_velocity,
-            float_height: PLAYER_HEIGHT,
+            float_height: PLAYER_HEIGHT + 0.1,
             ..default()
         });
 

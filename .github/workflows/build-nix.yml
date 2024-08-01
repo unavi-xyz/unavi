@@ -46,7 +46,7 @@ jobs:
     name: ${{ matrix.attr }}
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: AdityaGarg8/remove-unwanted-software@v3
+      - uses: AdityaGarg8/remove-unwanted-software@v4
         with:
           remove-android: true
           remove-codeql: true

@@ -4873,7 +4873,7 @@ dependencies = [
  "log",
  "num-traits",
  "robust",
- "rstar",
+ "rstar 0.11.0",
  "serde",
 ]
 
@@ -4890,7 +4890,7 @@ dependencies = [
  "log",
  "num-traits",
  "robust",
- "rstar",
+ "rstar 0.11.0",
  "serde",
  "spade",
 ]
@@ -4904,7 +4904,7 @@ dependencies = [
  "approx 0.5.1",
  "arbitrary",
  "num-traits",
- "rstar",
+ "rstar 0.11.0",
  "serde",
 ]
 
@@ -5318,6 +5318,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "hash32"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47d60b12902ba28e2730cd37e95b8c9223af2808df9e902d4df49588d1470606"
+dependencies = [
+ "byteorder",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5374,9 +5383,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdc6457c0eb62c71aac4bc17216026d8410337c4126773b9c5daba343f17964f"
 dependencies = [
  "atomic-polyfill",
- "hash32",
+ "hash32 0.2.1",
  "rustc_version",
  "spin 0.9.8",
+ "stable_deref_trait",
+]
+
+[[package]]
+name = "heapless"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0bfb9eb618601c89945a70e254898da93b13be0388091d42117462b265bb3fad"
+dependencies = [
+ "hash32 0.3.1",
  "stable_deref_trait",
 ]
 
@@ -8085,9 +8104,9 @@ dependencies = [
 
 [[package]]
 name = "parry3d"
-version = "0.16.1"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec1d9cc5a359352e2be7e47270cef9f9e175794c03302553353804a436228e7f"
+checksum = "33f1a44b6ced345a7bb52f5df9912fecae07c6e22d231ba1bab7abf807f52ec9"
 dependencies = [
  "approx 0.5.1",
  "arrayvec 0.7.4",
@@ -8099,6 +8118,7 @@ dependencies = [
  "num-derive 0.4.2",
  "num-traits",
  "ordered-float",
+ "rstar 0.12.0",
  "rustc-hash 2.0.0",
  "simba 0.9.0",
  "slab",
@@ -9505,7 +9525,18 @@ version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73111312eb7a2287d229f06c00ff35b51ddee180f017ab6dec1f69d62ac098d6"
 dependencies = [
- "heapless",
+ "heapless 0.7.17",
+ "num-traits",
+ "smallvec",
+]
+
+[[package]]
+name = "rstar"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "133315eb94c7b1e8d0cb097e5a710d850263372fd028fff18969de708afc7008"
+dependencies = [
+ "heapless 0.8.0",
  "num-traits",
  "smallvec",
 ]
@@ -12003,7 +12034,7 @@ dependencies = [
 name = "unavi-shapes"
 version = "0.0.3"
 dependencies = [
- "parry3d 0.16.1",
+ "parry3d 0.17.0",
  "wit-bindgen-rt",
 ]
 

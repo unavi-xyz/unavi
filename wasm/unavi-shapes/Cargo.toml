@@ -9,7 +9,7 @@ license.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-parry3d = "0.16.1"
+parry3d = "0.17.0"
 wit-bindgen-rt.workspace = true
 
 [package.metadata.component]

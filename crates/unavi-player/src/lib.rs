@@ -69,7 +69,7 @@ impl Default for Player {
 #[derive(Component)]
 pub struct PlayerCamera;
 
-const PLAYER_HEIGHT: f32 = 1.6;
+const PLAYER_HEIGHT: f32 = 1.8;
 const PLAYER_WIDTH: f32 = 0.5;
 const SPAWN: Vec3 = Vec3::new(0.0, PLAYER_HEIGHT * 2.0, 0.0);
 
@@ -87,14 +87,26 @@ fn spawn_player(asset_server: Res<AssetServer>, mut commands: Commands) {
             Player::default(),
             RigidBody::Dynamic,
             TnuaControllerBundle::default(),
+            SpatialBundle {
+                global_transform: GlobalTransform::from_translation(SPAWN),
+                ..default()
+            },
+        ))
+        .id();
+
+    let avatar = commands
+        .spawn((
             AvatarBundle {
                 animations,
                 fallback: FallbackAvatar,
-                velocity: AverageVelocity::default(),
+                velocity: AverageVelocity {
+                    target: Some(body),
+                    ..default()
+                },
             },
             VrmBundle {
                 scene_bundle: SceneBundle {
-                    global_transform: GlobalTransform::from_translation(SPAWN),
+                    transform: Transform::from_xyz(0.0, -PLAYER_HEIGHT / 2.0, 0.0),
                     ..default()
                 },
                 vrm: default_vrm(&asset_server),
@@ -103,13 +115,22 @@ fn spawn_player(asset_server: Res<AssetServer>, mut commands: Commands) {
         ))
         .id();
 
-    let yaw = commands.spawn((TransformBundle::default(), YawTag)).id();
+    let yaw = commands
+        .spawn((
+            TransformBundle::from_transform(Transform::from_xyz(
+                0.0,
+                (PLAYER_HEIGHT / 2.0) * 0.85,
+                0.0,
+            )),
+            YawTag,
+        ))
+        .id();
     let pitch = commands.spawn((TransformBundle::default(), PitchTag)).id();
     let camera = commands
         .spawn((Camera3dBundle::default(), PlayerCamera))
         .id();
 
-    commands.entity(body).push_children(&[yaw]);
+    commands.entity(body).push_children(&[avatar, yaw]);
     commands.entity(yaw).push_children(&[pitch]);
     commands.entity(pitch).push_children(&[camera]);
 }

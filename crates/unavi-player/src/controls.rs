@@ -58,6 +58,8 @@ pub fn apply_pitch(
     }
 }
 
+const FLOAT_HEIGHT: f32 = (PLAYER_HEIGHT / 2.0) + 0.1;
+
 pub fn move_player(
     look_direction: Res<LookDirection>,
     mut last_time: Local<f32>,
@@ -103,7 +105,7 @@ pub fn move_player(
         controller.basis(TnuaBuiltinWalk {
             coyote_time: 0.2,
             desired_velocity,
-            float_height: PLAYER_HEIGHT + 0.1,
+            float_height: FLOAT_HEIGHT,
             ..default()
         });
 

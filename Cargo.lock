@@ -338,9 +338,6 @@ name = "arbitrary"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d5a26814d8dcb93b0e5a0ff3c6d80a8843bafb21b39e8e18a6f05471870e110"
-dependencies = [
- "derive_arbitrary",
-]
 
 [[package]]
 name = "arboard"
@@ -855,7 +852,7 @@ dependencies = [
  "cfg-if",
  "libc",
  "miniz_oxide",
- "object 0.36.2",
+ "object 0.36.3",
  "rustc-demangle",
 ]
 
@@ -1721,8 +1718,8 @@ dependencies = [
 
 [[package]]
 name = "bevy_shader_mtoon"
-version = "0.0.10"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#5d97e6e0ae58116a91f7191a34e342a961abf3e1"
+version = "0.0.11"
+source = "git+https://github.com/unavi-xyz/bevy_vrm#f4b5687c4e9dbabbd4c308abca82db18c310ca67"
 dependencies = [
  "bevy",
  "bevy_mod_outline",
@@ -1903,8 +1900,8 @@ dependencies = [
 
 [[package]]
 name = "bevy_vrm"
-version = "0.0.10"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#5d97e6e0ae58116a91f7191a34e342a961abf3e1"
+version = "0.0.11"
+source = "git+https://github.com/unavi-xyz/bevy_vrm#f4b5687c4e9dbabbd4c308abca82db18c310ca67"
 dependencies = [
  "bevy",
  "bevy_gltf_kun",
@@ -2882,35 +2879,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "concat-idents"
-version = "1.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f76990911f2267d837d9d0ad060aa63aaad170af40904b29461734c339030d4d"
-dependencies = [
- "quote",
- "syn 2.0.72",
-]
-
-[[package]]
 name = "concurrent-queue"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ca0197aee26d1ae37445ee532fefce43251d24cc7c166799f4d46817f1d3973"
 dependencies = [
  "crossbeam-utils",
-]
-
-[[package]]
-name = "console"
-version = "0.15.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e1f83fc076bd6dd27517eacdf25fef6c4dfe5f1d7448bafaaf3a26f13b5e4eb"
-dependencies = [
- "encode_unicode",
- "lazy_static",
- "libc",
- "unicode-width",
- "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -3667,17 +3641,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "derive_arbitrary"
-version = "1.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67e77553c4162a157adbf834ebae5b415acbecbeafc7a74b0e886657506a7611"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.72",
-]
-
-[[package]]
 name = "derive_builder"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4171,7 +4134,6 @@ dependencies = [
  "rand_core",
  "serde",
  "sha2 0.10.8",
- "signature 2.2.0",
  "subtle",
  "zeroize",
 ]
@@ -4295,12 +4257,6 @@ dependencies = [
  "quote",
  "syn 2.0.72",
 ]
-
-[[package]]
-name = "encode_unicode"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
 
 [[package]]
 name = "encoding_rs"
@@ -5139,8 +5095,8 @@ dependencies = [
 
 [[package]]
 name = "gltf_kun_vrm"
-version = "0.0.10"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#5d97e6e0ae58116a91f7191a34e342a961abf3e1"
+version = "0.0.11"
+source = "git+https://github.com/unavi-xyz/bevy_vrm#f4b5687c4e9dbabbd4c308abca82db18c310ca67"
 dependencies = [
  "gltf_kun",
  "serde",
@@ -5846,19 +5802,6 @@ dependencies = [
  "equivalent",
  "hashbrown 0.14.5",
  "serde",
-]
-
-[[package]]
-name = "indicatif"
-version = "0.17.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "763a5a8f45087d6bcea4222e7b72c291a054edf80e4ef6efd2a4979878c7bea3"
-dependencies = [
- "console",
- "instant",
- "number_prefix",
- "portable-atomic",
- "unicode-width",
 ]
 
 [[package]]
@@ -6869,12 +6812,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "lockfree-object-pool"
-version = "0.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9374ef4228402d4b7e403e5838cb880d9ee663314b0a900d5a6aabf0c213552e"
-
-[[package]]
 name = "locspan"
 version = "0.7.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7630,12 +7567,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "number_prefix"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
-
-[[package]]
 name = "objc"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7861,9 +7792,9 @@ dependencies = [
 
 [[package]]
 name = "object"
-version = "0.36.2"
+version = "0.36.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f203fa8daa7bb185f760ae12bd8e097f63d17041dcdcaf675ac54cdf863170e"
+checksum = "27b64972346851a39438c60b341ebc01bba47464ae329e55cf343eb93964efd9"
 dependencies = [
  "crc32fast",
  "hashbrown 0.14.5",
@@ -8510,12 +8441,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "325a6d2ac5dee293c3b2612d4993b98aec1dff096b0a2dae70ed7d95784a05da"
 
 [[package]]
-name = "portable-atomic"
-version = "1.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da544ee218f0d287a911e9c99a39a8c9bc8fcad3cb8db5959940044ecfc67265"
-
-[[package]]
 name = "postcard"
 version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8724,15 +8649,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d6da84cc204722a989e01ba2f6e1e276e190f22263d0cb6ce8526fcdb0d2e1f"
 dependencies = [
  "byteorder",
-]
-
-[[package]]
-name = "quick-xml"
-version = "0.23.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11bafc859c6815fbaffbbbf4229ecb767ac913fecb27f9ad4343662e9ef099ea"
-dependencies = [
- "memchr",
 ]
 
 [[package]]
@@ -9930,38 +9846,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "self-replace"
-version = "1.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7828a58998685d8bf5a3c5e7a3379a5867289c20828c3ee436280b44b598515"
-dependencies = [
- "fastrand 1.9.0",
- "tempfile",
- "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "self_update"
-version = "0.41.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "469a3970061380c19852269f393e74c0fe607a4e23d85267382cf25486aa8de5"
-dependencies = [
- "hyper 1.4.1",
- "indicatif",
- "log",
- "quick-xml 0.23.1",
- "regex",
- "reqwest 0.12.5",
- "self-replace",
- "semver",
- "serde_json",
- "tempfile",
- "urlencoding",
- "zip",
- "zipsign-api",
-]
-
-[[package]]
 name = "semver"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10083,8 +9967,8 @@ dependencies = [
 
 [[package]]
 name = "serde_vrm"
-version = "0.0.10"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#5d97e6e0ae58116a91f7191a34e342a961abf3e1"
+version = "0.0.11"
+source = "git+https://github.com/unavi-xyz/bevy_vrm#f4b5687c4e9dbabbd4c308abca82db18c310ca67"
 dependencies = [
  "bevy",
  "serde",
@@ -11905,14 +11789,10 @@ dependencies = [
 name = "unavi-app"
 version = "0.0.3"
 dependencies = [
- "anyhow",
  "avian3d",
  "bevy",
  "clap",
  "dwn",
- "reqwest 0.12.5",
- "self_update",
- "semver",
  "surrealdb",
  "tokio",
  "tracing",
@@ -11923,9 +11803,7 @@ dependencies = [
  "unavi-settings",
  "unavi-world",
  "wasm-bindgen",
- "wasm-bindgen-futures",
  "web-sys",
- "zip",
 ]
 
 [[package]]
@@ -11939,7 +11817,6 @@ dependencies = [
  "bevy_panorbit_camera",
  "bevy_vrm",
  "paste",
- "serde_json",
 ]
 
 [[package]]
@@ -12014,12 +11891,10 @@ dependencies = [
  "bevy-inspector-egui",
  "bevy_async_task",
  "bevy_panorbit_camera",
- "concat-idents",
  "crossbeam",
  "tokio",
  "tracing",
  "tracing-test",
- "unavi-constants",
  "unavi-player",
  "wasm-bridge",
  "wasm-bridge-wasi",
@@ -12031,9 +11906,6 @@ version = "0.0.3"
 dependencies = [
  "anyhow",
  "async-recursion",
- "base64 0.22.1",
- "capnp",
- "capnp-rpc",
  "clap",
  "dwn",
  "port_scanner",
@@ -12044,15 +11916,9 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "tracing-test",
- "unavi-networking",
  "unavi-social-server",
  "unavi-world-host",
  "unavi-world-server",
- "wired-social",
- "wired-world",
- "wtransport",
- "xwt-futures-io",
- "xwt-wtransport",
 ]
 
 [[package]]
@@ -12713,7 +12579,7 @@ dependencies = [
  "gimli 0.28.1",
  "indexmap 2.3.0",
  "log",
- "object 0.36.2",
+ "object 0.36.3",
  "postcard",
  "semver",
  "serde",
@@ -13011,7 +12877,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d7b56f89937f1cf2ee1f1259cf2936a17a1f45d8f0aa1019fae6d470d304cfa6"
 dependencies = [
  "proc-macro2",
- "quick-xml 0.34.0",
+ "quick-xml",
  "quote",
 ]
 
@@ -14088,48 +13954,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.72",
-]
-
-[[package]]
-name = "zip"
-version = "2.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40dd8c92efc296286ce1fbd16657c5dbefff44f1b4ca01cc5f517d8b7b3d3e2e"
-dependencies = [
- "arbitrary",
- "crc32fast",
- "crossbeam-utils",
- "displaydoc",
- "flate2",
- "indexmap 2.3.0",
- "memchr",
- "thiserror",
- "time",
- "zopfli",
-]
-
-[[package]]
-name = "zipsign-api"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6413a546ada9dbcd0b9a3e0b0880581279e35047bce9797e523b3408e1df607c"
-dependencies = [
- "ed25519-dalek",
- "thiserror",
-]
-
-[[package]]
-name = "zopfli"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5019f391bac5cf252e93bbcc53d039ffd62c7bfb7c150414d61369afe57e946"
-dependencies = [
- "bumpalo",
- "crc32fast",
- "lockfree-object-pool",
- "log",
- "once_cell",
- "simd-adler32",
 ]
 
 [[package]]

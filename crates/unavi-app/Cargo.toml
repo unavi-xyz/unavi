@@ -1,13 +1,10 @@
 [package]
 name = "unavi-app"
 version.workspace = true
+authors.workspace = true
+edition.workspace = true
 license.workspace = true
 repository.workspace = true
-edition.workspace = true
-
-[features]
-default = []
-self_update = ["dep:self_update"]
 
 [lints]
 workspace = true
@@ -28,15 +25,9 @@ unavi-world = { path = "../unavi-world" }
 [target.'cfg(target_family = "wasm")'.dependencies]
 surrealdb = { workspace = true, features = ["kv-indxdb"] }
 tokio.workspace = true
-wasm-bindgen-futures.workspace = true
 wasm-bindgen.workspace = true
 web-sys = { workspace = true, features = ["Location", "UrlSearchParams", "Window"] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-anyhow.workspace = true
-reqwest.workspace = true
-self_update = { version = "0.41.0", features = ["archive-zip"], optional = true }
-semver.workspace = true
 surrealdb = { workspace = true, features = ["kv-surrealkv"] }
 tokio = { workspace = true, features = ["rt-multi-thread"] }
-zip = { version = "2.1.1", default-features = false, features = ["deflate"] }

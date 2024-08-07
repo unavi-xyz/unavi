@@ -7,6 +7,7 @@ members = [
 
 [workspace.package]
 version = "0.0.3"
+authors = ["kayh"]
 edition = "2021"
 repository = "https://github.com/unavi-xyz/unavi"
 license = "MPL-2.0"

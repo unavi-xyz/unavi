@@ -31,24 +31,22 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - run: nix develop -c cargo deny check
-
-      - run: nix run .?submodules=1#check-components
-      - uses: EndBug/add-and-commit@v9
-        with:
-          message: "chore: generate component bindings"
-          default_author: github_actions
+      - run: nix develop -c cargo component check
 
       - run: nix develop -c cargo clippy --all-features --fix --no-deps
       - run: nix develop -c cargo fmt --all
-      - run: nix develop -c prettier -w .
+
       - run: nix fmt .
+      - run: nix run .#generate-readme
       - run: nix run .#tf-format
+
+      - run: nix develop -c prettier -w .
+
       - uses: EndBug/add-and-commit@v9
         with:
           message: "chore: lint"
           default_author: github_actions
 
-      - run: nix run .#generate-readme
       - uses: EndBug/add-and-commit@v9
         with:
           message: "chore: generate README"

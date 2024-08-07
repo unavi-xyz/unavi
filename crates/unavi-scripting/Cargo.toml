@@ -15,6 +15,7 @@ bevy.workspace = true
 bevy_async_task.workspace = true
 crossbeam = { version = "0.8.4", features = ["crossbeam-channel"] }
 tokio.workspace = true
+unavi-constants = { path = "../unavi-constants" }
 wasm-bridge = { git = "https://github.com/kayhhh/wasm-bridge.git", branch = "all", features = ["component-model", "async"] }
 wasm-bridge-wasi = { git = "https://github.com/kayhhh/wasm-bridge.git", branch = "all" }
 

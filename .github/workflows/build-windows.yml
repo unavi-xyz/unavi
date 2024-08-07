@@ -13,28 +13,7 @@ on:
         type: string
 
 jobs:
-  generate-assets:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref || github.ref }}
-          submodules: true
-
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-
-      - run: nix run .?submodules=1#generate-assets
-      - run: find assets/components/* -exec zip -r components.zip {} +
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: components
-          path: components.zip
-          retention-days: 1
-
   build-windows:
-    needs: generate-assets
     runs-on: windows-latest
     strategy:
       matrix:

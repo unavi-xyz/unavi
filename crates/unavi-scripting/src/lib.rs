@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use unavi_constants::assets::WASM_ASSETS_DIR;
 
 use self::{asset::Wasm, load::Scripts};
 
@@ -43,12 +44,7 @@ impl ScriptBundle {
     pub fn load(name: &str, asset_server: &AssetServer) -> Self {
         let (namespace, package) = name.split_once(':').unwrap();
 
-        let path = format!(
-            "components/{}/{}/{}.wasm",
-            env!("CARGO_PKG_VERSION"),
-            namespace,
-            package
-        );
+        let path = format!("{}/{}/{}.wasm", WASM_ASSETS_DIR, namespace, package);
         let wasm = asset_server.load(path);
 
         Self {

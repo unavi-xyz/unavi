@@ -17,9 +17,6 @@ use unavi_dwn::UserActor;
 pub const ROOT_DIR: &str = ".unavi/app";
 
 mod unavi_system;
-#[cfg(feature = "self_update")]
-#[cfg(not(target_family = "wasm"))]
-pub mod update;
 
 pub struct StartOptions {
     pub debug_physics: bool,

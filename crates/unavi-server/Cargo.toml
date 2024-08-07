@@ -1,5 +1,6 @@
 [package]
 name = "unavi-server"
+authors.workspace = true
 version.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -19,16 +20,7 @@ unavi-world-host = { path = "../unavi-world-host" }
 unavi-world-server = { path = "../unavi-world-server" }
 
 [dev-dependencies]
-base64.workspace = true
-capnp-rpc.workspace = true
-capnp.workspace = true
 port_scanner = "0.1.5"
 reqwest.workspace = true
 serde_json.workspace = true
 tracing-test.workspace = true
-unavi-networking = { path = "../unavi-networking" }
-wired-social = { path = "../wired-social" }
-wired-world = { path = "../wired-world" }
-wtransport = { workspace = true, features = ["dangerous-configuration"] }
-xwt-futures-io = { path = "../xwt-futures-io" }
-xwt-wtransport.workspace = true

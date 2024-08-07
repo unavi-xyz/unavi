@@ -118,9 +118,9 @@
             (with pkgs; [
               cargo-component
               cargo-deny
+              cargo-dist
               cargo-machete
               cargo-rdme
-              cargo-tarpaulin
               cargo-watch
               nodePackages.prettier
               rust-analyzer

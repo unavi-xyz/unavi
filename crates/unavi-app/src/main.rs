@@ -53,9 +53,6 @@ struct Args {
     /// Enables physics debug mode.
     #[arg(long)]
     debug_physics: bool,
-    /// Forces an update from the latest release, even if the versions match.
-    #[arg(long)]
-    force_update: bool,
     /// Sets the log level.
     #[arg(long, default_value_t, value_enum)]
     log_level: LogLevel,
@@ -73,18 +70,6 @@ enum LogLevel {
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
-
-    #[cfg(feature = "self_update")]
-    {
-        let force_update = args.force_update;
-        tokio::task::spawn_blocking(move || {
-            if let Err(e) = unavi_app::update::check_for_updates(force_update) {
-                println!("Error while updating: {}", e);
-            }
-        })
-        .await
-        .unwrap();
-    }
 
     let db_path = format!("{}/db", unavi_app::ROOT_DIR);
 

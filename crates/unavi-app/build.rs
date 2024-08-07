@@ -13,6 +13,7 @@ const WASM_TARGET: &str = "wasm32-wasip1";
 fn main() {
     // Build components.
     let wasm_out = PathBuf::from(ASSETS_DIR).join(WASM_ASSETS_DIR);
+    std::fs::create_dir_all(wasm_out.clone()).unwrap();
     std::fs::remove_dir_all(wasm_out.clone()).unwrap();
     std::fs::create_dir_all(wasm_out.clone()).unwrap();
 

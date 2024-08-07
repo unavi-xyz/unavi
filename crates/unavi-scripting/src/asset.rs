@@ -4,7 +4,7 @@ use bevy::{
     reflect::TypePath,
 };
 
-#[derive(Asset, Debug, TypePath)]
+#[derive(Asset, Debug, Deref, DerefMut, TypePath)]
 pub struct Wasm(pub Vec<u8>);
 
 #[derive(Default)]

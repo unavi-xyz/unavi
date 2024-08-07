@@ -65,21 +65,29 @@
           ];
         };
 
+        wac-cli = pkgs.rustPlatform.buildRustPackage rec {
+          pname = "wac-cli";
+          version = "0.3.0";
+
+          src = pkgs.fetchFromGitHub {
+            owner = "bytecodealliance";
+            repo = "wac";
+            rev = "v${version}";
+            sha256 = "sha256-xv+lSsJ+SSRovJ0mt8/AbEjEdyaRvO3qzY44ih9oSF0=";
+          };
+
+          cargoHash = "sha256-+hmTsTfcxygdU/pDTkmkuQgujEOR1+H8YZG4ScVBKcc=";
+
+          nativeBuildInputs = [ pkgs.pkg-config ];
+
+          buildInputs =
+            [ pkgs.openssl ]
+            ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.SystemConfiguration ];
+        };
+
         craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
-        wasm = import ./wasm.nix (inputs // { inherit craneLib localSystem pkgs; });
-
-        crates = import ./crates.nix (
-          inputs
-          // {
-            inherit
-              wasm
-              craneLib
-              localSystem
-              pkgs
-              ;
-          }
-        );
+        crates = import ./crates.nix (inputs // { inherit craneLib localSystem pkgs; });
 
         terraform = import ./deployments/terraform.nix (inputs // { inherit localSystem pkgs; });
 
@@ -89,8 +97,7 @@
         inherit crates;
 
         apps =
-          wasm.apps
-          // crates.apps
+          crates.apps
           // terraform.apps
           // deployments.apps
           // {
@@ -111,7 +118,7 @@
           };
 
         checks = crates.checks;
-        packages = wasm.packages // crates.packages // deployments.packages;
+        packages = crates.packages // deployments.packages;
 
         devShells.default = craneLib.devShell {
           packages =
@@ -125,7 +132,7 @@
               nodePackages.prettier
               rust-analyzer
             ])
-            ++ [ wasm.wac-cli ]
+            ++ [ wac-cli ]
             ++ crates.buildInputs
             ++ crates.nativeBuildInputs;
 

@@ -31,3 +31,6 @@ web-sys = { workspace = true, features = ["Location", "UrlSearchParams", "Window
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 surrealdb = { workspace = true, features = ["kv-surrealkv"] }
 tokio = { workspace = true, features = ["rt-multi-thread"] }
+
+[build-dependencies]
+unavi-constants = { path = "../unavi-constants" }

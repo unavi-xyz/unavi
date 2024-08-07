@@ -1,6 +1,5 @@
 {
   flake-utils,
-  wasm,
   craneLib,
   pkgs,
   ...
@@ -71,7 +70,6 @@ let
     pname = "unavi-app";
     strictDeps = true;
 
-    preBuild = wasm.generateAssetsScript;
     postInstall = ''
       cp -r ./crates/unavi-app/assets $out/bin
     '';
@@ -97,8 +95,6 @@ let
     strictDeps = true;
     trunkIndexPath = "crates/unavi-app/index.html";
     wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
-
-    preBuild = wasm.generateAssetsScript;
 
     CARGO_PROFILE = "release-web";
   };

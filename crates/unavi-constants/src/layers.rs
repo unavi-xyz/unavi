@@ -1,6 +1,6 @@
 use avian3d::prelude::*;
 
-#[derive(PhysicsLayer, Clone, Copy, Debug)]
+#[derive(PhysicsLayer, Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum GameLayer {
     LocalPlayer,
     OtherPlayer,

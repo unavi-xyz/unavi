@@ -14,5 +14,5 @@
 
 # Other
 .unavi
-/crates/unavi-app/assets/components
+/crates/unavi-app/assets/wasm
 lcov.info

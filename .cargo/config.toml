@@ -7,10 +7,3 @@ rustflags = [
 rustflags = [
   "--cfg=surrealdb_unstable" # surreal-kv
 ]
-
-[target.x86_64-unknown-linux-gnu]
-linker = "clang"
-rustflags = ["-C", "link-arg=-fuse-ld=mold"]
-
-[target.x86_64-pc-windows-msvc]
-linker = "rust-lld.exe"

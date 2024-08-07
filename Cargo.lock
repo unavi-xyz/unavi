@@ -1722,7 +1722,7 @@ dependencies = [
 [[package]]
 name = "bevy_shader_mtoon"
 version = "0.0.10"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#5d91a9698d5dc10e1342f3764588265750bfe085"
+source = "git+https://github.com/unavi-xyz/bevy_vrm#5d97e6e0ae58116a91f7191a34e342a961abf3e1"
 dependencies = [
  "bevy",
  "bevy_mod_outline",
@@ -1904,7 +1904,7 @@ dependencies = [
 [[package]]
 name = "bevy_vrm"
 version = "0.0.10"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#5d91a9698d5dc10e1342f3764588265750bfe085"
+source = "git+https://github.com/unavi-xyz/bevy_vrm#5d97e6e0ae58116a91f7191a34e342a961abf3e1"
 dependencies = [
  "bevy",
  "bevy_gltf_kun",
@@ -5140,7 +5140,7 @@ dependencies = [
 [[package]]
 name = "gltf_kun_vrm"
 version = "0.0.10"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#5d91a9698d5dc10e1342f3764588265750bfe085"
+source = "git+https://github.com/unavi-xyz/bevy_vrm#5d97e6e0ae58116a91f7191a34e342a961abf3e1"
 dependencies = [
  "gltf_kun",
  "serde",
@@ -10084,7 +10084,7 @@ dependencies = [
 [[package]]
 name = "serde_vrm"
 version = "0.0.10"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#5d91a9698d5dc10e1342f3764588265750bfe085"
+source = "git+https://github.com/unavi-xyz/bevy_vrm#5d97e6e0ae58116a91f7191a34e342a961abf3e1"
 dependencies = [
  "bevy",
  "serde",

@@ -1,8 +1,12 @@
 use avian3d::prelude::*;
-use bevy::prelude::*;
+use bevy::{prelude::*, render::view::RenderLayers};
 use bevy_tnua::prelude::*;
 use bevy_tnua_avian3d::TnuaAvian3dPlugin;
-use bevy_vrm::VrmBundle;
+use bevy_vrm::{
+    first_person::{FirstPersonFlag, SetupFirstPerson, RENDER_LAYERS},
+    loader::Vrm,
+    VrmBundle,
+};
 use controls::{InputState, PitchTag, YawTag};
 use unavi_avatar::{
     default_character_animations, default_vrm, AvatarBundle, AvatarPlugin, AverageVelocity,
@@ -33,6 +37,7 @@ impl Plugin for PlayerPlugin {
             (
                 input::handle_raycast_input,
                 look::grab_mouse,
+                setup_first_person,
                 (controls::void_teleport, input::read_keyboard_input).before(controls::move_player),
                 (
                     look::read_mouse_input,
@@ -112,6 +117,7 @@ fn spawn_player(asset_server: Res<AssetServer>, mut commands: Commands) {
                 vrm: default_vrm(&asset_server),
                 ..default()
             },
+            FirstPerson,
         ))
         .id();
 
@@ -127,10 +133,34 @@ fn spawn_player(asset_server: Res<AssetServer>, mut commands: Commands) {
         .id();
     let pitch = commands.spawn((TransformBundle::default(), PitchTag)).id();
     let camera = commands
-        .spawn((Camera3dBundle::default(), PlayerCamera))
+        .spawn((
+            Camera3dBundle::default(),
+            PlayerCamera,
+            RenderLayers::layer(0).union(&RENDER_LAYERS[&FirstPersonFlag::FirstPersonOnly]),
+        ))
         .id();
 
     commands.entity(body).push_children(&[avatar, yaw]);
     commands.entity(yaw).push_children(&[pitch]);
     commands.entity(pitch).push_children(&[camera]);
+}
+
+#[derive(Component)]
+struct FirstPerson;
+
+fn setup_first_person(
+    mut events: EventReader<AssetEvent<Vrm>>,
+    mut writer: EventWriter<SetupFirstPerson>,
+    players: Query<(Entity, &Handle<Vrm>), With<FirstPerson>>,
+) {
+    for event in events.read() {
+        if let AssetEvent::LoadedWithDependencies { id } = event {
+            for (ent, handle) in players.iter() {
+                if handle.id() == *id {
+                    info!("setting up first person");
+                    writer.send(SetupFirstPerson(ent));
+                }
+            }
+        }
+    }
 }

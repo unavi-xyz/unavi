@@ -1,8 +1,7 @@
 use avian3d::prelude::*;
-use bevy::prelude::*;
-use bevy_basic_portals::{
-    AsPortalDestination, CreatePortal, CreatePortalBundle, DebugPortal, PortalsPlugin,
-};
+use bevy::{prelude::*, render::view::RenderLayers};
+use bevy_basic_portals::{AsPortalDestination, CreatePortal, CreatePortalBundle, PortalsPlugin};
+use bevy_vrm::first_person::{FirstPersonFlag, RENDER_LAYERS};
 use unavi_player::PlayerPlugin;
 
 fn main() {
@@ -63,10 +62,8 @@ fn setup_scene(
         mesh: meshes.add(Mesh::from(Rectangle::new(GROUND_SIZE, MIRROR_H))),
         create_portal: CreatePortal {
             destination: AsPortalDestination::CreateMirror,
-            debug: Some(DebugPortal {
-                show_window: false,
-                ..default()
-            }),
+            render_layer: RenderLayers::layer(0)
+                .union(&RENDER_LAYERS[&FirstPersonFlag::ThirdPersonOnly]),
             ..default()
         },
         portal_transform: Transform::from_xyz(0.0, MIRROR_H / 2.0, -GROUND_SIZE / 2.0),

@@ -37,9 +37,8 @@ jobs:
       - run: nix develop -c cargo fmt --all
 
       - run: nix fmt .
-      - run: nix run .#generate-readme
-      - run: nix run .#tf-format
-
+      - run: nix develop -c sh scripts/generate-readme.sh
+      - run: nix develop -c terraform fmt -recursive
       - run: nix develop -c prettier -w .
 
       - uses: EndBug/add-and-commit@v9

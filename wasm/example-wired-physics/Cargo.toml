@@ -1,5 +1,6 @@
 [package]
 name = "example-wired-physics"
+publish = false
 version.workspace = true
 edition.workspace = true
 repository.workspace = true

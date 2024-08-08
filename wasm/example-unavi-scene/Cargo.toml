@@ -1,5 +1,6 @@
 [package]
 name = "example-unavi-scene"
+publish = false
 version.workspace = true
 edition.workspace = true
 repository.workspace = true

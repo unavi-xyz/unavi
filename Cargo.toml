@@ -9,8 +9,8 @@ members = [
 version = "0.0.3"
 authors = ["kayh"]
 edition = "2021"
-repository = "https://github.com/unavi-xyz/unavi"
 license = "MPL-2.0"
+repository = "https://github.com/unavi-xyz/unavi"
 
 [workspace.lints.clippy]
 too_many_arguments = "allow"
@@ -26,7 +26,7 @@ bevy = "0.14.0"
 bevy-inspector-egui = "0.25.1"
 bevy_async_task = "0.2.0"
 bevy_panorbit_camera = "0.19.0"
-bevy_vrm = { git = "https://github.com/unavi-xyz/bevy_vrm" }
+bevy_vrm = "0.0.11"
 capnp = "0.19.4"
 capnp-rpc = "0.19.1"
 clap = { version = "4.5.4", features = ["derive"] }
@@ -50,6 +50,11 @@ wtransport = "0.1.8"
 xwt-core = "0.4.1"
 xwt-wtransport = "0.7.0"
 
+[workspace.metadata.release]
+publish = false
+shared-version = true
+tag-name = "v{{version}}"
+
 [profile.dev]
 opt-level = 1
 
@@ -57,14 +62,8 @@ opt-level = 1
 opt-level = 3
 
 [profile.release]
-lto = true
+lto = "thin"
 
 [profile.release-wasm]
 inherits = "release"
-codegen-units = 1
-opt-level = "s"
-
-[profile.release-web]
-inherits = "release"
-lto = false
 opt-level = "s"

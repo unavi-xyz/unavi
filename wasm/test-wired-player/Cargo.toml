@@ -1,5 +1,6 @@
 [package]
 name = "test-wired-player"
+publish = false
 version.workspace = true
 edition.workspace = true
 repository.workspace = true

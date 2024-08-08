@@ -1,6 +1,6 @@
 [package]
-
 name = "unavi-networking"
+publish = false
 version.workspace = true
 license.workspace = true
 repository.workspace = true

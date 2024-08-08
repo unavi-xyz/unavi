@@ -11,7 +11,7 @@ use std::sync::Arc;
 use clap::Parser;
 use dwn::{store::SurrealStore, DWN};
 use surrealdb::{
-    engine::local::{Mem, SurrealKV},
+    engine::local::{Mem, SurrealKv},
     Surreal,
 };
 use tracing::{error, Level};
@@ -33,7 +33,7 @@ async fn main() {
         Storage::Filesystem => {
             let db_path = format!("{}/db", args.path);
             std::fs::create_dir_all(&db_path).unwrap();
-            let db = Surreal::new::<SurrealKV>(db_path).await.unwrap();
+            let db = Surreal::new::<SurrealKv>(db_path).await.unwrap();
             SurrealStore::new(db).await.unwrap()
         }
         Storage::Memory => {

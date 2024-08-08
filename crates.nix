@@ -96,7 +96,7 @@ let
     trunkIndexPath = "crates/unavi-app/index.html";
     wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
 
-    CARGO_PROFILE = "release-web";
+    CARGO_PROFILE = "release-wasm";
   };
 
   unaviServerConfig = rec {

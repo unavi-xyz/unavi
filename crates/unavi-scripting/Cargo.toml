@@ -1,5 +1,6 @@
 [package]
 name = "unavi-scripting"
+publish = false
 version.workspace = true
 license.workspace = true
 repository.workspace = true

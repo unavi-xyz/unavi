@@ -65,6 +65,20 @@
           ];
         };
 
+        cargo-wix = pkgs.rustPlatform.buildRustPackage rec {
+          pname = "cargo-wix";
+          version = "0.3.8";
+
+          src = pkgs.fetchFromGitHub {
+            owner = "volks73";
+            repo = "cargo-wix";
+            rev = "${version}";
+            sha256 = "sha256-KtCQ068VDL596Q5dF61Q43UwbraKep+fv/2Q04tOP+M=";
+          };
+
+          cargoHash = "sha256-hLDIqcNVv2EEDMmdGrs54YacH0qkd+fTg0rfjdCClGk=";
+        };
+
         wac-cli = pkgs.rustPlatform.buildRustPackage rec {
           pname = "wac-cli";
           version = "0.3.0";
@@ -89,33 +103,12 @@
 
         crates = import ./crates.nix (inputs // { inherit craneLib localSystem pkgs; });
 
-        terraform = import ./deployments/terraform.nix (inputs // { inherit localSystem pkgs; });
-
         deployments = import ./deployments (inputs // { inherit localSystem; });
       in
       {
         inherit crates;
 
-        apps =
-          crates.apps
-          // terraform.apps
-          // deployments.apps
-          // {
-            generate-readme = flake-utils.lib.mkApp {
-              drv = pkgs.writeShellApplication {
-                name = "generate-readme";
-                runtimeInputs = with pkgs; [
-                  rust-bin.stable.latest.default
-                  cargo-rdme
-                ];
-                text = ''
-                  cd crates
-                  for folder in */; do
-                    (cd "$folder" && cargo rdme) || true
-                  done'';
-              };
-            };
-          };
+        apps = crates.apps // deployments.apps;
 
         checks = crates.checks;
         packages = crates.packages // deployments.packages;
@@ -131,8 +124,12 @@
               cargo-watch
               nodePackages.prettier
               rust-analyzer
+              terraform
             ])
-            ++ [ wac-cli ]
+            ++ [
+              cargo-wix
+              wac-cli
+            ]
             ++ crates.buildInputs
             ++ crates.nativeBuildInputs;
 

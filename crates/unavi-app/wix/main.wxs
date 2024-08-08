@@ -61,7 +61,7 @@
     <Product
         Id='*'
         Name='unavi-app'
-        UpgradeCode='70F4A62F-1B10-4913-909D-0A9250CC9FD8'
+        UpgradeCode='CD21570F-A50A-4B80-97A9-2A8ACCB87ABA'
         Manufacturer='kayh'
         Language='1033'
         Codepage='1252'
@@ -109,7 +109,7 @@
                     -->
 
                     <Directory Id='Bin' Name='bin'>
-                        <Component Id='Path' Guid='04332D3D-FF36-4AC1-B22B-91CECD99C9E0' KeyPath='yes'>
+                        <Component Id='Path' Guid='1943316D-D71F-43DB-B2EF-5588D3642DDF' KeyPath='yes'>
                             <Environment
                                 Id='PATH'
                                 Name='PATH'

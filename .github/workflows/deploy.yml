@@ -105,12 +105,12 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Apply universal
-        run: nix run .#tf-universal-apply
+        run: nix develop -c sh scripts/apply-universal.sh
         env:
           TF_WORKSPACE: default
 
       - name: Apply channel
-        run: nix run .#tf-channel-apply
+        run: nix develop -c sh scripts/apply-channel.sh
 
       - uses: EndBug/add-and-commit@v9
         with:

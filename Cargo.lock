@@ -1719,7 +1719,8 @@ dependencies = [
 [[package]]
 name = "bevy_shader_mtoon"
 version = "0.0.11"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#f4b5687c4e9dbabbd4c308abca82db18c310ca67"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "19a26046674373e5d1c54c54fa28d64bb682bdf03fd3d1c72a9550836d944346"
 dependencies = [
  "bevy",
  "bevy_mod_outline",
@@ -1901,7 +1902,8 @@ dependencies = [
 [[package]]
 name = "bevy_vrm"
 version = "0.0.11"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#f4b5687c4e9dbabbd4c308abca82db18c310ca67"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c00a6a71a87aac11addffc8503ac3820a25e29cc5262397e0b9183aed5b57abd"
 dependencies = [
  "bevy",
  "bevy_gltf_kun",
@@ -2747,9 +2749,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.13"
+version = "4.5.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0fbb260a053428790f3de475e304ff84cdbc4face759ea7a3e64c1edd938a7fc"
+checksum = "c937d4061031a6d0c8da4b9a4f98a172fc2976dfb1c19213a9cf7d0d3c837e36"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -2757,9 +2759,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.13"
+version = "4.5.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64b17d7ea74e9f833c7dbf2cbe4fb12ff26783eda4782a8975b72f895c9b4d99"
+checksum = "85379ba512b21a328adf887e85f7742d12e96eb31f3ef077df4ffc26b506ffed"
 dependencies = [
  "anstream",
  "anstyle",
@@ -5119,7 +5121,8 @@ dependencies = [
 [[package]]
 name = "gltf_kun_vrm"
 version = "0.0.11"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#f4b5687c4e9dbabbd4c308abca82db18c310ca67"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6dfa96b122fa2d2f9eba82ec7e302c2b63a0edc1b1696f8c63986c1a6c75a8cc"
 dependencies = [
  "gltf_kun",
  "serde",
@@ -8924,9 +8927,9 @@ dependencies = [
 
 [[package]]
 name = "ravif"
-version = "0.11.9"
+version = "0.11.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5797d09f9bd33604689e87e8380df4951d4912f01b63f71205e2abd4ae25e6b6"
+checksum = "a8f0bfd976333248de2078d350bfdf182ff96e168a24d23d2436cef320dd4bdd"
 dependencies = [
  "avif-serialize",
  "imgref",
@@ -9898,9 +9901,9 @@ checksum = "cd0b0ec5f1c1ca621c432a25813d8d60c88abe6d3e08a3eb9cf37d97a0fe3d73"
 
 [[package]]
 name = "serde"
-version = "1.0.204"
+version = "1.0.205"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc76f558e0cbb2a839d37354c575f1dc3fdc6546b5be373ba43d95f231bf7c12"
+checksum = "e33aedb1a7135da52b7c21791455563facbbcc43d0f0f66165b42c21b3dfb150"
 dependencies = [
  "serde_derive",
 ]
@@ -9925,9 +9928,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.204"
+version = "1.0.205"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0cd7e117be63d3c3678776753929474f3b04a43a080c744d6b0ae2a8c28e222"
+checksum = "692d6f5ac90220161d6774db30c662202721e64aed9058d2c394f451261420c1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -10004,7 +10007,8 @@ dependencies = [
 [[package]]
 name = "serde_vrm"
 version = "0.0.11"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#f4b5687c4e9dbabbd4c308abca82db18c310ca67"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "066947cf117620028601b4eed6851bf56a101993eab838edaf07398f30662166"
 dependencies = [
  "bevy",
  "serde",

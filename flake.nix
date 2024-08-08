@@ -123,6 +123,7 @@
               cargo-release
               cargo-watch
               nodePackages.prettier
+              openssh
               rust-analyzer
               terraform
             ])

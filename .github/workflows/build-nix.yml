@@ -51,7 +51,6 @@ jobs:
           remove-android: true
           remove-cached-tools: true
           remove-codeql: true
-          remove-docker-images: true
           remove-dotnet: true
           remove-haskell: true
 

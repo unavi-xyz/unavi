@@ -30,18 +30,7 @@ jobs:
         with:
           targets: x86_64-pc-windows-msvc
 
-      - run: mkdir result
-
-      - if: ${{ matrix.package == 'unavi-app' }}
-        uses: actions/download-artifact@v4
-        with:
-          name: components
-
-      - if: ${{ matrix.package == 'unavi-app' }}
-        name: Copy generated assets
-        run: |
-          New-Item -ItemType Directory -Path "assets/components"
-          Expand-Archive -Path components.zip -DestinationPath "assets/components"
+      - run: cargo install cargo-component
 
       - name: Build package
         run: |

@@ -4,15 +4,17 @@
     "type": [
       "object",
       {
-        "domain_server": "string",
+        "domain_dwn": "string",
         "domain_web": "string",
+        "domain_world": "string",
         "ip": "string",
         "name": "string"
       }
     ],
     "value": {
-      "domain_server": "server.unavi.xyz",
+      "domain_dwn": "dwn.unavi.xyz",
       "domain_web": "app.unavi.xyz",
+      "domain_world": "world.unavi.xyz",
       "ip": "64.225.62.83",
       "name": "unavi-server-stable"
     }

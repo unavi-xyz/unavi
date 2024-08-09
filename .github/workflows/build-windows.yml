@@ -31,6 +31,7 @@ jobs:
           targets: x86_64-pc-windows-msvc
 
       - run: cargo install cargo-component
+      - run: cargo install wac-cli
 
       - name: Install capnproto
         uses: crazy-max/ghaction-chocolatey@v3

@@ -6,18 +6,19 @@ use std::{
 use unavi_constants::assets::WASM_ASSETS_DIR;
 
 const ASSETS_DIR: &str = "assets";
-const WASM_DIR: &str = "../../wasm";
 const WASM_PROFILE: &str = "release-wasm";
 const WASM_TARGET: &str = "wasm32-wasip1";
 
 fn main() {
+    let wasm_dir: PathBuf = ["..", "..", "wasm"].iter().collect();
+
     // Build components.
     let wasm_out = PathBuf::from(ASSETS_DIR).join(WASM_ASSETS_DIR);
     std::fs::create_dir_all(wasm_out.clone()).unwrap();
     std::fs::remove_dir_all(wasm_out.clone()).unwrap();
     std::fs::create_dir_all(wasm_out.clone()).unwrap();
 
-    for entry in std::fs::read_dir(WASM_DIR).expect("Failed to read directory") {
+    for entry in std::fs::read_dir(&wasm_dir).expect("Failed to read directory") {
         let entry = entry.expect("Failed to read directory entry");
         let path = entry.path();
 
@@ -50,14 +51,10 @@ fn main() {
 
             let dst = wasm_out.join(Path::new(&wasm_name));
 
-            std::fs::copy(
-                format!(
-                    "../../target/{}/{}/{}",
-                    WASM_TARGET, WASM_PROFILE, wasm_name
-                ),
-                &dst,
-            )
-            .expect("Failed to copy the WASM file {}");
+            let path: PathBuf = ["..", "..", "target", WASM_TARGET, WASM_PROFILE, &wasm_name]
+                .iter()
+                .collect();
+            std::fs::copy(path, &dst).expect("Failed to copy the WASM file {}");
         }
     }
 
@@ -120,5 +117,5 @@ fn main() {
         std::fs::remove_file(path).unwrap();
     }
 
-    println!("cargo:rerun-if-changed={}", WASM_DIR);
+    println!("cargo:rerun-if-changed={}", wasm_dir.to_str().unwrap());
 }

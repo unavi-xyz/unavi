@@ -79,26 +79,6 @@
           cargoHash = "sha256-hLDIqcNVv2EEDMmdGrs54YacH0qkd+fTg0rfjdCClGk=";
         };
 
-        wac-cli = pkgs.rustPlatform.buildRustPackage rec {
-          pname = "wac-cli";
-          version = "0.3.0";
-
-          src = pkgs.fetchFromGitHub {
-            owner = "bytecodealliance";
-            repo = "wac";
-            rev = "v${version}";
-            sha256 = "sha256-xv+lSsJ+SSRovJ0mt8/AbEjEdyaRvO3qzY44ih9oSF0=";
-          };
-
-          cargoHash = "sha256-+hmTsTfcxygdU/pDTkmkuQgujEOR1+H8YZG4ScVBKcc=";
-
-          nativeBuildInputs = [ pkgs.pkg-config ];
-
-          buildInputs =
-            [ pkgs.openssl ]
-            ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.SystemConfiguration ];
-        };
-
         craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
         crates = import ./crates.nix (inputs // { inherit craneLib localSystem pkgs; });
@@ -127,10 +107,7 @@
               rust-analyzer
               terraform
             ])
-            ++ [
-              cargo-wix
-              wac-cli
-            ]
+            ++ [ cargo-wix ]
             ++ crates.buildInputs
             ++ crates.nativeBuildInputs;
 

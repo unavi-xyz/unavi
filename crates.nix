@@ -7,13 +7,33 @@
 let
   lib = pkgs.lib;
 
+  wac-cli = pkgs.rustPlatform.buildRustPackage rec {
+    pname = "wac-cli";
+    version = "0.3.0";
+
+    src = pkgs.fetchFromGitHub {
+      owner = "bytecodealliance";
+      repo = "wac";
+      rev = "v${version}";
+      sha256 = "sha256-xv+lSsJ+SSRovJ0mt8/AbEjEdyaRvO3qzY44ih9oSF0=";
+    };
+
+    cargoHash = "sha256-+hmTsTfcxygdU/pDTkmkuQgujEOR1+H8YZG4ScVBKcc=";
+
+    nativeBuildInputs = [ pkgs.pkg-config ];
+
+    buildInputs =
+      [ pkgs.openssl ]
+      ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.SystemConfiguration ];
+  };
+
   src = lib.cleanSourceWith {
     src = ./.;
     filter =
       path: type:
-      (lib.hasInfix "/crates/unavi-app/assets/" path)
-      || (lib.hasInfix "/crates/unavi-app/public/" path)
-      || (lib.hasInfix "/wired-protocol" path)
+      (lib.hasInfix "crates/unavi-app/assets/" path)
+      || (lib.hasInfix "crates/unavi-app/public/" path)
+      || (lib.hasInfix "wired-protocol" path)
       || (lib.hasSuffix ".capnp" path)
       || (lib.hasSuffix ".html" path)
       || (lib.hasSuffix ".json" path)
@@ -39,6 +59,10 @@ let
     ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs; [ libiconv ]);
 
   unaviAppConfig = rec {
+    pname = "unavi-app";
+    strictDeps = true;
+    cargoExtraArgs = "--locked -p unavi-app";
+
     inherit src;
 
     buildInputs =
@@ -64,20 +88,27 @@ let
           darwin.apple_sdk.frameworks.Cocoa
         ]
       );
-    nativeBuildInputs = (with pkgs; [ capnproto ]) ++ commonNativeBuildInputs;
 
-    cargoExtraArgs = "--locked -p unavi-app";
-    pname = "unavi-app";
-    strictDeps = true;
+    nativeBuildInputs =
+      (with pkgs; [
+        capnproto
+        cargo-component
+      ])
+      ++ [ wac-cli ]
+      ++ commonNativeBuildInputs;
 
     postInstall = ''
-      cp -r ./crates/unavi-app/assets $out/bin
+      cp -r crates/unavi-app/assets $out/bin
     '';
 
     LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
   };
 
   unaviWebConfig = {
+    pname = "unavi-web";
+    strictDeps = true;
+    cargoExtraArgs = "--locked -p unavi-app";
+
     inherit src;
 
     buildInputs = unaviAppConfig.buildInputs;
@@ -90,9 +121,6 @@ let
       ])
       ++ unaviAppConfig.nativeBuildInputs;
 
-    cargoExtraArgs = "--locked -p unavi-app";
-    pname = "unavi-web";
-    strictDeps = true;
     trunkIndexPath = "crates/unavi-app/index.html";
     wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
 
@@ -100,6 +128,10 @@ let
   };
 
   unaviServerConfig = rec {
+    pname = "unavi-server";
+    strictDeps = true;
+    cargoExtraArgs = "--locked -p unavi-server";
+
     inherit src;
 
     buildInputs = lib.optionals pkgs.stdenv.isLinux (
@@ -115,10 +147,6 @@ let
       (with pkgs; [ capnproto ])
       ++ commonNativeBuildInputs
       ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs; [ darwin.apple_sdk.frameworks.Cocoa ]);
-
-    cargoExtraArgs = "--locked -p unavi-server";
-    pname = "unavi-server";
-    strictDeps = true;
 
     LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
   };
@@ -147,22 +175,29 @@ let
       UNAVI_WORLD_HOST_DID = worldHostDid;
     };
 
-  unaviAppArtifacts = craneLib.buildDepsOnly unaviAppConfig;
   mkUnaviApp =
-    input:
-    craneLib.buildPackage (unaviAppConfig // { cargoArtifacts = unaviAppArtifacts; } // mkAppEnv input);
+    input: craneLib.buildPackage (unaviAppConfig // { inherit cargoArtifacts; } // mkAppEnv input);
   unavi-app = mkUnaviApp { inherit worldHostDid; };
 
   mkUnaviWeb = input: craneLib.buildTrunkPackage (unaviWebConfig // mkAppEnv input);
   unavi-web = mkUnaviWeb { inherit worldHostDid; };
 
-  unavi-server = craneLib.buildPackage unaviServerConfig;
+  unavi-server = craneLib.buildPackage (unaviServerConfig // { inherit cargoArtifacts; });
 in
 {
   inherit mkUnaviApp mkUnaviWeb;
 
   buildInputs = commonArgs.buildInputs;
   nativeBuildInputs = commonArgs.nativeBuildInputs;
+
+  checks = {
+    inherit
+      cargoClippy
+      cargoDoc
+      cargoFmt
+      cargoTarpaulin
+      ;
+  };
 
   apps = rec {
     app = flake-utils.lib.mkApp { drv = unavi-app; };
@@ -179,14 +214,7 @@ in
 
     default = app;
   };
-  checks = {
-    inherit
-      cargoClippy
-      cargoDoc
-      cargoFmt
-      cargoTarpaulin
-      ;
-  };
+
   packages = {
     inherit unavi-app unavi-server unavi-web;
     default = unavi-app;

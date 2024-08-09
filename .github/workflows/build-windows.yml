@@ -32,6 +32,11 @@ jobs:
 
       - run: cargo install cargo-component
 
+      - name: Install capnproto
+        uses: crazy-max/ghaction-chocolatey@v3
+        with:
+          args: install capnproto
+
       - name: Build package
         run: |
           cargo build -p ${{ matrix.package }} --release --target x86_64-pc-windows-msvc

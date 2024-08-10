@@ -42,6 +42,8 @@ jobs:
         run: |
           cargo build -p ${{ matrix.package }} --release --target x86_64-pc-windows-msvc
           mv target/x86_64-pc-windows-msvc/release/*.exe result
+          cp crates/${{ matrix.package }}/README.md result
+          cp LICENSE result
         env:
           UNAVI_REGISTRY_DID: ${{ inputs.channel == 'stable' && 'app' || inputs.channel }}.unavi.xyz
 

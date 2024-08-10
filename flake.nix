@@ -64,6 +64,7 @@
             "wasm32-wasip1"
           ];
         };
+        craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
         cargo-wix = pkgs.rustPlatform.buildRustPackage rec {
           pname = "cargo-wix";
@@ -79,10 +80,7 @@
           cargoHash = "sha256-hLDIqcNVv2EEDMmdGrs54YacH0qkd+fTg0rfjdCClGk=";
         };
 
-        craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
-
         crates = import ./crates.nix (inputs // { inherit craneLib localSystem pkgs; });
-
         deployments = import ./deployments (inputs // { inherit localSystem; });
 
         githubMatrix = nix-github-actions.lib.mkGithubMatrix {
@@ -113,7 +111,24 @@
         apps = crates.apps // deployments.apps;
 
         checks = crates.checks;
-        packages = crates.packages // deployments.packages;
+        packages =
+          crates.packages
+          // deployments.packages
+          // {
+            githubMatrix = githubMatrix // {
+              matrix.include = map (
+                entry:
+                let
+                  split = pkgs.lib.strings.splitString "." entry.attr;
+                  package = pkgs.lib.strings.removeSuffix "\"" (
+                    pkgs.lib.strings.removePrefix "\"" (builtins.elemAt split 1)
+                  );
+                  platform = builtins.elemAt split 0;
+                in
+                entry // { name = "${package}.${platform}"; }
+              ) githubMatrix.matrix.include;
+            };
+          };
 
         devShells.default = craneLib.devShell {
           packages =
@@ -138,19 +153,6 @@
 
         formatter = pkgs.nixfmt-rfc-style;
 
-        githubMatrix = githubMatrix // {
-          matrix.include = map (
-            entry:
-            let
-              split = pkgs.lib.strings.splitString "." entry.attr;
-              package = pkgs.lib.strings.removeSuffix "\"" (
-                pkgs.lib.strings.removePrefix "\"" (builtins.elemAt split 1)
-              );
-              platform = builtins.elemAt split 0;
-            in
-            entry // { name = "${package}.${platform}"; }
-          ) githubMatrix.matrix.include;
-        };
       }
     )
     // (

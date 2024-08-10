@@ -51,37 +51,22 @@ jobs:
           new_branch: release/v${{ steps.semver.outputs.version }}
           tag: v${{ steps.semver.outputs.version }} --force
 
-  terraform:
-    needs: version
-    secrets: inherit
-    uses: ./.github/workflows/deploy.yml
-    with:
-      channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
-      ref: release/v${{ needs.version.outputs.version }}
-      disable-deploy: true
-
   build-nix:
-    needs:
-      - terraform
-      - version
+    needs: version
     uses: ./.github/workflows/build-nix.yml
     with:
       channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
       ref: release/v${{ needs.version.outputs.version }}
 
   build-windows:
-    needs:
-      - terraform
-      - version
+    needs: version
     uses: ./.github/workflows/build-windows.yml
     with:
       channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
       ref: release/v${{ needs.version.outputs.version }}
 
   deploy:
-    needs:
-      - terraform
-      - version
+    needs: version
     secrets: inherit
     uses: ./.github/workflows/deploy.yml
     with:

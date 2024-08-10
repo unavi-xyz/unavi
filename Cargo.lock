@@ -4380,7 +4380,7 @@ dependencies = [
 
 [[package]]
 name = "example-unavi-scene"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "glam 0.28.0",
  "wit-bindgen-rt",
@@ -4388,14 +4388,14 @@ dependencies = [
 
 [[package]]
 name = "example-unavi-ui"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "wit-bindgen-rt",
 ]
 
 [[package]]
 name = "example-wired-input"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "rand",
  "wit-bindgen-rt",
@@ -4403,14 +4403,14 @@ dependencies = [
 
 [[package]]
 name = "example-wired-physics"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "wit-bindgen-rt",
 ]
 
 [[package]]
 name = "example-wired-scene"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "glam 0.28.0",
  "wit-bindgen-rt",
@@ -11344,14 +11344,14 @@ dependencies = [
 
 [[package]]
 name = "test-wired-player"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "wit-bindgen-rt",
 ]
 
 [[package]]
 name = "test-wired-scene"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "wit-bindgen-rt",
 ]
@@ -11827,7 +11827,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-app"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "avian3d",
  "bevy",
@@ -11850,7 +11850,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-avatar"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "avian3d",
  "bevy",
@@ -11863,14 +11863,14 @@ dependencies = [
 
 [[package]]
 name = "unavi-constants"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "avian3d",
 ]
 
 [[package]]
 name = "unavi-dwn"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "bevy",
  "bevy_async_task",
@@ -11880,7 +11880,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-networking"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "anyhow",
  "bevy",
@@ -11902,7 +11902,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-player"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "avian3d",
  "bevy",
@@ -11918,14 +11918,14 @@ dependencies = [
 
 [[package]]
 name = "unavi-scene"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "wit-bindgen-rt",
 ]
 
 [[package]]
 name = "unavi-scripting"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "anyhow",
  "avian3d",
@@ -11945,7 +11945,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-server"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "anyhow",
  "async-recursion",
@@ -11966,14 +11966,14 @@ dependencies = [
 
 [[package]]
 name = "unavi-settings"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "bevy",
 ]
 
 [[package]]
 name = "unavi-shapes"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "parry3d 0.17.0",
  "wit-bindgen-rt",
@@ -11981,7 +11981,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-social-server"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "axum-server",
  "dwn",
@@ -11991,28 +11991,28 @@ dependencies = [
 
 [[package]]
 name = "unavi-system"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "wit-bindgen-rt",
 ]
 
 [[package]]
 name = "unavi-ui"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "wit-bindgen-rt",
 ]
 
 [[package]]
 name = "unavi-vscreen"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "wit-bindgen-rt",
 ]
 
 [[package]]
 name = "unavi-world"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "avian3d",
  "base64 0.22.1",
@@ -12029,7 +12029,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-world-host"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "axum",
  "axum-server",
@@ -12045,7 +12045,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-world-server"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "anyhow",
  "capnp",
@@ -13654,7 +13654,7 @@ dependencies = [
 
 [[package]]
 name = "wired-social"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "dwn",
  "jsonschema",
@@ -13665,7 +13665,7 @@ dependencies = [
 
 [[package]]
 name = "wired-world"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "capnp",
  "capnpc",
@@ -13924,7 +13924,7 @@ checksum = "c1f98acac2f9398db512d6cc2d1fd12ce5e896192e9c961a83dd48d32c7fed8c"
 
 [[package]]
 name = "xwt-futures-io"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "anyhow",
  "futures-io",

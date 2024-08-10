@@ -110,31 +110,41 @@ let
     LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
   };
 
-  unaviWebConfig = {
+  unaviWebConfig = rec {
     pname = "unavi-web";
     strictDeps = true;
     cargoExtraArgs = "--locked -p unavi-app";
 
     inherit src;
 
+    trunkIndexPath = "crates/unavi-app/index.html";
+    wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
+
     buildInputs = unaviAppConfig.buildInputs;
     nativeBuildInputs =
       (with pkgs; [
         binaryen
         trunk
-        wasm-bindgen-cli
         wasm-tools
       ])
+      ++ [ wasm-bindgen-cli ]
       ++ unaviAppConfig.nativeBuildInputs;
 
-    trunkIndexPath = "crates/unavi-app/index.html";
-    wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
-
     postInstall = ''
+      cp -r crates/unavi-app/assets $out
       cp LICENSE $out
     '';
 
     CARGO_PROFILE = "release-wasm";
+
+    cargoArtifacts = craneLib.buildDepsOnly {
+      inherit pname;
+      inherit strictDeps;
+      inherit src;
+      inherit buildInputs;
+      inherit nativeBuildInputs;
+      inherit CARGO_PROFILE;
+    };
   };
 
   unaviServerConfig = rec {

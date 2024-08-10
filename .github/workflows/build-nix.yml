@@ -11,10 +11,6 @@ on:
         description: The ref to build.
         required: true
         type: string
-      attr:
-        description: Only build this attribute.
-        required: false
-        type: string
 
 jobs:
   nix-matrix:
@@ -31,11 +27,6 @@ jobs:
       - id: set-matrix
         run: |
           matrix=$(nix eval --json .#githubMatrix.matrix)
-
-          if [ -n "${{ inputs.attr }}" ]; then
-            matrix=$(echo $matrix | jq '{include: [.include[] | select(.attr == "${{ inputs.attr }}")]}')
-          fi
-
           echo "Matrix: $matrix"
           echo matrix=$matrix >> $GITHUB_OUTPUT
 
@@ -43,7 +34,7 @@ jobs:
     needs: nix-matrix
     strategy:
       matrix: ${{ fromJSON(needs.nix-matrix.outputs.matrix) }}
-    name: ${{ matrix.attr }}
+    name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: AdityaGarg8/remove-unwanted-software@v4
@@ -67,10 +58,10 @@ jobs:
           cp -rL result tmp
           chmod -R 755 tmp
           cd tmp
-          zip -r ../${{ matrix.attr }}.zip .
+          zip -r ../${{ matrix.name }}.zip .
 
       - uses: actions/upload-artifact@v4
         with:
-          name: build-${{ matrix.attr }}
-          path: ${{ matrix.attr }}.zip
+          name: build-${{ matrix.name }}
+          path: ${{ matrix.name }}.zip
           retention-days: 1

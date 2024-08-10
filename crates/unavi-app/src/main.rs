@@ -16,7 +16,6 @@ pub async fn start() {
 
     let mut args = Args {
         debug_physics: false,
-        force_update: false,
         log_level: LogLevel::default(),
     };
 

@@ -9,8 +9,6 @@ on:
         type: string
       ref:
         type: string
-      disable-deploy:
-        type: boolean
   workflow_dispatch:
 
 env:
@@ -31,7 +29,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: AdityaGarg8/remove-unwanted-software@v4
-        if: inputs.disable-deploy != true
         with:
           remove-android: true
           remove-cached-tools: true
@@ -68,5 +65,4 @@ jobs:
           default_author: github_actions
 
       - name: Deploy
-        if: inputs.disable-deploy != true
         run: nix run .?submodules=1#deploy

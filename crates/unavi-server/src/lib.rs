@@ -1,14 +1,24 @@
-use std::sync::Arc;
+use std::{
+    path::PathBuf,
+    sync::{Arc, LazyLock},
+};
 
 use anyhow::Result;
 use clap::{Parser, Subcommand, ValueEnum};
+use directories::ProjectDirs;
 use dwn::{
     store::{DataStore, MessageStore},
     DWN,
 };
 use tracing::{debug, info_span, Instrument};
 
-pub mod process_args;
+pub static STORAGE_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
+    let dirs =
+        ProjectDirs::from("xyz", "unavi", "unavi-server").expect("Failed to get project dirs.");
+    let path = dirs.data_dir().to_owned();
+    std::fs::create_dir_all(&path).expect("Failed to create STORAGE_PATH");
+    path
+});
 
 #[derive(Parser, Debug)]
 #[command(version, about)]
@@ -19,10 +29,6 @@ pub struct Args {
 
     #[arg(long, default_value = "filesystem")]
     pub storage: Storage,
-
-    /// Path to store data in, if storage is set to "filesystem".
-    #[arg(long, default_value = ".unavi/server/<command>")]
-    pub path: String,
 
     #[command(subcommand)]
     pub command: Command,
@@ -81,13 +87,11 @@ impl Default for StartOptions {
 
 #[async_recursion::async_recursion]
 pub async fn start(
-    mut args: Args,
+    args: Args,
     opts: StartOptions,
     dwn: Arc<DWN<impl DataStore + 'static, impl MessageStore + 'static>>,
 ) -> Result<()> {
-    process_args::process_args(&mut args);
-
-    debug!("Processing args: {:?}", args);
+    debug!("Args: {:?}", args);
 
     match args.command {
         Command::All => {
@@ -121,7 +125,7 @@ pub async fn start(
             };
 
             let storage = match args.storage {
-                Storage::Filesystem => unavi_world_host::Storage::Path(args.path),
+                Storage::Filesystem => unavi_world_host::Storage::Path(STORAGE_PATH.clone()),
                 Storage::Memory => unavi_world_host::Storage::Memory,
             };
 

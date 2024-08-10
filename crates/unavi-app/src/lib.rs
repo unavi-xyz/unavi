@@ -14,8 +14,6 @@ use dwn::{actor::Actor, store::SurrealStore, DWN};
 use surrealdb::{engine::local::Db, Surreal};
 use unavi_dwn::UserActor;
 
-pub const ROOT_DIR: &str = ".unavi/app";
-
 mod unavi_system;
 
 pub struct StartOptions {

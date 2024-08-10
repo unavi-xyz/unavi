@@ -14,6 +14,7 @@ eula = false
 anyhow.workspace = true
 async-recursion = "1.1.1"
 clap.workspace = true
+directories.workspace = true
 dwn.workspace = true
 surrealdb = { workspace = true, features = ["kv-mem", "kv-surrealkv"] }
 tokio = { workspace = true, features = ["rt-multi-thread", "signal"] }

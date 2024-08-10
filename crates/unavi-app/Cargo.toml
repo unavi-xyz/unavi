@@ -17,6 +17,7 @@ workspace = true
 avian3d.workspace = true
 bevy = { workspace = true, features = ["wayland"] }
 clap.workspace = true
+directories.workspace = true
 dwn.workspace = true
 tracing.workspace = true
 unavi-dwn = { path = "../unavi-dwn" }

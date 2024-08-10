@@ -96,7 +96,7 @@ in
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
         Environment = [ "LD_LIBRARY_PATH=${pkgs.openssl.out}/lib" ];
-        ExecStart = "${unavi-server}/bin/unavi-server --debug social -p ${portSocial}";
+        ExecStart = "${unavi-server}/unavi-server --debug social -p ${portSocial}";
         Restart = "always";
       };
     };
@@ -106,7 +106,7 @@ in
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
         Environment = [ "LD_LIBRARY_PATH=${pkgs.openssl.out}/lib" ];
-        ExecStart = "${unavi-server}/bin/unavi-server --debug world -d ${domainWorld} -p ${portWorld} --remote-dwn ${urlDwn}";
+        ExecStart = "${unavi-server}/unavi-server --debug world -d ${domainWorld} -p ${portWorld} --remote-dwn ${urlDwn}";
         Restart = "always";
       };
     };

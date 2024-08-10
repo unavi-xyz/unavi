@@ -37,5 +37,8 @@ web-sys = { workspace = true, features = ["Location", "UrlSearchParams", "Window
 surrealdb = { workspace = true, features = ["kv-surrealkv"] }
 tokio = { workspace = true, features = ["rt-multi-thread"] }
 
+[dev-dependencies]
+bevy = { workspace = true, features = ["dynamic_linking", "wayland"] }
+
 [build-dependencies]
 unavi-constants = { path = "../unavi-constants" }

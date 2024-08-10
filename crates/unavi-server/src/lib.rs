@@ -37,8 +37,6 @@ pub struct Args {
 #[derive(Subcommand, Debug)]
 pub enum Command {
     /// Starts all servers with default settings.
-    /// Useful for development.
-    /// Will use a separate database for the combined server.
     All,
     /// Social server.
     /// Hosts a DWN, login APIs, and more.

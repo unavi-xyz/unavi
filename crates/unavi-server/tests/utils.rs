@@ -22,14 +22,12 @@ pub async fn setup_test_server() -> TestServer {
 
     let args_social = Args {
         debug: true,
-        path: String::new(),
         storage: Storage::Memory,
         command: Command::Social { port: port_social },
     };
 
     let args_world = Args {
         debug: true,
-        path: String::new(),
         storage: Storage::Memory,
         command: Command::World {
             domain: domain_world.clone(),

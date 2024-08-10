@@ -45,10 +45,10 @@ jobs:
         env:
           UNAVI_REGISTRY_DID: ${{ inputs.channel == 'stable' && 'app' || inputs.channel }}.unavi.xyz
 
-      - run: Compress-Archive -Path result/* -DestinationPath x86_64-windows.${{ matrix.package }}.zip
+      - run: Compress-Archive -Path result/* -DestinationPath ${{ matrix.package }}.x86_64-windows.zip
 
       - uses: actions/upload-artifact@v4
         with:
-          name: build-x86_64-windows.${{ matrix.package }}
-          path: x86_64-windows.${{ matrix.package }}.zip
+          name: build-${{ matrix.package }}.x86_64-windows
+          path: ${{ matrix.package }}.x86_64-windows.zip
           retention-days: 1

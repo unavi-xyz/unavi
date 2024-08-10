@@ -84,6 +84,28 @@
         crates = import ./crates.nix (inputs // { inherit craneLib localSystem pkgs; });
 
         deployments = import ./deployments (inputs // { inherit localSystem; });
+
+        githubMatrix = nix-github-actions.lib.mkGithubMatrix {
+          attrPrefix = "";
+          checks =
+            nixpkgs.lib.mapAttrs
+              (
+                _: v:
+                (nixpkgs.lib.filterAttrs (
+                  n: _:
+                  !(nixpkgs.lib.mutuallyExclusive [ n ] [
+                    "unavi-app"
+                    "unavi-server"
+                  ])
+                ) v)
+              )
+              (
+                nixpkgs.lib.getAttrs [
+                  flake-utils.lib.system.aarch64-darwin
+                  flake-utils.lib.system.x86_64-linux
+                ] self.packages
+              );
+        };
       in
       {
         inherit crates;
@@ -115,6 +137,20 @@
         };
 
         formatter = pkgs.nixfmt-rfc-style;
+
+        githubMatrix = githubMatrix // {
+          matrix.include = map (
+            entry:
+            let
+              split = pkgs.lib.strings.splitString "." entry.attr;
+              package = pkgs.lib.strings.removeSuffix "\"" (
+                pkgs.lib.strings.removePrefix "\"" (builtins.elemAt split 1)
+              );
+              platform = builtins.elemAt split 0;
+            in
+            entry // { name = "${package}.${platform}"; }
+          ) githubMatrix.matrix.include;
+        };
       }
     )
     // (
@@ -123,28 +159,6 @@
       in
       {
         deploy = deployments.deploy;
-
-        githubMatrix = nix-github-actions.lib.mkGithubMatrix {
-          attrPrefix = "";
-          checks =
-            nixpkgs.lib.mapAttrs
-              (
-                _: v:
-                (nixpkgs.lib.filterAttrs (
-                  n: _:
-                  !(nixpkgs.lib.mutuallyExclusive [ n ] [
-                    "unavi-app"
-                    "unavi-server"
-                  ])
-                ) v)
-              )
-              (
-                nixpkgs.lib.getAttrs [
-                  flake-utils.lib.system.aarch64-darwin
-                  flake-utils.lib.system.x86_64-linux
-                ] self.packages
-              );
-        };
       }
     );
 }

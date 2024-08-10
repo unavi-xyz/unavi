@@ -68,18 +68,22 @@ enum LogLevel {
 #[cfg(not(target_family = "wasm"))]
 #[tokio::main]
 async fn main() {
+    use directories::ProjectDirs;
+    use surrealdb::engine::local::SurrealKV;
+
     let args = Args::parse();
 
-    let db_path = format!("{}/db", unavi_app::ROOT_DIR);
+    let dirs = ProjectDirs::from("xyz", "unavi", "unavi-app").expect("Failed to get project dirs.");
+    let db_path = dirs.data_dir();
 
-    std::fs::create_dir_all(&db_path).expect("Failed to create database dir.");
+    std::fs::create_dir_all(db_path).expect("Failed to create database dir.");
 
-    let db = Surreal::new::<surrealdb::engine::local::SurrealKV>(&db_path)
+    let db = Surreal::new::<SurrealKV>(db_path)
         .await
         .expect("Failed to create SurrealDB.");
 
     let opts = args_to_options(args);
-    unavi_app::start(db, opts).await
+    unavi_app::start(db, opts).await;
 }
 
 fn args_to_options(args: Args) -> StartOptions {

@@ -15,12 +15,11 @@ use surrealdb::{
     Surreal,
 };
 use tracing::{error, Level};
-use unavi_server::{process_args::process_args, StartOptions, Storage};
+use unavi_server::{StartOptions, Storage, STORAGE_PATH};
 
 #[tokio::main]
 async fn main() {
-    let mut args = unavi_server::Args::parse();
-    process_args(&mut args);
+    let args = unavi_server::Args::parse();
 
     let log_level = if args.debug {
         Level::DEBUG
@@ -31,9 +30,9 @@ async fn main() {
 
     let store = match &args.storage {
         Storage::Filesystem => {
-            let db_path = format!("{}/db", args.path);
-            std::fs::create_dir_all(&db_path).unwrap();
-            let db = Surreal::new::<SurrealKV>(db_path).await.unwrap();
+            let db = Surreal::new::<SurrealKV>(STORAGE_PATH.clone())
+                .await
+                .unwrap();
             SurrealStore::new(db).await.unwrap()
         }
         Storage::Memory => {

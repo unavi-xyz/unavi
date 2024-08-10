@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
 use didkit::JWK;
 use dwn::{
@@ -60,7 +60,7 @@ where
 
     let actor = match &opts.storage {
         Storage::Path(path) => {
-            let identity_path = format!("{}/identity.json", path);
+            let identity_path = path.join(Path::new("identity.json"));
 
             if let Ok(identity) = std::fs::read_to_string(&identity_path) {
                 let identity: WorldHostIdentity =
@@ -91,7 +91,7 @@ where
     actor
 }
 
-fn create_identity<D, M>(did: String, dwn: Arc<DWN<D, M>>, path: Option<&str>) -> Actor<D, M>
+fn create_identity<D, M>(did: String, dwn: Arc<DWN<D, M>>, path: Option<&Path>) -> Actor<D, M>
 where
     D: DataStore,
     M: MessageStore,
@@ -110,7 +110,6 @@ where
     let identity = serde_json::to_string(&identity).unwrap();
 
     if let Some(path) = path {
-        info!("Saving identity to {}", path);
         std::fs::write(path, identity).unwrap();
     }
 

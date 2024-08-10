@@ -4,6 +4,7 @@
 
 use std::{
     net::{Ipv4Addr, SocketAddr},
+    path::PathBuf,
     sync::Arc,
     time::Duration,
 };
@@ -34,7 +35,7 @@ pub struct ServerOptions<D: DataStore, M: MessageStore> {
 #[derive(Debug, Clone)]
 pub enum Storage {
     /// Path to a directory to store data within.
-    Path(String),
+    Path(PathBuf),
     Memory,
 }
 

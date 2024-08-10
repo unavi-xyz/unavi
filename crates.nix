@@ -38,6 +38,8 @@ let
       || (lib.hasSuffix ".html" path)
       || (lib.hasSuffix ".json" path)
       || (lib.hasSuffix ".wit" path)
+      || (lib.hasSuffix "LICENSE" path)
+      || (lib.hasSuffix "README.md" path)
       || (craneLib.filterCargoSources path type);
   };
 
@@ -98,7 +100,11 @@ let
       ++ commonNativeBuildInputs;
 
     postInstall = ''
-      cp -r crates/unavi-app/assets $out/bin
+      mv $out/bin/* $out
+      rm -r $out/bin
+      cp -r crates/unavi-app/assets $out
+      cp crates/unavi-app/README.md $out
+      cp LICENSE $out
     '';
 
     LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
@@ -124,6 +130,10 @@ let
     trunkIndexPath = "crates/unavi-app/index.html";
     wasm-bindgen-cli = pkgs.wasm-bindgen-cli;
 
+    postInstall = ''
+      cp LICENSE $out
+    '';
+
     CARGO_PROFILE = "release-wasm";
   };
 
@@ -147,6 +157,13 @@ let
       (with pkgs; [ capnproto ])
       ++ commonNativeBuildInputs
       ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs; [ darwin.apple_sdk.frameworks.Cocoa ]);
+
+    postInstall = ''
+      mv $out/bin/* $out
+      rm -r $out/bin
+      cp crates/unavi-server/README.md $out
+      cp LICENSE $out
+    '';
 
     LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
   };

@@ -140,7 +140,7 @@ jobs:
             cd $dir
 
             for file in *; do
-              mv $file ../${file%.zip}-${{ needs.version.outputs.version }}.zip
+              mv $file ../${file%.zip}.${{ needs.version.outputs.version }}.zip
             done
 
             cd ..

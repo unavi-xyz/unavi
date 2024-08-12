@@ -156,10 +156,8 @@ mod tests {
         app.init_asset::<Scene>();
         app.init_asset::<SkinnedMeshInverseBindposes>();
 
-        app.add_systems(Startup, |asset_server: Res<AssetServer>| {
-            let _: Handle<AnimationClip> =
-                asset_server.load("models/character-animations.glb#Animation0");
-        });
+        let asset_server = app.world().get_resource::<AssetServer>().unwrap();
+        let _ = asset_server.load::<AnimationClip>("models/character-animations.glb#Animation0");
 
         app.add_systems(
             Update,

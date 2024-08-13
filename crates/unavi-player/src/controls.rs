@@ -8,12 +8,12 @@ use super::look::{LookDirection, PitchEvent, YawEvent};
 
 #[derive(Default)]
 pub struct InputState {
+    pub menu: bool,
     pub forward: bool,
     pub backward: bool,
     pub left: bool,
     pub right: bool,
     pub jump: bool,
-    pub sprint: bool,
 }
 
 #[derive(Component)]
@@ -87,13 +87,7 @@ pub fn move_player(
             move_direction -= right;
         }
 
-        let speed = if player.input.sprint {
-            player.sprint_speed
-        } else {
-            player.speed
-        };
-
-        let desired_velocity = move_direction.normalize_or_zero() * speed;
+        let desired_velocity = move_direction.normalize_or_zero() * player.speed;
 
         if player.input.jump {
             controller.action(TnuaBuiltinJump {

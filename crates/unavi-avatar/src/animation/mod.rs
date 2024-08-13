@@ -12,13 +12,18 @@ pub enum AnimationName {
     Falling,
     #[default]
     Idle,
+    Menu,
     Walk,
     WalkLeft,
     WalkRight,
 }
 
-#[derive(Component, Clone, Default)]
+#[derive(Component, Clone, Default, Deref, DerefMut)]
 pub struct AnimationWeights(pub HashMap<AnimationName, f32>);
+
+/// Target an animation towards a specific weight.
+#[derive(Component, Clone, Default, Deref, DerefMut)]
+pub struct TargetAnimationWeights(pub HashMap<AnimationName, f32>);
 
 #[derive(Component, Clone)]
 pub struct AvatarAnimationClips(pub HashMap<AnimationName, AvatarAnimation>);
@@ -36,9 +41,11 @@ pub(crate) fn init_animations(
 ) {
     for (entity, parent) in animation_players.iter_mut() {
         if let Ok(graph) = animation_nodes.get(parent.get()) {
-            commands
-                .entity(entity)
-                .insert((AnimationWeights::default(), graph.clone()));
+            commands.entity(entity).insert((
+                AnimationWeights::default(),
+                TargetAnimationWeights::default(),
+                graph.clone(),
+            ));
         } else {
             error!(
                 "Failed to initialize animation. Animation nodes not found for animation player {}",
@@ -48,24 +55,29 @@ pub(crate) fn init_animations(
     }
 }
 
-const ALPHA_FACTOR: f32 = 0.01;
+const ALPHA_FACTOR: f32 = 100.0;
 const VELOCITY_FACTOR: f32 = 2.0;
 const WEIGHT_THRESHOLD: f32 = 0.02;
 
 pub(crate) fn play_avatar_animations(
     time: Res<Time>,
     mut avatars: Query<(&AvatarAnimationNodes, &AverageVelocity, &Transform)>,
-    mut animation_players: Query<(&mut AnimationWeights, &mut AnimationPlayer, &Parent)>,
+    mut animation_players: Query<(
+        &mut AnimationWeights,
+        &TargetAnimationWeights,
+        &mut AnimationPlayer,
+        &Parent,
+    )>,
 ) {
-    let alpha = time.delta_seconds() * ALPHA_FACTOR;
+    let alpha = (time.delta_seconds() * ALPHA_FACTOR).min(0.9);
 
-    for (mut weights, mut player, parent) in animation_players.iter_mut() {
+    for (mut weights, targets, mut player, parent) in animation_players.iter_mut() {
         if let Ok((nodes, avg, transform)) = avatars.get_mut(**parent) {
             for (name, node) in nodes.0.iter() {
                 if player.animation(*node).is_none() {
                     let animation = player.play(*node).repeat();
                     animation.set_weight(0.0);
-                    weights.0.insert(*name, 0.0);
+                    weights.insert(*name, 0.0);
                 }
             }
 
@@ -132,11 +144,25 @@ pub(crate) fn play_avatar_animations(
                 walk.set_speed(-1.0);
             }
 
+            // Menu.
+            let menu_weight = weights[&AnimationName::Menu];
+            let mut target_menu_weight = *targets.get(&AnimationName::Menu).unwrap_or(&0.0);
+
+            apply_weight(
+                AnimationName::Menu,
+                &mut target_menu_weight,
+                alpha,
+                &mut player,
+                nodes,
+                &mut weights,
+            );
+
             // Idle.
             let mut idle_weight = 1.0;
             idle_weight -= l_walk_weight;
             idle_weight -= r_walk_weight;
             idle_weight -= walk_weight;
+            idle_weight -= menu_weight;
 
             apply_weight(
                 AnimationName::Idle,
@@ -158,8 +184,8 @@ fn apply_weight<'a>(
     nodes: &AvatarAnimationNodes,
     weights: &mut AnimationWeights,
 ) -> &'a mut ActiveAnimation {
-    let prev = weights.0[&name];
-    *weight *= (1.0 - alpha) + prev * alpha;
+    let prev = &weights[&name];
+    *weight = *weight * (1.0 - alpha) + prev * alpha;
 
     if *weight < WEIGHT_THRESHOLD {
         *weight = 0.0;
@@ -169,7 +195,7 @@ fn apply_weight<'a>(
 
     let animation = player.animation_mut(nodes.0[&name]).unwrap();
     animation.set_weight(*weight);
-    weights.0.insert(name, *weight);
+    weights.insert(name, *weight);
 
     animation
 }

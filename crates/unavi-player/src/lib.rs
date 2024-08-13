@@ -8,6 +8,7 @@ use bevy_vrm::{
     VrmBundle,
 };
 use controls::{InputState, PitchTag, YawTag};
+use menu::PlayerMenuOpen;
 use unavi_avatar::{
     default_character_animations, default_vrm, AvatarBundle, AvatarPlugin, AverageVelocity,
     FallbackAvatar,
@@ -17,6 +18,7 @@ use unavi_constants::layers::LOCAL_PLAYER_LAYER;
 mod controls;
 mod input;
 mod look;
+mod menu;
 
 pub struct PlayerPlugin;
 
@@ -37,6 +39,7 @@ impl Plugin for PlayerPlugin {
             (
                 input::handle_raycast_input,
                 look::grab_mouse,
+                menu::play_menu_animation,
                 setup_first_person,
                 (controls::void_teleport, input::read_keyboard_input).before(controls::move_player),
                 (
@@ -55,7 +58,6 @@ pub struct Player {
     pub input: InputState,
     pub jump_height: f32,
     pub speed: f32,
-    pub sprint_speed: f32,
     pub velocity: Vec3,
 }
 
@@ -65,7 +67,6 @@ impl Default for Player {
             input: InputState::default(),
             jump_height: 2.0,
             speed: 7.0,
-            sprint_speed: 10.0,
             velocity: Vec3::ZERO,
         }
     }
@@ -90,6 +91,7 @@ fn spawn_player(asset_server: Res<AssetServer>, mut commands: Commands) {
             },
             LinearVelocity::default(),
             Player::default(),
+            PlayerMenuOpen::default(),
             RigidBody::Dynamic,
             TnuaControllerBundle::default(),
             SpatialBundle {

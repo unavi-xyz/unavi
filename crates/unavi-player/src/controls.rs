@@ -2,7 +2,10 @@ use avian3d::prelude::*;
 use bevy::prelude::*;
 use bevy_tnua::prelude::*;
 
-use crate::{Player, PLAYER_HEIGHT, SPAWN};
+use crate::{
+    body::{PLAYER_HEIGHT, SPAWN},
+    Player,
+};
 
 #[derive(Default)]
 pub struct InputState {

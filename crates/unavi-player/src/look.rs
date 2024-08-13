@@ -2,31 +2,15 @@ use std::f32::consts::FRAC_PI_2;
 
 use bevy::{input::mouse::MouseMotion, prelude::*, window::CursorGrabMode, window::Window};
 
-#[derive(Resource)]
-pub struct LookDirection {
-    pub forward: Vec3,
-    pub right: Vec3,
-    pub up: Vec3,
-}
+use crate::Player;
 
-impl Default for LookDirection {
-    fn default() -> Self {
-        Self {
-            forward: Vec3::Z,
-            right: -Vec3::X,
-            up: Vec3::Y,
-        }
-    }
-}
-
-#[derive(Event, Debug, Default, Deref, DerefMut)]
+#[derive(Resource, Event, Debug, Default, Deref, DerefMut)]
 pub struct CameraLookEvent(pub Vec2);
 
 const PITCH_BOUND: f32 = FRAC_PI_2 - 1E-3;
 const SENSITIVITY: f32 = 0.001;
 
 pub fn read_mouse_input(
-    mut look_direction: ResMut<LookDirection>,
     mut look_events: EventWriter<CameraLookEvent>,
     mut look_xy: Local<Vec2>,
     mut mouse_motion_events: EventReader<MouseMotion>,
@@ -70,11 +54,34 @@ pub fn read_mouse_input(
     look_xy.y = look_xy.y.clamp(-PITCH_BOUND, PITCH_BOUND);
 
     look_events.send(CameraLookEvent(*look_xy));
+}
 
-    let rotation = Quat::from_euler(EulerRot::YXZ, look_xy.x, look_xy.y, 0.0);
-    look_direction.forward = rotation * Vec3::NEG_Z;
-    look_direction.right = rotation * Vec3::X;
-    look_direction.up = rotation * Vec3::Y;
+const CAM_LERP_FACTOR: f32 = 30.0;
+
+pub fn apply_camera_look(
+    mut cameras: Query<&mut Transform, With<Camera>>,
+    mut look_events: EventReader<CameraLookEvent>,
+    mut players: Query<(&mut Transform, &Children), (With<Player>, Without<Camera>)>,
+    mut target_pitch: Local<Quat>,
+    mut target_yaw: Local<Quat>,
+    time: Res<Time>,
+) {
+    for look in look_events.read() {
+        *target_yaw = Quat::from_rotation_y(look.x);
+        *target_pitch = Quat::from_rotation_x(look.y);
+    }
+
+    let s = time.delta_seconds() * CAM_LERP_FACTOR;
+
+    for (mut player_tr, children) in players.iter_mut() {
+        player_tr.rotation = player_tr.rotation.lerp(*target_yaw, s);
+
+        for child in children.iter() {
+            if let Ok(mut camera_tr) = cameras.get_mut(*child) {
+                camera_tr.rotation = camera_tr.rotation.lerp(*target_pitch, s);
+            }
+        }
+    }
 }
 
 pub fn grab_mouse(

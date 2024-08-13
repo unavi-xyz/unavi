@@ -31,7 +31,6 @@ impl Plugin for PlayerPlugin {
         ))
         .insert_resource(input::InputMap::default())
         .add_event::<look::CameraLookEvent>()
-        .init_resource::<look::LookDirection>()
         .add_systems(Startup, spawn_player)
         .add_systems(
             Update,
@@ -43,7 +42,7 @@ impl Plugin for PlayerPlugin {
                 (controls::void_teleport, input::read_keyboard_input).before(controls::move_player),
                 (
                     look::read_mouse_input,
-                    controls::apply_camera_look,
+                    look::apply_camera_look,
                     controls::move_player,
                 )
                     .chain(),

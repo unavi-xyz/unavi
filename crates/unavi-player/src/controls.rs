@@ -4,7 +4,7 @@ use bevy_tnua::prelude::*;
 
 use crate::{Player, PLAYER_HEIGHT, SPAWN};
 
-use super::look::{LookDirection, PitchEvent, YawEvent};
+use super::look::{CameraLookEvent, LookDirection};
 
 #[derive(Default)]
 pub struct InputState {
@@ -16,45 +16,31 @@ pub struct InputState {
     pub jump: bool,
 }
 
-#[derive(Component)]
-pub struct YawTag;
-
-#[derive(Component)]
-pub struct PitchTag;
-
 const CAM_LERP_FACTOR: f32 = 30.0;
 
-pub fn apply_yaw(
-    mut events: EventReader<YawEvent>,
-    mut query: Query<&mut Transform, With<YawTag>>,
-    mut target: Local<Quat>,
+pub fn apply_camera_look(
+    mut cameras: Query<&mut Transform, With<Camera>>,
+    mut events: EventReader<CameraLookEvent>,
+    mut players: Query<(&mut Transform, &Children), (With<Player>, Without<Camera>)>,
+    mut target_pitch: Local<Quat>,
+    mut target_yaw: Local<Quat>,
     time: Res<Time>,
 ) {
-    if let Some(yaw) = events.read().next() {
-        *target = Quat::from_rotation_y(yaw.0);
+    if let Some(look) = events.read().next() {
+        *target_yaw = Quat::from_rotation_y(look.x);
+        *target_pitch = Quat::from_rotation_x(look.y);
     }
 
     let s = time.delta_seconds() * CAM_LERP_FACTOR;
 
-    for mut transform in query.iter_mut() {
-        transform.rotation = transform.rotation.lerp(*target, s);
-    }
-}
+    for (mut player_tr, children) in players.iter_mut() {
+        player_tr.rotation = player_tr.rotation.lerp(*target_yaw, s);
 
-pub fn apply_pitch(
-    mut events: EventReader<PitchEvent>,
-    mut query: Query<&mut Transform, With<PitchTag>>,
-    mut target: Local<Quat>,
-    time: Res<Time>,
-) {
-    if let Some(pitch) = events.read().next() {
-        *target = Quat::from_rotation_x(pitch.0);
-    }
-
-    let s = time.delta_seconds() * CAM_LERP_FACTOR;
-
-    for mut transform in query.iter_mut() {
-        transform.rotation = transform.rotation.lerp(*target, s);
+        for child in children.iter() {
+            if let Ok(mut camera_tr) = cameras.get_mut(*child) {
+                camera_tr.rotation = camera_tr.rotation.lerp(*target_pitch, s);
+            }
+        }
     }
 }
 

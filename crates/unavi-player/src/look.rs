@@ -19,21 +19,17 @@ impl Default for LookDirection {
     }
 }
 
-#[derive(Event, Debug, Default)]
-pub struct PitchEvent(pub f32);
-
-#[derive(Event, Debug, Default)]
-pub struct YawEvent(pub f32);
+#[derive(Event, Debug, Default, Deref, DerefMut)]
+pub struct CameraLookEvent(pub Vec2);
 
 const PITCH_BOUND: f32 = FRAC_PI_2 - 1E-3;
 const SENSITIVITY: f32 = 0.001;
 
 pub fn read_mouse_input(
     mut look_direction: ResMut<LookDirection>,
+    mut look_events: EventWriter<CameraLookEvent>,
+    mut look_xy: Local<Vec2>,
     mut mouse_motion_events: EventReader<MouseMotion>,
-    mut pitch_events: EventWriter<PitchEvent>,
-    mut yaw_events: EventWriter<YawEvent>,
-    mut yaw_pitch: Local<Vec2>,
     windows: Query<&Window>,
 ) {
     if mouse_motion_events.is_empty() {
@@ -70,20 +66,12 @@ pub fn read_mouse_input(
         }
     }
 
-    *yaw_pitch += delta;
+    *look_xy += delta;
+    look_xy.y = look_xy.y.clamp(-PITCH_BOUND, PITCH_BOUND);
 
-    if yaw_pitch.y > PITCH_BOUND {
-        yaw_pitch.y = PITCH_BOUND;
-    }
+    look_events.send(CameraLookEvent(*look_xy));
 
-    if yaw_pitch.y < -PITCH_BOUND {
-        yaw_pitch.y = -PITCH_BOUND;
-    }
-
-    pitch_events.send(PitchEvent(yaw_pitch.y));
-    yaw_events.send(YawEvent(yaw_pitch.x));
-
-    let rotation = Quat::from_euler(EulerRot::YXZ, yaw_pitch.x, yaw_pitch.y, 0.0);
+    let rotation = Quat::from_euler(EulerRot::YXZ, look_xy.x, look_xy.y, 0.0);
     look_direction.forward = rotation * Vec3::NEG_Z;
     look_direction.right = rotation * Vec3::X;
     look_direction.up = rotation * Vec3::Y;

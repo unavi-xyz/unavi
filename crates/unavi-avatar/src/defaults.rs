@@ -21,6 +21,13 @@ pub fn default_character_animations(asset_server: &AssetServer) -> AvatarAnimati
         },
     );
     map.insert(
+        AnimationName::Menu,
+        AvatarAnimation {
+            clip: asset_server.load("models/idle-menu.glb#Animation0"),
+            gltf: asset_server.load("models/idle-menu.glb"),
+        },
+    );
+    map.insert(
         AnimationName::WalkLeft,
         AvatarAnimation {
             clip: asset_server.load("models/character-animations.glb#Animation2"),

@@ -4,29 +4,29 @@ use bevy::prelude::*;
 use unavi_constants::layers::{OTHER_PLAYER_LAYER, WORLD_LAYER};
 use unavi_scripting::api::wired_input::input_handler::{InputHandlerSender, ScriptInputEvent};
 
-use crate::PlayerCamera;
+use crate::{menu::PlayerMenuOpen, PlayerCamera};
 
 use super::Player;
 
 #[derive(Resource)]
 pub struct InputMap {
+    pub key_menu: KeyCode,
     pub key_forward: KeyCode,
     pub key_backward: KeyCode,
     pub key_left: KeyCode,
     pub key_right: KeyCode,
     pub key_jump: KeyCode,
-    pub key_sprint: KeyCode,
 }
 
 impl Default for InputMap {
     fn default() -> Self {
         Self {
+            key_menu: KeyCode::Tab,
             key_forward: KeyCode::KeyW,
             key_backward: KeyCode::KeyS,
             key_left: KeyCode::KeyA,
             key_right: KeyCode::KeyD,
             key_jump: KeyCode::Space,
-            key_sprint: KeyCode::ShiftLeft,
         }
     }
 }
@@ -34,15 +34,26 @@ impl Default for InputMap {
 pub fn read_keyboard_input(
     keys: Res<ButtonInput<KeyCode>>,
     input_map: Res<InputMap>,
-    mut players: Query<&mut Player>,
+    mut players: Query<(&mut Player, &mut PlayerMenuOpen)>,
 ) {
-    for mut player in players.iter_mut() {
+    for (mut player, mut menu) in players.iter_mut() {
         player.input.forward = keys.pressed(input_map.key_forward);
         player.input.backward = keys.pressed(input_map.key_backward);
         player.input.left = keys.pressed(input_map.key_left);
         player.input.right = keys.pressed(input_map.key_right);
         player.input.jump = keys.pressed(input_map.key_jump);
-        player.input.sprint = keys.pressed(input_map.key_sprint);
+
+        let did_move = player.input.forward
+            || player.input.backward
+            || player.input.left
+            || player.input.right
+            || player.input.jump;
+
+        if did_move {
+            menu.0 = false;
+        } else if keys.just_pressed(input_map.key_menu) {
+            menu.0 = !menu.0;
+        }
     }
 }
 

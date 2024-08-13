@@ -7,7 +7,7 @@ use bevy_vrm::{
     loader::Vrm,
     VrmBundle,
 };
-use controls::{InputState, PitchTag, YawTag};
+use controls::InputState;
 use menu::PlayerMenuOpen;
 use unavi_avatar::{
     default_character_animations, default_vrm, AvatarBundle, AvatarPlugin, AverageVelocity,
@@ -30,8 +30,7 @@ impl Plugin for PlayerPlugin {
             TnuaControllerPlugin::default(),
         ))
         .insert_resource(input::InputMap::default())
-        .add_event::<look::YawEvent>()
-        .add_event::<look::PitchEvent>()
+        .add_event::<look::CameraLookEvent>()
         .init_resource::<look::LookDirection>()
         .add_systems(Startup, spawn_player)
         .add_systems(
@@ -44,7 +43,7 @@ impl Plugin for PlayerPlugin {
                 (controls::void_teleport, input::read_keyboard_input).before(controls::move_player),
                 (
                     look::read_mouse_input,
-                    (controls::apply_yaw, controls::apply_pitch),
+                    controls::apply_camera_look,
                     controls::move_player,
                 )
                     .chain(),
@@ -123,28 +122,18 @@ fn spawn_player(asset_server: Res<AssetServer>, mut commands: Commands) {
         ))
         .id();
 
-    let yaw = commands
-        .spawn((
-            TransformBundle::from_transform(Transform::from_xyz(
-                0.0,
-                (PLAYER_HEIGHT / 2.0) * 0.85,
-                0.0,
-            )),
-            YawTag,
-        ))
-        .id();
-    let pitch = commands.spawn((TransformBundle::default(), PitchTag)).id();
     let camera = commands
         .spawn((
-            Camera3dBundle::default(),
+            Camera3dBundle {
+                transform: Transform::from_xyz(0.0, (PLAYER_HEIGHT / 2.0) * 0.85, 0.0),
+                ..default()
+            },
             PlayerCamera,
             RenderLayers::layer(0).union(&RENDER_LAYERS[&FirstPersonFlag::FirstPersonOnly]),
         ))
         .id();
 
-    commands.entity(body).push_children(&[avatar, yaw]);
-    commands.entity(yaw).push_children(&[pitch]);
-    commands.entity(pitch).push_children(&[camera]);
+    commands.entity(body).push_children(&[avatar, camera]);
 }
 
 #[derive(Component)]
@@ -159,7 +148,6 @@ fn setup_first_person(
         if let AssetEvent::LoadedWithDependencies { id } = event {
             for (ent, handle) in players.iter() {
                 if handle.id() == *id {
-                    info!("setting up first person");
                     writer.send(SetupFirstPerson(ent));
                 }
             }

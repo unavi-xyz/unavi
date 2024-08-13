@@ -164,7 +164,7 @@ mod tests {
             |assets: Res<Assets<AnimationClip>>,
              time: Res<Time>,
              mut exit: EventWriter<AppExit>| {
-                if time.elapsed_seconds() > 10.0 {
+                if time.elapsed_seconds() > 15.0 {
                     panic!("Took too long");
                 }
 

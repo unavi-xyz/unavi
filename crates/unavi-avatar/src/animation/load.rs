@@ -1,5 +1,5 @@
 use bevy::{gltf::GltfNode, prelude::*, utils::HashMap};
-use bevy_vrm::animations::vrm::VRM_ANIMATION_TARGETS;
+use bevy_vrm::{animations::vrm::VRM_ANIMATION_TARGETS, BoneName};
 
 use super::{
     mixamo::{MIXAMO_ANIMATION_TARGETS, MIXAMO_BONE_NAMES},
@@ -46,6 +46,11 @@ pub(crate) fn load_animation_nodes(
             let clip_curves = clip.curves_mut();
 
             for (name, target) in MIXAMO_ANIMATION_TARGETS.iter() {
+                // Head transform is set by user's camera.
+                if *name == BoneName::Head {
+                    continue;
+                }
+
                 if let Some(mut curves) = clip_curves.remove(target) {
                     let mut to_remove = Vec::default();
 

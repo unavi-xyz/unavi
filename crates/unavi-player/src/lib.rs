@@ -26,15 +26,20 @@ impl Plugin for PlayerPlugin {
         .add_systems(
             Update,
             (
+                body::set_avatar_head,
                 body::setup_first_person,
                 input::handle_raycast_input,
                 look::grab_mouse,
                 menu::play_menu_animation,
-                (controls::void_teleport, input::read_keyboard_input).before(controls::move_player),
                 (
-                    look::read_mouse_input,
-                    look::apply_camera_look,
-                    controls::move_player,
+                    (
+                        input::read_keyboard_input,
+                        (look::read_mouse_input, look::apply_camera_look).chain(),
+                    ),
+                    (
+                        (controls::void_teleport, controls::move_player).chain(),
+                        body::rotate_avatar_head,
+                    ),
                 )
                     .chain(),
             ),

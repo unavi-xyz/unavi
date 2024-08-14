@@ -86,7 +86,7 @@ pub(crate) fn spawn_player(asset_server: Res<AssetServer>, mut commands: Command
     let camera = commands
         .spawn((
             Camera3dBundle {
-                transform: Transform::from_xyz(0.0, (PLAYER_HEIGHT / 2.0) * 0.85, 0.0),
+                transform: Transform::from_xyz(0.0, -PLAYER_HEIGHT / 2.0, 0.0),
                 ..default()
             },
             PlayerCamera,
@@ -139,6 +139,7 @@ pub(crate) fn setup_first_person(
 
             let mut left_eye = None;
             let mut right_eye = None;
+            let mut head = None;
 
             for (bone_ent, bone_name) in bones.iter(&scene.world) {
                 if *bone_name == BoneName::LeftEye {
@@ -147,25 +148,36 @@ pub(crate) fn setup_first_person(
                 if *bone_name == BoneName::RightEye {
                     right_eye = Some(bone_ent);
                 }
+                if *bone_name == BoneName::Head {
+                    head = Some(bone_ent);
+                }
             }
 
-            let mut offset = Vec3::default();
-
-            if left_eye.is_some() && right_eye.is_some() {
+            let mut offset = if left_eye.is_some() && right_eye.is_some() {
                 let left_tr = scene
                     .world
                     .entity(left_eye.unwrap())
-                    .get::<Transform>()
+                    .get::<GlobalTransform>()
                     .unwrap();
                 let right_tr = scene
                     .world
                     .entity(right_eye.unwrap())
-                    .get::<Transform>()
+                    .get::<GlobalTransform>()
                     .unwrap();
 
-                offset = left_tr.translation + right_tr.translation;
-                offset /= 2.0;
-            }
+                (left_tr.translation() + right_tr.translation()) / 2.0
+            } else {
+                let head_tr = scene
+                    .world
+                    .entity(head.unwrap())
+                    .get::<GlobalTransform>()
+                    .unwrap();
+
+                head_tr.translation()
+            };
+
+            offset.y += 0.08;
+            offset.z -= 0.08;
 
             commands.entity(avatar_ent).insert(EyeOffset(offset));
 
@@ -217,15 +229,15 @@ fn is_child(target_child: Entity, target_parent: Entity, parents: &Query<&Parent
 pub struct BaseRotation(pub Quat);
 
 pub(crate) fn rotate_avatar_head(
-    avatars: Query<&AvatarHead>,
-    cameras: Query<&Transform, With<PlayerCamera>>,
+    avatars: Query<(&AvatarHead, &EyeOffset)>,
     mut bones: Query<
         (&mut Transform, Option<&BaseRotation>),
         (With<BoneName>, Without<PlayerCamera>),
     >,
+    mut cameras: Query<&mut Transform, With<PlayerCamera>>,
     mut commands: Commands,
 ) {
-    for head in avatars.iter() {
+    for (head, offset) in avatars.iter() {
         let Ok((mut head_tr, base)) = bones.get_mut(head.0) else {
             continue;
         };
@@ -237,9 +249,10 @@ pub(crate) fn rotate_avatar_head(
             continue;
         };
 
-        let camera_tr = cameras.single();
-        let new_rot = base.0 * camera_tr.rotation;
+        let mut camera_tr = cameras.single_mut();
+        camera_tr.translation = Vec3::new(0.0, -PLAYER_HEIGHT / 2.0, 0.0) + offset.0;
 
+        let new_rot = base.0 * camera_tr.rotation;
         head_tr.rotation = new_rot;
     }
 }

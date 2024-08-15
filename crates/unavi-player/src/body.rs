@@ -11,7 +11,7 @@ use unavi_avatar::{
 };
 use unavi_constants::layers::LOCAL_PLAYER_LAYER;
 
-use crate::{controls::InputState, menu::PlayerMenuOpen};
+use crate::controls::InputState;
 
 #[derive(Component)]
 pub struct Player {
@@ -51,7 +51,6 @@ pub(crate) fn spawn_player(asset_server: Res<AssetServer>, mut commands: Command
             },
             LinearVelocity::default(),
             Player::default(),
-            PlayerMenuOpen::default(),
             RigidBody::Dynamic,
             TnuaControllerBundle::default(),
             SpatialBundle {

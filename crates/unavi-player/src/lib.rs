@@ -20,9 +20,12 @@ impl Plugin for PlayerPlugin {
             TnuaAvian3dPlugin::default(),
             TnuaControllerPlugin::default(),
         ))
-        .insert_resource(input::InputMap::default())
         .add_event::<look::CameraLookEvent>()
+        .init_state::<menu::MenuState>()
+        .insert_resource(input::InputMap::default())
         .add_systems(Startup, body::spawn_player)
+        .add_systems(OnEnter(menu::MenuState::Open), menu::open_menu)
+        .add_systems(OnExit(menu::MenuState::Open), menu::close_menu)
         .add_systems(
             Update,
             (
@@ -30,7 +33,6 @@ impl Plugin for PlayerPlugin {
                 body::setup_first_person,
                 input::handle_raycast_input,
                 look::grab_mouse,
-                menu::play_menu_animation,
                 (
                     (
                         input::read_keyboard_input,

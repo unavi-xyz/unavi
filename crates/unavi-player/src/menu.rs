@@ -1,15 +1,30 @@
-use bevy::prelude::*;
+use bevy::{ecs::system::RunSystemOnce, prelude::*};
 use unavi_avatar::animation::{load::AvatarAnimationNodes, AnimationName, TargetAnimationWeights};
 
-#[derive(Component, Default, Deref, DerefMut)]
-pub struct PlayerMenuOpen(pub bool);
+use crate::Player;
 
-pub(crate) fn play_menu_animation(
+#[derive(States, Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum MenuState {
+    #[default]
+    Closed,
+    Open,
+}
+
+pub(crate) fn open_menu(world: &mut World) {
+    world.run_system_once_with(true, set_menu_animation);
+}
+
+pub(crate) fn close_menu(world: &mut World) {
+    world.run_system_once_with(false, set_menu_animation);
+}
+
+fn set_menu_animation(
+    open: In<bool>,
     avatars: Query<Entity, With<AvatarAnimationNodes>>,
     mut animation_players: Query<(&mut TargetAnimationWeights, &Parent)>,
-    players: Query<(&PlayerMenuOpen, &Children), Changed<PlayerMenuOpen>>,
+    players: Query<&Children, With<Player>>,
 ) {
-    for (open, children) in players.iter() {
+    for children in players.iter() {
         for child in children.iter() {
             if let Ok(avatar_ent) = avatars.get(*child) {
                 for (mut targets, parent) in animation_players.iter_mut() {
@@ -17,7 +32,7 @@ pub(crate) fn play_menu_animation(
                         continue;
                     }
 
-                    if **open {
+                    if *open {
                         targets.insert(AnimationName::Menu, 1.0);
                     } else {
                         targets.remove(&AnimationName::Menu);

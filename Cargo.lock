@@ -1562,6 +1562,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_oxr"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e0cfecb5064bc6670bb0ffdacd9fa031b435255f799d8dca292740a562651a2d"
+dependencies = [
+ "ash",
+ "bevy",
+ "d3d12",
+ "eyre",
+ "futures-lite 2.3.0",
+ "jni 0.20.0",
+ "mint",
+ "ndk-context",
+ "openxr",
+ "wgpu",
+ "wgpu-core",
+ "wgpu-hal",
+ "winapi",
+]
+
+[[package]]
 name = "bevy_panorbit_camera"
 version = "0.19.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2803,6 +2824,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "15efe7a882b08f34e38556b14f2fb3daa98769d06c7f0c1b076dfd0d983bc892"
 dependencies = [
  "error-code",
+]
+
+[[package]]
+name = "cmake"
+version = "0.1.51"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb1e43aa7fd152b1f968787f7dbcdeb306d1867ff373c69955211876c053f91a"
+dependencies = [
+ "cc",
 ]
 
 [[package]]
@@ -4467,6 +4497,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "eyre"
+version = "0.6.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7cd915d99f24784cdc19fd37ef22b97e3ff0ae756c7e492e9fbfe897d61e2aec"
+dependencies = [
+ "indenter",
+ "once_cell",
+]
+
+[[package]]
 name = "fallible-iterator"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5830,6 +5870,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "indenter"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce23b50ad8242c51a442f3ff322d56b02f08852c77e4c0b4d3fd684abc89c683"
+
+[[package]]
 name = "indexmap"
 version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6069,6 +6115,20 @@ dependencies = [
  "error-chain",
  "jni-sys",
  "log",
+ "walkdir",
+]
+
+[[package]]
+name = "jni"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "039022cdf4d7b1cf548d31f60ae783138e5fd42013f6271049d7df7afadef96c"
+dependencies = [
+ "cesu8",
+ "combine",
+ "jni-sys",
+ "log",
+ "thiserror",
  "walkdir",
 ]
 
@@ -7082,6 +7142,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "mint"
+version = "0.5.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e53debba6bda7a793e5f99b8dacf19e626084f525f7829104ba9898f367d85ff"
+
+[[package]]
 name = "mio"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7994,6 +8060,29 @@ dependencies = [
  "openssl-src",
  "pkg-config",
  "vcpkg",
+]
+
+[[package]]
+name = "openxr"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a03958eb34719625119448d483ebd2fe008a2128b6286f2a7138b7e48072053"
+dependencies = [
+ "libc",
+ "libloading 0.8.5",
+ "ndk-context",
+ "openxr-sys",
+]
+
+[[package]]
+name = "openxr-sys"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1534b2c14b56564e58b91f5015817e1d87bd43ca12a188eda6a9ea3859b0ec25"
+dependencies = [
+ "cmake",
+ "libc",
+ "mint",
 ]
 
 [[package]]
@@ -11858,6 +11947,7 @@ version = "0.0.5"
 dependencies = [
  "avian3d",
  "bevy",
+ "bevy_oxr",
  "clap",
  "directories",
  "dwn",

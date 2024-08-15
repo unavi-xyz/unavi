@@ -74,7 +74,7 @@ fn handle_session_response(mut commands: Commands, mut sessions: Query<(Entity, 
                 }
                 SessionResponse::PlayerTransform {
                     player,
-                    rotation,
+                    rotation: _,
                     translation,
                 } => {
                     info!("Player: {}, translation: {:?}", player, translation);

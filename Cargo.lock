@@ -11955,7 +11955,6 @@ dependencies = [
  "tokio",
  "tracing",
  "unavi-constants",
- "unavi-dwn",
  "unavi-networking",
  "unavi-player",
  "unavi-scripting",
@@ -11984,16 +11983,6 @@ name = "unavi-constants"
 version = "0.0.5"
 dependencies = [
  "avian3d",
-]
-
-[[package]]
-name = "unavi-dwn"
-version = "0.0.5"
-dependencies = [
- "bevy",
- "bevy_async_task",
- "dwn",
- "surrealdb",
 ]
 
 [[package]]
@@ -12141,8 +12130,8 @@ dependencies = [
  "bevy_vrm",
  "dwn",
  "serde_json",
+ "surrealdb",
  "thiserror",
- "unavi-dwn",
  "wired-social",
 ]
 

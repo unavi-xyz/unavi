@@ -1,5 +1,7 @@
 use bevy::prelude::*;
+use dwn::{actor::Actor, store::SurrealStore};
 use home::JoinHome;
+use surrealdb::engine::local::Db;
 use wired_social::schemas::common::RecordLink;
 
 mod home;
@@ -63,3 +65,6 @@ fn add_atmosphere_cameras(
             .insert(bevy_atmosphere::plugin::AtmosphereCamera::default());
     }
 }
+
+#[derive(Resource)]
+pub struct UserActor(pub Actor<SurrealStore<Db>, SurrealStore<Db>>);

@@ -1,16 +1,17 @@
+use std::sync::LazyLock;
+
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use bevy::prelude::*;
 
 use bevy_async_task::{AsyncTaskRunner, AsyncTaskStatus};
 use dwn::{
-    actor::{MessageBuilder, ProcessMessageError},
+    actor::{Actor, MessageBuilder, ProcessMessageError},
     message::{
         descriptor::{records::RecordsFilter, Descriptor},
         Data,
     },
 };
 use thiserror::Error;
-use unavi_dwn::{world_host::world_host_did, UserActor};
 use wired_social::{
     protocols::world_host::{world_host_protocol_url, WORLD_HOST_PROTOCOL_VERSION},
     schemas::{
@@ -21,7 +22,7 @@ use wired_social::{
     },
 };
 
-use crate::{InstanceRecord, InstanceServer, WorldRecord};
+use crate::{InstanceRecord, InstanceServer, UserActor, WorldRecord};
 
 #[derive(Event, Default)]
 pub struct JoinHome;
@@ -48,6 +49,12 @@ pub struct JoinHomeResult {
     world: RecordLink,
 }
 
+const ENV_WORLD_HOST_DID: Option<&str> = option_env!("UNAVI_WORLD_HOST_DID");
+const LOCAL_WORLD_HOST_DID: &str = "did:web:localhost%3A3001";
+
+static WORLD_HOST_DID: LazyLock<&str> =
+    LazyLock::new(|| ENV_WORLD_HOST_DID.unwrap_or(LOCAL_WORLD_HOST_DID));
+
 pub fn handle_join_home(
     actor: Res<UserActor>,
     mut commands: Commands,
@@ -58,10 +65,9 @@ pub fn handle_join_home(
         AsyncTaskStatus::Idle => {
             if events.read().next().is_some() {
                 let actor = actor.0.clone();
+                let world_host = *WORLD_HOST_DID;
 
                 task.start(async move {
-                    let world_host = world_host_did();
-
                     // Query for user's home.
                     let reply = actor
                         .query_records(RecordsFilter {

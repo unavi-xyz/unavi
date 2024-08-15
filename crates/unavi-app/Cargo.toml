@@ -20,7 +20,6 @@ clap.workspace = true
 directories.workspace = true
 dwn.workspace = true
 tracing.workspace = true
-unavi-dwn = { path = "../unavi-dwn" }
 unavi-networking = { path = "../unavi-networking" }
 unavi-player = { path = "../unavi-player" }
 unavi-scripting = { path = "../unavi-scripting" }

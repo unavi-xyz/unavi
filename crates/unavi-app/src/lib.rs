@@ -12,7 +12,7 @@ use bevy::{
 use avian3d::prelude::*;
 use dwn::{actor::Actor, store::SurrealStore, DWN};
 use surrealdb::{engine::local::Db, Surreal};
-use unavi_dwn::UserActor;
+use unavi_world::UserActor;
 
 mod unavi_system;
 
@@ -72,7 +72,6 @@ pub async fn start(db: Surreal<Db>, opts: StartOptions) {
 
     app.insert_resource(UserActor(actor)).add_plugins((
         PhysicsPlugins::default(),
-        unavi_dwn::DwnPlugin,
         unavi_networking::NetworkingPlugin,
         unavi_player::PlayerPlugin,
         unavi_scripting::ScriptingPlugin,

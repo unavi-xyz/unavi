@@ -36,7 +36,7 @@ fn main() {
                 ])
                 .current_dir(&path)
                 .output()
-                .expect("Failed to build the subdirectory");
+                .expect("Failed to buld with cargo-component");
 
             if !output.status.success() {
                 panic!(
@@ -73,7 +73,7 @@ fn main() {
             let output = Command::new("wac")
                 .args(["plug", "--plug", path_a, path_b])
                 .output()
-                .unwrap();
+                .expect("Failed to run wac plug");
 
             if output.status.success() {
                 println!("Plugged {} -> {}", path_a, path_b);

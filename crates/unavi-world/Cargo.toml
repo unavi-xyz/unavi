@@ -17,8 +17,8 @@ bevy_async_task.workspace = true
 bevy_vrm.workspace = true
 dwn.workspace = true
 serde_json.workspace = true
+surrealdb = { workspace = true, features = ["kv-mem"] }
 thiserror.workspace = true
-unavi-dwn = { path = "../unavi-dwn" }
 wired-social = { path = "../wired-social" }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]

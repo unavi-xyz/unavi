@@ -19,6 +19,7 @@ mod unavi_system;
 pub struct StartOptions {
     pub debug_physics: bool,
     pub log_level: Level,
+    pub xr: bool,
 }
 
 impl Default for StartOptions {
@@ -26,6 +27,7 @@ impl Default for StartOptions {
         Self {
             debug_physics: false,
             log_level: Level::INFO,
+            xr: false,
         }
     }
 }
@@ -43,34 +45,42 @@ pub async fn start(db: Surreal<Db>, opts: StartOptions) {
 
     let mut app = App::new();
 
-    app.insert_resource(UserActor(actor))
-        .add_plugins((
-            DefaultPlugins
-                .set(AssetPlugin {
-                    meta_check: AssetMetaCheck::Paths(meta_paths),
-                    ..default()
-                })
-                .set(LogPlugin {
-                    level: opts.log_level,
-                    ..default()
-                })
-                .set(WindowPlugin {
-                    primary_window: Some(Window {
-                        prevent_default_event_handling: true,
-                        title: "UNAVI".to_string(),
-                        ..default()
-                    }),
-                    ..default()
-                }),
-            PhysicsPlugins::default(),
-            unavi_dwn::DwnPlugin,
-            unavi_networking::NetworkingPlugin,
-            unavi_player::PlayerPlugin,
-            unavi_scripting::ScriptingPlugin,
-            unavi_settings::SettingsPlugin,
-            unavi_world::WorldPlugin,
-        ))
-        .add_systems(Startup, unavi_system::spawn_unavi_system);
+    let default_plugins = if opts.xr {
+        bevy_oxr::DefaultXrPlugins::default().build()
+    } else {
+        DefaultPlugins.build()
+    };
+
+    default_plugins
+        .set(AssetPlugin {
+            meta_check: AssetMetaCheck::Paths(meta_paths),
+            ..default()
+        })
+        .set(LogPlugin {
+            level: opts.log_level,
+            ..default()
+        })
+        .set(WindowPlugin {
+            primary_window: Some(Window {
+                prevent_default_event_handling: true,
+                title: "UNAVI".to_string(),
+                ..default()
+            }),
+            ..default()
+        })
+        .finish(&mut app);
+
+    app.insert_resource(UserActor(actor)).add_plugins((
+        PhysicsPlugins::default(),
+        unavi_dwn::DwnPlugin,
+        unavi_networking::NetworkingPlugin,
+        unavi_player::PlayerPlugin,
+        unavi_scripting::ScriptingPlugin,
+        unavi_settings::SettingsPlugin,
+        unavi_world::WorldPlugin,
+    ));
+
+    app.add_systems(Startup, unavi_system::spawn_unavi_system);
 
     if opts.debug_physics {
         app.add_plugins(PhysicsDebugPlugin::default());

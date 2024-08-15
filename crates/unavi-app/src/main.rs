@@ -49,12 +49,15 @@ fn main() {}
 #[derive(Parser, Debug)]
 #[command(version, about)]
 struct Args {
-    /// Enables physics debug mode.
+    /// Enables debug physics visuals.
     #[arg(long)]
     debug_physics: bool,
-    /// Sets the log level.
+    /// Minimum log level.
     #[arg(long, default_value_t, value_enum)]
     log_level: LogLevel,
+    /// Enables XR support.
+    #[arg(long)]
+    xr: bool,
 }
 
 #[derive(ValueEnum, Clone, Debug, Default)]
@@ -96,5 +99,6 @@ fn args_to_options(args: Args) -> StartOptions {
     StartOptions {
         debug_physics: args.debug_physics,
         log_level,
+        xr: args.xr,
     }
 }

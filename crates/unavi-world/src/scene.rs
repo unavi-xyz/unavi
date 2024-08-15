@@ -11,7 +11,8 @@ pub fn setup_lights(mut commands: Commands, mut ambient: ResMut<AmbientLight>) {
     commands.spawn((
         DirectionalLightBundle {
             directional_light: DirectionalLight {
-                shadows_enabled: true,
+                // https://github.com/awtterpip/bevy_oxr/issues/149
+                // shadows_enabled: true,
                 illuminance: 5000.0,
                 color: Color::linear_rgb(1.0, 1.0, 0.98),
                 ..default()

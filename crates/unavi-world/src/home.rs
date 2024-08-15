@@ -5,7 +5,7 @@ use bevy::prelude::*;
 
 use bevy_async_task::{AsyncTaskRunner, AsyncTaskStatus};
 use dwn::{
-    actor::{Actor, MessageBuilder, ProcessMessageError},
+    actor::{MessageBuilder, ProcessMessageError},
     message::{
         descriptor::{records::RecordsFilter, Descriptor},
         Data,

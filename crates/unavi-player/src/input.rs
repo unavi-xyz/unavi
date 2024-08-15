@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use unavi_constants::layers::{OTHER_PLAYER_LAYER, WORLD_LAYER};
 use unavi_scripting::api::wired_input::input_handler::{InputHandlerSender, ScriptInputEvent};
 
-use crate::{menu::PlayerMenuOpen, PlayerCamera};
+use crate::{menu::MenuState, PlayerCamera};
 
 use super::Player;
 
@@ -32,11 +32,13 @@ impl Default for InputMap {
 }
 
 pub fn read_keyboard_input(
-    keys: Res<ButtonInput<KeyCode>>,
     input_map: Res<InputMap>,
-    mut players: Query<(&mut Player, &mut PlayerMenuOpen)>,
+    keys: Res<ButtonInput<KeyCode>>,
+    menu: Res<State<MenuState>>,
+    mut next_menu: ResMut<NextState<MenuState>>,
+    mut players: Query<&mut Player>,
 ) {
-    for (mut player, mut menu) in players.iter_mut() {
+    for mut player in players.iter_mut() {
         player.input.forward = keys.pressed(input_map.key_forward);
         player.input.backward = keys.pressed(input_map.key_backward);
         player.input.left = keys.pressed(input_map.key_left);
@@ -50,9 +52,12 @@ pub fn read_keyboard_input(
             || player.input.jump;
 
         if did_move {
-            menu.0 = false;
+            next_menu.set(MenuState::Closed);
         } else if keys.just_pressed(input_map.key_menu) {
-            menu.0 = !menu.0;
+            match menu.get() {
+                MenuState::Closed => next_menu.set(MenuState::Open),
+                MenuState::Open => next_menu.set(MenuState::Closed),
+            }
         }
     }
 }

@@ -11982,9 +11982,6 @@ dependencies = [
 [[package]]
 name = "unavi-constants"
 version = "0.0.5"
-dependencies = [
- "avian3d",
-]
 
 [[package]]
 name = "unavi-networking"

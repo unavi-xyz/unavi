@@ -39,7 +39,7 @@ pub enum Command {
     /// Starts all servers with default settings.
     All,
     /// Social server.
-    /// Hosts a DWN, login APIs, and more.
+    /// Hosts a DWN and login APIs.
     Social {
         #[arg(short, long, default_value = "3000")]
         port: u16,

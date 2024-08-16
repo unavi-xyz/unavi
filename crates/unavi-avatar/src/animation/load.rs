@@ -108,8 +108,6 @@ pub(crate) fn load_animation_nodes(
 
                     let vrm_target = VRM_ANIMATION_TARGETS[name];
                     clip_curves.insert(vrm_target, curves);
-                } else {
-                    warn!("No animation curves for {}", name);
                 }
             }
 

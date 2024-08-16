@@ -9,19 +9,22 @@ use bevy_vrm::{
 use unavi_avatar::{
     default_character_animations, default_vrm, AvatarBundle, AverageVelocity, FallbackAvatar,
 };
-use unavi_constants::layers::LOCAL_PLAYER_LAYER;
+use unavi_constants::{
+    layers::LOCAL_PLAYER_LAYER,
+    player::{PLAYER_HEIGHT, PLAYER_WIDTH},
+};
 
 use crate::controls::InputState;
 
 #[derive(Component)]
-pub struct Player {
+pub struct LocalPlayer {
     pub input: InputState,
     pub jump_height: f32,
     pub speed: f32,
     pub velocity: Vec3,
 }
 
-impl Default for Player {
+impl Default for LocalPlayer {
     fn default() -> Self {
         Self {
             input: InputState::default(),
@@ -35,8 +38,6 @@ impl Default for Player {
 #[derive(Component)]
 pub struct PlayerCamera;
 
-pub const PLAYER_HEIGHT: f32 = 1.8;
-const PLAYER_WIDTH: f32 = 0.5;
 pub const SPAWN: Vec3 = Vec3::new(0.0, PLAYER_HEIGHT * 2.0, 0.0);
 
 pub(crate) fn spawn_player(asset_server: Res<AssetServer>, mut commands: Commands) {
@@ -50,7 +51,7 @@ pub(crate) fn spawn_player(asset_server: Res<AssetServer>, mut commands: Command
                 ..default()
             },
             LinearVelocity::default(),
-            Player::default(),
+            LocalPlayer::default(),
             RigidBody::Dynamic,
             TnuaControllerBundle::default(),
             SpatialBundle {

@@ -52,9 +52,14 @@ struct Args {
     /// Enables debug physics visuals.
     #[arg(long)]
     debug_physics: bool,
+
     /// Minimum log level.
     #[arg(long, default_value_t, value_enum)]
     log_level: LogLevel,
+
+    #[arg(long, default_value = "filesystem")]
+    storage: Storage,
+
     /// Enables XR support.
     #[arg(long)]
     xr: bool,
@@ -68,22 +73,36 @@ enum LogLevel {
     Trace,
 }
 
+#[derive(ValueEnum, Clone, Debug)]
+pub enum Storage {
+    Filesystem,
+    Memory,
+}
+
 #[cfg(not(target_family = "wasm"))]
 #[tokio::main]
 async fn main() {
     use directories::ProjectDirs;
-    use surrealdb::engine::local::SurrealKV;
+    use surrealdb::engine::local::{Mem, SurrealKV};
 
     let args = Args::parse();
 
-    let dirs = ProjectDirs::from("xyz", "unavi", "unavi-app").expect("Failed to get project dirs.");
-    let db_path = dirs.data_dir();
+    let db = match args.storage {
+        Storage::Filesystem => {
+            let dirs = ProjectDirs::from("xyz", "unavi", "unavi-app")
+                .expect("Failed to get project dirs.");
+            let db_path = dirs.data_dir();
 
-    std::fs::create_dir_all(db_path).expect("Failed to create database dir.");
+            std::fs::create_dir_all(db_path).expect("Failed to create database dir.");
 
-    let db = Surreal::new::<SurrealKV>(db_path)
-        .await
-        .expect("Failed to create SurrealDB.");
+            Surreal::new::<SurrealKV>(db_path)
+                .await
+                .expect("Failed to create SurrealDB.")
+        }
+        Storage::Memory => Surreal::new::<Mem>(())
+            .await
+            .expect("Failed to create SurrealDB."),
+    };
 
     let opts = args_to_options(args);
     unavi_app::start(db, opts).await;

@@ -1,9 +1,6 @@
 use bevy::prelude::*;
 use bevy_vrm::loader::Vrm;
-
-const FALLBACK_RADIUS: f32 = 0.35;
-const FALLBACK_HEIGHT: f32 = 1.8;
-const CAPSULE_LENGTH: f32 = FALLBACK_HEIGHT - (FALLBACK_RADIUS * 2.0);
+use unavi_constants::player::{PLAYER_HEIGHT, PLAYER_WIDTH};
 
 #[derive(Component, Default)]
 pub struct FallbackAvatar;
@@ -28,7 +25,10 @@ pub fn init_fallback_assets(
     });
     commands.insert_resource(FallbackMaterial(handle_mat));
 
-    let handle_mesh = meshes.add(Mesh::from(Capsule3d::new(FALLBACK_RADIUS, CAPSULE_LENGTH)));
+    let handle_mesh = meshes.add(Mesh::from(Capsule3d::new(
+        PLAYER_WIDTH / 2.0,
+        PLAYER_HEIGHT - PLAYER_WIDTH,
+    )));
     commands.insert_resource(FallbackMesh(handle_mesh));
 }
 
@@ -57,7 +57,7 @@ pub fn spawn_fallback_children(
                 PbrBundle {
                     material: fallback_material.clone(),
                     mesh: fallback_mesh.clone(),
-                    transform: Transform::from_xyz(0.0, FALLBACK_HEIGHT / 2.0, 0.0),
+                    transform: Transform::from_xyz(0.0, PLAYER_HEIGHT / 2.0, 0.0),
                     ..Default::default()
                 },
             ));

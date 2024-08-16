@@ -1,7 +1,7 @@
 use bevy::{ecs::system::RunSystemOnce, prelude::*};
 use unavi_avatar::animation::{load::AvatarAnimationNodes, AnimationName, TargetAnimationWeights};
 
-use crate::Player;
+use crate::LocalPlayer;
 
 #[derive(States, Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum MenuState {
@@ -22,7 +22,7 @@ fn set_menu_animation(
     open: In<bool>,
     avatars: Query<Entity, With<AvatarAnimationNodes>>,
     mut animation_players: Query<(&mut TargetAnimationWeights, &Parent)>,
-    players: Query<&Children, With<Player>>,
+    players: Query<&Children, With<LocalPlayer>>,
 ) {
     for children in players.iter() {
         for child in children.iter() {

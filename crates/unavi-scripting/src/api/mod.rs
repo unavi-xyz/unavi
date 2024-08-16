@@ -15,6 +15,7 @@ pub fn add_host_apis(linker: &mut Linker<StoreState>) -> Result<()> {
     wired_input::add_to_linker(linker)?;
     wired_log::add_to_linker(linker)?;
     wired_physics::add_to_linker(linker)?;
+    wired_player::add_to_linker(linker)?;
     Ok(())
 }
 

@@ -87,10 +87,19 @@ pub async fn update_loop(
                         }
                     };
 
-                    for player_id in instance.players.iter() {
-                        let player = players.get_mut(player_id).unwrap();
-                        player.known_players.add(*player_id);
+                    let player = players.get_mut(&msg.player_id).unwrap();
+
+                    for other_id in instance.players.iter() {
+                        player.known_players.add(*other_id);
                         player
+                            .sender
+                            .send(OutgoingEvent::PlayerJoined { id: *other_id })?;
+                    }
+
+                    for other_id in instance.players.iter() {
+                        let other = players.get_mut(other_id).unwrap();
+                        other.known_players.add(msg.player_id);
+                        other
                             .sender
                             .send(OutgoingEvent::PlayerJoined { id: msg.player_id })?;
                     }

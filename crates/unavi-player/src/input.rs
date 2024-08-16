@@ -6,7 +6,7 @@ use unavi_scripting::api::wired_input::input_handler::{InputHandlerSender, Scrip
 
 use crate::{menu::MenuState, PlayerCamera};
 
-use super::Player;
+use super::LocalPlayer;
 
 #[derive(Resource)]
 pub struct InputMap {
@@ -36,7 +36,7 @@ pub fn read_keyboard_input(
     keys: Res<ButtonInput<KeyCode>>,
     menu: Res<State<MenuState>>,
     mut next_menu: ResMut<NextState<MenuState>>,
-    mut players: Query<&mut Player>,
+    mut players: Query<&mut LocalPlayer>,
 ) {
     for mut player in players.iter_mut() {
         player.input.forward = keys.pressed(input_map.key_forward);

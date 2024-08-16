@@ -1,11 +1,9 @@
 use avian3d::prelude::*;
 use bevy::prelude::*;
 use bevy_tnua::prelude::*;
+use unavi_constants::player::PLAYER_HEIGHT;
 
-use crate::{
-    body::{PLAYER_HEIGHT, SPAWN},
-    Player,
-};
+use crate::{body::SPAWN, LocalPlayer};
 
 #[derive(Default)]
 pub struct InputState {
@@ -21,7 +19,7 @@ const FLOAT_HEIGHT: f32 = (PLAYER_HEIGHT / 2.0) + 0.1;
 
 pub fn move_player(
     mut last_time: Local<f32>,
-    mut players: Query<(&Transform, &mut Player, &mut TnuaController)>,
+    mut players: Query<(&Transform, &mut LocalPlayer, &mut TnuaController)>,
     time: Res<Time>,
 ) {
     for (transform, mut player, mut controller) in players.iter_mut() {
@@ -76,7 +74,10 @@ pub fn move_player(
 const VOID_LEVEL: f32 = -50.0;
 
 pub fn void_teleport(
-    mut players: Query<(&mut Transform, &mut LinearVelocity, &mut AngularVelocity), With<Player>>,
+    mut players: Query<
+        (&mut Transform, &mut LinearVelocity, &mut AngularVelocity),
+        With<LocalPlayer>,
+    >,
 ) {
     for (mut transform, mut linvel, mut angvel) in players.iter_mut() {
         if transform.translation.y < VOID_LEVEL {

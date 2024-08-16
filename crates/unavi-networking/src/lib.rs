@@ -1,7 +1,10 @@
 use bevy::prelude::*;
+use bevy_vrm::VrmBundle;
 use thread::{NetworkingThread, NewSession, SessionRequest, SessionResponse};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
-use unavi_player::Player;
+use unavi_avatar::{default_character_animations, default_vrm, AvatarBundle};
+use unavi_constants::player::PLAYER_HEIGHT;
+use unavi_player::LocalPlayer;
 use unavi_world::{InstanceRecord, InstanceServer};
 use wired_world::datagram_capnp;
 
@@ -62,10 +65,19 @@ fn connect_to_instances(
 
 /// Tickrate of the server, in seconds.
 /// We don't want to publish data faster than this rate.
-#[derive(Component, Deref, DerefMut)]
+#[derive(Component)]
 struct Tickrate(f32);
 
-fn handle_session_response(mut commands: Commands, mut sessions: Query<(Entity, &mut Session)>) {
+#[derive(Component)]
+struct PlayerId(u16);
+
+fn handle_session_response(
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
+    mut players: Query<(&PlayerId, &mut Transform)>,
+    mut sessions: Query<(Entity, &mut Session)>,
+    mut spawned: Local<Vec<u16>>,
+) {
     for (entity, mut session) in sessions.iter_mut() {
         if let Ok(res) = session.receiver.try_recv() {
             match res {
@@ -74,22 +86,57 @@ fn handle_session_response(mut commands: Commands, mut sessions: Query<(Entity, 
                 }
                 SessionResponse::PlayerTransform {
                     player,
-                    rotation: _,
+                    rotation,
                     translation,
                 } => {
-                    info!("Player: {}, translation: {:?}", player, translation);
+                    if spawned.contains(&player) {
+                        for (player_id, mut transform) in players.iter_mut() {
+                            if player_id.0 != player {
+                                continue;
+                            }
+
+                            transform.rotation.x = rotation[0];
+                            transform.rotation.y = rotation[1];
+                            transform.rotation.z = rotation[2];
+                            transform.rotation.w = rotation[3];
+
+                            transform.translation.x = translation[0];
+                            transform.translation.y = translation[1];
+                            transform.translation.z = translation[2];
+                        }
+                    } else {
+                        info!("Spawning player {}", player);
+                        spawned.push(player);
+
+                        commands.spawn((
+                            AvatarBundle::new(default_character_animations(&asset_server)),
+                            PlayerId(player),
+                            VrmBundle {
+                                vrm: default_vrm(&asset_server),
+                                scene_bundle: SceneBundle {
+                                    transform: Transform {
+                                        translation: Vec3::from_array(translation),
+                                        rotation: Quat::from_array(rotation),
+                                        ..default()
+                                    },
+                                    ..default()
+                                },
+                                ..default()
+                            },
+                        ));
+                    }
                 }
             };
         }
     }
 }
 
-#[derive(Component, Deref, DerefMut)]
+#[derive(Component)]
 struct LastTransformPublish(f32);
 
 fn publish_transform(
     mut sessions: Query<(&Session, &Tickrate, &mut LastTransformPublish)>,
-    players: Query<&Transform, With<Player>>,
+    players: Query<&Transform, With<LocalPlayer>>,
     time: Res<Time>,
 ) {
     let elapsed = time.elapsed_seconds();
@@ -99,7 +146,7 @@ fn publish_transform(
             let delta = elapsed - last.0;
 
             if delta > interval.0 {
-                **last = elapsed;
+                last.0 = elapsed;
             }
 
             let mut msg = capnp::message::Builder::new_default();
@@ -107,7 +154,7 @@ fn publish_transform(
 
             let mut translation = root.reborrow().init_translation();
             translation.set_x(transform.translation.x);
-            translation.set_y(transform.translation.y);
+            translation.set_y(transform.translation.y - (PLAYER_HEIGHT / 2.0));
             translation.set_z(transform.translation.z);
 
             let mut rotation = root.init_rotation();

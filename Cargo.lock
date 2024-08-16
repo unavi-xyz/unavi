@@ -11976,6 +11976,7 @@ dependencies = [
  "bevy_panorbit_camera",
  "bevy_vrm",
  "paste",
+ "unavi-constants",
 ]
 
 [[package]]
@@ -11991,10 +11992,13 @@ version = "0.0.5"
 dependencies = [
  "anyhow",
  "bevy",
+ "bevy_vrm",
  "capnp",
  "capnp-rpc",
  "thiserror",
  "tokio",
+ "unavi-avatar",
+ "unavi-constants",
  "unavi-player",
  "unavi-world",
  "wasm-bindgen",

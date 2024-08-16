@@ -2,7 +2,7 @@ use std::f32::consts::FRAC_PI_2;
 
 use bevy::{input::mouse::MouseMotion, prelude::*, window::CursorGrabMode, window::Window};
 
-use crate::{menu::MenuState, Player};
+use crate::{menu::MenuState, LocalPlayer};
 
 #[derive(Resource, Event, Debug, Default, Deref, DerefMut)]
 pub struct CameraLookEvent(pub Vec2);
@@ -79,7 +79,7 @@ pub fn apply_camera_look(
     mut cameras: Query<&mut Transform, With<Camera>>,
     mut look_events: EventReader<CameraLookEvent>,
     mut menu_yaw: Local<Option<Quat>>,
-    mut players: Query<(&mut Transform, &Children), (With<Player>, Without<Camera>)>,
+    mut players: Query<(&mut Transform, &Children), (With<LocalPlayer>, Without<Camera>)>,
     mut target_pitch: Local<Quat>,
     mut target_yaw: Local<Quat>,
     time: Res<Time>,

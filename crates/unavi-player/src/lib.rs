@@ -9,7 +9,7 @@ mod input;
 mod look;
 mod menu;
 
-pub use body::{Player, PlayerCamera};
+pub use body::{LocalPlayer, PlayerCamera};
 
 pub struct PlayerPlugin;
 

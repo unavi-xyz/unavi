@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_vrm::VrmBundle;
 use thread::{NetworkingThread, NewSession, SessionRequest, SessionResponse};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
-use unavi_avatar::{default_character_animations, default_vrm, AvatarBundle};
+use unavi_avatar::{default_character_animations, AvatarBundle, DEFAULT_VRM};
 use unavi_constants::player::PLAYER_HEIGHT;
 use unavi_player::LocalPlayer;
 use unavi_world::{InstanceRecord, InstanceServer};
@@ -112,7 +112,7 @@ fn handle_session_response(
                             AvatarBundle::new(default_character_animations(&asset_server)),
                             PlayerId(player),
                             VrmBundle {
-                                vrm: default_vrm(&asset_server),
+                                vrm: asset_server.load(DEFAULT_VRM),
                                 scene_bundle: SceneBundle {
                                     transform: Transform {
                                         translation: Vec3::from_array(translation),

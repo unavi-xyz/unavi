@@ -30,6 +30,7 @@ impl Plugin for PlayerPlugin {
         .add_systems(
             Update,
             (
+                body::calc_eye_offset,
                 body::set_avatar_head,
                 body::setup_first_person,
                 input::handle_raycast_input,

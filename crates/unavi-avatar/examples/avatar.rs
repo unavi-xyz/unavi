@@ -5,8 +5,8 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_vrm::VrmBundle;
 use unavi_avatar::{
-    animation::AvatarAnimationClips, default_character_animations, default_vrm, AvatarBundle,
-    AvatarPlugin,
+    animation::AvatarAnimationClips, default_character_animations, AvatarBundle, AvatarPlugin,
+    DEFAULT_VRM,
 };
 
 fn main() {
@@ -126,7 +126,7 @@ fn load_avatar(
                 transform: *transform,
                 ..default()
             },
-            vrm: default_vrm(&asset_server),
+            vrm: asset_server.load(DEFAULT_VRM),
             ..default()
         });
     }

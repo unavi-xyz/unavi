@@ -8,6 +8,3 @@ edition.workspace = true
 
 [lints]
 workspace = true
-
-[dependencies]
-avian3d.workspace = true

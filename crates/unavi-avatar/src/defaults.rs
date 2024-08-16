@@ -1,7 +1,8 @@
 use bevy::{prelude::*, utils::HashMap};
-use bevy_vrm::loader::Vrm;
 
 use crate::animation::{AnimationName, AvatarAnimation, AvatarAnimationClips};
+
+pub const DEFAULT_VRM: &str = "models/robot.vrm";
 
 pub fn default_character_animations(asset_server: &AssetServer) -> AvatarAnimationClips {
     let mut map = HashMap::default();
@@ -50,8 +51,4 @@ pub fn default_character_animations(asset_server: &AssetServer) -> AvatarAnimati
     );
 
     AvatarAnimationClips(map)
-}
-
-pub fn default_vrm(asset_server: &AssetServer) -> Handle<Vrm> {
-    asset_server.load("models/robot.vrm")
 }

@@ -1,4 +1,4 @@
-cd deployments/environments/channel || exit
+cd deploy/profile/channel || exit
 
 terraform init -upgrade && terraform apply -auto-approve
 

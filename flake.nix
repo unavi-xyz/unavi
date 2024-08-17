@@ -81,7 +81,7 @@
         };
 
         crates = import ./crates.nix (inputs // { inherit craneLib localSystem pkgs; });
-        deployments = import ./deployments (inputs // { inherit localSystem; });
+        deploy = import ./deploy (inputs // { inherit localSystem; });
 
         githubMatrix = nix-github-actions.lib.mkGithubMatrix {
           attrPrefix = "";
@@ -108,12 +108,12 @@
       {
         inherit crates;
 
-        apps = crates.apps // deployments.apps;
+        apps = crates.apps // deploy.apps;
 
         checks = crates.checks;
         packages =
           crates.packages
-          // deployments.packages
+          // deploy.packages
           // {
             githubMatrix = githubMatrix // {
               matrix.include = map (
@@ -157,10 +157,10 @@
     )
     // (
       let
-        deployments = import ./deployments (inputs // { localSystem = "x86_64-linux"; });
+        deploy = import ./deploy (inputs // { localSystem = "x86_64-linux"; });
       in
       {
-        deploy = deployments.deploy;
+        deploy = deploy.deploy;
       }
     );
 }

@@ -204,10 +204,7 @@ pub fn handle_join_home(
 
                     Ok(JoinHomeResult {
                         instance: RecordLink {
-                            // record_id: instance_reply.record_id,
-                            record_id:
-                                "bafyreihq7muzf34xlapo77uic2wamzngclxf56trt2d3e2tr5edj7yrfjq"
-                                    .to_string(),
+                            record_id: instance_reply.record_id,
                             did: world_host.to_string(),
                         },
                         instance_server: connect_url,

@@ -37,7 +37,7 @@ jobs:
       - run: nix develop -c cargo clippy --all-features --fix --no-deps
       - run: nix develop -c cargo fmt --all
 
-      - run: nix fmt .
+      - run: nix fmt
       - run: nix develop -c prettier -w .
       - run: nix develop -c sh scripts/generate-readme.sh
       - run: nix develop -c terraform fmt -recursive

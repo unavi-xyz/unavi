@@ -63,7 +63,7 @@ let
           let
             config = nixpkgs-stable.lib.nixosSystem rec {
               system = "x86_64-linux";
-              modules = [ ./configurations/unavi-server.nix ];
+              modules = [ ./config/unavi-server.nix ];
               specialArgs = {
                 domainDwn = resource.value.domain_dwn;
                 domainWeb = resource.value.domain_web;

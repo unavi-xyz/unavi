@@ -8,9 +8,9 @@ on:
         required: true
         type: choice
         options:
-          - prerelease
-          - preminor
-          - stable
+          - minor
+          - patch
+          - beta
 
 concurrency:
   group: release
@@ -20,49 +20,44 @@ jobs:
   version:
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.semver.outputs.version }}
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - id: semver
-        uses: nguyenvukhang/semver-increment@v1
-        with:
-          increment: ${{ inputs.increment == 'stable' && 'patch' || inputs.increment }}
-          identifier: beta
-          version-file: Cargo.toml
-          version-regex: '^version = "(.*)"'
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - name: Force Cargo.lock to update
-        run: cargo update --workspace
-
-      - name: Delete version branch and tag if they exist
+      - name: Git config
         run: |
-          git push origin --delete release/v${{ steps.semver.outputs.version }} || echo "Branch doesn't exist"
-          git push origin --delete v${{ steps.semver.outputs.version }} || echo "Tag doesn't exist"
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git config user.name github-actions
 
-      - uses: EndBug/add-and-commit@v9
-        with:
-          default_author: github_actions
-          message: "chore: bump ${{ steps.semver.outputs.version }}"
-          new_branch: release/v${{ steps.semver.outputs.version }}
-          tag: v${{ steps.semver.outputs.version }} --force
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Bump version
+        run: nix develop -c cargo release ${{ inputs.increment }} -x --no-publish --no-push --no-tag
+
+      - id: version
+        run: echo "::set-output name=version::$(grep '^version =' Cargo.toml | sed -E 's/version = "([^"]+)"/\1/')"
+
+      - name: Create version branch
+        run: |
+          git push origin --delete release/v${{ steps.version.outputs.version }} || echo "Branch doesn't exist"
+          git checkout -b release/"v${{ steps.version.outputs.version }}"
+          git push origin release/"v${{ steps.version.outputs.version }}"
 
   build-nix:
     needs: version
     uses: ./.github/workflows/build-nix.yml
     with:
-      channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
+      channel: ${{ inputs.increment == 'beta' && 'beta' || 'stable' }}
       ref: release/v${{ needs.version.outputs.version }}
 
   build-windows:
     needs: version
     uses: ./.github/workflows/build-windows.yml
     with:
-      channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
+      channel: ${{ inputs.increment == 'beta' && 'beta' || 'stable' }}
       ref: release/v${{ needs.version.outputs.version }}
 
   deploy:
@@ -70,7 +65,7 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/deploy.yml
     with:
-      channel: ${{ inputs.increment == 'stable' && 'stable' || 'beta' }}
+      channel: ${{ inputs.increment == 'beta' && 'beta' || 'stable' }}
       ref: release/v${{ needs.version.outputs.version }}
 
   release:
@@ -90,12 +85,17 @@ jobs:
         run: |
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git config user.name github-actions
+          git fetch --all
+
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Cargo release
+        run: nix develop -c cargo release release -x --no-push
 
       - name: Merge release into main
         run: |
-          git fetch --all
           git switch -c main --track origin/main
-
           git merge --no-ff --no-edit release/v${{ needs.version.outputs.version }}
           git push
 
@@ -103,11 +103,10 @@ jobs:
         name: Merge release into beta
         run: |
           git switch -c beta --track origin/beta
-
           git merge --no-ff --no-edit release/v${{ needs.version.outputs.version }}
           git push
 
-      - if: ${{ inputs.increment == 'stable' }}
+      - if: ${{ inputs.increment != 'beta' }}
         name: Merge release into stable
         run: |
           # Delete beta and stable branches if they exist

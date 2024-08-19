@@ -1,11 +1,11 @@
 use bevy::{animation::ActiveAnimation, prelude::*, utils::HashMap};
 
-pub mod load;
+pub(crate) mod load;
 mod mixamo;
 
 use crate::AverageVelocity;
 
-use self::load::AvatarAnimationNodes;
+pub use load::{AvatarAnimationNodes, CreatedAnimationGraph};
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub enum AnimationName {

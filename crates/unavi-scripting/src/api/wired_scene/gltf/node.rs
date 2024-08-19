@@ -6,7 +6,7 @@ use wasm_bridge::component::Resource;
 use crate::{
     api::{
         utils::{RefCount, RefCountCell, RefResource},
-        wired_input::input_handler::{InputHandler, InputHandlerSender},
+        wired_input::{InputHandler, InputHandlerSender},
         wired_physics::wired::{
             math::types::Vec3,
             physics::types::{RigidBodyType, Shape, Sphere},

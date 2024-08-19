@@ -1,13 +1,15 @@
 use bevy::prelude::*;
 use unavi_constants::assets::WASM_ASSETS_DIR;
 
-use self::{asset::Wasm, load::Scripts};
+use self::load::Scripts;
 
 pub mod api;
-pub mod asset;
+mod asset;
 mod execution;
 mod load;
 mod state;
+
+pub use asset::*;
 
 mod wired_script {
     wasm_bridge::component::bindgen!({

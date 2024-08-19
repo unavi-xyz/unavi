@@ -41,6 +41,7 @@ jobs:
       - name: Build package
         run: |
           cargo build -p ${{ matrix.package }} --release --target x86_64-pc-windows-msvc
+          mkdir result
           mv target/x86_64-pc-windows-msvc/release/*.exe result
           cp crates/${{ matrix.package }}/README.md result
           cp LICENSE result
@@ -48,6 +49,8 @@ jobs:
           UNAVI_REGISTRY_DID: ${{ inputs.channel == 'stable' && 'app' || inputs.channel }}.unavi.xyz
 
       - run: Compress-Archive -Path result/* -DestinationPath ${{ matrix.package }}.x86_64-windows.zip
+
+      - run: dir result
 
       - uses: actions/upload-artifact@v4
         with:

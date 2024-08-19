@@ -17,6 +17,8 @@ pub async fn start() {
     let mut args = Args {
         debug_physics: false,
         log_level: LogLevel::default(),
+        storage: Storage::Memory,
+        xr: false,
     };
 
     if let Some(value) = params.get("debug-physics") {

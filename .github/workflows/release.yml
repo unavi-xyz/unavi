@@ -8,9 +8,9 @@ on:
         required: true
         type: choice
         options:
-          - minor
-          - patch
           - beta
+          - patch
+          - minor
 
 concurrency:
   group: release
@@ -38,7 +38,10 @@ jobs:
         run: nix develop -c cargo release ${{ inputs.increment }} -x --no-publish --no-push --no-tag
 
       - id: version
-        run: echo "::set-output name=version::$(grep '^version =' Cargo.toml | sed -E 's/version = "([^"]+)"/\1/')"
+        run: |
+          version=$(grep '^version' Cargo.toml | sed 's/version = "//; s/"//')
+          echo "version=$version"
+          echo "version=$version" >> $GITHUB_ENV
 
       - name: Create version branch
         run: |

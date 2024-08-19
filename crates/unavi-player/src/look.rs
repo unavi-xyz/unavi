@@ -12,6 +12,7 @@ const MENU_YAW_BOUND: f32 = FRAC_PI_2 - 1E-3;
 const SENSITIVITY: f32 = 0.001;
 
 pub fn read_mouse_input(
+    #[cfg(target_family = "wasm")] mut is_firefox: Local<Option<bool>>,
     menu: Res<State<MenuState>>,
     mut look_events: EventWriter<CameraLookEvent>,
     mut look_xy: Local<Vec2>,
@@ -41,16 +42,16 @@ pub fn read_mouse_input(
 
     #[cfg(target_family = "wasm")]
     {
-        // TODO: Move this to a one time check
-
         // Adjust the sensitivity when running in Firefox.
         // I think because of incorrect values within mouse move events.
-        let window = web_sys::window().unwrap();
-        let navigator = window.navigator().user_agent().unwrap();
-        let is_firefox = navigator.to_lowercase().contains("firefox");
-
-        if is_firefox {
-            delta *= 10.0;
+        if let Some(is_firefox) = *is_firefox {
+            if is_firefox {
+                delta *= 10.0;
+            }
+        } else {
+            let window = web_sys::window().unwrap();
+            let navigator = window.navigator().user_agent().unwrap();
+            *is_firefox = Some(navigator.to_lowercase().contains("firefox"));
         }
     }
 

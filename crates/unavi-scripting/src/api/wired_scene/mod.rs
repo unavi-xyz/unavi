@@ -13,7 +13,7 @@ pub mod glxf;
 wasm_bridge::component::bindgen!({
     path: "../../wired-protocol/spatial/wit/wired-scene",
     with: {
-        "wired:input/handler/input-handler": super::wired_input::input_handler::InputHandler,
+        "wired:input/handler/input-handler": super::wired_input::InputHandler,
         "wired:physics/types/collider": super::wired_physics::collider::Collider,
         "wired:physics/types/rigid-body": super::wired_physics::rigid_body::RigidBody,
         "wired:scene/gltf/gltf": gltf::document::GltfDocument,

@@ -1,5 +1,5 @@
 use bevy::{ecs::system::RunSystemOnce, prelude::*};
-use unavi_avatar::animation::{load::AvatarAnimationNodes, AnimationName, TargetAnimationWeights};
+use unavi_avatar::animation::{AnimationName, AvatarAnimationNodes, TargetAnimationWeights};
 
 use crate::LocalPlayer;
 

@@ -1,7 +1,7 @@
 use avian3d::prelude::*;
 use bevy::input::keyboard::KeyCode;
 use bevy::prelude::*;
-use unavi_scripting::api::wired_input::input_handler::{InputHandlerSender, ScriptInputEvent};
+use unavi_scripting::api::wired_input::{InputHandlerSender, ScriptInputEvent};
 
 use crate::{
     layers::{OTHER_PLAYER_LAYER, WORLD_LAYER},

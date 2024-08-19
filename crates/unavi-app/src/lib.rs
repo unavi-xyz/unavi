@@ -64,7 +64,14 @@ pub async fn start(db: Surreal<Db>, opts: StartOptions) {
     let mut app = App::new();
 
     let default_plugins = if opts.xr {
-        bevy_oxr::DefaultXrPlugins::default().build()
+        #[cfg(target_family = "wasm")]
+        {
+            DefaultPlugins.build()
+        }
+        #[cfg(not(target_family = "wasm"))]
+        {
+            bevy_oxr::DefaultXrPlugins::default().build()
+        }
     } else {
         DefaultPlugins.build()
     };

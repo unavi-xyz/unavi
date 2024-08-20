@@ -4436,6 +4436,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-unavi-shapes"
+version = "0.0.5"
+dependencies = [
+ "wit-bindgen-rt",
+]
+
+[[package]]
 name = "example-unavi-ui"
 version = "0.0.5"
 dependencies = [

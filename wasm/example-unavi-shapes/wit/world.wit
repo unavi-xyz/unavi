@@ -1,0 +1,8 @@
+package example:unavi-shapes;
+
+world script {
+    include wired:script/script;
+
+    import unavi:scene/api;
+    import unavi:shapes/api;
+}

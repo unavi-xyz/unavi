@@ -134,7 +134,6 @@ impl HostNode for StoreState {
             for p in mesh.primitives.iter() {
                 let p_data = self.table.get(p).unwrap();
                 let material_id = p_data.material.as_ref().map(|r| r.rep());
-
                 primitive_ids.push((p.rep(), material_id));
             }
         }

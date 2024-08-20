@@ -13,24 +13,6 @@ mod wired_scene_impls;
 
 struct RootImpl;
 
-impl RootImpl {
-    fn add_scene_impl(value: &SceneImpl) {
-        let root = get_root();
-        root.add_asset(&AssetBorrow::Gltf(&value.asset));
-        root.add_node(&value.node);
-
-        let scene = root.active_scene().unwrap_or_else(|| {
-            let value = GlxfScene::new();
-            root.add_scene(&value);
-            root.set_default_scene(&value);
-            root.set_active_scene(Some(&value));
-            value
-        });
-
-        scene.add_node(&value.node);
-    }
-}
-
 impl GuestRoot for RootImpl {
     fn list_scenes() -> Vec<Scene> {
         let root = get_root();
@@ -75,7 +57,20 @@ impl GuestRoot for RootImpl {
 
     fn add_scene(value: SceneBorrow) {
         let value = value.get::<SceneImpl>();
-        RootImpl::add_scene_impl(value);
+
+        let root = get_root();
+        root.add_asset(&AssetBorrow::Gltf(&value.asset));
+        root.add_node(&value.node);
+
+        let scene = root.active_scene().unwrap_or_else(|| {
+            let value = GlxfScene::new();
+            root.add_scene(&value);
+            root.set_default_scene(&value);
+            root.set_active_scene(Some(&value));
+            value
+        });
+
+        scene.add_node(&value.node);
     }
 
     fn remove_scene(value: SceneBorrow) {

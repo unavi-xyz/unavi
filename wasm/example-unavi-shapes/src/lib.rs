@@ -1,7 +1,7 @@
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
     unavi::{
-        scene::api::Scene,
+        scene::api::{Root, Scene},
         shapes::api::{Cuboid, Sphere, Vec3},
     },
     wired::math::types::Transform,
@@ -28,6 +28,8 @@ impl GuestScript for Script {
         let sphere = Sphere::new_uv(0.5).to_physics_node();
         sphere.set_transform(Transform::from_translation(Vec3::new(1.5, 0.0, 0.0)));
         scene.add_node(&sphere);
+
+        Root::add_scene(&scene);
 
         Script
     }

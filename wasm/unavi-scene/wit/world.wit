@@ -16,6 +16,8 @@ interface api {
 
   resource root {
     list-scenes: static func() -> list<scene>;
+    // Add a scene to the root glXF.
+    // This will make the scene a part of the game world.
     add-scene: static func(value: borrow<scene>);
     remove-scene: static func(value: borrow<scene>);
   }
@@ -23,11 +25,10 @@ interface api {
   // An abstraction over the `wired:scene` glTF and glXF APIs.
   // New scenes are stored as separate glTF documents.
   resource scene {
-    // Creates a new scene and adds it to the root glXF.
     constructor();
 
     list-nodes: func() -> list<node>;
-    // Creates a [node] and adds it to the scene.
+    // Creates a node within the scene.
     create-node: func() -> node;
     add-node: func(value: borrow<node>);
     remove-node: func(value: borrow<node>);

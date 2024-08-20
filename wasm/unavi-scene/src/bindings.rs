@@ -5511,6 +5511,8 @@ pub mod exports {
                     }
 
                     fn list_scenes() -> _rt::Vec<Scene>;
+                    /// Add a scene to the root glXF.
+                    /// This will make the scene a part of the game world.
                     fn add_scene(value: SceneBorrow<'_>);
                     fn remove_scene(value: SceneBorrow<'_>);
                 }
@@ -5559,10 +5561,9 @@ pub mod exports {
                         }
                     }
 
-                    /// Creates a new scene and adds it to the root glXF.
                     fn new() -> Self;
                     fn list_nodes(&self) -> _rt::Vec<Node>;
-                    /// Creates a [node] and adds it to the scene.
+                    /// Creates a node within the scene.
                     fn create_node(&self) -> Node;
                     fn add_node(&self, value: &Node);
                     fn remove_node(&self, value: &Node);

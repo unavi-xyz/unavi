@@ -10,6 +10,7 @@ use crate::bindings::{
         GuestSphere, Sphere as ExportSphere, SphereIco, SphereKind, SphereUv,
     },
     wired::{
+        log::api::{log, LogLevel},
         physics::types::{Collider, Shape},
         scene::{mesh::Mesh, node::Node},
     },
@@ -25,7 +26,7 @@ pub struct Sphere {
 impl GuestSphere for Sphere {
     fn new_ico(radius: f32) -> ExportSphere {
         ExportSphere::new(Sphere {
-            kind: RefCell::new(SphereKind::Ico(SphereIco { subdivisions: 4 })),
+            kind: RefCell::new(SphereKind::Ico(SphereIco { subdivisions: 3 })),
             radius: Cell::new(radius),
         })
     }
@@ -57,6 +58,16 @@ impl GuestSphere for Sphere {
         let radius = self.radius();
         match self.kind() {
             SphereKind::Ico(SphereIco { subdivisions }) => {
+                if subdivisions > MAX_SUBDIVISIONS {
+                    log(
+                        LogLevel::Warn,
+                        &format!(
+                            "Too many ico sphere subdivisions ({})! Limiting to {}",
+                            subdivisions, MAX_SUBDIVISIONS
+                        ),
+                    );
+                }
+
                 let subdivisions = subdivisions.min(MAX_SUBDIVISIONS);
                 create_ico_mesh(radius, subdivisions as usize)
             }

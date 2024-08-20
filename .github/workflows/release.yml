@@ -41,7 +41,7 @@ jobs:
         run: |
           version=$(grep '^version' Cargo.toml | sed 's/version = "//; s/"//')
           echo "version=$version"
-          echo "version=$version" >> $GITHUB_ENV
+          echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Create version branch
         run: |

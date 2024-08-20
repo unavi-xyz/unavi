@@ -1,9 +1,8 @@
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
-    unavi::shapes::api::{create_cuboid, create_sphere},
     wired::{
         math::types::Vec3,
-        physics::types::{Collider, RigidBody, RigidBodyType, Shape, Sphere},
+        physics::types::{Collider, RigidBody, RigidBodyType, Shape},
         scene::node::Node,
     },
 };
@@ -20,9 +19,6 @@ impl GuestScript for Script {
         let size = Vec3::new(10.0, 0.5, 10.0);
 
         let node = Node::new();
-        let mesh = create_cuboid(size);
-        node.set_mesh(Some(&mesh));
-
         let collider = Collider::new(Shape::Cuboid(size));
         let rigid_body = RigidBody::new(RigidBodyType::Fixed);
 
@@ -40,10 +36,7 @@ impl GuestScript for Script {
 
             node.set_transform(tr);
 
-            let mesh = create_sphere(radius, 32, 18);
-            node.set_mesh(Some(&mesh));
-
-            let collider = Collider::new(Shape::Sphere(Sphere { radius }));
+            let collider = Collider::new(Shape::Sphere(radius));
             let rigid_body = RigidBody::new(RigidBodyType::Dynamic);
 
             node.set_collider(Some(&collider));

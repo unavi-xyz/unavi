@@ -3,18 +3,47 @@ package unavi:shapes;
 world shapes {
     import wired:scene/mesh;
 
+    import api;
     export api;
 }
 
 interface api {
-  use wired:scene/mesh.{mesh};
   use wired:math/types.{vec3};
+  use wired:scene/mesh.{mesh};
+  use wired:scene/node.{node};
 
-  create-cuboid: func(size: vec3) -> mesh;
+  resource cuboid {
+    constructor(size: vec3);
 
-  // Creates a UV sphere with the given number of
-  // longitudinal sectors and latitudinal stacks, aka horizontal and vertical resolution.
-  // 
-  // A good default is `32` sectors and `18` stacks.
-  create-sphere: func(radius: f32, sectors: u32, stacks: u32) -> mesh;
+    size: func() -> vec3;
+    set-size: func(value: vec3);
+
+    // Creates a mesh of this shape.
+    to-mesh: func() -> mesh;
+    // Creates a node with a mesh of this shape.
+    to-node: func() -> node;
+    // Creates a node with a mesh and physics collider of this shape.
+    to-physics-node: func() -> node;
+  }
+
+  // UV sphere comprised of longitudinal sectors and latitudinal stacks.
+  resource sphere {
+    constructor(radius: f32);
+
+    radius: func() -> f32;
+    set-radius: func(value: f32);
+
+    sectors: func() -> u16;
+    set-sectors: func(value: u16);
+
+    stacks: func() -> u16;
+    set-stacks: func(value: u16);
+
+    // Creates a mesh of this shape.
+    to-mesh: func() -> mesh;
+    // Creates a node with a mesh of this shape.
+    to-node: func() -> node;
+    // Creates a node with a mesh and physics collider of this shape.
+    to-physics-node: func() -> node;
+  }
 }

@@ -101,7 +101,7 @@ fn create_ico_mesh(radius: f32, subdivisions: usize) -> Mesh {
 
     let raw_points = generated.raw_points();
 
-    let vertices = raw_points
+    let positions = raw_points
         .iter()
         .map(|&p| (p * radius).into())
         .collect::<Vec<[f32; 3]>>();
@@ -124,12 +124,12 @@ fn create_ico_mesh(radius: f32, subdivisions: usize) -> Mesh {
     let primitive = mesh.create_primitive();
 
     let normals = normals.into_iter().flatten().collect::<Vec<_>>();
-    let vertices = vertices.into_iter().flatten().collect::<Vec<_>>();
+    let positions = positions.into_iter().flatten().collect::<Vec<_>>();
     let uvs = uvs.into_iter().flatten().collect::<Vec<_>>();
 
     primitive.set_indices(&indices);
     primitive.set_normals(&normals);
-    primitive.set_positions(&vertices);
+    primitive.set_positions(&positions);
     primitive.set_uvs(&uvs);
 
     mesh
@@ -142,7 +142,7 @@ fn create_uv_mesh(radius: f32, sectors: usize, stacks: usize) -> Mesh {
     let sector_step = 2. * PI / sectors_f32;
     let stack_step = PI / stacks_f32;
 
-    let mut vertices: Vec<[f32; 3]> = Vec::with_capacity(stacks * sectors);
+    let mut positions: Vec<[f32; 3]> = Vec::with_capacity(stacks * sectors);
     let mut normals: Vec<[f32; 3]> = Vec::with_capacity(stacks * sectors);
     let mut uvs: Vec<[f32; 2]> = Vec::with_capacity(stacks * sectors);
     let mut indices: Vec<u32> = Vec::with_capacity(stacks * sectors * 2 * 3);
@@ -157,7 +157,7 @@ fn create_uv_mesh(radius: f32, sectors: usize, stacks: usize) -> Mesh {
             let x = xy * sector_angle.cos();
             let y = xy * sector_angle.sin();
 
-            vertices.push([x, y, z]);
+            positions.push([x, y, z]);
             normals.push([x * length_inv, y * length_inv, z * length_inv]);
             uvs.push([(j as f32) / sectors_f32, (i as f32) / stacks_f32]);
         }
@@ -188,7 +188,7 @@ fn create_uv_mesh(radius: f32, sectors: usize, stacks: usize) -> Mesh {
     }
 
     let normals = normals.into_iter().flatten().collect::<Vec<_>>();
-    let vertices = vertices.into_iter().flatten().collect::<Vec<_>>();
+    let positions = positions.into_iter().flatten().collect::<Vec<_>>();
     let uvs = uvs.into_iter().flatten().collect::<Vec<_>>();
 
     let mesh = Mesh::new();
@@ -196,7 +196,7 @@ fn create_uv_mesh(radius: f32, sectors: usize, stacks: usize) -> Mesh {
 
     primitive.set_indices(&indices);
     primitive.set_normals(&normals);
-    primitive.set_positions(&vertices);
+    primitive.set_positions(&positions);
     primitive.set_uvs(&uvs);
 
     mesh

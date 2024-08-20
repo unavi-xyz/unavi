@@ -15,11 +15,23 @@ interface api {
   resource cylinder {
     constructor(radius: f32, height: f32);
 
-    radius: func() -> f32;
-    set-radius: func(value: f32);
+    // Whether to cap the ends of the cylinder.
+    cap: func() -> bool;
+    set-cap: func(value: bool);
 
     height: func() -> f32;
     set-height: func(value: f32);
+
+    radius: func() -> f32;
+    set-radius: func(value: f32);
+
+    // The number of vertices used for the top and bottom of the cylinder.
+    resolution: func() -> u8;
+    set-resolution: func(value: u8);
+
+    // The number of segments along the height of the cylinder.
+    segments: func() -> u8;
+    set-segments: func(value: u8);
 
     // Creates a mesh of this shape.
     to-mesh: func() -> mesh;

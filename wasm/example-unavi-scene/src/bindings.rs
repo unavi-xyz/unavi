@@ -690,40 +690,47 @@ pub mod unavi {
             }
             impl Cylinder {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn radius(&self) -> f32 {
+                /// Whether to cap the ends of the cylinder.
+                pub fn cap(&self) -> bool {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "unavi:shapes/api")]
                         extern "C" {
-                            #[link_name = "[method]cylinder.radius"]
-                            fn wit_import(_: i32) -> f32;
+                            #[link_name = "[method]cylinder.cap"]
+                            fn wit_import(_: i32) -> i32;
                         }
 
                         #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32) -> f32 {
+                        fn wit_import(_: i32) -> i32 {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        ret
+                        _rt::bool_lift(ret as u8)
                     }
                 }
             }
             impl Cylinder {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn set_radius(&self, value: f32) {
+                pub fn set_cap(&self, value: bool) {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "unavi:shapes/api")]
                         extern "C" {
-                            #[link_name = "[method]cylinder.set-radius"]
-                            fn wit_import(_: i32, _: f32);
+                            #[link_name = "[method]cylinder.set-cap"]
+                            fn wit_import(_: i32, _: i32);
                         }
 
                         #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: f32) {
+                        fn wit_import(_: i32, _: i32) {
                             unreachable!()
                         }
-                        wit_import((self).handle() as i32, _rt::as_f32(&value));
+                        wit_import(
+                            (self).handle() as i32,
+                            match &value {
+                                true => 1,
+                                false => 0,
+                            },
+                        );
                     }
                 }
             }
@@ -763,6 +770,125 @@ pub mod unavi {
                             unreachable!()
                         }
                         wit_import((self).handle() as i32, _rt::as_f32(&value));
+                    }
+                }
+            }
+            impl Cylinder {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn radius(&self) -> f32 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]cylinder.radius"]
+                            fn wit_import(_: i32) -> f32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> f32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret
+                    }
+                }
+            }
+            impl Cylinder {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_radius(&self, value: f32) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]cylinder.set-radius"]
+                            fn wit_import(_: i32, _: f32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_f32(&value));
+                    }
+                }
+            }
+            impl Cylinder {
+                #[allow(unused_unsafe, clippy::all)]
+                /// The number of vertices used for the top and bottom of the cylinder.
+                pub fn resolution(&self) -> u8 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]cylinder.resolution"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret as u8
+                    }
+                }
+            }
+            impl Cylinder {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_resolution(&self, value: u8) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]cylinder.set-resolution"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_i32(&value));
+                    }
+                }
+            }
+            impl Cylinder {
+                #[allow(unused_unsafe, clippy::all)]
+                /// The number of segments along the height of the cylinder.
+                pub fn segments(&self) -> u8 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]cylinder.segments"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret as u8
+                    }
+                }
+            }
+            impl Cylinder {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_segments(&self, value: u8) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]cylinder.set-segments"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_i32(&value));
                     }
                 }
             }
@@ -4379,8 +4505,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 5215] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xe2'\x01A\x02\x01A\x1e\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 5459] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xd6)\x01A\x02\x01A\x1e\
 \x01B\x06\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\0\x01r\x04\x01xv\x01yv\x01\
 zv\x01wv\x04\0\x04quat\x03\0\x02\x01r\x03\x08rotation\x03\x05scale\x01\x0btransl\
 ation\x01\x04\0\x09transform\x03\0\x04\x03\x01\x10wired:math/types\x05\0\x01B\x11\
@@ -4467,36 +4593,40 @@ h\x05\x01@\x01\x05value\x09\x01\0\x04\0\x16[static]root.add-scene\x01\x0a\x04\0\
 [method]scene.transform\x01\x12\x01@\x02\x04self\x09\x05value\x01\x01\0\x04\0\x1b\
 [method]scene.set-transform\x01\x13\x01@\x01\x04self\x09\0\x7f\x04\0\x14[method]\
 scene.active\x01\x14\x01@\x02\x04self\x09\x05value\x7f\x01\0\x04\0\x18[method]sc\
-ene.set-active\x01\x15\x03\x01\x0funavi:scene/api\x05\x11\x01B?\x02\x03\x02\x01\x04\
+ene.set-active\x01\x15\x03\x01\x0funavi:scene/api\x05\x11\x01BI\x02\x03\x02\x01\x04\
 \x04\0\x04vec3\x03\0\0\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\x02\x02\x03\x02\x01\
 \x10\x04\0\x04node\x03\0\x04\x04\0\x08cylinder\x03\x01\x04\0\x06cuboid\x03\x01\x01\
 r\x01\x0csubdivisions}\x04\0\x0asphere-ico\x03\0\x08\x01r\x02\x07sectors}\x06sta\
 cks}\x04\0\x09sphere-uv\x03\0\x0a\x01q\x02\x03ico\x01\x09\0\x02uv\x01\x0b\0\x04\0\
 \x0bsphere-kind\x03\0\x0c\x04\0\x06sphere\x03\x01\x01i\x06\x01@\x02\x06radiusv\x06\
 heightv\0\x0f\x04\0\x15[constructor]cylinder\x01\x10\x01h\x06\x01@\x01\x04self\x11\
-\0v\x04\0\x17[method]cylinder.radius\x01\x12\x01@\x02\x04self\x11\x05valuev\x01\0\
-\x04\0\x1b[method]cylinder.set-radius\x01\x13\x04\0\x17[method]cylinder.height\x01\
-\x12\x04\0\x1b[method]cylinder.set-height\x01\x13\x01i\x03\x01@\x01\x04self\x11\0\
-\x14\x04\0\x18[method]cylinder.to-mesh\x01\x15\x01i\x05\x01@\x01\x04self\x11\0\x16\
-\x04\0\x18[method]cylinder.to-node\x01\x17\x04\0\x20[method]cylinder.to-physics-\
-node\x01\x17\x01i\x07\x01@\x01\x04size\x01\0\x18\x04\0\x13[constructor]cuboid\x01\
-\x19\x01h\x07\x01@\x01\x04self\x1a\0\x01\x04\0\x13[method]cuboid.size\x01\x1b\x01\
-@\x02\x04self\x1a\x05value\x01\x01\0\x04\0\x17[method]cuboid.set-size\x01\x1c\x01\
-@\x01\x04self\x1a\0\x14\x04\0\x16[method]cuboid.to-mesh\x01\x1d\x01@\x01\x04self\
-\x1a\0\x16\x04\0\x16[method]cuboid.to-node\x01\x1e\x04\0\x1e[method]cuboid.to-ph\
-ysics-node\x01\x1e\x01i\x0e\x01@\x01\x06radiusv\0\x1f\x04\0\x16[static]sphere.ne\
-w-ico\x01\x20\x04\0\x15[static]sphere.new-uv\x01\x20\x01h\x0e\x01@\x01\x04self!\0\
-v\x04\0\x15[method]sphere.radius\x01\"\x01@\x02\x04self!\x05valuev\x01\0\x04\0\x19\
-[method]sphere.set-radius\x01#\x01@\x01\x04self!\0\x0d\x04\0\x13[method]sphere.k\
-ind\x01$\x01@\x02\x04self!\x05value\x0d\x01\0\x04\0\x17[method]sphere.set-kind\x01\
-%\x01@\x01\x04self!\0\x14\x04\0\x16[method]sphere.to-mesh\x01&\x01@\x01\x04self!\
-\0\x16\x04\0\x16[method]sphere.to-node\x01'\x04\0\x1e[method]sphere.to-physics-n\
-ode\x01'\x03\x01\x10unavi:shapes/api\x05\x12\x01B\x07\x04\0\x06script\x03\x01\x01\
-i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01h\0\x01@\x02\x04self\x03\
-\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\x01\x12wired:script/\
-types\x05\x13\x04\x01\x1aexample:unavi-scene/script\x04\0\x0b\x0c\x01\0\x06scrip\
-t\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10\
-wit-bindgen-rust\x060.25.0";
+\0\x7f\x04\0\x14[method]cylinder.cap\x01\x12\x01@\x02\x04self\x11\x05value\x7f\x01\
+\0\x04\0\x18[method]cylinder.set-cap\x01\x13\x01@\x01\x04self\x11\0v\x04\0\x17[m\
+ethod]cylinder.height\x01\x14\x01@\x02\x04self\x11\x05valuev\x01\0\x04\0\x1b[met\
+hod]cylinder.set-height\x01\x15\x04\0\x17[method]cylinder.radius\x01\x14\x04\0\x1b\
+[method]cylinder.set-radius\x01\x15\x01@\x01\x04self\x11\0}\x04\0\x1b[method]cyl\
+inder.resolution\x01\x16\x01@\x02\x04self\x11\x05value}\x01\0\x04\0\x1f[method]c\
+ylinder.set-resolution\x01\x17\x04\0\x19[method]cylinder.segments\x01\x16\x04\0\x1d\
+[method]cylinder.set-segments\x01\x17\x01i\x03\x01@\x01\x04self\x11\0\x18\x04\0\x18\
+[method]cylinder.to-mesh\x01\x19\x01i\x05\x01@\x01\x04self\x11\0\x1a\x04\0\x18[m\
+ethod]cylinder.to-node\x01\x1b\x04\0\x20[method]cylinder.to-physics-node\x01\x1b\
+\x01i\x07\x01@\x01\x04size\x01\0\x1c\x04\0\x13[constructor]cuboid\x01\x1d\x01h\x07\
+\x01@\x01\x04self\x1e\0\x01\x04\0\x13[method]cuboid.size\x01\x1f\x01@\x02\x04sel\
+f\x1e\x05value\x01\x01\0\x04\0\x17[method]cuboid.set-size\x01\x20\x01@\x01\x04se\
+lf\x1e\0\x18\x04\0\x16[method]cuboid.to-mesh\x01!\x01@\x01\x04self\x1e\0\x1a\x04\
+\0\x16[method]cuboid.to-node\x01\"\x04\0\x1e[method]cuboid.to-physics-node\x01\"\
+\x01i\x0e\x01@\x01\x06radiusv\0#\x04\0\x16[static]sphere.new-ico\x01$\x04\0\x15[\
+static]sphere.new-uv\x01$\x01h\x0e\x01@\x01\x04self%\0v\x04\0\x15[method]sphere.\
+radius\x01&\x01@\x02\x04self%\x05valuev\x01\0\x04\0\x19[method]sphere.set-radius\
+\x01'\x01@\x01\x04self%\0\x0d\x04\0\x13[method]sphere.kind\x01(\x01@\x02\x04self\
+%\x05value\x0d\x01\0\x04\0\x17[method]sphere.set-kind\x01)\x01@\x01\x04self%\0\x18\
+\x04\0\x16[method]sphere.to-mesh\x01*\x01@\x01\x04self%\0\x1a\x04\0\x16[method]s\
+phere.to-node\x01+\x04\0\x1e[method]sphere.to-physics-node\x01+\x03\x01\x10unavi\
+:shapes/api\x05\x12\x01B\x07\x04\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13\
+[constructor]script\x01\x02\x01h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15\
+[method]script.update\x01\x04\x04\x01\x12wired:script/types\x05\x13\x04\x01\x1ae\
+xample:unavi-scene/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\
+\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

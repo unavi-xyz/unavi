@@ -3212,23 +3212,29 @@ pub mod exports {
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_cylinder_radius_cabi<T: GuestCylinder>(
+                pub unsafe fn _export_method_cylinder_cap_cabi<T: GuestCylinder>(
                     arg0: *mut u8,
-                ) -> f32 {
+                ) -> i32 {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
-                    let result0 = T::radius(CylinderBorrow::lift(arg0 as u32 as usize).get());
-                    _rt::as_f32(result0)
+                    let result0 = T::cap(CylinderBorrow::lift(arg0 as u32 as usize).get());
+                    match result0 {
+                        true => 1,
+                        false => 0,
+                    }
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_cylinder_set_radius_cabi<T: GuestCylinder>(
+                pub unsafe fn _export_method_cylinder_set_cap_cabi<T: GuestCylinder>(
                     arg0: *mut u8,
-                    arg1: f32,
+                    arg1: i32,
                 ) {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
-                    T::set_radius(CylinderBorrow::lift(arg0 as u32 as usize).get(), arg1);
+                    T::set_cap(
+                        CylinderBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::bool_lift(arg1 as u8),
+                    );
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
@@ -3249,6 +3255,66 @@ pub mod exports {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
                     T::set_height(CylinderBorrow::lift(arg0 as u32 as usize).get(), arg1);
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_cylinder_radius_cabi<T: GuestCylinder>(
+                    arg0: *mut u8,
+                ) -> f32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::radius(CylinderBorrow::lift(arg0 as u32 as usize).get());
+                    _rt::as_f32(result0)
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_cylinder_set_radius_cabi<T: GuestCylinder>(
+                    arg0: *mut u8,
+                    arg1: f32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::set_radius(CylinderBorrow::lift(arg0 as u32 as usize).get(), arg1);
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_cylinder_resolution_cabi<T: GuestCylinder>(
+                    arg0: *mut u8,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::resolution(CylinderBorrow::lift(arg0 as u32 as usize).get());
+                    _rt::as_i32(result0)
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_cylinder_set_resolution_cabi<T: GuestCylinder>(
+                    arg0: *mut u8,
+                    arg1: i32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::set_resolution(CylinderBorrow::lift(arg0 as u32 as usize).get(), arg1 as u8);
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_cylinder_segments_cabi<T: GuestCylinder>(
+                    arg0: *mut u8,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::segments(CylinderBorrow::lift(arg0 as u32 as usize).get());
+                    _rt::as_i32(result0)
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_cylinder_set_segments_cabi<T: GuestCylinder>(
+                    arg0: *mut u8,
+                    arg1: i32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::set_segments(CylinderBorrow::lift(arg0 as u32 as usize).get(), arg1 as u8);
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
@@ -3543,10 +3609,19 @@ pub mod exports {
                     }
 
                     fn new(radius: f32, height: f32) -> Self;
-                    fn radius(&self) -> f32;
-                    fn set_radius(&self, value: f32);
+                    /// Whether to cap the ends of the cylinder.
+                    fn cap(&self) -> bool;
+                    fn set_cap(&self, value: bool);
                     fn height(&self) -> f32;
                     fn set_height(&self, value: f32);
+                    fn radius(&self) -> f32;
+                    fn set_radius(&self, value: f32);
+                    /// The number of vertices used for the top and bottom of the cylinder.
+                    fn resolution(&self) -> u8;
+                    fn set_resolution(&self, value: u8);
+                    /// The number of segments along the height of the cylinder.
+                    fn segments(&self) -> u8;
+                    fn set_segments(&self, value: u8);
                     /// Creates a mesh of this shape.
                     fn to_mesh(&self) -> Mesh;
                     /// Creates a node with a mesh of this shape.
@@ -3676,13 +3751,13 @@ pub mod exports {
     unsafe extern "C" fn export_constructor_cylinder(arg0: f32,arg1: f32,) -> i32 {
       $($path_to_types)*::_export_constructor_cylinder_cabi::<<$ty as $($path_to_types)*::Guest>::Cylinder>(arg0, arg1)
     }
-    #[export_name = "unavi:shapes/api#[method]cylinder.radius"]
-    unsafe extern "C" fn export_method_cylinder_radius(arg0: *mut u8,) -> f32 {
-      $($path_to_types)*::_export_method_cylinder_radius_cabi::<<$ty as $($path_to_types)*::Guest>::Cylinder>(arg0)
+    #[export_name = "unavi:shapes/api#[method]cylinder.cap"]
+    unsafe extern "C" fn export_method_cylinder_cap(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_cylinder_cap_cabi::<<$ty as $($path_to_types)*::Guest>::Cylinder>(arg0)
     }
-    #[export_name = "unavi:shapes/api#[method]cylinder.set-radius"]
-    unsafe extern "C" fn export_method_cylinder_set_radius(arg0: *mut u8,arg1: f32,) {
-      $($path_to_types)*::_export_method_cylinder_set_radius_cabi::<<$ty as $($path_to_types)*::Guest>::Cylinder>(arg0, arg1)
+    #[export_name = "unavi:shapes/api#[method]cylinder.set-cap"]
+    unsafe extern "C" fn export_method_cylinder_set_cap(arg0: *mut u8,arg1: i32,) {
+      $($path_to_types)*::_export_method_cylinder_set_cap_cabi::<<$ty as $($path_to_types)*::Guest>::Cylinder>(arg0, arg1)
     }
     #[export_name = "unavi:shapes/api#[method]cylinder.height"]
     unsafe extern "C" fn export_method_cylinder_height(arg0: *mut u8,) -> f32 {
@@ -3691,6 +3766,30 @@ pub mod exports {
     #[export_name = "unavi:shapes/api#[method]cylinder.set-height"]
     unsafe extern "C" fn export_method_cylinder_set_height(arg0: *mut u8,arg1: f32,) {
       $($path_to_types)*::_export_method_cylinder_set_height_cabi::<<$ty as $($path_to_types)*::Guest>::Cylinder>(arg0, arg1)
+    }
+    #[export_name = "unavi:shapes/api#[method]cylinder.radius"]
+    unsafe extern "C" fn export_method_cylinder_radius(arg0: *mut u8,) -> f32 {
+      $($path_to_types)*::_export_method_cylinder_radius_cabi::<<$ty as $($path_to_types)*::Guest>::Cylinder>(arg0)
+    }
+    #[export_name = "unavi:shapes/api#[method]cylinder.set-radius"]
+    unsafe extern "C" fn export_method_cylinder_set_radius(arg0: *mut u8,arg1: f32,) {
+      $($path_to_types)*::_export_method_cylinder_set_radius_cabi::<<$ty as $($path_to_types)*::Guest>::Cylinder>(arg0, arg1)
+    }
+    #[export_name = "unavi:shapes/api#[method]cylinder.resolution"]
+    unsafe extern "C" fn export_method_cylinder_resolution(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_cylinder_resolution_cabi::<<$ty as $($path_to_types)*::Guest>::Cylinder>(arg0)
+    }
+    #[export_name = "unavi:shapes/api#[method]cylinder.set-resolution"]
+    unsafe extern "C" fn export_method_cylinder_set_resolution(arg0: *mut u8,arg1: i32,) {
+      $($path_to_types)*::_export_method_cylinder_set_resolution_cabi::<<$ty as $($path_to_types)*::Guest>::Cylinder>(arg0, arg1)
+    }
+    #[export_name = "unavi:shapes/api#[method]cylinder.segments"]
+    unsafe extern "C" fn export_method_cylinder_segments(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_cylinder_segments_cabi::<<$ty as $($path_to_types)*::Guest>::Cylinder>(arg0)
+    }
+    #[export_name = "unavi:shapes/api#[method]cylinder.set-segments"]
+    unsafe extern "C" fn export_method_cylinder_set_segments(arg0: *mut u8,arg1: i32,) {
+      $($path_to_types)*::_export_method_cylinder_set_segments_cabi::<<$ty as $($path_to_types)*::Guest>::Cylinder>(arg0, arg1)
     }
     #[export_name = "unavi:shapes/api#[method]cylinder.to-mesh"]
     unsafe extern "C" fn export_method_cylinder_to_mesh(arg0: *mut u8,) -> i32 {
@@ -3957,6 +4056,17 @@ mod _rt {
     pub fn run_ctors_once() {
         wit_bindgen_rt::run_ctors_once();
     }
+    pub unsafe fn bool_lift(val: u8) -> bool {
+        if cfg!(debug_assertions) {
+            match val {
+                0 => false,
+                1 => true,
+                _ => panic!("invalid bool discriminant"),
+            }
+        } else {
+            val != 0
+        }
+    }
 
     pub fn as_i32<T: AsI32>(t: T) -> i32 {
         t.as_i32()
@@ -4062,8 +4172,8 @@ pub(crate) use __export_shapes_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:shapes:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4628] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x97#\x01A\x02\x01A\x1c\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4872] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x8b%\x01A\x02\x01A\x1c\
 \x01B\x04\x01m\x04\x05debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01\
 @\x02\x05level\x01\x07messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/a\
 pi\x05\0\x01B\x11\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
@@ -4140,33 +4250,37 @@ de.rigid-body\x01&\x01h\x09\x01k'\x01@\x02\x04self\x0d\x05value(\x01\0\x04\0\x1b
 [method]node.set-rigid-body\x01)\x01i\x03\x01k*\x01@\x01\x04self\x0d\0+\x04\0\x1a\
 [method]node.input-handler\x01,\x01h\x03\x01k-\x01@\x02\x04self\x0d\x05value.\x01\
 \0\x04\0\x1e[method]node.set-input-handler\x01/\x03\x01\x10wired:scene/node\x05\x10\
-\x02\x03\0\x07\x04node\x01B?\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\0\x02\x03\x02\
+\x02\x03\0\x07\x04node\x01BI\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\0\x02\x03\x02\
 \x01\x0b\x04\0\x04mesh\x03\0\x02\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x04\x04\
 \0\x08cylinder\x03\x01\x04\0\x06cuboid\x03\x01\x01r\x01\x0csubdivisions}\x04\0\x0a\
 sphere-ico\x03\0\x08\x01r\x02\x07sectors}\x06stacks}\x04\0\x09sphere-uv\x03\0\x0a\
 \x01q\x02\x03ico\x01\x09\0\x02uv\x01\x0b\0\x04\0\x0bsphere-kind\x03\0\x0c\x04\0\x06\
 sphere\x03\x01\x01i\x06\x01@\x02\x06radiusv\x06heightv\0\x0f\x04\0\x15[construct\
-or]cylinder\x01\x10\x01h\x06\x01@\x01\x04self\x11\0v\x04\0\x17[method]cylinder.r\
-adius\x01\x12\x01@\x02\x04self\x11\x05valuev\x01\0\x04\0\x1b[method]cylinder.set\
--radius\x01\x13\x04\0\x17[method]cylinder.height\x01\x12\x04\0\x1b[method]cylind\
-er.set-height\x01\x13\x01i\x03\x01@\x01\x04self\x11\0\x14\x04\0\x18[method]cylin\
-der.to-mesh\x01\x15\x01i\x05\x01@\x01\x04self\x11\0\x16\x04\0\x18[method]cylinde\
-r.to-node\x01\x17\x04\0\x20[method]cylinder.to-physics-node\x01\x17\x01i\x07\x01\
-@\x01\x04size\x01\0\x18\x04\0\x13[constructor]cuboid\x01\x19\x01h\x07\x01@\x01\x04\
-self\x1a\0\x01\x04\0\x13[method]cuboid.size\x01\x1b\x01@\x02\x04self\x1a\x05valu\
-e\x01\x01\0\x04\0\x17[method]cuboid.set-size\x01\x1c\x01@\x01\x04self\x1a\0\x14\x04\
-\0\x16[method]cuboid.to-mesh\x01\x1d\x01@\x01\x04self\x1a\0\x16\x04\0\x16[method\
-]cuboid.to-node\x01\x1e\x04\0\x1e[method]cuboid.to-physics-node\x01\x1e\x01i\x0e\
-\x01@\x01\x06radiusv\0\x1f\x04\0\x16[static]sphere.new-ico\x01\x20\x04\0\x15[sta\
-tic]sphere.new-uv\x01\x20\x01h\x0e\x01@\x01\x04self!\0v\x04\0\x15[method]sphere.\
-radius\x01\"\x01@\x02\x04self!\x05valuev\x01\0\x04\0\x19[method]sphere.set-radiu\
-s\x01#\x01@\x01\x04self!\0\x0d\x04\0\x13[method]sphere.kind\x01$\x01@\x02\x04sel\
-f!\x05value\x0d\x01\0\x04\0\x17[method]sphere.set-kind\x01%\x01@\x01\x04self!\0\x14\
-\x04\0\x16[method]sphere.to-mesh\x01&\x01@\x01\x04self!\0\x16\x04\0\x16[method]s\
-phere.to-node\x01'\x04\0\x1e[method]sphere.to-physics-node\x01'\x04\x01\x10unavi\
-:shapes/api\x05\x12\x04\x01\x13unavi:shapes/shapes\x04\0\x0b\x0c\x01\0\x06shapes\
-\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10\
-wit-bindgen-rust\x060.25.0";
+or]cylinder\x01\x10\x01h\x06\x01@\x01\x04self\x11\0\x7f\x04\0\x14[method]cylinde\
+r.cap\x01\x12\x01@\x02\x04self\x11\x05value\x7f\x01\0\x04\0\x18[method]cylinder.\
+set-cap\x01\x13\x01@\x01\x04self\x11\0v\x04\0\x17[method]cylinder.height\x01\x14\
+\x01@\x02\x04self\x11\x05valuev\x01\0\x04\0\x1b[method]cylinder.set-height\x01\x15\
+\x04\0\x17[method]cylinder.radius\x01\x14\x04\0\x1b[method]cylinder.set-radius\x01\
+\x15\x01@\x01\x04self\x11\0}\x04\0\x1b[method]cylinder.resolution\x01\x16\x01@\x02\
+\x04self\x11\x05value}\x01\0\x04\0\x1f[method]cylinder.set-resolution\x01\x17\x04\
+\0\x19[method]cylinder.segments\x01\x16\x04\0\x1d[method]cylinder.set-segments\x01\
+\x17\x01i\x03\x01@\x01\x04self\x11\0\x18\x04\0\x18[method]cylinder.to-mesh\x01\x19\
+\x01i\x05\x01@\x01\x04self\x11\0\x1a\x04\0\x18[method]cylinder.to-node\x01\x1b\x04\
+\0\x20[method]cylinder.to-physics-node\x01\x1b\x01i\x07\x01@\x01\x04size\x01\0\x1c\
+\x04\0\x13[constructor]cuboid\x01\x1d\x01h\x07\x01@\x01\x04self\x1e\0\x01\x04\0\x13\
+[method]cuboid.size\x01\x1f\x01@\x02\x04self\x1e\x05value\x01\x01\0\x04\0\x17[me\
+thod]cuboid.set-size\x01\x20\x01@\x01\x04self\x1e\0\x18\x04\0\x16[method]cuboid.\
+to-mesh\x01!\x01@\x01\x04self\x1e\0\x1a\x04\0\x16[method]cuboid.to-node\x01\"\x04\
+\0\x1e[method]cuboid.to-physics-node\x01\"\x01i\x0e\x01@\x01\x06radiusv\0#\x04\0\
+\x16[static]sphere.new-ico\x01$\x04\0\x15[static]sphere.new-uv\x01$\x01h\x0e\x01\
+@\x01\x04self%\0v\x04\0\x15[method]sphere.radius\x01&\x01@\x02\x04self%\x05value\
+v\x01\0\x04\0\x19[method]sphere.set-radius\x01'\x01@\x01\x04self%\0\x0d\x04\0\x13\
+[method]sphere.kind\x01(\x01@\x02\x04self%\x05value\x0d\x01\0\x04\0\x17[method]s\
+phere.set-kind\x01)\x01@\x01\x04self%\0\x18\x04\0\x16[method]sphere.to-mesh\x01*\
+\x01@\x01\x04self%\0\x1a\x04\0\x16[method]sphere.to-node\x01+\x04\0\x1e[method]s\
+phere.to-physics-node\x01+\x04\x01\x10unavi:shapes/api\x05\x12\x04\x01\x13unavi:\
+shapes/shapes\x04\0\x0b\x0c\x01\0\x06shapes\x03\0\0\0G\x09producers\x01\x0cproce\
+ssed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

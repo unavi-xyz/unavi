@@ -1,4 +1,4 @@
-use avian3d::prelude::{PhysicsDebugPlugin, PhysicsPlugins};
+use avian3d::prelude::*;
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use unavi_scripting::{ScriptBundle, ScriptingPlugin};

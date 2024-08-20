@@ -17,7 +17,7 @@ impl GuestScript for Script {
     fn new() -> Self {
         let scene = Scene::new();
 
-        let cuboid = Cuboid::new(Vec3::default()).to_physics_node();
+        let cuboid = Cuboid::new(Vec3::new(1.0, 0.5, 1.5)).to_physics_node();
         cuboid.set_transform(Transform::from_translation(Vec3::new(3.0, 0.0, 0.0)));
         scene.add_node(&cuboid);
 

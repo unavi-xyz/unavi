@@ -27,7 +27,7 @@ impl GuestScript for Script {
         let scene = Scene::new();
         let node = scene.create_node();
 
-        let mesh = Cuboid::new(Vec3::default()).to_mesh();
+        let mesh = Cuboid::new(Vec3::splat(1.0)).to_mesh();
         node.set_mesh(Some(&mesh));
 
         let material = Material::new();

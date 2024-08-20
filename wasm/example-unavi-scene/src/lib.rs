@@ -2,7 +2,10 @@ use std::cell::RefCell;
 
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
-    unavi::{scene::api::Scene, shapes::api::Cuboid},
+    unavi::{
+        scene::api::{Root, Scene},
+        shapes::api::Cuboid,
+    },
     wired::{
         math::types::Vec3,
         scene::{
@@ -41,6 +44,8 @@ impl GuestScript for Script {
         for primitive in mesh.list_primitives() {
             primitive.set_material(Some(&material));
         }
+
+        Root::add_scene(&scene);
 
         Script {
             color_delta: RefCell::new(Color {

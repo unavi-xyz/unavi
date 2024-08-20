@@ -3,6 +3,484 @@
 #[allow(dead_code)]
 pub mod unavi {
     #[allow(dead_code)]
+    pub mod scene {
+        #[allow(dead_code, clippy::all)]
+        pub mod api {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            pub type Transform = super::super::super::wired::math::types::Transform;
+            pub type Node = super::super::super::wired::scene::node::Node;
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Root {
+                handle: _rt::Resource<Root>,
+            }
+
+            impl Root {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for Root {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "unavi:scene/api")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]root"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            /// An abstraction over the `wired:scene` glTF and glXF APIs.
+            /// New scenes are stored as separate glTF documents.
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Scene {
+                handle: _rt::Resource<Scene>,
+            }
+
+            impl Scene {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for Scene {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "unavi:scene/api")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]scene"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            impl Root {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn list_scenes() -> _rt::Vec<Scene> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:scene/api")]
+                        extern "C" {
+                            #[link_name = "[static]root.list-scenes"]
+                            fn wit_import(_: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import(ptr0);
+                        let l1 = *ptr0.add(0).cast::<*mut u8>();
+                        let l2 = *ptr0.add(4).cast::<usize>();
+                        let base4 = l1;
+                        let len4 = l2;
+                        let mut result4 = _rt::Vec::with_capacity(len4);
+                        for i in 0..len4 {
+                            let base = base4.add(i * 4);
+                            let e4 = {
+                                let l3 = *base.add(0).cast::<i32>();
+
+                                Scene::from_handle(l3 as u32)
+                            };
+                            result4.push(e4);
+                        }
+                        _rt::cabi_dealloc(base4, len4 * 4, 4);
+                        result4
+                    }
+                }
+            }
+            impl Root {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Add a scene to the root glXF.
+                /// This will make the scene a part of the game world.
+                pub fn add_scene(value: &Scene) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:scene/api")]
+                        extern "C" {
+                            #[link_name = "[static]root.add-scene"]
+                            fn wit_import(_: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) {
+                            unreachable!()
+                        }
+                        wit_import((value).handle() as i32);
+                    }
+                }
+            }
+            impl Root {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn remove_scene(value: &Scene) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:scene/api")]
+                        extern "C" {
+                            #[link_name = "[static]root.remove-scene"]
+                            fn wit_import(_: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) {
+                            unreachable!()
+                        }
+                        wit_import((value).handle() as i32);
+                    }
+                }
+            }
+            impl Scene {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn new() -> Self {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:scene/api")]
+                        extern "C" {
+                            #[link_name = "[constructor]scene"]
+                            fn wit_import() -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import() -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import();
+                        Scene::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Scene {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn list_nodes(&self) -> _rt::Vec<Node> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:scene/api")]
+                        extern "C" {
+                            #[link_name = "[method]scene.list-nodes"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<*mut u8>();
+                        let l2 = *ptr0.add(4).cast::<usize>();
+                        let base4 = l1;
+                        let len4 = l2;
+                        let mut result4 = _rt::Vec::with_capacity(len4);
+                        for i in 0..len4 {
+                            let base = base4.add(i * 4);
+                            let e4 = {
+                                let l3 = *base.add(0).cast::<i32>();
+
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l3 as u32,
+                                )
+                            };
+                            result4.push(e4);
+                        }
+                        _rt::cabi_dealloc(base4, len4 * 4, 4);
+                        result4
+                    }
+                }
+            }
+            impl Scene {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Creates a node within the scene.
+                pub fn create_node(&self) -> Node {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:scene/api")]
+                        extern "C" {
+                            #[link_name = "[method]scene.create-node"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Scene {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn add_node(&self, value: &Node) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:scene/api")]
+                        extern "C" {
+                            #[link_name = "[method]scene.add-node"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, (value).handle() as i32);
+                    }
+                }
+            }
+            impl Scene {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn remove_node(&self, value: &Node) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:scene/api")]
+                        extern "C" {
+                            #[link_name = "[method]scene.remove-node"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, (value).handle() as i32);
+                    }
+                }
+            }
+            impl Scene {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn transform(&self) -> Transform {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 40]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 40]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:scene/api")]
+                        extern "C" {
+                            #[link_name = "[method]scene.transform"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<f32>();
+                        let l2 = *ptr0.add(4).cast::<f32>();
+                        let l3 = *ptr0.add(8).cast::<f32>();
+                        let l4 = *ptr0.add(12).cast::<f32>();
+                        let l5 = *ptr0.add(16).cast::<f32>();
+                        let l6 = *ptr0.add(20).cast::<f32>();
+                        let l7 = *ptr0.add(24).cast::<f32>();
+                        let l8 = *ptr0.add(28).cast::<f32>();
+                        let l9 = *ptr0.add(32).cast::<f32>();
+                        let l10 = *ptr0.add(36).cast::<f32>();
+                        super::super::super::wired::math::types::Transform {
+                            rotation: super::super::super::wired::math::types::Quat {
+                                x: l1,
+                                y: l2,
+                                z: l3,
+                                w: l4,
+                            },
+                            scale: super::super::super::wired::math::types::Vec3 {
+                                x: l5,
+                                y: l6,
+                                z: l7,
+                            },
+                            translation: super::super::super::wired::math::types::Vec3 {
+                                x: l8,
+                                y: l9,
+                                z: l10,
+                            },
+                        }
+                    }
+                }
+            }
+            impl Scene {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_transform(&self, value: Transform) {
+                    unsafe {
+                        let super::super::super::wired::math::types::Transform {
+                            rotation: rotation0,
+                            scale: scale0,
+                            translation: translation0,
+                        } = value;
+                        let super::super::super::wired::math::types::Quat {
+                            x: x1,
+                            y: y1,
+                            z: z1,
+                            w: w1,
+                        } = rotation0;
+                        let super::super::super::wired::math::types::Vec3 {
+                            x: x2,
+                            y: y2,
+                            z: z2,
+                        } = scale0;
+                        let super::super::super::wired::math::types::Vec3 {
+                            x: x3,
+                            y: y3,
+                            z: z3,
+                        } = translation0;
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:scene/api")]
+                        extern "C" {
+                            #[link_name = "[method]scene.set-transform"]
+                            fn wit_import(
+                                _: i32,
+                                _: f32,
+                                _: f32,
+                                _: f32,
+                                _: f32,
+                                _: f32,
+                                _: f32,
+                                _: f32,
+                                _: f32,
+                                _: f32,
+                                _: f32,
+                            );
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(
+                            _: i32,
+                            _: f32,
+                            _: f32,
+                            _: f32,
+                            _: f32,
+                            _: f32,
+                            _: f32,
+                            _: f32,
+                            _: f32,
+                            _: f32,
+                            _: f32,
+                        ) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            _rt::as_f32(x1),
+                            _rt::as_f32(y1),
+                            _rt::as_f32(z1),
+                            _rt::as_f32(w1),
+                            _rt::as_f32(x2),
+                            _rt::as_f32(y2),
+                            _rt::as_f32(z2),
+                            _rt::as_f32(x3),
+                            _rt::as_f32(y3),
+                            _rt::as_f32(z3),
+                        );
+                    }
+                }
+            }
+            impl Scene {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn active(&self) -> bool {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:scene/api")]
+                        extern "C" {
+                            #[link_name = "[method]scene.active"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        _rt::bool_lift(ret as u8)
+                    }
+                }
+            }
+            impl Scene {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_active(&self, value: bool) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:scene/api")]
+                        extern "C" {
+                            #[link_name = "[method]scene.set-active"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            match &value {
+                                true => 1,
+                                false => 0,
+                            },
+                        );
+                    }
+                }
+            }
+        }
+    }
+    #[allow(dead_code)]
     pub mod shapes {
         #[allow(dead_code, clippy::all)]
         pub mod api {
@@ -6147,6 +6625,17 @@ mod _rt {
         let layout = alloc::Layout::from_size_align_unchecked(size, align);
         alloc::dealloc(ptr as *mut u8, layout);
     }
+    pub unsafe fn bool_lift(val: u8) -> bool {
+        if cfg!(debug_assertions) {
+            match val {
+                0 => false,
+                1 => true,
+                _ => panic!("invalid bool discriminant"),
+            }
+        } else {
+            val != 0
+        }
+    }
 
     pub fn as_i32<T: AsI32>(t: T) -> i32 {
         t.as_i32()
@@ -6258,8 +6747,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7859] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xb6<\x01A\x02\x01A(\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 8413] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xe0@\x01A\x02\x01A*\x01\
 B\x06\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\0\x01r\x04\x01xv\x01yv\x01z\
 v\x01wv\x04\0\x04quat\x03\0\x02\x01r\x03\x08rotation\x03\x05scale\x01\x0btransla\
 tion\x01\x04\0\x09transform\x03\0\x04\x03\x01\x10wired:math/types\x05\0\x01B\x11\
@@ -6333,106 +6822,119 @@ k'\x01@\x02\x04self\x0d\x05value(\x01\0\x04\0\x1b[method]node.set-rigid-body\x01
 )\x01i\x03\x01k*\x01@\x01\x04self\x0d\0+\x04\0\x1a[method]node.input-handler\x01\
 ,\x01h\x03\x01k-\x01@\x02\x04self\x0d\x05value.\x01\0\x04\0\x1e[method]node.set-\
 input-handler\x01/\x03\x01\x10wired:scene/node\x05\x0f\x02\x03\0\x06\x04node\x01\
-B/\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\0\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\
-\0\x02\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\x04\x04\0\x06cuboid\x03\x01\x01r\x01\
-\x0csubdivisions}\x04\0\x0asphere-ico\x03\0\x07\x01r\x02\x07sectors}\x06stacks}\x04\
-\0\x09sphere-uv\x03\0\x09\x01q\x02\x03ico\x01\x08\0\x02uv\x01\x0a\0\x04\0\x0bsph\
-ere-kind\x03\0\x0b\x04\0\x06sphere\x03\x01\x01i\x06\x01@\x01\x04size\x01\0\x0e\x04\
-\0\x13[constructor]cuboid\x01\x0f\x01h\x06\x01@\x01\x04self\x10\0\x01\x04\0\x13[\
-method]cuboid.size\x01\x11\x01@\x02\x04self\x10\x05value\x01\x01\0\x04\0\x17[met\
-hod]cuboid.set-size\x01\x12\x01i\x03\x01@\x01\x04self\x10\0\x13\x04\0\x16[method\
-]cuboid.to-mesh\x01\x14\x01i\x05\x01@\x01\x04self\x10\0\x15\x04\0\x16[method]cub\
-oid.to-node\x01\x16\x04\0\x1e[method]cuboid.to-physics-node\x01\x16\x01i\x0d\x01\
-@\x01\x06radiusv\0\x17\x04\0\x16[static]sphere.new-ico\x01\x18\x04\0\x15[static]\
-sphere.new-uv\x01\x18\x01h\x0d\x01@\x01\x04self\x19\0v\x04\0\x15[method]sphere.r\
-adius\x01\x1a\x01@\x02\x04self\x19\x05valuev\x01\0\x04\0\x19[method]sphere.set-r\
-adius\x01\x1b\x01@\x01\x04self\x19\0\x0c\x04\0\x13[method]sphere.kind\x01\x1c\x01\
-@\x02\x04self\x19\x05value\x0c\x01\0\x04\0\x17[method]sphere.set-kind\x01\x1d\x01\
-@\x01\x04self\x19\0\x13\x04\0\x16[method]sphere.to-mesh\x01\x1e\x01@\x01\x04self\
-\x19\0\x15\x04\0\x16[method]sphere.to-node\x01\x1f\x04\0\x1e[method]sphere.to-ph\
-ysics-node\x01\x1f\x03\x01\x10unavi:shapes/api\x05\x11\x01B\x04\x01m\x04\x05debu\
-g\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\x07m\
-essages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x12\x01B\x0f\x02\
-\x03\x02\x01\x10\x04\0\x04node\x03\0\0\x01i\x01\x01r\x0f\x04head\x02\x05spine\x02\
-\x04hips\x02\x0eleft-upper-arm\x02\x0eleft-lower-arm\x02\x09left-hand\x02\x0frig\
-ht-upper-arm\x02\x0fright-lower-arm\x02\x0aright-hand\x02\x0eleft-upper-leg\x02\x0e\
-left-lower-leg\x02\x09left-foot\x02\x0fright-upper-leg\x02\x0fright-lower-leg\x02\
-\x0aright-foot\x02\x04\0\x08skeleton\x03\0\x03\x04\0\x06player\x03\x01\x01h\x05\x01\
-@\x01\x04self\x06\0\x04\x04\0\x17[method]player.skeleton\x01\x07\x01i\x05\x01p\x08\
-\x01@\0\0\x09\x04\0\x0clist-players\x01\x0a\x01@\0\0\x08\x04\0\x0clocal-player\x01\
-\x0b\x03\x01\x10wired:player/api\x05\x13\x01B\x15\x02\x03\x02\x01\x10\x04\0\x04n\
-ode\x03\0\0\x04\0\x05scene\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\x12[constructor]s\
-cene\x01\x04\x01h\x02\x01@\x01\x04self\x05\0y\x04\0\x10[method]scene.id\x01\x06\x01\
-@\x01\x04self\x05\0s\x04\0\x12[method]scene.name\x01\x07\x01@\x02\x04self\x05\x05\
-values\x01\0\x04\0\x16[method]scene.set-name\x01\x08\x01i\x01\x01p\x09\x01@\x01\x04\
-self\x05\0\x0a\x04\0\x13[method]scene.nodes\x01\x0b\x01h\x01\x01@\x02\x04self\x05\
-\x05value\x0c\x01\0\x04\0\x16[method]scene.add-node\x01\x0d\x04\0\x19[method]sce\
-ne.remove-node\x01\x0d\x03\x01\x11wired:scene/scene\x05\x14\x02\x03\0\x0a\x05sce\
-ne\x01B5\x02\x03\x02\x01\x02\x04\0\x08material\x03\0\0\x02\x03\x02\x01\x0a\x04\0\
-\x04mesh\x03\0\x02\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\x04\x02\x03\x02\x01\x15\
-\x04\0\x05scene\x03\0\x06\x04\0\x04gltf\x03\x01\x01i\x08\x01@\0\0\x09\x04\0\x11[\
-constructor]gltf\x01\x0a\x01h\x08\x01i\x01\x01p\x0c\x01@\x01\x04self\x0b\0\x0d\x04\
-\0\x1b[method]gltf.list-materials\x01\x0e\x01h\x01\x01@\x02\x04self\x0b\x05value\
-\x0f\x01\0\x04\0\x19[method]gltf.add-material\x01\x10\x04\0\x1c[method]gltf.remo\
-ve-material\x01\x10\x01i\x03\x01p\x11\x01@\x01\x04self\x0b\0\x12\x04\0\x18[metho\
-d]gltf.list-meshes\x01\x13\x01h\x03\x01@\x02\x04self\x0b\x05value\x14\x01\0\x04\0\
-\x15[method]gltf.add-mesh\x01\x15\x04\0\x18[method]gltf.remove-mesh\x01\x15\x01i\
-\x05\x01p\x16\x01@\x01\x04self\x0b\0\x17\x04\0\x17[method]gltf.list-nodes\x01\x18\
-\x01h\x05\x01@\x02\x04self\x0b\x05value\x19\x01\0\x04\0\x15[method]gltf.add-node\
-\x01\x1a\x04\0\x18[method]gltf.remove-node\x01\x1a\x01i\x07\x01p\x1b\x01@\x01\x04\
-self\x0b\0\x1c\x04\0\x18[method]gltf.list-scenes\x01\x1d\x01h\x07\x01@\x02\x04se\
-lf\x0b\x05value\x1e\x01\0\x04\0\x16[method]gltf.add-scene\x01\x1f\x04\0\x19[meth\
-od]gltf.remove-scene\x01\x1f\x01k\x1b\x01@\x01\x04self\x0b\0\x20\x04\0\x19[metho\
-d]gltf.active-scene\x01!\x01k\x1e\x01@\x02\x04self\x0b\x05value\"\x01\0\x04\0\x1d\
-[method]gltf.set-active-scene\x01#\x04\0\x1a[method]gltf.default-scene\x01!\x04\0\
-\x1e[method]gltf.set-default-scene\x01\x1f\x03\x01\x10wired:scene/gltf\x05\x16\x02\
-\x03\0\x0b\x04gltf\x01Bt\x02\x03\x02\x01\x17\x04\0\x04gltf\x03\0\0\x02\x03\x02\x01\
-\x10\x04\0\x04node\x03\0\x02\x02\x03\x02\x01\x0c\x04\0\x09transform\x03\0\x04\x04\
-\0\x04glxf\x03\x01\x04\0\x0aasset-gltf\x03\x01\x04\0\x0aasset-glxf\x03\x01\x01i\x07\
-\x01i\x08\x01q\x02\x04gltf\x01\x09\0\x04glxf\x01\x0a\0\x04\0\x05asset\x03\0\x0b\x01\
-h\x07\x01h\x08\x01q\x02\x04gltf\x01\x0d\0\x04glxf\x01\x0e\0\x04\0\x0casset-borro\
-w\x03\0\x0f\x04\0\x09glxf-node\x03\x01\x01i\x11\x01p\x12\x01q\x02\x05asset\x01\x0c\
-\0\x05nodes\x01\x13\0\x04\0\x08children\x03\0\x14\x01h\x11\x01p\x16\x01q\x02\x05\
-asset\x01\x10\0\x05nodes\x01\x17\0\x04\0\x0fchildren-borrow\x03\0\x18\x04\0\x0ag\
-lxf-scene\x03\x01\x01i\x06\x01@\0\0\x1b\x04\0\x11[constructor]glxf\x01\x1c\x01h\x06\
-\x01p\x0c\x01@\x01\x04self\x1d\0\x1e\x04\0\x18[method]glxf.list-assets\x01\x1f\x01\
-@\x02\x04self\x1d\x05value\x10\x01\0\x04\0\x16[method]glxf.add-asset\x01\x20\x04\
-\0\x19[method]glxf.remove-asset\x01\x20\x01@\x01\x04self\x1d\0\x13\x04\0\x17[met\
-hod]glxf.list-nodes\x01!\x01@\x02\x04self\x1d\x05value\x16\x01\0\x04\0\x15[metho\
-d]glxf.add-node\x01\"\x04\0\x18[method]glxf.remove-node\x01\"\x01i\x1a\x01p#\x01\
-@\x01\x04self\x1d\0$\x04\0\x18[method]glxf.list-scenes\x01%\x01h\x1a\x01@\x02\x04\
-self\x1d\x05value&\x01\0\x04\0\x16[method]glxf.add-scene\x01'\x04\0\x19[method]g\
-lxf.remove-scene\x01'\x01k#\x01@\x01\x04self\x1d\0(\x04\0\x19[method]glxf.active\
--scene\x01)\x01k&\x01@\x02\x04self\x1d\x05value*\x01\0\x04\0\x1d[method]glxf.set\
--active-scene\x01+\x04\0\x1a[method]glxf.default-scene\x01)\x04\0\x1e[method]glx\
-f.set-default-scene\x01'\x01h\x01\x01@\x01\x08document,\0\x09\x04\0\x17[construc\
-tor]asset-gltf\x01-\x01i\x01\x01@\x01\x04self\x0d\0.\x04\0\x1b[method]asset-gltf\
-.document\x01/\x01i\x03\x01p0\x01@\x01\x04self\x0d\01\x04\0\x1d[method]asset-glt\
-f.list-nodes\x012\x01h\x03\x01@\x02\x04self\x0d\x05value3\x01\0\x04\0\x1b[method\
-]asset-gltf.add-node\x014\x04\0\x1e[method]asset-gltf.remove-node\x014\x01@\x01\x08\
-document\x1d\0\x0a\x04\0\x17[constructor]asset-glxf\x015\x01@\x01\x04self\x0e\0\x1b\
-\x04\0\x1b[method]asset-glxf.document\x016\x01@\x01\x04self\x0e\0\x13\x04\0\x1d[\
-method]asset-glxf.list-nodes\x017\x01@\x02\x04self\x0e\x05value\x16\x01\0\x04\0\x1b\
-[method]asset-glxf.add-node\x018\x04\0\x1e[method]asset-glxf.remove-node\x018\x01\
-@\0\0\x12\x04\0\x16[constructor]glxf-node\x019\x01@\x01\x04self\x16\0y\x04\0\x14\
-[method]glxf-node.id\x01:\x01@\x01\x04self\x16\0s\x04\0\x16[method]glxf-node.nam\
-e\x01;\x01@\x02\x04self\x16\x05values\x01\0\x04\0\x1a[method]glxf-node.set-name\x01\
-<\x01@\x01\x04self\x16\0\x05\x04\0\x1b[method]glxf-node.transform\x01=\x01@\x02\x04\
-self\x16\x05value\x05\x01\0\x04\0\x1f[method]glxf-node.set-transform\x01>\x01k\x12\
-\x01@\x01\x04self\x16\0?\x04\0\x18[method]glxf-node.parent\x01@\x01k\x15\x01@\x01\
-\x04self\x16\0\xc1\0\x04\0\x1a[method]glxf-node.children\x01B\x01k\x19\x01@\x02\x04\
-self\x16\x05value\xc3\0\x01\0\x04\0\x1e[method]glxf-node.set-children\x01D\x01@\0\
-\0#\x04\0\x17[constructor]glxf-scene\x01E\x01@\x01\x04self&\0y\x04\0\x15[method]\
-glxf-scene.id\x01F\x01@\x01\x04self&\0s\x04\0\x17[method]glxf-scene.name\x01G\x01\
-@\x02\x04self&\x05values\x01\0\x04\0\x1b[method]glxf-scene.set-name\x01H\x01@\x01\
-\x04self&\0\x13\x04\0\x18[method]glxf-scene.nodes\x01I\x01@\x02\x04self&\x04node\
-\x16\x01\0\x04\0\x1b[method]glxf-scene.add-node\x01J\x04\0\x1e[method]glxf-scene\
-.remove-node\x01J\x04\0\x08get-root\x01\x1c\x03\x01\x10wired:scene/glxf\x05\x18\x01\
-B\x07\x04\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\
-\x02\x01h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\
-\x04\x04\x01\x12wired:script/types\x05\x19\x04\x01\x1aexample:wired-input/script\
-\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0d\
-wit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+B\"\x02\x03\x02\x01\x0c\x04\0\x09transform\x03\0\0\x02\x03\x02\x01\x10\x04\0\x04\
+node\x03\0\x02\x04\0\x04root\x03\x01\x04\0\x05scene\x03\x01\x01i\x05\x01p\x06\x01\
+@\0\0\x07\x04\0\x18[static]root.list-scenes\x01\x08\x01h\x05\x01@\x01\x05value\x09\
+\x01\0\x04\0\x16[static]root.add-scene\x01\x0a\x04\0\x19[static]root.remove-scen\
+e\x01\x0a\x01@\0\0\x06\x04\0\x12[constructor]scene\x01\x0b\x01i\x03\x01p\x0c\x01\
+@\x01\x04self\x09\0\x0d\x04\0\x18[method]scene.list-nodes\x01\x0e\x01@\x01\x04se\
+lf\x09\0\x0c\x04\0\x19[method]scene.create-node\x01\x0f\x01h\x03\x01@\x02\x04sel\
+f\x09\x05value\x10\x01\0\x04\0\x16[method]scene.add-node\x01\x11\x04\0\x19[metho\
+d]scene.remove-node\x01\x11\x01@\x01\x04self\x09\0\x01\x04\0\x17[method]scene.tr\
+ansform\x01\x12\x01@\x02\x04self\x09\x05value\x01\x01\0\x04\0\x1b[method]scene.s\
+et-transform\x01\x13\x01@\x01\x04self\x09\0\x7f\x04\0\x14[method]scene.active\x01\
+\x14\x01@\x02\x04self\x09\x05value\x7f\x01\0\x04\0\x18[method]scene.set-active\x01\
+\x15\x03\x01\x0funavi:scene/api\x05\x11\x01B/\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\
+\0\0\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\x02\x02\x03\x02\x01\x10\x04\0\x04no\
+de\x03\0\x04\x04\0\x06cuboid\x03\x01\x01r\x01\x0csubdivisions}\x04\0\x0asphere-i\
+co\x03\0\x07\x01r\x02\x07sectors}\x06stacks}\x04\0\x09sphere-uv\x03\0\x09\x01q\x02\
+\x03ico\x01\x08\0\x02uv\x01\x0a\0\x04\0\x0bsphere-kind\x03\0\x0b\x04\0\x06sphere\
+\x03\x01\x01i\x06\x01@\x01\x04size\x01\0\x0e\x04\0\x13[constructor]cuboid\x01\x0f\
+\x01h\x06\x01@\x01\x04self\x10\0\x01\x04\0\x13[method]cuboid.size\x01\x11\x01@\x02\
+\x04self\x10\x05value\x01\x01\0\x04\0\x17[method]cuboid.set-size\x01\x12\x01i\x03\
+\x01@\x01\x04self\x10\0\x13\x04\0\x16[method]cuboid.to-mesh\x01\x14\x01i\x05\x01\
+@\x01\x04self\x10\0\x15\x04\0\x16[method]cuboid.to-node\x01\x16\x04\0\x1e[method\
+]cuboid.to-physics-node\x01\x16\x01i\x0d\x01@\x01\x06radiusv\0\x17\x04\0\x16[sta\
+tic]sphere.new-ico\x01\x18\x04\0\x15[static]sphere.new-uv\x01\x18\x01h\x0d\x01@\x01\
+\x04self\x19\0v\x04\0\x15[method]sphere.radius\x01\x1a\x01@\x02\x04self\x19\x05v\
+aluev\x01\0\x04\0\x19[method]sphere.set-radius\x01\x1b\x01@\x01\x04self\x19\0\x0c\
+\x04\0\x13[method]sphere.kind\x01\x1c\x01@\x02\x04self\x19\x05value\x0c\x01\0\x04\
+\0\x17[method]sphere.set-kind\x01\x1d\x01@\x01\x04self\x19\0\x13\x04\0\x16[metho\
+d]sphere.to-mesh\x01\x1e\x01@\x01\x04self\x19\0\x15\x04\0\x16[method]sphere.to-n\
+ode\x01\x1f\x04\0\x1e[method]sphere.to-physics-node\x01\x1f\x03\x01\x10unavi:sha\
+pes/api\x05\x12\x01B\x04\x01m\x04\x05debug\x04info\x04warn\x05error\x04\0\x09log\
+-level\x03\0\0\x01@\x02\x05level\x01\x07messages\x01\0\x04\0\x03log\x01\x02\x03\x01\
+\x0dwired:log/api\x05\x13\x01B\x0f\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\0\x01\
+i\x01\x01r\x0f\x04head\x02\x05spine\x02\x04hips\x02\x0eleft-upper-arm\x02\x0elef\
+t-lower-arm\x02\x09left-hand\x02\x0fright-upper-arm\x02\x0fright-lower-arm\x02\x0a\
+right-hand\x02\x0eleft-upper-leg\x02\x0eleft-lower-leg\x02\x09left-foot\x02\x0fr\
+ight-upper-leg\x02\x0fright-lower-leg\x02\x0aright-foot\x02\x04\0\x08skeleton\x03\
+\0\x03\x04\0\x06player\x03\x01\x01h\x05\x01@\x01\x04self\x06\0\x04\x04\0\x17[met\
+hod]player.skeleton\x01\x07\x01i\x05\x01p\x08\x01@\0\0\x09\x04\0\x0clist-players\
+\x01\x0a\x01@\0\0\x08\x04\0\x0clocal-player\x01\x0b\x03\x01\x10wired:player/api\x05\
+\x14\x01B\x15\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\0\x04\0\x05scene\x03\x01\x01\
+i\x02\x01@\0\0\x03\x04\0\x12[constructor]scene\x01\x04\x01h\x02\x01@\x01\x04self\
+\x05\0y\x04\0\x10[method]scene.id\x01\x06\x01@\x01\x04self\x05\0s\x04\0\x12[meth\
+od]scene.name\x01\x07\x01@\x02\x04self\x05\x05values\x01\0\x04\0\x16[method]scen\
+e.set-name\x01\x08\x01i\x01\x01p\x09\x01@\x01\x04self\x05\0\x0a\x04\0\x13[method\
+]scene.nodes\x01\x0b\x01h\x01\x01@\x02\x04self\x05\x05value\x0c\x01\0\x04\0\x16[\
+method]scene.add-node\x01\x0d\x04\0\x19[method]scene.remove-node\x01\x0d\x03\x01\
+\x11wired:scene/scene\x05\x15\x02\x03\0\x0b\x05scene\x01B5\x02\x03\x02\x01\x02\x04\
+\0\x08material\x03\0\0\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\x02\x02\x03\x02\x01\
+\x10\x04\0\x04node\x03\0\x04\x02\x03\x02\x01\x16\x04\0\x05scene\x03\0\x06\x04\0\x04\
+gltf\x03\x01\x01i\x08\x01@\0\0\x09\x04\0\x11[constructor]gltf\x01\x0a\x01h\x08\x01\
+i\x01\x01p\x0c\x01@\x01\x04self\x0b\0\x0d\x04\0\x1b[method]gltf.list-materials\x01\
+\x0e\x01h\x01\x01@\x02\x04self\x0b\x05value\x0f\x01\0\x04\0\x19[method]gltf.add-\
+material\x01\x10\x04\0\x1c[method]gltf.remove-material\x01\x10\x01i\x03\x01p\x11\
+\x01@\x01\x04self\x0b\0\x12\x04\0\x18[method]gltf.list-meshes\x01\x13\x01h\x03\x01\
+@\x02\x04self\x0b\x05value\x14\x01\0\x04\0\x15[method]gltf.add-mesh\x01\x15\x04\0\
+\x18[method]gltf.remove-mesh\x01\x15\x01i\x05\x01p\x16\x01@\x01\x04self\x0b\0\x17\
+\x04\0\x17[method]gltf.list-nodes\x01\x18\x01h\x05\x01@\x02\x04self\x0b\x05value\
+\x19\x01\0\x04\0\x15[method]gltf.add-node\x01\x1a\x04\0\x18[method]gltf.remove-n\
+ode\x01\x1a\x01i\x07\x01p\x1b\x01@\x01\x04self\x0b\0\x1c\x04\0\x18[method]gltf.l\
+ist-scenes\x01\x1d\x01h\x07\x01@\x02\x04self\x0b\x05value\x1e\x01\0\x04\0\x16[me\
+thod]gltf.add-scene\x01\x1f\x04\0\x19[method]gltf.remove-scene\x01\x1f\x01k\x1b\x01\
+@\x01\x04self\x0b\0\x20\x04\0\x19[method]gltf.active-scene\x01!\x01k\x1e\x01@\x02\
+\x04self\x0b\x05value\"\x01\0\x04\0\x1d[method]gltf.set-active-scene\x01#\x04\0\x1a\
+[method]gltf.default-scene\x01!\x04\0\x1e[method]gltf.set-default-scene\x01\x1f\x03\
+\x01\x10wired:scene/gltf\x05\x17\x02\x03\0\x0c\x04gltf\x01Bt\x02\x03\x02\x01\x18\
+\x04\0\x04gltf\x03\0\0\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\x02\x02\x03\x02\x01\
+\x0c\x04\0\x09transform\x03\0\x04\x04\0\x04glxf\x03\x01\x04\0\x0aasset-gltf\x03\x01\
+\x04\0\x0aasset-glxf\x03\x01\x01i\x07\x01i\x08\x01q\x02\x04gltf\x01\x09\0\x04glx\
+f\x01\x0a\0\x04\0\x05asset\x03\0\x0b\x01h\x07\x01h\x08\x01q\x02\x04gltf\x01\x0d\0\
+\x04glxf\x01\x0e\0\x04\0\x0casset-borrow\x03\0\x0f\x04\0\x09glxf-node\x03\x01\x01\
+i\x11\x01p\x12\x01q\x02\x05asset\x01\x0c\0\x05nodes\x01\x13\0\x04\0\x08children\x03\
+\0\x14\x01h\x11\x01p\x16\x01q\x02\x05asset\x01\x10\0\x05nodes\x01\x17\0\x04\0\x0f\
+children-borrow\x03\0\x18\x04\0\x0aglxf-scene\x03\x01\x01i\x06\x01@\0\0\x1b\x04\0\
+\x11[constructor]glxf\x01\x1c\x01h\x06\x01p\x0c\x01@\x01\x04self\x1d\0\x1e\x04\0\
+\x18[method]glxf.list-assets\x01\x1f\x01@\x02\x04self\x1d\x05value\x10\x01\0\x04\
+\0\x16[method]glxf.add-asset\x01\x20\x04\0\x19[method]glxf.remove-asset\x01\x20\x01\
+@\x01\x04self\x1d\0\x13\x04\0\x17[method]glxf.list-nodes\x01!\x01@\x02\x04self\x1d\
+\x05value\x16\x01\0\x04\0\x15[method]glxf.add-node\x01\"\x04\0\x18[method]glxf.r\
+emove-node\x01\"\x01i\x1a\x01p#\x01@\x01\x04self\x1d\0$\x04\0\x18[method]glxf.li\
+st-scenes\x01%\x01h\x1a\x01@\x02\x04self\x1d\x05value&\x01\0\x04\0\x16[method]gl\
+xf.add-scene\x01'\x04\0\x19[method]glxf.remove-scene\x01'\x01k#\x01@\x01\x04self\
+\x1d\0(\x04\0\x19[method]glxf.active-scene\x01)\x01k&\x01@\x02\x04self\x1d\x05va\
+lue*\x01\0\x04\0\x1d[method]glxf.set-active-scene\x01+\x04\0\x1a[method]glxf.def\
+ault-scene\x01)\x04\0\x1e[method]glxf.set-default-scene\x01'\x01h\x01\x01@\x01\x08\
+document,\0\x09\x04\0\x17[constructor]asset-gltf\x01-\x01i\x01\x01@\x01\x04self\x0d\
+\0.\x04\0\x1b[method]asset-gltf.document\x01/\x01i\x03\x01p0\x01@\x01\x04self\x0d\
+\01\x04\0\x1d[method]asset-gltf.list-nodes\x012\x01h\x03\x01@\x02\x04self\x0d\x05\
+value3\x01\0\x04\0\x1b[method]asset-gltf.add-node\x014\x04\0\x1e[method]asset-gl\
+tf.remove-node\x014\x01@\x01\x08document\x1d\0\x0a\x04\0\x17[constructor]asset-g\
+lxf\x015\x01@\x01\x04self\x0e\0\x1b\x04\0\x1b[method]asset-glxf.document\x016\x01\
+@\x01\x04self\x0e\0\x13\x04\0\x1d[method]asset-glxf.list-nodes\x017\x01@\x02\x04\
+self\x0e\x05value\x16\x01\0\x04\0\x1b[method]asset-glxf.add-node\x018\x04\0\x1e[\
+method]asset-glxf.remove-node\x018\x01@\0\0\x12\x04\0\x16[constructor]glxf-node\x01\
+9\x01@\x01\x04self\x16\0y\x04\0\x14[method]glxf-node.id\x01:\x01@\x01\x04self\x16\
+\0s\x04\0\x16[method]glxf-node.name\x01;\x01@\x02\x04self\x16\x05values\x01\0\x04\
+\0\x1a[method]glxf-node.set-name\x01<\x01@\x01\x04self\x16\0\x05\x04\0\x1b[metho\
+d]glxf-node.transform\x01=\x01@\x02\x04self\x16\x05value\x05\x01\0\x04\0\x1f[met\
+hod]glxf-node.set-transform\x01>\x01k\x12\x01@\x01\x04self\x16\0?\x04\0\x18[meth\
+od]glxf-node.parent\x01@\x01k\x15\x01@\x01\x04self\x16\0\xc1\0\x04\0\x1a[method]\
+glxf-node.children\x01B\x01k\x19\x01@\x02\x04self\x16\x05value\xc3\0\x01\0\x04\0\
+\x1e[method]glxf-node.set-children\x01D\x01@\0\0#\x04\0\x17[constructor]glxf-sce\
+ne\x01E\x01@\x01\x04self&\0y\x04\0\x15[method]glxf-scene.id\x01F\x01@\x01\x04sel\
+f&\0s\x04\0\x17[method]glxf-scene.name\x01G\x01@\x02\x04self&\x05values\x01\0\x04\
+\0\x1b[method]glxf-scene.set-name\x01H\x01@\x01\x04self&\0\x13\x04\0\x18[method]\
+glxf-scene.nodes\x01I\x01@\x02\x04self&\x04node\x16\x01\0\x04\0\x1b[method]glxf-\
+scene.add-node\x01J\x04\0\x1e[method]glxf-scene.remove-node\x01J\x04\0\x08get-ro\
+ot\x01\x1c\x03\x01\x10wired:scene/glxf\x05\x19\x01B\x07\x04\0\x06script\x03\x01\x01\
+i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01h\0\x01@\x02\x04self\x03\
+\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\x01\x12wired:script/\
+types\x05\x1a\x04\x01\x1aexample:wired-input/script\x04\0\x0b\x0c\x01\0\x06scrip\
+t\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10\
+wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

@@ -3,5 +3,6 @@ package example:wired-input;
 world script {
     include wired:prelude/script;
 
+    import unavi:scene/api;
     import unavi:shapes/api;
 }

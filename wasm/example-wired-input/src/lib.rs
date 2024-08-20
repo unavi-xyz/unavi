@@ -1,15 +1,14 @@
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
-    unavi::shapes::api::Cuboid,
+    unavi::{
+        scene::api::{Root, Scene},
+        shapes::api::Cuboid,
+    },
     wired::{
         input::handler::InputHandler,
         log::api::{log, LogLevel},
         math::types::Vec3,
-        physics::types::{Collider, Shape},
-        scene::{
-            material::{Color, Material},
-            node::Node,
-        },
+        scene::material::{Color, Material},
     },
 };
 use rand::Rng;
@@ -25,23 +24,21 @@ struct Script {
 
 impl GuestScript for Script {
     fn new() -> Self {
-        let node = Node::new();
+        let scene = Scene::new();
 
-        let size = Vec3::splat(1.0);
-        let collider = Collider::new(Shape::Cuboid(size));
-        node.set_collider(Some(&collider));
-
-        let mesh = Cuboid::new(size).to_mesh();
-        node.set_mesh(Some(&mesh));
+        let node = Cuboid::new(Vec3::splat(1.0)).to_physics_node();
+        scene.add_node(&node);
 
         let material = Material::new();
-        for primitive in mesh.list_primitives() {
+
+        for primitive in node.mesh().unwrap().list_primitives() {
             primitive.set_material(Some(&material));
         }
 
-        log(LogLevel::Info, "Registering input handler");
         let handler = InputHandler::new();
         node.set_input_handler(Some(&handler));
+
+        Root::add_scene(&scene);
 
         Script { handler, material }
     }

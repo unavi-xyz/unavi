@@ -147,6 +147,8 @@ pub mod unavi {
             }
             impl Root {
                 #[allow(unused_unsafe, clippy::all)]
+                /// Add a scene to the root glXF.
+                /// This will make the scene a part of the game world.
                 pub fn add_scene(value: &Scene) {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
@@ -185,7 +187,6 @@ pub mod unavi {
             }
             impl Scene {
                 #[allow(unused_unsafe, clippy::all)]
-                /// Creates a new scene and adds it to the root glXF.
                 pub fn new() -> Self {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
@@ -247,7 +248,7 @@ pub mod unavi {
             }
             impl Scene {
                 #[allow(unused_unsafe, clippy::all)]
-                /// Creates a [node] and adds it to the scene.
+                /// Creates a node within the scene.
                 pub fn create_node(&self) -> Node {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]

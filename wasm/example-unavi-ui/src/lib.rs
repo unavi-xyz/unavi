@@ -1,6 +1,9 @@
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
-    unavi::{scene::api::Scene, ui::button::Button},
+    unavi::{
+        scene::api::{Root, Scene},
+        ui::button::Button,
+    },
 };
 
 #[allow(warnings)]
@@ -16,6 +19,8 @@ impl GuestScript for Script {
 
         let button = Button::new();
         // scene.add_node(&button.root().root());
+
+        Root::add_scene(&scene);
 
         Script { button }
     }

@@ -2,10 +2,7 @@ use std::cell::RefCell;
 
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
-    unavi::{
-        scene::api::{add_scene, Scene},
-        shapes::api::create_cuboid,
-    },
+    unavi::{scene::api::Scene, shapes::api::create_cuboid},
     wired::{
         math::types::Vec3,
         scene::{
@@ -28,10 +25,7 @@ struct Script {
 impl GuestScript for Script {
     fn new() -> Self {
         let scene = Scene::new();
-        add_scene(&scene);
-
-        let node = Node::new();
-        scene.add_node(&node);
+        let node = scene.create_node();
 
         let mesh = create_cuboid(Vec3::splat(1.0));
         node.set_mesh(Some(&mesh));

@@ -234,7 +234,7 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_nodes() {
-        let (mut world, mut state) = init_test_state();
+        let (_, mut state) = init_test_state();
 
         let scene = HostGlxfScene::new(&mut state).unwrap();
         let node = HostGlxfNode::new(&mut state).unwrap();

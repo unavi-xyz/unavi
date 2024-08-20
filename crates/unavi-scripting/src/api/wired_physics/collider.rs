@@ -63,7 +63,7 @@ mod tests {
 
     use tracing_test::traced_test;
 
-    use crate::api::{utils::tests::init_test_state, wired_physics::wired::physics::types::Sphere};
+    use crate::api::utils::tests::init_test_state;
 
     use super::*;
 
@@ -72,7 +72,7 @@ mod tests {
     fn test_drop() {
         let (_, mut state) = init_test_state();
 
-        let shape = Shape::Sphere(Sphere { radius: 0.5 });
+        let shape = Shape::Sphere(0.5);
         let res = HostCollider::new(&mut state, shape).unwrap();
 
         crate::api::utils::tests::test_drop(&mut state, res);
@@ -83,7 +83,7 @@ mod tests {
     fn test_new() {
         let (_, mut state) = init_test_state();
 
-        let shape = Shape::Sphere(Sphere { radius: 0.5 });
+        let shape = Shape::Sphere(0.5);
         let res = HostCollider::new(&mut state, shape).unwrap();
 
         crate::api::utils::tests::test_new(&mut state, res);

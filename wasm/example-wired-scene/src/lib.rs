@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
-    unavi::shapes::api::create_cuboid,
+    unavi::shapes::api::Cuboid,
     wired::{
         math::types::Vec3,
         scene::{
@@ -46,7 +46,7 @@ impl GuestScript for Script {
         let node = Node::new();
         scene.add_node(&node);
 
-        let mesh = create_cuboid(Vec3::splat(1.0));
+        let mesh = Cuboid::new(Vec3::default()).to_mesh();
         node.set_mesh(Some(&mesh));
 
         let material = Material::new();

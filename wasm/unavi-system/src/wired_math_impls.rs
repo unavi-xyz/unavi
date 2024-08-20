@@ -51,6 +51,29 @@ impl PartialEq for Quat {
     }
 }
 
+impl Transform {
+    pub fn from_translation(translation: Vec3) -> Self {
+        Self {
+            translation,
+            ..Default::default()
+        }
+    }
+
+    pub fn from_rotation(rotation: Quat) -> Self {
+        Self {
+            rotation,
+            ..Default::default()
+        }
+    }
+
+    pub fn from_scale(scale: Vec3) -> Self {
+        Self {
+            scale,
+            ..Default::default()
+        }
+    }
+}
+
 impl Default for Transform {
     fn default() -> Self {
         Self {

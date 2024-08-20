@@ -2,7 +2,7 @@ use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
     unavi::{
         scene::api::Scene,
-        shapes::api::{create_cuboid, create_sphere, Vec3},
+        shapes::api::{Cuboid, Sphere, Vec3},
     },
     wired::math::types::Transform,
 };
@@ -17,21 +17,13 @@ impl GuestScript for Script {
     fn new() -> Self {
         let scene = Scene::new();
 
-        let cuboid_node = scene.create_node();
-        cuboid_node.set_transform(Transform {
-            translation: Vec3::new(3.0, 0.0, 0.0),
-            ..Default::default()
-        });
-        let cuboid_mesh = create_cuboid(Vec3::splat(1.0));
-        cuboid_node.set_mesh(Some(&cuboid_mesh));
+        let cuboid = Cuboid::new(Vec3::default()).to_physics_node();
+        cuboid.set_transform(Transform::from_translation(Vec3::new(3.0, 0.0, 0.0)));
+        scene.add_node(&cuboid);
 
-        let sphere_node = scene.create_node();
-        sphere_node.set_transform(Transform {
-            translation: Vec3::new(1.5, 0.0, 0.0),
-            ..Default::default()
-        });
-        let sphere_mesh = create_sphere(0.5, 32, 18);
-        sphere_node.set_mesh(Some(&sphere_mesh));
+        let sphere = Sphere::new(0.5).to_physics_node();
+        sphere.set_transform(Transform::from_translation(Vec3::new(1.5, 0.0, 0.0)));
+        scene.add_node(&sphere);
 
         Script
     }

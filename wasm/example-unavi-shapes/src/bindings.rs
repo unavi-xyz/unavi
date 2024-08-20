@@ -489,56 +489,448 @@ pub mod unavi {
             static __FORCE_SECTION_REF: fn() =
                 super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
-            pub type Mesh = super::super::super::wired::scene::mesh::Mesh;
             pub type Vec3 = super::super::super::wired::math::types::Vec3;
-            #[allow(unused_unsafe, clippy::all)]
-            pub fn create_cuboid(size: Vec3) -> Mesh {
-                unsafe {
-                    let super::super::super::wired::math::types::Vec3 {
-                        x: x0,
-                        y: y0,
-                        z: z0,
-                    } = size;
+            pub type Mesh = super::super::super::wired::scene::mesh::Mesh;
+            pub type Node = super::super::super::wired::scene::node::Node;
 
-                    #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "unavi:shapes/api")]
-                    extern "C" {
-                        #[link_name = "create-cuboid"]
-                        fn wit_import(_: f32, _: f32, _: f32) -> i32;
-                    }
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Cuboid {
+                handle: _rt::Resource<Cuboid>,
+            }
 
-                    #[cfg(not(target_arch = "wasm32"))]
-                    fn wit_import(_: f32, _: f32, _: f32) -> i32 {
-                        unreachable!()
+            impl Cuboid {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
                     }
-                    let ret = wit_import(_rt::as_f32(x0), _rt::as_f32(y0), _rt::as_f32(z0));
-                    super::super::super::wired::scene::mesh::Mesh::from_handle(ret as u32)
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
                 }
             }
-            #[allow(unused_unsafe, clippy::all)]
-            /// Creates a UV sphere with the given number of
-            /// longitudinal sectors and latitudinal stacks, aka horizontal and vertical resolution.
-            ///
-            /// A good default is `32` sectors and `18` stacks.
-            pub fn create_sphere(radius: f32, sectors: u32, stacks: u32) -> Mesh {
-                unsafe {
-                    #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "unavi:shapes/api")]
-                    extern "C" {
-                        #[link_name = "create-sphere"]
-                        fn wit_import(_: f32, _: i32, _: i32) -> i32;
-                    }
 
+            unsafe impl _rt::WasmResource for Cuboid {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
                     #[cfg(not(target_arch = "wasm32"))]
-                    fn wit_import(_: f32, _: i32, _: i32) -> i32 {
-                        unreachable!()
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]cuboid"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
                     }
-                    let ret = wit_import(
-                        _rt::as_f32(&radius),
-                        _rt::as_i32(&sectors),
-                        _rt::as_i32(&stacks),
-                    );
-                    super::super::super::wired::scene::mesh::Mesh::from_handle(ret as u32)
+                }
+            }
+
+            /// UV sphere comprised of longitudinal sectors and latitudinal stacks.
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Sphere {
+                handle: _rt::Resource<Sphere>,
+            }
+
+            impl Sphere {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for Sphere {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]sphere"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            impl Cuboid {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn new(size: Vec3) -> Self {
+                    unsafe {
+                        let super::super::super::wired::math::types::Vec3 {
+                            x: x0,
+                            y: y0,
+                            z: z0,
+                        } = size;
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[constructor]cuboid"]
+                            fn wit_import(_: f32, _: f32, _: f32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: f32, _: f32, _: f32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import(_rt::as_f32(x0), _rt::as_f32(y0), _rt::as_f32(z0));
+                        Cuboid::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Cuboid {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn size(&self) -> Vec3 {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]cuboid.size"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<f32>();
+                        let l2 = *ptr0.add(4).cast::<f32>();
+                        let l3 = *ptr0.add(8).cast::<f32>();
+                        super::super::super::wired::math::types::Vec3 {
+                            x: l1,
+                            y: l2,
+                            z: l3,
+                        }
+                    }
+                }
+            }
+            impl Cuboid {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_size(&self, value: Vec3) {
+                    unsafe {
+                        let super::super::super::wired::math::types::Vec3 {
+                            x: x0,
+                            y: y0,
+                            z: z0,
+                        } = value;
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]cuboid.set-size"]
+                            fn wit_import(_: i32, _: f32, _: f32, _: f32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32, _: f32, _: f32) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            _rt::as_f32(x0),
+                            _rt::as_f32(y0),
+                            _rt::as_f32(z0),
+                        );
+                    }
+                }
+            }
+            impl Cuboid {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Creates a mesh of this shape.
+                pub fn to_mesh(&self) -> Mesh {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]cuboid.to-mesh"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wired::scene::mesh::Mesh::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Cuboid {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Creates a node with a mesh of this shape.
+                pub fn to_node(&self) -> Node {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]cuboid.to-node"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Cuboid {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Creates a node with a mesh and physics collider of this shape.
+                pub fn to_physics_node(&self) -> Node {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]cuboid.to-physics-node"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Sphere {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn new(radius: f32) -> Self {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[constructor]sphere"]
+                            fn wit_import(_: f32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: f32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import(_rt::as_f32(&radius));
+                        Sphere::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Sphere {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn radius(&self) -> f32 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]sphere.radius"]
+                            fn wit_import(_: i32) -> f32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> f32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret
+                    }
+                }
+            }
+            impl Sphere {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_radius(&self, value: f32) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]sphere.set-radius"]
+                            fn wit_import(_: i32, _: f32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_f32(&value));
+                    }
+                }
+            }
+            impl Sphere {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn sectors(&self) -> u16 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]sphere.sectors"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret as u16
+                    }
+                }
+            }
+            impl Sphere {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_sectors(&self, value: u16) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]sphere.set-sectors"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_i32(&value));
+                    }
+                }
+            }
+            impl Sphere {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn stacks(&self) -> u16 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]sphere.stacks"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret as u16
+                    }
+                }
+            }
+            impl Sphere {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_stacks(&self, value: u16) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]sphere.set-stacks"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_i32(&value));
+                    }
+                }
+            }
+            impl Sphere {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Creates a mesh of this shape.
+                pub fn to_mesh(&self) -> Mesh {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]sphere.to-mesh"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wired::scene::mesh::Mesh::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Sphere {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Creates a node with a mesh of this shape.
+                pub fn to_node(&self) -> Node {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]sphere.to-node"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Sphere {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Creates a node with a mesh and physics collider of this shape.
+                pub fn to_physics_node(&self) -> Node {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]sphere.to-physics-node"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
+                    }
                 }
             }
         }
@@ -1556,22 +1948,10 @@ pub mod wired {
                 }
             }
 
-            #[repr(C)]
-            #[derive(Clone, Copy)]
-            pub struct Sphere {
-                pub radius: f32,
-            }
-            impl ::core::fmt::Debug for Sphere {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    f.debug_struct("Sphere")
-                        .field("radius", &self.radius)
-                        .finish()
-                }
-            }
             #[derive(Clone, Copy)]
             pub enum Shape {
                 Cuboid(Vec3),
-                Sphere(Sphere),
+                Sphere(f32),
             }
             impl ::core::fmt::Debug for Shape {
                 fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
@@ -1666,7 +2046,7 @@ pub mod wired {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn new(shape: Shape) -> Self {
                     unsafe {
-                        let (result2_0, result2_1, result2_2, result2_3) = match shape {
+                        let (result1_0, result1_1, result1_2, result1_3) = match shape {
                             Shape::Cuboid(e) => {
                                 let super::super::super::wired::math::types::Vec3 {
                                     x: x0,
@@ -1676,11 +2056,7 @@ pub mod wired {
 
                                 (0i32, _rt::as_f32(x0), _rt::as_f32(y0), _rt::as_f32(z0))
                             }
-                            Shape::Sphere(e) => {
-                                let Sphere { radius: radius1 } = e;
-
-                                (1i32, _rt::as_f32(radius1), 0.0f32, 0.0f32)
-                            }
+                            Shape::Sphere(e) => (1i32, _rt::as_f32(e), 0.0f32, 0.0f32),
                         };
 
                         #[cfg(target_arch = "wasm32")]
@@ -1694,7 +2070,7 @@ pub mod wired {
                         fn wit_import(_: i32, _: f32, _: f32, _: f32) -> i32 {
                             unreachable!()
                         }
-                        let ret = wit_import(result2_0, result2_1, result2_2, result2_3);
+                        let ret = wit_import(result1_0, result1_1, result1_2, result1_3);
                         Collider::from_handle(ret as u32)
                     }
                 }
@@ -3704,19 +4080,19 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4210] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xf5\x1f\x01A\x02\x01\
-A\x1e\x01B\x06\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\0\x01r\x04\x01xv\x01\
-yv\x01zv\x01wv\x04\0\x04quat\x03\0\x02\x01r\x03\x08rotation\x03\x05scale\x01\x0b\
-translation\x01\x04\0\x09transform\x03\0\x04\x03\x01\x10wired:math/types\x05\0\x01\
-B\x11\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08material\x03\
-\x01\x01i\x02\x01@\0\0\x03\x04\0\x15[constructor]material\x01\x04\x01h\x02\x01@\x01\
-\x04self\x05\0y\x04\0\x13[method]material.id\x01\x06\x01@\x01\x04self\x05\0s\x04\
-\0\x15[method]material.name\x01\x07\x01@\x02\x04self\x05\x05values\x01\0\x04\0\x19\
-[method]material.set-name\x01\x08\x01@\x01\x04self\x05\0\x01\x04\0\x16[method]ma\
-terial.color\x01\x09\x01@\x02\x04self\x05\x05value\x01\x01\0\x04\0\x1a[method]ma\
-terial.set-color\x01\x0a\x03\x01\x14wired:scene/material\x05\x01\x02\x03\0\x01\x08\
-material\x01B)\x02\x03\x02\x01\x02\x04\0\x08material\x03\0\0\x04\0\x09primitive\x03\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4765] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa0$\x01A\x02\x01A\x1e\
+\x01B\x06\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\0\x01r\x04\x01xv\x01yv\x01\
+zv\x01wv\x04\0\x04quat\x03\0\x02\x01r\x03\x08rotation\x03\x05scale\x01\x0btransl\
+ation\x01\x04\0\x09transform\x03\0\x04\x03\x01\x10wired:math/types\x05\0\x01B\x11\
+\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08material\x03\x01\
+\x01i\x02\x01@\0\0\x03\x04\0\x15[constructor]material\x01\x04\x01h\x02\x01@\x01\x04\
+self\x05\0y\x04\0\x13[method]material.id\x01\x06\x01@\x01\x04self\x05\0s\x04\0\x15\
+[method]material.name\x01\x07\x01@\x02\x04self\x05\x05values\x01\0\x04\0\x19[met\
+hod]material.set-name\x01\x08\x01@\x01\x04self\x05\0\x01\x04\0\x16[method]materi\
+al.color\x01\x09\x01@\x02\x04self\x05\x05value\x01\x01\0\x04\0\x1a[method]materi\
+al.set-color\x01\x0a\x03\x01\x14wired:scene/material\x05\x01\x02\x03\0\x01\x08ma\
+terial\x01B)\x02\x03\x02\x01\x02\x04\0\x08material\x03\0\0\x04\0\x09primitive\x03\
 \x01\x04\0\x04mesh\x03\x01\x01h\x02\x01@\x01\x04self\x04\0y\x04\0\x14[method]pri\
 mitive.id\x01\x05\x01i\x01\x01k\x06\x01@\x01\x04self\x04\0\x07\x04\0\x1a[method]\
 primitive.material\x01\x08\x01h\x01\x01k\x09\x01@\x02\x04self\x04\x05value\x0a\x01\
@@ -3745,62 +4121,74 @@ q\x03\x04hand\x01\x0c\0\x03ray\x01\x0e\0\x03tip\x01\x10\0\x04\0\x0ainput-type\x0
 \x02\x03\x02\x01\x07\x04\0\x0binput-event\x03\0\0\x04\0\x0dinput-handler\x03\x01\
 \x01i\x02\x01@\0\0\x03\x04\0\x1a[constructor]input-handler\x01\x04\x01h\x02\x01k\
 \x01\x01@\x01\x04self\x05\0\x06\x04\0\"[method]input-handler.handle-input\x01\x07\
-\x03\x01\x13wired:input/handler\x05\x08\x01B\x1c\x02\x03\x02\x01\x04\x04\0\x04ve\
-c3\x03\0\0\x04\0\x08collider\x03\x01\x01r\x01\x06radiusv\x04\0\x06sphere\x03\0\x03\
-\x01q\x02\x06cuboid\x01\x01\0\x06sphere\x01\x04\0\x04\0\x05shape\x03\0\x05\x04\0\
-\x0arigid-body\x03\x01\x01m\x03\x07dynamic\x05fixed\x09kinematic\x04\0\x0frigid-\
-body-type\x03\0\x08\x01i\x02\x01@\x01\x05shape\x06\0\x0a\x04\0\x15[constructor]c\
-ollider\x01\x0b\x01h\x02\x01@\x01\x04self\x0c\0v\x04\0\x18[method]collider.densi\
-ty\x01\x0d\x01@\x02\x04self\x0c\x05valuev\x01\0\x04\0\x1c[method]collider.set-de\
-nsity\x01\x0e\x01i\x07\x01@\x01\x0frigid-body-type\x09\0\x0f\x04\0\x17[construct\
-or]rigid-body\x01\x10\x01h\x07\x01@\x01\x04self\x11\0\x01\x04\0\x19[method]rigid\
--body.angvel\x01\x12\x01@\x02\x04self\x11\x05value\x01\x01\0\x04\0\x1d[method]ri\
-gid-body.set-angvel\x01\x13\x04\0\x19[method]rigid-body.linvel\x01\x12\x04\0\x1d\
-[method]rigid-body.set-linvel\x01\x13\x03\x01\x13wired:physics/types\x05\x09\x02\
-\x03\0\x02\x04mesh\x02\x03\0\x04\x0dinput-handler\x02\x03\0\0\x09transform\x02\x03\
-\0\x05\x08collider\x02\x03\0\x05\x0arigid-body\x01BB\x02\x03\x02\x01\x0a\x04\0\x04\
-mesh\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x0dinput-handler\x03\0\x02\x02\x03\x02\x01\
-\x0c\x04\0\x09transform\x03\0\x04\x02\x03\x02\x01\x0d\x04\0\x08collider\x03\0\x06\
-\x02\x03\x02\x01\x0e\x04\0\x0arigid-body\x03\0\x08\x04\0\x04node\x03\x01\x01i\x0a\
-\x01@\0\0\x0b\x04\0\x11[constructor]node\x01\x0c\x01h\x0a\x01@\x01\x04self\x0d\0\
-y\x04\0\x0f[method]node.id\x01\x0e\x01@\x01\x04self\x0d\0s\x04\0\x11[method]node\
-.name\x01\x0f\x01@\x02\x04self\x0d\x05values\x01\0\x04\0\x15[method]node.set-nam\
-e\x01\x10\x01p\x0b\x01@\x01\x04self\x0d\0\x11\x04\0\x15[method]node.children\x01\
-\x12\x01@\x02\x04self\x0d\x05value\x0d\x01\0\x04\0\x16[method]node.add-child\x01\
-\x13\x04\0\x19[method]node.remove-child\x01\x13\x01k\x0b\x01@\x01\x04self\x0d\0\x14\
-\x04\0\x13[method]node.parent\x01\x15\x01@\x01\x04self\x0d\0\x05\x04\0\x16[metho\
-d]node.transform\x01\x16\x01@\x02\x04self\x0d\x05value\x05\x01\0\x04\0\x1a[metho\
-d]node.set-transform\x01\x17\x01i\x01\x01k\x18\x01@\x01\x04self\x0d\0\x19\x04\0\x11\
-[method]node.mesh\x01\x1a\x01h\x01\x01k\x1b\x01@\x02\x04self\x0d\x05value\x1c\x01\
-\0\x04\0\x15[method]node.set-mesh\x01\x1d\x01i\x07\x01k\x1e\x01@\x01\x04self\x0d\
-\0\x1f\x04\0\x15[method]node.collider\x01\x20\x01h\x07\x01k!\x01@\x02\x04self\x0d\
-\x05value\"\x01\0\x04\0\x19[method]node.set-collider\x01#\x01i\x09\x01k$\x01@\x01\
-\x04self\x0d\0%\x04\0\x17[method]node.rigid-body\x01&\x01h\x09\x01k'\x01@\x02\x04\
-self\x0d\x05value(\x01\0\x04\0\x1b[method]node.set-rigid-body\x01)\x01i\x03\x01k\
-*\x01@\x01\x04self\x0d\0+\x04\0\x1a[method]node.input-handler\x01,\x01h\x03\x01k\
--\x01@\x02\x04self\x0d\x05value.\x01\0\x04\0\x1e[method]node.set-input-handler\x01\
-/\x03\x01\x10wired:scene/node\x05\x0f\x02\x03\0\x06\x04node\x01B\"\x02\x03\x02\x01\
-\x0c\x04\0\x09transform\x03\0\0\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\x02\x04\0\
-\x04root\x03\x01\x04\0\x05scene\x03\x01\x01i\x05\x01p\x06\x01@\0\0\x07\x04\0\x18\
-[static]root.list-scenes\x01\x08\x01h\x05\x01@\x01\x05value\x09\x01\0\x04\0\x16[\
-static]root.add-scene\x01\x0a\x04\0\x19[static]root.remove-scene\x01\x0a\x01@\0\0\
-\x06\x04\0\x12[constructor]scene\x01\x0b\x01i\x03\x01p\x0c\x01@\x01\x04self\x09\0\
-\x0d\x04\0\x18[method]scene.list-nodes\x01\x0e\x01@\x01\x04self\x09\0\x0c\x04\0\x19\
-[method]scene.create-node\x01\x0f\x01h\x03\x01@\x02\x04self\x09\x05value\x10\x01\
-\0\x04\0\x16[method]scene.add-node\x01\x11\x04\0\x19[method]scene.remove-node\x01\
-\x11\x01@\x01\x04self\x09\0\x01\x04\0\x17[method]scene.transform\x01\x12\x01@\x02\
-\x04self\x09\x05value\x01\x01\0\x04\0\x1b[method]scene.set-transform\x01\x13\x01\
-@\x01\x04self\x09\0\x7f\x04\0\x14[method]scene.active\x01\x14\x01@\x02\x04self\x09\
-\x05value\x7f\x01\0\x04\0\x18[method]scene.set-active\x01\x15\x03\x01\x0funavi:s\
-cene/api\x05\x11\x01B\x09\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\
-\x04\x04\0\x04vec3\x03\0\x02\x01i\x01\x01@\x01\x04size\x03\0\x04\x04\0\x0dcreate\
--cuboid\x01\x05\x01@\x03\x06radiusv\x07sectorsy\x06stacksy\0\x04\x04\0\x0dcreate\
--sphere\x01\x06\x03\x01\x10unavi:shapes/api\x05\x12\x01B\x07\x04\0\x06script\x03\
-\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01h\0\x01@\x02\x04\
-self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\x01\x12wired\
-:script/types\x05\x13\x04\x01\x1bexample:unavi-shapes/script\x04\0\x0b\x0c\x01\0\
-\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070\
-.208.1\x10wit-bindgen-rust\x060.25.0";
+\x03\x01\x13wired:input/handler\x05\x08\x01B\x1a\x02\x03\x02\x01\x04\x04\0\x04ve\
+c3\x03\0\0\x04\0\x08collider\x03\x01\x01q\x02\x06cuboid\x01\x01\0\x06sphere\x01v\
+\0\x04\0\x05shape\x03\0\x03\x04\0\x0arigid-body\x03\x01\x01m\x03\x07dynamic\x05f\
+ixed\x09kinematic\x04\0\x0frigid-body-type\x03\0\x06\x01i\x02\x01@\x01\x05shape\x04\
+\0\x08\x04\0\x15[constructor]collider\x01\x09\x01h\x02\x01@\x01\x04self\x0a\0v\x04\
+\0\x18[method]collider.density\x01\x0b\x01@\x02\x04self\x0a\x05valuev\x01\0\x04\0\
+\x1c[method]collider.set-density\x01\x0c\x01i\x05\x01@\x01\x0frigid-body-type\x07\
+\0\x0d\x04\0\x17[constructor]rigid-body\x01\x0e\x01h\x05\x01@\x01\x04self\x0f\0\x01\
+\x04\0\x19[method]rigid-body.angvel\x01\x10\x01@\x02\x04self\x0f\x05value\x01\x01\
+\0\x04\0\x1d[method]rigid-body.set-angvel\x01\x11\x04\0\x19[method]rigid-body.li\
+nvel\x01\x10\x04\0\x1d[method]rigid-body.set-linvel\x01\x11\x03\x01\x13wired:phy\
+sics/types\x05\x09\x02\x03\0\x02\x04mesh\x02\x03\0\x04\x0dinput-handler\x02\x03\0\
+\0\x09transform\x02\x03\0\x05\x08collider\x02\x03\0\x05\x0arigid-body\x01BB\x02\x03\
+\x02\x01\x0a\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x0dinput-handler\x03\
+\0\x02\x02\x03\x02\x01\x0c\x04\0\x09transform\x03\0\x04\x02\x03\x02\x01\x0d\x04\0\
+\x08collider\x03\0\x06\x02\x03\x02\x01\x0e\x04\0\x0arigid-body\x03\0\x08\x04\0\x04\
+node\x03\x01\x01i\x0a\x01@\0\0\x0b\x04\0\x11[constructor]node\x01\x0c\x01h\x0a\x01\
+@\x01\x04self\x0d\0y\x04\0\x0f[method]node.id\x01\x0e\x01@\x01\x04self\x0d\0s\x04\
+\0\x11[method]node.name\x01\x0f\x01@\x02\x04self\x0d\x05values\x01\0\x04\0\x15[m\
+ethod]node.set-name\x01\x10\x01p\x0b\x01@\x01\x04self\x0d\0\x11\x04\0\x15[method\
+]node.children\x01\x12\x01@\x02\x04self\x0d\x05value\x0d\x01\0\x04\0\x16[method]\
+node.add-child\x01\x13\x04\0\x19[method]node.remove-child\x01\x13\x01k\x0b\x01@\x01\
+\x04self\x0d\0\x14\x04\0\x13[method]node.parent\x01\x15\x01@\x01\x04self\x0d\0\x05\
+\x04\0\x16[method]node.transform\x01\x16\x01@\x02\x04self\x0d\x05value\x05\x01\0\
+\x04\0\x1a[method]node.set-transform\x01\x17\x01i\x01\x01k\x18\x01@\x01\x04self\x0d\
+\0\x19\x04\0\x11[method]node.mesh\x01\x1a\x01h\x01\x01k\x1b\x01@\x02\x04self\x0d\
+\x05value\x1c\x01\0\x04\0\x15[method]node.set-mesh\x01\x1d\x01i\x07\x01k\x1e\x01\
+@\x01\x04self\x0d\0\x1f\x04\0\x15[method]node.collider\x01\x20\x01h\x07\x01k!\x01\
+@\x02\x04self\x0d\x05value\"\x01\0\x04\0\x19[method]node.set-collider\x01#\x01i\x09\
+\x01k$\x01@\x01\x04self\x0d\0%\x04\0\x17[method]node.rigid-body\x01&\x01h\x09\x01\
+k'\x01@\x02\x04self\x0d\x05value(\x01\0\x04\0\x1b[method]node.set-rigid-body\x01\
+)\x01i\x03\x01k*\x01@\x01\x04self\x0d\0+\x04\0\x1a[method]node.input-handler\x01\
+,\x01h\x03\x01k-\x01@\x02\x04self\x0d\x05value.\x01\0\x04\0\x1e[method]node.set-\
+input-handler\x01/\x03\x01\x10wired:scene/node\x05\x0f\x02\x03\0\x06\x04node\x01\
+B\"\x02\x03\x02\x01\x0c\x04\0\x09transform\x03\0\0\x02\x03\x02\x01\x10\x04\0\x04\
+node\x03\0\x02\x04\0\x04root\x03\x01\x04\0\x05scene\x03\x01\x01i\x05\x01p\x06\x01\
+@\0\0\x07\x04\0\x18[static]root.list-scenes\x01\x08\x01h\x05\x01@\x01\x05value\x09\
+\x01\0\x04\0\x16[static]root.add-scene\x01\x0a\x04\0\x19[static]root.remove-scen\
+e\x01\x0a\x01@\0\0\x06\x04\0\x12[constructor]scene\x01\x0b\x01i\x03\x01p\x0c\x01\
+@\x01\x04self\x09\0\x0d\x04\0\x18[method]scene.list-nodes\x01\x0e\x01@\x01\x04se\
+lf\x09\0\x0c\x04\0\x19[method]scene.create-node\x01\x0f\x01h\x03\x01@\x02\x04sel\
+f\x09\x05value\x10\x01\0\x04\0\x16[method]scene.add-node\x01\x11\x04\0\x19[metho\
+d]scene.remove-node\x01\x11\x01@\x01\x04self\x09\0\x01\x04\0\x17[method]scene.tr\
+ansform\x01\x12\x01@\x02\x04self\x09\x05value\x01\x01\0\x04\0\x1b[method]scene.s\
+et-transform\x01\x13\x01@\x01\x04self\x09\0\x7f\x04\0\x14[method]scene.active\x01\
+\x14\x01@\x02\x04self\x09\x05value\x7f\x01\0\x04\0\x18[method]scene.set-active\x01\
+\x15\x03\x01\x0funavi:scene/api\x05\x11\x01B*\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\
+\0\0\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\x02\x02\x03\x02\x01\x10\x04\0\x04no\
+de\x03\0\x04\x04\0\x06cuboid\x03\x01\x04\0\x06sphere\x03\x01\x01i\x06\x01@\x01\x04\
+size\x01\0\x08\x04\0\x13[constructor]cuboid\x01\x09\x01h\x06\x01@\x01\x04self\x0a\
+\0\x01\x04\0\x13[method]cuboid.size\x01\x0b\x01@\x02\x04self\x0a\x05value\x01\x01\
+\0\x04\0\x17[method]cuboid.set-size\x01\x0c\x01i\x03\x01@\x01\x04self\x0a\0\x0d\x04\
+\0\x16[method]cuboid.to-mesh\x01\x0e\x01i\x05\x01@\x01\x04self\x0a\0\x0f\x04\0\x16\
+[method]cuboid.to-node\x01\x10\x04\0\x1e[method]cuboid.to-physics-node\x01\x10\x01\
+i\x07\x01@\x01\x06radiusv\0\x11\x04\0\x13[constructor]sphere\x01\x12\x01h\x07\x01\
+@\x01\x04self\x13\0v\x04\0\x15[method]sphere.radius\x01\x14\x01@\x02\x04self\x13\
+\x05valuev\x01\0\x04\0\x19[method]sphere.set-radius\x01\x15\x01@\x01\x04self\x13\
+\0{\x04\0\x16[method]sphere.sectors\x01\x16\x01@\x02\x04self\x13\x05value{\x01\0\
+\x04\0\x1a[method]sphere.set-sectors\x01\x17\x04\0\x15[method]sphere.stacks\x01\x16\
+\x04\0\x19[method]sphere.set-stacks\x01\x17\x01@\x01\x04self\x13\0\x0d\x04\0\x16\
+[method]sphere.to-mesh\x01\x18\x01@\x01\x04self\x13\0\x0f\x04\0\x16[method]spher\
+e.to-node\x01\x19\x04\0\x1e[method]sphere.to-physics-node\x01\x19\x03\x01\x10una\
+vi:shapes/api\x05\x12\x01B\x07\x04\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\
+\x13[constructor]script\x01\x02\x01h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\
+\x15[method]script.update\x01\x04\x04\x01\x12wired:script/types\x05\x13\x04\x01\x1b\
+example:unavi-shapes/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producer\
+s\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.2\
+5.0";
 
 #[inline(never)]
 #[doc(hidden)]

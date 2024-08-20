@@ -1,4 +1,53 @@
-use crate::bindings::wired::{math::types::Vec3, scene::mesh::Primitive};
+use std::cell::RefCell;
+
+use crate::bindings::{
+    exports::unavi::shapes::api::{GuestCuboid, Vec3},
+    wired::{
+        physics::types::{Collider, Shape},
+        scene::{
+            mesh::{Mesh, Primitive},
+            node::Node,
+        },
+    },
+};
+
+pub struct Cuboid {
+    size: RefCell<Vec3>,
+}
+
+impl GuestCuboid for Cuboid {
+    fn new(size: Vec3) -> Self {
+        Self {
+            size: RefCell::new(size),
+        }
+    }
+
+    fn size(&self) -> Vec3 {
+        *self.size.borrow()
+    }
+    fn set_size(&self, value: Vec3) {
+        self.size.replace(value);
+    }
+
+    fn to_mesh(&self) -> Mesh {
+        let mesh = Mesh::new();
+        let primitive = mesh.create_primitive();
+
+        make_cuboid(&self.size.borrow(), &primitive);
+
+        mesh
+    }
+    fn to_node(&self) -> crate::bindings::exports::unavi::shapes::api::Node {
+        let node = Node::new();
+        node.set_mesh(Some(&self.to_mesh()));
+        node
+    }
+    fn to_physics_node(&self) -> Node {
+        let node = self.to_node();
+        node.set_collider(Some(&Collider::new(Shape::Cuboid(self.size()))));
+        node
+    }
+}
 
 pub fn make_cuboid(size: &Vec3, primitive: &Primitive) {
     let indices = [

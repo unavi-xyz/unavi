@@ -1,6 +1,6 @@
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
-    unavi::shapes::api::create_cuboid,
+    unavi::shapes::api::Cuboid,
     wired::{
         input::handler::InputHandler,
         log::api::{log, LogLevel},
@@ -31,7 +31,7 @@ impl GuestScript for Script {
         let collider = Collider::new(Shape::Cuboid(size));
         node.set_collider(Some(&collider));
 
-        let mesh = create_cuboid(size);
+        let mesh = Cuboid::new(size).to_mesh();
         node.set_mesh(Some(&mesh));
 
         let material = Material::new();

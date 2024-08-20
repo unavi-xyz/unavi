@@ -1,6 +1,7 @@
 package unavi:shapes;
 
 world shapes {
+    import wired:log/api;
     import wired:scene/mesh;
 
     import api;

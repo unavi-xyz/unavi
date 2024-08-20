@@ -4,7 +4,6 @@ world shapes {
     import wired:log/api;
     import wired:scene/mesh;
 
-    import api;
     export api;
 }
 
@@ -12,6 +11,23 @@ interface api {
   use wired:math/types.{vec3};
   use wired:scene/mesh.{mesh};
   use wired:scene/node.{node};
+
+  resource cylinder {
+    constructor(radius: f32, height: f32);
+
+    radius: func() -> f32;
+    set-radius: func(value: f32);
+
+    height: func() -> f32;
+    set-height: func(value: f32);
+
+    // Creates a mesh of this shape.
+    to-mesh: func() -> mesh;
+    // Creates a node with a mesh of this shape.
+    to-node: func() -> node;
+    // Creates a node with a mesh and physics collider of this shape.
+    to-physics-node: func() -> node;
+  }
 
   resource cuboid {
     constructor(size: vec3);

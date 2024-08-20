@@ -1348,15 +1348,31 @@ pub mod wired {
                 }
             }
 
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            pub struct ShapeCylinder {
+                pub height: f32,
+                pub radius: f32,
+            }
+            impl ::core::fmt::Debug for ShapeCylinder {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("ShapeCylinder")
+                        .field("height", &self.height)
+                        .field("radius", &self.radius)
+                        .finish()
+                }
+            }
             #[derive(Clone, Copy)]
             pub enum Shape {
                 Cuboid(Vec3),
+                Cylinder(ShapeCylinder),
                 Sphere(f32),
             }
             impl ::core::fmt::Debug for Shape {
                 fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
                         Shape::Cuboid(e) => f.debug_tuple("Shape::Cuboid").field(e).finish(),
+                        Shape::Cylinder(e) => f.debug_tuple("Shape::Cylinder").field(e).finish(),
                         Shape::Sphere(e) => f.debug_tuple("Shape::Sphere").field(e).finish(),
                     }
                 }
@@ -1446,7 +1462,7 @@ pub mod wired {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn new(shape: Shape) -> Self {
                     unsafe {
-                        let (result1_0, result1_1, result1_2, result1_3) = match shape {
+                        let (result2_0, result2_1, result2_2, result2_3) = match shape {
                             Shape::Cuboid(e) => {
                                 let super::super::super::wired::math::types::Vec3 {
                                     x: x0,
@@ -1456,7 +1472,15 @@ pub mod wired {
 
                                 (0i32, _rt::as_f32(x0), _rt::as_f32(y0), _rt::as_f32(z0))
                             }
-                            Shape::Sphere(e) => (1i32, _rt::as_f32(e), 0.0f32, 0.0f32),
+                            Shape::Cylinder(e) => {
+                                let ShapeCylinder {
+                                    height: height1,
+                                    radius: radius1,
+                                } = e;
+
+                                (1i32, _rt::as_f32(height1), _rt::as_f32(radius1), 0.0f32)
+                            }
+                            Shape::Sphere(e) => (2i32, _rt::as_f32(e), 0.0f32, 0.0f32),
                         };
 
                         #[cfg(target_arch = "wasm32")]
@@ -1470,7 +1494,7 @@ pub mod wired {
                         fn wit_import(_: i32, _: f32, _: f32, _: f32) -> i32 {
                             unreachable!()
                         }
-                        let ret = wit_import(result1_0, result1_1, result1_2, result1_3);
+                        let ret = wit_import(result2_0, result2_1, result2_2, result2_3);
                         Collider::from_handle(ret as u32)
                     }
                 }
@@ -5938,8 +5962,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7469] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xb09\x01A\x02\x01A(\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7520] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xe39\x01A\x02\x01A(\x01\
 B\x11\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08material\x03\
 \x01\x01i\x02\x01@\0\0\x03\x04\0\x15[constructor]material\x01\x04\x01h\x02\x01@\x01\
 \x04self\x05\0y\x04\0\x13[method]material.id\x01\x06\x01@\x01\x04self\x05\0s\x04\
@@ -5979,26 +6003,27 @@ vent\x03\0\x13\x03\x01\x11wired:input/types\x05\x06\x02\x03\0\x03\x0binput-event
 \x01B\x0a\x02\x03\x02\x01\x07\x04\0\x0binput-event\x03\0\0\x04\0\x0dinput-handle\
 r\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\x1a[constructor]input-handler\x01\x04\x01h\
 \x02\x01k\x01\x01@\x01\x04self\x05\0\x06\x04\0\"[method]input-handler.handle-inp\
-ut\x01\x07\x03\x01\x13wired:input/handler\x05\x08\x01B\x1a\x02\x03\x02\x01\x04\x04\
-\0\x04vec3\x03\0\0\x04\0\x08collider\x03\x01\x01q\x02\x06cuboid\x01\x01\0\x06sph\
-ere\x01v\0\x04\0\x05shape\x03\0\x03\x04\0\x0arigid-body\x03\x01\x01m\x03\x07dyna\
-mic\x05fixed\x09kinematic\x04\0\x0frigid-body-type\x03\0\x06\x01i\x02\x01@\x01\x05\
-shape\x04\0\x08\x04\0\x15[constructor]collider\x01\x09\x01h\x02\x01@\x01\x04self\
-\x0a\0v\x04\0\x18[method]collider.density\x01\x0b\x01@\x02\x04self\x0a\x05valuev\
-\x01\0\x04\0\x1c[method]collider.set-density\x01\x0c\x01i\x05\x01@\x01\x0frigid-\
-body-type\x07\0\x0d\x04\0\x17[constructor]rigid-body\x01\x0e\x01h\x05\x01@\x01\x04\
-self\x0f\0\x01\x04\0\x19[method]rigid-body.angvel\x01\x10\x01@\x02\x04self\x0f\x05\
-value\x01\x01\0\x04\0\x1d[method]rigid-body.set-angvel\x01\x11\x04\0\x19[method]\
-rigid-body.linvel\x01\x10\x04\0\x1d[method]rigid-body.set-linvel\x01\x11\x03\x01\
-\x13wired:physics/types\x05\x09\x02\x03\0\x01\x04mesh\x02\x03\0\x04\x0dinput-han\
-dler\x02\x03\0\x02\x09transform\x02\x03\0\x05\x08collider\x02\x03\0\x05\x0arigid\
--body\x01BB\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x0d\
-input-handler\x03\0\x02\x02\x03\x02\x01\x0c\x04\0\x09transform\x03\0\x04\x02\x03\
-\x02\x01\x0d\x04\0\x08collider\x03\0\x06\x02\x03\x02\x01\x0e\x04\0\x0arigid-body\
-\x03\0\x08\x04\0\x04node\x03\x01\x01i\x0a\x01@\0\0\x0b\x04\0\x11[constructor]nod\
-e\x01\x0c\x01h\x0a\x01@\x01\x04self\x0d\0y\x04\0\x0f[method]node.id\x01\x0e\x01@\
-\x01\x04self\x0d\0s\x04\0\x11[method]node.name\x01\x0f\x01@\x02\x04self\x0d\x05v\
-alues\x01\0\x04\0\x15[method]node.set-name\x01\x10\x01p\x0b\x01@\x01\x04self\x0d\
+ut\x01\x07\x03\x01\x13wired:input/handler\x05\x08\x01B\x1c\x02\x03\x02\x01\x04\x04\
+\0\x04vec3\x03\0\0\x04\0\x08collider\x03\x01\x01r\x02\x06heightv\x06radiusv\x04\0\
+\x0eshape-cylinder\x03\0\x03\x01q\x03\x06cuboid\x01\x01\0\x08cylinder\x01\x04\0\x06\
+sphere\x01v\0\x04\0\x05shape\x03\0\x05\x04\0\x0arigid-body\x03\x01\x01m\x03\x07d\
+ynamic\x05fixed\x09kinematic\x04\0\x0frigid-body-type\x03\0\x08\x01i\x02\x01@\x01\
+\x05shape\x06\0\x0a\x04\0\x15[constructor]collider\x01\x0b\x01h\x02\x01@\x01\x04\
+self\x0c\0v\x04\0\x18[method]collider.density\x01\x0d\x01@\x02\x04self\x0c\x05va\
+luev\x01\0\x04\0\x1c[method]collider.set-density\x01\x0e\x01i\x07\x01@\x01\x0fri\
+gid-body-type\x09\0\x0f\x04\0\x17[constructor]rigid-body\x01\x10\x01h\x07\x01@\x01\
+\x04self\x11\0\x01\x04\0\x19[method]rigid-body.angvel\x01\x12\x01@\x02\x04self\x11\
+\x05value\x01\x01\0\x04\0\x1d[method]rigid-body.set-angvel\x01\x13\x04\0\x19[met\
+hod]rigid-body.linvel\x01\x12\x04\0\x1d[method]rigid-body.set-linvel\x01\x13\x03\
+\x01\x13wired:physics/types\x05\x09\x02\x03\0\x01\x04mesh\x02\x03\0\x04\x0dinput\
+-handler\x02\x03\0\x02\x09transform\x02\x03\0\x05\x08collider\x02\x03\0\x05\x0ar\
+igid-body\x01BB\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x0b\x04\
+\0\x0dinput-handler\x03\0\x02\x02\x03\x02\x01\x0c\x04\0\x09transform\x03\0\x04\x02\
+\x03\x02\x01\x0d\x04\0\x08collider\x03\0\x06\x02\x03\x02\x01\x0e\x04\0\x0arigid-\
+body\x03\0\x08\x04\0\x04node\x03\x01\x01i\x0a\x01@\0\0\x0b\x04\0\x11[constructor\
+]node\x01\x0c\x01h\x0a\x01@\x01\x04self\x0d\0y\x04\0\x0f[method]node.id\x01\x0e\x01\
+@\x01\x04self\x0d\0s\x04\0\x11[method]node.name\x01\x0f\x01@\x02\x04self\x0d\x05\
+values\x01\0\x04\0\x15[method]node.set-name\x01\x10\x01p\x0b\x01@\x01\x04self\x0d\
 \0\x11\x04\0\x15[method]node.children\x01\x12\x01@\x02\x04self\x0d\x05value\x0d\x01\
 \0\x04\0\x16[method]node.add-child\x01\x13\x04\0\x19[method]node.remove-child\x01\
 \x13\x01k\x0b\x01@\x01\x04self\x0d\0\x14\x04\0\x13[method]node.parent\x01\x15\x01\

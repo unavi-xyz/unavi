@@ -2,7 +2,7 @@ use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
     unavi::{
         scene::api::{Root, Scene},
-        shapes::api::{Cuboid, Sphere, Vec3},
+        shapes::api::{Cuboid, Cylinder, Sphere, Vec3},
     },
     wired::math::types::Transform,
 };
@@ -28,6 +28,9 @@ impl GuestScript for Script {
         let sphere = Sphere::new_uv(0.5).to_physics_node();
         sphere.set_transform(Transform::from_translation(Vec3::new(1.5, 0.0, 0.0)));
         scene.add_node(&sphere);
+
+        let cylinder = Cylinder::new(0.5, 1.0).to_physics_node();
+        scene.add_node(&cylinder);
 
         Root::add_scene(&scene);
 

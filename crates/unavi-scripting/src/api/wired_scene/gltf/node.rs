@@ -9,7 +9,7 @@ use crate::{
         wired_input::{InputHandler, InputHandlerSender},
         wired_physics::wired::{
             math::types::Vec3,
-            physics::types::{RigidBodyType, Shape},
+            physics::types::{RigidBodyType, Shape, ShapeCylinder},
         },
     },
     state::{MaterialState, PrimitiveState, StoreState},
@@ -343,8 +343,11 @@ impl HostNode for StoreState {
             Some(value) => {
                 let collider = self.table.get(value)?;
                 let collider = match collider.shape {
-                    Shape::Sphere(radius) => avian3d::prelude::Collider::sphere(radius),
                     Shape::Cuboid(Vec3 { x, y, z }) => avian3d::prelude::Collider::cuboid(x, y, z),
+                    Shape::Cylinder(ShapeCylinder { height, radius }) => {
+                        avian3d::prelude::Collider::cylinder(radius, height)
+                    }
+                    Shape::Sphere(radius) => avian3d::prelude::Collider::sphere(radius),
                 };
                 Some(collider)
             }

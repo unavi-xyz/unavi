@@ -26,18 +26,31 @@ interface api {
     to-physics-node: func() -> node;
   }
 
-  // UV sphere comprised of longitudinal sectors and latitudinal stacks.
+  record sphere-ico {
+    subdivisions: u8
+  }
+
+  record sphere-uv {
+    sectors: u8,
+    stacks: u8,
+  }
+
+  variant sphere-kind {
+    // An icosphere, a spherical mesh that consists of similar sized triangles.
+    ico(sphere-ico),
+    // A UV sphere, a spherical mesh that consists of quadrilaterals
+    uv(sphere-uv),
+  }
+
   resource sphere {
-    constructor(radius: f32);
+    new-ico: static func(radius: f32) -> sphere;
+    new-uv: static func(radius: f32) -> sphere;
 
     radius: func() -> f32;
     set-radius: func(value: f32);
 
-    sectors: func() -> u16;
-    set-sectors: func(value: u16);
-
-    stacks: func() -> u16;
-    set-stacks: func(value: u16);
+    kind: func() -> sphere-kind;
+    set-kind: func(value: sphere-kind);
 
     // Creates a mesh of this shape.
     to-mesh: func() -> mesh;

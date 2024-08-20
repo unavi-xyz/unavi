@@ -21,7 +21,11 @@ impl GuestScript for Script {
         cuboid.set_transform(Transform::from_translation(Vec3::new(3.0, 0.0, 0.0)));
         scene.add_node(&cuboid);
 
-        let sphere = Sphere::new(0.5).to_physics_node();
+        let sphere = Sphere::new_ico(0.5).to_physics_node();
+        sphere.set_transform(Transform::from_translation(Vec3::new(1.5, 0.0, 2.0)));
+        scene.add_node(&sphere);
+
+        let sphere = Sphere::new_uv(0.5).to_physics_node();
         sphere.set_transform(Transform::from_translation(Vec3::new(1.5, 0.0, 0.0)));
         scene.add_node(&sphere);
 

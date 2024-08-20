@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use load::DefaultMaterial;
 use unavi_constants::assets::WASM_ASSETS_DIR;
 
 use self::load::Scripts;
@@ -22,9 +23,16 @@ pub struct ScriptingPlugin;
 
 impl Plugin for ScriptingPlugin {
     fn build(&self, app: &mut App) {
+        let mut materials = app
+            .world_mut()
+            .get_resource_mut::<Assets<StandardMaterial>>()
+            .unwrap();
+        let default_material = materials.add(StandardMaterial::default());
+
         app.register_asset_loader(asset::WasmLoader)
             .init_asset::<Wasm>()
             .init_non_send_resource::<Scripts>()
+            .insert_resource(DefaultMaterial(default_material))
             .add_systems(
                 FixedUpdate,
                 (

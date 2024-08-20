@@ -28,7 +28,7 @@ mod tests {
 
     use crate::{
         asset::{Wasm, WasmLoader},
-        load::{LoadedScript, Scripts},
+        load::{DefaultMaterial, LoadedScript, Scripts},
         ScriptBundle,
     };
 
@@ -48,7 +48,8 @@ mod tests {
         .init_asset::<StandardMaterial>()
         .init_asset::<Wasm>()
         .init_asset_loader::<WasmLoader>()
-        .init_non_send_resource::<Scripts>();
+        .init_non_send_resource::<Scripts>()
+        .insert_resource(DefaultMaterial(Handle::default()));
 
         app.add_systems(Update, crate::load::load_scripts);
 

@@ -242,6 +242,7 @@ impl HostPrimitive for StoreState {
 
         let mesh_nodes = mesh.nodes.iter().map(|r| r.rep()).collect::<Vec<_>>();
 
+        let default_material = self.default_material.clone();
         let materials = self.entities.materials.clone();
         let nodes = self.entities.nodes.clone();
         let rep = self_.rep();
@@ -260,8 +261,7 @@ impl HostPrimitive for StoreState {
                         if let Some(material) = &material {
                             world.entity_mut(p_ent).insert(material.clone());
                         } else {
-                            // TODO: default material
-                            world.entity_mut(p_ent).remove::<Handle<StandardMaterial>>();
+                            world.entity_mut(p_ent).insert(default_material.clone());
                         }
                     }
                 }
@@ -368,13 +368,13 @@ impl Host for StoreState {}
 
 #[cfg(test)]
 mod tests {
+    use crate::api::utils::tests::init_test_state;
+
     use super::*;
 
     #[test]
     fn test_new() {
-        let mut world = World::new();
-        let root_ent = world.spawn_empty().id();
-        let mut state = StoreState::new("test".to_string(), root_ent);
+        let (mut world, mut state) = init_test_state();
 
         let _ = HostMesh::new(&mut state).unwrap();
 

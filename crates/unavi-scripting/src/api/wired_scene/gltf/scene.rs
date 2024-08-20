@@ -165,7 +165,7 @@ mod tests {
     fn test_new() {
         let mut world = World::new();
         let root_ent = world.spawn_empty().id();
-        let mut state = StoreState::new("test".to_string(), root_ent);
+        let mut state = StoreState::new("test".to_string(), root_ent, Handle::default());
 
         let _ = HostScene::new(&mut state).unwrap();
 
@@ -181,7 +181,7 @@ mod tests {
     fn test_add_node() {
         let mut world = World::new();
         let root_ent = world.spawn_empty().id();
-        let mut state = StoreState::new("test".to_string(), root_ent);
+        let mut state = StoreState::new("test".to_string(), root_ent, Handle::default());
 
         let scene = HostScene::new(&mut state).unwrap();
         let node = HostNode::new(&mut state).unwrap();
@@ -200,7 +200,7 @@ mod tests {
     fn test_remove_node() {
         let mut world = World::new();
         let root_ent = world.spawn_empty().id();
-        let mut state = StoreState::new("test".to_string(), root_ent);
+        let mut state = StoreState::new("test".to_string(), root_ent, Handle::default());
 
         let scene = HostScene::new(&mut state).unwrap();
         let node = HostNode::new(&mut state).unwrap();
@@ -225,7 +225,7 @@ mod tests {
     fn test_nodes() {
         let mut world = World::new();
         let root_ent = world.spawn_empty().id();
-        let mut state = StoreState::new("test".to_string(), root_ent);
+        let mut state = StoreState::new("test".to_string(), root_ent, Handle::default());
 
         let scene = HostScene::new(&mut state).unwrap();
         let node = HostNode::new(&mut state).unwrap();

@@ -94,14 +94,14 @@ mod tests {
     use bevy::prelude::*;
     use tracing_test::traced_test;
 
+    use crate::api::utils::tests::init_test_state;
+
     use super::*;
 
     #[test]
     #[traced_test]
     fn test_drop() {
-        let mut world = World::default();
-        let ent = world.spawn(()).id();
-        let mut state = StoreState::new("test_drop".to_string(), ent);
+        let (mut world, mut state) = init_test_state();
 
         let res = HostRigidBody::new(&mut state, RigidBodyType::Dynamic).unwrap();
 
@@ -111,9 +111,7 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_new() {
-        let mut world = World::default();
-        let ent = world.spawn(()).id();
-        let mut state = StoreState::new("test_new".to_string(), ent);
+        let (mut world, mut state) = init_test_state();
 
         let res = HostRigidBody::new(&mut state, RigidBodyType::Dynamic).unwrap();
 

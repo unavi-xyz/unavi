@@ -35,7 +35,7 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Bump version
-        run: nix develop -c cargo release ${{ inputs.increment }} -x --no-publish --no-push --no-tag
+        run: nix develop -c cargo release ${{ inputs.increment }} -x --no-confirm --no-publish --no-push --no-tag
 
       - id: version
         run: |
@@ -94,7 +94,7 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Cargo release
-        run: nix develop -c cargo release release -x --no-push
+        run: nix develop -c cargo release release -x --no-confirm --no-push
 
       - name: Merge release into main
         run: |

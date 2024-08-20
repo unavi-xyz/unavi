@@ -50,8 +50,6 @@ jobs:
 
       - run: Compress-Archive -Path result/* -DestinationPath ${{ matrix.package }}.x86_64-windows.zip
 
-      - run: dir result
-
       - uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.package }}.x86_64-windows

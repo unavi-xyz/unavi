@@ -167,16 +167,17 @@ impl HostGlxfScene for StoreState {
 mod tests {
     use tracing_test::traced_test;
 
-    use crate::api::wired_scene::{glxf::node::GlxfNodeId, wired::scene::glxf::HostGlxfNode};
+    use crate::api::{
+        utils::tests::init_test_state,
+        wired_scene::{glxf::node::GlxfNodeId, wired::scene::glxf::HostGlxfNode},
+    };
 
     use super::*;
 
     #[test]
     #[traced_test]
     fn test_new() {
-        let mut world = World::new();
-        let root_ent = world.spawn_empty().id();
-        let mut state = StoreState::new("test".to_string(), root_ent);
+        let (mut world, mut state) = init_test_state();
 
         let _ = HostGlxfScene::new(&mut state).unwrap();
 
@@ -192,9 +193,7 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_add_node() {
-        let mut world = World::new();
-        let root_ent = world.spawn_empty().id();
-        let mut state = StoreState::new("test".to_string(), root_ent);
+        let (mut world, mut state) = init_test_state();
 
         let scene = HostGlxfScene::new(&mut state).unwrap();
         let node = HostGlxfNode::new(&mut state).unwrap();
@@ -211,9 +210,7 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_remove_node() {
-        let mut world = World::new();
-        let root_ent = world.spawn_empty().id();
-        let mut state = StoreState::new("test".to_string(), root_ent);
+        let (mut world, mut state) = init_test_state();
 
         let scene = HostGlxfScene::new(&mut state).unwrap();
         let node = HostGlxfNode::new(&mut state).unwrap();
@@ -237,9 +234,7 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_nodes() {
-        let mut world = World::new();
-        let root_ent = world.spawn_empty().id();
-        let mut state = StoreState::new("test".to_string(), root_ent);
+        let (mut world, mut state) = init_test_state();
 
         let scene = HostGlxfScene::new(&mut state).unwrap();
         let node = HostGlxfNode::new(&mut state).unwrap();

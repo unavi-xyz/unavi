@@ -2,7 +2,7 @@ use std::cell::Cell;
 
 use bevy::{
     log::{debug, warn},
-    prelude::Deref,
+    prelude::*,
 };
 use wasm_bridge::component::{Resource, ResourceTable, ResourceTableError};
 
@@ -89,9 +89,22 @@ pub trait RefResource: RefCount + Send + Sized + 'static {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::state::StoreState;
+    use crate::{load::DefaultMaterial, state::StoreState};
 
     use super::*;
+
+    pub fn init_test_state() -> (World, StoreState) {
+        let mut world = World::new();
+        world.init_resource::<Assets<Mesh>>();
+
+        let default_material = Handle::default();
+        world.insert_resource(DefaultMaterial(default_material.clone()));
+
+        let root_ent = world.spawn_empty().id();
+        let state = StoreState::new("test".to_string(), root_ent, default_material);
+
+        (world, state)
+    }
 
     pub fn test_drop<T: RefResource + Send>(state: &mut StoreState, res_a: Resource<T>) {
         let res_b = T::from_res(&res_a, &state.table).unwrap();

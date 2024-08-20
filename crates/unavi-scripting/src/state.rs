@@ -8,6 +8,7 @@ use crate::api::{utils::RefResource, wired_scene::glxf::document::GlxfDocument};
 
 pub struct StoreState {
     pub commands: CommandQueue,
+    pub default_material: Handle<StandardMaterial>,
     pub entities: EntityMaps,
     pub name: String,
     pub root_glxf: Resource<GlxfDocument>,
@@ -27,7 +28,7 @@ impl WasiView for StoreState {
 }
 
 impl StoreState {
-    pub fn new(name: String, root_ent: Entity) -> Self {
+    pub fn new(name: String, root_ent: Entity, default_material: Handle<StandardMaterial>) -> Self {
         let mut table = ResourceTable::default();
         let table_res = table.push(GlxfDocument::default()).unwrap();
         let root_glxf = GlxfDocument::from_res(&table_res, &table).unwrap();
@@ -47,6 +48,7 @@ impl StoreState {
 
         Self {
             commands,
+            default_material,
             entities,
             name,
             root_glxf,

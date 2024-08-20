@@ -18,8 +18,12 @@ pub struct ProcessedScript;
 #[derive(Default, Deref)]
 pub struct Scripts(pub Arc<Mutex<HashMap<Entity, (Script, Store<StoreState>)>>>);
 
+#[derive(Resource, Deref)]
+pub struct DefaultMaterial(pub Handle<StandardMaterial>);
+
 pub fn load_scripts(
     assets: Res<Assets<Wasm>>,
+    default_material: Res<DefaultMaterial>,
     mut commands: Commands,
     mut pool: AsyncTaskPool<anyhow::Result<Entity>>,
     scripts: NonSendMut<Scripts>,
@@ -46,7 +50,7 @@ pub fn load_scripts(
             }
         };
 
-        let state = StoreState::new(name.to_string(), entity);
+        let state = StoreState::new(name.to_string(), entity, default_material.clone());
         let mut store = Store::new(&engine, state);
         let mut linker = Linker::new(store.engine());
 

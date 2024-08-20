@@ -143,6 +143,7 @@ impl HostNode for StoreState {
         let node = self.table.get_mut(&self_)?;
         node.mesh = res;
 
+        let default_material = self.default_material.clone();
         let materials = self.entities.materials.clone();
         let mesh_rep = node.mesh.as_ref().map(|res| res.rep());
         let nodes = self.entities.nodes.clone();
@@ -183,7 +184,7 @@ impl HostNode for StoreState {
                     let MaterialState { handle, .. } = materials.get(&material_id).unwrap();
                     world.entity_mut(p_ent).insert(handle.clone());
                 } else {
-                    // TODO: default material
+                    world.entity_mut(p_ent).insert(default_material.clone());
                 }
             }
 
@@ -454,16 +455,14 @@ impl Host for StoreState {}
 mod tests {
     use tracing_test::traced_test;
 
-    use crate::api::wired_scene::wired::scene::mesh::HostMesh;
+    use crate::api::{utils::tests::init_test_state, wired_scene::wired::scene::mesh::HostMesh};
 
     use super::*;
 
     #[test]
     #[traced_test]
     fn test_new() {
-        let mut world = World::new();
-        let root_ent = world.spawn_empty().id();
-        let mut state = StoreState::new("test".to_string(), root_ent);
+        let (mut world, mut state) = init_test_state();
 
         let _ = HostNode::new(&mut state).unwrap();
 
@@ -479,11 +478,7 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_set_mesh() {
-        let mut world = World::new();
-        world.init_resource::<Assets<Mesh>>();
-
-        let root_ent = world.spawn_empty().id();
-        let mut state = StoreState::new("test".to_string(), root_ent);
+        let (mut world, mut state) = init_test_state();
 
         // Set mesh.
         let node = HostNode::new(&mut state).unwrap();

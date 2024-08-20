@@ -259,13 +259,13 @@ impl HostGlxfNode for StoreState {
 
 #[cfg(test)]
 mod tests {
+    use crate::api::utils::tests::init_test_state;
+
     use super::*;
 
     #[test]
     fn test_new() {
-        let mut world = World::new();
-        let root_ent = world.spawn_empty().id();
-        let mut state = StoreState::new("test".to_string(), root_ent);
+        let (mut world, mut state) = init_test_state();
 
         let _ = HostGlxfNode::new(&mut state).unwrap();
 

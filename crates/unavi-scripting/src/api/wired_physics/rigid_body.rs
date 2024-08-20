@@ -91,7 +91,7 @@ impl HostRigidBody for StoreState {
 
 #[cfg(test)]
 mod tests {
-    use bevy::prelude::*;
+
     use tracing_test::traced_test;
 
     use crate::api::utils::tests::init_test_state;
@@ -101,7 +101,7 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_drop() {
-        let (mut world, mut state) = init_test_state();
+        let (_, mut state) = init_test_state();
 
         let res = HostRigidBody::new(&mut state, RigidBodyType::Dynamic).unwrap();
 
@@ -111,7 +111,7 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_new() {
-        let (mut world, mut state) = init_test_state();
+        let (_, mut state) = init_test_state();
 
         let res = HostRigidBody::new(&mut state, RigidBodyType::Dynamic).unwrap();
 

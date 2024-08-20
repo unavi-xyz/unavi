@@ -1,5 +1,5 @@
 use bindings::{
-    exports::unavi::scene::api::{Guest, Scene, SceneBorrow},
+    exports::unavi::scene::api::{Guest, GuestRoot, Scene, SceneBorrow},
     wired::scene::glxf::{get_root, Asset, AssetBorrow, Children, GlxfScene},
 };
 use scene::SceneImpl;
@@ -11,11 +11,27 @@ mod scene;
 mod wired_math_impls;
 mod wired_scene_impls;
 
-struct GuestImpl;
+struct RootImpl;
 
-impl Guest for GuestImpl {
-    type Scene = SceneImpl;
+impl RootImpl {
+    fn add_scene_impl(value: &SceneImpl) {
+        let root = get_root();
+        root.add_asset(&AssetBorrow::Gltf(&value.asset));
+        root.add_node(&value.node);
 
+        let scene = root.active_scene().unwrap_or_else(|| {
+            let value = GlxfScene::new();
+            root.add_scene(&value);
+            root.set_default_scene(&value);
+            root.set_active_scene(Some(&value));
+            value
+        });
+
+        scene.add_node(&value.node);
+    }
+}
+
+impl GuestRoot for RootImpl {
     fn list_scenes() -> Vec<Scene> {
         let root = get_root();
 
@@ -59,20 +75,7 @@ impl Guest for GuestImpl {
 
     fn add_scene(value: SceneBorrow) {
         let value = value.get::<SceneImpl>();
-
-        let root = get_root();
-        root.add_asset(&AssetBorrow::Gltf(&value.asset));
-        root.add_node(&value.node);
-
-        let scene = root.active_scene().unwrap_or_else(|| {
-            let value = GlxfScene::new();
-            root.add_scene(&value);
-            root.set_default_scene(&value);
-            root.set_active_scene(Some(&value));
-            value
-        });
-
-        scene.add_node(&value.node);
+        RootImpl::add_scene_impl(value);
     }
 
     fn remove_scene(value: SceneBorrow) {
@@ -86,6 +89,13 @@ impl Guest for GuestImpl {
             scene.remove_node(&value.node)
         }
     }
+}
+
+struct GuestImpl;
+
+impl Guest for GuestImpl {
+    type Root = RootImpl;
+    type Scene = SceneImpl;
 }
 
 bindings::export!(GuestImpl with_types_in bindings);

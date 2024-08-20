@@ -4940,9 +4940,149 @@ pub mod exports {
                 use super::super::super::super::_rt;
                 pub type Transform = super::super::super::super::wired::math::types::Transform;
                 pub type Node = super::super::super::super::wired::scene::node::Node;
+
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct Root {
+                    handle: _rt::Resource<Root>,
+                }
+
+                type _RootRep<T> = Option<T>;
+
+                impl Root {
+                    /// Creates a new resource from the specified representation.
+                    ///
+                    /// This function will create a new resource handle by moving `val` onto
+                    /// the heap and then passing that heap pointer to the component model to
+                    /// create a handle. The owned handle is then returned as `Root`.
+                    pub fn new<T: GuestRoot>(val: T) -> Self {
+                        Self::type_guard::<T>();
+                        let val: _RootRep<T> = Some(val);
+                        let ptr: *mut _RootRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
+                    }
+
+                    /// Gets access to the underlying `T` which represents this resource.
+                    pub fn get<T: GuestRoot>(&self) -> &T {
+                        let ptr = unsafe { &*self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    /// Gets mutable access to the underlying `T` which represents this
+                    /// resource.
+                    pub fn get_mut<T: GuestRoot>(&mut self) -> &mut T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_mut().unwrap()
+                    }
+
+                    /// Consumes this resource and returns the underlying `T`.
+                    pub fn into_inner<T: GuestRoot>(self) -> T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.take().unwrap()
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn from_handle(handle: u32) -> Self {
+                        Self {
+                            handle: _rt::Resource::from_handle(handle),
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub fn take_handle(&self) -> u32 {
+                        _rt::Resource::take_handle(&self.handle)
+                    }
+
+                    #[doc(hidden)]
+                    pub fn handle(&self) -> u32 {
+                        _rt::Resource::handle(&self.handle)
+                    }
+
+                    // It's theoretically possible to implement the `GuestRoot` trait twice
+                    // so guard against using it with two different types here.
+                    #[doc(hidden)]
+                    fn type_guard<T: 'static>() {
+                        use core::any::TypeId;
+                        static mut LAST_TYPE: Option<TypeId> = None;
+                        unsafe {
+                            assert!(!cfg!(target_feature = "threads"));
+                            let id = TypeId::of::<T>();
+                            match LAST_TYPE {
+                                Some(ty) => assert!(
+                                    ty == id,
+                                    "cannot use two types with this resource type"
+                                ),
+                                None => LAST_TYPE = Some(id),
+                            }
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn dtor<T: 'static>(handle: *mut u8) {
+                        Self::type_guard::<T>();
+                        let _ = _rt::Box::from_raw(handle as *mut _RootRep<T>);
+                    }
+
+                    fn as_ptr<T: GuestRoot>(&self) -> *mut _RootRep<T> {
+                        Root::type_guard::<T>();
+                        T::_resource_rep(self.handle()).cast()
+                    }
+                }
+
+                /// A borrowed version of [`Root`] which represents a borrowed value
+                /// with the lifetime `'a`.
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct RootBorrow<'a> {
+                    rep: *mut u8,
+                    _marker: core::marker::PhantomData<&'a Root>,
+                }
+
+                impl<'a> RootBorrow<'a> {
+                    #[doc(hidden)]
+                    pub unsafe fn lift(rep: usize) -> Self {
+                        Self {
+                            rep: rep as *mut u8,
+                            _marker: core::marker::PhantomData,
+                        }
+                    }
+
+                    /// Gets access to the underlying `T` in this resource.
+                    pub fn get<T: GuestRoot>(&self) -> &T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    // NB: mutable access is not allowed due to the component model allowing
+                    // multiple borrows of the same resource.
+
+                    fn as_ptr<T: 'static>(&self) -> *mut _RootRep<T> {
+                        Root::type_guard::<T>();
+                        self.rep.cast()
+                    }
+                }
+
+                unsafe impl _rt::WasmResource for Root {
+                    #[inline]
+                    unsafe fn drop(_handle: u32) {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unreachable!();
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]unavi:scene/api")]
+                            extern "C" {
+                                #[link_name = "[resource-drop]root"]
+                                fn drop(_: u32);
+                            }
+
+                            drop(_handle);
+                        }
+                    }
+                }
+
                 /// An abstraction over the `wired:scene` glTF and glXF APIs.
-                /// New scenes will be stored in their own glTF file, and
-                /// will be added to the root glXF document when `add-scene` is called.
+                /// New scenes are stored as separate glTF documents.
 
                 #[derive(Debug)]
                 #[repr(transparent)]
@@ -5086,7 +5226,7 @@ pub mod exports {
 
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_list_scenes_cabi<T: Guest>() -> *mut u8 {
+                pub unsafe fn _export_static_root_list_scenes_cabi<T: GuestRoot>() -> *mut u8 {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
                     let result0 = T::list_scenes();
@@ -5117,7 +5257,7 @@ pub mod exports {
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn __post_return_list_scenes<T: Guest>(arg0: *mut u8) {
+                pub unsafe fn __post_return_static_root_list_scenes<T: GuestRoot>(arg0: *mut u8) {
                     let l0 = *arg0.add(0).cast::<*mut u8>();
                     let l1 = *arg0.add(4).cast::<usize>();
                     let base2 = l0;
@@ -5126,14 +5266,14 @@ pub mod exports {
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_add_scene_cabi<T: Guest>(arg0: i32) {
+                pub unsafe fn _export_static_root_add_scene_cabi<T: GuestRoot>(arg0: i32) {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
                     T::add_scene(SceneBorrow::lift(arg0 as u32 as usize));
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_remove_scene_cabi<T: Guest>(arg0: i32) {
+                pub unsafe fn _export_static_root_remove_scene_cabi<T: GuestRoot>(arg0: i32) {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
                     T::remove_scene(SceneBorrow::lift(arg0 as u32 as usize));
@@ -5187,6 +5327,16 @@ pub mod exports {
                     let base2 = l0;
                     let len2 = l1;
                     _rt::cabi_dealloc(base2, len2 * 4, 4);
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_scene_create_node_cabi<T: GuestScene>(
+                    arg0: *mut u8,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::create_node(SceneBorrow::lift(arg0 as u32 as usize).get());
+                    (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
@@ -5328,7 +5478,54 @@ pub mod exports {
                     );
                 }
                 pub trait Guest {
+                    type Root: GuestRoot;
                     type Scene: GuestScene;
+                }
+                pub trait GuestRoot: 'static {
+                    #[doc(hidden)]
+                    unsafe fn _resource_new(val: *mut u8) -> u32
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = val;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]unavi:scene/api")]
+                            extern "C" {
+                                #[link_name = "[resource-new]root"]
+                                fn new(_: *mut u8) -> u32;
+                            }
+                            new(val)
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    fn _resource_rep(handle: u32) -> *mut u8
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = handle;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]unavi:scene/api")]
+                            extern "C" {
+                                #[link_name = "[resource-rep]root"]
+                                fn rep(_: u32) -> *mut u8;
+                            }
+                            unsafe { rep(handle) }
+                        }
+                    }
+
                     fn list_scenes() -> _rt::Vec<Scene>;
                     fn add_scene(value: SceneBorrow<'_>);
                     fn remove_scene(value: SceneBorrow<'_>);
@@ -5378,8 +5575,11 @@ pub mod exports {
                         }
                     }
 
+                    /// Creates a new scene and adds it to the root glXF.
                     fn new() -> Self;
                     fn list_nodes(&self) -> _rt::Vec<Node>;
+                    /// Creates a [node] and adds it to the scene.
+                    fn create_node(&self) -> Node;
                     fn add_node(&self, value: &Node);
                     fn remove_node(&self, value: &Node);
                     fn transform(&self) -> Transform;
@@ -5392,21 +5592,21 @@ pub mod exports {
                 macro_rules! __export_unavi_scene_api_cabi{
   ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
-    #[export_name = "unavi:scene/api#list-scenes"]
-    unsafe extern "C" fn export_list_scenes() -> *mut u8 {
-      $($path_to_types)*::_export_list_scenes_cabi::<$ty>()
+    #[export_name = "unavi:scene/api#[static]root.list-scenes"]
+    unsafe extern "C" fn export_static_root_list_scenes() -> *mut u8 {
+      $($path_to_types)*::_export_static_root_list_scenes_cabi::<<$ty as $($path_to_types)*::Guest>::Root>()
     }
-    #[export_name = "cabi_post_unavi:scene/api#list-scenes"]
-    unsafe extern "C" fn _post_return_list_scenes(arg0: *mut u8,) {
-      $($path_to_types)*::__post_return_list_scenes::<$ty>(arg0)
+    #[export_name = "cabi_post_unavi:scene/api#[static]root.list-scenes"]
+    unsafe extern "C" fn _post_return_static_root_list_scenes(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_static_root_list_scenes::<<$ty as $($path_to_types)*::Guest>::Root>(arg0)
     }
-    #[export_name = "unavi:scene/api#add-scene"]
-    unsafe extern "C" fn export_add_scene(arg0: i32,) {
-      $($path_to_types)*::_export_add_scene_cabi::<$ty>(arg0)
+    #[export_name = "unavi:scene/api#[static]root.add-scene"]
+    unsafe extern "C" fn export_static_root_add_scene(arg0: i32,) {
+      $($path_to_types)*::_export_static_root_add_scene_cabi::<<$ty as $($path_to_types)*::Guest>::Root>(arg0)
     }
-    #[export_name = "unavi:scene/api#remove-scene"]
-    unsafe extern "C" fn export_remove_scene(arg0: i32,) {
-      $($path_to_types)*::_export_remove_scene_cabi::<$ty>(arg0)
+    #[export_name = "unavi:scene/api#[static]root.remove-scene"]
+    unsafe extern "C" fn export_static_root_remove_scene(arg0: i32,) {
+      $($path_to_types)*::_export_static_root_remove_scene_cabi::<<$ty as $($path_to_types)*::Guest>::Root>(arg0)
     }
     #[export_name = "unavi:scene/api#[constructor]scene"]
     unsafe extern "C" fn export_constructor_scene() -> i32 {
@@ -5419,6 +5619,10 @@ pub mod exports {
     #[export_name = "cabi_post_unavi:scene/api#[method]scene.list-nodes"]
     unsafe extern "C" fn _post_return_method_scene_list_nodes(arg0: *mut u8,) {
       $($path_to_types)*::__post_return_method_scene_list_nodes::<<$ty as $($path_to_types)*::Guest>::Scene>(arg0)
+    }
+    #[export_name = "unavi:scene/api#[method]scene.create-node"]
+    unsafe extern "C" fn export_method_scene_create_node(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_scene_create_node_cabi::<<$ty as $($path_to_types)*::Guest>::Scene>(arg0)
     }
     #[export_name = "unavi:scene/api#[method]scene.add-node"]
     unsafe extern "C" fn export_method_scene_add_node(arg0: *mut u8,arg1: i32,) {
@@ -5444,6 +5648,18 @@ pub mod exports {
     unsafe extern "C" fn export_method_scene_set_active(arg0: *mut u8,arg1: i32,) {
       $($path_to_types)*::_export_method_scene_set_active_cabi::<<$ty as $($path_to_types)*::Guest>::Scene>(arg0, arg1)
     }
+
+    const _: () = {
+      #[doc(hidden)]
+      #[export_name = "unavi:scene/api#[dtor]root"]
+      #[allow(non_snake_case)]
+      unsafe extern "C" fn dtor(rep: *mut u8) {
+        $($path_to_types)*::Root::dtor::<
+        <$ty as $($path_to_types)*::Guest>::Root
+        >(rep)
+      }
+    };
+
 
     const _: () = {
       #[doc(hidden)]
@@ -5659,8 +5875,8 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6992] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xd45\x01A\x02\x01A\"\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7081] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xad6\x01A\x02\x01A\"\
 \x01B\x06\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\0\x01r\x04\x01xv\x01yv\x01\
 zv\x01wv\x04\0\x04quat\x03\0\x02\x01r\x03\x08rotation\x03\x05scale\x01\x0btransl\
 ation\x01\x04\0\x09transform\x03\0\x04\x03\x01\x10wired:math/types\x05\0\x01B\x11\
@@ -5802,20 +6018,21 @@ hod]glxf-node.set-children\x01D\x01@\0\0#\x04\0\x17[constructor]glxf-scene\x01E\
 hod]glxf-scene.set-name\x01H\x01@\x01\x04self&\0\x13\x04\0\x18[method]glxf-scene\
 .nodes\x01I\x01@\x02\x04self&\x04node\x16\x01\0\x04\0\x1b[method]glxf-scene.add-\
 node\x01J\x04\0\x1e[method]glxf-scene.remove-node\x01J\x04\0\x08get-root\x01\x1c\
-\x03\x01\x10wired:scene/glxf\x05\x15\x01B\x1f\x02\x03\x02\x01\x0c\x04\0\x09trans\
-form\x03\0\0\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\x02\x04\0\x05scene\x03\x01\x01\
-i\x04\x01@\0\0\x05\x04\0\x12[constructor]scene\x01\x06\x01h\x04\x01i\x03\x01p\x08\
-\x01@\x01\x04self\x07\0\x09\x04\0\x18[method]scene.list-nodes\x01\x0a\x01h\x03\x01\
-@\x02\x04self\x07\x05value\x0b\x01\0\x04\0\x16[method]scene.add-node\x01\x0c\x04\
-\0\x19[method]scene.remove-node\x01\x0c\x01@\x01\x04self\x07\0\x01\x04\0\x17[met\
-hod]scene.transform\x01\x0d\x01@\x02\x04self\x07\x05value\x01\x01\0\x04\0\x1b[me\
-thod]scene.set-transform\x01\x0e\x01@\x01\x04self\x07\0\x7f\x04\0\x14[method]sce\
-ne.active\x01\x0f\x01@\x02\x04self\x07\x05value\x7f\x01\0\x04\0\x18[method]scene\
-.set-active\x01\x10\x01p\x05\x01@\0\0\x11\x04\0\x0blist-scenes\x01\x12\x01@\x01\x05\
-value\x07\x01\0\x04\0\x09add-scene\x01\x13\x04\0\x0cremove-scene\x01\x13\x04\x01\
-\x0funavi:scene/api\x05\x16\x04\x01\x11unavi:scene/guest\x04\0\x0b\x0b\x01\0\x05\
-guest\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.\
-1\x10wit-bindgen-rust\x060.25.0";
+\x03\x01\x10wired:scene/glxf\x05\x15\x01B\"\x02\x03\x02\x01\x0c\x04\0\x09transfo\
+rm\x03\0\0\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\x02\x04\0\x04root\x03\x01\x04\
+\0\x05scene\x03\x01\x01i\x05\x01p\x06\x01@\0\0\x07\x04\0\x18[static]root.list-sc\
+enes\x01\x08\x01h\x05\x01@\x01\x05value\x09\x01\0\x04\0\x16[static]root.add-scen\
+e\x01\x0a\x04\0\x19[static]root.remove-scene\x01\x0a\x01@\0\0\x06\x04\0\x12[cons\
+tructor]scene\x01\x0b\x01i\x03\x01p\x0c\x01@\x01\x04self\x09\0\x0d\x04\0\x18[met\
+hod]scene.list-nodes\x01\x0e\x01@\x01\x04self\x09\0\x0c\x04\0\x19[method]scene.c\
+reate-node\x01\x0f\x01h\x03\x01@\x02\x04self\x09\x05value\x10\x01\0\x04\0\x16[me\
+thod]scene.add-node\x01\x11\x04\0\x19[method]scene.remove-node\x01\x11\x01@\x01\x04\
+self\x09\0\x01\x04\0\x17[method]scene.transform\x01\x12\x01@\x02\x04self\x09\x05\
+value\x01\x01\0\x04\0\x1b[method]scene.set-transform\x01\x13\x01@\x01\x04self\x09\
+\0\x7f\x04\0\x14[method]scene.active\x01\x14\x01@\x02\x04self\x09\x05value\x7f\x01\
+\0\x04\0\x18[method]scene.set-active\x01\x15\x04\x01\x0funavi:scene/api\x05\x16\x04\
+\x01\x11unavi:scene/guest\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\0G\x09producers\x01\
+\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

@@ -24,6 +24,7 @@ pub fn init_scripts(
     scripts: NonSendMut<Scripts>,
 ) {
     for (entity, name) in to_init.iter() {
+        #[allow(clippy::await_holding_lock)]
         let res = block_on(async {
             info!("Initializing script {}", name);
 
@@ -56,6 +57,7 @@ pub fn update_scripts(
     let delta = time.delta_seconds();
 
     for (entity, name, res) in to_update.iter_mut() {
+        #[allow(clippy::await_holding_lock)]
         let res: anyhow::Result<_> = block_on(async {
             let span = trace_span!("ScriptUpdate", name = name.to_string(), delta);
             let span = span.enter();

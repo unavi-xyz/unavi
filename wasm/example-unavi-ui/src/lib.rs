@@ -1,9 +1,6 @@
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
-    unavi::{
-        scene::api::{add_scene, Scene},
-        ui::button::Button,
-    },
+    unavi::{scene::api::Scene, ui::button::Button},
 };
 
 #[allow(warnings)]
@@ -16,7 +13,6 @@ struct Script {
 impl GuestScript for Script {
     fn new() -> Self {
         let scene = Scene::new();
-        add_scene(&scene);
 
         let button = Button::new();
         // scene.add_node(&button.root().root());

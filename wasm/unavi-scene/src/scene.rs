@@ -1,13 +1,16 @@
-use crate::bindings::{
-    exports::unavi::scene::api::GuestScene,
-    wired::{
-        math::types::Transform,
-        scene::{
-            gltf::{Gltf, Scene},
-            glxf::{AssetBorrow, AssetGltf, ChildrenBorrow, GlxfNode},
-            node::Node,
+use crate::{
+    bindings::{
+        exports::unavi::scene::api::GuestScene,
+        wired::{
+            math::types::Transform,
+            scene::{
+                gltf::{Gltf, Scene},
+                glxf::{AssetBorrow, AssetGltf, ChildrenBorrow, GlxfNode},
+                node::Node,
+            },
         },
     },
+    RootImpl,
 };
 
 pub struct SceneImpl {
@@ -29,12 +32,16 @@ impl GuestScene for SceneImpl {
         let node = GlxfNode::new();
         node.set_children(Some(&ChildrenBorrow::Asset(AssetBorrow::Gltf(&asset))));
 
-        Self {
+        let value = Self {
             asset,
             gltf,
             node,
             scene,
-        }
+        };
+
+        RootImpl::add_scene_impl(&value);
+
+        value
     }
 
     fn active(&self) -> bool {
@@ -61,6 +68,11 @@ impl GuestScene for SceneImpl {
 
     fn list_nodes(&self) -> Vec<Node> {
         self.scene.nodes()
+    }
+    fn create_node(&self) -> Node {
+        let node = Node::new();
+        self.add_node(&node);
+        node
     }
     fn add_node(&self, value: &Node) {
         self.scene.add_node(value)

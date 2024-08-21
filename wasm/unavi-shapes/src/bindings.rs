@@ -975,6 +975,20 @@ pub mod wired {
                 super::super::super::__link_custom_section_describing_imports;
             #[repr(C)]
             #[derive(Clone, Copy)]
+            pub struct Vec2 {
+                pub x: f32,
+                pub y: f32,
+            }
+            impl ::core::fmt::Debug for Vec2 {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("Vec2")
+                        .field("x", &self.x)
+                        .field("y", &self.y)
+                        .finish()
+                }
+            }
+            #[repr(C)]
+            #[derive(Clone, Copy)]
             pub struct Vec3 {
                 pub x: f32,
                 pub y: f32,
@@ -2731,9 +2745,153 @@ pub mod exports {
                 static __FORCE_SECTION_REF: fn() =
                     super::super::super::super::__link_custom_section_describing_imports;
                 use super::super::super::super::_rt;
+                pub type Vec2 = super::super::super::super::wired::math::types::Vec2;
                 pub type Vec3 = super::super::super::super::wired::math::types::Vec3;
                 pub type Mesh = super::super::super::super::wired::scene::mesh::Mesh;
                 pub type Node = super::super::super::super::wired::scene::node::Node;
+                /// 2D
+
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct Rectangle {
+                    handle: _rt::Resource<Rectangle>,
+                }
+
+                type _RectangleRep<T> = Option<T>;
+
+                impl Rectangle {
+                    /// Creates a new resource from the specified representation.
+                    ///
+                    /// This function will create a new resource handle by moving `val` onto
+                    /// the heap and then passing that heap pointer to the component model to
+                    /// create a handle. The owned handle is then returned as `Rectangle`.
+                    pub fn new<T: GuestRectangle>(val: T) -> Self {
+                        Self::type_guard::<T>();
+                        let val: _RectangleRep<T> = Some(val);
+                        let ptr: *mut _RectangleRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
+                    }
+
+                    /// Gets access to the underlying `T` which represents this resource.
+                    pub fn get<T: GuestRectangle>(&self) -> &T {
+                        let ptr = unsafe { &*self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    /// Gets mutable access to the underlying `T` which represents this
+                    /// resource.
+                    pub fn get_mut<T: GuestRectangle>(&mut self) -> &mut T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_mut().unwrap()
+                    }
+
+                    /// Consumes this resource and returns the underlying `T`.
+                    pub fn into_inner<T: GuestRectangle>(self) -> T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.take().unwrap()
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn from_handle(handle: u32) -> Self {
+                        Self {
+                            handle: _rt::Resource::from_handle(handle),
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub fn take_handle(&self) -> u32 {
+                        _rt::Resource::take_handle(&self.handle)
+                    }
+
+                    #[doc(hidden)]
+                    pub fn handle(&self) -> u32 {
+                        _rt::Resource::handle(&self.handle)
+                    }
+
+                    // It's theoretically possible to implement the `GuestRectangle` trait twice
+                    // so guard against using it with two different types here.
+                    #[doc(hidden)]
+                    fn type_guard<T: 'static>() {
+                        use core::any::TypeId;
+                        static mut LAST_TYPE: Option<TypeId> = None;
+                        unsafe {
+                            assert!(!cfg!(target_feature = "threads"));
+                            let id = TypeId::of::<T>();
+                            match LAST_TYPE {
+                                Some(ty) => assert!(
+                                    ty == id,
+                                    "cannot use two types with this resource type"
+                                ),
+                                None => LAST_TYPE = Some(id),
+                            }
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn dtor<T: 'static>(handle: *mut u8) {
+                        Self::type_guard::<T>();
+                        let _ = _rt::Box::from_raw(handle as *mut _RectangleRep<T>);
+                    }
+
+                    fn as_ptr<T: GuestRectangle>(&self) -> *mut _RectangleRep<T> {
+                        Rectangle::type_guard::<T>();
+                        T::_resource_rep(self.handle()).cast()
+                    }
+                }
+
+                /// A borrowed version of [`Rectangle`] which represents a borrowed value
+                /// with the lifetime `'a`.
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct RectangleBorrow<'a> {
+                    rep: *mut u8,
+                    _marker: core::marker::PhantomData<&'a Rectangle>,
+                }
+
+                impl<'a> RectangleBorrow<'a> {
+                    #[doc(hidden)]
+                    pub unsafe fn lift(rep: usize) -> Self {
+                        Self {
+                            rep: rep as *mut u8,
+                            _marker: core::marker::PhantomData,
+                        }
+                    }
+
+                    /// Gets access to the underlying `T` in this resource.
+                    pub fn get<T: GuestRectangle>(&self) -> &T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    // NB: mutable access is not allowed due to the component model allowing
+                    // multiple borrows of the same resource.
+
+                    fn as_ptr<T: 'static>(&self) -> *mut _RectangleRep<T> {
+                        Rectangle::type_guard::<T>();
+                        self.rep.cast()
+                    }
+                }
+
+                unsafe impl _rt::WasmResource for Rectangle {
+                    #[inline]
+                    unsafe fn drop(_handle: u32) {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unreachable!();
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]unavi:shapes/api")]
+                            extern "C" {
+                                #[link_name = "[resource-drop]rectangle"]
+                                fn drop(_: u32);
+                            }
+
+                            drop(_handle);
+                        }
+                    }
+                }
+
+                /// 3D
 
                 #[derive(Debug)]
                 #[repr(transparent)]
@@ -3201,6 +3359,79 @@ pub mod exports {
 
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
+                pub unsafe fn _export_constructor_rectangle_cabi<T: GuestRectangle>(
+                    arg0: f32,
+                    arg1: f32,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = Rectangle::new(T::new(
+                        super::super::super::super::wired::math::types::Vec2 { x: arg0, y: arg1 },
+                    ));
+                    (result0).take_handle() as i32
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_rectangle_size_cabi<T: GuestRectangle>(
+                    arg0: *mut u8,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::size(RectangleBorrow::lift(arg0 as u32 as usize).get());
+                    let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    let super::super::super::super::wired::math::types::Vec2 { x: x2, y: y2 } =
+                        result0;
+                    *ptr1.add(0).cast::<f32>() = _rt::as_f32(x2);
+                    *ptr1.add(4).cast::<f32>() = _rt::as_f32(y2);
+                    ptr1
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_rectangle_set_size_cabi<T: GuestRectangle>(
+                    arg0: *mut u8,
+                    arg1: f32,
+                    arg2: f32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::set_size(
+                        RectangleBorrow::lift(arg0 as u32 as usize).get(),
+                        super::super::super::super::wired::math::types::Vec2 { x: arg1, y: arg2 },
+                    );
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_rectangle_to_mesh_cabi<T: GuestRectangle>(
+                    arg0: *mut u8,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::to_mesh(RectangleBorrow::lift(arg0 as u32 as usize).get());
+                    (result0).take_handle() as i32
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_rectangle_to_node_cabi<T: GuestRectangle>(
+                    arg0: *mut u8,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::to_node(RectangleBorrow::lift(arg0 as u32 as usize).get());
+                    (result0).take_handle() as i32
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_rectangle_to_physics_node_cabi<T: GuestRectangle>(
+                    arg0: *mut u8,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 =
+                        T::to_physics_node(RectangleBorrow::lift(arg0 as u32 as usize).get());
+                    (result0).take_handle() as i32
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
                 pub unsafe fn _export_constructor_cylinder_cabi<T: GuestCylinder>(
                     arg0: f32,
                     arg1: f32,
@@ -3559,9 +3790,65 @@ pub mod exports {
                     (result0).take_handle() as i32
                 }
                 pub trait Guest {
+                    type Rectangle: GuestRectangle;
                     type Cylinder: GuestCylinder;
                     type Cuboid: GuestCuboid;
                     type Sphere: GuestSphere;
+                }
+                pub trait GuestRectangle: 'static {
+                    #[doc(hidden)]
+                    unsafe fn _resource_new(val: *mut u8) -> u32
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = val;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]unavi:shapes/api")]
+                            extern "C" {
+                                #[link_name = "[resource-new]rectangle"]
+                                fn new(_: *mut u8) -> u32;
+                            }
+                            new(val)
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    fn _resource_rep(handle: u32) -> *mut u8
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = handle;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]unavi:shapes/api")]
+                            extern "C" {
+                                #[link_name = "[resource-rep]rectangle"]
+                                fn rep(_: u32) -> *mut u8;
+                            }
+                            unsafe { rep(handle) }
+                        }
+                    }
+
+                    fn new(size: Vec2) -> Self;
+                    fn size(&self) -> Vec2;
+                    fn set_size(&self, value: Vec2);
+                    /// Creates a mesh of this shape.
+                    fn to_mesh(&self) -> Mesh;
+                    /// Creates a node with a mesh of this shape.
+                    fn to_node(&self) -> Node;
+                    /// Creates a node with a mesh and physics collider of this shape.
+                    fn to_physics_node(&self) -> Node;
                 }
                 pub trait GuestCylinder: 'static {
                     #[doc(hidden)]
@@ -3747,6 +4034,30 @@ pub mod exports {
                 macro_rules! __export_unavi_shapes_api_cabi{
   ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
+    #[export_name = "unavi:shapes/api#[constructor]rectangle"]
+    unsafe extern "C" fn export_constructor_rectangle(arg0: f32,arg1: f32,) -> i32 {
+      $($path_to_types)*::_export_constructor_rectangle_cabi::<<$ty as $($path_to_types)*::Guest>::Rectangle>(arg0, arg1)
+    }
+    #[export_name = "unavi:shapes/api#[method]rectangle.size"]
+    unsafe extern "C" fn export_method_rectangle_size(arg0: *mut u8,) -> *mut u8 {
+      $($path_to_types)*::_export_method_rectangle_size_cabi::<<$ty as $($path_to_types)*::Guest>::Rectangle>(arg0)
+    }
+    #[export_name = "unavi:shapes/api#[method]rectangle.set-size"]
+    unsafe extern "C" fn export_method_rectangle_set_size(arg0: *mut u8,arg1: f32,arg2: f32,) {
+      $($path_to_types)*::_export_method_rectangle_set_size_cabi::<<$ty as $($path_to_types)*::Guest>::Rectangle>(arg0, arg1, arg2)
+    }
+    #[export_name = "unavi:shapes/api#[method]rectangle.to-mesh"]
+    unsafe extern "C" fn export_method_rectangle_to_mesh(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_rectangle_to_mesh_cabi::<<$ty as $($path_to_types)*::Guest>::Rectangle>(arg0)
+    }
+    #[export_name = "unavi:shapes/api#[method]rectangle.to-node"]
+    unsafe extern "C" fn export_method_rectangle_to_node(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_rectangle_to_node_cabi::<<$ty as $($path_to_types)*::Guest>::Rectangle>(arg0)
+    }
+    #[export_name = "unavi:shapes/api#[method]rectangle.to-physics-node"]
+    unsafe extern "C" fn export_method_rectangle_to_physics_node(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_rectangle_to_physics_node_cabi::<<$ty as $($path_to_types)*::Guest>::Rectangle>(arg0)
+    }
     #[export_name = "unavi:shapes/api#[constructor]cylinder"]
     unsafe extern "C" fn export_constructor_cylinder(arg0: f32,arg1: f32,) -> i32 {
       $($path_to_types)*::_export_constructor_cylinder_cabi::<<$ty as $($path_to_types)*::Guest>::Cylinder>(arg0, arg1)
@@ -3863,6 +4174,18 @@ pub mod exports {
     unsafe extern "C" fn export_method_sphere_to_physics_node(arg0: *mut u8,) -> i32 {
       $($path_to_types)*::_export_method_sphere_to_physics_node_cabi::<<$ty as $($path_to_types)*::Guest>::Sphere>(arg0)
     }
+
+    const _: () = {
+      #[doc(hidden)]
+      #[export_name = "unavi:shapes/api#[dtor]rectangle"]
+      #[allow(non_snake_case)]
+      unsafe extern "C" fn dtor(rep: *mut u8) {
+        $($path_to_types)*::Rectangle::dtor::<
+        <$ty as $($path_to_types)*::Guest>::Rectangle
+        >(rep)
+      }
+    };
+
 
     const _: () = {
       #[doc(hidden)]
@@ -4172,8 +4495,8 @@ pub(crate) use __export_shapes_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:shapes:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4872] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x8b%\x01A\x02\x01A\x1c\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 5180] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xbf'\x01A\x02\x01A\x1d\
 \x01B\x04\x01m\x04\x05debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01\
 @\x02\x05level\x01\x07messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/a\
 pi\x05\0\x01B\x11\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
@@ -4198,89 +4521,96 @@ s\x04\0\x11[method]mesh.name\x01\x14\x01@\x02\x04self\x12\x05values\x01\0\x04\0\
 \x1c[method]mesh.list-primitives\x01\x18\x01@\x01\x04self\x12\0\x16\x04\0\x1d[me\
 thod]mesh.create-primitive\x01\x19\x01@\x02\x04self\x12\x05value\x16\x01\0\x04\0\
 \x1d[method]mesh.remove-primitive\x01\x1a\x03\x01\x10wired:scene/mesh\x05\x03\x01\
-B\x06\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\0\x01r\x04\x01xv\x01yv\x01z\
-v\x01wv\x04\0\x04quat\x03\0\x02\x01r\x03\x08rotation\x03\x05scale\x01\x0btransla\
-tion\x01\x04\0\x09transform\x03\0\x04\x03\x01\x10wired:math/types\x05\x04\x02\x03\
-\0\x03\x04vec3\x02\x03\0\x03\x04quat\x01B\x15\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\
-\0\0\x02\x03\x02\x01\x06\x04\0\x04quat\x03\0\x02\x01m\x02\x04left\x05right\x04\0\
-\x09hand-side\x03\0\x04\x01r\x03\x0btranslation\x01\x08rotation\x03\x06radiusv\x04\
-\0\x05joint\x03\0\x06\x01r\x04\x03tip\x07\x06distal\x07\x08proximal\x07\x0ametac\
-arpal\x07\x04\0\x06finger\x03\0\x08\x01k\x07\x01r\x09\x04side\x05\x05thumb\x09\x05\
-index\x09\x06middle\x09\x04ring\x09\x06little\x09\x04palm\x07\x05wrist\x07\x05el\
-bow\x0a\x04\0\x04hand\x03\0\x0b\x01r\x02\x06origin\x01\x0borientation\x03\x04\0\x03\
-ray\x03\0\x0d\x01r\x03\x06origin\x01\x0borientation\x03\x06radiusv\x04\0\x03tip\x03\
-\0\x0f\x01q\x03\x04hand\x01\x0c\0\x03ray\x01\x0e\0\x03tip\x01\x10\0\x04\0\x0ainp\
-ut-type\x03\0\x11\x01r\x04\x02idw\x05input\x12\x08distancev\x05ordery\x04\0\x0bi\
-nput-event\x03\0\x13\x03\x01\x11wired:input/types\x05\x07\x02\x03\0\x04\x0binput\
--event\x01B\x0a\x02\x03\x02\x01\x08\x04\0\x0binput-event\x03\0\0\x04\0\x0dinput-\
-handler\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\x1a[constructor]input-handler\x01\x04\
-\x01h\x02\x01k\x01\x01@\x01\x04self\x05\0\x06\x04\0\"[method]input-handler.handl\
-e-input\x01\x07\x03\x01\x13wired:input/handler\x05\x09\x01B\x1c\x02\x03\x02\x01\x05\
-\x04\0\x04vec3\x03\0\0\x04\0\x08collider\x03\x01\x01r\x02\x06heightv\x06radiusv\x04\
-\0\x0eshape-cylinder\x03\0\x03\x01q\x03\x06cuboid\x01\x01\0\x08cylinder\x01\x04\0\
-\x06sphere\x01v\0\x04\0\x05shape\x03\0\x05\x04\0\x0arigid-body\x03\x01\x01m\x03\x07\
-dynamic\x05fixed\x09kinematic\x04\0\x0frigid-body-type\x03\0\x08\x01i\x02\x01@\x01\
-\x05shape\x06\0\x0a\x04\0\x15[constructor]collider\x01\x0b\x01h\x02\x01@\x01\x04\
-self\x0c\0v\x04\0\x18[method]collider.density\x01\x0d\x01@\x02\x04self\x0c\x05va\
-luev\x01\0\x04\0\x1c[method]collider.set-density\x01\x0e\x01i\x07\x01@\x01\x0fri\
-gid-body-type\x09\0\x0f\x04\0\x17[constructor]rigid-body\x01\x10\x01h\x07\x01@\x01\
-\x04self\x11\0\x01\x04\0\x19[method]rigid-body.angvel\x01\x12\x01@\x02\x04self\x11\
-\x05value\x01\x01\0\x04\0\x1d[method]rigid-body.set-angvel\x01\x13\x04\0\x19[met\
-hod]rigid-body.linvel\x01\x12\x04\0\x1d[method]rigid-body.set-linvel\x01\x13\x03\
-\x01\x13wired:physics/types\x05\x0a\x02\x03\0\x02\x04mesh\x02\x03\0\x05\x0dinput\
--handler\x02\x03\0\x03\x09transform\x02\x03\0\x06\x08collider\x02\x03\0\x06\x0ar\
-igid-body\x01BB\x02\x03\x02\x01\x0b\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x0c\x04\
-\0\x0dinput-handler\x03\0\x02\x02\x03\x02\x01\x0d\x04\0\x09transform\x03\0\x04\x02\
-\x03\x02\x01\x0e\x04\0\x08collider\x03\0\x06\x02\x03\x02\x01\x0f\x04\0\x0arigid-\
-body\x03\0\x08\x04\0\x04node\x03\x01\x01i\x0a\x01@\0\0\x0b\x04\0\x11[constructor\
-]node\x01\x0c\x01h\x0a\x01@\x01\x04self\x0d\0y\x04\0\x0f[method]node.id\x01\x0e\x01\
-@\x01\x04self\x0d\0s\x04\0\x11[method]node.name\x01\x0f\x01@\x02\x04self\x0d\x05\
-values\x01\0\x04\0\x15[method]node.set-name\x01\x10\x01p\x0b\x01@\x01\x04self\x0d\
-\0\x11\x04\0\x15[method]node.children\x01\x12\x01@\x02\x04self\x0d\x05value\x0d\x01\
-\0\x04\0\x16[method]node.add-child\x01\x13\x04\0\x19[method]node.remove-child\x01\
-\x13\x01k\x0b\x01@\x01\x04self\x0d\0\x14\x04\0\x13[method]node.parent\x01\x15\x01\
-@\x01\x04self\x0d\0\x05\x04\0\x16[method]node.transform\x01\x16\x01@\x02\x04self\
-\x0d\x05value\x05\x01\0\x04\0\x1a[method]node.set-transform\x01\x17\x01i\x01\x01\
-k\x18\x01@\x01\x04self\x0d\0\x19\x04\0\x11[method]node.mesh\x01\x1a\x01h\x01\x01\
-k\x1b\x01@\x02\x04self\x0d\x05value\x1c\x01\0\x04\0\x15[method]node.set-mesh\x01\
-\x1d\x01i\x07\x01k\x1e\x01@\x01\x04self\x0d\0\x1f\x04\0\x15[method]node.collider\
-\x01\x20\x01h\x07\x01k!\x01@\x02\x04self\x0d\x05value\"\x01\0\x04\0\x19[method]n\
-ode.set-collider\x01#\x01i\x09\x01k$\x01@\x01\x04self\x0d\0%\x04\0\x17[method]no\
-de.rigid-body\x01&\x01h\x09\x01k'\x01@\x02\x04self\x0d\x05value(\x01\0\x04\0\x1b\
-[method]node.set-rigid-body\x01)\x01i\x03\x01k*\x01@\x01\x04self\x0d\0+\x04\0\x1a\
-[method]node.input-handler\x01,\x01h\x03\x01k-\x01@\x02\x04self\x0d\x05value.\x01\
-\0\x04\0\x1e[method]node.set-input-handler\x01/\x03\x01\x10wired:scene/node\x05\x10\
-\x02\x03\0\x07\x04node\x01BI\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\0\x02\x03\x02\
-\x01\x0b\x04\0\x04mesh\x03\0\x02\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x04\x04\
-\0\x08cylinder\x03\x01\x04\0\x06cuboid\x03\x01\x01r\x01\x0csubdivisions}\x04\0\x0a\
-sphere-ico\x03\0\x08\x01r\x02\x07sectors}\x06stacks}\x04\0\x09sphere-uv\x03\0\x0a\
-\x01q\x02\x03ico\x01\x09\0\x02uv\x01\x0b\0\x04\0\x0bsphere-kind\x03\0\x0c\x04\0\x06\
-sphere\x03\x01\x01i\x06\x01@\x02\x06radiusv\x06heightv\0\x0f\x04\0\x15[construct\
-or]cylinder\x01\x10\x01h\x06\x01@\x01\x04self\x11\0\x7f\x04\0\x14[method]cylinde\
-r.cap\x01\x12\x01@\x02\x04self\x11\x05value\x7f\x01\0\x04\0\x18[method]cylinder.\
-set-cap\x01\x13\x01@\x01\x04self\x11\0v\x04\0\x17[method]cylinder.height\x01\x14\
-\x01@\x02\x04self\x11\x05valuev\x01\0\x04\0\x1b[method]cylinder.set-height\x01\x15\
-\x04\0\x17[method]cylinder.radius\x01\x14\x04\0\x1b[method]cylinder.set-radius\x01\
-\x15\x01@\x01\x04self\x11\0}\x04\0\x1b[method]cylinder.resolution\x01\x16\x01@\x02\
-\x04self\x11\x05value}\x01\0\x04\0\x1f[method]cylinder.set-resolution\x01\x17\x04\
-\0\x19[method]cylinder.segments\x01\x16\x04\0\x1d[method]cylinder.set-segments\x01\
-\x17\x01i\x03\x01@\x01\x04self\x11\0\x18\x04\0\x18[method]cylinder.to-mesh\x01\x19\
-\x01i\x05\x01@\x01\x04self\x11\0\x1a\x04\0\x18[method]cylinder.to-node\x01\x1b\x04\
-\0\x20[method]cylinder.to-physics-node\x01\x1b\x01i\x07\x01@\x01\x04size\x01\0\x1c\
-\x04\0\x13[constructor]cuboid\x01\x1d\x01h\x07\x01@\x01\x04self\x1e\0\x01\x04\0\x13\
-[method]cuboid.size\x01\x1f\x01@\x02\x04self\x1e\x05value\x01\x01\0\x04\0\x17[me\
-thod]cuboid.set-size\x01\x20\x01@\x01\x04self\x1e\0\x18\x04\0\x16[method]cuboid.\
-to-mesh\x01!\x01@\x01\x04self\x1e\0\x1a\x04\0\x16[method]cuboid.to-node\x01\"\x04\
-\0\x1e[method]cuboid.to-physics-node\x01\"\x01i\x0e\x01@\x01\x06radiusv\0#\x04\0\
-\x16[static]sphere.new-ico\x01$\x04\0\x15[static]sphere.new-uv\x01$\x01h\x0e\x01\
-@\x01\x04self%\0v\x04\0\x15[method]sphere.radius\x01&\x01@\x02\x04self%\x05value\
-v\x01\0\x04\0\x19[method]sphere.set-radius\x01'\x01@\x01\x04self%\0\x0d\x04\0\x13\
-[method]sphere.kind\x01(\x01@\x02\x04self%\x05value\x0d\x01\0\x04\0\x17[method]s\
-phere.set-kind\x01)\x01@\x01\x04self%\0\x18\x04\0\x16[method]sphere.to-mesh\x01*\
-\x01@\x01\x04self%\0\x1a\x04\0\x16[method]sphere.to-node\x01+\x04\0\x1e[method]s\
-phere.to-physics-node\x01+\x04\x01\x10unavi:shapes/api\x05\x12\x04\x01\x13unavi:\
-shapes/shapes\x04\0\x0b\x0c\x01\0\x06shapes\x03\0\0\0G\x09producers\x01\x0cproce\
-ssed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+B\x08\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\
+\x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01r\
+\x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
+\x03\x01\x10wired:math/types\x05\x04\x02\x03\0\x03\x04vec3\x02\x03\0\x03\x04quat\
+\x01B\x15\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\0\x02\x03\x02\x01\x06\x04\0\x04\
+quat\x03\0\x02\x01m\x02\x04left\x05right\x04\0\x09hand-side\x03\0\x04\x01r\x03\x0b\
+translation\x01\x08rotation\x03\x06radiusv\x04\0\x05joint\x03\0\x06\x01r\x04\x03\
+tip\x07\x06distal\x07\x08proximal\x07\x0ametacarpal\x07\x04\0\x06finger\x03\0\x08\
+\x01k\x07\x01r\x09\x04side\x05\x05thumb\x09\x05index\x09\x06middle\x09\x04ring\x09\
+\x06little\x09\x04palm\x07\x05wrist\x07\x05elbow\x0a\x04\0\x04hand\x03\0\x0b\x01\
+r\x02\x06origin\x01\x0borientation\x03\x04\0\x03ray\x03\0\x0d\x01r\x03\x06origin\
+\x01\x0borientation\x03\x06radiusv\x04\0\x03tip\x03\0\x0f\x01q\x03\x04hand\x01\x0c\
+\0\x03ray\x01\x0e\0\x03tip\x01\x10\0\x04\0\x0ainput-type\x03\0\x11\x01r\x04\x02i\
+dw\x05input\x12\x08distancev\x05ordery\x04\0\x0binput-event\x03\0\x13\x03\x01\x11\
+wired:input/types\x05\x07\x02\x03\0\x04\x0binput-event\x01B\x0a\x02\x03\x02\x01\x08\
+\x04\0\x0binput-event\x03\0\0\x04\0\x0dinput-handler\x03\x01\x01i\x02\x01@\0\0\x03\
+\x04\0\x1a[constructor]input-handler\x01\x04\x01h\x02\x01k\x01\x01@\x01\x04self\x05\
+\0\x06\x04\0\"[method]input-handler.handle-input\x01\x07\x03\x01\x13wired:input/\
+handler\x05\x09\x01B\x1c\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\0\x04\0\x08coll\
+ider\x03\x01\x01r\x02\x06heightv\x06radiusv\x04\0\x0eshape-cylinder\x03\0\x03\x01\
+q\x03\x06cuboid\x01\x01\0\x08cylinder\x01\x04\0\x06sphere\x01v\0\x04\0\x05shape\x03\
+\0\x05\x04\0\x0arigid-body\x03\x01\x01m\x03\x07dynamic\x05fixed\x09kinematic\x04\
+\0\x0frigid-body-type\x03\0\x08\x01i\x02\x01@\x01\x05shape\x06\0\x0a\x04\0\x15[c\
+onstructor]collider\x01\x0b\x01h\x02\x01@\x01\x04self\x0c\0v\x04\0\x18[method]co\
+llider.density\x01\x0d\x01@\x02\x04self\x0c\x05valuev\x01\0\x04\0\x1c[method]col\
+lider.set-density\x01\x0e\x01i\x07\x01@\x01\x0frigid-body-type\x09\0\x0f\x04\0\x17\
+[constructor]rigid-body\x01\x10\x01h\x07\x01@\x01\x04self\x11\0\x01\x04\0\x19[me\
+thod]rigid-body.angvel\x01\x12\x01@\x02\x04self\x11\x05value\x01\x01\0\x04\0\x1d\
+[method]rigid-body.set-angvel\x01\x13\x04\0\x19[method]rigid-body.linvel\x01\x12\
+\x04\0\x1d[method]rigid-body.set-linvel\x01\x13\x03\x01\x13wired:physics/types\x05\
+\x0a\x02\x03\0\x02\x04mesh\x02\x03\0\x05\x0dinput-handler\x02\x03\0\x03\x09trans\
+form\x02\x03\0\x06\x08collider\x02\x03\0\x06\x0arigid-body\x01BB\x02\x03\x02\x01\
+\x0b\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x0c\x04\0\x0dinput-handler\x03\0\x02\x02\
+\x03\x02\x01\x0d\x04\0\x09transform\x03\0\x04\x02\x03\x02\x01\x0e\x04\0\x08colli\
+der\x03\0\x06\x02\x03\x02\x01\x0f\x04\0\x0arigid-body\x03\0\x08\x04\0\x04node\x03\
+\x01\x01i\x0a\x01@\0\0\x0b\x04\0\x11[constructor]node\x01\x0c\x01h\x0a\x01@\x01\x04\
+self\x0d\0y\x04\0\x0f[method]node.id\x01\x0e\x01@\x01\x04self\x0d\0s\x04\0\x11[m\
+ethod]node.name\x01\x0f\x01@\x02\x04self\x0d\x05values\x01\0\x04\0\x15[method]no\
+de.set-name\x01\x10\x01p\x0b\x01@\x01\x04self\x0d\0\x11\x04\0\x15[method]node.ch\
+ildren\x01\x12\x01@\x02\x04self\x0d\x05value\x0d\x01\0\x04\0\x16[method]node.add\
+-child\x01\x13\x04\0\x19[method]node.remove-child\x01\x13\x01k\x0b\x01@\x01\x04s\
+elf\x0d\0\x14\x04\0\x13[method]node.parent\x01\x15\x01@\x01\x04self\x0d\0\x05\x04\
+\0\x16[method]node.transform\x01\x16\x01@\x02\x04self\x0d\x05value\x05\x01\0\x04\
+\0\x1a[method]node.set-transform\x01\x17\x01i\x01\x01k\x18\x01@\x01\x04self\x0d\0\
+\x19\x04\0\x11[method]node.mesh\x01\x1a\x01h\x01\x01k\x1b\x01@\x02\x04self\x0d\x05\
+value\x1c\x01\0\x04\0\x15[method]node.set-mesh\x01\x1d\x01i\x07\x01k\x1e\x01@\x01\
+\x04self\x0d\0\x1f\x04\0\x15[method]node.collider\x01\x20\x01h\x07\x01k!\x01@\x02\
+\x04self\x0d\x05value\"\x01\0\x04\0\x19[method]node.set-collider\x01#\x01i\x09\x01\
+k$\x01@\x01\x04self\x0d\0%\x04\0\x17[method]node.rigid-body\x01&\x01h\x09\x01k'\x01\
+@\x02\x04self\x0d\x05value(\x01\0\x04\0\x1b[method]node.set-rigid-body\x01)\x01i\
+\x03\x01k*\x01@\x01\x04self\x0d\0+\x04\0\x1a[method]node.input-handler\x01,\x01h\
+\x03\x01k-\x01@\x02\x04self\x0d\x05value.\x01\0\x04\0\x1e[method]node.set-input-\
+handler\x01/\x03\x01\x10wired:scene/node\x05\x10\x02\x03\0\x03\x04vec2\x02\x03\0\
+\x07\x04node\x01BY\x02\x03\x02\x01\x11\x04\0\x04vec2\x03\0\0\x02\x03\x02\x01\x05\
+\x04\0\x04vec3\x03\0\x02\x02\x03\x02\x01\x0b\x04\0\x04mesh\x03\0\x04\x02\x03\x02\
+\x01\x12\x04\0\x04node\x03\0\x06\x04\0\x09rectangle\x03\x01\x04\0\x08cylinder\x03\
+\x01\x04\0\x06cuboid\x03\x01\x01r\x01\x0csubdivisions}\x04\0\x0asphere-ico\x03\0\
+\x0b\x01r\x02\x07sectors}\x06stacks}\x04\0\x09sphere-uv\x03\0\x0d\x01q\x02\x03ic\
+o\x01\x0c\0\x02uv\x01\x0e\0\x04\0\x0bsphere-kind\x03\0\x0f\x04\0\x06sphere\x03\x01\
+\x01i\x08\x01@\x01\x04size\x01\0\x12\x04\0\x16[constructor]rectangle\x01\x13\x01\
+h\x08\x01@\x01\x04self\x14\0\x01\x04\0\x16[method]rectangle.size\x01\x15\x01@\x02\
+\x04self\x14\x05value\x01\x01\0\x04\0\x1a[method]rectangle.set-size\x01\x16\x01i\
+\x05\x01@\x01\x04self\x14\0\x17\x04\0\x19[method]rectangle.to-mesh\x01\x18\x01i\x07\
+\x01@\x01\x04self\x14\0\x19\x04\0\x19[method]rectangle.to-node\x01\x1a\x04\0![me\
+thod]rectangle.to-physics-node\x01\x1a\x01i\x09\x01@\x02\x06radiusv\x06heightv\0\
+\x1b\x04\0\x15[constructor]cylinder\x01\x1c\x01h\x09\x01@\x01\x04self\x1d\0\x7f\x04\
+\0\x14[method]cylinder.cap\x01\x1e\x01@\x02\x04self\x1d\x05value\x7f\x01\0\x04\0\
+\x18[method]cylinder.set-cap\x01\x1f\x01@\x01\x04self\x1d\0v\x04\0\x17[method]cy\
+linder.height\x01\x20\x01@\x02\x04self\x1d\x05valuev\x01\0\x04\0\x1b[method]cyli\
+nder.set-height\x01!\x04\0\x17[method]cylinder.radius\x01\x20\x04\0\x1b[method]c\
+ylinder.set-radius\x01!\x01@\x01\x04self\x1d\0}\x04\0\x1b[method]cylinder.resolu\
+tion\x01\"\x01@\x02\x04self\x1d\x05value}\x01\0\x04\0\x1f[method]cylinder.set-re\
+solution\x01#\x04\0\x19[method]cylinder.segments\x01\"\x04\0\x1d[method]cylinder\
+.set-segments\x01#\x01@\x01\x04self\x1d\0\x17\x04\0\x18[method]cylinder.to-mesh\x01\
+$\x01@\x01\x04self\x1d\0\x19\x04\0\x18[method]cylinder.to-node\x01%\x04\0\x20[me\
+thod]cylinder.to-physics-node\x01%\x01i\x0a\x01@\x01\x04size\x03\0&\x04\0\x13[co\
+nstructor]cuboid\x01'\x01h\x0a\x01@\x01\x04self(\0\x03\x04\0\x13[method]cuboid.s\
+ize\x01)\x01@\x02\x04self(\x05value\x03\x01\0\x04\0\x17[method]cuboid.set-size\x01\
+*\x01@\x01\x04self(\0\x17\x04\0\x16[method]cuboid.to-mesh\x01+\x01@\x01\x04self(\
+\0\x19\x04\0\x16[method]cuboid.to-node\x01,\x04\0\x1e[method]cuboid.to-physics-n\
+ode\x01,\x01i\x11\x01@\x01\x06radiusv\0-\x04\0\x16[static]sphere.new-ico\x01.\x04\
+\0\x15[static]sphere.new-uv\x01.\x01h\x11\x01@\x01\x04self/\0v\x04\0\x15[method]\
+sphere.radius\x010\x01@\x02\x04self/\x05valuev\x01\0\x04\0\x19[method]sphere.set\
+-radius\x011\x01@\x01\x04self/\0\x10\x04\0\x13[method]sphere.kind\x012\x01@\x02\x04\
+self/\x05value\x10\x01\0\x04\0\x17[method]sphere.set-kind\x013\x01@\x01\x04self/\
+\0\x17\x04\0\x16[method]sphere.to-mesh\x014\x01@\x01\x04self/\0\x19\x04\0\x16[me\
+thod]sphere.to-node\x015\x04\0\x1e[method]sphere.to-physics-node\x015\x04\x01\x10\
+unavi:shapes/api\x05\x13\x04\x01\x13unavi:shapes/shapes\x04\0\x0b\x0c\x01\0\x06s\
+hapes\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.\
+1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

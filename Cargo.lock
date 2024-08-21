@@ -12097,6 +12097,7 @@ dependencies = [
 name = "unavi-shapes"
 version = "0.0.6"
 dependencies = [
+ "glam 0.28.0",
  "hexasphere 14.1.0",
  "parry3d 0.17.0",
  "wit-bindgen-rt",

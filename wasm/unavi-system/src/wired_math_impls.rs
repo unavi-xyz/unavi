@@ -1,6 +1,28 @@
 #![allow(dead_code)]
 
-use crate::bindings::wired::math::types::{Quat, Transform, Vec3};
+use crate::bindings::wired::math::types::{Quat, Transform, Vec2, Vec3};
+
+impl Vec2 {
+    pub fn new(x: f32, y: f32) -> Self {
+        Self { x, y }
+    }
+
+    pub fn splat(v: f32) -> Self {
+        Self::new(v, v)
+    }
+}
+
+impl Default for Vec2 {
+    fn default() -> Self {
+        Self { x: 0.0, y: 0.0 }
+    }
+}
+
+impl PartialEq for Vec2 {
+    fn eq(&self, other: &Self) -> bool {
+        (self.x == other.x) && (self.y == other.y)
+    }
+}
 
 impl Vec3 {
     pub fn new(x: f32, y: f32, z: f32) -> Self {

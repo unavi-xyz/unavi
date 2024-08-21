@@ -6,10 +6,6 @@ world guest {
     export api;
 }
 
-world prelude {
-  import api;
-}
-
 interface api {
   use wired:math/types.{transform};
   use wired:scene/node.{node};

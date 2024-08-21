@@ -8,10 +8,26 @@ world shapes {
 }
 
 interface api {
-  use wired:math/types.{vec3};
+  use wired:math/types.{vec2, vec3};
   use wired:scene/mesh.{mesh};
   use wired:scene/node.{node};
 
+  // 2D
+  resource rectangle {
+    constructor(size: vec2);
+
+    size: func() -> vec2;
+    set-size: func(value: vec2);
+
+    // Creates a mesh of this shape.
+    to-mesh: func() -> mesh;
+    // Creates a node with a mesh of this shape.
+    to-node: func() -> node;
+    // Creates a node with a mesh and physics collider of this shape.
+    to-physics-node: func() -> node;
+  }
+
+  // 3D
   resource cylinder {
     constructor(radius: f32, height: f32);
 

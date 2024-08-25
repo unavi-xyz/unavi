@@ -1,7 +1,7 @@
-package example:unavi-ui;
+package example:unavi-layout;
 
 world script {
-    include unavi:ui/prelude;
+    include unavi:layout/prelude;
     include wired:script/script;
 
     import unavi:scene/api;

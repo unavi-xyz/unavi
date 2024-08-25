@@ -19,6 +19,7 @@ package = "unavi:ui"
 world = "guest"
 
 [package.metadata.component.target.dependencies]
+"unavi:layout" = { path = "../unavi-layout/wit" }
 "unavi:shapes" = { path = "../unavi-shapes/wit" }
 "wired:input" = { path = "../../wired-protocol/spatial/wit/wired-input" }
 "wired:log" = { path = "../../wired-protocol/spatial/wit/wired-log" }

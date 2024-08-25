@@ -7,7 +7,7 @@ use bindings::{
     wired::{
         input::handler::InputHandler,
         log::api::{log, LogLevel},
-        math::types::Vec3,
+        math::types::{Transform, Vec3},
         scene::material::{Color, Material},
     },
 };
@@ -27,6 +27,7 @@ impl GuestScript for Script {
         let scene = Scene::new();
 
         let node = Cuboid::new(Vec3::splat(1.0)).to_physics_node();
+        node.set_transform(Transform::from_translation(Vec3::new(0.0, 0.1, -6.0)));
         scene.add_node(&node);
 
         let material = Material::new();

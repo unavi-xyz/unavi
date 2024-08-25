@@ -54,6 +54,22 @@ impl Quat {
     pub fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
         Self { x, y, z, w }
     }
+
+    // Creates a quaternion from the `angle` (in radians) around the x axis.
+    pub fn from_rotation_x(angle: f32) -> Self {
+        let (s, c) = f32::sin_cos(angle * 0.5);
+        Self::new(s, 0.0, 0.0, c)
+    }
+    // Creates a quaternion from the `angle` (in radians) around the y axis.
+    pub fn from_rotation_y(angle: f32) -> Self {
+        let (s, c) = f32::sin_cos(angle * 0.5);
+        Self::new(0.0, s, 0.0, c)
+    }
+    // Creates a quaternion from the `angle` (in radians) around the z axis.
+    pub fn from_rotation_z(angle: f32) -> Self {
+        let (s, c) = f32::sin_cos(angle * 0.5);
+        Self::new(0.0, 0.0, s, c)
+    }
 }
 
 impl Default for Quat {

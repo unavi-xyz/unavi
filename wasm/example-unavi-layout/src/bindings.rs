@@ -122,6 +122,27 @@ pub mod unavi {
             }
             impl Container {
                 #[allow(unused_unsafe, clippy::all)]
+                /// Returns another reference to the same resource.
+                pub fn ref_(&self) -> Container {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/container")]
+                        extern "C" {
+                            #[link_name = "[method]container.ref"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        Container::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Container {
+                #[allow(unused_unsafe, clippy::all)]
                 /// The `root` node.
                 /// Positioned in the center of the container.
                 pub fn root(&self) -> Node {
@@ -5326,8 +5347,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6653] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x803\x01A\x02\x01A$\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6690] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa53\x01A\x02\x01A$\x01\
 B\x08\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\
 \x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01r\
 \x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -5450,31 +5471,32 @@ here.set-radius\x011\x01@\x01\x04self/\0\x10\x04\0\x13[method]sphere.kind\x012\x
 @\x02\x04self/\x05value\x10\x01\0\x04\0\x17[method]sphere.set-kind\x013\x01@\x01\
 \x04self/\0\x17\x04\0\x16[method]sphere.to-mesh\x014\x01@\x01\x04self/\0\x19\x04\
 \0\x16[method]sphere.to-node\x015\x04\0\x1e[method]sphere.to-physics-node\x015\x03\
-\x01\x10unavi:shapes/api\x05\x13\x01B\x1b\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\
+\x01\x10unavi:shapes/api\x05\x13\x01B\x1d\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\
 \0\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\x02\x01m\x03\x06center\x03end\x05star\
 t\x04\0\x09alignment\x03\0\x04\x04\0\x09container\x03\x01\x01i\x06\x01@\x01\x04s\
-ize\x01\0\x07\x04\0\x16[constructor]container\x01\x08\x01h\x06\x01i\x03\x01@\x01\
-\x04self\x09\0\x0a\x04\0\x16[method]container.root\x01\x0b\x04\0\x17[method]cont\
-ainer.inner\x01\x0b\x01@\x01\x04self\x09\0\x01\x04\0\x16[method]container.size\x01\
-\x0c\x01@\x02\x04self\x09\x05value\x01\x01\0\x04\0\x1a[method]container.set-size\
-\x01\x0d\x01@\x01\x04self\x09\0\x05\x04\0\x19[method]container.align-x\x01\x0e\x04\
-\0\x19[method]container.align-y\x01\x0e\x04\0\x19[method]container.align-z\x01\x0e\
-\x01@\x02\x04self\x09\x05value\x05\x01\0\x04\0\x1d[method]container.set-align-x\x01\
-\x0f\x04\0\x1d[method]container.set-align-y\x01\x0f\x04\0\x1d[method]container.s\
-et-align-z\x01\x0f\x03\x01\x16unavi:layout/container\x05\x14\x02\x03\0\x09\x09co\
-ntainer\x01B\x16\x02\x03\x02\x01\x15\x04\0\x09container\x03\0\0\x02\x03\x02\x01\x04\
-\x04\0\x04vec3\x03\0\x02\x04\0\x04grid\x03\x01\x01i\x04\x01@\x02\x04size\x03\x04\
-rows\x03\0\x05\x04\0\x11[constructor]grid\x01\x06\x01h\x04\x01i\x01\x01@\x01\x04\
-self\x07\0\x08\x04\0\x11[method]grid.root\x01\x09\x01p\x08\x01@\x01\x04self\x07\0\
-\x0a\x04\0\x12[method]grid.cells\x01\x0b\x01k\x08\x01@\x04\x04self\x07\x01xy\x01\
-yy\x01zy\0\x0c\x04\0\x11[method]grid.cell\x01\x0d\x01@\x01\x04self\x07\0\x03\x04\
-\0\x11[method]grid.rows\x01\x0e\x01@\x02\x04self\x07\x05value\x03\x01\0\x04\0\x15\
-[method]grid.set-rows\x01\x0f\x03\x01\x11unavi:layout/grid\x05\x16\x01B\x07\x04\0\
-\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01h\
-\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\
-\x01\x12wired:script/types\x05\x17\x04\x01\x1bexample:unavi-layout/script\x04\0\x0b\
-\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-comp\
-onent\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+ize\x01\0\x07\x04\0\x16[constructor]container\x01\x08\x01h\x06\x01@\x01\x04self\x09\
+\0\x07\x04\0\x15[method]container.ref\x01\x0a\x01i\x03\x01@\x01\x04self\x09\0\x0b\
+\x04\0\x16[method]container.root\x01\x0c\x04\0\x17[method]container.inner\x01\x0c\
+\x01@\x01\x04self\x09\0\x01\x04\0\x16[method]container.size\x01\x0d\x01@\x02\x04\
+self\x09\x05value\x01\x01\0\x04\0\x1a[method]container.set-size\x01\x0e\x01@\x01\
+\x04self\x09\0\x05\x04\0\x19[method]container.align-x\x01\x0f\x04\0\x19[method]c\
+ontainer.align-y\x01\x0f\x04\0\x19[method]container.align-z\x01\x0f\x01@\x02\x04\
+self\x09\x05value\x05\x01\0\x04\0\x1d[method]container.set-align-x\x01\x10\x04\0\
+\x1d[method]container.set-align-y\x01\x10\x04\0\x1d[method]container.set-align-z\
+\x01\x10\x03\x01\x16unavi:layout/container\x05\x14\x02\x03\0\x09\x09container\x01\
+B\x16\x02\x03\x02\x01\x15\x04\0\x09container\x03\0\0\x02\x03\x02\x01\x04\x04\0\x04\
+vec3\x03\0\x02\x04\0\x04grid\x03\x01\x01i\x04\x01@\x02\x04size\x03\x04rows\x03\0\
+\x05\x04\0\x11[constructor]grid\x01\x06\x01h\x04\x01i\x01\x01@\x01\x04self\x07\0\
+\x08\x04\0\x11[method]grid.root\x01\x09\x01p\x08\x01@\x01\x04self\x07\0\x0a\x04\0\
+\x12[method]grid.cells\x01\x0b\x01k\x08\x01@\x04\x04self\x07\x01xy\x01yy\x01zy\0\
+\x0c\x04\0\x11[method]grid.cell\x01\x0d\x01@\x01\x04self\x07\0\x03\x04\0\x11[met\
+hod]grid.rows\x01\x0e\x01@\x02\x04self\x07\x05value\x03\x01\0\x04\0\x15[method]g\
+rid.set-rows\x01\x0f\x03\x01\x11unavi:layout/grid\x05\x16\x01B\x07\x04\0\x06scri\
+pt\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01h\0\x01@\x02\
+\x04self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\x01\x12w\
+ired:script/types\x05\x17\x04\x01\x1bexample:unavi-layout/script\x04\0\x0b\x0c\x01\
+\0\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x07\
+0.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

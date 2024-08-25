@@ -9,7 +9,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "79faae4620f45232f599d9bc7b290f88247a0834162c4495ab2f02d60004adfb"
 dependencies = [
  "ab_glyph_rasterizer",
- "owned_ttf_parser",
+ "owned_ttf_parser 0.24.0",
 ]
 
 [[package]]
@@ -7132,6 +7132,7 @@ checksum = "54cc64b800d5eeb02b15d1f85806fd04a8f7c4747432fd947f4a87946abdc323"
 dependencies = [
  "cdt",
  "glam 0.22.0",
+ "owned_ttf_parser 0.18.1",
  "ttf-parser 0.18.1",
 ]
 
@@ -8168,6 +8169,15 @@ name = "overload"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
+
+[[package]]
+name = "owned_ttf_parser"
+version = "0.18.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e25e9fb15717794fae58ab55c26e044103aad13186fbb625893f9a3bbcc24228"
+dependencies = [
+ "ttf-parser 0.18.1",
+]
 
 [[package]]
 name = "owned_ttf_parser"

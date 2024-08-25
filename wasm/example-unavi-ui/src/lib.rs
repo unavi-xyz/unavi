@@ -63,13 +63,14 @@ impl GuestScript for Script {
         let button = Button::new(Container::new(Vec3::new(1.0, 0.5, 0.2)));
         container.add_child(&button.root());
 
-        let clock_container = Container::new(Vec3::new(2.0, 0.5, 0.1));
+        let clock_container = Container::new(Vec3::new(2.0, 0.5, 0.01));
         clock_container.inner().set_transform(Transform {
             translation: Vec3::new(-1.0, 1.0, 0.0),
             rotation: Quat::from_rotation_y(PI),
-            scale: Vec3::splat(0.2),
+            ..Default::default()
         });
         container.add_child(&clock_container);
+
         let clock = TextBox::new(clock_container);
 
         Root::add_scene(&scene);

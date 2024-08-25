@@ -4824,6 +4824,32 @@ pub mod exports {
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
+                pub unsafe fn _export_method_text_set_font_cabi<T: GuestText>(
+                    arg0: *mut u8,
+                    arg1: i32,
+                    arg2: *mut u8,
+                    arg3: usize,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::set_font(
+                        TextBorrow::lift(arg0 as u32 as usize).get(),
+                        match arg1 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    let len0 = arg3;
+
+                                    _rt::Vec::from_raw_parts(arg2.cast(), len0, len0)
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        },
+                    );
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
                 pub unsafe fn _export_method_text_text_cabi<T: GuestText>(
                     arg0: *mut u8,
                 ) -> *mut u8 {
@@ -4864,27 +4890,43 @@ pub mod exports {
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_text_flat_cabi<T: GuestText>(arg0: *mut u8) -> i32 {
+                pub unsafe fn _export_method_text_font_size_cabi<T: GuestText>(
+                    arg0: *mut u8,
+                ) -> f32 {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
-                    let result0 = T::flat(TextBorrow::lift(arg0 as u32 as usize).get());
-                    match result0 {
-                        true => 1,
-                        false => 0,
-                    }
+                    let result0 = T::font_size(TextBorrow::lift(arg0 as u32 as usize).get());
+                    _rt::as_f32(result0)
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_text_set_flat_cabi<T: GuestText>(
+                pub unsafe fn _export_method_text_set_font_size_cabi<T: GuestText>(
                     arg0: *mut u8,
-                    arg1: i32,
+                    arg1: f32,
                 ) {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
-                    T::set_flat(
-                        TextBorrow::lift(arg0 as u32 as usize).get(),
-                        _rt::bool_lift(arg1 as u8),
-                    );
+                    T::set_font_size(TextBorrow::lift(arg0 as u32 as usize).get(), arg1);
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_text_thickness_cabi<T: GuestText>(
+                    arg0: *mut u8,
+                ) -> f32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::thickness(TextBorrow::lift(arg0 as u32 as usize).get());
+                    _rt::as_f32(result0)
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_text_set_thickness_cabi<T: GuestText>(
+                    arg0: *mut u8,
+                    arg1: f32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::set_thickness(TextBorrow::lift(arg0 as u32 as usize).get(), arg1);
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
@@ -4974,10 +5016,15 @@ pub mod exports {
                     fn new(text: _rt::String) -> Self;
                     /// Returns another reference to the same resource.
                     fn ref_(&self) -> Text;
+                    /// Supports TrueType, OpenType, and AAT fonts.
+                    /// Will use a default font if none is provided.
+                    fn set_font(&self, value: Option<_rt::Vec<u8>>);
                     fn text(&self) -> _rt::String;
                     fn set_text(&self, value: _rt::String);
-                    fn flat(&self) -> bool;
-                    fn set_flat(&self, value: bool);
+                    fn font_size(&self) -> f32;
+                    fn set_font_size(&self, value: f32);
+                    fn thickness(&self) -> f32;
+                    fn set_thickness(&self, value: f32);
                     fn mesh(&self) -> Mesh;
                 }
                 pub trait GuestTextBox: 'static {
@@ -5042,6 +5089,10 @@ pub mod exports {
     unsafe extern "C" fn export_method_text_ref(arg0: *mut u8,) -> i32 {
       $($path_to_types)*::_export_method_text_ref_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0)
     }
+    #[export_name = "unavi:ui/text#[method]text.set-font"]
+    unsafe extern "C" fn export_method_text_set_font(arg0: *mut u8,arg1: i32,arg2: *mut u8,arg3: usize,) {
+      $($path_to_types)*::_export_method_text_set_font_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0, arg1, arg2, arg3)
+    }
     #[export_name = "unavi:ui/text#[method]text.text"]
     unsafe extern "C" fn export_method_text_text(arg0: *mut u8,) -> *mut u8 {
       $($path_to_types)*::_export_method_text_text_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0)
@@ -5054,13 +5105,21 @@ pub mod exports {
     unsafe extern "C" fn export_method_text_set_text(arg0: *mut u8,arg1: *mut u8,arg2: usize,) {
       $($path_to_types)*::_export_method_text_set_text_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0, arg1, arg2)
     }
-    #[export_name = "unavi:ui/text#[method]text.flat"]
-    unsafe extern "C" fn export_method_text_flat(arg0: *mut u8,) -> i32 {
-      $($path_to_types)*::_export_method_text_flat_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0)
+    #[export_name = "unavi:ui/text#[method]text.font-size"]
+    unsafe extern "C" fn export_method_text_font_size(arg0: *mut u8,) -> f32 {
+      $($path_to_types)*::_export_method_text_font_size_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0)
     }
-    #[export_name = "unavi:ui/text#[method]text.set-flat"]
-    unsafe extern "C" fn export_method_text_set_flat(arg0: *mut u8,arg1: i32,) {
-      $($path_to_types)*::_export_method_text_set_flat_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0, arg1)
+    #[export_name = "unavi:ui/text#[method]text.set-font-size"]
+    unsafe extern "C" fn export_method_text_set_font_size(arg0: *mut u8,arg1: f32,) {
+      $($path_to_types)*::_export_method_text_set_font_size_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0, arg1)
+    }
+    #[export_name = "unavi:ui/text#[method]text.thickness"]
+    unsafe extern "C" fn export_method_text_thickness(arg0: *mut u8,) -> f32 {
+      $($path_to_types)*::_export_method_text_thickness_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0)
+    }
+    #[export_name = "unavi:ui/text#[method]text.set-thickness"]
+    unsafe extern "C" fn export_method_text_set_thickness(arg0: *mut u8,arg1: f32,) {
+      $($path_to_types)*::_export_method_text_set_thickness_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0, arg1)
     }
     #[export_name = "unavi:ui/text#[method]text.mesh"]
     unsafe extern "C" fn export_method_text_mesh(arg0: *mut u8,) -> i32 {
@@ -5376,8 +5435,8 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6586] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xbe2\x01A\x02\x01A\"\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6704] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xb43\x01A\x02\x01A\"\
 \x01B\x0a\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\
 \0\x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01\
 r\x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -5509,21 +5568,23 @@ B\x0e\x02\x03\x02\x01\x14\x04\0\x09container\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x
 input-handler\x03\0\x02\x04\0\x06button\x03\x01\x01i\x01\x01i\x04\x01@\x01\x04ro\
 ot\x05\0\x06\x04\0\x13[constructor]button\x01\x07\x01h\x04\x01@\x01\x04self\x08\0\
 \x05\x04\0\x13[method]button.root\x01\x09\x01@\x01\x04self\x08\0\x7f\x04\0\x16[m\
-ethod]button.pressed\x01\x0a\x04\x01\x0funavi:ui/button\x05\x15\x01B\"\x02\x03\x02\
+ethod]button.pressed\x01\x0a\x04\x01\x0funavi:ui/button\x05\x15\x01B(\x02\x03\x02\
 \x01\x14\x04\0\x09container\x03\0\0\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\x02\x02\
 \x03\x02\x01\x11\x04\0\x04node\x03\0\x04\x04\0\x04text\x03\x01\x04\0\x08text-box\
 \x03\x01\x01i\x06\x01@\x01\x04texts\0\x08\x04\0\x11[constructor]text\x01\x09\x01\
-h\x06\x01@\x01\x04self\x0a\0\x08\x04\0\x10[method]text.ref\x01\x0b\x01@\x01\x04s\
-elf\x0a\0s\x04\0\x11[method]text.text\x01\x0c\x01@\x02\x04self\x0a\x05values\x01\
-\0\x04\0\x15[method]text.set-text\x01\x0d\x01@\x01\x04self\x0a\0\x7f\x04\0\x11[m\
-ethod]text.flat\x01\x0e\x01@\x02\x04self\x0a\x05value\x7f\x01\0\x04\0\x15[method\
-]text.set-flat\x01\x0f\x01i\x03\x01@\x01\x04self\x0a\0\x10\x04\0\x11[method]text\
-.mesh\x01\x11\x01i\x01\x01i\x07\x01@\x01\x04root\x12\0\x13\x04\0\x15[constructor\
-]text-box\x01\x14\x01h\x07\x01@\x01\x04self\x15\0\x12\x04\0\x15[method]text-box.\
-root\x01\x16\x01@\x01\x04self\x15\0\x08\x04\0\x15[method]text-box.text\x01\x17\x04\
-\x01\x0dunavi:ui/text\x05\x16\x04\x01\x0eunavi:ui/guest\x04\0\x0b\x0b\x01\0\x05g\
-uest\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\
-\x10wit-bindgen-rust\x060.25.0";
+h\x06\x01@\x01\x04self\x0a\0\x08\x04\0\x10[method]text.ref\x01\x0b\x01p}\x01k\x0c\
+\x01@\x02\x04self\x0a\x05value\x0d\x01\0\x04\0\x15[method]text.set-font\x01\x0e\x01\
+@\x01\x04self\x0a\0s\x04\0\x11[method]text.text\x01\x0f\x01@\x02\x04self\x0a\x05\
+values\x01\0\x04\0\x15[method]text.set-text\x01\x10\x01@\x01\x04self\x0a\0v\x04\0\
+\x16[method]text.font-size\x01\x11\x01@\x02\x04self\x0a\x05valuev\x01\0\x04\0\x1a\
+[method]text.set-font-size\x01\x12\x04\0\x16[method]text.thickness\x01\x11\x04\0\
+\x1a[method]text.set-thickness\x01\x12\x01i\x03\x01@\x01\x04self\x0a\0\x13\x04\0\
+\x11[method]text.mesh\x01\x14\x01i\x01\x01i\x07\x01@\x01\x04root\x15\0\x16\x04\0\
+\x15[constructor]text-box\x01\x17\x01h\x07\x01@\x01\x04self\x18\0\x15\x04\0\x15[\
+method]text-box.root\x01\x19\x01@\x01\x04self\x18\0\x08\x04\0\x15[method]text-bo\
+x.text\x01\x1a\x04\x01\x0dunavi:ui/text\x05\x16\x04\x01\x0eunavi:ui/guest\x04\0\x0b\
+\x0b\x01\0\x05guest\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-compo\
+nent\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

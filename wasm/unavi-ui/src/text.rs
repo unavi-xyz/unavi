@@ -3,7 +3,7 @@ use std::{
     rc::Rc,
 };
 
-use meshtext::{IndexedMeshText, MeshGenerator, TextSection};
+use meshtext::{IndexedMeshText, MeshGenerator, OwnedFace, TextSection};
 
 use crate::{
     bindings::{
@@ -25,39 +25,32 @@ impl Guest for GuestImpl {
 pub struct Text(Rc<TextData>);
 
 struct TextData {
-    flat: Cell<bool>,
+    font_size: Cell<f32>,
+    generator: RefCell<MeshGenerator<OwnedFace>>,
     mesh: Mesh,
     primitive: Primitive,
     text: RefCell<String>,
+    thickness: Cell<f32>,
 }
 
-impl GuestText for Text {
-    fn new(text: String) -> Self {
-        let mesh = Mesh::new();
-        let primitive = mesh.create_primitive();
+impl Text {
+    fn generate(&self) {
+        let font_size = self.0.font_size.get();
+        let text = self.0.text.borrow().clone();
+        let thickness = self.0.thickness.get();
 
-        Self(Rc::new(TextData {
-            flat: Cell::new(true),
-            mesh,
-            primitive,
-            text: RefCell::new(text),
-        }))
-    }
+        let flat = thickness == 0.0;
 
-    fn ref_(&self) -> TextExport {
-        TextExport::new(self.clone())
-    }
-
-    fn text(&self) -> String {
-        self.0.text.borrow().clone()
-    }
-    fn set_text(&self, value: String) {
-        self.0.text.replace(value);
-
-        let mut generator = MeshGenerator::new(FONT);
+        let transform = [
+            font_size, 0.0, 0.0, 0.0, 0.0, font_size, 0.0, 0.0, 0.0, 0.0, thickness, 0.0, 0.0, 0.0,
+            0.0, 1.0,
+        ];
 
         let data: Result<IndexedMeshText, _> =
-            generator.generate_section(&self.0.text.borrow(), self.0.flat.get(), None);
+            self.0
+                .generator
+                .borrow_mut()
+                .generate_section(&text, flat, Some(&transform));
 
         if let Ok(data) = data {
             self.0.primitive.set_indices(&data.indices);
@@ -67,12 +60,56 @@ impl GuestText for Text {
             self.0.primitive.set_indices(&[]);
         }
     }
+}
 
-    fn flat(&self) -> bool {
-        self.0.flat.get()
+impl GuestText for Text {
+    fn new(text: String) -> Self {
+        let mesh = Mesh::new();
+        let primitive = mesh.create_primitive();
+
+        Self(Rc::new(TextData {
+            font_size: Cell::new(0.25),
+            generator: RefCell::new(MeshGenerator::new(FONT.to_owned())),
+            mesh,
+            primitive,
+            text: RefCell::new(text),
+            thickness: Cell::default(),
+        }))
     }
-    fn set_flat(&self, value: bool) {
-        self.0.flat.set(value);
+
+    fn ref_(&self) -> TextExport {
+        TextExport::new(self.clone())
+    }
+
+    fn set_font(&self, value: Option<Vec<u8>>) {
+        self.0
+            .generator
+            .replace(MeshGenerator::new(value.unwrap_or(FONT.to_owned())));
+        self.generate();
+    }
+
+    fn text(&self) -> String {
+        self.0.text.borrow().clone()
+    }
+    fn set_text(&self, value: String) {
+        self.0.text.replace(value);
+        self.generate();
+    }
+
+    fn font_size(&self) -> f32 {
+        self.0.font_size.get()
+    }
+    fn set_font_size(&self, value: f32) {
+        self.0.font_size.set(value);
+        self.generate();
+    }
+
+    fn thickness(&self) -> f32 {
+        self.0.thickness.get()
+    }
+    fn set_thickness(&self, value: f32) {
+        self.0.thickness.set(value);
+        self.generate();
     }
 
     fn mesh(&self) -> Mesh {

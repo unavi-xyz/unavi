@@ -39,11 +39,18 @@ interface text {
     // Returns another reference to the same resource.
     ref: func() -> text;
 
+    // Supports TrueType, OpenType, and AAT fonts.
+    // Will use a default font if none is provided.
+    set-font: func(value: option<list<u8>>);
+
     text: func() -> string;
     set-text: func(value: string);
 
-    flat: func() -> bool;
-    set-flat: func(value: bool);
+    font-size: func() -> f32;
+    set-font-size: func(value: f32);
+
+    thickness: func() -> f32;
+    set-thickness: func(value: f32);
 
     mesh: func() -> mesh;
   }

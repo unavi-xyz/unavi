@@ -3,6 +3,7 @@ mod bindings;
 
 mod container;
 mod grid;
+mod wired_math_impls;
 
 struct GuestImpl;
 

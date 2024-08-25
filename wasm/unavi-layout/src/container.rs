@@ -3,9 +3,12 @@ use std::{cell::RefCell, rc::Rc};
 use crate::{
     bindings::{
         exports::unavi::layout::container::{
-            Alignment, Container as ContainerExport, Guest, GuestContainer,
+            Alignment, Container as ContainerExport, ContainerBorrow, Guest, GuestContainer,
         },
-        wired::{math::types::Vec3, scene::node::Node},
+        wired::{
+            math::types::{Transform, Vec3},
+            scene::node::Node,
+        },
     },
     GuestImpl,
 };
@@ -21,6 +24,7 @@ pub struct ContainerData {
     align_x: Alignment,
     align_y: Alignment,
     align_z: Alignment,
+    children: Vec<Container>,
     inner: Node,
     root: Node,
     size: Vec3,
@@ -43,7 +47,7 @@ macro_rules! generate_align_methods {
                 Alignment::End => 1.0,
             };
 
-            let len = self.size().$axis;
+            let len = data.size.$axis;
             let axis_val = (percent * len) - (len / 2.0);
 
             let mut transform = data.inner.transform();
@@ -63,6 +67,7 @@ impl GuestContainer for Container {
             align_x: Alignment::Center,
             align_y: Alignment::Center,
             align_z: Alignment::Center,
+            children: Vec::default(),
             inner,
             root,
             size,
@@ -76,9 +81,60 @@ impl GuestContainer for Container {
     fn root(&self) -> Node {
         self.0.borrow().root.ref_()
     }
-
     fn inner(&self) -> Node {
         self.0.borrow().inner.ref_()
+    }
+
+    fn list_children(&self) -> Vec<ContainerExport> {
+        self.0
+            .borrow()
+            .children
+            .iter()
+            .cloned()
+            .map(ContainerExport::new)
+            .collect()
+    }
+    fn add_child(&self, child: ContainerBorrow) {
+        let child = child.get::<Container>();
+        self.0.borrow_mut().children.push(child.clone());
+
+        self.inner().add_child(&child.root());
+
+        let data = self.0.borrow();
+        let size = child.size();
+
+        let side = match data.align_x {
+            Alignment::Start => 1.0,
+            Alignment::Center => 0.0,
+            Alignment::End => -1.0,
+        };
+        let offset_x = side * size.x / 2.0;
+
+        let side = match data.align_y {
+            Alignment::Start => 1.0,
+            Alignment::Center => 0.0,
+            Alignment::End => -1.0,
+        };
+        let offset_y = side * size.y / 2.0;
+
+        let side = match data.align_z {
+            Alignment::Start => 1.0,
+            Alignment::Center => 0.0,
+            Alignment::End => -1.0,
+        };
+        let offset_z = side * size.z / 2.0;
+
+        child
+            .root()
+            .set_transform(Transform::from_translation(Vec3::new(
+                offset_x, offset_y, offset_z,
+            )));
+    }
+    fn remove_child(&self, child: ContainerBorrow) {
+        let child = child.get::<Container>();
+        self.0.borrow_mut().children.push(child.clone());
+
+        self.inner().remove_child(&child.root());
     }
 
     fn size(&self) -> Vec3 {

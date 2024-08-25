@@ -1,4 +1,4 @@
-use avian3d::PhysicsPlugins;
+use avian3d::{prelude::PhysicsDebugPlugin, PhysicsPlugins};
 use bevy::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
@@ -13,6 +13,7 @@ fn main() {
             }),
             WorldInspectorPlugin::default(),
             PanOrbitCameraPlugin,
+            PhysicsDebugPlugin::default(),
             PhysicsPlugins::default(),
             ScriptingPlugin,
         ))

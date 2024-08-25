@@ -4362,6 +4362,334 @@ pub mod exports {
                 #[doc(hidden)]
                 pub(crate) use __export_unavi_ui_button_cabi;
             }
+
+            #[allow(dead_code, clippy::all)]
+            pub mod text {
+                #[used]
+                #[doc(hidden)]
+                #[cfg(target_arch = "wasm32")]
+                static __FORCE_SECTION_REF: fn() =
+                    super::super::super::super::__link_custom_section_describing_imports;
+                use super::super::super::super::_rt;
+                pub type Mesh = super::super::super::super::wired::scene::mesh::Mesh;
+                pub type Node = super::super::super::super::wired::scene::node::Node;
+
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct Text {
+                    handle: _rt::Resource<Text>,
+                }
+
+                type _TextRep<T> = Option<T>;
+
+                impl Text {
+                    /// Creates a new resource from the specified representation.
+                    ///
+                    /// This function will create a new resource handle by moving `val` onto
+                    /// the heap and then passing that heap pointer to the component model to
+                    /// create a handle. The owned handle is then returned as `Text`.
+                    pub fn new<T: GuestText>(val: T) -> Self {
+                        Self::type_guard::<T>();
+                        let val: _TextRep<T> = Some(val);
+                        let ptr: *mut _TextRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
+                    }
+
+                    /// Gets access to the underlying `T` which represents this resource.
+                    pub fn get<T: GuestText>(&self) -> &T {
+                        let ptr = unsafe { &*self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    /// Gets mutable access to the underlying `T` which represents this
+                    /// resource.
+                    pub fn get_mut<T: GuestText>(&mut self) -> &mut T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_mut().unwrap()
+                    }
+
+                    /// Consumes this resource and returns the underlying `T`.
+                    pub fn into_inner<T: GuestText>(self) -> T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.take().unwrap()
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn from_handle(handle: u32) -> Self {
+                        Self {
+                            handle: _rt::Resource::from_handle(handle),
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub fn take_handle(&self) -> u32 {
+                        _rt::Resource::take_handle(&self.handle)
+                    }
+
+                    #[doc(hidden)]
+                    pub fn handle(&self) -> u32 {
+                        _rt::Resource::handle(&self.handle)
+                    }
+
+                    // It's theoretically possible to implement the `GuestText` trait twice
+                    // so guard against using it with two different types here.
+                    #[doc(hidden)]
+                    fn type_guard<T: 'static>() {
+                        use core::any::TypeId;
+                        static mut LAST_TYPE: Option<TypeId> = None;
+                        unsafe {
+                            assert!(!cfg!(target_feature = "threads"));
+                            let id = TypeId::of::<T>();
+                            match LAST_TYPE {
+                                Some(ty) => assert!(
+                                    ty == id,
+                                    "cannot use two types with this resource type"
+                                ),
+                                None => LAST_TYPE = Some(id),
+                            }
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn dtor<T: 'static>(handle: *mut u8) {
+                        Self::type_guard::<T>();
+                        let _ = _rt::Box::from_raw(handle as *mut _TextRep<T>);
+                    }
+
+                    fn as_ptr<T: GuestText>(&self) -> *mut _TextRep<T> {
+                        Text::type_guard::<T>();
+                        T::_resource_rep(self.handle()).cast()
+                    }
+                }
+
+                /// A borrowed version of [`Text`] which represents a borrowed value
+                /// with the lifetime `'a`.
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct TextBorrow<'a> {
+                    rep: *mut u8,
+                    _marker: core::marker::PhantomData<&'a Text>,
+                }
+
+                impl<'a> TextBorrow<'a> {
+                    #[doc(hidden)]
+                    pub unsafe fn lift(rep: usize) -> Self {
+                        Self {
+                            rep: rep as *mut u8,
+                            _marker: core::marker::PhantomData,
+                        }
+                    }
+
+                    /// Gets access to the underlying `T` in this resource.
+                    pub fn get<T: GuestText>(&self) -> &T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    // NB: mutable access is not allowed due to the component model allowing
+                    // multiple borrows of the same resource.
+
+                    fn as_ptr<T: 'static>(&self) -> *mut _TextRep<T> {
+                        Text::type_guard::<T>();
+                        self.rep.cast()
+                    }
+                }
+
+                unsafe impl _rt::WasmResource for Text {
+                    #[inline]
+                    unsafe fn drop(_handle: u32) {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unreachable!();
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]unavi:ui/text")]
+                            extern "C" {
+                                #[link_name = "[resource-drop]text"]
+                                fn drop(_: u32);
+                            }
+
+                            drop(_handle);
+                        }
+                    }
+                }
+
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_constructor_text_cabi<T: GuestText>(
+                    arg0: *mut u8,
+                    arg1: usize,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg1;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg0.cast(), len0, len0);
+                    let result1 = Text::new(T::new(_rt::string_lift(bytes0)));
+                    (result1).take_handle() as i32
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_text_flat_cabi<T: GuestText>(arg0: *mut u8) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::flat(TextBorrow::lift(arg0 as u32 as usize).get());
+                    match result0 {
+                        true => 1,
+                        false => 0,
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_text_set_flat_cabi<T: GuestText>(
+                    arg0: *mut u8,
+                    arg1: i32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::set_flat(
+                        TextBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::bool_lift(arg1 as u8),
+                    );
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_text_to_mesh_cabi<T: GuestText>(
+                    arg0: *mut u8,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::to_mesh(TextBorrow::lift(arg0 as u32 as usize).get());
+                    let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result0 {
+                        Some(e) => {
+                            *ptr1.add(0).cast::<u8>() = (1i32) as u8;
+                            *ptr1.add(4).cast::<i32>() = (e).take_handle() as i32;
+                        }
+                        None => {
+                            *ptr1.add(0).cast::<u8>() = (0i32) as u8;
+                        }
+                    };
+                    ptr1
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_text_to_node_cabi<T: GuestText>(
+                    arg0: *mut u8,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::to_node(TextBorrow::lift(arg0 as u32 as usize).get());
+                    let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result0 {
+                        Some(e) => {
+                            *ptr1.add(0).cast::<u8>() = (1i32) as u8;
+                            *ptr1.add(4).cast::<i32>() = (e).take_handle() as i32;
+                        }
+                        None => {
+                            *ptr1.add(0).cast::<u8>() = (0i32) as u8;
+                        }
+                    };
+                    ptr1
+                }
+                pub trait Guest {
+                    type Text: GuestText;
+                }
+                pub trait GuestText: 'static {
+                    #[doc(hidden)]
+                    unsafe fn _resource_new(val: *mut u8) -> u32
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = val;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]unavi:ui/text")]
+                            extern "C" {
+                                #[link_name = "[resource-new]text"]
+                                fn new(_: *mut u8) -> u32;
+                            }
+                            new(val)
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    fn _resource_rep(handle: u32) -> *mut u8
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = handle;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]unavi:ui/text")]
+                            extern "C" {
+                                #[link_name = "[resource-rep]text"]
+                                fn rep(_: u32) -> *mut u8;
+                            }
+                            unsafe { rep(handle) }
+                        }
+                    }
+
+                    fn new(text: _rt::String) -> Self;
+                    fn flat(&self) -> bool;
+                    fn set_flat(&self, value: bool);
+                    fn to_mesh(&self) -> Option<Mesh>;
+                    fn to_node(&self) -> Option<Node>;
+                }
+                #[doc(hidden)]
+
+                macro_rules! __export_unavi_ui_text_cabi{
+  ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
+
+    #[export_name = "unavi:ui/text#[constructor]text"]
+    unsafe extern "C" fn export_constructor_text(arg0: *mut u8,arg1: usize,) -> i32 {
+      $($path_to_types)*::_export_constructor_text_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0, arg1)
+    }
+    #[export_name = "unavi:ui/text#[method]text.flat"]
+    unsafe extern "C" fn export_method_text_flat(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_text_flat_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0)
+    }
+    #[export_name = "unavi:ui/text#[method]text.set-flat"]
+    unsafe extern "C" fn export_method_text_set_flat(arg0: *mut u8,arg1: i32,) {
+      $($path_to_types)*::_export_method_text_set_flat_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0, arg1)
+    }
+    #[export_name = "unavi:ui/text#[method]text.to-mesh"]
+    unsafe extern "C" fn export_method_text_to_mesh(arg0: *mut u8,) -> *mut u8 {
+      $($path_to_types)*::_export_method_text_to_mesh_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0)
+    }
+    #[export_name = "unavi:ui/text#[method]text.to-node"]
+    unsafe extern "C" fn export_method_text_to_node(arg0: *mut u8,) -> *mut u8 {
+      $($path_to_types)*::_export_method_text_to_node_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0)
+    }
+
+    const _: () = {
+      #[doc(hidden)]
+      #[export_name = "unavi:ui/text#[dtor]text"]
+      #[allow(non_snake_case)]
+      unsafe extern "C" fn dtor(rep: *mut u8) {
+        $($path_to_types)*::Text::dtor::<
+        <$ty as $($path_to_types)*::Guest>::Text
+        >(rep)
+      }
+    };
+
+  };);
+}
+                #[doc(hidden)]
+                pub(crate) use __export_unavi_ui_text_cabi;
+                #[repr(align(4))]
+                struct _RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+            }
         }
     }
 }
@@ -4619,6 +4947,7 @@ macro_rules! __export_guest_impl {
   ($ty:ident) => (self::export!($ty with_types_in self););
   ($ty:ident with_types_in $($path_to_types_root:tt)*) => (
   $($path_to_types_root)*::exports::unavi::ui::button::__export_unavi_ui_button_cabi!($ty with_types_in $($path_to_types_root)*::exports::unavi::ui::button);
+  $($path_to_types_root)*::exports::unavi::ui::text::__export_unavi_ui_text_cabi!($ty with_types_in $($path_to_types_root)*::exports::unavi::ui::text);
   )
 }
 #[doc(inline)]
@@ -4627,8 +4956,8 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 5892] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x88-\x01A\x02\x01A\x20\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6152] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x8c/\x01A\x02\x01A\"\
 \x01B\x08\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\
 \0\x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01\
 r\x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -4756,9 +5085,15 @@ ontainer\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x0dinput-handler\x03\0\x02\x04\0\x06b
 utton\x03\x01\x01i\x01\x01i\x04\x01@\x01\x04root\x05\0\x06\x04\0\x13[constructor\
 ]button\x01\x07\x01h\x04\x01@\x01\x04self\x08\0\x05\x04\0\x13[method]button.root\
 \x01\x09\x01@\x01\x04self\x08\0\x7f\x04\0\x16[method]button.pressed\x01\x0a\x04\x01\
-\x0funavi:ui/button\x05\x15\x04\x01\x0eunavi:ui/guest\x04\0\x0b\x0b\x01\0\x05gue\
-st\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10\
-wit-bindgen-rust\x060.25.0";
+\x0funavi:ui/button\x05\x15\x01B\x15\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\0\x02\
+\x03\x02\x01\x11\x04\0\x04node\x03\0\x02\x04\0\x04text\x03\x01\x01i\x04\x01@\x01\
+\x04texts\0\x05\x04\0\x11[constructor]text\x01\x06\x01h\x04\x01@\x01\x04self\x07\
+\0\x7f\x04\0\x11[method]text.flat\x01\x08\x01@\x02\x04self\x07\x05value\x7f\x01\0\
+\x04\0\x15[method]text.set-flat\x01\x09\x01i\x01\x01k\x0a\x01@\x01\x04self\x07\0\
+\x0b\x04\0\x14[method]text.to-mesh\x01\x0c\x01i\x03\x01k\x0d\x01@\x01\x04self\x07\
+\0\x0e\x04\0\x14[method]text.to-node\x01\x0f\x04\x01\x0dunavi:ui/text\x05\x16\x04\
+\x01\x0eunavi:ui/guest\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\0G\x09producers\x01\x0c\
+processed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

@@ -10,6 +10,7 @@ license.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
+meshtext = "0.3.0"
 wit-bindgen-rt.workspace = true
 
 [package.metadata.component]

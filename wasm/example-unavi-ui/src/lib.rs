@@ -6,7 +6,7 @@ use bindings::{
         layout::container::Container,
         scene::api::{Root, Scene},
         shapes::api::Rectangle,
-        ui::button::Button,
+        ui::{button::Button, text::Text},
     },
     wired::{
         log::api::{log, LogLevel},
@@ -57,6 +57,14 @@ impl GuestScript for Script {
 
         let button = Button::new(Container::new(Vec3::new(1.0, 0.5, 0.2)));
         container.inner().add_child(&button.root().root());
+
+        let text = Text::new("Hello world!").to_node().unwrap();
+        text.set_transform(Transform {
+            translation: Vec3::new(0.0, 0.5, -0.3),
+            rotation: Quat::from_rotation_y(PI),
+            scale: Vec3::splat(0.5),
+        });
+        button.root().inner().add_child(&text);
 
         Root::add_scene(&scene);
 

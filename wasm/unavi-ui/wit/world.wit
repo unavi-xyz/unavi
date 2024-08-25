@@ -12,6 +12,7 @@ world prelude {
 
 interface button {
   use unavi:layout/container.{container};
+  use wired:input/handler.{input-handler};
 
   // 3D interactable button.
   // Fills the space of its root container.
@@ -19,6 +20,9 @@ interface button {
     constructor(root: container);
 
     root: func() -> container;
+
+    // Returns `true` if the button is pressed down this frame.
+    pressed: func() -> bool;
   }
 }
 

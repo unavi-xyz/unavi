@@ -24,6 +24,9 @@ interface container {
   resource container {
     constructor(size: vec3);
 
+    // Returns another reference to the same resource.
+    ref: func() -> container;
+
     // The `root` node.
     // Positioned in the center of the container.
     root: func() -> node;

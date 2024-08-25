@@ -6,4 +6,5 @@ world script {
 
     import unavi:scene/api;
     import unavi:shapes/api;
+    import wired:log/api;
 }

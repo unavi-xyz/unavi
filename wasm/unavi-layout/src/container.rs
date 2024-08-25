@@ -5,10 +5,7 @@ use crate::{
         exports::unavi::layout::container::{
             Alignment, Container as ContainerExport, ContainerBorrow, Guest, GuestContainer,
         },
-        wired::{
-            math::types::{Transform, Vec3},
-            scene::node::Node,
-        },
+        wired::{math::types::Vec3, scene::node::Node},
     },
     GuestImpl,
 };
@@ -53,6 +50,22 @@ macro_rules! generate_align_methods {
             let mut transform = data.inner.transform();
             transform.translation.$axis = axis_val;
             data.inner.set_transform(transform);
+
+            for child in data.children.iter() {
+                let size = child.size();
+
+                let side = match data.$align_fn {
+                    Alignment::Start => 1.0,
+                    Alignment::Center => 0.0,
+                    Alignment::End => -1.0,
+                };
+                let offset = side * size.$axis / 2.0;
+
+                let mut transform = child.root().transform();
+                transform.translation.$axis = offset;
+
+                child.root().set_transform(transform);
+            }
         }
     };
 }
@@ -100,35 +113,7 @@ impl GuestContainer for Container {
 
         self.inner().add_child(&child.root());
 
-        let data = self.0.borrow();
-        let size = child.size();
-
-        let side = match data.align_x {
-            Alignment::Start => 1.0,
-            Alignment::Center => 0.0,
-            Alignment::End => -1.0,
-        };
-        let offset_x = side * size.x / 2.0;
-
-        let side = match data.align_y {
-            Alignment::Start => 1.0,
-            Alignment::Center => 0.0,
-            Alignment::End => -1.0,
-        };
-        let offset_y = side * size.y / 2.0;
-
-        let side = match data.align_z {
-            Alignment::Start => 1.0,
-            Alignment::Center => 0.0,
-            Alignment::End => -1.0,
-        };
-        let offset_z = side * size.z / 2.0;
-
-        child
-            .root()
-            .set_transform(Transform::from_translation(Vec3::new(
-                offset_x, offset_y, offset_z,
-            )));
+        self.update_alignments();
     }
     fn remove_child(&self, child: ContainerBorrow) {
         let child = child.get::<Container>();
@@ -142,14 +127,18 @@ impl GuestContainer for Container {
     }
     fn set_size(&self, value: Vec3) {
         self.0.borrow_mut().size = value;
-
-        // Use alignment methods to update inner node.
-        self.set_align_x(self.align_x());
-        self.set_align_y(self.align_y());
-        self.set_align_z(self.align_z());
+        self.update_alignments();
     }
 
     generate_align_methods!(align_x, set_align_x, x);
     generate_align_methods!(align_y, set_align_y, y);
     generate_align_methods!(align_z, set_align_z, z);
+}
+
+impl Container {
+    fn update_alignments(&self) {
+        self.set_align_x(self.align_x());
+        self.set_align_y(self.align_y());
+        self.set_align_z(self.align_z());
+    }
 }

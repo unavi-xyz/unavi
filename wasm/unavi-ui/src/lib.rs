@@ -2,6 +2,7 @@
 mod bindings;
 
 mod button;
+mod text;
 
 struct GuestImpl;
 

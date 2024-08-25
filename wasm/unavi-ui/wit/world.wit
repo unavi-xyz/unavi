@@ -4,10 +4,12 @@ world guest {
     import unavi:shapes/api;
 
     export button;
+    export text;
 }
 
 world prelude {
   import button;
+  import text;
 }
 
 interface button {
@@ -26,3 +28,17 @@ interface button {
   }
 }
 
+interface text {
+  use wired:scene/mesh.{mesh};
+  use wired:scene/node.{node};
+
+  resource text {
+    constructor(text: string);
+
+    flat: func() -> bool;
+    set-flat: func(value: bool);
+
+    to-mesh: func() -> option<mesh>;
+    to-node: func() -> option<node>;
+  }
+}

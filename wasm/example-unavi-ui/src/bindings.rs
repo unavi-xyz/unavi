@@ -2001,6 +2001,208 @@ pub mod unavi {
                 }
             }
         }
+
+        #[allow(dead_code, clippy::all)]
+        pub mod text {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            pub type Mesh = super::super::super::wired::scene::mesh::Mesh;
+            pub type Node = super::super::super::wired::scene::node::Node;
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Text {
+                handle: _rt::Resource<Text>,
+            }
+
+            impl Text {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for Text {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "unavi:ui/text")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]text"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            impl Text {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn new(text: &str) -> Self {
+                    unsafe {
+                        let vec0 = text;
+                        let ptr0 = vec0.as_ptr().cast::<u8>();
+                        let len0 = vec0.len();
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:ui/text")]
+                        extern "C" {
+                            #[link_name = "[constructor]text"]
+                            fn wit_import(_: *mut u8, _: usize) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: *mut u8, _: usize) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import(ptr0.cast_mut(), len0);
+                        Text::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Text {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn flat(&self) -> bool {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:ui/text")]
+                        extern "C" {
+                            #[link_name = "[method]text.flat"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        _rt::bool_lift(ret as u8)
+                    }
+                }
+            }
+            impl Text {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_flat(&self, value: bool) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:ui/text")]
+                        extern "C" {
+                            #[link_name = "[method]text.set-flat"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            match &value {
+                                true => 1,
+                                false => 0,
+                            },
+                        );
+                    }
+                }
+            }
+            impl Text {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn to_mesh(&self) -> Option<Mesh> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:ui/text")]
+                        extern "C" {
+                            #[link_name = "[method]text.to-mesh"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<i32>();
+
+                                    super::super::super::wired::scene::mesh::Mesh::from_handle(
+                                        l2 as u32,
+                                    )
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl Text {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn to_node(&self) -> Option<Node> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:ui/text")]
+                        extern "C" {
+                            #[link_name = "[method]text.to-node"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<i32>();
+
+                                    super::super::super::wired::scene::node::Node::from_handle(
+                                        l2 as u32,
+                                    )
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 #[allow(dead_code)]
@@ -5275,8 +5477,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6662] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x893\x01A\x02\x01A&\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6922] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x8d5\x01A\x02\x01A(\x01\
 B\x08\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\
 \x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01r\
 \x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -5418,12 +5620,19 @@ ntainer\x01B\x0e\x02\x03\x02\x01\x16\x04\0\x09container\x03\0\0\x02\x03\x02\x01\
 \x04\0\x0dinput-handler\x03\0\x02\x04\0\x06button\x03\x01\x01i\x01\x01i\x04\x01@\
 \x01\x04root\x05\0\x06\x04\0\x13[constructor]button\x01\x07\x01h\x04\x01@\x01\x04\
 self\x08\0\x05\x04\0\x13[method]button.root\x01\x09\x01@\x01\x04self\x08\0\x7f\x04\
-\0\x16[method]button.pressed\x01\x0a\x03\x01\x0funavi:ui/button\x05\x17\x01B\x07\
-\x04\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\
-\x01h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\
-\x04\x01\x12wired:script/types\x05\x18\x04\x01\x17example:unavi-ui/script\x04\0\x0b\
-\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-comp\
-onent\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+\0\x16[method]button.pressed\x01\x0a\x03\x01\x0funavi:ui/button\x05\x17\x01B\x15\
+\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x10\x04\0\x04node\x03\
+\0\x02\x04\0\x04text\x03\x01\x01i\x04\x01@\x01\x04texts\0\x05\x04\0\x11[construc\
+tor]text\x01\x06\x01h\x04\x01@\x01\x04self\x07\0\x7f\x04\0\x11[method]text.flat\x01\
+\x08\x01@\x02\x04self\x07\x05value\x7f\x01\0\x04\0\x15[method]text.set-flat\x01\x09\
+\x01i\x01\x01k\x0a\x01@\x01\x04self\x07\0\x0b\x04\0\x14[method]text.to-mesh\x01\x0c\
+\x01i\x03\x01k\x0d\x01@\x01\x04self\x07\0\x0e\x04\0\x14[method]text.to-node\x01\x0f\
+\x03\x01\x0dunavi:ui/text\x05\x18\x01B\x07\x04\0\x06script\x03\x01\x01i\0\x01@\0\
+\0\x01\x04\0\x13[constructor]script\x01\x02\x01h\0\x01@\x02\x04self\x03\x05delta\
+v\x01\0\x04\0\x15[method]script.update\x01\x04\x04\x01\x12wired:script/types\x05\
+\x19\x04\x01\x17example:unavi-ui/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\
+\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen\
+-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

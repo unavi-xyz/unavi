@@ -13,7 +13,7 @@ world prelude {
 interface button {
   use unavi:layout/container.{container};
 
-  // 3d interactable button.
+  // 3D interactable button.
   // Fills the space of its root container.
   resource button {
     constructor(root: container);

@@ -67,6 +67,10 @@ impl HostMaterial for StoreState {
     fn id(&mut self, self_: Resource<MaterialRes>) -> wasm_bridge::Result<u32> {
         Ok(self_.rep())
     }
+    fn ref_(&mut self, self_: Resource<MaterialRes>) -> wasm_bridge::Result<Resource<MaterialRes>> {
+        let value = MaterialRes::from_res(&self_, &self.table)?;
+        Ok(value)
+    }
 
     fn name(&mut self, self_: Resource<MaterialRes>) -> wasm_bridge::Result<String> {
         let material = self.table.get(&self_)?;

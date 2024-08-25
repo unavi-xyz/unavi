@@ -97,6 +97,10 @@ impl HostMesh for StoreState {
     fn id(&mut self, self_: Resource<MeshRes>) -> wasm_bridge::Result<u32> {
         Ok(self_.rep())
     }
+    fn ref_(&mut self, self_: Resource<MeshRes>) -> wasm_bridge::Result<Resource<MeshRes>> {
+        let value = MeshRes::from_res(&self_, &self.table)?;
+        Ok(value)
+    }
 
     fn name(&mut self, self_: Resource<MeshRes>) -> wasm_bridge::Result<String> {
         let mesh = self.table.get(&self_)?;

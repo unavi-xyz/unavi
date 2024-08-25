@@ -1,12 +1,12 @@
-use std::f32::consts::PI;
+use std::{cell::Cell, f32::consts::PI};
 
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
     unavi::{
-        layout::container::Container,
+        layout::container::{Alignment, Container},
         scene::api::{Root, Scene},
         shapes::api::Rectangle,
-        ui::{button::Button, text::Text},
+        ui::{button::Button, text::TextBox},
     },
     wired::{
         log::api::{log, LogLevel},
@@ -21,6 +21,8 @@ mod wired_math_impls;
 
 struct Script {
     button: Button,
+    clock: TextBox,
+    elapsed: Cell<f32>,
 }
 
 const LENGTH: f32 = 5.0;
@@ -30,48 +32,63 @@ impl GuestScript for Script {
     fn new() -> Self {
         let scene = Scene::new();
 
-        let bg = Rectangle::new(Vec2::new(LENGTH, HEIGHT)).to_physics_node();
-        bg.set_transform(Transform {
+        let container = Container::new(Vec3::new(LENGTH, HEIGHT, 0.1));
+        container.set_align_z(Alignment::End);
+        container.root().set_transform(Transform {
             translation: Vec3::new(0.0, 0.0, -8.0),
             rotation: Quat::from_rotation_y(PI),
             ..Default::default()
         });
 
-        let material = Material::new();
-        material.set_color(Color {
-            r: 0.1,
-            g: 0.1,
-            b: 0.2,
-            a: 1.0,
-        });
-        bg.mesh()
-            .unwrap()
-            .list_primitives()
-            .iter()
-            .for_each(|p| p.set_material(Some(&material)));
+        scene.add_node(&container.root());
 
-        scene.add_node(&bg);
+        {
+            let bg = Rectangle::new(Vec2::new(LENGTH, HEIGHT)).to_physics_node();
+            container.inner().add_child(&bg);
 
-        let container = Container::new(Vec3::new(LENGTH, HEIGHT, 0.1));
-        bg.add_child(&container.root());
+            let material = Material::new();
+            material.set_color(Color {
+                r: 0.1,
+                g: 0.1,
+                b: 0.2,
+                a: 1.0,
+            });
+            bg.mesh()
+                .unwrap()
+                .list_primitives()
+                .iter()
+                .for_each(|p| p.set_material(Some(&material)));
+        }
 
         let button = Button::new(Container::new(Vec3::new(1.0, 0.5, 0.2)));
-        container.inner().add_child(&button.root().root());
+        container.add_child(&button.root());
 
-        let text = Text::new("Hello world!").to_node().unwrap();
-        text.set_transform(Transform {
-            translation: Vec3::new(0.0, 0.5, -0.3),
+        let clock_container = Container::new(Vec3::new(2.0, 0.5, 0.1));
+        clock_container.inner().set_transform(Transform {
+            translation: Vec3::new(-1.0, 1.0, 0.0),
             rotation: Quat::from_rotation_y(PI),
-            scale: Vec3::splat(0.5),
+            scale: Vec3::splat(0.2),
         });
-        button.root().inner().add_child(&text);
+        container.add_child(&clock_container);
+        let clock = TextBox::new(clock_container);
 
         Root::add_scene(&scene);
 
-        Script { button }
+        Script {
+            button,
+            clock,
+            elapsed: Cell::default(),
+        }
     }
 
-    fn update(&self, _delta: f32) {
+    fn update(&self, delta: f32) {
+        let elapsed = self.elapsed.get();
+        self.elapsed.set(elapsed + delta);
+
+        self.clock
+            .text()
+            .set_text(&format!("Elapsed: {:.2}", elapsed));
+
         if self.button.pressed() {
             log(LogLevel::Info, "Button pressed!");
         }

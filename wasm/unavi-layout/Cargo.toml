@@ -1,5 +1,5 @@
 [package]
-name = "example-unavi-ui"
+name = "unavi-layout"
 publish = false
 version.workspace = true
 edition.workspace = true
@@ -13,18 +13,14 @@ crate-type = ["cdylib"]
 wit-bindgen-rt.workspace = true
 
 [package.metadata.component]
-package = "example:unavi-ui"
+package = "unavi:layout"
+
+[package.metadata.component.target]
+world = "guest"
 
 [package.metadata.component.target.dependencies]
-"unavi:layout" = { path = "../unavi-layout/wit" }
-"unavi:scene" = { path = "../unavi-scene/wit" }
-"unavi:shapes" = { path = "../unavi-shapes/wit" }
-"unavi:ui" = { path = "../unavi-ui/wit" }
 "wired:input" = { path = "../../wired-protocol/spatial/wit/wired-input" }
 "wired:log" = { path = "../../wired-protocol/spatial/wit/wired-log" }
 "wired:math" = { path = "../../wired-protocol/spatial/wit/wired-math" }
 "wired:physics" = { path = "../../wired-protocol/spatial/wit/wired-physics" }
-"wired:player" = { path = "../../wired-protocol/spatial/wit/wired-player" }
-"wired:prelude" = { path = "../../wired-protocol/spatial/wit/wired-prelude" }
 "wired:scene" = { path = "../../wired-protocol/spatial/wit/wired-scene" }
-"wired:script" = { path = "../../wired-protocol/spatial/wit/wired-script" }

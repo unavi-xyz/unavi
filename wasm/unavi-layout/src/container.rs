@@ -1,9 +1,9 @@
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 
 use crate::{
     bindings::{
-        exports::unavi::ui::container::{Alignment, Guest, GuestContainer},
-        wired::scene::node::Node,
+        exports::unavi::layout::container::{Alignment, Guest, GuestContainer},
+        wired::{math::types::Vec3, scene::node::Node},
     },
     GuestImpl,
 };
@@ -13,50 +13,38 @@ impl Guest for GuestImpl {
 }
 
 pub struct Container {
-    node: Node,
-    x_len: Cell<f32>,
-    y_len: Cell<f32>,
-    z_len: Cell<f32>,
     align_x: Cell<Alignment>,
     align_y: Cell<Alignment>,
     align_z: Cell<Alignment>,
+    root: Node,
+    size: RefCell<Vec3>,
 }
 
 impl GuestContainer for Container {
-    fn new() -> Self {
+    fn new(size: Vec3) -> Self {
         Self {
-            node: Node::new(),
-            x_len: Cell::new(1.0),
-            y_len: Cell::new(1.0),
-            z_len: Cell::new(1.0),
             align_x: Cell::new(Alignment::Center),
             align_y: Cell::new(Alignment::Center),
             align_z: Cell::new(Alignment::Center),
+            root: Node::new(),
+            size: RefCell::new(size),
         }
     }
 
-    fn root(&self) -> Node {
-        // self.node
+    fn root(&self) -> crate::bindings::exports::unavi::layout::container::Node {
         todo!()
     }
 
-    fn x_len(&self) -> f32 {
-        self.x_len.get()
+    fn inner(&self) -> Node {
+        todo!()
+        // unsafe { Node::from_handle(self.node.handle()) }
     }
-    fn y_len(&self) -> f32 {
-        self.y_len.get()
+
+    fn size(&self) -> Vec3 {
+        *self.size.borrow()
     }
-    fn z_len(&self) -> f32 {
-        self.z_len.get()
-    }
-    fn set_x_len(&self, value: f32) {
-        self.x_len.set(value);
-    }
-    fn set_y_len(&self, value: f32) {
-        self.y_len.set(value);
-    }
-    fn set_z_len(&self, value: f32) {
-        self.z_len.set(value);
+    fn set_size(&self, value: Vec3) {
+        self.size.replace(value);
     }
 
     fn align_x(&self) -> Alignment {
@@ -68,6 +56,7 @@ impl GuestContainer for Container {
     fn align_z(&self) -> Alignment {
         self.align_z.get()
     }
+
     fn set_align_x(&self, value: Alignment) {
         self.align_x.set(value);
     }

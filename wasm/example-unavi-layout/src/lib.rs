@@ -3,6 +3,7 @@ use std::f32::consts::PI;
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
     unavi::{
+        layout::container::Container,
         scene::api::{Root, Scene},
         shapes::api::Rectangle,
     },
@@ -26,6 +27,8 @@ impl GuestScript for Script {
             ..Default::default()
         });
         scene.add_node(&bg);
+
+        let _a = Container::new(Vec3::splat(1.0));
 
         Root::add_scene(&scene);
 

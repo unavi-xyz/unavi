@@ -1,12 +1,10 @@
 use crate::{
-    bindings::exports::unavi::ui::{
-        button::{Guest, GuestButton},
-        container::GuestContainer,
+    bindings::{
+        exports::unavi::ui::button::{Guest, GuestButton},
+        unavi::layout::container::Container,
     },
     GuestImpl,
 };
-
-use super::container::Container;
 
 impl Guest for GuestImpl {
     type Button = Button;
@@ -17,14 +15,11 @@ pub struct Button {
 }
 
 impl GuestButton for Button {
-    fn new() -> Self {
-        Self {
-            root: Container::new(),
-        }
+    fn new(root: Container) -> Self {
+        Self { root }
     }
 
     fn root(&self) -> crate::bindings::exports::unavi::ui::button::Container {
-        // crate::bindings::exports::unavi::ui::button::Container::new(self.root)
-        todo!();
+        todo!()
     }
 }

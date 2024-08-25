@@ -343,6 +343,270 @@ pub mod unavi {
                 }
             }
         }
+
+        #[allow(dead_code, clippy::all)]
+        pub mod grid {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            pub type Container = super::super::super::unavi::layout::container::Container;
+            pub type Vec3 = super::super::super::wired::math::types::Vec3;
+            /// Creates a 3d grid of `container`s, with a set number of `rows` in each direction.
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Grid {
+                handle: _rt::Resource<Grid>,
+            }
+
+            impl Grid {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for Grid {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "unavi:layout/grid")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]grid"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            impl Grid {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn new(size: Vec3, rows: Vec3) -> Self {
+                    unsafe {
+                        let super::super::super::wired::math::types::Vec3 {
+                            x: x0,
+                            y: y0,
+                            z: z0,
+                        } = size;
+                        let super::super::super::wired::math::types::Vec3 {
+                            x: x1,
+                            y: y1,
+                            z: z1,
+                        } = rows;
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/grid")]
+                        extern "C" {
+                            #[link_name = "[constructor]grid"]
+                            fn wit_import(_: f32, _: f32, _: f32, _: f32, _: f32, _: f32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: f32, _: f32, _: f32, _: f32, _: f32, _: f32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import(
+                            _rt::as_f32(x0),
+                            _rt::as_f32(y0),
+                            _rt::as_f32(z0),
+                            _rt::as_f32(x1),
+                            _rt::as_f32(y1),
+                            _rt::as_f32(z1),
+                        );
+                        Grid::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Grid {
+                #[allow(unused_unsafe, clippy::all)]
+                /// The `root` container.
+                pub fn root(&self) -> Container {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/grid")]
+                        extern "C" {
+                            #[link_name = "[method]grid.root"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::unavi::layout::container::Container::from_handle(
+                            ret as u32,
+                        )
+                    }
+                }
+            }
+            impl Grid {
+                #[allow(unused_unsafe, clippy::all)]
+                /// List of all child containers.
+                pub fn cells(&self) -> _rt::Vec<Container> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/grid")]
+                        extern "C" {
+                            #[link_name = "[method]grid.cells"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<*mut u8>();
+                        let l2 = *ptr0.add(4).cast::<usize>();
+                        let base4 = l1;
+                        let len4 = l2;
+                        let mut result4 = _rt::Vec::with_capacity(len4);
+                        for i in 0..len4 {
+                            let base = base4.add(i * 4);
+                            let e4 = {
+                                let l3 = *base.add(0).cast::<i32>();
+
+                                super::super::super::unavi::layout::container::Container::from_handle(l3 as u32)
+                            };
+                            result4.push(e4);
+                        }
+                        _rt::cabi_dealloc(base4, len4 * 4, 4);
+                        result4
+                    }
+                }
+            }
+            impl Grid {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Gets a specific cell from the grid.
+                /// Returns `none` if out of bounds.
+                pub fn cell(&self, x: u32, y: u32, z: u32) -> Option<Container> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/grid")]
+                        extern "C" {
+                            #[link_name = "[method]grid.cell"]
+                            fn wit_import(_: i32, _: i32, _: i32, _: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32, _: i32, _: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            _rt::as_i32(&x),
+                            _rt::as_i32(&y),
+                            _rt::as_i32(&z),
+                            ptr0,
+                        );
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<i32>();
+
+                                    super::super::super::unavi::layout::container::Container::from_handle(l2 as u32)
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl Grid {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn rows(&self) -> Vec3 {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/grid")]
+                        extern "C" {
+                            #[link_name = "[method]grid.rows"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<f32>();
+                        let l2 = *ptr0.add(4).cast::<f32>();
+                        let l3 = *ptr0.add(8).cast::<f32>();
+                        super::super::super::wired::math::types::Vec3 {
+                            x: l1,
+                            y: l2,
+                            z: l3,
+                        }
+                    }
+                }
+            }
+            impl Grid {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_rows(&self, value: Vec3) {
+                    unsafe {
+                        let super::super::super::wired::math::types::Vec3 {
+                            x: x0,
+                            y: y0,
+                            z: z0,
+                        } = value;
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/grid")]
+                        extern "C" {
+                            #[link_name = "[method]grid.set-rows"]
+                            fn wit_import(_: i32, _: f32, _: f32, _: f32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32, _: f32, _: f32) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            _rt::as_f32(x0),
+                            _rt::as_f32(y0),
+                            _rt::as_f32(z0),
+                        );
+                    }
+                }
+            }
+        }
     }
     #[allow(dead_code)]
     pub mod scene {
@@ -1853,108 +2117,6 @@ pub mod unavi {
                         }
                         let ret = wit_import((self).handle() as i32);
                         super::super::super::wired::scene::node::Node::from_handle(ret as u32)
-                    }
-                }
-            }
-        }
-    }
-    #[allow(dead_code)]
-    pub mod ui {
-        #[allow(dead_code, clippy::all)]
-        pub mod button {
-            #[used]
-            #[doc(hidden)]
-            #[cfg(target_arch = "wasm32")]
-            static __FORCE_SECTION_REF: fn() =
-                super::super::super::__link_custom_section_describing_imports;
-            use super::super::super::_rt;
-            pub type Container = super::super::super::unavi::layout::container::Container;
-            /// 3d interactable button.
-            /// Fills the space of its root container.
-
-            #[derive(Debug)]
-            #[repr(transparent)]
-            pub struct Button {
-                handle: _rt::Resource<Button>,
-            }
-
-            impl Button {
-                #[doc(hidden)]
-                pub unsafe fn from_handle(handle: u32) -> Self {
-                    Self {
-                        handle: _rt::Resource::from_handle(handle),
-                    }
-                }
-
-                #[doc(hidden)]
-                pub fn take_handle(&self) -> u32 {
-                    _rt::Resource::take_handle(&self.handle)
-                }
-
-                #[doc(hidden)]
-                pub fn handle(&self) -> u32 {
-                    _rt::Resource::handle(&self.handle)
-                }
-            }
-
-            unsafe impl _rt::WasmResource for Button {
-                #[inline]
-                unsafe fn drop(_handle: u32) {
-                    #[cfg(not(target_arch = "wasm32"))]
-                    unreachable!();
-
-                    #[cfg(target_arch = "wasm32")]
-                    {
-                        #[link(wasm_import_module = "unavi:ui/button")]
-                        extern "C" {
-                            #[link_name = "[resource-drop]button"]
-                            fn drop(_: u32);
-                        }
-
-                        drop(_handle);
-                    }
-                }
-            }
-
-            impl Button {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn new(root: Container) -> Self {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "unavi:ui/button")]
-                        extern "C" {
-                            #[link_name = "[constructor]button"]
-                            fn wit_import(_: i32) -> i32;
-                        }
-
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32) -> i32 {
-                            unreachable!()
-                        }
-                        let ret = wit_import((&root).take_handle() as i32);
-                        Button::from_handle(ret as u32)
-                    }
-                }
-            }
-            impl Button {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn root(&self) -> Container {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "unavi:ui/button")]
-                        extern "C" {
-                            #[link_name = "[method]button.root"]
-                            fn wit_import(_: i32) -> i32;
-                        }
-
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32) -> i32 {
-                            unreachable!()
-                        }
-                        let ret = wit_import((self).handle() as i32);
-                        super::super::super::unavi::layout::container::Container::from_handle(
-                            ret as u32,
-                        )
                     }
                 }
             }
@@ -5143,8 +5305,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6441] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xac1\x01A\x02\x01A$\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6621] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xe02\x01A\x02\x01A$\x01\
 B\x08\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\
 \x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01r\
 \x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -5278,15 +5440,19 @@ x\x01\x0e\x04\0\x19[method]container.align-y\x01\x0e\x04\0\x19[method]container.
 align-z\x01\x0e\x01@\x02\x04self\x09\x05value\x05\x01\0\x04\0\x1d[method]contain\
 er.set-align-x\x01\x0f\x04\0\x1d[method]container.set-align-y\x01\x0f\x04\0\x1d[\
 method]container.set-align-z\x01\x0f\x03\x01\x16unavi:layout/container\x05\x14\x02\
-\x03\0\x09\x09container\x01B\x0a\x02\x03\x02\x01\x15\x04\0\x09container\x03\0\0\x04\
-\0\x06button\x03\x01\x01i\x01\x01i\x02\x01@\x01\x04root\x03\0\x04\x04\0\x13[cons\
-tructor]button\x01\x05\x01h\x02\x01@\x01\x04self\x06\0\x03\x04\0\x13[method]butt\
-on.root\x01\x07\x03\x01\x0funavi:ui/button\x05\x16\x01B\x07\x04\0\x06script\x03\x01\
-\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01h\0\x01@\x02\x04sel\
-f\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\x01\x12wired:sc\
-ript/types\x05\x17\x04\x01\x17example:unavi-ui/script\x04\0\x0b\x0c\x01\0\x06scr\
-ipt\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10\
-wit-bindgen-rust\x060.25.0";
+\x03\0\x09\x09container\x01B\x16\x02\x03\x02\x01\x15\x04\0\x09container\x03\0\0\x02\
+\x03\x02\x01\x04\x04\0\x04vec3\x03\0\x02\x04\0\x04grid\x03\x01\x01i\x04\x01@\x02\
+\x04size\x03\x04rows\x03\0\x05\x04\0\x11[constructor]grid\x01\x06\x01h\x04\x01i\x01\
+\x01@\x01\x04self\x07\0\x08\x04\0\x11[method]grid.root\x01\x09\x01p\x08\x01@\x01\
+\x04self\x07\0\x0a\x04\0\x12[method]grid.cells\x01\x0b\x01k\x08\x01@\x04\x04self\
+\x07\x01xy\x01yy\x01zy\0\x0c\x04\0\x11[method]grid.cell\x01\x0d\x01@\x01\x04self\
+\x07\0\x03\x04\0\x11[method]grid.rows\x01\x0e\x01@\x02\x04self\x07\x05value\x03\x01\
+\0\x04\0\x15[method]grid.set-rows\x01\x0f\x03\x01\x11unavi:layout/grid\x05\x16\x01\
+B\x07\x04\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\
+\x02\x01h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\
+\x04\x04\x01\x12wired:script/types\x05\x17\x04\x01\x1bexample:unavi-layout/scrip\
+t\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0d\
+wit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

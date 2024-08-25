@@ -4428,6 +4428,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-unavi-layout"
+version = "0.0.6"
+dependencies = [
+ "wit-bindgen-rt",
+]
+
+[[package]]
 name = "example-unavi-scene"
 version = "0.0.6"
 dependencies = [
@@ -11995,6 +12002,13 @@ dependencies = [
 [[package]]
 name = "unavi-constants"
 version = "0.0.6"
+
+[[package]]
+name = "unavi-layout"
+version = "0.0.6"
+dependencies = [
+ "wit-bindgen-rt",
+]
 
 [[package]]
 name = "unavi-networking"

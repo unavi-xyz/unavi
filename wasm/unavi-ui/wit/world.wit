@@ -3,92 +3,22 @@ package unavi:ui;
 world guest {
     import unavi:shapes/api;
 
-    export container;
     export button;
-    export grid;
 }
 
 world prelude {
-  import container;
   import button;
-  import grid;
-}
-
-interface container {
-  use wired:scene/node.{node};
-
-  // Represents an area of space.
-  // Child contents should not exceed its bounds.
-  resource container {
-    constructor();
-
-    // The root node, positioned according to the `alignment` of the container.
-    root: func() -> node;
-
-    x-len: func() -> f32;
-    y-len: func() -> f32;
-    z-len: func() -> f32;
-    set-x-len: func(value: f32);
-    set-y-len: func(value: f32);
-    set-z-len: func(value: f32);
-
-    align-x: func() -> alignment;
-    align-y: func() -> alignment;
-    align-z: func() -> alignment;
-    set-align-x: func(value: alignment);
-    set-align-y: func(value: alignment);
-    set-align-z: func(value: alignment);
-  }
-
-  enum alignment {
-    center,
-    end,
-    start,
-  }
 }
 
 interface button {
-  use container.{container};
+  use unavi:layout/container.{container};
 
   // 3d interactable button.
   // Fills the space of its root container.
   resource button {
-    constructor();
+    constructor(root: container);
 
     root: func() -> container;
   }
 }
 
-interface grid {
-  use container.{container};
-
-  // A grid will evenly space it's children in a grid across the given directions.
-  resource grid {
-    constructor();
-
-    root: func() -> container;
-
-    columns: func() -> u32;
-    set-columns: func(value: u32);
-
-    rows: func() -> u32;
-    set-rows: func(value: u32);
-
-    direction: func() -> direction;
-    set-direction: func(value: direction);
-
-    add-item: func(item: borrow<container>);
-    remove-item: func(item: borrow<container>);
-    list-items: func() -> list<container>;
-  }
-
-  enum direction {
-    x,
-    y,
-    z,
-    xy,
-    xz,
-    yz,
-    xyz,
-  }
-}

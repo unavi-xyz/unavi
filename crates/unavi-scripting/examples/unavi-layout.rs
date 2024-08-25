@@ -1,6 +1,7 @@
-use avian3d::prelude::*;
+use avian3d::PhysicsPlugins;
 use bevy::prelude::*;
-use unavi_player::PlayerPlugin;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use unavi_scripting::{ScriptBundle, ScriptingPlugin};
 
 fn main() {
@@ -8,11 +9,11 @@ fn main() {
         .add_plugins((
             DefaultPlugins.set(AssetPlugin {
                 file_path: "../unavi-app/assets".to_string(),
-                ..Default::default()
+                ..default()
             }),
-            PhysicsDebugPlugin::default(),
+            WorldInspectorPlugin::default(),
+            PanOrbitCameraPlugin,
             PhysicsPlugins::default(),
-            PlayerPlugin,
             ScriptingPlugin,
         ))
         .add_systems(Startup, (setup_scene, load_script))
@@ -24,23 +25,25 @@ fn setup_scene(mut ambient: ResMut<AmbientLight>, mut commands: Commands) {
     ambient.color = Color::linear_rgb(0.95, 0.95, 1.0);
 
     commands.spawn(DirectionalLightBundle {
-        transform: Transform::from_xyz(4.5, 10.0, 7.0).looking_at(Vec3::ZERO, Vec3::Y),
+        transform: Transform::from_xyz(4.5, 10.0, -7.0).looking_at(Vec3::ZERO, Vec3::Y),
         ..Default::default()
     });
 
+    let mut transform = Transform::from_xyz(0.0, 3.0, -10.0);
+    transform.look_at(Vec3::new(0.0, 0.5, 0.0), Vec3::new(0.0, 1.0, 0.0));
+
     commands.spawn((
-        SpatialBundle {
-            transform: Transform::from_xyz(0.0, -1.0, 0.0),
-            ..default()
+        Camera3dBundle {
+            transform,
+            ..Default::default()
         },
-        Collider::cuboid(20.0, 0.5, 20.0),
-        RigidBody::Static,
+        PanOrbitCamera::default(),
     ));
 }
 
 pub fn load_script(asset_server: Res<AssetServer>, mut commands: Commands) {
     commands.spawn((
-        ScriptBundle::load("example:unavi-ui", &asset_server),
+        ScriptBundle::load("example:unavi-layout", &asset_server),
         SpatialBundle::default(),
     ));
 }

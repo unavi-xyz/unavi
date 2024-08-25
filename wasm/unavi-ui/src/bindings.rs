@@ -2979,6 +2979,27 @@ pub mod wired {
             }
             impl Material {
                 #[allow(unused_unsafe, clippy::all)]
+                /// Returns another reference to the same resource.
+                pub fn ref_(&self) -> Material {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:scene/material")]
+                        extern "C" {
+                            #[link_name = "[method]material.ref"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        Material::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Material {
+                #[allow(unused_unsafe, clippy::all)]
                 pub fn name(&self) -> _rt::String {
                     unsafe {
                         #[repr(align(4))]
@@ -3401,6 +3422,27 @@ pub mod wired {
                         }
                         let ret = wit_import((self).handle() as i32);
                         ret as u32
+                    }
+                }
+            }
+            impl Mesh {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Returns another reference to the same resource.
+                pub fn ref_(&self) -> Mesh {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:scene/mesh")]
+                        extern "C" {
+                            #[link_name = "[method]mesh.ref"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        Mesh::from_handle(ret as u32)
                     }
                 }
             }
@@ -4473,8 +4515,9 @@ pub mod exports {
                 static __FORCE_SECTION_REF: fn() =
                     super::super::super::super::__link_custom_section_describing_imports;
                 use super::super::super::super::_rt;
+                pub type Container =
+                    super::super::super::super::unavi::layout::container::Container;
                 pub type Mesh = super::super::super::super::wired::scene::mesh::Mesh;
-                pub type Node = super::super::super::super::wired::scene::node::Node;
 
                 #[derive(Debug)]
                 #[repr(transparent)]
@@ -4616,6 +4659,148 @@ pub mod exports {
                     }
                 }
 
+                /// Dynamic text generation within the bounds of a container.
+
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct TextBox {
+                    handle: _rt::Resource<TextBox>,
+                }
+
+                type _TextBoxRep<T> = Option<T>;
+
+                impl TextBox {
+                    /// Creates a new resource from the specified representation.
+                    ///
+                    /// This function will create a new resource handle by moving `val` onto
+                    /// the heap and then passing that heap pointer to the component model to
+                    /// create a handle. The owned handle is then returned as `TextBox`.
+                    pub fn new<T: GuestTextBox>(val: T) -> Self {
+                        Self::type_guard::<T>();
+                        let val: _TextBoxRep<T> = Some(val);
+                        let ptr: *mut _TextBoxRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
+                    }
+
+                    /// Gets access to the underlying `T` which represents this resource.
+                    pub fn get<T: GuestTextBox>(&self) -> &T {
+                        let ptr = unsafe { &*self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    /// Gets mutable access to the underlying `T` which represents this
+                    /// resource.
+                    pub fn get_mut<T: GuestTextBox>(&mut self) -> &mut T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_mut().unwrap()
+                    }
+
+                    /// Consumes this resource and returns the underlying `T`.
+                    pub fn into_inner<T: GuestTextBox>(self) -> T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.take().unwrap()
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn from_handle(handle: u32) -> Self {
+                        Self {
+                            handle: _rt::Resource::from_handle(handle),
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub fn take_handle(&self) -> u32 {
+                        _rt::Resource::take_handle(&self.handle)
+                    }
+
+                    #[doc(hidden)]
+                    pub fn handle(&self) -> u32 {
+                        _rt::Resource::handle(&self.handle)
+                    }
+
+                    // It's theoretically possible to implement the `GuestTextBox` trait twice
+                    // so guard against using it with two different types here.
+                    #[doc(hidden)]
+                    fn type_guard<T: 'static>() {
+                        use core::any::TypeId;
+                        static mut LAST_TYPE: Option<TypeId> = None;
+                        unsafe {
+                            assert!(!cfg!(target_feature = "threads"));
+                            let id = TypeId::of::<T>();
+                            match LAST_TYPE {
+                                Some(ty) => assert!(
+                                    ty == id,
+                                    "cannot use two types with this resource type"
+                                ),
+                                None => LAST_TYPE = Some(id),
+                            }
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn dtor<T: 'static>(handle: *mut u8) {
+                        Self::type_guard::<T>();
+                        let _ = _rt::Box::from_raw(handle as *mut _TextBoxRep<T>);
+                    }
+
+                    fn as_ptr<T: GuestTextBox>(&self) -> *mut _TextBoxRep<T> {
+                        TextBox::type_guard::<T>();
+                        T::_resource_rep(self.handle()).cast()
+                    }
+                }
+
+                /// A borrowed version of [`TextBox`] which represents a borrowed value
+                /// with the lifetime `'a`.
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct TextBoxBorrow<'a> {
+                    rep: *mut u8,
+                    _marker: core::marker::PhantomData<&'a TextBox>,
+                }
+
+                impl<'a> TextBoxBorrow<'a> {
+                    #[doc(hidden)]
+                    pub unsafe fn lift(rep: usize) -> Self {
+                        Self {
+                            rep: rep as *mut u8,
+                            _marker: core::marker::PhantomData,
+                        }
+                    }
+
+                    /// Gets access to the underlying `T` in this resource.
+                    pub fn get<T: GuestTextBox>(&self) -> &T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    // NB: mutable access is not allowed due to the component model allowing
+                    // multiple borrows of the same resource.
+
+                    fn as_ptr<T: 'static>(&self) -> *mut _TextBoxRep<T> {
+                        TextBox::type_guard::<T>();
+                        self.rep.cast()
+                    }
+                }
+
+                unsafe impl _rt::WasmResource for TextBox {
+                    #[inline]
+                    unsafe fn drop(_handle: u32) {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unreachable!();
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]unavi:ui/text")]
+                            extern "C" {
+                                #[link_name = "[resource-drop]text-box"]
+                                fn drop(_: u32);
+                            }
+
+                            drop(_handle);
+                        }
+                    }
+                }
+
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
                 pub unsafe fn _export_constructor_text_cabi<T: GuestText>(
@@ -4628,6 +4813,54 @@ pub mod exports {
                     let bytes0 = _rt::Vec::from_raw_parts(arg0.cast(), len0, len0);
                     let result1 = Text::new(T::new(_rt::string_lift(bytes0)));
                     (result1).take_handle() as i32
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_text_ref_cabi<T: GuestText>(arg0: *mut u8) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::ref_(TextBorrow::lift(arg0 as u32 as usize).get());
+                    (result0).take_handle() as i32
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_text_text_cabi<T: GuestText>(
+                    arg0: *mut u8,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::text(TextBorrow::lift(arg0 as u32 as usize).get());
+                    let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    let vec2 = (result0.into_bytes()).into_boxed_slice();
+                    let ptr2 = vec2.as_ptr().cast::<u8>();
+                    let len2 = vec2.len();
+                    ::core::mem::forget(vec2);
+                    *ptr1.add(4).cast::<usize>() = len2;
+                    *ptr1.add(0).cast::<*mut u8>() = ptr2.cast_mut();
+                    ptr1
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_method_text_text<T: GuestText>(arg0: *mut u8) {
+                    let l0 = *arg0.add(0).cast::<*mut u8>();
+                    let l1 = *arg0.add(4).cast::<usize>();
+                    _rt::cabi_dealloc(l0, l1, 1);
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_text_set_text_cabi<T: GuestText>(
+                    arg0: *mut u8,
+                    arg1: *mut u8,
+                    arg2: usize,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg2;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
+                    T::set_text(
+                        TextBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::string_lift(bytes0),
+                    );
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
@@ -4655,46 +4888,43 @@ pub mod exports {
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_text_to_mesh_cabi<T: GuestText>(
-                    arg0: *mut u8,
-                ) -> *mut u8 {
+                pub unsafe fn _export_method_text_mesh_cabi<T: GuestText>(arg0: *mut u8) -> i32 {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
-                    let result0 = T::to_mesh(TextBorrow::lift(arg0 as u32 as usize).get());
-                    let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
-                    match result0 {
-                        Some(e) => {
-                            *ptr1.add(0).cast::<u8>() = (1i32) as u8;
-                            *ptr1.add(4).cast::<i32>() = (e).take_handle() as i32;
-                        }
-                        None => {
-                            *ptr1.add(0).cast::<u8>() = (0i32) as u8;
-                        }
-                    };
-                    ptr1
+                    let result0 = T::mesh(TextBorrow::lift(arg0 as u32 as usize).get());
+                    (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_text_to_node_cabi<T: GuestText>(
-                    arg0: *mut u8,
-                ) -> *mut u8 {
+                pub unsafe fn _export_constructor_text_box_cabi<T: GuestTextBox>(arg0: i32) -> i32 {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
-                    let result0 = T::to_node(TextBorrow::lift(arg0 as u32 as usize).get());
-                    let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
-                    match result0 {
-                        Some(e) => {
-                            *ptr1.add(0).cast::<u8>() = (1i32) as u8;
-                            *ptr1.add(4).cast::<i32>() = (e).take_handle() as i32;
-                        }
-                        None => {
-                            *ptr1.add(0).cast::<u8>() = (0i32) as u8;
-                        }
-                    };
-                    ptr1
+                    let result0 = TextBox::new(T::new(super::super::super::super::unavi::layout::container::Container::from_handle(arg0 as u32)));
+                    (result0).take_handle() as i32
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_text_box_root_cabi<T: GuestTextBox>(
+                    arg0: *mut u8,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::root(TextBoxBorrow::lift(arg0 as u32 as usize).get());
+                    (result0).take_handle() as i32
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_text_box_text_cabi<T: GuestTextBox>(
+                    arg0: *mut u8,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::text(TextBoxBorrow::lift(arg0 as u32 as usize).get());
+                    (result0).take_handle() as i32
                 }
                 pub trait Guest {
                     type Text: GuestText;
+                    type TextBox: GuestTextBox;
                 }
                 pub trait GuestText: 'static {
                     #[doc(hidden)]
@@ -4742,10 +4972,62 @@ pub mod exports {
                     }
 
                     fn new(text: _rt::String) -> Self;
+                    /// Returns another reference to the same resource.
+                    fn ref_(&self) -> Text;
+                    fn text(&self) -> _rt::String;
+                    fn set_text(&self, value: _rt::String);
                     fn flat(&self) -> bool;
                     fn set_flat(&self, value: bool);
-                    fn to_mesh(&self) -> Option<Mesh>;
-                    fn to_node(&self) -> Option<Node>;
+                    fn mesh(&self) -> Mesh;
+                }
+                pub trait GuestTextBox: 'static {
+                    #[doc(hidden)]
+                    unsafe fn _resource_new(val: *mut u8) -> u32
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = val;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]unavi:ui/text")]
+                            extern "C" {
+                                #[link_name = "[resource-new]text-box"]
+                                fn new(_: *mut u8) -> u32;
+                            }
+                            new(val)
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    fn _resource_rep(handle: u32) -> *mut u8
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = handle;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]unavi:ui/text")]
+                            extern "C" {
+                                #[link_name = "[resource-rep]text-box"]
+                                fn rep(_: u32) -> *mut u8;
+                            }
+                            unsafe { rep(handle) }
+                        }
+                    }
+
+                    fn new(root: Container) -> Self;
+                    fn root(&self) -> Container;
+                    fn text(&self) -> Text;
                 }
                 #[doc(hidden)]
 
@@ -4756,6 +5038,22 @@ pub mod exports {
     unsafe extern "C" fn export_constructor_text(arg0: *mut u8,arg1: usize,) -> i32 {
       $($path_to_types)*::_export_constructor_text_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0, arg1)
     }
+    #[export_name = "unavi:ui/text#[method]text.ref"]
+    unsafe extern "C" fn export_method_text_ref(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_text_ref_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0)
+    }
+    #[export_name = "unavi:ui/text#[method]text.text"]
+    unsafe extern "C" fn export_method_text_text(arg0: *mut u8,) -> *mut u8 {
+      $($path_to_types)*::_export_method_text_text_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0)
+    }
+    #[export_name = "cabi_post_unavi:ui/text#[method]text.text"]
+    unsafe extern "C" fn _post_return_method_text_text(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_text_text::<<$ty as $($path_to_types)*::Guest>::Text>(arg0)
+    }
+    #[export_name = "unavi:ui/text#[method]text.set-text"]
+    unsafe extern "C" fn export_method_text_set_text(arg0: *mut u8,arg1: *mut u8,arg2: usize,) {
+      $($path_to_types)*::_export_method_text_set_text_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0, arg1, arg2)
+    }
     #[export_name = "unavi:ui/text#[method]text.flat"]
     unsafe extern "C" fn export_method_text_flat(arg0: *mut u8,) -> i32 {
       $($path_to_types)*::_export_method_text_flat_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0)
@@ -4764,13 +5062,21 @@ pub mod exports {
     unsafe extern "C" fn export_method_text_set_flat(arg0: *mut u8,arg1: i32,) {
       $($path_to_types)*::_export_method_text_set_flat_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0, arg1)
     }
-    #[export_name = "unavi:ui/text#[method]text.to-mesh"]
-    unsafe extern "C" fn export_method_text_to_mesh(arg0: *mut u8,) -> *mut u8 {
-      $($path_to_types)*::_export_method_text_to_mesh_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0)
+    #[export_name = "unavi:ui/text#[method]text.mesh"]
+    unsafe extern "C" fn export_method_text_mesh(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_text_mesh_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0)
     }
-    #[export_name = "unavi:ui/text#[method]text.to-node"]
-    unsafe extern "C" fn export_method_text_to_node(arg0: *mut u8,) -> *mut u8 {
-      $($path_to_types)*::_export_method_text_to_node_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0)
+    #[export_name = "unavi:ui/text#[constructor]text-box"]
+    unsafe extern "C" fn export_constructor_text_box(arg0: i32,) -> i32 {
+      $($path_to_types)*::_export_constructor_text_box_cabi::<<$ty as $($path_to_types)*::Guest>::TextBox>(arg0)
+    }
+    #[export_name = "unavi:ui/text#[method]text-box.root"]
+    unsafe extern "C" fn export_method_text_box_root(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_text_box_root_cabi::<<$ty as $($path_to_types)*::Guest>::TextBox>(arg0)
+    }
+    #[export_name = "unavi:ui/text#[method]text-box.text"]
+    unsafe extern "C" fn export_method_text_box_text(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_text_box_text_cabi::<<$ty as $($path_to_types)*::Guest>::TextBox>(arg0)
     }
 
     const _: () = {
@@ -4780,6 +5086,18 @@ pub mod exports {
       unsafe extern "C" fn dtor(rep: *mut u8) {
         $($path_to_types)*::Text::dtor::<
         <$ty as $($path_to_types)*::Guest>::Text
+        >(rep)
+      }
+    };
+
+
+    const _: () = {
+      #[doc(hidden)]
+      #[export_name = "unavi:ui/text#[dtor]text-box"]
+      #[allow(non_snake_case)]
+      unsafe extern "C" fn dtor(rep: *mut u8) {
+        $($path_to_types)*::TextBox::dtor::<
+        <$ty as $($path_to_types)*::Guest>::TextBox
         >(rep)
       }
     };
@@ -5058,147 +5376,154 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6304] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa40\x01A\x02\x01A\"\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6586] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xbe2\x01A\x02\x01A\"\
 \x01B\x0a\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\
 \0\x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01\
 r\x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
-\x01@\0\0\x01\x04\0\x07fake-fn\x01\x08\x03\x01\x10wired:math/types\x05\0\x01B\x11\
+\x01@\0\0\x01\x04\0\x07fake-fn\x01\x08\x03\x01\x10wired:math/types\x05\0\x01B\x13\
 \x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08material\x03\x01\
 \x01i\x02\x01@\0\0\x03\x04\0\x15[constructor]material\x01\x04\x01h\x02\x01@\x01\x04\
-self\x05\0y\x04\0\x13[method]material.id\x01\x06\x01@\x01\x04self\x05\0s\x04\0\x15\
-[method]material.name\x01\x07\x01@\x02\x04self\x05\x05values\x01\0\x04\0\x19[met\
-hod]material.set-name\x01\x08\x01@\x01\x04self\x05\0\x01\x04\0\x16[method]materi\
-al.color\x01\x09\x01@\x02\x04self\x05\x05value\x01\x01\0\x04\0\x1a[method]materi\
-al.set-color\x01\x0a\x03\x01\x14wired:scene/material\x05\x01\x02\x03\0\x01\x08ma\
-terial\x01B)\x02\x03\x02\x01\x02\x04\0\x08material\x03\0\0\x04\0\x09primitive\x03\
-\x01\x04\0\x04mesh\x03\x01\x01h\x02\x01@\x01\x04self\x04\0y\x04\0\x14[method]pri\
-mitive.id\x01\x05\x01i\x01\x01k\x06\x01@\x01\x04self\x04\0\x07\x04\0\x1a[method]\
-primitive.material\x01\x08\x01h\x01\x01k\x09\x01@\x02\x04self\x04\x05value\x0a\x01\
-\0\x04\0\x1e[method]primitive.set-material\x01\x0b\x01py\x01@\x02\x04self\x04\x05\
-value\x0c\x01\0\x04\0\x1d[method]primitive.set-indices\x01\x0d\x01pv\x01@\x02\x04\
-self\x04\x05value\x0e\x01\0\x04\0\x1d[method]primitive.set-normals\x01\x0f\x04\0\
-\x1f[method]primitive.set-positions\x01\x0f\x04\0\x19[method]primitive.set-uvs\x01\
-\x0f\x01i\x03\x01@\0\0\x10\x04\0\x11[constructor]mesh\x01\x11\x01h\x03\x01@\x01\x04\
-self\x12\0y\x04\0\x0f[method]mesh.id\x01\x13\x01@\x01\x04self\x12\0s\x04\0\x11[m\
-ethod]mesh.name\x01\x14\x01@\x02\x04self\x12\x05values\x01\0\x04\0\x15[method]me\
-sh.set-name\x01\x15\x01i\x02\x01p\x16\x01@\x01\x04self\x12\0\x17\x04\0\x1c[metho\
-d]mesh.list-primitives\x01\x18\x01@\x01\x04self\x12\0\x16\x04\0\x1d[method]mesh.\
-create-primitive\x01\x19\x01@\x02\x04self\x12\x05value\x16\x01\0\x04\0\x1d[metho\
-d]mesh.remove-primitive\x01\x1a\x03\x01\x10wired:scene/mesh\x05\x03\x02\x03\0\0\x04\
-vec3\x02\x03\0\0\x04quat\x01B\x15\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\0\x02\x03\
-\x02\x01\x05\x04\0\x04quat\x03\0\x02\x01m\x02\x04left\x05right\x04\0\x09hand-sid\
-e\x03\0\x04\x01r\x03\x0btranslation\x01\x08rotation\x03\x06radiusv\x04\0\x05join\
-t\x03\0\x06\x01r\x04\x03tip\x07\x06distal\x07\x08proximal\x07\x0ametacarpal\x07\x04\
-\0\x06finger\x03\0\x08\x01k\x07\x01r\x09\x04side\x05\x05thumb\x09\x05index\x09\x06\
-middle\x09\x04ring\x09\x06little\x09\x04palm\x07\x05wrist\x07\x05elbow\x0a\x04\0\
-\x04hand\x03\0\x0b\x01r\x02\x06origin\x01\x0borientation\x03\x04\0\x03ray\x03\0\x0d\
-\x01r\x03\x06origin\x01\x0borientation\x03\x06radiusv\x04\0\x03tip\x03\0\x0f\x01\
-q\x03\x04hand\x01\x0c\0\x03ray\x01\x0e\0\x03tip\x01\x10\0\x04\0\x0ainput-type\x03\
-\0\x11\x01r\x04\x02idw\x05input\x12\x08distancev\x05ordery\x04\0\x0binput-event\x03\
-\0\x13\x03\x01\x11wired:input/types\x05\x06\x02\x03\0\x03\x0binput-event\x01B\x0a\
-\x02\x03\x02\x01\x07\x04\0\x0binput-event\x03\0\0\x04\0\x0dinput-handler\x03\x01\
-\x01i\x02\x01@\0\0\x03\x04\0\x1a[constructor]input-handler\x01\x04\x01h\x02\x01k\
-\x01\x01@\x01\x04self\x05\0\x06\x04\0\"[method]input-handler.handle-input\x01\x07\
-\x03\x01\x13wired:input/handler\x05\x08\x01B\x1c\x02\x03\x02\x01\x04\x04\0\x04ve\
-c3\x03\0\0\x04\0\x08collider\x03\x01\x01r\x02\x06heightv\x06radiusv\x04\0\x0esha\
-pe-cylinder\x03\0\x03\x01q\x03\x06cuboid\x01\x01\0\x08cylinder\x01\x04\0\x06sphe\
-re\x01v\0\x04\0\x05shape\x03\0\x05\x04\0\x0arigid-body\x03\x01\x01m\x03\x07dynam\
-ic\x05fixed\x09kinematic\x04\0\x0frigid-body-type\x03\0\x08\x01i\x02\x01@\x01\x05\
-shape\x06\0\x0a\x04\0\x15[constructor]collider\x01\x0b\x01h\x02\x01@\x01\x04self\
-\x0c\0v\x04\0\x18[method]collider.density\x01\x0d\x01@\x02\x04self\x0c\x05valuev\
-\x01\0\x04\0\x1c[method]collider.set-density\x01\x0e\x01i\x07\x01@\x01\x0frigid-\
-body-type\x09\0\x0f\x04\0\x17[constructor]rigid-body\x01\x10\x01h\x07\x01@\x01\x04\
-self\x11\0\x01\x04\0\x19[method]rigid-body.angvel\x01\x12\x01@\x02\x04self\x11\x05\
-value\x01\x01\0\x04\0\x1d[method]rigid-body.set-angvel\x01\x13\x04\0\x19[method]\
-rigid-body.linvel\x01\x12\x04\0\x1d[method]rigid-body.set-linvel\x01\x13\x03\x01\
-\x13wired:physics/types\x05\x09\x02\x03\0\x02\x04mesh\x02\x03\0\x04\x0dinput-han\
-dler\x02\x03\0\0\x09transform\x02\x03\0\x05\x08collider\x02\x03\0\x05\x0arigid-b\
-ody\x01BD\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x0d\
-input-handler\x03\0\x02\x02\x03\x02\x01\x0c\x04\0\x09transform\x03\0\x04\x02\x03\
-\x02\x01\x0d\x04\0\x08collider\x03\0\x06\x02\x03\x02\x01\x0e\x04\0\x0arigid-body\
-\x03\0\x08\x04\0\x04node\x03\x01\x01i\x0a\x01@\0\0\x0b\x04\0\x11[constructor]nod\
-e\x01\x0c\x01h\x0a\x01@\x01\x04self\x0d\0y\x04\0\x0f[method]node.id\x01\x0e\x01@\
-\x01\x04self\x0d\0\x0b\x04\0\x10[method]node.ref\x01\x0f\x01@\x01\x04self\x0d\0s\
-\x04\0\x11[method]node.name\x01\x10\x01@\x02\x04self\x0d\x05values\x01\0\x04\0\x15\
-[method]node.set-name\x01\x11\x01p\x0b\x01@\x01\x04self\x0d\0\x12\x04\0\x15[meth\
-od]node.children\x01\x13\x01@\x02\x04self\x0d\x05value\x0d\x01\0\x04\0\x16[metho\
-d]node.add-child\x01\x14\x04\0\x19[method]node.remove-child\x01\x14\x01k\x0b\x01\
-@\x01\x04self\x0d\0\x15\x04\0\x13[method]node.parent\x01\x16\x01@\x01\x04self\x0d\
-\0\x05\x04\0\x16[method]node.transform\x01\x17\x01@\x02\x04self\x0d\x05value\x05\
-\x01\0\x04\0\x1a[method]node.set-transform\x01\x18\x01i\x01\x01k\x19\x01@\x01\x04\
-self\x0d\0\x1a\x04\0\x11[method]node.mesh\x01\x1b\x01h\x01\x01k\x1c\x01@\x02\x04\
-self\x0d\x05value\x1d\x01\0\x04\0\x15[method]node.set-mesh\x01\x1e\x01i\x07\x01k\
-\x1f\x01@\x01\x04self\x0d\0\x20\x04\0\x15[method]node.collider\x01!\x01h\x07\x01\
-k\"\x01@\x02\x04self\x0d\x05value#\x01\0\x04\0\x19[method]node.set-collider\x01$\
-\x01i\x09\x01k%\x01@\x01\x04self\x0d\0&\x04\0\x17[method]node.rigid-body\x01'\x01\
-h\x09\x01k(\x01@\x02\x04self\x0d\x05value)\x01\0\x04\0\x1b[method]node.set-rigid\
--body\x01*\x01i\x03\x01k+\x01@\x01\x04self\x0d\0,\x04\0\x1a[method]node.input-ha\
-ndler\x01-\x01h\x03\x01k.\x01@\x02\x04self\x0d\x05value/\x01\0\x04\0\x1e[method]\
-node.set-input-handler\x010\x03\x01\x10wired:scene/node\x05\x0f\x02\x03\0\0\x04v\
-ec2\x02\x03\0\x06\x04node\x01BY\x02\x03\x02\x01\x10\x04\0\x04vec2\x03\0\0\x02\x03\
-\x02\x01\x04\x04\0\x04vec3\x03\0\x02\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\x04\
-\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x06\x04\0\x09rectangle\x03\x01\x04\0\x08\
-cylinder\x03\x01\x04\0\x06cuboid\x03\x01\x01r\x01\x0csubdivisions}\x04\0\x0asphe\
-re-ico\x03\0\x0b\x01r\x02\x07sectors}\x06stacks}\x04\0\x09sphere-uv\x03\0\x0d\x01\
-q\x02\x03ico\x01\x0c\0\x02uv\x01\x0e\0\x04\0\x0bsphere-kind\x03\0\x0f\x04\0\x06s\
-phere\x03\x01\x01i\x08\x01@\x01\x04size\x01\0\x12\x04\0\x16[constructor]rectangl\
-e\x01\x13\x01h\x08\x01@\x01\x04self\x14\0\x01\x04\0\x16[method]rectangle.size\x01\
-\x15\x01@\x02\x04self\x14\x05value\x01\x01\0\x04\0\x1a[method]rectangle.set-size\
-\x01\x16\x01i\x05\x01@\x01\x04self\x14\0\x17\x04\0\x19[method]rectangle.to-mesh\x01\
-\x18\x01i\x07\x01@\x01\x04self\x14\0\x19\x04\0\x19[method]rectangle.to-node\x01\x1a\
-\x04\0![method]rectangle.to-physics-node\x01\x1a\x01i\x09\x01@\x02\x06radiusv\x06\
-heightv\0\x1b\x04\0\x15[constructor]cylinder\x01\x1c\x01h\x09\x01@\x01\x04self\x1d\
-\0\x7f\x04\0\x14[method]cylinder.cap\x01\x1e\x01@\x02\x04self\x1d\x05value\x7f\x01\
-\0\x04\0\x18[method]cylinder.set-cap\x01\x1f\x01@\x01\x04self\x1d\0v\x04\0\x17[m\
-ethod]cylinder.height\x01\x20\x01@\x02\x04self\x1d\x05valuev\x01\0\x04\0\x1b[met\
-hod]cylinder.set-height\x01!\x04\0\x17[method]cylinder.radius\x01\x20\x04\0\x1b[\
-method]cylinder.set-radius\x01!\x01@\x01\x04self\x1d\0}\x04\0\x1b[method]cylinde\
-r.resolution\x01\"\x01@\x02\x04self\x1d\x05value}\x01\0\x04\0\x1f[method]cylinde\
-r.set-resolution\x01#\x04\0\x19[method]cylinder.segments\x01\"\x04\0\x1d[method]\
-cylinder.set-segments\x01#\x01@\x01\x04self\x1d\0\x17\x04\0\x18[method]cylinder.\
-to-mesh\x01$\x01@\x01\x04self\x1d\0\x19\x04\0\x18[method]cylinder.to-node\x01%\x04\
-\0\x20[method]cylinder.to-physics-node\x01%\x01i\x0a\x01@\x01\x04size\x03\0&\x04\
-\0\x13[constructor]cuboid\x01'\x01h\x0a\x01@\x01\x04self(\0\x03\x04\0\x13[method\
-]cuboid.size\x01)\x01@\x02\x04self(\x05value\x03\x01\0\x04\0\x17[method]cuboid.s\
-et-size\x01*\x01@\x01\x04self(\0\x17\x04\0\x16[method]cuboid.to-mesh\x01+\x01@\x01\
-\x04self(\0\x19\x04\0\x16[method]cuboid.to-node\x01,\x04\0\x1e[method]cuboid.to-\
-physics-node\x01,\x01i\x11\x01@\x01\x06radiusv\0-\x04\0\x16[static]sphere.new-ic\
-o\x01.\x04\0\x15[static]sphere.new-uv\x01.\x01h\x11\x01@\x01\x04self/\0v\x04\0\x15\
-[method]sphere.radius\x010\x01@\x02\x04self/\x05valuev\x01\0\x04\0\x19[method]sp\
-here.set-radius\x011\x01@\x01\x04self/\0\x10\x04\0\x13[method]sphere.kind\x012\x01\
-@\x02\x04self/\x05value\x10\x01\0\x04\0\x17[method]sphere.set-kind\x013\x01@\x01\
-\x04self/\0\x17\x04\0\x16[method]sphere.to-mesh\x014\x01@\x01\x04self/\0\x19\x04\
-\0\x16[method]sphere.to-node\x015\x04\0\x1e[method]sphere.to-physics-node\x015\x03\
-\x01\x10unavi:shapes/api\x05\x12\x01B#\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\0\
-\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x02\x01m\x03\x06center\x03end\x05start\x04\
-\0\x09alignment\x03\0\x04\x04\0\x09container\x03\x01\x01i\x06\x01@\x01\x04size\x01\
-\0\x07\x04\0\x16[constructor]container\x01\x08\x01h\x06\x01@\x01\x04self\x09\0\x07\
-\x04\0\x15[method]container.ref\x01\x0a\x01i\x03\x01@\x01\x04self\x09\0\x0b\x04\0\
-\x16[method]container.root\x01\x0c\x04\0\x17[method]container.inner\x01\x0c\x01p\
-\x07\x01@\x01\x04self\x09\0\x0d\x04\0\x1f[method]container.list-children\x01\x0e\
-\x01@\x02\x04self\x09\x05child\x09\x01\0\x04\0\x1b[method]container.add-child\x01\
-\x0f\x04\0\x1e[method]container.remove-child\x01\x0f\x01@\x01\x04self\x09\0\x01\x04\
-\0\x16[method]container.size\x01\x10\x01@\x02\x04self\x09\x05value\x01\x01\0\x04\
-\0\x1a[method]container.set-size\x01\x11\x01@\x01\x04self\x09\0\x05\x04\0\x19[me\
-thod]container.align-x\x01\x12\x04\0\x19[method]container.align-y\x01\x12\x04\0\x19\
-[method]container.align-z\x01\x12\x01@\x02\x04self\x09\x05value\x05\x01\0\x04\0\x1d\
-[method]container.set-align-x\x01\x13\x04\0\x1d[method]container.set-align-y\x01\
-\x13\x04\0\x1d[method]container.set-align-z\x01\x13\x03\x01\x16unavi:layout/cont\
-ainer\x05\x13\x02\x03\0\x08\x09container\x01B\x0e\x02\x03\x02\x01\x14\x04\0\x09c\
-ontainer\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x0dinput-handler\x03\0\x02\x04\0\x06b\
-utton\x03\x01\x01i\x01\x01i\x04\x01@\x01\x04root\x05\0\x06\x04\0\x13[constructor\
-]button\x01\x07\x01h\x04\x01@\x01\x04self\x08\0\x05\x04\0\x13[method]button.root\
-\x01\x09\x01@\x01\x04self\x08\0\x7f\x04\0\x16[method]button.pressed\x01\x0a\x04\x01\
-\x0funavi:ui/button\x05\x15\x01B\x15\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\0\x02\
-\x03\x02\x01\x11\x04\0\x04node\x03\0\x02\x04\0\x04text\x03\x01\x01i\x04\x01@\x01\
-\x04texts\0\x05\x04\0\x11[constructor]text\x01\x06\x01h\x04\x01@\x01\x04self\x07\
-\0\x7f\x04\0\x11[method]text.flat\x01\x08\x01@\x02\x04self\x07\x05value\x7f\x01\0\
-\x04\0\x15[method]text.set-flat\x01\x09\x01i\x01\x01k\x0a\x01@\x01\x04self\x07\0\
-\x0b\x04\0\x14[method]text.to-mesh\x01\x0c\x01i\x03\x01k\x0d\x01@\x01\x04self\x07\
-\0\x0e\x04\0\x14[method]text.to-node\x01\x0f\x04\x01\x0dunavi:ui/text\x05\x16\x04\
-\x01\x0eunavi:ui/guest\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\0G\x09producers\x01\x0c\
-processed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+self\x05\0y\x04\0\x13[method]material.id\x01\x06\x01@\x01\x04self\x05\0\x03\x04\0\
+\x14[method]material.ref\x01\x07\x01@\x01\x04self\x05\0s\x04\0\x15[method]materi\
+al.name\x01\x08\x01@\x02\x04self\x05\x05values\x01\0\x04\0\x19[method]material.s\
+et-name\x01\x09\x01@\x01\x04self\x05\0\x01\x04\0\x16[method]material.color\x01\x0a\
+\x01@\x02\x04self\x05\x05value\x01\x01\0\x04\0\x1a[method]material.set-color\x01\
+\x0b\x03\x01\x14wired:scene/material\x05\x01\x02\x03\0\x01\x08material\x01B+\x02\
+\x03\x02\x01\x02\x04\0\x08material\x03\0\0\x04\0\x09primitive\x03\x01\x04\0\x04m\
+esh\x03\x01\x01h\x02\x01@\x01\x04self\x04\0y\x04\0\x14[method]primitive.id\x01\x05\
+\x01i\x01\x01k\x06\x01@\x01\x04self\x04\0\x07\x04\0\x1a[method]primitive.materia\
+l\x01\x08\x01h\x01\x01k\x09\x01@\x02\x04self\x04\x05value\x0a\x01\0\x04\0\x1e[me\
+thod]primitive.set-material\x01\x0b\x01py\x01@\x02\x04self\x04\x05value\x0c\x01\0\
+\x04\0\x1d[method]primitive.set-indices\x01\x0d\x01pv\x01@\x02\x04self\x04\x05va\
+lue\x0e\x01\0\x04\0\x1d[method]primitive.set-normals\x01\x0f\x04\0\x1f[method]pr\
+imitive.set-positions\x01\x0f\x04\0\x19[method]primitive.set-uvs\x01\x0f\x01i\x03\
+\x01@\0\0\x10\x04\0\x11[constructor]mesh\x01\x11\x01h\x03\x01@\x01\x04self\x12\0\
+y\x04\0\x0f[method]mesh.id\x01\x13\x01@\x01\x04self\x12\0\x10\x04\0\x10[method]m\
+esh.ref\x01\x14\x01@\x01\x04self\x12\0s\x04\0\x11[method]mesh.name\x01\x15\x01@\x02\
+\x04self\x12\x05values\x01\0\x04\0\x15[method]mesh.set-name\x01\x16\x01i\x02\x01\
+p\x17\x01@\x01\x04self\x12\0\x18\x04\0\x1c[method]mesh.list-primitives\x01\x19\x01\
+@\x01\x04self\x12\0\x17\x04\0\x1d[method]mesh.create-primitive\x01\x1a\x01@\x02\x04\
+self\x12\x05value\x17\x01\0\x04\0\x1d[method]mesh.remove-primitive\x01\x1b\x03\x01\
+\x10wired:scene/mesh\x05\x03\x02\x03\0\0\x04vec3\x02\x03\0\0\x04quat\x01B\x15\x02\
+\x03\x02\x01\x04\x04\0\x04vec3\x03\0\0\x02\x03\x02\x01\x05\x04\0\x04quat\x03\0\x02\
+\x01m\x02\x04left\x05right\x04\0\x09hand-side\x03\0\x04\x01r\x03\x0btranslation\x01\
+\x08rotation\x03\x06radiusv\x04\0\x05joint\x03\0\x06\x01r\x04\x03tip\x07\x06dist\
+al\x07\x08proximal\x07\x0ametacarpal\x07\x04\0\x06finger\x03\0\x08\x01k\x07\x01r\
+\x09\x04side\x05\x05thumb\x09\x05index\x09\x06middle\x09\x04ring\x09\x06little\x09\
+\x04palm\x07\x05wrist\x07\x05elbow\x0a\x04\0\x04hand\x03\0\x0b\x01r\x02\x06origi\
+n\x01\x0borientation\x03\x04\0\x03ray\x03\0\x0d\x01r\x03\x06origin\x01\x0borient\
+ation\x03\x06radiusv\x04\0\x03tip\x03\0\x0f\x01q\x03\x04hand\x01\x0c\0\x03ray\x01\
+\x0e\0\x03tip\x01\x10\0\x04\0\x0ainput-type\x03\0\x11\x01r\x04\x02idw\x05input\x12\
+\x08distancev\x05ordery\x04\0\x0binput-event\x03\0\x13\x03\x01\x11wired:input/ty\
+pes\x05\x06\x02\x03\0\x03\x0binput-event\x01B\x0a\x02\x03\x02\x01\x07\x04\0\x0bi\
+nput-event\x03\0\0\x04\0\x0dinput-handler\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\x1a\
+[constructor]input-handler\x01\x04\x01h\x02\x01k\x01\x01@\x01\x04self\x05\0\x06\x04\
+\0\"[method]input-handler.handle-input\x01\x07\x03\x01\x13wired:input/handler\x05\
+\x08\x01B\x1c\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\0\x04\0\x08collider\x03\x01\
+\x01r\x02\x06heightv\x06radiusv\x04\0\x0eshape-cylinder\x03\0\x03\x01q\x03\x06cu\
+boid\x01\x01\0\x08cylinder\x01\x04\0\x06sphere\x01v\0\x04\0\x05shape\x03\0\x05\x04\
+\0\x0arigid-body\x03\x01\x01m\x03\x07dynamic\x05fixed\x09kinematic\x04\0\x0frigi\
+d-body-type\x03\0\x08\x01i\x02\x01@\x01\x05shape\x06\0\x0a\x04\0\x15[constructor\
+]collider\x01\x0b\x01h\x02\x01@\x01\x04self\x0c\0v\x04\0\x18[method]collider.den\
+sity\x01\x0d\x01@\x02\x04self\x0c\x05valuev\x01\0\x04\0\x1c[method]collider.set-\
+density\x01\x0e\x01i\x07\x01@\x01\x0frigid-body-type\x09\0\x0f\x04\0\x17[constru\
+ctor]rigid-body\x01\x10\x01h\x07\x01@\x01\x04self\x11\0\x01\x04\0\x19[method]rig\
+id-body.angvel\x01\x12\x01@\x02\x04self\x11\x05value\x01\x01\0\x04\0\x1d[method]\
+rigid-body.set-angvel\x01\x13\x04\0\x19[method]rigid-body.linvel\x01\x12\x04\0\x1d\
+[method]rigid-body.set-linvel\x01\x13\x03\x01\x13wired:physics/types\x05\x09\x02\
+\x03\0\x02\x04mesh\x02\x03\0\x04\x0dinput-handler\x02\x03\0\0\x09transform\x02\x03\
+\0\x05\x08collider\x02\x03\0\x05\x0arigid-body\x01BD\x02\x03\x02\x01\x0a\x04\0\x04\
+mesh\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x0dinput-handler\x03\0\x02\x02\x03\x02\x01\
+\x0c\x04\0\x09transform\x03\0\x04\x02\x03\x02\x01\x0d\x04\0\x08collider\x03\0\x06\
+\x02\x03\x02\x01\x0e\x04\0\x0arigid-body\x03\0\x08\x04\0\x04node\x03\x01\x01i\x0a\
+\x01@\0\0\x0b\x04\0\x11[constructor]node\x01\x0c\x01h\x0a\x01@\x01\x04self\x0d\0\
+y\x04\0\x0f[method]node.id\x01\x0e\x01@\x01\x04self\x0d\0\x0b\x04\0\x10[method]n\
+ode.ref\x01\x0f\x01@\x01\x04self\x0d\0s\x04\0\x11[method]node.name\x01\x10\x01@\x02\
+\x04self\x0d\x05values\x01\0\x04\0\x15[method]node.set-name\x01\x11\x01p\x0b\x01\
+@\x01\x04self\x0d\0\x12\x04\0\x15[method]node.children\x01\x13\x01@\x02\x04self\x0d\
+\x05value\x0d\x01\0\x04\0\x16[method]node.add-child\x01\x14\x04\0\x19[method]nod\
+e.remove-child\x01\x14\x01k\x0b\x01@\x01\x04self\x0d\0\x15\x04\0\x13[method]node\
+.parent\x01\x16\x01@\x01\x04self\x0d\0\x05\x04\0\x16[method]node.transform\x01\x17\
+\x01@\x02\x04self\x0d\x05value\x05\x01\0\x04\0\x1a[method]node.set-transform\x01\
+\x18\x01i\x01\x01k\x19\x01@\x01\x04self\x0d\0\x1a\x04\0\x11[method]node.mesh\x01\
+\x1b\x01h\x01\x01k\x1c\x01@\x02\x04self\x0d\x05value\x1d\x01\0\x04\0\x15[method]\
+node.set-mesh\x01\x1e\x01i\x07\x01k\x1f\x01@\x01\x04self\x0d\0\x20\x04\0\x15[met\
+hod]node.collider\x01!\x01h\x07\x01k\"\x01@\x02\x04self\x0d\x05value#\x01\0\x04\0\
+\x19[method]node.set-collider\x01$\x01i\x09\x01k%\x01@\x01\x04self\x0d\0&\x04\0\x17\
+[method]node.rigid-body\x01'\x01h\x09\x01k(\x01@\x02\x04self\x0d\x05value)\x01\0\
+\x04\0\x1b[method]node.set-rigid-body\x01*\x01i\x03\x01k+\x01@\x01\x04self\x0d\0\
+,\x04\0\x1a[method]node.input-handler\x01-\x01h\x03\x01k.\x01@\x02\x04self\x0d\x05\
+value/\x01\0\x04\0\x1e[method]node.set-input-handler\x010\x03\x01\x10wired:scene\
+/node\x05\x0f\x02\x03\0\0\x04vec2\x02\x03\0\x06\x04node\x01BY\x02\x03\x02\x01\x10\
+\x04\0\x04vec2\x03\0\0\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\x02\x02\x03\x02\x01\
+\x0a\x04\0\x04mesh\x03\0\x04\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x06\x04\0\x09\
+rectangle\x03\x01\x04\0\x08cylinder\x03\x01\x04\0\x06cuboid\x03\x01\x01r\x01\x0c\
+subdivisions}\x04\0\x0asphere-ico\x03\0\x0b\x01r\x02\x07sectors}\x06stacks}\x04\0\
+\x09sphere-uv\x03\0\x0d\x01q\x02\x03ico\x01\x0c\0\x02uv\x01\x0e\0\x04\0\x0bspher\
+e-kind\x03\0\x0f\x04\0\x06sphere\x03\x01\x01i\x08\x01@\x01\x04size\x01\0\x12\x04\
+\0\x16[constructor]rectangle\x01\x13\x01h\x08\x01@\x01\x04self\x14\0\x01\x04\0\x16\
+[method]rectangle.size\x01\x15\x01@\x02\x04self\x14\x05value\x01\x01\0\x04\0\x1a\
+[method]rectangle.set-size\x01\x16\x01i\x05\x01@\x01\x04self\x14\0\x17\x04\0\x19\
+[method]rectangle.to-mesh\x01\x18\x01i\x07\x01@\x01\x04self\x14\0\x19\x04\0\x19[\
+method]rectangle.to-node\x01\x1a\x04\0![method]rectangle.to-physics-node\x01\x1a\
+\x01i\x09\x01@\x02\x06radiusv\x06heightv\0\x1b\x04\0\x15[constructor]cylinder\x01\
+\x1c\x01h\x09\x01@\x01\x04self\x1d\0\x7f\x04\0\x14[method]cylinder.cap\x01\x1e\x01\
+@\x02\x04self\x1d\x05value\x7f\x01\0\x04\0\x18[method]cylinder.set-cap\x01\x1f\x01\
+@\x01\x04self\x1d\0v\x04\0\x17[method]cylinder.height\x01\x20\x01@\x02\x04self\x1d\
+\x05valuev\x01\0\x04\0\x1b[method]cylinder.set-height\x01!\x04\0\x17[method]cyli\
+nder.radius\x01\x20\x04\0\x1b[method]cylinder.set-radius\x01!\x01@\x01\x04self\x1d\
+\0}\x04\0\x1b[method]cylinder.resolution\x01\"\x01@\x02\x04self\x1d\x05value}\x01\
+\0\x04\0\x1f[method]cylinder.set-resolution\x01#\x04\0\x19[method]cylinder.segme\
+nts\x01\"\x04\0\x1d[method]cylinder.set-segments\x01#\x01@\x01\x04self\x1d\0\x17\
+\x04\0\x18[method]cylinder.to-mesh\x01$\x01@\x01\x04self\x1d\0\x19\x04\0\x18[met\
+hod]cylinder.to-node\x01%\x04\0\x20[method]cylinder.to-physics-node\x01%\x01i\x0a\
+\x01@\x01\x04size\x03\0&\x04\0\x13[constructor]cuboid\x01'\x01h\x0a\x01@\x01\x04\
+self(\0\x03\x04\0\x13[method]cuboid.size\x01)\x01@\x02\x04self(\x05value\x03\x01\
+\0\x04\0\x17[method]cuboid.set-size\x01*\x01@\x01\x04self(\0\x17\x04\0\x16[metho\
+d]cuboid.to-mesh\x01+\x01@\x01\x04self(\0\x19\x04\0\x16[method]cuboid.to-node\x01\
+,\x04\0\x1e[method]cuboid.to-physics-node\x01,\x01i\x11\x01@\x01\x06radiusv\0-\x04\
+\0\x16[static]sphere.new-ico\x01.\x04\0\x15[static]sphere.new-uv\x01.\x01h\x11\x01\
+@\x01\x04self/\0v\x04\0\x15[method]sphere.radius\x010\x01@\x02\x04self/\x05value\
+v\x01\0\x04\0\x19[method]sphere.set-radius\x011\x01@\x01\x04self/\0\x10\x04\0\x13\
+[method]sphere.kind\x012\x01@\x02\x04self/\x05value\x10\x01\0\x04\0\x17[method]s\
+phere.set-kind\x013\x01@\x01\x04self/\0\x17\x04\0\x16[method]sphere.to-mesh\x014\
+\x01@\x01\x04self/\0\x19\x04\0\x16[method]sphere.to-node\x015\x04\0\x1e[method]s\
+phere.to-physics-node\x015\x03\x01\x10unavi:shapes/api\x05\x12\x01B#\x02\x03\x02\
+\x01\x04\x04\0\x04vec3\x03\0\0\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x02\x01m\x03\
+\x06center\x03end\x05start\x04\0\x09alignment\x03\0\x04\x04\0\x09container\x03\x01\
+\x01i\x06\x01@\x01\x04size\x01\0\x07\x04\0\x16[constructor]container\x01\x08\x01\
+h\x06\x01@\x01\x04self\x09\0\x07\x04\0\x15[method]container.ref\x01\x0a\x01i\x03\
+\x01@\x01\x04self\x09\0\x0b\x04\0\x16[method]container.root\x01\x0c\x04\0\x17[me\
+thod]container.inner\x01\x0c\x01p\x07\x01@\x01\x04self\x09\0\x0d\x04\0\x1f[metho\
+d]container.list-children\x01\x0e\x01@\x02\x04self\x09\x05child\x09\x01\0\x04\0\x1b\
+[method]container.add-child\x01\x0f\x04\0\x1e[method]container.remove-child\x01\x0f\
+\x01@\x01\x04self\x09\0\x01\x04\0\x16[method]container.size\x01\x10\x01@\x02\x04\
+self\x09\x05value\x01\x01\0\x04\0\x1a[method]container.set-size\x01\x11\x01@\x01\
+\x04self\x09\0\x05\x04\0\x19[method]container.align-x\x01\x12\x04\0\x19[method]c\
+ontainer.align-y\x01\x12\x04\0\x19[method]container.align-z\x01\x12\x01@\x02\x04\
+self\x09\x05value\x05\x01\0\x04\0\x1d[method]container.set-align-x\x01\x13\x04\0\
+\x1d[method]container.set-align-y\x01\x13\x04\0\x1d[method]container.set-align-z\
+\x01\x13\x03\x01\x16unavi:layout/container\x05\x13\x02\x03\0\x08\x09container\x01\
+B\x0e\x02\x03\x02\x01\x14\x04\0\x09container\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x0d\
+input-handler\x03\0\x02\x04\0\x06button\x03\x01\x01i\x01\x01i\x04\x01@\x01\x04ro\
+ot\x05\0\x06\x04\0\x13[constructor]button\x01\x07\x01h\x04\x01@\x01\x04self\x08\0\
+\x05\x04\0\x13[method]button.root\x01\x09\x01@\x01\x04self\x08\0\x7f\x04\0\x16[m\
+ethod]button.pressed\x01\x0a\x04\x01\x0funavi:ui/button\x05\x15\x01B\"\x02\x03\x02\
+\x01\x14\x04\0\x09container\x03\0\0\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\x02\x02\
+\x03\x02\x01\x11\x04\0\x04node\x03\0\x04\x04\0\x04text\x03\x01\x04\0\x08text-box\
+\x03\x01\x01i\x06\x01@\x01\x04texts\0\x08\x04\0\x11[constructor]text\x01\x09\x01\
+h\x06\x01@\x01\x04self\x0a\0\x08\x04\0\x10[method]text.ref\x01\x0b\x01@\x01\x04s\
+elf\x0a\0s\x04\0\x11[method]text.text\x01\x0c\x01@\x02\x04self\x0a\x05values\x01\
+\0\x04\0\x15[method]text.set-text\x01\x0d\x01@\x01\x04self\x0a\0\x7f\x04\0\x11[m\
+ethod]text.flat\x01\x0e\x01@\x02\x04self\x0a\x05value\x7f\x01\0\x04\0\x15[method\
+]text.set-flat\x01\x0f\x01i\x03\x01@\x01\x04self\x0a\0\x10\x04\0\x11[method]text\
+.mesh\x01\x11\x01i\x01\x01i\x07\x01@\x01\x04root\x12\0\x13\x04\0\x15[constructor\
+]text-box\x01\x14\x01h\x07\x01@\x01\x04self\x15\0\x12\x04\0\x15[method]text-box.\
+root\x01\x16\x01@\x01\x04self\x15\0\x08\x04\0\x15[method]text-box.text\x01\x17\x04\
+\x01\x0dunavi:ui/text\x05\x16\x04\x01\x0eunavi:ui/guest\x04\0\x0b\x0b\x01\0\x05g\
+uest\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\
+\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

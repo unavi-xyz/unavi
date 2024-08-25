@@ -29,16 +29,30 @@ interface button {
 }
 
 interface text {
+  use unavi:layout/container.{container};
   use wired:scene/mesh.{mesh};
   use wired:scene/node.{node};
 
   resource text {
     constructor(text: string);
 
+    // Returns another reference to the same resource.
+    ref: func() -> text;
+
+    text: func() -> string;
+    set-text: func(value: string);
+
     flat: func() -> bool;
     set-flat: func(value: bool);
 
-    to-mesh: func() -> option<mesh>;
-    to-node: func() -> option<node>;
+    mesh: func() -> mesh;
+  }
+
+  // Dynamic text generation within the bounds of a container.
+  resource text-box {
+    constructor(root: container);
+
+    root: func() -> container;
+    text: func() -> text;
   }
 }

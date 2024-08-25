@@ -87,6 +87,10 @@ impl HostNode for StoreState {
     fn id(&mut self, self_: Resource<NodeRes>) -> wasm_bridge::Result<u32> {
         Ok(self_.rep())
     }
+    fn ref_(&mut self, self_: Resource<NodeRes>) -> wasm_bridge::Result<Resource<NodeRes>> {
+        let value = NodeRes::from_res(&self_, &self.table)?;
+        Ok(value)
+    }
 
     fn name(&mut self, self_: Resource<NodeRes>) -> wasm_bridge::Result<String> {
         let data = self.table.get(&self_)?;

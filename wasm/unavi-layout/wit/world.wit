@@ -1,6 +1,8 @@
 package unavi:layout;
 
 world guest {
+    import wired:math/types;
+
     export container;
     export grid;
 }
@@ -30,10 +32,13 @@ interface container {
     // The `root` node.
     // Positioned in the center of the container.
     root: func() -> node;
-
     // The `inner` node, child of the `root` node.
     // Positioned according to the `alignment` of the container.
     inner: func() -> node;
+
+    list-children: func() -> list<container>;
+    add-child: func(child: borrow<container>);
+    remove-child: func(child: borrow<container>);
 
     size: func() -> vec3;
     set-size: func(value: vec3);

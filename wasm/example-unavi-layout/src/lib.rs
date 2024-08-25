@@ -15,8 +15,6 @@ use bindings::{
 mod bindings;
 mod wired_math_impls;
 
-const SPACING: f32 = 1.0;
-
 struct Script {}
 
 impl GuestScript for Script {
@@ -27,26 +25,27 @@ impl GuestScript for Script {
             for y in 0..3 {
                 for z in 0..3 {
                     let size = Vec3::splat(1.0);
-
-                    let container = Container::new(size);
-                    let root = container.root();
+                    let parent = Container::new(size);
+                    let root = parent.root();
                     scene.add_node(&root);
 
                     let collider = Collider::new(Shape::Cuboid(size));
                     root.set_collider(Some(&collider));
 
                     root.set_transform(Transform::from_translation(Vec3::new(
-                        x as f32 * SPACING,
-                        y as f32 * SPACING,
-                        z as f32 * SPACING,
+                        x as f32, y as f32, z as f32,
                     )));
 
-                    container.set_align_x(get_alignment(x));
-                    container.set_align_y(get_alignment(y));
-                    container.set_align_z(get_alignment(z));
+                    parent.set_align_x(get_alignment(x));
+                    parent.set_align_y(get_alignment(y));
+                    parent.set_align_z(get_alignment(z));
 
-                    let mesh = Cuboid::new(Vec3::splat(0.2)).to_node();
-                    container.inner().add_child(&mesh);
+                    let child_size = Vec3::splat(0.2);
+                    let child = Container::new(child_size);
+                    parent.add_child(&child);
+
+                    let mesh = Cuboid::new(child_size).to_mesh();
+                    child.inner().set_mesh(Some(&mesh));
                 }
             }
         }

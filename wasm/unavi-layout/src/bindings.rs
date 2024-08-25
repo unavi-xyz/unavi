@@ -906,6 +906,20 @@ pub mod wired {
                 super::super::super::__link_custom_section_describing_imports;
             #[repr(C)]
             #[derive(Clone, Copy)]
+            pub struct Vec2 {
+                pub x: f32,
+                pub y: f32,
+            }
+            impl ::core::fmt::Debug for Vec2 {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("Vec2")
+                        .field("x", &self.x)
+                        .field("y", &self.y)
+                        .finish()
+                }
+            }
+            #[repr(C)]
+            #[derive(Clone, Copy)]
             pub struct Vec3 {
                 pub x: f32,
                 pub y: f32,
@@ -952,6 +966,31 @@ pub mod wired {
                         .field("scale", &self.scale)
                         .field("translation", &self.translation)
                         .finish()
+                }
+            }
+            #[allow(unused_unsafe, clippy::all)]
+            /// Codegen doesn't always include vec2, add this function to force its inclusion.
+            pub fn fake_fn() -> Vec2 {
+                unsafe {
+                    #[repr(align(4))]
+                    struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                    let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                    let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wired:math/types")]
+                    extern "C" {
+                        #[link_name = "fake-fn"]
+                        fn wit_import(_: *mut u8);
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(_: *mut u8) {
+                        unreachable!()
+                    }
+                    wit_import(ptr0);
+                    let l1 = *ptr0.add(0).cast::<f32>();
+                    let l2 = *ptr0.add(4).cast::<f32>();
+                    Vec2 { x: l1, y: l2 }
                 }
             }
         }
@@ -2911,6 +2950,77 @@ pub mod exports {
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
+                pub unsafe fn _export_method_container_list_children_cabi<T: GuestContainer>(
+                    arg0: *mut u8,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 =
+                        T::list_children(ContainerBorrow::lift(arg0 as u32 as usize).get());
+                    let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    let vec2 = result0;
+                    let len2 = vec2.len();
+                    let layout2 = _rt::alloc::Layout::from_size_align_unchecked(vec2.len() * 4, 4);
+                    let result2 = if layout2.size() != 0 {
+                        let ptr = _rt::alloc::alloc(layout2).cast::<u8>();
+                        if ptr.is_null() {
+                            _rt::alloc::handle_alloc_error(layout2);
+                        }
+                        ptr
+                    } else {
+                        {
+                            ::core::ptr::null_mut()
+                        }
+                    };
+                    for (i, e) in vec2.into_iter().enumerate() {
+                        let base = result2.add(i * 4);
+                        {
+                            *base.add(0).cast::<i32>() = (e).take_handle() as i32;
+                        }
+                    }
+                    *ptr1.add(4).cast::<usize>() = len2;
+                    *ptr1.add(0).cast::<*mut u8>() = result2;
+                    ptr1
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_method_container_list_children<T: GuestContainer>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = *arg0.add(0).cast::<*mut u8>();
+                    let l1 = *arg0.add(4).cast::<usize>();
+                    let base2 = l0;
+                    let len2 = l1;
+                    _rt::cabi_dealloc(base2, len2 * 4, 4);
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_container_add_child_cabi<T: GuestContainer>(
+                    arg0: *mut u8,
+                    arg1: i32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::add_child(
+                        ContainerBorrow::lift(arg0 as u32 as usize).get(),
+                        ContainerBorrow::lift(arg1 as u32 as usize),
+                    );
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_container_remove_child_cabi<T: GuestContainer>(
+                    arg0: *mut u8,
+                    arg1: i32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::remove_child(
+                        ContainerBorrow::lift(arg0 as u32 as usize).get(),
+                        ContainerBorrow::lift(arg1 as u32 as usize),
+                    );
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
                 pub unsafe fn _export_method_container_size_cabi<T: GuestContainer>(
                     arg0: *mut u8,
                 ) -> *mut u8 {
@@ -3073,6 +3183,9 @@ pub mod exports {
                     /// The `inner` node, child of the `root` node.
                     /// Positioned according to the `alignment` of the container.
                     fn inner(&self) -> Node;
+                    fn list_children(&self) -> _rt::Vec<Container>;
+                    fn add_child(&self, child: ContainerBorrow<'_>);
+                    fn remove_child(&self, child: ContainerBorrow<'_>);
                     fn size(&self) -> Vec3;
                     fn set_size(&self, value: Vec3);
                     fn align_x(&self) -> Alignment;
@@ -3102,6 +3215,22 @@ pub mod exports {
     #[export_name = "unavi:layout/container#[method]container.inner"]
     unsafe extern "C" fn export_method_container_inner(arg0: *mut u8,) -> i32 {
       $($path_to_types)*::_export_method_container_inner_cabi::<<$ty as $($path_to_types)*::Guest>::Container>(arg0)
+    }
+    #[export_name = "unavi:layout/container#[method]container.list-children"]
+    unsafe extern "C" fn export_method_container_list_children(arg0: *mut u8,) -> *mut u8 {
+      $($path_to_types)*::_export_method_container_list_children_cabi::<<$ty as $($path_to_types)*::Guest>::Container>(arg0)
+    }
+    #[export_name = "cabi_post_unavi:layout/container#[method]container.list-children"]
+    unsafe extern "C" fn _post_return_method_container_list_children(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_container_list_children::<<$ty as $($path_to_types)*::Guest>::Container>(arg0)
+    }
+    #[export_name = "unavi:layout/container#[method]container.add-child"]
+    unsafe extern "C" fn export_method_container_add_child(arg0: *mut u8,arg1: i32,) {
+      $($path_to_types)*::_export_method_container_add_child_cabi::<<$ty as $($path_to_types)*::Guest>::Container>(arg0, arg1)
+    }
+    #[export_name = "unavi:layout/container#[method]container.remove-child"]
+    unsafe extern "C" fn export_method_container_remove_child(arg0: *mut u8,arg1: i32,) {
+      $($path_to_types)*::_export_method_container_remove_child_cabi::<<$ty as $($path_to_types)*::Guest>::Container>(arg0, arg1)
     }
     #[export_name = "unavi:layout/container#[method]container.size"]
     unsafe extern "C" fn export_method_container_size(arg0: *mut u8,) -> *mut u8 {
@@ -3752,106 +3881,109 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4365] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x91!\x01A\x02\x01A\x1d\
-\x01B\x08\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4517] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa9\"\x01A\x02\x01A\x1d\
+\x01B\x0a\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\
 \0\x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01\
 r\x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
-\x03\x01\x10wired:math/types\x05\0\x01B\x11\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\
-\0\x05color\x03\0\0\x04\0\x08material\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\x15[co\
-nstructor]material\x01\x04\x01h\x02\x01@\x01\x04self\x05\0y\x04\0\x13[method]mat\
-erial.id\x01\x06\x01@\x01\x04self\x05\0s\x04\0\x15[method]material.name\x01\x07\x01\
-@\x02\x04self\x05\x05values\x01\0\x04\0\x19[method]material.set-name\x01\x08\x01\
-@\x01\x04self\x05\0\x01\x04\0\x16[method]material.color\x01\x09\x01@\x02\x04self\
-\x05\x05value\x01\x01\0\x04\0\x1a[method]material.set-color\x01\x0a\x03\x01\x14w\
-ired:scene/material\x05\x01\x02\x03\0\x01\x08material\x01B)\x02\x03\x02\x01\x02\x04\
-\0\x08material\x03\0\0\x04\0\x09primitive\x03\x01\x04\0\x04mesh\x03\x01\x01h\x02\
-\x01@\x01\x04self\x04\0y\x04\0\x14[method]primitive.id\x01\x05\x01i\x01\x01k\x06\
-\x01@\x01\x04self\x04\0\x07\x04\0\x1a[method]primitive.material\x01\x08\x01h\x01\
-\x01k\x09\x01@\x02\x04self\x04\x05value\x0a\x01\0\x04\0\x1e[method]primitive.set\
--material\x01\x0b\x01py\x01@\x02\x04self\x04\x05value\x0c\x01\0\x04\0\x1d[method\
-]primitive.set-indices\x01\x0d\x01pv\x01@\x02\x04self\x04\x05value\x0e\x01\0\x04\
-\0\x1d[method]primitive.set-normals\x01\x0f\x04\0\x1f[method]primitive.set-posit\
-ions\x01\x0f\x04\0\x19[method]primitive.set-uvs\x01\x0f\x01i\x03\x01@\0\0\x10\x04\
-\0\x11[constructor]mesh\x01\x11\x01h\x03\x01@\x01\x04self\x12\0y\x04\0\x0f[metho\
-d]mesh.id\x01\x13\x01@\x01\x04self\x12\0s\x04\0\x11[method]mesh.name\x01\x14\x01\
-@\x02\x04self\x12\x05values\x01\0\x04\0\x15[method]mesh.set-name\x01\x15\x01i\x02\
-\x01p\x16\x01@\x01\x04self\x12\0\x17\x04\0\x1c[method]mesh.list-primitives\x01\x18\
-\x01@\x01\x04self\x12\0\x16\x04\0\x1d[method]mesh.create-primitive\x01\x19\x01@\x02\
-\x04self\x12\x05value\x16\x01\0\x04\0\x1d[method]mesh.remove-primitive\x01\x1a\x03\
-\x01\x10wired:scene/mesh\x05\x03\x02\x03\0\0\x04vec3\x02\x03\0\0\x04quat\x01B\x15\
-\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\0\x02\x03\x02\x01\x05\x04\0\x04quat\x03\
-\0\x02\x01m\x02\x04left\x05right\x04\0\x09hand-side\x03\0\x04\x01r\x03\x0btransl\
-ation\x01\x08rotation\x03\x06radiusv\x04\0\x05joint\x03\0\x06\x01r\x04\x03tip\x07\
-\x06distal\x07\x08proximal\x07\x0ametacarpal\x07\x04\0\x06finger\x03\0\x08\x01k\x07\
-\x01r\x09\x04side\x05\x05thumb\x09\x05index\x09\x06middle\x09\x04ring\x09\x06lit\
-tle\x09\x04palm\x07\x05wrist\x07\x05elbow\x0a\x04\0\x04hand\x03\0\x0b\x01r\x02\x06\
-origin\x01\x0borientation\x03\x04\0\x03ray\x03\0\x0d\x01r\x03\x06origin\x01\x0bo\
-rientation\x03\x06radiusv\x04\0\x03tip\x03\0\x0f\x01q\x03\x04hand\x01\x0c\0\x03r\
-ay\x01\x0e\0\x03tip\x01\x10\0\x04\0\x0ainput-type\x03\0\x11\x01r\x04\x02idw\x05i\
-nput\x12\x08distancev\x05ordery\x04\0\x0binput-event\x03\0\x13\x03\x01\x11wired:\
-input/types\x05\x06\x02\x03\0\x03\x0binput-event\x01B\x0a\x02\x03\x02\x01\x07\x04\
-\0\x0binput-event\x03\0\0\x04\0\x0dinput-handler\x03\x01\x01i\x02\x01@\0\0\x03\x04\
-\0\x1a[constructor]input-handler\x01\x04\x01h\x02\x01k\x01\x01@\x01\x04self\x05\0\
-\x06\x04\0\"[method]input-handler.handle-input\x01\x07\x03\x01\x13wired:input/ha\
-ndler\x05\x08\x01B\x1c\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\0\x04\0\x08collid\
-er\x03\x01\x01r\x02\x06heightv\x06radiusv\x04\0\x0eshape-cylinder\x03\0\x03\x01q\
-\x03\x06cuboid\x01\x01\0\x08cylinder\x01\x04\0\x06sphere\x01v\0\x04\0\x05shape\x03\
-\0\x05\x04\0\x0arigid-body\x03\x01\x01m\x03\x07dynamic\x05fixed\x09kinematic\x04\
-\0\x0frigid-body-type\x03\0\x08\x01i\x02\x01@\x01\x05shape\x06\0\x0a\x04\0\x15[c\
-onstructor]collider\x01\x0b\x01h\x02\x01@\x01\x04self\x0c\0v\x04\0\x18[method]co\
-llider.density\x01\x0d\x01@\x02\x04self\x0c\x05valuev\x01\0\x04\0\x1c[method]col\
-lider.set-density\x01\x0e\x01i\x07\x01@\x01\x0frigid-body-type\x09\0\x0f\x04\0\x17\
-[constructor]rigid-body\x01\x10\x01h\x07\x01@\x01\x04self\x11\0\x01\x04\0\x19[me\
-thod]rigid-body.angvel\x01\x12\x01@\x02\x04self\x11\x05value\x01\x01\0\x04\0\x1d\
-[method]rigid-body.set-angvel\x01\x13\x04\0\x19[method]rigid-body.linvel\x01\x12\
-\x04\0\x1d[method]rigid-body.set-linvel\x01\x13\x03\x01\x13wired:physics/types\x05\
-\x09\x02\x03\0\x02\x04mesh\x02\x03\0\x04\x0dinput-handler\x02\x03\0\0\x09transfo\
-rm\x02\x03\0\x05\x08collider\x02\x03\0\x05\x0arigid-body\x01BD\x02\x03\x02\x01\x0a\
-\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x0dinput-handler\x03\0\x02\x02\x03\
-\x02\x01\x0c\x04\0\x09transform\x03\0\x04\x02\x03\x02\x01\x0d\x04\0\x08collider\x03\
-\0\x06\x02\x03\x02\x01\x0e\x04\0\x0arigid-body\x03\0\x08\x04\0\x04node\x03\x01\x01\
-i\x0a\x01@\0\0\x0b\x04\0\x11[constructor]node\x01\x0c\x01h\x0a\x01@\x01\x04self\x0d\
-\0y\x04\0\x0f[method]node.id\x01\x0e\x01@\x01\x04self\x0d\0\x0b\x04\0\x10[method\
-]node.ref\x01\x0f\x01@\x01\x04self\x0d\0s\x04\0\x11[method]node.name\x01\x10\x01\
-@\x02\x04self\x0d\x05values\x01\0\x04\0\x15[method]node.set-name\x01\x11\x01p\x0b\
-\x01@\x01\x04self\x0d\0\x12\x04\0\x15[method]node.children\x01\x13\x01@\x02\x04s\
-elf\x0d\x05value\x0d\x01\0\x04\0\x16[method]node.add-child\x01\x14\x04\0\x19[met\
-hod]node.remove-child\x01\x14\x01k\x0b\x01@\x01\x04self\x0d\0\x15\x04\0\x13[meth\
-od]node.parent\x01\x16\x01@\x01\x04self\x0d\0\x05\x04\0\x16[method]node.transfor\
-m\x01\x17\x01@\x02\x04self\x0d\x05value\x05\x01\0\x04\0\x1a[method]node.set-tran\
-sform\x01\x18\x01i\x01\x01k\x19\x01@\x01\x04self\x0d\0\x1a\x04\0\x11[method]node\
-.mesh\x01\x1b\x01h\x01\x01k\x1c\x01@\x02\x04self\x0d\x05value\x1d\x01\0\x04\0\x15\
-[method]node.set-mesh\x01\x1e\x01i\x07\x01k\x1f\x01@\x01\x04self\x0d\0\x20\x04\0\
-\x15[method]node.collider\x01!\x01h\x07\x01k\"\x01@\x02\x04self\x0d\x05value#\x01\
-\0\x04\0\x19[method]node.set-collider\x01$\x01i\x09\x01k%\x01@\x01\x04self\x0d\0\
-&\x04\0\x17[method]node.rigid-body\x01'\x01h\x09\x01k(\x01@\x02\x04self\x0d\x05v\
-alue)\x01\0\x04\0\x1b[method]node.set-rigid-body\x01*\x01i\x03\x01k+\x01@\x01\x04\
-self\x0d\0,\x04\0\x1a[method]node.input-handler\x01-\x01h\x03\x01k.\x01@\x02\x04\
-self\x0d\x05value/\x01\0\x04\0\x1e[method]node.set-input-handler\x010\x03\x01\x10\
-wired:scene/node\x05\x0f\x02\x03\0\x06\x04node\x01B\x1d\x02\x03\x02\x01\x04\x04\0\
-\x04vec3\x03\0\0\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\x02\x01m\x03\x06center\x03\
-end\x05start\x04\0\x09alignment\x03\0\x04\x04\0\x09container\x03\x01\x01i\x06\x01\
-@\x01\x04size\x01\0\x07\x04\0\x16[constructor]container\x01\x08\x01h\x06\x01@\x01\
-\x04self\x09\0\x07\x04\0\x15[method]container.ref\x01\x0a\x01i\x03\x01@\x01\x04s\
-elf\x09\0\x0b\x04\0\x16[method]container.root\x01\x0c\x04\0\x17[method]container\
-.inner\x01\x0c\x01@\x01\x04self\x09\0\x01\x04\0\x16[method]container.size\x01\x0d\
-\x01@\x02\x04self\x09\x05value\x01\x01\0\x04\0\x1a[method]container.set-size\x01\
-\x0e\x01@\x01\x04self\x09\0\x05\x04\0\x19[method]container.align-x\x01\x0f\x04\0\
-\x19[method]container.align-y\x01\x0f\x04\0\x19[method]container.align-z\x01\x0f\
-\x01@\x02\x04self\x09\x05value\x05\x01\0\x04\0\x1d[method]container.set-align-x\x01\
-\x10\x04\0\x1d[method]container.set-align-y\x01\x10\x04\0\x1d[method]container.s\
-et-align-z\x01\x10\x04\x01\x16unavi:layout/container\x05\x11\x02\x03\0\x07\x09co\
-ntainer\x01B\x16\x02\x03\x02\x01\x12\x04\0\x09container\x03\0\0\x02\x03\x02\x01\x04\
-\x04\0\x04vec3\x03\0\x02\x04\0\x04grid\x03\x01\x01i\x04\x01@\x02\x04size\x03\x04\
-rows\x03\0\x05\x04\0\x11[constructor]grid\x01\x06\x01h\x04\x01i\x01\x01@\x01\x04\
-self\x07\0\x08\x04\0\x11[method]grid.root\x01\x09\x01p\x08\x01@\x01\x04self\x07\0\
-\x0a\x04\0\x12[method]grid.cells\x01\x0b\x01k\x08\x01@\x04\x04self\x07\x01xy\x01\
-yy\x01zy\0\x0c\x04\0\x11[method]grid.cell\x01\x0d\x01@\x01\x04self\x07\0\x03\x04\
-\0\x11[method]grid.rows\x01\x0e\x01@\x02\x04self\x07\x05value\x03\x01\0\x04\0\x15\
-[method]grid.set-rows\x01\x0f\x04\x01\x11unavi:layout/grid\x05\x13\x04\x01\x12un\
-avi:layout/guest\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\0G\x09producers\x01\x0cpro\
-cessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+\x01@\0\0\x01\x04\0\x07fake-fn\x01\x08\x03\x01\x10wired:math/types\x05\0\x01B\x11\
+\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08material\x03\x01\
+\x01i\x02\x01@\0\0\x03\x04\0\x15[constructor]material\x01\x04\x01h\x02\x01@\x01\x04\
+self\x05\0y\x04\0\x13[method]material.id\x01\x06\x01@\x01\x04self\x05\0s\x04\0\x15\
+[method]material.name\x01\x07\x01@\x02\x04self\x05\x05values\x01\0\x04\0\x19[met\
+hod]material.set-name\x01\x08\x01@\x01\x04self\x05\0\x01\x04\0\x16[method]materi\
+al.color\x01\x09\x01@\x02\x04self\x05\x05value\x01\x01\0\x04\0\x1a[method]materi\
+al.set-color\x01\x0a\x03\x01\x14wired:scene/material\x05\x01\x02\x03\0\x01\x08ma\
+terial\x01B)\x02\x03\x02\x01\x02\x04\0\x08material\x03\0\0\x04\0\x09primitive\x03\
+\x01\x04\0\x04mesh\x03\x01\x01h\x02\x01@\x01\x04self\x04\0y\x04\0\x14[method]pri\
+mitive.id\x01\x05\x01i\x01\x01k\x06\x01@\x01\x04self\x04\0\x07\x04\0\x1a[method]\
+primitive.material\x01\x08\x01h\x01\x01k\x09\x01@\x02\x04self\x04\x05value\x0a\x01\
+\0\x04\0\x1e[method]primitive.set-material\x01\x0b\x01py\x01@\x02\x04self\x04\x05\
+value\x0c\x01\0\x04\0\x1d[method]primitive.set-indices\x01\x0d\x01pv\x01@\x02\x04\
+self\x04\x05value\x0e\x01\0\x04\0\x1d[method]primitive.set-normals\x01\x0f\x04\0\
+\x1f[method]primitive.set-positions\x01\x0f\x04\0\x19[method]primitive.set-uvs\x01\
+\x0f\x01i\x03\x01@\0\0\x10\x04\0\x11[constructor]mesh\x01\x11\x01h\x03\x01@\x01\x04\
+self\x12\0y\x04\0\x0f[method]mesh.id\x01\x13\x01@\x01\x04self\x12\0s\x04\0\x11[m\
+ethod]mesh.name\x01\x14\x01@\x02\x04self\x12\x05values\x01\0\x04\0\x15[method]me\
+sh.set-name\x01\x15\x01i\x02\x01p\x16\x01@\x01\x04self\x12\0\x17\x04\0\x1c[metho\
+d]mesh.list-primitives\x01\x18\x01@\x01\x04self\x12\0\x16\x04\0\x1d[method]mesh.\
+create-primitive\x01\x19\x01@\x02\x04self\x12\x05value\x16\x01\0\x04\0\x1d[metho\
+d]mesh.remove-primitive\x01\x1a\x03\x01\x10wired:scene/mesh\x05\x03\x02\x03\0\0\x04\
+vec3\x02\x03\0\0\x04quat\x01B\x15\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\0\x02\x03\
+\x02\x01\x05\x04\0\x04quat\x03\0\x02\x01m\x02\x04left\x05right\x04\0\x09hand-sid\
+e\x03\0\x04\x01r\x03\x0btranslation\x01\x08rotation\x03\x06radiusv\x04\0\x05join\
+t\x03\0\x06\x01r\x04\x03tip\x07\x06distal\x07\x08proximal\x07\x0ametacarpal\x07\x04\
+\0\x06finger\x03\0\x08\x01k\x07\x01r\x09\x04side\x05\x05thumb\x09\x05index\x09\x06\
+middle\x09\x04ring\x09\x06little\x09\x04palm\x07\x05wrist\x07\x05elbow\x0a\x04\0\
+\x04hand\x03\0\x0b\x01r\x02\x06origin\x01\x0borientation\x03\x04\0\x03ray\x03\0\x0d\
+\x01r\x03\x06origin\x01\x0borientation\x03\x06radiusv\x04\0\x03tip\x03\0\x0f\x01\
+q\x03\x04hand\x01\x0c\0\x03ray\x01\x0e\0\x03tip\x01\x10\0\x04\0\x0ainput-type\x03\
+\0\x11\x01r\x04\x02idw\x05input\x12\x08distancev\x05ordery\x04\0\x0binput-event\x03\
+\0\x13\x03\x01\x11wired:input/types\x05\x06\x02\x03\0\x03\x0binput-event\x01B\x0a\
+\x02\x03\x02\x01\x07\x04\0\x0binput-event\x03\0\0\x04\0\x0dinput-handler\x03\x01\
+\x01i\x02\x01@\0\0\x03\x04\0\x1a[constructor]input-handler\x01\x04\x01h\x02\x01k\
+\x01\x01@\x01\x04self\x05\0\x06\x04\0\"[method]input-handler.handle-input\x01\x07\
+\x03\x01\x13wired:input/handler\x05\x08\x01B\x1c\x02\x03\x02\x01\x04\x04\0\x04ve\
+c3\x03\0\0\x04\0\x08collider\x03\x01\x01r\x02\x06heightv\x06radiusv\x04\0\x0esha\
+pe-cylinder\x03\0\x03\x01q\x03\x06cuboid\x01\x01\0\x08cylinder\x01\x04\0\x06sphe\
+re\x01v\0\x04\0\x05shape\x03\0\x05\x04\0\x0arigid-body\x03\x01\x01m\x03\x07dynam\
+ic\x05fixed\x09kinematic\x04\0\x0frigid-body-type\x03\0\x08\x01i\x02\x01@\x01\x05\
+shape\x06\0\x0a\x04\0\x15[constructor]collider\x01\x0b\x01h\x02\x01@\x01\x04self\
+\x0c\0v\x04\0\x18[method]collider.density\x01\x0d\x01@\x02\x04self\x0c\x05valuev\
+\x01\0\x04\0\x1c[method]collider.set-density\x01\x0e\x01i\x07\x01@\x01\x0frigid-\
+body-type\x09\0\x0f\x04\0\x17[constructor]rigid-body\x01\x10\x01h\x07\x01@\x01\x04\
+self\x11\0\x01\x04\0\x19[method]rigid-body.angvel\x01\x12\x01@\x02\x04self\x11\x05\
+value\x01\x01\0\x04\0\x1d[method]rigid-body.set-angvel\x01\x13\x04\0\x19[method]\
+rigid-body.linvel\x01\x12\x04\0\x1d[method]rigid-body.set-linvel\x01\x13\x03\x01\
+\x13wired:physics/types\x05\x09\x02\x03\0\x02\x04mesh\x02\x03\0\x04\x0dinput-han\
+dler\x02\x03\0\0\x09transform\x02\x03\0\x05\x08collider\x02\x03\0\x05\x0arigid-b\
+ody\x01BD\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x0d\
+input-handler\x03\0\x02\x02\x03\x02\x01\x0c\x04\0\x09transform\x03\0\x04\x02\x03\
+\x02\x01\x0d\x04\0\x08collider\x03\0\x06\x02\x03\x02\x01\x0e\x04\0\x0arigid-body\
+\x03\0\x08\x04\0\x04node\x03\x01\x01i\x0a\x01@\0\0\x0b\x04\0\x11[constructor]nod\
+e\x01\x0c\x01h\x0a\x01@\x01\x04self\x0d\0y\x04\0\x0f[method]node.id\x01\x0e\x01@\
+\x01\x04self\x0d\0\x0b\x04\0\x10[method]node.ref\x01\x0f\x01@\x01\x04self\x0d\0s\
+\x04\0\x11[method]node.name\x01\x10\x01@\x02\x04self\x0d\x05values\x01\0\x04\0\x15\
+[method]node.set-name\x01\x11\x01p\x0b\x01@\x01\x04self\x0d\0\x12\x04\0\x15[meth\
+od]node.children\x01\x13\x01@\x02\x04self\x0d\x05value\x0d\x01\0\x04\0\x16[metho\
+d]node.add-child\x01\x14\x04\0\x19[method]node.remove-child\x01\x14\x01k\x0b\x01\
+@\x01\x04self\x0d\0\x15\x04\0\x13[method]node.parent\x01\x16\x01@\x01\x04self\x0d\
+\0\x05\x04\0\x16[method]node.transform\x01\x17\x01@\x02\x04self\x0d\x05value\x05\
+\x01\0\x04\0\x1a[method]node.set-transform\x01\x18\x01i\x01\x01k\x19\x01@\x01\x04\
+self\x0d\0\x1a\x04\0\x11[method]node.mesh\x01\x1b\x01h\x01\x01k\x1c\x01@\x02\x04\
+self\x0d\x05value\x1d\x01\0\x04\0\x15[method]node.set-mesh\x01\x1e\x01i\x07\x01k\
+\x1f\x01@\x01\x04self\x0d\0\x20\x04\0\x15[method]node.collider\x01!\x01h\x07\x01\
+k\"\x01@\x02\x04self\x0d\x05value#\x01\0\x04\0\x19[method]node.set-collider\x01$\
+\x01i\x09\x01k%\x01@\x01\x04self\x0d\0&\x04\0\x17[method]node.rigid-body\x01'\x01\
+h\x09\x01k(\x01@\x02\x04self\x0d\x05value)\x01\0\x04\0\x1b[method]node.set-rigid\
+-body\x01*\x01i\x03\x01k+\x01@\x01\x04self\x0d\0,\x04\0\x1a[method]node.input-ha\
+ndler\x01-\x01h\x03\x01k.\x01@\x02\x04self\x0d\x05value/\x01\0\x04\0\x1e[method]\
+node.set-input-handler\x010\x03\x01\x10wired:scene/node\x05\x0f\x02\x03\0\x06\x04\
+node\x01B#\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\0\x02\x03\x02\x01\x10\x04\0\x04\
+node\x03\0\x02\x01m\x03\x06center\x03end\x05start\x04\0\x09alignment\x03\0\x04\x04\
+\0\x09container\x03\x01\x01i\x06\x01@\x01\x04size\x01\0\x07\x04\0\x16[constructo\
+r]container\x01\x08\x01h\x06\x01@\x01\x04self\x09\0\x07\x04\0\x15[method]contain\
+er.ref\x01\x0a\x01i\x03\x01@\x01\x04self\x09\0\x0b\x04\0\x16[method]container.ro\
+ot\x01\x0c\x04\0\x17[method]container.inner\x01\x0c\x01p\x07\x01@\x01\x04self\x09\
+\0\x0d\x04\0\x1f[method]container.list-children\x01\x0e\x01@\x02\x04self\x09\x05\
+child\x09\x01\0\x04\0\x1b[method]container.add-child\x01\x0f\x04\0\x1e[method]co\
+ntainer.remove-child\x01\x0f\x01@\x01\x04self\x09\0\x01\x04\0\x16[method]contain\
+er.size\x01\x10\x01@\x02\x04self\x09\x05value\x01\x01\0\x04\0\x1a[method]contain\
+er.set-size\x01\x11\x01@\x01\x04self\x09\0\x05\x04\0\x19[method]container.align-\
+x\x01\x12\x04\0\x19[method]container.align-y\x01\x12\x04\0\x19[method]container.\
+align-z\x01\x12\x01@\x02\x04self\x09\x05value\x05\x01\0\x04\0\x1d[method]contain\
+er.set-align-x\x01\x13\x04\0\x1d[method]container.set-align-y\x01\x13\x04\0\x1d[\
+method]container.set-align-z\x01\x13\x04\x01\x16unavi:layout/container\x05\x11\x02\
+\x03\0\x07\x09container\x01B\x16\x02\x03\x02\x01\x12\x04\0\x09container\x03\0\0\x02\
+\x03\x02\x01\x04\x04\0\x04vec3\x03\0\x02\x04\0\x04grid\x03\x01\x01i\x04\x01@\x02\
+\x04size\x03\x04rows\x03\0\x05\x04\0\x11[constructor]grid\x01\x06\x01h\x04\x01i\x01\
+\x01@\x01\x04self\x07\0\x08\x04\0\x11[method]grid.root\x01\x09\x01p\x08\x01@\x01\
+\x04self\x07\0\x0a\x04\0\x12[method]grid.cells\x01\x0b\x01k\x08\x01@\x04\x04self\
+\x07\x01xy\x01yy\x01zy\0\x0c\x04\0\x11[method]grid.cell\x01\x0d\x01@\x01\x04self\
+\x07\0\x03\x04\0\x11[method]grid.rows\x01\x0e\x01@\x02\x04self\x07\x05value\x03\x01\
+\0\x04\0\x15[method]grid.set-rows\x01\x0f\x04\x01\x11unavi:layout/grid\x05\x13\x04\
+\x01\x12unavi:layout/guest\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\0G\x09producers\x01\
+\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

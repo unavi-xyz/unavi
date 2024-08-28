@@ -60,7 +60,6 @@ impl HostCollider for StoreState {
 
 #[cfg(test)]
 mod tests {
-
     use tracing_test::traced_test;
 
     use crate::api::utils::tests::init_test_state;

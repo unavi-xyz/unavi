@@ -4,12 +4,15 @@ use bevy::{ecs::world::CommandQueue, prelude::*, utils::HashMap};
 use wasm_bridge::component::{Resource, ResourceTable, ResourceTableError};
 use wasm_bridge_wasi::{WasiCtx, WasiCtxBuilder, WasiView};
 
-use crate::api::{utils::RefResource, wired_scene::glxf::document::GlxfDocument};
+use crate::api::{
+    utils::RefResource, wired_player::player::Player, wired_scene::glxf::document::GlxfDocument,
+};
 
 pub struct StoreState {
     pub commands: CommandQueue,
     pub default_material: Handle<StandardMaterial>,
     pub entities: EntityMaps,
+    pub local_player: Resource<Player>,
     pub name: String,
     pub root_glxf: Resource<GlxfDocument>,
     pub table: ResourceTable,
@@ -30,8 +33,11 @@ impl WasiView for StoreState {
 impl StoreState {
     pub fn new(name: String, root_ent: Entity, default_material: Handle<StandardMaterial>) -> Self {
         let mut table = ResourceTable::default();
-        let table_res = table.push(GlxfDocument::default()).unwrap();
-        let root_glxf = GlxfDocument::from_res(&table_res, &table).unwrap();
+
+        let local_player = Player::new(&mut table).unwrap();
+
+        let root_glxf = table.push(GlxfDocument::default()).unwrap();
+        let root_glxf = GlxfDocument::from_res(&root_glxf, &table).unwrap();
 
         let entities = EntityMaps::default();
         let mut commands = CommandQueue::default();
@@ -50,6 +56,7 @@ impl StoreState {
             commands,
             default_material,
             entities,
+            local_player,
             name,
             root_glxf,
             table,

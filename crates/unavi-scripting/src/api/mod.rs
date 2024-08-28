@@ -7,7 +7,7 @@ pub(crate) mod utils;
 pub mod wired_input;
 mod wired_log;
 mod wired_physics;
-mod wired_player;
+pub(crate) mod wired_player;
 pub(crate) mod wired_scene;
 
 pub(crate) fn add_host_apis(linker: &mut Linker<StoreState>) -> Result<()> {

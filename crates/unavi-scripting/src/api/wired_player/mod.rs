@@ -3,7 +3,9 @@ use wasm_bridge::component::{Linker, Resource};
 
 use crate::state::StoreState;
 
-mod player;
+use super::utils::RefResource;
+
+pub mod player;
 
 wasm_bridge::component::bindgen!({
     path: "../../wired-protocol/spatial/wit/wired-player",
@@ -25,6 +27,7 @@ impl wired::player::api::Host for StoreState {
     }
 
     fn local_player(&mut self) -> wasm_bridge::Result<Resource<player::Player>> {
-        todo!()
+        let p = player::Player::from_res(&self.local_player, &self.table)?;
+        Ok(p)
     }
 }

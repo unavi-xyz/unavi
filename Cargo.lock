@@ -4482,6 +4482,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-wired-player"
+version = "0.0.6"
+dependencies = [
+ "wit-bindgen-rt",
+]
+
+[[package]]
 name = "example-wired-scene"
 version = "0.0.6"
 dependencies = [

@@ -1,0 +1,28 @@
+[package]
+name = "example-wired-player"
+publish = false
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen-rt.workspace = true
+
+[package.metadata.component]
+package = "example:wired-player"
+
+[package.metadata.component.target.dependencies]
+"unavi:scene" = { path = "../unavi-scene/wit" }
+"unavi:shapes" = { path = "../unavi-shapes/wit" }
+"wired:input" = { path = "../../wired-protocol/spatial/wit/wired-input" }
+"wired:log" = { path = "../../wired-protocol/spatial/wit/wired-log" }
+"wired:math" = { path = "../../wired-protocol/spatial/wit/wired-math" }
+"wired:physics" = { path = "../../wired-protocol/spatial/wit/wired-physics" }
+"wired:player" = { path = "../../wired-protocol/spatial/wit/wired-player" }
+"wired:prelude" = { path = "../../wired-protocol/spatial/wit/wired-prelude" }
+"wired:scene" = { path = "../../wired-protocol/spatial/wit/wired-scene" }
+"wired:script" = { path = "../../wired-protocol/spatial/wit/wired-script" }

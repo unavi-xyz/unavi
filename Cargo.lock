@@ -1740,6 +1740,7 @@ dependencies = [
 [[package]]
 name = "bevy_shader_mtoon"
 version = "0.0.11"
+source = "git+https://github.com/unavi-xyz/bevy_vrm#88527527195a83b691679523f83a468f46cef48b"
 dependencies = [
  "bevy",
  "bevy_mod_outline",
@@ -1921,6 +1922,7 @@ dependencies = [
 [[package]]
 name = "bevy_vrm"
 version = "0.0.11"
+source = "git+https://github.com/unavi-xyz/bevy_vrm#88527527195a83b691679523f83a468f46cef48b"
 dependencies = [
  "bevy",
  "bevy_gltf_kun",
@@ -1996,7 +1998,7 @@ dependencies = [
  "bitflags 2.6.0",
  "cexpr",
  "clang-sys",
- "itertools 0.12.1",
+ "itertools 0.11.0",
  "lazy_static",
  "lazycell",
  "proc-macro2",
@@ -4982,7 +4984,7 @@ version = "0.7.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ff16065e5720f376fbced200a5ae0f47ace85fd70b7e54269790281353b6d61"
 dependencies = [
- "approx 0.5.1",
+ "approx 0.4.0",
  "arbitrary",
  "num-traits",
  "rstar 0.11.0",
@@ -5221,6 +5223,7 @@ dependencies = [
 [[package]]
 name = "gltf_kun_vrm"
 version = "0.0.11"
+source = "git+https://github.com/unavi-xyz/bevy_vrm#88527527195a83b691679523f83a468f46cef48b"
 dependencies = [
  "gltf_kun",
  "serde",
@@ -10191,6 +10194,7 @@ dependencies = [
 [[package]]
 name = "serde_vrm"
 version = "0.0.11"
+source = "git+https://github.com/unavi-xyz/bevy_vrm#88527527195a83b691679523f83a468f46cef48b"
 dependencies = [
  "bevy",
  "serde",

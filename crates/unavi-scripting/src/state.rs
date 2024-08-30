@@ -34,8 +34,6 @@ impl StoreState {
     pub fn new(name: String, root_ent: Entity, default_material: Handle<StandardMaterial>) -> Self {
         let mut table = ResourceTable::default();
 
-        let local_player = Player::new(&mut table).unwrap();
-
         let root_glxf = table.push(GlxfDocument::default()).unwrap();
         let root_glxf = GlxfDocument::from_res(&root_glxf, &table).unwrap();
 
@@ -52,17 +50,21 @@ impl StoreState {
             });
         });
 
-        Self {
+        let mut data = Self {
             commands,
             default_material,
             entities,
-            local_player,
+            local_player: Resource::new_own(0),
             name,
             root_glxf,
             table,
             wasi: WasiCtxBuilder::new().build(),
             wasi_table: wasm_bridge_wasi::ResourceTable::default(),
-        }
+        };
+
+        data.local_player = Player::new(&mut data).unwrap();
+
+        data
     }
 
     pub fn clone_res<T: RefResource>(

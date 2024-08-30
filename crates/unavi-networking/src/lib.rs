@@ -69,12 +69,12 @@ fn connect_to_instances(
 struct Tickrate(f32);
 
 #[derive(Component)]
-struct PlayerId(u16);
+struct Player(u16);
 
 fn handle_session_response(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
-    mut players: Query<(&PlayerId, &mut Transform)>,
+    mut players: Query<(&Player, &mut Transform)>,
     mut sessions: Query<(Entity, &mut Session)>,
     mut spawned: Local<Vec<u16>>,
 ) {
@@ -110,7 +110,7 @@ fn handle_session_response(
 
                         commands.spawn((
                             AvatarBundle::new(default_character_animations(&asset_server)),
-                            PlayerId(player),
+                            Player(player),
                             VrmBundle {
                                 vrm: asset_server.load(DEFAULT_VRM),
                                 scene_bundle: SceneBundle {

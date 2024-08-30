@@ -81,7 +81,7 @@ impl<'a> ChainWrapper<'a> {
     }
 
     fn push_bone(&mut self, bone: BoneName, name: &'a str) {
-        self.names.borrow_mut().insert(bone.clone(), name);
+        self.names.borrow_mut().insert(bone, name);
         let target = self.chain.push_target(name.to_string());
         self.targets.borrow_mut().insert(bone, target);
     }

@@ -7,7 +7,7 @@ pub(crate) mod utils;
 pub mod wired_input;
 mod wired_log;
 mod wired_physics;
-pub(crate) mod wired_player;
+pub mod wired_player;
 pub(crate) mod wired_scene;
 
 pub(crate) fn add_host_apis(linker: &mut Linker<StoreState>) -> Result<()> {
@@ -28,7 +28,7 @@ mod tests {
 
     use crate::{
         asset::{Wasm, WasmLoader},
-        load::{DefaultMaterial, LoadedScript, Scripts},
+        load::{DefaultMaterial, LoadedScript, ScriptMap},
         ScriptBundle,
     };
 
@@ -48,7 +48,7 @@ mod tests {
         .init_asset::<StandardMaterial>()
         .init_asset::<Wasm>()
         .init_asset_loader::<WasmLoader>()
-        .init_non_send_resource::<Scripts>()
+        .init_non_send_resource::<ScriptMap>()
         .insert_resource(DefaultMaterial(Handle::default()));
 
         app.add_systems(Update, crate::load::load_scripts);

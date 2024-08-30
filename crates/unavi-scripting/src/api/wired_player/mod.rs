@@ -5,7 +5,8 @@ use crate::state::StoreState;
 
 use super::utils::RefResource;
 
-pub mod player;
+pub(crate) mod player;
+pub mod systems;
 
 wasm_bridge::component::bindgen!({
     path: "../../wired-protocol/spatial/wit/wired-player",

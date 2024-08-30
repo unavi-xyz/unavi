@@ -16,7 +16,7 @@ pub struct LoadedScript;
 pub struct ProcessedScript;
 
 #[derive(Default, Deref)]
-pub struct Scripts(pub Arc<Mutex<HashMap<Entity, (Script, Store<StoreState>)>>>);
+pub struct ScriptMap(pub Arc<Mutex<HashMap<Entity, (Script, Store<StoreState>)>>>);
 
 #[derive(Resource, Deref)]
 pub struct DefaultMaterial(pub Handle<StandardMaterial>);
@@ -26,7 +26,7 @@ pub fn load_scripts(
     default_material: Res<DefaultMaterial>,
     mut commands: Commands,
     mut pool: AsyncTaskPool<anyhow::Result<Entity>>,
-    scripts: NonSendMut<Scripts>,
+    scripts: NonSendMut<ScriptMap>,
     to_load: Query<(Entity, &Name, &Handle<Wasm>), Without<ProcessedScript>>,
 ) {
     for (entity, name, handle) in to_load.iter() {

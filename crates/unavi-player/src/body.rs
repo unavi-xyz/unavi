@@ -10,6 +10,7 @@ use unavi_avatar::{
     default_character_animations, AvatarBundle, AverageVelocity, FallbackAvatar, DEFAULT_VRM,
 };
 use unavi_constants::player::{PLAYER_HEIGHT, PLAYER_WIDTH};
+use unavi_scripting::api::wired_player::systems::{PlayerId, LOCAL_PLAYER_ID};
 
 use crate::{controls::InputState, layers::LOCAL_PLAYER_LAYER};
 
@@ -77,6 +78,7 @@ pub(crate) fn spawn_player(asset_server: Res<AssetServer>, mut commands: Command
                 ..default()
             },
             FirstPerson,
+            PlayerId(LOCAL_PLAYER_ID),
         ))
         .id();
 
@@ -92,6 +94,35 @@ pub(crate) fn spawn_player(asset_server: Res<AssetServer>, mut commands: Command
         .id();
 
     commands.entity(body).push_children(&[avatar, camera]);
+}
+
+pub(crate) fn id_player_bones(
+    mut commands: Commands,
+    new_bones: Query<Entity, Added<BoneName>>,
+    parents: Query<&Parent>,
+    player_ids: Query<&PlayerId>,
+) {
+    for ent in new_bones.iter() {
+        if let Some(id) = find_player_id(ent, &parents, &player_ids) {
+            commands.entity(ent).insert(PlayerId(id));
+        }
+    }
+}
+
+fn find_player_id(
+    ent: Entity,
+    parents: &Query<&Parent>,
+    players: &Query<&PlayerId>,
+) -> Option<usize> {
+    if let Ok(parent) = parents.get(ent) {
+        if let Ok(id) = players.get(**parent) {
+            Some(id.0)
+        } else {
+            find_player_id(**parent, parents, players)
+        }
+    } else {
+        None
+    }
 }
 
 #[derive(Component)]

@@ -1,40 +1,60 @@
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
-    unavi::scene::api::{Root, Scene},
-    wired::{
-        log::api::{log, LogLevel},
-        player::api::{local_player, Skeleton},
+    unavi::{
+        scene::api::{Node, Transform},
+        shapes::api::{Sphere, Vec3},
     },
+    wired::player::api::local_player,
 };
 
 #[allow(warnings)]
 mod bindings;
 mod wired_math_impls;
 
-struct Script {
-    skeleton: Skeleton,
-}
+struct Script;
 
 impl GuestScript for Script {
     fn new() -> Self {
-        let scene = Scene::new();
+        let offset = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
+        let player = local_player();
 
-        Root::add_scene(&scene);
+        create_marker(&player.root(), &Sphere::new_ico(0.06), offset);
 
-        Script {
-            skeleton: local_player().skeleton(),
-        }
+        let marker = Sphere::new_ico(0.04);
+        let skeleton = player.skeleton();
+
+        create_marker(&skeleton.hips, &marker, offset);
+        create_marker(&skeleton.spine, &marker, offset);
+        create_marker(&skeleton.chest, &marker, offset);
+        create_marker(&skeleton.upper_chest, &marker, offset);
+        create_marker(&skeleton.neck, &marker, offset);
+        create_marker(&skeleton.head, &marker, offset);
+        create_marker(&skeleton.left_shoulder, &marker, offset);
+        create_marker(&skeleton.left_upper_arm, &marker, offset);
+        create_marker(&skeleton.left_lower_arm, &marker, offset);
+        create_marker(&skeleton.left_hand, &marker, offset);
+        create_marker(&skeleton.left_upper_leg, &marker, offset);
+        create_marker(&skeleton.left_lower_leg, &marker, offset);
+        create_marker(&skeleton.left_foot, &marker, offset);
+        create_marker(&skeleton.right_shoulder, &marker, offset);
+        create_marker(&skeleton.right_upper_arm, &marker, offset);
+        create_marker(&skeleton.right_lower_arm, &marker, offset);
+        create_marker(&skeleton.right_hand, &marker, offset);
+        create_marker(&skeleton.right_upper_leg, &marker, offset);
+        create_marker(&skeleton.right_lower_leg, &marker, offset);
+        create_marker(&skeleton.right_foot, &marker, offset);
+
+        Script
     }
 
-    fn update(&self, _delta: f32) {
-        log(
-            LogLevel::Info,
-            &format!(
-                "left_lower_arm: {:?}",
-                self.skeleton.left_lower_arm.transform().translation
-            ),
-        );
-    }
+    fn update(&self, _delta: f32) {}
+}
+
+fn create_marker(bone: &Node, marker: &Sphere, offset: Transform) -> Node {
+    let node = marker.to_node();
+    node.set_transform(offset);
+    bone.add_child(&node);
+    node
 }
 
 struct Types;

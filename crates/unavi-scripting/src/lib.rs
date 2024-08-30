@@ -1,8 +1,9 @@
 use bevy::prelude::*;
+use execution::ScriptTickrate;
 use load::DefaultMaterial;
 use unavi_constants::assets::WASM_ASSETS_DIR;
 
-use self::load::Scripts;
+use self::load::ScriptMap;
 
 pub mod api;
 mod asset;
@@ -31,14 +32,18 @@ impl Plugin for ScriptingPlugin {
 
         app.register_asset_loader(asset::WasmLoader)
             .init_asset::<Wasm>()
-            .init_non_send_resource::<Scripts>()
+            .init_non_send_resource::<ScriptMap>()
             .insert_resource(DefaultMaterial(default_material))
             .add_systems(
                 FixedUpdate,
                 (
-                    (execution::init_scripts, execution::update_scripts).chain(),
                     load::load_scripts,
-                ),
+                    execution::tick_scripts,
+                    api::wired_player::systems::update_player_skeletons,
+                    execution::init_scripts,
+                    execution::update_scripts,
+                )
+                    .chain(),
             );
     }
 }
@@ -46,6 +51,7 @@ impl Plugin for ScriptingPlugin {
 #[derive(Bundle)]
 pub struct ScriptBundle {
     pub name: Name,
+    pub tickrate: ScriptTickrate,
     pub wasm: Handle<Wasm>,
 }
 
@@ -59,6 +65,7 @@ impl ScriptBundle {
 
         Self {
             name: name.into(),
+            tickrate: ScriptTickrate::default(),
             wasm,
         }
     }

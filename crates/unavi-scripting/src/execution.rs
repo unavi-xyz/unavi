@@ -3,7 +3,45 @@ use wasm_bridge::{component::ResourceAny, AsContextMut};
 
 use crate::load::LoadedScript;
 
-use super::load::Scripts;
+use super::load::ScriptMap;
+
+#[derive(Component)]
+pub struct ScriptTickrate {
+    delta: f32,
+    last: f32,
+    pub ready_for_update: bool,
+    tickrate: f32,
+}
+
+impl Default for ScriptTickrate {
+    fn default() -> Self {
+        Self {
+            delta: 0.0,
+            last: 0.0,
+            ready_for_update: true,
+            tickrate: 1.0 / 20.0,
+        }
+    }
+}
+
+pub fn tick_scripts(time: Res<Time>, mut scripts: Query<&mut ScriptTickrate>) {
+    let now = time.elapsed_seconds();
+
+    for mut tickrate in scripts.iter_mut() {
+        if tickrate.last == 0.0 {
+            tickrate.last = now;
+            continue;
+        }
+
+        let delta = now - tickrate.last;
+
+        if delta > tickrate.tickrate {
+            tickrate.delta = delta;
+            tickrate.last = now;
+            tickrate.ready_for_update = true;
+        };
+    }
+}
 
 #[derive(Component)]
 pub struct FailedToInit;
@@ -21,14 +59,14 @@ pub fn init_scripts(
             Without<ScriptResource>,
         ),
     >,
-    scripts: NonSendMut<Scripts>,
+    script_map: NonSendMut<ScriptMap>,
 ) {
     for (entity, name) in to_init.iter() {
         #[allow(clippy::await_holding_lock)]
-        let res = block_on(async {
+        let result = block_on(async {
             info!("Initializing script {}", name);
 
-            let mut scripts = scripts.lock().unwrap();
+            let mut scripts = script_map.lock().unwrap();
             let (script, store) = scripts.get_mut(&entity).unwrap();
 
             script
@@ -38,39 +76,44 @@ pub fn init_scripts(
                 .await
         });
 
-        if let Err(e) = res {
+        if let Err(e) = result {
             error!("Failed to construct script resource: {}", e);
             commands.entity(entity).insert(FailedToInit);
             continue;
         };
 
-        commands.entity(entity).insert(ScriptResource(res.unwrap()));
+        commands
+            .entity(entity)
+            .insert(ScriptResource(result.unwrap()));
     }
 }
 
 pub fn update_scripts(
     mut commands: Commands,
-    mut to_update: Query<(Entity, &Name, &ScriptResource)>,
-    scripts: NonSendMut<Scripts>,
-    time: Res<Time>,
+    mut scripts: Query<(Entity, &Name, &ScriptResource, &mut ScriptTickrate)>,
+    script_map: NonSendMut<ScriptMap>,
 ) {
-    let delta = time.delta_seconds();
+    for (entity, name, resource, mut tickrate) in scripts.iter_mut() {
+        if !tickrate.ready_for_update {
+            continue;
+        }
 
-    for (entity, name, res) in to_update.iter_mut() {
+        tickrate.ready_for_update = false;
+
         #[allow(clippy::await_holding_lock)]
-        let res: anyhow::Result<_> = block_on(async {
-            let span = trace_span!("ScriptUpdate", name = name.to_string(), delta);
+        let result: anyhow::Result<_> = block_on(async {
+            let span = trace_span!("ScriptUpdate", name = name.to_string(), tickrate.delta);
             let span = span.enter();
 
             trace!("Updating script");
 
-            let mut scripts = scripts.lock().unwrap();
+            let mut scripts = script_map.lock().unwrap();
             let (script, store) = scripts.get_mut(&entity).unwrap();
 
-            let res = script
+            let result = script
                 .wired_script_types()
                 .script()
-                .call_update(store.as_context_mut(), res.0, delta)
+                .call_update(store.as_context_mut(), resource.0, tickrate.delta)
                 .await;
 
             commands.append(&mut store.data_mut().commands);
@@ -78,10 +121,10 @@ pub fn update_scripts(
             trace!("Done");
             drop(span);
 
-            res
+            result
         });
 
-        if let Err(e) = res {
+        if let Err(e) = result {
             error!("Failed to update script: {}", e);
         };
     }

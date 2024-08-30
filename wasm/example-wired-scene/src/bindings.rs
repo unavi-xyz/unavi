@@ -2505,12 +2505,17 @@ pub mod wired {
             use super::super::super::_rt;
             pub type Node = super::super::super::wired::scene::node::Node;
             pub struct Skeleton {
-                pub head: Node,
-                pub spine: Node,
                 pub hips: Node,
+                pub spine: Node,
+                pub chest: Node,
+                pub upper_chest: Node,
+                pub neck: Node,
+                pub head: Node,
+                pub left_shoulder: Node,
                 pub left_upper_arm: Node,
                 pub left_lower_arm: Node,
                 pub left_hand: Node,
+                pub right_shoulder: Node,
                 pub right_upper_arm: Node,
                 pub right_lower_arm: Node,
                 pub right_hand: Node,
@@ -2524,12 +2529,17 @@ pub mod wired {
             impl ::core::fmt::Debug for Skeleton {
                 fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Skeleton")
-                        .field("head", &self.head)
-                        .field("spine", &self.spine)
                         .field("hips", &self.hips)
+                        .field("spine", &self.spine)
+                        .field("chest", &self.chest)
+                        .field("upper-chest", &self.upper_chest)
+                        .field("neck", &self.neck)
+                        .field("head", &self.head)
+                        .field("left-shoulder", &self.left_shoulder)
                         .field("left-upper-arm", &self.left_upper_arm)
                         .field("left-lower-arm", &self.left_lower_arm)
                         .field("left-hand", &self.left_hand)
+                        .field("right-shoulder", &self.right_shoulder)
                         .field("right-upper-arm", &self.right_upper_arm)
                         .field("right-lower-arm", &self.right_lower_arm)
                         .field("right-hand", &self.right_hand)
@@ -2589,11 +2599,31 @@ pub mod wired {
 
             impl Player {
                 #[allow(unused_unsafe, clippy::all)]
+                pub fn root(&self) -> Node {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:player/api")]
+                        extern "C" {
+                            #[link_name = "[method]player.root"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Player {
+                #[allow(unused_unsafe, clippy::all)]
                 pub fn skeleton(&self) -> Skeleton {
                     unsafe {
                         #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 60]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 60]);
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 80]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 80]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:player/api")]
@@ -2622,59 +2652,81 @@ pub mod wired {
                         let l13 = *ptr0.add(48).cast::<i32>();
                         let l14 = *ptr0.add(52).cast::<i32>();
                         let l15 = *ptr0.add(56).cast::<i32>();
+                        let l16 = *ptr0.add(60).cast::<i32>();
+                        let l17 = *ptr0.add(64).cast::<i32>();
+                        let l18 = *ptr0.add(68).cast::<i32>();
+                        let l19 = *ptr0.add(72).cast::<i32>();
+                        let l20 = *ptr0.add(76).cast::<i32>();
                         Skeleton {
-                            head: super::super::super::wired::scene::node::Node::from_handle(
+                            hips: super::super::super::wired::scene::node::Node::from_handle(
                                 l1 as u32,
                             ),
                             spine: super::super::super::wired::scene::node::Node::from_handle(
                                 l2 as u32,
                             ),
-                            hips: super::super::super::wired::scene::node::Node::from_handle(
+                            chest: super::super::super::wired::scene::node::Node::from_handle(
                                 l3 as u32,
                             ),
-                            left_upper_arm:
-                                super::super::super::wired::scene::node::Node::from_handle(
-                                    l4 as u32,
-                                ),
-                            left_lower_arm:
-                                super::super::super::wired::scene::node::Node::from_handle(
-                                    l5 as u32,
-                                ),
-                            left_hand: super::super::super::wired::scene::node::Node::from_handle(
+                            upper_chest: super::super::super::wired::scene::node::Node::from_handle(
+                                l4 as u32,
+                            ),
+                            neck: super::super::super::wired::scene::node::Node::from_handle(
+                                l5 as u32,
+                            ),
+                            head: super::super::super::wired::scene::node::Node::from_handle(
                                 l6 as u32,
                             ),
-                            right_upper_arm:
+                            left_shoulder:
                                 super::super::super::wired::scene::node::Node::from_handle(
                                     l7 as u32,
                                 ),
-                            right_lower_arm:
+                            left_upper_arm:
                                 super::super::super::wired::scene::node::Node::from_handle(
                                     l8 as u32,
                                 ),
-                            right_hand: super::super::super::wired::scene::node::Node::from_handle(
-                                l9 as u32,
-                            ),
-                            left_upper_leg:
+                            left_lower_arm:
                                 super::super::super::wired::scene::node::Node::from_handle(
-                                    l10 as u32,
+                                    l9 as u32,
                                 ),
-                            left_lower_leg:
+                            left_hand: super::super::super::wired::scene::node::Node::from_handle(
+                                l10 as u32,
+                            ),
+                            right_shoulder:
                                 super::super::super::wired::scene::node::Node::from_handle(
                                     l11 as u32,
                                 ),
-                            left_foot: super::super::super::wired::scene::node::Node::from_handle(
-                                l12 as u32,
-                            ),
-                            right_upper_leg:
+                            right_upper_arm:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l12 as u32,
+                                ),
+                            right_lower_arm:
                                 super::super::super::wired::scene::node::Node::from_handle(
                                     l13 as u32,
                                 ),
+                            right_hand: super::super::super::wired::scene::node::Node::from_handle(
+                                l14 as u32,
+                            ),
+                            left_upper_leg:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l15 as u32,
+                                ),
+                            left_lower_leg:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l16 as u32,
+                                ),
+                            left_foot: super::super::super::wired::scene::node::Node::from_handle(
+                                l17 as u32,
+                            ),
+                            right_upper_leg:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l18 as u32,
+                                ),
                             right_lower_leg:
                                 super::super::super::wired::scene::node::Node::from_handle(
-                                    l14 as u32,
+                                    l19 as u32,
                                 ),
                             right_foot: super::super::super::wired::scene::node::Node::from_handle(
-                                l15 as u32,
+                                l20 as u32,
                             ),
                         }
                     }
@@ -6906,8 +6958,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 8911] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xd2D\x01A\x02\x01A)\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 9003] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xaeE\x01A\x02\x01A)\x01\
 B\x0a\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\
 \x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01r\
 \x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -7021,38 +7073,40 @@ phere.set-kind\x013\x01@\x01\x04self/\0\x17\x04\0\x16[method]sphere.to-mesh\x014
 \x01@\x01\x04self/\0\x19\x04\0\x16[method]sphere.to-node\x015\x04\0\x1e[method]s\
 phere.to-physics-node\x015\x03\x01\x10unavi:shapes/api\x05\x12\x01B\x04\x01m\x04\
 \x05debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\
-\x07messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x13\x01B\x0f\
-\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\0\x01i\x01\x01r\x0f\x04head\x02\x05spin\
-e\x02\x04hips\x02\x0eleft-upper-arm\x02\x0eleft-lower-arm\x02\x09left-hand\x02\x0f\
-right-upper-arm\x02\x0fright-lower-arm\x02\x0aright-hand\x02\x0eleft-upper-leg\x02\
-\x0eleft-lower-leg\x02\x09left-foot\x02\x0fright-upper-leg\x02\x0fright-lower-le\
-g\x02\x0aright-foot\x02\x04\0\x08skeleton\x03\0\x03\x04\0\x06player\x03\x01\x01h\
-\x05\x01@\x01\x04self\x06\0\x04\x04\0\x17[method]player.skeleton\x01\x07\x01i\x05\
-\x01p\x08\x01@\0\0\x09\x04\0\x0clist-players\x01\x0a\x01@\0\0\x08\x04\0\x0clocal\
--player\x01\x0b\x03\x01\x10wired:player/api\x05\x14\x01B\x15\x02\x03\x02\x01\x11\
-\x04\0\x04node\x03\0\0\x04\0\x05scene\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\x12[co\
-nstructor]scene\x01\x04\x01h\x02\x01@\x01\x04self\x05\0y\x04\0\x10[method]scene.\
-id\x01\x06\x01@\x01\x04self\x05\0s\x04\0\x12[method]scene.name\x01\x07\x01@\x02\x04\
-self\x05\x05values\x01\0\x04\0\x16[method]scene.set-name\x01\x08\x01i\x01\x01p\x09\
-\x01@\x01\x04self\x05\0\x0a\x04\0\x13[method]scene.nodes\x01\x0b\x01h\x01\x01@\x02\
-\x04self\x05\x05value\x0c\x01\0\x04\0\x16[method]scene.add-node\x01\x0d\x04\0\x19\
-[method]scene.remove-node\x01\x0d\x03\x01\x11wired:scene/scene\x05\x15\x02\x03\0\
-\x0a\x05scene\x01B5\x02\x03\x02\x01\x02\x04\0\x08material\x03\0\0\x02\x03\x02\x01\
-\x0a\x04\0\x04mesh\x03\0\x02\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x04\x02\x03\
-\x02\x01\x16\x04\0\x05scene\x03\0\x06\x04\0\x04gltf\x03\x01\x01i\x08\x01@\0\0\x09\
-\x04\0\x11[constructor]gltf\x01\x0a\x01h\x08\x01i\x01\x01p\x0c\x01@\x01\x04self\x0b\
-\0\x0d\x04\0\x1b[method]gltf.list-materials\x01\x0e\x01h\x01\x01@\x02\x04self\x0b\
-\x05value\x0f\x01\0\x04\0\x19[method]gltf.add-material\x01\x10\x04\0\x1c[method]\
-gltf.remove-material\x01\x10\x01i\x03\x01p\x11\x01@\x01\x04self\x0b\0\x12\x04\0\x18\
-[method]gltf.list-meshes\x01\x13\x01h\x03\x01@\x02\x04self\x0b\x05value\x14\x01\0\
-\x04\0\x15[method]gltf.add-mesh\x01\x15\x04\0\x18[method]gltf.remove-mesh\x01\x15\
-\x01i\x05\x01p\x16\x01@\x01\x04self\x0b\0\x17\x04\0\x17[method]gltf.list-nodes\x01\
-\x18\x01h\x05\x01@\x02\x04self\x0b\x05value\x19\x01\0\x04\0\x15[method]gltf.add-\
-node\x01\x1a\x04\0\x18[method]gltf.remove-node\x01\x1a\x01i\x07\x01p\x1b\x01@\x01\
-\x04self\x0b\0\x1c\x04\0\x18[method]gltf.list-scenes\x01\x1d\x01h\x07\x01@\x02\x04\
-self\x0b\x05value\x1e\x01\0\x04\0\x16[method]gltf.add-scene\x01\x1f\x04\0\x19[me\
-thod]gltf.remove-scene\x01\x1f\x01k\x1b\x01@\x01\x04self\x0b\0\x20\x04\0\x19[met\
-hod]gltf.active-scene\x01!\x01k\x1e\x01@\x02\x04self\x0b\x05value\"\x01\0\x04\0\x1d\
+\x07messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x13\x01B\x11\
+\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\0\x01i\x01\x01r\x14\x04hips\x02\x05spin\
+e\x02\x05chest\x02\x0bupper-chest\x02\x04neck\x02\x04head\x02\x0dleft-shoulder\x02\
+\x0eleft-upper-arm\x02\x0eleft-lower-arm\x02\x09left-hand\x02\x0eright-shoulder\x02\
+\x0fright-upper-arm\x02\x0fright-lower-arm\x02\x0aright-hand\x02\x0eleft-upper-l\
+eg\x02\x0eleft-lower-leg\x02\x09left-foot\x02\x0fright-upper-leg\x02\x0fright-lo\
+wer-leg\x02\x0aright-foot\x02\x04\0\x08skeleton\x03\0\x03\x04\0\x06player\x03\x01\
+\x01h\x05\x01@\x01\x04self\x06\0\x02\x04\0\x13[method]player.root\x01\x07\x01@\x01\
+\x04self\x06\0\x04\x04\0\x17[method]player.skeleton\x01\x08\x01i\x05\x01p\x09\x01\
+@\0\0\x0a\x04\0\x0clist-players\x01\x0b\x01@\0\0\x09\x04\0\x0clocal-player\x01\x0c\
+\x03\x01\x10wired:player/api\x05\x14\x01B\x15\x02\x03\x02\x01\x11\x04\0\x04node\x03\
+\0\0\x04\0\x05scene\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\x12[constructor]scene\x01\
+\x04\x01h\x02\x01@\x01\x04self\x05\0y\x04\0\x10[method]scene.id\x01\x06\x01@\x01\
+\x04self\x05\0s\x04\0\x12[method]scene.name\x01\x07\x01@\x02\x04self\x05\x05valu\
+es\x01\0\x04\0\x16[method]scene.set-name\x01\x08\x01i\x01\x01p\x09\x01@\x01\x04s\
+elf\x05\0\x0a\x04\0\x13[method]scene.nodes\x01\x0b\x01h\x01\x01@\x02\x04self\x05\
+\x05value\x0c\x01\0\x04\0\x16[method]scene.add-node\x01\x0d\x04\0\x19[method]sce\
+ne.remove-node\x01\x0d\x03\x01\x11wired:scene/scene\x05\x15\x02\x03\0\x0a\x05sce\
+ne\x01B5\x02\x03\x02\x01\x02\x04\0\x08material\x03\0\0\x02\x03\x02\x01\x0a\x04\0\
+\x04mesh\x03\0\x02\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x04\x02\x03\x02\x01\x16\
+\x04\0\x05scene\x03\0\x06\x04\0\x04gltf\x03\x01\x01i\x08\x01@\0\0\x09\x04\0\x11[\
+constructor]gltf\x01\x0a\x01h\x08\x01i\x01\x01p\x0c\x01@\x01\x04self\x0b\0\x0d\x04\
+\0\x1b[method]gltf.list-materials\x01\x0e\x01h\x01\x01@\x02\x04self\x0b\x05value\
+\x0f\x01\0\x04\0\x19[method]gltf.add-material\x01\x10\x04\0\x1c[method]gltf.remo\
+ve-material\x01\x10\x01i\x03\x01p\x11\x01@\x01\x04self\x0b\0\x12\x04\0\x18[metho\
+d]gltf.list-meshes\x01\x13\x01h\x03\x01@\x02\x04self\x0b\x05value\x14\x01\0\x04\0\
+\x15[method]gltf.add-mesh\x01\x15\x04\0\x18[method]gltf.remove-mesh\x01\x15\x01i\
+\x05\x01p\x16\x01@\x01\x04self\x0b\0\x17\x04\0\x17[method]gltf.list-nodes\x01\x18\
+\x01h\x05\x01@\x02\x04self\x0b\x05value\x19\x01\0\x04\0\x15[method]gltf.add-node\
+\x01\x1a\x04\0\x18[method]gltf.remove-node\x01\x1a\x01i\x07\x01p\x1b\x01@\x01\x04\
+self\x0b\0\x1c\x04\0\x18[method]gltf.list-scenes\x01\x1d\x01h\x07\x01@\x02\x04se\
+lf\x0b\x05value\x1e\x01\0\x04\0\x16[method]gltf.add-scene\x01\x1f\x04\0\x19[meth\
+od]gltf.remove-scene\x01\x1f\x01k\x1b\x01@\x01\x04self\x0b\0\x20\x04\0\x19[metho\
+d]gltf.active-scene\x01!\x01k\x1e\x01@\x02\x04self\x0b\x05value\"\x01\0\x04\0\x1d\
 [method]gltf.set-active-scene\x01#\x04\0\x1a[method]gltf.default-scene\x01!\x04\0\
 \x1e[method]gltf.set-default-scene\x01\x1f\x03\x01\x10wired:scene/gltf\x05\x17\x02\
 \x03\0\x0b\x04gltf\x01Bt\x02\x03\x02\x01\x18\x04\0\x04gltf\x03\0\0\x02\x03\x02\x01\

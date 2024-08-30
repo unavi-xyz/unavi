@@ -31,6 +31,7 @@ impl Plugin for PlayerPlugin {
             Update,
             (
                 body::calc_eye_offset,
+                body::id_player_bones,
                 body::set_avatar_head,
                 body::setup_first_person,
                 input::handle_raycast_input,

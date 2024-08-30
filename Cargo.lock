@@ -1740,7 +1740,6 @@ dependencies = [
 [[package]]
 name = "bevy_shader_mtoon"
 version = "0.0.11"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#d98440ec923e7741a4c808dcf0da980a9735c021"
 dependencies = [
  "bevy",
  "bevy_mod_outline",
@@ -1922,7 +1921,6 @@ dependencies = [
 [[package]]
 name = "bevy_vrm"
 version = "0.0.11"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#d98440ec923e7741a4c808dcf0da980a9735c021"
 dependencies = [
  "bevy",
  "bevy_gltf_kun",
@@ -5223,7 +5221,6 @@ dependencies = [
 [[package]]
 name = "gltf_kun_vrm"
 version = "0.0.11"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#d98440ec923e7741a4c808dcf0da980a9735c021"
 dependencies = [
  "gltf_kun",
  "serde",
@@ -10194,7 +10191,6 @@ dependencies = [
 [[package]]
 name = "serde_vrm"
 version = "0.0.11"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#d98440ec923e7741a4c808dcf0da980a9735c021"
 dependencies = [
  "bevy",
  "serde",
@@ -12124,6 +12120,7 @@ dependencies = [
  "bevy-inspector-egui",
  "bevy_async_task",
  "bevy_panorbit_camera",
+ "bevy_vrm",
  "crossbeam",
  "tokio",
  "tracing",

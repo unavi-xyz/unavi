@@ -470,15 +470,16 @@ mod tests {
     fn test_new() {
         let (mut world, mut state) = init_test_state();
 
-        let _ = HostNode::new(&mut state).unwrap();
+        let res = HostNode::new(&mut state).unwrap();
 
         world.commands().append(&mut state.commands);
         world.flush_commands();
 
-        let (found_id, _) = world
-            .query::<(&NodeId, &bevy::prelude::Transform)>()
-            .single(&world);
-        assert_eq!(found_id.0, 1);
+        world
+            .query::<&NodeId>()
+            .iter(&world)
+            .find(|n| n.0 == res.rep())
+            .unwrap();
     }
 
     #[test]

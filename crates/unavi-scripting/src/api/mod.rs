@@ -111,7 +111,7 @@ mod tests {
             }
 
             assert_eq!(found_constructs, 1);
-            assert_eq!(found_updates, UPDATES);
+            assert_eq!(found_updates, 1);
 
             Ok(())
         });

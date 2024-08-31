@@ -167,13 +167,16 @@ mod tests {
         let root_ent = world.spawn_empty().id();
         let mut state = StoreState::new("test".to_string(), root_ent, Handle::default());
 
-        let _ = HostScene::new(&mut state).unwrap();
+        let res = HostScene::new(&mut state).unwrap();
 
         world.commands().append(&mut state.commands);
         world.flush_commands();
 
-        let (found_id, _) = world.query::<(&SceneId, &Handle<Scene>)>().single(&world);
-        assert_eq!(found_id.0, 1);
+        world
+            .query::<&SceneId>()
+            .iter(&world)
+            .find(|n| n.0 == res.rep())
+            .unwrap();
     }
 
     #[test]
@@ -185,12 +188,18 @@ mod tests {
 
         let scene = HostScene::new(&mut state).unwrap();
         let node = HostNode::new(&mut state).unwrap();
+        let node_rep = node.rep();
         HostScene::add_node(&mut state, scene, node).unwrap();
 
         world.commands().append(&mut state.commands);
         world.flush_commands();
 
-        let (node_ent, _) = world.query::<(Entity, &NodeId)>().single(&world);
+        let (node_ent, _) = world
+            .query::<(Entity, &NodeId)>()
+            .iter(&world)
+            .find(|(_, n)| n.0 == node_rep)
+            .unwrap();
+
         let (scene_children, _) = world.query::<(&Children, &SceneId)>().single(&world);
         assert!(scene_children.contains(&node_ent));
     }

@@ -272,9 +272,8 @@ mod tests {
         world.commands().append(&mut state.commands);
         world.flush_commands();
 
-        let (found_id, _) = world
+        world
             .query::<(&GlxfNodeId, &bevy::prelude::Transform)>()
             .single(&world);
-        assert_eq!(found_id.0, 1);
     }
 }

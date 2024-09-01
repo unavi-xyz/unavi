@@ -18,5 +18,5 @@ unavi-constants = { path = "../unavi-constants" }
 
 [dev-dependencies]
 bevy-inspector-egui.workspace = true
-bevy_egui = "0.28.0"
+bevy_egui = "0.29.0"
 bevy_panorbit_camera.workspace = true

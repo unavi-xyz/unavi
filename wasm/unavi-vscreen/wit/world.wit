@@ -7,17 +7,27 @@ world lib {
 interface screen {
   use wired:scene/node.{node};
 
+  // Central screen UI.
+  // Expands into various modules when activated.
   resource screen {
     constructor();
-
-    add-module: func(module: module);
 
     visible: func() -> bool;
     set-visible: func(value: bool);
 
+    // The module displayed in the screen, at all times.
+    central-module: func() -> option<module>;
+    set-central-module: func(value: option<borrow<module>>);
+
+    add-module: func(value: borrow<module>);
+    remove-module: func(value: borrow<module>);
+    modules: func() -> list<module>;
+
     update: func(delta: f32);
   }
 
+  // UI module.
+  // Has a closed and open form.
   resource module {
     constructor();
 

@@ -12108,7 +12108,7 @@ dependencies = [
  "wasm-bindgen-futures",
  "wired-world",
  "wtransport",
- "xwt-core",
+ "xwt-core 0.4.2",
  "xwt-futures-io",
  "xwt-web-sys",
  "xwt-wtransport",
@@ -12276,7 +12276,7 @@ dependencies = [
  "wired-social",
  "wired-world",
  "wtransport",
- "xwt-core",
+ "xwt-core 0.4.2",
  "xwt-futures-io",
  "xwt-wtransport",
 ]
@@ -14078,20 +14078,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1f98acac2f9398db512d6cc2d1fd12ce5e896192e9c961a83dd48d32c7fed8c"
 
 [[package]]
+name = "xwt-core"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e003285401374e0eb07a563d78bc4d79402482df5228c304829c36888a54aaed"
+
+[[package]]
 name = "xwt-futures-io"
 version = "0.0.6"
 dependencies = [
  "anyhow",
  "futures-io",
  "tracing",
- "xwt-core",
+ "xwt-core 0.4.2",
 ]
 
 [[package]]
 name = "xwt-web-sys"
-version = "0.11.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1e028f18e310bc2e8e3650ba9cbbf3b7a5b13277e8c0ded6a0d81b510ccc1a6"
+checksum = "a2dcac32667f471216ce3003742f67e2e0f33bff76c8fec09ecd34e98690ad16"
 dependencies = [
  "js-sys",
  "tokio",
@@ -14100,7 +14106,7 @@ dependencies = [
  "web-sys",
  "web-sys-async-io",
  "web-sys-stream-utils",
- "xwt-core",
+ "xwt-core 0.5.0",
 ]
 
 [[package]]
@@ -14110,7 +14116,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f2dbaad8856f65bee36cab11271a4662ed9659986b161bab22d2d1cef16dd87"
 dependencies = [
  "wtransport",
- "xwt-core",
+ "xwt-core 0.4.2",
 ]
 
 [[package]]

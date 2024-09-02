@@ -2765,6 +2765,8 @@ pub mod exports {
                     super::super::super::super::__link_custom_section_describing_imports;
                 use super::super::super::super::_rt;
                 pub type Node = super::super::super::super::wired::scene::node::Node;
+                /// Central screen UI.
+                /// Expands into various modules when activated.
 
                 #[derive(Debug)]
                 #[repr(transparent)]
@@ -2905,6 +2907,9 @@ pub mod exports {
                         }
                     }
                 }
+
+                /// UI module.
+                /// Has a closed and open form.
 
                 #[derive(Debug)]
                 #[repr(transparent)]
@@ -3056,19 +3061,6 @@ pub mod exports {
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_screen_add_module_cabi<T: GuestScreen>(
-                    arg0: *mut u8,
-                    arg1: i32,
-                ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    T::add_module(
-                        ScreenBorrow::lift(arg0 as u32 as usize).get(),
-                        Module::from_handle(arg1 as u32),
-                    );
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
                 pub unsafe fn _export_method_screen_visible_cabi<T: GuestScreen>(
                     arg0: *mut u8,
                 ) -> i32 {
@@ -3092,6 +3084,115 @@ pub mod exports {
                         ScreenBorrow::lift(arg0 as u32 as usize).get(),
                         _rt::bool_lift(arg1 as u8),
                     );
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_screen_central_module_cabi<T: GuestScreen>(
+                    arg0: *mut u8,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::central_module(ScreenBorrow::lift(arg0 as u32 as usize).get());
+                    let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result0 {
+                        Some(e) => {
+                            *ptr1.add(0).cast::<u8>() = (1i32) as u8;
+                            *ptr1.add(4).cast::<i32>() = (e).take_handle() as i32;
+                        }
+                        None => {
+                            *ptr1.add(0).cast::<u8>() = (0i32) as u8;
+                        }
+                    };
+                    ptr1
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_screen_set_central_module_cabi<T: GuestScreen>(
+                    arg0: *mut u8,
+                    arg1: i32,
+                    arg2: i32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::set_central_module(
+                        ScreenBorrow::lift(arg0 as u32 as usize).get(),
+                        match arg1 {
+                            0 => None,
+                            1 => {
+                                let e = ModuleBorrow::lift(arg2 as u32 as usize);
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        },
+                    );
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_screen_add_module_cabi<T: GuestScreen>(
+                    arg0: *mut u8,
+                    arg1: i32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::add_module(
+                        ScreenBorrow::lift(arg0 as u32 as usize).get(),
+                        ModuleBorrow::lift(arg1 as u32 as usize),
+                    );
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_screen_remove_module_cabi<T: GuestScreen>(
+                    arg0: *mut u8,
+                    arg1: i32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::remove_module(
+                        ScreenBorrow::lift(arg0 as u32 as usize).get(),
+                        ModuleBorrow::lift(arg1 as u32 as usize),
+                    );
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_screen_modules_cabi<T: GuestScreen>(
+                    arg0: *mut u8,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::modules(ScreenBorrow::lift(arg0 as u32 as usize).get());
+                    let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    let vec2 = result0;
+                    let len2 = vec2.len();
+                    let layout2 = _rt::alloc::Layout::from_size_align_unchecked(vec2.len() * 4, 4);
+                    let result2 = if layout2.size() != 0 {
+                        let ptr = _rt::alloc::alloc(layout2).cast::<u8>();
+                        if ptr.is_null() {
+                            _rt::alloc::handle_alloc_error(layout2);
+                        }
+                        ptr
+                    } else {
+                        {
+                            ::core::ptr::null_mut()
+                        }
+                    };
+                    for (i, e) in vec2.into_iter().enumerate() {
+                        let base = result2.add(i * 4);
+                        {
+                            *base.add(0).cast::<i32>() = (e).take_handle() as i32;
+                        }
+                    }
+                    *ptr1.add(4).cast::<usize>() = len2;
+                    *ptr1.add(0).cast::<*mut u8>() = result2;
+                    ptr1
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_method_screen_modules<T: GuestScreen>(arg0: *mut u8) {
+                    let l0 = *arg0.add(0).cast::<*mut u8>();
+                    let l1 = *arg0.add(4).cast::<usize>();
+                    let base2 = l0;
+                    let len2 = l1;
+                    _rt::cabi_dealloc(base2, len2 * 4, 4);
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
@@ -3181,9 +3282,14 @@ pub mod exports {
                     }
 
                     fn new() -> Self;
-                    fn add_module(&self, module: Module);
                     fn visible(&self) -> bool;
                     fn set_visible(&self, value: bool);
+                    /// The module displayed in the screen, at all times.
+                    fn central_module(&self) -> Option<Module>;
+                    fn set_central_module(&self, value: Option<ModuleBorrow<'_>>);
+                    fn add_module(&self, value: ModuleBorrow<'_>);
+                    fn remove_module(&self, value: ModuleBorrow<'_>);
+                    fn modules(&self) -> _rt::Vec<Module>;
                     fn update(&self, delta: f32);
                 }
                 pub trait GuestModule: 'static {
@@ -3244,10 +3350,6 @@ pub mod exports {
     unsafe extern "C" fn export_constructor_screen() -> i32 {
       $($path_to_types)*::_export_constructor_screen_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>()
     }
-    #[export_name = "unavi:vscreen/screen#[method]screen.add-module"]
-    unsafe extern "C" fn export_method_screen_add_module(arg0: *mut u8,arg1: i32,) {
-      $($path_to_types)*::_export_method_screen_add_module_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0, arg1)
-    }
     #[export_name = "unavi:vscreen/screen#[method]screen.visible"]
     unsafe extern "C" fn export_method_screen_visible(arg0: *mut u8,) -> i32 {
       $($path_to_types)*::_export_method_screen_visible_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0)
@@ -3255,6 +3357,30 @@ pub mod exports {
     #[export_name = "unavi:vscreen/screen#[method]screen.set-visible"]
     unsafe extern "C" fn export_method_screen_set_visible(arg0: *mut u8,arg1: i32,) {
       $($path_to_types)*::_export_method_screen_set_visible_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0, arg1)
+    }
+    #[export_name = "unavi:vscreen/screen#[method]screen.central-module"]
+    unsafe extern "C" fn export_method_screen_central_module(arg0: *mut u8,) -> *mut u8 {
+      $($path_to_types)*::_export_method_screen_central_module_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0)
+    }
+    #[export_name = "unavi:vscreen/screen#[method]screen.set-central-module"]
+    unsafe extern "C" fn export_method_screen_set_central_module(arg0: *mut u8,arg1: i32,arg2: i32,) {
+      $($path_to_types)*::_export_method_screen_set_central_module_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0, arg1, arg2)
+    }
+    #[export_name = "unavi:vscreen/screen#[method]screen.add-module"]
+    unsafe extern "C" fn export_method_screen_add_module(arg0: *mut u8,arg1: i32,) {
+      $($path_to_types)*::_export_method_screen_add_module_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0, arg1)
+    }
+    #[export_name = "unavi:vscreen/screen#[method]screen.remove-module"]
+    unsafe extern "C" fn export_method_screen_remove_module(arg0: *mut u8,arg1: i32,) {
+      $($path_to_types)*::_export_method_screen_remove_module_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0, arg1)
+    }
+    #[export_name = "unavi:vscreen/screen#[method]screen.modules"]
+    unsafe extern "C" fn export_method_screen_modules(arg0: *mut u8,) -> *mut u8 {
+      $($path_to_types)*::_export_method_screen_modules_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0)
+    }
+    #[export_name = "cabi_post_unavi:vscreen/screen#[method]screen.modules"]
+    unsafe extern "C" fn _post_return_method_screen_modules(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_screen_modules::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0)
     }
     #[export_name = "unavi:vscreen/screen#[method]screen.update"]
     unsafe extern "C" fn export_method_screen_update(arg0: *mut u8,arg1: f32,) {
@@ -3300,6 +3426,9 @@ pub mod exports {
 }
                 #[doc(hidden)]
                 pub(crate) use __export_unavi_vscreen_screen_cabi;
+                #[repr(align(4))]
+                struct _RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 8]);
             }
         }
     }
@@ -3461,8 +3590,8 @@ mod _rt {
             val != 0
         }
     }
-    extern crate alloc as alloc_crate;
     pub use alloc_crate::alloc;
+    extern crate alloc as alloc_crate;
 }
 
 /// Generates `#[no_mangle]` functions to export the specified type as the
@@ -3496,8 +3625,8 @@ pub(crate) use __export_lib_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:lib:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 3954] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xf8\x1d\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4134] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xac\x1f\x01A\x02\x01\
 A\x1a\x01B\x13\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
 material\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\x15[constructor]material\x01\x04\x01\
 h\x02\x01@\x01\x04self\x05\0y\x04\0\x13[method]material.id\x01\x06\x01@\x01\x04s\
@@ -3575,18 +3704,22 @@ node.mesh\x01\x1b\x01h\x01\x01k\x1c\x01@\x02\x04self\x0d\x05value\x1d\x01\0\x04\
 alue)\x01\0\x04\0\x1b[method]node.set-rigid-body\x01*\x01i\x03\x01k+\x01@\x01\x04\
 self\x0d\0,\x04\0\x1a[method]node.input-handler\x01-\x01h\x03\x01k.\x01@\x02\x04\
 self\x0d\x05value/\x01\0\x04\0\x1e[method]node.set-input-handler\x010\x03\x01\x10\
-wired:scene/node\x05\x0f\x02\x03\0\x06\x04node\x01B\x19\x02\x03\x02\x01\x10\x04\0\
-\x04node\x03\0\0\x04\0\x06screen\x03\x01\x04\0\x06module\x03\x01\x01i\x02\x01@\0\
-\0\x04\x04\0\x13[constructor]screen\x01\x05\x01h\x02\x01i\x03\x01@\x02\x04self\x06\
-\x06module\x07\x01\0\x04\0\x19[method]screen.add-module\x01\x08\x01@\x01\x04self\
-\x06\0\x7f\x04\0\x16[method]screen.visible\x01\x09\x01@\x02\x04self\x06\x05value\
-\x7f\x01\0\x04\0\x1a[method]screen.set-visible\x01\x0a\x01@\x02\x04self\x06\x05d\
-eltav\x01\0\x04\0\x15[method]screen.update\x01\x0b\x01@\0\0\x07\x04\0\x13[constr\
-uctor]module\x01\x0c\x01h\x03\x01i\x01\x01@\x01\x04self\x0d\0\x0e\x04\0\x13[meth\
-od]module.root\x01\x0f\x01@\x02\x04self\x0d\x05deltav\x01\0\x04\0\x15[method]mod\
-ule.update\x01\x10\x04\x01\x14unavi:vscreen/screen\x05\x11\x04\x01\x11unavi:vscr\
-een/lib\x04\0\x0b\x09\x01\0\x03lib\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\
-\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+wired:scene/node\x05\x0f\x02\x03\0\x06\x04node\x01B#\x02\x03\x02\x01\x10\x04\0\x04\
+node\x03\0\0\x04\0\x06screen\x03\x01\x04\0\x06module\x03\x01\x01i\x02\x01@\0\0\x04\
+\x04\0\x13[constructor]screen\x01\x05\x01h\x02\x01@\x01\x04self\x06\0\x7f\x04\0\x16\
+[method]screen.visible\x01\x07\x01@\x02\x04self\x06\x05value\x7f\x01\0\x04\0\x1a\
+[method]screen.set-visible\x01\x08\x01i\x03\x01k\x09\x01@\x01\x04self\x06\0\x0a\x04\
+\0\x1d[method]screen.central-module\x01\x0b\x01h\x03\x01k\x0c\x01@\x02\x04self\x06\
+\x05value\x0d\x01\0\x04\0![method]screen.set-central-module\x01\x0e\x01@\x02\x04\
+self\x06\x05value\x0c\x01\0\x04\0\x19[method]screen.add-module\x01\x0f\x04\0\x1c\
+[method]screen.remove-module\x01\x0f\x01p\x09\x01@\x01\x04self\x06\0\x10\x04\0\x16\
+[method]screen.modules\x01\x11\x01@\x02\x04self\x06\x05deltav\x01\0\x04\0\x15[me\
+thod]screen.update\x01\x12\x01@\0\0\x09\x04\0\x13[constructor]module\x01\x13\x01\
+i\x01\x01@\x01\x04self\x0c\0\x14\x04\0\x13[method]module.root\x01\x15\x01@\x02\x04\
+self\x0c\x05deltav\x01\0\x04\0\x15[method]module.update\x01\x16\x04\x01\x14unavi\
+:vscreen/screen\x05\x11\x04\x01\x11unavi:vscreen/lib\x04\0\x0b\x09\x01\0\x03lib\x03\
+\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-\
+bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

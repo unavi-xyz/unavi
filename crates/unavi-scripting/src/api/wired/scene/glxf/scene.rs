@@ -4,7 +4,7 @@ use wasm_bridge::component::Resource;
 use crate::{
     api::{
         utils::{RefCount, RefCountCell, RefResource},
-        wired_scene::wired::scene::glxf::HostGlxfScene,
+        wired::scene::bindings::glxf::HostGlxfScene,
     },
     state::StoreState,
 };
@@ -169,7 +169,7 @@ mod tests {
 
     use crate::api::{
         utils::tests::init_test_state,
-        wired_scene::{glxf::node::GlxfNodeId, wired::scene::glxf::HostGlxfNode},
+        wired::scene::{bindings::glxf::HostGlxfNode, glxf::node::GlxfNodeId},
     };
 
     use super::*;

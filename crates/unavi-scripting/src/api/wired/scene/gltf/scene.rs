@@ -4,7 +4,7 @@ use wasm_bridge::component::Resource;
 use crate::{
     api::{
         utils::{RefCount, RefCountCell, RefResource},
-        wired_scene::wired::scene::scene::{Host, HostScene},
+        wired::scene::bindings::scene::{Host, HostScene},
     },
     state::StoreState,
 };
@@ -156,7 +156,7 @@ impl Host for StoreState {}
 mod tests {
     use tracing_test::traced_test;
 
-    use crate::api::wired_scene::{gltf::node::NodeId, wired::scene::node::HostNode};
+    use crate::api::wired::scene::{bindings::node::HostNode, gltf::node::NodeId};
 
     use super::*;
 

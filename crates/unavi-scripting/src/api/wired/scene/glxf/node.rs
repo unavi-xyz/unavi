@@ -1,12 +1,15 @@
 use std::cell::Cell;
 
-use bevy::{prelude::*, utils::HashSet};
+use bevy::{
+    prelude::{Transform as BTransform, *},
+    utils::HashSet,
+};
 use wasm_bridge::component::Resource;
 
 use crate::{
     api::{
         utils::{RefCount, RefCountCell, RefResource},
-        wired_scene::wired::scene::glxf::{
+        wired::scene::bindings::glxf::{
             Asset, AssetBorrow, Children, ChildrenBorrow, HostGlxfNode, Transform,
         },
     },
@@ -38,7 +41,7 @@ pub struct GlxfNodeRes {
     children: Option<NodeChildren>,
     name: String,
     parent: Option<Resource<GlxfNodeRes>>,
-    transform: Transform,
+    transform: BTransform,
     ref_count: RefCountCell,
 }
 
@@ -90,7 +93,7 @@ impl HostGlxfNode for StoreState {
 
     fn transform(&mut self, self_: Resource<GlxfNodeRes>) -> wasm_bridge::Result<Transform> {
         let node = self.table.get(&self_)?;
-        Ok(node.transform)
+        Ok(node.transform.into())
     }
     fn set_transform(
         &mut self,
@@ -98,28 +101,16 @@ impl HostGlxfNode for StoreState {
         value: Transform,
     ) -> wasm_bridge::Result<()> {
         let node = self.table.get_mut(&self_)?;
-        node.transform = value;
+        node.transform = value.into();
 
-        let transform = bevy::prelude::Transform {
-            translation: bevy::prelude::Vec3::new(
-                node.transform.translation.x,
-                node.transform.translation.y,
-                node.transform.translation.z,
-            ),
-            rotation: bevy::prelude::Quat::from_xyzw(
-                node.transform.rotation.x,
-                node.transform.rotation.y,
-                node.transform.rotation.z,
-                node.transform.rotation.w,
-            ),
-            scale: bevy::prelude::Vec3::new(
-                node.transform.scale.x,
-                node.transform.scale.y,
-                node.transform.scale.z,
-            ),
-        };
-
-        self.node_insert(self_.rep(), transform);
+        self.node_insert(
+            self_.rep(),
+            BTransform {
+                translation: value.translation.into(),
+                rotation: value.rotation.into(),
+                scale: value.scale.into(),
+            },
+        );
 
         Ok(())
     }

@@ -4,7 +4,10 @@ use bevy::{prelude::*, utils::HashMap};
 use bevy_async_task::{AsyncTaskPool, AsyncTaskStatus};
 use wasm_bridge::{component::Linker, Config, Engine, Store};
 
-use crate::{api::add_host_apis, state::StoreState, wired_script::Script};
+use crate::{
+    api::{add_host_apis, wired::script::bindings::Script},
+    state::StoreState,
+};
 
 use super::asset::Wasm;
 

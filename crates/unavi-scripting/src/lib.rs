@@ -13,13 +13,6 @@ mod state;
 
 pub use asset::*;
 
-mod wired_script {
-    wasm_bridge::component::bindgen!({
-        path: "../../wired-protocol/spatial/wit/wired-script",
-        async: true,
-    });
-}
-
 pub struct ScriptingPlugin;
 
 impl Plugin for ScriptingPlugin {
@@ -39,7 +32,7 @@ impl Plugin for ScriptingPlugin {
                 (
                     load::load_scripts,
                     execution::tick_scripts,
-                    api::wired_player::systems::update_player_skeletons,
+                    api::wired::player::systems::update_player_skeletons,
                     execution::init_scripts,
                     execution::update_scripts,
                 )

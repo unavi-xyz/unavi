@@ -4,14 +4,19 @@ use bindings::{
         scene::api::{Node, Transform},
         shapes::api::{Sphere, Vec3},
     },
-    wired::player::api::local_player,
+    wired::{
+        log::api::{log, LogLevel},
+        player::api::{local_player, Skeleton},
+    },
 };
 
 #[allow(warnings)]
 mod bindings;
 mod wired_math_impls;
 
-struct Script;
+struct Script {
+    skeleton: Skeleton,
+}
 
 impl GuestScript for Script {
     fn new() -> Self {
@@ -44,10 +49,22 @@ impl GuestScript for Script {
         create_marker(&skeleton.right_lower_leg, &marker, offset);
         create_marker(&skeleton.right_foot, &marker, offset);
 
-        Script
+        Script { skeleton }
     }
 
-    fn update(&self, _delta: f32) {}
+    fn update(&self, _delta: f32) {
+        log(
+            LogLevel::Info,
+            &format!(
+                "Left arm Y: {}",
+                self.skeleton
+                    .left_lower_arm
+                    .global_transform()
+                    .translation
+                    .y
+            ),
+        );
+    }
 }
 
 fn create_marker(bone: &Node, marker: &Sphere, offset: Transform) -> Node {

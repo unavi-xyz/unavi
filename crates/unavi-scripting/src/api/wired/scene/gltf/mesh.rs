@@ -10,11 +10,12 @@ use bevy::{
 use wasm_bridge::component::Resource;
 
 use crate::{
-    api::utils::{RefCount, RefCountCell, RefResource},
+    api::{
+        utils::{RefCount, RefCountCell, RefResource},
+        wired::scene::bindings::mesh::{Host, HostMesh, HostPrimitive, Material},
+    },
     state::{PrimitiveState, StoreState},
 };
-
-use crate::api::wired_scene::wired::scene::mesh::{Host, HostMesh, HostPrimitive, Material};
 
 use super::{
     material::MaterialRes,

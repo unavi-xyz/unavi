@@ -1,6 +1,5 @@
 use avian3d::prelude::*;
 use bevy::prelude::*;
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use unavi_scripting::{ScriptBundle, ScriptingPlugin};
 
@@ -11,7 +10,6 @@ fn main() {
                 file_path: "../unavi-app/assets".to_string(),
                 ..default()
             }),
-            WorldInspectorPlugin::default(),
             PanOrbitCameraPlugin,
             PhysicsDebugPlugin::default(),
             PhysicsPlugins::default(),

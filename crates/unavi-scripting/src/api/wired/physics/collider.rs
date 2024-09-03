@@ -7,7 +7,7 @@ use crate::{
     state::StoreState,
 };
 
-use super::wired::physics::types::{HostCollider, Shape};
+use super::bindings::wired::physics::types::{HostCollider, Shape};
 
 #[derive(Debug)]
 pub struct Collider {

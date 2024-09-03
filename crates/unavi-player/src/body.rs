@@ -10,7 +10,7 @@ use unavi_avatar::{
     default_character_animations, AvatarBundle, AverageVelocity, FallbackAvatar, DEFAULT_VRM,
 };
 use unavi_constants::player::{PLAYER_HEIGHT, PLAYER_WIDTH};
-use unavi_scripting::api::wired_player::systems::{PlayerId, LOCAL_PLAYER_ID};
+use unavi_scripting::api::wired::player::systems::{PlayerId, LOCAL_PLAYER_ID};
 
 use crate::{controls::InputState, layers::LOCAL_PLAYER_LAYER};
 

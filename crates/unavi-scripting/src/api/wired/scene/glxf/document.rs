@@ -4,7 +4,7 @@ use wasm_bridge::component::Resource;
 use crate::{
     api::{
         utils::{RefCount, RefCountCell, RefResource},
-        wired_scene::wired::scene::glxf::{Asset, AssetBorrow, Host, HostGlxf},
+        wired::scene::bindings::glxf::{Asset, AssetBorrow, Host, HostGlxf},
     },
     state::StoreState,
 };

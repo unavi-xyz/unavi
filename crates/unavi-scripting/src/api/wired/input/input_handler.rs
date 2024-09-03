@@ -1,6 +1,6 @@
 use std::cell::Cell;
 
-use bevy::prelude::{Component, Deref};
+use bevy::prelude::*;
 use crossbeam::channel::{Receiver, Sender};
 use wasm_bridge::component::Resource;
 
@@ -9,12 +9,9 @@ use crate::{
     state::StoreState,
 };
 
-use super::wired::{
-    input::{
-        handler::HostInputHandler,
-        types::{InputEvent, InputType, Ray},
-    },
-    math::types::{Quat, Vec3},
+use super::bindings::{
+    handler::{HostInputHandler, InputEvent},
+    types::{InputType, Ray},
 };
 
 pub enum ScriptInputEvent {
@@ -79,30 +76,15 @@ impl HostInputHandler for StoreState {
                 ScriptInputEvent::Raycast {
                     origin,
                     orientation,
-                } => {
-                    let origin = Vec3 {
-                        x: origin.x,
-                        y: origin.y,
-                        z: origin.z,
-                    };
-
-                    let orientation = Quat {
-                        x: orientation.x,
-                        y: orientation.y,
-                        z: orientation.z,
-                        w: orientation.w,
-                    };
-
-                    InputEvent {
-                        id: 0,
-                        input: InputType::Ray(Ray {
-                            origin,
-                            orientation,
-                        }),
-                        order: 0,
-                        distance: 0.0,
-                    }
-                }
+                } => InputEvent {
+                    id: 0,
+                    input: InputType::Ray(Ray {
+                        origin: origin.into(),
+                        orientation: orientation.into(),
+                    }),
+                    order: 0,
+                    distance: 0.0,
+                },
             };
 
             Ok(Some(e))

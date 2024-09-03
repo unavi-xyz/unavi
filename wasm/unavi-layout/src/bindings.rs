@@ -2383,6 +2383,57 @@ pub mod wired {
             }
             impl Node {
                 #[allow(unused_unsafe, clippy::all)]
+                pub fn global_transform(&self) -> Transform {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 40]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 40]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:scene/node")]
+                        extern "C" {
+                            #[link_name = "[method]node.global-transform"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<f32>();
+                        let l2 = *ptr0.add(4).cast::<f32>();
+                        let l3 = *ptr0.add(8).cast::<f32>();
+                        let l4 = *ptr0.add(12).cast::<f32>();
+                        let l5 = *ptr0.add(16).cast::<f32>();
+                        let l6 = *ptr0.add(20).cast::<f32>();
+                        let l7 = *ptr0.add(24).cast::<f32>();
+                        let l8 = *ptr0.add(28).cast::<f32>();
+                        let l9 = *ptr0.add(32).cast::<f32>();
+                        let l10 = *ptr0.add(36).cast::<f32>();
+                        super::super::super::wired::math::types::Transform {
+                            rotation: super::super::super::wired::math::types::Quat {
+                                x: l1,
+                                y: l2,
+                                z: l3,
+                                w: l4,
+                            },
+                            scale: super::super::super::wired::math::types::Vec3 {
+                                x: l5,
+                                y: l6,
+                                z: l7,
+                            },
+                            translation: super::super::super::wired::math::types::Vec3 {
+                                x: l8,
+                                y: l9,
+                                z: l10,
+                            },
+                        }
+                    }
+                }
+            }
+            impl Node {
+                #[allow(unused_unsafe, clippy::all)]
                 pub fn transform(&self) -> Transform {
                     unsafe {
                         #[repr(align(4))]
@@ -3923,8 +3974,8 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4585] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xed\"\x01A\x02\x01A\x1d\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4619] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x8f#\x01A\x02\x01A\x1d\
 \x01B\x0a\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\
 \0\x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01\
 r\x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -3980,7 +4031,7 @@ id-body.angvel\x01\x12\x01@\x02\x04self\x11\x05value\x01\x01\0\x04\0\x1d[method]
 rigid-body.set-angvel\x01\x13\x04\0\x19[method]rigid-body.linvel\x01\x12\x04\0\x1d\
 [method]rigid-body.set-linvel\x01\x13\x03\x01\x13wired:physics/types\x05\x09\x02\
 \x03\0\x02\x04mesh\x02\x03\0\x04\x0dinput-handler\x02\x03\0\0\x09transform\x02\x03\
-\0\x05\x08collider\x02\x03\0\x05\x0arigid-body\x01BD\x02\x03\x02\x01\x0a\x04\0\x04\
+\0\x05\x08collider\x02\x03\0\x05\x0arigid-body\x01BE\x02\x03\x02\x01\x0a\x04\0\x04\
 mesh\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x0dinput-handler\x03\0\x02\x02\x03\x02\x01\
 \x0c\x04\0\x09transform\x03\0\x04\x02\x03\x02\x01\x0d\x04\0\x08collider\x03\0\x06\
 \x02\x03\x02\x01\x0e\x04\0\x0arigid-body\x03\0\x08\x04\0\x04node\x03\x01\x01i\x0a\
@@ -3991,43 +4042,43 @@ ode.ref\x01\x0f\x01@\x01\x04self\x0d\0s\x04\0\x11[method]node.name\x01\x10\x01@\
 @\x01\x04self\x0d\0\x12\x04\0\x15[method]node.children\x01\x13\x01@\x02\x04self\x0d\
 \x05value\x0d\x01\0\x04\0\x16[method]node.add-child\x01\x14\x04\0\x19[method]nod\
 e.remove-child\x01\x14\x01k\x0b\x01@\x01\x04self\x0d\0\x15\x04\0\x13[method]node\
-.parent\x01\x16\x01@\x01\x04self\x0d\0\x05\x04\0\x16[method]node.transform\x01\x17\
-\x01@\x02\x04self\x0d\x05value\x05\x01\0\x04\0\x1a[method]node.set-transform\x01\
-\x18\x01i\x01\x01k\x19\x01@\x01\x04self\x0d\0\x1a\x04\0\x11[method]node.mesh\x01\
-\x1b\x01h\x01\x01k\x1c\x01@\x02\x04self\x0d\x05value\x1d\x01\0\x04\0\x15[method]\
-node.set-mesh\x01\x1e\x01i\x07\x01k\x1f\x01@\x01\x04self\x0d\0\x20\x04\0\x15[met\
-hod]node.collider\x01!\x01h\x07\x01k\"\x01@\x02\x04self\x0d\x05value#\x01\0\x04\0\
-\x19[method]node.set-collider\x01$\x01i\x09\x01k%\x01@\x01\x04self\x0d\0&\x04\0\x17\
-[method]node.rigid-body\x01'\x01h\x09\x01k(\x01@\x02\x04self\x0d\x05value)\x01\0\
-\x04\0\x1b[method]node.set-rigid-body\x01*\x01i\x03\x01k+\x01@\x01\x04self\x0d\0\
-,\x04\0\x1a[method]node.input-handler\x01-\x01h\x03\x01k.\x01@\x02\x04self\x0d\x05\
-value/\x01\0\x04\0\x1e[method]node.set-input-handler\x010\x03\x01\x10wired:scene\
-/node\x05\x0f\x02\x03\0\x06\x04node\x01B#\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\
-\0\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\x02\x01m\x03\x06center\x03end\x05star\
-t\x04\0\x09alignment\x03\0\x04\x04\0\x09container\x03\x01\x01i\x06\x01@\x01\x04s\
-ize\x01\0\x07\x04\0\x16[constructor]container\x01\x08\x01h\x06\x01@\x01\x04self\x09\
-\0\x07\x04\0\x15[method]container.ref\x01\x0a\x01i\x03\x01@\x01\x04self\x09\0\x0b\
-\x04\0\x16[method]container.root\x01\x0c\x04\0\x17[method]container.inner\x01\x0c\
-\x01p\x07\x01@\x01\x04self\x09\0\x0d\x04\0\x1f[method]container.list-children\x01\
-\x0e\x01@\x02\x04self\x09\x05child\x09\x01\0\x04\0\x1b[method]container.add-chil\
-d\x01\x0f\x04\0\x1e[method]container.remove-child\x01\x0f\x01@\x01\x04self\x09\0\
-\x01\x04\0\x16[method]container.size\x01\x10\x01@\x02\x04self\x09\x05value\x01\x01\
-\0\x04\0\x1a[method]container.set-size\x01\x11\x01@\x01\x04self\x09\0\x05\x04\0\x19\
-[method]container.align-x\x01\x12\x04\0\x19[method]container.align-y\x01\x12\x04\
-\0\x19[method]container.align-z\x01\x12\x01@\x02\x04self\x09\x05value\x05\x01\0\x04\
-\0\x1d[method]container.set-align-x\x01\x13\x04\0\x1d[method]container.set-align\
--y\x01\x13\x04\0\x1d[method]container.set-align-z\x01\x13\x04\x01\x16unavi:layou\
-t/container\x05\x11\x02\x03\0\x07\x09container\x01B\x16\x02\x03\x02\x01\x12\x04\0\
-\x09container\x03\0\0\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\x02\x04\0\x04grid\x03\
-\x01\x01i\x04\x01@\x02\x04size\x03\x04rows\x03\0\x05\x04\0\x11[constructor]grid\x01\
-\x06\x01h\x04\x01i\x01\x01@\x01\x04self\x07\0\x08\x04\0\x11[method]grid.root\x01\
-\x09\x01p\x08\x01@\x01\x04self\x07\0\x0a\x04\0\x12[method]grid.cells\x01\x0b\x01\
-k\x08\x01@\x04\x04self\x07\x01xy\x01yy\x01zy\0\x0c\x04\0\x11[method]grid.cell\x01\
-\x0d\x01@\x01\x04self\x07\0\x03\x04\0\x11[method]grid.rows\x01\x0e\x01@\x02\x04s\
-elf\x07\x05value\x03\x01\0\x04\0\x15[method]grid.set-rows\x01\x0f\x04\x01\x11una\
-vi:layout/grid\x05\x13\x04\x01\x12unavi:layout/guest\x04\0\x0b\x0b\x01\0\x05gues\
-t\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10\
-wit-bindgen-rust\x060.25.0";
+.parent\x01\x16\x01@\x01\x04self\x0d\0\x05\x04\0\x1d[method]node.global-transfor\
+m\x01\x17\x04\0\x16[method]node.transform\x01\x17\x01@\x02\x04self\x0d\x05value\x05\
+\x01\0\x04\0\x1a[method]node.set-transform\x01\x18\x01i\x01\x01k\x19\x01@\x01\x04\
+self\x0d\0\x1a\x04\0\x11[method]node.mesh\x01\x1b\x01h\x01\x01k\x1c\x01@\x02\x04\
+self\x0d\x05value\x1d\x01\0\x04\0\x15[method]node.set-mesh\x01\x1e\x01i\x07\x01k\
+\x1f\x01@\x01\x04self\x0d\0\x20\x04\0\x15[method]node.collider\x01!\x01h\x07\x01\
+k\"\x01@\x02\x04self\x0d\x05value#\x01\0\x04\0\x19[method]node.set-collider\x01$\
+\x01i\x09\x01k%\x01@\x01\x04self\x0d\0&\x04\0\x17[method]node.rigid-body\x01'\x01\
+h\x09\x01k(\x01@\x02\x04self\x0d\x05value)\x01\0\x04\0\x1b[method]node.set-rigid\
+-body\x01*\x01i\x03\x01k+\x01@\x01\x04self\x0d\0,\x04\0\x1a[method]node.input-ha\
+ndler\x01-\x01h\x03\x01k.\x01@\x02\x04self\x0d\x05value/\x01\0\x04\0\x1e[method]\
+node.set-input-handler\x010\x03\x01\x10wired:scene/node\x05\x0f\x02\x03\0\x06\x04\
+node\x01B#\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\0\x02\x03\x02\x01\x10\x04\0\x04\
+node\x03\0\x02\x01m\x03\x06center\x03end\x05start\x04\0\x09alignment\x03\0\x04\x04\
+\0\x09container\x03\x01\x01i\x06\x01@\x01\x04size\x01\0\x07\x04\0\x16[constructo\
+r]container\x01\x08\x01h\x06\x01@\x01\x04self\x09\0\x07\x04\0\x15[method]contain\
+er.ref\x01\x0a\x01i\x03\x01@\x01\x04self\x09\0\x0b\x04\0\x16[method]container.ro\
+ot\x01\x0c\x04\0\x17[method]container.inner\x01\x0c\x01p\x07\x01@\x01\x04self\x09\
+\0\x0d\x04\0\x1f[method]container.list-children\x01\x0e\x01@\x02\x04self\x09\x05\
+child\x09\x01\0\x04\0\x1b[method]container.add-child\x01\x0f\x04\0\x1e[method]co\
+ntainer.remove-child\x01\x0f\x01@\x01\x04self\x09\0\x01\x04\0\x16[method]contain\
+er.size\x01\x10\x01@\x02\x04self\x09\x05value\x01\x01\0\x04\0\x1a[method]contain\
+er.set-size\x01\x11\x01@\x01\x04self\x09\0\x05\x04\0\x19[method]container.align-\
+x\x01\x12\x04\0\x19[method]container.align-y\x01\x12\x04\0\x19[method]container.\
+align-z\x01\x12\x01@\x02\x04self\x09\x05value\x05\x01\0\x04\0\x1d[method]contain\
+er.set-align-x\x01\x13\x04\0\x1d[method]container.set-align-y\x01\x13\x04\0\x1d[\
+method]container.set-align-z\x01\x13\x04\x01\x16unavi:layout/container\x05\x11\x02\
+\x03\0\x07\x09container\x01B\x16\x02\x03\x02\x01\x12\x04\0\x09container\x03\0\0\x02\
+\x03\x02\x01\x04\x04\0\x04vec3\x03\0\x02\x04\0\x04grid\x03\x01\x01i\x04\x01@\x02\
+\x04size\x03\x04rows\x03\0\x05\x04\0\x11[constructor]grid\x01\x06\x01h\x04\x01i\x01\
+\x01@\x01\x04self\x07\0\x08\x04\0\x11[method]grid.root\x01\x09\x01p\x08\x01@\x01\
+\x04self\x07\0\x0a\x04\0\x12[method]grid.cells\x01\x0b\x01k\x08\x01@\x04\x04self\
+\x07\x01xy\x01yy\x01zy\0\x0c\x04\0\x11[method]grid.cell\x01\x0d\x01@\x01\x04self\
+\x07\0\x03\x04\0\x11[method]grid.rows\x01\x0e\x01@\x02\x04self\x07\x05value\x03\x01\
+\0\x04\0\x15[method]grid.set-rows\x01\x0f\x04\x01\x11unavi:layout/grid\x05\x13\x04\
+\x01\x12unavi:layout/guest\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\0G\x09producers\x01\
+\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

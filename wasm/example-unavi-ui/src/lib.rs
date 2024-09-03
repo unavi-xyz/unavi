@@ -22,7 +22,7 @@ mod wired_math_impls;
 struct Script {
     button: Button,
     clock: TextBox,
-    elapsed: Cell<f32>,
+    time: Cell<f32>,
 }
 
 const LENGTH: f32 = 5.0;
@@ -35,7 +35,7 @@ impl GuestScript for Script {
         let container = Container::new(Vec3::new(LENGTH, HEIGHT, 0.1));
         container.set_align_z(Alignment::End);
         container.root().set_transform(Transform {
-            translation: Vec3::new(0.0, 0.0, -8.0),
+            translation: Vec3::new(0.0, 0.2, -8.0),
             rotation: Quat::from_rotation_y(PI),
             ..Default::default()
         });
@@ -78,17 +78,15 @@ impl GuestScript for Script {
         Script {
             button,
             clock,
-            elapsed: Cell::default(),
+            time: Cell::default(),
         }
     }
 
     fn update(&self, delta: f32) {
-        let elapsed = self.elapsed.get();
-        self.elapsed.set(elapsed + delta);
+        let time = self.time.get();
+        self.time.set(time + delta);
 
-        self.clock
-            .text()
-            .set_text(&format!("Elapsed: {:.2}", elapsed));
+        self.clock.text().set_text(&format!("Time: {:.0}", time));
 
         if self.button.pressed() {
             log(LogLevel::Info, "Button pressed!");

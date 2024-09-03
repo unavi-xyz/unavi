@@ -15,6 +15,7 @@ mod bindings;
 mod wired_math_impls;
 
 struct Script {
+    root: Node,
     skeleton: Skeleton,
 }
 
@@ -49,20 +50,24 @@ impl GuestScript for Script {
         create_marker(&skeleton.right_lower_leg, &marker, offset);
         create_marker(&skeleton.right_foot, &marker, offset);
 
-        Script { skeleton }
+        Script {
+            root: player.root(),
+            skeleton,
+        }
     }
 
     fn update(&self, _delta: f32) {
+        let relative_y = self
+            .skeleton
+            .left_lower_arm
+            .global_transform()
+            .translation
+            .y
+            - self.root.global_transform().translation.y;
+
         log(
             LogLevel::Info,
-            &format!(
-                "Left arm Y: {}",
-                self.skeleton
-                    .left_lower_arm
-                    .global_transform()
-                    .translation
-                    .y
-            ),
+            &format!("Left arm relative Y: {}", relative_y),
         );
     }
 }

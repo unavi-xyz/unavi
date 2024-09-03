@@ -14,7 +14,7 @@ use crate::{
     module::Module,
 };
 
-const ANIMATION_DURATION_SECONDS: f32 = 0.25;
+const ANIMATION_DURATION_SECONDS: f32 = 0.4;
 const ARM_RADIUS: f32 = 0.03; // TODO: Get from avatar.
 const SCREEN_HEIGHT: f32 = 0.002;
 const SCREEN_RADIUS: f32 = 0.04;
@@ -29,7 +29,10 @@ pub struct Screen {
 
 impl GuestScreen for Screen {
     fn new() -> Self {
-        let root = Cylinder::new(SCREEN_RADIUS, SCREEN_HEIGHT).to_node();
+        let cylinder = Cylinder::new(SCREEN_RADIUS, SCREEN_HEIGHT);
+        cylinder.set_resolution(32);
+
+        let root = cylinder.to_node();
         root.set_transform(Transform {
             translation: Vec3::new(SCREEN_RADIUS * 2.0, ARM_RADIUS, -ARM_RADIUS / 3.0),
             rotation: Quat::default(),

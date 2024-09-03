@@ -65,35 +65,49 @@ pub fn read_keyboard_input(
     }
 }
 
-const RAYCAST_DISTANCE: f32 = 10.0;
+const RAYCAST_DISTANCE: f32 = 5.0;
+const CROSSHAIR_RADIUS: f32 = 0.008;
 
 pub fn handle_raycast_input(
     camera: Query<&GlobalTransform, With<PlayerCamera>>,
+    input_handlers: Query<(Entity, &InputHandlerSender)>,
     mouse: Res<ButtonInput<MouseButton>>,
-    nodes: Query<(Entity, &InputHandlerSender)>,
+    mut gizmos: Gizmos,
     query: SpatialQuery,
 ) {
     if camera.is_empty() {
         return;
     }
 
-    if mouse.just_pressed(MouseButton::Left) {
-        let transform = camera.single();
-        let (_, rotation, translation) = transform.to_scale_rotation_translation();
+    let transform = camera.single();
+    let (_, rotation, translation) = transform.to_scale_rotation_translation();
 
-        let direction = rotation.normalize() * Dir3::NEG_Z;
+    let direction = rotation.normalize() * Dir3::NEG_Z;
 
-        if let Some(hit) = query.cast_ray(
-            translation,
-            direction,
-            RAYCAST_DISTANCE,
-            false,
-            SpatialQueryFilter {
-                mask: OTHER_PLAYER_LAYER | WORLD_LAYER,
-                ..default()
-            },
-        ) {
-            for (ent, handler) in nodes.iter() {
+    if let Some(hit) = query.cast_ray(
+        translation,
+        direction,
+        RAYCAST_DISTANCE,
+        false,
+        SpatialQueryFilter {
+            mask: OTHER_PLAYER_LAYER | WORLD_LAYER,
+            ..default()
+        },
+    ) {
+        // Crosshair.
+        // TODO: Showing double on non-60hz monitors
+        if let Ok(normal) = Dir3::from_xyz(hit.normal.x, hit.normal.y, hit.normal.z) {
+            gizmos.circle(
+                translation + direction * hit.time_of_impact,
+                normal,
+                CROSSHAIR_RADIUS,
+                Color::WHITE,
+            );
+        }
+
+        // Script input.
+        if mouse.just_pressed(MouseButton::Left) {
+            for (ent, handler) in input_handlers.iter() {
                 // TODO: Recursive check if children were hit.
 
                 if hit.entity == ent {
@@ -106,6 +120,6 @@ pub fn handle_raycast_input(
                     break;
                 }
             }
-        };
-    }
+        }
+    };
 }

@@ -23,16 +23,8 @@ pub fn move_player(
     time: Res<Time>,
 ) {
     for (transform, mut player, mut controller) in players.iter_mut() {
-        let dir_forward = transform.rotation.mul_vec3(Vec3 {
-            x: 0.0,
-            y: 0.0,
-            z: -1.0,
-        });
-        let dir_left = transform.rotation.mul_vec3(Vec3 {
-            x: -1.0,
-            y: 0.0,
-            z: 0.0,
-        });
+        let dir_forward = transform.rotation.mul_vec3(Vec3::NEG_Z);
+        let dir_left = transform.rotation.mul_vec3(Vec3::NEG_X);
 
         let mut move_direction = Vec3::ZERO;
 
@@ -89,6 +81,8 @@ pub fn void_teleport(
             linvel.x = 0.0;
             linvel.y = 0.0;
             linvel.z = 0.0;
+
+            // TODO: Reset camera rotation
         }
     }
 }

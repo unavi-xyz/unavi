@@ -7,7 +7,7 @@ use thiserror::Error;
 use tokio::sync::mpsc::{error::SendError, UnboundedReceiver, UnboundedSender};
 use tracing::debug;
 
-pub const TICKRATE: f32 = 1.0 / 20.0;
+pub const TICKRATE: f32 = 1.0 / 30.0;
 
 #[derive(Debug)]
 pub struct IncomingEvent {

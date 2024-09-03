@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use std::ops::{Add, Mul};
+
 use crate::bindings::wired::math::types::{Quat, Transform, Vec2, Vec3};
 
 impl Vec2 {
@@ -21,6 +23,28 @@ impl Default for Vec2 {
 impl PartialEq for Vec2 {
     fn eq(&self, other: &Self) -> bool {
         (self.x == other.x) && (self.y == other.y)
+    }
+}
+
+impl Add for Vec2 {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
+    }
+}
+
+impl Mul for Vec2 {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self {
+            x: self.x * rhs.x,
+            y: self.y * rhs.y,
+        }
     }
 }
 
@@ -50,6 +74,30 @@ impl PartialEq for Vec3 {
     }
 }
 
+impl Add for Vec3 {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }
+}
+
+impl Mul for Vec3 {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self {
+            x: self.x * rhs.x,
+            y: self.y * rhs.y,
+            z: self.z * rhs.z,
+        }
+    }
+}
+
 impl Quat {
     pub fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
         Self { x, y, z, w }
@@ -70,6 +118,15 @@ impl Quat {
         let (s, c) = f32::sin_cos(angle * 0.5);
         Self::new(0.0, 0.0, s, c)
     }
+
+    fn conjugate(self) -> Quat {
+        Quat {
+            x: -self.x,
+            y: -self.y,
+            z: -self.z,
+            w: self.w,
+        }
+    }
 }
 
 impl Default for Quat {
@@ -86,6 +143,29 @@ impl Default for Quat {
 impl PartialEq for Quat {
     fn eq(&self, other: &Self) -> bool {
         (self.x == other.x) && (self.y == other.y) && (self.z == other.z) && (self.w == other.w)
+    }
+}
+
+impl Mul for Quat {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Quat::new(
+            self.w * rhs.x + self.x * rhs.w + self.y * rhs.z - self.z * rhs.y,
+            self.w * rhs.y - self.x * rhs.z + self.y * rhs.w + self.z * rhs.x,
+            self.w * rhs.z + self.x * rhs.y - self.y * rhs.x + self.z * rhs.w,
+            self.w * rhs.w - self.x * rhs.x - self.y * rhs.y - self.z * rhs.z,
+        )
+    }
+}
+
+impl Mul<Vec3> for Quat {
+    type Output = Vec3;
+
+    fn mul(self, rhs: Vec3) -> Vec3 {
+        let q_vec = Quat::new(rhs.x, rhs.y, rhs.z, 0.0);
+        let result = self * q_vec * self.conjugate();
+        Vec3::new(result.x, result.y, result.z)
     }
 }
 
@@ -127,5 +207,23 @@ impl PartialEq for Transform {
         (self.translation == other.translation)
             && (self.rotation == other.rotation)
             && (self.scale == other.scale)
+    }
+}
+
+impl Mul for Transform {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        let rotation = self.rotation * rhs.rotation;
+        let scale = self.scale * rhs.scale;
+
+        let rotated_translation = self.rotation * (rhs.translation * self.scale);
+        let translation = self.translation + rotated_translation;
+
+        Transform {
+            rotation,
+            scale,
+            translation,
+        }
     }
 }

@@ -2,19 +2,12 @@ use bevy::prelude::*;
 use bevy_vrm::{loader::Vrm, BoneName};
 
 use crate::{
-    api::{
-        utils::RefResource,
-        wired_scene::{
-            gltf::node::NodeRes,
-            wired::{
-                math::types::{Quat, Transform as WTransform, Vec3},
-                scene::node::HostNode,
-            },
-        },
-    },
+    api::{utils::RefResource, wired::scene::bindings::node::HostNode},
     execution::ScriptTickrate,
     load::ScriptMap,
 };
+
+use super::bindings::api::Node;
 
 pub const LOCAL_PLAYER_ID: usize = 0;
 
@@ -41,36 +34,21 @@ pub(crate) fn update_player_skeletons(
 
         let data = store.data_mut();
         let player = data.table.get(&data.local_player).unwrap();
-        let root = NodeRes::from_res(&player.root, &data.table).unwrap();
+        let root = Node::from_res(&player.root, &data.table).unwrap();
         let skeleton = player.skeleton.clone_ref(&data.table).unwrap();
 
-        for (id, transform) in players.iter() {
+        for (id, player_transform) in players.iter() {
             if id.0 != LOCAL_PLAYER_ID {
                 continue;
             }
 
-            let (scale, rotation, translation) = transform.to_scale_rotation_translation();
+            let transform = player_transform.compute_transform();
 
-            let transform = WTransform {
-                translation: Vec3 {
-                    x: translation.x,
-                    y: translation.y,
-                    z: translation.z,
-                },
-                rotation: Quat {
-                    x: rotation.x,
-                    y: rotation.y,
-                    z: rotation.z,
-                    w: rotation.w,
-                },
-                scale: Vec3 {
-                    x: scale.x,
-                    y: scale.y,
-                    z: scale.z,
-                },
-            };
-            data.set_transform(NodeRes::from_res(&root, &data.table).unwrap(), transform)
-                .unwrap();
+            data.set_transform(
+                Node::from_res(&root, &data.table).unwrap(),
+                transform.into(),
+            )
+            .unwrap();
 
             let pairs = [
                 (BoneName::Hips, &skeleton.hips),
@@ -127,6 +105,10 @@ pub(crate) fn update_player_skeletons(
                     node.transform.scale.x = transform.scale.x;
                     node.transform.scale.y = transform.scale.y;
                     node.transform.scale.z = transform.scale.z;
+
+                    // if *pair_name == BoneName::LeftUpperArm {
+                    //     info!("setting translation: {}", transform.translation);
+                    // }
                 }
             }
         }

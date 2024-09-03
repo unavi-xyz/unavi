@@ -1,23 +1,23 @@
 use std::cell::Cell;
 
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{
+    prelude::{Transform as BTransform, *},
+    utils::HashMap,
+};
 use wasm_bridge::component::Resource;
+use wasm_bridge_wasi::{ResourceTable, ResourceTableError};
 
 use crate::{
     api::{
         utils::{RefCount, RefCountCell, RefResource},
-        wired_input::{InputHandler, InputHandlerSender},
-        wired_physics::wired::{
-            math::types::Vec3,
-            physics::types::{RigidBodyType, Shape, ShapeCylinder},
+        wired::{
+            input::{bindings::InputHandler, input_handler::InputHandlerSender},
+            math::bindings::types::{Transform, Vec3},
+            physics::bindings::types::{Collider, RigidBody, RigidBodyType, Shape, ShapeCylinder},
+            scene::bindings::node::{Host, HostNode},
         },
     },
     state::{MaterialState, PrimitiveState, StoreState},
-};
-
-use crate::api::wired_scene::wired::{
-    physics::types::{Collider, RigidBody},
-    scene::node::{Host, HostNode, Transform},
 };
 
 use super::mesh::MeshRes;
@@ -55,7 +55,7 @@ pub struct NodeRes {
     pub name: String,
     pub parent: Option<Resource<NodeRes>>,
     pub rigid_body: Option<Resource<RigidBody>>,
-    pub transform: Transform,
+    pub transform: BTransform,
     ref_count: RefCountCell,
 }
 
@@ -291,9 +291,15 @@ impl HostNode for StoreState {
         Ok(())
     }
 
+    fn global_transform(&mut self, self_: Resource<NodeRes>) -> wasm_bridge::Result<Transform> {
+        let node = self.table.get(&self_)?;
+        let transform = calc_global_transform(BTransform::default(), node, &self.table)?;
+        Ok(transform.into())
+    }
+
     fn transform(&mut self, self_: Resource<NodeRes>) -> wasm_bridge::Result<Transform> {
         let node = self.table.get(&self_)?;
-        Ok(node.transform)
+        Ok(node.transform.into())
     }
     fn set_transform(
         &mut self,
@@ -301,28 +307,16 @@ impl HostNode for StoreState {
         value: Transform,
     ) -> wasm_bridge::Result<()> {
         let node = self.table.get_mut(&self_)?;
-        node.transform = value;
+        node.transform = value.into();
 
-        let transform = bevy::prelude::Transform {
-            translation: bevy::prelude::Vec3::new(
-                node.transform.translation.x,
-                node.transform.translation.y,
-                node.transform.translation.z,
-            ),
-            rotation: bevy::prelude::Quat::from_xyzw(
-                node.transform.rotation.x,
-                node.transform.rotation.y,
-                node.transform.rotation.z,
-                node.transform.rotation.w,
-            ),
-            scale: bevy::prelude::Vec3::new(
-                node.transform.scale.x,
-                node.transform.scale.y,
-                node.transform.scale.z,
-            ),
-        };
-
-        self.node_insert(self_.rep(), transform);
+        self.node_insert(
+            self_.rep(),
+            BTransform {
+                translation: value.translation.into(),
+                rotation: value.rotation.into(),
+                scale: value.scale.into(),
+            },
+        );
 
         Ok(())
     }
@@ -457,11 +451,26 @@ impl HostNode for StoreState {
 
 impl Host for StoreState {}
 
+fn calc_global_transform(
+    transform: BTransform,
+    node: &NodeRes,
+    table: &ResourceTable,
+) -> Result<BTransform, ResourceTableError> {
+    let new_transform = node.transform * transform;
+
+    if let Some(parent) = &node.parent {
+        let parent = table.get(parent)?;
+        calc_global_transform(new_transform, parent, table)
+    } else {
+        Ok(new_transform)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use tracing_test::traced_test;
 
-    use crate::api::{utils::tests::init_test_state, wired_scene::wired::scene::mesh::HostMesh};
+    use crate::api::{utils::tests::init_test_state, wired::scene::bindings::mesh::HostMesh};
 
     use super::*;
 

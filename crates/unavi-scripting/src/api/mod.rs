@@ -4,18 +4,14 @@ use wasm_bridge::component::Linker;
 use super::state::StoreState;
 
 pub(crate) mod utils;
-pub mod wired_input;
-mod wired_log;
-mod wired_physics;
-pub mod wired_player;
-pub(crate) mod wired_scene;
+pub mod wired;
 
 pub(crate) fn add_host_apis(linker: &mut Linker<StoreState>) -> Result<()> {
-    wired_scene::add_to_linker(linker)?;
-    wired_input::add_to_linker(linker)?;
-    wired_log::add_to_linker(linker)?;
-    wired_physics::add_to_linker(linker)?;
-    wired_player::add_to_linker(linker)?;
+    wired::scene::add_to_linker(linker)?;
+    wired::input::add_to_linker(linker)?;
+    wired::log::add_to_linker(linker)?;
+    wired::physics::add_to_linker(linker)?;
+    wired::player::add_to_linker(linker)?;
     Ok(())
 }
 

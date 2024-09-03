@@ -5,7 +5,7 @@ use wasm_bridge::component::{Resource, ResourceTable, ResourceTableError};
 use wasm_bridge_wasi::{WasiCtx, WasiCtxBuilder, WasiView};
 
 use crate::api::{
-    utils::RefResource, wired_player::player::Player, wired_scene::glxf::document::GlxfDocument,
+    utils::RefResource, wired::player::bindings::Player, wired::scene::glxf::document::GlxfDocument,
 };
 
 pub struct StoreState {

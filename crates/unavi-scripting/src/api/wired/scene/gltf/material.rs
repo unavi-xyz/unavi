@@ -4,11 +4,12 @@ use bevy::prelude::*;
 use wasm_bridge::component::Resource;
 
 use crate::{
-    api::utils::{RefCount, RefCountCell, RefResource},
+    api::{
+        utils::{RefCount, RefCountCell, RefResource},
+        wired::scene::bindings::material::{Color, Host, HostMaterial},
+    },
     state::{MaterialState, StoreState},
 };
-
-use crate::api::wired_scene::wired::scene::material::{Color, Host, HostMaterial};
 
 #[derive(Component, Clone, Copy, Debug)]
 pub struct MaterialId(pub u32);

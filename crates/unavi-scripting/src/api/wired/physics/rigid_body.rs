@@ -7,15 +7,15 @@ use crate::{
     state::StoreState,
 };
 
-use super::wired::{
-    math::types::Vec3,
-    physics::types::{HostRigidBody, RigidBodyType},
+use super::bindings::{
+    types::Vec3,
+    wired::physics::types::{HostRigidBody, RigidBodyType},
 };
 
 #[derive(Debug)]
 pub struct RigidBody {
-    angvel: bevy::math::Vec3,
-    linvel: bevy::math::Vec3,
+    angvel: Vec3,
+    linvel: Vec3,
     pub rigid_body_type: RigidBodyType,
     ref_count: RefCountCell,
 }
@@ -23,8 +23,8 @@ pub struct RigidBody {
 impl RigidBody {
     fn new(rigid_body_type: RigidBodyType) -> Self {
         Self {
-            angvel: bevy::math::Vec3::default(),
-            linvel: bevy::math::Vec3::default(),
+            angvel: Vec3::default(),
+            linvel: Vec3::default(),
             ref_count: RefCountCell::default(),
             rigid_body_type,
         }

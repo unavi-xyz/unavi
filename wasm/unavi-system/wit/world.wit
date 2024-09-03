@@ -1,6 +1,6 @@
 package unavi:system;
 
-world script {
+world guest {
     include wired:prelude/script; 
 
     import unavi:vscreen/screen;

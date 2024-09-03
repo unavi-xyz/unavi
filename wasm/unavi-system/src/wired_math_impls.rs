@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::ops::{Add, Mul};
+use std::ops::{Add, AddAssign, Mul, SubAssign};
 
 use crate::bindings::wired::math::types::{Quat, Transform, Vec2, Vec3};
 
@@ -23,6 +23,20 @@ impl Default for Vec2 {
 impl PartialEq for Vec2 {
     fn eq(&self, other: &Self) -> bool {
         (self.x == other.x) && (self.y == other.y)
+    }
+}
+
+impl AddAssign<f32> for Vec2 {
+    fn add_assign(&mut self, rhs: f32) {
+        self.x += rhs;
+        self.y += rhs;
+    }
+}
+
+impl SubAssign<f32> for Vec2 {
+    fn sub_assign(&mut self, rhs: f32) {
+        self.x -= rhs;
+        self.y -= rhs;
     }
 }
 
@@ -71,6 +85,22 @@ impl Default for Vec3 {
 impl PartialEq for Vec3 {
     fn eq(&self, other: &Self) -> bool {
         (self.x == other.x) && (self.y == other.y) && (self.z == other.z)
+    }
+}
+
+impl AddAssign<f32> for Vec3 {
+    fn add_assign(&mut self, rhs: f32) {
+        self.x += rhs;
+        self.y += rhs;
+        self.z += rhs;
+    }
+}
+
+impl SubAssign<f32> for Vec3 {
+    fn sub_assign(&mut self, rhs: f32) {
+        self.x -= rhs;
+        self.y -= rhs;
+        self.z -= rhs;
     }
 }
 

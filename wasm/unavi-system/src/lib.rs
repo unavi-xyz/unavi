@@ -2,8 +2,8 @@ use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
     unavi::vscreen::screen::{Module, Screen},
     wired::{
-        log::api::{log, LogLevel},
         player::api::{local_player, Skeleton},
+        scene::node::Node,
     },
 };
 
@@ -13,7 +13,10 @@ mod clock;
 mod wired_math_impls;
 mod wired_scene_impls;
 
+const ACTIVE_Y: f32 = 1.2;
+
 struct Script {
+    root: Node,
     screen: Screen,
     skeleton: Skeleton,
 }
@@ -25,14 +28,23 @@ impl GuestScript for Script {
         let clock = Module::new();
         screen.set_central_module(Some(&clock));
 
-        let skeleton = local_player().skeleton();
+        let player = local_player();
+        let skeleton = player.skeleton();
 
-        Script { screen, skeleton }
+        skeleton.left_hand.add_child(&screen.root());
+
+        Script {
+            root: player.root(),
+            screen,
+            skeleton,
+        }
     }
 
     fn update(&self, delta: f32) {
-        let lower_arm_y = self.skeleton.left_hand.transform().translation.y;
-        log(LogLevel::Info, &format!("y: {}", lower_arm_y));
+        let relative_y = self.skeleton.left_hand.global_transform().translation.y
+            - self.root.global_transform().translation.y;
+
+        self.screen.set_visible(relative_y > ACTIVE_Y);
 
         self.screen.update(delta);
     }

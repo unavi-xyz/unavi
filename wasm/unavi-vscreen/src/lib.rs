@@ -4,6 +4,7 @@ use bindings::exports::unavi::vscreen::screen::Guest;
 mod bindings;
 mod module;
 mod screen;
+mod wired_math_impls;
 
 struct Types;
 

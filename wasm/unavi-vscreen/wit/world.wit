@@ -1,6 +1,8 @@
 package unavi:vscreen;
 
-world lib {
+world guest {
+    import unavi:shapes/api;
+
     export screen;
 }
 
@@ -11,6 +13,8 @@ interface screen {
   // Expands into various modules when activated.
   resource screen {
     constructor();
+
+    root: func() -> node;
 
     visible: func() -> bool;
     set-visible: func(value: bool);

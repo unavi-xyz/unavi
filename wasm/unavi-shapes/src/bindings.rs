@@ -4731,20 +4731,20 @@ mod _rt {
 #[allow(unused_macros)]
 #[doc(hidden)]
 
-macro_rules! __export_shapes_impl {
+macro_rules! __export_guest_impl {
   ($ty:ident) => (self::export!($ty with_types_in self););
   ($ty:ident with_types_in $($path_to_types_root:tt)*) => (
   $($path_to_types_root)*::exports::unavi::shapes::api::__export_unavi_shapes_api_cabi!($ty with_types_in $($path_to_types_root)*::exports::unavi::shapes::api);
   )
 }
 #[doc(inline)]
-pub(crate) use __export_shapes_impl as export;
+pub(crate) use __export_guest_impl as export;
 
 #[cfg(target_arch = "wasm32")]
-#[link_section = "component-type:wit-bindgen:0.25.0:shapes:encoded world"]
+#[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 5390] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x91)\x01A\x02\x01A\x1d\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 5388] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x90)\x01A\x02\x01A\x1d\
 \x01B\x04\x01m\x04\x05debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01\
 @\x02\x05level\x01\x07messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/a\
 pi\x05\0\x01B\x13\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
@@ -4861,9 +4861,9 @@ here.new-uv\x01.\x01h\x11\x01@\x01\x04self/\0v\x04\0\x15[method]sphere.radius\x0
 \x10\x01\0\x04\0\x17[method]sphere.set-kind\x013\x01@\x01\x04self/\0\x17\x04\0\x16\
 [method]sphere.to-mesh\x014\x01@\x01\x04self/\0\x19\x04\0\x16[method]sphere.to-n\
 ode\x015\x04\0\x1e[method]sphere.to-physics-node\x015\x04\x01\x10unavi:shapes/ap\
-i\x05\x13\x04\x01\x13unavi:shapes/shapes\x04\0\x0b\x0c\x01\0\x06shapes\x03\0\0\0\
-G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindge\
-n-rust\x060.25.0";
+i\x05\x13\x04\x01\x12unavi:shapes/guest\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\0G\x09\
+producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rus\
+t\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

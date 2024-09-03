@@ -969,8 +969,8 @@ pub mod wired {
                 }
             }
             #[allow(unused_unsafe, clippy::all)]
-            /// Codegen doesn't always include vec2, add this function to force its inclusion.
-            pub fn fake_fn() -> Vec2 {
+            /// Codegen doesn't always include types, these function force its inclusion.
+            pub fn fake_fn_a() -> Vec2 {
                 unsafe {
                     #[repr(align(4))]
                     struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
@@ -979,7 +979,7 @@ pub mod wired {
                     #[cfg(target_arch = "wasm32")]
                     #[link(wasm_import_module = "wired:math/types")]
                     extern "C" {
-                        #[link_name = "fake-fn"]
+                        #[link_name = "fake-fn-a"]
                         fn wit_import(_: *mut u8);
                     }
 
@@ -991,6 +991,115 @@ pub mod wired {
                     let l1 = *ptr0.add(0).cast::<f32>();
                     let l2 = *ptr0.add(4).cast::<f32>();
                     Vec2 { x: l1, y: l2 }
+                }
+            }
+            #[allow(unused_unsafe, clippy::all)]
+            pub fn fake_fn_b() -> Vec3 {
+                unsafe {
+                    #[repr(align(4))]
+                    struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                    let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
+                    let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wired:math/types")]
+                    extern "C" {
+                        #[link_name = "fake-fn-b"]
+                        fn wit_import(_: *mut u8);
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(_: *mut u8) {
+                        unreachable!()
+                    }
+                    wit_import(ptr0);
+                    let l1 = *ptr0.add(0).cast::<f32>();
+                    let l2 = *ptr0.add(4).cast::<f32>();
+                    let l3 = *ptr0.add(8).cast::<f32>();
+                    Vec3 {
+                        x: l1,
+                        y: l2,
+                        z: l3,
+                    }
+                }
+            }
+            #[allow(unused_unsafe, clippy::all)]
+            pub fn fake_fn_c() -> Quat {
+                unsafe {
+                    #[repr(align(4))]
+                    struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
+                    let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
+                    let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wired:math/types")]
+                    extern "C" {
+                        #[link_name = "fake-fn-c"]
+                        fn wit_import(_: *mut u8);
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(_: *mut u8) {
+                        unreachable!()
+                    }
+                    wit_import(ptr0);
+                    let l1 = *ptr0.add(0).cast::<f32>();
+                    let l2 = *ptr0.add(4).cast::<f32>();
+                    let l3 = *ptr0.add(8).cast::<f32>();
+                    let l4 = *ptr0.add(12).cast::<f32>();
+                    Quat {
+                        x: l1,
+                        y: l2,
+                        z: l3,
+                        w: l4,
+                    }
+                }
+            }
+            #[allow(unused_unsafe, clippy::all)]
+            pub fn fake_fn_d() -> Transform {
+                unsafe {
+                    #[repr(align(4))]
+                    struct RetArea([::core::mem::MaybeUninit<u8>; 40]);
+                    let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 40]);
+                    let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wired:math/types")]
+                    extern "C" {
+                        #[link_name = "fake-fn-d"]
+                        fn wit_import(_: *mut u8);
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(_: *mut u8) {
+                        unreachable!()
+                    }
+                    wit_import(ptr0);
+                    let l1 = *ptr0.add(0).cast::<f32>();
+                    let l2 = *ptr0.add(4).cast::<f32>();
+                    let l3 = *ptr0.add(8).cast::<f32>();
+                    let l4 = *ptr0.add(12).cast::<f32>();
+                    let l5 = *ptr0.add(16).cast::<f32>();
+                    let l6 = *ptr0.add(20).cast::<f32>();
+                    let l7 = *ptr0.add(24).cast::<f32>();
+                    let l8 = *ptr0.add(28).cast::<f32>();
+                    let l9 = *ptr0.add(32).cast::<f32>();
+                    let l10 = *ptr0.add(36).cast::<f32>();
+                    Transform {
+                        rotation: Quat {
+                            x: l1,
+                            y: l2,
+                            z: l3,
+                            w: l4,
+                        },
+                        scale: Vec3 {
+                            x: l5,
+                            y: l6,
+                            z: l7,
+                        },
+                        translation: Vec3 {
+                            x: l8,
+                            y: l9,
+                            z: l10,
+                        },
+                    }
                 }
             }
         }
@@ -3676,8 +3785,8 @@ pub(crate) use __export_lib_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:lib:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4168] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xce\x1f\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4227] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x89\x20\x01A\x02\x01\
 A\x1a\x01B\x13\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
 material\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\x15[constructor]material\x01\x04\x01\
 h\x02\x01@\x01\x04self\x05\0y\x04\0\x13[method]material.id\x01\x06\x01@\x01\x04s\
@@ -3701,76 +3810,78 @@ self\x12\0y\x04\0\x0f[method]mesh.id\x01\x13\x01@\x01\x04self\x12\0\x10\x04\0\x1
 i\x02\x01p\x17\x01@\x01\x04self\x12\0\x18\x04\0\x1c[method]mesh.list-primitives\x01\
 \x19\x01@\x01\x04self\x12\0\x17\x04\0\x1d[method]mesh.create-primitive\x01\x1a\x01\
 @\x02\x04self\x12\x05value\x17\x01\0\x04\0\x1d[method]mesh.remove-primitive\x01\x1b\
-\x03\x01\x10wired:scene/mesh\x05\x02\x01B\x0a\x01r\x02\x01xv\x01yv\x04\0\x04vec2\
+\x03\x01\x10wired:scene/mesh\x05\x02\x01B\x10\x01r\x02\x01xv\x01yv\x04\0\x04vec2\
 \x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\
 \x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01r\x03\x08rotation\x05\x05scale\x03\x0btr\
-anslation\x03\x04\0\x09transform\x03\0\x06\x01@\0\0\x01\x04\0\x07fake-fn\x01\x08\
-\x03\x01\x10wired:math/types\x05\x03\x02\x03\0\x02\x04vec3\x02\x03\0\x02\x04quat\
-\x01B\x15\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\0\x02\x03\x02\x01\x05\x04\0\x04\
-quat\x03\0\x02\x01m\x02\x04left\x05right\x04\0\x09hand-side\x03\0\x04\x01r\x03\x0b\
-translation\x01\x08rotation\x03\x06radiusv\x04\0\x05joint\x03\0\x06\x01r\x04\x03\
-tip\x07\x06distal\x07\x08proximal\x07\x0ametacarpal\x07\x04\0\x06finger\x03\0\x08\
-\x01k\x07\x01r\x09\x04side\x05\x05thumb\x09\x05index\x09\x06middle\x09\x04ring\x09\
-\x06little\x09\x04palm\x07\x05wrist\x07\x05elbow\x0a\x04\0\x04hand\x03\0\x0b\x01\
-r\x02\x06origin\x01\x0borientation\x03\x04\0\x03ray\x03\0\x0d\x01r\x03\x06origin\
-\x01\x0borientation\x03\x06radiusv\x04\0\x03tip\x03\0\x0f\x01q\x03\x04hand\x01\x0c\
-\0\x03ray\x01\x0e\0\x03tip\x01\x10\0\x04\0\x0ainput-type\x03\0\x11\x01r\x04\x02i\
-dw\x05input\x12\x08distancev\x05ordery\x04\0\x0binput-event\x03\0\x13\x03\x01\x11\
-wired:input/types\x05\x06\x02\x03\0\x03\x0binput-event\x01B\x0a\x02\x03\x02\x01\x07\
-\x04\0\x0binput-event\x03\0\0\x04\0\x0dinput-handler\x03\x01\x01i\x02\x01@\0\0\x03\
-\x04\0\x1a[constructor]input-handler\x01\x04\x01h\x02\x01k\x01\x01@\x01\x04self\x05\
-\0\x06\x04\0\"[method]input-handler.handle-input\x01\x07\x03\x01\x13wired:input/\
-handler\x05\x08\x01B\x1c\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\0\x04\0\x08coll\
-ider\x03\x01\x01r\x02\x06heightv\x06radiusv\x04\0\x0eshape-cylinder\x03\0\x03\x01\
-q\x03\x06cuboid\x01\x01\0\x08cylinder\x01\x04\0\x06sphere\x01v\0\x04\0\x05shape\x03\
-\0\x05\x04\0\x0arigid-body\x03\x01\x01m\x03\x07dynamic\x05fixed\x09kinematic\x04\
-\0\x0frigid-body-type\x03\0\x08\x01i\x02\x01@\x01\x05shape\x06\0\x0a\x04\0\x15[c\
-onstructor]collider\x01\x0b\x01h\x02\x01@\x01\x04self\x0c\0v\x04\0\x18[method]co\
-llider.density\x01\x0d\x01@\x02\x04self\x0c\x05valuev\x01\0\x04\0\x1c[method]col\
-lider.set-density\x01\x0e\x01i\x07\x01@\x01\x0frigid-body-type\x09\0\x0f\x04\0\x17\
-[constructor]rigid-body\x01\x10\x01h\x07\x01@\x01\x04self\x11\0\x01\x04\0\x19[me\
-thod]rigid-body.angvel\x01\x12\x01@\x02\x04self\x11\x05value\x01\x01\0\x04\0\x1d\
-[method]rigid-body.set-angvel\x01\x13\x04\0\x19[method]rigid-body.linvel\x01\x12\
-\x04\0\x1d[method]rigid-body.set-linvel\x01\x13\x03\x01\x13wired:physics/types\x05\
-\x09\x02\x03\0\x01\x04mesh\x02\x03\0\x04\x0dinput-handler\x02\x03\0\x02\x09trans\
-form\x02\x03\0\x05\x08collider\x02\x03\0\x05\x0arigid-body\x01BE\x02\x03\x02\x01\
-\x0a\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x0dinput-handler\x03\0\x02\x02\
-\x03\x02\x01\x0c\x04\0\x09transform\x03\0\x04\x02\x03\x02\x01\x0d\x04\0\x08colli\
-der\x03\0\x06\x02\x03\x02\x01\x0e\x04\0\x0arigid-body\x03\0\x08\x04\0\x04node\x03\
-\x01\x01i\x0a\x01@\0\0\x0b\x04\0\x11[constructor]node\x01\x0c\x01h\x0a\x01@\x01\x04\
-self\x0d\0y\x04\0\x0f[method]node.id\x01\x0e\x01@\x01\x04self\x0d\0\x0b\x04\0\x10\
-[method]node.ref\x01\x0f\x01@\x01\x04self\x0d\0s\x04\0\x11[method]node.name\x01\x10\
-\x01@\x02\x04self\x0d\x05values\x01\0\x04\0\x15[method]node.set-name\x01\x11\x01\
-p\x0b\x01@\x01\x04self\x0d\0\x12\x04\0\x15[method]node.children\x01\x13\x01@\x02\
-\x04self\x0d\x05value\x0d\x01\0\x04\0\x16[method]node.add-child\x01\x14\x04\0\x19\
-[method]node.remove-child\x01\x14\x01k\x0b\x01@\x01\x04self\x0d\0\x15\x04\0\x13[\
-method]node.parent\x01\x16\x01@\x01\x04self\x0d\0\x05\x04\0\x1d[method]node.glob\
-al-transform\x01\x17\x04\0\x16[method]node.transform\x01\x17\x01@\x02\x04self\x0d\
-\x05value\x05\x01\0\x04\0\x1a[method]node.set-transform\x01\x18\x01i\x01\x01k\x19\
-\x01@\x01\x04self\x0d\0\x1a\x04\0\x11[method]node.mesh\x01\x1b\x01h\x01\x01k\x1c\
-\x01@\x02\x04self\x0d\x05value\x1d\x01\0\x04\0\x15[method]node.set-mesh\x01\x1e\x01\
-i\x07\x01k\x1f\x01@\x01\x04self\x0d\0\x20\x04\0\x15[method]node.collider\x01!\x01\
-h\x07\x01k\"\x01@\x02\x04self\x0d\x05value#\x01\0\x04\0\x19[method]node.set-coll\
-ider\x01$\x01i\x09\x01k%\x01@\x01\x04self\x0d\0&\x04\0\x17[method]node.rigid-bod\
-y\x01'\x01h\x09\x01k(\x01@\x02\x04self\x0d\x05value)\x01\0\x04\0\x1b[method]node\
-.set-rigid-body\x01*\x01i\x03\x01k+\x01@\x01\x04self\x0d\0,\x04\0\x1a[method]nod\
-e.input-handler\x01-\x01h\x03\x01k.\x01@\x02\x04self\x0d\x05value/\x01\0\x04\0\x1e\
-[method]node.set-input-handler\x010\x03\x01\x10wired:scene/node\x05\x0f\x02\x03\0\
-\x06\x04node\x01B#\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\0\x04\0\x06screen\x03\
-\x01\x04\0\x06module\x03\x01\x01i\x02\x01@\0\0\x04\x04\0\x13[constructor]screen\x01\
-\x05\x01h\x02\x01@\x01\x04self\x06\0\x7f\x04\0\x16[method]screen.visible\x01\x07\
-\x01@\x02\x04self\x06\x05value\x7f\x01\0\x04\0\x1a[method]screen.set-visible\x01\
-\x08\x01i\x03\x01k\x09\x01@\x01\x04self\x06\0\x0a\x04\0\x1d[method]screen.centra\
-l-module\x01\x0b\x01h\x03\x01k\x0c\x01@\x02\x04self\x06\x05value\x0d\x01\0\x04\0\
-![method]screen.set-central-module\x01\x0e\x01@\x02\x04self\x06\x05value\x0c\x01\
-\0\x04\0\x19[method]screen.add-module\x01\x0f\x04\0\x1c[method]screen.remove-mod\
-ule\x01\x0f\x01p\x09\x01@\x01\x04self\x06\0\x10\x04\0\x16[method]screen.modules\x01\
-\x11\x01@\x02\x04self\x06\x05deltav\x01\0\x04\0\x15[method]screen.update\x01\x12\
-\x01@\0\0\x09\x04\0\x13[constructor]module\x01\x13\x01i\x01\x01@\x01\x04self\x0c\
-\0\x14\x04\0\x13[method]module.root\x01\x15\x01@\x02\x04self\x0c\x05deltav\x01\0\
-\x04\0\x15[method]module.update\x01\x16\x04\x01\x14unavi:vscreen/screen\x05\x11\x04\
-\x01\x11unavi:vscreen/lib\x04\0\x0b\x09\x01\0\x03lib\x03\0\0\0G\x09producers\x01\
-\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+anslation\x03\x04\0\x09transform\x03\0\x06\x01@\0\0\x01\x04\0\x09fake-fn-a\x01\x08\
+\x01@\0\0\x03\x04\0\x09fake-fn-b\x01\x09\x01@\0\0\x05\x04\0\x09fake-fn-c\x01\x0a\
+\x01@\0\0\x07\x04\0\x09fake-fn-d\x01\x0b\x03\x01\x10wired:math/types\x05\x03\x02\
+\x03\0\x02\x04vec3\x02\x03\0\x02\x04quat\x01B\x15\x02\x03\x02\x01\x04\x04\0\x04v\
+ec3\x03\0\0\x02\x03\x02\x01\x05\x04\0\x04quat\x03\0\x02\x01m\x02\x04left\x05righ\
+t\x04\0\x09hand-side\x03\0\x04\x01r\x03\x0btranslation\x01\x08rotation\x03\x06ra\
+diusv\x04\0\x05joint\x03\0\x06\x01r\x04\x03tip\x07\x06distal\x07\x08proximal\x07\
+\x0ametacarpal\x07\x04\0\x06finger\x03\0\x08\x01k\x07\x01r\x09\x04side\x05\x05th\
+umb\x09\x05index\x09\x06middle\x09\x04ring\x09\x06little\x09\x04palm\x07\x05wris\
+t\x07\x05elbow\x0a\x04\0\x04hand\x03\0\x0b\x01r\x02\x06origin\x01\x0borientation\
+\x03\x04\0\x03ray\x03\0\x0d\x01r\x03\x06origin\x01\x0borientation\x03\x06radiusv\
+\x04\0\x03tip\x03\0\x0f\x01q\x03\x04hand\x01\x0c\0\x03ray\x01\x0e\0\x03tip\x01\x10\
+\0\x04\0\x0ainput-type\x03\0\x11\x01r\x04\x02idw\x05input\x12\x08distancev\x05or\
+dery\x04\0\x0binput-event\x03\0\x13\x03\x01\x11wired:input/types\x05\x06\x02\x03\
+\0\x03\x0binput-event\x01B\x0a\x02\x03\x02\x01\x07\x04\0\x0binput-event\x03\0\0\x04\
+\0\x0dinput-handler\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\x1a[constructor]input-ha\
+ndler\x01\x04\x01h\x02\x01k\x01\x01@\x01\x04self\x05\0\x06\x04\0\"[method]input-\
+handler.handle-input\x01\x07\x03\x01\x13wired:input/handler\x05\x08\x01B\x1c\x02\
+\x03\x02\x01\x04\x04\0\x04vec3\x03\0\0\x04\0\x08collider\x03\x01\x01r\x02\x06hei\
+ghtv\x06radiusv\x04\0\x0eshape-cylinder\x03\0\x03\x01q\x03\x06cuboid\x01\x01\0\x08\
+cylinder\x01\x04\0\x06sphere\x01v\0\x04\0\x05shape\x03\0\x05\x04\0\x0arigid-body\
+\x03\x01\x01m\x03\x07dynamic\x05fixed\x09kinematic\x04\0\x0frigid-body-type\x03\0\
+\x08\x01i\x02\x01@\x01\x05shape\x06\0\x0a\x04\0\x15[constructor]collider\x01\x0b\
+\x01h\x02\x01@\x01\x04self\x0c\0v\x04\0\x18[method]collider.density\x01\x0d\x01@\
+\x02\x04self\x0c\x05valuev\x01\0\x04\0\x1c[method]collider.set-density\x01\x0e\x01\
+i\x07\x01@\x01\x0frigid-body-type\x09\0\x0f\x04\0\x17[constructor]rigid-body\x01\
+\x10\x01h\x07\x01@\x01\x04self\x11\0\x01\x04\0\x19[method]rigid-body.angvel\x01\x12\
+\x01@\x02\x04self\x11\x05value\x01\x01\0\x04\0\x1d[method]rigid-body.set-angvel\x01\
+\x13\x04\0\x19[method]rigid-body.linvel\x01\x12\x04\0\x1d[method]rigid-body.set-\
+linvel\x01\x13\x03\x01\x13wired:physics/types\x05\x09\x02\x03\0\x01\x04mesh\x02\x03\
+\0\x04\x0dinput-handler\x02\x03\0\x02\x09transform\x02\x03\0\x05\x08collider\x02\
+\x03\0\x05\x0arigid-body\x01BE\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\0\x02\x03\
+\x02\x01\x0b\x04\0\x0dinput-handler\x03\0\x02\x02\x03\x02\x01\x0c\x04\0\x09trans\
+form\x03\0\x04\x02\x03\x02\x01\x0d\x04\0\x08collider\x03\0\x06\x02\x03\x02\x01\x0e\
+\x04\0\x0arigid-body\x03\0\x08\x04\0\x04node\x03\x01\x01i\x0a\x01@\0\0\x0b\x04\0\
+\x11[constructor]node\x01\x0c\x01h\x0a\x01@\x01\x04self\x0d\0y\x04\0\x0f[method]\
+node.id\x01\x0e\x01@\x01\x04self\x0d\0\x0b\x04\0\x10[method]node.ref\x01\x0f\x01\
+@\x01\x04self\x0d\0s\x04\0\x11[method]node.name\x01\x10\x01@\x02\x04self\x0d\x05\
+values\x01\0\x04\0\x15[method]node.set-name\x01\x11\x01p\x0b\x01@\x01\x04self\x0d\
+\0\x12\x04\0\x15[method]node.children\x01\x13\x01@\x02\x04self\x0d\x05value\x0d\x01\
+\0\x04\0\x16[method]node.add-child\x01\x14\x04\0\x19[method]node.remove-child\x01\
+\x14\x01k\x0b\x01@\x01\x04self\x0d\0\x15\x04\0\x13[method]node.parent\x01\x16\x01\
+@\x01\x04self\x0d\0\x05\x04\0\x1d[method]node.global-transform\x01\x17\x04\0\x16\
+[method]node.transform\x01\x17\x01@\x02\x04self\x0d\x05value\x05\x01\0\x04\0\x1a\
+[method]node.set-transform\x01\x18\x01i\x01\x01k\x19\x01@\x01\x04self\x0d\0\x1a\x04\
+\0\x11[method]node.mesh\x01\x1b\x01h\x01\x01k\x1c\x01@\x02\x04self\x0d\x05value\x1d\
+\x01\0\x04\0\x15[method]node.set-mesh\x01\x1e\x01i\x07\x01k\x1f\x01@\x01\x04self\
+\x0d\0\x20\x04\0\x15[method]node.collider\x01!\x01h\x07\x01k\"\x01@\x02\x04self\x0d\
+\x05value#\x01\0\x04\0\x19[method]node.set-collider\x01$\x01i\x09\x01k%\x01@\x01\
+\x04self\x0d\0&\x04\0\x17[method]node.rigid-body\x01'\x01h\x09\x01k(\x01@\x02\x04\
+self\x0d\x05value)\x01\0\x04\0\x1b[method]node.set-rigid-body\x01*\x01i\x03\x01k\
++\x01@\x01\x04self\x0d\0,\x04\0\x1a[method]node.input-handler\x01-\x01h\x03\x01k\
+.\x01@\x02\x04self\x0d\x05value/\x01\0\x04\0\x1e[method]node.set-input-handler\x01\
+0\x03\x01\x10wired:scene/node\x05\x0f\x02\x03\0\x06\x04node\x01B#\x02\x03\x02\x01\
+\x10\x04\0\x04node\x03\0\0\x04\0\x06screen\x03\x01\x04\0\x06module\x03\x01\x01i\x02\
+\x01@\0\0\x04\x04\0\x13[constructor]screen\x01\x05\x01h\x02\x01@\x01\x04self\x06\
+\0\x7f\x04\0\x16[method]screen.visible\x01\x07\x01@\x02\x04self\x06\x05value\x7f\
+\x01\0\x04\0\x1a[method]screen.set-visible\x01\x08\x01i\x03\x01k\x09\x01@\x01\x04\
+self\x06\0\x0a\x04\0\x1d[method]screen.central-module\x01\x0b\x01h\x03\x01k\x0c\x01\
+@\x02\x04self\x06\x05value\x0d\x01\0\x04\0![method]screen.set-central-module\x01\
+\x0e\x01@\x02\x04self\x06\x05value\x0c\x01\0\x04\0\x19[method]screen.add-module\x01\
+\x0f\x04\0\x1c[method]screen.remove-module\x01\x0f\x01p\x09\x01@\x01\x04self\x06\
+\0\x10\x04\0\x16[method]screen.modules\x01\x11\x01@\x02\x04self\x06\x05deltav\x01\
+\0\x04\0\x15[method]screen.update\x01\x12\x01@\0\0\x09\x04\0\x13[constructor]mod\
+ule\x01\x13\x01i\x01\x01@\x01\x04self\x0c\0\x14\x04\0\x13[method]module.root\x01\
+\x15\x01@\x02\x04self\x0c\x05deltav\x01\0\x04\0\x15[method]module.update\x01\x16\
+\x04\x01\x14unavi:vscreen/screen\x05\x11\x04\x01\x11unavi:vscreen/lib\x04\0\x0b\x09\
+\x01\0\x03lib\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x07\
+0.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

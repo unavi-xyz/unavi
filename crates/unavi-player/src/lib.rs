@@ -34,16 +34,18 @@ impl Plugin for PlayerPlugin {
                 body::id_player_bones,
                 body::set_avatar_head,
                 body::setup_first_person,
-                input::handle_raycast_input,
+                input::read_keyboard_input,
                 look::grab_mouse,
                 (
+                    (look::read_mouse_input, look::apply_camera_look).chain(),
                     (
-                        input::read_keyboard_input,
-                        (look::read_mouse_input, look::apply_camera_look).chain(),
-                    ),
-                    (
-                        (controls::void_teleport, controls::move_player).chain(),
+                        (
+                            controls::void_teleport,
+                            controls::move_player.before(input::read_keyboard_input),
+                        )
+                            .chain(),
                         body::rotate_avatar_head,
+                        input::handle_raycast_input,
                     ),
                 )
                     .chain(),

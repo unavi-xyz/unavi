@@ -1,6 +1,7 @@
 use avian3d::prelude::*;
 use bevy::{prelude::*, render::view::RenderLayers};
 use bevy_tnua::prelude::*;
+use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
 use bevy_vrm::{
     first_person::{FirstPersonFlag, SetupFirstPerson, RENDER_LAYERS},
     loader::Vrm,
@@ -48,10 +49,11 @@ pub(crate) fn spawn_player(asset_server: Res<AssetServer>, mut commands: Command
                 memberships: LOCAL_PLAYER_LAYER,
                 ..default()
             },
-            LinearVelocity::default(),
             LocalPlayer::default(),
             RigidBody::Dynamic,
             TnuaControllerBundle::default(),
+            TnuaAvian3dSensorShape(Collider::cylinder((PLAYER_WIDTH / 2.0) * 0.95, 0.0)),
+            LockedAxes::ROTATION_LOCKED,
             SpatialBundle {
                 global_transform: GlobalTransform::from_translation(SPAWN),
                 ..default()

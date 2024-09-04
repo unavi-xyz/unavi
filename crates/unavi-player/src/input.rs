@@ -66,7 +66,7 @@ pub fn read_keyboard_input(
 }
 
 const RAYCAST_DISTANCE: f32 = 5.0;
-const CROSSHAIR_RADIUS: f32 = 0.006;
+const CROSSHAIR_RADIUS: f32 = 0.012;
 
 pub fn handle_raycast_input(
     camera: Query<&GlobalTransform, With<PlayerCamera>>,
@@ -98,9 +98,9 @@ pub fn handle_raycast_input(
         // TODO: Showing double on non-60hz monitors
         if let Ok(normal) = Dir3::from_xyz(hit.normal.x, hit.normal.y, hit.normal.z) {
             gizmos.circle(
-                translation + direction * hit.time_of_impact,
+                translation + direction * (hit.time_of_impact - 0.001),
                 normal,
-                CROSSHAIR_RADIUS,
+                CROSSHAIR_RADIUS * (hit.time_of_impact / RAYCAST_DISTANCE),
                 Color::WHITE,
             );
         }

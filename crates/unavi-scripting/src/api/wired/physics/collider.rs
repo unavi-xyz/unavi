@@ -7,7 +7,10 @@ use crate::{
     state::StoreState,
 };
 
-use super::bindings::wired::physics::types::{HostCollider, Shape};
+use super::bindings::{
+    types::{ShapeCylinder, Vec3},
+    wired::physics::types::{HostCollider, Shape},
+};
 
 #[derive(Debug)]
 pub struct Collider {
@@ -30,6 +33,17 @@ impl Collider {
             density: 1.0,
             shape,
             ref_count: RefCountCell::default(),
+        }
+    }
+
+    /// Returns the equivalent Bevy component.
+    pub fn component(&self) -> avian3d::prelude::Collider {
+        match self.shape {
+            Shape::Cuboid(Vec3 { x, y, z }) => avian3d::prelude::Collider::cuboid(x, y, z),
+            Shape::Cylinder(ShapeCylinder { height, radius }) => {
+                avian3d::prelude::Collider::cylinder(radius, height)
+            }
+            Shape::Sphere(radius) => avian3d::prelude::Collider::sphere(radius),
         }
     }
 }

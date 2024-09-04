@@ -74,21 +74,9 @@ impl StoreState {
         T::from_res(res, &self.table)
     }
 
-    /// Inserts a component into the given node.
-    pub fn node_insert<T: Component>(&mut self, node: u32, value: T) {
-        let nodes = self.entities.nodes.clone();
-
-        self.commands.push(move |world: &mut World| {
-            let nodes = nodes.read().unwrap();
-            let entity = nodes.get(&node).unwrap();
-            let mut entity = world.entity_mut(*entity);
-            entity.insert(value);
-        });
-    }
-
     /// Inserts a component into the given node if the value is `Some`.
     /// If the value is `None`, removes the component from the entity.
-    pub fn node_insert_option<T: Component>(&mut self, node: u32, value: Option<T>) {
+    pub fn node_insert_option<T: Bundle>(&mut self, node: u32, value: Option<T>) {
         let nodes = self.entities.nodes.clone();
 
         self.commands.push(move |world: &mut World| {
@@ -102,6 +90,16 @@ impl StoreState {
                 entity.remove::<T>();
             }
         });
+    }
+
+    /// Inserts a component into the given node.
+    pub fn node_insert<T: Bundle>(&mut self, node: u32, value: T) {
+        self.node_insert_option(node, Some(value))
+    }
+
+    /// Removes a component from the given node.
+    pub fn node_remove<T: Bundle>(&mut self, node: u32) {
+        self.node_insert_option::<T>(node, None)
     }
 }
 

@@ -337,6 +337,12 @@ impl HostNode for StoreState {
         self_: Resource<NodeRes>,
         value: Option<Resource<Collider>>,
     ) -> wasm_bridge::Result<()> {
+        let value = if let Some(v) = value {
+            Some(Collider::from_res(&v, &self.table)?)
+        } else {
+            None
+        };
+
         let collider = match &value {
             Some(value) => {
                 let collider = self.table.get(value)?;

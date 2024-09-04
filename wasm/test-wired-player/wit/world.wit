@@ -1,5 +1,0 @@
-package test:wired-player;
-
-world script {
-    include wired:prelude/script; 
-}

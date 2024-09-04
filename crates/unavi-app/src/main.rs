@@ -62,7 +62,7 @@ struct Args {
     #[arg(long, default_value = "filesystem")]
     storage: Storage,
 
-    /// Enables XR support.
+    /// Enables XR mode.
     #[arg(long)]
     xr: bool,
 }

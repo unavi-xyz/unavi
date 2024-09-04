@@ -66,7 +66,7 @@ pub fn read_keyboard_input(
 }
 
 const RAYCAST_DISTANCE: f32 = 5.0;
-const CROSSHAIR_RADIUS: f32 = 0.008;
+const CROSSHAIR_RADIUS: f32 = 0.006;
 
 pub fn handle_raycast_input(
     camera: Query<&GlobalTransform, With<PlayerCamera>>,

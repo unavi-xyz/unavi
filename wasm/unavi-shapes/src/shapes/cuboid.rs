@@ -37,7 +37,7 @@ impl GuestCuboid for Cuboid {
 
         mesh
     }
-    fn to_node(&self) -> crate::bindings::exports::unavi::shapes::api::Node {
+    fn to_node(&self) -> Node {
         let node = Node::new();
         node.set_mesh(Some(&self.to_mesh()));
         node

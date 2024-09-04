@@ -17,26 +17,39 @@ impl GuestScript for Script {
     fn new() -> Self {
         let scene = Scene::new();
 
-        // 3D
-        let cuboid = Cuboid::new(Vec3::new(1.0, 0.5, 1.5)).to_physics_node();
-        cuboid.set_transform(Transform::from_translation(Vec3::new(3.0, 0.0, 0.0)));
-        scene.add_node(&cuboid);
+        {
+            let cuboid = Cuboid::new(Vec3::new(1.0, 0.5, 1.5)).to_physics_node();
+            assert!(cuboid.collider().is_some());
+            cuboid.set_transform(Transform::from_translation(Vec3::new(3.0, 0.0, 0.0)));
+            scene.add_node(&cuboid);
+        }
 
-        let sphere = Sphere::new_ico(0.5).to_physics_node();
-        sphere.set_transform(Transform::from_translation(Vec3::new(1.5, 0.0, 2.0)));
-        scene.add_node(&sphere);
+        {
+            let sphere = Sphere::new_ico(0.5).to_physics_node();
+            assert!(sphere.collider().is_some());
+            sphere.set_transform(Transform::from_translation(Vec3::new(1.5, 0.0, 2.0)));
+            scene.add_node(&sphere);
+        }
 
-        let sphere = Sphere::new_uv(0.5).to_physics_node();
-        sphere.set_transform(Transform::from_translation(Vec3::new(1.5, 0.0, 0.0)));
-        scene.add_node(&sphere);
+        {
+            let sphere = Sphere::new_uv(0.5).to_physics_node();
+            assert!(sphere.collider().is_some());
+            sphere.set_transform(Transform::from_translation(Vec3::new(1.5, 0.0, 0.0)));
+            scene.add_node(&sphere);
+        }
 
-        let cylinder = Cylinder::new(0.5, 1.0).to_physics_node();
-        scene.add_node(&cylinder);
+        {
+            let cylinder = Cylinder::new(0.5, 1.0).to_physics_node();
+            assert!(cylinder.collider().is_some());
+            scene.add_node(&cylinder);
+        }
 
-        // 2D
-        let rectangle = Rectangle::new(Vec2::splat(1.0)).to_physics_node();
-        rectangle.set_transform(Transform::from_translation(Vec3::new(-1.5, 0.0, 0.0)));
-        scene.add_node(&rectangle);
+        {
+            let rectangle = Rectangle::new(Vec2::splat(1.0)).to_physics_node();
+            assert!(rectangle.collider().is_some());
+            rectangle.set_transform(Transform::from_translation(Vec3::new(-1.5, 0.0, 0.0)));
+            scene.add_node(&rectangle);
+        }
 
         Root::add_scene(&scene);
 

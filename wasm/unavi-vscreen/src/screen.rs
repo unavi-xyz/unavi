@@ -8,6 +8,7 @@ use crate::{
         unavi::shapes::api::Cylinder,
         wired::{
             math::types::{Quat, Transform, Vec3},
+            physics::types::Collider,
             scene::node::Node,
         },
     },
@@ -23,6 +24,7 @@ pub struct Screen {
     central_module: RefCell<Option<Module>>,
     modules: RefCell<Vec<Module>>,
     root: Node,
+    root_collider: Collider,
     visible: Cell<bool>,
     visible_animating: Cell<bool>,
 }
@@ -32,17 +34,22 @@ impl GuestScreen for Screen {
         let cylinder = Cylinder::new(SCREEN_RADIUS, SCREEN_HEIGHT);
         cylinder.set_resolution(32);
 
-        let root = cylinder.to_node();
+        let root = cylinder.to_physics_node();
+
         root.set_transform(Transform {
             translation: Vec3::new(SCREEN_RADIUS * 2.0, ARM_RADIUS, -ARM_RADIUS / 3.0),
             rotation: Quat::default(),
             scale: Vec3::default(),
         });
 
+        let root_collider = root.collider().unwrap();
+        root.set_collider(None);
+
         Self {
             central_module: RefCell::default(),
             modules: RefCell::default(),
             root,
+            root_collider,
             visible: Cell::default(),
             visible_animating: Cell::default(),
         }
@@ -59,6 +66,12 @@ impl GuestScreen for Screen {
         if self.visible.get() == value {
             return;
         }
+
+        self.root.set_collider(if value {
+            Some(&self.root_collider)
+        } else {
+            None
+        });
 
         self.visible.set(value);
         self.visible_animating.set(true);

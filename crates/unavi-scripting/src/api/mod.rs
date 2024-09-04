@@ -135,6 +135,16 @@ mod tests {
 
     #[tokio::test]
     #[traced_test]
+    async fn example_wired_player() {
+        test_script("example:wired-player").await;
+        assert!(!logs_contain("ERROR"));
+        assert!(!logs_contain("error"));
+        assert!(!logs_contain("WARN"));
+        assert!(!logs_contain("warn"));
+    }
+
+    #[tokio::test]
+    #[traced_test]
     async fn example_wired_physics() {
         test_script("example:wired-physics").await;
         assert!(!logs_contain("ERROR"));
@@ -145,8 +155,28 @@ mod tests {
 
     #[tokio::test]
     #[traced_test]
+    async fn example_unavi_layout() {
+        test_script("example:unavi-layout").await;
+        assert!(!logs_contain("ERROR"));
+        assert!(!logs_contain("error"));
+        assert!(!logs_contain("WARN"));
+        assert!(!logs_contain("warn"));
+    }
+
+    #[tokio::test]
+    #[traced_test]
     async fn example_unavi_scene() {
         test_script("example:unavi-scene").await;
+        assert!(!logs_contain("ERROR"));
+        assert!(!logs_contain("error"));
+        assert!(!logs_contain("WARN"));
+        assert!(!logs_contain("warn"));
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn example_unavi_shapes() {
+        test_script("example:unavi-shapes").await;
         assert!(!logs_contain("ERROR"));
         assert!(!logs_contain("error"));
         assert!(!logs_contain("WARN"));

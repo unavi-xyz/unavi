@@ -1,5 +1,6 @@
 use std::cell::Cell;
 
+use avian3d::prelude::MassPropertiesBundle;
 use bevy::{
     prelude::{Transform as BTransform, *},
     utils::HashMap,
@@ -12,9 +13,12 @@ use crate::{
         utils::{RefCount, RefCountCell, RefResource},
         wired::{
             input::{bindings::InputHandler, input_handler::InputHandlerSender},
-            math::bindings::types::{Transform, Vec3},
-            physics::bindings::types::{Collider, RigidBody, RigidBodyType, Shape, ShapeCylinder},
-            scene::bindings::node::{Host, HostNode},
+            math::bindings::types::Transform,
+            physics::bindings::types::{Collider, RigidBody},
+            scene::bindings::{
+                node::{Host, HostNode},
+                scene::Node,
+            },
         },
     },
     state::{MaterialState, PrimitiveState, StoreState},
@@ -309,14 +313,25 @@ impl HostNode for StoreState {
         let node = self.table.get_mut(&self_)?;
         node.transform = value.into();
 
-        self.node_insert(
-            self_.rep(),
-            BTransform {
-                translation: value.translation.into(),
-                rotation: value.rotation.into(),
-                scale: value.scale.into(),
-            },
-        );
+        let mut transform = BTransform {
+            translation: value.translation.into(),
+            rotation: value.rotation.into(),
+            scale: value.scale.into(),
+        };
+
+        // parry3d (used in avian physics) panics when scale is 0
+        const ALMOST_ZERO: f32 = 10e-10;
+        if transform.scale.x == 0.0 {
+            transform.scale.x = ALMOST_ZERO;
+        }
+        if transform.scale.y == 0.0 {
+            transform.scale.y = ALMOST_ZERO;
+        }
+        if transform.scale.z == 0.0 {
+            transform.scale.z = ALMOST_ZERO;
+        }
+
+        self.node_insert(self_.rep(), transform);
 
         Ok(())
     }
@@ -346,20 +361,15 @@ impl HostNode for StoreState {
         let collider = match &value {
             Some(value) => {
                 let collider = self.table.get(value)?;
-                let collider = match collider.shape {
-                    Shape::Cuboid(Vec3 { x, y, z }) => avian3d::prelude::Collider::cuboid(x, y, z),
-                    Shape::Cylinder(ShapeCylinder { height, radius }) => {
-                        avian3d::prelude::Collider::cylinder(radius, height)
-                    }
-                    Shape::Sphere(radius) => avian3d::prelude::Collider::sphere(radius),
-                };
-                Some(collider)
+                Some(collider.component())
             }
             None => None,
         };
 
         let node = self.table.get_mut(&self_)?;
         node.collider = value;
+
+        compute_mass_properties(&self_, self)?;
 
         self.node_insert_option(self_.rep(), collider);
 
@@ -385,18 +395,15 @@ impl HostNode for StoreState {
         let rigid_body = match &value {
             Some(value) => {
                 let rigid_body = self.table.get(value)?;
-                let rigid_body = match rigid_body.rigid_body_type {
-                    RigidBodyType::Dynamic => avian3d::prelude::RigidBody::Dynamic,
-                    RigidBodyType::Fixed => avian3d::prelude::RigidBody::Static,
-                    RigidBodyType::Kinematic => avian3d::prelude::RigidBody::Kinematic,
-                };
-                Some(rigid_body)
+                Some(rigid_body.component())
             }
             None => None,
         };
 
         let node = self.table.get_mut(&self_)?;
         node.rigid_body = value;
+
+        compute_mass_properties(&self_, self)?;
 
         self.node_insert_option(self_.rep(), rigid_body);
 
@@ -456,6 +463,31 @@ impl HostNode for StoreState {
 }
 
 impl Host for StoreState {}
+
+fn compute_mass_properties(
+    node_res: &Resource<Node>,
+    state: &mut StoreState,
+) -> Result<(), ResourceTableError> {
+    let rep = node_res.rep();
+    let node = state.table.get(node_res)?;
+
+    if node.rigid_body.is_some() {
+        if let Some(collider) = &node.collider {
+            let collider = state.table.get(collider)?;
+
+            state.node_insert(
+                rep,
+                MassPropertiesBundle::new_computed(&collider.component(), 1.0),
+            );
+        } else {
+            state.node_insert(rep, MassPropertiesBundle::default());
+        }
+    } else {
+        state.node_remove::<avian3d::prelude::MassPropertiesBundle>(rep)
+    }
+
+    Ok(())
+}
 
 fn calc_global_transform(
     transform: BTransform,

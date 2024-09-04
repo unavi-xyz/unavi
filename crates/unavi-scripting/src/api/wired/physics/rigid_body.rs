@@ -29,6 +29,15 @@ impl RigidBody {
             rigid_body_type,
         }
     }
+
+    /// Returns the equivalent Bevy component.
+    pub fn component(&self) -> avian3d::prelude::RigidBody {
+        match self.rigid_body_type {
+            RigidBodyType::Dynamic => avian3d::prelude::RigidBody::Dynamic,
+            RigidBodyType::Fixed => avian3d::prelude::RigidBody::Static,
+            RigidBodyType::Kinematic => avian3d::prelude::RigidBody::Kinematic,
+        }
+    }
 }
 
 impl RefCount for RigidBody {

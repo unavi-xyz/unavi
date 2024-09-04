@@ -12,8 +12,7 @@ mod scene;
 mod wired_math_impls;
 mod wired_scene_impls;
 
-#[derive(Default)]
-struct Script {}
+struct Script;
 
 impl GuestScript for Script {
     fn new() -> Self {
@@ -24,7 +23,7 @@ impl GuestScript for Script {
         node::test_node_api();
         scene::test_scene_api();
 
-        Script::default()
+        Script
     }
 
     fn update(&self, _delta: f32) {

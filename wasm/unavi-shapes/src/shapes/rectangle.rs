@@ -9,8 +9,6 @@ use crate::bindings::{
     },
 };
 
-const COLLIDER_DEPTH: f32 = 0.0001;
-
 pub struct Rectangle {
     size: RefCell<Vec2>,
 }
@@ -41,9 +39,7 @@ impl GuestRectangle for Rectangle {
         let node = self.to_node();
         let size = self.size();
         node.set_collider(Some(&Collider::new(Shape::Cuboid(Vec3::new(
-            size.x,
-            size.y,
-            COLLIDER_DEPTH,
+            size.x, size.y, 0.0,
         )))));
         node
     }

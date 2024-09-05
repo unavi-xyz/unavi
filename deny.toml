@@ -50,6 +50,7 @@ ignore = [
 	"RUSTSEC-2023-0055", # lexical json number parsing
 	"RUSTSEC-2023-0071", # rsa sidechannel
 	"RUSTSEC-2024-0358", # object_store AWS
+	"RUSTSEC-2024-0370", # proc-macro-error unmaintained
 ]
 
 [bans]

@@ -8,7 +8,6 @@ use crate::{
         unavi::shapes::api::Cylinder,
         wired::{
             math::types::{Quat, Transform, Vec3},
-            physics::types::Collider,
             scene::node::Node,
         },
     },
@@ -17,6 +16,8 @@ use crate::{
 
 const ANIMATION_DURATION_SECONDS: f32 = 0.5;
 const ARM_RADIUS: f32 = 0.03;
+const MAX_SCALE: f32 = 1.0;
+const MIN_SCALE: f32 = 0.0;
 const SCREEN_HEIGHT: f32 = 0.001;
 const SCREEN_RADIUS: f32 = 0.04;
 
@@ -24,32 +25,24 @@ pub struct Screen {
     central_module: RefCell<Option<Module>>,
     modules: RefCell<Vec<Module>>,
     root: Node,
-    root_collider: Collider,
     visible: Cell<bool>,
     visible_animating: Cell<bool>,
 }
 
 impl GuestScreen for Screen {
     fn new() -> Self {
-        let cylinder = Cylinder::new(SCREEN_RADIUS, SCREEN_HEIGHT);
-        cylinder.set_resolution(32);
-
-        let root = cylinder.to_physics_node();
+        let root = Cylinder::new(SCREEN_RADIUS, SCREEN_HEIGHT).to_physics_node();
 
         root.set_transform(Transform {
             translation: Vec3::new(SCREEN_RADIUS * 2.0, ARM_RADIUS, -ARM_RADIUS / 3.0),
             rotation: Quat::default(),
-            scale: Vec3::default(),
+            scale: Vec3::splat(MIN_SCALE),
         });
-
-        let root_collider = root.collider().unwrap();
-        root.set_collider(None);
 
         Self {
             central_module: RefCell::default(),
             modules: RefCell::default(),
             root,
-            root_collider,
             visible: Cell::default(),
             visible_animating: Cell::default(),
         }
@@ -114,18 +107,15 @@ impl GuestScreen for Screen {
             if visible {
                 transform.scale += delta / ANIMATION_DURATION_SECONDS;
 
-                if transform.scale.x > 1.0 {
-                    transform.scale = Vec3::splat(1.0);
+                if transform.scale.x > MAX_SCALE {
+                    transform.scale = Vec3::splat(MAX_SCALE);
                     self.visible_animating.set(false);
-                    self.root.set_collider(Some(&self.root_collider));
                 }
             } else {
                 transform.scale -= delta / ANIMATION_DURATION_SECONDS;
 
-                self.root.set_collider(None);
-
-                if transform.scale.x < 0.0 {
-                    transform.scale = Vec3::splat(0.0);
+                if transform.scale.x < MIN_SCALE {
+                    transform.scale = Vec3::splat(MIN_SCALE);
                     self.visible_animating.set(false);
                 }
             }

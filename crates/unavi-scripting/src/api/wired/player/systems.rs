@@ -94,16 +94,7 @@ pub(crate) fn update_player_skeletons(
 
                     // Set node resource transform.
                     let node = data.table.get_mut(node_res).unwrap();
-                    node.transform.translation.x = bone_transform.translation.x;
-                    node.transform.translation.y = bone_transform.translation.y;
-                    node.transform.translation.z = bone_transform.translation.z;
-                    node.transform.rotation.x = bone_transform.rotation.x;
-                    node.transform.rotation.y = bone_transform.rotation.y;
-                    node.transform.rotation.z = bone_transform.rotation.z;
-                    node.transform.rotation.w = bone_transform.rotation.w;
-                    node.transform.scale.x = bone_transform.scale.x;
-                    node.transform.scale.y = bone_transform.scale.y;
-                    node.transform.scale.z = bone_transform.scale.z;
+                    node.transform = *bone_transform;
                 }
             }
         }

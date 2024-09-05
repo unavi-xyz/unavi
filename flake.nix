@@ -1,9 +1,6 @@
 {
   inputs = {
-    crane = {
-      url = "github:ipetkov/crane";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    crane.url = "github:ipetkov/crane";
     deploy-rs = {
       url = "github:serokell/deploy-rs";
       inputs = {

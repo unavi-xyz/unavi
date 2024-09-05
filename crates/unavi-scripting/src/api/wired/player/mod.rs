@@ -3,6 +3,7 @@ use wasm_bridge::component::{Linker, Resource};
 
 use crate::{api::utils::RefResource, state::StoreState};
 
+#[allow(clippy::module_inception)]
 mod player;
 pub mod systems;
 

@@ -36,7 +36,6 @@ impl Collider {
         }
     }
 
-    /// Returns the equivalent Bevy component.
     pub fn component(&self) -> avian3d::prelude::Collider {
         match self.shape {
             Shape::Cuboid(Vec3 { x, y, z }) => avian3d::prelude::Collider::cuboid(x, y, z),

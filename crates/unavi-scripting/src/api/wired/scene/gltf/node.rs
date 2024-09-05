@@ -1,6 +1,5 @@
 use std::cell::Cell;
 
-use avian3d::prelude::MassPropertiesBundle;
 use bevy::{
     prelude::{Transform as BTransform, *},
     utils::HashMap,
@@ -15,10 +14,7 @@ use crate::{
             input::{bindings::InputHandler, input_handler::InputHandlerSender},
             math::bindings::types::Transform,
             physics::bindings::types::{Collider, RigidBody},
-            scene::bindings::{
-                node::{Host, HostNode},
-                scene::Node,
-            },
+            scene::bindings::node::{Host, HostNode},
         },
     },
     state::{MaterialState, PrimitiveState, StoreState},
@@ -369,8 +365,6 @@ impl HostNode for StoreState {
         let node = self.table.get_mut(&self_)?;
         node.collider = value;
 
-        compute_mass_properties(&self_, self)?;
-
         self.node_insert_option(self_.rep(), collider);
 
         Ok(())
@@ -402,8 +396,6 @@ impl HostNode for StoreState {
 
         let node = self.table.get_mut(&self_)?;
         node.rigid_body = value;
-
-        compute_mass_properties(&self_, self)?;
 
         self.node_insert_option(self_.rep(), rigid_body);
 
@@ -463,31 +455,6 @@ impl HostNode for StoreState {
 }
 
 impl Host for StoreState {}
-
-fn compute_mass_properties(
-    node_res: &Resource<Node>,
-    state: &mut StoreState,
-) -> Result<(), ResourceTableError> {
-    let rep = node_res.rep();
-    let node = state.table.get(node_res)?;
-
-    if node.rigid_body.is_some() {
-        if let Some(collider) = &node.collider {
-            let collider = state.table.get(collider)?;
-
-            state.node_insert(
-                rep,
-                MassPropertiesBundle::new_computed(&collider.component(), 1.0),
-            );
-        } else {
-            state.node_insert(rep, MassPropertiesBundle::default());
-        }
-    } else {
-        state.node_remove::<avian3d::prelude::MassPropertiesBundle>(rep)
-    }
-
-    Ok(())
-}
 
 fn calc_global_transform(
     transform: BTransform,

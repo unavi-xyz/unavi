@@ -42,11 +42,9 @@ pub(crate) fn update_player_skeletons(
                 continue;
             }
 
-            let transform = player_transform.compute_transform();
-
             data.set_transform(
                 Node::from_res(&root, &data.table).unwrap(),
-                transform.into(),
+                player_transform.compute_transform().into(),
             )
             .unwrap();
 
@@ -73,7 +71,7 @@ pub(crate) fn update_player_skeletons(
                 (BoneName::RightFoot, &skeleton.right_foot),
             ];
 
-            for (bone_ent, bone_id, bone_name, transform) in bones.iter() {
+            for (bone_ent, bone_id, bone_name, bone_transform) in bones.iter() {
                 if bone_id != id {
                     continue;
                 }
@@ -83,32 +81,29 @@ pub(crate) fn update_player_skeletons(
                         continue;
                     }
 
-                    // Make node entity child of bone.
-                    // TODO: Don't do this every tick
-                    {
-                        if let Ok(nodes) = data.entities.nodes.read() {
-                            if let Some(node_ent) = nodes.get(&node_res.rep()) {
-                                commands.entity(*node_ent).set_parent(bone_ent);
-                            }
+                    if let Ok(nodes) = data.entities.nodes.read() {
+                        if let Some(node_ent) = nodes.get(&node_res.rep()) {
+                            commands
+                                .entity(*node_ent)
+                                // Reset transform (in case scripts try to change it).
+                                .insert(Transform::default())
+                                // Parent node entity to bone.
+                                .set_parent(bone_ent);
                         }
                     }
 
-                    // Set resource transform.
+                    // Set node resource transform.
                     let node = data.table.get_mut(node_res).unwrap();
-                    node.transform.translation.x = transform.translation.x;
-                    node.transform.translation.y = transform.translation.y;
-                    node.transform.translation.z = transform.translation.z;
-                    node.transform.rotation.x = transform.rotation.x;
-                    node.transform.rotation.y = transform.rotation.y;
-                    node.transform.rotation.z = transform.rotation.z;
-                    node.transform.rotation.w = transform.rotation.w;
-                    node.transform.scale.x = transform.scale.x;
-                    node.transform.scale.y = transform.scale.y;
-                    node.transform.scale.z = transform.scale.z;
-
-                    // if *pair_name == BoneName::LeftUpperArm {
-                    //     info!("setting translation: {}", transform.translation);
-                    // }
+                    node.transform.translation.x = bone_transform.translation.x;
+                    node.transform.translation.y = bone_transform.translation.y;
+                    node.transform.translation.z = bone_transform.translation.z;
+                    node.transform.rotation.x = bone_transform.rotation.x;
+                    node.transform.rotation.y = bone_transform.rotation.y;
+                    node.transform.rotation.z = bone_transform.rotation.z;
+                    node.transform.rotation.w = bone_transform.rotation.w;
+                    node.transform.scale.x = bone_transform.scale.x;
+                    node.transform.scale.y = bone_transform.scale.y;
+                    node.transform.scale.z = bone_transform.scale.z;
                 }
             }
         }

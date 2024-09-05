@@ -85,6 +85,16 @@ mod tests {
 
     #[tokio::test]
     #[traced_test]
+    async fn test_wired_physics() {
+        test_script("test:wired-physics").await;
+        assert!(!logs_contain("ERROR"));
+        assert!(!logs_contain("error"));
+        assert!(!logs_contain("WARN"));
+        assert!(!logs_contain("warn"));
+    }
+
+    #[tokio::test]
+    #[traced_test]
     async fn test_wired_scene() {
         test_script("test:wired-scene").await;
         assert!(!logs_contain("ERROR"));

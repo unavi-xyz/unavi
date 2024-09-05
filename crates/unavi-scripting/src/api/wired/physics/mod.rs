@@ -5,6 +5,7 @@ use crate::state::StoreState;
 
 mod collider;
 mod rigid_body;
+pub(crate) mod systems;
 
 pub mod bindings {
     pub use super::{collider::Collider, rigid_body::RigidBody};

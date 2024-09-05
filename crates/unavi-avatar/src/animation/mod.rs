@@ -148,7 +148,7 @@ pub(crate) fn play_avatar_animations(
             let menu_weight = weights[&AnimationName::Menu];
             let mut target_menu_weight = *targets.get(&AnimationName::Menu).unwrap_or(&0.0);
 
-            apply_weight(
+            let menu = apply_weight(
                 AnimationName::Menu,
                 &mut target_menu_weight,
                 alpha,
@@ -156,6 +156,7 @@ pub(crate) fn play_avatar_animations(
                 nodes,
                 &mut weights,
             );
+            menu.set_speed(0.01);
 
             // Idle.
             let mut idle_weight = 1.0;

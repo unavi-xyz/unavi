@@ -1,9 +1,11 @@
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
-    unavi::scene::api::Scene,
+    unavi::scene::api::{Root, Scene},
     wired::{
+        log::api::{log, LogLevel},
         math::types::Vec3,
         physics::types::{Collider, RigidBody, RigidBodyType, Shape},
+        scene::scene::Node,
     },
 };
 
@@ -11,7 +13,9 @@ use bindings::{
 mod bindings;
 mod wired_math_impls;
 
-struct Script {}
+struct Script {
+    spheres: Vec<Node>,
+}
 
 impl GuestScript for Script {
     fn new() -> Self {
@@ -28,6 +32,8 @@ impl GuestScript for Script {
         node.set_rigid_body(Some(&rigid_body));
 
         // Spheres.
+        let mut spheres = Vec::default();
+
         for i in 1..5 {
             let radius = 0.25;
 
@@ -43,12 +49,27 @@ impl GuestScript for Script {
 
             node.set_collider(Some(&collider));
             node.set_rigid_body(Some(&rigid_body));
+
+            spheres.push(node);
         }
 
-        Script {}
+        // Collider only.
+        let node = scene.create_node();
+        let collider = Collider::new(Shape::Sphere(1.0));
+        node.set_collider(Some(&collider));
+
+        Root::add_scene(&scene);
+
+        Script { spheres }
     }
 
-    fn update(&self, _delta: f32) {}
+    fn update(&self, _delta: f32) {
+        let translation = self.spheres[0].transform().translation;
+        log(
+            LogLevel::Info,
+            &format!("Ball translation: {}", translation),
+        );
+    }
 }
 
 struct Types;

@@ -29,7 +29,6 @@ Anyone can run their own servers, modify their client, and extend the underlying
 UNAVI is almost entirely written in Rust 🦀.
 The app is built using [Bevy](https://bevyengine.org/) and makes heavy use of [WebAssembly](https://webassembly.org/) for user scripting.
 Multiplayer is handled by self-hostable servers acting as relays for communication between players.
-UNAVI provides both a web app and native build.
 
 This project is still early, any feedback or contributions are greatly appreciated!
 Come join the [Discord](https://discord.gg/cazUfCCgHJ) and say hi!
@@ -48,7 +47,7 @@ You can then run crates using cargo:
 cargo run -p unavi-app
 ```
 
-Or serve the web app using trunk:
+Or serve the web app (WIP) using trunk:
 
 ```bash
 trunk serve

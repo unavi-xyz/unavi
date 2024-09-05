@@ -106,26 +106,22 @@
         inherit crates;
 
         apps = crates.apps // deploy.apps;
-
         checks = crates.checks;
-        packages =
-          crates.packages
-          // deploy.packages
-          // {
-            githubMatrix = githubMatrix // {
-              matrix.include = map (
-                entry:
-                let
-                  split = pkgs.lib.strings.splitString "." entry.attr;
-                  package = pkgs.lib.strings.removeSuffix "\"" (
-                    pkgs.lib.strings.removePrefix "\"" (builtins.elemAt split 1)
-                  );
-                  platform = builtins.elemAt split 0;
-                in
-                entry // { name = "${package}.${platform}"; }
-              ) githubMatrix.matrix.include;
-            };
-          };
+        packages = crates.packages // deploy.packages;
+
+        githubMatrix = githubMatrix // {
+          matrix.include = map (
+            entry:
+            let
+              split = pkgs.lib.strings.splitString "." entry.attr;
+              package = pkgs.lib.strings.removeSuffix "\"" (
+                pkgs.lib.strings.removePrefix "\"" (builtins.elemAt split 1)
+              );
+              platform = builtins.elemAt split 0;
+            in
+            entry // { name = "${package}.${platform}"; }
+          ) githubMatrix.matrix.include;
+        };
 
         devShells.default = craneLib.devShell {
           packages =

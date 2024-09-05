@@ -93,8 +93,13 @@ let
 
     nativeBuildInputs =
       (with pkgs; [
+        alsa-lib.dev
         capnproto
         cargo-component
+        libxkbcommon.dev
+        openssl.dev
+        udev.dev
+        wayland.dev
       ])
       ++ [ wac-cli ]
       ++ commonNativeBuildInputs;
@@ -157,14 +162,17 @@ let
     buildInputs = lib.optionals pkgs.stdenv.isLinux (
       with pkgs;
       [
-        alsa-lib
         openssl
         udev
       ]
     );
 
     nativeBuildInputs =
-      (with pkgs; [ capnproto ])
+      (with pkgs; [
+        capnproto
+        openssl.dev
+        udev.dev
+      ])
       ++ commonNativeBuildInputs
       ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs; [ darwin.apple_sdk.frameworks.Cocoa ]);
 

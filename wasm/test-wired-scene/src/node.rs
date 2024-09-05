@@ -1,11 +1,10 @@
 use crate::{
     bindings::wired::{
         log::api::{log, LogLevel},
-        physics::types::{Collider, RigidBodyType, Shape},
         scene::{
             gltf::Gltf,
             mesh::Mesh,
-            node::{Node, RigidBody, Transform},
+            node::{Node, Transform},
         },
     },
     panic_log,

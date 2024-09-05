@@ -1,0 +1,5 @@
+package test:wired-physics;
+
+world script {
+    include wired:prelude/script; 
+}

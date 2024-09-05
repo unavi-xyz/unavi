@@ -32,7 +32,10 @@ impl Plugin for ScriptingPlugin {
                 (
                     load::load_scripts,
                     execution::tick_scripts,
-                    api::wired::player::systems::update_player_skeletons,
+                    (
+                        api::wired::physics::systems::update_physics_transforms,
+                        api::wired::player::systems::update_player_skeletons,
+                    ),
                     execution::init_scripts,
                     execution::update_scripts,
                 )

@@ -11558,6 +11558,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-wired-physics"
+version = "0.0.6"
+dependencies = [
+ "wit-bindgen-rt",
+]
+
+[[package]]
 name = "test-wired-scene"
 version = "0.0.6"
 dependencies = [

@@ -15,9 +15,9 @@ use crate::{
     module::Module,
 };
 
-const ANIMATION_DURATION_SECONDS: f32 = 0.4;
-const ARM_RADIUS: f32 = 0.03; // TODO: Get from avatar.
-const SCREEN_HEIGHT: f32 = 0.002;
+const ANIMATION_DURATION_SECONDS: f32 = 0.5;
+const ARM_RADIUS: f32 = 0.03;
+const SCREEN_HEIGHT: f32 = 0.001;
 const SCREEN_RADIUS: f32 = 0.04;
 
 pub struct Screen {
@@ -66,12 +66,6 @@ impl GuestScreen for Screen {
         if self.visible.get() == value {
             return;
         }
-
-        self.root.set_collider(if value {
-            Some(&self.root_collider)
-        } else {
-            None
-        });
 
         self.visible.set(value);
         self.visible_animating.set(true);
@@ -123,9 +117,12 @@ impl GuestScreen for Screen {
                 if transform.scale.x > 1.0 {
                     transform.scale = Vec3::splat(1.0);
                     self.visible_animating.set(false);
+                    self.root.set_collider(Some(&self.root_collider));
                 }
             } else {
                 transform.scale -= delta / ANIMATION_DURATION_SECONDS;
+
+                self.root.set_collider(None);
 
                 if transform.scale.x < 0.0 {
                     transform.scale = Vec3::splat(0.0);

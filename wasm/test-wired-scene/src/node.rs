@@ -107,18 +107,4 @@ pub fn test_node_api() {
         );
         panic_log(&err);
     }
-
-    let collider = Collider::new(Shape::Sphere(0.5));
-    node.set_collider(Some(&collider));
-    assert!(node.collider().is_some());
-
-    let rigid_body = RigidBody::new(RigidBodyType::Dynamic);
-    node.set_rigid_body(Some(&rigid_body));
-    assert!(node.rigid_body().is_some());
-
-    node.set_collider(None);
-    assert!(node.collider().is_none());
-
-    node.set_rigid_body(None);
-    assert!(node.rigid_body().is_none());
 }

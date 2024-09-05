@@ -1,0 +1,44 @@
+use avian3d::prelude::*;
+use bevy::prelude::*;
+
+use crate::{
+    api::{
+        utils::RefResource,
+        wired::scene::{bindings::gltf::Node, gltf::node::NodeId},
+    },
+    execution::ScriptTickrate,
+    load::ScriptMap,
+};
+
+pub(crate) fn update_physics_transforms(
+    phys_nodes: Query<(&NodeId, Entity, &Transform), With<Collider>>,
+    script_map: NonSendMut<ScriptMap>,
+    scripts: Query<(Entity, &ScriptTickrate)>,
+) {
+    for (entity, tickrate) in scripts.iter() {
+        if !tickrate.ready_for_update {
+            continue;
+        }
+
+        let mut scripts = script_map.lock().unwrap();
+
+        let Some((_, store)) = scripts.get_mut(&entity) else {
+            continue;
+        };
+
+        let data = store.data_mut();
+        let nodes = data.entities.nodes.read().unwrap();
+
+        for (id, ent, transform) in phys_nodes.iter() {
+            // Check if phys node is from this script.
+            if Some(ent) != nodes.get(&id.0).copied() {
+                continue;
+            }
+
+            let node = Node::from_rep(id.0, &data.table).unwrap();
+            let node = data.table.get_mut(&node).unwrap();
+
+            node.transform = *transform;
+        }
+    }
+}

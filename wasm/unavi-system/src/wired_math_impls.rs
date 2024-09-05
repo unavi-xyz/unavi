@@ -1,6 +1,9 @@
 #![allow(dead_code)]
 
-use std::ops::{Add, AddAssign, Mul, SubAssign};
+use std::{
+    fmt::Display,
+    ops::{Add, AddAssign, Mul, SubAssign},
+};
 
 use crate::bindings::wired::math::types::{Quat, Transform, Vec2, Vec3};
 
@@ -59,6 +62,12 @@ impl Mul for Vec2 {
             x: self.x * rhs.x,
             y: self.y * rhs.y,
         }
+    }
+}
+
+impl Display for Vec2 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("({},{})", self.x, self.y))
     }
 }
 
@@ -125,6 +134,12 @@ impl Mul for Vec3 {
             y: self.y * rhs.y,
             z: self.z * rhs.z,
         }
+    }
+}
+
+impl Display for Vec3 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("({},{},{})", self.x, self.y, self.z))
     }
 }
 

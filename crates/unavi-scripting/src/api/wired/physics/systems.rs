@@ -11,7 +11,7 @@ use crate::{
 };
 
 pub(crate) fn update_physics_transforms(
-    phys_nodes: Query<(&NodeId, Entity, &Transform), With<Collider>>,
+    nodes: Query<(&NodeId, Entity, &Transform), With<Collider>>,
     script_map: NonSendMut<ScriptMap>,
     scripts: Query<(Entity, &ScriptTickrate)>,
 ) {
@@ -27,11 +27,11 @@ pub(crate) fn update_physics_transforms(
         };
 
         let data = store.data_mut();
-        let nodes = data.entities.nodes.read().unwrap();
+        let script_nodes = data.entities.nodes.read().unwrap();
 
-        for (id, ent, transform) in phys_nodes.iter() {
+        for (id, ent, transform) in nodes.iter() {
             // Check if phys node is from this script.
-            if Some(ent) != nodes.get(&id.0).copied() {
+            if Some(ent) != script_nodes.get(&id.0).copied() {
                 continue;
             }
 

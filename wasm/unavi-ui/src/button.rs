@@ -17,23 +17,7 @@ pub struct Button(Rc<ButtonData>);
 
 impl Drop for Button {
     fn drop(&mut self) {
-        let mut to_remove = Vec::default();
-
-        unsafe {
-            for (i, item) in ELEMENTS.borrow().iter().enumerate() {
-                if item.id() == self.0.id {
-                    to_remove.push(i);
-                }
-            }
-        }
-
-        to_remove.sort();
-
-        for i in to_remove {
-            unsafe {
-                ELEMENTS.borrow_mut().remove(i);
-            }
-        }
+        self.0.remove_element();
     }
 }
 

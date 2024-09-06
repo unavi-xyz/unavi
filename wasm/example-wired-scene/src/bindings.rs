@@ -1150,46 +1150,40 @@ pub mod wired {
             #[repr(C)]
             #[derive(Clone, Copy)]
             pub struct Ray {
-                pub origin: Vec3,
                 pub orientation: Quat,
+                pub origin: Vec3,
             }
             impl ::core::fmt::Debug for Ray {
                 fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Ray")
-                        .field("origin", &self.origin)
                         .field("orientation", &self.orientation)
-                        .finish()
-                }
-            }
-            /// A single point of interaction, such as the tip of a stylus.
-            #[repr(C)]
-            #[derive(Clone, Copy)]
-            pub struct Tip {
-                pub origin: Vec3,
-                pub orientation: Quat,
-                pub radius: f32,
-            }
-            impl ::core::fmt::Debug for Tip {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    f.debug_struct("Tip")
                         .field("origin", &self.origin)
-                        .field("orientation", &self.orientation)
-                        .field("radius", &self.radius)
                         .finish()
                 }
             }
             #[derive(Clone, Copy)]
-            pub enum InputType {
+            pub enum InputData {
                 Hand(Hand),
                 Ray(Ray),
-                Tip(Tip),
             }
-            impl ::core::fmt::Debug for InputType {
+            impl ::core::fmt::Debug for InputData {
                 fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
-                        InputType::Hand(e) => f.debug_tuple("InputType::Hand").field(e).finish(),
-                        InputType::Ray(e) => f.debug_tuple("InputType::Ray").field(e).finish(),
-                        InputType::Tip(e) => f.debug_tuple("InputType::Tip").field(e).finish(),
+                        InputData::Hand(e) => f.debug_tuple("InputData::Hand").field(e).finish(),
+                        InputData::Ray(e) => f.debug_tuple("InputData::Ray").field(e).finish(),
+                    }
+                }
+            }
+            #[derive(Clone, Copy)]
+            pub enum InputAction {
+                Collision,
+                Hover,
+            }
+            impl ::core::fmt::Debug for InputAction {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        InputAction::Collision => f.debug_tuple("InputAction::Collision").finish(),
+                        InputAction::Hover => f.debug_tuple("InputAction::Hover").finish(),
                     }
                 }
             }
@@ -1198,20 +1192,17 @@ pub mod wired {
             pub struct InputEvent {
                 /// Unique id for the event.
                 pub id: u64,
+                /// The action that created the event.
+                pub action: InputAction,
                 /// Spatial input data.
-                pub input: InputType,
-                /// Distance from the input method to the handler.
-                pub distance: f32,
-                /// How many handlers received the event before this one.
-                pub order: u32,
+                pub data: InputData,
             }
             impl ::core::fmt::Debug for InputEvent {
                 fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("InputEvent")
                         .field("id", &self.id)
-                        .field("input", &self.input)
-                        .field("distance", &self.distance)
-                        .field("order", &self.order)
+                        .field("action", &self.action)
+                        .field("data", &self.data)
                         .finish()
                 }
             }
@@ -1295,16 +1286,16 @@ pub mod wired {
                 #[allow(unused_unsafe, clippy::all)]
                 /// Handle the next recieved input event.
                 /// Events only last for one tick.
-                pub fn handle_input(&self) -> Option<InputEvent> {
+                pub fn next(&self) -> Option<InputEvent> {
                     unsafe {
                         #[repr(align(8))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 776]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 776]);
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 768]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 768]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:input/handler")]
                         extern "C" {
-                            #[link_name = "[method]input-handler.handle-input"]
+                            #[link_name = "[method]input-handler.next"]
                             fn wit_import(_: i32, _: *mut u8);
                         }
 
@@ -1320,535 +1311,544 @@ pub mod wired {
                                 let e = {
                                     let l2 = *ptr0.add(8).cast::<i64>();
                                     let l3 = i32::from(*ptr0.add(16).cast::<u8>());
-                                    use super::super::super::wired::input::types::InputType as V205;
-                                    let v205 = match l3 {
+                                    use super::super::super::wired::input::types::InputAction as V4;
+                                    let v4 = match l3 {
+                                        0 => V4::Collision,
+                                        n => {
+                                            debug_assert_eq!(n, 1, "invalid enum discriminant");
+                                            V4::Hover
+                                        }
+                                    };
+                                    let l5 = i32::from(*ptr0.add(20).cast::<u8>());
+                                    use super::super::super::wired::input::types::InputData as V199;
+                                    let v199 = match l5 {
                                         0 => {
-                                            let e205 = {
-                                                let l4 = i32::from(*ptr0.add(20).cast::<u8>());
-                                                let l5 = *ptr0.add(24).cast::<f32>();
-                                                let l6 = *ptr0.add(28).cast::<f32>();
-                                                let l7 = *ptr0.add(32).cast::<f32>();
-                                                let l8 = *ptr0.add(36).cast::<f32>();
-                                                let l9 = *ptr0.add(40).cast::<f32>();
-                                                let l10 = *ptr0.add(44).cast::<f32>();
-                                                let l11 = *ptr0.add(48).cast::<f32>();
-                                                let l12 = *ptr0.add(52).cast::<f32>();
-                                                let l13 = *ptr0.add(56).cast::<f32>();
-                                                let l14 = *ptr0.add(60).cast::<f32>();
-                                                let l15 = *ptr0.add(64).cast::<f32>();
-                                                let l16 = *ptr0.add(68).cast::<f32>();
-                                                let l17 = *ptr0.add(72).cast::<f32>();
-                                                let l18 = *ptr0.add(76).cast::<f32>();
-                                                let l19 = *ptr0.add(80).cast::<f32>();
-                                                let l20 = *ptr0.add(84).cast::<f32>();
-                                                let l21 = *ptr0.add(88).cast::<f32>();
-                                                let l22 = *ptr0.add(92).cast::<f32>();
-                                                let l23 = *ptr0.add(96).cast::<f32>();
-                                                let l24 = *ptr0.add(100).cast::<f32>();
-                                                let l25 = *ptr0.add(104).cast::<f32>();
-                                                let l26 = *ptr0.add(108).cast::<f32>();
-                                                let l27 = *ptr0.add(112).cast::<f32>();
-                                                let l28 = *ptr0.add(116).cast::<f32>();
-                                                let l29 = *ptr0.add(120).cast::<f32>();
-                                                let l30 = *ptr0.add(124).cast::<f32>();
-                                                let l31 = *ptr0.add(128).cast::<f32>();
-                                                let l32 = *ptr0.add(132).cast::<f32>();
-                                                let l33 = *ptr0.add(136).cast::<f32>();
-                                                let l34 = *ptr0.add(140).cast::<f32>();
-                                                let l35 = *ptr0.add(144).cast::<f32>();
-                                                let l36 = *ptr0.add(148).cast::<f32>();
-                                                let l37 = *ptr0.add(152).cast::<f32>();
-                                                let l38 = *ptr0.add(156).cast::<f32>();
-                                                let l39 = *ptr0.add(160).cast::<f32>();
-                                                let l40 = *ptr0.add(164).cast::<f32>();
-                                                let l41 = *ptr0.add(168).cast::<f32>();
-                                                let l42 = *ptr0.add(172).cast::<f32>();
-                                                let l43 = *ptr0.add(176).cast::<f32>();
-                                                let l44 = *ptr0.add(180).cast::<f32>();
-                                                let l45 = *ptr0.add(184).cast::<f32>();
-                                                let l46 = *ptr0.add(188).cast::<f32>();
-                                                let l47 = *ptr0.add(192).cast::<f32>();
-                                                let l48 = *ptr0.add(196).cast::<f32>();
-                                                let l49 = *ptr0.add(200).cast::<f32>();
-                                                let l50 = *ptr0.add(204).cast::<f32>();
-                                                let l51 = *ptr0.add(208).cast::<f32>();
-                                                let l52 = *ptr0.add(212).cast::<f32>();
-                                                let l53 = *ptr0.add(216).cast::<f32>();
-                                                let l54 = *ptr0.add(220).cast::<f32>();
-                                                let l55 = *ptr0.add(224).cast::<f32>();
-                                                let l56 = *ptr0.add(228).cast::<f32>();
-                                                let l57 = *ptr0.add(232).cast::<f32>();
-                                                let l58 = *ptr0.add(236).cast::<f32>();
-                                                let l59 = *ptr0.add(240).cast::<f32>();
-                                                let l60 = *ptr0.add(244).cast::<f32>();
-                                                let l61 = *ptr0.add(248).cast::<f32>();
-                                                let l62 = *ptr0.add(252).cast::<f32>();
-                                                let l63 = *ptr0.add(256).cast::<f32>();
-                                                let l64 = *ptr0.add(260).cast::<f32>();
-                                                let l65 = *ptr0.add(264).cast::<f32>();
-                                                let l66 = *ptr0.add(268).cast::<f32>();
-                                                let l67 = *ptr0.add(272).cast::<f32>();
-                                                let l68 = *ptr0.add(276).cast::<f32>();
-                                                let l69 = *ptr0.add(280).cast::<f32>();
-                                                let l70 = *ptr0.add(284).cast::<f32>();
-                                                let l71 = *ptr0.add(288).cast::<f32>();
-                                                let l72 = *ptr0.add(292).cast::<f32>();
-                                                let l73 = *ptr0.add(296).cast::<f32>();
-                                                let l74 = *ptr0.add(300).cast::<f32>();
-                                                let l75 = *ptr0.add(304).cast::<f32>();
-                                                let l76 = *ptr0.add(308).cast::<f32>();
-                                                let l77 = *ptr0.add(312).cast::<f32>();
-                                                let l78 = *ptr0.add(316).cast::<f32>();
-                                                let l79 = *ptr0.add(320).cast::<f32>();
-                                                let l80 = *ptr0.add(324).cast::<f32>();
-                                                let l81 = *ptr0.add(328).cast::<f32>();
-                                                let l82 = *ptr0.add(332).cast::<f32>();
-                                                let l83 = *ptr0.add(336).cast::<f32>();
-                                                let l84 = *ptr0.add(340).cast::<f32>();
-                                                let l85 = *ptr0.add(344).cast::<f32>();
-                                                let l86 = *ptr0.add(348).cast::<f32>();
-                                                let l87 = *ptr0.add(352).cast::<f32>();
-                                                let l88 = *ptr0.add(356).cast::<f32>();
-                                                let l89 = *ptr0.add(360).cast::<f32>();
-                                                let l90 = *ptr0.add(364).cast::<f32>();
-                                                let l91 = *ptr0.add(368).cast::<f32>();
-                                                let l92 = *ptr0.add(372).cast::<f32>();
-                                                let l93 = *ptr0.add(376).cast::<f32>();
-                                                let l94 = *ptr0.add(380).cast::<f32>();
-                                                let l95 = *ptr0.add(384).cast::<f32>();
-                                                let l96 = *ptr0.add(388).cast::<f32>();
-                                                let l97 = *ptr0.add(392).cast::<f32>();
-                                                let l98 = *ptr0.add(396).cast::<f32>();
-                                                let l99 = *ptr0.add(400).cast::<f32>();
-                                                let l100 = *ptr0.add(404).cast::<f32>();
-                                                let l101 = *ptr0.add(408).cast::<f32>();
-                                                let l102 = *ptr0.add(412).cast::<f32>();
-                                                let l103 = *ptr0.add(416).cast::<f32>();
-                                                let l104 = *ptr0.add(420).cast::<f32>();
-                                                let l105 = *ptr0.add(424).cast::<f32>();
-                                                let l106 = *ptr0.add(428).cast::<f32>();
-                                                let l107 = *ptr0.add(432).cast::<f32>();
-                                                let l108 = *ptr0.add(436).cast::<f32>();
-                                                let l109 = *ptr0.add(440).cast::<f32>();
-                                                let l110 = *ptr0.add(444).cast::<f32>();
-                                                let l111 = *ptr0.add(448).cast::<f32>();
-                                                let l112 = *ptr0.add(452).cast::<f32>();
-                                                let l113 = *ptr0.add(456).cast::<f32>();
-                                                let l114 = *ptr0.add(460).cast::<f32>();
-                                                let l115 = *ptr0.add(464).cast::<f32>();
-                                                let l116 = *ptr0.add(468).cast::<f32>();
-                                                let l117 = *ptr0.add(472).cast::<f32>();
-                                                let l118 = *ptr0.add(476).cast::<f32>();
-                                                let l119 = *ptr0.add(480).cast::<f32>();
-                                                let l120 = *ptr0.add(484).cast::<f32>();
-                                                let l121 = *ptr0.add(488).cast::<f32>();
-                                                let l122 = *ptr0.add(492).cast::<f32>();
-                                                let l123 = *ptr0.add(496).cast::<f32>();
-                                                let l124 = *ptr0.add(500).cast::<f32>();
-                                                let l125 = *ptr0.add(504).cast::<f32>();
-                                                let l126 = *ptr0.add(508).cast::<f32>();
-                                                let l127 = *ptr0.add(512).cast::<f32>();
-                                                let l128 = *ptr0.add(516).cast::<f32>();
-                                                let l129 = *ptr0.add(520).cast::<f32>();
-                                                let l130 = *ptr0.add(524).cast::<f32>();
-                                                let l131 = *ptr0.add(528).cast::<f32>();
-                                                let l132 = *ptr0.add(532).cast::<f32>();
-                                                let l133 = *ptr0.add(536).cast::<f32>();
-                                                let l134 = *ptr0.add(540).cast::<f32>();
-                                                let l135 = *ptr0.add(544).cast::<f32>();
-                                                let l136 = *ptr0.add(548).cast::<f32>();
-                                                let l137 = *ptr0.add(552).cast::<f32>();
-                                                let l138 = *ptr0.add(556).cast::<f32>();
-                                                let l139 = *ptr0.add(560).cast::<f32>();
-                                                let l140 = *ptr0.add(564).cast::<f32>();
-                                                let l141 = *ptr0.add(568).cast::<f32>();
-                                                let l142 = *ptr0.add(572).cast::<f32>();
-                                                let l143 = *ptr0.add(576).cast::<f32>();
-                                                let l144 = *ptr0.add(580).cast::<f32>();
-                                                let l145 = *ptr0.add(584).cast::<f32>();
-                                                let l146 = *ptr0.add(588).cast::<f32>();
-                                                let l147 = *ptr0.add(592).cast::<f32>();
-                                                let l148 = *ptr0.add(596).cast::<f32>();
-                                                let l149 = *ptr0.add(600).cast::<f32>();
-                                                let l150 = *ptr0.add(604).cast::<f32>();
-                                                let l151 = *ptr0.add(608).cast::<f32>();
-                                                let l152 = *ptr0.add(612).cast::<f32>();
-                                                let l153 = *ptr0.add(616).cast::<f32>();
-                                                let l154 = *ptr0.add(620).cast::<f32>();
-                                                let l155 = *ptr0.add(624).cast::<f32>();
-                                                let l156 = *ptr0.add(628).cast::<f32>();
-                                                let l157 = *ptr0.add(632).cast::<f32>();
-                                                let l158 = *ptr0.add(636).cast::<f32>();
-                                                let l159 = *ptr0.add(640).cast::<f32>();
-                                                let l160 = *ptr0.add(644).cast::<f32>();
-                                                let l161 = *ptr0.add(648).cast::<f32>();
-                                                let l162 = *ptr0.add(652).cast::<f32>();
-                                                let l163 = *ptr0.add(656).cast::<f32>();
-                                                let l164 = *ptr0.add(660).cast::<f32>();
-                                                let l165 = *ptr0.add(664).cast::<f32>();
-                                                let l166 = *ptr0.add(668).cast::<f32>();
-                                                let l167 = *ptr0.add(672).cast::<f32>();
-                                                let l168 = *ptr0.add(676).cast::<f32>();
-                                                let l169 = *ptr0.add(680).cast::<f32>();
-                                                let l170 = *ptr0.add(684).cast::<f32>();
-                                                let l171 = *ptr0.add(688).cast::<f32>();
-                                                let l172 = *ptr0.add(692).cast::<f32>();
-                                                let l173 = *ptr0.add(696).cast::<f32>();
-                                                let l174 = *ptr0.add(700).cast::<f32>();
-                                                let l175 = *ptr0.add(704).cast::<f32>();
-                                                let l176 = *ptr0.add(708).cast::<f32>();
-                                                let l177 = *ptr0.add(712).cast::<f32>();
-                                                let l178 = *ptr0.add(716).cast::<f32>();
-                                                let l179 = *ptr0.add(720).cast::<f32>();
-                                                let l180 = *ptr0.add(724).cast::<f32>();
-                                                let l181 = i32::from(*ptr0.add(728).cast::<u8>());
+                                            let e199 = {
+                                                let l6 = i32::from(*ptr0.add(24).cast::<u8>());
+                                                let l7 = *ptr0.add(28).cast::<f32>();
+                                                let l8 = *ptr0.add(32).cast::<f32>();
+                                                let l9 = *ptr0.add(36).cast::<f32>();
+                                                let l10 = *ptr0.add(40).cast::<f32>();
+                                                let l11 = *ptr0.add(44).cast::<f32>();
+                                                let l12 = *ptr0.add(48).cast::<f32>();
+                                                let l13 = *ptr0.add(52).cast::<f32>();
+                                                let l14 = *ptr0.add(56).cast::<f32>();
+                                                let l15 = *ptr0.add(60).cast::<f32>();
+                                                let l16 = *ptr0.add(64).cast::<f32>();
+                                                let l17 = *ptr0.add(68).cast::<f32>();
+                                                let l18 = *ptr0.add(72).cast::<f32>();
+                                                let l19 = *ptr0.add(76).cast::<f32>();
+                                                let l20 = *ptr0.add(80).cast::<f32>();
+                                                let l21 = *ptr0.add(84).cast::<f32>();
+                                                let l22 = *ptr0.add(88).cast::<f32>();
+                                                let l23 = *ptr0.add(92).cast::<f32>();
+                                                let l24 = *ptr0.add(96).cast::<f32>();
+                                                let l25 = *ptr0.add(100).cast::<f32>();
+                                                let l26 = *ptr0.add(104).cast::<f32>();
+                                                let l27 = *ptr0.add(108).cast::<f32>();
+                                                let l28 = *ptr0.add(112).cast::<f32>();
+                                                let l29 = *ptr0.add(116).cast::<f32>();
+                                                let l30 = *ptr0.add(120).cast::<f32>();
+                                                let l31 = *ptr0.add(124).cast::<f32>();
+                                                let l32 = *ptr0.add(128).cast::<f32>();
+                                                let l33 = *ptr0.add(132).cast::<f32>();
+                                                let l34 = *ptr0.add(136).cast::<f32>();
+                                                let l35 = *ptr0.add(140).cast::<f32>();
+                                                let l36 = *ptr0.add(144).cast::<f32>();
+                                                let l37 = *ptr0.add(148).cast::<f32>();
+                                                let l38 = *ptr0.add(152).cast::<f32>();
+                                                let l39 = *ptr0.add(156).cast::<f32>();
+                                                let l40 = *ptr0.add(160).cast::<f32>();
+                                                let l41 = *ptr0.add(164).cast::<f32>();
+                                                let l42 = *ptr0.add(168).cast::<f32>();
+                                                let l43 = *ptr0.add(172).cast::<f32>();
+                                                let l44 = *ptr0.add(176).cast::<f32>();
+                                                let l45 = *ptr0.add(180).cast::<f32>();
+                                                let l46 = *ptr0.add(184).cast::<f32>();
+                                                let l47 = *ptr0.add(188).cast::<f32>();
+                                                let l48 = *ptr0.add(192).cast::<f32>();
+                                                let l49 = *ptr0.add(196).cast::<f32>();
+                                                let l50 = *ptr0.add(200).cast::<f32>();
+                                                let l51 = *ptr0.add(204).cast::<f32>();
+                                                let l52 = *ptr0.add(208).cast::<f32>();
+                                                let l53 = *ptr0.add(212).cast::<f32>();
+                                                let l54 = *ptr0.add(216).cast::<f32>();
+                                                let l55 = *ptr0.add(220).cast::<f32>();
+                                                let l56 = *ptr0.add(224).cast::<f32>();
+                                                let l57 = *ptr0.add(228).cast::<f32>();
+                                                let l58 = *ptr0.add(232).cast::<f32>();
+                                                let l59 = *ptr0.add(236).cast::<f32>();
+                                                let l60 = *ptr0.add(240).cast::<f32>();
+                                                let l61 = *ptr0.add(244).cast::<f32>();
+                                                let l62 = *ptr0.add(248).cast::<f32>();
+                                                let l63 = *ptr0.add(252).cast::<f32>();
+                                                let l64 = *ptr0.add(256).cast::<f32>();
+                                                let l65 = *ptr0.add(260).cast::<f32>();
+                                                let l66 = *ptr0.add(264).cast::<f32>();
+                                                let l67 = *ptr0.add(268).cast::<f32>();
+                                                let l68 = *ptr0.add(272).cast::<f32>();
+                                                let l69 = *ptr0.add(276).cast::<f32>();
+                                                let l70 = *ptr0.add(280).cast::<f32>();
+                                                let l71 = *ptr0.add(284).cast::<f32>();
+                                                let l72 = *ptr0.add(288).cast::<f32>();
+                                                let l73 = *ptr0.add(292).cast::<f32>();
+                                                let l74 = *ptr0.add(296).cast::<f32>();
+                                                let l75 = *ptr0.add(300).cast::<f32>();
+                                                let l76 = *ptr0.add(304).cast::<f32>();
+                                                let l77 = *ptr0.add(308).cast::<f32>();
+                                                let l78 = *ptr0.add(312).cast::<f32>();
+                                                let l79 = *ptr0.add(316).cast::<f32>();
+                                                let l80 = *ptr0.add(320).cast::<f32>();
+                                                let l81 = *ptr0.add(324).cast::<f32>();
+                                                let l82 = *ptr0.add(328).cast::<f32>();
+                                                let l83 = *ptr0.add(332).cast::<f32>();
+                                                let l84 = *ptr0.add(336).cast::<f32>();
+                                                let l85 = *ptr0.add(340).cast::<f32>();
+                                                let l86 = *ptr0.add(344).cast::<f32>();
+                                                let l87 = *ptr0.add(348).cast::<f32>();
+                                                let l88 = *ptr0.add(352).cast::<f32>();
+                                                let l89 = *ptr0.add(356).cast::<f32>();
+                                                let l90 = *ptr0.add(360).cast::<f32>();
+                                                let l91 = *ptr0.add(364).cast::<f32>();
+                                                let l92 = *ptr0.add(368).cast::<f32>();
+                                                let l93 = *ptr0.add(372).cast::<f32>();
+                                                let l94 = *ptr0.add(376).cast::<f32>();
+                                                let l95 = *ptr0.add(380).cast::<f32>();
+                                                let l96 = *ptr0.add(384).cast::<f32>();
+                                                let l97 = *ptr0.add(388).cast::<f32>();
+                                                let l98 = *ptr0.add(392).cast::<f32>();
+                                                let l99 = *ptr0.add(396).cast::<f32>();
+                                                let l100 = *ptr0.add(400).cast::<f32>();
+                                                let l101 = *ptr0.add(404).cast::<f32>();
+                                                let l102 = *ptr0.add(408).cast::<f32>();
+                                                let l103 = *ptr0.add(412).cast::<f32>();
+                                                let l104 = *ptr0.add(416).cast::<f32>();
+                                                let l105 = *ptr0.add(420).cast::<f32>();
+                                                let l106 = *ptr0.add(424).cast::<f32>();
+                                                let l107 = *ptr0.add(428).cast::<f32>();
+                                                let l108 = *ptr0.add(432).cast::<f32>();
+                                                let l109 = *ptr0.add(436).cast::<f32>();
+                                                let l110 = *ptr0.add(440).cast::<f32>();
+                                                let l111 = *ptr0.add(444).cast::<f32>();
+                                                let l112 = *ptr0.add(448).cast::<f32>();
+                                                let l113 = *ptr0.add(452).cast::<f32>();
+                                                let l114 = *ptr0.add(456).cast::<f32>();
+                                                let l115 = *ptr0.add(460).cast::<f32>();
+                                                let l116 = *ptr0.add(464).cast::<f32>();
+                                                let l117 = *ptr0.add(468).cast::<f32>();
+                                                let l118 = *ptr0.add(472).cast::<f32>();
+                                                let l119 = *ptr0.add(476).cast::<f32>();
+                                                let l120 = *ptr0.add(480).cast::<f32>();
+                                                let l121 = *ptr0.add(484).cast::<f32>();
+                                                let l122 = *ptr0.add(488).cast::<f32>();
+                                                let l123 = *ptr0.add(492).cast::<f32>();
+                                                let l124 = *ptr0.add(496).cast::<f32>();
+                                                let l125 = *ptr0.add(500).cast::<f32>();
+                                                let l126 = *ptr0.add(504).cast::<f32>();
+                                                let l127 = *ptr0.add(508).cast::<f32>();
+                                                let l128 = *ptr0.add(512).cast::<f32>();
+                                                let l129 = *ptr0.add(516).cast::<f32>();
+                                                let l130 = *ptr0.add(520).cast::<f32>();
+                                                let l131 = *ptr0.add(524).cast::<f32>();
+                                                let l132 = *ptr0.add(528).cast::<f32>();
+                                                let l133 = *ptr0.add(532).cast::<f32>();
+                                                let l134 = *ptr0.add(536).cast::<f32>();
+                                                let l135 = *ptr0.add(540).cast::<f32>();
+                                                let l136 = *ptr0.add(544).cast::<f32>();
+                                                let l137 = *ptr0.add(548).cast::<f32>();
+                                                let l138 = *ptr0.add(552).cast::<f32>();
+                                                let l139 = *ptr0.add(556).cast::<f32>();
+                                                let l140 = *ptr0.add(560).cast::<f32>();
+                                                let l141 = *ptr0.add(564).cast::<f32>();
+                                                let l142 = *ptr0.add(568).cast::<f32>();
+                                                let l143 = *ptr0.add(572).cast::<f32>();
+                                                let l144 = *ptr0.add(576).cast::<f32>();
+                                                let l145 = *ptr0.add(580).cast::<f32>();
+                                                let l146 = *ptr0.add(584).cast::<f32>();
+                                                let l147 = *ptr0.add(588).cast::<f32>();
+                                                let l148 = *ptr0.add(592).cast::<f32>();
+                                                let l149 = *ptr0.add(596).cast::<f32>();
+                                                let l150 = *ptr0.add(600).cast::<f32>();
+                                                let l151 = *ptr0.add(604).cast::<f32>();
+                                                let l152 = *ptr0.add(608).cast::<f32>();
+                                                let l153 = *ptr0.add(612).cast::<f32>();
+                                                let l154 = *ptr0.add(616).cast::<f32>();
+                                                let l155 = *ptr0.add(620).cast::<f32>();
+                                                let l156 = *ptr0.add(624).cast::<f32>();
+                                                let l157 = *ptr0.add(628).cast::<f32>();
+                                                let l158 = *ptr0.add(632).cast::<f32>();
+                                                let l159 = *ptr0.add(636).cast::<f32>();
+                                                let l160 = *ptr0.add(640).cast::<f32>();
+                                                let l161 = *ptr0.add(644).cast::<f32>();
+                                                let l162 = *ptr0.add(648).cast::<f32>();
+                                                let l163 = *ptr0.add(652).cast::<f32>();
+                                                let l164 = *ptr0.add(656).cast::<f32>();
+                                                let l165 = *ptr0.add(660).cast::<f32>();
+                                                let l166 = *ptr0.add(664).cast::<f32>();
+                                                let l167 = *ptr0.add(668).cast::<f32>();
+                                                let l168 = *ptr0.add(672).cast::<f32>();
+                                                let l169 = *ptr0.add(676).cast::<f32>();
+                                                let l170 = *ptr0.add(680).cast::<f32>();
+                                                let l171 = *ptr0.add(684).cast::<f32>();
+                                                let l172 = *ptr0.add(688).cast::<f32>();
+                                                let l173 = *ptr0.add(692).cast::<f32>();
+                                                let l174 = *ptr0.add(696).cast::<f32>();
+                                                let l175 = *ptr0.add(700).cast::<f32>();
+                                                let l176 = *ptr0.add(704).cast::<f32>();
+                                                let l177 = *ptr0.add(708).cast::<f32>();
+                                                let l178 = *ptr0.add(712).cast::<f32>();
+                                                let l179 = *ptr0.add(716).cast::<f32>();
+                                                let l180 = *ptr0.add(720).cast::<f32>();
+                                                let l181 = *ptr0.add(724).cast::<f32>();
+                                                let l182 = *ptr0.add(728).cast::<f32>();
+                                                let l183 = i32::from(*ptr0.add(732).cast::<u8>());
 
                                                 super::super::super::wired::input::types::Hand{
-                          side: super::super::super::wired::input::types::HandSide::_lift(l4 as u8),
+                          side: super::super::super::wired::input::types::HandSide::_lift(l6 as u8),
                           thumb: super::super::super::wired::input::types::Finger{
                             tip: super::super::super::wired::input::types::Joint{
                               translation: super::super::super::wired::math::types::Vec3{
-                                x: l5,
-                                y: l6,
-                                z: l7,
+                                x: l7,
+                                y: l8,
+                                z: l9,
                               },
                               rotation: super::super::super::wired::math::types::Quat{
-                                x: l8,
-                                y: l9,
-                                z: l10,
-                                w: l11,
+                                x: l10,
+                                y: l11,
+                                z: l12,
+                                w: l13,
                               },
-                              radius: l12,
+                              radius: l14,
                             },
                             distal: super::super::super::wired::input::types::Joint{
                               translation: super::super::super::wired::math::types::Vec3{
-                                x: l13,
-                                y: l14,
-                                z: l15,
+                                x: l15,
+                                y: l16,
+                                z: l17,
                               },
                               rotation: super::super::super::wired::math::types::Quat{
-                                x: l16,
-                                y: l17,
-                                z: l18,
-                                w: l19,
+                                x: l18,
+                                y: l19,
+                                z: l20,
+                                w: l21,
                               },
-                              radius: l20,
+                              radius: l22,
                             },
                             proximal: super::super::super::wired::input::types::Joint{
                               translation: super::super::super::wired::math::types::Vec3{
-                                x: l21,
-                                y: l22,
-                                z: l23,
+                                x: l23,
+                                y: l24,
+                                z: l25,
                               },
                               rotation: super::super::super::wired::math::types::Quat{
-                                x: l24,
-                                y: l25,
-                                z: l26,
-                                w: l27,
+                                x: l26,
+                                y: l27,
+                                z: l28,
+                                w: l29,
                               },
-                              radius: l28,
+                              radius: l30,
                             },
                             metacarpal: super::super::super::wired::input::types::Joint{
                               translation: super::super::super::wired::math::types::Vec3{
-                                x: l29,
-                                y: l30,
-                                z: l31,
+                                x: l31,
+                                y: l32,
+                                z: l33,
                               },
                               rotation: super::super::super::wired::math::types::Quat{
-                                x: l32,
-                                y: l33,
-                                z: l34,
-                                w: l35,
+                                x: l34,
+                                y: l35,
+                                z: l36,
+                                w: l37,
                               },
-                              radius: l36,
+                              radius: l38,
                             },
                           },
                           index: super::super::super::wired::input::types::Finger{
                             tip: super::super::super::wired::input::types::Joint{
                               translation: super::super::super::wired::math::types::Vec3{
-                                x: l37,
-                                y: l38,
-                                z: l39,
+                                x: l39,
+                                y: l40,
+                                z: l41,
                               },
                               rotation: super::super::super::wired::math::types::Quat{
-                                x: l40,
-                                y: l41,
-                                z: l42,
-                                w: l43,
+                                x: l42,
+                                y: l43,
+                                z: l44,
+                                w: l45,
                               },
-                              radius: l44,
+                              radius: l46,
                             },
                             distal: super::super::super::wired::input::types::Joint{
                               translation: super::super::super::wired::math::types::Vec3{
-                                x: l45,
-                                y: l46,
-                                z: l47,
+                                x: l47,
+                                y: l48,
+                                z: l49,
                               },
                               rotation: super::super::super::wired::math::types::Quat{
-                                x: l48,
-                                y: l49,
-                                z: l50,
-                                w: l51,
+                                x: l50,
+                                y: l51,
+                                z: l52,
+                                w: l53,
                               },
-                              radius: l52,
+                              radius: l54,
                             },
                             proximal: super::super::super::wired::input::types::Joint{
                               translation: super::super::super::wired::math::types::Vec3{
-                                x: l53,
-                                y: l54,
-                                z: l55,
+                                x: l55,
+                                y: l56,
+                                z: l57,
                               },
                               rotation: super::super::super::wired::math::types::Quat{
-                                x: l56,
-                                y: l57,
-                                z: l58,
-                                w: l59,
+                                x: l58,
+                                y: l59,
+                                z: l60,
+                                w: l61,
                               },
-                              radius: l60,
+                              radius: l62,
                             },
                             metacarpal: super::super::super::wired::input::types::Joint{
                               translation: super::super::super::wired::math::types::Vec3{
-                                x: l61,
-                                y: l62,
-                                z: l63,
+                                x: l63,
+                                y: l64,
+                                z: l65,
                               },
                               rotation: super::super::super::wired::math::types::Quat{
-                                x: l64,
-                                y: l65,
-                                z: l66,
-                                w: l67,
+                                x: l66,
+                                y: l67,
+                                z: l68,
+                                w: l69,
                               },
-                              radius: l68,
+                              radius: l70,
                             },
                           },
                           middle: super::super::super::wired::input::types::Finger{
                             tip: super::super::super::wired::input::types::Joint{
                               translation: super::super::super::wired::math::types::Vec3{
-                                x: l69,
-                                y: l70,
-                                z: l71,
+                                x: l71,
+                                y: l72,
+                                z: l73,
                               },
                               rotation: super::super::super::wired::math::types::Quat{
-                                x: l72,
-                                y: l73,
-                                z: l74,
-                                w: l75,
+                                x: l74,
+                                y: l75,
+                                z: l76,
+                                w: l77,
                               },
-                              radius: l76,
+                              radius: l78,
                             },
                             distal: super::super::super::wired::input::types::Joint{
                               translation: super::super::super::wired::math::types::Vec3{
-                                x: l77,
-                                y: l78,
-                                z: l79,
+                                x: l79,
+                                y: l80,
+                                z: l81,
                               },
                               rotation: super::super::super::wired::math::types::Quat{
-                                x: l80,
-                                y: l81,
-                                z: l82,
-                                w: l83,
+                                x: l82,
+                                y: l83,
+                                z: l84,
+                                w: l85,
                               },
-                              radius: l84,
+                              radius: l86,
                             },
                             proximal: super::super::super::wired::input::types::Joint{
                               translation: super::super::super::wired::math::types::Vec3{
-                                x: l85,
-                                y: l86,
-                                z: l87,
+                                x: l87,
+                                y: l88,
+                                z: l89,
                               },
                               rotation: super::super::super::wired::math::types::Quat{
-                                x: l88,
-                                y: l89,
-                                z: l90,
-                                w: l91,
+                                x: l90,
+                                y: l91,
+                                z: l92,
+                                w: l93,
                               },
-                              radius: l92,
+                              radius: l94,
                             },
                             metacarpal: super::super::super::wired::input::types::Joint{
                               translation: super::super::super::wired::math::types::Vec3{
-                                x: l93,
-                                y: l94,
-                                z: l95,
+                                x: l95,
+                                y: l96,
+                                z: l97,
                               },
                               rotation: super::super::super::wired::math::types::Quat{
-                                x: l96,
-                                y: l97,
-                                z: l98,
-                                w: l99,
+                                x: l98,
+                                y: l99,
+                                z: l100,
+                                w: l101,
                               },
-                              radius: l100,
+                              radius: l102,
                             },
                           },
                           ring: super::super::super::wired::input::types::Finger{
                             tip: super::super::super::wired::input::types::Joint{
                               translation: super::super::super::wired::math::types::Vec3{
-                                x: l101,
-                                y: l102,
-                                z: l103,
+                                x: l103,
+                                y: l104,
+                                z: l105,
                               },
                               rotation: super::super::super::wired::math::types::Quat{
-                                x: l104,
-                                y: l105,
-                                z: l106,
-                                w: l107,
+                                x: l106,
+                                y: l107,
+                                z: l108,
+                                w: l109,
                               },
-                              radius: l108,
+                              radius: l110,
                             },
                             distal: super::super::super::wired::input::types::Joint{
                               translation: super::super::super::wired::math::types::Vec3{
-                                x: l109,
-                                y: l110,
-                                z: l111,
+                                x: l111,
+                                y: l112,
+                                z: l113,
                               },
                               rotation: super::super::super::wired::math::types::Quat{
-                                x: l112,
-                                y: l113,
-                                z: l114,
-                                w: l115,
+                                x: l114,
+                                y: l115,
+                                z: l116,
+                                w: l117,
                               },
-                              radius: l116,
+                              radius: l118,
                             },
                             proximal: super::super::super::wired::input::types::Joint{
                               translation: super::super::super::wired::math::types::Vec3{
-                                x: l117,
-                                y: l118,
-                                z: l119,
+                                x: l119,
+                                y: l120,
+                                z: l121,
                               },
                               rotation: super::super::super::wired::math::types::Quat{
-                                x: l120,
-                                y: l121,
-                                z: l122,
-                                w: l123,
+                                x: l122,
+                                y: l123,
+                                z: l124,
+                                w: l125,
                               },
-                              radius: l124,
+                              radius: l126,
                             },
                             metacarpal: super::super::super::wired::input::types::Joint{
                               translation: super::super::super::wired::math::types::Vec3{
-                                x: l125,
-                                y: l126,
-                                z: l127,
+                                x: l127,
+                                y: l128,
+                                z: l129,
                               },
                               rotation: super::super::super::wired::math::types::Quat{
-                                x: l128,
-                                y: l129,
-                                z: l130,
-                                w: l131,
+                                x: l130,
+                                y: l131,
+                                z: l132,
+                                w: l133,
                               },
-                              radius: l132,
+                              radius: l134,
                             },
                           },
                           little: super::super::super::wired::input::types::Finger{
                             tip: super::super::super::wired::input::types::Joint{
                               translation: super::super::super::wired::math::types::Vec3{
-                                x: l133,
-                                y: l134,
-                                z: l135,
+                                x: l135,
+                                y: l136,
+                                z: l137,
                               },
                               rotation: super::super::super::wired::math::types::Quat{
-                                x: l136,
-                                y: l137,
-                                z: l138,
-                                w: l139,
+                                x: l138,
+                                y: l139,
+                                z: l140,
+                                w: l141,
                               },
-                              radius: l140,
+                              radius: l142,
                             },
                             distal: super::super::super::wired::input::types::Joint{
                               translation: super::super::super::wired::math::types::Vec3{
-                                x: l141,
-                                y: l142,
-                                z: l143,
+                                x: l143,
+                                y: l144,
+                                z: l145,
                               },
                               rotation: super::super::super::wired::math::types::Quat{
-                                x: l144,
-                                y: l145,
-                                z: l146,
-                                w: l147,
+                                x: l146,
+                                y: l147,
+                                z: l148,
+                                w: l149,
                               },
-                              radius: l148,
+                              radius: l150,
                             },
                             proximal: super::super::super::wired::input::types::Joint{
                               translation: super::super::super::wired::math::types::Vec3{
-                                x: l149,
-                                y: l150,
-                                z: l151,
+                                x: l151,
+                                y: l152,
+                                z: l153,
                               },
                               rotation: super::super::super::wired::math::types::Quat{
-                                x: l152,
-                                y: l153,
-                                z: l154,
-                                w: l155,
+                                x: l154,
+                                y: l155,
+                                z: l156,
+                                w: l157,
                               },
-                              radius: l156,
+                              radius: l158,
                             },
                             metacarpal: super::super::super::wired::input::types::Joint{
                               translation: super::super::super::wired::math::types::Vec3{
-                                x: l157,
-                                y: l158,
-                                z: l159,
+                                x: l159,
+                                y: l160,
+                                z: l161,
                               },
                               rotation: super::super::super::wired::math::types::Quat{
-                                x: l160,
-                                y: l161,
-                                z: l162,
-                                w: l163,
+                                x: l162,
+                                y: l163,
+                                z: l164,
+                                w: l165,
                               },
-                              radius: l164,
+                              radius: l166,
                             },
                           },
                           palm: super::super::super::wired::input::types::Joint{
                             translation: super::super::super::wired::math::types::Vec3{
-                              x: l165,
-                              y: l166,
-                              z: l167,
+                              x: l167,
+                              y: l168,
+                              z: l169,
                             },
                             rotation: super::super::super::wired::math::types::Quat{
-                              x: l168,
-                              y: l169,
-                              z: l170,
-                              w: l171,
+                              x: l170,
+                              y: l171,
+                              z: l172,
+                              w: l173,
                             },
-                            radius: l172,
+                            radius: l174,
                           },
                           wrist: super::super::super::wired::input::types::Joint{
                             translation: super::super::super::wired::math::types::Vec3{
-                              x: l173,
-                              y: l174,
-                              z: l175,
+                              x: l175,
+                              y: l176,
+                              z: l177,
                             },
                             rotation: super::super::super::wired::math::types::Quat{
-                              x: l176,
-                              y: l177,
-                              z: l178,
-                              w: l179,
+                              x: l178,
+                              y: l179,
+                              z: l180,
+                              w: l181,
                             },
-                            radius: l180,
+                            radius: l182,
                           },
-                          elbow: match l181 {
+                          elbow: match l183 {
                             0 => None,
                             1 => {
                               let e = {
-                                let l182 = *ptr0.add(732).cast::<f32>();
-                                let l183 = *ptr0.add(736).cast::<f32>();
-                                let l184 = *ptr0.add(740).cast::<f32>();
-                                let l185 = *ptr0.add(744).cast::<f32>();
-                                let l186 = *ptr0.add(748).cast::<f32>();
-                                let l187 = *ptr0.add(752).cast::<f32>();
-                                let l188 = *ptr0.add(756).cast::<f32>();
-                                let l189 = *ptr0.add(760).cast::<f32>();
+                                let l184 = *ptr0.add(736).cast::<f32>();
+                                let l185 = *ptr0.add(740).cast::<f32>();
+                                let l186 = *ptr0.add(744).cast::<f32>();
+                                let l187 = *ptr0.add(748).cast::<f32>();
+                                let l188 = *ptr0.add(752).cast::<f32>();
+                                let l189 = *ptr0.add(756).cast::<f32>();
+                                let l190 = *ptr0.add(760).cast::<f32>();
+                                let l191 = *ptr0.add(764).cast::<f32>();
 
                                 super::super::super::wired::input::types::Joint{
                                   translation: super::super::super::wired::math::types::Vec3{
-                                    x: l182,
-                                    y: l183,
-                                    z: l184,
+                                    x: l184,
+                                    y: l185,
+                                    z: l186,
                                   },
                                   rotation: super::super::super::wired::math::types::Quat{
-                                    x: l185,
-                                    y: l186,
-                                    z: l187,
-                                    w: l188,
+                                    x: l187,
+                                    y: l188,
+                                    z: l189,
+                                    w: l190,
                                   },
-                                  radius: l189,
+                                  radius: l191,
                                 }
                               };
                               Some(e)
@@ -1857,72 +1857,41 @@ pub mod wired {
                           },
                         }
                                             };
-                                            V205::Hand(e205)
-                                        }
-                                        1 => {
-                                            let e205 = {
-                                                let l190 = *ptr0.add(20).cast::<f32>();
-                                                let l191 = *ptr0.add(24).cast::<f32>();
-                                                let l192 = *ptr0.add(28).cast::<f32>();
-                                                let l193 = *ptr0.add(32).cast::<f32>();
-                                                let l194 = *ptr0.add(36).cast::<f32>();
-                                                let l195 = *ptr0.add(40).cast::<f32>();
-                                                let l196 = *ptr0.add(44).cast::<f32>();
-
-                                                super::super::super::wired::input::types::Ray{
-                          origin: super::super::super::wired::math::types::Vec3{
-                            x: l190,
-                            y: l191,
-                            z: l192,
-                          },
-                          orientation: super::super::super::wired::math::types::Quat{
-                            x: l193,
-                            y: l194,
-                            z: l195,
-                            w: l196,
-                          },
-                        }
-                                            };
-                                            V205::Ray(e205)
+                                            V199::Hand(e199)
                                         }
                                         n => {
-                                            debug_assert_eq!(n, 2, "invalid enum discriminant");
-                                            let e205 = {
-                                                let l197 = *ptr0.add(20).cast::<f32>();
-                                                let l198 = *ptr0.add(24).cast::<f32>();
-                                                let l199 = *ptr0.add(28).cast::<f32>();
-                                                let l200 = *ptr0.add(32).cast::<f32>();
-                                                let l201 = *ptr0.add(36).cast::<f32>();
-                                                let l202 = *ptr0.add(40).cast::<f32>();
-                                                let l203 = *ptr0.add(44).cast::<f32>();
-                                                let l204 = *ptr0.add(48).cast::<f32>();
+                                            debug_assert_eq!(n, 1, "invalid enum discriminant");
+                                            let e199 = {
+                                                let l192 = *ptr0.add(24).cast::<f32>();
+                                                let l193 = *ptr0.add(28).cast::<f32>();
+                                                let l194 = *ptr0.add(32).cast::<f32>();
+                                                let l195 = *ptr0.add(36).cast::<f32>();
+                                                let l196 = *ptr0.add(40).cast::<f32>();
+                                                let l197 = *ptr0.add(44).cast::<f32>();
+                                                let l198 = *ptr0.add(48).cast::<f32>();
 
-                                                super::super::super::wired::input::types::Tip{
-                          origin: super::super::super::wired::math::types::Vec3{
-                            x: l197,
-                            y: l198,
-                            z: l199,
-                          },
+                                                super::super::super::wired::input::types::Ray{
                           orientation: super::super::super::wired::math::types::Quat{
-                            x: l200,
-                            y: l201,
-                            z: l202,
-                            w: l203,
+                            x: l192,
+                            y: l193,
+                            z: l194,
+                            w: l195,
                           },
-                          radius: l204,
+                          origin: super::super::super::wired::math::types::Vec3{
+                            x: l196,
+                            y: l197,
+                            z: l198,
+                          },
                         }
                                             };
-                                            V205::Tip(e205)
+                                            V199::Ray(e199)
                                         }
                                     };
-                                    let l206 = *ptr0.add(764).cast::<f32>();
-                                    let l207 = *ptr0.add(768).cast::<i32>();
 
                                     super::super::super::wired::input::types::InputEvent {
                                         id: l2 as u64,
-                                        input: v205,
-                                        distance: l206,
-                                        order: l207 as u32,
+                                        action: v4,
+                                        data: v199,
                                     }
                                 };
                                 Some(e)
@@ -7118,8 +7087,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 9096] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x8bF\x01A\x02\x01A)\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 9071] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xf2E\x01A\x02\x01A)\x01\
 B\x10\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\
 \x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01r\
 \x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -7155,169 +7124,169 @@ method]mesh.create-primitive\x01\x1a\x01@\x02\x04self\x12\x05value\x17\x01\0\x04
 \0\x05joint\x03\0\x06\x01r\x04\x03tip\x07\x06distal\x07\x08proximal\x07\x0ametac\
 arpal\x07\x04\0\x06finger\x03\0\x08\x01k\x07\x01r\x09\x04side\x05\x05thumb\x09\x05\
 index\x09\x06middle\x09\x04ring\x09\x06little\x09\x04palm\x07\x05wrist\x07\x05el\
-bow\x0a\x04\0\x04hand\x03\0\x0b\x01r\x02\x06origin\x01\x0borientation\x03\x04\0\x03\
-ray\x03\0\x0d\x01r\x03\x06origin\x01\x0borientation\x03\x06radiusv\x04\0\x03tip\x03\
-\0\x0f\x01q\x03\x04hand\x01\x0c\0\x03ray\x01\x0e\0\x03tip\x01\x10\0\x04\0\x0ainp\
-ut-type\x03\0\x11\x01r\x04\x02idw\x05input\x12\x08distancev\x05ordery\x04\0\x0bi\
-nput-event\x03\0\x13\x03\x01\x11wired:input/types\x05\x06\x02\x03\0\x03\x0binput\
--event\x01B\x0a\x02\x03\x02\x01\x07\x04\0\x0binput-event\x03\0\0\x04\0\x0dinput-\
-handler\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\x1a[constructor]input-handler\x01\x04\
-\x01h\x02\x01k\x01\x01@\x01\x04self\x05\0\x06\x04\0\"[method]input-handler.handl\
-e-input\x01\x07\x03\x01\x13wired:input/handler\x05\x08\x01B\x1c\x02\x03\x02\x01\x04\
-\x04\0\x04vec3\x03\0\0\x04\0\x08collider\x03\x01\x01r\x02\x06heightv\x06radiusv\x04\
-\0\x0eshape-cylinder\x03\0\x03\x01q\x03\x06cuboid\x01\x01\0\x08cylinder\x01\x04\0\
-\x06sphere\x01v\0\x04\0\x05shape\x03\0\x05\x04\0\x0arigid-body\x03\x01\x01m\x03\x07\
-dynamic\x05fixed\x09kinematic\x04\0\x0frigid-body-type\x03\0\x08\x01i\x02\x01@\x01\
-\x05shape\x06\0\x0a\x04\0\x15[constructor]collider\x01\x0b\x01h\x02\x01@\x01\x04\
-self\x0c\0v\x04\0\x18[method]collider.density\x01\x0d\x01@\x02\x04self\x0c\x05va\
-luev\x01\0\x04\0\x1c[method]collider.set-density\x01\x0e\x01i\x07\x01@\x01\x0fri\
-gid-body-type\x09\0\x0f\x04\0\x17[constructor]rigid-body\x01\x10\x01h\x07\x01@\x01\
-\x04self\x11\0\x01\x04\0\x19[method]rigid-body.angvel\x01\x12\x01@\x02\x04self\x11\
-\x05value\x01\x01\0\x04\0\x1d[method]rigid-body.set-angvel\x01\x13\x04\0\x19[met\
-hod]rigid-body.linvel\x01\x12\x04\0\x1d[method]rigid-body.set-linvel\x01\x13\x03\
-\x01\x13wired:physics/types\x05\x09\x02\x03\0\x02\x04mesh\x02\x03\0\x04\x0dinput\
--handler\x02\x03\0\0\x09transform\x02\x03\0\x05\x08collider\x02\x03\0\x05\x0arig\
-id-body\x01BE\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x0b\x04\0\
-\x0dinput-handler\x03\0\x02\x02\x03\x02\x01\x0c\x04\0\x09transform\x03\0\x04\x02\
-\x03\x02\x01\x0d\x04\0\x08collider\x03\0\x06\x02\x03\x02\x01\x0e\x04\0\x0arigid-\
-body\x03\0\x08\x04\0\x04node\x03\x01\x01i\x0a\x01@\0\0\x0b\x04\0\x11[constructor\
-]node\x01\x0c\x01h\x0a\x01@\x01\x04self\x0d\0y\x04\0\x0f[method]node.id\x01\x0e\x01\
-@\x01\x04self\x0d\0\x0b\x04\0\x10[method]node.ref\x01\x0f\x01@\x01\x04self\x0d\0\
-s\x04\0\x11[method]node.name\x01\x10\x01@\x02\x04self\x0d\x05values\x01\0\x04\0\x15\
-[method]node.set-name\x01\x11\x01p\x0b\x01@\x01\x04self\x0d\0\x12\x04\0\x15[meth\
-od]node.children\x01\x13\x01@\x02\x04self\x0d\x05value\x0d\x01\0\x04\0\x16[metho\
-d]node.add-child\x01\x14\x04\0\x19[method]node.remove-child\x01\x14\x01k\x0b\x01\
-@\x01\x04self\x0d\0\x15\x04\0\x13[method]node.parent\x01\x16\x01@\x01\x04self\x0d\
-\0\x05\x04\0\x1d[method]node.global-transform\x01\x17\x04\0\x16[method]node.tran\
-sform\x01\x17\x01@\x02\x04self\x0d\x05value\x05\x01\0\x04\0\x1a[method]node.set-\
-transform\x01\x18\x01i\x01\x01k\x19\x01@\x01\x04self\x0d\0\x1a\x04\0\x11[method]\
-node.mesh\x01\x1b\x01h\x01\x01k\x1c\x01@\x02\x04self\x0d\x05value\x1d\x01\0\x04\0\
-\x15[method]node.set-mesh\x01\x1e\x01i\x07\x01k\x1f\x01@\x01\x04self\x0d\0\x20\x04\
-\0\x15[method]node.collider\x01!\x01h\x07\x01k\"\x01@\x02\x04self\x0d\x05value#\x01\
-\0\x04\0\x19[method]node.set-collider\x01$\x01i\x09\x01k%\x01@\x01\x04self\x0d\0\
-&\x04\0\x17[method]node.rigid-body\x01'\x01h\x09\x01k(\x01@\x02\x04self\x0d\x05v\
-alue)\x01\0\x04\0\x1b[method]node.set-rigid-body\x01*\x01i\x03\x01k+\x01@\x01\x04\
-self\x0d\0,\x04\0\x1a[method]node.input-handler\x01-\x01h\x03\x01k.\x01@\x02\x04\
-self\x0d\x05value/\x01\0\x04\0\x1e[method]node.set-input-handler\x010\x03\x01\x10\
-wired:scene/node\x05\x0f\x02\x03\0\0\x04vec2\x02\x03\0\x06\x04node\x01BY\x02\x03\
-\x02\x01\x10\x04\0\x04vec2\x03\0\0\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\x02\x02\
-\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\x04\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\
-\x06\x04\0\x09rectangle\x03\x01\x04\0\x08cylinder\x03\x01\x04\0\x06cuboid\x03\x01\
-\x01r\x01\x0csubdivisions}\x04\0\x0asphere-ico\x03\0\x0b\x01r\x02\x07sectors}\x06\
-stacks}\x04\0\x09sphere-uv\x03\0\x0d\x01q\x02\x03ico\x01\x0c\0\x02uv\x01\x0e\0\x04\
-\0\x0bsphere-kind\x03\0\x0f\x04\0\x06sphere\x03\x01\x01i\x08\x01@\x01\x04size\x01\
-\0\x12\x04\0\x16[constructor]rectangle\x01\x13\x01h\x08\x01@\x01\x04self\x14\0\x01\
-\x04\0\x16[method]rectangle.size\x01\x15\x01@\x02\x04self\x14\x05value\x01\x01\0\
-\x04\0\x1a[method]rectangle.set-size\x01\x16\x01i\x05\x01@\x01\x04self\x14\0\x17\
-\x04\0\x19[method]rectangle.to-mesh\x01\x18\x01i\x07\x01@\x01\x04self\x14\0\x19\x04\
-\0\x19[method]rectangle.to-node\x01\x1a\x04\0![method]rectangle.to-physics-node\x01\
-\x1a\x01i\x09\x01@\x02\x06radiusv\x06heightv\0\x1b\x04\0\x15[constructor]cylinde\
-r\x01\x1c\x01h\x09\x01@\x01\x04self\x1d\0\x7f\x04\0\x14[method]cylinder.cap\x01\x1e\
-\x01@\x02\x04self\x1d\x05value\x7f\x01\0\x04\0\x18[method]cylinder.set-cap\x01\x1f\
-\x01@\x01\x04self\x1d\0v\x04\0\x17[method]cylinder.height\x01\x20\x01@\x02\x04se\
-lf\x1d\x05valuev\x01\0\x04\0\x1b[method]cylinder.set-height\x01!\x04\0\x17[metho\
-d]cylinder.radius\x01\x20\x04\0\x1b[method]cylinder.set-radius\x01!\x01@\x01\x04\
-self\x1d\0}\x04\0\x1b[method]cylinder.resolution\x01\"\x01@\x02\x04self\x1d\x05v\
-alue}\x01\0\x04\0\x1f[method]cylinder.set-resolution\x01#\x04\0\x19[method]cylin\
-der.segments\x01\"\x04\0\x1d[method]cylinder.set-segments\x01#\x01@\x01\x04self\x1d\
-\0\x17\x04\0\x18[method]cylinder.to-mesh\x01$\x01@\x01\x04self\x1d\0\x19\x04\0\x18\
-[method]cylinder.to-node\x01%\x04\0\x20[method]cylinder.to-physics-node\x01%\x01\
-i\x0a\x01@\x01\x04size\x03\0&\x04\0\x13[constructor]cuboid\x01'\x01h\x0a\x01@\x01\
-\x04self(\0\x03\x04\0\x13[method]cuboid.size\x01)\x01@\x02\x04self(\x05value\x03\
-\x01\0\x04\0\x17[method]cuboid.set-size\x01*\x01@\x01\x04self(\0\x17\x04\0\x16[m\
-ethod]cuboid.to-mesh\x01+\x01@\x01\x04self(\0\x19\x04\0\x16[method]cuboid.to-nod\
-e\x01,\x04\0\x1e[method]cuboid.to-physics-node\x01,\x01i\x11\x01@\x01\x06radiusv\
-\0-\x04\0\x16[static]sphere.new-ico\x01.\x04\0\x15[static]sphere.new-uv\x01.\x01\
-h\x11\x01@\x01\x04self/\0v\x04\0\x15[method]sphere.radius\x010\x01@\x02\x04self/\
-\x05valuev\x01\0\x04\0\x19[method]sphere.set-radius\x011\x01@\x01\x04self/\0\x10\
-\x04\0\x13[method]sphere.kind\x012\x01@\x02\x04self/\x05value\x10\x01\0\x04\0\x17\
-[method]sphere.set-kind\x013\x01@\x01\x04self/\0\x17\x04\0\x16[method]sphere.to-\
-mesh\x014\x01@\x01\x04self/\0\x19\x04\0\x16[method]sphere.to-node\x015\x04\0\x1e\
-[method]sphere.to-physics-node\x015\x03\x01\x10unavi:shapes/api\x05\x12\x01B\x04\
-\x01m\x04\x05debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\x05\
-level\x01\x07messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x13\
-\x01B\x11\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\0\x01i\x01\x01r\x14\x04hips\x02\
-\x05spine\x02\x05chest\x02\x0bupper-chest\x02\x04neck\x02\x04head\x02\x0dleft-sh\
-oulder\x02\x0eleft-upper-arm\x02\x0eleft-lower-arm\x02\x09left-hand\x02\x0eright\
--shoulder\x02\x0fright-upper-arm\x02\x0fright-lower-arm\x02\x0aright-hand\x02\x0e\
-left-upper-leg\x02\x0eleft-lower-leg\x02\x09left-foot\x02\x0fright-upper-leg\x02\
-\x0fright-lower-leg\x02\x0aright-foot\x02\x04\0\x08skeleton\x03\0\x03\x04\0\x06p\
-layer\x03\x01\x01h\x05\x01@\x01\x04self\x06\0\x02\x04\0\x13[method]player.root\x01\
-\x07\x01@\x01\x04self\x06\0\x04\x04\0\x17[method]player.skeleton\x01\x08\x01i\x05\
-\x01p\x09\x01@\0\0\x0a\x04\0\x0clist-players\x01\x0b\x01@\0\0\x09\x04\0\x0clocal\
--player\x01\x0c\x03\x01\x10wired:player/api\x05\x14\x01B\x15\x02\x03\x02\x01\x11\
-\x04\0\x04node\x03\0\0\x04\0\x05scene\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\x12[co\
-nstructor]scene\x01\x04\x01h\x02\x01@\x01\x04self\x05\0y\x04\0\x10[method]scene.\
-id\x01\x06\x01@\x01\x04self\x05\0s\x04\0\x12[method]scene.name\x01\x07\x01@\x02\x04\
-self\x05\x05values\x01\0\x04\0\x16[method]scene.set-name\x01\x08\x01i\x01\x01p\x09\
-\x01@\x01\x04self\x05\0\x0a\x04\0\x13[method]scene.nodes\x01\x0b\x01h\x01\x01@\x02\
-\x04self\x05\x05value\x0c\x01\0\x04\0\x16[method]scene.add-node\x01\x0d\x04\0\x19\
-[method]scene.remove-node\x01\x0d\x03\x01\x11wired:scene/scene\x05\x15\x02\x03\0\
-\x0a\x05scene\x01B5\x02\x03\x02\x01\x02\x04\0\x08material\x03\0\0\x02\x03\x02\x01\
-\x0a\x04\0\x04mesh\x03\0\x02\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x04\x02\x03\
-\x02\x01\x16\x04\0\x05scene\x03\0\x06\x04\0\x04gltf\x03\x01\x01i\x08\x01@\0\0\x09\
-\x04\0\x11[constructor]gltf\x01\x0a\x01h\x08\x01i\x01\x01p\x0c\x01@\x01\x04self\x0b\
-\0\x0d\x04\0\x1b[method]gltf.list-materials\x01\x0e\x01h\x01\x01@\x02\x04self\x0b\
-\x05value\x0f\x01\0\x04\0\x19[method]gltf.add-material\x01\x10\x04\0\x1c[method]\
-gltf.remove-material\x01\x10\x01i\x03\x01p\x11\x01@\x01\x04self\x0b\0\x12\x04\0\x18\
-[method]gltf.list-meshes\x01\x13\x01h\x03\x01@\x02\x04self\x0b\x05value\x14\x01\0\
-\x04\0\x15[method]gltf.add-mesh\x01\x15\x04\0\x18[method]gltf.remove-mesh\x01\x15\
-\x01i\x05\x01p\x16\x01@\x01\x04self\x0b\0\x17\x04\0\x17[method]gltf.list-nodes\x01\
-\x18\x01h\x05\x01@\x02\x04self\x0b\x05value\x19\x01\0\x04\0\x15[method]gltf.add-\
-node\x01\x1a\x04\0\x18[method]gltf.remove-node\x01\x1a\x01i\x07\x01p\x1b\x01@\x01\
-\x04self\x0b\0\x1c\x04\0\x18[method]gltf.list-scenes\x01\x1d\x01h\x07\x01@\x02\x04\
-self\x0b\x05value\x1e\x01\0\x04\0\x16[method]gltf.add-scene\x01\x1f\x04\0\x19[me\
-thod]gltf.remove-scene\x01\x1f\x01k\x1b\x01@\x01\x04self\x0b\0\x20\x04\0\x19[met\
-hod]gltf.active-scene\x01!\x01k\x1e\x01@\x02\x04self\x0b\x05value\"\x01\0\x04\0\x1d\
-[method]gltf.set-active-scene\x01#\x04\0\x1a[method]gltf.default-scene\x01!\x04\0\
-\x1e[method]gltf.set-default-scene\x01\x1f\x03\x01\x10wired:scene/gltf\x05\x17\x02\
-\x03\0\x0b\x04gltf\x01Bt\x02\x03\x02\x01\x18\x04\0\x04gltf\x03\0\0\x02\x03\x02\x01\
-\x11\x04\0\x04node\x03\0\x02\x02\x03\x02\x01\x0c\x04\0\x09transform\x03\0\x04\x04\
-\0\x04glxf\x03\x01\x04\0\x0aasset-gltf\x03\x01\x04\0\x0aasset-glxf\x03\x01\x01i\x07\
-\x01i\x08\x01q\x02\x04gltf\x01\x09\0\x04glxf\x01\x0a\0\x04\0\x05asset\x03\0\x0b\x01\
-h\x07\x01h\x08\x01q\x02\x04gltf\x01\x0d\0\x04glxf\x01\x0e\0\x04\0\x0casset-borro\
-w\x03\0\x0f\x04\0\x09glxf-node\x03\x01\x01i\x11\x01p\x12\x01q\x02\x05asset\x01\x0c\
-\0\x05nodes\x01\x13\0\x04\0\x08children\x03\0\x14\x01h\x11\x01p\x16\x01q\x02\x05\
-asset\x01\x10\0\x05nodes\x01\x17\0\x04\0\x0fchildren-borrow\x03\0\x18\x04\0\x0ag\
-lxf-scene\x03\x01\x01i\x06\x01@\0\0\x1b\x04\0\x11[constructor]glxf\x01\x1c\x01h\x06\
-\x01p\x0c\x01@\x01\x04self\x1d\0\x1e\x04\0\x18[method]glxf.list-assets\x01\x1f\x01\
-@\x02\x04self\x1d\x05value\x10\x01\0\x04\0\x16[method]glxf.add-asset\x01\x20\x04\
-\0\x19[method]glxf.remove-asset\x01\x20\x01@\x01\x04self\x1d\0\x13\x04\0\x17[met\
-hod]glxf.list-nodes\x01!\x01@\x02\x04self\x1d\x05value\x16\x01\0\x04\0\x15[metho\
-d]glxf.add-node\x01\"\x04\0\x18[method]glxf.remove-node\x01\"\x01i\x1a\x01p#\x01\
-@\x01\x04self\x1d\0$\x04\0\x18[method]glxf.list-scenes\x01%\x01h\x1a\x01@\x02\x04\
-self\x1d\x05value&\x01\0\x04\0\x16[method]glxf.add-scene\x01'\x04\0\x19[method]g\
-lxf.remove-scene\x01'\x01k#\x01@\x01\x04self\x1d\0(\x04\0\x19[method]glxf.active\
--scene\x01)\x01k&\x01@\x02\x04self\x1d\x05value*\x01\0\x04\0\x1d[method]glxf.set\
--active-scene\x01+\x04\0\x1a[method]glxf.default-scene\x01)\x04\0\x1e[method]glx\
-f.set-default-scene\x01'\x01h\x01\x01@\x01\x08document,\0\x09\x04\0\x17[construc\
-tor]asset-gltf\x01-\x01i\x01\x01@\x01\x04self\x0d\0.\x04\0\x1b[method]asset-gltf\
-.document\x01/\x01i\x03\x01p0\x01@\x01\x04self\x0d\01\x04\0\x1d[method]asset-glt\
-f.list-nodes\x012\x01h\x03\x01@\x02\x04self\x0d\x05value3\x01\0\x04\0\x1b[method\
-]asset-gltf.add-node\x014\x04\0\x1e[method]asset-gltf.remove-node\x014\x01@\x01\x08\
-document\x1d\0\x0a\x04\0\x17[constructor]asset-glxf\x015\x01@\x01\x04self\x0e\0\x1b\
-\x04\0\x1b[method]asset-glxf.document\x016\x01@\x01\x04self\x0e\0\x13\x04\0\x1d[\
-method]asset-glxf.list-nodes\x017\x01@\x02\x04self\x0e\x05value\x16\x01\0\x04\0\x1b\
-[method]asset-glxf.add-node\x018\x04\0\x1e[method]asset-glxf.remove-node\x018\x01\
-@\0\0\x12\x04\0\x16[constructor]glxf-node\x019\x01@\x01\x04self\x16\0y\x04\0\x14\
-[method]glxf-node.id\x01:\x01@\x01\x04self\x16\0s\x04\0\x16[method]glxf-node.nam\
-e\x01;\x01@\x02\x04self\x16\x05values\x01\0\x04\0\x1a[method]glxf-node.set-name\x01\
-<\x01@\x01\x04self\x16\0\x05\x04\0\x1b[method]glxf-node.transform\x01=\x01@\x02\x04\
-self\x16\x05value\x05\x01\0\x04\0\x1f[method]glxf-node.set-transform\x01>\x01k\x12\
-\x01@\x01\x04self\x16\0?\x04\0\x18[method]glxf-node.parent\x01@\x01k\x15\x01@\x01\
-\x04self\x16\0\xc1\0\x04\0\x1a[method]glxf-node.children\x01B\x01k\x19\x01@\x02\x04\
-self\x16\x05value\xc3\0\x01\0\x04\0\x1e[method]glxf-node.set-children\x01D\x01@\0\
-\0#\x04\0\x17[constructor]glxf-scene\x01E\x01@\x01\x04self&\0y\x04\0\x15[method]\
-glxf-scene.id\x01F\x01@\x01\x04self&\0s\x04\0\x17[method]glxf-scene.name\x01G\x01\
-@\x02\x04self&\x05values\x01\0\x04\0\x1b[method]glxf-scene.set-name\x01H\x01@\x01\
-\x04self&\0\x13\x04\0\x18[method]glxf-scene.nodes\x01I\x01@\x02\x04self&\x04node\
-\x16\x01\0\x04\0\x1b[method]glxf-scene.add-node\x01J\x04\0\x1e[method]glxf-scene\
-.remove-node\x01J\x04\0\x08get-root\x01\x1c\x03\x01\x10wired:scene/glxf\x05\x19\x01\
-B\x07\x04\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\
-\x02\x01h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\
-\x04\x04\x01\x12wired:script/types\x05\x1a\x04\x01\x1aexample:wired-scene/script\
-\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0d\
-wit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+bow\x0a\x04\0\x04hand\x03\0\x0b\x01r\x02\x0borientation\x03\x06origin\x01\x04\0\x03\
+ray\x03\0\x0d\x01q\x02\x04hand\x01\x0c\0\x03ray\x01\x0e\0\x04\0\x0ainput-data\x03\
+\0\x0f\x01q\x02\x09collision\0\0\x05hover\0\0\x04\0\x0cinput-action\x03\0\x11\x01\
+r\x03\x02idw\x06action\x12\x04data\x10\x04\0\x0binput-event\x03\0\x13\x03\x01\x11\
+wired:input/types\x05\x06\x02\x03\0\x03\x0binput-event\x01B\x0a\x02\x03\x02\x01\x07\
+\x04\0\x0binput-event\x03\0\0\x04\0\x0dinput-handler\x03\x01\x01i\x02\x01@\0\0\x03\
+\x04\0\x1a[constructor]input-handler\x01\x04\x01h\x02\x01k\x01\x01@\x01\x04self\x05\
+\0\x06\x04\0\x1a[method]input-handler.next\x01\x07\x03\x01\x13wired:input/handle\
+r\x05\x08\x01B\x1c\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\0\x04\0\x08collider\x03\
+\x01\x01r\x02\x06heightv\x06radiusv\x04\0\x0eshape-cylinder\x03\0\x03\x01q\x03\x06\
+cuboid\x01\x01\0\x08cylinder\x01\x04\0\x06sphere\x01v\0\x04\0\x05shape\x03\0\x05\
+\x04\0\x0arigid-body\x03\x01\x01m\x03\x07dynamic\x05fixed\x09kinematic\x04\0\x0f\
+rigid-body-type\x03\0\x08\x01i\x02\x01@\x01\x05shape\x06\0\x0a\x04\0\x15[constru\
+ctor]collider\x01\x0b\x01h\x02\x01@\x01\x04self\x0c\0v\x04\0\x18[method]collider\
+.density\x01\x0d\x01@\x02\x04self\x0c\x05valuev\x01\0\x04\0\x1c[method]collider.\
+set-density\x01\x0e\x01i\x07\x01@\x01\x0frigid-body-type\x09\0\x0f\x04\0\x17[con\
+structor]rigid-body\x01\x10\x01h\x07\x01@\x01\x04self\x11\0\x01\x04\0\x19[method\
+]rigid-body.angvel\x01\x12\x01@\x02\x04self\x11\x05value\x01\x01\0\x04\0\x1d[met\
+hod]rigid-body.set-angvel\x01\x13\x04\0\x19[method]rigid-body.linvel\x01\x12\x04\
+\0\x1d[method]rigid-body.set-linvel\x01\x13\x03\x01\x13wired:physics/types\x05\x09\
+\x02\x03\0\x02\x04mesh\x02\x03\0\x04\x0dinput-handler\x02\x03\0\0\x09transform\x02\
+\x03\0\x05\x08collider\x02\x03\0\x05\x0arigid-body\x01BE\x02\x03\x02\x01\x0a\x04\
+\0\x04mesh\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x0dinput-handler\x03\0\x02\x02\x03\x02\
+\x01\x0c\x04\0\x09transform\x03\0\x04\x02\x03\x02\x01\x0d\x04\0\x08collider\x03\0\
+\x06\x02\x03\x02\x01\x0e\x04\0\x0arigid-body\x03\0\x08\x04\0\x04node\x03\x01\x01\
+i\x0a\x01@\0\0\x0b\x04\0\x11[constructor]node\x01\x0c\x01h\x0a\x01@\x01\x04self\x0d\
+\0y\x04\0\x0f[method]node.id\x01\x0e\x01@\x01\x04self\x0d\0\x0b\x04\0\x10[method\
+]node.ref\x01\x0f\x01@\x01\x04self\x0d\0s\x04\0\x11[method]node.name\x01\x10\x01\
+@\x02\x04self\x0d\x05values\x01\0\x04\0\x15[method]node.set-name\x01\x11\x01p\x0b\
+\x01@\x01\x04self\x0d\0\x12\x04\0\x15[method]node.children\x01\x13\x01@\x02\x04s\
+elf\x0d\x05value\x0d\x01\0\x04\0\x16[method]node.add-child\x01\x14\x04\0\x19[met\
+hod]node.remove-child\x01\x14\x01k\x0b\x01@\x01\x04self\x0d\0\x15\x04\0\x13[meth\
+od]node.parent\x01\x16\x01@\x01\x04self\x0d\0\x05\x04\0\x1d[method]node.global-t\
+ransform\x01\x17\x04\0\x16[method]node.transform\x01\x17\x01@\x02\x04self\x0d\x05\
+value\x05\x01\0\x04\0\x1a[method]node.set-transform\x01\x18\x01i\x01\x01k\x19\x01\
+@\x01\x04self\x0d\0\x1a\x04\0\x11[method]node.mesh\x01\x1b\x01h\x01\x01k\x1c\x01\
+@\x02\x04self\x0d\x05value\x1d\x01\0\x04\0\x15[method]node.set-mesh\x01\x1e\x01i\
+\x07\x01k\x1f\x01@\x01\x04self\x0d\0\x20\x04\0\x15[method]node.collider\x01!\x01\
+h\x07\x01k\"\x01@\x02\x04self\x0d\x05value#\x01\0\x04\0\x19[method]node.set-coll\
+ider\x01$\x01i\x09\x01k%\x01@\x01\x04self\x0d\0&\x04\0\x17[method]node.rigid-bod\
+y\x01'\x01h\x09\x01k(\x01@\x02\x04self\x0d\x05value)\x01\0\x04\0\x1b[method]node\
+.set-rigid-body\x01*\x01i\x03\x01k+\x01@\x01\x04self\x0d\0,\x04\0\x1a[method]nod\
+e.input-handler\x01-\x01h\x03\x01k.\x01@\x02\x04self\x0d\x05value/\x01\0\x04\0\x1e\
+[method]node.set-input-handler\x010\x03\x01\x10wired:scene/node\x05\x0f\x02\x03\0\
+\0\x04vec2\x02\x03\0\x06\x04node\x01BY\x02\x03\x02\x01\x10\x04\0\x04vec2\x03\0\0\
+\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\x02\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\
+\0\x04\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x06\x04\0\x09rectangle\x03\x01\x04\
+\0\x08cylinder\x03\x01\x04\0\x06cuboid\x03\x01\x01r\x01\x0csubdivisions}\x04\0\x0a\
+sphere-ico\x03\0\x0b\x01r\x02\x07sectors}\x06stacks}\x04\0\x09sphere-uv\x03\0\x0d\
+\x01q\x02\x03ico\x01\x0c\0\x02uv\x01\x0e\0\x04\0\x0bsphere-kind\x03\0\x0f\x04\0\x06\
+sphere\x03\x01\x01i\x08\x01@\x01\x04size\x01\0\x12\x04\0\x16[constructor]rectang\
+le\x01\x13\x01h\x08\x01@\x01\x04self\x14\0\x01\x04\0\x16[method]rectangle.size\x01\
+\x15\x01@\x02\x04self\x14\x05value\x01\x01\0\x04\0\x1a[method]rectangle.set-size\
+\x01\x16\x01i\x05\x01@\x01\x04self\x14\0\x17\x04\0\x19[method]rectangle.to-mesh\x01\
+\x18\x01i\x07\x01@\x01\x04self\x14\0\x19\x04\0\x19[method]rectangle.to-node\x01\x1a\
+\x04\0![method]rectangle.to-physics-node\x01\x1a\x01i\x09\x01@\x02\x06radiusv\x06\
+heightv\0\x1b\x04\0\x15[constructor]cylinder\x01\x1c\x01h\x09\x01@\x01\x04self\x1d\
+\0\x7f\x04\0\x14[method]cylinder.cap\x01\x1e\x01@\x02\x04self\x1d\x05value\x7f\x01\
+\0\x04\0\x18[method]cylinder.set-cap\x01\x1f\x01@\x01\x04self\x1d\0v\x04\0\x17[m\
+ethod]cylinder.height\x01\x20\x01@\x02\x04self\x1d\x05valuev\x01\0\x04\0\x1b[met\
+hod]cylinder.set-height\x01!\x04\0\x17[method]cylinder.radius\x01\x20\x04\0\x1b[\
+method]cylinder.set-radius\x01!\x01@\x01\x04self\x1d\0}\x04\0\x1b[method]cylinde\
+r.resolution\x01\"\x01@\x02\x04self\x1d\x05value}\x01\0\x04\0\x1f[method]cylinde\
+r.set-resolution\x01#\x04\0\x19[method]cylinder.segments\x01\"\x04\0\x1d[method]\
+cylinder.set-segments\x01#\x01@\x01\x04self\x1d\0\x17\x04\0\x18[method]cylinder.\
+to-mesh\x01$\x01@\x01\x04self\x1d\0\x19\x04\0\x18[method]cylinder.to-node\x01%\x04\
+\0\x20[method]cylinder.to-physics-node\x01%\x01i\x0a\x01@\x01\x04size\x03\0&\x04\
+\0\x13[constructor]cuboid\x01'\x01h\x0a\x01@\x01\x04self(\0\x03\x04\0\x13[method\
+]cuboid.size\x01)\x01@\x02\x04self(\x05value\x03\x01\0\x04\0\x17[method]cuboid.s\
+et-size\x01*\x01@\x01\x04self(\0\x17\x04\0\x16[method]cuboid.to-mesh\x01+\x01@\x01\
+\x04self(\0\x19\x04\0\x16[method]cuboid.to-node\x01,\x04\0\x1e[method]cuboid.to-\
+physics-node\x01,\x01i\x11\x01@\x01\x06radiusv\0-\x04\0\x16[static]sphere.new-ic\
+o\x01.\x04\0\x15[static]sphere.new-uv\x01.\x01h\x11\x01@\x01\x04self/\0v\x04\0\x15\
+[method]sphere.radius\x010\x01@\x02\x04self/\x05valuev\x01\0\x04\0\x19[method]sp\
+here.set-radius\x011\x01@\x01\x04self/\0\x10\x04\0\x13[method]sphere.kind\x012\x01\
+@\x02\x04self/\x05value\x10\x01\0\x04\0\x17[method]sphere.set-kind\x013\x01@\x01\
+\x04self/\0\x17\x04\0\x16[method]sphere.to-mesh\x014\x01@\x01\x04self/\0\x19\x04\
+\0\x16[method]sphere.to-node\x015\x04\0\x1e[method]sphere.to-physics-node\x015\x03\
+\x01\x10unavi:shapes/api\x05\x12\x01B\x04\x01m\x04\x05debug\x04info\x04warn\x05e\
+rror\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\x07messages\x01\0\x04\0\x03\
+log\x01\x02\x03\x01\x0dwired:log/api\x05\x13\x01B\x11\x02\x03\x02\x01\x11\x04\0\x04\
+node\x03\0\0\x01i\x01\x01r\x14\x04hips\x02\x05spine\x02\x05chest\x02\x0bupper-ch\
+est\x02\x04neck\x02\x04head\x02\x0dleft-shoulder\x02\x0eleft-upper-arm\x02\x0ele\
+ft-lower-arm\x02\x09left-hand\x02\x0eright-shoulder\x02\x0fright-upper-arm\x02\x0f\
+right-lower-arm\x02\x0aright-hand\x02\x0eleft-upper-leg\x02\x0eleft-lower-leg\x02\
+\x09left-foot\x02\x0fright-upper-leg\x02\x0fright-lower-leg\x02\x0aright-foot\x02\
+\x04\0\x08skeleton\x03\0\x03\x04\0\x06player\x03\x01\x01h\x05\x01@\x01\x04self\x06\
+\0\x02\x04\0\x13[method]player.root\x01\x07\x01@\x01\x04self\x06\0\x04\x04\0\x17\
+[method]player.skeleton\x01\x08\x01i\x05\x01p\x09\x01@\0\0\x0a\x04\0\x0clist-pla\
+yers\x01\x0b\x01@\0\0\x09\x04\0\x0clocal-player\x01\x0c\x03\x01\x10wired:player/\
+api\x05\x14\x01B\x15\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\0\x04\0\x05scene\x03\
+\x01\x01i\x02\x01@\0\0\x03\x04\0\x12[constructor]scene\x01\x04\x01h\x02\x01@\x01\
+\x04self\x05\0y\x04\0\x10[method]scene.id\x01\x06\x01@\x01\x04self\x05\0s\x04\0\x12\
+[method]scene.name\x01\x07\x01@\x02\x04self\x05\x05values\x01\0\x04\0\x16[method\
+]scene.set-name\x01\x08\x01i\x01\x01p\x09\x01@\x01\x04self\x05\0\x0a\x04\0\x13[m\
+ethod]scene.nodes\x01\x0b\x01h\x01\x01@\x02\x04self\x05\x05value\x0c\x01\0\x04\0\
+\x16[method]scene.add-node\x01\x0d\x04\0\x19[method]scene.remove-node\x01\x0d\x03\
+\x01\x11wired:scene/scene\x05\x15\x02\x03\0\x0a\x05scene\x01B5\x02\x03\x02\x01\x02\
+\x04\0\x08material\x03\0\0\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\x02\x02\x03\x02\
+\x01\x11\x04\0\x04node\x03\0\x04\x02\x03\x02\x01\x16\x04\0\x05scene\x03\0\x06\x04\
+\0\x04gltf\x03\x01\x01i\x08\x01@\0\0\x09\x04\0\x11[constructor]gltf\x01\x0a\x01h\
+\x08\x01i\x01\x01p\x0c\x01@\x01\x04self\x0b\0\x0d\x04\0\x1b[method]gltf.list-mat\
+erials\x01\x0e\x01h\x01\x01@\x02\x04self\x0b\x05value\x0f\x01\0\x04\0\x19[method\
+]gltf.add-material\x01\x10\x04\0\x1c[method]gltf.remove-material\x01\x10\x01i\x03\
+\x01p\x11\x01@\x01\x04self\x0b\0\x12\x04\0\x18[method]gltf.list-meshes\x01\x13\x01\
+h\x03\x01@\x02\x04self\x0b\x05value\x14\x01\0\x04\0\x15[method]gltf.add-mesh\x01\
+\x15\x04\0\x18[method]gltf.remove-mesh\x01\x15\x01i\x05\x01p\x16\x01@\x01\x04sel\
+f\x0b\0\x17\x04\0\x17[method]gltf.list-nodes\x01\x18\x01h\x05\x01@\x02\x04self\x0b\
+\x05value\x19\x01\0\x04\0\x15[method]gltf.add-node\x01\x1a\x04\0\x18[method]gltf\
+.remove-node\x01\x1a\x01i\x07\x01p\x1b\x01@\x01\x04self\x0b\0\x1c\x04\0\x18[meth\
+od]gltf.list-scenes\x01\x1d\x01h\x07\x01@\x02\x04self\x0b\x05value\x1e\x01\0\x04\
+\0\x16[method]gltf.add-scene\x01\x1f\x04\0\x19[method]gltf.remove-scene\x01\x1f\x01\
+k\x1b\x01@\x01\x04self\x0b\0\x20\x04\0\x19[method]gltf.active-scene\x01!\x01k\x1e\
+\x01@\x02\x04self\x0b\x05value\"\x01\0\x04\0\x1d[method]gltf.set-active-scene\x01\
+#\x04\0\x1a[method]gltf.default-scene\x01!\x04\0\x1e[method]gltf.set-default-sce\
+ne\x01\x1f\x03\x01\x10wired:scene/gltf\x05\x17\x02\x03\0\x0b\x04gltf\x01Bt\x02\x03\
+\x02\x01\x18\x04\0\x04gltf\x03\0\0\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x02\x02\
+\x03\x02\x01\x0c\x04\0\x09transform\x03\0\x04\x04\0\x04glxf\x03\x01\x04\0\x0aass\
+et-gltf\x03\x01\x04\0\x0aasset-glxf\x03\x01\x01i\x07\x01i\x08\x01q\x02\x04gltf\x01\
+\x09\0\x04glxf\x01\x0a\0\x04\0\x05asset\x03\0\x0b\x01h\x07\x01h\x08\x01q\x02\x04\
+gltf\x01\x0d\0\x04glxf\x01\x0e\0\x04\0\x0casset-borrow\x03\0\x0f\x04\0\x09glxf-n\
+ode\x03\x01\x01i\x11\x01p\x12\x01q\x02\x05asset\x01\x0c\0\x05nodes\x01\x13\0\x04\
+\0\x08children\x03\0\x14\x01h\x11\x01p\x16\x01q\x02\x05asset\x01\x10\0\x05nodes\x01\
+\x17\0\x04\0\x0fchildren-borrow\x03\0\x18\x04\0\x0aglxf-scene\x03\x01\x01i\x06\x01\
+@\0\0\x1b\x04\0\x11[constructor]glxf\x01\x1c\x01h\x06\x01p\x0c\x01@\x01\x04self\x1d\
+\0\x1e\x04\0\x18[method]glxf.list-assets\x01\x1f\x01@\x02\x04self\x1d\x05value\x10\
+\x01\0\x04\0\x16[method]glxf.add-asset\x01\x20\x04\0\x19[method]glxf.remove-asse\
+t\x01\x20\x01@\x01\x04self\x1d\0\x13\x04\0\x17[method]glxf.list-nodes\x01!\x01@\x02\
+\x04self\x1d\x05value\x16\x01\0\x04\0\x15[method]glxf.add-node\x01\"\x04\0\x18[m\
+ethod]glxf.remove-node\x01\"\x01i\x1a\x01p#\x01@\x01\x04self\x1d\0$\x04\0\x18[me\
+thod]glxf.list-scenes\x01%\x01h\x1a\x01@\x02\x04self\x1d\x05value&\x01\0\x04\0\x16\
+[method]glxf.add-scene\x01'\x04\0\x19[method]glxf.remove-scene\x01'\x01k#\x01@\x01\
+\x04self\x1d\0(\x04\0\x19[method]glxf.active-scene\x01)\x01k&\x01@\x02\x04self\x1d\
+\x05value*\x01\0\x04\0\x1d[method]glxf.set-active-scene\x01+\x04\0\x1a[method]gl\
+xf.default-scene\x01)\x04\0\x1e[method]glxf.set-default-scene\x01'\x01h\x01\x01@\
+\x01\x08document,\0\x09\x04\0\x17[constructor]asset-gltf\x01-\x01i\x01\x01@\x01\x04\
+self\x0d\0.\x04\0\x1b[method]asset-gltf.document\x01/\x01i\x03\x01p0\x01@\x01\x04\
+self\x0d\01\x04\0\x1d[method]asset-gltf.list-nodes\x012\x01h\x03\x01@\x02\x04sel\
+f\x0d\x05value3\x01\0\x04\0\x1b[method]asset-gltf.add-node\x014\x04\0\x1e[method\
+]asset-gltf.remove-node\x014\x01@\x01\x08document\x1d\0\x0a\x04\0\x17[constructo\
+r]asset-glxf\x015\x01@\x01\x04self\x0e\0\x1b\x04\0\x1b[method]asset-glxf.documen\
+t\x016\x01@\x01\x04self\x0e\0\x13\x04\0\x1d[method]asset-glxf.list-nodes\x017\x01\
+@\x02\x04self\x0e\x05value\x16\x01\0\x04\0\x1b[method]asset-glxf.add-node\x018\x04\
+\0\x1e[method]asset-glxf.remove-node\x018\x01@\0\0\x12\x04\0\x16[constructor]glx\
+f-node\x019\x01@\x01\x04self\x16\0y\x04\0\x14[method]glxf-node.id\x01:\x01@\x01\x04\
+self\x16\0s\x04\0\x16[method]glxf-node.name\x01;\x01@\x02\x04self\x16\x05values\x01\
+\0\x04\0\x1a[method]glxf-node.set-name\x01<\x01@\x01\x04self\x16\0\x05\x04\0\x1b\
+[method]glxf-node.transform\x01=\x01@\x02\x04self\x16\x05value\x05\x01\0\x04\0\x1f\
+[method]glxf-node.set-transform\x01>\x01k\x12\x01@\x01\x04self\x16\0?\x04\0\x18[\
+method]glxf-node.parent\x01@\x01k\x15\x01@\x01\x04self\x16\0\xc1\0\x04\0\x1a[met\
+hod]glxf-node.children\x01B\x01k\x19\x01@\x02\x04self\x16\x05value\xc3\0\x01\0\x04\
+\0\x1e[method]glxf-node.set-children\x01D\x01@\0\0#\x04\0\x17[constructor]glxf-s\
+cene\x01E\x01@\x01\x04self&\0y\x04\0\x15[method]glxf-scene.id\x01F\x01@\x01\x04s\
+elf&\0s\x04\0\x17[method]glxf-scene.name\x01G\x01@\x02\x04self&\x05values\x01\0\x04\
+\0\x1b[method]glxf-scene.set-name\x01H\x01@\x01\x04self&\0\x13\x04\0\x18[method]\
+glxf-scene.nodes\x01I\x01@\x02\x04self&\x04node\x16\x01\0\x04\0\x1b[method]glxf-\
+scene.add-node\x01J\x04\0\x1e[method]glxf-scene.remove-node\x01J\x04\0\x08get-ro\
+ot\x01\x1c\x03\x01\x10wired:scene/glxf\x05\x19\x01B\x07\x04\0\x06script\x03\x01\x01\
+i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01h\0\x01@\x02\x04self\x03\
+\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\x01\x12wired:script/\
+types\x05\x1a\x04\x01\x1aexample:wired-scene/script\x04\0\x0b\x0c\x01\0\x06scrip\
+t\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10\
+wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

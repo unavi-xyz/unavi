@@ -10,6 +10,7 @@ use bindings::{
 #[allow(warnings)]
 mod bindings;
 mod clock;
+mod wired_input_impls;
 mod wired_math_impls;
 mod wired_scene_impls;
 

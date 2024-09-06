@@ -6,7 +6,7 @@ use bindings::{
         layout::container::{Alignment, Container},
         scene::api::{Root, Scene},
         shapes::api::Rectangle,
-        ui::{button::Button, text::TextBox},
+        ui::{api::update_ui, button::Button, text::TextBox},
     },
     wired::{
         log::api::{log, LogLevel},
@@ -83,6 +83,8 @@ impl GuestScript for Script {
     }
 
     fn update(&self, delta: f32) {
+        update_ui(delta);
+
         let time = self.time.get();
         self.time.set(time + delta);
 

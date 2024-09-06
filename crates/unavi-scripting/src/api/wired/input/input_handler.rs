@@ -11,7 +11,7 @@ use crate::{
 
 use super::bindings::{
     handler::{HostInputHandler, InputEvent},
-    types::{InputType, Ray},
+    types::{InputAction, InputData, Ray},
 };
 
 pub enum ScriptInputEvent {
@@ -65,10 +65,7 @@ impl HostInputHandler for StoreState {
         Ok(res)
     }
 
-    fn handle_input(
-        &mut self,
-        self_: Resource<InputHandler>,
-    ) -> wasm_bridge::Result<Option<InputEvent>> {
+    fn next(&mut self, self_: Resource<InputHandler>) -> wasm_bridge::Result<Option<InputEvent>> {
         let data = self.table.get(&self_)?;
 
         if let Ok(event) = data.receiver.try_recv() {
@@ -78,12 +75,11 @@ impl HostInputHandler for StoreState {
                     orientation,
                 } => InputEvent {
                     id: 0,
-                    input: InputType::Ray(Ray {
+                    action: InputAction::Collision,
+                    data: InputData::Ray(Ray {
                         origin: origin.into(),
                         orientation: orientation.into(),
                     }),
-                    order: 0,
-                    distance: 0.0,
                 },
             };
 

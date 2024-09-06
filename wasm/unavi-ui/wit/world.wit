@@ -3,13 +3,19 @@ package unavi:ui;
 world guest {
     import unavi:shapes/api;
 
+    export api;
     export button;
     export text;
 }
 
 world prelude {
+  import api;
   import button;
   import text;
+}
+
+interface api {
+  update-ui: func(delta: f32);
 }
 
 interface button {
@@ -23,7 +29,10 @@ interface button {
 
     root: func() -> container;
 
-    // Returns `true` if the button is pressed down this frame.
+    // Returns `true` if the button was hovered over this frame.
+    hovered: func() -> bool;
+
+    // Returns `true` if the button was pressed this frame.
     pressed: func() -> bool;
   }
 }

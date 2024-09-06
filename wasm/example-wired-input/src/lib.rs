@@ -18,7 +18,7 @@ mod bindings;
 mod wired_math_impls;
 
 struct Script {
-    handler: InputHandler,
+    input: InputHandler,
     material: Material,
 }
 
@@ -36,16 +36,16 @@ impl GuestScript for Script {
             primitive.set_material(Some(&material));
         }
 
-        let handler = InputHandler::new();
-        node.set_input_handler(Some(&handler));
+        let input = InputHandler::new();
+        node.set_input_handler(Some(&input));
 
         Root::add_scene(&scene);
 
-        Script { handler, material }
+        Script { input, material }
     }
 
     fn update(&self, _delta: f32) {
-        while let Some(event) = self.handler.handle_input() {
+        while let Some(event) = self.input.next() {
             log(LogLevel::Info, &format!("Got input: {:?}", event));
 
             let mut rng = rand::thread_rng();

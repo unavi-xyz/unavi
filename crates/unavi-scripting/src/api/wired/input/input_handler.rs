@@ -16,6 +16,7 @@ use super::bindings::{
 
 pub enum ScriptInputEvent {
     Raycast {
+        action: InputAction,
         origin: bevy::math::Vec3,
         orientation: bevy::math::Quat,
     },
@@ -71,11 +72,12 @@ impl HostInputHandler for StoreState {
         if let Ok(event) = data.receiver.try_recv() {
             let e = match event {
                 ScriptInputEvent::Raycast {
+                    action,
                     origin,
                     orientation,
                 } => InputEvent {
-                    id: 0,
-                    action: InputAction::Collision,
+                    id: 0, // TODO: Set id
+                    action,
                     data: InputData::Ray(Ray {
                         origin: origin.into(),
                         orientation: orientation.into(),

@@ -1,7 +1,10 @@
 use avian3d::prelude::*;
 use bevy::input::keyboard::KeyCode;
 use bevy::prelude::*;
-use unavi_scripting::api::wired::input::input_handler::{InputHandlerSender, ScriptInputEvent};
+use unavi_scripting::api::wired::input::{
+    bindings::types::InputAction,
+    input_handler::{InputHandlerSender, ScriptInputEvent},
+};
 
 use crate::{
     layers::{OTHER_PLAYER_LAYER, WORLD_LAYER},
@@ -95,7 +98,7 @@ pub fn handle_raycast_input(
         },
     ) {
         // Crosshair.
-        // TODO: Showing double on non-60hz monitors
+        // TODO: Fix showing double on non-60hz monitors
         if let Ok(normal) = Dir3::from_xyz(hit.normal.x, hit.normal.y, hit.normal.z) {
             gizmos.circle(
                 translation + direction * (hit.time_of_impact - 0.001),
@@ -106,19 +109,24 @@ pub fn handle_raycast_input(
         }
 
         // Script input.
-        if mouse.just_pressed(MouseButton::Left) {
-            for (ent, handler) in input_handlers.iter() {
-                // TODO: Recursive check if children were hit.
+        for (ent, handler) in input_handlers.iter() {
+            // TODO: Recursive check if children were hit.
 
-                if hit.entity == ent {
-                    if let Err(e) = handler.send(ScriptInputEvent::Raycast {
-                        origin: translation,
-                        orientation: rotation,
-                    }) {
-                        error!("Failed to send script input event: {}", e);
-                    };
-                    break;
-                }
+            let action = if mouse.just_pressed(MouseButton::Left) {
+                InputAction::Collision
+            } else {
+                InputAction::Hover
+            };
+
+            if hit.entity == ent {
+                if let Err(e) = handler.send(ScriptInputEvent::Raycast {
+                    action,
+                    origin: translation,
+                    orientation: rotation,
+                }) {
+                    error!("Failed to send script input event: {}", e);
+                };
+                break;
             }
         }
     };

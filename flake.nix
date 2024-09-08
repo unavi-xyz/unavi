@@ -77,9 +77,6 @@
           cargoHash = "sha256-hLDIqcNVv2EEDMmdGrs54YacH0qkd+fTg0rfjdCClGk=";
         };
 
-        crates = import ./crates.nix (inputs // { inherit craneLib localSystem pkgs; });
-        deploy = import ./deploy (inputs // { inherit localSystem; });
-
         githubMatrix = nix-github-actions.lib.mkGithubMatrix {
           attrPrefix = "";
           checks =
@@ -101,13 +98,81 @@
                 ] self.packages
               );
         };
+
+        src = pkgs.lib.cleanSourceWith {
+          src = ./.;
+          filter =
+            path: type:
+            (pkgs.lib.hasInfix "crates/unavi-app/assets/" path)
+            || (pkgs.lib.hasInfix "crates/unavi-app/public/" path)
+            || (pkgs.lib.hasInfix "wired-protocol" path)
+            || (pkgs.lib.hasSuffix ".capnp" path)
+            || (pkgs.lib.hasSuffix ".html" path)
+            || (pkgs.lib.hasSuffix ".json" path)
+            || (pkgs.lib.hasSuffix ".wit" path)
+            || (pkgs.lib.hasSuffix "LICENSE" path)
+            || (pkgs.lib.hasSuffix "README.md" path)
+            || (craneLib.filterCargoSources path type);
+        };
+
+        commonArgs = {
+          inherit
+            buildInputs
+            nativeBuildInputs
+            src
+            ;
+
+          pname = "unavi";
+          strictDeps = true;
+        };
+
+        cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+        cargoClippy = craneLib.cargoClippy (commonArgs // { inherit cargoArtifacts; });
+        cargoDoc = craneLib.cargoDoc (commonArgs // { inherit cargoArtifacts; });
+        cargoFmt = craneLib.cargoFmt (commonArgs // { inherit cargoArtifacts; });
+        cargoTarpaulin = craneLib.cargoTarpaulin (commonArgs // { inherit cargoArtifacts; });
+
+        unavi-app = import ./crates/unavi-app { inherit craneLib pkgs src; };
+        unavi-server = import ./crates/unavi-server { inherit craneLib pkgs src; };
+
+        buildInputs = unavi-app.buildInputs ++ unavi-server.buildInputs;
+        nativeBuildInputs = unavi-app.nativeBuildInputs ++ unavi-server.nativeBuildInputs;
+
+        deploy = import ./deploy (inputs // { inherit localSystem; });
       in
       {
-        inherit crates;
+        inherit unavi-app unavi-server;
 
-        apps = crates.apps // deploy.apps;
-        checks = crates.checks;
-        packages = crates.packages // deploy.packages;
+        apps = rec {
+          server = flake-utils.lib.mkApp { drv = unavi-server.server; };
+          app = flake-utils.lib.mkApp { drv = unavi-app.native; };
+          web = flake-utils.lib.mkApp {
+            drv = pkgs.writeShellApplication {
+              name = "unavi-web";
+              runtimeInputs = with pkgs; [ python3Minimal ];
+              text = ''
+                python3 -m http.server --directory ${unavi-app.web} 8080
+              '';
+            };
+          };
+          default = app;
+        } // deploy.apps;
+
+        checks = {
+          inherit
+            cargoClippy
+            cargoDoc
+            cargoFmt
+            cargoTarpaulin
+            ;
+        };
+
+        packages = rec {
+          app = unavi-app.native;
+          web = unavi-app.web;
+          server = unavi-server.server;
+          default = app;
+        } // deploy.packages;
 
         githubMatrix = githubMatrix // {
           matrix.include = map (
@@ -138,14 +203,13 @@
               terraform
             ])
             ++ [ cargo-wix ]
-            ++ crates.buildInputs
-            ++ crates.nativeBuildInputs;
+            ++ buildInputs
+            ++ nativeBuildInputs;
 
-          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath crates.buildInputs;
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
         };
 
         formatter = pkgs.nixfmt-rfc-style;
-
       }
     )
     // (

@@ -22,8 +22,8 @@ let
 
   mkAppInput = resource: { worldHostDid = mkDidWeb resource.value.domain_world; };
 
-  mkAppPackage = resource: self.crates.${localSystem}.mkUnaviApp (mkAppInput resource);
-  mkWebPackage = resource: self.crates.${localSystem}.mkUnaviWeb (mkAppInput resource);
+  mkAppPackage = resource: self.unavi-app.${localSystem}.mkNative (mkAppInput resource);
+  mkWebPackage = resource: self.unavi-app.${localSystem}.mkWeb (mkAppInput resource);
 
   mkPackages =
     { resource, subdir }:
@@ -47,7 +47,7 @@ let
           "unavi-server-"
           subdir
         ];
-        value = self.packages.${localSystem}.unavi-server;
+        value = self.packages.${localSystem}.server;
       }
     ];
 
@@ -68,8 +68,8 @@ let
                 domainDwn = resource.value.domain_dwn;
                 domainWeb = resource.value.domain_web;
                 domainWorld = resource.value.domain_world;
-                unavi-server = self.packages.${system}."unavi-server-${subdir}";
-                unavi-web = self.packages.${system}."unavi-web-${subdir}";
+                unavi-server = self.packages.${system}."server-${subdir}";
+                unavi-web = self.packages.${system}."web-${subdir}";
               };
             };
           in

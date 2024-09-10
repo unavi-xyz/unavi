@@ -1,3 +1,4 @@
+pub mod axes;
 pub mod circle;
 pub mod cuboid;
 pub mod cylinder;

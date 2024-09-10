@@ -1,0 +1,8 @@
+package example:unavi-vscreen;
+
+world script {
+    include wired:script/script;
+
+    import unavi:shapes/api;
+    import unavi:vscreen/screen;
+}

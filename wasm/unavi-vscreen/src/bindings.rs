@@ -2888,6 +2888,75 @@ pub mod wired {
         }
     }
     #[allow(dead_code)]
+    pub mod log {
+        #[allow(dead_code, clippy::all)]
+        pub mod api {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            #[repr(u8)]
+            #[derive(Clone, Copy, Eq, PartialEq)]
+            pub enum LogLevel {
+                Debug,
+                Info,
+                Warn,
+                Error,
+            }
+            impl ::core::fmt::Debug for LogLevel {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        LogLevel::Debug => f.debug_tuple("LogLevel::Debug").finish(),
+                        LogLevel::Info => f.debug_tuple("LogLevel::Info").finish(),
+                        LogLevel::Warn => f.debug_tuple("LogLevel::Warn").finish(),
+                        LogLevel::Error => f.debug_tuple("LogLevel::Error").finish(),
+                    }
+                }
+            }
+
+            impl LogLevel {
+                #[doc(hidden)]
+                pub unsafe fn _lift(val: u8) -> LogLevel {
+                    if !cfg!(debug_assertions) {
+                        return ::core::mem::transmute(val);
+                    }
+
+                    match val {
+                        0 => LogLevel::Debug,
+                        1 => LogLevel::Info,
+                        2 => LogLevel::Warn,
+                        3 => LogLevel::Error,
+
+                        _ => panic!("invalid enum discriminant"),
+                    }
+                }
+            }
+
+            #[allow(unused_unsafe, clippy::all)]
+            pub fn log(level: LogLevel, message: &str) {
+                unsafe {
+                    let vec0 = message;
+                    let ptr0 = vec0.as_ptr().cast::<u8>();
+                    let len0 = vec0.len();
+
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wired:log/api")]
+                    extern "C" {
+                        #[link_name = "log"]
+                        fn wit_import(_: i32, _: *mut u8, _: usize);
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(_: i32, _: *mut u8, _: usize) {
+                        unreachable!()
+                    }
+                    wit_import(level.clone() as i32, ptr0.cast_mut(), len0);
+                }
+            }
+        }
+    }
+    #[allow(dead_code)]
     pub mod math {
         #[allow(dead_code, clippy::all)]
         pub mod types {
@@ -5166,6 +5235,26 @@ pub mod exports {
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
+                pub unsafe fn _export_method_screen_open_duration_cabi<T: GuestScreen>(
+                    arg0: *mut u8,
+                ) -> f32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::open_duration(ScreenBorrow::lift(arg0 as u32 as usize).get());
+                    _rt::as_f32(result0)
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_screen_set_open_duration_cabi<T: GuestScreen>(
+                    arg0: *mut u8,
+                    arg1: f32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::set_open_duration(ScreenBorrow::lift(arg0 as u32 as usize).get(), arg1);
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
                 pub unsafe fn _export_method_screen_child_layout_cabi<T: GuestScreen>(
                     arg0: *mut u8,
                 ) -> *mut u8 {
@@ -5393,6 +5482,9 @@ pub mod exports {
                     fn root(&self) -> Container;
                     fn visible(&self) -> bool;
                     fn set_visible(&self, value: bool);
+                    /// How long it takes to open the screen, in seconds.
+                    fn open_duration(&self) -> f32;
+                    fn set_open_duration(&self, value: f32);
                     fn child_layout(&self) -> ChildLayout;
                     fn set_child_layout(&self, value: ChildLayout);
                     fn children(&self) -> _rt::Vec<Screen>;
@@ -5421,6 +5513,14 @@ pub mod exports {
     #[export_name = "unavi:vscreen/screen#[method]screen.set-visible"]
     unsafe extern "C" fn export_method_screen_set_visible(arg0: *mut u8,arg1: i32,) {
       $($path_to_types)*::_export_method_screen_set_visible_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0, arg1)
+    }
+    #[export_name = "unavi:vscreen/screen#[method]screen.open-duration"]
+    unsafe extern "C" fn export_method_screen_open_duration(arg0: *mut u8,) -> f32 {
+      $($path_to_types)*::_export_method_screen_open_duration_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0)
+    }
+    #[export_name = "unavi:vscreen/screen#[method]screen.set-open-duration"]
+    unsafe extern "C" fn export_method_screen_set_open_duration(arg0: *mut u8,arg1: f32,) {
+      $($path_to_types)*::_export_method_screen_set_open_duration_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0, arg1)
     }
     #[export_name = "unavi:vscreen/screen#[method]screen.child-layout"]
     unsafe extern "C" fn export_method_screen_child_layout(arg0: *mut u8,) -> *mut u8 {
@@ -5735,8 +5835,8 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7513] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xdd9\x01A\x02\x01A\x20\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7702] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x9a;\x01A\x02\x01A\"\
 \x01B\x10\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\
 \0\x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01\
 r\x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -5867,40 +5967,44 @@ radius\x01F\x01@\x01\x04self\xc4\0\0\x12\x04\0\x13[method]sphere.kind\x01G\x01@\
 ode\x01J\x01i\x14\x01@\0\0\xcb\0\x04\0\x11[constructor]axes\x01L\x01h\x14\x01@\x01\
 \x04self\xcd\0\0v\x04\0\x11[method]axes.size\x01N\x01@\x02\x04self\xcd\0\x05valu\
 ev\x01\0\x04\0\x15[method]axes.set-size\x01O\x01@\x01\x04self\xcd\0\0\x1c\x04\0\x14\
-[method]axes.to-node\x01P\x03\x01\x10unavi:shapes/api\x05\x12\x01B#\x02\x03\x02\x01\
-\x04\x04\0\x04vec3\x03\0\0\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x02\x01m\x03\x06\
-center\x03end\x05start\x04\0\x09alignment\x03\0\x04\x04\0\x09container\x03\x01\x01\
-i\x06\x01@\x01\x04size\x01\0\x07\x04\0\x16[constructor]container\x01\x08\x01h\x06\
-\x01@\x01\x04self\x09\0\x07\x04\0\x15[method]container.ref\x01\x0a\x01i\x03\x01@\
-\x01\x04self\x09\0\x0b\x04\0\x16[method]container.root\x01\x0c\x04\0\x17[method]\
-container.inner\x01\x0c\x01p\x07\x01@\x01\x04self\x09\0\x0d\x04\0\x1f[method]con\
-tainer.list-children\x01\x0e\x01@\x02\x04self\x09\x05child\x09\x01\0\x04\0\x1b[m\
-ethod]container.add-child\x01\x0f\x04\0\x1e[method]container.remove-child\x01\x0f\
-\x01@\x01\x04self\x09\0\x01\x04\0\x16[method]container.size\x01\x10\x01@\x02\x04\
-self\x09\x05value\x01\x01\0\x04\0\x1a[method]container.set-size\x01\x11\x01@\x01\
-\x04self\x09\0\x05\x04\0\x19[method]container.align-x\x01\x12\x04\0\x19[method]c\
-ontainer.align-y\x01\x12\x04\0\x19[method]container.align-z\x01\x12\x01@\x02\x04\
-self\x09\x05value\x05\x01\0\x04\0\x1d[method]container.set-align-x\x01\x13\x04\0\
-\x1d[method]container.set-align-y\x01\x13\x04\0\x1d[method]container.set-align-z\
-\x01\x13\x03\x01\x16unavi:layout/container\x05\x13\x02\x03\0\x08\x09container\x01\
-B&\x02\x03\x02\x01\x14\x04\0\x09container\x03\0\0\x02\x03\x02\x01\x0c\x04\0\x09t\
-ransform\x03\0\x02\x02\x03\x02\x01\x10\x04\0\x04vec2\x03\0\x04\x02\x03\x02\x01\x04\
-\x04\0\x04vec3\x03\0\x06\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x08\x01q\x02\x06\
-circle\x01v\0\x09rectangle\x01\x05\0\x04\0\x0cscreen-shape\x03\0\x0a\x01q\x03\x09\
-butterfly\0\0\x06circle\0\0\x09transform\x01\x03\0\x04\0\x0cchild-layout\x03\0\x0c\
-\x04\0\x06screen\x03\x01\x01i\x0e\x01@\x01\x05shape\x0b\0\x0f\x04\0\x13[construc\
-tor]screen\x01\x10\x01h\x0e\x01i\x01\x01@\x01\x04self\x11\0\x12\x04\0\x13[method\
-]screen.root\x01\x13\x01@\x01\x04self\x11\0\x7f\x04\0\x16[method]screen.visible\x01\
-\x14\x01@\x02\x04self\x11\x05value\x7f\x01\0\x04\0\x1a[method]screen.set-visible\
-\x01\x15\x01@\x01\x04self\x11\0\x0d\x04\0\x1b[method]screen.child-layout\x01\x16\
-\x01@\x02\x04self\x11\x05value\x0d\x01\0\x04\0\x1f[method]screen.set-child-layou\
-t\x01\x17\x01p\x0f\x01@\x01\x04self\x11\0\x18\x04\0\x17[method]screen.children\x01\
-\x19\x01@\x02\x04self\x11\x05value\x11\x01\0\x04\0\x18[method]screen.add-child\x01\
-\x1a\x04\0\x1b[method]screen.remove-child\x01\x1a\x01@\x02\x04self\x11\x05deltav\
-\x01\0\x04\0\x15[method]screen.update\x01\x1b\x04\x01\x14unavi:vscreen/screen\x05\
-\x15\x04\x01\x13unavi:vscreen/guest\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\0G\x09p\
-roducers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\
-\x060.25.0";
+[method]axes.to-node\x01P\x03\x01\x10unavi:shapes/api\x05\x12\x01B\x04\x01m\x04\x05\
+debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\x07\
+messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x13\x01B#\x02\x03\
+\x02\x01\x04\x04\0\x04vec3\x03\0\0\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x02\x01\
+m\x03\x06center\x03end\x05start\x04\0\x09alignment\x03\0\x04\x04\0\x09container\x03\
+\x01\x01i\x06\x01@\x01\x04size\x01\0\x07\x04\0\x16[constructor]container\x01\x08\
+\x01h\x06\x01@\x01\x04self\x09\0\x07\x04\0\x15[method]container.ref\x01\x0a\x01i\
+\x03\x01@\x01\x04self\x09\0\x0b\x04\0\x16[method]container.root\x01\x0c\x04\0\x17\
+[method]container.inner\x01\x0c\x01p\x07\x01@\x01\x04self\x09\0\x0d\x04\0\x1f[me\
+thod]container.list-children\x01\x0e\x01@\x02\x04self\x09\x05child\x09\x01\0\x04\
+\0\x1b[method]container.add-child\x01\x0f\x04\0\x1e[method]container.remove-chil\
+d\x01\x0f\x01@\x01\x04self\x09\0\x01\x04\0\x16[method]container.size\x01\x10\x01\
+@\x02\x04self\x09\x05value\x01\x01\0\x04\0\x1a[method]container.set-size\x01\x11\
+\x01@\x01\x04self\x09\0\x05\x04\0\x19[method]container.align-x\x01\x12\x04\0\x19\
+[method]container.align-y\x01\x12\x04\0\x19[method]container.align-z\x01\x12\x01\
+@\x02\x04self\x09\x05value\x05\x01\0\x04\0\x1d[method]container.set-align-x\x01\x13\
+\x04\0\x1d[method]container.set-align-y\x01\x13\x04\0\x1d[method]container.set-a\
+lign-z\x01\x13\x03\x01\x16unavi:layout/container\x05\x14\x02\x03\0\x09\x09contai\
+ner\x01B*\x02\x03\x02\x01\x15\x04\0\x09container\x03\0\0\x02\x03\x02\x01\x0c\x04\
+\0\x09transform\x03\0\x02\x02\x03\x02\x01\x10\x04\0\x04vec2\x03\0\x04\x02\x03\x02\
+\x01\x04\x04\0\x04vec3\x03\0\x06\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x08\x01\
+q\x02\x06circle\x01v\0\x09rectangle\x01\x05\0\x04\0\x0cscreen-shape\x03\0\x0a\x01\
+q\x03\x09butterfly\0\0\x06circle\0\0\x09transform\x01\x03\0\x04\0\x0cchild-layou\
+t\x03\0\x0c\x04\0\x06screen\x03\x01\x01i\x0e\x01@\x01\x05shape\x0b\0\x0f\x04\0\x13\
+[constructor]screen\x01\x10\x01h\x0e\x01i\x01\x01@\x01\x04self\x11\0\x12\x04\0\x13\
+[method]screen.root\x01\x13\x01@\x01\x04self\x11\0\x7f\x04\0\x16[method]screen.v\
+isible\x01\x14\x01@\x02\x04self\x11\x05value\x7f\x01\0\x04\0\x1a[method]screen.s\
+et-visible\x01\x15\x01@\x01\x04self\x11\0v\x04\0\x1c[method]screen.open-duration\
+\x01\x16\x01@\x02\x04self\x11\x05valuev\x01\0\x04\0\x20[method]screen.set-open-d\
+uration\x01\x17\x01@\x01\x04self\x11\0\x0d\x04\0\x1b[method]screen.child-layout\x01\
+\x18\x01@\x02\x04self\x11\x05value\x0d\x01\0\x04\0\x1f[method]screen.set-child-l\
+ayout\x01\x19\x01p\x0f\x01@\x01\x04self\x11\0\x1a\x04\0\x17[method]screen.childr\
+en\x01\x1b\x01@\x02\x04self\x11\x05value\x11\x01\0\x04\0\x18[method]screen.add-c\
+hild\x01\x1c\x04\0\x1b[method]screen.remove-child\x01\x1c\x01@\x02\x04self\x11\x05\
+deltav\x01\0\x04\0\x15[method]screen.update\x01\x1d\x04\x01\x14unavi:vscreen/scr\
+een\x05\x16\x04\x01\x13unavi:vscreen/guest\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\0\
+G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindge\
+n-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

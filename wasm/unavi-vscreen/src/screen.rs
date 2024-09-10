@@ -1,133 +1,158 @@
-use std::cell::{Cell, RefCell};
-
-use crate::{
-    bindings::{
-        exports::unavi::vscreen::screen::{
-            GuestModule, GuestScreen, Module as ModuleExport, ModuleBorrow,
-        },
-        unavi::shapes::api::Cylinder,
-        wired::{
-            math::types::{Quat, Transform, Vec3},
-            scene::node::Node,
-        },
-    },
-    module::Module,
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+    sync::atomic::{AtomicUsize, Ordering},
 };
 
-const ANIMATION_DURATION_SECONDS: f32 = 0.5;
+use crate::bindings::{
+    exports::unavi::vscreen::screen::{
+        ChildLayout, Container, GuestScreen, Screen as ScreenExport, ScreenBorrow, ScreenShape,
+    },
+    unavi::shapes::api::{Cylinder, Rectangle},
+    wired::math::types::{Transform, Vec3},
+};
+
+const ANIMATION_DURATION_SECONDS: f32 = 0.3;
 const ARM_RADIUS: f32 = 0.03;
 const MAX_SCALE: f32 = 1.0;
 const MIN_SCALE: f32 = 0.0;
-const SCREEN_HEIGHT: f32 = 0.001;
-const SCREEN_RADIUS: f32 = 0.04;
 
-pub struct Screen {
-    central_module: RefCell<Option<Module>>,
-    modules: RefCell<Vec<Module>>,
-    root: Node,
+#[derive(Clone)]
+pub struct Screen(pub Rc<ScreenData>);
+
+impl PartialEq for Screen {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.id == other.0.id
+    }
+}
+
+static ID: AtomicUsize = AtomicUsize::new(0);
+
+pub struct ScreenData {
+    id: usize,
+    child_layout: Cell<ChildLayout>,
+    children: RefCell<Vec<Screen>>,
+    root: Container,
     visible: Cell<bool>,
     visible_animating: Cell<bool>,
 }
 
 impl GuestScreen for Screen {
-    fn new() -> Self {
-        let root = Cylinder::new(SCREEN_RADIUS, SCREEN_HEIGHT).to_physics_node();
+    fn new(shape: ScreenShape) -> Self {
+        let (size, mesh) = match shape {
+            ScreenShape::Circle(radius) => {
+                let mesh = Cylinder::new(radius, 0.005).to_physics_node();
+                mesh.set_transform(Transform {
+                    translation: Vec3::new(radius * 2.0, ARM_RADIUS, -ARM_RADIUS / 3.0),
+                    scale: Vec3::splat(MIN_SCALE),
+                    ..Default::default()
+                });
+                (Vec3::new(radius, radius, 0.01), mesh)
+            }
+            ScreenShape::Rectangle(size) => {
+                let mesh = Rectangle::new(size).to_physics_node();
+                mesh.set_transform(Transform {
+                    translation: Vec3::new(size.x, ARM_RADIUS, -ARM_RADIUS / 3.0),
+                    scale: Vec3::splat(MIN_SCALE),
+                    ..Default::default()
+                });
+                (Vec3::new(size.x, size.y, 0.01), mesh)
+            }
+        };
 
-        root.set_transform(Transform {
-            translation: Vec3::new(SCREEN_RADIUS * 2.0, ARM_RADIUS, -ARM_RADIUS / 3.0),
-            rotation: Quat::default(),
-            scale: Vec3::splat(MIN_SCALE),
-        });
+        let root = Container::new(size);
+        root.inner().add_child(&mesh);
 
-        Self {
-            central_module: RefCell::default(),
-            modules: RefCell::default(),
+        let id = ID.fetch_add(1, Ordering::Relaxed);
+
+        Self(Rc::new(ScreenData {
+            id,
+            child_layout: Cell::new(ChildLayout::Butterfly),
+            children: RefCell::default(),
             root,
             visible: Cell::default(),
             visible_animating: Cell::default(),
-        }
+        }))
     }
 
-    fn root(&self) -> Node {
-        self.root.ref_()
+    fn root(&self) -> Container {
+        self.0.root.ref_()
     }
 
     fn visible(&self) -> bool {
-        self.visible.get()
+        self.0.visible.get()
     }
     fn set_visible(&self, value: bool) {
-        if self.visible.get() == value {
+        if self.0.visible.get() == value {
             return;
         }
 
-        self.visible.set(value);
-        self.visible_animating.set(true);
+        self.0.visible.set(value);
+        self.0.visible_animating.set(true);
     }
 
-    fn central_module(&self) -> Option<ModuleExport> {
-        self.central_module.borrow().clone().map(ModuleExport::new)
+    fn child_layout(&self) -> ChildLayout {
+        self.0.child_layout.get()
     }
-    fn set_central_module(&self, value: Option<ModuleBorrow>) {
-        if let Some(value) = value {
-            let module = value.get::<Module>();
-            *self.central_module.borrow_mut() = Some(module.clone());
-        } else {
-            *self.central_module.borrow_mut() = None;
-        }
+    fn set_child_layout(&self, value: ChildLayout) {
+        self.0.child_layout.set(value);
     }
 
-    fn add_module(&self, value: ModuleBorrow) {
-        self.modules
-            .borrow_mut()
-            .push(value.get::<Module>().clone());
-    }
-    fn remove_module(&self, value: ModuleBorrow) {
-        let value = value.get::<Module>();
-        self.modules
-            .borrow()
-            .iter()
-            .position(|n| n == value)
-            .map(|index| self.modules.borrow_mut().remove(index));
-    }
-    fn modules(&self) -> Vec<ModuleExport> {
-        self.modules
+    fn children(&self) -> Vec<ScreenExport> {
+        self.0
+            .children
             .borrow()
             .iter()
             .cloned()
-            .map(ModuleExport::new)
+            .map(ScreenExport::new)
             .collect()
+    }
+    fn add_child(&self, value: ScreenBorrow) {
+        let value = value.get::<Screen>();
+        self.0.root.add_child(&value.0.root);
+        self.0.children.borrow_mut().push(value.clone());
+    }
+    fn remove_child(&self, value: ScreenBorrow) {
+        let value = value.get::<Screen>();
+        self.0.root.remove_child(&value.0.root);
+        self.0
+            .children
+            .borrow()
+            .iter()
+            .position(|n| n == value)
+            .map(|index| self.0.children.borrow_mut().remove(index));
     }
 
     fn update(&self, delta: f32) {
-        let visible = self.visible.get();
+        let visible = self.0.visible.get();
 
-        if self.visible_animating.get() {
-            let mut transform = self.root.transform();
+        if self.0.visible_animating.get() {
+            let mut transform = self.0.root.root().transform();
 
             if visible {
                 transform.scale += delta / ANIMATION_DURATION_SECONDS;
 
                 if transform.scale.x > MAX_SCALE {
                     transform.scale = Vec3::splat(MAX_SCALE);
-                    self.visible_animating.set(false);
+                    self.0.visible_animating.set(false);
                 }
             } else {
                 transform.scale -= delta / ANIMATION_DURATION_SECONDS;
 
                 if transform.scale.x < MIN_SCALE {
                     transform.scale = Vec3::splat(MIN_SCALE);
-                    self.visible_animating.set(false);
+                    self.0.visible_animating.set(false);
                 }
             }
 
-            self.root.set_transform(transform);
+            self.0.root.root().set_transform(transform);
         }
 
         if !visible {
             return;
         }
 
-        for module in self.modules.borrow().iter() {
+        for module in self.0.children.borrow().iter() {
             module.update(delta);
         }
     }

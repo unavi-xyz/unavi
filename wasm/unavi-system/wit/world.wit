@@ -1,7 +1,9 @@
 package unavi:system;
 
 world guest {
+    include unavi:ui/prelude; 
     include wired:prelude/script; 
 
+    import unavi:scene/api; 
     import unavi:vscreen/screen;
 }

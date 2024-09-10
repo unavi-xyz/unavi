@@ -1,3 +1,3 @@
 # unavi-layout
 
-3D layouting primitives.
+3D layout primitives.

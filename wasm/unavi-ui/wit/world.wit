@@ -22,17 +22,17 @@ interface button {
   use unavi:layout/container.{container};
   use wired:input/handler.{input-handler};
 
-  // 3D interactable button.
-  // Fills the space of its root container.
+  /// 3D interactable button.
+  /// Fills the space of its root container.
   resource button {
     constructor(root: container);
 
     root: func() -> container;
 
-    // Returns `true` if the button was hovered over this frame.
+    /// Returns `true` if the button was hovered over this frame.
     hovered: func() -> bool;
 
-    // Returns `true` if the button was pressed this frame.
+    /// Returns `true` if the button was pressed this frame.
     pressed: func() -> bool;
   }
 }
@@ -45,11 +45,11 @@ interface text {
   resource text {
     constructor(text: string);
 
-    // Returns another reference to the same resource.
+    /// Returns another reference to the same resource.
     ref: func() -> text;
 
-    // Supports TrueType, OpenType, and AAT fonts.
-    // Will use a default font if none is provided.
+    /// Supports TrueType, OpenType, and AAT fonts.
+    /// Will use a default font if none is provided.
     set-font: func(value: option<list<u8>>);
 
     text: func() -> string;
@@ -64,7 +64,7 @@ interface text {
     mesh: func() -> mesh;
   }
 
-  // Dynamic text generation within the bounds of a container.
+  /// Dynamic text generation within the bounds of a container.
   resource text-box {
     constructor(root: container);
 

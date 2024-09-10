@@ -30,21 +30,21 @@ let
     [
       {
         name = pkgs.lib.concatStrings [
-          "unavi-app-"
+          "native-"
           subdir
         ];
         value = mkAppPackage resource;
       }
       {
         name = pkgs.lib.concatStrings [
-          "unavi-web-"
+          "web-"
           subdir
         ];
         value = mkWebPackage resource;
       }
       {
         name = pkgs.lib.concatStrings [
-          "unavi-server-"
+          "server-"
           subdir
         ];
         value = self.packages.${localSystem}.server;

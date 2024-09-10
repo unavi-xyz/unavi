@@ -4,7 +4,7 @@ use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
     unavi::{
         scene::api::{Root, Scene},
-        shapes::api::{Cuboid, Cylinder, Rectangle, Sphere},
+        shapes::api::{Circle, Cuboid, Cylinder, Ellipse, Rectangle, Sphere},
     },
     wired::{
         math::types::{Quat, Transform, Vec2, Vec3},
@@ -67,6 +67,24 @@ impl GuestScript for Script {
             let rectangle = Rectangle::new(Vec2::splat(1.0)).to_physics_node();
             rectangle.set_transform(Transform::from_translation(translation));
             scene.add_node(&rectangle);
+        }
+
+        {
+            let translation = Vec3::new(-3.0, 0.0, 0.0);
+            spawn_axis(translation);
+
+            let circle = Circle::new(0.5).to_physics_node();
+            circle.set_transform(Transform::from_translation(translation));
+            scene.add_node(&circle);
+        }
+
+        {
+            let translation = Vec3::new(-4.5, 0.0, 0.0);
+            spawn_axis(translation);
+
+            let ellipse = Ellipse::new(Vec2::new(0.5, 0.75)).to_node();
+            ellipse.set_transform(Transform::from_translation(translation));
+            scene.add_node(&ellipse);
         }
 
         Root::add_scene(&scene);

@@ -112,7 +112,6 @@ fn create_cylinder_mesh(
     let step_y = 2.0 * half_height / segments as f32;
 
     // rings
-
     for ring in 0..num_rings {
         let y = -half_height + ring as f32 * step_y;
 

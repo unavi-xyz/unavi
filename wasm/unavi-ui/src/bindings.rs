@@ -456,7 +456,6 @@ pub mod unavi {
             pub type Vec3 = super::super::super::wired::math::types::Vec3;
             pub type Mesh = super::super::super::wired::scene::mesh::Mesh;
             pub type Node = super::super::super::wired::scene::node::Node;
-            /// 2D
 
             #[derive(Debug)]
             #[repr(transparent)]
@@ -502,7 +501,93 @@ pub mod unavi {
                 }
             }
 
-            /// 3D
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Circle {
+                handle: _rt::Resource<Circle>,
+            }
+
+            impl Circle {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for Circle {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]circle"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Ellipse {
+                handle: _rt::Resource<Ellipse>,
+            }
+
+            impl Ellipse {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for Ellipse {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]ellipse"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
 
             #[derive(Debug)]
             #[repr(transparent)]
@@ -798,6 +883,341 @@ pub mod unavi {
                         #[link(wasm_import_module = "unavi:shapes/api")]
                         extern "C" {
                             #[link_name = "[method]rectangle.to-physics-node"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Circle {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn new(radius: f32) -> Self {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[constructor]circle"]
+                            fn wit_import(_: f32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: f32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import(_rt::as_f32(&radius));
+                        Circle::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Circle {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn radius(&self) -> f32 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]circle.radius"]
+                            fn wit_import(_: i32) -> f32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> f32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret
+                    }
+                }
+            }
+            impl Circle {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_radius(&self, value: f32) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]circle.set-radius"]
+                            fn wit_import(_: i32, _: f32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_f32(&value));
+                    }
+                }
+            }
+            impl Circle {
+                #[allow(unused_unsafe, clippy::all)]
+                /// The number of vertices used for the mesh.
+                pub fn resolution(&self) -> u16 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]circle.resolution"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret as u16
+                    }
+                }
+            }
+            impl Circle {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_resolution(&self, value: u16) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]circle.set-resolution"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_i32(&value));
+                    }
+                }
+            }
+            impl Circle {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Creates a mesh of this shape.
+                pub fn to_mesh(&self) -> Mesh {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]circle.to-mesh"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wired::scene::mesh::Mesh::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Circle {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Creates a node with a mesh of this shape.
+                pub fn to_node(&self) -> Node {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]circle.to-node"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Circle {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Creates a node with a mesh and physics collider of this shape.
+                pub fn to_physics_node(&self) -> Node {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]circle.to-physics-node"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Ellipse {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn new(half_size: Vec2) -> Self {
+                    unsafe {
+                        let super::super::super::wired::math::types::Vec2 { x: x0, y: y0 } =
+                            half_size;
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[constructor]ellipse"]
+                            fn wit_import(_: f32, _: f32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: f32, _: f32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import(_rt::as_f32(x0), _rt::as_f32(y0));
+                        Ellipse::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Ellipse {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn half_size(&self) -> Vec2 {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]ellipse.half-size"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<f32>();
+                        let l2 = *ptr0.add(4).cast::<f32>();
+                        super::super::super::wired::math::types::Vec2 { x: l1, y: l2 }
+                    }
+                }
+            }
+            impl Ellipse {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_half_size(&self, value: Vec2) {
+                    unsafe {
+                        let super::super::super::wired::math::types::Vec2 { x: x0, y: y0 } = value;
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]ellipse.set-half-size"]
+                            fn wit_import(_: i32, _: f32, _: f32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32, _: f32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_f32(x0), _rt::as_f32(y0));
+                    }
+                }
+            }
+            impl Ellipse {
+                #[allow(unused_unsafe, clippy::all)]
+                /// The number of vertices used for the mesh.
+                pub fn resolution(&self) -> u16 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]ellipse.resolution"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret as u16
+                    }
+                }
+            }
+            impl Ellipse {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_resolution(&self, value: u16) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]ellipse.set-resolution"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_i32(&value));
+                    }
+                }
+            }
+            impl Ellipse {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Creates a mesh of this shape.
+                pub fn to_mesh(&self) -> Mesh {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]ellipse.to-mesh"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wired::scene::mesh::Mesh::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Ellipse {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Creates a node with a mesh of this shape.
+                pub fn to_node(&self) -> Node {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]ellipse.to-node"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Ellipse {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Creates a node with a mesh and physics collider of this shape.
+                pub fn to_physics_node(&self) -> Node {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]ellipse.to-physics-node"]
                             fn wit_import(_: i32) -> i32;
                         }
 
@@ -5493,17 +5913,6 @@ mod _rt {
         let layout = alloc::Layout::from_size_align_unchecked(size, align);
         alloc::dealloc(ptr as *mut u8, layout);
     }
-    pub unsafe fn bool_lift(val: u8) -> bool {
-        if cfg!(debug_assertions) {
-            match val {
-                0 => false,
-                1 => true,
-                _ => panic!("invalid bool discriminant"),
-            }
-        } else {
-            val != 0
-        }
-    }
 
     pub fn as_i32<T: AsI32>(t: T) -> i32 {
         t.as_i32()
@@ -5574,6 +5983,17 @@ mod _rt {
             self as i32
         }
     }
+    pub unsafe fn bool_lift(val: u8) -> bool {
+        if cfg!(debug_assertions) {
+            match val {
+                0 => false,
+                1 => true,
+                _ => panic!("invalid bool discriminant"),
+            }
+        } else {
+            val != 0
+        }
+    }
 
     #[cfg(target_arch = "wasm32")]
     pub fn run_ctors_once() {
@@ -5617,8 +6037,8 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6845] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc14\x01A\x02\x01A$\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7556] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x88:\x01A\x02\x01A$\x01\
 B\x10\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\
 \x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01r\
 \x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -5698,53 +6118,67 @@ y\x01'\x01h\x09\x01k(\x01@\x02\x04self\x0d\x05value)\x01\0\x04\0\x1b[method]node
 .set-rigid-body\x01*\x01i\x03\x01k+\x01@\x01\x04self\x0d\0,\x04\0\x1a[method]nod\
 e.input-handler\x01-\x01h\x03\x01k.\x01@\x02\x04self\x0d\x05value/\x01\0\x04\0\x1e\
 [method]node.set-input-handler\x010\x03\x01\x10wired:scene/node\x05\x0f\x02\x03\0\
-\0\x04vec2\x02\x03\0\x06\x04node\x01BY\x02\x03\x02\x01\x10\x04\0\x04vec2\x03\0\0\
+\0\x04vec2\x02\x03\0\x06\x04node\x01B}\x02\x03\x02\x01\x10\x04\0\x04vec2\x03\0\0\
 \x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\x02\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\
 \0\x04\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x06\x04\0\x09rectangle\x03\x01\x04\
-\0\x08cylinder\x03\x01\x04\0\x06cuboid\x03\x01\x01r\x01\x0csubdivisions}\x04\0\x0a\
-sphere-ico\x03\0\x0b\x01r\x02\x07sectors}\x06stacks}\x04\0\x09sphere-uv\x03\0\x0d\
-\x01q\x02\x03ico\x01\x0c\0\x02uv\x01\x0e\0\x04\0\x0bsphere-kind\x03\0\x0f\x04\0\x06\
-sphere\x03\x01\x01i\x08\x01@\x01\x04size\x01\0\x12\x04\0\x16[constructor]rectang\
-le\x01\x13\x01h\x08\x01@\x01\x04self\x14\0\x01\x04\0\x16[method]rectangle.size\x01\
-\x15\x01@\x02\x04self\x14\x05value\x01\x01\0\x04\0\x1a[method]rectangle.set-size\
-\x01\x16\x01i\x05\x01@\x01\x04self\x14\0\x17\x04\0\x19[method]rectangle.to-mesh\x01\
-\x18\x01i\x07\x01@\x01\x04self\x14\0\x19\x04\0\x19[method]rectangle.to-node\x01\x1a\
-\x04\0![method]rectangle.to-physics-node\x01\x1a\x01i\x09\x01@\x02\x06radiusv\x06\
-heightv\0\x1b\x04\0\x15[constructor]cylinder\x01\x1c\x01h\x09\x01@\x01\x04self\x1d\
-\0\x7f\x04\0\x14[method]cylinder.cap\x01\x1e\x01@\x02\x04self\x1d\x05value\x7f\x01\
-\0\x04\0\x18[method]cylinder.set-cap\x01\x1f\x01@\x01\x04self\x1d\0v\x04\0\x17[m\
-ethod]cylinder.height\x01\x20\x01@\x02\x04self\x1d\x05valuev\x01\0\x04\0\x1b[met\
-hod]cylinder.set-height\x01!\x04\0\x17[method]cylinder.radius\x01\x20\x04\0\x1b[\
-method]cylinder.set-radius\x01!\x01@\x01\x04self\x1d\0}\x04\0\x1b[method]cylinde\
-r.resolution\x01\"\x01@\x02\x04self\x1d\x05value}\x01\0\x04\0\x1f[method]cylinde\
-r.set-resolution\x01#\x04\0\x19[method]cylinder.segments\x01\"\x04\0\x1d[method]\
-cylinder.set-segments\x01#\x01@\x01\x04self\x1d\0\x17\x04\0\x18[method]cylinder.\
-to-mesh\x01$\x01@\x01\x04self\x1d\0\x19\x04\0\x18[method]cylinder.to-node\x01%\x04\
-\0\x20[method]cylinder.to-physics-node\x01%\x01i\x0a\x01@\x01\x04size\x03\0&\x04\
-\0\x13[constructor]cuboid\x01'\x01h\x0a\x01@\x01\x04self(\0\x03\x04\0\x13[method\
-]cuboid.size\x01)\x01@\x02\x04self(\x05value\x03\x01\0\x04\0\x17[method]cuboid.s\
-et-size\x01*\x01@\x01\x04self(\0\x17\x04\0\x16[method]cuboid.to-mesh\x01+\x01@\x01\
-\x04self(\0\x19\x04\0\x16[method]cuboid.to-node\x01,\x04\0\x1e[method]cuboid.to-\
-physics-node\x01,\x01i\x11\x01@\x01\x06radiusv\0-\x04\0\x16[static]sphere.new-ic\
-o\x01.\x04\0\x15[static]sphere.new-uv\x01.\x01h\x11\x01@\x01\x04self/\0v\x04\0\x15\
-[method]sphere.radius\x010\x01@\x02\x04self/\x05valuev\x01\0\x04\0\x19[method]sp\
-here.set-radius\x011\x01@\x01\x04self/\0\x10\x04\0\x13[method]sphere.kind\x012\x01\
-@\x02\x04self/\x05value\x10\x01\0\x04\0\x17[method]sphere.set-kind\x013\x01@\x01\
-\x04self/\0\x17\x04\0\x16[method]sphere.to-mesh\x014\x01@\x01\x04self/\0\x19\x04\
-\0\x16[method]sphere.to-node\x015\x04\0\x1e[method]sphere.to-physics-node\x015\x03\
-\x01\x10unavi:shapes/api\x05\x12\x01B#\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\0\
-\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x02\x01m\x03\x06center\x03end\x05start\x04\
-\0\x09alignment\x03\0\x04\x04\0\x09container\x03\x01\x01i\x06\x01@\x01\x04size\x01\
-\0\x07\x04\0\x16[constructor]container\x01\x08\x01h\x06\x01@\x01\x04self\x09\0\x07\
-\x04\0\x15[method]container.ref\x01\x0a\x01i\x03\x01@\x01\x04self\x09\0\x0b\x04\0\
-\x16[method]container.root\x01\x0c\x04\0\x17[method]container.inner\x01\x0c\x01p\
-\x07\x01@\x01\x04self\x09\0\x0d\x04\0\x1f[method]container.list-children\x01\x0e\
-\x01@\x02\x04self\x09\x05child\x09\x01\0\x04\0\x1b[method]container.add-child\x01\
-\x0f\x04\0\x1e[method]container.remove-child\x01\x0f\x01@\x01\x04self\x09\0\x01\x04\
-\0\x16[method]container.size\x01\x10\x01@\x02\x04self\x09\x05value\x01\x01\0\x04\
-\0\x1a[method]container.set-size\x01\x11\x01@\x01\x04self\x09\0\x05\x04\0\x19[me\
-thod]container.align-x\x01\x12\x04\0\x19[method]container.align-y\x01\x12\x04\0\x19\
-[method]container.align-z\x01\x12\x01@\x02\x04self\x09\x05value\x05\x01\0\x04\0\x1d\
+\0\x06circle\x03\x01\x04\0\x07ellipse\x03\x01\x04\0\x08cylinder\x03\x01\x04\0\x06\
+cuboid\x03\x01\x01r\x01\x0csubdivisions}\x04\0\x0asphere-ico\x03\0\x0d\x01r\x02\x07\
+sectors}\x06stacks}\x04\0\x09sphere-uv\x03\0\x0f\x01q\x02\x03ico\x01\x0e\0\x02uv\
+\x01\x10\0\x04\0\x0bsphere-kind\x03\0\x11\x04\0\x06sphere\x03\x01\x01i\x08\x01@\x01\
+\x04size\x01\0\x14\x04\0\x16[constructor]rectangle\x01\x15\x01h\x08\x01@\x01\x04\
+self\x16\0\x01\x04\0\x16[method]rectangle.size\x01\x17\x01@\x02\x04self\x16\x05v\
+alue\x01\x01\0\x04\0\x1a[method]rectangle.set-size\x01\x18\x01i\x05\x01@\x01\x04\
+self\x16\0\x19\x04\0\x19[method]rectangle.to-mesh\x01\x1a\x01i\x07\x01@\x01\x04s\
+elf\x16\0\x1b\x04\0\x19[method]rectangle.to-node\x01\x1c\x04\0![method]rectangle\
+.to-physics-node\x01\x1c\x01i\x09\x01@\x01\x06radiusv\0\x1d\x04\0\x13[constructo\
+r]circle\x01\x1e\x01h\x09\x01@\x01\x04self\x1f\0v\x04\0\x15[method]circle.radius\
+\x01\x20\x01@\x02\x04self\x1f\x05valuev\x01\0\x04\0\x19[method]circle.set-radius\
+\x01!\x01@\x01\x04self\x1f\0{\x04\0\x19[method]circle.resolution\x01\"\x01@\x02\x04\
+self\x1f\x05value{\x01\0\x04\0\x1d[method]circle.set-resolution\x01#\x01@\x01\x04\
+self\x1f\0\x19\x04\0\x16[method]circle.to-mesh\x01$\x01@\x01\x04self\x1f\0\x1b\x04\
+\0\x16[method]circle.to-node\x01%\x04\0\x1e[method]circle.to-physics-node\x01%\x01\
+i\x0a\x01@\x01\x09half-size\x01\0&\x04\0\x14[constructor]ellipse\x01'\x01h\x0a\x01\
+@\x01\x04self(\0\x01\x04\0\x19[method]ellipse.half-size\x01)\x01@\x02\x04self(\x05\
+value\x01\x01\0\x04\0\x1d[method]ellipse.set-half-size\x01*\x01@\x01\x04self(\0{\
+\x04\0\x1a[method]ellipse.resolution\x01+\x01@\x02\x04self(\x05value{\x01\0\x04\0\
+\x1e[method]ellipse.set-resolution\x01,\x01@\x01\x04self(\0\x19\x04\0\x17[method\
+]ellipse.to-mesh\x01-\x01@\x01\x04self(\0\x1b\x04\0\x17[method]ellipse.to-node\x01\
+.\x04\0\x1f[method]ellipse.to-physics-node\x01.\x01i\x0b\x01@\x02\x06radiusv\x06\
+heightv\0/\x04\0\x15[constructor]cylinder\x010\x01h\x0b\x01@\x01\x04self1\0\x7f\x04\
+\0\x14[method]cylinder.cap\x012\x01@\x02\x04self1\x05value\x7f\x01\0\x04\0\x18[m\
+ethod]cylinder.set-cap\x013\x01@\x01\x04self1\0v\x04\0\x17[method]cylinder.heigh\
+t\x014\x01@\x02\x04self1\x05valuev\x01\0\x04\0\x1b[method]cylinder.set-height\x01\
+5\x04\0\x17[method]cylinder.radius\x014\x04\0\x1b[method]cylinder.set-radius\x01\
+5\x01@\x01\x04self1\0}\x04\0\x1b[method]cylinder.resolution\x016\x01@\x02\x04sel\
+f1\x05value}\x01\0\x04\0\x1f[method]cylinder.set-resolution\x017\x04\0\x19[metho\
+d]cylinder.segments\x016\x04\0\x1d[method]cylinder.set-segments\x017\x01@\x01\x04\
+self1\0\x19\x04\0\x18[method]cylinder.to-mesh\x018\x01@\x01\x04self1\0\x1b\x04\0\
+\x18[method]cylinder.to-node\x019\x04\0\x20[method]cylinder.to-physics-node\x019\
+\x01i\x0c\x01@\x01\x04size\x03\0:\x04\0\x13[constructor]cuboid\x01;\x01h\x0c\x01\
+@\x01\x04self<\0\x03\x04\0\x13[method]cuboid.size\x01=\x01@\x02\x04self<\x05valu\
+e\x03\x01\0\x04\0\x17[method]cuboid.set-size\x01>\x01@\x01\x04self<\0\x19\x04\0\x16\
+[method]cuboid.to-mesh\x01?\x01@\x01\x04self<\0\x1b\x04\0\x16[method]cuboid.to-n\
+ode\x01@\x04\0\x1e[method]cuboid.to-physics-node\x01@\x01i\x13\x01@\x01\x06radiu\
+sv\0\xc1\0\x04\0\x16[static]sphere.new-ico\x01B\x04\0\x15[static]sphere.new-uv\x01\
+B\x01h\x13\x01@\x01\x04self\xc3\0\0v\x04\0\x15[method]sphere.radius\x01D\x01@\x02\
+\x04self\xc3\0\x05valuev\x01\0\x04\0\x19[method]sphere.set-radius\x01E\x01@\x01\x04\
+self\xc3\0\0\x12\x04\0\x13[method]sphere.kind\x01F\x01@\x02\x04self\xc3\0\x05val\
+ue\x12\x01\0\x04\0\x17[method]sphere.set-kind\x01G\x01@\x01\x04self\xc3\0\0\x19\x04\
+\0\x16[method]sphere.to-mesh\x01H\x01@\x01\x04self\xc3\0\0\x1b\x04\0\x16[method]\
+sphere.to-node\x01I\x04\0\x1e[method]sphere.to-physics-node\x01I\x03\x01\x10unav\
+i:shapes/api\x05\x12\x01B#\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\0\x02\x03\x02\
+\x01\x11\x04\0\x04node\x03\0\x02\x01m\x03\x06center\x03end\x05start\x04\0\x09ali\
+gnment\x03\0\x04\x04\0\x09container\x03\x01\x01i\x06\x01@\x01\x04size\x01\0\x07\x04\
+\0\x16[constructor]container\x01\x08\x01h\x06\x01@\x01\x04self\x09\0\x07\x04\0\x15\
+[method]container.ref\x01\x0a\x01i\x03\x01@\x01\x04self\x09\0\x0b\x04\0\x16[meth\
+od]container.root\x01\x0c\x04\0\x17[method]container.inner\x01\x0c\x01p\x07\x01@\
+\x01\x04self\x09\0\x0d\x04\0\x1f[method]container.list-children\x01\x0e\x01@\x02\
+\x04self\x09\x05child\x09\x01\0\x04\0\x1b[method]container.add-child\x01\x0f\x04\
+\0\x1e[method]container.remove-child\x01\x0f\x01@\x01\x04self\x09\0\x01\x04\0\x16\
+[method]container.size\x01\x10\x01@\x02\x04self\x09\x05value\x01\x01\0\x04\0\x1a\
+[method]container.set-size\x01\x11\x01@\x01\x04self\x09\0\x05\x04\0\x19[method]c\
+ontainer.align-x\x01\x12\x04\0\x19[method]container.align-y\x01\x12\x04\0\x19[me\
+thod]container.align-z\x01\x12\x01@\x02\x04self\x09\x05value\x05\x01\0\x04\0\x1d\
 [method]container.set-align-x\x01\x13\x04\0\x1d[method]container.set-align-y\x01\
 \x13\x04\0\x1d[method]container.set-align-z\x01\x13\x03\x01\x16unavi:layout/cont\
 ainer\x05\x13\x01B\x02\x01@\x01\x05deltav\x01\0\x04\0\x09update-ui\x01\0\x04\x01\

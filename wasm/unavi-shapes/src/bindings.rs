@@ -2966,7 +2966,6 @@ pub mod exports {
                 pub type Vec3 = super::super::super::super::wired::math::types::Vec3;
                 pub type Mesh = super::super::super::super::wired::scene::mesh::Mesh;
                 pub type Node = super::super::super::super::wired::scene::node::Node;
-                /// 2D
 
                 #[derive(Debug)]
                 #[repr(transparent)]
@@ -3108,7 +3107,285 @@ pub mod exports {
                     }
                 }
 
-                /// 3D
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct Circle {
+                    handle: _rt::Resource<Circle>,
+                }
+
+                type _CircleRep<T> = Option<T>;
+
+                impl Circle {
+                    /// Creates a new resource from the specified representation.
+                    ///
+                    /// This function will create a new resource handle by moving `val` onto
+                    /// the heap and then passing that heap pointer to the component model to
+                    /// create a handle. The owned handle is then returned as `Circle`.
+                    pub fn new<T: GuestCircle>(val: T) -> Self {
+                        Self::type_guard::<T>();
+                        let val: _CircleRep<T> = Some(val);
+                        let ptr: *mut _CircleRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
+                    }
+
+                    /// Gets access to the underlying `T` which represents this resource.
+                    pub fn get<T: GuestCircle>(&self) -> &T {
+                        let ptr = unsafe { &*self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    /// Gets mutable access to the underlying `T` which represents this
+                    /// resource.
+                    pub fn get_mut<T: GuestCircle>(&mut self) -> &mut T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_mut().unwrap()
+                    }
+
+                    /// Consumes this resource and returns the underlying `T`.
+                    pub fn into_inner<T: GuestCircle>(self) -> T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.take().unwrap()
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn from_handle(handle: u32) -> Self {
+                        Self {
+                            handle: _rt::Resource::from_handle(handle),
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub fn take_handle(&self) -> u32 {
+                        _rt::Resource::take_handle(&self.handle)
+                    }
+
+                    #[doc(hidden)]
+                    pub fn handle(&self) -> u32 {
+                        _rt::Resource::handle(&self.handle)
+                    }
+
+                    // It's theoretically possible to implement the `GuestCircle` trait twice
+                    // so guard against using it with two different types here.
+                    #[doc(hidden)]
+                    fn type_guard<T: 'static>() {
+                        use core::any::TypeId;
+                        static mut LAST_TYPE: Option<TypeId> = None;
+                        unsafe {
+                            assert!(!cfg!(target_feature = "threads"));
+                            let id = TypeId::of::<T>();
+                            match LAST_TYPE {
+                                Some(ty) => assert!(
+                                    ty == id,
+                                    "cannot use two types with this resource type"
+                                ),
+                                None => LAST_TYPE = Some(id),
+                            }
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn dtor<T: 'static>(handle: *mut u8) {
+                        Self::type_guard::<T>();
+                        let _ = _rt::Box::from_raw(handle as *mut _CircleRep<T>);
+                    }
+
+                    fn as_ptr<T: GuestCircle>(&self) -> *mut _CircleRep<T> {
+                        Circle::type_guard::<T>();
+                        T::_resource_rep(self.handle()).cast()
+                    }
+                }
+
+                /// A borrowed version of [`Circle`] which represents a borrowed value
+                /// with the lifetime `'a`.
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct CircleBorrow<'a> {
+                    rep: *mut u8,
+                    _marker: core::marker::PhantomData<&'a Circle>,
+                }
+
+                impl<'a> CircleBorrow<'a> {
+                    #[doc(hidden)]
+                    pub unsafe fn lift(rep: usize) -> Self {
+                        Self {
+                            rep: rep as *mut u8,
+                            _marker: core::marker::PhantomData,
+                        }
+                    }
+
+                    /// Gets access to the underlying `T` in this resource.
+                    pub fn get<T: GuestCircle>(&self) -> &T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    // NB: mutable access is not allowed due to the component model allowing
+                    // multiple borrows of the same resource.
+
+                    fn as_ptr<T: 'static>(&self) -> *mut _CircleRep<T> {
+                        Circle::type_guard::<T>();
+                        self.rep.cast()
+                    }
+                }
+
+                unsafe impl _rt::WasmResource for Circle {
+                    #[inline]
+                    unsafe fn drop(_handle: u32) {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unreachable!();
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]unavi:shapes/api")]
+                            extern "C" {
+                                #[link_name = "[resource-drop]circle"]
+                                fn drop(_: u32);
+                            }
+
+                            drop(_handle);
+                        }
+                    }
+                }
+
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct Ellipse {
+                    handle: _rt::Resource<Ellipse>,
+                }
+
+                type _EllipseRep<T> = Option<T>;
+
+                impl Ellipse {
+                    /// Creates a new resource from the specified representation.
+                    ///
+                    /// This function will create a new resource handle by moving `val` onto
+                    /// the heap and then passing that heap pointer to the component model to
+                    /// create a handle. The owned handle is then returned as `Ellipse`.
+                    pub fn new<T: GuestEllipse>(val: T) -> Self {
+                        Self::type_guard::<T>();
+                        let val: _EllipseRep<T> = Some(val);
+                        let ptr: *mut _EllipseRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
+                    }
+
+                    /// Gets access to the underlying `T` which represents this resource.
+                    pub fn get<T: GuestEllipse>(&self) -> &T {
+                        let ptr = unsafe { &*self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    /// Gets mutable access to the underlying `T` which represents this
+                    /// resource.
+                    pub fn get_mut<T: GuestEllipse>(&mut self) -> &mut T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_mut().unwrap()
+                    }
+
+                    /// Consumes this resource and returns the underlying `T`.
+                    pub fn into_inner<T: GuestEllipse>(self) -> T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.take().unwrap()
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn from_handle(handle: u32) -> Self {
+                        Self {
+                            handle: _rt::Resource::from_handle(handle),
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub fn take_handle(&self) -> u32 {
+                        _rt::Resource::take_handle(&self.handle)
+                    }
+
+                    #[doc(hidden)]
+                    pub fn handle(&self) -> u32 {
+                        _rt::Resource::handle(&self.handle)
+                    }
+
+                    // It's theoretically possible to implement the `GuestEllipse` trait twice
+                    // so guard against using it with two different types here.
+                    #[doc(hidden)]
+                    fn type_guard<T: 'static>() {
+                        use core::any::TypeId;
+                        static mut LAST_TYPE: Option<TypeId> = None;
+                        unsafe {
+                            assert!(!cfg!(target_feature = "threads"));
+                            let id = TypeId::of::<T>();
+                            match LAST_TYPE {
+                                Some(ty) => assert!(
+                                    ty == id,
+                                    "cannot use two types with this resource type"
+                                ),
+                                None => LAST_TYPE = Some(id),
+                            }
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn dtor<T: 'static>(handle: *mut u8) {
+                        Self::type_guard::<T>();
+                        let _ = _rt::Box::from_raw(handle as *mut _EllipseRep<T>);
+                    }
+
+                    fn as_ptr<T: GuestEllipse>(&self) -> *mut _EllipseRep<T> {
+                        Ellipse::type_guard::<T>();
+                        T::_resource_rep(self.handle()).cast()
+                    }
+                }
+
+                /// A borrowed version of [`Ellipse`] which represents a borrowed value
+                /// with the lifetime `'a`.
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct EllipseBorrow<'a> {
+                    rep: *mut u8,
+                    _marker: core::marker::PhantomData<&'a Ellipse>,
+                }
+
+                impl<'a> EllipseBorrow<'a> {
+                    #[doc(hidden)]
+                    pub unsafe fn lift(rep: usize) -> Self {
+                        Self {
+                            rep: rep as *mut u8,
+                            _marker: core::marker::PhantomData,
+                        }
+                    }
+
+                    /// Gets access to the underlying `T` in this resource.
+                    pub fn get<T: GuestEllipse>(&self) -> &T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    // NB: mutable access is not allowed due to the component model allowing
+                    // multiple borrows of the same resource.
+
+                    fn as_ptr<T: 'static>(&self) -> *mut _EllipseRep<T> {
+                        Ellipse::type_guard::<T>();
+                        self.rep.cast()
+                    }
+                }
+
+                unsafe impl _rt::WasmResource for Ellipse {
+                    #[inline]
+                    unsafe fn drop(_handle: u32) {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unreachable!();
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]unavi:shapes/api")]
+                            extern "C" {
+                                #[link_name = "[resource-drop]ellipse"]
+                                fn drop(_: u32);
+                            }
+
+                            drop(_handle);
+                        }
+                    }
+                }
 
                 #[derive(Debug)]
                 #[repr(transparent)]
@@ -3649,6 +3926,178 @@ pub mod exports {
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
+                pub unsafe fn _export_constructor_circle_cabi<T: GuestCircle>(arg0: f32) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = Circle::new(T::new(arg0));
+                    (result0).take_handle() as i32
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_circle_radius_cabi<T: GuestCircle>(
+                    arg0: *mut u8,
+                ) -> f32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::radius(CircleBorrow::lift(arg0 as u32 as usize).get());
+                    _rt::as_f32(result0)
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_circle_set_radius_cabi<T: GuestCircle>(
+                    arg0: *mut u8,
+                    arg1: f32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::set_radius(CircleBorrow::lift(arg0 as u32 as usize).get(), arg1);
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_circle_resolution_cabi<T: GuestCircle>(
+                    arg0: *mut u8,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::resolution(CircleBorrow::lift(arg0 as u32 as usize).get());
+                    _rt::as_i32(result0)
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_circle_set_resolution_cabi<T: GuestCircle>(
+                    arg0: *mut u8,
+                    arg1: i32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::set_resolution(CircleBorrow::lift(arg0 as u32 as usize).get(), arg1 as u16);
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_circle_to_mesh_cabi<T: GuestCircle>(
+                    arg0: *mut u8,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::to_mesh(CircleBorrow::lift(arg0 as u32 as usize).get());
+                    (result0).take_handle() as i32
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_circle_to_node_cabi<T: GuestCircle>(
+                    arg0: *mut u8,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::to_node(CircleBorrow::lift(arg0 as u32 as usize).get());
+                    (result0).take_handle() as i32
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_circle_to_physics_node_cabi<T: GuestCircle>(
+                    arg0: *mut u8,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 =
+                        T::to_physics_node(CircleBorrow::lift(arg0 as u32 as usize).get());
+                    (result0).take_handle() as i32
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_constructor_ellipse_cabi<T: GuestEllipse>(
+                    arg0: f32,
+                    arg1: f32,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = Ellipse::new(T::new(
+                        super::super::super::super::wired::math::types::Vec2 { x: arg0, y: arg1 },
+                    ));
+                    (result0).take_handle() as i32
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_ellipse_half_size_cabi<T: GuestEllipse>(
+                    arg0: *mut u8,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::half_size(EllipseBorrow::lift(arg0 as u32 as usize).get());
+                    let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    let super::super::super::super::wired::math::types::Vec2 { x: x2, y: y2 } =
+                        result0;
+                    *ptr1.add(0).cast::<f32>() = _rt::as_f32(x2);
+                    *ptr1.add(4).cast::<f32>() = _rt::as_f32(y2);
+                    ptr1
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_ellipse_set_half_size_cabi<T: GuestEllipse>(
+                    arg0: *mut u8,
+                    arg1: f32,
+                    arg2: f32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::set_half_size(
+                        EllipseBorrow::lift(arg0 as u32 as usize).get(),
+                        super::super::super::super::wired::math::types::Vec2 { x: arg1, y: arg2 },
+                    );
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_ellipse_resolution_cabi<T: GuestEllipse>(
+                    arg0: *mut u8,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::resolution(EllipseBorrow::lift(arg0 as u32 as usize).get());
+                    _rt::as_i32(result0)
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_ellipse_set_resolution_cabi<T: GuestEllipse>(
+                    arg0: *mut u8,
+                    arg1: i32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::set_resolution(EllipseBorrow::lift(arg0 as u32 as usize).get(), arg1 as u16);
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_ellipse_to_mesh_cabi<T: GuestEllipse>(
+                    arg0: *mut u8,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::to_mesh(EllipseBorrow::lift(arg0 as u32 as usize).get());
+                    (result0).take_handle() as i32
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_ellipse_to_node_cabi<T: GuestEllipse>(
+                    arg0: *mut u8,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::to_node(EllipseBorrow::lift(arg0 as u32 as usize).get());
+                    (result0).take_handle() as i32
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_ellipse_to_physics_node_cabi<T: GuestEllipse>(
+                    arg0: *mut u8,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 =
+                        T::to_physics_node(EllipseBorrow::lift(arg0 as u32 as usize).get());
+                    (result0).take_handle() as i32
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
                 pub unsafe fn _export_constructor_cylinder_cabi<T: GuestCylinder>(
                     arg0: f32,
                     arg1: f32,
@@ -4008,6 +4457,8 @@ pub mod exports {
                 }
                 pub trait Guest {
                     type Rectangle: GuestRectangle;
+                    type Circle: GuestCircle;
+                    type Ellipse: GuestEllipse;
                     type Cylinder: GuestCylinder;
                     type Cuboid: GuestCuboid;
                     type Sphere: GuestSphere;
@@ -4060,6 +4511,122 @@ pub mod exports {
                     fn new(size: Vec2) -> Self;
                     fn size(&self) -> Vec2;
                     fn set_size(&self, value: Vec2);
+                    /// Creates a mesh of this shape.
+                    fn to_mesh(&self) -> Mesh;
+                    /// Creates a node with a mesh of this shape.
+                    fn to_node(&self) -> Node;
+                    /// Creates a node with a mesh and physics collider of this shape.
+                    fn to_physics_node(&self) -> Node;
+                }
+                pub trait GuestCircle: 'static {
+                    #[doc(hidden)]
+                    unsafe fn _resource_new(val: *mut u8) -> u32
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = val;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]unavi:shapes/api")]
+                            extern "C" {
+                                #[link_name = "[resource-new]circle"]
+                                fn new(_: *mut u8) -> u32;
+                            }
+                            new(val)
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    fn _resource_rep(handle: u32) -> *mut u8
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = handle;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]unavi:shapes/api")]
+                            extern "C" {
+                                #[link_name = "[resource-rep]circle"]
+                                fn rep(_: u32) -> *mut u8;
+                            }
+                            unsafe { rep(handle) }
+                        }
+                    }
+
+                    fn new(radius: f32) -> Self;
+                    fn radius(&self) -> f32;
+                    fn set_radius(&self, value: f32);
+                    /// The number of vertices used for the mesh.
+                    fn resolution(&self) -> u16;
+                    fn set_resolution(&self, value: u16);
+                    /// Creates a mesh of this shape.
+                    fn to_mesh(&self) -> Mesh;
+                    /// Creates a node with a mesh of this shape.
+                    fn to_node(&self) -> Node;
+                    /// Creates a node with a mesh and physics collider of this shape.
+                    fn to_physics_node(&self) -> Node;
+                }
+                pub trait GuestEllipse: 'static {
+                    #[doc(hidden)]
+                    unsafe fn _resource_new(val: *mut u8) -> u32
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = val;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]unavi:shapes/api")]
+                            extern "C" {
+                                #[link_name = "[resource-new]ellipse"]
+                                fn new(_: *mut u8) -> u32;
+                            }
+                            new(val)
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    fn _resource_rep(handle: u32) -> *mut u8
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = handle;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]unavi:shapes/api")]
+                            extern "C" {
+                                #[link_name = "[resource-rep]ellipse"]
+                                fn rep(_: u32) -> *mut u8;
+                            }
+                            unsafe { rep(handle) }
+                        }
+                    }
+
+                    fn new(half_size: Vec2) -> Self;
+                    fn half_size(&self) -> Vec2;
+                    fn set_half_size(&self, value: Vec2);
+                    /// The number of vertices used for the mesh.
+                    fn resolution(&self) -> u16;
+                    fn set_resolution(&self, value: u16);
                     /// Creates a mesh of this shape.
                     fn to_mesh(&self) -> Mesh;
                     /// Creates a node with a mesh of this shape.
@@ -4275,6 +4842,70 @@ pub mod exports {
     unsafe extern "C" fn export_method_rectangle_to_physics_node(arg0: *mut u8,) -> i32 {
       $($path_to_types)*::_export_method_rectangle_to_physics_node_cabi::<<$ty as $($path_to_types)*::Guest>::Rectangle>(arg0)
     }
+    #[export_name = "unavi:shapes/api#[constructor]circle"]
+    unsafe extern "C" fn export_constructor_circle(arg0: f32,) -> i32 {
+      $($path_to_types)*::_export_constructor_circle_cabi::<<$ty as $($path_to_types)*::Guest>::Circle>(arg0)
+    }
+    #[export_name = "unavi:shapes/api#[method]circle.radius"]
+    unsafe extern "C" fn export_method_circle_radius(arg0: *mut u8,) -> f32 {
+      $($path_to_types)*::_export_method_circle_radius_cabi::<<$ty as $($path_to_types)*::Guest>::Circle>(arg0)
+    }
+    #[export_name = "unavi:shapes/api#[method]circle.set-radius"]
+    unsafe extern "C" fn export_method_circle_set_radius(arg0: *mut u8,arg1: f32,) {
+      $($path_to_types)*::_export_method_circle_set_radius_cabi::<<$ty as $($path_to_types)*::Guest>::Circle>(arg0, arg1)
+    }
+    #[export_name = "unavi:shapes/api#[method]circle.resolution"]
+    unsafe extern "C" fn export_method_circle_resolution(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_circle_resolution_cabi::<<$ty as $($path_to_types)*::Guest>::Circle>(arg0)
+    }
+    #[export_name = "unavi:shapes/api#[method]circle.set-resolution"]
+    unsafe extern "C" fn export_method_circle_set_resolution(arg0: *mut u8,arg1: i32,) {
+      $($path_to_types)*::_export_method_circle_set_resolution_cabi::<<$ty as $($path_to_types)*::Guest>::Circle>(arg0, arg1)
+    }
+    #[export_name = "unavi:shapes/api#[method]circle.to-mesh"]
+    unsafe extern "C" fn export_method_circle_to_mesh(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_circle_to_mesh_cabi::<<$ty as $($path_to_types)*::Guest>::Circle>(arg0)
+    }
+    #[export_name = "unavi:shapes/api#[method]circle.to-node"]
+    unsafe extern "C" fn export_method_circle_to_node(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_circle_to_node_cabi::<<$ty as $($path_to_types)*::Guest>::Circle>(arg0)
+    }
+    #[export_name = "unavi:shapes/api#[method]circle.to-physics-node"]
+    unsafe extern "C" fn export_method_circle_to_physics_node(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_circle_to_physics_node_cabi::<<$ty as $($path_to_types)*::Guest>::Circle>(arg0)
+    }
+    #[export_name = "unavi:shapes/api#[constructor]ellipse"]
+    unsafe extern "C" fn export_constructor_ellipse(arg0: f32,arg1: f32,) -> i32 {
+      $($path_to_types)*::_export_constructor_ellipse_cabi::<<$ty as $($path_to_types)*::Guest>::Ellipse>(arg0, arg1)
+    }
+    #[export_name = "unavi:shapes/api#[method]ellipse.half-size"]
+    unsafe extern "C" fn export_method_ellipse_half_size(arg0: *mut u8,) -> *mut u8 {
+      $($path_to_types)*::_export_method_ellipse_half_size_cabi::<<$ty as $($path_to_types)*::Guest>::Ellipse>(arg0)
+    }
+    #[export_name = "unavi:shapes/api#[method]ellipse.set-half-size"]
+    unsafe extern "C" fn export_method_ellipse_set_half_size(arg0: *mut u8,arg1: f32,arg2: f32,) {
+      $($path_to_types)*::_export_method_ellipse_set_half_size_cabi::<<$ty as $($path_to_types)*::Guest>::Ellipse>(arg0, arg1, arg2)
+    }
+    #[export_name = "unavi:shapes/api#[method]ellipse.resolution"]
+    unsafe extern "C" fn export_method_ellipse_resolution(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_ellipse_resolution_cabi::<<$ty as $($path_to_types)*::Guest>::Ellipse>(arg0)
+    }
+    #[export_name = "unavi:shapes/api#[method]ellipse.set-resolution"]
+    unsafe extern "C" fn export_method_ellipse_set_resolution(arg0: *mut u8,arg1: i32,) {
+      $($path_to_types)*::_export_method_ellipse_set_resolution_cabi::<<$ty as $($path_to_types)*::Guest>::Ellipse>(arg0, arg1)
+    }
+    #[export_name = "unavi:shapes/api#[method]ellipse.to-mesh"]
+    unsafe extern "C" fn export_method_ellipse_to_mesh(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_ellipse_to_mesh_cabi::<<$ty as $($path_to_types)*::Guest>::Ellipse>(arg0)
+    }
+    #[export_name = "unavi:shapes/api#[method]ellipse.to-node"]
+    unsafe extern "C" fn export_method_ellipse_to_node(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_ellipse_to_node_cabi::<<$ty as $($path_to_types)*::Guest>::Ellipse>(arg0)
+    }
+    #[export_name = "unavi:shapes/api#[method]ellipse.to-physics-node"]
+    unsafe extern "C" fn export_method_ellipse_to_physics_node(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_ellipse_to_physics_node_cabi::<<$ty as $($path_to_types)*::Guest>::Ellipse>(arg0)
+    }
     #[export_name = "unavi:shapes/api#[constructor]cylinder"]
     unsafe extern "C" fn export_constructor_cylinder(arg0: f32,arg1: f32,) -> i32 {
       $($path_to_types)*::_export_constructor_cylinder_cabi::<<$ty as $($path_to_types)*::Guest>::Cylinder>(arg0, arg1)
@@ -4399,6 +5030,30 @@ pub mod exports {
       unsafe extern "C" fn dtor(rep: *mut u8) {
         $($path_to_types)*::Rectangle::dtor::<
         <$ty as $($path_to_types)*::Guest>::Rectangle
+        >(rep)
+      }
+    };
+
+
+    const _: () = {
+      #[doc(hidden)]
+      #[export_name = "unavi:shapes/api#[dtor]circle"]
+      #[allow(non_snake_case)]
+      unsafe extern "C" fn dtor(rep: *mut u8) {
+        $($path_to_types)*::Circle::dtor::<
+        <$ty as $($path_to_types)*::Guest>::Circle
+        >(rep)
+      }
+    };
+
+
+    const _: () = {
+      #[doc(hidden)]
+      #[export_name = "unavi:shapes/api#[dtor]ellipse"]
+      #[allow(non_snake_case)]
+      unsafe extern "C" fn dtor(rep: *mut u8) {
+        $($path_to_types)*::Ellipse::dtor::<
+        <$ty as $($path_to_types)*::Guest>::Ellipse
         >(rep)
       }
     };
@@ -4596,17 +5251,6 @@ mod _rt {
     pub fn run_ctors_once() {
         wit_bindgen_rt::run_ctors_once();
     }
-    pub unsafe fn bool_lift(val: u8) -> bool {
-        if cfg!(debug_assertions) {
-            match val {
-                0 => false,
-                1 => true,
-                _ => panic!("invalid bool discriminant"),
-            }
-        } else {
-            val != 0
-        }
-    }
 
     pub fn as_i32<T: AsI32>(t: T) -> i32 {
         t.as_i32()
@@ -4677,6 +5321,17 @@ mod _rt {
             self as i32
         }
     }
+    pub unsafe fn bool_lift(val: u8) -> bool {
+        if cfg!(debug_assertions) {
+            match val {
+                0 => false,
+                1 => true,
+                _ => panic!("invalid bool discriminant"),
+            }
+        } else {
+            val != 0
+        }
+    }
     extern crate alloc as alloc_crate;
     pub use alloc_crate::alloc;
 }
@@ -4712,8 +5367,8 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 5363] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xf7(\x01A\x02\x01A\x1d\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6074] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xbe.\x01A\x02\x01A\x1d\
 \x01B\x04\x01m\x04\x05debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01\
 @\x02\x05level\x01\x07messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/a\
 pi\x05\0\x01B\x13\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
@@ -4795,43 +5450,57 @@ rigid-body\x01'\x01h\x09\x01k(\x01@\x02\x04self\x0d\x05value)\x01\0\x04\0\x1b[me
 thod]node.set-rigid-body\x01*\x01i\x03\x01k+\x01@\x01\x04self\x0d\0,\x04\0\x1a[m\
 ethod]node.input-handler\x01-\x01h\x03\x01k.\x01@\x02\x04self\x0d\x05value/\x01\0\
 \x04\0\x1e[method]node.set-input-handler\x010\x03\x01\x10wired:scene/node\x05\x10\
-\x02\x03\0\x03\x04vec2\x02\x03\0\x07\x04node\x01BY\x02\x03\x02\x01\x11\x04\0\x04\
+\x02\x03\0\x03\x04vec2\x02\x03\0\x07\x04node\x01B}\x02\x03\x02\x01\x11\x04\0\x04\
 vec2\x03\0\0\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\x02\x02\x03\x02\x01\x0b\x04\
 \0\x04mesh\x03\0\x04\x02\x03\x02\x01\x12\x04\0\x04node\x03\0\x06\x04\0\x09rectan\
-gle\x03\x01\x04\0\x08cylinder\x03\x01\x04\0\x06cuboid\x03\x01\x01r\x01\x0csubdiv\
-isions}\x04\0\x0asphere-ico\x03\0\x0b\x01r\x02\x07sectors}\x06stacks}\x04\0\x09s\
-phere-uv\x03\0\x0d\x01q\x02\x03ico\x01\x0c\0\x02uv\x01\x0e\0\x04\0\x0bsphere-kin\
-d\x03\0\x0f\x04\0\x06sphere\x03\x01\x01i\x08\x01@\x01\x04size\x01\0\x12\x04\0\x16\
-[constructor]rectangle\x01\x13\x01h\x08\x01@\x01\x04self\x14\0\x01\x04\0\x16[met\
-hod]rectangle.size\x01\x15\x01@\x02\x04self\x14\x05value\x01\x01\0\x04\0\x1a[met\
-hod]rectangle.set-size\x01\x16\x01i\x05\x01@\x01\x04self\x14\0\x17\x04\0\x19[met\
-hod]rectangle.to-mesh\x01\x18\x01i\x07\x01@\x01\x04self\x14\0\x19\x04\0\x19[meth\
-od]rectangle.to-node\x01\x1a\x04\0![method]rectangle.to-physics-node\x01\x1a\x01\
-i\x09\x01@\x02\x06radiusv\x06heightv\0\x1b\x04\0\x15[constructor]cylinder\x01\x1c\
-\x01h\x09\x01@\x01\x04self\x1d\0\x7f\x04\0\x14[method]cylinder.cap\x01\x1e\x01@\x02\
-\x04self\x1d\x05value\x7f\x01\0\x04\0\x18[method]cylinder.set-cap\x01\x1f\x01@\x01\
-\x04self\x1d\0v\x04\0\x17[method]cylinder.height\x01\x20\x01@\x02\x04self\x1d\x05\
-valuev\x01\0\x04\0\x1b[method]cylinder.set-height\x01!\x04\0\x17[method]cylinder\
-.radius\x01\x20\x04\0\x1b[method]cylinder.set-radius\x01!\x01@\x01\x04self\x1d\0\
-}\x04\0\x1b[method]cylinder.resolution\x01\"\x01@\x02\x04self\x1d\x05value}\x01\0\
-\x04\0\x1f[method]cylinder.set-resolution\x01#\x04\0\x19[method]cylinder.segment\
-s\x01\"\x04\0\x1d[method]cylinder.set-segments\x01#\x01@\x01\x04self\x1d\0\x17\x04\
-\0\x18[method]cylinder.to-mesh\x01$\x01@\x01\x04self\x1d\0\x19\x04\0\x18[method]\
-cylinder.to-node\x01%\x04\0\x20[method]cylinder.to-physics-node\x01%\x01i\x0a\x01\
-@\x01\x04size\x03\0&\x04\0\x13[constructor]cuboid\x01'\x01h\x0a\x01@\x01\x04self\
-(\0\x03\x04\0\x13[method]cuboid.size\x01)\x01@\x02\x04self(\x05value\x03\x01\0\x04\
-\0\x17[method]cuboid.set-size\x01*\x01@\x01\x04self(\0\x17\x04\0\x16[method]cubo\
-id.to-mesh\x01+\x01@\x01\x04self(\0\x19\x04\0\x16[method]cuboid.to-node\x01,\x04\
-\0\x1e[method]cuboid.to-physics-node\x01,\x01i\x11\x01@\x01\x06radiusv\0-\x04\0\x16\
-[static]sphere.new-ico\x01.\x04\0\x15[static]sphere.new-uv\x01.\x01h\x11\x01@\x01\
-\x04self/\0v\x04\0\x15[method]sphere.radius\x010\x01@\x02\x04self/\x05valuev\x01\
-\0\x04\0\x19[method]sphere.set-radius\x011\x01@\x01\x04self/\0\x10\x04\0\x13[met\
-hod]sphere.kind\x012\x01@\x02\x04self/\x05value\x10\x01\0\x04\0\x17[method]spher\
-e.set-kind\x013\x01@\x01\x04self/\0\x17\x04\0\x16[method]sphere.to-mesh\x014\x01\
-@\x01\x04self/\0\x19\x04\0\x16[method]sphere.to-node\x015\x04\0\x1e[method]spher\
-e.to-physics-node\x015\x04\x01\x10unavi:shapes/api\x05\x13\x04\x01\x12unavi:shap\
-es/guest\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\0G\x09producers\x01\x0cprocessed-b\
-y\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+gle\x03\x01\x04\0\x06circle\x03\x01\x04\0\x07ellipse\x03\x01\x04\0\x08cylinder\x03\
+\x01\x04\0\x06cuboid\x03\x01\x01r\x01\x0csubdivisions}\x04\0\x0asphere-ico\x03\0\
+\x0d\x01r\x02\x07sectors}\x06stacks}\x04\0\x09sphere-uv\x03\0\x0f\x01q\x02\x03ic\
+o\x01\x0e\0\x02uv\x01\x10\0\x04\0\x0bsphere-kind\x03\0\x11\x04\0\x06sphere\x03\x01\
+\x01i\x08\x01@\x01\x04size\x01\0\x14\x04\0\x16[constructor]rectangle\x01\x15\x01\
+h\x08\x01@\x01\x04self\x16\0\x01\x04\0\x16[method]rectangle.size\x01\x17\x01@\x02\
+\x04self\x16\x05value\x01\x01\0\x04\0\x1a[method]rectangle.set-size\x01\x18\x01i\
+\x05\x01@\x01\x04self\x16\0\x19\x04\0\x19[method]rectangle.to-mesh\x01\x1a\x01i\x07\
+\x01@\x01\x04self\x16\0\x1b\x04\0\x19[method]rectangle.to-node\x01\x1c\x04\0![me\
+thod]rectangle.to-physics-node\x01\x1c\x01i\x09\x01@\x01\x06radiusv\0\x1d\x04\0\x13\
+[constructor]circle\x01\x1e\x01h\x09\x01@\x01\x04self\x1f\0v\x04\0\x15[method]ci\
+rcle.radius\x01\x20\x01@\x02\x04self\x1f\x05valuev\x01\0\x04\0\x19[method]circle\
+.set-radius\x01!\x01@\x01\x04self\x1f\0{\x04\0\x19[method]circle.resolution\x01\"\
+\x01@\x02\x04self\x1f\x05value{\x01\0\x04\0\x1d[method]circle.set-resolution\x01\
+#\x01@\x01\x04self\x1f\0\x19\x04\0\x16[method]circle.to-mesh\x01$\x01@\x01\x04se\
+lf\x1f\0\x1b\x04\0\x16[method]circle.to-node\x01%\x04\0\x1e[method]circle.to-phy\
+sics-node\x01%\x01i\x0a\x01@\x01\x09half-size\x01\0&\x04\0\x14[constructor]ellip\
+se\x01'\x01h\x0a\x01@\x01\x04self(\0\x01\x04\0\x19[method]ellipse.half-size\x01)\
+\x01@\x02\x04self(\x05value\x01\x01\0\x04\0\x1d[method]ellipse.set-half-size\x01\
+*\x01@\x01\x04self(\0{\x04\0\x1a[method]ellipse.resolution\x01+\x01@\x02\x04self\
+(\x05value{\x01\0\x04\0\x1e[method]ellipse.set-resolution\x01,\x01@\x01\x04self(\
+\0\x19\x04\0\x17[method]ellipse.to-mesh\x01-\x01@\x01\x04self(\0\x1b\x04\0\x17[m\
+ethod]ellipse.to-node\x01.\x04\0\x1f[method]ellipse.to-physics-node\x01.\x01i\x0b\
+\x01@\x02\x06radiusv\x06heightv\0/\x04\0\x15[constructor]cylinder\x010\x01h\x0b\x01\
+@\x01\x04self1\0\x7f\x04\0\x14[method]cylinder.cap\x012\x01@\x02\x04self1\x05val\
+ue\x7f\x01\0\x04\0\x18[method]cylinder.set-cap\x013\x01@\x01\x04self1\0v\x04\0\x17\
+[method]cylinder.height\x014\x01@\x02\x04self1\x05valuev\x01\0\x04\0\x1b[method]\
+cylinder.set-height\x015\x04\0\x17[method]cylinder.radius\x014\x04\0\x1b[method]\
+cylinder.set-radius\x015\x01@\x01\x04self1\0}\x04\0\x1b[method]cylinder.resoluti\
+on\x016\x01@\x02\x04self1\x05value}\x01\0\x04\0\x1f[method]cylinder.set-resoluti\
+on\x017\x04\0\x19[method]cylinder.segments\x016\x04\0\x1d[method]cylinder.set-se\
+gments\x017\x01@\x01\x04self1\0\x19\x04\0\x18[method]cylinder.to-mesh\x018\x01@\x01\
+\x04self1\0\x1b\x04\0\x18[method]cylinder.to-node\x019\x04\0\x20[method]cylinder\
+.to-physics-node\x019\x01i\x0c\x01@\x01\x04size\x03\0:\x04\0\x13[constructor]cub\
+oid\x01;\x01h\x0c\x01@\x01\x04self<\0\x03\x04\0\x13[method]cuboid.size\x01=\x01@\
+\x02\x04self<\x05value\x03\x01\0\x04\0\x17[method]cuboid.set-size\x01>\x01@\x01\x04\
+self<\0\x19\x04\0\x16[method]cuboid.to-mesh\x01?\x01@\x01\x04self<\0\x1b\x04\0\x16\
+[method]cuboid.to-node\x01@\x04\0\x1e[method]cuboid.to-physics-node\x01@\x01i\x13\
+\x01@\x01\x06radiusv\0\xc1\0\x04\0\x16[static]sphere.new-ico\x01B\x04\0\x15[stat\
+ic]sphere.new-uv\x01B\x01h\x13\x01@\x01\x04self\xc3\0\0v\x04\0\x15[method]sphere\
+.radius\x01D\x01@\x02\x04self\xc3\0\x05valuev\x01\0\x04\0\x19[method]sphere.set-\
+radius\x01E\x01@\x01\x04self\xc3\0\0\x12\x04\0\x13[method]sphere.kind\x01F\x01@\x02\
+\x04self\xc3\0\x05value\x12\x01\0\x04\0\x17[method]sphere.set-kind\x01G\x01@\x01\
+\x04self\xc3\0\0\x19\x04\0\x16[method]sphere.to-mesh\x01H\x01@\x01\x04self\xc3\0\
+\0\x1b\x04\0\x16[method]sphere.to-node\x01I\x04\0\x1e[method]sphere.to-physics-n\
+ode\x01I\x04\x01\x10unavi:shapes/api\x05\x13\x04\x01\x12unavi:shapes/guest\x04\0\
+\x0b\x0b\x01\0\x05guest\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-c\
+omponent\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

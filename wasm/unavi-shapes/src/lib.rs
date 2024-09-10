@@ -1,7 +1,7 @@
 use bindings::exports::unavi::shapes::api::Guest;
 use shapes::{
-    circle::Circle, cuboid::Cuboid, cylinder::Cylinder, ellipse::Ellipse, rectangle::Rectangle,
-    sphere::Sphere,
+    axes::Axes, circle::Circle, cuboid::Cuboid, cylinder::Cylinder, ellipse::Ellipse,
+    rectangle::Rectangle, sphere::Sphere,
 };
 
 mod attributes;
@@ -13,6 +13,7 @@ mod wired_math_impls;
 struct GuestImpl;
 
 impl Guest for GuestImpl {
+    type Axes = Axes;
     type Circle = Circle;
     type Cuboid = Cuboid;
     type Cylinder = Cylinder;

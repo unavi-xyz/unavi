@@ -8,6 +8,7 @@ use bindings::{
     wired::{
         math::types::{Transform, Vec3},
         physics::types::{Collider, Shape},
+        scene::node::Node,
     },
 };
 
@@ -21,20 +22,24 @@ impl GuestScript for Script {
     fn new() -> Self {
         let scene = Scene::new();
 
+        // Container alignments
+        let root = Node::new();
+        root.set_transform(Transform::from_translation(Vec3::new(4.0, 0.0, 0.0)));
+
         for x in 0..3 {
             for y in 0..3 {
                 for z in 0..3 {
                     let size = Vec3::splat(1.0);
                     let parent = Container::new(size);
-                    let root = parent.root();
-                    scene.add_node(&root);
+                    root.add_child(&parent.root());
 
                     let collider = Collider::new(Shape::Cuboid(size));
-                    root.set_collider(Some(&collider));
-
-                    root.set_transform(Transform::from_translation(Vec3::new(
-                        x as f32, y as f32, z as f32,
-                    )));
+                    parent.root().set_collider(Some(&collider));
+                    parent
+                        .root()
+                        .set_transform(Transform::from_translation(Vec3::new(
+                            x as f32, y as f32, z as f32,
+                        )));
 
                     parent.set_align_x(get_alignment(x));
                     parent.set_align_y(get_alignment(y));

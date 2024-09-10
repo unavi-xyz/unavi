@@ -801,6 +801,50 @@ pub mod unavi {
                 }
             }
 
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Axes {
+                handle: _rt::Resource<Axes>,
+            }
+
+            impl Axes {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for Axes {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]axes"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
             impl Rectangle {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn new(size: Vec2) -> Self {
@@ -1922,6 +1966,86 @@ pub mod unavi {
                         #[link(wasm_import_module = "unavi:shapes/api")]
                         extern "C" {
                             #[link_name = "[method]sphere.to-physics-node"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Axes {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn new() -> Self {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[constructor]axes"]
+                            fn wit_import() -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import() -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import();
+                        Axes::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Axes {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn size(&self) -> f32 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]axes.size"]
+                            fn wit_import(_: i32) -> f32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> f32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret
+                    }
+                }
+            }
+            impl Axes {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_size(&self, value: f32) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]axes.set-size"]
+                            fn wit_import(_: i32, _: f32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_f32(&value));
+                    }
+                }
+            }
+            impl Axes {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Creates a node with a mesh of this shape.
+                pub fn to_node(&self) -> Node {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:shapes/api")]
+                        extern "C" {
+                            #[link_name = "[method]axes.to-node"]
                             fn wit_import(_: i32) -> i32;
                         }
 
@@ -5336,8 +5460,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6664] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x8b3\x01A\x02\x01A\x1f\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6824] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xab4\x01A\x02\x01A\x1f\
 \x01B\x10\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\
 \0\x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01\
 r\x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -5429,60 +5553,64 @@ t.remove-scene\x01\x0a\x01@\0\0\x06\x04\0\x12[constructor]scene\x01\x0b\x01i\x03
 d]scene.transform\x01\x12\x01@\x02\x04self\x09\x05value\x01\x01\0\x04\0\x1b[meth\
 od]scene.set-transform\x01\x13\x01@\x01\x04self\x09\0\x7f\x04\0\x14[method]scene\
 .active\x01\x14\x01@\x02\x04self\x09\x05value\x7f\x01\0\x04\0\x18[method]scene.s\
-et-active\x01\x15\x03\x01\x0funavi:scene/api\x05\x11\x02\x03\0\0\x04vec2\x01B}\x02\
-\x03\x02\x01\x12\x04\0\x04vec2\x03\0\0\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\x02\
-\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\x04\x02\x03\x02\x01\x10\x04\0\x04node\x03\
-\0\x06\x04\0\x09rectangle\x03\x01\x04\0\x06circle\x03\x01\x04\0\x07ellipse\x03\x01\
-\x04\0\x08cylinder\x03\x01\x04\0\x06cuboid\x03\x01\x01r\x01\x0csubdivisions}\x04\
-\0\x0asphere-ico\x03\0\x0d\x01r\x02\x07sectors}\x06stacks}\x04\0\x09sphere-uv\x03\
-\0\x0f\x01q\x02\x03ico\x01\x0e\0\x02uv\x01\x10\0\x04\0\x0bsphere-kind\x03\0\x11\x04\
-\0\x06sphere\x03\x01\x01i\x08\x01@\x01\x04size\x01\0\x14\x04\0\x16[constructor]r\
-ectangle\x01\x15\x01h\x08\x01@\x01\x04self\x16\0\x01\x04\0\x16[method]rectangle.\
-size\x01\x17\x01@\x02\x04self\x16\x05value\x01\x01\0\x04\0\x1a[method]rectangle.\
-set-size\x01\x18\x01i\x05\x01@\x01\x04self\x16\0\x19\x04\0\x19[method]rectangle.\
-to-mesh\x01\x1a\x01i\x07\x01@\x01\x04self\x16\0\x1b\x04\0\x19[method]rectangle.t\
-o-node\x01\x1c\x04\0![method]rectangle.to-physics-node\x01\x1c\x01i\x09\x01@\x01\
-\x06radiusv\0\x1d\x04\0\x13[constructor]circle\x01\x1e\x01h\x09\x01@\x01\x04self\
-\x1f\0v\x04\0\x15[method]circle.radius\x01\x20\x01@\x02\x04self\x1f\x05valuev\x01\
-\0\x04\0\x19[method]circle.set-radius\x01!\x01@\x01\x04self\x1f\0{\x04\0\x19[met\
-hod]circle.resolution\x01\"\x01@\x02\x04self\x1f\x05value{\x01\0\x04\0\x1d[metho\
-d]circle.set-resolution\x01#\x01@\x01\x04self\x1f\0\x19\x04\0\x16[method]circle.\
-to-mesh\x01$\x01@\x01\x04self\x1f\0\x1b\x04\0\x16[method]circle.to-node\x01%\x04\
-\0\x1e[method]circle.to-physics-node\x01%\x01i\x0a\x01@\x01\x09half-size\x01\0&\x04\
-\0\x14[constructor]ellipse\x01'\x01h\x0a\x01@\x01\x04self(\0\x01\x04\0\x19[metho\
-d]ellipse.half-size\x01)\x01@\x02\x04self(\x05value\x01\x01\0\x04\0\x1d[method]e\
-llipse.set-half-size\x01*\x01@\x01\x04self(\0{\x04\0\x1a[method]ellipse.resoluti\
-on\x01+\x01@\x02\x04self(\x05value{\x01\0\x04\0\x1e[method]ellipse.set-resolutio\
-n\x01,\x01@\x01\x04self(\0\x19\x04\0\x17[method]ellipse.to-mesh\x01-\x01@\x01\x04\
-self(\0\x1b\x04\0\x17[method]ellipse.to-node\x01.\x04\0\x1f[method]ellipse.to-ph\
-ysics-node\x01.\x01i\x0b\x01@\x02\x06radiusv\x06heightv\0/\x04\0\x15[constructor\
-]cylinder\x010\x01h\x0b\x01@\x01\x04self1\0\x7f\x04\0\x14[method]cylinder.cap\x01\
-2\x01@\x02\x04self1\x05value\x7f\x01\0\x04\0\x18[method]cylinder.set-cap\x013\x01\
-@\x01\x04self1\0v\x04\0\x17[method]cylinder.height\x014\x01@\x02\x04self1\x05val\
-uev\x01\0\x04\0\x1b[method]cylinder.set-height\x015\x04\0\x17[method]cylinder.ra\
-dius\x014\x04\0\x1b[method]cylinder.set-radius\x015\x01@\x01\x04self1\0}\x04\0\x1b\
-[method]cylinder.resolution\x016\x01@\x02\x04self1\x05value}\x01\0\x04\0\x1f[met\
-hod]cylinder.set-resolution\x017\x04\0\x19[method]cylinder.segments\x016\x04\0\x1d\
-[method]cylinder.set-segments\x017\x01@\x01\x04self1\0\x19\x04\0\x18[method]cyli\
-nder.to-mesh\x018\x01@\x01\x04self1\0\x1b\x04\0\x18[method]cylinder.to-node\x019\
-\x04\0\x20[method]cylinder.to-physics-node\x019\x01i\x0c\x01@\x01\x04size\x03\0:\
-\x04\0\x13[constructor]cuboid\x01;\x01h\x0c\x01@\x01\x04self<\0\x03\x04\0\x13[me\
-thod]cuboid.size\x01=\x01@\x02\x04self<\x05value\x03\x01\0\x04\0\x17[method]cubo\
-id.set-size\x01>\x01@\x01\x04self<\0\x19\x04\0\x16[method]cuboid.to-mesh\x01?\x01\
-@\x01\x04self<\0\x1b\x04\0\x16[method]cuboid.to-node\x01@\x04\0\x1e[method]cuboi\
-d.to-physics-node\x01@\x01i\x13\x01@\x01\x06radiusv\0\xc1\0\x04\0\x16[static]sph\
-ere.new-ico\x01B\x04\0\x15[static]sphere.new-uv\x01B\x01h\x13\x01@\x01\x04self\xc3\
-\0\0v\x04\0\x15[method]sphere.radius\x01D\x01@\x02\x04self\xc3\0\x05valuev\x01\0\
-\x04\0\x19[method]sphere.set-radius\x01E\x01@\x01\x04self\xc3\0\0\x12\x04\0\x13[\
-method]sphere.kind\x01F\x01@\x02\x04self\xc3\0\x05value\x12\x01\0\x04\0\x17[meth\
-od]sphere.set-kind\x01G\x01@\x01\x04self\xc3\0\0\x19\x04\0\x16[method]sphere.to-\
-mesh\x01H\x01@\x01\x04self\xc3\0\0\x1b\x04\0\x16[method]sphere.to-node\x01I\x04\0\
-\x1e[method]sphere.to-physics-node\x01I\x03\x01\x10unavi:shapes/api\x05\x13\x01B\
-\x07\x04\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\
-\x02\x01h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\
-\x04\x04\x01\x12wired:script/types\x05\x14\x04\x01\x1bexample:unavi-shapes/scrip\
-t\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0d\
-wit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+et-active\x01\x15\x03\x01\x0funavi:scene/api\x05\x11\x02\x03\0\0\x04vec2\x01B\x88\
+\x01\x02\x03\x02\x01\x12\x04\0\x04vec2\x03\0\0\x02\x03\x02\x01\x04\x04\0\x04vec3\
+\x03\0\x02\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\x04\x02\x03\x02\x01\x10\x04\0\
+\x04node\x03\0\x06\x04\0\x09rectangle\x03\x01\x04\0\x06circle\x03\x01\x04\0\x07e\
+llipse\x03\x01\x04\0\x08cylinder\x03\x01\x04\0\x06cuboid\x03\x01\x01r\x01\x0csub\
+divisions}\x04\0\x0asphere-ico\x03\0\x0d\x01r\x02\x07sectors}\x06stacks}\x04\0\x09\
+sphere-uv\x03\0\x0f\x01q\x02\x03ico\x01\x0e\0\x02uv\x01\x10\0\x04\0\x0bsphere-ki\
+nd\x03\0\x11\x04\0\x06sphere\x03\x01\x04\0\x04axes\x03\x01\x01i\x08\x01@\x01\x04\
+size\x01\0\x15\x04\0\x16[constructor]rectangle\x01\x16\x01h\x08\x01@\x01\x04self\
+\x17\0\x01\x04\0\x16[method]rectangle.size\x01\x18\x01@\x02\x04self\x17\x05value\
+\x01\x01\0\x04\0\x1a[method]rectangle.set-size\x01\x19\x01i\x05\x01@\x01\x04self\
+\x17\0\x1a\x04\0\x19[method]rectangle.to-mesh\x01\x1b\x01i\x07\x01@\x01\x04self\x17\
+\0\x1c\x04\0\x19[method]rectangle.to-node\x01\x1d\x04\0![method]rectangle.to-phy\
+sics-node\x01\x1d\x01i\x09\x01@\x01\x06radiusv\0\x1e\x04\0\x13[constructor]circl\
+e\x01\x1f\x01h\x09\x01@\x01\x04self\x20\0v\x04\0\x15[method]circle.radius\x01!\x01\
+@\x02\x04self\x20\x05valuev\x01\0\x04\0\x19[method]circle.set-radius\x01\"\x01@\x01\
+\x04self\x20\0{\x04\0\x19[method]circle.resolution\x01#\x01@\x02\x04self\x20\x05\
+value{\x01\0\x04\0\x1d[method]circle.set-resolution\x01$\x01@\x01\x04self\x20\0\x1a\
+\x04\0\x16[method]circle.to-mesh\x01%\x01@\x01\x04self\x20\0\x1c\x04\0\x16[metho\
+d]circle.to-node\x01&\x04\0\x1e[method]circle.to-physics-node\x01&\x01i\x0a\x01@\
+\x01\x09half-size\x01\0'\x04\0\x14[constructor]ellipse\x01(\x01h\x0a\x01@\x01\x04\
+self)\0\x01\x04\0\x19[method]ellipse.half-size\x01*\x01@\x02\x04self)\x05value\x01\
+\x01\0\x04\0\x1d[method]ellipse.set-half-size\x01+\x01@\x01\x04self)\0{\x04\0\x1a\
+[method]ellipse.resolution\x01,\x01@\x02\x04self)\x05value{\x01\0\x04\0\x1e[meth\
+od]ellipse.set-resolution\x01-\x01@\x01\x04self)\0\x1a\x04\0\x17[method]ellipse.\
+to-mesh\x01.\x01@\x01\x04self)\0\x1c\x04\0\x17[method]ellipse.to-node\x01/\x04\0\
+\x1f[method]ellipse.to-physics-node\x01/\x01i\x0b\x01@\x02\x06radiusv\x06heightv\
+\00\x04\0\x15[constructor]cylinder\x011\x01h\x0b\x01@\x01\x04self2\0\x7f\x04\0\x14\
+[method]cylinder.cap\x013\x01@\x02\x04self2\x05value\x7f\x01\0\x04\0\x18[method]\
+cylinder.set-cap\x014\x01@\x01\x04self2\0v\x04\0\x17[method]cylinder.height\x015\
+\x01@\x02\x04self2\x05valuev\x01\0\x04\0\x1b[method]cylinder.set-height\x016\x04\
+\0\x17[method]cylinder.radius\x015\x04\0\x1b[method]cylinder.set-radius\x016\x01\
+@\x01\x04self2\0}\x04\0\x1b[method]cylinder.resolution\x017\x01@\x02\x04self2\x05\
+value}\x01\0\x04\0\x1f[method]cylinder.set-resolution\x018\x04\0\x19[method]cyli\
+nder.segments\x017\x04\0\x1d[method]cylinder.set-segments\x018\x01@\x01\x04self2\
+\0\x1a\x04\0\x18[method]cylinder.to-mesh\x019\x01@\x01\x04self2\0\x1c\x04\0\x18[\
+method]cylinder.to-node\x01:\x04\0\x20[method]cylinder.to-physics-node\x01:\x01i\
+\x0c\x01@\x01\x04size\x03\0;\x04\0\x13[constructor]cuboid\x01<\x01h\x0c\x01@\x01\
+\x04self=\0\x03\x04\0\x13[method]cuboid.size\x01>\x01@\x02\x04self=\x05value\x03\
+\x01\0\x04\0\x17[method]cuboid.set-size\x01?\x01@\x01\x04self=\0\x1a\x04\0\x16[m\
+ethod]cuboid.to-mesh\x01@\x01@\x01\x04self=\0\x1c\x04\0\x16[method]cuboid.to-nod\
+e\x01A\x04\0\x1e[method]cuboid.to-physics-node\x01A\x01i\x13\x01@\x01\x06radiusv\
+\0\xc2\0\x04\0\x16[static]sphere.new-ico\x01C\x04\0\x15[static]sphere.new-uv\x01\
+C\x01h\x13\x01@\x01\x04self\xc4\0\0v\x04\0\x15[method]sphere.radius\x01E\x01@\x02\
+\x04self\xc4\0\x05valuev\x01\0\x04\0\x19[method]sphere.set-radius\x01F\x01@\x01\x04\
+self\xc4\0\0\x12\x04\0\x13[method]sphere.kind\x01G\x01@\x02\x04self\xc4\0\x05val\
+ue\x12\x01\0\x04\0\x17[method]sphere.set-kind\x01H\x01@\x01\x04self\xc4\0\0\x1a\x04\
+\0\x16[method]sphere.to-mesh\x01I\x01@\x01\x04self\xc4\0\0\x1c\x04\0\x16[method]\
+sphere.to-node\x01J\x04\0\x1e[method]sphere.to-physics-node\x01J\x01i\x14\x01@\0\
+\0\xcb\0\x04\0\x11[constructor]axes\x01L\x01h\x14\x01@\x01\x04self\xcd\0\0v\x04\0\
+\x11[method]axes.size\x01N\x01@\x02\x04self\xcd\0\x05valuev\x01\0\x04\0\x15[meth\
+od]axes.set-size\x01O\x01@\x01\x04self\xcd\0\0\x1c\x04\0\x14[method]axes.to-node\
+\x01P\x03\x01\x10unavi:shapes/api\x05\x13\x01B\x07\x04\0\x06script\x03\x01\x01i\0\
+\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01h\0\x01@\x02\x04self\x03\x05\
+deltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\x01\x12wired:script/type\
+s\x05\x14\x04\x01\x1bexample:unavi-shapes/script\x04\0\x0b\x0c\x01\0\x06script\x03\
+\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-\
+bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

@@ -4494,6 +4494,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-unavi-vscreen"
+version = "0.0.6"
+dependencies = [
+ "wit-bindgen-rt",
+]
+
+[[package]]
 name = "example-wired-input"
 version = "0.0.6"
 dependencies = [

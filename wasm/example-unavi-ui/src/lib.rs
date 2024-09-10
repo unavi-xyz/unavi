@@ -112,10 +112,10 @@ impl GuestScript for Script {
     }
 }
 
-struct Types;
+struct GuestImpl;
 
-impl Guest for Types {
+impl Guest for GuestImpl {
     type Script = Script;
 }
 
-bindings::export!(Types with_types_in bindings);
+bindings::export!(GuestImpl with_types_in bindings);

@@ -16,7 +16,10 @@ wit-bindgen-rt.workspace = true
 package = "unavi:system"
 
 [package.metadata.component.target.dependencies]
+"unavi:layout" = { path = "../unavi-layout/wit" }
+"unavi:scene" = { path = "../unavi-scene/wit" }
 "unavi:shapes" = { path = "../unavi-shapes/wit" }
+"unavi:ui" = { path = "../unavi-ui/wit" }
 "unavi:vscreen" = { path = "../unavi-vscreen/wit" }
 "wired:input" = { path = "../../wired-protocol/spatial/wit/wired-input" }
 "wired:log" = { path = "../../wired-protocol/spatial/wit/wired-log" }

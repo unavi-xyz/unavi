@@ -22,18 +22,18 @@ interface container {
     start,
   }
 
-  // A 3D area of space.
+  /// A 3D area of space.
   resource container {
     constructor(size: vec3);
 
-    // Returns another reference to the same resource.
+    /// Returns another reference to the same resource.
     ref: func() -> container;
 
-    // The `root` node.
-    // Positioned in the center of the container.
+    /// The `root` node.
+    /// Positioned in the center of the container.
     root: func() -> node;
-    // The `inner` node, child of the `root` node.
-    // Positioned according to the `alignment` of the container.
+    /// The `inner` node, child of the `root` node.
+    /// Positioned according to the `alignment` of the container.
     inner: func() -> node;
 
     list-children: func() -> list<container>;
@@ -57,18 +57,18 @@ interface grid {
   use container.{container};
   use wired:math/types.{vec3};
 
-  // Creates a 3D grid of `container`s, with a set number of `rows` in each direction.
+  /// Creates a 3D grid of `container`s, with a set number of `rows` in each direction.
   resource grid {
     constructor(size: vec3, rows: vec3);
 
-    // The `root` container.
+    /// The `root` container.
     root: func() -> container;
 
-    // List of all child containers.
+    /// List of all child containers.
     cells: func() -> list<container>;
 
-    // Gets a specific cell from the grid.
-    // Returns `none` if out of bounds.
+    /// Gets a specific cell from the grid.
+    /// Returns `none` if out of bounds.
     cell: func(x: u32, y: u32, z: u32) -> option<container>;
 
     rows: func() -> vec3;

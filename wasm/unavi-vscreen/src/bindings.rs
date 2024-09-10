@@ -3,6 +3,446 @@
 #[allow(dead_code)]
 pub mod unavi {
     #[allow(dead_code)]
+    pub mod layout {
+        #[allow(dead_code, clippy::all)]
+        pub mod container {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            pub type Vec3 = super::super::super::wired::math::types::Vec3;
+            pub type Node = super::super::super::wired::scene::node::Node;
+            #[repr(u8)]
+            #[derive(Clone, Copy, Eq, PartialEq)]
+            pub enum Alignment {
+                Center,
+                End,
+                Start,
+            }
+            impl ::core::fmt::Debug for Alignment {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        Alignment::Center => f.debug_tuple("Alignment::Center").finish(),
+                        Alignment::End => f.debug_tuple("Alignment::End").finish(),
+                        Alignment::Start => f.debug_tuple("Alignment::Start").finish(),
+                    }
+                }
+            }
+
+            impl Alignment {
+                #[doc(hidden)]
+                pub unsafe fn _lift(val: u8) -> Alignment {
+                    if !cfg!(debug_assertions) {
+                        return ::core::mem::transmute(val);
+                    }
+
+                    match val {
+                        0 => Alignment::Center,
+                        1 => Alignment::End,
+                        2 => Alignment::Start,
+
+                        _ => panic!("invalid enum discriminant"),
+                    }
+                }
+            }
+
+            /// A 3D area of space.
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Container {
+                handle: _rt::Resource<Container>,
+            }
+
+            impl Container {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for Container {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "unavi:layout/container")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]container"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            impl Container {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn new(size: Vec3) -> Self {
+                    unsafe {
+                        let super::super::super::wired::math::types::Vec3 {
+                            x: x0,
+                            y: y0,
+                            z: z0,
+                        } = size;
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/container")]
+                        extern "C" {
+                            #[link_name = "[constructor]container"]
+                            fn wit_import(_: f32, _: f32, _: f32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: f32, _: f32, _: f32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import(_rt::as_f32(x0), _rt::as_f32(y0), _rt::as_f32(z0));
+                        Container::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Container {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Returns another reference to the same resource.
+                pub fn ref_(&self) -> Container {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/container")]
+                        extern "C" {
+                            #[link_name = "[method]container.ref"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        Container::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Container {
+                #[allow(unused_unsafe, clippy::all)]
+                /// The `root` node.
+                /// Positioned in the center of the container.
+                pub fn root(&self) -> Node {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/container")]
+                        extern "C" {
+                            #[link_name = "[method]container.root"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Container {
+                #[allow(unused_unsafe, clippy::all)]
+                /// The `inner` node, child of the `root` node.
+                /// Positioned according to the `alignment` of the container.
+                pub fn inner(&self) -> Node {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/container")]
+                        extern "C" {
+                            #[link_name = "[method]container.inner"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl Container {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn list_children(&self) -> _rt::Vec<Container> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/container")]
+                        extern "C" {
+                            #[link_name = "[method]container.list-children"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<*mut u8>();
+                        let l2 = *ptr0.add(4).cast::<usize>();
+                        let base4 = l1;
+                        let len4 = l2;
+                        let mut result4 = _rt::Vec::with_capacity(len4);
+                        for i in 0..len4 {
+                            let base = base4.add(i * 4);
+                            let e4 = {
+                                let l3 = *base.add(0).cast::<i32>();
+
+                                Container::from_handle(l3 as u32)
+                            };
+                            result4.push(e4);
+                        }
+                        _rt::cabi_dealloc(base4, len4 * 4, 4);
+                        result4
+                    }
+                }
+            }
+            impl Container {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn add_child(&self, child: &Container) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/container")]
+                        extern "C" {
+                            #[link_name = "[method]container.add-child"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, (child).handle() as i32);
+                    }
+                }
+            }
+            impl Container {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn remove_child(&self, child: &Container) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/container")]
+                        extern "C" {
+                            #[link_name = "[method]container.remove-child"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, (child).handle() as i32);
+                    }
+                }
+            }
+            impl Container {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn size(&self) -> Vec3 {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/container")]
+                        extern "C" {
+                            #[link_name = "[method]container.size"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<f32>();
+                        let l2 = *ptr0.add(4).cast::<f32>();
+                        let l3 = *ptr0.add(8).cast::<f32>();
+                        super::super::super::wired::math::types::Vec3 {
+                            x: l1,
+                            y: l2,
+                            z: l3,
+                        }
+                    }
+                }
+            }
+            impl Container {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_size(&self, value: Vec3) {
+                    unsafe {
+                        let super::super::super::wired::math::types::Vec3 {
+                            x: x0,
+                            y: y0,
+                            z: z0,
+                        } = value;
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/container")]
+                        extern "C" {
+                            #[link_name = "[method]container.set-size"]
+                            fn wit_import(_: i32, _: f32, _: f32, _: f32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32, _: f32, _: f32) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            _rt::as_f32(x0),
+                            _rt::as_f32(y0),
+                            _rt::as_f32(z0),
+                        );
+                    }
+                }
+            }
+            impl Container {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn align_x(&self) -> Alignment {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/container")]
+                        extern "C" {
+                            #[link_name = "[method]container.align-x"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        Alignment::_lift(ret as u8)
+                    }
+                }
+            }
+            impl Container {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn align_y(&self) -> Alignment {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/container")]
+                        extern "C" {
+                            #[link_name = "[method]container.align-y"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        Alignment::_lift(ret as u8)
+                    }
+                }
+            }
+            impl Container {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn align_z(&self) -> Alignment {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/container")]
+                        extern "C" {
+                            #[link_name = "[method]container.align-z"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        Alignment::_lift(ret as u8)
+                    }
+                }
+            }
+            impl Container {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_align_x(&self, value: Alignment) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/container")]
+                        extern "C" {
+                            #[link_name = "[method]container.set-align-x"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, value.clone() as i32);
+                    }
+                }
+            }
+            impl Container {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_align_y(&self, value: Alignment) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/container")]
+                        extern "C" {
+                            #[link_name = "[method]container.set-align-y"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, value.clone() as i32);
+                    }
+                }
+            }
+            impl Container {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_align_z(&self, value: Alignment) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:layout/container")]
+                        extern "C" {
+                            #[link_name = "[method]container.set-align-z"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, value.clone() as i32);
+                    }
+                }
+            }
+        }
+    }
+    #[allow(dead_code)]
     pub mod shapes {
         #[allow(dead_code, clippy::all)]
         pub mod api {
@@ -3932,9 +4372,51 @@ pub mod exports {
                 static __FORCE_SECTION_REF: fn() =
                     super::super::super::super::__link_custom_section_describing_imports;
                 use super::super::super::super::_rt;
-                pub type Node = super::super::super::super::wired::scene::node::Node;
-                /// Central screen UI.
-                /// Expands into various modules when activated.
+                pub type Container =
+                    super::super::super::super::unavi::layout::container::Container;
+                pub type Transform = super::super::super::super::wired::math::types::Transform;
+                pub type Vec2 = super::super::super::super::wired::math::types::Vec2;
+                #[derive(Clone, Copy)]
+                pub enum ScreenShape {
+                    Circle(f32),
+                    Rectangle(Vec2),
+                }
+                impl ::core::fmt::Debug for ScreenShape {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        match self {
+                            ScreenShape::Circle(e) => {
+                                f.debug_tuple("ScreenShape::Circle").field(e).finish()
+                            }
+                            ScreenShape::Rectangle(e) => {
+                                f.debug_tuple("ScreenShape::Rectangle").field(e).finish()
+                            }
+                        }
+                    }
+                }
+                #[derive(Clone, Copy)]
+                pub enum ChildLayout {
+                    /// Children are aranged in two wings, on either side of the screen.
+                    Butterfly,
+                    /// Children are aranged in a circle around the screen.
+                    Circle,
+                    /// Children are given a specific relative transform.
+                    Transform(Transform),
+                }
+                impl ::core::fmt::Debug for ChildLayout {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        match self {
+                            ChildLayout::Butterfly => {
+                                f.debug_tuple("ChildLayout::Butterfly").finish()
+                            }
+                            ChildLayout::Circle => f.debug_tuple("ChildLayout::Circle").finish(),
+                            ChildLayout::Transform(e) => {
+                                f.debug_tuple("ChildLayout::Transform").field(e).finish()
+                            }
+                        }
+                    }
+                }
+                /// Animated screen UI.
+                /// On press, expands into child screens.
 
                 #[derive(Debug)]
                 #[repr(transparent)]
@@ -4076,156 +4558,31 @@ pub mod exports {
                     }
                 }
 
-                /// UI module.
-                /// Has a closed and open form.
-
-                #[derive(Debug)]
-                #[repr(transparent)]
-                pub struct Module {
-                    handle: _rt::Resource<Module>,
-                }
-
-                type _ModuleRep<T> = Option<T>;
-
-                impl Module {
-                    /// Creates a new resource from the specified representation.
-                    ///
-                    /// This function will create a new resource handle by moving `val` onto
-                    /// the heap and then passing that heap pointer to the component model to
-                    /// create a handle. The owned handle is then returned as `Module`.
-                    pub fn new<T: GuestModule>(val: T) -> Self {
-                        Self::type_guard::<T>();
-                        let val: _ModuleRep<T> = Some(val);
-                        let ptr: *mut _ModuleRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
-                        unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
-                    }
-
-                    /// Gets access to the underlying `T` which represents this resource.
-                    pub fn get<T: GuestModule>(&self) -> &T {
-                        let ptr = unsafe { &*self.as_ptr::<T>() };
-                        ptr.as_ref().unwrap()
-                    }
-
-                    /// Gets mutable access to the underlying `T` which represents this
-                    /// resource.
-                    pub fn get_mut<T: GuestModule>(&mut self) -> &mut T {
-                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
-                        ptr.as_mut().unwrap()
-                    }
-
-                    /// Consumes this resource and returns the underlying `T`.
-                    pub fn into_inner<T: GuestModule>(self) -> T {
-                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
-                        ptr.take().unwrap()
-                    }
-
-                    #[doc(hidden)]
-                    pub unsafe fn from_handle(handle: u32) -> Self {
-                        Self {
-                            handle: _rt::Resource::from_handle(handle),
-                        }
-                    }
-
-                    #[doc(hidden)]
-                    pub fn take_handle(&self) -> u32 {
-                        _rt::Resource::take_handle(&self.handle)
-                    }
-
-                    #[doc(hidden)]
-                    pub fn handle(&self) -> u32 {
-                        _rt::Resource::handle(&self.handle)
-                    }
-
-                    // It's theoretically possible to implement the `GuestModule` trait twice
-                    // so guard against using it with two different types here.
-                    #[doc(hidden)]
-                    fn type_guard<T: 'static>() {
-                        use core::any::TypeId;
-                        static mut LAST_TYPE: Option<TypeId> = None;
-                        unsafe {
-                            assert!(!cfg!(target_feature = "threads"));
-                            let id = TypeId::of::<T>();
-                            match LAST_TYPE {
-                                Some(ty) => assert!(
-                                    ty == id,
-                                    "cannot use two types with this resource type"
-                                ),
-                                None => LAST_TYPE = Some(id),
-                            }
-                        }
-                    }
-
-                    #[doc(hidden)]
-                    pub unsafe fn dtor<T: 'static>(handle: *mut u8) {
-                        Self::type_guard::<T>();
-                        let _ = _rt::Box::from_raw(handle as *mut _ModuleRep<T>);
-                    }
-
-                    fn as_ptr<T: GuestModule>(&self) -> *mut _ModuleRep<T> {
-                        Module::type_guard::<T>();
-                        T::_resource_rep(self.handle()).cast()
-                    }
-                }
-
-                /// A borrowed version of [`Module`] which represents a borrowed value
-                /// with the lifetime `'a`.
-                #[derive(Debug)]
-                #[repr(transparent)]
-                pub struct ModuleBorrow<'a> {
-                    rep: *mut u8,
-                    _marker: core::marker::PhantomData<&'a Module>,
-                }
-
-                impl<'a> ModuleBorrow<'a> {
-                    #[doc(hidden)]
-                    pub unsafe fn lift(rep: usize) -> Self {
-                        Self {
-                            rep: rep as *mut u8,
-                            _marker: core::marker::PhantomData,
-                        }
-                    }
-
-                    /// Gets access to the underlying `T` in this resource.
-                    pub fn get<T: GuestModule>(&self) -> &T {
-                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
-                        ptr.as_ref().unwrap()
-                    }
-
-                    // NB: mutable access is not allowed due to the component model allowing
-                    // multiple borrows of the same resource.
-
-                    fn as_ptr<T: 'static>(&self) -> *mut _ModuleRep<T> {
-                        Module::type_guard::<T>();
-                        self.rep.cast()
-                    }
-                }
-
-                unsafe impl _rt::WasmResource for Module {
-                    #[inline]
-                    unsafe fn drop(_handle: u32) {
-                        #[cfg(not(target_arch = "wasm32"))]
-                        unreachable!();
-
-                        #[cfg(target_arch = "wasm32")]
-                        {
-                            #[link(wasm_import_module = "[export]unavi:vscreen/screen")]
-                            extern "C" {
-                                #[link_name = "[resource-drop]module"]
-                                fn drop(_: u32);
-                            }
-
-                            drop(_handle);
-                        }
-                    }
-                }
-
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_constructor_screen_cabi<T: GuestScreen>() -> i32 {
+                pub unsafe fn _export_constructor_screen_cabi<T: GuestScreen>(
+                    arg0: i32,
+                    arg1: f32,
+                    arg2: f32,
+                ) -> i32 {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
-                    let result0 = Screen::new(T::new());
-                    (result0).take_handle() as i32
+                    let v0 = match arg0 {
+                        0 => {
+                            let e0 = arg1;
+                            ScreenShape::Circle(e0)
+                        }
+                        n => {
+                            debug_assert_eq!(n, 1, "invalid enum discriminant");
+                            let e0 = super::super::super::super::wired::math::types::Vec2 {
+                                x: arg1,
+                                y: arg2,
+                            };
+                            ScreenShape::Rectangle(e0)
+                        }
+                    };
+                    let result1 = Screen::new(T::new(v0));
+                    (result1).take_handle() as i32
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
@@ -4265,79 +4622,111 @@ pub mod exports {
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_screen_central_module_cabi<T: GuestScreen>(
+                pub unsafe fn _export_method_screen_child_layout_cabi<T: GuestScreen>(
                     arg0: *mut u8,
                 ) -> *mut u8 {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
-                    let result0 = T::central_module(ScreenBorrow::lift(arg0 as u32 as usize).get());
+                    let result0 = T::child_layout(ScreenBorrow::lift(arg0 as u32 as usize).get());
                     let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
                     match result0 {
-                        Some(e) => {
-                            *ptr1.add(0).cast::<u8>() = (1i32) as u8;
-                            *ptr1.add(4).cast::<i32>() = (e).take_handle() as i32;
-                        }
-                        None => {
+                        ChildLayout::Butterfly => {
                             *ptr1.add(0).cast::<u8>() = (0i32) as u8;
                         }
-                    };
+                        ChildLayout::Circle => {
+                            *ptr1.add(0).cast::<u8>() = (1i32) as u8;
+                        }
+                        ChildLayout::Transform(e) => {
+                            *ptr1.add(0).cast::<u8>() = (2i32) as u8;
+                            let super::super::super::super::wired::math::types::Transform {
+                                rotation: rotation2,
+                                scale: scale2,
+                                translation: translation2,
+                            } = e;
+                            let super::super::super::super::wired::math::types::Quat {
+                                x: x3,
+                                y: y3,
+                                z: z3,
+                                w: w3,
+                            } = rotation2;
+                            *ptr1.add(4).cast::<f32>() = _rt::as_f32(x3);
+                            *ptr1.add(8).cast::<f32>() = _rt::as_f32(y3);
+                            *ptr1.add(12).cast::<f32>() = _rt::as_f32(z3);
+                            *ptr1.add(16).cast::<f32>() = _rt::as_f32(w3);
+                            let super::super::super::super::wired::math::types::Vec3 {
+                                x: x4,
+                                y: y4,
+                                z: z4,
+                            } = scale2;
+                            *ptr1.add(20).cast::<f32>() = _rt::as_f32(x4);
+                            *ptr1.add(24).cast::<f32>() = _rt::as_f32(y4);
+                            *ptr1.add(28).cast::<f32>() = _rt::as_f32(z4);
+                            let super::super::super::super::wired::math::types::Vec3 {
+                                x: x5,
+                                y: y5,
+                                z: z5,
+                            } = translation2;
+                            *ptr1.add(32).cast::<f32>() = _rt::as_f32(x5);
+                            *ptr1.add(36).cast::<f32>() = _rt::as_f32(y5);
+                            *ptr1.add(40).cast::<f32>() = _rt::as_f32(z5);
+                        }
+                    }
                     ptr1
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_screen_set_central_module_cabi<T: GuestScreen>(
+                pub unsafe fn _export_method_screen_set_child_layout_cabi<T: GuestScreen>(
                     arg0: *mut u8,
                     arg1: i32,
-                    arg2: i32,
+                    arg2: f32,
+                    arg3: f32,
+                    arg4: f32,
+                    arg5: f32,
+                    arg6: f32,
+                    arg7: f32,
+                    arg8: f32,
+                    arg9: f32,
+                    arg10: f32,
+                    arg11: f32,
                 ) {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
-                    T::set_central_module(
-                        ScreenBorrow::lift(arg0 as u32 as usize).get(),
-                        match arg1 {
-                            0 => None,
-                            1 => {
-                                let e = ModuleBorrow::lift(arg2 as u32 as usize);
-                                Some(e)
-                            }
-                            _ => _rt::invalid_enum_discriminant(),
-                        },
-                    );
+                    let v0 = match arg1 {
+                        0 => ChildLayout::Butterfly,
+                        1 => ChildLayout::Circle,
+                        n => {
+                            debug_assert_eq!(n, 2, "invalid enum discriminant");
+                            let e0 = super::super::super::super::wired::math::types::Transform {
+                                rotation: super::super::super::super::wired::math::types::Quat {
+                                    x: arg2,
+                                    y: arg3,
+                                    z: arg4,
+                                    w: arg5,
+                                },
+                                scale: super::super::super::super::wired::math::types::Vec3 {
+                                    x: arg6,
+                                    y: arg7,
+                                    z: arg8,
+                                },
+                                translation: super::super::super::super::wired::math::types::Vec3 {
+                                    x: arg9,
+                                    y: arg10,
+                                    z: arg11,
+                                },
+                            };
+                            ChildLayout::Transform(e0)
+                        }
+                    };
+                    T::set_child_layout(ScreenBorrow::lift(arg0 as u32 as usize).get(), v0);
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_screen_add_module_cabi<T: GuestScreen>(
-                    arg0: *mut u8,
-                    arg1: i32,
-                ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    T::add_module(
-                        ScreenBorrow::lift(arg0 as u32 as usize).get(),
-                        ModuleBorrow::lift(arg1 as u32 as usize),
-                    );
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_screen_remove_module_cabi<T: GuestScreen>(
-                    arg0: *mut u8,
-                    arg1: i32,
-                ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    T::remove_module(
-                        ScreenBorrow::lift(arg0 as u32 as usize).get(),
-                        ModuleBorrow::lift(arg1 as u32 as usize),
-                    );
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_screen_modules_cabi<T: GuestScreen>(
+                pub unsafe fn _export_method_screen_children_cabi<T: GuestScreen>(
                     arg0: *mut u8,
                 ) -> *mut u8 {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
-                    let result0 = T::modules(ScreenBorrow::lift(arg0 as u32 as usize).get());
+                    let result0 = T::children(ScreenBorrow::lift(arg0 as u32 as usize).get());
                     let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
                     let vec2 = result0;
                     let len2 = vec2.len();
@@ -4365,12 +4754,38 @@ pub mod exports {
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn __post_return_method_screen_modules<T: GuestScreen>(arg0: *mut u8) {
+                pub unsafe fn __post_return_method_screen_children<T: GuestScreen>(arg0: *mut u8) {
                     let l0 = *arg0.add(0).cast::<*mut u8>();
                     let l1 = *arg0.add(4).cast::<usize>();
                     let base2 = l0;
                     let len2 = l1;
                     _rt::cabi_dealloc(base2, len2 * 4, 4);
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_screen_add_child_cabi<T: GuestScreen>(
+                    arg0: *mut u8,
+                    arg1: i32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::add_child(
+                        ScreenBorrow::lift(arg0 as u32 as usize).get(),
+                        ScreenBorrow::lift(arg1 as u32 as usize),
+                    );
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_screen_remove_child_cabi<T: GuestScreen>(
+                    arg0: *mut u8,
+                    arg1: i32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::remove_child(
+                        ScreenBorrow::lift(arg0 as u32 as usize).get(),
+                        ScreenBorrow::lift(arg1 as u32 as usize),
+                    );
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
@@ -4382,37 +4797,8 @@ pub mod exports {
                     _rt::run_ctors_once();
                     T::update(ScreenBorrow::lift(arg0 as u32 as usize).get(), arg1);
                 }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_constructor_module_cabi<T: GuestModule>() -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = Module::new(T::new());
-                    (result0).take_handle() as i32
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_module_root_cabi<T: GuestModule>(
-                    arg0: *mut u8,
-                ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::root(ModuleBorrow::lift(arg0 as u32 as usize).get());
-                    (result0).take_handle() as i32
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_module_update_cabi<T: GuestModule>(
-                    arg0: *mut u8,
-                    arg1: f32,
-                ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    T::update(ModuleBorrow::lift(arg0 as u32 as usize).get(), arg1);
-                }
                 pub trait Guest {
                     type Screen: GuestScreen;
-                    type Module: GuestModule;
                 }
                 pub trait GuestScreen: 'static {
                     #[doc(hidden)]
@@ -4459,65 +4845,16 @@ pub mod exports {
                         }
                     }
 
-                    fn new() -> Self;
-                    fn root(&self) -> Node;
+                    fn new(shape: ScreenShape) -> Self;
+                    fn root(&self) -> Container;
                     fn visible(&self) -> bool;
                     fn set_visible(&self, value: bool);
-                    /// The module displayed in the screen, at all times.
-                    fn central_module(&self) -> Option<Module>;
-                    fn set_central_module(&self, value: Option<ModuleBorrow<'_>>);
-                    fn add_module(&self, value: ModuleBorrow<'_>);
-                    fn remove_module(&self, value: ModuleBorrow<'_>);
-                    fn modules(&self) -> _rt::Vec<Module>;
-                    fn update(&self, delta: f32);
-                }
-                pub trait GuestModule: 'static {
-                    #[doc(hidden)]
-                    unsafe fn _resource_new(val: *mut u8) -> u32
-                    where
-                        Self: Sized,
-                    {
-                        #[cfg(not(target_arch = "wasm32"))]
-                        {
-                            let _ = val;
-                            unreachable!();
-                        }
-
-                        #[cfg(target_arch = "wasm32")]
-                        {
-                            #[link(wasm_import_module = "[export]unavi:vscreen/screen")]
-                            extern "C" {
-                                #[link_name = "[resource-new]module"]
-                                fn new(_: *mut u8) -> u32;
-                            }
-                            new(val)
-                        }
-                    }
-
-                    #[doc(hidden)]
-                    fn _resource_rep(handle: u32) -> *mut u8
-                    where
-                        Self: Sized,
-                    {
-                        #[cfg(not(target_arch = "wasm32"))]
-                        {
-                            let _ = handle;
-                            unreachable!();
-                        }
-
-                        #[cfg(target_arch = "wasm32")]
-                        {
-                            #[link(wasm_import_module = "[export]unavi:vscreen/screen")]
-                            extern "C" {
-                                #[link_name = "[resource-rep]module"]
-                                fn rep(_: u32) -> *mut u8;
-                            }
-                            unsafe { rep(handle) }
-                        }
-                    }
-
-                    fn new() -> Self;
-                    fn root(&self) -> Node;
+                    fn child_layout(&self) -> ChildLayout;
+                    fn set_child_layout(&self, value: ChildLayout);
+                    fn children(&self) -> _rt::Vec<Screen>;
+                    fn add_child(&self, value: ScreenBorrow<'_>);
+                    fn remove_child(&self, value: ScreenBorrow<'_>);
+                    /// Updates the screen and all children.
                     fn update(&self, delta: f32);
                 }
                 #[doc(hidden)]
@@ -4526,8 +4863,8 @@ pub mod exports {
   ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
     #[export_name = "unavi:vscreen/screen#[constructor]screen"]
-    unsafe extern "C" fn export_constructor_screen() -> i32 {
-      $($path_to_types)*::_export_constructor_screen_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>()
+    unsafe extern "C" fn export_constructor_screen(arg0: i32,arg1: f32,arg2: f32,) -> i32 {
+      $($path_to_types)*::_export_constructor_screen_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0, arg1, arg2)
     }
     #[export_name = "unavi:vscreen/screen#[method]screen.root"]
     unsafe extern "C" fn export_method_screen_root(arg0: *mut u8,) -> i32 {
@@ -4541,45 +4878,33 @@ pub mod exports {
     unsafe extern "C" fn export_method_screen_set_visible(arg0: *mut u8,arg1: i32,) {
       $($path_to_types)*::_export_method_screen_set_visible_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0, arg1)
     }
-    #[export_name = "unavi:vscreen/screen#[method]screen.central-module"]
-    unsafe extern "C" fn export_method_screen_central_module(arg0: *mut u8,) -> *mut u8 {
-      $($path_to_types)*::_export_method_screen_central_module_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0)
+    #[export_name = "unavi:vscreen/screen#[method]screen.child-layout"]
+    unsafe extern "C" fn export_method_screen_child_layout(arg0: *mut u8,) -> *mut u8 {
+      $($path_to_types)*::_export_method_screen_child_layout_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0)
     }
-    #[export_name = "unavi:vscreen/screen#[method]screen.set-central-module"]
-    unsafe extern "C" fn export_method_screen_set_central_module(arg0: *mut u8,arg1: i32,arg2: i32,) {
-      $($path_to_types)*::_export_method_screen_set_central_module_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0, arg1, arg2)
+    #[export_name = "unavi:vscreen/screen#[method]screen.set-child-layout"]
+    unsafe extern "C" fn export_method_screen_set_child_layout(arg0: *mut u8,arg1: i32,arg2: f32,arg3: f32,arg4: f32,arg5: f32,arg6: f32,arg7: f32,arg8: f32,arg9: f32,arg10: f32,arg11: f32,) {
+      $($path_to_types)*::_export_method_screen_set_child_layout_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11)
     }
-    #[export_name = "unavi:vscreen/screen#[method]screen.add-module"]
-    unsafe extern "C" fn export_method_screen_add_module(arg0: *mut u8,arg1: i32,) {
-      $($path_to_types)*::_export_method_screen_add_module_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0, arg1)
+    #[export_name = "unavi:vscreen/screen#[method]screen.children"]
+    unsafe extern "C" fn export_method_screen_children(arg0: *mut u8,) -> *mut u8 {
+      $($path_to_types)*::_export_method_screen_children_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0)
     }
-    #[export_name = "unavi:vscreen/screen#[method]screen.remove-module"]
-    unsafe extern "C" fn export_method_screen_remove_module(arg0: *mut u8,arg1: i32,) {
-      $($path_to_types)*::_export_method_screen_remove_module_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0, arg1)
+    #[export_name = "cabi_post_unavi:vscreen/screen#[method]screen.children"]
+    unsafe extern "C" fn _post_return_method_screen_children(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_screen_children::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0)
     }
-    #[export_name = "unavi:vscreen/screen#[method]screen.modules"]
-    unsafe extern "C" fn export_method_screen_modules(arg0: *mut u8,) -> *mut u8 {
-      $($path_to_types)*::_export_method_screen_modules_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0)
+    #[export_name = "unavi:vscreen/screen#[method]screen.add-child"]
+    unsafe extern "C" fn export_method_screen_add_child(arg0: *mut u8,arg1: i32,) {
+      $($path_to_types)*::_export_method_screen_add_child_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0, arg1)
     }
-    #[export_name = "cabi_post_unavi:vscreen/screen#[method]screen.modules"]
-    unsafe extern "C" fn _post_return_method_screen_modules(arg0: *mut u8,) {
-      $($path_to_types)*::__post_return_method_screen_modules::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0)
+    #[export_name = "unavi:vscreen/screen#[method]screen.remove-child"]
+    unsafe extern "C" fn export_method_screen_remove_child(arg0: *mut u8,arg1: i32,) {
+      $($path_to_types)*::_export_method_screen_remove_child_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0, arg1)
     }
     #[export_name = "unavi:vscreen/screen#[method]screen.update"]
     unsafe extern "C" fn export_method_screen_update(arg0: *mut u8,arg1: f32,) {
       $($path_to_types)*::_export_method_screen_update_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0, arg1)
-    }
-    #[export_name = "unavi:vscreen/screen#[constructor]module"]
-    unsafe extern "C" fn export_constructor_module() -> i32 {
-      $($path_to_types)*::_export_constructor_module_cabi::<<$ty as $($path_to_types)*::Guest>::Module>()
-    }
-    #[export_name = "unavi:vscreen/screen#[method]module.root"]
-    unsafe extern "C" fn export_method_module_root(arg0: *mut u8,) -> i32 {
-      $($path_to_types)*::_export_method_module_root_cabi::<<$ty as $($path_to_types)*::Guest>::Module>(arg0)
-    }
-    #[export_name = "unavi:vscreen/screen#[method]module.update"]
-    unsafe extern "C" fn export_method_module_update(arg0: *mut u8,arg1: f32,) {
-      $($path_to_types)*::_export_method_module_update_cabi::<<$ty as $($path_to_types)*::Guest>::Module>(arg0, arg1)
     }
 
     const _: () = {
@@ -4593,25 +4918,13 @@ pub mod exports {
       }
     };
 
-
-    const _: () = {
-      #[doc(hidden)]
-      #[export_name = "unavi:vscreen/screen#[dtor]module"]
-      #[allow(non_snake_case)]
-      unsafe extern "C" fn dtor(rep: *mut u8) {
-        $($path_to_types)*::Module::dtor::<
-        <$ty as $($path_to_types)*::Guest>::Module
-        >(rep)
-      }
-    };
-
   };);
 }
                 #[doc(hidden)]
                 pub(crate) use __export_unavi_vscreen_screen_cabi;
                 #[repr(align(4))]
-                struct _RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                struct _RetArea([::core::mem::MaybeUninit<u8>; 44]);
+                static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 44]);
             }
         }
     }
@@ -4878,8 +5191,8 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 5886] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x82-\x01A\x02\x01A\x1d\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6642] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xf62\x01A\x02\x01A\x20\
 \x01B\x10\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\
 \0\x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01\
 r\x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -4993,23 +5306,39 @@ here.set-radius\x011\x01@\x01\x04self/\0\x10\x04\0\x13[method]sphere.kind\x012\x
 @\x02\x04self/\x05value\x10\x01\0\x04\0\x17[method]sphere.set-kind\x013\x01@\x01\
 \x04self/\0\x17\x04\0\x16[method]sphere.to-mesh\x014\x01@\x01\x04self/\0\x19\x04\
 \0\x16[method]sphere.to-node\x015\x04\0\x1e[method]sphere.to-physics-node\x015\x03\
-\x01\x10unavi:shapes/api\x05\x12\x01B%\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\0\
-\x04\0\x06screen\x03\x01\x04\0\x06module\x03\x01\x01i\x02\x01@\0\0\x04\x04\0\x13\
-[constructor]screen\x01\x05\x01h\x02\x01i\x01\x01@\x01\x04self\x06\0\x07\x04\0\x13\
-[method]screen.root\x01\x08\x01@\x01\x04self\x06\0\x7f\x04\0\x16[method]screen.v\
-isible\x01\x09\x01@\x02\x04self\x06\x05value\x7f\x01\0\x04\0\x1a[method]screen.s\
-et-visible\x01\x0a\x01i\x03\x01k\x0b\x01@\x01\x04self\x06\0\x0c\x04\0\x1d[method\
-]screen.central-module\x01\x0d\x01h\x03\x01k\x0e\x01@\x02\x04self\x06\x05value\x0f\
-\x01\0\x04\0![method]screen.set-central-module\x01\x10\x01@\x02\x04self\x06\x05v\
-alue\x0e\x01\0\x04\0\x19[method]screen.add-module\x01\x11\x04\0\x1c[method]scree\
-n.remove-module\x01\x11\x01p\x0b\x01@\x01\x04self\x06\0\x12\x04\0\x16[method]scr\
-een.modules\x01\x13\x01@\x02\x04self\x06\x05deltav\x01\0\x04\0\x15[method]screen\
-.update\x01\x14\x01@\0\0\x0b\x04\0\x13[constructor]module\x01\x15\x01@\x01\x04se\
-lf\x0e\0\x07\x04\0\x13[method]module.root\x01\x16\x01@\x02\x04self\x0e\x05deltav\
-\x01\0\x04\0\x15[method]module.update\x01\x17\x04\x01\x14unavi:vscreen/screen\x05\
-\x13\x04\x01\x13unavi:vscreen/guest\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\0G\x09p\
-roducers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\
-\x060.25.0";
+\x01\x10unavi:shapes/api\x05\x12\x01B#\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\0\
+\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x02\x01m\x03\x06center\x03end\x05start\x04\
+\0\x09alignment\x03\0\x04\x04\0\x09container\x03\x01\x01i\x06\x01@\x01\x04size\x01\
+\0\x07\x04\0\x16[constructor]container\x01\x08\x01h\x06\x01@\x01\x04self\x09\0\x07\
+\x04\0\x15[method]container.ref\x01\x0a\x01i\x03\x01@\x01\x04self\x09\0\x0b\x04\0\
+\x16[method]container.root\x01\x0c\x04\0\x17[method]container.inner\x01\x0c\x01p\
+\x07\x01@\x01\x04self\x09\0\x0d\x04\0\x1f[method]container.list-children\x01\x0e\
+\x01@\x02\x04self\x09\x05child\x09\x01\0\x04\0\x1b[method]container.add-child\x01\
+\x0f\x04\0\x1e[method]container.remove-child\x01\x0f\x01@\x01\x04self\x09\0\x01\x04\
+\0\x16[method]container.size\x01\x10\x01@\x02\x04self\x09\x05value\x01\x01\0\x04\
+\0\x1a[method]container.set-size\x01\x11\x01@\x01\x04self\x09\0\x05\x04\0\x19[me\
+thod]container.align-x\x01\x12\x04\0\x19[method]container.align-y\x01\x12\x04\0\x19\
+[method]container.align-z\x01\x12\x01@\x02\x04self\x09\x05value\x05\x01\0\x04\0\x1d\
+[method]container.set-align-x\x01\x13\x04\0\x1d[method]container.set-align-y\x01\
+\x13\x04\0\x1d[method]container.set-align-z\x01\x13\x03\x01\x16unavi:layout/cont\
+ainer\x05\x13\x02\x03\0\x08\x09container\x01B&\x02\x03\x02\x01\x14\x04\0\x09cont\
+ainer\x03\0\0\x02\x03\x02\x01\x0c\x04\0\x09transform\x03\0\x02\x02\x03\x02\x01\x10\
+\x04\0\x04vec2\x03\0\x04\x02\x03\x02\x01\x04\x04\0\x04vec3\x03\0\x06\x02\x03\x02\
+\x01\x11\x04\0\x04node\x03\0\x08\x01q\x02\x06circle\x01v\0\x09rectangle\x01\x05\0\
+\x04\0\x0cscreen-shape\x03\0\x0a\x01q\x03\x09butterfly\0\0\x06circle\0\0\x09tran\
+sform\x01\x03\0\x04\0\x0cchild-layout\x03\0\x0c\x04\0\x06screen\x03\x01\x01i\x0e\
+\x01@\x01\x05shape\x0b\0\x0f\x04\0\x13[constructor]screen\x01\x10\x01h\x0e\x01i\x01\
+\x01@\x01\x04self\x11\0\x12\x04\0\x13[method]screen.root\x01\x13\x01@\x01\x04sel\
+f\x11\0\x7f\x04\0\x16[method]screen.visible\x01\x14\x01@\x02\x04self\x11\x05valu\
+e\x7f\x01\0\x04\0\x1a[method]screen.set-visible\x01\x15\x01@\x01\x04self\x11\0\x0d\
+\x04\0\x1b[method]screen.child-layout\x01\x16\x01@\x02\x04self\x11\x05value\x0d\x01\
+\0\x04\0\x1f[method]screen.set-child-layout\x01\x17\x01p\x0f\x01@\x01\x04self\x11\
+\0\x18\x04\0\x17[method]screen.children\x01\x19\x01@\x02\x04self\x11\x05value\x11\
+\x01\0\x04\0\x18[method]screen.add-child\x01\x1a\x04\0\x1b[method]screen.remove-\
+child\x01\x1a\x01@\x02\x04self\x11\x05deltav\x01\0\x04\0\x15[method]screen.updat\
+e\x01\x1b\x04\x01\x14unavi:vscreen/screen\x05\x15\x04\x01\x13unavi:vscreen/guest\
+\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0d\
+wit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

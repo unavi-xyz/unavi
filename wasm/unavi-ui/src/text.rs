@@ -40,7 +40,6 @@ impl Text {
         let thickness = self.0.thickness.get();
 
         let flat = thickness == 0.0;
-
         let transform = [
             font_size, 0.0, 0.0, 0.0, 0.0, font_size, 0.0, 0.0, 0.0, 0.0, thickness, 0.0, 0.0, 0.0,
             0.0, 1.0,
@@ -67,14 +66,18 @@ impl GuestText for Text {
         let mesh = Mesh::new();
         let primitive = mesh.create_primitive();
 
-        Self(Rc::new(TextData {
+        let text = Self(Rc::new(TextData {
             font_size: Cell::new(0.25),
             generator: RefCell::new(MeshGenerator::new(FONT.to_owned())),
             mesh,
             primitive,
             text: RefCell::new(text),
             thickness: Cell::default(),
-        }))
+        }));
+
+        text.generate();
+
+        text
     }
 
     fn ref_(&self) -> TextExport {

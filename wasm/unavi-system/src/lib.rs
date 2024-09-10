@@ -1,9 +1,9 @@
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
-    unavi::vscreen::screen::{Module, Screen},
+    unavi::vscreen::screen::{Screen, ScreenShape},
     wired::{
         player::api::{local_player, Skeleton},
-        scene::node::Node,
+        scene::gltf::Node,
     },
 };
 
@@ -24,15 +24,12 @@ struct Script {
 
 impl GuestScript for Script {
     fn new() -> Self {
-        let screen = Screen::new();
-
-        let clock = Module::new();
-        screen.set_central_module(Some(&clock));
+        let screen = Screen::new(ScreenShape::Circle(0.03));
 
         let player = local_player();
         let skeleton = player.skeleton();
 
-        skeleton.left_hand.add_child(&screen.root());
+        skeleton.left_hand.add_child(&screen.root().root());
 
         Script {
             root: player.root(),

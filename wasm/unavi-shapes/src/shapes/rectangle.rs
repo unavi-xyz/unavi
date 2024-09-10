@@ -39,7 +39,7 @@ impl GuestRectangle for Rectangle {
         let node = self.to_node();
         let size = self.size();
         node.set_collider(Some(&Collider::new(Shape::Cuboid(Vec3::new(
-            size.x, size.y, 0.0,
+            size.x, 0.0, size.y,
         )))));
         node
     }
@@ -59,13 +59,11 @@ fn create_rectangle_mesh(size: Vec2) -> Mesh {
     let mut uvs: Vec<[f32; 2]> = Vec::with_capacity(num_vertices);
     let mut indices: Vec<u32> = Vec::with_capacity(num_indices);
 
-    let rotation = glam::Quat::from_rotation_arc(glam::Vec3::Y, normal);
-
     for z in 0..z_vertex_count {
         for x in 0..x_vertex_count {
             let tx = x as f32 / (x_vertex_count - 1) as f32;
             let tz = z as f32 / (z_vertex_count - 1) as f32;
-            let pos = rotation * glam::Vec3::new((-0.5 + tx) * size.x, 0.0, (-0.5 + tz) * size.y);
+            let pos = glam::Vec3::new((-0.5 + tx) * size.x, 0.0, (-0.5 + tz) * size.y);
             positions.push(pos);
             normals.push(normal.to_array());
             uvs.push([tx, tz]);
@@ -93,7 +91,6 @@ fn create_rectangle_mesh(size: Vec2) -> Mesh {
 
     let mesh = Mesh::new();
     let primitive = mesh.create_primitive();
-
     primitive.set_indices(&indices);
     primitive.set_normals(&normals);
     primitive.set_positions(&positions);

@@ -8,12 +8,10 @@ use crate::bindings::{
     exports::unavi::vscreen::screen::{
         ChildLayout, Container, GuestScreen, Screen as ScreenExport, ScreenBorrow, ScreenShape,
     },
-    unavi::shapes::api::{Cylinder, Rectangle},
+    unavi::shapes::api::{Circle, Rectangle},
     wired::math::types::{Transform, Vec3},
 };
 
-const ANIMATION_DURATION_SECONDS: f32 = 0.3;
-const ARM_RADIUS: f32 = 0.03;
 const MAX_SCALE: f32 = 1.0;
 const MIN_SCALE: f32 = 0.0;
 
@@ -32,6 +30,7 @@ pub struct ScreenData {
     id: usize,
     child_layout: Cell<ChildLayout>,
     children: RefCell<Vec<Screen>>,
+    open_duration: Cell<f32>,
     root: Container,
     visible: Cell<bool>,
     visible_animating: Cell<bool>,
@@ -40,28 +39,22 @@ pub struct ScreenData {
 impl GuestScreen for Screen {
     fn new(shape: ScreenShape) -> Self {
         let (size, mesh) = match shape {
-            ScreenShape::Circle(radius) => {
-                let mesh = Cylinder::new(radius, 0.005).to_physics_node();
-                mesh.set_transform(Transform {
-                    translation: Vec3::new(radius * 2.0, ARM_RADIUS, -ARM_RADIUS / 3.0),
-                    scale: Vec3::splat(MIN_SCALE),
-                    ..Default::default()
-                });
-                (Vec3::new(radius, radius, 0.01), mesh)
-            }
-            ScreenShape::Rectangle(size) => {
-                let mesh = Rectangle::new(size).to_physics_node();
-                mesh.set_transform(Transform {
-                    translation: Vec3::new(size.x, ARM_RADIUS, -ARM_RADIUS / 3.0),
-                    scale: Vec3::splat(MIN_SCALE),
-                    ..Default::default()
-                });
-                (Vec3::new(size.x, size.y, 0.01), mesh)
-            }
+            ScreenShape::Circle(radius) => (
+                Vec3::new(radius, radius, 0.0),
+                Circle::new(radius).to_physics_node(),
+            ),
+            ScreenShape::Rectangle(size) => (
+                Vec3::new(size.x, size.y, 0.0),
+                Rectangle::new(size).to_physics_node(),
+            ),
         };
 
         let root = Container::new(size);
         root.inner().add_child(&mesh);
+        root.inner().set_transform(Transform {
+            scale: Vec3::splat(MIN_SCALE),
+            ..Default::default()
+        });
 
         let id = ID.fetch_add(1, Ordering::Relaxed);
 
@@ -69,6 +62,7 @@ impl GuestScreen for Screen {
             id,
             child_layout: Cell::new(ChildLayout::Butterfly),
             children: RefCell::default(),
+            open_duration: Cell::new(1.0),
             root,
             visible: Cell::default(),
             visible_animating: Cell::default(),
@@ -83,12 +77,15 @@ impl GuestScreen for Screen {
         self.0.visible.get()
     }
     fn set_visible(&self, value: bool) {
-        if self.0.visible.get() == value {
-            return;
-        }
-
         self.0.visible.set(value);
         self.0.visible_animating.set(true);
+    }
+
+    fn open_duration(&self) -> f32 {
+        self.0.open_duration.get()
+    }
+    fn set_open_duration(&self, value: f32) {
+        self.0.open_duration.set(value);
     }
 
     fn child_layout(&self) -> ChildLayout {
@@ -127,33 +124,33 @@ impl GuestScreen for Screen {
         let visible = self.0.visible.get();
 
         if self.0.visible_animating.get() {
-            let mut transform = self.0.root.root().transform();
+            let mut transform = self.0.root.inner().transform();
 
             if visible {
-                transform.scale += delta / ANIMATION_DURATION_SECONDS;
+                transform.scale += delta / self.0.open_duration.get();
 
-                if transform.scale.x > MAX_SCALE {
+                if transform.scale.x >= MAX_SCALE {
                     transform.scale = Vec3::splat(MAX_SCALE);
                     self.0.visible_animating.set(false);
                 }
             } else {
-                transform.scale -= delta / ANIMATION_DURATION_SECONDS;
+                transform.scale -= delta / self.0.open_duration.get();
 
-                if transform.scale.x < MIN_SCALE {
+                if transform.scale.x <= MIN_SCALE {
                     transform.scale = Vec3::splat(MIN_SCALE);
                     self.0.visible_animating.set(false);
                 }
             }
 
-            self.0.root.root().set_transform(transform);
+            self.0.root.inner().set_transform(transform);
         }
 
         if !visible {
             return;
         }
 
-        for module in self.0.children.borrow().iter() {
-            module.update(delta);
+        for child in self.0.children.borrow().iter() {
+            child.update(delta);
         }
     }
 }

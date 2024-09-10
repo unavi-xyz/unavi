@@ -53,7 +53,7 @@ impl GuestCircle for Circle {
         let radius = self.radius.get();
         node.set_collider(Some(&Collider::new(Shape::Cylinder(ShapeCylinder {
             radius,
-            height: 0.0001,
+            height: 0.0,
         }))));
         node
     }

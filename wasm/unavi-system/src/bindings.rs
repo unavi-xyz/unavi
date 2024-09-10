@@ -1677,6 +1677,46 @@ pub mod unavi {
             }
             impl Screen {
                 #[allow(unused_unsafe, clippy::all)]
+                /// How long it takes to open the screen, in seconds.
+                pub fn open_duration(&self) -> f32 {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:vscreen/screen")]
+                        extern "C" {
+                            #[link_name = "[method]screen.open-duration"]
+                            fn wit_import(_: i32) -> f32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> f32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        ret
+                    }
+                }
+            }
+            impl Screen {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_open_duration(&self, value: f32) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:vscreen/screen")]
+                        extern "C" {
+                            #[link_name = "[method]screen.set-open-duration"]
+                            fn wit_import(_: i32, _: f32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: f32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_f32(&value));
+                    }
+                }
+            }
+            impl Screen {
+                #[allow(unused_unsafe, clippy::all)]
                 pub fn child_layout(&self) -> ChildLayout {
                     unsafe {
                         #[repr(align(4))]
@@ -7936,8 +7976,8 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 10208] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xe4N\x01A\x02\x01A4\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 10307] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc7O\x01A\x02\x01A4\x01\
 B\x10\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\
 \x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01r\
 \x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -8045,7 +8085,7 @@ iner.align-y\x01\x12\x04\0\x19[method]container.align-z\x01\x12\x01@\x02\x04self
 \x09\x05value\x05\x01\0\x04\0\x1d[method]container.set-align-x\x01\x13\x04\0\x1d\
 [method]container.set-align-y\x01\x13\x04\0\x1d[method]container.set-align-z\x01\
 \x13\x03\x01\x16unavi:layout/container\x05\x12\x02\x03\0\x08\x09container\x02\x03\
-\0\0\x04vec2\x01B&\x02\x03\x02\x01\x13\x04\0\x09container\x03\0\0\x02\x03\x02\x01\
+\0\0\x04vec2\x01B*\x02\x03\x02\x01\x13\x04\0\x09container\x03\0\0\x02\x03\x02\x01\
 \x0c\x04\0\x09transform\x03\0\x02\x02\x03\x02\x01\x14\x04\0\x04vec2\x03\0\x04\x02\
 \x03\x02\x01\x04\x04\0\x04vec3\x03\0\x06\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\
 \x08\x01q\x02\x06circle\x01v\0\x09rectangle\x01\x05\0\x04\0\x0cscreen-shape\x03\0\
@@ -8054,26 +8094,28 @@ ld-layout\x03\0\x0c\x04\0\x06screen\x03\x01\x01i\x0e\x01@\x01\x05shape\x0b\0\x0f
 \x04\0\x13[constructor]screen\x01\x10\x01h\x0e\x01i\x01\x01@\x01\x04self\x11\0\x12\
 \x04\0\x13[method]screen.root\x01\x13\x01@\x01\x04self\x11\0\x7f\x04\0\x16[metho\
 d]screen.visible\x01\x14\x01@\x02\x04self\x11\x05value\x7f\x01\0\x04\0\x1a[metho\
-d]screen.set-visible\x01\x15\x01@\x01\x04self\x11\0\x0d\x04\0\x1b[method]screen.\
-child-layout\x01\x16\x01@\x02\x04self\x11\x05value\x0d\x01\0\x04\0\x1f[method]sc\
-reen.set-child-layout\x01\x17\x01p\x0f\x01@\x01\x04self\x11\0\x18\x04\0\x17[meth\
-od]screen.children\x01\x19\x01@\x02\x04self\x11\x05value\x11\x01\0\x04\0\x18[met\
-hod]screen.add-child\x01\x1a\x04\0\x1b[method]screen.remove-child\x01\x1a\x01@\x02\
-\x04self\x11\x05deltav\x01\0\x04\0\x15[method]screen.update\x01\x1b\x03\x01\x14u\
-navi:vscreen/screen\x05\x15\x01B\x02\x01@\x01\x05deltav\x01\0\x04\0\x09update-ui\
-\x01\0\x03\x01\x0cunavi:ui/api\x05\x16\x01B\x0f\x02\x03\x02\x01\x13\x04\0\x09con\
-tainer\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x0dinput-handler\x03\0\x02\x04\0\x06but\
-ton\x03\x01\x01i\x01\x01i\x04\x01@\x01\x04root\x05\0\x06\x04\0\x13[constructor]b\
-utton\x01\x07\x01h\x04\x01@\x01\x04self\x08\0\x05\x04\0\x13[method]button.root\x01\
-\x09\x01@\x01\x04self\x08\0\x7f\x04\0\x16[method]button.hovered\x01\x0a\x04\0\x16\
-[method]button.pressed\x01\x0a\x03\x01\x0funavi:ui/button\x05\x17\x01B(\x02\x03\x02\
-\x01\x13\x04\0\x09container\x03\0\0\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\x02\x02\
-\x03\x02\x01\x10\x04\0\x04node\x03\0\x04\x04\0\x04text\x03\x01\x04\0\x08text-box\
-\x03\x01\x01i\x06\x01@\x01\x04texts\0\x08\x04\0\x11[constructor]text\x01\x09\x01\
-h\x06\x01@\x01\x04self\x0a\0\x08\x04\0\x10[method]text.ref\x01\x0b\x01p}\x01k\x0c\
-\x01@\x02\x04self\x0a\x05value\x0d\x01\0\x04\0\x15[method]text.set-font\x01\x0e\x01\
-@\x01\x04self\x0a\0s\x04\0\x11[method]text.text\x01\x0f\x01@\x02\x04self\x0a\x05\
-values\x01\0\x04\0\x15[method]text.set-text\x01\x10\x01@\x01\x04self\x0a\0v\x04\0\
+d]screen.set-visible\x01\x15\x01@\x01\x04self\x11\0v\x04\0\x1c[method]screen.ope\
+n-duration\x01\x16\x01@\x02\x04self\x11\x05valuev\x01\0\x04\0\x20[method]screen.\
+set-open-duration\x01\x17\x01@\x01\x04self\x11\0\x0d\x04\0\x1b[method]screen.chi\
+ld-layout\x01\x18\x01@\x02\x04self\x11\x05value\x0d\x01\0\x04\0\x1f[method]scree\
+n.set-child-layout\x01\x19\x01p\x0f\x01@\x01\x04self\x11\0\x1a\x04\0\x17[method]\
+screen.children\x01\x1b\x01@\x02\x04self\x11\x05value\x11\x01\0\x04\0\x18[method\
+]screen.add-child\x01\x1c\x04\0\x1b[method]screen.remove-child\x01\x1c\x01@\x02\x04\
+self\x11\x05deltav\x01\0\x04\0\x15[method]screen.update\x01\x1d\x03\x01\x14unavi\
+:vscreen/screen\x05\x15\x01B\x02\x01@\x01\x05deltav\x01\0\x04\0\x09update-ui\x01\
+\0\x03\x01\x0cunavi:ui/api\x05\x16\x01B\x0f\x02\x03\x02\x01\x13\x04\0\x09contain\
+er\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x0dinput-handler\x03\0\x02\x04\0\x06button\x03\
+\x01\x01i\x01\x01i\x04\x01@\x01\x04root\x05\0\x06\x04\0\x13[constructor]button\x01\
+\x07\x01h\x04\x01@\x01\x04self\x08\0\x05\x04\0\x13[method]button.root\x01\x09\x01\
+@\x01\x04self\x08\0\x7f\x04\0\x16[method]button.hovered\x01\x0a\x04\0\x16[method\
+]button.pressed\x01\x0a\x03\x01\x0funavi:ui/button\x05\x17\x01B(\x02\x03\x02\x01\
+\x13\x04\0\x09container\x03\0\0\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\x02\x02\x03\
+\x02\x01\x10\x04\0\x04node\x03\0\x04\x04\0\x04text\x03\x01\x04\0\x08text-box\x03\
+\x01\x01i\x06\x01@\x01\x04texts\0\x08\x04\0\x11[constructor]text\x01\x09\x01h\x06\
+\x01@\x01\x04self\x0a\0\x08\x04\0\x10[method]text.ref\x01\x0b\x01p}\x01k\x0c\x01\
+@\x02\x04self\x0a\x05value\x0d\x01\0\x04\0\x15[method]text.set-font\x01\x0e\x01@\
+\x01\x04self\x0a\0s\x04\0\x11[method]text.text\x01\x0f\x01@\x02\x04self\x0a\x05v\
+alues\x01\0\x04\0\x15[method]text.set-text\x01\x10\x01@\x01\x04self\x0a\0v\x04\0\
 \x16[method]text.font-size\x01\x11\x01@\x02\x04self\x0a\x05valuev\x01\0\x04\0\x1a\
 [method]text.set-font-size\x01\x12\x04\0\x16[method]text.thickness\x01\x11\x04\0\
 \x1a[method]text.set-thickness\x01\x12\x01i\x03\x01@\x01\x04self\x0a\0\x13\x04\0\

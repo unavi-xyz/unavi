@@ -1,4 +1,4 @@
-use std::{cell::Cell, f32::consts::PI};
+use std::{cell::Cell, f32::consts::FRAC_PI_2};
 
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
@@ -41,7 +41,7 @@ impl GuestScript for Script {
         container.set_align_z(Alignment::End);
         container.root().set_transform(Transform {
             translation: Vec3::new(0.0, 0.2, -8.0),
-            rotation: Quat::from_rotation_y(PI),
+            rotation: Quat::from_rotation_x(FRAC_PI_2),
             ..Default::default()
         });
 
@@ -65,13 +65,17 @@ impl GuestScript for Script {
 
         // Button
         let button = Button::new(Container::new(Vec3::new(1.0, 0.5, 0.2)));
+        button
+            .root()
+            .inner()
+            .set_transform(Transform::from_rotation(Quat::from_rotation_x(-FRAC_PI_2)));
         container.add_child(&button.root());
 
         // TextBox
         let clock_container = Container::new(Vec3::new(2.0, 0.5, 0.01));
         clock_container.inner().set_transform(Transform {
-            translation: Vec3::new(-1.0, 1.0, 0.0),
-            rotation: Quat::from_rotation_y(PI),
+            translation: Vec3::new(1.5, 0.01, -1.0),
+            rotation: Quat::from_rotation_x(-FRAC_PI_2),
             ..Default::default()
         });
         container.add_child(&clock_container);
@@ -84,8 +88,8 @@ impl GuestScript for Script {
         clock.root().root().add_child(&label);
         label.set_mesh(Some(&label_text.mesh()));
         label.set_transform(Transform {
-            translation: Vec3::new(0.0, 1.1, 0.0),
-            rotation: Quat::from_rotation_y(PI),
+            translation: Vec3::new(0.5, 0.01, -1.0),
+            rotation: Quat::from_rotation_x(-FRAC_PI_2),
             ..Default::default()
         });
 

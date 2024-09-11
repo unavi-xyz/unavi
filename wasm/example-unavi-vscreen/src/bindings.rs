@@ -2033,7 +2033,6 @@ pub mod unavi {
                 super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Container = super::super::super::unavi::layout::container::Container;
-            pub type Transform = super::super::super::wired::math::types::Transform;
             pub type Vec2 = super::super::super::wired::math::types::Vec2;
             #[derive(Clone, Copy)]
             pub enum ScreenShape {
@@ -2048,26 +2047,6 @@ pub mod unavi {
                         }
                         ScreenShape::Rectangle(e) => {
                             f.debug_tuple("ScreenShape::Rectangle").field(e).finish()
-                        }
-                    }
-                }
-            }
-            #[derive(Clone, Copy)]
-            pub enum ChildLayout {
-                /// Children are aranged in two wings, on either side of the screen.
-                Butterfly,
-                /// Children are aranged in a circle around the screen.
-                Circle,
-                /// Children are given a specific relative transform.
-                Transform(Transform),
-            }
-            impl ::core::fmt::Debug for ChildLayout {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    match self {
-                        ChildLayout::Butterfly => f.debug_tuple("ChildLayout::Butterfly").finish(),
-                        ChildLayout::Circle => f.debug_tuple("ChildLayout::Circle").finish(),
-                        ChildLayout::Transform(e) => {
-                            f.debug_tuple("ChildLayout::Transform").field(e).finish()
                         }
                     }
                 }
@@ -2253,189 +2232,6 @@ pub mod unavi {
                             unreachable!()
                         }
                         wit_import((self).handle() as i32, _rt::as_f32(&value));
-                    }
-                }
-            }
-            impl Screen {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn child_layout(&self) -> ChildLayout {
-                    unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 44]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 44]);
-                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "unavi:vscreen/screen")]
-                        extern "C" {
-                            #[link_name = "[method]screen.child-layout"]
-                            fn wit_import(_: i32, _: *mut u8);
-                        }
-
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: *mut u8) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, ptr0);
-                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
-                        let v12 = match l1 {
-                            0 => ChildLayout::Butterfly,
-                            1 => ChildLayout::Circle,
-                            n => {
-                                debug_assert_eq!(n, 2, "invalid enum discriminant");
-                                let e12 = {
-                                    let l2 = *ptr0.add(4).cast::<f32>();
-                                    let l3 = *ptr0.add(8).cast::<f32>();
-                                    let l4 = *ptr0.add(12).cast::<f32>();
-                                    let l5 = *ptr0.add(16).cast::<f32>();
-                                    let l6 = *ptr0.add(20).cast::<f32>();
-                                    let l7 = *ptr0.add(24).cast::<f32>();
-                                    let l8 = *ptr0.add(28).cast::<f32>();
-                                    let l9 = *ptr0.add(32).cast::<f32>();
-                                    let l10 = *ptr0.add(36).cast::<f32>();
-                                    let l11 = *ptr0.add(40).cast::<f32>();
-
-                                    super::super::super::wired::math::types::Transform {
-                                        rotation: super::super::super::wired::math::types::Quat {
-                                            x: l2,
-                                            y: l3,
-                                            z: l4,
-                                            w: l5,
-                                        },
-                                        scale: super::super::super::wired::math::types::Vec3 {
-                                            x: l6,
-                                            y: l7,
-                                            z: l8,
-                                        },
-                                        translation:
-                                            super::super::super::wired::math::types::Vec3 {
-                                                x: l9,
-                                                y: l10,
-                                                z: l11,
-                                            },
-                                    }
-                                };
-                                ChildLayout::Transform(e12)
-                            }
-                        };
-                        v12
-                    }
-                }
-            }
-            impl Screen {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn set_child_layout(&self, value: ChildLayout) {
-                    unsafe {
-                        let (
-                            result4_0,
-                            result4_1,
-                            result4_2,
-                            result4_3,
-                            result4_4,
-                            result4_5,
-                            result4_6,
-                            result4_7,
-                            result4_8,
-                            result4_9,
-                            result4_10,
-                        ) = match value {
-                            ChildLayout::Butterfly => (
-                                0i32, 0.0f32, 0.0f32, 0.0f32, 0.0f32, 0.0f32, 0.0f32, 0.0f32,
-                                0.0f32, 0.0f32, 0.0f32,
-                            ),
-                            ChildLayout::Circle => (
-                                1i32, 0.0f32, 0.0f32, 0.0f32, 0.0f32, 0.0f32, 0.0f32, 0.0f32,
-                                0.0f32, 0.0f32, 0.0f32,
-                            ),
-                            ChildLayout::Transform(e) => {
-                                let super::super::super::wired::math::types::Transform {
-                                    rotation: rotation0,
-                                    scale: scale0,
-                                    translation: translation0,
-                                } = e;
-                                let super::super::super::wired::math::types::Quat {
-                                    x: x1,
-                                    y: y1,
-                                    z: z1,
-                                    w: w1,
-                                } = rotation0;
-                                let super::super::super::wired::math::types::Vec3 {
-                                    x: x2,
-                                    y: y2,
-                                    z: z2,
-                                } = scale0;
-                                let super::super::super::wired::math::types::Vec3 {
-                                    x: x3,
-                                    y: y3,
-                                    z: z3,
-                                } = translation0;
-
-                                (
-                                    2i32,
-                                    _rt::as_f32(x1),
-                                    _rt::as_f32(y1),
-                                    _rt::as_f32(z1),
-                                    _rt::as_f32(w1),
-                                    _rt::as_f32(x2),
-                                    _rt::as_f32(y2),
-                                    _rt::as_f32(z2),
-                                    _rt::as_f32(x3),
-                                    _rt::as_f32(y3),
-                                    _rt::as_f32(z3),
-                                )
-                            }
-                        };
-
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "unavi:vscreen/screen")]
-                        extern "C" {
-                            #[link_name = "[method]screen.set-child-layout"]
-                            fn wit_import(
-                                _: i32,
-                                _: i32,
-                                _: f32,
-                                _: f32,
-                                _: f32,
-                                _: f32,
-                                _: f32,
-                                _: f32,
-                                _: f32,
-                                _: f32,
-                                _: f32,
-                                _: f32,
-                            );
-                        }
-
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(
-                            _: i32,
-                            _: i32,
-                            _: f32,
-                            _: f32,
-                            _: f32,
-                            _: f32,
-                            _: f32,
-                            _: f32,
-                            _: f32,
-                            _: f32,
-                            _: f32,
-                            _: f32,
-                        ) {
-                            unreachable!()
-                        }
-                        wit_import(
-                            (self).handle() as i32,
-                            result4_0,
-                            result4_1,
-                            result4_2,
-                            result4_3,
-                            result4_4,
-                            result4_5,
-                            result4_6,
-                            result4_7,
-                            result4_8,
-                            result4_9,
-                            result4_10,
-                        );
                     }
                 }
             }
@@ -5938,8 +5734,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7738] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xbd;\x01A\x02\x01A\"\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7586] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa5:\x01A\x02\x01A\"\
 \x01B\x10\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\
 \0\x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01\
 r\x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -6086,28 +5882,25 @@ ontainer.align-y\x01\x12\x04\0\x19[method]container.align-z\x01\x12\x01@\x02\x04
 self\x09\x05value\x05\x01\0\x04\0\x1d[method]container.set-align-x\x01\x13\x04\0\
 \x1d[method]container.set-align-y\x01\x13\x04\0\x1d[method]container.set-align-z\
 \x01\x13\x03\x01\x16unavi:layout/container\x05\x13\x02\x03\0\x08\x09container\x01\
-B*\x02\x03\x02\x01\x14\x04\0\x09container\x03\0\0\x02\x03\x02\x01\x0c\x04\0\x09t\
+B$\x02\x03\x02\x01\x14\x04\0\x09container\x03\0\0\x02\x03\x02\x01\x0c\x04\0\x09t\
 ransform\x03\0\x02\x02\x03\x02\x01\x10\x04\0\x04vec2\x03\0\x04\x02\x03\x02\x01\x04\
 \x04\0\x04vec3\x03\0\x06\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x08\x01q\x02\x06\
-circle\x01v\0\x09rectangle\x01\x05\0\x04\0\x0cscreen-shape\x03\0\x0a\x01q\x03\x09\
-butterfly\0\0\x06circle\0\0\x09transform\x01\x03\0\x04\0\x0cchild-layout\x03\0\x0c\
-\x04\0\x06screen\x03\x01\x01i\x0e\x01@\x01\x05shape\x0b\0\x0f\x04\0\x13[construc\
-tor]screen\x01\x10\x01h\x0e\x01i\x01\x01@\x01\x04self\x11\0\x12\x04\0\x13[method\
-]screen.root\x01\x13\x01@\x01\x04self\x11\0\x7f\x04\0\x16[method]screen.visible\x01\
-\x14\x01@\x02\x04self\x11\x05value\x7f\x01\0\x04\0\x1a[method]screen.set-visible\
-\x01\x15\x01@\x01\x04self\x11\0v\x04\0\x1c[method]screen.open-duration\x01\x16\x01\
-@\x02\x04self\x11\x05valuev\x01\0\x04\0\x20[method]screen.set-open-duration\x01\x17\
-\x01@\x01\x04self\x11\0\x0d\x04\0\x1b[method]screen.child-layout\x01\x18\x01@\x02\
-\x04self\x11\x05value\x0d\x01\0\x04\0\x1f[method]screen.set-child-layout\x01\x19\
-\x01p\x0f\x01@\x01\x04self\x11\0\x1a\x04\0\x17[method]screen.children\x01\x1b\x01\
-@\x02\x04self\x11\x05value\x11\x01\0\x04\0\x18[method]screen.add-child\x01\x1c\x04\
-\0\x1b[method]screen.remove-child\x01\x1c\x01@\x02\x04self\x11\x05deltav\x01\0\x04\
-\0\x15[method]screen.update\x01\x1d\x03\x01\x14unavi:vscreen/screen\x05\x15\x01B\
-\x07\x04\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\
-\x02\x01h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\
-\x04\x04\x01\x12wired:script/types\x05\x16\x04\x01\x1cexample:unavi-vscreen/scri\
-pt\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\
-\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+circle\x01v\0\x09rectangle\x01\x05\0\x04\0\x0cscreen-shape\x03\0\x0a\x04\0\x06sc\
+reen\x03\x01\x01i\x0c\x01@\x01\x05shape\x0b\0\x0d\x04\0\x13[constructor]screen\x01\
+\x0e\x01h\x0c\x01i\x01\x01@\x01\x04self\x0f\0\x10\x04\0\x13[method]screen.root\x01\
+\x11\x01@\x01\x04self\x0f\0\x7f\x04\0\x16[method]screen.visible\x01\x12\x01@\x02\
+\x04self\x0f\x05value\x7f\x01\0\x04\0\x1a[method]screen.set-visible\x01\x13\x01@\
+\x01\x04self\x0f\0v\x04\0\x1c[method]screen.open-duration\x01\x14\x01@\x02\x04se\
+lf\x0f\x05valuev\x01\0\x04\0\x20[method]screen.set-open-duration\x01\x15\x01p\x0d\
+\x01@\x01\x04self\x0f\0\x16\x04\0\x17[method]screen.children\x01\x17\x01@\x02\x04\
+self\x0f\x05value\x0f\x01\0\x04\0\x18[method]screen.add-child\x01\x18\x04\0\x1b[\
+method]screen.remove-child\x01\x18\x01@\x02\x04self\x0f\x05deltav\x01\0\x04\0\x15\
+[method]screen.update\x01\x19\x03\x01\x14unavi:vscreen/screen\x05\x15\x01B\x07\x04\
+\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01\
+h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\
+\x01\x12wired:script/types\x05\x16\x04\x01\x1cexample:unavi-vscreen/script\x04\0\
+\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-\
+component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

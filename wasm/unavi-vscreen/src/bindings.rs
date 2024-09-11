@@ -4987,7 +4987,6 @@ pub mod exports {
                 use super::super::super::super::_rt;
                 pub type Container =
                     super::super::super::super::unavi::layout::container::Container;
-                pub type Transform = super::super::super::super::wired::math::types::Transform;
                 pub type Vec2 = super::super::super::super::wired::math::types::Vec2;
                 #[derive(Clone, Copy)]
                 pub enum ScreenShape {
@@ -5002,28 +5001,6 @@ pub mod exports {
                             }
                             ScreenShape::Rectangle(e) => {
                                 f.debug_tuple("ScreenShape::Rectangle").field(e).finish()
-                            }
-                        }
-                    }
-                }
-                #[derive(Clone, Copy)]
-                pub enum ChildLayout {
-                    /// Children are aranged in two wings, on either side of the screen.
-                    Butterfly,
-                    /// Children are aranged in a circle around the screen.
-                    Circle,
-                    /// Children are given a specific relative transform.
-                    Transform(Transform),
-                }
-                impl ::core::fmt::Debug for ChildLayout {
-                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                        match self {
-                            ChildLayout::Butterfly => {
-                                f.debug_tuple("ChildLayout::Butterfly").finish()
-                            }
-                            ChildLayout::Circle => f.debug_tuple("ChildLayout::Circle").finish(),
-                            ChildLayout::Transform(e) => {
-                                f.debug_tuple("ChildLayout::Transform").field(e).finish()
                             }
                         }
                     }
@@ -5255,105 +5232,6 @@ pub mod exports {
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_screen_child_layout_cabi<T: GuestScreen>(
-                    arg0: *mut u8,
-                ) -> *mut u8 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::child_layout(ScreenBorrow::lift(arg0 as u32 as usize).get());
-                    let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
-                    match result0 {
-                        ChildLayout::Butterfly => {
-                            *ptr1.add(0).cast::<u8>() = (0i32) as u8;
-                        }
-                        ChildLayout::Circle => {
-                            *ptr1.add(0).cast::<u8>() = (1i32) as u8;
-                        }
-                        ChildLayout::Transform(e) => {
-                            *ptr1.add(0).cast::<u8>() = (2i32) as u8;
-                            let super::super::super::super::wired::math::types::Transform {
-                                rotation: rotation2,
-                                scale: scale2,
-                                translation: translation2,
-                            } = e;
-                            let super::super::super::super::wired::math::types::Quat {
-                                x: x3,
-                                y: y3,
-                                z: z3,
-                                w: w3,
-                            } = rotation2;
-                            *ptr1.add(4).cast::<f32>() = _rt::as_f32(x3);
-                            *ptr1.add(8).cast::<f32>() = _rt::as_f32(y3);
-                            *ptr1.add(12).cast::<f32>() = _rt::as_f32(z3);
-                            *ptr1.add(16).cast::<f32>() = _rt::as_f32(w3);
-                            let super::super::super::super::wired::math::types::Vec3 {
-                                x: x4,
-                                y: y4,
-                                z: z4,
-                            } = scale2;
-                            *ptr1.add(20).cast::<f32>() = _rt::as_f32(x4);
-                            *ptr1.add(24).cast::<f32>() = _rt::as_f32(y4);
-                            *ptr1.add(28).cast::<f32>() = _rt::as_f32(z4);
-                            let super::super::super::super::wired::math::types::Vec3 {
-                                x: x5,
-                                y: y5,
-                                z: z5,
-                            } = translation2;
-                            *ptr1.add(32).cast::<f32>() = _rt::as_f32(x5);
-                            *ptr1.add(36).cast::<f32>() = _rt::as_f32(y5);
-                            *ptr1.add(40).cast::<f32>() = _rt::as_f32(z5);
-                        }
-                    }
-                    ptr1
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_method_screen_set_child_layout_cabi<T: GuestScreen>(
-                    arg0: *mut u8,
-                    arg1: i32,
-                    arg2: f32,
-                    arg3: f32,
-                    arg4: f32,
-                    arg5: f32,
-                    arg6: f32,
-                    arg7: f32,
-                    arg8: f32,
-                    arg9: f32,
-                    arg10: f32,
-                    arg11: f32,
-                ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let v0 = match arg1 {
-                        0 => ChildLayout::Butterfly,
-                        1 => ChildLayout::Circle,
-                        n => {
-                            debug_assert_eq!(n, 2, "invalid enum discriminant");
-                            let e0 = super::super::super::super::wired::math::types::Transform {
-                                rotation: super::super::super::super::wired::math::types::Quat {
-                                    x: arg2,
-                                    y: arg3,
-                                    z: arg4,
-                                    w: arg5,
-                                },
-                                scale: super::super::super::super::wired::math::types::Vec3 {
-                                    x: arg6,
-                                    y: arg7,
-                                    z: arg8,
-                                },
-                                translation: super::super::super::super::wired::math::types::Vec3 {
-                                    x: arg9,
-                                    y: arg10,
-                                    z: arg11,
-                                },
-                            };
-                            ChildLayout::Transform(e0)
-                        }
-                    };
-                    T::set_child_layout(ScreenBorrow::lift(arg0 as u32 as usize).get(), v0);
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
                 pub unsafe fn _export_method_screen_children_cabi<T: GuestScreen>(
                     arg0: *mut u8,
                 ) -> *mut u8 {
@@ -5485,8 +5363,6 @@ pub mod exports {
                     /// How long it takes to open the screen, in seconds.
                     fn open_duration(&self) -> f32;
                     fn set_open_duration(&self, value: f32);
-                    fn child_layout(&self) -> ChildLayout;
-                    fn set_child_layout(&self, value: ChildLayout);
                     fn children(&self) -> _rt::Vec<Screen>;
                     fn add_child(&self, value: ScreenBorrow<'_>);
                     fn remove_child(&self, value: ScreenBorrow<'_>);
@@ -5521,14 +5397,6 @@ pub mod exports {
     #[export_name = "unavi:vscreen/screen#[method]screen.set-open-duration"]
     unsafe extern "C" fn export_method_screen_set_open_duration(arg0: *mut u8,arg1: f32,) {
       $($path_to_types)*::_export_method_screen_set_open_duration_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0, arg1)
-    }
-    #[export_name = "unavi:vscreen/screen#[method]screen.child-layout"]
-    unsafe extern "C" fn export_method_screen_child_layout(arg0: *mut u8,) -> *mut u8 {
-      $($path_to_types)*::_export_method_screen_child_layout_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0)
-    }
-    #[export_name = "unavi:vscreen/screen#[method]screen.set-child-layout"]
-    unsafe extern "C" fn export_method_screen_set_child_layout(arg0: *mut u8,arg1: i32,arg2: f32,arg3: f32,arg4: f32,arg5: f32,arg6: f32,arg7: f32,arg8: f32,arg9: f32,arg10: f32,arg11: f32,) {
-      $($path_to_types)*::_export_method_screen_set_child_layout_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11)
     }
     #[export_name = "unavi:vscreen/screen#[method]screen.children"]
     unsafe extern "C" fn export_method_screen_children(arg0: *mut u8,) -> *mut u8 {
@@ -5567,8 +5435,8 @@ pub mod exports {
                 #[doc(hidden)]
                 pub(crate) use __export_unavi_vscreen_screen_cabi;
                 #[repr(align(4))]
-                struct _RetArea([::core::mem::MaybeUninit<u8>; 44]);
-                static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 44]);
+                struct _RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 8]);
             }
         }
     }
@@ -5835,8 +5703,8 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7702] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x9a;\x01A\x02\x01A\"\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7550] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x82:\x01A\x02\x01A\"\
 \x01B\x10\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\
 \0\x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01\
 r\x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -5985,26 +5853,22 @@ d\x01\x0f\x01@\x01\x04self\x09\0\x01\x04\0\x16[method]container.size\x01\x10\x01
 @\x02\x04self\x09\x05value\x05\x01\0\x04\0\x1d[method]container.set-align-x\x01\x13\
 \x04\0\x1d[method]container.set-align-y\x01\x13\x04\0\x1d[method]container.set-a\
 lign-z\x01\x13\x03\x01\x16unavi:layout/container\x05\x14\x02\x03\0\x09\x09contai\
-ner\x01B*\x02\x03\x02\x01\x15\x04\0\x09container\x03\0\0\x02\x03\x02\x01\x0c\x04\
+ner\x01B$\x02\x03\x02\x01\x15\x04\0\x09container\x03\0\0\x02\x03\x02\x01\x0c\x04\
 \0\x09transform\x03\0\x02\x02\x03\x02\x01\x10\x04\0\x04vec2\x03\0\x04\x02\x03\x02\
 \x01\x04\x04\0\x04vec3\x03\0\x06\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x08\x01\
-q\x02\x06circle\x01v\0\x09rectangle\x01\x05\0\x04\0\x0cscreen-shape\x03\0\x0a\x01\
-q\x03\x09butterfly\0\0\x06circle\0\0\x09transform\x01\x03\0\x04\0\x0cchild-layou\
-t\x03\0\x0c\x04\0\x06screen\x03\x01\x01i\x0e\x01@\x01\x05shape\x0b\0\x0f\x04\0\x13\
-[constructor]screen\x01\x10\x01h\x0e\x01i\x01\x01@\x01\x04self\x11\0\x12\x04\0\x13\
-[method]screen.root\x01\x13\x01@\x01\x04self\x11\0\x7f\x04\0\x16[method]screen.v\
-isible\x01\x14\x01@\x02\x04self\x11\x05value\x7f\x01\0\x04\0\x1a[method]screen.s\
-et-visible\x01\x15\x01@\x01\x04self\x11\0v\x04\0\x1c[method]screen.open-duration\
-\x01\x16\x01@\x02\x04self\x11\x05valuev\x01\0\x04\0\x20[method]screen.set-open-d\
-uration\x01\x17\x01@\x01\x04self\x11\0\x0d\x04\0\x1b[method]screen.child-layout\x01\
-\x18\x01@\x02\x04self\x11\x05value\x0d\x01\0\x04\0\x1f[method]screen.set-child-l\
-ayout\x01\x19\x01p\x0f\x01@\x01\x04self\x11\0\x1a\x04\0\x17[method]screen.childr\
-en\x01\x1b\x01@\x02\x04self\x11\x05value\x11\x01\0\x04\0\x18[method]screen.add-c\
-hild\x01\x1c\x04\0\x1b[method]screen.remove-child\x01\x1c\x01@\x02\x04self\x11\x05\
-deltav\x01\0\x04\0\x15[method]screen.update\x01\x1d\x04\x01\x14unavi:vscreen/scr\
-een\x05\x16\x04\x01\x13unavi:vscreen/guest\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\0\
-G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindge\
-n-rust\x060.25.0";
+q\x02\x06circle\x01v\0\x09rectangle\x01\x05\0\x04\0\x0cscreen-shape\x03\0\x0a\x04\
+\0\x06screen\x03\x01\x01i\x0c\x01@\x01\x05shape\x0b\0\x0d\x04\0\x13[constructor]\
+screen\x01\x0e\x01h\x0c\x01i\x01\x01@\x01\x04self\x0f\0\x10\x04\0\x13[method]scr\
+een.root\x01\x11\x01@\x01\x04self\x0f\0\x7f\x04\0\x16[method]screen.visible\x01\x12\
+\x01@\x02\x04self\x0f\x05value\x7f\x01\0\x04\0\x1a[method]screen.set-visible\x01\
+\x13\x01@\x01\x04self\x0f\0v\x04\0\x1c[method]screen.open-duration\x01\x14\x01@\x02\
+\x04self\x0f\x05valuev\x01\0\x04\0\x20[method]screen.set-open-duration\x01\x15\x01\
+p\x0d\x01@\x01\x04self\x0f\0\x16\x04\0\x17[method]screen.children\x01\x17\x01@\x02\
+\x04self\x0f\x05value\x0f\x01\0\x04\0\x18[method]screen.add-child\x01\x18\x04\0\x1b\
+[method]screen.remove-child\x01\x18\x01@\x02\x04self\x0f\x05deltav\x01\0\x04\0\x15\
+[method]screen.update\x01\x19\x04\x01\x14unavi:vscreen/screen\x05\x16\x04\x01\x13\
+unavi:vscreen/guest\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\0G\x09producers\x01\x0c\
+processed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

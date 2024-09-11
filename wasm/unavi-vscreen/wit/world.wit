@@ -17,15 +17,6 @@ interface screen {
     rectangle(vec2),
   }
 
-  variant child-layout {
-    /// Children are aranged in two wings, on either side of the screen.
-    butterfly,
-    /// Children are aranged in a circle around the screen.
-    circle,
-    /// Children are given a specific relative transform.
-    transform(transform),
-  }
-
   /// Animated screen UI.
   /// On press, expands into child screens.
   resource screen {
@@ -39,9 +30,6 @@ interface screen {
     /// How long it takes to open the screen, in seconds.
     open-duration: func() -> f32;
     set-open-duration: func(value: f32);
-
-    child-layout: func() -> child-layout;
-    set-child-layout: func(value: child-layout);
 
     children: func() -> list<screen>;
     add-child: func(value: borrow<screen>);

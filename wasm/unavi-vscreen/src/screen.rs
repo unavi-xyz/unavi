@@ -6,7 +6,7 @@ use std::{
 
 use crate::bindings::{
     exports::unavi::vscreen::screen::{
-        ChildLayout, Container, GuestScreen, Screen as ScreenExport, ScreenBorrow, ScreenShape,
+        Container, GuestScreen, Screen as ScreenExport, ScreenBorrow, ScreenShape,
     },
     unavi::shapes::api::{Circle, Rectangle},
     wired::math::types::{Transform, Vec3},
@@ -28,7 +28,6 @@ static ID: AtomicUsize = AtomicUsize::new(0);
 
 pub struct ScreenData {
     id: usize,
-    child_layout: Cell<ChildLayout>,
     children: RefCell<Vec<Screen>>,
     open_duration: Cell<f32>,
     root: Container,
@@ -60,7 +59,6 @@ impl GuestScreen for Screen {
 
         Self(Rc::new(ScreenData {
             id,
-            child_layout: Cell::new(ChildLayout::Butterfly),
             children: RefCell::default(),
             open_duration: Cell::new(1.0),
             root,
@@ -86,13 +84,6 @@ impl GuestScreen for Screen {
     }
     fn set_open_duration(&self, value: f32) {
         self.0.open_duration.set(value);
-    }
-
-    fn child_layout(&self) -> ChildLayout {
-        self.0.child_layout.get()
-    }
-    fn set_child_layout(&self, value: ChildLayout) {
-        self.0.child_layout.set(value);
     }
 
     fn children(&self) -> Vec<ScreenExport> {

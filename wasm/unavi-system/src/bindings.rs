@@ -1492,7 +1492,6 @@ pub mod unavi {
                 super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Container = super::super::super::unavi::layout::container::Container;
-            pub type Transform = super::super::super::wired::math::types::Transform;
             pub type Vec2 = super::super::super::wired::math::types::Vec2;
             #[derive(Clone, Copy)]
             pub enum ScreenShape {
@@ -1507,26 +1506,6 @@ pub mod unavi {
                         }
                         ScreenShape::Rectangle(e) => {
                             f.debug_tuple("ScreenShape::Rectangle").field(e).finish()
-                        }
-                    }
-                }
-            }
-            #[derive(Clone, Copy)]
-            pub enum ChildLayout {
-                /// Children are aranged in two wings, on either side of the screen.
-                Butterfly,
-                /// Children are aranged in a circle around the screen.
-                Circle,
-                /// Children are given a specific relative transform.
-                Transform(Transform),
-            }
-            impl ::core::fmt::Debug for ChildLayout {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    match self {
-                        ChildLayout::Butterfly => f.debug_tuple("ChildLayout::Butterfly").finish(),
-                        ChildLayout::Circle => f.debug_tuple("ChildLayout::Circle").finish(),
-                        ChildLayout::Transform(e) => {
-                            f.debug_tuple("ChildLayout::Transform").field(e).finish()
                         }
                     }
                 }
@@ -1712,189 +1691,6 @@ pub mod unavi {
                             unreachable!()
                         }
                         wit_import((self).handle() as i32, _rt::as_f32(&value));
-                    }
-                }
-            }
-            impl Screen {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn child_layout(&self) -> ChildLayout {
-                    unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 44]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 44]);
-                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "unavi:vscreen/screen")]
-                        extern "C" {
-                            #[link_name = "[method]screen.child-layout"]
-                            fn wit_import(_: i32, _: *mut u8);
-                        }
-
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: *mut u8) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, ptr0);
-                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
-                        let v12 = match l1 {
-                            0 => ChildLayout::Butterfly,
-                            1 => ChildLayout::Circle,
-                            n => {
-                                debug_assert_eq!(n, 2, "invalid enum discriminant");
-                                let e12 = {
-                                    let l2 = *ptr0.add(4).cast::<f32>();
-                                    let l3 = *ptr0.add(8).cast::<f32>();
-                                    let l4 = *ptr0.add(12).cast::<f32>();
-                                    let l5 = *ptr0.add(16).cast::<f32>();
-                                    let l6 = *ptr0.add(20).cast::<f32>();
-                                    let l7 = *ptr0.add(24).cast::<f32>();
-                                    let l8 = *ptr0.add(28).cast::<f32>();
-                                    let l9 = *ptr0.add(32).cast::<f32>();
-                                    let l10 = *ptr0.add(36).cast::<f32>();
-                                    let l11 = *ptr0.add(40).cast::<f32>();
-
-                                    super::super::super::wired::math::types::Transform {
-                                        rotation: super::super::super::wired::math::types::Quat {
-                                            x: l2,
-                                            y: l3,
-                                            z: l4,
-                                            w: l5,
-                                        },
-                                        scale: super::super::super::wired::math::types::Vec3 {
-                                            x: l6,
-                                            y: l7,
-                                            z: l8,
-                                        },
-                                        translation:
-                                            super::super::super::wired::math::types::Vec3 {
-                                                x: l9,
-                                                y: l10,
-                                                z: l11,
-                                            },
-                                    }
-                                };
-                                ChildLayout::Transform(e12)
-                            }
-                        };
-                        v12
-                    }
-                }
-            }
-            impl Screen {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn set_child_layout(&self, value: ChildLayout) {
-                    unsafe {
-                        let (
-                            result4_0,
-                            result4_1,
-                            result4_2,
-                            result4_3,
-                            result4_4,
-                            result4_5,
-                            result4_6,
-                            result4_7,
-                            result4_8,
-                            result4_9,
-                            result4_10,
-                        ) = match value {
-                            ChildLayout::Butterfly => (
-                                0i32, 0.0f32, 0.0f32, 0.0f32, 0.0f32, 0.0f32, 0.0f32, 0.0f32,
-                                0.0f32, 0.0f32, 0.0f32,
-                            ),
-                            ChildLayout::Circle => (
-                                1i32, 0.0f32, 0.0f32, 0.0f32, 0.0f32, 0.0f32, 0.0f32, 0.0f32,
-                                0.0f32, 0.0f32, 0.0f32,
-                            ),
-                            ChildLayout::Transform(e) => {
-                                let super::super::super::wired::math::types::Transform {
-                                    rotation: rotation0,
-                                    scale: scale0,
-                                    translation: translation0,
-                                } = e;
-                                let super::super::super::wired::math::types::Quat {
-                                    x: x1,
-                                    y: y1,
-                                    z: z1,
-                                    w: w1,
-                                } = rotation0;
-                                let super::super::super::wired::math::types::Vec3 {
-                                    x: x2,
-                                    y: y2,
-                                    z: z2,
-                                } = scale0;
-                                let super::super::super::wired::math::types::Vec3 {
-                                    x: x3,
-                                    y: y3,
-                                    z: z3,
-                                } = translation0;
-
-                                (
-                                    2i32,
-                                    _rt::as_f32(x1),
-                                    _rt::as_f32(y1),
-                                    _rt::as_f32(z1),
-                                    _rt::as_f32(w1),
-                                    _rt::as_f32(x2),
-                                    _rt::as_f32(y2),
-                                    _rt::as_f32(z2),
-                                    _rt::as_f32(x3),
-                                    _rt::as_f32(y3),
-                                    _rt::as_f32(z3),
-                                )
-                            }
-                        };
-
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "unavi:vscreen/screen")]
-                        extern "C" {
-                            #[link_name = "[method]screen.set-child-layout"]
-                            fn wit_import(
-                                _: i32,
-                                _: i32,
-                                _: f32,
-                                _: f32,
-                                _: f32,
-                                _: f32,
-                                _: f32,
-                                _: f32,
-                                _: f32,
-                                _: f32,
-                                _: f32,
-                                _: f32,
-                            );
-                        }
-
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(
-                            _: i32,
-                            _: i32,
-                            _: f32,
-                            _: f32,
-                            _: f32,
-                            _: f32,
-                            _: f32,
-                            _: f32,
-                            _: f32,
-                            _: f32,
-                            _: f32,
-                            _: f32,
-                        ) {
-                            unreachable!()
-                        }
-                        wit_import(
-                            (self).handle() as i32,
-                            result4_0,
-                            result4_1,
-                            result4_2,
-                            result4_3,
-                            result4_4,
-                            result4_5,
-                            result4_6,
-                            result4_7,
-                            result4_8,
-                            result4_9,
-                            result4_10,
-                        );
                     }
                 }
             }
@@ -7976,8 +7772,8 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 10307] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc7O\x01A\x02\x01A4\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 10155] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xafN\x01A\x02\x01A4\x01\
 B\x10\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\
 \x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01r\
 \x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -8085,128 +7881,125 @@ iner.align-y\x01\x12\x04\0\x19[method]container.align-z\x01\x12\x01@\x02\x04self
 \x09\x05value\x05\x01\0\x04\0\x1d[method]container.set-align-x\x01\x13\x04\0\x1d\
 [method]container.set-align-y\x01\x13\x04\0\x1d[method]container.set-align-z\x01\
 \x13\x03\x01\x16unavi:layout/container\x05\x12\x02\x03\0\x08\x09container\x02\x03\
-\0\0\x04vec2\x01B*\x02\x03\x02\x01\x13\x04\0\x09container\x03\0\0\x02\x03\x02\x01\
+\0\0\x04vec2\x01B$\x02\x03\x02\x01\x13\x04\0\x09container\x03\0\0\x02\x03\x02\x01\
 \x0c\x04\0\x09transform\x03\0\x02\x02\x03\x02\x01\x14\x04\0\x04vec2\x03\0\x04\x02\
 \x03\x02\x01\x04\x04\0\x04vec3\x03\0\x06\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\
 \x08\x01q\x02\x06circle\x01v\0\x09rectangle\x01\x05\0\x04\0\x0cscreen-shape\x03\0\
-\x0a\x01q\x03\x09butterfly\0\0\x06circle\0\0\x09transform\x01\x03\0\x04\0\x0cchi\
-ld-layout\x03\0\x0c\x04\0\x06screen\x03\x01\x01i\x0e\x01@\x01\x05shape\x0b\0\x0f\
-\x04\0\x13[constructor]screen\x01\x10\x01h\x0e\x01i\x01\x01@\x01\x04self\x11\0\x12\
-\x04\0\x13[method]screen.root\x01\x13\x01@\x01\x04self\x11\0\x7f\x04\0\x16[metho\
-d]screen.visible\x01\x14\x01@\x02\x04self\x11\x05value\x7f\x01\0\x04\0\x1a[metho\
-d]screen.set-visible\x01\x15\x01@\x01\x04self\x11\0v\x04\0\x1c[method]screen.ope\
-n-duration\x01\x16\x01@\x02\x04self\x11\x05valuev\x01\0\x04\0\x20[method]screen.\
-set-open-duration\x01\x17\x01@\x01\x04self\x11\0\x0d\x04\0\x1b[method]screen.chi\
-ld-layout\x01\x18\x01@\x02\x04self\x11\x05value\x0d\x01\0\x04\0\x1f[method]scree\
-n.set-child-layout\x01\x19\x01p\x0f\x01@\x01\x04self\x11\0\x1a\x04\0\x17[method]\
-screen.children\x01\x1b\x01@\x02\x04self\x11\x05value\x11\x01\0\x04\0\x18[method\
-]screen.add-child\x01\x1c\x04\0\x1b[method]screen.remove-child\x01\x1c\x01@\x02\x04\
-self\x11\x05deltav\x01\0\x04\0\x15[method]screen.update\x01\x1d\x03\x01\x14unavi\
-:vscreen/screen\x05\x15\x01B\x02\x01@\x01\x05deltav\x01\0\x04\0\x09update-ui\x01\
-\0\x03\x01\x0cunavi:ui/api\x05\x16\x01B\x0f\x02\x03\x02\x01\x13\x04\0\x09contain\
-er\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x0dinput-handler\x03\0\x02\x04\0\x06button\x03\
-\x01\x01i\x01\x01i\x04\x01@\x01\x04root\x05\0\x06\x04\0\x13[constructor]button\x01\
-\x07\x01h\x04\x01@\x01\x04self\x08\0\x05\x04\0\x13[method]button.root\x01\x09\x01\
-@\x01\x04self\x08\0\x7f\x04\0\x16[method]button.hovered\x01\x0a\x04\0\x16[method\
-]button.pressed\x01\x0a\x03\x01\x0funavi:ui/button\x05\x17\x01B(\x02\x03\x02\x01\
-\x13\x04\0\x09container\x03\0\0\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\x02\x02\x03\
-\x02\x01\x10\x04\0\x04node\x03\0\x04\x04\0\x04text\x03\x01\x04\0\x08text-box\x03\
-\x01\x01i\x06\x01@\x01\x04texts\0\x08\x04\0\x11[constructor]text\x01\x09\x01h\x06\
-\x01@\x01\x04self\x0a\0\x08\x04\0\x10[method]text.ref\x01\x0b\x01p}\x01k\x0c\x01\
-@\x02\x04self\x0a\x05value\x0d\x01\0\x04\0\x15[method]text.set-font\x01\x0e\x01@\
-\x01\x04self\x0a\0s\x04\0\x11[method]text.text\x01\x0f\x01@\x02\x04self\x0a\x05v\
-alues\x01\0\x04\0\x15[method]text.set-text\x01\x10\x01@\x01\x04self\x0a\0v\x04\0\
-\x16[method]text.font-size\x01\x11\x01@\x02\x04self\x0a\x05valuev\x01\0\x04\0\x1a\
-[method]text.set-font-size\x01\x12\x04\0\x16[method]text.thickness\x01\x11\x04\0\
-\x1a[method]text.set-thickness\x01\x12\x01i\x03\x01@\x01\x04self\x0a\0\x13\x04\0\
-\x11[method]text.mesh\x01\x14\x01i\x01\x01i\x07\x01@\x01\x04root\x15\0\x16\x04\0\
-\x15[constructor]text-box\x01\x17\x01h\x07\x01@\x01\x04self\x18\0\x15\x04\0\x15[\
-method]text-box.root\x01\x19\x01@\x01\x04self\x18\0\x08\x04\0\x15[method]text-bo\
-x.text\x01\x1a\x03\x01\x0dunavi:ui/text\x05\x18\x01B\x04\x01m\x04\x05debug\x04in\
-fo\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\x07messages\
-\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x19\x01B\x11\x02\x03\x02\
-\x01\x10\x04\0\x04node\x03\0\0\x01i\x01\x01r\x14\x04hips\x02\x05spine\x02\x05che\
-st\x02\x0bupper-chest\x02\x04neck\x02\x04head\x02\x0dleft-shoulder\x02\x0eleft-u\
-pper-arm\x02\x0eleft-lower-arm\x02\x09left-hand\x02\x0eright-shoulder\x02\x0frig\
-ht-upper-arm\x02\x0fright-lower-arm\x02\x0aright-hand\x02\x0eleft-upper-leg\x02\x0e\
-left-lower-leg\x02\x09left-foot\x02\x0fright-upper-leg\x02\x0fright-lower-leg\x02\
-\x0aright-foot\x02\x04\0\x08skeleton\x03\0\x03\x04\0\x06player\x03\x01\x01h\x05\x01\
-@\x01\x04self\x06\0\x02\x04\0\x13[method]player.root\x01\x07\x01@\x01\x04self\x06\
-\0\x04\x04\0\x17[method]player.skeleton\x01\x08\x01i\x05\x01p\x09\x01@\0\0\x0a\x04\
-\0\x0clist-players\x01\x0b\x01@\0\0\x09\x04\0\x0clocal-player\x01\x0c\x03\x01\x10\
-wired:player/api\x05\x1a\x01B\x15\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\0\x04\0\
-\x05scene\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\x12[constructor]scene\x01\x04\x01h\
-\x02\x01@\x01\x04self\x05\0y\x04\0\x10[method]scene.id\x01\x06\x01@\x01\x04self\x05\
-\0s\x04\0\x12[method]scene.name\x01\x07\x01@\x02\x04self\x05\x05values\x01\0\x04\
-\0\x16[method]scene.set-name\x01\x08\x01i\x01\x01p\x09\x01@\x01\x04self\x05\0\x0a\
-\x04\0\x13[method]scene.nodes\x01\x0b\x01h\x01\x01@\x02\x04self\x05\x05value\x0c\
-\x01\0\x04\0\x16[method]scene.add-node\x01\x0d\x04\0\x19[method]scene.remove-nod\
-e\x01\x0d\x03\x01\x11wired:scene/scene\x05\x1b\x02\x03\0\x0f\x05scene\x01B5\x02\x03\
-\x02\x01\x02\x04\0\x08material\x03\0\0\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\x02\
-\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\x04\x02\x03\x02\x01\x1c\x04\0\x05scene\x03\
-\0\x06\x04\0\x04gltf\x03\x01\x01i\x08\x01@\0\0\x09\x04\0\x11[constructor]gltf\x01\
-\x0a\x01h\x08\x01i\x01\x01p\x0c\x01@\x01\x04self\x0b\0\x0d\x04\0\x1b[method]gltf\
-.list-materials\x01\x0e\x01h\x01\x01@\x02\x04self\x0b\x05value\x0f\x01\0\x04\0\x19\
-[method]gltf.add-material\x01\x10\x04\0\x1c[method]gltf.remove-material\x01\x10\x01\
-i\x03\x01p\x11\x01@\x01\x04self\x0b\0\x12\x04\0\x18[method]gltf.list-meshes\x01\x13\
-\x01h\x03\x01@\x02\x04self\x0b\x05value\x14\x01\0\x04\0\x15[method]gltf.add-mesh\
-\x01\x15\x04\0\x18[method]gltf.remove-mesh\x01\x15\x01i\x05\x01p\x16\x01@\x01\x04\
-self\x0b\0\x17\x04\0\x17[method]gltf.list-nodes\x01\x18\x01h\x05\x01@\x02\x04sel\
-f\x0b\x05value\x19\x01\0\x04\0\x15[method]gltf.add-node\x01\x1a\x04\0\x18[method\
-]gltf.remove-node\x01\x1a\x01i\x07\x01p\x1b\x01@\x01\x04self\x0b\0\x1c\x04\0\x18\
-[method]gltf.list-scenes\x01\x1d\x01h\x07\x01@\x02\x04self\x0b\x05value\x1e\x01\0\
-\x04\0\x16[method]gltf.add-scene\x01\x1f\x04\0\x19[method]gltf.remove-scene\x01\x1f\
-\x01k\x1b\x01@\x01\x04self\x0b\0\x20\x04\0\x19[method]gltf.active-scene\x01!\x01\
-k\x1e\x01@\x02\x04self\x0b\x05value\"\x01\0\x04\0\x1d[method]gltf.set-active-sce\
-ne\x01#\x04\0\x1a[method]gltf.default-scene\x01!\x04\0\x1e[method]gltf.set-defau\
-lt-scene\x01\x1f\x03\x01\x10wired:scene/gltf\x05\x1d\x02\x03\0\x10\x04gltf\x01Bt\
-\x02\x03\x02\x01\x1e\x04\0\x04gltf\x03\0\0\x02\x03\x02\x01\x10\x04\0\x04node\x03\
-\0\x02\x02\x03\x02\x01\x0c\x04\0\x09transform\x03\0\x04\x04\0\x04glxf\x03\x01\x04\
-\0\x0aasset-gltf\x03\x01\x04\0\x0aasset-glxf\x03\x01\x01i\x07\x01i\x08\x01q\x02\x04\
-gltf\x01\x09\0\x04glxf\x01\x0a\0\x04\0\x05asset\x03\0\x0b\x01h\x07\x01h\x08\x01q\
-\x02\x04gltf\x01\x0d\0\x04glxf\x01\x0e\0\x04\0\x0casset-borrow\x03\0\x0f\x04\0\x09\
-glxf-node\x03\x01\x01i\x11\x01p\x12\x01q\x02\x05asset\x01\x0c\0\x05nodes\x01\x13\
-\0\x04\0\x08children\x03\0\x14\x01h\x11\x01p\x16\x01q\x02\x05asset\x01\x10\0\x05\
-nodes\x01\x17\0\x04\0\x0fchildren-borrow\x03\0\x18\x04\0\x0aglxf-scene\x03\x01\x01\
-i\x06\x01@\0\0\x1b\x04\0\x11[constructor]glxf\x01\x1c\x01h\x06\x01p\x0c\x01@\x01\
-\x04self\x1d\0\x1e\x04\0\x18[method]glxf.list-assets\x01\x1f\x01@\x02\x04self\x1d\
-\x05value\x10\x01\0\x04\0\x16[method]glxf.add-asset\x01\x20\x04\0\x19[method]glx\
-f.remove-asset\x01\x20\x01@\x01\x04self\x1d\0\x13\x04\0\x17[method]glxf.list-nod\
-es\x01!\x01@\x02\x04self\x1d\x05value\x16\x01\0\x04\0\x15[method]glxf.add-node\x01\
-\"\x04\0\x18[method]glxf.remove-node\x01\"\x01i\x1a\x01p#\x01@\x01\x04self\x1d\0\
-$\x04\0\x18[method]glxf.list-scenes\x01%\x01h\x1a\x01@\x02\x04self\x1d\x05value&\
-\x01\0\x04\0\x16[method]glxf.add-scene\x01'\x04\0\x19[method]glxf.remove-scene\x01\
-'\x01k#\x01@\x01\x04self\x1d\0(\x04\0\x19[method]glxf.active-scene\x01)\x01k&\x01\
-@\x02\x04self\x1d\x05value*\x01\0\x04\0\x1d[method]glxf.set-active-scene\x01+\x04\
-\0\x1a[method]glxf.default-scene\x01)\x04\0\x1e[method]glxf.set-default-scene\x01\
-'\x01h\x01\x01@\x01\x08document,\0\x09\x04\0\x17[constructor]asset-gltf\x01-\x01\
-i\x01\x01@\x01\x04self\x0d\0.\x04\0\x1b[method]asset-gltf.document\x01/\x01i\x03\
-\x01p0\x01@\x01\x04self\x0d\01\x04\0\x1d[method]asset-gltf.list-nodes\x012\x01h\x03\
-\x01@\x02\x04self\x0d\x05value3\x01\0\x04\0\x1b[method]asset-gltf.add-node\x014\x04\
-\0\x1e[method]asset-gltf.remove-node\x014\x01@\x01\x08document\x1d\0\x0a\x04\0\x17\
-[constructor]asset-glxf\x015\x01@\x01\x04self\x0e\0\x1b\x04\0\x1b[method]asset-g\
-lxf.document\x016\x01@\x01\x04self\x0e\0\x13\x04\0\x1d[method]asset-glxf.list-no\
-des\x017\x01@\x02\x04self\x0e\x05value\x16\x01\0\x04\0\x1b[method]asset-glxf.add\
--node\x018\x04\0\x1e[method]asset-glxf.remove-node\x018\x01@\0\0\x12\x04\0\x16[c\
-onstructor]glxf-node\x019\x01@\x01\x04self\x16\0y\x04\0\x14[method]glxf-node.id\x01\
-:\x01@\x01\x04self\x16\0s\x04\0\x16[method]glxf-node.name\x01;\x01@\x02\x04self\x16\
-\x05values\x01\0\x04\0\x1a[method]glxf-node.set-name\x01<\x01@\x01\x04self\x16\0\
-\x05\x04\0\x1b[method]glxf-node.transform\x01=\x01@\x02\x04self\x16\x05value\x05\
-\x01\0\x04\0\x1f[method]glxf-node.set-transform\x01>\x01k\x12\x01@\x01\x04self\x16\
-\0?\x04\0\x18[method]glxf-node.parent\x01@\x01k\x15\x01@\x01\x04self\x16\0\xc1\0\
-\x04\0\x1a[method]glxf-node.children\x01B\x01k\x19\x01@\x02\x04self\x16\x05value\
-\xc3\0\x01\0\x04\0\x1e[method]glxf-node.set-children\x01D\x01@\0\0#\x04\0\x17[co\
-nstructor]glxf-scene\x01E\x01@\x01\x04self&\0y\x04\0\x15[method]glxf-scene.id\x01\
-F\x01@\x01\x04self&\0s\x04\0\x17[method]glxf-scene.name\x01G\x01@\x02\x04self&\x05\
-values\x01\0\x04\0\x1b[method]glxf-scene.set-name\x01H\x01@\x01\x04self&\0\x13\x04\
-\0\x18[method]glxf-scene.nodes\x01I\x01@\x02\x04self&\x04node\x16\x01\0\x04\0\x1b\
-[method]glxf-scene.add-node\x01J\x04\0\x1e[method]glxf-scene.remove-node\x01J\x04\
-\0\x08get-root\x01\x1c\x03\x01\x10wired:scene/glxf\x05\x1f\x01B\x07\x04\0\x06scr\
-ipt\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01h\0\x01@\
-\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\x01\x12\
-wired:script/types\x05\x20\x04\x01\x12unavi:system/guest\x04\0\x0b\x0b\x01\0\x05\
-guest\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.\
-1\x10wit-bindgen-rust\x060.25.0";
+\x0a\x04\0\x06screen\x03\x01\x01i\x0c\x01@\x01\x05shape\x0b\0\x0d\x04\0\x13[cons\
+tructor]screen\x01\x0e\x01h\x0c\x01i\x01\x01@\x01\x04self\x0f\0\x10\x04\0\x13[me\
+thod]screen.root\x01\x11\x01@\x01\x04self\x0f\0\x7f\x04\0\x16[method]screen.visi\
+ble\x01\x12\x01@\x02\x04self\x0f\x05value\x7f\x01\0\x04\0\x1a[method]screen.set-\
+visible\x01\x13\x01@\x01\x04self\x0f\0v\x04\0\x1c[method]screen.open-duration\x01\
+\x14\x01@\x02\x04self\x0f\x05valuev\x01\0\x04\0\x20[method]screen.set-open-durat\
+ion\x01\x15\x01p\x0d\x01@\x01\x04self\x0f\0\x16\x04\0\x17[method]screen.children\
+\x01\x17\x01@\x02\x04self\x0f\x05value\x0f\x01\0\x04\0\x18[method]screen.add-chi\
+ld\x01\x18\x04\0\x1b[method]screen.remove-child\x01\x18\x01@\x02\x04self\x0f\x05\
+deltav\x01\0\x04\0\x15[method]screen.update\x01\x19\x03\x01\x14unavi:vscreen/scr\
+een\x05\x15\x01B\x02\x01@\x01\x05deltav\x01\0\x04\0\x09update-ui\x01\0\x03\x01\x0c\
+unavi:ui/api\x05\x16\x01B\x0f\x02\x03\x02\x01\x13\x04\0\x09container\x03\0\0\x02\
+\x03\x02\x01\x0b\x04\0\x0dinput-handler\x03\0\x02\x04\0\x06button\x03\x01\x01i\x01\
+\x01i\x04\x01@\x01\x04root\x05\0\x06\x04\0\x13[constructor]button\x01\x07\x01h\x04\
+\x01@\x01\x04self\x08\0\x05\x04\0\x13[method]button.root\x01\x09\x01@\x01\x04sel\
+f\x08\0\x7f\x04\0\x16[method]button.hovered\x01\x0a\x04\0\x16[method]button.pres\
+sed\x01\x0a\x03\x01\x0funavi:ui/button\x05\x17\x01B(\x02\x03\x02\x01\x13\x04\0\x09\
+container\x03\0\0\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\x02\x02\x03\x02\x01\x10\
+\x04\0\x04node\x03\0\x04\x04\0\x04text\x03\x01\x04\0\x08text-box\x03\x01\x01i\x06\
+\x01@\x01\x04texts\0\x08\x04\0\x11[constructor]text\x01\x09\x01h\x06\x01@\x01\x04\
+self\x0a\0\x08\x04\0\x10[method]text.ref\x01\x0b\x01p}\x01k\x0c\x01@\x02\x04self\
+\x0a\x05value\x0d\x01\0\x04\0\x15[method]text.set-font\x01\x0e\x01@\x01\x04self\x0a\
+\0s\x04\0\x11[method]text.text\x01\x0f\x01@\x02\x04self\x0a\x05values\x01\0\x04\0\
+\x15[method]text.set-text\x01\x10\x01@\x01\x04self\x0a\0v\x04\0\x16[method]text.\
+font-size\x01\x11\x01@\x02\x04self\x0a\x05valuev\x01\0\x04\0\x1a[method]text.set\
+-font-size\x01\x12\x04\0\x16[method]text.thickness\x01\x11\x04\0\x1a[method]text\
+.set-thickness\x01\x12\x01i\x03\x01@\x01\x04self\x0a\0\x13\x04\0\x11[method]text\
+.mesh\x01\x14\x01i\x01\x01i\x07\x01@\x01\x04root\x15\0\x16\x04\0\x15[constructor\
+]text-box\x01\x17\x01h\x07\x01@\x01\x04self\x18\0\x15\x04\0\x15[method]text-box.\
+root\x01\x19\x01@\x01\x04self\x18\0\x08\x04\0\x15[method]text-box.text\x01\x1a\x03\
+\x01\x0dunavi:ui/text\x05\x18\x01B\x04\x01m\x04\x05debug\x04info\x04warn\x05erro\
+r\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\x07messages\x01\0\x04\0\x03lo\
+g\x01\x02\x03\x01\x0dwired:log/api\x05\x19\x01B\x11\x02\x03\x02\x01\x10\x04\0\x04\
+node\x03\0\0\x01i\x01\x01r\x14\x04hips\x02\x05spine\x02\x05chest\x02\x0bupper-ch\
+est\x02\x04neck\x02\x04head\x02\x0dleft-shoulder\x02\x0eleft-upper-arm\x02\x0ele\
+ft-lower-arm\x02\x09left-hand\x02\x0eright-shoulder\x02\x0fright-upper-arm\x02\x0f\
+right-lower-arm\x02\x0aright-hand\x02\x0eleft-upper-leg\x02\x0eleft-lower-leg\x02\
+\x09left-foot\x02\x0fright-upper-leg\x02\x0fright-lower-leg\x02\x0aright-foot\x02\
+\x04\0\x08skeleton\x03\0\x03\x04\0\x06player\x03\x01\x01h\x05\x01@\x01\x04self\x06\
+\0\x02\x04\0\x13[method]player.root\x01\x07\x01@\x01\x04self\x06\0\x04\x04\0\x17\
+[method]player.skeleton\x01\x08\x01i\x05\x01p\x09\x01@\0\0\x0a\x04\0\x0clist-pla\
+yers\x01\x0b\x01@\0\0\x09\x04\0\x0clocal-player\x01\x0c\x03\x01\x10wired:player/\
+api\x05\x1a\x01B\x15\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\0\x04\0\x05scene\x03\
+\x01\x01i\x02\x01@\0\0\x03\x04\0\x12[constructor]scene\x01\x04\x01h\x02\x01@\x01\
+\x04self\x05\0y\x04\0\x10[method]scene.id\x01\x06\x01@\x01\x04self\x05\0s\x04\0\x12\
+[method]scene.name\x01\x07\x01@\x02\x04self\x05\x05values\x01\0\x04\0\x16[method\
+]scene.set-name\x01\x08\x01i\x01\x01p\x09\x01@\x01\x04self\x05\0\x0a\x04\0\x13[m\
+ethod]scene.nodes\x01\x0b\x01h\x01\x01@\x02\x04self\x05\x05value\x0c\x01\0\x04\0\
+\x16[method]scene.add-node\x01\x0d\x04\0\x19[method]scene.remove-node\x01\x0d\x03\
+\x01\x11wired:scene/scene\x05\x1b\x02\x03\0\x0f\x05scene\x01B5\x02\x03\x02\x01\x02\
+\x04\0\x08material\x03\0\0\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\x02\x02\x03\x02\
+\x01\x10\x04\0\x04node\x03\0\x04\x02\x03\x02\x01\x1c\x04\0\x05scene\x03\0\x06\x04\
+\0\x04gltf\x03\x01\x01i\x08\x01@\0\0\x09\x04\0\x11[constructor]gltf\x01\x0a\x01h\
+\x08\x01i\x01\x01p\x0c\x01@\x01\x04self\x0b\0\x0d\x04\0\x1b[method]gltf.list-mat\
+erials\x01\x0e\x01h\x01\x01@\x02\x04self\x0b\x05value\x0f\x01\0\x04\0\x19[method\
+]gltf.add-material\x01\x10\x04\0\x1c[method]gltf.remove-material\x01\x10\x01i\x03\
+\x01p\x11\x01@\x01\x04self\x0b\0\x12\x04\0\x18[method]gltf.list-meshes\x01\x13\x01\
+h\x03\x01@\x02\x04self\x0b\x05value\x14\x01\0\x04\0\x15[method]gltf.add-mesh\x01\
+\x15\x04\0\x18[method]gltf.remove-mesh\x01\x15\x01i\x05\x01p\x16\x01@\x01\x04sel\
+f\x0b\0\x17\x04\0\x17[method]gltf.list-nodes\x01\x18\x01h\x05\x01@\x02\x04self\x0b\
+\x05value\x19\x01\0\x04\0\x15[method]gltf.add-node\x01\x1a\x04\0\x18[method]gltf\
+.remove-node\x01\x1a\x01i\x07\x01p\x1b\x01@\x01\x04self\x0b\0\x1c\x04\0\x18[meth\
+od]gltf.list-scenes\x01\x1d\x01h\x07\x01@\x02\x04self\x0b\x05value\x1e\x01\0\x04\
+\0\x16[method]gltf.add-scene\x01\x1f\x04\0\x19[method]gltf.remove-scene\x01\x1f\x01\
+k\x1b\x01@\x01\x04self\x0b\0\x20\x04\0\x19[method]gltf.active-scene\x01!\x01k\x1e\
+\x01@\x02\x04self\x0b\x05value\"\x01\0\x04\0\x1d[method]gltf.set-active-scene\x01\
+#\x04\0\x1a[method]gltf.default-scene\x01!\x04\0\x1e[method]gltf.set-default-sce\
+ne\x01\x1f\x03\x01\x10wired:scene/gltf\x05\x1d\x02\x03\0\x10\x04gltf\x01Bt\x02\x03\
+\x02\x01\x1e\x04\0\x04gltf\x03\0\0\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\x02\x02\
+\x03\x02\x01\x0c\x04\0\x09transform\x03\0\x04\x04\0\x04glxf\x03\x01\x04\0\x0aass\
+et-gltf\x03\x01\x04\0\x0aasset-glxf\x03\x01\x01i\x07\x01i\x08\x01q\x02\x04gltf\x01\
+\x09\0\x04glxf\x01\x0a\0\x04\0\x05asset\x03\0\x0b\x01h\x07\x01h\x08\x01q\x02\x04\
+gltf\x01\x0d\0\x04glxf\x01\x0e\0\x04\0\x0casset-borrow\x03\0\x0f\x04\0\x09glxf-n\
+ode\x03\x01\x01i\x11\x01p\x12\x01q\x02\x05asset\x01\x0c\0\x05nodes\x01\x13\0\x04\
+\0\x08children\x03\0\x14\x01h\x11\x01p\x16\x01q\x02\x05asset\x01\x10\0\x05nodes\x01\
+\x17\0\x04\0\x0fchildren-borrow\x03\0\x18\x04\0\x0aglxf-scene\x03\x01\x01i\x06\x01\
+@\0\0\x1b\x04\0\x11[constructor]glxf\x01\x1c\x01h\x06\x01p\x0c\x01@\x01\x04self\x1d\
+\0\x1e\x04\0\x18[method]glxf.list-assets\x01\x1f\x01@\x02\x04self\x1d\x05value\x10\
+\x01\0\x04\0\x16[method]glxf.add-asset\x01\x20\x04\0\x19[method]glxf.remove-asse\
+t\x01\x20\x01@\x01\x04self\x1d\0\x13\x04\0\x17[method]glxf.list-nodes\x01!\x01@\x02\
+\x04self\x1d\x05value\x16\x01\0\x04\0\x15[method]glxf.add-node\x01\"\x04\0\x18[m\
+ethod]glxf.remove-node\x01\"\x01i\x1a\x01p#\x01@\x01\x04self\x1d\0$\x04\0\x18[me\
+thod]glxf.list-scenes\x01%\x01h\x1a\x01@\x02\x04self\x1d\x05value&\x01\0\x04\0\x16\
+[method]glxf.add-scene\x01'\x04\0\x19[method]glxf.remove-scene\x01'\x01k#\x01@\x01\
+\x04self\x1d\0(\x04\0\x19[method]glxf.active-scene\x01)\x01k&\x01@\x02\x04self\x1d\
+\x05value*\x01\0\x04\0\x1d[method]glxf.set-active-scene\x01+\x04\0\x1a[method]gl\
+xf.default-scene\x01)\x04\0\x1e[method]glxf.set-default-scene\x01'\x01h\x01\x01@\
+\x01\x08document,\0\x09\x04\0\x17[constructor]asset-gltf\x01-\x01i\x01\x01@\x01\x04\
+self\x0d\0.\x04\0\x1b[method]asset-gltf.document\x01/\x01i\x03\x01p0\x01@\x01\x04\
+self\x0d\01\x04\0\x1d[method]asset-gltf.list-nodes\x012\x01h\x03\x01@\x02\x04sel\
+f\x0d\x05value3\x01\0\x04\0\x1b[method]asset-gltf.add-node\x014\x04\0\x1e[method\
+]asset-gltf.remove-node\x014\x01@\x01\x08document\x1d\0\x0a\x04\0\x17[constructo\
+r]asset-glxf\x015\x01@\x01\x04self\x0e\0\x1b\x04\0\x1b[method]asset-glxf.documen\
+t\x016\x01@\x01\x04self\x0e\0\x13\x04\0\x1d[method]asset-glxf.list-nodes\x017\x01\
+@\x02\x04self\x0e\x05value\x16\x01\0\x04\0\x1b[method]asset-glxf.add-node\x018\x04\
+\0\x1e[method]asset-glxf.remove-node\x018\x01@\0\0\x12\x04\0\x16[constructor]glx\
+f-node\x019\x01@\x01\x04self\x16\0y\x04\0\x14[method]glxf-node.id\x01:\x01@\x01\x04\
+self\x16\0s\x04\0\x16[method]glxf-node.name\x01;\x01@\x02\x04self\x16\x05values\x01\
+\0\x04\0\x1a[method]glxf-node.set-name\x01<\x01@\x01\x04self\x16\0\x05\x04\0\x1b\
+[method]glxf-node.transform\x01=\x01@\x02\x04self\x16\x05value\x05\x01\0\x04\0\x1f\
+[method]glxf-node.set-transform\x01>\x01k\x12\x01@\x01\x04self\x16\0?\x04\0\x18[\
+method]glxf-node.parent\x01@\x01k\x15\x01@\x01\x04self\x16\0\xc1\0\x04\0\x1a[met\
+hod]glxf-node.children\x01B\x01k\x19\x01@\x02\x04self\x16\x05value\xc3\0\x01\0\x04\
+\0\x1e[method]glxf-node.set-children\x01D\x01@\0\0#\x04\0\x17[constructor]glxf-s\
+cene\x01E\x01@\x01\x04self&\0y\x04\0\x15[method]glxf-scene.id\x01F\x01@\x01\x04s\
+elf&\0s\x04\0\x17[method]glxf-scene.name\x01G\x01@\x02\x04self&\x05values\x01\0\x04\
+\0\x1b[method]glxf-scene.set-name\x01H\x01@\x01\x04self&\0\x13\x04\0\x18[method]\
+glxf-scene.nodes\x01I\x01@\x02\x04self&\x04node\x16\x01\0\x04\0\x1b[method]glxf-\
+scene.add-node\x01J\x04\0\x1e[method]glxf-scene.remove-node\x01J\x04\0\x08get-ro\
+ot\x01\x1c\x03\x01\x10wired:scene/glxf\x05\x1f\x01B\x07\x04\0\x06script\x03\x01\x01\
+i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01h\0\x01@\x02\x04self\x03\
+\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\x01\x12wired:script/\
+types\x05\x20\x04\x01\x12unavi:system/guest\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\
+\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bind\
+gen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

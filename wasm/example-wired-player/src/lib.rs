@@ -73,7 +73,7 @@ impl GuestScript for Script {
 }
 
 fn create_marker(bone: &Node, marker: &Sphere, offset: Transform) -> Node {
-    let node = marker.to_node();
+    let node = marker.to_physics_node();
     node.set_transform(offset);
     bone.add_child(&node);
     node

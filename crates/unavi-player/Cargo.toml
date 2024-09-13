@@ -16,7 +16,7 @@ bevy-tnua-avian3d = "0.1.0"
 bevy.workspace = true
 bevy_vrm.workspace = true
 unavi-avatar = { path = "../unavi-avatar" }
-unavi-constants = { path = "../unavi-constants" }
+unavi-constants = { path = "../unavi-constants", features = ["physics"] }
 unavi-scripting = { path = "../unavi-scripting" }
 
 [target.'cfg(target_family = "wasm")'.dependencies]

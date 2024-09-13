@@ -1,7 +1,7 @@
-use std::cell::Cell;
+use std::{cell::Cell, f32::consts::FRAC_PI_2};
 
 use crate::bindings::{
-    exports::unavi::shapes::api::GuestCircle,
+    exports::unavi::shapes::api::{GuestCircle, GuestEllipse},
     wired::{
         math::types::Vec2,
         physics::types::{Collider, Shape, ShapeCylinder},
@@ -9,11 +9,21 @@ use crate::bindings::{
     },
 };
 
-use super::ellipse::create_ellipse_mesh;
+use super::ellipse::Ellipse;
 
 pub struct Circle {
     radius: Cell<f32>,
     resolution: Cell<u16>,
+}
+
+impl Circle {
+    fn to_ellipse(&self) -> Ellipse {
+        let radius = self.radius.get();
+        let resolution = self.resolution.get();
+        let ellipse = Ellipse::new(Vec2::splat(radius));
+        ellipse.set_resolution(resolution);
+        ellipse
+    }
 }
 
 impl GuestCircle for Circle {
@@ -39,20 +49,15 @@ impl GuestCircle for Circle {
     }
 
     fn to_mesh(&self) -> Mesh {
-        let radius = self.radius.get();
-        let resolution = self.resolution.get();
-        create_ellipse_mesh(Vec2::splat(radius), resolution)
+        self.to_ellipse().to_mesh()
     }
     fn to_node(&self) -> crate::bindings::exports::unavi::shapes::api::Node {
-        let node = Node::new();
-        node.set_mesh(Some(&self.to_mesh()));
-        node
+        self.to_ellipse().to_node()
     }
     fn to_physics_node(&self) -> Node {
-        let node = self.to_node();
-        let radius = self.radius.get();
+        let node = self.to_ellipse().to_node();
         node.set_collider(Some(&Collider::new(Shape::Cylinder(ShapeCylinder {
-            radius,
+            radius: self.radius.get(),
             height: 0.0,
         }))));
         node

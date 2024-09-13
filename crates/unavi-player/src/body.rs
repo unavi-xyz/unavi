@@ -10,10 +10,10 @@ use bevy_vrm::{
 use unavi_avatar::{
     default_character_animations, AvatarBundle, AverageVelocity, FallbackAvatar, DEFAULT_VRM,
 };
-use unavi_constants::player::{PLAYER_HEIGHT, PLAYER_WIDTH};
+use unavi_constants::player::{layers::LAYER_LOCAL_PLAYER, PLAYER_HEIGHT, PLAYER_WIDTH};
 use unavi_scripting::api::wired::player::systems::{PlayerId, LOCAL_PLAYER_ID};
 
-use crate::{controls::InputState, layers::LOCAL_PLAYER_LAYER};
+use crate::controls::InputState;
 
 #[derive(Component)]
 pub struct LocalPlayer {
@@ -46,7 +46,7 @@ pub(crate) fn spawn_player(asset_server: Res<AssetServer>, mut commands: Command
         .spawn((
             Collider::capsule(PLAYER_WIDTH / 2.0, PLAYER_HEIGHT - PLAYER_WIDTH),
             CollisionLayers {
-                memberships: LOCAL_PLAYER_LAYER,
+                memberships: LAYER_LOCAL_PLAYER,
                 ..default()
             },
             LocalPlayer::default(),

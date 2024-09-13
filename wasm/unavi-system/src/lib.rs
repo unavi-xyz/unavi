@@ -1,12 +1,15 @@
+use std::f32::consts::FRAC_PI_2;
+
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
     unavi::vscreen::screen::{Screen, ScreenShape},
     wired::{
-        math::types::{Transform, Vec3},
+        math::types::{Quat, Transform, Vec3},
         player::api::{local_player, Skeleton},
         scene::gltf::Node,
     },
 };
+use clock::Clock;
 
 #[allow(warnings)]
 mod bindings;
@@ -28,14 +31,14 @@ struct Script {
 impl GuestScript for Script {
     fn new() -> Self {
         let screen = Screen::new(ScreenShape::Circle(SCREEN_RADIUS));
-        screen
-            .root()
-            .root()
-            .set_transform(Transform::from_translation(Vec3::new(
-                SCREEN_RADIUS * 2.0,
-                ARM_RADIUS,
-                0.0,
-            )));
+        screen.root().root().set_transform(Transform {
+            translation: Vec3::new(SCREEN_RADIUS * 2.0, ARM_RADIUS, 0.0),
+            rotation: Quat::from_rotation_x(-FRAC_PI_2),
+            ..Default::default()
+        });
+
+        let clock = Clock::default();
+        screen.add_child(&clock.screen);
 
         let player = local_player();
         let skeleton = player.skeleton();

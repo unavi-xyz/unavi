@@ -6,5 +6,9 @@ license.workspace = true
 repository.workspace = true
 edition.workspace = true
 
-[lints]
-workspace = true
+[features]
+default = []
+physics = ["dep:avian3d"]
+
+[dependencies]
+avian3d = { workspace = true, optional = true }

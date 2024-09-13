@@ -1,4 +1,4 @@
-use std::f32::consts::PI;
+use std::f32::consts::{FRAC_PI_2, PI};
 
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
@@ -21,75 +21,75 @@ impl GuestScript for Script {
 
         {
             let translation = Vec3::new(3.0, 0.0, 0.0);
-            let node = Axes::new().to_node();
-            node.set_transform(Transform::from_translation(translation));
+            let axes = Axes::new().to_node();
+            axes.set_transform(Transform::from_translation(translation));
+            scene.add_node(&axes);
 
             let cuboid = Cuboid::new(Vec3::new(1.0, 0.5, 1.5)).to_physics_node();
-            cuboid.set_transform(Transform::from_translation(translation));
-            scene.add_node(&cuboid);
+            axes.add_child(&cuboid);
         }
 
         {
             let translation = Vec3::new(1.5, 0.0, 2.0);
-            let node = Axes::new().to_node();
-            node.set_transform(Transform::from_translation(translation));
+            let axes = Axes::new().to_node();
+            axes.set_transform(Transform::from_translation(translation));
+            scene.add_node(&axes);
 
             let sphere = Sphere::new_ico(0.5).to_physics_node();
-            sphere.set_transform(Transform::from_translation(translation));
-            scene.add_node(&sphere);
+            axes.add_child(&sphere);
         }
 
         {
             let translation = Vec3::new(1.5, 0.0, 0.0);
-            let node = Axes::new().to_node();
-            node.set_transform(Transform::from_translation(translation));
+            let axes = Axes::new().to_node();
+            axes.set_transform(Transform::from_translation(translation));
+            scene.add_node(&axes);
 
             let sphere = Sphere::new_uv(0.5).to_physics_node();
-            sphere.set_transform(Transform::from_translation(translation));
-            scene.add_node(&sphere);
+            axes.add_child(&sphere);
         }
 
         {
             let translation = Vec3::default();
-            let node = Axes::new().to_node();
-            node.set_transform(Transform::from_translation(translation));
+            let axes = Axes::new().to_node();
+            axes.set_transform(Transform::from_translation(translation));
+            scene.add_node(&axes);
 
             let cylinder = Cylinder::new(0.5, 1.0).to_physics_node();
-            scene.add_node(&cylinder);
+            axes.add_child(&cylinder);
         }
 
         {
             let translation = Vec3::new(-1.5, 0.0, 0.0);
-            let node = Axes::new().to_node();
-            node.set_transform(Transform::from_translation(translation));
+            let axes = Axes::new().to_node();
+            axes.set_transform(Transform::from_translation(translation));
+            scene.add_node(&axes);
 
             let rectangle = Rectangle::new(Vec2::splat(1.0)).to_physics_node();
-            rectangle.set_transform(Transform {
-                translation,
-                rotation: Quat::from_rotation_y(PI),
-                ..Default::default()
-            });
-            scene.add_node(&rectangle);
+            rectangle.set_transform(Transform::from_rotation(Quat::from_rotation_y(PI)));
+            axes.add_child(&rectangle);
         }
 
         {
             let translation = Vec3::new(-3.0, 0.0, 0.0);
-            let node = Axes::new().to_node();
-            node.set_transform(Transform::from_translation(translation));
+            let axes = Axes::new().to_node();
+            axes.set_transform(Transform::from_translation(translation));
+            scene.add_node(&axes);
 
             let circle = Circle::new(0.5).to_physics_node();
-            circle.set_transform(Transform::from_translation(translation));
-            scene.add_node(&circle);
+            circle.set_transform(Transform::from_rotation(Quat::from_rotation_x(FRAC_PI_2)));
+            axes.add_child(&circle);
         }
 
         {
             let translation = Vec3::new(-4.5, 0.0, 0.0);
-            let node = Axes::new().to_node();
-            node.set_transform(Transform::from_translation(translation));
+            let axes = Axes::new().to_node();
+            axes.set_transform(Transform::from_translation(translation));
+            scene.add_node(&axes);
 
             let ellipse = Ellipse::new(Vec2::new(0.5, 0.75)).to_node();
-            ellipse.set_transform(Transform::from_translation(translation));
-            scene.add_node(&ellipse);
+            ellipse.set_transform(Transform::from_rotation(Quat::from_rotation_x(FRAC_PI_2)));
+            axes.add_child(&ellipse);
         }
 
         Root::add_scene(&scene);

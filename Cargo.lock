@@ -11954,6 +11954,9 @@ dependencies = [
 [[package]]
 name = "unavi-constants"
 version = "0.0.6"
+dependencies = [
+ "avian3d",
+]
 
 [[package]]
 name = "unavi-layout"

@@ -24,6 +24,9 @@ interface screen {
 
     root: func() -> container;
 
+    open: func() -> bool;
+    set-open: func(value: bool);
+
     visible: func() -> bool;
     set-visible: func(value: bool);
 

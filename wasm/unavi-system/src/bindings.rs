@@ -1611,6 +1611,51 @@ pub mod unavi {
             }
             impl Screen {
                 #[allow(unused_unsafe, clippy::all)]
+                pub fn open(&self) -> bool {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:vscreen/screen")]
+                        extern "C" {
+                            #[link_name = "[method]screen.open"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        _rt::bool_lift(ret as u8)
+                    }
+                }
+            }
+            impl Screen {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_open(&self, value: bool) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:vscreen/screen")]
+                        extern "C" {
+                            #[link_name = "[method]screen.set-open"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            match &value {
+                                true => 1,
+                                false => 0,
+                            },
+                        );
+                    }
+                }
+            }
+            impl Screen {
+                #[allow(unused_unsafe, clippy::all)]
                 pub fn visible(&self) -> bool {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
@@ -7771,8 +7816,8 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 10165] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xb9N\x01A\x02\x01A4\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 10217] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xedN\x01A\x02\x01A4\x01\
 B\x10\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\
 \x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01r\
 \x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -7880,15 +7925,16 @@ iner.align-y\x01\x12\x04\0\x19[method]container.align-z\x01\x12\x01@\x02\x04self
 \x09\x05value\x05\x01\0\x04\0\x1d[method]container.set-align-x\x01\x13\x04\0\x1d\
 [method]container.set-align-y\x01\x13\x04\0\x1d[method]container.set-align-z\x01\
 \x13\x03\x01\x16unavi:layout/container\x05\x12\x02\x03\0\x08\x09container\x02\x03\
-\0\0\x04vec2\x01B$\x02\x03\x02\x01\x13\x04\0\x09container\x03\0\0\x02\x03\x02\x01\
+\0\0\x04vec2\x01B&\x02\x03\x02\x01\x13\x04\0\x09container\x03\0\0\x02\x03\x02\x01\
 \x0c\x04\0\x09transform\x03\0\x02\x02\x03\x02\x01\x14\x04\0\x04vec2\x03\0\x04\x02\
 \x03\x02\x01\x04\x04\0\x04vec3\x03\0\x06\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\
 \x08\x01q\x02\x06circle\x01v\0\x09rectangle\x01\x05\0\x04\0\x0cscreen-shape\x03\0\
 \x0a\x04\0\x06screen\x03\x01\x01i\x0c\x01@\x01\x05shape\x0b\0\x0d\x04\0\x13[cons\
 tructor]screen\x01\x0e\x01h\x0c\x01i\x01\x01@\x01\x04self\x0f\0\x10\x04\0\x13[me\
-thod]screen.root\x01\x11\x01@\x01\x04self\x0f\0\x7f\x04\0\x16[method]screen.visi\
-ble\x01\x12\x01@\x02\x04self\x0f\x05value\x7f\x01\0\x04\0\x1a[method]screen.set-\
-visible\x01\x13\x01@\x01\x04self\x0f\0v\x04\0![method]screen.animation-duration\x01\
+thod]screen.root\x01\x11\x01@\x01\x04self\x0f\0\x7f\x04\0\x13[method]screen.open\
+\x01\x12\x01@\x02\x04self\x0f\x05value\x7f\x01\0\x04\0\x17[method]screen.set-ope\
+n\x01\x13\x04\0\x16[method]screen.visible\x01\x12\x04\0\x1a[method]screen.set-vi\
+sible\x01\x13\x01@\x01\x04self\x0f\0v\x04\0![method]screen.animation-duration\x01\
 \x14\x01@\x02\x04self\x0f\x05valuev\x01\0\x04\0%[method]screen.set-animation-dur\
 ation\x01\x15\x01p\x0d\x01@\x01\x04self\x0f\0\x16\x04\0\x17[method]screen.childr\
 en\x01\x17\x01@\x02\x04self\x0f\x05value\x0f\x01\0\x04\0\x18[method]screen.add-c\

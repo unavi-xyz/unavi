@@ -5186,6 +5186,32 @@ pub mod exports {
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
+                pub unsafe fn _export_method_screen_open_cabi<T: GuestScreen>(
+                    arg0: *mut u8,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::open(ScreenBorrow::lift(arg0 as u32 as usize).get());
+                    match result0 {
+                        true => 1,
+                        false => 0,
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_screen_set_open_cabi<T: GuestScreen>(
+                    arg0: *mut u8,
+                    arg1: i32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::set_open(
+                        ScreenBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::bool_lift(arg1 as u8),
+                    );
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
                 pub unsafe fn _export_method_screen_visible_cabi<T: GuestScreen>(
                     arg0: *mut u8,
                 ) -> i32 {
@@ -5359,6 +5385,8 @@ pub mod exports {
 
                     fn new(shape: ScreenShape) -> Self;
                     fn root(&self) -> Container;
+                    fn open(&self) -> bool;
+                    fn set_open(&self, value: bool);
                     fn visible(&self) -> bool;
                     fn set_visible(&self, value: bool);
                     fn animation_duration(&self) -> f32;
@@ -5381,6 +5409,14 @@ pub mod exports {
     #[export_name = "unavi:vscreen/screen#[method]screen.root"]
     unsafe extern "C" fn export_method_screen_root(arg0: *mut u8,) -> i32 {
       $($path_to_types)*::_export_method_screen_root_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0)
+    }
+    #[export_name = "unavi:vscreen/screen#[method]screen.open"]
+    unsafe extern "C" fn export_method_screen_open(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_screen_open_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0)
+    }
+    #[export_name = "unavi:vscreen/screen#[method]screen.set-open"]
+    unsafe extern "C" fn export_method_screen_set_open(arg0: *mut u8,arg1: i32,) {
+      $($path_to_types)*::_export_method_screen_set_open_cabi::<<$ty as $($path_to_types)*::Guest>::Screen>(arg0, arg1)
     }
     #[export_name = "unavi:vscreen/screen#[method]screen.visible"]
     unsafe extern "C" fn export_method_screen_visible(arg0: *mut u8,) -> i32 {
@@ -5703,8 +5739,8 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7560] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x8c:\x01A\x02\x01A\"\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7612] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc0:\x01A\x02\x01A\"\
 \x01B\x10\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\
 \0\x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01\
 r\x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -5853,14 +5889,15 @@ d\x01\x0f\x01@\x01\x04self\x09\0\x01\x04\0\x16[method]container.size\x01\x10\x01
 @\x02\x04self\x09\x05value\x05\x01\0\x04\0\x1d[method]container.set-align-x\x01\x13\
 \x04\0\x1d[method]container.set-align-y\x01\x13\x04\0\x1d[method]container.set-a\
 lign-z\x01\x13\x03\x01\x16unavi:layout/container\x05\x14\x02\x03\0\x09\x09contai\
-ner\x01B$\x02\x03\x02\x01\x15\x04\0\x09container\x03\0\0\x02\x03\x02\x01\x0c\x04\
+ner\x01B&\x02\x03\x02\x01\x15\x04\0\x09container\x03\0\0\x02\x03\x02\x01\x0c\x04\
 \0\x09transform\x03\0\x02\x02\x03\x02\x01\x10\x04\0\x04vec2\x03\0\x04\x02\x03\x02\
 \x01\x04\x04\0\x04vec3\x03\0\x06\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x08\x01\
 q\x02\x06circle\x01v\0\x09rectangle\x01\x05\0\x04\0\x0cscreen-shape\x03\0\x0a\x04\
 \0\x06screen\x03\x01\x01i\x0c\x01@\x01\x05shape\x0b\0\x0d\x04\0\x13[constructor]\
 screen\x01\x0e\x01h\x0c\x01i\x01\x01@\x01\x04self\x0f\0\x10\x04\0\x13[method]scr\
-een.root\x01\x11\x01@\x01\x04self\x0f\0\x7f\x04\0\x16[method]screen.visible\x01\x12\
-\x01@\x02\x04self\x0f\x05value\x7f\x01\0\x04\0\x1a[method]screen.set-visible\x01\
+een.root\x01\x11\x01@\x01\x04self\x0f\0\x7f\x04\0\x13[method]screen.open\x01\x12\
+\x01@\x02\x04self\x0f\x05value\x7f\x01\0\x04\0\x17[method]screen.set-open\x01\x13\
+\x04\0\x16[method]screen.visible\x01\x12\x04\0\x1a[method]screen.set-visible\x01\
 \x13\x01@\x01\x04self\x0f\0v\x04\0![method]screen.animation-duration\x01\x14\x01\
 @\x02\x04self\x0f\x05valuev\x01\0\x04\0%[method]screen.set-animation-duration\x01\
 \x15\x01p\x0d\x01@\x01\x04self\x0f\0\x16\x04\0\x17[method]screen.children\x01\x17\

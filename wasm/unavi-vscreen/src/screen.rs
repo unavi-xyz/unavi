@@ -101,12 +101,24 @@ impl GuestScreen for Screen {
         self.0.root.ref_()
     }
 
+    fn open(&self) -> bool {
+        self.0.open.get()
+    }
+    fn set_open(&self, value: bool) {
+        self.0.open.set(value);
+        self.position_children(value);
+    }
+
     fn visible(&self) -> bool {
         self.0.visible.get()
     }
     fn set_visible(&self, value: bool) {
         self.0.visible.set(value);
         self.0.visible_animating.set(true);
+
+        if !value {
+            self.set_open(false);
+        }
     }
 
     fn animation_duration(&self) -> f32 {
@@ -171,8 +183,7 @@ impl GuestScreen for Screen {
 
         while let Some(event) = self.0.input.next() {
             if event.action == InputAction::Collision {
-                self.0.open.set(!open);
-                self.position_children(!open);
+                self.set_open(!open);
             }
         }
 

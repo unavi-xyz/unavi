@@ -27,9 +27,8 @@ interface screen {
     visible: func() -> bool;
     set-visible: func(value: bool);
 
-    /// How long it takes to open the screen, in seconds.
-    open-duration: func() -> f32;
-    set-open-duration: func(value: f32);
+    animation-duration: func() -> f32;
+    set-animation-duration: func(value: f32);
 
     children: func() -> list<screen>;
     add-child: func(value: borrow<screen>);

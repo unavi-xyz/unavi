@@ -1656,13 +1656,12 @@ pub mod unavi {
             }
             impl Screen {
                 #[allow(unused_unsafe, clippy::all)]
-                /// How long it takes to open the screen, in seconds.
-                pub fn open_duration(&self) -> f32 {
+                pub fn animation_duration(&self) -> f32 {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "unavi:vscreen/screen")]
                         extern "C" {
-                            #[link_name = "[method]screen.open-duration"]
+                            #[link_name = "[method]screen.animation-duration"]
                             fn wit_import(_: i32) -> f32;
                         }
 
@@ -1677,12 +1676,12 @@ pub mod unavi {
             }
             impl Screen {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn set_open_duration(&self, value: f32) {
+                pub fn set_animation_duration(&self, value: f32) {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "unavi:vscreen/screen")]
                         extern "C" {
-                            #[link_name = "[method]screen.set-open-duration"]
+                            #[link_name = "[method]screen.set-animation-duration"]
                             fn wit_import(_: i32, _: f32);
                         }
 
@@ -7772,8 +7771,8 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 10155] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xafN\x01A\x02\x01A4\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 10165] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xb9N\x01A\x02\x01A4\x01\
 B\x10\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\
 \x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01r\
 \x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -7889,11 +7888,11 @@ iner.align-y\x01\x12\x04\0\x19[method]container.align-z\x01\x12\x01@\x02\x04self
 tructor]screen\x01\x0e\x01h\x0c\x01i\x01\x01@\x01\x04self\x0f\0\x10\x04\0\x13[me\
 thod]screen.root\x01\x11\x01@\x01\x04self\x0f\0\x7f\x04\0\x16[method]screen.visi\
 ble\x01\x12\x01@\x02\x04self\x0f\x05value\x7f\x01\0\x04\0\x1a[method]screen.set-\
-visible\x01\x13\x01@\x01\x04self\x0f\0v\x04\0\x1c[method]screen.open-duration\x01\
-\x14\x01@\x02\x04self\x0f\x05valuev\x01\0\x04\0\x20[method]screen.set-open-durat\
-ion\x01\x15\x01p\x0d\x01@\x01\x04self\x0f\0\x16\x04\0\x17[method]screen.children\
-\x01\x17\x01@\x02\x04self\x0f\x05value\x0f\x01\0\x04\0\x18[method]screen.add-chi\
-ld\x01\x18\x04\0\x1b[method]screen.remove-child\x01\x18\x01@\x02\x04self\x0f\x05\
+visible\x01\x13\x01@\x01\x04self\x0f\0v\x04\0![method]screen.animation-duration\x01\
+\x14\x01@\x02\x04self\x0f\x05valuev\x01\0\x04\0%[method]screen.set-animation-dur\
+ation\x01\x15\x01p\x0d\x01@\x01\x04self\x0f\0\x16\x04\0\x17[method]screen.childr\
+en\x01\x17\x01@\x02\x04self\x0f\x05value\x0f\x01\0\x04\0\x18[method]screen.add-c\
+hild\x01\x18\x04\0\x1b[method]screen.remove-child\x01\x18\x01@\x02\x04self\x0f\x05\
 deltav\x01\0\x04\0\x15[method]screen.update\x01\x19\x03\x01\x14unavi:vscreen/scr\
 een\x05\x15\x01B\x02\x01@\x01\x05deltav\x01\0\x04\0\x09update-ui\x01\0\x03\x01\x0c\
 unavi:ui/api\x05\x16\x01B\x0f\x02\x03\x02\x01\x13\x04\0\x09container\x03\0\0\x02\

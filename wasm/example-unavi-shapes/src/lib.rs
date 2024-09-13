@@ -1,10 +1,12 @@
+use std::f32::consts::PI;
+
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
     unavi::{
         scene::api::{Root, Scene},
         shapes::api::{Axes, Circle, Cuboid, Cylinder, Ellipse, Rectangle, Sphere},
     },
-    wired::math::types::{Transform, Vec2, Vec3},
+    wired::math::types::{Quat, Transform, Vec2, Vec3},
 };
 
 #[allow(warnings)]
@@ -62,7 +64,11 @@ impl GuestScript for Script {
             node.set_transform(Transform::from_translation(translation));
 
             let rectangle = Rectangle::new(Vec2::splat(1.0)).to_physics_node();
-            rectangle.set_transform(Transform::from_translation(translation));
+            rectangle.set_transform(Transform {
+                translation,
+                rotation: Quat::from_rotation_y(PI),
+                ..Default::default()
+            });
             scene.add_node(&rectangle);
         }
 

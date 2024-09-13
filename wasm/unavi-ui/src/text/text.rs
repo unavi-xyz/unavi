@@ -5,21 +5,12 @@ use std::{
 
 use meshtext::{IndexedMeshText, MeshGenerator, OwnedFace, TextSection};
 
-use crate::{
-    bindings::{
-        exports::unavi::ui::text::{Guest, GuestText, GuestTextBox, Text as TextExport},
-        unavi::layout::container::Container,
-        wired::scene::mesh::{Mesh, Primitive},
-    },
-    GuestImpl,
+use crate::bindings::{
+    exports::unavi::ui::text::{GuestText, Text as TextExport},
+    wired::scene::mesh::{Mesh, Primitive},
 };
 
-const FONT: &[u8] = include_bytes!("../Roboto-Regular.ttf");
-
-impl Guest for GuestImpl {
-    type Text = Text;
-    type TextBox = TextBox;
-}
+const FONT: &[u8] = include_bytes!("../../Roboto-Regular.ttf");
 
 #[derive(Clone)]
 pub struct Text(Rc<TextData>);
@@ -121,26 +112,5 @@ impl GuestText for Text {
 
     fn mesh(&self) -> Mesh {
         self.0.mesh.ref_()
-    }
-}
-
-pub struct TextBox {
-    root: Container,
-    text: Text,
-}
-
-impl GuestTextBox for TextBox {
-    fn new(root: Container) -> Self {
-        let text = Text::new(String::default());
-        root.inner().set_mesh(Some(&text.mesh()));
-
-        Self { root, text }
-    }
-
-    fn root(&self) -> Container {
-        self.root.ref_()
-    }
-    fn text(&self) -> TextExport {
-        self.text.ref_()
     }
 }

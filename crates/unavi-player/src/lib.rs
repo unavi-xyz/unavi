@@ -6,7 +6,6 @@ use unavi_avatar::AvatarPlugin;
 mod body;
 mod controls;
 mod input;
-mod layers;
 mod look;
 mod menu;
 

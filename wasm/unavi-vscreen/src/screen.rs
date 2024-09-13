@@ -66,7 +66,7 @@ impl GuestScreen for Screen {
         let (size, mesh) = match shape {
             ScreenShape::Circle(radius) => {
                 let node = Circle::new(radius).to_physics_node();
-                node.set_transform(Transform::from_rotation(Quat::from_rotation_x(FRAC_PI_2)));
+                node.set_transform(Transform::from_rotation(Quat::from_rotation_x(-FRAC_PI_2)));
                 (Vec2::new(radius * 2.0, radius * 2.0), node)
             }
             ScreenShape::Rectangle(size) => (size, Rectangle::new(size).to_physics_node()),
@@ -144,6 +144,7 @@ impl GuestScreen for Screen {
     }
 
     fn update(&self, delta: f32) {
+        let open = self.0.open.get();
         let visible = self.0.visible.get();
 
         if self.0.visible_animating.get() {
@@ -167,8 +168,6 @@ impl GuestScreen for Screen {
 
             self.0.root.inner().set_transform(transform);
         }
-
-        let open = self.0.open.get();
 
         while let Some(event) = self.0.input.next() {
             if event.action == InputAction::Collision {

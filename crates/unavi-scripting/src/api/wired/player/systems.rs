@@ -1,11 +1,7 @@
 use bevy::prelude::*;
 use bevy_vrm::{loader::Vrm, BoneName};
 
-use crate::{
-    api::{utils::RefResource, wired::scene::bindings::node::HostNode},
-    execution::ScriptTickrate,
-    load::ScriptMap,
-};
+use crate::{api::utils::RefResource, execution::ScriptTickrate, load::ScriptMap};
 
 use super::bindings::api::Node;
 
@@ -14,10 +10,16 @@ pub const LOCAL_PLAYER_ID: usize = 0;
 #[derive(Component, PartialEq, Eq)]
 pub struct PlayerId(pub usize);
 
+#[derive(Component)]
+pub struct CopyTransform(pub Entity);
+
+#[derive(Component)]
+pub struct CopyGlobalTransform(pub Entity);
+
 pub(crate) fn update_player_skeletons(
     bones: Query<(Entity, &PlayerId, &BoneName, &Transform)>,
     mut commands: Commands,
-    players: Query<(&PlayerId, &GlobalTransform), With<Handle<Vrm>>>,
+    players: Query<(Entity, &PlayerId), With<Handle<Vrm>>>,
     script_map: NonSendMut<ScriptMap>,
     scripts: Query<(Entity, &ScriptTickrate)>,
 ) {
@@ -37,16 +39,18 @@ pub(crate) fn update_player_skeletons(
         let root = Node::from_res(&player.root, &data.table).unwrap();
         let skeleton = player.skeleton.clone_ref(&data.table).unwrap();
 
-        for (id, player_transform) in players.iter() {
+        for (player_ent, id) in players.iter() {
             if id.0 != LOCAL_PLAYER_ID {
                 continue;
             }
 
-            data.set_transform(
-                Node::from_res(&root, &data.table).unwrap(),
-                player_transform.compute_transform().into(),
-            )
-            .unwrap();
+            if let Ok(nodes) = data.entities.nodes.read() {
+                if let Some(node_ent) = nodes.get(&root.rep()) {
+                    commands
+                        .entity(*node_ent)
+                        .insert(CopyGlobalTransform(player_ent));
+                }
+            }
 
             let pairs = [
                 (BoneName::Hips, &skeleton.hips),
@@ -83,12 +87,12 @@ pub(crate) fn update_player_skeletons(
 
                     if let Ok(nodes) = data.entities.nodes.read() {
                         if let Some(node_ent) = nodes.get(&node_res.rep()) {
-                            commands
-                                .entity(*node_ent)
-                                // Reset transform (in case scripts try to change it).
-                                .insert(Transform::default())
-                                // Parent node entity to bone.
-                                .set_parent(bone_ent);
+                            commands.entity(*node_ent).insert(
+                                // "Parent" node entity to bone.
+                                // We do not use actual parenting, because it causes issues when
+                                // physics colliders are children of the player rigid body.
+                                CopyTransform(bone_ent),
+                            );
                         }
                     }
 
@@ -97,6 +101,28 @@ pub(crate) fn update_player_skeletons(
                     node.transform = *bone_transform;
                 }
             }
+        }
+    }
+}
+
+pub(crate) fn copy_transforms(
+    mut targets: Query<(&CopyTransform, &mut Transform)>,
+    transforms: Query<&Transform, Without<CopyTransform>>,
+) {
+    for (target, mut transform) in targets.iter_mut() {
+        if let Ok(found) = transforms.get(target.0) {
+            *transform = *found;
+        }
+    }
+}
+
+pub(crate) fn copy_global_transforms(
+    mut targets: Query<(&CopyGlobalTransform, &mut Transform)>,
+    global_transforms: Query<&GlobalTransform, Without<CopyGlobalTransform>>,
+) {
+    for (target, mut transform) in targets.iter_mut() {
+        if let Ok(found) = global_transforms.get(target.0) {
+            *transform = found.compute_transform();
         }
     }
 }

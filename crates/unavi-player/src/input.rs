@@ -1,16 +1,13 @@
 use avian3d::prelude::*;
 use bevy::input::keyboard::KeyCode;
 use bevy::prelude::*;
+use unavi_constants::player::layers::{LAYER_OTHER_PLAYER, LAYER_WORLD};
 use unavi_scripting::api::wired::input::{
     bindings::types::InputAction,
     input_handler::{InputHandlerSender, ScriptInputEvent},
 };
 
-use crate::{
-    layers::{OTHER_PLAYER_LAYER, WORLD_LAYER},
-    menu::MenuState,
-    PlayerCamera,
-};
+use crate::{menu::MenuState, PlayerCamera};
 
 use super::LocalPlayer;
 
@@ -93,7 +90,7 @@ pub fn handle_raycast_input(
         RAYCAST_DISTANCE,
         false,
         SpatialQueryFilter {
-            mask: OTHER_PLAYER_LAYER | WORLD_LAYER,
+            mask: LAYER_OTHER_PLAYER | LAYER_WORLD,
             ..default()
         },
     ) {

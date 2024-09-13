@@ -34,6 +34,8 @@ impl Plugin for ScriptingPlugin {
                     execution::tick_scripts,
                     (
                         api::wired::physics::systems::update_physics_transforms,
+                        api::wired::player::systems::copy_global_transforms,
+                        api::wired::player::systems::copy_transforms,
                         api::wired::player::systems::update_player_skeletons,
                     ),
                     execution::init_scripts,

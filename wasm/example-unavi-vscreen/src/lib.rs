@@ -68,6 +68,8 @@ impl GuestScript for Script {
     }
 }
 
+const SIZE: f32 = 0.1;
+
 fn spawn_examples(transform: Transform, screens: &mut Vec<Screen>) {
     // Background
     let bg = Rectangle::new(Vec2::new(8.0, 3.0)).to_physics_node();
@@ -84,7 +86,7 @@ fn spawn_examples(transform: Transform, screens: &mut Vec<Screen>) {
     }
 
     // Circle screen
-    let screen = Screen::new(ScreenShape::Circle(0.1));
+    let screen = Screen::new(ScreenShape::Circle(SIZE));
     screen.set_visible(true);
     screen.root().root().set_transform(Transform {
         translation: Vec3::new(-2.0, 0.0, 0.01),
@@ -92,15 +94,12 @@ fn spawn_examples(transform: Transform, screens: &mut Vec<Screen>) {
     });
     bg.add_child(&screen.root().root());
 
-    for _ in 0..6 {
-        let child = Screen::new(ScreenShape::Circle(0.08));
-        screen.add_child(&child);
-    }
+    spawn_children(&screen);
 
     screens.push(screen);
 
     // Rectangle screen
-    let screen = Screen::new(ScreenShape::Rectangle(Vec2::new(0.4, 0.2)));
+    let screen = Screen::new(ScreenShape::Rectangle(Vec2::new(SIZE * 4.0, SIZE * 2.0)));
     screen.set_visible(true);
     screen.root().root().set_transform(Transform {
         translation: Vec3::new(2.0, 0.0, 0.01),
@@ -108,12 +107,21 @@ fn spawn_examples(transform: Transform, screens: &mut Vec<Screen>) {
     });
     bg.add_child(&screen.root().root());
 
-    for _ in 0..2 {
-        let child = Screen::new(ScreenShape::Circle(0.08));
-        screen.add_child(&child);
-    }
+    spawn_children(&screen);
 
     screens.push(screen);
+}
+
+fn spawn_children(screen: &Screen) {
+    for i in 0..6 {
+        let shape = if i % 2 == 0 {
+            ScreenShape::Circle(SIZE)
+        } else {
+            ScreenShape::Rectangle(Vec2::splat(SIZE * 2.0))
+        };
+        let child = Screen::new(shape);
+        screen.add_child(&child);
+    }
 }
 
 struct GuestImpl;

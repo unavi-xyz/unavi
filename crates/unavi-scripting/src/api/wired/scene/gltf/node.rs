@@ -1,9 +1,11 @@
 use std::cell::Cell;
 
+use avian3d::prelude::CollisionLayers;
 use bevy::{
     prelude::{Transform as BTransform, *},
     utils::HashMap,
 };
+use unavi_constants::player::layers::LAYER_WORLD;
 use wasm_bridge::component::Resource;
 use wasm_bridge_wasi::{ResourceTable, ResourceTableError};
 
@@ -28,6 +30,7 @@ pub struct NodeId(pub u32);
 #[derive(Bundle)]
 pub struct WiredNodeBundle {
     pub id: NodeId,
+    pub layers: CollisionLayers,
     pub spatial: SpatialBundle,
 }
 
@@ -41,6 +44,10 @@ impl WiredNodeBundle {
     pub fn new(id: u32) -> Self {
         Self {
             id: NodeId(id),
+            layers: CollisionLayers {
+                memberships: LAYER_WORLD,
+                filters: LAYER_WORLD,
+            },
             spatial: SpatialBundle::default(),
         }
     }

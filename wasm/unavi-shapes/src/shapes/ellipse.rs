@@ -1,9 +1,9 @@
-use std::cell::Cell;
+use std::{cell::Cell, f32::consts::FRAC_PI_2};
 
 use crate::bindings::{
     exports::unavi::shapes::api::GuestEllipse,
     wired::{
-        math::types::Vec2,
+        math::types::{Quat, Transform, Vec2},
         scene::{mesh::Mesh, node::Node},
     },
 };
@@ -51,12 +51,12 @@ impl GuestEllipse for Ellipse {
     }
 }
 
-pub fn create_ellipse_mesh(half_size: Vec2, resolution: u16) -> Mesh {
+fn create_ellipse_mesh(half_size: Vec2, resolution: u16) -> Mesh {
     let resolution = resolution as usize;
 
     let mut indices = Vec::with_capacity((resolution - 2) * 3);
     let mut positions = Vec::with_capacity(resolution);
-    let normals = vec![[0.0, 0.0, -1.0]; resolution];
+    let normals = vec![[0.0, -1.0, 0.0]; resolution];
     let mut uvs = Vec::with_capacity(resolution);
 
     // Add pi/2 so that there is a vertex at the top (sin is 1.0 and cos is 0.0)
@@ -68,9 +68,9 @@ pub fn create_ellipse_mesh(half_size: Vec2, resolution: u16) -> Mesh {
         let theta = start_angle + i as f32 * step;
         let (sin, cos) = theta.sin_cos();
         let x = cos * half_size.x;
-        let y = sin * half_size.y;
+        let z = sin * half_size.y;
 
-        positions.push([x, 0.0, -y]);
+        positions.push([x, 0.0, z]);
         uvs.push([0.5 * (cos + 1.0), 1.0 - 0.5 * (sin + 1.0)]);
     }
 

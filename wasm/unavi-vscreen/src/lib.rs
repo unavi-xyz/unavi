@@ -3,6 +3,7 @@ use bindings::exports::unavi::vscreen::screen::Guest;
 #[allow(warnings)]
 mod bindings;
 mod screen;
+mod wired_input_impls;
 mod wired_math_impls;
 
 struct Types;

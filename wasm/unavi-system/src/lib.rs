@@ -27,8 +27,7 @@ struct Script {
 
 impl GuestScript for Script {
     fn new() -> Self {
-        let screen = Screen::new(ScreenShape::Circle(0.03));
-        screen.set_open_duration(0.4);
+        let screen = Screen::new(ScreenShape::Circle(SCREEN_RADIUS));
         screen
             .root()
             .root()

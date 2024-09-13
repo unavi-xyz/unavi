@@ -1,5 +1,6 @@
 use std::{
     cell::{Cell, RefCell},
+    f32::consts::{FRAC_PI_2, PI},
     rc::Rc,
     sync::atomic::{AtomicUsize, Ordering},
 };
@@ -9,11 +10,16 @@ use crate::bindings::{
         Container, GuestScreen, Screen as ScreenExport, ScreenBorrow, ScreenShape,
     },
     unavi::shapes::api::{Circle, Rectangle},
-    wired::math::types::{Transform, Vec3},
+    wired::{
+        input::{handler::InputHandler, types::InputAction},
+        math::types::{Quat, Transform, Vec2, Vec3},
+    },
 };
 
 const MAX_SCALE: f32 = 1.0;
 const MIN_SCALE: f32 = 0.0;
+
+static ID: AtomicUsize = AtomicUsize::new(0);
 
 #[derive(Clone)]
 pub struct Screen(pub Rc<ScreenData>);
@@ -24,31 +30,52 @@ impl PartialEq for Screen {
     }
 }
 
-static ID: AtomicUsize = AtomicUsize::new(0);
-
 pub struct ScreenData {
-    id: usize,
+    animation_duration: Cell<f32>,
     children: RefCell<Vec<Screen>>,
-    open_duration: Cell<f32>,
+    id: usize,
+    input: InputHandler,
+    open: Cell<bool>,
     root: Container,
+    size: Vec2,
     visible: Cell<bool>,
     visible_animating: Cell<bool>,
+}
+
+impl Screen {
+    fn position_children(&self, open: bool) {
+        let children = self.0.children.borrow();
+        let count = children.len();
+        let angle_step = 2.0 * PI / count as f32;
+        let radius = self.0.size.x.max(self.0.size.y) * 1.5;
+
+        for (i, child) in children.iter().enumerate() {
+            let angle = i as f32 * angle_step;
+
+            let mut transform = child.root().inner().transform();
+            transform.translation = Vec3::new(radius * angle.cos(), radius * angle.sin(), 0.0);
+            child.root().inner().set_transform(transform);
+
+            child.set_visible(open);
+        }
+    }
 }
 
 impl GuestScreen for Screen {
     fn new(shape: ScreenShape) -> Self {
         let (size, mesh) = match shape {
-            ScreenShape::Circle(radius) => (
-                Vec3::new(radius, radius, 0.0),
-                Circle::new(radius).to_physics_node(),
-            ),
-            ScreenShape::Rectangle(size) => (
-                Vec3::new(size.x, size.y, 0.0),
-                Rectangle::new(size).to_physics_node(),
-            ),
+            ScreenShape::Circle(radius) => {
+                let node = Circle::new(radius).to_physics_node();
+                node.set_transform(Transform::from_rotation(Quat::from_rotation_x(FRAC_PI_2)));
+                (Vec2::new(radius * 2.0, radius * 2.0), node)
+            }
+            ScreenShape::Rectangle(size) => (size, Rectangle::new(size).to_physics_node()),
         };
 
-        let root = Container::new(size);
+        let input = InputHandler::new();
+        mesh.set_input_handler(Some(&input));
+
+        let root = Container::new(Vec3::new(size.x, size.y, 0.0));
         root.inner().add_child(&mesh);
         root.inner().set_transform(Transform {
             scale: Vec3::splat(MIN_SCALE),
@@ -58,10 +85,13 @@ impl GuestScreen for Screen {
         let id = ID.fetch_add(1, Ordering::Relaxed);
 
         Self(Rc::new(ScreenData {
-            id,
+            animation_duration: Cell::new(0.5),
             children: RefCell::default(),
-            open_duration: Cell::new(1.0),
+            id,
+            input,
             root,
+            size,
+            open: Cell::default(),
             visible: Cell::default(),
             visible_animating: Cell::default(),
         }))
@@ -79,11 +109,11 @@ impl GuestScreen for Screen {
         self.0.visible_animating.set(true);
     }
 
-    fn open_duration(&self) -> f32 {
-        self.0.open_duration.get()
+    fn animation_duration(&self) -> f32 {
+        self.0.animation_duration.get()
     }
-    fn set_open_duration(&self, value: f32) {
-        self.0.open_duration.set(value);
+    fn set_animation_duration(&self, value: f32) {
+        self.0.animation_duration.set(value);
     }
 
     fn children(&self) -> Vec<ScreenExport> {
@@ -99,6 +129,7 @@ impl GuestScreen for Screen {
         let value = value.get::<Screen>();
         self.0.root.add_child(&value.0.root);
         self.0.children.borrow_mut().push(value.clone());
+        self.position_children(self.0.open.get());
     }
     fn remove_child(&self, value: ScreenBorrow) {
         let value = value.get::<Screen>();
@@ -109,6 +140,7 @@ impl GuestScreen for Screen {
             .iter()
             .position(|n| n == value)
             .map(|index| self.0.children.borrow_mut().remove(index));
+        self.position_children(self.0.open.get());
     }
 
     fn update(&self, delta: f32) {
@@ -118,14 +150,14 @@ impl GuestScreen for Screen {
             let mut transform = self.0.root.inner().transform();
 
             if visible {
-                transform.scale += delta / self.0.open_duration.get();
+                transform.scale += delta / self.0.animation_duration.get();
 
                 if transform.scale.x >= MAX_SCALE {
                     transform.scale = Vec3::splat(MAX_SCALE);
                     self.0.visible_animating.set(false);
                 }
             } else {
-                transform.scale -= delta / self.0.open_duration.get();
+                transform.scale -= delta / self.0.animation_duration.get();
 
                 if transform.scale.x <= MIN_SCALE {
                     transform.scale = Vec3::splat(MIN_SCALE);
@@ -136,8 +168,13 @@ impl GuestScreen for Screen {
             self.0.root.inner().set_transform(transform);
         }
 
-        if !visible {
-            return;
+        let open = self.0.open.get();
+
+        while let Some(event) = self.0.input.next() {
+            if event.action == InputAction::Collision {
+                self.0.open.set(!open);
+                self.position_children(!open);
+            }
         }
 
         for child in self.0.children.borrow().iter() {

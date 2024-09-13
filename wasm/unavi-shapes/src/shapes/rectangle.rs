@@ -1,9 +1,9 @@
-use std::{cell::RefCell, f32::consts::PI};
+use std::cell::RefCell;
 
 use crate::bindings::{
     exports::unavi::shapes::api::GuestRectangle,
     wired::{
-        math::types::{Quat, Transform, Vec2, Vec3},
+        math::types::{Vec2, Vec3},
         physics::types::{Collider, Shape},
         scene::{mesh::Mesh, node::Node},
     },

@@ -1,4 +1,4 @@
-use std::{cell::Cell, f32::consts::FRAC_PI_2};
+use std::cell::Cell;
 
 use crate::bindings::{
     exports::unavi::shapes::api::{GuestCircle, GuestEllipse},

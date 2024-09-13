@@ -1,9 +1,9 @@
-use std::{cell::Cell, f32::consts::FRAC_PI_2};
+use std::cell::Cell;
 
 use crate::bindings::{
     exports::unavi::shapes::api::GuestEllipse,
     wired::{
-        math::types::{Quat, Transform, Vec2},
+        math::types::Vec2,
         scene::{mesh::Mesh, node::Node},
     },
 };

@@ -57,8 +57,10 @@ interface text {
     text: func() -> string;
     set-text: func(value: string);
 
-    alignment: func() -> alignment;
-    set-alignment: func(value: alignment);
+    align-x: func() -> alignment;
+    align-y: func() -> alignment;
+    set-align-x: func(value: alignment);
+    set-align-y: func(value: alignment);
 
     font-size: func() -> f32;
     set-font-size: func(value: f32);

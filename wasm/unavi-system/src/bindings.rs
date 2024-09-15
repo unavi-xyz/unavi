@@ -1354,12 +1354,12 @@ pub mod unavi {
             }
             impl Text {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn alignment(&self) -> Alignment {
+                pub fn align_x(&self) -> Alignment {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "unavi:ui/text")]
                         extern "C" {
-                            #[link_name = "[method]text.alignment"]
+                            #[link_name = "[method]text.align-x"]
                             fn wit_import(_: i32) -> i32;
                         }
 
@@ -1374,12 +1374,51 @@ pub mod unavi {
             }
             impl Text {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn set_alignment(&self, value: Alignment) {
+                pub fn align_y(&self) -> Alignment {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "unavi:ui/text")]
                         extern "C" {
-                            #[link_name = "[method]text.set-alignment"]
+                            #[link_name = "[method]text.align-y"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::unavi::layout::container::Alignment::_lift(ret as u8)
+                    }
+                }
+            }
+            impl Text {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_align_x(&self, value: Alignment) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:ui/text")]
+                        extern "C" {
+                            #[link_name = "[method]text.set-align-x"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, value.clone() as i32);
+                    }
+                }
+            }
+            impl Text {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_align_y(&self, value: Alignment) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:ui/text")]
+                        extern "C" {
+                            #[link_name = "[method]text.set-align-y"]
                             fn wit_import(_: i32, _: i32);
                         }
 
@@ -8010,8 +8049,8 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 10620] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x80R\x01A\x02\x01A5\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 10670] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xb2R\x01A\x02\x01A5\x01\
 B\x10\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\
 \x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01r\
 \x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -8140,7 +8179,7 @@ unavi:ui/api\x05\x16\x01B\x0f\x02\x03\x02\x01\x13\x04\0\x09container\x03\0\0\x02
 \x01i\x04\x01@\x01\x04root\x05\0\x06\x04\0\x13[constructor]button\x01\x07\x01h\x04\
 \x01@\x01\x04self\x08\0\x05\x04\0\x13[method]button.root\x01\x09\x01@\x01\x04sel\
 f\x08\0\x7f\x04\0\x16[method]button.hovered\x01\x0a\x04\0\x16[method]button.pres\
-sed\x01\x0a\x03\x01\x0funavi:ui/button\x05\x17\x02\x03\0\x08\x09alignment\x01B@\x02\
+sed\x01\x0a\x03\x01\x0funavi:ui/button\x05\x17\x02\x03\0\x08\x09alignment\x01BB\x02\
 \x03\x02\x01\x18\x04\0\x09alignment\x03\0\0\x02\x03\x02\x01\x13\x04\0\x09contain\
 er\x03\0\x02\x02\x03\x02\x01\x02\x04\0\x08material\x03\0\x04\x02\x03\x02\x01\x0a\
 \x04\0\x04mesh\x03\0\x06\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\x08\x04\0\x04te\
@@ -8150,19 +8189,20 @@ ext-box\x03\x01\x01i\x0a\x01@\x01\x04texts\0\x0e\x04\0\x11[constructor]text\x01\
 k\x12\x01@\x02\x04self\x10\x05value\x13\x01\0\x04\0\x15[method]text.set-font\x01\
 \x14\x01@\x01\x04self\x10\0s\x04\0\x11[method]text.text\x01\x15\x01@\x02\x04self\
 \x10\x05values\x01\0\x04\0\x15[method]text.set-text\x01\x16\x01@\x01\x04self\x10\
-\0\x01\x04\0\x16[method]text.alignment\x01\x17\x01@\x02\x04self\x10\x05value\x01\
-\x01\0\x04\0\x1a[method]text.set-alignment\x01\x18\x01@\x01\x04self\x10\0v\x04\0\
-\x16[method]text.font-size\x01\x19\x01@\x02\x04self\x10\x05valuev\x01\0\x04\0\x1a\
-[method]text.set-font-size\x01\x1a\x04\0\x16[method]text.thickness\x01\x19\x04\0\
-\x1a[method]text.set-thickness\x01\x1a\x01i\x05\x01k\x1b\x01@\x01\x04self\x10\0\x1c\
-\x04\0\x15[method]text.material\x01\x1d\x01h\x05\x01k\x1e\x01@\x02\x04self\x10\x05\
-value\x1f\x01\0\x04\0\x19[method]text.set-material\x01\x20\x01i\x07\x01@\x01\x04\
-self\x10\0!\x04\0\x11[method]text.mesh\x01\"\x01i\x03\x01i\x0d\x01@\x01\x04root#\
-\0$\x04\0\x15[constructor]text-box\x01%\x01h\x0d\x01@\x01\x04self&\0#\x04\0\x15[\
-method]text-box.root\x01'\x01@\x01\x04self&\0\x0e\x04\0\x15[method]text-box.text\
-\x01(\x01@\x02\x04self&\x05values\x01\0\x04\0\x19[method]text-box.set-text\x01)\x01\
-@\x01\x04self&\0\x0c\x04\0\x15[method]text-box.wrap\x01*\x01@\x02\x04self&\x05va\
-lue\x0c\x01\0\x04\0\x19[method]text-box.set-wrap\x01+\x03\x01\x0dunavi:ui/text\x05\
+\0\x01\x04\0\x14[method]text.align-x\x01\x17\x04\0\x14[method]text.align-y\x01\x17\
+\x01@\x02\x04self\x10\x05value\x01\x01\0\x04\0\x18[method]text.set-align-x\x01\x18\
+\x04\0\x18[method]text.set-align-y\x01\x18\x01@\x01\x04self\x10\0v\x04\0\x16[met\
+hod]text.font-size\x01\x19\x01@\x02\x04self\x10\x05valuev\x01\0\x04\0\x1a[method\
+]text.set-font-size\x01\x1a\x04\0\x16[method]text.thickness\x01\x19\x04\0\x1a[me\
+thod]text.set-thickness\x01\x1a\x01i\x05\x01k\x1b\x01@\x01\x04self\x10\0\x1c\x04\
+\0\x15[method]text.material\x01\x1d\x01h\x05\x01k\x1e\x01@\x02\x04self\x10\x05va\
+lue\x1f\x01\0\x04\0\x19[method]text.set-material\x01\x20\x01i\x07\x01@\x01\x04se\
+lf\x10\0!\x04\0\x11[method]text.mesh\x01\"\x01i\x03\x01i\x0d\x01@\x01\x04root#\0\
+$\x04\0\x15[constructor]text-box\x01%\x01h\x0d\x01@\x01\x04self&\0#\x04\0\x15[me\
+thod]text-box.root\x01'\x01@\x01\x04self&\0\x0e\x04\0\x15[method]text-box.text\x01\
+(\x01@\x02\x04self&\x05values\x01\0\x04\0\x19[method]text-box.set-text\x01)\x01@\
+\x01\x04self&\0\x0c\x04\0\x15[method]text-box.wrap\x01*\x01@\x02\x04self&\x05val\
+ue\x0c\x01\0\x04\0\x19[method]text-box.set-wrap\x01+\x03\x01\x0dunavi:ui/text\x05\
 \x19\x01B\x04\x01m\x04\x05debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\
 \0\x01@\x02\x05level\x01\x07messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired\
 :log/api\x05\x1a\x01B\x11\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\0\x01i\x01\x01\

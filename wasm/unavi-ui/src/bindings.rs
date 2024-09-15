@@ -5718,23 +5718,44 @@ pub mod exports {
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_text_alignment_cabi<T: GuestText>(
-                    arg0: *mut u8,
-                ) -> i32 {
+                pub unsafe fn _export_method_text_align_x_cabi<T: GuestText>(arg0: *mut u8) -> i32 {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
-                    let result0 = T::alignment(TextBorrow::lift(arg0 as u32 as usize).get());
+                    let result0 = T::align_x(TextBorrow::lift(arg0 as u32 as usize).get());
                     result0.clone() as i32
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_text_set_alignment_cabi<T: GuestText>(
+                pub unsafe fn _export_method_text_align_y_cabi<T: GuestText>(arg0: *mut u8) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::align_y(TextBorrow::lift(arg0 as u32 as usize).get());
+                    result0.clone() as i32
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_text_set_align_x_cabi<T: GuestText>(
                     arg0: *mut u8,
                     arg1: i32,
                 ) {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
-                    T::set_alignment(
+                    T::set_align_x(
+                        TextBorrow::lift(arg0 as u32 as usize).get(),
+                        super::super::super::super::unavi::layout::container::Alignment::_lift(
+                            arg1 as u8,
+                        ),
+                    );
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_text_set_align_y_cabi<T: GuestText>(
+                    arg0: *mut u8,
+                    arg1: i32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::set_align_y(
                         TextBorrow::lift(arg0 as u32 as usize).get(),
                         super::super::super::super::unavi::layout::container::Alignment::_lift(
                             arg1 as u8,
@@ -5958,8 +5979,10 @@ pub mod exports {
                     fn set_font(&self, value: Option<_rt::Vec<u8>>);
                     fn text(&self) -> _rt::String;
                     fn set_text(&self, value: _rt::String);
-                    fn alignment(&self) -> Alignment;
-                    fn set_alignment(&self, value: Alignment);
+                    fn align_x(&self) -> Alignment;
+                    fn align_y(&self) -> Alignment;
+                    fn set_align_x(&self, value: Alignment);
+                    fn set_align_y(&self, value: Alignment);
                     fn font_size(&self) -> f32;
                     fn set_font_size(&self, value: f32);
                     fn thickness(&self) -> f32;
@@ -6050,13 +6073,21 @@ pub mod exports {
     unsafe extern "C" fn export_method_text_set_text(arg0: *mut u8,arg1: *mut u8,arg2: usize,) {
       $($path_to_types)*::_export_method_text_set_text_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0, arg1, arg2)
     }
-    #[export_name = "unavi:ui/text#[method]text.alignment"]
-    unsafe extern "C" fn export_method_text_alignment(arg0: *mut u8,) -> i32 {
-      $($path_to_types)*::_export_method_text_alignment_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0)
+    #[export_name = "unavi:ui/text#[method]text.align-x"]
+    unsafe extern "C" fn export_method_text_align_x(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_text_align_x_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0)
     }
-    #[export_name = "unavi:ui/text#[method]text.set-alignment"]
-    unsafe extern "C" fn export_method_text_set_alignment(arg0: *mut u8,arg1: i32,) {
-      $($path_to_types)*::_export_method_text_set_alignment_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0, arg1)
+    #[export_name = "unavi:ui/text#[method]text.align-y"]
+    unsafe extern "C" fn export_method_text_align_y(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_text_align_y_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0)
+    }
+    #[export_name = "unavi:ui/text#[method]text.set-align-x"]
+    unsafe extern "C" fn export_method_text_set_align_x(arg0: *mut u8,arg1: i32,) {
+      $($path_to_types)*::_export_method_text_set_align_x_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0, arg1)
+    }
+    #[export_name = "unavi:ui/text#[method]text.set-align-y"]
+    unsafe extern "C" fn export_method_text_set_align_y(arg0: *mut u8,arg1: i32,) {
+      $($path_to_types)*::_export_method_text_set_align_y_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0, arg1)
     }
     #[export_name = "unavi:ui/text#[method]text.font-size"]
     unsafe extern "C" fn export_method_text_font_size(arg0: *mut u8,) -> f32 {
@@ -6409,8 +6440,8 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 8209] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x95?\x01A\x02\x01A'\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 8259] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc7?\x01A\x02\x01A'\x01\
 B\x10\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\
 \x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01r\
 \x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -6565,7 +6596,7 @@ ltav\x01\0\x04\0\x09update-ui\x01\0\x04\x01\x0cunavi:ui/api\x05\x15\x02\x03\0\x0
 \x01@\x01\x04root\x05\0\x06\x04\0\x13[constructor]button\x01\x07\x01h\x04\x01@\x01\
 \x04self\x08\0\x05\x04\0\x13[method]button.root\x01\x09\x01@\x01\x04self\x08\0\x7f\
 \x04\0\x16[method]button.hovered\x01\x0a\x04\0\x16[method]button.pressed\x01\x0a\
-\x04\x01\x0funavi:ui/button\x05\x17\x02\x03\0\x09\x09alignment\x01B@\x02\x03\x02\
+\x04\x01\x0funavi:ui/button\x05\x17\x02\x03\0\x09\x09alignment\x01BB\x02\x03\x02\
 \x01\x18\x04\0\x09alignment\x03\0\0\x02\x03\x02\x01\x16\x04\0\x09container\x03\0\
 \x02\x02\x03\x02\x01\x02\x04\0\x08material\x03\0\x04\x02\x03\x02\x01\x0a\x04\0\x04\
 mesh\x03\0\x06\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x08\x04\0\x04text\x03\x01\
@@ -6575,21 +6606,22 @@ mesh\x03\0\x06\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x08\x04\0\x04text\x03\x01
 @\x02\x04self\x10\x05value\x13\x01\0\x04\0\x15[method]text.set-font\x01\x14\x01@\
 \x01\x04self\x10\0s\x04\0\x11[method]text.text\x01\x15\x01@\x02\x04self\x10\x05v\
 alues\x01\0\x04\0\x15[method]text.set-text\x01\x16\x01@\x01\x04self\x10\0\x01\x04\
-\0\x16[method]text.alignment\x01\x17\x01@\x02\x04self\x10\x05value\x01\x01\0\x04\
-\0\x1a[method]text.set-alignment\x01\x18\x01@\x01\x04self\x10\0v\x04\0\x16[metho\
-d]text.font-size\x01\x19\x01@\x02\x04self\x10\x05valuev\x01\0\x04\0\x1a[method]t\
-ext.set-font-size\x01\x1a\x04\0\x16[method]text.thickness\x01\x19\x04\0\x1a[meth\
-od]text.set-thickness\x01\x1a\x01i\x05\x01k\x1b\x01@\x01\x04self\x10\0\x1c\x04\0\
-\x15[method]text.material\x01\x1d\x01h\x05\x01k\x1e\x01@\x02\x04self\x10\x05valu\
-e\x1f\x01\0\x04\0\x19[method]text.set-material\x01\x20\x01i\x07\x01@\x01\x04self\
-\x10\0!\x04\0\x11[method]text.mesh\x01\"\x01i\x03\x01i\x0d\x01@\x01\x04root#\0$\x04\
-\0\x15[constructor]text-box\x01%\x01h\x0d\x01@\x01\x04self&\0#\x04\0\x15[method]\
-text-box.root\x01'\x01@\x01\x04self&\0\x0e\x04\0\x15[method]text-box.text\x01(\x01\
-@\x02\x04self&\x05values\x01\0\x04\0\x19[method]text-box.set-text\x01)\x01@\x01\x04\
-self&\0\x0c\x04\0\x15[method]text-box.wrap\x01*\x01@\x02\x04self&\x05value\x0c\x01\
-\0\x04\0\x19[method]text-box.set-wrap\x01+\x04\x01\x0dunavi:ui/text\x05\x19\x04\x01\
-\x0eunavi:ui/guest\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\0G\x09producers\x01\x0cp\
-rocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+\0\x14[method]text.align-x\x01\x17\x04\0\x14[method]text.align-y\x01\x17\x01@\x02\
+\x04self\x10\x05value\x01\x01\0\x04\0\x18[method]text.set-align-x\x01\x18\x04\0\x18\
+[method]text.set-align-y\x01\x18\x01@\x01\x04self\x10\0v\x04\0\x16[method]text.f\
+ont-size\x01\x19\x01@\x02\x04self\x10\x05valuev\x01\0\x04\0\x1a[method]text.set-\
+font-size\x01\x1a\x04\0\x16[method]text.thickness\x01\x19\x04\0\x1a[method]text.\
+set-thickness\x01\x1a\x01i\x05\x01k\x1b\x01@\x01\x04self\x10\0\x1c\x04\0\x15[met\
+hod]text.material\x01\x1d\x01h\x05\x01k\x1e\x01@\x02\x04self\x10\x05value\x1f\x01\
+\0\x04\0\x19[method]text.set-material\x01\x20\x01i\x07\x01@\x01\x04self\x10\0!\x04\
+\0\x11[method]text.mesh\x01\"\x01i\x03\x01i\x0d\x01@\x01\x04root#\0$\x04\0\x15[c\
+onstructor]text-box\x01%\x01h\x0d\x01@\x01\x04self&\0#\x04\0\x15[method]text-box\
+.root\x01'\x01@\x01\x04self&\0\x0e\x04\0\x15[method]text-box.text\x01(\x01@\x02\x04\
+self&\x05values\x01\0\x04\0\x19[method]text-box.set-text\x01)\x01@\x01\x04self&\0\
+\x0c\x04\0\x15[method]text-box.wrap\x01*\x01@\x02\x04self&\x05value\x0c\x01\0\x04\
+\0\x19[method]text-box.set-wrap\x01+\x04\x01\x0dunavi:ui/text\x05\x19\x04\x01\x0e\
+unavi:ui/guest\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\0G\x09producers\x01\x0cproce\
+ssed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

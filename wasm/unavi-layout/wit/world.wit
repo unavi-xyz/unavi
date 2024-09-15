@@ -46,7 +46,6 @@ interface container {
     align-x: func() -> alignment;
     align-y: func() -> alignment;
     align-z: func() -> alignment;
-
     set-align-x: func(value: alignment);
     set-align-y: func(value: alignment);
     set-align-z: func(value: alignment);

@@ -30,7 +30,7 @@ let
     [
       {
         name = pkgs.lib.concatStrings [
-          "native-"
+          "app-"
           subdir
         ];
         value = mkAppPackage resource;

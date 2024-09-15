@@ -10,7 +10,7 @@ use crate::bindings::{
     wired::scene::mesh::Mesh,
 };
 
-const FONT: &[u8] = include_bytes!("../../Roboto-Regular.ttf");
+const FONT: &[u8] = include_bytes!("../../NotoSans-Regular.ttf");
 
 #[derive(Clone)]
 pub struct Text(Rc<TextData>);
@@ -18,6 +18,7 @@ pub struct Text(Rc<TextData>);
 struct TextData {
     font_size: Cell<f32>,
     generator: RefCell<MeshGenerator<OwnedFace>>,
+    line_padding: Cell<f32>,
     mesh: Mesh,
     text: RefCell<String>,
     thickness: Cell<f32>,
@@ -54,7 +55,7 @@ impl Text {
             self.0.mesh.remove_primitive(primitive);
         }
 
-        let line_padding = 1.25;
+        let line_padding = self.0.line_padding.get();
         let mut total_line_height = 0.0;
 
         for (i, mut data) in self
@@ -94,6 +95,7 @@ impl GuestText for Text {
         let text = Self(Rc::new(TextData {
             font_size: Cell::new(0.25),
             generator: RefCell::new(MeshGenerator::new(FONT.to_owned())),
+            line_padding: Cell::new(1.15),
             mesh,
             text: RefCell::new(text),
             thickness: Cell::default(),

@@ -56,18 +56,23 @@ let
       );
 
     nativeBuildInputs =
-      (with pkgs; [
-        alsa-lib.dev
+      pkgs.lib.optionals pkgs.stdenv.isLinux (
+        with pkgs;
+        [
+          alsa-lib.dev
+          clang
+          cmake
+          libxkbcommon.dev
+          openssl.dev
+          pkg-config
+          udev.dev
+          wayland.dev
+        ]
+      )
+      ++ (with pkgs; [
         capnproto
         cargo-component
-        clang
-        cmake
-        libxkbcommon.dev
-        openssl.dev
-        pkg-config
         rustPlatform.bindgenHook
-        udev.dev
-        wayland.dev
       ])
       ++ [
         wac-cli

@@ -13,16 +13,21 @@ let
   );
 
   nativeBuildInputs =
-    (with pkgs; [
+    pkgs.lib.optionals pkgs.stdenv.isLinux (
+      with pkgs;
+      [
+        clang
+        cmake
+        openssl.dev
+        pkg-config
+        udev.dev
+      ]
+    )
+    ++ pkgs.lib.optionals pkgs.stdenv.isDarwin (with pkgs; [ darwin.apple_sdk.frameworks.Cocoa ])
+    ++ (with pkgs; [
       capnproto
-      clang
-      cmake
-      openssl.dev
-      pkg-config
       rustPlatform.bindgenHook
-      udev.dev
-    ])
-    ++ pkgs.lib.optionals pkgs.stdenv.isDarwin (with pkgs; [ darwin.apple_sdk.frameworks.Cocoa ]);
+    ]);
 in
 {
   inherit buildInputs nativeBuildInputs;

@@ -77,28 +77,6 @@
           cargoHash = "sha256-hLDIqcNVv2EEDMmdGrs54YacH0qkd+fTg0rfjdCClGk=";
         };
 
-        githubMatrix = nix-github-actions.lib.mkGithubMatrix {
-          attrPrefix = "";
-          checks =
-            nixpkgs.lib.mapAttrs
-              (
-                _: v:
-                (nixpkgs.lib.filterAttrs (
-                  n: _:
-                  !(nixpkgs.lib.mutuallyExclusive [ n ] [
-                    "unavi-app"
-                    "unavi-server"
-                  ])
-                ) v)
-              )
-              (
-                nixpkgs.lib.getAttrs [
-                  flake-utils.lib.system.aarch64-darwin
-                  flake-utils.lib.system.x86_64-linux
-                ] self.packages
-              );
-        };
-
         src = pkgs.lib.cleanSourceWith {
           src = ./.;
           filter =
@@ -144,8 +122,8 @@
         inherit unavi-app unavi-server;
 
         apps = rec {
-          server = flake-utils.lib.mkApp { drv = unavi-server.server; };
           app = flake-utils.lib.mkApp { drv = unavi-app.native; };
+          server = flake-utils.lib.mkApp { drv = unavi-server.server; };
           web = flake-utils.lib.mkApp {
             drv = pkgs.writeShellApplication {
               name = "unavi-web";
@@ -169,24 +147,10 @@
 
         packages = rec {
           app = unavi-app.native;
-          web = unavi-app.web;
           server = unavi-server.server;
+          web = unavi-app.web;
           default = app;
         } // deploy.packages;
-
-        githubMatrix = githubMatrix // {
-          matrix.include = map (
-            entry:
-            let
-              split = pkgs.lib.strings.splitString "." entry.attr;
-              package = pkgs.lib.strings.removeSuffix "\"" (
-                pkgs.lib.strings.removePrefix "\"" (builtins.elemAt split 1)
-              );
-              platform = builtins.elemAt split 0;
-            in
-            entry // { name = "${package}.${platform}"; }
-          ) githubMatrix.matrix.include;
-        };
 
         devShells.default = craneLib.devShell {
           packages =
@@ -215,9 +179,43 @@
     // (
       let
         deploy = import ./deploy (inputs // { localSystem = "x86_64-linux"; });
+        githubMatrix = nix-github-actions.lib.mkGithubMatrix {
+          attrPrefix = "";
+          checks =
+            nixpkgs.lib.mapAttrs
+              (
+                _: v:
+                (nixpkgs.lib.filterAttrs (
+                  n: _:
+                  !(nixpkgs.lib.mutuallyExclusive [ n ] [
+                    "app"
+                    "server"
+                  ])
+                ) v)
+              )
+              (
+                nixpkgs.lib.getAttrs [
+                  flake-utils.lib.system.aarch64-darwin
+                  flake-utils.lib.system.x86_64-linux
+                ] self.packages
+              );
+        };
       in
       {
         deploy = deploy.deploy;
+        githubMatrix = githubMatrix // {
+          matrix.include = map (
+            entry:
+            let
+              split = nixpkgs.lib.strings.splitString "." entry.attr;
+              package = nixpkgs.lib.strings.removeSuffix "\"" (
+                nixpkgs.lib.strings.removePrefix "\"" (builtins.elemAt split 1)
+              );
+              platform = builtins.elemAt split 0;
+            in
+            entry // { name = "${package}.${platform}"; }
+          ) githubMatrix.matrix.include;
+        };
       }
     );
 }

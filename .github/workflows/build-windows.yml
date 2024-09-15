@@ -35,12 +35,12 @@ jobs:
           targets: x86_64-pc-windows-msvc
 
       - run: cargo install cargo-component
+      - run: cargo install cargo-wix
       - run: cargo install wac-cli
-      - run: cargo install wix
 
       - name: Build package
         run: |
-          cargo wix -p ${{ matrix.package }} --release --target x86_64-pc-windows-msvc
+          cargo wix -p ${{ matrix.package }} --target x86_64-pc-windows-msvc
           mkdir result
           mv target/x86_64-pc-windows-msvc/release/*.exe result
           cp crates/${{ matrix.package }}/README.md result
@@ -52,8 +52,7 @@ jobs:
         run: Compress-Archive -Path result/* -DestinationPath ${{ matrix.package }}.x86_64-windows.zip
 
       - name: Create msi
-        run: |
-          cp target/x86_64-pc-windows-msvc/release/*.msi ${{ matrix.packages }}.x86-64_windows.msi
+        run: cp target/x86_64-pc-windows-msvc/release/*.msi ${{ matrix.packages }}.x86-64_windows.msi
 
       - uses: actions/upload-artifact@v4
         with:

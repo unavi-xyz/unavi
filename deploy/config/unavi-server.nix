@@ -4,7 +4,7 @@
   domainWorld,
   pkgs,
   unavi-server,
-  unavi-web,
+  # unavi-web,
   ...
 }:
 let
@@ -64,17 +64,17 @@ in
           };
         };
       };
-      ${domainWeb} = {
-        enableACME = true;
-        forceSSL = true;
-        http2 = true;
-        root = unavi-web;
-        locations = {
-          "/" = {
-            index = "index.html";
-          };
-        };
-      };
+      # ${domainWeb} = {
+      #   enableACME = true;
+      #   forceSSL = true;
+      #   http2 = true;
+      #   root = unavi-web;
+      #   locations = {
+      #     "/" = {
+      #       index = "index.html";
+      #     };
+      #   };
+      # };
       ${domainWorld} = {
         enableACME = true;
         forceSSL = true;

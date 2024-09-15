@@ -62,14 +62,14 @@
         Id='*'
         Name='unavi-server'
         UpgradeCode='14C6291C-3271-4F87-9414-4E9B5E6298ED'
-        Manufacturer='kayh'
+        Manufacturer='UNAVI'
         Language='1033'
         Codepage='1252'
         Version='$(var.Version)'>
 
         <Package Id='*'
             Keywords='Installer'
-            Manufacturer='kayh'
+            Manufacturer='UNAVI'
             InstallerVersion='450'
             Languages='1033'
             Compressed='yes'

@@ -62,14 +62,14 @@
         Id='*'
         Name='unavi-app'
         UpgradeCode='CD21570F-A50A-4B80-97A9-2A8ACCB87ABA'
-        Manufacturer='kayh'
+        Manufacturer='UNAVI'
         Language='1033'
         Codepage='1252'
         Version='$(var.Version)'>
 
         <Package Id='*'
             Keywords='Installer'
-            Manufacturer='kayh'
+            Manufacturer='UNAVI'
             InstallerVersion='450'
             Languages='1033'
             Compressed='yes'

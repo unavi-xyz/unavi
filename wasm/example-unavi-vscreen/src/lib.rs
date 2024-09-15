@@ -15,6 +15,7 @@ use bindings::{
 #[allow(warnings)]
 mod bindings;
 mod wired_math_impls;
+mod wired_scene_impls;
 
 struct Script {
     screens: Vec<Screen>,
@@ -75,12 +76,7 @@ fn spawn_examples(transform: Transform, screens: &mut Vec<Screen>) {
     let bg = Rectangle::new(Vec2::new(8.0, 3.0)).to_physics_node();
     bg.set_transform(transform);
     let material = Material::new();
-    material.set_color(Color {
-        r: 0.5,
-        g: 0.1,
-        b: 0.2,
-        a: 1.0,
-    });
+    material.set_color(Color::RED);
     for primitive in bg.mesh().unwrap().list_primitives() {
         primitive.set_material(Some(&material))
     }

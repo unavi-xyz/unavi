@@ -1,7 +1,7 @@
 package example:unavi-vscreen;
 
 world script {
-    include wired:script/script;
+    include wired:prelude/script;
 
     import unavi:shapes/api;
     import unavi:vscreen/screen;

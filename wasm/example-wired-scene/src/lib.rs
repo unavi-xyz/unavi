@@ -50,12 +50,6 @@ impl GuestScript for Script {
         node.set_mesh(Some(&mesh));
 
         let material = Material::new();
-        material.set_color(Color {
-            r: 1.0,
-            g: 0.5,
-            b: 0.9,
-            a: 1.0,
-        });
 
         for primitive in mesh.list_primitives() {
             primitive.set_material(Some(&material));

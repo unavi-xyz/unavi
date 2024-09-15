@@ -2,7 +2,7 @@ use std::cell::Cell;
 
 use crate::bindings::{
     exports::unavi::ui::text::{GuestText, GuestTextBox, Text as TextExport, WordWrap},
-    unavi::layout::container::Container,
+    unavi::layout::container::{Alignment, Container},
 };
 
 use super::text::Text;
@@ -97,6 +97,7 @@ impl TextBox {
 impl GuestTextBox for TextBox {
     fn new(root: Container) -> Self {
         let text = Text::new(String::default());
+        text.set_alignment(Alignment::Start);
         root.inner().set_mesh(Some(&text.mesh()));
 
         Self {

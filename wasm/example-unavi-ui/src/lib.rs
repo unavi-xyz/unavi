@@ -22,6 +22,7 @@ use bindings::{
 #[allow(warnings)]
 mod bindings;
 mod wired_math_impls;
+mod wired_scene_impls;
 
 struct Script {
     button: Button,
@@ -47,12 +48,7 @@ impl GuestScript for Script {
             bg.root().add_child(&rect);
 
             let material = Material::new();
-            material.set_color(Color {
-                r: 0.1,
-                g: 0.1,
-                b: 0.2,
-                a: 1.0,
-            });
+            material.set_color(Color::BLUE);
             rect.mesh()
                 .unwrap()
                 .list_primitives()
@@ -90,7 +86,6 @@ impl GuestScript for Script {
             container.root().add_child(&outline);
 
             let text = TextBox::new(container);
-            text.text().set_alignment(Alignment::Start);
             text.set_text("The quick brown fox jumps over the lazy dog.");
 
             // TODO: Add buttons for controlling text settings

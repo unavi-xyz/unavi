@@ -1,10 +1,13 @@
 use std::cell::Cell;
 
 use crate::{
-    bindings::unavi::{
-        layout::container::{Alignment, Container},
-        ui::text::TextBox,
-        vscreen::screen::{Screen, ScreenShape},
+    bindings::{
+        unavi::{
+            layout::container::{Alignment, Container},
+            ui::text::TextBox,
+            vscreen::screen::{Screen, ScreenShape},
+        },
+        wired::scene::material::{Color, Material},
     },
     SCREEN_RADIUS,
 };
@@ -42,6 +45,8 @@ impl Default for Clock {
         let text = TextBox::new(container);
         text.text().set_alignment(Alignment::Center);
         text.text().set_font_size(SCREEN_RADIUS / 2.0);
+        text.text()
+            .set_material(Some(&Material::from_color(Color::BLACK)));
 
         Self {
             screen,

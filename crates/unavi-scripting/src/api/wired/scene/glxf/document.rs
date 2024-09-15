@@ -6,7 +6,7 @@ use crate::{
         utils::{RefCount, RefCountCell, RefResource},
         wired::scene::bindings::glxf::{Asset, AssetBorrow, Host, HostGlxf},
     },
-    state::StoreState,
+    data::StoreData,
 };
 
 use super::{
@@ -32,7 +32,7 @@ impl RefCount for GlxfDocument {
 
 impl RefResource for GlxfDocument {}
 
-impl HostGlxf for StoreState {
+impl HostGlxf for StoreData {
     fn new(&mut self) -> wasm_bridge::Result<Resource<GlxfDocument>> {
         let node = GlxfDocument::default();
         let table_res = self.table.push(node)?;
@@ -281,7 +281,7 @@ impl HostGlxf for StoreState {
     }
 }
 
-impl Host for StoreState {
+impl Host for StoreData {
     fn get_root(&mut self) -> wasm_bridge::Result<Resource<GlxfDocument>> {
         let res = self.clone_res(&self.root_glxf)?;
         Ok(res)

@@ -1,12 +1,12 @@
 use anyhow::Result;
 use wasm_bridge::component::Linker;
 
-use super::state::StoreState;
+use super::data::StoreData;
 
 pub(crate) mod utils;
 pub mod wired;
 
-pub(crate) fn add_host_apis(linker: &mut Linker<StoreState>) -> Result<()> {
+pub(crate) fn add_host_apis(linker: &mut Linker<StoreData>) -> Result<()> {
     wired::scene::add_to_linker(linker)?;
     wired::input::add_to_linker(linker)?;
     wired::log::add_to_linker(linker)?;

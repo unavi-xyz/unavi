@@ -4,7 +4,7 @@ use wasm_bridge::component::Resource;
 
 use crate::{
     api::utils::{RefCount, RefCountCell, RefResource},
-    state::StoreState,
+    data::StoreData,
 };
 
 use super::bindings::{
@@ -47,7 +47,7 @@ impl Collider {
     }
 }
 
-impl HostCollider for StoreState {
+impl HostCollider for StoreData {
     fn new(&mut self, shape: Shape) -> wasm_bridge::Result<Resource<Collider>> {
         let collider = Collider::new(shape);
         let table_res = self.table.push(collider)?;
@@ -75,29 +75,29 @@ impl HostCollider for StoreState {
 mod tests {
     use tracing_test::traced_test;
 
-    use crate::api::utils::tests::init_test_state;
+    use crate::api::utils::tests::init_test_data;
 
     use super::*;
 
     #[test]
     #[traced_test]
     fn test_drop() {
-        let (_, mut state) = init_test_state();
+        let (_, mut data) = init_test_data();
 
         let shape = Shape::Sphere(0.5);
-        let res = HostCollider::new(&mut state, shape).unwrap();
+        let res = HostCollider::new(&mut data, shape).unwrap();
 
-        crate::api::utils::tests::test_drop(&mut state, res);
+        crate::api::utils::tests::test_drop(&mut data, res);
     }
 
     #[test]
     #[traced_test]
     fn test_new() {
-        let (_, mut state) = init_test_state();
+        let (_, mut data) = init_test_data();
 
         let shape = Shape::Sphere(0.5);
-        let res = HostCollider::new(&mut state, shape).unwrap();
+        let res = HostCollider::new(&mut data, shape).unwrap();
 
-        crate::api::utils::tests::test_new(&mut state, res);
+        crate::api::utils::tests::test_new(&mut data, res);
     }
 }

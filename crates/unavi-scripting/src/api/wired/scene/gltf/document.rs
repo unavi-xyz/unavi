@@ -6,7 +6,7 @@ use crate::{
         utils::{RefCount, RefCountCell, RefResource},
         wired::scene::bindings::wired::scene::gltf::{Host, HostGltf},
     },
-    state::StoreState,
+    data::StoreData,
 };
 
 use super::{material::MaterialRes, mesh::MeshRes, node::NodeRes, scene::SceneRes};
@@ -30,7 +30,7 @@ impl RefCount for GltfDocument {
 
 impl RefResource for GltfDocument {}
 
-impl HostGltf for StoreState {
+impl HostGltf for StoreData {
     fn new(&mut self) -> wasm_bridge::Result<Resource<GltfDocument>> {
         let node = GltfDocument::default();
         let table_res = self.table.push(node)?;
@@ -275,4 +275,4 @@ impl HostGltf for StoreState {
     }
 }
 
-impl Host for StoreState {}
+impl Host for StoreData {}

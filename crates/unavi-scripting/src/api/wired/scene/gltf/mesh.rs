@@ -14,7 +14,7 @@ use crate::{
         utils::{RefCount, RefCountCell, RefResource},
         wired::scene::bindings::mesh::{Host, HostMesh, HostPrimitive, Material},
     },
-    state::{PrimitiveState, StoreState},
+    data::{PrimitiveState, StoreData},
 };
 
 use super::{
@@ -88,7 +88,7 @@ impl RefCount for PrimitiveRes {
 
 impl RefResource for PrimitiveRes {}
 
-impl HostMesh for StoreState {
+impl HostMesh for StoreData {
     fn new(&mut self) -> wasm_bridge::Result<Resource<MeshRes>> {
         let table_res = self.table.push(MeshRes::default())?;
         let res = self.clone_res(&table_res)?;
@@ -215,7 +215,7 @@ impl HostMesh for StoreState {
     }
 }
 
-impl HostPrimitive for StoreState {
+impl HostPrimitive for StoreData {
     fn id(&mut self, self_: Resource<PrimitiveRes>) -> wasm_bridge::Result<u32> {
         Ok(self_.rep())
     }
@@ -369,21 +369,21 @@ impl HostPrimitive for StoreState {
     }
 }
 
-impl Host for StoreState {}
+impl Host for StoreData {}
 
 #[cfg(test)]
 mod tests {
-    use crate::api::utils::tests::init_test_state;
+    use crate::api::utils::tests::init_test_data;
 
     use super::*;
 
     #[test]
     fn test_new() {
-        let (mut world, mut state) = init_test_state();
+        let (mut world, mut data) = init_test_data();
 
-        let _ = HostMesh::new(&mut state).unwrap();
+        let _ = HostMesh::new(&mut data).unwrap();
 
-        world.commands().append(&mut state.commands);
+        world.commands().append(&mut data.commands);
         world.flush_commands();
     }
 }

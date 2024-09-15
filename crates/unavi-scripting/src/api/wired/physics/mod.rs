@@ -1,7 +1,7 @@
 use anyhow::Result;
 use wasm_bridge::component::Linker;
 
-use crate::state::StoreState;
+use crate::data::StoreData;
 
 mod collider;
 mod rigid_body;
@@ -23,9 +23,9 @@ pub mod bindings {
     pub use self::wired::physics::*;
 }
 
-impl bindings::types::Host for StoreState {}
+impl bindings::types::Host for StoreData {}
 
-pub fn add_to_linker(linker: &mut Linker<StoreState>) -> Result<()> {
+pub fn add_to_linker(linker: &mut Linker<StoreData>) -> Result<()> {
     bindings::wired::physics::types::add_to_linker(linker, |s| s)?;
     Ok(())
 }

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use wasm_bridge::component::Linker;
 
-use crate::state::StoreState;
+use crate::data::StoreData;
 
 pub mod gltf;
 pub mod glxf;
@@ -30,7 +30,7 @@ pub mod bindings {
     pub use wired::scene::*;
 }
 
-pub fn add_to_linker(linker: &mut Linker<StoreState>) -> Result<()> {
+pub fn add_to_linker(linker: &mut Linker<StoreData>) -> Result<()> {
     bindings::gltf::add_to_linker(linker, |s| s)?;
     bindings::glxf::add_to_linker(linker, |s| s)?;
     bindings::material::add_to_linker(linker, |s| s)?;

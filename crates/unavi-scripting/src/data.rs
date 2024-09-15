@@ -8,7 +8,7 @@ use crate::api::{
     utils::RefResource, wired::player::bindings::Player, wired::scene::glxf::document::GlxfDocument,
 };
 
-pub struct StoreState {
+pub struct StoreData {
     pub commands: CommandQueue,
     pub default_material: Handle<StandardMaterial>,
     pub entities: EntityMaps,
@@ -20,7 +20,7 @@ pub struct StoreState {
     pub wasi_table: wasm_bridge_wasi::ResourceTable,
 }
 
-impl WasiView for StoreState {
+impl WasiView for StoreData {
     fn table(&mut self) -> &mut wasm_bridge_wasi::ResourceTable {
         &mut self.wasi_table
     }
@@ -30,7 +30,7 @@ impl WasiView for StoreState {
     }
 }
 
-impl StoreState {
+impl StoreData {
     pub fn new(name: String, root_ent: Entity, default_material: Handle<StandardMaterial>) -> Self {
         let mut table = ResourceTable::default();
 

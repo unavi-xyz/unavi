@@ -6,7 +6,7 @@ use crate::{
         utils::{RefCount, RefCountCell, RefResource},
         wired::scene::bindings::wired::scene::glxf::HostAssetGlxf,
     },
-    state::StoreState,
+    data::StoreData,
 };
 
 use super::{document::GlxfDocument, node::GlxfNodeRes};
@@ -26,7 +26,7 @@ impl RefCount for GlxfAssetRes {
 
 impl RefResource for GlxfAssetRes {}
 
-impl HostAssetGlxf for StoreState {
+impl HostAssetGlxf for StoreData {
     fn new(
         &mut self,
         document: Resource<GlxfDocument>,

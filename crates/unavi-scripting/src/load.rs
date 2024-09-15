@@ -6,7 +6,7 @@ use wasm_bridge::{component::Linker, Config, Engine, Store};
 
 use crate::{
     api::{add_host_apis, wired::script::bindings::Script},
-    state::StoreState,
+    data::StoreData,
 };
 
 use super::asset::Wasm;
@@ -19,7 +19,7 @@ pub struct LoadedScript;
 pub struct ProcessedScript;
 
 #[derive(Default, Deref)]
-pub struct ScriptMap(pub Arc<Mutex<HashMap<Entity, (Script, Store<StoreState>)>>>);
+pub struct ScriptMap(pub Arc<Mutex<HashMap<Entity, (Script, Store<StoreData>)>>>);
 
 #[derive(Resource, Deref)]
 pub struct DefaultMaterial(pub Handle<StandardMaterial>);
@@ -53,8 +53,8 @@ pub fn load_scripts(
             }
         };
 
-        let state = StoreState::new(name.to_string(), entity, default_material.clone());
-        let mut store = Store::new(&engine, state);
+        let data = StoreData::new(name.to_string(), entity, default_material.clone());
+        let mut store = Store::new(&engine, data);
         let mut linker = Linker::new(store.engine());
 
         let bytes = wasm.0.clone();

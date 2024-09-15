@@ -4,7 +4,7 @@ use wasm_bridge::component::Resource;
 
 use crate::{
     api::utils::{RefCount, RefCountCell, RefResource},
-    state::StoreState,
+    data::StoreData,
 };
 
 use super::bindings::{
@@ -48,7 +48,7 @@ impl RefCount for RigidBody {
 
 impl RefResource for RigidBody {}
 
-impl HostRigidBody for StoreState {
+impl HostRigidBody for StoreData {
     fn new(&mut self, rigid_body_type: RigidBodyType) -> wasm_bridge::Result<Resource<RigidBody>> {
         let rigid_body = RigidBody::new(rigid_body_type);
         let table_res = self.table.push(rigid_body)?;
@@ -103,27 +103,27 @@ mod tests {
 
     use tracing_test::traced_test;
 
-    use crate::api::utils::tests::init_test_state;
+    use crate::api::utils::tests::init_test_data;
 
     use super::*;
 
     #[test]
     #[traced_test]
     fn test_drop() {
-        let (_, mut state) = init_test_state();
+        let (_, mut data) = init_test_data();
 
-        let res = HostRigidBody::new(&mut state, RigidBodyType::Dynamic).unwrap();
+        let res = HostRigidBody::new(&mut data, RigidBodyType::Dynamic).unwrap();
 
-        crate::api::utils::tests::test_drop(&mut state, res);
+        crate::api::utils::tests::test_drop(&mut data, res);
     }
 
     #[test]
     #[traced_test]
     fn test_new() {
-        let (_, mut state) = init_test_state();
+        let (_, mut data) = init_test_data();
 
-        let res = HostRigidBody::new(&mut state, RigidBodyType::Dynamic).unwrap();
+        let res = HostRigidBody::new(&mut data, RigidBodyType::Dynamic).unwrap();
 
-        crate::api::utils::tests::test_new(&mut state, res);
+        crate::api::utils::tests::test_new(&mut data, res);
     }
 }

@@ -6,7 +6,7 @@ use crate::{
         utils::{RefCount, RefCountCell, RefResource},
         wired::scene::bindings::scene::{Host, HostScene},
     },
-    state::StoreState,
+    data::StoreData,
 };
 
 use super::node::NodeRes;
@@ -44,7 +44,7 @@ impl RefCount for SceneRes {
 
 impl RefResource for SceneRes {}
 
-impl HostScene for StoreState {
+impl HostScene for StoreData {
     fn new(&mut self) -> wasm_bridge::Result<Resource<SceneRes>> {
         let node = SceneRes::default();
         let table_res = self.table.push(node)?;
@@ -150,7 +150,7 @@ impl HostScene for StoreState {
     }
 }
 
-impl Host for StoreState {}
+impl Host for StoreData {}
 
 #[cfg(test)]
 mod tests {
@@ -165,11 +165,11 @@ mod tests {
     fn test_new() {
         let mut world = World::new();
         let root_ent = world.spawn_empty().id();
-        let mut state = StoreState::new("test".to_string(), root_ent, Handle::default());
+        let mut data = StoreData::new("test".to_string(), root_ent, Handle::default());
 
-        let res = HostScene::new(&mut state).unwrap();
+        let res = HostScene::new(&mut data).unwrap();
 
-        world.commands().append(&mut state.commands);
+        world.commands().append(&mut data.commands);
         world.flush_commands();
 
         world
@@ -184,14 +184,14 @@ mod tests {
     fn test_add_node() {
         let mut world = World::new();
         let root_ent = world.spawn_empty().id();
-        let mut state = StoreState::new("test".to_string(), root_ent, Handle::default());
+        let mut data = StoreData::new("test".to_string(), root_ent, Handle::default());
 
-        let scene = HostScene::new(&mut state).unwrap();
-        let node = HostNode::new(&mut state).unwrap();
+        let scene = HostScene::new(&mut data).unwrap();
+        let node = HostNode::new(&mut data).unwrap();
         let node_rep = node.rep();
-        HostScene::add_node(&mut state, scene, node).unwrap();
+        HostScene::add_node(&mut data, scene, node).unwrap();
 
-        world.commands().append(&mut state.commands);
+        world.commands().append(&mut data.commands);
         world.flush_commands();
 
         let (node_ent, _) = world
@@ -209,20 +209,20 @@ mod tests {
     fn test_remove_node() {
         let mut world = World::new();
         let root_ent = world.spawn_empty().id();
-        let mut state = StoreState::new("test".to_string(), root_ent, Handle::default());
+        let mut data = StoreData::new("test".to_string(), root_ent, Handle::default());
 
-        let scene = HostScene::new(&mut state).unwrap();
-        let node = HostNode::new(&mut state).unwrap();
+        let scene = HostScene::new(&mut data).unwrap();
+        let node = HostNode::new(&mut data).unwrap();
 
         {
-            let scene = state.clone_res(&scene).unwrap();
-            let node = state.clone_res(&node).unwrap();
-            HostScene::add_node(&mut state, scene, node).unwrap();
+            let scene = data.clone_res(&scene).unwrap();
+            let node = data.clone_res(&node).unwrap();
+            HostScene::add_node(&mut data, scene, node).unwrap();
         }
 
-        HostScene::remove_node(&mut state, scene, node).unwrap();
+        HostScene::remove_node(&mut data, scene, node).unwrap();
 
-        world.commands().append(&mut state.commands);
+        world.commands().append(&mut data.commands);
         world.flush_commands();
 
         let children_query = world.query::<(&Children, &SceneId)>().get_single(&world);
@@ -234,30 +234,30 @@ mod tests {
     fn test_nodes() {
         let mut world = World::new();
         let root_ent = world.spawn_empty().id();
-        let mut state = StoreState::new("test".to_string(), root_ent, Handle::default());
+        let mut data = StoreData::new("test".to_string(), root_ent, Handle::default());
 
-        let scene = HostScene::new(&mut state).unwrap();
-        let node = HostNode::new(&mut state).unwrap();
+        let scene = HostScene::new(&mut data).unwrap();
+        let node = HostNode::new(&mut data).unwrap();
 
         {
-            let scene = state.clone_res(&scene).unwrap();
-            let node = state.clone_res(&node).unwrap();
-            HostScene::add_node(&mut state, scene, node).unwrap();
+            let scene = data.clone_res(&scene).unwrap();
+            let node = data.clone_res(&node).unwrap();
+            HostScene::add_node(&mut data, scene, node).unwrap();
         }
 
         {
-            let scene = state.clone_res(&scene).unwrap();
-            let nodes = HostScene::nodes(&mut state, scene).unwrap();
+            let scene = data.clone_res(&scene).unwrap();
+            let nodes = HostScene::nodes(&mut data, scene).unwrap();
             assert_eq!(nodes.len(), 1);
             assert_eq!(nodes[0].rep(), node.rep());
         }
 
         {
-            let scene = state.clone_res(&scene).unwrap();
-            HostScene::remove_node(&mut state, scene, node).unwrap();
+            let scene = data.clone_res(&scene).unwrap();
+            HostScene::remove_node(&mut data, scene, node).unwrap();
         }
 
-        let nodes = HostScene::nodes(&mut state, scene).unwrap();
+        let nodes = HostScene::nodes(&mut data, scene).unwrap();
         assert!(nodes.is_empty());
     }
 }

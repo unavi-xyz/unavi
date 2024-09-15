@@ -89,11 +89,11 @@ pub trait RefResource: RefCount + Send + Sized + 'static {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::{load::DefaultMaterial, state::StoreState};
+    use crate::{data::StoreData, load::DefaultMaterial};
 
     use super::*;
 
-    pub fn init_test_state() -> (World, StoreState) {
+    pub fn init_test_data() -> (World, StoreData) {
         let mut world = World::new();
         world.init_resource::<Assets<Mesh>>();
 
@@ -101,34 +101,34 @@ pub mod tests {
         world.insert_resource(DefaultMaterial(default_material.clone()));
 
         let root_ent = world.spawn_empty().id();
-        let state = StoreState::new("test".to_string(), root_ent, default_material);
+        let data = StoreData::new("test".to_string(), root_ent, default_material);
 
-        (world, state)
+        (world, data)
     }
 
-    pub fn test_drop<T: RefResource + Send>(state: &mut StoreState, res_a: Resource<T>) {
-        let res_b = T::from_res(&res_a, &state.table).unwrap();
+    pub fn test_drop<T: RefResource + Send>(data: &mut StoreData, res_a: Resource<T>) {
+        let res_b = T::from_res(&res_a, &data.table).unwrap();
 
         let dummy = Resource::new_own(res_a.rep());
-        assert!(state.table.get::<T>(&dummy).is_ok());
+        assert!(data.table.get::<T>(&dummy).is_ok());
 
-        T::handle_drop(res_a, &mut state.table).unwrap();
-        assert!(state.table.get::<T>(&dummy).is_ok());
+        T::handle_drop(res_a, &mut data.table).unwrap();
+        assert!(data.table.get::<T>(&dummy).is_ok());
 
-        T::handle_drop(res_b, &mut state.table).unwrap();
-        let err = state.table.get::<T>(&dummy);
+        T::handle_drop(res_b, &mut data.table).unwrap();
+        let err = data.table.get::<T>(&dummy);
         assert!(err.is_err());
     }
 
-    pub fn test_new<T: RefResource + Send>(state: &mut StoreState, res_a: Resource<T>) {
-        let data = state.table.get(&res_a).unwrap();
-        let res_b = data.new_own(res_a.rep());
+    pub fn test_new<T: RefResource + Send>(data: &mut StoreData, res_a: Resource<T>) {
+        let a = data.table.get(&res_a).unwrap();
+        let res_b = a.new_own(res_a.rep());
         assert_eq!(res_a.rep(), res_b.rep());
 
-        let res_c = T::from_res(&res_a, &state.table).unwrap();
+        let res_c = T::from_res(&res_a, &data.table).unwrap();
         assert_eq!(res_a.rep(), res_c.rep());
 
-        let res_d = T::from_rep(res_a.rep(), &state.table).unwrap();
+        let res_d = T::from_rep(res_a.rep(), &data.table).unwrap();
         assert_eq!(res_a.rep(), res_d.rep());
     }
 }

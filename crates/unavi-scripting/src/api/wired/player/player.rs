@@ -8,7 +8,7 @@ use crate::{
         utils::{RefCount, RefCountCell, RefResource},
         wired::scene::bindings::node::HostNode,
     },
-    state::StoreState,
+    data::StoreData,
 };
 
 use super::bindings::api::{HostPlayer, Node, Skeleton};
@@ -28,7 +28,7 @@ impl RefCount for Player {
 impl RefResource for Player {}
 
 impl Player {
-    pub fn new(data: &mut StoreState) -> anyhow::Result<Resource<Self>> {
+    pub fn new(data: &mut StoreData) -> anyhow::Result<Resource<Self>> {
         let root = data.new()?;
 
         let hips = data.new()?;
@@ -213,7 +213,7 @@ impl Skeleton {
     }
 }
 
-impl HostPlayer for StoreState {
+impl HostPlayer for StoreData {
     fn root(&mut self, self_: Resource<Player>) -> wasm_bridge::Result<Resource<Node>> {
         let player = self.table.get(&self_)?;
         let root = Node::from_res(&player.root, &self.table)?;

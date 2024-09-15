@@ -63,6 +63,8 @@ impl GuestScript for Script {
         // Text
         let clock = {
             let text = Text::new("");
+            text.set_material(Some(&Material::from_color(Color::BLACK)));
+
             let node = scene.create_node();
             node.set_mesh(Some(&text.mesh()));
             node.set_transform(Transform::from_translation(Vec3::new(4.0, 1.0, 0.01)));

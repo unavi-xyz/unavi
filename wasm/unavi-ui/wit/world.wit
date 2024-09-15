@@ -40,6 +40,7 @@ interface button {
 
 interface text {
   use unavi:layout/container.{alignment, container};
+  use wired:scene/material.{material};
   use wired:scene/mesh.{mesh};
   use wired:scene/node.{node};
 
@@ -64,6 +65,9 @@ interface text {
 
     thickness: func() -> f32;
     set-thickness: func(value: f32);
+
+    material: func() -> option<material>;
+    set-material: func(value: option<borrow<material>>);
 
     mesh: func() -> mesh;
   }

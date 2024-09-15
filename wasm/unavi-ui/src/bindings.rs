@@ -5313,6 +5313,7 @@ pub mod exports {
                     super::super::super::super::unavi::layout::container::Alignment;
                 pub type Container =
                     super::super::super::super::unavi::layout::container::Container;
+                pub type Material = super::super::super::super::wired::scene::material::Material;
                 pub type Mesh = super::super::super::super::wired::scene::mesh::Mesh;
 
                 #[derive(Debug)]
@@ -5782,6 +5783,51 @@ pub mod exports {
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
+                pub unsafe fn _export_method_text_material_cabi<T: GuestText>(
+                    arg0: *mut u8,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::material(TextBorrow::lift(arg0 as u32 as usize).get());
+                    let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result0 {
+                        Some(e) => {
+                            *ptr1.add(0).cast::<u8>() = (1i32) as u8;
+                            *ptr1.add(4).cast::<i32>() = (e).take_handle() as i32;
+                        }
+                        None => {
+                            *ptr1.add(0).cast::<u8>() = (0i32) as u8;
+                        }
+                    };
+                    ptr1
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_text_set_material_cabi<T: GuestText>(
+                    arg0: *mut u8,
+                    arg1: i32,
+                    arg2: i32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let handle0;
+                    T::set_material(
+                        TextBorrow::lift(arg0 as u32 as usize).get(),
+                        match arg1 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    handle0 = super::super::super::super::wired::scene::material::Material::from_handle(arg2 as u32);
+                                    &handle0
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        },
+                    );
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
                 pub unsafe fn _export_method_text_mesh_cabi<T: GuestText>(arg0: *mut u8) -> i32 {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
@@ -5918,6 +5964,8 @@ pub mod exports {
                     fn set_font_size(&self, value: f32);
                     fn thickness(&self) -> f32;
                     fn set_thickness(&self, value: f32);
+                    fn material(&self) -> Option<Material>;
+                    fn set_material(&self, value: Option<&Material>);
                     fn mesh(&self) -> Mesh;
                 }
                 pub trait GuestTextBox: 'static {
@@ -6025,6 +6073,14 @@ pub mod exports {
     #[export_name = "unavi:ui/text#[method]text.set-thickness"]
     unsafe extern "C" fn export_method_text_set_thickness(arg0: *mut u8,arg1: f32,) {
       $($path_to_types)*::_export_method_text_set_thickness_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0, arg1)
+    }
+    #[export_name = "unavi:ui/text#[method]text.material"]
+    unsafe extern "C" fn export_method_text_material(arg0: *mut u8,) -> *mut u8 {
+      $($path_to_types)*::_export_method_text_material_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0)
+    }
+    #[export_name = "unavi:ui/text#[method]text.set-material"]
+    unsafe extern "C" fn export_method_text_set_material(arg0: *mut u8,arg1: i32,arg2: i32,) {
+      $($path_to_types)*::_export_method_text_set_material_cabi::<<$ty as $($path_to_types)*::Guest>::Text>(arg0, arg1, arg2)
     }
     #[export_name = "unavi:ui/text#[method]text.mesh"]
     unsafe extern "C" fn export_method_text_mesh(arg0: *mut u8,) -> i32 {
@@ -6353,8 +6409,8 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 8093] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa1>\x01A\x02\x01A'\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 8209] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x95?\x01A\x02\x01A'\x01\
 B\x10\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\
 \x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01r\
 \x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -6509,29 +6565,31 @@ ltav\x01\0\x04\0\x09update-ui\x01\0\x04\x01\x0cunavi:ui/api\x05\x15\x02\x03\0\x0
 \x01@\x01\x04root\x05\0\x06\x04\0\x13[constructor]button\x01\x07\x01h\x04\x01@\x01\
 \x04self\x08\0\x05\x04\0\x13[method]button.root\x01\x09\x01@\x01\x04self\x08\0\x7f\
 \x04\0\x16[method]button.hovered\x01\x0a\x04\0\x16[method]button.pressed\x01\x0a\
-\x04\x01\x0funavi:ui/button\x05\x17\x02\x03\0\x09\x09alignment\x01B6\x02\x03\x02\
+\x04\x01\x0funavi:ui/button\x05\x17\x02\x03\0\x09\x09alignment\x01B@\x02\x03\x02\
 \x01\x18\x04\0\x09alignment\x03\0\0\x02\x03\x02\x01\x16\x04\0\x09container\x03\0\
-\x02\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\x04\x02\x03\x02\x01\x11\x04\0\x04no\
-de\x03\0\x06\x04\0\x04text\x03\x01\x01m\x02\x09character\x04word\x04\0\x09word-w\
-rap\x03\0\x09\x04\0\x08text-box\x03\x01\x01i\x08\x01@\x01\x04texts\0\x0c\x04\0\x11\
-[constructor]text\x01\x0d\x01h\x08\x01@\x01\x04self\x0e\0\x0c\x04\0\x10[method]t\
-ext.ref\x01\x0f\x01p}\x01k\x10\x01@\x02\x04self\x0e\x05value\x11\x01\0\x04\0\x15\
-[method]text.set-font\x01\x12\x01@\x01\x04self\x0e\0s\x04\0\x11[method]text.text\
-\x01\x13\x01@\x02\x04self\x0e\x05values\x01\0\x04\0\x15[method]text.set-text\x01\
-\x14\x01@\x01\x04self\x0e\0\x01\x04\0\x16[method]text.alignment\x01\x15\x01@\x02\
-\x04self\x0e\x05value\x01\x01\0\x04\0\x1a[method]text.set-alignment\x01\x16\x01@\
-\x01\x04self\x0e\0v\x04\0\x16[method]text.font-size\x01\x17\x01@\x02\x04self\x0e\
-\x05valuev\x01\0\x04\0\x1a[method]text.set-font-size\x01\x18\x04\0\x16[method]te\
-xt.thickness\x01\x17\x04\0\x1a[method]text.set-thickness\x01\x18\x01i\x05\x01@\x01\
-\x04self\x0e\0\x19\x04\0\x11[method]text.mesh\x01\x1a\x01i\x03\x01i\x0b\x01@\x01\
-\x04root\x1b\0\x1c\x04\0\x15[constructor]text-box\x01\x1d\x01h\x0b\x01@\x01\x04s\
-elf\x1e\0\x1b\x04\0\x15[method]text-box.root\x01\x1f\x01@\x01\x04self\x1e\0\x0c\x04\
-\0\x15[method]text-box.text\x01\x20\x01@\x02\x04self\x1e\x05values\x01\0\x04\0\x19\
-[method]text-box.set-text\x01!\x01@\x01\x04self\x1e\0\x0a\x04\0\x15[method]text-\
-box.wrap\x01\"\x01@\x02\x04self\x1e\x05value\x0a\x01\0\x04\0\x19[method]text-box\
-.set-wrap\x01#\x04\x01\x0dunavi:ui/text\x05\x19\x04\x01\x0eunavi:ui/guest\x04\0\x0b\
-\x0b\x01\0\x05guest\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-compo\
-nent\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+\x02\x02\x03\x02\x01\x02\x04\0\x08material\x03\0\x04\x02\x03\x02\x01\x0a\x04\0\x04\
+mesh\x03\0\x06\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x08\x04\0\x04text\x03\x01\
+\x01m\x02\x09character\x04word\x04\0\x09word-wrap\x03\0\x0b\x04\0\x08text-box\x03\
+\x01\x01i\x0a\x01@\x01\x04texts\0\x0e\x04\0\x11[constructor]text\x01\x0f\x01h\x0a\
+\x01@\x01\x04self\x10\0\x0e\x04\0\x10[method]text.ref\x01\x11\x01p}\x01k\x12\x01\
+@\x02\x04self\x10\x05value\x13\x01\0\x04\0\x15[method]text.set-font\x01\x14\x01@\
+\x01\x04self\x10\0s\x04\0\x11[method]text.text\x01\x15\x01@\x02\x04self\x10\x05v\
+alues\x01\0\x04\0\x15[method]text.set-text\x01\x16\x01@\x01\x04self\x10\0\x01\x04\
+\0\x16[method]text.alignment\x01\x17\x01@\x02\x04self\x10\x05value\x01\x01\0\x04\
+\0\x1a[method]text.set-alignment\x01\x18\x01@\x01\x04self\x10\0v\x04\0\x16[metho\
+d]text.font-size\x01\x19\x01@\x02\x04self\x10\x05valuev\x01\0\x04\0\x1a[method]t\
+ext.set-font-size\x01\x1a\x04\0\x16[method]text.thickness\x01\x19\x04\0\x1a[meth\
+od]text.set-thickness\x01\x1a\x01i\x05\x01k\x1b\x01@\x01\x04self\x10\0\x1c\x04\0\
+\x15[method]text.material\x01\x1d\x01h\x05\x01k\x1e\x01@\x02\x04self\x10\x05valu\
+e\x1f\x01\0\x04\0\x19[method]text.set-material\x01\x20\x01i\x07\x01@\x01\x04self\
+\x10\0!\x04\0\x11[method]text.mesh\x01\"\x01i\x03\x01i\x0d\x01@\x01\x04root#\0$\x04\
+\0\x15[constructor]text-box\x01%\x01h\x0d\x01@\x01\x04self&\0#\x04\0\x15[method]\
+text-box.root\x01'\x01@\x01\x04self&\0\x0e\x04\0\x15[method]text-box.text\x01(\x01\
+@\x02\x04self&\x05values\x01\0\x04\0\x19[method]text-box.set-text\x01)\x01@\x01\x04\
+self&\0\x0c\x04\0\x15[method]text-box.wrap\x01*\x01@\x02\x04self&\x05value\x0c\x01\
+\0\x04\0\x19[method]text-box.set-wrap\x01+\x04\x01\x0dunavi:ui/text\x05\x19\x04\x01\
+\x0eunavi:ui/guest\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\0G\x09producers\x01\x0cp\
+rocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

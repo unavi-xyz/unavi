@@ -8,7 +8,7 @@ use meshtext::{error::MeshTextError, IndexedMeshText, MeshGenerator, OwnedFace, 
 use crate::bindings::{
     exports::unavi::ui::text::{GuestText, Text as TextExport},
     unavi::layout::container::Alignment,
-    wired::scene::mesh::Mesh,
+    wired::scene::{material::Material, mesh::Mesh},
 };
 
 const FONT: &[u8] = include_bytes!("../../NotoSans-Regular.ttf");
@@ -21,6 +21,7 @@ struct TextData {
     font_size: Cell<f32>,
     generator: RefCell<MeshGenerator<OwnedFace>>,
     line_padding: Cell<f32>,
+    material: RefCell<Option<Material>>,
     mesh: Mesh,
     text: RefCell<String>,
     thickness: Cell<f32>,
@@ -67,6 +68,7 @@ impl Text {
             .enumerate()
         {
             let primitive = self.0.mesh.create_primitive();
+            primitive.set_material(self.0.material.borrow().as_ref());
 
             let line_height = data.bbox.max.y - data.bbox.min.y;
             let line_width = data.bbox.max.x - data.bbox.min.x;
@@ -107,6 +109,7 @@ impl GuestText for Text {
             font_size: Cell::new(0.25),
             generator: RefCell::new(MeshGenerator::new(FONT.to_owned())),
             line_padding: Cell::new(1.15),
+            material: RefCell::default(),
             mesh,
             text: RefCell::new(text),
             thickness: Cell::default(),
@@ -157,6 +160,13 @@ impl GuestText for Text {
     fn set_thickness(&self, value: f32) {
         self.0.thickness.set(value);
         self.generate();
+    }
+
+    fn material(&self) -> Option<Material> {
+        self.0.material.borrow().as_ref().map(|m| m.ref_())
+    }
+    fn set_material(&self, value: Option<&Material>) {
+        *self.0.material.borrow_mut() = value.map(|m| m.ref_());
     }
 
     fn mesh(&self) -> Mesh {

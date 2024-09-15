@@ -27,7 +27,7 @@ jobs:
 
       - uses: crazy-max/ghaction-chocolatey@v3
         with:
-          args: install capnproto wix
+          args: install capnproto wixtoolset
 
       - uses: Swatinem/rust-cache@v2
       - uses: dtolnay/rust-toolchain@stable
@@ -36,7 +36,7 @@ jobs:
 
       - run: cargo install cargo-component
       - run: cargo install wac-cli
-      - run: cargo install wixtoolset
+      - run: cargo install wix
 
       - name: Build package
         run: |

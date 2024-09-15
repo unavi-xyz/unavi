@@ -2888,6 +2888,75 @@ pub mod wired {
         }
     }
     #[allow(dead_code)]
+    pub mod log {
+        #[allow(dead_code, clippy::all)]
+        pub mod api {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            #[repr(u8)]
+            #[derive(Clone, Copy, Eq, PartialEq)]
+            pub enum LogLevel {
+                Debug,
+                Info,
+                Warn,
+                Error,
+            }
+            impl ::core::fmt::Debug for LogLevel {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        LogLevel::Debug => f.debug_tuple("LogLevel::Debug").finish(),
+                        LogLevel::Info => f.debug_tuple("LogLevel::Info").finish(),
+                        LogLevel::Warn => f.debug_tuple("LogLevel::Warn").finish(),
+                        LogLevel::Error => f.debug_tuple("LogLevel::Error").finish(),
+                    }
+                }
+            }
+
+            impl LogLevel {
+                #[doc(hidden)]
+                pub unsafe fn _lift(val: u8) -> LogLevel {
+                    if !cfg!(debug_assertions) {
+                        return ::core::mem::transmute(val);
+                    }
+
+                    match val {
+                        0 => LogLevel::Debug,
+                        1 => LogLevel::Info,
+                        2 => LogLevel::Warn,
+                        3 => LogLevel::Error,
+
+                        _ => panic!("invalid enum discriminant"),
+                    }
+                }
+            }
+
+            #[allow(unused_unsafe, clippy::all)]
+            pub fn log(level: LogLevel, message: &str) {
+                unsafe {
+                    let vec0 = message;
+                    let ptr0 = vec0.as_ptr().cast::<u8>();
+                    let len0 = vec0.len();
+
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wired:log/api")]
+                    extern "C" {
+                        #[link_name = "log"]
+                        fn wit_import(_: i32, _: *mut u8, _: usize);
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(_: i32, _: *mut u8, _: usize) {
+                        unreachable!()
+                    }
+                    wit_import(level.clone() as i32, ptr0.cast_mut(), len0);
+                }
+            }
+        }
+    }
+    #[allow(dead_code)]
     pub mod math {
         #[allow(dead_code, clippy::all)]
         pub mod types {
@@ -5384,7 +5453,38 @@ pub mod exports {
                     }
                 }
 
-                /// Dynamic text generation within the bounds of a container.
+                #[repr(u8)]
+                #[derive(Clone, Copy, Eq, PartialEq)]
+                pub enum WordWrap {
+                    Character,
+                    Word,
+                }
+                impl ::core::fmt::Debug for WordWrap {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        match self {
+                            WordWrap::Character => f.debug_tuple("WordWrap::Character").finish(),
+                            WordWrap::Word => f.debug_tuple("WordWrap::Word").finish(),
+                        }
+                    }
+                }
+
+                impl WordWrap {
+                    #[doc(hidden)]
+                    pub unsafe fn _lift(val: u8) -> WordWrap {
+                        if !cfg!(debug_assertions) {
+                            return ::core::mem::transmute(val);
+                        }
+
+                        match val {
+                            0 => WordWrap::Character,
+                            1 => WordWrap::Word,
+
+                            _ => panic!("invalid enum discriminant"),
+                        }
+                    }
+                }
+
+                /// Text generation within the bounds of a container.
 
                 #[derive(Debug)]
                 #[repr(transparent)]
@@ -5689,6 +5789,45 @@ pub mod exports {
                     let result0 = T::text(TextBoxBorrow::lift(arg0 as u32 as usize).get());
                     (result0).take_handle() as i32
                 }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_text_box_set_text_cabi<T: GuestTextBox>(
+                    arg0: *mut u8,
+                    arg1: *mut u8,
+                    arg2: usize,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg2;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
+                    T::set_text(
+                        TextBoxBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::string_lift(bytes0),
+                    );
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_text_box_wrap_cabi<T: GuestTextBox>(
+                    arg0: *mut u8,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::wrap(TextBoxBorrow::lift(arg0 as u32 as usize).get());
+                    result0.clone() as i32
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_text_box_set_wrap_cabi<T: GuestTextBox>(
+                    arg0: *mut u8,
+                    arg1: i32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    T::set_wrap(
+                        TextBoxBorrow::lift(arg0 as u32 as usize).get(),
+                        WordWrap::_lift(arg1 as u8),
+                    );
+                }
                 pub trait Guest {
                     type Text: GuestText;
                     type TextBox: GuestTextBox;
@@ -5800,6 +5939,10 @@ pub mod exports {
                     fn new(root: Container) -> Self;
                     fn root(&self) -> Container;
                     fn text(&self) -> Text;
+                    /// Sets the text after adjusting for container bounds.
+                    fn set_text(&self, value: _rt::String);
+                    fn wrap(&self) -> WordWrap;
+                    fn set_wrap(&self, value: WordWrap);
                 }
                 #[doc(hidden)]
 
@@ -5861,6 +6004,18 @@ pub mod exports {
     #[export_name = "unavi:ui/text#[method]text-box.text"]
     unsafe extern "C" fn export_method_text_box_text(arg0: *mut u8,) -> i32 {
       $($path_to_types)*::_export_method_text_box_text_cabi::<<$ty as $($path_to_types)*::Guest>::TextBox>(arg0)
+    }
+    #[export_name = "unavi:ui/text#[method]text-box.set-text"]
+    unsafe extern "C" fn export_method_text_box_set_text(arg0: *mut u8,arg1: *mut u8,arg2: usize,) {
+      $($path_to_types)*::_export_method_text_box_set_text_cabi::<<$ty as $($path_to_types)*::Guest>::TextBox>(arg0, arg1, arg2)
+    }
+    #[export_name = "unavi:ui/text#[method]text-box.wrap"]
+    unsafe extern "C" fn export_method_text_box_wrap(arg0: *mut u8,) -> i32 {
+      $($path_to_types)*::_export_method_text_box_wrap_cabi::<<$ty as $($path_to_types)*::Guest>::TextBox>(arg0)
+    }
+    #[export_name = "unavi:ui/text#[method]text-box.set-wrap"]
+    unsafe extern "C" fn export_method_text_box_set_wrap(arg0: *mut u8,arg1: i32,) {
+      $($path_to_types)*::_export_method_text_box_set_wrap_cabi::<<$ty as $($path_to_types)*::Guest>::TextBox>(arg0, arg1)
     }
 
     const _: () = {
@@ -6161,8 +6316,8 @@ pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:guest:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7716] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa8;\x01A\x02\x01A$\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7972] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa8=\x01A\x02\x01A&\x01\
 B\x10\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\
 \x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01r\
 \x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -6293,45 +6448,50 @@ radius\x01F\x01@\x01\x04self\xc4\0\0\x12\x04\0\x13[method]sphere.kind\x01G\x01@\
 ode\x01J\x01i\x14\x01@\0\0\xcb\0\x04\0\x11[constructor]axes\x01L\x01h\x14\x01@\x01\
 \x04self\xcd\0\0v\x04\0\x11[method]axes.size\x01N\x01@\x02\x04self\xcd\0\x05valu\
 ev\x01\0\x04\0\x15[method]axes.set-size\x01O\x01@\x01\x04self\xcd\0\0\x1c\x04\0\x14\
-[method]axes.to-node\x01P\x03\x01\x10unavi:shapes/api\x05\x12\x01B#\x02\x03\x02\x01\
-\x04\x04\0\x04vec3\x03\0\0\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x02\x01m\x03\x06\
-center\x03end\x05start\x04\0\x09alignment\x03\0\x04\x04\0\x09container\x03\x01\x01\
-i\x06\x01@\x01\x04size\x01\0\x07\x04\0\x16[constructor]container\x01\x08\x01h\x06\
-\x01@\x01\x04self\x09\0\x07\x04\0\x15[method]container.ref\x01\x0a\x01i\x03\x01@\
-\x01\x04self\x09\0\x0b\x04\0\x16[method]container.root\x01\x0c\x04\0\x17[method]\
-container.inner\x01\x0c\x01p\x07\x01@\x01\x04self\x09\0\x0d\x04\0\x1f[method]con\
-tainer.list-children\x01\x0e\x01@\x02\x04self\x09\x05child\x09\x01\0\x04\0\x1b[m\
-ethod]container.add-child\x01\x0f\x04\0\x1e[method]container.remove-child\x01\x0f\
-\x01@\x01\x04self\x09\0\x01\x04\0\x16[method]container.size\x01\x10\x01@\x02\x04\
-self\x09\x05value\x01\x01\0\x04\0\x1a[method]container.set-size\x01\x11\x01@\x01\
-\x04self\x09\0\x05\x04\0\x19[method]container.align-x\x01\x12\x04\0\x19[method]c\
-ontainer.align-y\x01\x12\x04\0\x19[method]container.align-z\x01\x12\x01@\x02\x04\
-self\x09\x05value\x05\x01\0\x04\0\x1d[method]container.set-align-x\x01\x13\x04\0\
-\x1d[method]container.set-align-y\x01\x13\x04\0\x1d[method]container.set-align-z\
-\x01\x13\x03\x01\x16unavi:layout/container\x05\x13\x01B\x02\x01@\x01\x05deltav\x01\
-\0\x04\0\x09update-ui\x01\0\x04\x01\x0cunavi:ui/api\x05\x14\x02\x03\0\x08\x09con\
-tainer\x01B\x0f\x02\x03\x02\x01\x15\x04\0\x09container\x03\0\0\x02\x03\x02\x01\x0b\
-\x04\0\x0dinput-handler\x03\0\x02\x04\0\x06button\x03\x01\x01i\x01\x01i\x04\x01@\
-\x01\x04root\x05\0\x06\x04\0\x13[constructor]button\x01\x07\x01h\x04\x01@\x01\x04\
-self\x08\0\x05\x04\0\x13[method]button.root\x01\x09\x01@\x01\x04self\x08\0\x7f\x04\
-\0\x16[method]button.hovered\x01\x0a\x04\0\x16[method]button.pressed\x01\x0a\x04\
-\x01\x0funavi:ui/button\x05\x16\x01B(\x02\x03\x02\x01\x15\x04\0\x09container\x03\
-\0\0\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\x02\x02\x03\x02\x01\x11\x04\0\x04no\
-de\x03\0\x04\x04\0\x04text\x03\x01\x04\0\x08text-box\x03\x01\x01i\x06\x01@\x01\x04\
-texts\0\x08\x04\0\x11[constructor]text\x01\x09\x01h\x06\x01@\x01\x04self\x0a\0\x08\
-\x04\0\x10[method]text.ref\x01\x0b\x01p}\x01k\x0c\x01@\x02\x04self\x0a\x05value\x0d\
-\x01\0\x04\0\x15[method]text.set-font\x01\x0e\x01@\x01\x04self\x0a\0s\x04\0\x11[\
-method]text.text\x01\x0f\x01@\x02\x04self\x0a\x05values\x01\0\x04\0\x15[method]t\
-ext.set-text\x01\x10\x01@\x01\x04self\x0a\0v\x04\0\x16[method]text.font-size\x01\
-\x11\x01@\x02\x04self\x0a\x05valuev\x01\0\x04\0\x1a[method]text.set-font-size\x01\
-\x12\x04\0\x16[method]text.thickness\x01\x11\x04\0\x1a[method]text.set-thickness\
-\x01\x12\x01i\x03\x01@\x01\x04self\x0a\0\x13\x04\0\x11[method]text.mesh\x01\x14\x01\
-i\x01\x01i\x07\x01@\x01\x04root\x15\0\x16\x04\0\x15[constructor]text-box\x01\x17\
-\x01h\x07\x01@\x01\x04self\x18\0\x15\x04\0\x15[method]text-box.root\x01\x19\x01@\
-\x01\x04self\x18\0\x08\x04\0\x15[method]text-box.text\x01\x1a\x04\x01\x0dunavi:u\
-i/text\x05\x17\x04\x01\x0eunavi:ui/guest\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\0G\
-\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen\
--rust\x060.25.0";
+[method]axes.to-node\x01P\x03\x01\x10unavi:shapes/api\x05\x12\x01B\x04\x01m\x04\x05\
+debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\x07\
+messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\x13\x01B#\x02\x03\
+\x02\x01\x04\x04\0\x04vec3\x03\0\0\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x02\x01\
+m\x03\x06center\x03end\x05start\x04\0\x09alignment\x03\0\x04\x04\0\x09container\x03\
+\x01\x01i\x06\x01@\x01\x04size\x01\0\x07\x04\0\x16[constructor]container\x01\x08\
+\x01h\x06\x01@\x01\x04self\x09\0\x07\x04\0\x15[method]container.ref\x01\x0a\x01i\
+\x03\x01@\x01\x04self\x09\0\x0b\x04\0\x16[method]container.root\x01\x0c\x04\0\x17\
+[method]container.inner\x01\x0c\x01p\x07\x01@\x01\x04self\x09\0\x0d\x04\0\x1f[me\
+thod]container.list-children\x01\x0e\x01@\x02\x04self\x09\x05child\x09\x01\0\x04\
+\0\x1b[method]container.add-child\x01\x0f\x04\0\x1e[method]container.remove-chil\
+d\x01\x0f\x01@\x01\x04self\x09\0\x01\x04\0\x16[method]container.size\x01\x10\x01\
+@\x02\x04self\x09\x05value\x01\x01\0\x04\0\x1a[method]container.set-size\x01\x11\
+\x01@\x01\x04self\x09\0\x05\x04\0\x19[method]container.align-x\x01\x12\x04\0\x19\
+[method]container.align-y\x01\x12\x04\0\x19[method]container.align-z\x01\x12\x01\
+@\x02\x04self\x09\x05value\x05\x01\0\x04\0\x1d[method]container.set-align-x\x01\x13\
+\x04\0\x1d[method]container.set-align-y\x01\x13\x04\0\x1d[method]container.set-a\
+lign-z\x01\x13\x03\x01\x16unavi:layout/container\x05\x14\x01B\x02\x01@\x01\x05de\
+ltav\x01\0\x04\0\x09update-ui\x01\0\x04\x01\x0cunavi:ui/api\x05\x15\x02\x03\0\x09\
+\x09container\x01B\x0f\x02\x03\x02\x01\x16\x04\0\x09container\x03\0\0\x02\x03\x02\
+\x01\x0b\x04\0\x0dinput-handler\x03\0\x02\x04\0\x06button\x03\x01\x01i\x01\x01i\x04\
+\x01@\x01\x04root\x05\0\x06\x04\0\x13[constructor]button\x01\x07\x01h\x04\x01@\x01\
+\x04self\x08\0\x05\x04\0\x13[method]button.root\x01\x09\x01@\x01\x04self\x08\0\x7f\
+\x04\0\x16[method]button.hovered\x01\x0a\x04\0\x16[method]button.pressed\x01\x0a\
+\x04\x01\x0funavi:ui/button\x05\x17\x01B0\x02\x03\x02\x01\x16\x04\0\x09container\
+\x03\0\0\x02\x03\x02\x01\x0a\x04\0\x04mesh\x03\0\x02\x02\x03\x02\x01\x11\x04\0\x04\
+node\x03\0\x04\x04\0\x04text\x03\x01\x01m\x02\x09character\x04word\x04\0\x09word\
+-wrap\x03\0\x07\x04\0\x08text-box\x03\x01\x01i\x06\x01@\x01\x04texts\0\x0a\x04\0\
+\x11[constructor]text\x01\x0b\x01h\x06\x01@\x01\x04self\x0c\0\x0a\x04\0\x10[meth\
+od]text.ref\x01\x0d\x01p}\x01k\x0e\x01@\x02\x04self\x0c\x05value\x0f\x01\0\x04\0\
+\x15[method]text.set-font\x01\x10\x01@\x01\x04self\x0c\0s\x04\0\x11[method]text.\
+text\x01\x11\x01@\x02\x04self\x0c\x05values\x01\0\x04\0\x15[method]text.set-text\
+\x01\x12\x01@\x01\x04self\x0c\0v\x04\0\x16[method]text.font-size\x01\x13\x01@\x02\
+\x04self\x0c\x05valuev\x01\0\x04\0\x1a[method]text.set-font-size\x01\x14\x04\0\x16\
+[method]text.thickness\x01\x13\x04\0\x1a[method]text.set-thickness\x01\x14\x01i\x03\
+\x01@\x01\x04self\x0c\0\x15\x04\0\x11[method]text.mesh\x01\x16\x01i\x01\x01i\x09\
+\x01@\x01\x04root\x17\0\x18\x04\0\x15[constructor]text-box\x01\x19\x01h\x09\x01@\
+\x01\x04self\x1a\0\x17\x04\0\x15[method]text-box.root\x01\x1b\x01@\x01\x04self\x1a\
+\0\x0a\x04\0\x15[method]text-box.text\x01\x1c\x01@\x02\x04self\x1a\x05values\x01\
+\0\x04\0\x19[method]text-box.set-text\x01\x1d\x01@\x01\x04self\x1a\0\x08\x04\0\x15\
+[method]text-box.wrap\x01\x1e\x01@\x02\x04self\x1a\x05value\x08\x01\0\x04\0\x19[\
+method]text-box.set-wrap\x01\x1f\x04\x01\x0dunavi:ui/text\x05\x18\x04\x01\x0euna\
+vi:ui/guest\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\0G\x09producers\x01\x0cprocesse\
+d-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

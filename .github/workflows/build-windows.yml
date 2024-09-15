@@ -25,6 +25,10 @@ jobs:
           ref: ${{ inputs.ref || github.ref }}
           submodules: true
 
+      - uses: crazy-max/ghaction-chocolatey@v3
+        with:
+          args: install capnproto wix
+
       - uses: Swatinem/rust-cache@v2
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -32,14 +36,11 @@ jobs:
 
       - run: cargo install cargo-component
       - run: cargo install wac-cli
-
-      - uses: crazy-max/ghaction-chocolatey@v3
-        with:
-          args: install capnproto wix
+      - run: cargo install wixtoolset
 
       - name: Build package
         run: |
-          cargo build -p ${{ matrix.package }} --release --target x86_64-pc-windows-msvc
+          cargo wix -p ${{ matrix.package }} --release --target x86_64-pc-windows-msvc
           mkdir result
           mv target/x86_64-pc-windows-msvc/release/*.exe result
           cp crates/${{ matrix.package }}/README.md result
@@ -52,8 +53,7 @@ jobs:
 
       - name: Create msi
         run: |
-          wix candle crates/${{ matrix.package }}/wix/main.wxs -o installer.wixobj
-          wix light installer.wixobj -o ${{ matrix.package }}.x86_64-windows.msi
+          cp target/x86_64-pc-windows-msvc/release/*.msi ${{ matrix.packages }}.x86-64_windows.msi
 
       - uses: actions/upload-artifact@v4
         with:
@@ -63,6 +63,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: installer-${{ matrix.package }}.x86_64-windows
+          name: build-installer-${{ matrix.package }}.x86_64-windows
           path: ${{ matrix.package }}.x86_64-windows.msi
           retention-days: 1

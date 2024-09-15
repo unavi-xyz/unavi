@@ -89,6 +89,7 @@ impl TextBox {
             }
         }
 
+        self.root.set_align_x(self.text.alignment());
         self.text.set_text(text);
     }
 }

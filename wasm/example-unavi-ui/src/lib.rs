@@ -79,7 +79,6 @@ impl GuestScript for Script {
             let size = Vec2::new(1.5, 1.0);
 
             let container = Container::new(Vec3::new(size.x, size.y, 0.01));
-            container.set_align_x(Alignment::Start);
             container.set_align_y(Alignment::End);
             container
                 .root()
@@ -91,6 +90,7 @@ impl GuestScript for Script {
             container.root().add_child(&outline);
 
             let text = TextBox::new(container);
+            text.text().set_alignment(Alignment::Start);
             text.set_text("The quick brown fox jumps over the lazy dog.");
 
             // TODO: Add buttons for controlling text settings

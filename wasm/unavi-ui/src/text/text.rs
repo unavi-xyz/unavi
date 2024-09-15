@@ -7,6 +7,7 @@ use meshtext::{error::MeshTextError, IndexedMeshText, MeshGenerator, OwnedFace, 
 
 use crate::bindings::{
     exports::unavi::ui::text::{GuestText, Text as TextExport},
+    unavi::layout::container::Alignment,
     wired::scene::mesh::Mesh,
 };
 
@@ -16,6 +17,7 @@ const FONT: &[u8] = include_bytes!("../../NotoSans-Regular.ttf");
 pub struct Text(Rc<TextData>);
 
 struct TextData {
+    alignment: Cell<Alignment>,
     font_size: Cell<f32>,
     generator: RefCell<MeshGenerator<OwnedFace>>,
     line_padding: Cell<f32>,
@@ -66,14 +68,22 @@ impl Text {
         {
             let primitive = self.0.mesh.create_primitive();
 
-            let line_height = (data.bbox.max.y - data.bbox.min.y).abs();
-            let offset_factor = (if i == 0 { 1.0 / line_padding } else { 0.5 }) * line_padding;
-            let line_offset = line_height * offset_factor;
+            let line_height = data.bbox.max.y - data.bbox.min.y;
+            let line_width = data.bbox.max.x - data.bbox.min.x;
+
+            let v_padding = if i == 0 { 1.0 } else { 0.5 * line_padding };
+            let v_offset = total_line_height + (line_height * v_padding);
+
+            let h_offset = match self.0.alignment.get() {
+                Alignment::Start => 0.0,
+                Alignment::Center => -line_width / 2.0,
+                Alignment::End => -line_width,
+            };
 
             data.vertices = data
                 .vertices
                 .chunks(3)
-                .flat_map(|v| [v[0], v[1] - total_line_height - line_offset, v[2]])
+                .flat_map(|v| [v[0] + h_offset, v[1] - v_offset, v[2]])
                 .collect();
 
             primitive.set_indices(&data.indices);
@@ -93,6 +103,7 @@ impl GuestText for Text {
         let mesh = Mesh::new();
 
         let text = Self(Rc::new(TextData {
+            alignment: Cell::new(Alignment::Center),
             font_size: Cell::new(0.25),
             generator: RefCell::new(MeshGenerator::new(FONT.to_owned())),
             line_padding: Cell::new(1.15),
@@ -127,6 +138,13 @@ impl GuestText for Text {
 
         self.0.text.replace(value);
         self.generate();
+    }
+
+    fn alignment(&self) -> Alignment {
+        self.0.alignment.get()
+    }
+    fn set_alignment(&self, value: Alignment) {
+        self.0.alignment.set(value);
     }
 
     fn font_size(&self) -> f32 {

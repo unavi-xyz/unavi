@@ -39,7 +39,7 @@ interface button {
 }
 
 interface text {
-  use unavi:layout/container.{container};
+  use unavi:layout/container.{alignment, container};
   use wired:scene/mesh.{mesh};
   use wired:scene/node.{node};
 
@@ -55,6 +55,9 @@ interface text {
 
     text: func() -> string;
     set-text: func(value: string);
+
+    alignment: func() -> alignment;
+    set-alignment: func(value: alignment);
 
     font-size: func() -> f32;
     set-font-size: func(value: f32);

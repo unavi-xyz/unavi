@@ -17,7 +17,8 @@ const FONT: &[u8] = include_bytes!("../../NotoSans-Regular.ttf");
 pub struct Text(Rc<TextData>);
 
 struct TextData {
-    alignment: Cell<Alignment>,
+    align_x: Cell<Alignment>,
+    align_y: Cell<Alignment>,
     font_size: Cell<f32>,
     generator: RefCell<MeshGenerator<OwnedFace>>,
     line_padding: Cell<f32>,
@@ -73,10 +74,19 @@ impl Text {
             let line_height = data.bbox.max.y - data.bbox.min.y;
             let line_width = data.bbox.max.x - data.bbox.min.x;
 
-            let v_padding = if i == 0 { 1.0 } else { 0.5 * line_padding };
+            let v_padding = if i == 0 {
+                match self.0.align_y.get() {
+                    Alignment::Start => -1.0,
+                    Alignment::Center => 0.5 * line_padding,
+                    Alignment::End => 1.0,
+                }
+            } else {
+                0.5 * line_padding
+            };
+
             let v_offset = total_line_height + (line_height * v_padding);
 
-            let h_offset = match self.0.alignment.get() {
+            let h_offset = match self.0.align_x.get() {
                 Alignment::Start => 0.0,
                 Alignment::Center => -line_width / 2.0,
                 Alignment::End => -line_width,
@@ -105,7 +115,8 @@ impl GuestText for Text {
         let mesh = Mesh::new();
 
         let text = Self(Rc::new(TextData {
-            alignment: Cell::new(Alignment::Center),
+            align_x: Cell::new(Alignment::Center),
+            align_y: Cell::new(Alignment::Center),
             font_size: Cell::new(0.25),
             generator: RefCell::new(MeshGenerator::new(FONT.to_owned())),
             line_padding: Cell::new(1.15),
@@ -139,11 +150,17 @@ impl GuestText for Text {
         self.generate();
     }
 
-    fn alignment(&self) -> Alignment {
-        self.0.alignment.get()
+    fn align_x(&self) -> Alignment {
+        self.0.align_x.get()
     }
-    fn set_alignment(&self, value: Alignment) {
-        self.0.alignment.set(value);
+    fn align_y(&self) -> Alignment {
+        self.0.align_y.get()
+    }
+    fn set_align_x(&self, value: Alignment) {
+        self.0.align_x.set(value);
+    }
+    fn set_align_y(&self, value: Alignment) {
+        self.0.align_y.set(value);
     }
 
     fn font_size(&self) -> f32 {

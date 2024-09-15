@@ -89,7 +89,8 @@ impl TextBox {
             }
         }
 
-        self.root.set_align_x(self.text.alignment());
+        self.root.set_align_x(self.text.align_x());
+        self.root.set_align_y(self.text.align_y());
         self.text.set_text(text);
     }
 }
@@ -97,7 +98,8 @@ impl TextBox {
 impl GuestTextBox for TextBox {
     fn new(root: Container) -> Self {
         let text = Text::new(String::default());
-        text.set_alignment(Alignment::Start);
+        text.set_align_x(Alignment::Start);
+        text.set_align_y(Alignment::End);
         root.inner().set_mesh(Some(&text.mesh()));
 
         Self {

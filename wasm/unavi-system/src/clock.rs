@@ -43,7 +43,8 @@ impl Default for Clock {
         screen.root().add_child(&container);
 
         let text = TextBox::new(container);
-        text.text().set_alignment(Alignment::Center);
+        text.text().set_align_x(Alignment::Center);
+        text.text().set_align_y(Alignment::Center);
         text.text().set_font_size(SCREEN_RADIUS / 2.0);
         text.text()
             .set_material(Some(&Material::from_color(Color::BLACK)));

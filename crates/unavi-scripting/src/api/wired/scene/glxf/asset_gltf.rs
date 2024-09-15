@@ -9,7 +9,7 @@ use crate::{
             gltf::{document::GltfDocument, node::NodeRes},
         },
     },
-    state::StoreState,
+    data::StoreData,
 };
 
 #[derive(Debug)]
@@ -27,7 +27,7 @@ impl RefCount for GltfAssetRes {
 
 impl RefResource for GltfAssetRes {}
 
-impl HostAssetGltf for StoreState {
+impl HostAssetGltf for StoreData {
     fn new(
         &mut self,
         document: Resource<GltfDocument>,

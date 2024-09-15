@@ -8,7 +8,7 @@ use crate::{
         utils::{RefCount, RefCountCell, RefResource},
         wired::scene::bindings::material::{Color, Host, HostMaterial},
     },
-    state::{MaterialState, StoreState},
+    data::{MaterialState, StoreData},
 };
 
 #[derive(Component, Clone, Copy, Debug)]
@@ -44,7 +44,7 @@ impl RefCount for MaterialRes {
 
 impl RefResource for MaterialRes {}
 
-impl HostMaterial for StoreState {
+impl HostMaterial for StoreData {
     fn new(&mut self) -> wasm_bridge::Result<wasm_bridge::component::Resource<MaterialRes>> {
         let table_res = self.table.push(MaterialRes::default())?;
         let res = MaterialRes::from_res(&table_res, &self.table)?;
@@ -128,4 +128,4 @@ impl HostMaterial for StoreState {
     }
 }
 
-impl Host for StoreState {}
+impl Host for StoreData {}

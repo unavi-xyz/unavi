@@ -13,7 +13,7 @@ use crate::{
             Asset, AssetBorrow, Children, ChildrenBorrow, HostGlxfNode, Transform,
         },
     },
-    state::StoreState,
+    data::StoreData,
 };
 
 use super::{asset_gltf::GltfAssetRes, asset_glxf::GlxfAssetRes};
@@ -60,7 +60,7 @@ impl RefCount for GlxfNodeRes {
 
 impl RefResource for GlxfNodeRes {}
 
-impl HostGlxfNode for StoreState {
+impl HostGlxfNode for StoreData {
     fn new(&mut self) -> wasm_bridge::Result<Resource<GlxfNodeRes>> {
         let node = GlxfNodeRes::default();
         let table_res = self.table.push(node)?;
@@ -250,17 +250,17 @@ impl HostGlxfNode for StoreState {
 
 #[cfg(test)]
 mod tests {
-    use crate::api::utils::tests::init_test_state;
+    use crate::api::utils::tests::init_test_data;
 
     use super::*;
 
     #[test]
     fn test_new() {
-        let (mut world, mut state) = init_test_state();
+        let (mut world, mut data) = init_test_data();
 
-        let _ = HostGlxfNode::new(&mut state).unwrap();
+        let _ = HostGlxfNode::new(&mut data).unwrap();
 
-        world.commands().append(&mut state.commands);
+        world.commands().append(&mut data.commands);
         world.flush_commands();
 
         world

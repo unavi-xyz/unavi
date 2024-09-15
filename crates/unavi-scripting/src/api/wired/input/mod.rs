@@ -1,7 +1,7 @@
 use anyhow::Result;
 use wasm_bridge::component::Linker;
 
-use crate::state::StoreState;
+use crate::data::StoreData;
 
 pub mod input_handler;
 
@@ -20,9 +20,9 @@ pub mod bindings {
     pub use self::wired::input::*;
 }
 
-impl bindings::handler::Host for StoreState {}
+impl bindings::handler::Host for StoreData {}
 
-pub(crate) fn add_to_linker(linker: &mut Linker<StoreState>) -> Result<()> {
+pub(crate) fn add_to_linker(linker: &mut Linker<StoreData>) -> Result<()> {
     bindings::wired::input::handler::add_to_linker(linker, |s| s)?;
     Ok(())
 }

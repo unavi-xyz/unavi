@@ -19,7 +19,7 @@ use crate::{
             scene::bindings::node::{Host, HostNode},
         },
     },
-    state::{MaterialState, PrimitiveState, StoreState},
+    data::{MaterialState, PrimitiveState, StoreData},
 };
 
 use super::mesh::MeshRes;
@@ -74,7 +74,7 @@ impl RefCount for NodeRes {
 
 impl RefResource for NodeRes {}
 
-impl HostNode for StoreState {
+impl HostNode for StoreData {
     fn new(&mut self) -> wasm_bridge::Result<Resource<NodeRes>> {
         let node = NodeRes::default();
         let table_res = self.table.push(node)?;
@@ -461,7 +461,7 @@ impl HostNode for StoreState {
     }
 }
 
-impl Host for StoreState {}
+impl Host for StoreData {}
 
 fn calc_global_transform(
     transform: BTransform,
@@ -482,18 +482,18 @@ fn calc_global_transform(
 mod tests {
     use tracing_test::traced_test;
 
-    use crate::api::{utils::tests::init_test_state, wired::scene::bindings::mesh::HostMesh};
+    use crate::api::{utils::tests::init_test_data, wired::scene::bindings::mesh::HostMesh};
 
     use super::*;
 
     #[test]
     #[traced_test]
     fn test_new() {
-        let (mut world, mut state) = init_test_state();
+        let (mut world, mut data) = init_test_data();
 
-        let res = HostNode::new(&mut state).unwrap();
+        let res = HostNode::new(&mut data).unwrap();
 
-        world.commands().append(&mut state.commands);
+        world.commands().append(&mut data.commands);
         world.flush_commands();
 
         world
@@ -506,15 +506,15 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_set_mesh() {
-        let (mut world, mut state) = init_test_state();
+        let (mut world, mut data) = init_test_data();
 
         // Set mesh.
-        let node = HostNode::new(&mut state).unwrap();
-        let mesh = HostMesh::new(&mut state).unwrap();
-        let _ = HostMesh::create_primitive(&mut state, Resource::new_own(mesh.rep())).unwrap();
-        HostNode::set_mesh(&mut state, Resource::new_own(node.rep()), Some(mesh)).unwrap();
+        let node = HostNode::new(&mut data).unwrap();
+        let mesh = HostMesh::new(&mut data).unwrap();
+        let _ = HostMesh::create_primitive(&mut data, Resource::new_own(mesh.rep())).unwrap();
+        HostNode::set_mesh(&mut data, Resource::new_own(node.rep()), Some(mesh)).unwrap();
 
-        world.commands().append(&mut state.commands);
+        world.commands().append(&mut data.commands);
         world.flush_commands();
 
         let (node_mesh, node_children) = world.query::<(&NodeMesh, &Children)>().single(&world);
@@ -526,9 +526,9 @@ mod tests {
         assert!(node_children.contains(primitive_ent));
 
         // Remove mesh.
-        HostNode::set_mesh(&mut state, node, None).unwrap();
+        HostNode::set_mesh(&mut data, node, None).unwrap();
 
-        world.commands().append(&mut state.commands);
+        world.commands().append(&mut data.commands);
         world.flush_commands();
 
         let node_mesh = world.query::<&NodeMesh>().get_single(&world);

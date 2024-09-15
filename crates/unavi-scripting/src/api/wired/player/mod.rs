@@ -1,7 +1,7 @@
 use anyhow::Result;
 use wasm_bridge::component::{Linker, Resource};
 
-use crate::{api::utils::RefResource, state::StoreState};
+use crate::{api::utils::RefResource, data::StoreData};
 
 #[allow(clippy::module_inception)]
 mod player;
@@ -23,12 +23,12 @@ pub mod bindings {
     pub use wired::player::*;
 }
 
-pub fn add_to_linker(linker: &mut Linker<StoreState>) -> Result<()> {
+pub fn add_to_linker(linker: &mut Linker<StoreData>) -> Result<()> {
     bindings::api::add_to_linker(linker, |s| s)?;
     Ok(())
 }
 
-impl bindings::api::Host for StoreState {
+impl bindings::api::Host for StoreData {
     fn list_players(&mut self) -> wasm_bridge::Result<Vec<Resource<player::Player>>> {
         Ok(Vec::default())
     }

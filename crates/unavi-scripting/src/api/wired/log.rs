@@ -2,7 +2,7 @@ use anyhow::Result;
 use bevy::log::{debug, error, info, info_span, warn};
 use wasm_bridge::component::Linker;
 
-use crate::state::StoreState;
+use crate::data::StoreData;
 
 pub mod bindings {
     wasm_bridge::component::bindgen!({
@@ -14,7 +14,7 @@ pub mod bindings {
 
 use self::bindings::api::LogLevel;
 
-impl bindings::api::Host for StoreState {
+impl bindings::api::Host for StoreData {
     fn log(&mut self, level: LogLevel, message: String) -> wasm_bridge::Result<()> {
         let span = info_span!("Script", name = self.name);
         let span = span.enter();
@@ -32,7 +32,7 @@ impl bindings::api::Host for StoreState {
     }
 }
 
-pub fn add_to_linker(linker: &mut Linker<StoreState>) -> Result<()> {
+pub fn add_to_linker(linker: &mut Linker<StoreData>) -> Result<()> {
     bindings::api::add_to_linker(linker, |s| s)?;
     Ok(())
 }

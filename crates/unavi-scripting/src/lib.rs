@@ -7,9 +7,9 @@ use self::load::ScriptMap;
 
 pub mod api;
 mod asset;
+mod data;
 mod execution;
 mod load;
-mod data;
 
 pub use asset::*;
 

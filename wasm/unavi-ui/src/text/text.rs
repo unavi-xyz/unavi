@@ -132,10 +132,6 @@ impl GuestText for Text {
         self.0.text.borrow().clone()
     }
     fn set_text(&self, value: String) {
-        if self.0.text.borrow().as_str() == value {
-            return;
-        }
-
         self.0.text.replace(value);
         self.generate();
     }

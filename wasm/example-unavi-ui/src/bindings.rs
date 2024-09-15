@@ -2726,7 +2726,38 @@ pub mod unavi {
                 }
             }
 
-            /// Dynamic text generation within the bounds of a container.
+            #[repr(u8)]
+            #[derive(Clone, Copy, Eq, PartialEq)]
+            pub enum WordWrap {
+                Character,
+                Word,
+            }
+            impl ::core::fmt::Debug for WordWrap {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        WordWrap::Character => f.debug_tuple("WordWrap::Character").finish(),
+                        WordWrap::Word => f.debug_tuple("WordWrap::Word").finish(),
+                    }
+                }
+            }
+
+            impl WordWrap {
+                #[doc(hidden)]
+                pub unsafe fn _lift(val: u8) -> WordWrap {
+                    if !cfg!(debug_assertions) {
+                        return ::core::mem::transmute(val);
+                    }
+
+                    match val {
+                        0 => WordWrap::Character,
+                        1 => WordWrap::Word,
+
+                        _ => panic!("invalid enum discriminant"),
+                    }
+                }
+            }
+
+            /// Text generation within the bounds of a container.
 
             #[derive(Debug)]
             #[repr(transparent)]
@@ -3056,6 +3087,69 @@ pub mod unavi {
                         }
                         let ret = wit_import((self).handle() as i32);
                         Text::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl TextBox {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Sets the text after adjusting for container bounds.
+                pub fn set_text(&self, value: &str) {
+                    unsafe {
+                        let vec0 = value;
+                        let ptr0 = vec0.as_ptr().cast::<u8>();
+                        let len0 = vec0.len();
+
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:ui/text")]
+                        extern "C" {
+                            #[link_name = "[method]text-box.set-text"]
+                            fn wit_import(_: i32, _: *mut u8, _: usize);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8, _: usize) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0.cast_mut(), len0);
+                    }
+                }
+            }
+            impl TextBox {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn wrap(&self) -> WordWrap {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:ui/text")]
+                        extern "C" {
+                            #[link_name = "[method]text-box.wrap"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        WordWrap::_lift(ret as u8)
+                    }
+                }
+            }
+            impl TextBox {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_wrap(&self, value: WordWrap) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "unavi:ui/text")]
+                        extern "C" {
+                            #[link_name = "[method]text-box.set-wrap"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, value.clone() as i32);
                     }
                 }
             }
@@ -6530,8 +6624,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 8486] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa9A\x01A\x02\x01A*\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 8652] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xcfB\x01A\x02\x01A*\x01\
 B\x10\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\
 \x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01r\
 \x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -6699,25 +6793,29 @@ input-handler\x03\0\x02\x04\0\x06button\x03\x01\x01i\x01\x01i\x04\x01@\x01\x04ro
 ot\x05\0\x06\x04\0\x13[constructor]button\x01\x07\x01h\x04\x01@\x01\x04self\x08\0\
 \x05\x04\0\x13[method]button.root\x01\x09\x01@\x01\x04self\x08\0\x7f\x04\0\x16[m\
 ethod]button.hovered\x01\x0a\x04\0\x16[method]button.pressed\x01\x0a\x03\x01\x0f\
-unavi:ui/button\x05\x18\x01B(\x02\x03\x02\x01\x17\x04\0\x09container\x03\0\0\x02\
+unavi:ui/button\x05\x18\x01B0\x02\x03\x02\x01\x17\x04\0\x09container\x03\0\0\x02\
 \x03\x02\x01\x0a\x04\0\x04mesh\x03\0\x02\x02\x03\x02\x01\x10\x04\0\x04node\x03\0\
-\x04\x04\0\x04text\x03\x01\x04\0\x08text-box\x03\x01\x01i\x06\x01@\x01\x04texts\0\
-\x08\x04\0\x11[constructor]text\x01\x09\x01h\x06\x01@\x01\x04self\x0a\0\x08\x04\0\
-\x10[method]text.ref\x01\x0b\x01p}\x01k\x0c\x01@\x02\x04self\x0a\x05value\x0d\x01\
-\0\x04\0\x15[method]text.set-font\x01\x0e\x01@\x01\x04self\x0a\0s\x04\0\x11[meth\
-od]text.text\x01\x0f\x01@\x02\x04self\x0a\x05values\x01\0\x04\0\x15[method]text.\
-set-text\x01\x10\x01@\x01\x04self\x0a\0v\x04\0\x16[method]text.font-size\x01\x11\
-\x01@\x02\x04self\x0a\x05valuev\x01\0\x04\0\x1a[method]text.set-font-size\x01\x12\
-\x04\0\x16[method]text.thickness\x01\x11\x04\0\x1a[method]text.set-thickness\x01\
-\x12\x01i\x03\x01@\x01\x04self\x0a\0\x13\x04\0\x11[method]text.mesh\x01\x14\x01i\
-\x01\x01i\x07\x01@\x01\x04root\x15\0\x16\x04\0\x15[constructor]text-box\x01\x17\x01\
-h\x07\x01@\x01\x04self\x18\0\x15\x04\0\x15[method]text-box.root\x01\x19\x01@\x01\
-\x04self\x18\0\x08\x04\0\x15[method]text-box.text\x01\x1a\x03\x01\x0dunavi:ui/te\
-xt\x05\x19\x01B\x07\x04\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constr\
-uctor]script\x01\x02\x01h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[metho\
-d]script.update\x01\x04\x04\x01\x12wired:script/types\x05\x1a\x04\x01\x17example\
-:unavi-ui/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0cpr\
-ocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+\x04\x04\0\x04text\x03\x01\x01m\x02\x09character\x04word\x04\0\x09word-wrap\x03\0\
+\x07\x04\0\x08text-box\x03\x01\x01i\x06\x01@\x01\x04texts\0\x0a\x04\0\x11[constr\
+uctor]text\x01\x0b\x01h\x06\x01@\x01\x04self\x0c\0\x0a\x04\0\x10[method]text.ref\
+\x01\x0d\x01p}\x01k\x0e\x01@\x02\x04self\x0c\x05value\x0f\x01\0\x04\0\x15[method\
+]text.set-font\x01\x10\x01@\x01\x04self\x0c\0s\x04\0\x11[method]text.text\x01\x11\
+\x01@\x02\x04self\x0c\x05values\x01\0\x04\0\x15[method]text.set-text\x01\x12\x01\
+@\x01\x04self\x0c\0v\x04\0\x16[method]text.font-size\x01\x13\x01@\x02\x04self\x0c\
+\x05valuev\x01\0\x04\0\x1a[method]text.set-font-size\x01\x14\x04\0\x16[method]te\
+xt.thickness\x01\x13\x04\0\x1a[method]text.set-thickness\x01\x14\x01i\x03\x01@\x01\
+\x04self\x0c\0\x15\x04\0\x11[method]text.mesh\x01\x16\x01i\x01\x01i\x09\x01@\x01\
+\x04root\x17\0\x18\x04\0\x15[constructor]text-box\x01\x19\x01h\x09\x01@\x01\x04s\
+elf\x1a\0\x17\x04\0\x15[method]text-box.root\x01\x1b\x01@\x01\x04self\x1a\0\x0a\x04\
+\0\x15[method]text-box.text\x01\x1c\x01@\x02\x04self\x1a\x05values\x01\0\x04\0\x19\
+[method]text-box.set-text\x01\x1d\x01@\x01\x04self\x1a\0\x08\x04\0\x15[method]te\
+xt-box.wrap\x01\x1e\x01@\x02\x04self\x1a\x05value\x08\x01\0\x04\0\x19[method]tex\
+t-box.set-wrap\x01\x1f\x03\x01\x0dunavi:ui/text\x05\x19\x01B\x07\x04\0\x06script\
+\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01h\0\x01@\x02\
+\x04self\x03\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\x01\x12w\
+ired:script/types\x05\x1a\x04\x01\x17example:unavi-ui/script\x04\0\x0b\x0c\x01\0\
+\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070\
+.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

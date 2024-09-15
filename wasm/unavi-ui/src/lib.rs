@@ -12,6 +12,7 @@ mod bindings;
 mod button;
 mod text;
 mod wired_input_impls;
+mod wired_math_impls;
 
 static ELEMENT_ID: AtomicUsize = AtomicUsize::new(0);
 

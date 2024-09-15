@@ -2,6 +2,7 @@ package unavi:ui;
 
 world guest {
     import unavi:shapes/api;
+    import wired:log/api;
 
     export api;
     export button;
@@ -64,11 +65,22 @@ interface text {
     mesh: func() -> mesh;
   }
 
-  /// Dynamic text generation within the bounds of a container.
+  enum word-wrap {
+    character,
+    word,
+  }
+
+  /// Text generation within the bounds of a container.
   resource text-box {
     constructor(root: container);
 
     root: func() -> container;
     text: func() -> text;
+
+    /// Sets the text after adjusting for container bounds.
+    set-text: func(value: string);
+
+    wrap: func() -> word-wrap;
+    set-wrap: func(value: word-wrap);
   }
 }

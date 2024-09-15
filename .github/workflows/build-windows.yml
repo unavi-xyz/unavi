@@ -33,10 +33,9 @@ jobs:
       - run: cargo install cargo-component
       - run: cargo install wac-cli
 
-      - name: Install capnproto
-        uses: crazy-max/ghaction-chocolatey@v3
+      - uses: crazy-max/ghaction-chocolatey@v3
         with:
-          args: install capnproto
+          args: install capnproto wix
 
       - name: Build package
         run: |
@@ -48,10 +47,22 @@ jobs:
         env:
           UNAVI_REGISTRY_DID: ${{ inputs.channel == 'stable' && 'app' || inputs.channel }}.unavi.xyz
 
-      - run: Compress-Archive -Path result/* -DestinationPath ${{ matrix.package }}.x86_64-windows.zip
+      - name: Create zip
+        run: Compress-Archive -Path result/* -DestinationPath ${{ matrix.package }}.x86_64-windows.zip
+
+      - name: Create msi
+        run: |
+          wix candle crates/${{ matrix.package }}/wix/main.wxs -o installer.wixobj
+          wix light installer.wixobj -o ${{ matrix.package }}.x86_64-windows.msi
 
       - uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.package }}.x86_64-windows
           path: ${{ matrix.package }}.x86_64-windows.zip
+          retention-days: 1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.package }}.x86_64-windows
+          path: ${{ matrix.package }}.x86_64-windows.msi
           retention-days: 1

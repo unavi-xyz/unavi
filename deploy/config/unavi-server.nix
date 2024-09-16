@@ -4,7 +4,6 @@
   domainWorld,
   pkgs,
   unavi-server,
-  # unavi-web,
   ...
 }:
 let

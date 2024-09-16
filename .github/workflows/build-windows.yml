@@ -18,7 +18,7 @@ jobs:
     strategy:
       matrix:
         package: [unavi-app, unavi-server]
-    name: x86_64-windows.${{ matrix.package }}
+    name: ${{ matrix.package }}.x86_64-windows
     steps:
       - uses: actions/checkout@v4
         with:

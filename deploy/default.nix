@@ -30,24 +30,24 @@ let
     [
       {
         name = pkgs.lib.concatStrings [
-          "app-"
+          "unavi-app-"
           subdir
         ];
         value = mkAppPackage resource;
       }
       {
         name = pkgs.lib.concatStrings [
-          "web-"
+          "unavi-web-"
           subdir
         ];
         value = mkWebPackage resource;
       }
       {
         name = pkgs.lib.concatStrings [
-          "server-"
+          "unavi-server-"
           subdir
         ];
-        value = self.packages.${localSystem}.server;
+        value = self.packages.${localSystem}.unavi-server;
       }
     ];
 
@@ -68,8 +68,8 @@ let
                 domainDwn = resource.value.domain_dwn;
                 domainWeb = resource.value.domain_web;
                 domainWorld = resource.value.domain_world;
-                unavi-server = self.packages.${system}."server-${subdir}";
-                unavi-web = self.packages.${system}."web-${subdir}";
+                unavi-server = self.packages.${system}."unavi-server-${subdir}";
+                unavi-web = self.packages.${system}."unavi-web-${subdir}";
               };
             };
           in

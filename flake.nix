@@ -122,9 +122,9 @@
         inherit unavi-app unavi-server;
 
         apps = rec {
-          app = flake-utils.lib.mkApp { drv = unavi-app.native; };
-          server = flake-utils.lib.mkApp { drv = unavi-server.server; };
-          web = flake-utils.lib.mkApp {
+          unavi-app = flake-utils.lib.mkApp { drv = unavi-app.native; };
+          unavi-server = flake-utils.lib.mkApp { drv = unavi-server.server; };
+          unavi-web = flake-utils.lib.mkApp {
             drv = pkgs.writeShellApplication {
               name = "unavi-web";
               runtimeInputs = with pkgs; [ python3Minimal ];
@@ -133,7 +133,7 @@
               '';
             };
           };
-          default = app;
+          default = unavi-app;
         } // deploy.apps;
 
         checks = {
@@ -145,11 +145,11 @@
             ;
         };
 
-        packages = rec {
-          app = unavi-app.native;
-          server = unavi-server.server;
-          web = unavi-app.web;
-          default = app;
+        packages = {
+          default = unavi-app.native;
+          unavi-app = unavi-app.native;
+          unavi-server = unavi-server.server;
+          unavi-web = unavi-app.web;
         } // deploy.packages;
 
         devShells.default = craneLib.devShell {
@@ -188,8 +188,8 @@
                 (nixpkgs.lib.filterAttrs (
                   n: _:
                   !(nixpkgs.lib.mutuallyExclusive [ n ] [
-                    "app"
-                    "server"
+                    "unavi-app"
+                    "unavi-server"
                   ])
                 ) v)
               )

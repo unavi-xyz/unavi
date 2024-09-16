@@ -87,6 +87,7 @@
             || (pkgs.lib.hasSuffix ".capnp" path)
             || (pkgs.lib.hasSuffix ".html" path)
             || (pkgs.lib.hasSuffix ".json" path)
+            || (pkgs.lib.hasSuffix ".ttf" path)
             || (pkgs.lib.hasSuffix ".wit" path)
             || (pkgs.lib.hasSuffix "LICENSE" path)
             || (pkgs.lib.hasSuffix "README.md" path)

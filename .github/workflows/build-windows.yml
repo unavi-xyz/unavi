@@ -53,8 +53,8 @@ jobs:
 
       - name: Create msi
         run: |
-          ls target/x86_64-pc-windows-msvc/release/
-          mv target/x86_64-pc-windows-msvc/release/*.msi ${{ matrix.packages }}.x86-64_windows.msi
+          ls target/wix/
+          mv target/wix/*.msi ${{ matrix.packages }}.x86-64_windows.msi
 
       - uses: actions/upload-artifact@v4
         with:

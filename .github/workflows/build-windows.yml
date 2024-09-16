@@ -52,7 +52,9 @@ jobs:
         run: Compress-Archive -Path result/* -DestinationPath ${{ matrix.package }}.x86_64-windows.zip
 
       - name: Create msi
-        run: cp target/x86_64-pc-windows-msvc/release/*.msi ${{ matrix.packages }}.x86-64_windows.msi
+        run: |
+          ls target/x86_64-pc-windows-msvc/release/
+          mv target/x86_64-pc-windows-msvc/release/*.msi ${{ matrix.packages }}.x86-64_windows.msi
 
       - uses: actions/upload-artifact@v4
         with:

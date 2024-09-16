@@ -142,7 +142,9 @@ jobs:
             cd $dir
 
             for file in *; do
-              mv $file ../${file%.zip}.${{ needs.version.outputs.version }}.zip
+              ext="${file##*.}"
+              name="${file%.*}"
+              mv "$file" "../${name}.${{ needs.version.outputs.version }}.$ext"
             done
 
             cd ..

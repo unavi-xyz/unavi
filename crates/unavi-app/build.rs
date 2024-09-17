@@ -59,16 +59,22 @@ fn main() {
     }
 
     // Compose components.
-    for entry in std::fs::read_dir(wasm_out.clone()).expect("Failed to read directory") {
-        let entry = entry.expect("Failed to read directory entry");
-        let path = entry.path();
+    // We must manually specify the order of composition via this array.
+    for name in [
+        "unavi_vscreen.wasm",
+        "unavi_ui.wasm",
+        "unavi_shapes.wasm",
+        "unavi_scene.wasm",
+        "unavi_layout.wasm",
+    ] {
+        let path_a: PathBuf = [wasm_out.to_str().unwrap(), name].iter().collect();
 
-        for entry_2 in std::fs::read_dir(wasm_out.clone()).expect("Failed to read directory") {
-            let entry_2 = entry_2.expect("Failed to read directory entry");
-            let path_2 = entry_2.path();
+        for entry_b in std::fs::read_dir(wasm_out.clone()).expect("Failed to read directory") {
+            let entry_b = entry_b.expect("Failed to read directory entry");
+            let path_b = entry_b.path();
 
-            let path_a = path.as_os_str().to_str().unwrap();
-            let path_b = path_2.as_os_str().to_str().unwrap();
+            let path_a = path_a.as_os_str().to_str().unwrap();
+            let path_b = path_b.as_os_str().to_str().unwrap();
 
             let output = Command::new("wac")
                 .args(["plug", "--plug", path_a, path_b])

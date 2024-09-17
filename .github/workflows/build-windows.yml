@@ -40,7 +40,7 @@ jobs:
 
       - name: Build package
         run: |
-          cargo wix -p ${{ matrix.package }} --target x86_64-pc-windows-msvc
+          cargo wix -p ${{ matrix.package }} --nocapture
           mkdir result
           mv target/x86_64-pc-windows-msvc/release/*.exe result
           cp crates/${{ matrix.package }}/README.md result

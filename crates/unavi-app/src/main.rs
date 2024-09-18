@@ -82,32 +82,41 @@ pub enum Storage {
 }
 
 #[cfg(not(target_family = "wasm"))]
-#[tokio::main]
-async fn main() {
-    use directories::ProjectDirs;
+fn main() {
     use surrealdb::engine::local::{Mem, SurrealKV};
+    use unavi_app::{dirs::get_project_dirs, update::check_for_updates};
+
+    if let Err(e) = check_for_updates() {
+        panic!("Failed to update: {}", e);
+    };
 
     let args = Args::parse();
 
-    let db = match args.storage {
-        Storage::Filesystem => {
-            let dirs = ProjectDirs::from("xyz", "unavi", "unavi-app")
-                .expect("Failed to get project dirs.");
-            let db_path = dirs.data_dir();
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("Failed to build tokio runtime");
 
-            std::fs::create_dir_all(db_path).expect("Failed to create database dir.");
+    rt.block_on(async {
+        let db = match args.storage {
+            Storage::Filesystem => {
+                let dirs = get_project_dirs();
+                let db_path = dirs.data_dir();
 
-            Surreal::new::<SurrealKV>(db_path)
+                std::fs::create_dir_all(db_path).expect("Failed to create database dir.");
+
+                Surreal::new::<SurrealKV>(db_path)
+                    .await
+                    .expect("Failed to create SurrealDB.")
+            }
+            Storage::Memory => Surreal::new::<Mem>(())
                 .await
-                .expect("Failed to create SurrealDB.")
-        }
-        Storage::Memory => Surreal::new::<Mem>(())
-            .await
-            .expect("Failed to create SurrealDB."),
-    };
+                .expect("Failed to create SurrealDB."),
+        };
 
-    let opts = args_to_options(args);
-    unavi_app::start(db, opts).await;
+        let opts = args_to_options(args);
+        unavi_app::start(db, opts).await;
+    });
 }
 
 fn args_to_options(args: Args) -> StartOptions {

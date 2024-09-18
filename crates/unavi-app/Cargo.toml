@@ -14,6 +14,7 @@ eula = false
 workspace = true
 
 [dependencies]
+anyhow.workspace = true
 avian3d.workspace = true
 bevy = { workspace = true, features = ["wayland"] }
 clap.workspace = true
@@ -31,12 +32,20 @@ surrealdb = { workspace = true, features = ["kv-indxdb"] }
 tokio.workspace = true
 wasm-bindgen-futures.workspace = true
 wasm-bindgen.workspace = true
-web-sys = { workspace = true, features = ["Location", "UrlSearchParams", "Window"] }
+web-sys = { workspace = true, features = [
+  "Location",
+  "UrlSearchParams",
+  "Window",
+] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 bevy_oxr = "0.3.0"
+reqwest.workspace = true
+self_update = "0.41.0"
 surrealdb = { workspace = true, features = ["kv-mem", "kv-surrealkv"] }
-tokio = { workspace = true, features = ["rt-multi-thread"] }
+tempfile = "3.12.0"
+tokio.workspace = true
+zip = { version = "2.2.0", default-features = false, features = ["deflate"] }
 
 [build-dependencies]
 unavi-constants = { path = "../unavi-constants" }

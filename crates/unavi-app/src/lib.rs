@@ -32,7 +32,11 @@ use dwn::{actor::Actor, store::SurrealStore, DWN};
 use surrealdb::{engine::local::Db, Surreal};
 use unavi_world::UserActor;
 
+#[cfg(not(target_family = "wasm"))]
+pub mod dirs;
 mod unavi_system;
+#[cfg(not(target_family = "wasm"))]
+pub mod update;
 
 pub struct StartOptions {
     pub debug_physics: bool,

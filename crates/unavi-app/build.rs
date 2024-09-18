@@ -124,4 +124,8 @@ fn main() {
     }
 
     println!("cargo:rerun-if-changed={}", wasm_dir.to_str().unwrap());
+    println!(
+        "cargo:rustc-env=TARGET={}",
+        std::env::var("TARGET").unwrap()
+    );
 }

@@ -144,7 +144,7 @@ jobs:
             for file in *; do
               ext="${file##*.}"
               name="${file%.*}"
-              mv "$file" "../${name}.${{ needs.version.outputs.version }}.$ext"
+              mv "$file" "../${name}-${{ needs.version.outputs.version }}.$ext"
             done
 
             cd ..

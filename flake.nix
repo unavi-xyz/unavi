@@ -212,9 +212,11 @@
               package = nixpkgs.lib.strings.removeSuffix "\"" (
                 nixpkgs.lib.strings.removePrefix "\"" (builtins.elemAt split 1)
               );
-              platform = builtins.elemAt split 0;
+              platformSplit = nixpkgs.lib.strings.splitString "-" (builtins.elemAt split 0);
+              platformRaw = builtins.elemAt platformSplit 1;
+              platform = if platformRaw == "darwin" then "macos" else platformRaw;
             in
-            entry // { name = "${package}.${platform}"; }
+            entry // { name = "${package}-${platform}"; }
           ) githubMatrix.matrix.include;
         };
       }

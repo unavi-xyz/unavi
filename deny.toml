@@ -10,28 +10,40 @@ targets = [
 [licenses]
 version = 2
 allow = [
-    "Apache-2.0 WITH LLVM-exception",
-    "Apache-2.0",
-    "BSD-2-Clause",
-    "BSD-3-Clause",
-    "BSL-1.0",
-    "CC0-1.0",
-    "ISC",
-    "MIT",
-    "MIT-0",
-    "MPL-2.0",
-    "Unlicense",
-    "Zlib",
-]
-exceptions = [
-    { allow = ["BUSL-1.1"], crate = "surrealdb" },
-    { allow = ["BUSL-1.1"], crate = "surrealdb-core" },
-    { allow = ["OpenSSL"], crate = "ring" },
-    { allow = ["Unicode-DFS-2016"], crate = "unicode-ident" },
-    { allow = ["W3C-20150513", "CC-BY-SA-3.0"], crate = "ssi-contexts" },
+  "Apache-2.0 WITH LLVM-exception",
+  "Apache-2.0",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "BSL-1.0",
+  "CC0-1.0",
+  "ISC",
+  "MIT",
+  "MIT-0",
+  "MPL-2.0",
+  "Unlicense",
+  "Zlib",
 ]
 
-# Sigh
+[[exceptions]]
+allow = ["BUSL-1.1"]
+crate = "surrealdb"
+
+[[exceptions]]
+allow = ["BUSL-1.1"]
+crate = "surrealdb-core"
+
+[[exceptions]]
+allow = ["OpenSSL"]
+crate = "ring"
+
+[[exceptions]]
+allow = ["Unicode-DFS-2016"]
+crate = "unicode-ident"
+
+[[exceptions]]
+allow = ["W3C-20150513", "CC-BY-SA-3.0"]
+crate = "ssi-contexts"
+
 [[licenses.clarify]]
 crate = "ring"
 # SPDX considers OpenSSL to encompass both the OpenSSL and SSLeay licenses
@@ -47,25 +59,26 @@ license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }]
 [advisories]
 version = 2
 ignore = [
-	"RUSTSEC-2023-0055", # lexical json number parsing
-	"RUSTSEC-2023-0071", # rsa sidechannel
-	"RUSTSEC-2024-0358", # object_store AWS
-	"RUSTSEC-2024-0370", # proc-macro-error unmaintained
+  "RUSTSEC-2023-0055", # lexical json number parsing
+  "RUSTSEC-2023-0071", # rsa sidechannel
+  "RUSTSEC-2024-0358", # object_store AWS
+  "RUSTSEC-2024-0370", # proc-macro-error unmaintained
+  "RUSTSEC-2023-0086", # lexical-core soundness issues
 ]
 
 [bans]
 multiple-versions = "warn"
 deny = [
-	{ name = "bevy", deny-multiple-versions = true },
-	{ name = "tokio", deny-multiple-versions = true },
+  { name = "bevy", deny-multiple-versions = true },
+  { name = "tokio", deny-multiple-versions = true },
 ]
 
-  [sources]
+[sources]
 unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
 allow-git = [
-	"https://github.com/kayhhh/wasm-bridge",
-	"https://github.com/kayhhh/xwt",
-	"https://github.com/unavi-xyz/bevy_vrm",
+  "https://github.com/kayhhh/wasm-bridge",
+  "https://github.com/kayhhh/xwt",
+  "https://github.com/unavi-xyz/bevy_vrm",
 ]

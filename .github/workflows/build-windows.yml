@@ -18,7 +18,7 @@ jobs:
     strategy:
       matrix:
         package: [unavi-app, unavi-server]
-    name: ${{ matrix.package }}.x86_64-windows
+    name: ${{ matrix.package }}-windows
     steps:
       - uses: actions/checkout@v4
         with:
@@ -49,21 +49,21 @@ jobs:
           UNAVI_REGISTRY_DID: ${{ inputs.channel == 'stable' && 'app' || inputs.channel }}.unavi.xyz
 
       - name: Create zip
-        run: Compress-Archive -Path result/* -DestinationPath ${{ matrix.package }}.x86_64-windows.zip
+        run: Compress-Archive -Path result/* -DestinationPath ${{ matrix.package }}-windows.zip
 
       - name: Create msi
         run: |
           ls target/wix/
-          mv target/wix/*.msi ${{ matrix.packages }}.x86-64_windows.msi
+          mv target/wix/*.msi ${{ matrix.packages }}-windows.msi
 
       - uses: actions/upload-artifact@v4
         with:
-          name: build-${{ matrix.package }}.x86_64-windows
-          path: ${{ matrix.package }}.x86_64-windows.zip
+          name: build-${{ matrix.package }}-windows
+          path: ${{ matrix.package }}-windows.zip
           retention-days: 1
 
       - uses: actions/upload-artifact@v4
         with:
-          name: build-installer-${{ matrix.package }}.x86_64-windows
-          path: ${{ matrix.package }}.x86_64-windows.msi
+          name: build-installer-${{ matrix.package }}-windows
+          path: ${{ matrix.package }}-windows.msi
           retention-days: 1

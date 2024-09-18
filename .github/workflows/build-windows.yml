@@ -54,7 +54,7 @@ jobs:
       - name: Create msi
         run: |
           ls target/wix/
-          mv target/wix/*.msi ${{ matrix.packages }}-windows.msi
+          mv target/wix/*.msi ${{ matrix.package }}-windows.msi
 
       - uses: actions/upload-artifact@v4
         with:

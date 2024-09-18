@@ -33,10 +33,8 @@ use surrealdb::{engine::local::Db, Surreal};
 use unavi_world::UserActor;
 
 #[cfg(not(target_family = "wasm"))]
-pub mod dirs;
+pub mod native;
 mod unavi_system;
-#[cfg(not(target_family = "wasm"))]
-pub mod update;
 
 pub struct StartOptions {
     pub debug_physics: bool,

@@ -5,7 +5,7 @@ use self_update::{backends::github::ReleaseList, cargo_crate_version};
 use tempfile::tempdir_in;
 use zip::ZipArchive;
 
-use crate::dirs::get_project_dirs;
+use crate::native::dirs::get_project_dirs;
 
 pub fn check_for_updates() -> Result<()> {
     println!("Checking for updates...");

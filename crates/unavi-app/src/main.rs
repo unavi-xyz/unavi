@@ -59,6 +59,10 @@ struct Args {
     #[arg(long, default_value_t, value_enum)]
     log_level: LogLevel,
 
+    /// Disables automatic updates.
+    #[arg(long)]
+    no_update: bool,
+
     #[arg(long, default_value = "filesystem")]
     storage: Storage,
 
@@ -83,14 +87,16 @@ pub enum Storage {
 
 #[cfg(not(target_family = "wasm"))]
 fn main() {
-    use surrealdb::engine::local::{Mem, SurrealKV};
-    use unavi_app::{dirs::get_project_dirs, update::check_for_updates};
-
-    if let Err(e) = check_for_updates() {
-        panic!("Failed to update: {}", e);
-    };
+    use surrealdb::engine::local::Mem;
+    use unavi_app::native::{db::get_filesystem_db, update::check_for_updates};
 
     let args = Args::parse();
+
+    if !args.no_update {
+        if let Err(e) = check_for_updates() {
+            panic!("Failed to update: {}", e);
+        };
+    }
 
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -99,20 +105,10 @@ fn main() {
 
     rt.block_on(async {
         let db = match args.storage {
-            Storage::Filesystem => {
-                let dirs = get_project_dirs();
-                let db_path = dirs.data_dir();
-
-                std::fs::create_dir_all(db_path).expect("Failed to create database dir.");
-
-                Surreal::new::<SurrealKV>(db_path)
-                    .await
-                    .expect("Failed to create SurrealDB.")
-            }
-            Storage::Memory => Surreal::new::<Mem>(())
-                .await
-                .expect("Failed to create SurrealDB."),
-        };
+            Storage::Filesystem => get_filesystem_db().await,
+            Storage::Memory => Surreal::new::<Mem>(()).await,
+        }
+        .expect("Failed to create SurrealDB");
 
         let opts = args_to_options(args);
         unavi_app::start(db, opts).await;

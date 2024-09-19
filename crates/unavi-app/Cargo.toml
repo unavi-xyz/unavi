@@ -49,3 +49,4 @@ zip = { version = "2.2.0", default-features = false, features = ["deflate"] }
 
 [build-dependencies]
 unavi-constants = { path = "../unavi-constants" }
+winres = "0.1.12"

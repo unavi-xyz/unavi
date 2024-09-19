@@ -10,9 +10,20 @@ const WASM_PROFILE: &str = "release-wasm";
 const WASM_TARGET: &str = "wasm32-wasip1";
 
 fn main() {
-    let wasm_dir: PathBuf = ["..", "..", "wasm"].iter().collect();
+    if cfg!(target_os = "windows") {
+        let mut res = winres::WindowsResource::new();
+        res.set_icon("wix/logo.ico");
+        res.compile().expect("Failed to compile resources");
+    }
+
+    // Set TARGET env, used for self-updating.
+    println!(
+        "cargo:rustc-env=TARGET={}",
+        std::env::var("TARGET").unwrap()
+    );
 
     // Build components.
+    let wasm_dir: PathBuf = ["..", "..", "wasm"].iter().collect();
     let wasm_out = PathBuf::from(ASSETS_DIR).join(WASM_ASSETS_DIR);
     std::fs::create_dir_all(wasm_out.clone()).unwrap();
     std::fs::remove_dir_all(wasm_out.clone()).unwrap();
@@ -124,8 +135,4 @@ fn main() {
     }
 
     println!("cargo:rerun-if-changed={}", wasm_dir.to_str().unwrap());
-    println!(
-        "cargo:rustc-env=TARGET={}",
-        std::env::var("TARGET").unwrap()
-    );
 }

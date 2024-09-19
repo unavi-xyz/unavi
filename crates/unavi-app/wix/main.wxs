@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='windows-1252'?>
+<?xml version="1.0" encoding="windows-1252"?>
 <!--
   Copyright (C) 2017 Christopher R. Field.
 
@@ -56,171 +56,142 @@
     <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
 <?endif ?>
 
-<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+<?define AppName = "UNAVI" ?>
+<?define Manufacturer = "UNAVI" ?>
+
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
 
     <Product
-        Id='*'
-        Name='unavi-app'
-        UpgradeCode='CD21570F-A50A-4B80-97A9-2A8ACCB87ABA'
-        Manufacturer='UNAVI'
-        Language='1033'
-        Codepage='1252'
-        Version='$(var.Version)'>
+        Id="*"
+        Name="$(var.AppName)"
+        UpgradeCode="CD21570F-A50A-4B80-97A9-2A8ACCB87ABA"
+        Manufacturer="$(var.Manufacturer)"
+        Language="1033"
+        Codepage="1252"
+        Version="$(var.Version)">
 
-        <Package Id='*'
-            Keywords='Installer'
-            Manufacturer='UNAVI'
-            InstallerVersion='450'
-            Languages='1033'
-            Compressed='yes'
-            InstallScope='perMachine'
-            SummaryCodepage='1252'
+        <Package Id="*"
+            Keywords="Installer"
+            Manufacturer="$(var.Manufacturer)"
+            InstallerVersion="450"
+            Languages="1033"
+            Compressed="yes"
+            InstallScope="perMachine"
+            SummaryCodepage="1252"
             />
 
         <MajorUpgrade
-            Schedule='afterInstallInitialize'
-            DowngradeErrorMessage='A newer version of [ProductName] is already installed. Setup will now exit.'/>
+            Schedule="afterInstallInitialize"
+            DowngradeErrorMessage="A newer version of [ProductName] is already installed. Setup will now exit."/>
 
-        <Media Id='1' Cabinet='media1.cab' EmbedCab='yes' DiskPrompt='CD-ROM #1'/>
-        <Property Id='DiskPrompt' Value='unavi-app Installation'/>
+        <Media Id="1" Cabinet="media1.cab" EmbedCab="yes" DiskPrompt="CD-ROM #1"/>
+        <Property Id="DiskPrompt" Value="$(var.AppName) Installation"/>
 
-        <Directory Id='TARGETDIR' Name='SourceDir'>
-            <Directory Id='$(var.PlatformProgramFilesFolder)' Name='PFiles'>
-                <Directory Id='APPLICATIONFOLDER' Name='unavi-app'>
-                    
-                    <!--
-                      Enabling the license sidecar file in the installer is a four step process:
-
-                      1. Uncomment the `Component` tag and its contents.
-                      2. Change the value for the `Source` attribute in the `File` tag to a path
-                         to the file that should be included as the license sidecar file. The path
-                         can, and probably should be, relative to this file.
-                      3. Change the value for the `Name` attribute in the `File` tag to the
-                         desired name for the file when it is installed alongside the `bin` folder
-                         in the installation directory. This can be omitted if the desired name is
-                         the same as the file name.
-                      4. Uncomment the `ComponentRef` tag with the Id attribute value of "License"
-                         further down in this file.
-                    -->
-                    <!--
-                    <Component Id='License' Guid='*'>
-                        <File Id='LicenseFile' Name='ChangeMe' DiskId='1' Source='C:\Path\To\File' KeyPath='yes'/>
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="$(var.PlatformProgramFilesFolder)" Name="PFiles">
+                <Directory Id="APPLICATIONFOLDER" Name="$(var.AppName)">
+                    <Component Id="binary0" Guid="*">
+                        <File
+                            Id="exe0"
+                            Name="unavi.exe"
+                            DiskId="1"
+                            Source="$(var.CargoTargetBinDir)\unavi-app.exe"
+                            KeyPath="yes"
+                            />
                     </Component>
-                    -->
 
-                    <Directory Id='Bin' Name='bin'>
-                        <Component Id='Path' Guid='1943316D-D71F-43DB-B2EF-5588D3642DDF' KeyPath='yes'>
-                            <Environment
-                                Id='PATH'
-                                Name='PATH'
-                                Value='[Bin]'
-                                Permanent='no'
-                                Part='last'
-                                Action='set'
-                                System='yes'/>
-                        </Component>
-                        <Component Id='binary0' Guid='*'>
-                            <File
-                                Id='exe0'
-                                Name='unavi-app.exe'
-                                DiskId='1'
-                                Source='$(var.CargoTargetBinDir)\unavi-app.exe'
-                                KeyPath='yes'/>
-                        </Component>
-                    </Directory>
+                    <Component Id="Shortcut" Guid="*">
+                        <RegistryKey Root="HKCU" Key="Software\$(var.AppName)\binary0">
+                            <RegistryValue Name="Installed" Type="integer" Value="1" KeyPath="yes"/>
+                        </RegistryKey>
+
+                        <Shortcut
+                            Id="ApplicationShortcut"
+                            Directory="ProgramMenuDir" Name="$(var.AppName)"
+                            WorkingDirectory="APPLICATIONFOLDER"
+                            Icon="ProductICO"
+                            Target="[APPLICATIONFOLDER]unavi.exe"
+                            />
+
+                        <RemoveFolder Id="RemoveProgramMenuDir" On="uninstall" Directory="ProgramMenuDir" />
+                    </Component>
+
+                    <Component Id="License" Guid="*">
+                        <File Id="LicenseFile" DiskId="1" Source="..\..\LICENSE" KeyPath="yes" />
+                    </Component>
+                </Directory>
+
+                <Directory Id="ProgramMenuFolder">
+                  <Directory Id="ProgramMenuDir" Name="$(var.AppName)" />
                 </Directory>
             </Directory>
         </Directory>
 
         <Feature
-            Id='Binaries'
-            Title='Application'
-            Description='Installs all binaries and the license.'
-            Level='1'
-            ConfigurableDirectory='APPLICATIONFOLDER'
-            AllowAdvertise='no'
-            Display='expand'
-            Absent='disallow'>
-            
-            <!--
-              Uncomment the following `ComponentRef` tag to add the license
-              sidecar file to the installer.
-            -->
-            <!--<ComponentRef Id='License'/>-->
+            Id="BinaryFeature"
+            Title="Application"
+            Level="1"
+            ConfigurableDirectory="APPLICATIONFOLDER"
+            AllowAdvertise="no"
+            Display="expand"
+            Absent="disallow">
 
-            <ComponentRef Id='binary0'/>
-
-            <Feature
-                Id='Environment'
-                Title='PATH Environment Variable'
-                Description='Add the install location of the [ProductName] executable to the PATH system environment variable. This allows the [ProductName] executable to be called from any location.'
-                Level='1'
-                Absent='allow'>
-                <ComponentRef Id='Path'/>
-            </Feature>
+            <ComponentRef Id="binary0"/>
+            <ComponentRef Id="License"/>
+            <ComponentGroupRef Id="AssetsGroup" />
         </Feature>
 
-        <SetProperty Id='ARPINSTALLLOCATION' Value='[APPLICATIONFOLDER]' After='CostFinalize'/>
+        <Feature
+            Id="ShortcutFeature"
+            Title="Shortcut"
+            Level="1"
+            Absent="allow"
+            >
+            <ComponentRef Id="Shortcut"/>
+        </Feature>
 
-        
-        <!--
-          Uncomment the following `Icon` and `Property` tags to change the product icon.
+        <SetProperty Id="ARPINSTALLLOCATION" Value="[APPLICATIONFOLDER]" After="CostFinalize"/>
 
-          The product icon is the graphic that appears in the Add/Remove
-          Programs control panel for the application.
-        -->
-        <!--<Icon Id='ProductICO' SourceFile='wix\Product.ico'/>-->
-        <!--<Property Id='ARPPRODUCTICON' Value='ProductICO' />-->
+        <Icon Id="ProductICO" SourceFile="crates\unavi-app\wix\logo.ico"/>
+        <Property Id="ARPPRODUCTICON" Value="ProductICO" />
 
-        <Property Id='ARPHELPLINK' Value='https://github.com/unavi-xyz/unavi'/>
-        
+        <Property Id="ARPHELPLINK" Value="https://github.com/unavi-xyz/unavi"/>
+
         <UI>
-            <UIRef Id='WixUI_FeatureTree'/>
-            
-            <!--
-              Enabling the EULA dialog in the installer is a three step process:
+            <UIRef Id="WixUI_FeatureTree"/>
 
-                1. Comment out or remove the two `Publish` tags that follow the
-                   `WixVariable` tag.
-                2. Uncomment the `<WixVariable Id='WixUILicenseRtf' Value='Path\to\Eula.rft'>` tag further down
-                3. Replace the `Value` attribute of the `WixVariable` tag with
-                   the path to a RTF file that will be used as the EULA and
-                   displayed in the license agreement dialog.
-            -->
-            <Publish Dialog='WelcomeDlg' Control='Next' Event='NewDialog' Value='CustomizeDlg' Order='99'>1</Publish>
-            <Publish Dialog='CustomizeDlg' Control='Back' Event='NewDialog' Value='WelcomeDlg' Order='99'>1</Publish>
-
+            <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="CustomizeDlg" Order="99">1</Publish>
+            <Publish Dialog="CustomizeDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="99">1</Publish>
         </UI>
 
-        
+
         <!--
           Enabling the EULA dialog in the installer requires uncommenting
           the following `WixUILicenseRTF` tag and changing the `Value`
           attribute.
         -->
-        <!-- <WixVariable Id='WixUILicenseRtf' Value='Relative\Path\to\Eula.rtf'/> -->
+        <!-- <WixVariable Id="WixUILicenseRtf" Value="Relative\Path\to\Eula.rtf"/> -->
 
-        
+
         <!--
-          Uncomment the next `WixVariable` tag to customize the installer's
+          Uncomment the next `WixVariable` tag to customize the installer"s
           Graphical User Interface (GUI) and add a custom banner image across
           the top of each screen. See the WiX Toolset documentation for details
           about customization.
 
           The banner BMP dimensions are 493 x 58 pixels.
         -->
-        <!--<WixVariable Id='WixUIBannerBmp' Value='wix\Banner.bmp'/>-->
+        <!-- <WixVariable Id="WixUIBannerBmp" Value="crates\unavi-app\wix\banner.bmp"/> -->
 
-        
         <!--
-          Uncomment the next `WixVariable` tag to customize the installer's
+          Uncomment the next `WixVariable` tag to customize the installer"s
           Graphical User Interface (GUI) and add a custom image to the first
           dialog, or screen. See the WiX Toolset documentation for details about
           customization.
 
           The dialog BMP dimensions are 493 x 312 pixels.
         -->
-        <!--<WixVariable Id='WixUIDialogBmp' Value='wix\Dialog.bmp'/>-->
+        <!--<WixVariable Id="WixUIDialogBmp" Value="wix\Dialog.bmp"/>-->
 
     </Product>
 

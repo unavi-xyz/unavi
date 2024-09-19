@@ -38,6 +38,13 @@ jobs:
       - run: cargo install cargo-wix
       - run: cargo install wac-cli
 
+      - if: ${{ matrix.package }} == "unavi-app"
+        name: Build assets
+        run: |
+          cargo wix -p ${{ matrix.package }} --nocapture
+          cd crates/${{ matrix.package }}/wix
+          ./gen-assets.bat
+
       - name: Build package
         run: |
           cargo wix -p ${{ matrix.package }} --nocapture

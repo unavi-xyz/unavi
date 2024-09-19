@@ -12028,6 +12028,7 @@ dependencies = [
  "clap",
  "directories",
  "dwn",
+ "image 0.25.2",
  "reqwest 0.12.7",
  "self_update",
  "surrealdb",
@@ -12043,6 +12044,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
+ "winit",
  "winres",
  "zip",
 ]

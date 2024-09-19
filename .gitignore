@@ -13,5 +13,5 @@
 /crates/unavi-app/dist
 
 # Other
-.unavi
 /crates/unavi-app/assets/wasm
+/crates/unavi-app/wix/assets.wxs

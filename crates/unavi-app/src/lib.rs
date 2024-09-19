@@ -107,6 +107,8 @@ pub async fn start(db: Surreal<Db>, opts: StartOptions) {
     ));
 
     app.add_systems(Startup, unavi_system::spawn_unavi_system);
+    #[cfg(not(target_family = "wasm"))]
+    app.add_systems(Startup, native::icon::set_window_icon);
 
     if opts.debug_physics {
         app.add_plugins(PhysicsDebugPlugin::default());

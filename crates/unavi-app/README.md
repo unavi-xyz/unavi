@@ -22,4 +22,12 @@ cargo install wac-cli
 
 [Cap'n Proto](https://capnproto.org/install.html) must be installed to compile networking schemas.
 
+#### Git Submodules
+
+Make sure your Git submodules have been initialized:
+
+```bash
+git submodule update --init
+```
+
 <!-- cargo-rdme end -->

@@ -22,7 +22,7 @@ cargo install wac-cli
 
 [Cap'n Proto](https://capnproto.org/install.html) must be installed to compile networking schemas.
 
-#### Git Submodules
+### Git Submodules
 
 Make sure your Git submodules have been initialized:
 

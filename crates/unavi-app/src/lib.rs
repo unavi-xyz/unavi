@@ -20,10 +20,11 @@
 //!
 //! ## Git Submodules
 //!
-//! Make sure your Git submodules have been initialized:
+//! Make sure your Git submodules are up to date:
 //!
 //! ```bash
-//! git submodule update --init
+//! git submodule update --init --recursive
+//! git submodule foreach git pull
 //! ```
 
 use std::sync::Arc;

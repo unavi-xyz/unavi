@@ -33,7 +33,7 @@ pub fn check_for_updates() -> Result<()> {
     let release = releases[0].clone();
 
     if release.version == cargo_crate_version!() {
-        println!("No updates found!");
+        println!("Up to date!");
         return Ok(());
     }
 

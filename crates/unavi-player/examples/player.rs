@@ -1,6 +1,5 @@
 use avian3d::prelude::*;
 use bevy::{prelude::*, render::view::RenderLayers};
-use bevy_basic_portals::{AsPortalDestination, CreatePortal, CreatePortalBundle, PortalsPlugin};
 use bevy_vrm::first_person::{FirstPersonFlag, RENDER_LAYERS};
 use unavi_player::PlayerPlugin;
 
@@ -13,7 +12,6 @@ fn main() {
             }),
             PhysicsDebugPlugin::default(),
             PhysicsPlugins::default(),
-            PortalsPlugin::default(),
             PlayerPlugin,
         ))
         .add_systems(Startup, setup_scene)
@@ -57,18 +55,6 @@ fn setup_scene(
         RigidBody::Static,
         Collider::cuboid(GROUND_SIZE, GROUND_THICK, GROUND_SIZE),
     ));
-
-    commands.spawn(CreatePortalBundle {
-        mesh: meshes.add(Mesh::from(Rectangle::new(GROUND_SIZE, MIRROR_H))),
-        create_portal: CreatePortal {
-            destination: AsPortalDestination::CreateMirror,
-            render_layer: RenderLayers::layer(0)
-                .union(&RENDER_LAYERS[&FirstPersonFlag::ThirdPersonOnly]),
-            ..default()
-        },
-        portal_transform: Transform::from_xyz(0.0, MIRROR_H / 2.0, -GROUND_SIZE / 2.0),
-        ..default()
-    });
 
     let mut transform = Transform::from_xyz(0.0, 3.0, -10.0);
     transform.look_at(Vec3::new(0.0, 0.5, 0.0), Vec3::new(0.0, 1.0, 0.0));

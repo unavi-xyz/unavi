@@ -21,6 +21,3 @@ unavi-scripting = { path = "../unavi-scripting" }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 web-sys = { workspace = true, features = ["Navigator", "Window"] }
-
-[dev-dependencies]
-bevy_basic_portals = "0.6.0"

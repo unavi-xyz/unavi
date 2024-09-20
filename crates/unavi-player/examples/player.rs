@@ -1,6 +1,5 @@
 use avian3d::prelude::*;
-use bevy::{prelude::*, render::view::RenderLayers};
-use bevy_vrm::first_person::{FirstPersonFlag, RENDER_LAYERS};
+use bevy::prelude::*;
 use unavi_player::PlayerPlugin;
 
 fn main() {

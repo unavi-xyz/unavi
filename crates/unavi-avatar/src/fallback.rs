@@ -2,15 +2,6 @@ use bevy::prelude::*;
 use bevy_vrm::loader::Vrm;
 use unavi_constants::player::{PLAYER_HEIGHT, PLAYER_WIDTH};
 
-#[derive(Component, Default)]
-pub struct FallbackAvatar;
-
-#[derive(Resource, Deref)]
-pub struct FallbackMaterial(Handle<StandardMaterial>);
-
-#[derive(Resource, Deref)]
-pub struct FallbackMesh(Handle<Mesh>);
-
 pub fn init_fallback_assets(
     mut commands: Commands,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -40,9 +31,6 @@ pub fn remove_fallback_avatar(
         commands.entity(entity).remove::<FallbackAvatar>();
     }
 }
-
-#[derive(Component)]
-pub struct FallbackChild;
 
 pub fn spawn_fallback_children(
     fallback_material: Res<FallbackMaterial>,
@@ -84,6 +72,18 @@ pub fn despawn_fallback_children(
         }
     }
 }
+
+#[derive(Component, Default)]
+pub struct FallbackAvatar;
+
+#[derive(Resource, Deref)]
+pub struct FallbackMaterial(Handle<StandardMaterial>);
+
+#[derive(Resource, Deref)]
+pub struct FallbackMesh(Handle<Mesh>);
+
+#[derive(Component)]
+pub struct FallbackChild;
 
 #[cfg(test)]
 mod tests {

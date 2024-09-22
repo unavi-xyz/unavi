@@ -140,13 +140,12 @@ pub(crate) fn setup_first_person(
 ) {
     for event in events.read() {
         if let AssetEvent::LoadedWithDependencies { id } = event {
-            for (avatar_ent, handle_vrm) in avatars.iter() {
-                if handle_vrm.id() != *id {
-                    continue;
-                }
+            let (ent, _) = avatars
+                .iter()
+                .find(|(_, handle)| handle.id() == *id)
+                .expect("Avatar not found");
 
-                writer.send(SetupFirstPerson(avatar_ent));
-            }
+            writer.send(SetupFirstPerson(ent));
         }
     }
 }
@@ -164,11 +163,10 @@ pub(crate) fn calc_eye_offset(
     }
 
     for ent in to_calc.iter() {
-        let Ok(handle_scene) = scenes.get(*ent) else {
-            continue;
-        };
+        let handle_scene = scenes.get(*ent).expect("Scene handle not found");
 
         let Some(scene) = scene_assets.get_mut(handle_scene) else {
+            // Asset might not be loaded yet.
             continue;
         };
 
@@ -280,9 +278,7 @@ pub(crate) fn rotate_avatar_head(
     mut commands: Commands,
 ) {
     for (head, offset) in avatars.iter() {
-        let Ok((mut head_tr, base)) = bones.get_mut(head.0) else {
-            continue;
-        };
+        let (mut head_tr, base) = bones.get_mut(head.0).expect("Avatar head bone not found");
 
         let Some(base) = base else {
             commands

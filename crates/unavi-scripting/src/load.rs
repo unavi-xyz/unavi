@@ -11,20 +11,7 @@ use crate::{
 
 use super::asset::Wasm;
 
-#[derive(Component)]
-pub struct LoadedScript;
-
-/// Script was processed to begin loading.
-#[derive(Component)]
-pub struct ProcessedScript;
-
-#[derive(Default, Deref)]
-pub struct ScriptMap(pub Arc<Mutex<HashMap<Entity, (Script, Store<StoreData>)>>>);
-
-#[derive(Resource, Deref)]
-pub struct DefaultMaterial(pub Handle<StandardMaterial>);
-
-pub fn load_scripts(
+pub(crate) fn load_scripts(
     assets: Res<Assets<Wasm>>,
     default_material: Res<DefaultMaterial>,
     mut commands: Commands,
@@ -92,3 +79,16 @@ pub fn load_scripts(
         }
     }
 }
+
+#[derive(Component)]
+pub struct LoadedScript;
+
+/// Script was processed to begin loading.
+#[derive(Component)]
+pub struct ProcessedScript;
+
+#[derive(Default, Deref)]
+pub struct ScriptMap(pub Arc<Mutex<HashMap<Entity, (Script, Store<StoreData>)>>>);
+
+#[derive(Resource, Deref)]
+pub struct DefaultMaterial(pub Handle<StandardMaterial>);

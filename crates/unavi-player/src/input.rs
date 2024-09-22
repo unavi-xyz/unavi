@@ -116,13 +116,13 @@ pub fn handle_raycast_input(
             };
 
             if hit.entity == ent {
-                if let Err(e) = handler.send(ScriptInputEvent::Raycast {
-                    action,
-                    origin: translation,
-                    orientation: rotation,
-                }) {
-                    error!("Failed to send script input event: {}", e);
-                };
+                handler
+                    .send(ScriptInputEvent::Raycast {
+                        action,
+                        origin: translation,
+                        orientation: rotation,
+                    })
+                    .expect("Failed to send script input event");
                 break;
             }
         }

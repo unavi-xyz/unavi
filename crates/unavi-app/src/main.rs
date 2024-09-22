@@ -5,6 +5,35 @@ use surrealdb::Surreal;
 use tracing::Level;
 use unavi_app::StartOptions;
 
+#[cfg(not(target_family = "wasm"))]
+fn main() {
+    use surrealdb::engine::local::Mem;
+    use unavi_app::native::{db::get_filesystem_db, update::check_for_updates};
+
+    let args = Args::parse();
+
+    if !args.no_update {
+        if let Err(e) = check_for_updates() {
+            panic!("Failed to update: {}", e);
+        };
+    }
+
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("Failed to build tokio runtime");
+
+    rt.block_on(async {
+        let db = match args.storage {
+            Storage::Filesystem => get_filesystem_db().await,
+            Storage::Memory => Surreal::new::<Mem>(()).await,
+        }
+        .expect("Failed to create SurrealDB");
+
+        unavi_app::start(db, args.to_options()).await;
+    });
+}
+
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen::prelude::wasm_bindgen(start)]
 pub async fn start() {
@@ -40,9 +69,7 @@ pub async fn start() {
         .await
         .expect("Failed to create SurrealDB.");
 
-    let opts = args_to_options(args);
-
-    unavi_app::start(db, opts).await;
+    unavi_app::start(db, args.to_options()).await;
 }
 
 #[cfg(target_family = "wasm")]
@@ -71,6 +98,22 @@ struct Args {
     xr: bool,
 }
 
+impl Args {
+    fn to_options(&self) -> StartOptions {
+        let log_level = match self.log_level {
+            LogLevel::Info => Level::INFO,
+            LogLevel::Debug => Level::DEBUG,
+            LogLevel::Trace => Level::TRACE,
+        };
+
+        StartOptions {
+            debug_physics: self.debug_physics,
+            log_level,
+            xr: self.xr,
+        }
+    }
+}
+
 #[derive(ValueEnum, Clone, Debug, Default)]
 enum LogLevel {
     #[default]
@@ -83,48 +126,4 @@ enum LogLevel {
 pub enum Storage {
     Filesystem,
     Memory,
-}
-
-#[cfg(not(target_family = "wasm"))]
-fn main() {
-    use surrealdb::engine::local::Mem;
-    use unavi_app::native::{db::get_filesystem_db, update::check_for_updates};
-
-    let args = Args::parse();
-
-    if !args.no_update {
-        if let Err(e) = check_for_updates() {
-            panic!("Failed to update: {}", e);
-        };
-    }
-
-    let rt = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .expect("Failed to build tokio runtime");
-
-    rt.block_on(async {
-        let db = match args.storage {
-            Storage::Filesystem => get_filesystem_db().await,
-            Storage::Memory => Surreal::new::<Mem>(()).await,
-        }
-        .expect("Failed to create SurrealDB");
-
-        let opts = args_to_options(args);
-        unavi_app::start(db, opts).await;
-    });
-}
-
-fn args_to_options(args: Args) -> StartOptions {
-    let log_level = match args.log_level {
-        LogLevel::Info => Level::INFO,
-        LogLevel::Debug => Level::DEBUG,
-        LogLevel::Trace => Level::TRACE,
-    };
-
-    StartOptions {
-        debug_physics: args.debug_physics,
-        log_level,
-        xr: args.xr,
-    }
 }

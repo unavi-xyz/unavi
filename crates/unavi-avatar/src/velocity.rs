@@ -7,8 +7,8 @@ pub struct AverageVelocity {
     pub alpha: f32,
     pub initialized: bool,
     pub prev_translation: Vec3,
-    /// If None, will use the current entity.
     /// The target entity to track the velocity of.
+    /// If set to None, the current entity will be used.
     pub target: Option<Entity>,
     pub velocity: Vec3,
 }
@@ -35,9 +35,9 @@ pub fn calc_average_velocity(
     for (entity, mut avg) in velocities.iter_mut() {
         let target = avg.target.unwrap_or(entity);
 
-        let Ok(transform) = transforms.get(target) else {
-            continue;
-        };
+        let transform = transforms
+            .get(target)
+            .expect("Velocity target has no transform");
 
         if !avg.initialized {
             avg.prev_translation.clone_from(&transform.translation);

@@ -100,6 +100,7 @@ pub async fn start(db: Surreal<Db>, opts: StartOptions) {
             primary_window: Some(Window {
                 prevent_default_event_handling: true,
                 title: "UNAVI".to_string(),
+                name: Some("unavi".to_string()),
                 ..default()
             }),
             ..default()

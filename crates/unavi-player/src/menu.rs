@@ -24,19 +24,21 @@ fn set_menu_animation(
     mut animation_players: Query<(&mut TargetAnimationWeights, &Parent)>,
     players: Query<&Children, With<LocalPlayer>>,
 ) {
-    for children in players.iter() {
-        for child in children.iter() {
-            if let Ok(avatar_ent) = avatars.get(*child) {
-                for (mut targets, parent) in animation_players.iter_mut() {
-                    if parent.get() != avatar_ent {
-                        continue;
-                    }
+    let Ok(children) = players.get_single() else {
+        return;
+    };
 
-                    if *open {
-                        targets.insert(AnimationName::Menu, 1.0);
-                    } else {
-                        targets.remove(&AnimationName::Menu);
-                    }
+    for child in children.iter() {
+        if let Ok(avatar_ent) = avatars.get(*child) {
+            for (mut targets, parent) in animation_players.iter_mut() {
+                if parent.get() != avatar_ent {
+                    continue;
+                }
+
+                if *open {
+                    targets.insert(AnimationName::Menu, 1.0);
+                } else {
+                    targets.remove(&AnimationName::Menu);
                 }
             }
         }

@@ -56,7 +56,7 @@ pub struct ScriptBundle {
 impl ScriptBundle {
     /// Loads a give WASM script from the assets folder, in the `namespace:package` format.
     pub fn load(name: &str, asset_server: &AssetServer) -> Self {
-        let (namespace, package) = name.split_once(':').unwrap();
+        let (namespace, package) = name.split_once(':').expect("Script name has no colon");
 
         let path = format!("{}/{}/{}.wasm", WASM_ASSETS_DIR, namespace, package);
         let wasm = asset_server.load(path);

@@ -7,11 +7,12 @@ pub(crate) mod utils;
 pub mod wired;
 
 pub(crate) fn add_host_apis(linker: &mut Linker<StoreData>) -> Result<()> {
-    wired::scene::add_to_linker(linker)?;
+    wired::dwn::add_to_linker(linker)?;
     wired::input::add_to_linker(linker)?;
     wired::log::add_to_linker(linker)?;
     wired::physics::add_to_linker(linker)?;
     wired::player::add_to_linker(linker)?;
+    wired::scene::add_to_linker(linker)?;
     Ok(())
 }
 
@@ -81,6 +82,16 @@ mod tests {
             tokio::time::sleep(Duration::from_secs_f32(0.1)).await;
             app.update();
         }
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn test_wired_dwn() {
+        test_script("test:wired-dwn").await;
+        assert!(!logs_contain("ERROR"));
+        assert!(!logs_contain("error"));
+        assert!(!logs_contain("WARN"));
+        assert!(!logs_contain("warn"));
     }
 
     #[tokio::test]

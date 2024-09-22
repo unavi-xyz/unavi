@@ -1,0 +1,8 @@
+package test:wired-dwn;
+
+world script {
+    include wired:script/script; 
+
+    import wired:dwn/api;
+    import wired:log/api;
+}

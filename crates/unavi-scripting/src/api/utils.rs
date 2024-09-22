@@ -1,9 +1,6 @@
 use std::cell::Cell;
 
-use bevy::{
-    log::{debug, warn},
-    prelude::*,
-};
+use bevy::{log::debug, prelude::*};
 use wasm_bridge::component::{Resource, ResourceTable, ResourceTableError};
 
 /// A `Cell<usize>` used for reference counting.
@@ -34,11 +31,7 @@ pub trait RefCount {
     fn decrement(&self) -> usize {
         let count = self.ref_count();
         let val = count.get();
-
-        if val == 0 {
-            warn!("Cannot decrement, ref_count already at 0");
-            return 0;
-        }
+        debug_assert!(val > 0, "Cannot decrement, ref count already at 0");
 
         let new = val - 1;
         count.set(new);

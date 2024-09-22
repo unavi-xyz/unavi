@@ -22,6 +22,8 @@ pub fn move_player(
     mut players: Query<(&Transform, &mut LocalPlayer, &mut TnuaController)>,
     time: Res<Time>,
 ) {
+    debug_assert!(*last_time > 0.0);
+
     for (transform, mut player, mut controller) in players.iter_mut() {
         let dir_forward = transform.rotation.mul_vec3(Vec3::NEG_Z);
         let dir_left = transform.rotation.mul_vec3(Vec3::NEG_X);

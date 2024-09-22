@@ -11519,6 +11519,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-wired-dwn"
+version = "0.0.10"
+dependencies = [
+ "wit-bindgen-rt",
+]
+
+[[package]]
 name = "test-wired-physics"
 version = "0.0.10"
 dependencies = [

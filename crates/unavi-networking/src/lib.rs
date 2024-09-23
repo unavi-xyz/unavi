@@ -1,10 +1,10 @@
 use bevy::prelude::*;
+use bevy_vr_controller::{animation::defaults::default_character_animations, player::PlayerBody};
 use bevy_vrm::VrmBundle;
 use thread::{NetworkingThread, NewSession, SessionRequest, SessionResponse};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
-use unavi_avatar::{default_character_animations, AvatarBundle, DEFAULT_VRM};
-use unavi_constants::player::PLAYER_HEIGHT;
-use unavi_player::LocalPlayer;
+use unavi_constants::player::{DEFAULT_VRM, PLAYER_HEIGHT};
+use unavi_player::id::PlayerId;
 use unavi_world::{InstanceRecord, InstanceServer};
 use wired_world::datagram_capnp;
 
@@ -68,13 +68,10 @@ fn connect_to_instances(
 #[derive(Component)]
 struct Tickrate(f32);
 
-#[derive(Component)]
-struct Player(u16);
-
 fn handle_session_response(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
-    mut players: Query<(&Player, &mut Transform)>,
+    mut players: Query<(&PlayerId, &mut Transform)>,
     mut sessions: Query<(Entity, &mut Session)>,
     mut spawned: Local<Vec<u16>>,
 ) {
@@ -109,8 +106,8 @@ fn handle_session_response(
                         spawned.push(player);
 
                         commands.spawn((
-                            AvatarBundle::new(default_character_animations(&asset_server)),
-                            Player(player),
+                            default_character_animations(&asset_server),
+                            PlayerId(player),
                             VrmBundle {
                                 vrm: asset_server.load(DEFAULT_VRM),
                                 scene_bundle: SceneBundle {
@@ -136,7 +133,7 @@ struct LastTransformPublish(f32);
 
 fn publish_transform(
     mut sessions: Query<(&Session, &Tickrate, &mut LastTransformPublish)>,
-    players: Query<&Transform, With<LocalPlayer>>,
+    players: Query<&Transform, With<PlayerBody>>,
     time: Res<Time>,
 ) {
     let elapsed = time.elapsed_seconds();

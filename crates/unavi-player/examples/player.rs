@@ -24,7 +24,6 @@ fn draw_gizmo(mut gizmos: Gizmos) {
 
 const GROUND_SIZE: f32 = 15.0;
 const GROUND_THICK: f32 = 0.2;
-const MIRROR_H: f32 = 3.0;
 
 fn setup_scene(
     mut ambient: ResMut<AmbientLight>,
@@ -54,7 +53,4 @@ fn setup_scene(
         RigidBody::Static,
         Collider::cuboid(GROUND_SIZE, GROUND_THICK, GROUND_SIZE),
     ));
-
-    let mut transform = Transform::from_xyz(0.0, 3.0, -10.0);
-    transform.look_at(Vec3::new(0.0, 0.5, 0.0), Vec3::new(0.0, 1.0, 0.0));
 }

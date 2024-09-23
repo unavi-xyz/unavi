@@ -10,6 +10,7 @@ mod asset;
 mod data;
 mod execution;
 mod load;
+mod raycast;
 
 pub use asset::*;
 
@@ -27,6 +28,7 @@ impl Plugin for ScriptingPlugin {
             .init_asset::<Wasm>()
             .init_non_send_resource::<ScriptMap>()
             .insert_resource(DefaultMaterial(default_material))
+            .add_systems(Update, raycast::handle_raycast_input)
             .add_systems(
                 FixedUpdate,
                 (

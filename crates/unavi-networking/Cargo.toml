@@ -12,12 +12,12 @@ workspace = true
 [dependencies]
 anyhow.workspace = true
 bevy.workspace = true
+bevy_vr_controller.workspace = true
 bevy_vrm.workspace = true
 capnp-rpc.workspace = true
 capnp.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
-unavi-avatar = { path = "../unavi-avatar" }
 unavi-constants = { path = "../unavi-constants" }
 unavi-player = { path = "../unavi-player" }
 unavi-world = { path = "../unavi-world" }

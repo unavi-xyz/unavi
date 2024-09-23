@@ -1,7 +1,10 @@
 use bevy::{ecs::system::RunSystemOnce, prelude::*};
-use unavi_avatar::animation::{AnimationName, AvatarAnimationNodes, TargetAnimationWeights};
+use bevy_vr_controller::{
+    animation::{weights::TargetAnimationWeights, AnimationName, AvatarAnimationNodes},
+    player::{CameraFreeLook, PlayerAvatar},
+};
 
-use crate::LocalPlayer;
+pub const MENU_ANIMATION: &str = "menu";
 
 #[derive(States, Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum MenuState {
@@ -20,26 +23,22 @@ pub(crate) fn close_menu(world: &mut World) {
 
 fn set_menu_animation(
     open: In<bool>,
-    avatars: Query<Entity, With<AvatarAnimationNodes>>,
+    avatars: Query<Entity, (With<AvatarAnimationNodes>, With<PlayerAvatar>)>,
     mut animation_players: Query<(&mut TargetAnimationWeights, &Parent)>,
-    players: Query<&Children, With<LocalPlayer>>,
+    mut free_look: Query<&mut CameraFreeLook>,
 ) {
-    let Ok(children) = players.get_single() else {
-        return;
-    };
+    for avatar_ent in avatars.iter() {
+        for (mut targets, parent) in animation_players.iter_mut() {
+            if parent.get() != avatar_ent {
+                continue;
+            }
 
-    for child in children.iter() {
-        if let Ok(avatar_ent) = avatars.get(*child) {
-            for (mut targets, parent) in animation_players.iter_mut() {
-                if parent.get() != avatar_ent {
-                    continue;
-                }
+            free_look.single_mut().0 = *open;
 
-                if *open {
-                    targets.insert(AnimationName::Menu, 1.0);
-                } else {
-                    targets.remove(&AnimationName::Menu);
-                }
+            if *open {
+                targets.insert(AnimationName::Other(MENU_ANIMATION), 1.0);
+            } else {
+                targets.remove(&AnimationName::Other(MENU_ANIMATION));
             }
         }
     }

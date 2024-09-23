@@ -1,14 +1,12 @@
 use bevy::prelude::*;
-use bevy_vrm::{loader::Vrm, BoneName};
+use bevy_vr_controller::player::PlayerAvatar;
+use bevy_vrm::BoneName;
+use unavi_constants::player::LOCAL_PLAYER_ID;
+use unavi_player::id::PlayerId;
 
 use crate::{api::utils::RefResource, execution::ScriptTickrate, load::ScriptMap};
 
 use super::bindings::api::Node;
-
-pub const LOCAL_PLAYER_ID: usize = 0;
-
-#[derive(Component, PartialEq, Eq)]
-pub struct PlayerId(pub usize);
 
 #[derive(Component)]
 pub struct CopyTransform(pub Entity);
@@ -19,7 +17,7 @@ pub struct CopyGlobalTransform(pub Entity);
 pub(crate) fn update_player_skeletons(
     bones: Query<(Entity, &PlayerId, &BoneName, &Transform)>,
     mut commands: Commands,
-    players: Query<(Entity, &PlayerId), With<Handle<Vrm>>>,
+    players: Query<(Entity, &PlayerId), With<PlayerAvatar>>,
     script_map: NonSendMut<ScriptMap>,
     scripts: Query<(Entity, &ScriptTickrate)>,
 ) {

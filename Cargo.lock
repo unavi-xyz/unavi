@@ -926,7 +926,7 @@ dependencies = [
  "bevy_core",
  "bevy_core_pipeline",
  "bevy_ecs",
- "bevy_egui 0.28.0",
+ "bevy_egui",
  "bevy_hierarchy",
  "bevy_log",
  "bevy_math",
@@ -1280,29 +1280,6 @@ dependencies = [
  "wasm-bindgen-futures",
  "web-sys",
  "webbrowser",
- "winit",
-]
-
-[[package]]
-name = "bevy_egui"
-version = "0.29.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "128438a8163e49528207aabf20d3ff0890fd6be0f0054626915995efac87922b"
-dependencies = [
- "arboard",
- "bevy",
- "bytemuck",
- "console_log",
- "crossbeam-channel",
- "egui",
- "js-sys",
- "log",
- "thread_local",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
- "webbrowser",
- "wgpu-types",
  "winit",
 ]
 
@@ -1722,8 +1699,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_shader_mtoon"
-version = "0.0.11"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#88527527195a83b691679523f83a468f46cef48b"
+version = "0.0.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f88ea218a2c31a20e59b06fe0c6414b4693361d6b698deb916d5abf454b981f7"
 dependencies = [
  "bevy",
  "bevy_mod_outline",
@@ -1903,9 +1881,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_vr_controller"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "249633f80a59ba4af84bbd9c3bc531c7a951ecd75241ee71bcee914090a0b049"
+dependencies = [
+ "avian3d",
+ "bevy",
+ "bevy-tnua",
+ "bevy-tnua-avian3d",
+ "bevy_vrm",
+ "paste",
+ "web-sys",
+]
+
+[[package]]
 name = "bevy_vrm"
-version = "0.0.11"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#88527527195a83b691679523f83a468f46cef48b"
+version = "0.0.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3dd6f760b00b7252013dccd7e87a25bde37bb616f0e52f09c49fb9857d1255b9"
 dependencies = [
  "bevy",
  "bevy_gltf_kun",
@@ -5243,8 +5237,9 @@ dependencies = [
 
 [[package]]
 name = "gltf_kun_vrm"
-version = "0.0.11"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#88527527195a83b691679523f83a468f46cef48b"
+version = "0.0.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a6b0188e36ad91ca82729d27b99eabcbf0ef68d2c36a8532628f5236449f6f24"
 dependencies = [
  "gltf_kun",
  "serde",
@@ -6263,9 +6258,9 @@ dependencies = [
 
 [[package]]
 name = "js-sys"
-version = "0.3.69"
+version = "0.3.70"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29c15563dc2726973df627357ce0c9ddddbea194836909d655df6a75d2cf296d"
+checksum = "1868808506b929d7b0cfa8f75951347aa71bb21144b7791bae35d9bccfcfe37a"
 dependencies = [
  "wasm-bindgen",
 ]
@@ -10169,8 +10164,9 @@ dependencies = [
 
 [[package]]
 name = "serde_vrm"
-version = "0.0.11"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#88527527195a83b691679523f83a468f46cef48b"
+version = "0.0.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c1f26a75514cfb16d00fa4ba00b718d3266572a477610739aa1ef1a8c960193"
 dependencies = [
  "bevy",
  "serde",
@@ -12036,20 +12032,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "unavi-avatar"
-version = "0.0.10"
-dependencies = [
- "avian3d",
- "bevy",
- "bevy-inspector-egui",
- "bevy_egui 0.29.0",
- "bevy_panorbit_camera",
- "bevy_vrm",
- "paste",
- "unavi-constants",
-]
-
-[[package]]
 name = "unavi-constants"
 version = "0.0.10"
 dependencies = [
@@ -12069,12 +12051,12 @@ version = "0.0.10"
 dependencies = [
  "anyhow",
  "bevy",
+ "bevy_vr_controller",
  "bevy_vrm",
  "capnp",
  "capnp-rpc",
  "thiserror",
  "tokio",
- "unavi-avatar",
  "unavi-constants",
  "unavi-player",
  "unavi-world",
@@ -12094,13 +12076,9 @@ version = "0.0.10"
 dependencies = [
  "avian3d",
  "bevy",
- "bevy-tnua",
- "bevy-tnua-avian3d",
+ "bevy_vr_controller",
  "bevy_vrm",
- "unavi-avatar",
  "unavi-constants",
- "unavi-scripting",
- "web-sys",
 ]
 
 [[package]]
@@ -12120,6 +12098,7 @@ dependencies = [
  "bevy-inspector-egui",
  "bevy_async_task",
  "bevy_panorbit_camera",
+ "bevy_vr_controller",
  "bevy_vrm",
  "crossbeam",
  "tokio",
@@ -12472,19 +12451,20 @@ checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
 
 [[package]]
 name = "wasm-bindgen"
-version = "0.2.92"
+version = "0.2.93"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4be2531df63900aeb2bca0daaaddec08491ee64ceecbee5076636a3b026795a8"
+checksum = "a82edfc16a6c469f5f44dc7b571814045d60404b55a0ee849f9bcfa2e63dd9b5"
 dependencies = [
  "cfg-if",
+ "once_cell",
  "wasm-bindgen-macro",
 ]
 
 [[package]]
 name = "wasm-bindgen-backend"
-version = "0.2.92"
+version = "0.2.93"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "614d787b966d3989fa7bb98a654e369c762374fd3213d212cfc0251257e747da"
+checksum = "9de396da306523044d3302746f1208fa71d7532227f15e347e2d93e4145dd77b"
 dependencies = [
  "bumpalo",
  "log",
@@ -12509,9 +12489,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro"
-version = "0.2.92"
+version = "0.2.93"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1f8823de937b71b9460c0c34e25f3da88250760bec0ebac694b49997550d726"
+checksum = "585c4c91a46b072c92e908d99cb1dcdf95c5218eeb6f3bf1efa991ee7a68cccf"
 dependencies = [
  "quote",
  "wasm-bindgen-macro-support",
@@ -12519,9 +12499,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro-support"
-version = "0.2.92"
+version = "0.2.93"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e94f17b526d0a461a191c78ea52bbce64071ed5c04c9ffe424dcb38f74171bb7"
+checksum = "afc340c74d9005395cf9dd098506f7f44e38f2b4a21c6aaacf9a105ea5e1e836"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -12532,9 +12512,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-shared"
-version = "0.2.92"
+version = "0.2.93"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af190c94f2773fdb3729c55b007a722abb5384da03bc0986df4c289bf5567e96"
+checksum = "c62a0a307cb4a311d3a07867860911ca130c3494e8c2719593806c08bc5d0484"
 
 [[package]]
 name = "wasm-bridge"
@@ -13130,9 +13110,9 @@ dependencies = [
 
 [[package]]
 name = "web-sys"
-version = "0.3.69"
+version = "0.3.70"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77afa9a11836342370f4817622a2f0f418b134426d91a82dfb48f532d2ec13ef"
+checksum = "26fdeaafd9bd129f65e7c031593c24d62186301e0c72c8978fa1678be7d532c0"
 dependencies = [
  "js-sys",
  "wasm-bindgen",

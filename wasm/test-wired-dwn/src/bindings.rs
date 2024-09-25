@@ -6,7 +6,8 @@ pub mod wired {
         pub mod dwn {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             #[derive(Clone)]
             pub struct EncryptedData {
@@ -17,10 +18,7 @@ pub mod wired {
                 pub tag: _rt::String,
             }
             impl ::core::fmt::Debug for EncryptedData {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("EncryptedData")
                         .field("alg", &self.alg)
                         .field("ciphertext", &self.ciphertext)
@@ -36,17 +34,10 @@ pub mod wired {
                 Encrypted(EncryptedData),
             }
             impl ::core::fmt::Debug for Data {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
-                        Data::Base64(e) => {
-                            f.debug_tuple("Data::Base64").field(e).finish()
-                        }
-                        Data::Encrypted(e) => {
-                            f.debug_tuple("Data::Encrypted").field(e).finish()
-                        }
+                        Data::Base64(e) => f.debug_tuple("Data::Base64").field(e).finish(),
+                        Data::Encrypted(e) => f.debug_tuple("Data::Encrypted").field(e).finish(),
                     }
                 }
             }
@@ -56,10 +47,7 @@ pub mod wired {
                 pub data: Option<Data>,
             }
             impl ::core::fmt::Debug for Message {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Message")
                         .field("record-id", &self.record_id)
                         .field("data", &self.data)
@@ -72,10 +60,7 @@ pub mod wired {
                 pub detail: Option<_rt::String>,
             }
             impl ::core::fmt::Debug for Status {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Status")
                         .field("code", &self.code)
                         .field("detail", &self.detail)
@@ -88,10 +73,7 @@ pub mod wired {
                 pub status: Status,
             }
             impl ::core::fmt::Debug for QueryReply {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("QueryReply")
                         .field("entries", &self.entries)
                         .field("status", &self.status)
@@ -215,9 +197,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 28]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 28],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 28]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:dwn/dwn")]
@@ -246,11 +226,8 @@ pub mod wired {
                                             let l4 = *base.add(0).cast::<*mut u8>();
                                             let l5 = *base.add(4).cast::<usize>();
                                             let len6 = l5;
-                                            let bytes6 = _rt::Vec::from_raw_parts(
-                                                l4.cast(),
-                                                len6,
-                                                len6,
-                                            );
+                                            let bytes6 =
+                                                _rt::Vec::from_raw_parts(l4.cast(), len6, len6);
                                             let l7 = i32::from(*base.add(8).cast::<u8>());
                                             Message {
                                                 record_id: _rt::string_lift(bytes6),
@@ -258,12 +235,19 @@ pub mod wired {
                                                     0 => None,
                                                     1 => {
                                                         let e = {
-                                                            let l8 = i32::from(*base.add(12).cast::<u8>());
+                                                            let l8 = i32::from(
+                                                                *base.add(12).cast::<u8>(),
+                                                            );
                                                             let v30 = match l8 {
                                                                 0 => {
                                                                     let e30 = {
-                                                                        let l9 = *base.add(16).cast::<*mut u8>();
-                                                                        let l10 = *base.add(20).cast::<usize>();
+                                                                        let l9 = *base
+                                                                            .add(16)
+                                                                            .cast::<*mut u8>(
+                                                                        );
+                                                                        let l10 = *base
+                                                                            .add(20)
+                                                                            .cast::<usize>();
                                                                         let len11 = l10;
                                                                         let bytes11 = _rt::Vec::from_raw_parts(
                                                                             l9.cast(),
@@ -275,55 +259,96 @@ pub mod wired {
                                                                     Data::Base64(e30)
                                                                 }
                                                                 n => {
-                                                                    debug_assert_eq!(n, 1, "invalid enum discriminant");
+                                                                    debug_assert_eq!(
+                                                                        n, 1,
+                                                                        "invalid enum discriminant"
+                                                                    );
                                                                     let e30 = {
-                                                                        let l12 = *base.add(16).cast::<*mut u8>();
-                                                                        let l13 = *base.add(20).cast::<usize>();
+                                                                        let l12 = *base
+                                                                            .add(16)
+                                                                            .cast::<*mut u8>(
+                                                                        );
+                                                                        let l13 = *base
+                                                                            .add(20)
+                                                                            .cast::<usize>();
                                                                         let len14 = l13;
                                                                         let bytes14 = _rt::Vec::from_raw_parts(
                                                                             l12.cast(),
                                                                             len14,
                                                                             len14,
                                                                         );
-                                                                        let l15 = *base.add(24).cast::<*mut u8>();
-                                                                        let l16 = *base.add(28).cast::<usize>();
+                                                                        let l15 = *base
+                                                                            .add(24)
+                                                                            .cast::<*mut u8>(
+                                                                        );
+                                                                        let l16 = *base
+                                                                            .add(28)
+                                                                            .cast::<usize>();
                                                                         let len17 = l16;
                                                                         let bytes17 = _rt::Vec::from_raw_parts(
                                                                             l15.cast(),
                                                                             len17,
                                                                             len17,
                                                                         );
-                                                                        let l18 = *base.add(32).cast::<*mut u8>();
-                                                                        let l19 = *base.add(36).cast::<usize>();
+                                                                        let l18 = *base
+                                                                            .add(32)
+                                                                            .cast::<*mut u8>(
+                                                                        );
+                                                                        let l19 = *base
+                                                                            .add(36)
+                                                                            .cast::<usize>();
                                                                         let len20 = l19;
                                                                         let bytes20 = _rt::Vec::from_raw_parts(
                                                                             l18.cast(),
                                                                             len20,
                                                                             len20,
                                                                         );
-                                                                        let l21 = *base.add(40).cast::<*mut u8>();
-                                                                        let l22 = *base.add(44).cast::<usize>();
+                                                                        let l21 = *base
+                                                                            .add(40)
+                                                                            .cast::<*mut u8>(
+                                                                        );
+                                                                        let l22 = *base
+                                                                            .add(44)
+                                                                            .cast::<usize>();
                                                                         let base26 = l21;
                                                                         let len26 = l22;
-                                                                        let mut result26 = _rt::Vec::with_capacity(len26);
+                                                                        let mut result26 =
+                                                                            _rt::Vec::with_capacity(
+                                                                                len26,
+                                                                            );
                                                                         for i in 0..len26 {
-                                                                            let base = base26.add(i * 8);
+                                                                            let base =
+                                                                                base26.add(i * 8);
                                                                             let e26 = {
                                                                                 let l23 = *base.add(0).cast::<*mut u8>();
-                                                                                let l24 = *base.add(4).cast::<usize>();
+                                                                                let l24 = *base
+                                                                                    .add(4)
+                                                                                    .cast::<usize>(
+                                                                                    );
                                                                                 let len25 = l24;
                                                                                 let bytes25 = _rt::Vec::from_raw_parts(
                                                                                     l23.cast(),
                                                                                     len25,
                                                                                     len25,
                                                                                 );
-                                                                                _rt::string_lift(bytes25)
+                                                                                _rt::string_lift(
+                                                                                    bytes25,
+                                                                                )
                                                                             };
                                                                             result26.push(e26);
                                                                         }
-                                                                        _rt::cabi_dealloc(base26, len26 * 8, 4);
-                                                                        let l27 = *base.add(48).cast::<*mut u8>();
-                                                                        let l28 = *base.add(52).cast::<usize>();
+                                                                        _rt::cabi_dealloc(
+                                                                            base26,
+                                                                            len26 * 8,
+                                                                            4,
+                                                                        );
+                                                                        let l27 = *base
+                                                                            .add(48)
+                                                                            .cast::<*mut u8>(
+                                                                        );
+                                                                        let l28 = *base
+                                                                            .add(52)
+                                                                            .cast::<usize>();
                                                                         let len29 = l28;
                                                                         let bytes29 = _rt::Vec::from_raw_parts(
                                                                             l27.cast(),
@@ -331,11 +356,20 @@ pub mod wired {
                                                                             len29,
                                                                         );
                                                                         EncryptedData {
-                                                                            alg: _rt::string_lift(bytes14),
-                                                                            ciphertext: _rt::string_lift(bytes17),
-                                                                            iv: _rt::string_lift(bytes20),
+                                                                            alg: _rt::string_lift(
+                                                                                bytes14,
+                                                                            ),
+                                                                            ciphertext:
+                                                                                _rt::string_lift(
+                                                                                    bytes17,
+                                                                                ),
+                                                                            iv: _rt::string_lift(
+                                                                                bytes20,
+                                                                            ),
                                                                             recipients: result26,
-                                                                            tag: _rt::string_lift(bytes29),
+                                                                            tag: _rt::string_lift(
+                                                                                bytes29,
+                                                                            ),
                                                                         }
                                                                     };
                                                                     Data::Encrypted(e30)
@@ -411,9 +445,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 12],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:dwn/dwn")]
@@ -434,11 +466,7 @@ pub mod wired {
                                     let l2 = *ptr0.add(4).cast::<*mut u8>();
                                     let l3 = *ptr0.add(8).cast::<usize>();
                                     let len4 = l3;
-                                    let bytes4 = _rt::Vec::from_raw_parts(
-                                        l2.cast(),
-                                        len4,
-                                        len4,
-                                    );
+                                    let bytes4 = _rt::Vec::from_raw_parts(l2.cast(), len4, len4);
                                     _rt::string_lift(bytes4)
                                 };
                                 Some(e)
@@ -471,12 +499,7 @@ pub mod wired {
                         fn wit_import(_: i32, _: i32, _: *mut u8, _: usize) {
                             unreachable!()
                         }
-                        wit_import(
-                            (self).handle() as i32,
-                            result1_0,
-                            result1_1,
-                            result1_2,
-                        );
+                        wit_import((self).handle() as i32, result1_0, result1_1, result1_2);
                     }
                 }
             }
@@ -486,9 +509,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 12],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:dwn/dwn")]
@@ -509,11 +530,7 @@ pub mod wired {
                                     let l2 = *ptr0.add(4).cast::<*mut u8>();
                                     let l3 = *ptr0.add(8).cast::<usize>();
                                     let len4 = l3;
-                                    let bytes4 = _rt::Vec::from_raw_parts(
-                                        l2.cast(),
-                                        len4,
-                                        len4,
-                                    );
+                                    let bytes4 = _rt::Vec::from_raw_parts(l2.cast(), len4, len4);
                                     _rt::string_lift(bytes4)
                                 };
                                 Some(e)
@@ -546,12 +563,7 @@ pub mod wired {
                         fn wit_import(_: i32, _: i32, _: *mut u8, _: usize) {
                             unreachable!()
                         }
-                        wit_import(
-                            (self).handle() as i32,
-                            result1_0,
-                            result1_1,
-                            result1_2,
-                        );
+                        wit_import((self).handle() as i32, result1_0, result1_1, result1_2);
                     }
                 }
             }
@@ -561,9 +573,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 12],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:dwn/dwn")]
@@ -584,11 +594,7 @@ pub mod wired {
                                     let l2 = *ptr0.add(4).cast::<*mut u8>();
                                     let l3 = *ptr0.add(8).cast::<usize>();
                                     let len4 = l3;
-                                    let bytes4 = _rt::Vec::from_raw_parts(
-                                        l2.cast(),
-                                        len4,
-                                        len4,
-                                    );
+                                    let bytes4 = _rt::Vec::from_raw_parts(l2.cast(), len4, len4);
                                     _rt::string_lift(bytes4)
                                 };
                                 Some(e)
@@ -621,12 +627,7 @@ pub mod wired {
                         fn wit_import(_: i32, _: i32, _: *mut u8, _: usize) {
                             unreachable!()
                         }
-                        wit_import(
-                            (self).handle() as i32,
-                            result1_0,
-                            result1_1,
-                            result1_2,
-                        );
+                        wit_import((self).handle() as i32, result1_0, result1_1, result1_2);
                     }
                 }
             }
@@ -673,7 +674,8 @@ pub mod wired {
         pub mod api {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             pub type Dwn = super::super::super::wired::dwn::dwn::Dwn;
             #[allow(unused_unsafe, clippy::all)]
             /// Get the local user's DWN.
@@ -719,7 +721,8 @@ pub mod wired {
         pub mod api {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             #[repr(u8)]
             #[derive(Clone, Copy, Eq, PartialEq)]
             pub enum LogLevel {
@@ -729,10 +732,7 @@ pub mod wired {
                 Error,
             }
             impl ::core::fmt::Debug for LogLevel {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
                         LogLevel::Debug => f.debug_tuple("LogLevel::Debug").finish(),
                         LogLevel::Info => f.debug_tuple("LogLevel::Info").finish(),
@@ -788,7 +788,8 @@ pub mod exports {
             pub mod types {
                 #[used]
                 #[doc(hidden)]
-                static __FORCE_SECTION_REF: fn() = super::super::super::super::__link_custom_section_describing_imports;
+                static __FORCE_SECTION_REF: fn() =
+                    super::super::super::super::__link_custom_section_describing_imports;
                 use super::super::super::super::_rt;
                 #[derive(Debug)]
                 #[repr(transparent)]
@@ -805,9 +806,7 @@ pub mod exports {
                     pub fn new<T: GuestScript>(val: T) -> Self {
                         Self::type_guard::<T>();
                         let val: _ScriptRep<T> = Some(val);
-                        let ptr: *mut _ScriptRep<T> = _rt::Box::into_raw(
-                            _rt::Box::new(val),
-                        );
+                        let ptr: *mut _ScriptRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
                         unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
                     }
                     /// Gets access to the underlying `T` which represents this resource.
@@ -845,12 +844,13 @@ pub mod exports {
                         use core::any::TypeId;
                         static mut LAST_TYPE: Option<TypeId> = None;
                         unsafe {
-                            assert!(! cfg!(target_feature = "atomics"));
+                            assert!(!cfg!(target_feature = "atomics"));
                             let id = TypeId::of::<T>();
                             match LAST_TYPE {
                                 Some(ty) => {
                                     assert!(
-                                        ty == id, "cannot use two types with this resource type"
+                                        ty == id,
+                                        "cannot use two types with this resource type"
                                     )
                                 }
                                 None => LAST_TYPE = Some(id),
@@ -912,7 +912,8 @@ pub mod exports {
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
                 pub unsafe fn _export_constructor_script_cabi<T: GuestScript>() -> i32 {
-                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
                     let result0 = Script::new(T::new());
                     (result0).take_handle() as i32
                 }
@@ -922,7 +923,8 @@ pub mod exports {
                     arg0: *mut u8,
                     arg1: f32,
                 ) {
-                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
                     T::update(ScriptBorrow::lift(arg0 as u32 as usize).get(), arg1);
                 }
                 pub trait Guest {
@@ -1062,7 +1064,9 @@ mod _rt {
     }
     impl<T: WasmResource> fmt::Debug for Resource<T> {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            f.debug_struct("Resource").field("handle", &self.handle).finish()
+            f.debug_struct("Resource")
+                .field("handle", &self.handle)
+                .finish()
         }
     }
     impl<T: WasmResource> Drop for Resource<T> {

@@ -6,7 +6,8 @@ pub mod unavi {
         pub mod container {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Vec3 = super::super::super::wired::math::types::Vec3;
             pub type Node = super::super::super::wired::scene::node::Node;
@@ -18,10 +19,7 @@ pub mod unavi {
                 Start,
             }
             impl ::core::fmt::Debug for Alignment {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
                         Alignment::Center => f.debug_tuple("Alignment::Center").finish(),
                         Alignment::End => f.debug_tuple("Alignment::End").finish(),
@@ -100,11 +98,7 @@ pub mod unavi {
                         fn wit_import(_: f32, _: f32, _: f32) -> i32 {
                             unreachable!()
                         }
-                        let ret = wit_import(
-                            _rt::as_f32(x0),
-                            _rt::as_f32(y0),
-                            _rt::as_f32(z0),
-                        );
+                        let ret = wit_import(_rt::as_f32(x0), _rt::as_f32(y0), _rt::as_f32(z0));
                         Container::from_handle(ret as u32)
                     }
                 }
@@ -146,9 +140,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::node::Node::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
                     }
                 }
             }
@@ -169,9 +161,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::node::Node::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
                     }
                 }
             }
@@ -181,9 +171,7 @@ pub mod unavi {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "unavi:layout/container")]
@@ -256,9 +244,7 @@ pub mod unavi {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 12],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "unavi:layout/container")]
@@ -429,7 +415,8 @@ pub mod unavi {
         pub mod api {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Transform = super::super::super::wired::math::types::Transform;
             pub type Node = super::super::super::wired::scene::node::Node;
@@ -515,9 +502,7 @@ pub mod unavi {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "unavi:scene/api")]
@@ -611,9 +596,7 @@ pub mod unavi {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "unavi:scene/api")]
@@ -662,9 +645,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::node::Node::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
                     }
                 }
             }
@@ -710,9 +691,7 @@ pub mod unavi {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 40]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 40],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 40]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "unavi:scene/api")]
@@ -882,7 +861,8 @@ pub mod unavi {
         pub mod api {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Vec2 = super::super::super::wired::math::types::Vec2;
             pub type Vec3 = super::super::super::wired::math::types::Vec3;
@@ -1079,10 +1059,7 @@ pub mod unavi {
                 pub subdivisions: u8,
             }
             impl ::core::fmt::Debug for SphereIco {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("SphereIco")
                         .field("subdivisions", &self.subdivisions)
                         .finish()
@@ -1095,10 +1072,7 @@ pub mod unavi {
                 pub stacks: u8,
             }
             impl ::core::fmt::Debug for SphereUv {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("SphereUv")
                         .field("sectors", &self.sectors)
                         .field("stacks", &self.stacks)
@@ -1113,17 +1087,10 @@ pub mod unavi {
                 Uv(SphereUv),
             }
             impl ::core::fmt::Debug for SphereKind {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
-                        SphereKind::Ico(e) => {
-                            f.debug_tuple("SphereKind::Ico").field(e).finish()
-                        }
-                        SphereKind::Uv(e) => {
-                            f.debug_tuple("SphereKind::Uv").field(e).finish()
-                        }
+                        SphereKind::Ico(e) => f.debug_tuple("SphereKind::Ico").field(e).finish(),
+                        SphereKind::Uv(e) => f.debug_tuple("SphereKind::Uv").field(e).finish(),
                     }
                 }
             }
@@ -1205,10 +1172,7 @@ pub mod unavi {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn new(size: Vec2) -> Self {
                     unsafe {
-                        let super::super::super::wired::math::types::Vec2 {
-                            x: x0,
-                            y: y0,
-                        } = size;
+                        let super::super::super::wired::math::types::Vec2 { x: x0, y: y0 } = size;
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "unavi:shapes/api")]
                         extern "C" {
@@ -1230,9 +1194,7 @@ pub mod unavi {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "unavi:shapes/api")]
@@ -1247,10 +1209,7 @@ pub mod unavi {
                         wit_import((self).handle() as i32, ptr0);
                         let l1 = *ptr0.add(0).cast::<f32>();
                         let l2 = *ptr0.add(4).cast::<f32>();
-                        super::super::super::wired::math::types::Vec2 {
-                            x: l1,
-                            y: l2,
-                        }
+                        super::super::super::wired::math::types::Vec2 { x: l1, y: l2 }
                     }
                 }
             }
@@ -1258,10 +1217,7 @@ pub mod unavi {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn set_size(&self, value: Vec2) {
                     unsafe {
-                        let super::super::super::wired::math::types::Vec2 {
-                            x: x0,
-                            y: y0,
-                        } = value;
+                        let super::super::super::wired::math::types::Vec2 { x: x0, y: y0 } = value;
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "unavi:shapes/api")]
                         extern "C" {
@@ -1272,11 +1228,7 @@ pub mod unavi {
                         fn wit_import(_: i32, _: f32, _: f32) {
                             unreachable!()
                         }
-                        wit_import(
-                            (self).handle() as i32,
-                            _rt::as_f32(x0),
-                            _rt::as_f32(y0),
-                        );
+                        wit_import((self).handle() as i32, _rt::as_f32(x0), _rt::as_f32(y0));
                     }
                 }
             }
@@ -1296,9 +1248,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::mesh::Mesh::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::mesh::Mesh::from_handle(ret as u32)
                     }
                 }
             }
@@ -1318,9 +1268,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::node::Node::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
                     }
                 }
             }
@@ -1340,9 +1288,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::node::Node::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
                     }
                 }
             }
@@ -1456,9 +1402,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::mesh::Mesh::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::mesh::Mesh::from_handle(ret as u32)
                     }
                 }
             }
@@ -1478,9 +1422,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::node::Node::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
                     }
                 }
             }
@@ -1500,9 +1442,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::node::Node::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
                     }
                 }
             }
@@ -1510,10 +1450,8 @@ pub mod unavi {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn new(half_size: Vec2) -> Self {
                     unsafe {
-                        let super::super::super::wired::math::types::Vec2 {
-                            x: x0,
-                            y: y0,
-                        } = half_size;
+                        let super::super::super::wired::math::types::Vec2 { x: x0, y: y0 } =
+                            half_size;
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "unavi:shapes/api")]
                         extern "C" {
@@ -1535,9 +1473,7 @@ pub mod unavi {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "unavi:shapes/api")]
@@ -1552,10 +1488,7 @@ pub mod unavi {
                         wit_import((self).handle() as i32, ptr0);
                         let l1 = *ptr0.add(0).cast::<f32>();
                         let l2 = *ptr0.add(4).cast::<f32>();
-                        super::super::super::wired::math::types::Vec2 {
-                            x: l1,
-                            y: l2,
-                        }
+                        super::super::super::wired::math::types::Vec2 { x: l1, y: l2 }
                     }
                 }
             }
@@ -1563,10 +1496,7 @@ pub mod unavi {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn set_half_size(&self, value: Vec2) {
                     unsafe {
-                        let super::super::super::wired::math::types::Vec2 {
-                            x: x0,
-                            y: y0,
-                        } = value;
+                        let super::super::super::wired::math::types::Vec2 { x: x0, y: y0 } = value;
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "unavi:shapes/api")]
                         extern "C" {
@@ -1577,11 +1507,7 @@ pub mod unavi {
                         fn wit_import(_: i32, _: f32, _: f32) {
                             unreachable!()
                         }
-                        wit_import(
-                            (self).handle() as i32,
-                            _rt::as_f32(x0),
-                            _rt::as_f32(y0),
-                        );
+                        wit_import((self).handle() as i32, _rt::as_f32(x0), _rt::as_f32(y0));
                     }
                 }
             }
@@ -1639,9 +1565,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::mesh::Mesh::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::mesh::Mesh::from_handle(ret as u32)
                     }
                 }
             }
@@ -1661,9 +1585,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::node::Node::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
                     }
                 }
             }
@@ -1683,9 +1605,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::node::Node::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
                     }
                 }
             }
@@ -1918,9 +1838,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::mesh::Mesh::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::mesh::Mesh::from_handle(ret as u32)
                     }
                 }
             }
@@ -1940,9 +1858,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::node::Node::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
                     }
                 }
             }
@@ -1962,9 +1878,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::node::Node::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
                     }
                 }
             }
@@ -1987,11 +1901,7 @@ pub mod unavi {
                         fn wit_import(_: f32, _: f32, _: f32) -> i32 {
                             unreachable!()
                         }
-                        let ret = wit_import(
-                            _rt::as_f32(x0),
-                            _rt::as_f32(y0),
-                            _rt::as_f32(z0),
-                        );
+                        let ret = wit_import(_rt::as_f32(x0), _rt::as_f32(y0), _rt::as_f32(z0));
                         Cuboid::from_handle(ret as u32)
                     }
                 }
@@ -2002,9 +1912,7 @@ pub mod unavi {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 12],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "unavi:shapes/api")]
@@ -2072,9 +1980,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::mesh::Mesh::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::mesh::Mesh::from_handle(ret as u32)
                     }
                 }
             }
@@ -2094,9 +2000,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::node::Node::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
                     }
                 }
             }
@@ -2116,9 +2020,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::node::Node::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
                     }
                 }
             }
@@ -2203,9 +2105,7 @@ pub mod unavi {
                     unsafe {
                         #[repr(align(1))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 3]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 3],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 3]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "unavi:shapes/api")]
@@ -2252,11 +2152,16 @@ pub mod unavi {
                     unsafe {
                         let (result2_0, result2_1, result2_2) = match value {
                             SphereKind::Ico(e) => {
-                                let SphereIco { subdivisions: subdivisions0 } = e;
+                                let SphereIco {
+                                    subdivisions: subdivisions0,
+                                } = e;
                                 (0i32, _rt::as_i32(subdivisions0), 0i32)
                             }
                             SphereKind::Uv(e) => {
-                                let SphereUv { sectors: sectors1, stacks: stacks1 } = e;
+                                let SphereUv {
+                                    sectors: sectors1,
+                                    stacks: stacks1,
+                                } = e;
                                 (1i32, _rt::as_i32(sectors1), _rt::as_i32(stacks1))
                             }
                         };
@@ -2270,12 +2175,7 @@ pub mod unavi {
                         fn wit_import(_: i32, _: i32, _: i32, _: i32) {
                             unreachable!()
                         }
-                        wit_import(
-                            (self).handle() as i32,
-                            result2_0,
-                            result2_1,
-                            result2_2,
-                        );
+                        wit_import((self).handle() as i32, result2_0, result2_1, result2_2);
                     }
                 }
             }
@@ -2295,9 +2195,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::mesh::Mesh::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::mesh::Mesh::from_handle(ret as u32)
                     }
                 }
             }
@@ -2317,9 +2215,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::node::Node::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
                     }
                 }
             }
@@ -2339,9 +2235,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::node::Node::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
                     }
                 }
             }
@@ -2417,9 +2311,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::node::Node::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
                     }
                 }
             }
@@ -2431,7 +2323,8 @@ pub mod unavi {
         pub mod api {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             #[allow(unused_unsafe, clippy::all)]
             pub fn update_ui(delta: f32) {
@@ -2454,7 +2347,8 @@ pub mod unavi {
         pub mod button {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Container = super::super::super::unavi::layout::container::Container;
             /// 3D interactable button.
@@ -2581,7 +2475,8 @@ pub mod unavi {
         pub mod text {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Alignment = super::super::super::unavi::layout::container::Alignment;
             pub type Container = super::super::super::unavi::layout::container::Container;
@@ -2631,14 +2526,9 @@ pub mod unavi {
                 Word,
             }
             impl ::core::fmt::Debug for WordWrap {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
-                        WordWrap::Character => {
-                            f.debug_tuple("WordWrap::Character").finish()
-                        }
+                        WordWrap::Character => f.debug_tuple("WordWrap::Character").finish(),
                         WordWrap::Word => f.debug_tuple("WordWrap::Word").finish(),
                     }
                 }
@@ -2761,12 +2651,7 @@ pub mod unavi {
                         fn wit_import(_: i32, _: i32, _: *mut u8, _: usize) {
                             unreachable!()
                         }
-                        wit_import(
-                            (self).handle() as i32,
-                            result1_0,
-                            result1_1,
-                            result1_2,
-                        );
+                        wit_import((self).handle() as i32, result1_0, result1_1, result1_2);
                     }
                 }
             }
@@ -2776,9 +2661,7 @@ pub mod unavi {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "unavi:ui/text")]
@@ -2835,9 +2718,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::unavi::layout::container::Alignment::_lift(
-                            ret as u8,
-                        )
+                        super::super::super::unavi::layout::container::Alignment::_lift(ret as u8)
                     }
                 }
             }
@@ -2856,9 +2737,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::unavi::layout::container::Alignment::_lift(
-                            ret as u8,
-                        )
+                        super::super::super::unavi::layout::container::Alignment::_lift(ret as u8)
                     }
                 }
             }
@@ -2978,9 +2857,7 @@ pub mod unavi {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "unavi:ui/text")]
@@ -3047,9 +2924,7 @@ pub mod unavi {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::mesh::Mesh::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::mesh::Mesh::from_handle(ret as u32)
                     }
                 }
             }
@@ -3182,7 +3057,8 @@ pub mod wired {
         pub mod types {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             pub type Vec3 = super::super::super::wired::math::types::Vec3;
             pub type Quat = super::super::super::wired::math::types::Quat;
             #[repr(u8)]
@@ -3192,10 +3068,7 @@ pub mod wired {
                 Right,
             }
             impl ::core::fmt::Debug for HandSide {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
                         HandSide::Left => f.debug_tuple("HandSide::Left").finish(),
                         HandSide::Right => f.debug_tuple("HandSide::Right").finish(),
@@ -3223,10 +3096,7 @@ pub mod wired {
                 pub radius: f32,
             }
             impl ::core::fmt::Debug for Joint {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Joint")
                         .field("translation", &self.translation)
                         .field("rotation", &self.rotation)
@@ -3243,10 +3113,7 @@ pub mod wired {
                 pub metacarpal: Joint,
             }
             impl ::core::fmt::Debug for Finger {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Finger")
                         .field("tip", &self.tip)
                         .field("distal", &self.distal)
@@ -3270,10 +3137,7 @@ pub mod wired {
                 pub elbow: Option<Joint>,
             }
             impl ::core::fmt::Debug for Hand {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Hand")
                         .field("side", &self.side)
                         .field("thumb", &self.thumb)
@@ -3295,10 +3159,7 @@ pub mod wired {
                 pub origin: Vec3,
             }
             impl ::core::fmt::Debug for Ray {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Ray")
                         .field("orientation", &self.orientation)
                         .field("origin", &self.origin)
@@ -3311,17 +3172,10 @@ pub mod wired {
                 Ray(Ray),
             }
             impl ::core::fmt::Debug for InputData {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
-                        InputData::Hand(e) => {
-                            f.debug_tuple("InputData::Hand").field(e).finish()
-                        }
-                        InputData::Ray(e) => {
-                            f.debug_tuple("InputData::Ray").field(e).finish()
-                        }
+                        InputData::Hand(e) => f.debug_tuple("InputData::Hand").field(e).finish(),
+                        InputData::Ray(e) => f.debug_tuple("InputData::Ray").field(e).finish(),
                     }
                 }
             }
@@ -3331,17 +3185,10 @@ pub mod wired {
                 Hover,
             }
             impl ::core::fmt::Debug for InputAction {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
-                        InputAction::Collision => {
-                            f.debug_tuple("InputAction::Collision").finish()
-                        }
-                        InputAction::Hover => {
-                            f.debug_tuple("InputAction::Hover").finish()
-                        }
+                        InputAction::Collision => f.debug_tuple("InputAction::Collision").finish(),
+                        InputAction::Hover => f.debug_tuple("InputAction::Hover").finish(),
                     }
                 }
             }
@@ -3356,10 +3203,7 @@ pub mod wired {
                 pub data: InputData,
             }
             impl ::core::fmt::Debug for InputEvent {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("InputEvent")
                         .field("id", &self.id)
                         .field("action", &self.action)
@@ -3372,7 +3216,8 @@ pub mod wired {
         pub mod handler {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type InputEvent = super::super::super::wired::input::types::InputEvent;
             #[derive(Debug)]
@@ -3439,9 +3284,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(8))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 768]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 768],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 768]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:input/handler")]
@@ -4057,7 +3900,8 @@ pub mod wired {
         pub mod api {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             #[repr(u8)]
             #[derive(Clone, Copy, Eq, PartialEq)]
             pub enum LogLevel {
@@ -4067,10 +3911,7 @@ pub mod wired {
                 Error,
             }
             impl ::core::fmt::Debug for LogLevel {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
                         LogLevel::Debug => f.debug_tuple("LogLevel::Debug").finish(),
                         LogLevel::Info => f.debug_tuple("LogLevel::Info").finish(),
@@ -4121,7 +3962,8 @@ pub mod wired {
         pub mod types {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             #[repr(C)]
             #[derive(Clone, Copy)]
             pub struct Vec2 {
@@ -4129,10 +3971,7 @@ pub mod wired {
                 pub y: f32,
             }
             impl ::core::fmt::Debug for Vec2 {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Vec2")
                         .field("x", &self.x)
                         .field("y", &self.y)
@@ -4147,10 +3986,7 @@ pub mod wired {
                 pub z: f32,
             }
             impl ::core::fmt::Debug for Vec3 {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Vec3")
                         .field("x", &self.x)
                         .field("y", &self.y)
@@ -4167,10 +4003,7 @@ pub mod wired {
                 pub w: f32,
             }
             impl ::core::fmt::Debug for Quat {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Quat")
                         .field("x", &self.x)
                         .field("y", &self.y)
@@ -4187,10 +4020,7 @@ pub mod wired {
                 pub translation: Vec3,
             }
             impl ::core::fmt::Debug for Transform {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Transform")
                         .field("rotation", &self.rotation)
                         .field("scale", &self.scale)
@@ -4243,7 +4073,11 @@ pub mod wired {
                     let l1 = *ptr0.add(0).cast::<f32>();
                     let l2 = *ptr0.add(4).cast::<f32>();
                     let l3 = *ptr0.add(8).cast::<f32>();
-                    Vec3 { x: l1, y: l2, z: l3 }
+                    Vec3 {
+                        x: l1,
+                        y: l2,
+                        z: l3,
+                    }
                 }
             }
             #[allow(unused_unsafe, clippy::all)]
@@ -4268,7 +4102,12 @@ pub mod wired {
                     let l2 = *ptr0.add(4).cast::<f32>();
                     let l3 = *ptr0.add(8).cast::<f32>();
                     let l4 = *ptr0.add(12).cast::<f32>();
-                    Quat { x: l1, y: l2, z: l3, w: l4 }
+                    Quat {
+                        x: l1,
+                        y: l2,
+                        z: l3,
+                        w: l4,
+                    }
                 }
             }
             #[allow(unused_unsafe, clippy::all)]
@@ -4300,9 +4139,22 @@ pub mod wired {
                     let l9 = *ptr0.add(32).cast::<f32>();
                     let l10 = *ptr0.add(36).cast::<f32>();
                     Transform {
-                        rotation: Quat { x: l1, y: l2, z: l3, w: l4 },
-                        scale: Vec3 { x: l5, y: l6, z: l7 },
-                        translation: Vec3 { x: l8, y: l9, z: l10 },
+                        rotation: Quat {
+                            x: l1,
+                            y: l2,
+                            z: l3,
+                            w: l4,
+                        },
+                        scale: Vec3 {
+                            x: l5,
+                            y: l6,
+                            z: l7,
+                        },
+                        translation: Vec3 {
+                            x: l8,
+                            y: l9,
+                            z: l10,
+                        },
                     }
                 }
             }
@@ -4314,7 +4166,8 @@ pub mod wired {
         pub mod types {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Vec3 = super::super::super::wired::math::types::Vec3;
             #[derive(Debug)]
@@ -4361,10 +4214,7 @@ pub mod wired {
                 pub radius: f32,
             }
             impl ::core::fmt::Debug for ShapeCylinder {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("ShapeCylinder")
                         .field("height", &self.height)
                         .field("radius", &self.radius)
@@ -4378,20 +4228,11 @@ pub mod wired {
                 Sphere(f32),
             }
             impl ::core::fmt::Debug for Shape {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
-                        Shape::Cuboid(e) => {
-                            f.debug_tuple("Shape::Cuboid").field(e).finish()
-                        }
-                        Shape::Cylinder(e) => {
-                            f.debug_tuple("Shape::Cylinder").field(e).finish()
-                        }
-                        Shape::Sphere(e) => {
-                            f.debug_tuple("Shape::Sphere").field(e).finish()
-                        }
+                        Shape::Cuboid(e) => f.debug_tuple("Shape::Cuboid").field(e).finish(),
+                        Shape::Cylinder(e) => f.debug_tuple("Shape::Cylinder").field(e).finish(),
+                        Shape::Sphere(e) => f.debug_tuple("Shape::Sphere").field(e).finish(),
                     }
                 }
             }
@@ -4440,17 +4281,10 @@ pub mod wired {
                 Kinematic,
             }
             impl ::core::fmt::Debug for RigidBodyType {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
-                        RigidBodyType::Dynamic => {
-                            f.debug_tuple("RigidBodyType::Dynamic").finish()
-                        }
-                        RigidBodyType::Fixed => {
-                            f.debug_tuple("RigidBodyType::Fixed").finish()
-                        }
+                        RigidBodyType::Dynamic => f.debug_tuple("RigidBodyType::Dynamic").finish(),
+                        RigidBodyType::Fixed => f.debug_tuple("RigidBodyType::Fixed").finish(),
                         RigidBodyType::Kinematic => {
                             f.debug_tuple("RigidBodyType::Kinematic").finish()
                         }
@@ -4485,7 +4319,10 @@ pub mod wired {
                                 (0i32, _rt::as_f32(x0), _rt::as_f32(y0), _rt::as_f32(z0))
                             }
                             Shape::Cylinder(e) => {
-                                let ShapeCylinder { height: height1, radius: radius1 } = e;
+                                let ShapeCylinder {
+                                    height: height1,
+                                    radius: radius1,
+                                } = e;
                                 (1i32, _rt::as_f32(height1), _rt::as_f32(radius1), 0.0f32)
                             }
                             Shape::Sphere(e) => (2i32, _rt::as_f32(e), 0.0f32, 0.0f32),
@@ -4567,9 +4404,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 12],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:physics/types")]
@@ -4627,9 +4462,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 12],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:physics/types")]
@@ -4689,7 +4522,8 @@ pub mod wired {
         pub mod api {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Node = super::super::super::wired::scene::node::Node;
             pub struct Skeleton {
@@ -4715,10 +4549,7 @@ pub mod wired {
                 pub right_foot: Node,
             }
             impl ::core::fmt::Debug for Skeleton {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Skeleton")
                         .field("hips", &self.hips)
                         .field("spine", &self.spine)
@@ -4795,9 +4626,7 @@ pub mod wired {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::node::Node::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
                     }
                 }
             }
@@ -4807,9 +4636,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 80]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 80],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 80]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:player/api")]
@@ -4861,45 +4688,55 @@ pub mod wired {
                             head: super::super::super::wired::scene::node::Node::from_handle(
                                 l6 as u32,
                             ),
-                            left_shoulder: super::super::super::wired::scene::node::Node::from_handle(
-                                l7 as u32,
-                            ),
-                            left_upper_arm: super::super::super::wired::scene::node::Node::from_handle(
-                                l8 as u32,
-                            ),
-                            left_lower_arm: super::super::super::wired::scene::node::Node::from_handle(
-                                l9 as u32,
-                            ),
+                            left_shoulder:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l7 as u32,
+                                ),
+                            left_upper_arm:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l8 as u32,
+                                ),
+                            left_lower_arm:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l9 as u32,
+                                ),
                             left_hand: super::super::super::wired::scene::node::Node::from_handle(
                                 l10 as u32,
                             ),
-                            right_shoulder: super::super::super::wired::scene::node::Node::from_handle(
-                                l11 as u32,
-                            ),
-                            right_upper_arm: super::super::super::wired::scene::node::Node::from_handle(
-                                l12 as u32,
-                            ),
-                            right_lower_arm: super::super::super::wired::scene::node::Node::from_handle(
-                                l13 as u32,
-                            ),
+                            right_shoulder:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l11 as u32,
+                                ),
+                            right_upper_arm:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l12 as u32,
+                                ),
+                            right_lower_arm:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l13 as u32,
+                                ),
                             right_hand: super::super::super::wired::scene::node::Node::from_handle(
                                 l14 as u32,
                             ),
-                            left_upper_leg: super::super::super::wired::scene::node::Node::from_handle(
-                                l15 as u32,
-                            ),
-                            left_lower_leg: super::super::super::wired::scene::node::Node::from_handle(
-                                l16 as u32,
-                            ),
+                            left_upper_leg:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l15 as u32,
+                                ),
+                            left_lower_leg:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l16 as u32,
+                                ),
                             left_foot: super::super::super::wired::scene::node::Node::from_handle(
                                 l17 as u32,
                             ),
-                            right_upper_leg: super::super::super::wired::scene::node::Node::from_handle(
-                                l18 as u32,
-                            ),
-                            right_lower_leg: super::super::super::wired::scene::node::Node::from_handle(
-                                l19 as u32,
-                            ),
+                            right_upper_leg:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l18 as u32,
+                                ),
+                            right_lower_leg:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l19 as u32,
+                                ),
                             right_foot: super::super::super::wired::scene::node::Node::from_handle(
                                 l20 as u32,
                             ),
@@ -4967,7 +4804,8 @@ pub mod wired {
         pub mod material {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             #[repr(C)]
             #[derive(Clone, Copy)]
@@ -4978,10 +4816,7 @@ pub mod wired {
                 pub a: f32,
             }
             impl ::core::fmt::Debug for Color {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Color")
                         .field("r", &self.r)
                         .field("g", &self.g)
@@ -5091,9 +4926,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/material")]
@@ -5141,9 +4974,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 16],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/material")]
@@ -5173,7 +5004,12 @@ pub mod wired {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn set_color(&self, value: Color) {
                     unsafe {
-                        let Color { r: r0, g: g0, b: b0, a: a0 } = value;
+                        let Color {
+                            r: r0,
+                            g: g0,
+                            b: b0,
+                            a: a0,
+                        } = value;
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/material")]
                         extern "C" {
@@ -5199,7 +5035,8 @@ pub mod wired {
         pub mod mesh {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Material = super::super::super::wired::scene::material::Material;
             #[derive(Debug)]
@@ -5301,9 +5138,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/mesh")]
@@ -5503,9 +5338,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/mesh")]
@@ -5553,9 +5386,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/mesh")]
@@ -5619,10 +5450,7 @@ pub mod wired {
                         fn wit_import(_: i32, _: i32) {
                             unreachable!()
                         }
-                        wit_import(
-                            (self).handle() as i32,
-                            (&value).take_handle() as i32,
-                        );
+                        wit_import((self).handle() as i32, (&value).take_handle() as i32);
                     }
                 }
             }
@@ -5631,7 +5459,8 @@ pub mod wired {
         pub mod node {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Mesh = super::super::super::wired::scene::mesh::Mesh;
             pub type InputHandler = super::super::super::wired::input::handler::InputHandler;
@@ -5739,9 +5568,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -5789,9 +5616,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -5864,9 +5689,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -5900,9 +5723,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 40]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 40],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 40]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -5952,9 +5773,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 40]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 40],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 40]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -6079,9 +5898,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -6139,9 +5956,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -6199,9 +6014,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -6259,9 +6072,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -6318,7 +6129,8 @@ pub mod wired {
         pub mod scene {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Node = super::super::super::wired::scene::node::Node;
             #[derive(Debug)]
@@ -6402,9 +6214,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/scene")]
@@ -6452,9 +6262,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/scene")]
@@ -6528,7 +6336,8 @@ pub mod wired {
         pub mod gltf {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Material = super::super::super::wired::scene::material::Material;
             pub type Mesh = super::super::super::wired::scene::mesh::Mesh;
@@ -6598,9 +6407,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/gltf")]
@@ -6675,9 +6482,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/gltf")]
@@ -6752,9 +6557,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/gltf")]
@@ -6829,9 +6632,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/gltf")]
@@ -6907,9 +6708,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/gltf")]
@@ -6969,9 +6768,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/gltf")]
@@ -7024,7 +6821,8 @@ pub mod wired {
         pub mod glxf {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Gltf = super::super::super::wired::scene::gltf::Gltf;
             pub type Node = super::super::super::wired::scene::node::Node;
@@ -7147,10 +6945,7 @@ pub mod wired {
                 Glxf(AssetGlxf),
             }
             impl ::core::fmt::Debug for Asset {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
                         Asset::Gltf(e) => f.debug_tuple("Asset::Gltf").field(e).finish(),
                         Asset::Glxf(e) => f.debug_tuple("Asset::Glxf").field(e).finish(),
@@ -7162,10 +6957,7 @@ pub mod wired {
                 Glxf(&'a AssetGlxf),
             }
             impl<'a> ::core::fmt::Debug for AssetBorrow<'a> {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
                         AssetBorrow::Gltf(e) => {
                             f.debug_tuple("AssetBorrow::Gltf").field(e).finish()
@@ -7218,17 +7010,10 @@ pub mod wired {
                 Nodes(_rt::Vec<GlxfNode>),
             }
             impl ::core::fmt::Debug for Children {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
-                        Children::Asset(e) => {
-                            f.debug_tuple("Children::Asset").field(e).finish()
-                        }
-                        Children::Nodes(e) => {
-                            f.debug_tuple("Children::Nodes").field(e).finish()
-                        }
+                        Children::Asset(e) => f.debug_tuple("Children::Asset").field(e).finish(),
+                        Children::Nodes(e) => f.debug_tuple("Children::Nodes").field(e).finish(),
                     }
                 }
             }
@@ -7237,10 +7022,7 @@ pub mod wired {
                 Nodes(_rt::Vec<&'a GlxfNode>),
             }
             impl<'a> ::core::fmt::Debug for ChildrenBorrow<'a> {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
                         ChildrenBorrow::Asset(e) => {
                             f.debug_tuple("ChildrenBorrow::Asset").field(e).finish()
@@ -7331,9 +7113,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/glxf")]
@@ -7431,9 +7211,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/glxf")]
@@ -7506,9 +7284,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/glxf")]
@@ -7582,9 +7358,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/glxf")]
@@ -7642,9 +7416,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/glxf")]
@@ -7724,9 +7496,7 @@ pub mod wired {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::gltf::Gltf::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::gltf::Gltf::from_handle(ret as u32)
                     }
                 }
             }
@@ -7738,9 +7508,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/glxf")]
@@ -7855,9 +7623,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/glxf")]
@@ -7968,9 +7734,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/glxf")]
@@ -8018,9 +7782,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 40]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 40],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 40]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/glxf")]
@@ -8145,9 +7907,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/glxf")]
@@ -8181,9 +7941,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 16],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/glxf")]
@@ -8215,7 +7973,10 @@ pub mod wired {
                                                         Asset::Gltf(e6)
                                                     }
                                                     n => {
-                                                        debug_assert_eq!(n, 1, "invalid enum discriminant");
+                                                        debug_assert_eq!(
+                                                            n, 1,
+                                                            "invalid enum discriminant"
+                                                        );
                                                         let e6 = {
                                                             let l5 = *ptr0.add(12).cast::<i32>();
                                                             AssetGlxf::from_handle(l5 as u32)
@@ -8287,7 +8048,9 @@ pub mod wired {
                                             }
                                             ptr
                                         } else {
-                                            { ::core::ptr::null_mut() }
+                                            {
+                                                ::core::ptr::null_mut()
+                                            }
                                         };
                                         for (i, e) in vec1.into_iter().enumerate() {
                                             let base = result1.add(i * 4);
@@ -8372,9 +8135,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/glxf")]
@@ -8422,9 +8183,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/glxf")]
@@ -8504,7 +8263,8 @@ pub mod exports {
             pub mod types {
                 #[used]
                 #[doc(hidden)]
-                static __FORCE_SECTION_REF: fn() = super::super::super::super::__link_custom_section_describing_imports;
+                static __FORCE_SECTION_REF: fn() =
+                    super::super::super::super::__link_custom_section_describing_imports;
                 use super::super::super::super::_rt;
                 #[derive(Debug)]
                 #[repr(transparent)]
@@ -8521,9 +8281,7 @@ pub mod exports {
                     pub fn new<T: GuestScript>(val: T) -> Self {
                         Self::type_guard::<T>();
                         let val: _ScriptRep<T> = Some(val);
-                        let ptr: *mut _ScriptRep<T> = _rt::Box::into_raw(
-                            _rt::Box::new(val),
-                        );
+                        let ptr: *mut _ScriptRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
                         unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
                     }
                     /// Gets access to the underlying `T` which represents this resource.
@@ -8561,12 +8319,13 @@ pub mod exports {
                         use core::any::TypeId;
                         static mut LAST_TYPE: Option<TypeId> = None;
                         unsafe {
-                            assert!(! cfg!(target_feature = "atomics"));
+                            assert!(!cfg!(target_feature = "atomics"));
                             let id = TypeId::of::<T>();
                             match LAST_TYPE {
                                 Some(ty) => {
                                     assert!(
-                                        ty == id, "cannot use two types with this resource type"
+                                        ty == id,
+                                        "cannot use two types with this resource type"
                                     )
                                 }
                                 None => LAST_TYPE = Some(id),
@@ -8628,7 +8387,8 @@ pub mod exports {
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
                 pub unsafe fn _export_constructor_script_cabi<T: GuestScript>() -> i32 {
-                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
                     let result0 = Script::new(T::new());
                     (result0).take_handle() as i32
                 }
@@ -8638,7 +8398,8 @@ pub mod exports {
                     arg0: *mut u8,
                     arg1: f32,
                 ) {
-                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
                     T::update(ScriptBorrow::lift(arg0 as u32 as usize).get(), arg1);
                 }
                 pub trait Guest {
@@ -8776,7 +8537,9 @@ mod _rt {
     }
     impl<T: WasmResource> fmt::Debug for Resource<T> {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            f.debug_struct("Resource").field("handle", &self.handle).finish()
+            f.debug_struct("Resource")
+                .field("handle", &self.handle)
+                .finish()
         }
     }
     impl<T: WasmResource> Drop for Resource<T> {

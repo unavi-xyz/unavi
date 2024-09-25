@@ -4,7 +4,6 @@ use shapes::{
     rectangle::Rectangle, sphere::Sphere,
 };
 
-mod attributes;
 #[allow(warnings)]
 mod bindings;
 mod shapes;

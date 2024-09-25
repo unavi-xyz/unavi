@@ -18,7 +18,7 @@ pub fn instance_schema_url() -> String {
 
 #[cfg(test)]
 mod tests {
-    use jsonschema::JSONSchema;
+    use jsonschema::Validator;
 
     use super::*;
 
@@ -35,7 +35,7 @@ mod tests {
         let deserialized = serde_json::from_slice(&serialized).unwrap();
 
         let schema = serde_json::from_slice(INSTANCE_SCHEMA).unwrap();
-        let schema = JSONSchema::compile(&schema).unwrap();
+        let schema = Validator::new(&schema).unwrap();
 
         if schema.validate(&deserialized).is_err() {
             panic!("Failed to validate");

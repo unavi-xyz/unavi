@@ -38,7 +38,7 @@ impl GuestGrid for Grid {
     }
 
     fn root(&self) -> crate::bindings::exports::unavi::layout::grid::Container {
-        todo!()
+        self.root.ref_()
     }
 
     fn cells(&self) -> Vec<crate::bindings::exports::unavi::layout::grid::Container> {
@@ -47,9 +47,9 @@ impl GuestGrid for Grid {
 
     fn cell(
         &self,
-        x: u32,
-        y: u32,
-        z: u32,
+        _x: u32,
+        _y: u32,
+        _z: u32,
     ) -> Option<crate::bindings::exports::unavi::layout::grid::Container> {
         todo!()
     }

@@ -8,7 +8,7 @@ use unavi_player::id::PlayerId;
 use unavi_world::{InstanceRecord, InstanceServer};
 use wired_world::datagram_capnp;
 
-mod thread;
+pub mod thread;
 
 pub struct NetworkingPlugin;
 

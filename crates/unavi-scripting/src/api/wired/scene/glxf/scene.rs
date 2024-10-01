@@ -6,7 +6,7 @@ use crate::{
         utils::{RefCount, RefCountCell, RefResource},
         wired::scene::bindings::glxf::HostGlxfScene,
     },
-    data::StoreData,
+    data::ScriptData,
 };
 
 use super::node::GlxfNodeRes;
@@ -44,14 +44,14 @@ impl RefCount for GlxfSceneRes {
 
 impl RefResource for GlxfSceneRes {}
 
-impl HostGlxfScene for StoreData {
+impl HostGlxfScene for ScriptData {
     fn new(&mut self) -> wasm_bridge::Result<Resource<GlxfSceneRes>> {
         let node = GlxfSceneRes::default();
         let table_res = self.table.push(node)?;
         let res = self.clone_res(&table_res)?;
 
         let rep = res.rep();
-        let glxf_scenes = self.entities.glxf_scenes.clone();
+        let glxf_scenes = self.api.wired_scene.as_ref().unwrap().glxf_scenes.clone();
         self.commands.push(move |world: &mut World| {
             let entity = world.spawn(GlxfSceneBundle::new(rep)).id();
             let mut scenes = glxf_scenes.write().unwrap();
@@ -103,8 +103,8 @@ impl HostGlxfScene for StoreData {
         let data = self.table.get_mut(&self_)?;
         data.nodes.push(res);
 
-        let glxf_nodes = self.entities.glxf_nodes.clone();
-        let glxf_scenes = self.entities.glxf_scenes.clone();
+        let glxf_nodes = self.api.wired_scene.as_ref().unwrap().glxf_nodes.clone();
+        let glxf_scenes = self.api.wired_scene.as_ref().unwrap().glxf_scenes.clone();
         self.commands.push(move |world: &mut World| {
             let scenes = glxf_scenes.read().unwrap();
             let scene_ent = scenes.get(&scene_rep).unwrap();
@@ -131,8 +131,8 @@ impl HostGlxfScene for StoreData {
             .position(|r| r.rep() == node_rep)
             .map(|index| data.nodes.remove(index));
 
-        let glxf_nodes = self.entities.glxf_nodes.clone();
-        let glxf_scenes = self.entities.glxf_scenes.clone();
+        let glxf_nodes = self.api.wired_scene.as_ref().unwrap().glxf_nodes.clone();
+        let glxf_scenes = self.api.wired_scene.as_ref().unwrap().glxf_scenes.clone();
         self.commands.push(move |world: &mut World| {
             let scenes = glxf_scenes.read().unwrap();
             let scene_ent = scenes.get(&scene_rep).unwrap();
@@ -151,7 +151,7 @@ impl HostGlxfScene for StoreData {
         let dropped = GlxfSceneRes::handle_drop(rep, &mut self.table)?;
 
         if dropped {
-            let glxf_scenes = self.entities.glxf_scenes.clone();
+            let glxf_scenes = self.api.wired_scene.as_ref().unwrap().glxf_scenes.clone();
             self.commands.push(move |world: &mut World| {
                 let mut scenes = glxf_scenes.write().unwrap();
                 let entity = scenes.remove(&id).unwrap();

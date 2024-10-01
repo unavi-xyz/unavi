@@ -3,6 +3,6 @@ package test:wired-dwn;
 world script {
     include wired:script/script; 
 
-    import wired:dwn/api;
+    import wired:dwn/dwn;
     import wired:log/api;
 }

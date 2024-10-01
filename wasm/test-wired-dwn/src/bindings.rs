@@ -3,7 +3,7 @@ pub mod wired {
     #[allow(dead_code)]
     pub mod dwn {
         #[allow(dead_code, clippy::all)]
-        pub mod dwn {
+        pub mod types {
             #[used]
             #[doc(hidden)]
             static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
@@ -82,17 +82,26 @@ pub mod wired {
                         .finish()
                 }
             }
+        }
+        #[allow(dead_code, clippy::all)]
+        pub mod records_query {
+            #[used]
+            #[doc(hidden)]
+            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            pub type Message = super::super::super::wired::dwn::types::Message;
+            pub type Status = super::super::super::wired::dwn::types::Status;
             #[derive(Clone)]
-            pub struct QueryReply {
+            pub struct RecordsQueryReply {
                 pub entries: _rt::Vec<Message>,
                 pub status: Status,
             }
-            impl ::core::fmt::Debug for QueryReply {
+            impl ::core::fmt::Debug for RecordsQueryReply {
                 fn fmt(
                     &self,
                     f: &mut ::core::fmt::Formatter<'_>,
                 ) -> ::core::fmt::Result {
-                    f.debug_struct("QueryReply")
+                    f.debug_struct("RecordsQueryReply")
                         .field("entries", &self.entries)
                         .field("status", &self.status)
                         .finish()
@@ -100,10 +109,10 @@ pub mod wired {
             }
             #[derive(Debug)]
             #[repr(transparent)]
-            pub struct Query {
-                handle: _rt::Resource<Query>,
+            pub struct RecordsQuery {
+                handle: _rt::Resource<RecordsQuery>,
             }
-            impl Query {
+            impl RecordsQuery {
                 #[doc(hidden)]
                 pub unsafe fn from_handle(handle: u32) -> Self {
                     Self {
@@ -119,16 +128,16 @@ pub mod wired {
                     _rt::Resource::handle(&self.handle)
                 }
             }
-            unsafe impl _rt::WasmResource for Query {
+            unsafe impl _rt::WasmResource for RecordsQuery {
                 #[inline]
                 unsafe fn drop(_handle: u32) {
                     #[cfg(not(target_arch = "wasm32"))]
                     unreachable!();
                     #[cfg(target_arch = "wasm32")]
                     {
-                        #[link(wasm_import_module = "wired:dwn/dwn")]
+                        #[link(wasm_import_module = "wired:dwn/records-query")]
                         extern "C" {
-                            #[link_name = "[resource-drop]query"]
+                            #[link_name = "[resource-drop]records-query"]
                             fn drop(_: u32);
                         }
                         drop(_handle);
@@ -137,10 +146,10 @@ pub mod wired {
             }
             #[derive(Debug)]
             #[repr(transparent)]
-            pub struct QueryBuilder {
-                handle: _rt::Resource<QueryBuilder>,
+            pub struct RecordsQueryBuilder {
+                handle: _rt::Resource<RecordsQueryBuilder>,
             }
-            impl QueryBuilder {
+            impl RecordsQueryBuilder {
                 #[doc(hidden)]
                 pub unsafe fn from_handle(handle: u32) -> Self {
                     Self {
@@ -156,62 +165,25 @@ pub mod wired {
                     _rt::Resource::handle(&self.handle)
                 }
             }
-            unsafe impl _rt::WasmResource for QueryBuilder {
+            unsafe impl _rt::WasmResource for RecordsQueryBuilder {
                 #[inline]
                 unsafe fn drop(_handle: u32) {
                     #[cfg(not(target_arch = "wasm32"))]
                     unreachable!();
                     #[cfg(target_arch = "wasm32")]
                     {
-                        #[link(wasm_import_module = "wired:dwn/dwn")]
+                        #[link(wasm_import_module = "wired:dwn/records-query")]
                         extern "C" {
-                            #[link_name = "[resource-drop]query-builder"]
+                            #[link_name = "[resource-drop]records-query-builder"]
                             fn drop(_: u32);
                         }
                         drop(_handle);
                     }
                 }
             }
-            #[derive(Debug)]
-            #[repr(transparent)]
-            pub struct Dwn {
-                handle: _rt::Resource<Dwn>,
-            }
-            impl Dwn {
-                #[doc(hidden)]
-                pub unsafe fn from_handle(handle: u32) -> Self {
-                    Self {
-                        handle: _rt::Resource::from_handle(handle),
-                    }
-                }
-                #[doc(hidden)]
-                pub fn take_handle(&self) -> u32 {
-                    _rt::Resource::take_handle(&self.handle)
-                }
-                #[doc(hidden)]
-                pub fn handle(&self) -> u32 {
-                    _rt::Resource::handle(&self.handle)
-                }
-            }
-            unsafe impl _rt::WasmResource for Dwn {
-                #[inline]
-                unsafe fn drop(_handle: u32) {
-                    #[cfg(not(target_arch = "wasm32"))]
-                    unreachable!();
-                    #[cfg(target_arch = "wasm32")]
-                    {
-                        #[link(wasm_import_module = "wired:dwn/dwn")]
-                        extern "C" {
-                            #[link_name = "[resource-drop]dwn"]
-                            fn drop(_: u32);
-                        }
-                        drop(_handle);
-                    }
-                }
-            }
-            impl Query {
+            impl RecordsQuery {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn poll(&self) -> Option<QueryReply> {
+                pub fn poll(&self) -> Option<RecordsQueryReply> {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 28]);
@@ -220,9 +192,9 @@ pub mod wired {
                         );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:dwn/dwn")]
+                        #[link(wasm_import_module = "wired:dwn/records-query")]
                         extern "C" {
-                            #[link_name = "[method]query.poll"]
+                            #[link_name = "[method]records-query.poll"]
                             fn wit_import(_: i32, _: *mut u8);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -252,13 +224,14 @@ pub mod wired {
                                                 len6,
                                             );
                                             let l7 = i32::from(*base.add(8).cast::<u8>());
-                                            Message {
+                                            super::super::super::wired::dwn::types::Message {
                                                 record_id: _rt::string_lift(bytes6),
                                                 data: match l7 {
                                                     0 => None,
                                                     1 => {
                                                         let e = {
                                                             let l8 = i32::from(*base.add(12).cast::<u8>());
+                                                            use super::super::super::wired::dwn::types::Data as V30;
                                                             let v30 = match l8 {
                                                                 0 => {
                                                                     let e30 = {
@@ -272,7 +245,7 @@ pub mod wired {
                                                                         );
                                                                         _rt::string_lift(bytes11)
                                                                     };
-                                                                    Data::Base64(e30)
+                                                                    V30::Base64(e30)
                                                                 }
                                                                 n => {
                                                                     debug_assert_eq!(n, 1, "invalid enum discriminant");
@@ -330,7 +303,7 @@ pub mod wired {
                                                                             len29,
                                                                             len29,
                                                                         );
-                                                                        EncryptedData {
+                                                                        super::super::super::wired::dwn::types::EncryptedData {
                                                                             alg: _rt::string_lift(bytes14),
                                                                             ciphertext: _rt::string_lift(bytes17),
                                                                             iv: _rt::string_lift(bytes20),
@@ -338,7 +311,7 @@ pub mod wired {
                                                                             tag: _rt::string_lift(bytes29),
                                                                         }
                                                                     };
-                                                                    Data::Encrypted(e30)
+                                                                    V30::Encrypted(e30)
                                                                 }
                                                             };
                                                             v30
@@ -354,9 +327,9 @@ pub mod wired {
                                     _rt::cabi_dealloc(base31, len31 * 56, 4);
                                     let l32 = i32::from(*ptr0.add(12).cast::<u16>());
                                     let l33 = i32::from(*ptr0.add(16).cast::<u8>());
-                                    QueryReply {
+                                    RecordsQueryReply {
                                         entries: result31,
-                                        status: Status {
+                                        status: super::super::super::wired::dwn::types::Status {
                                             code: l32 as u16,
                                             detail: match l33 {
                                                 0 => None,
@@ -386,14 +359,14 @@ pub mod wired {
                     }
                 }
             }
-            impl Query {
+            impl RecordsQuery {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn finished(&self) -> bool {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:dwn/dwn")]
+                        #[link(wasm_import_module = "wired:dwn/records-query")]
                         extern "C" {
-                            #[link_name = "[method]query.finished"]
+                            #[link_name = "[method]records-query.finished"]
                             fn wit_import(_: i32) -> i32;
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -405,7 +378,7 @@ pub mod wired {
                     }
                 }
             }
-            impl QueryBuilder {
+            impl RecordsQueryBuilder {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn protocol(&self) -> Option<_rt::String> {
                     unsafe {
@@ -416,9 +389,9 @@ pub mod wired {
                         );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:dwn/dwn")]
+                        #[link(wasm_import_module = "wired:dwn/records-query")]
                         extern "C" {
-                            #[link_name = "[method]query-builder.protocol"]
+                            #[link_name = "[method]records-query-builder.protocol"]
                             fn wit_import(_: i32, _: *mut u8);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -448,7 +421,7 @@ pub mod wired {
                     }
                 }
             }
-            impl QueryBuilder {
+            impl RecordsQueryBuilder {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn set_protocol(&self, value: Option<&str>) {
                     unsafe {
@@ -462,9 +435,9 @@ pub mod wired {
                             None => (0i32, ::core::ptr::null_mut(), 0usize),
                         };
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:dwn/dwn")]
+                        #[link(wasm_import_module = "wired:dwn/records-query")]
                         extern "C" {
-                            #[link_name = "[method]query-builder.set-protocol"]
+                            #[link_name = "[method]records-query-builder.set-protocol"]
                             fn wit_import(_: i32, _: i32, _: *mut u8, _: usize);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -480,7 +453,7 @@ pub mod wired {
                     }
                 }
             }
-            impl QueryBuilder {
+            impl RecordsQueryBuilder {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn record_id(&self) -> Option<_rt::String> {
                     unsafe {
@@ -491,9 +464,9 @@ pub mod wired {
                         );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:dwn/dwn")]
+                        #[link(wasm_import_module = "wired:dwn/records-query")]
                         extern "C" {
-                            #[link_name = "[method]query-builder.record-id"]
+                            #[link_name = "[method]records-query-builder.record-id"]
                             fn wit_import(_: i32, _: *mut u8);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -523,7 +496,7 @@ pub mod wired {
                     }
                 }
             }
-            impl QueryBuilder {
+            impl RecordsQueryBuilder {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn set_record_id(&self, value: Option<&str>) {
                     unsafe {
@@ -537,9 +510,9 @@ pub mod wired {
                             None => (0i32, ::core::ptr::null_mut(), 0usize),
                         };
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:dwn/dwn")]
+                        #[link(wasm_import_module = "wired:dwn/records-query")]
                         extern "C" {
-                            #[link_name = "[method]query-builder.set-record-id"]
+                            #[link_name = "[method]records-query-builder.set-record-id"]
                             fn wit_import(_: i32, _: i32, _: *mut u8, _: usize);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -555,7 +528,7 @@ pub mod wired {
                     }
                 }
             }
-            impl QueryBuilder {
+            impl RecordsQueryBuilder {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn schema(&self) -> Option<_rt::String> {
                     unsafe {
@@ -566,9 +539,9 @@ pub mod wired {
                         );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:dwn/dwn")]
+                        #[link(wasm_import_module = "wired:dwn/records-query")]
                         extern "C" {
-                            #[link_name = "[method]query-builder.schema"]
+                            #[link_name = "[method]records-query-builder.schema"]
                             fn wit_import(_: i32, _: *mut u8);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -598,7 +571,7 @@ pub mod wired {
                     }
                 }
             }
-            impl QueryBuilder {
+            impl RecordsQueryBuilder {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn set_schema(&self, value: Option<&str>) {
                     unsafe {
@@ -612,9 +585,9 @@ pub mod wired {
                             None => (0i32, ::core::ptr::null_mut(), 0usize),
                         };
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:dwn/dwn")]
+                        #[link(wasm_import_module = "wired:dwn/records-query")]
                         extern "C" {
-                            #[link_name = "[method]query-builder.set-schema"]
+                            #[link_name = "[method]records-query-builder.set-schema"]
                             fn wit_import(_: i32, _: i32, _: *mut u8, _: usize);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -630,14 +603,14 @@ pub mod wired {
                     }
                 }
             }
-            impl QueryBuilder {
+            impl RecordsQueryBuilder {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn run(&self) -> Query {
+                pub fn run(&self) -> RecordsQuery {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:dwn/dwn")]
+                        #[link(wasm_import_module = "wired:dwn/records-query")]
                         extern "C" {
-                            #[link_name = "[method]query-builder.run"]
+                            #[link_name = "[method]records-query-builder.run"]
                             fn wit_import(_: i32) -> i32;
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -645,42 +618,533 @@ pub mod wired {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        Query::from_handle(ret as u32)
-                    }
-                }
-            }
-            impl Dwn {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn query(&self) -> QueryBuilder {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:dwn/dwn")]
-                        extern "C" {
-                            #[link_name = "[method]dwn.query"]
-                            fn wit_import(_: i32) -> i32;
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32) -> i32 {
-                            unreachable!()
-                        }
-                        let ret = wit_import((self).handle() as i32);
-                        QueryBuilder::from_handle(ret as u32)
+                        RecordsQuery::from_handle(ret as u32)
                     }
                 }
             }
         }
         #[allow(dead_code, clippy::all)]
-        pub mod api {
+        pub mod records_write {
             #[used]
             #[doc(hidden)]
             static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
-            pub type Dwn = super::super::super::wired::dwn::dwn::Dwn;
+            use super::super::super::_rt;
+            pub type Status = super::super::super::wired::dwn::types::Status;
+            #[derive(Clone)]
+            pub struct RecordsWriteReply {
+                pub record_id: _rt::String,
+                pub status: Status,
+            }
+            impl ::core::fmt::Debug for RecordsWriteReply {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    f.debug_struct("RecordsWriteReply")
+                        .field("record-id", &self.record_id)
+                        .field("status", &self.status)
+                        .finish()
+                }
+            }
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct RecordsWrite {
+                handle: _rt::Resource<RecordsWrite>,
+            }
+            impl RecordsWrite {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+            unsafe impl _rt::WasmResource for RecordsWrite {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wired:dwn/records-write")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]records-write"]
+                            fn drop(_: u32);
+                        }
+                        drop(_handle);
+                    }
+                }
+            }
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct RecordsWriteBuilder {
+                handle: _rt::Resource<RecordsWriteBuilder>,
+            }
+            impl RecordsWriteBuilder {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+            unsafe impl _rt::WasmResource for RecordsWriteBuilder {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wired:dwn/records-write")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]records-write-builder"]
+                            fn drop(_: u32);
+                        }
+                        drop(_handle);
+                    }
+                }
+            }
+            impl RecordsWrite {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn poll(&self) -> Option<RecordsWriteReply> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 28]);
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 28],
+                        );
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:dwn/records-write")]
+                        extern "C" {
+                            #[link_name = "[method]records-write.poll"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<*mut u8>();
+                                    let l3 = *ptr0.add(8).cast::<usize>();
+                                    let len4 = l3;
+                                    let bytes4 = _rt::Vec::from_raw_parts(
+                                        l2.cast(),
+                                        len4,
+                                        len4,
+                                    );
+                                    let l5 = i32::from(*ptr0.add(12).cast::<u16>());
+                                    let l6 = i32::from(*ptr0.add(16).cast::<u8>());
+                                    RecordsWriteReply {
+                                        record_id: _rt::string_lift(bytes4),
+                                        status: super::super::super::wired::dwn::types::Status {
+                                            code: l5 as u16,
+                                            detail: match l6 {
+                                                0 => None,
+                                                1 => {
+                                                    let e = {
+                                                        let l7 = *ptr0.add(20).cast::<*mut u8>();
+                                                        let l8 = *ptr0.add(24).cast::<usize>();
+                                                        let len9 = l8;
+                                                        let bytes9 = _rt::Vec::from_raw_parts(
+                                                            l7.cast(),
+                                                            len9,
+                                                            len9,
+                                                        );
+                                                        _rt::string_lift(bytes9)
+                                                    };
+                                                    Some(e)
+                                                }
+                                                _ => _rt::invalid_enum_discriminant(),
+                                            },
+                                        },
+                                    }
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl RecordsWrite {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn finished(&self) -> bool {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:dwn/records-write")]
+                        extern "C" {
+                            #[link_name = "[method]records-write.finished"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        _rt::bool_lift(ret as u8)
+                    }
+                }
+            }
+            impl RecordsWriteBuilder {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn protocol(&self) -> Option<_rt::String> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 12],
+                        );
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:dwn/records-write")]
+                        extern "C" {
+                            #[link_name = "[method]records-write-builder.protocol"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<*mut u8>();
+                                    let l3 = *ptr0.add(8).cast::<usize>();
+                                    let len4 = l3;
+                                    let bytes4 = _rt::Vec::from_raw_parts(
+                                        l2.cast(),
+                                        len4,
+                                        len4,
+                                    );
+                                    _rt::string_lift(bytes4)
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl RecordsWriteBuilder {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_protocol(&self, value: Option<&str>) {
+                    unsafe {
+                        let (result1_0, result1_1, result1_2) = match value {
+                            Some(e) => {
+                                let vec0 = e;
+                                let ptr0 = vec0.as_ptr().cast::<u8>();
+                                let len0 = vec0.len();
+                                (1i32, ptr0.cast_mut(), len0)
+                            }
+                            None => (0i32, ::core::ptr::null_mut(), 0usize),
+                        };
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:dwn/records-write")]
+                        extern "C" {
+                            #[link_name = "[method]records-write-builder.set-protocol"]
+                            fn wit_import(_: i32, _: i32, _: *mut u8, _: usize);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32, _: *mut u8, _: usize) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            result1_0,
+                            result1_1,
+                            result1_2,
+                        );
+                    }
+                }
+            }
+            impl RecordsWriteBuilder {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn record_id(&self) -> Option<_rt::String> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 12],
+                        );
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:dwn/records-write")]
+                        extern "C" {
+                            #[link_name = "[method]records-write-builder.record-id"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<*mut u8>();
+                                    let l3 = *ptr0.add(8).cast::<usize>();
+                                    let len4 = l3;
+                                    let bytes4 = _rt::Vec::from_raw_parts(
+                                        l2.cast(),
+                                        len4,
+                                        len4,
+                                    );
+                                    _rt::string_lift(bytes4)
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl RecordsWriteBuilder {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_record_id(&self, value: Option<&str>) {
+                    unsafe {
+                        let (result1_0, result1_1, result1_2) = match value {
+                            Some(e) => {
+                                let vec0 = e;
+                                let ptr0 = vec0.as_ptr().cast::<u8>();
+                                let len0 = vec0.len();
+                                (1i32, ptr0.cast_mut(), len0)
+                            }
+                            None => (0i32, ::core::ptr::null_mut(), 0usize),
+                        };
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:dwn/records-write")]
+                        extern "C" {
+                            #[link_name = "[method]records-write-builder.set-record-id"]
+                            fn wit_import(_: i32, _: i32, _: *mut u8, _: usize);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32, _: *mut u8, _: usize) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            result1_0,
+                            result1_1,
+                            result1_2,
+                        );
+                    }
+                }
+            }
+            impl RecordsWriteBuilder {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn schema(&self) -> Option<_rt::String> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 12],
+                        );
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:dwn/records-write")]
+                        extern "C" {
+                            #[link_name = "[method]records-write-builder.schema"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<*mut u8>();
+                                    let l3 = *ptr0.add(8).cast::<usize>();
+                                    let len4 = l3;
+                                    let bytes4 = _rt::Vec::from_raw_parts(
+                                        l2.cast(),
+                                        len4,
+                                        len4,
+                                    );
+                                    _rt::string_lift(bytes4)
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl RecordsWriteBuilder {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_schema(&self, value: Option<&str>) {
+                    unsafe {
+                        let (result1_0, result1_1, result1_2) = match value {
+                            Some(e) => {
+                                let vec0 = e;
+                                let ptr0 = vec0.as_ptr().cast::<u8>();
+                                let len0 = vec0.len();
+                                (1i32, ptr0.cast_mut(), len0)
+                            }
+                            None => (0i32, ::core::ptr::null_mut(), 0usize),
+                        };
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:dwn/records-write")]
+                        extern "C" {
+                            #[link_name = "[method]records-write-builder.set-schema"]
+                            fn wit_import(_: i32, _: i32, _: *mut u8, _: usize);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32, _: *mut u8, _: usize) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            result1_0,
+                            result1_1,
+                            result1_2,
+                        );
+                    }
+                }
+            }
+            impl RecordsWriteBuilder {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn run(&self) -> RecordsWrite {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:dwn/records-write")]
+                        extern "C" {
+                            #[link_name = "[method]records-write-builder.run"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        RecordsWrite::from_handle(ret as u32)
+                    }
+                }
+            }
+        }
+        #[allow(dead_code, clippy::all)]
+        pub mod dwn {
+            #[used]
+            #[doc(hidden)]
+            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            pub type RecordsQueryBuilder = super::super::super::wired::dwn::records_query::RecordsQueryBuilder;
+            pub type RecordsWriteBuilder = super::super::super::wired::dwn::records_write::RecordsWriteBuilder;
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Dwn {
+                handle: _rt::Resource<Dwn>,
+            }
+            impl Dwn {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+            unsafe impl _rt::WasmResource for Dwn {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wired:dwn/dwn")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]dwn"]
+                            fn drop(_: u32);
+                        }
+                        drop(_handle);
+                    }
+                }
+            }
+            impl Dwn {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn records_query(&self) -> RecordsQueryBuilder {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:dwn/dwn")]
+                        extern "C" {
+                            #[link_name = "[method]dwn.records-query"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wired::dwn::records_query::RecordsQueryBuilder::from_handle(
+                            ret as u32,
+                        )
+                    }
+                }
+            }
+            impl Dwn {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn records_write(&self) -> RecordsWriteBuilder {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:dwn/dwn")]
+                        extern "C" {
+                            #[link_name = "[method]dwn.records-write"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wired::dwn::records_write::RecordsWriteBuilder::from_handle(
+                            ret as u32,
+                        )
+                    }
+                }
+            }
             #[allow(unused_unsafe, clippy::all)]
             /// Get the local user's DWN.
             pub fn local_dwn() -> Dwn {
                 unsafe {
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "wired:dwn/api")]
+                    #[link(wasm_import_module = "wired:dwn/dwn")]
                     extern "C" {
                         #[link_name = "local-dwn"]
                         fn wit_import() -> i32;
@@ -690,7 +1154,7 @@ pub mod wired {
                         unreachable!()
                     }
                     let ret = wit_import();
-                    super::super::super::wired::dwn::dwn::Dwn::from_handle(ret as u32)
+                    Dwn::from_handle(ret as u32)
                 }
             }
             #[allow(unused_unsafe, clippy::all)]
@@ -698,7 +1162,7 @@ pub mod wired {
             pub fn world_host_dwn() -> Dwn {
                 unsafe {
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "wired:dwn/api")]
+                    #[link(wasm_import_module = "wired:dwn/dwn")]
                     extern "C" {
                         #[link_name = "world-host-dwn"]
                         fn wit_import() -> i32;
@@ -708,7 +1172,7 @@ pub mod wired {
                         unreachable!()
                     }
                     let ret = wit_import();
-                    super::super::super::wired::dwn::dwn::Dwn::from_handle(ret as u32)
+                    Dwn::from_handle(ret as u32)
                 }
             }
         }
@@ -1148,32 +1612,50 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.30.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1125] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xe8\x07\x01A\x02\x01\
-A\x09\x01B'\x01ps\x01r\x05\x03algs\x0aciphertexts\x02ivs\x0arecipients\0\x03tags\
-\x04\0\x0eencrypted-data\x03\0\x01\x01q\x02\x06base64\x01s\0\x09encrypted\x01\x02\
-\0\x04\0\x04data\x03\0\x03\x01k\x04\x01r\x02\x09record-ids\x04data\x05\x04\0\x07\
-message\x03\0\x06\x01ks\x01r\x02\x04code{\x06detail\x08\x04\0\x06status\x03\0\x09\
-\x01p\x07\x01r\x02\x07entries\x0b\x06status\x0a\x04\0\x0bquery-reply\x03\0\x0c\x04\
-\0\x05query\x03\x01\x04\0\x0dquery-builder\x03\x01\x04\0\x03dwn\x03\x01\x01h\x0e\
-\x01k\x0d\x01@\x01\x04self\x11\0\x12\x04\0\x12[method]query.poll\x01\x13\x01@\x01\
-\x04self\x11\0\x7f\x04\0\x16[method]query.finished\x01\x14\x01h\x0f\x01@\x01\x04\
-self\x15\0\x08\x04\0\x1e[method]query-builder.protocol\x01\x16\x01@\x02\x04self\x15\
-\x05value\x08\x01\0\x04\0\"[method]query-builder.set-protocol\x01\x17\x04\0\x1f[\
-method]query-builder.record-id\x01\x16\x04\0#[method]query-builder.set-record-id\
-\x01\x17\x04\0\x1c[method]query-builder.schema\x01\x16\x04\0\x20[method]query-bu\
-ilder.set-schema\x01\x17\x01i\x0e\x01@\x01\x04self\x15\0\x18\x04\0\x19[method]qu\
-ery-builder.run\x01\x19\x01h\x10\x01i\x0f\x01@\x01\x04self\x1a\0\x1b\x04\0\x11[m\
-ethod]dwn.query\x01\x1c\x03\x01\x0dwired:dwn/dwn\x05\0\x02\x03\0\0\x03dwn\x01B\x06\
-\x02\x03\x02\x01\x01\x04\0\x03dwn\x03\0\0\x01i\x01\x01@\0\0\x02\x04\0\x09local-d\
-wn\x01\x03\x04\0\x0eworld-host-dwn\x01\x03\x03\x01\x0dwired:dwn/api\x05\x02\x01B\
-\x04\x01m\x04\x05debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01@\x02\
-\x05level\x01\x07messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/api\x05\
-\x03\x01B\x07\x04\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13[constructor]\
-script\x01\x02\x01h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15[method]scri\
-pt.update\x01\x04\x04\x01\x12wired:script/types\x05\x04\x04\x01\x15test:wired-dw\
-n/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0cprocessed-\
-by\x02\x0dwit-component\x070.215.0\x10wit-bindgen-rust\x060.30.0";
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 2067] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x96\x0f\x01A\x02\x01\
+A\x10\x01B\x0b\x01ps\x01r\x05\x03algs\x0aciphertexts\x02ivs\x0arecipients\0\x03t\
+ags\x04\0\x0eencrypted-data\x03\0\x01\x01q\x02\x06base64\x01s\0\x09encrypted\x01\
+\x02\0\x04\0\x04data\x03\0\x03\x01k\x04\x01r\x02\x09record-ids\x04data\x05\x04\0\
+\x07message\x03\0\x06\x01ks\x01r\x02\x04code{\x06detail\x08\x04\0\x06status\x03\0\
+\x09\x03\x01\x0fwired:dwn/types\x05\0\x02\x03\0\0\x07message\x02\x03\0\0\x06stat\
+us\x01B\x1c\x02\x03\x02\x01\x01\x04\0\x07message\x03\0\0\x02\x03\x02\x01\x02\x04\
+\0\x06status\x03\0\x02\x01p\x01\x01r\x02\x07entries\x04\x06status\x03\x04\0\x13r\
+ecords-query-reply\x03\0\x05\x04\0\x0drecords-query\x03\x01\x04\0\x15records-que\
+ry-builder\x03\x01\x01h\x07\x01k\x06\x01@\x01\x04self\x09\0\x0a\x04\0\x1a[method\
+]records-query.poll\x01\x0b\x01@\x01\x04self\x09\0\x7f\x04\0\x1e[method]records-\
+query.finished\x01\x0c\x01h\x08\x01ks\x01@\x01\x04self\x0d\0\x0e\x04\0&[method]r\
+ecords-query-builder.protocol\x01\x0f\x01@\x02\x04self\x0d\x05value\x0e\x01\0\x04\
+\0*[method]records-query-builder.set-protocol\x01\x10\x04\0'[method]records-quer\
+y-builder.record-id\x01\x0f\x04\0+[method]records-query-builder.set-record-id\x01\
+\x10\x04\0$[method]records-query-builder.schema\x01\x0f\x04\0([method]records-qu\
+ery-builder.set-schema\x01\x10\x01i\x07\x01@\x01\x04self\x0d\0\x11\x04\0![method\
+]records-query-builder.run\x01\x12\x03\x01\x17wired:dwn/records-query\x05\x03\x01\
+B\x1b\x02\x03\x02\x01\x01\x04\0\x07message\x03\0\0\x02\x03\x02\x01\x02\x04\0\x06\
+status\x03\0\x02\x01r\x02\x09record-ids\x06status\x03\x04\0\x13records-write-rep\
+ly\x03\0\x04\x04\0\x0drecords-write\x03\x01\x04\0\x15records-write-builder\x03\x01\
+\x01h\x06\x01k\x05\x01@\x01\x04self\x08\0\x09\x04\0\x1a[method]records-write.pol\
+l\x01\x0a\x01@\x01\x04self\x08\0\x7f\x04\0\x1e[method]records-write.finished\x01\
+\x0b\x01h\x07\x01ks\x01@\x01\x04self\x0c\0\x0d\x04\0&[method]records-write-build\
+er.protocol\x01\x0e\x01@\x02\x04self\x0c\x05value\x0d\x01\0\x04\0*[method]record\
+s-write-builder.set-protocol\x01\x0f\x04\0'[method]records-write-builder.record-\
+id\x01\x0e\x04\0+[method]records-write-builder.set-record-id\x01\x0f\x04\0$[meth\
+od]records-write-builder.schema\x01\x0e\x04\0([method]records-write-builder.set-\
+schema\x01\x0f\x01i\x06\x01@\x01\x04self\x0c\0\x10\x04\0![method]records-write-b\
+uilder.run\x01\x11\x03\x01\x17wired:dwn/records-write\x05\x04\x02\x03\0\x01\x15r\
+ecords-query-builder\x02\x03\0\x02\x15records-write-builder\x01B\x10\x02\x03\x02\
+\x01\x05\x04\0\x15records-query-builder\x03\0\0\x02\x03\x02\x01\x06\x04\0\x15rec\
+ords-write-builder\x03\0\x02\x04\0\x03dwn\x03\x01\x01h\x04\x01i\x01\x01@\x01\x04\
+self\x05\0\x06\x04\0\x19[method]dwn.records-query\x01\x07\x01i\x03\x01@\x01\x04s\
+elf\x05\0\x08\x04\0\x19[method]dwn.records-write\x01\x09\x01i\x04\x01@\0\0\x0a\x04\
+\0\x09local-dwn\x01\x0b\x04\0\x0eworld-host-dwn\x01\x0b\x03\x01\x0dwired:dwn/dwn\
+\x05\x07\x01B\x04\x01m\x04\x05debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\
+\0\0\x01@\x02\x05level\x01\x07messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwir\
+ed:log/api\x05\x08\x01B\x07\x04\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13\
+[constructor]script\x01\x02\x01h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15\
+[method]script.update\x01\x04\x04\x01\x12wired:script/types\x05\x09\x04\x01\x15t\
+est:wired-dwn/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0c\
+processed-by\x02\x0dwit-component\x070.215.0\x10wit-bindgen-rust\x060.30.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {

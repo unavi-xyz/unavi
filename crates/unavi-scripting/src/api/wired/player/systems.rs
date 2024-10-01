@@ -28,12 +28,15 @@ pub(crate) fn update_player_skeletons(
 
         let mut scripts = script_map.lock().unwrap();
 
-        let Some((_, store)) = scripts.get_mut(&entity) else {
+        let Some(script) = scripts.get_mut(&entity) else {
             continue;
         };
 
-        let data = store.data_mut();
-        let player = data.table.get(&data.local_player).unwrap();
+        let data = script.store.data_mut();
+        let player = data
+            .table
+            .get(&data.api.wired_player.as_ref().unwrap().local_player)
+            .unwrap();
         let root = Node::from_res(&player.root, &data.table).unwrap();
         let skeleton = player.skeleton.clone_ref(&data.table).unwrap();
 
@@ -42,7 +45,7 @@ pub(crate) fn update_player_skeletons(
                 continue;
             }
 
-            if let Ok(nodes) = data.entities.nodes.read() {
+            if let Ok(nodes) = data.api.wired_scene.as_ref().unwrap().nodes.read() {
                 if let Some(node_ent) = nodes.get(&root.rep()) {
                     commands
                         .entity(*node_ent)
@@ -83,7 +86,7 @@ pub(crate) fn update_player_skeletons(
                         continue;
                     }
 
-                    if let Ok(nodes) = data.entities.nodes.read() {
+                    if let Ok(nodes) = data.api.wired_scene.as_ref().unwrap().nodes.read() {
                         if let Some(node_ent) = nodes.get(&node_res.rep()) {
                             commands.entity(*node_ent).insert(
                                 // "Parent" node entity to bone.

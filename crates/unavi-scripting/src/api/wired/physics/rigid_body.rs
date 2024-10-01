@@ -4,7 +4,7 @@ use wasm_bridge::component::Resource;
 
 use crate::{
     api::utils::{RefCount, RefCountCell, RefResource},
-    data::StoreData,
+    data::ScriptData,
 };
 
 use super::bindings::{
@@ -48,7 +48,7 @@ impl RefCount for RigidBody {
 
 impl RefResource for RigidBody {}
 
-impl HostRigidBody for StoreData {
+impl HostRigidBody for ScriptData {
     fn new(&mut self, rigid_body_type: RigidBodyType) -> wasm_bridge::Result<Resource<RigidBody>> {
         let rigid_body = RigidBody::new(rigid_body_type);
         let table_res = self.table.push(rigid_body)?;

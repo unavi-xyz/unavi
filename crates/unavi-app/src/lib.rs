@@ -27,8 +27,6 @@
 //! git submodule foreach git pull
 //! ```
 
-use std::sync::Arc;
-
 use bevy::{
     asset::AssetMetaCheck,
     log::{Level, LogPlugin},
@@ -66,7 +64,7 @@ pub async fn start(db: Surreal<Db>, opts: StartOptions) {
         .await
         .expect("Failed to create DWN store.");
 
-    let dwn = Arc::new(DWN::from(store));
+    let dwn = DWN::from(store);
     let actor = Actor::new_did_key(dwn).expect("Failed to create DWN actor.");
 
     let mut meta_paths = HashSet::new();

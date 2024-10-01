@@ -5,17 +5,13 @@ use dwn::{
         descriptor::{protocols::ProtocolsFilter, records::RecordsFilter, Descriptor},
         Data,
     },
-    store::{DataStore, MessageStore},
 };
 use tracing::{info, warn};
 use wired_social::protocols::world_host::{
     world_host_definition, world_host_protocol_url, WORLD_HOST_PROTOCOL_VERSION,
 };
 
-pub async fn create_world_host(
-    actor: &Actor<impl DataStore, impl MessageStore>,
-    connect_url: &str,
-) {
+pub async fn create_world_host(actor: &Actor, connect_url: &str) {
     // Register protocol.
     let definition = world_host_definition();
 

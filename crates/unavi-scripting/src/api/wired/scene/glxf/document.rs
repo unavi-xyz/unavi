@@ -6,7 +6,7 @@ use crate::{
         utils::{RefCount, RefCountCell, RefResource},
         wired::scene::bindings::glxf::{Asset, AssetBorrow, Host, HostGlxf},
     },
-    data::StoreData,
+    data::ScriptData,
 };
 
 use super::{
@@ -32,13 +32,13 @@ impl RefCount for GlxfDocument {
 
 impl RefResource for GlxfDocument {}
 
-impl HostGlxf for StoreData {
+impl HostGlxf for ScriptData {
     fn new(&mut self) -> wasm_bridge::Result<Resource<GlxfDocument>> {
         let node = GlxfDocument::default();
         let table_res = self.table.push(node)?;
         let res = self.clone_res(&table_res)?;
 
-        let documents = self.entities.documents.clone();
+        let documents = self.api.wired_scene.as_ref().unwrap().documents.clone();
         let rep = res.rep();
         self.commands.push(move |world: &mut World| {
             let entity = world.spawn(SpatialBundle::default()).id();
@@ -144,7 +144,7 @@ impl HostGlxf for StoreData {
 
         if let Some(prev) = &data.active_scene {
             let prev_rep = prev.rep();
-            let glxf_scenes = self.entities.glxf_scenes.clone();
+            let glxf_scenes = self.api.wired_scene.as_ref().unwrap().glxf_scenes.clone();
             self.commands.push(move |world: &mut World| {
                 let glxf_scenes = glxf_scenes.read().unwrap();
                 let prev_ent = glxf_scenes.get(&prev_rep).unwrap();
@@ -156,8 +156,8 @@ impl HostGlxf for StoreData {
 
         if let Some(active_scene) = &data.active_scene {
             let scene_rep = active_scene.rep();
-            let documents = self.entities.documents.clone();
-            let glxf_scenes = self.entities.glxf_scenes.clone();
+            let documents = self.api.wired_scene.as_ref().unwrap().documents.clone();
+            let glxf_scenes = self.api.wired_scene.as_ref().unwrap().glxf_scenes.clone();
             let root_rep = self_.rep();
             self.commands.push(move |world: &mut World| {
                 let documents = documents.read().unwrap();
@@ -269,7 +269,7 @@ impl HostGlxf for StoreData {
         let dropped = GlxfDocument::handle_drop(rep, &mut self.table)?;
 
         if dropped {
-            let documents = self.entities.documents.clone();
+            let documents = self.api.wired_scene.as_ref().unwrap().documents.clone();
             self.commands.push(move |world: &mut World| {
                 let mut nodes = documents.write().unwrap();
                 let entity = nodes.remove(&id).unwrap();
@@ -281,7 +281,7 @@ impl HostGlxf for StoreData {
     }
 }
 
-impl Host for StoreData {
+impl Host for ScriptData {
     fn get_root(&mut self) -> wasm_bridge::Result<Resource<GlxfDocument>> {
         let res = self.clone_res(&self.root_glxf)?;
         Ok(res)

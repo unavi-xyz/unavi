@@ -1,10 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
-use dwn::{
-    store::{DataStore, MessageStore},
-    DWN,
-};
+use dwn::DWN;
 use tracing::{error, info, info_span, Instrument};
 
 use xwt_core::{
@@ -22,10 +19,10 @@ mod bi_stream;
 mod datagram;
 mod event;
 
-pub async fn handle_connection<D: DataStore + 'static, M: MessageStore + 'static>(
+pub async fn handle_connection(
     new_connection: NewConnection,
     context: Arc<GlobalContext>,
-    dwn: Arc<DWN<D, M>>,
+    dwn: DWN,
 ) -> Result<()> {
     let player_id = new_connection.id;
 
@@ -41,10 +38,10 @@ pub async fn handle_connection<D: DataStore + 'static, M: MessageStore + 'static
     Ok(())
 }
 
-async fn handle_connection_impl<D: DataStore + 'static, M: MessageStore + 'static>(
+async fn handle_connection_impl(
     new_connection: NewConnection,
     context: Arc<GlobalContext>,
-    dwn: Arc<DWN<D, M>>,
+    dwn: DWN,
 ) -> Result<()> {
     info!("Waiting for session request...");
     let session_request = new_connection.incoming_session.wait_accept().await?;

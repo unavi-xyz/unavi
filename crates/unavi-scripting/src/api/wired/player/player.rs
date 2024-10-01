@@ -8,10 +8,28 @@ use crate::{
         utils::{RefCount, RefCountCell, RefResource},
         wired::scene::bindings::node::HostNode,
     },
-    data::StoreData,
+    data::ScriptData,
 };
 
 use super::bindings::api::{HostPlayer, Node, Skeleton};
+
+impl HostPlayer for ScriptData {
+    fn root(&mut self, self_: Resource<Player>) -> wasm_bridge::Result<Resource<Node>> {
+        let player = self.table.get(&self_)?;
+        let root = Node::from_res(&player.root, &self.table)?;
+        Ok(root)
+    }
+
+    fn skeleton(&mut self, self_: Resource<Player>) -> wasm_bridge::Result<Skeleton> {
+        let player = self.table.get(&self_)?;
+        let skeleton = player.skeleton.clone_ref(&self.table)?;
+        Ok(skeleton)
+    }
+
+    fn drop(&mut self, _rep: Resource<Player>) -> wasm_bridge::Result<()> {
+        Ok(())
+    }
+}
 
 pub struct Player {
     ref_count: RefCountCell,
@@ -28,7 +46,7 @@ impl RefCount for Player {
 impl RefResource for Player {}
 
 impl Player {
-    pub fn new(data: &mut StoreData) -> anyhow::Result<Resource<Self>> {
+    pub fn new(data: &mut ScriptData) -> anyhow::Result<Resource<Self>> {
         let root = data.new()?;
 
         let hips = data.new()?;
@@ -210,23 +228,5 @@ impl Skeleton {
             right_upper_leg: Node::from_res(&self.right_upper_leg, table)?,
             spine: Node::from_res(&self.spine, table)?,
         })
-    }
-}
-
-impl HostPlayer for StoreData {
-    fn root(&mut self, self_: Resource<Player>) -> wasm_bridge::Result<Resource<Node>> {
-        let player = self.table.get(&self_)?;
-        let root = Node::from_res(&player.root, &self.table)?;
-        Ok(root)
-    }
-
-    fn skeleton(&mut self, self_: Resource<Player>) -> wasm_bridge::Result<Skeleton> {
-        let player = self.table.get(&self_)?;
-        let skeleton = player.skeleton.clone_ref(&self.table)?;
-        Ok(skeleton)
-    }
-
-    fn drop(&mut self, _rep: Resource<Player>) -> wasm_bridge::Result<()> {
-        Ok(())
     }
 }

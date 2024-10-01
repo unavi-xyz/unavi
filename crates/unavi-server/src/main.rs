@@ -6,8 +6,6 @@
 //! unavi-server --help
 //! ```
 
-use std::sync::Arc;
-
 use clap::Parser;
 use dwn::{store::SurrealStore, DWN};
 use surrealdb::{
@@ -40,7 +38,7 @@ async fn main() {
             SurrealStore::new(db).await.unwrap()
         }
     };
-    let dwn = Arc::new(DWN::from(store));
+    let dwn = DWN::from(store);
 
     if let Err(e) = unavi_server::start(args, StartOptions::default(), dwn).await {
         error!("{}", e);

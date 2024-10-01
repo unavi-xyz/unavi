@@ -1,31 +1,29 @@
 use anyhow::Result;
-use wasm_bridge::component::Linker;
+use wasm_bridge::component::{Linker, ResourceTable};
 
-use crate::data::StoreData;
+use crate::data::ScriptData;
 
 mod collider;
 mod rigid_body;
 pub(crate) mod systems;
 
 pub mod bindings {
-    pub use super::{collider::Collider, rigid_body::RigidBody};
-
     wasm_bridge::component::bindgen!({
         path: "../../wired-protocol/spatial/wit/wired-physics",
         world: "host",
         with: {
             "wired:math": crate::api::wired::math::bindings,
-            "wired:physics/types/collider": Collider,
-            "wired:physics/types/rigid-body": RigidBody,
+            "wired:physics/types/collider": super::collider::Collider,
+            "wired:physics/types/rigid-body": super::rigid_body::RigidBody,
         }
     });
 
     pub use self::wired::physics::*;
 }
 
-impl bindings::types::Host for StoreData {}
-
-pub fn add_to_linker(linker: &mut Linker<StoreData>) -> Result<()> {
+pub fn add_to_linker(linker: &mut Linker<ScriptData>) -> Result<()> {
     bindings::wired::physics::types::add_to_linker(linker, |s| s)?;
     Ok(())
 }
+
+impl bindings::types::Host for ScriptData {}

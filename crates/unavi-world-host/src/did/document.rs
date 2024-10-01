@@ -9,17 +9,11 @@ use didkit::{
     },
     Document,
 };
-use dwn::{
-    actor::Actor,
-    store::{DataStore, MessageStore},
-};
+use dwn::actor::Actor;
 
 use super::KEY_FRAGMENT;
 
-pub fn create_document(
-    actor: &Actor<impl DataStore, impl MessageStore>,
-    dwn_url: String,
-) -> Arc<Document> {
+pub fn create_document(actor: &Actor, dwn_url: String) -> Arc<Document> {
     let mut document = Document::new(&actor.did);
 
     document.service = Some(vec![Service {

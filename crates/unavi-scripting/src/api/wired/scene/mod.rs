@@ -1,7 +1,10 @@
+use std::sync::{Arc, RwLock};
+
 use anyhow::Result;
+use bevy::{prelude::*, utils::HashMap};
 use wasm_bridge::component::Linker;
 
-use crate::data::StoreData;
+use crate::data::ScriptData;
 
 pub mod gltf;
 pub mod glxf;
@@ -30,7 +33,7 @@ pub mod bindings {
     pub use wired::scene::*;
 }
 
-pub fn add_to_linker(linker: &mut Linker<StoreData>) -> Result<()> {
+pub fn add_to_linker(linker: &mut Linker<ScriptData>) -> Result<()> {
     bindings::gltf::add_to_linker(linker, |s| s)?;
     bindings::glxf::add_to_linker(linker, |s| s)?;
     bindings::material::add_to_linker(linker, |s| s)?;
@@ -38,6 +41,25 @@ pub fn add_to_linker(linker: &mut Linker<StoreData>) -> Result<()> {
     bindings::node::add_to_linker(linker, |s| s)?;
     bindings::scene::add_to_linker(linker, |s| s)?;
     Ok(())
+}
+
+#[derive(Default)]
+pub struct WiredScene {
+    pub default_material: Handle<StandardMaterial>,
+
+    pub assets: Arc<RwLock<HashMap<u32, Entity>>>,
+    pub documents: Arc<RwLock<HashMap<u32, Entity>>>,
+    pub glxf_nodes: Arc<RwLock<HashMap<u32, Entity>>>,
+    pub glxf_scenes: Arc<RwLock<HashMap<u32, Entity>>>,
+    pub materials: Arc<RwLock<HashMap<u32, MaterialState>>>,
+    pub nodes: Arc<RwLock<HashMap<u32, Entity>>>,
+    pub primitives: Arc<RwLock<HashMap<u32, Handle<Mesh>>>>,
+    pub scenes: Arc<RwLock<HashMap<u32, Entity>>>,
+}
+
+pub struct MaterialState {
+    pub entity: Entity,
+    pub handle: Handle<StandardMaterial>,
 }
 
 impl Default for bindings::material::Color {

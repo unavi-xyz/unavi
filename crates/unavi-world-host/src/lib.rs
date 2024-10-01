@@ -5,17 +5,12 @@
 use std::{
     net::{Ipv4Addr, SocketAddr},
     path::PathBuf,
-    sync::Arc,
     time::Duration,
 };
 
 use axum::{routing::get, Json, Router};
 use did::ActorOptions;
-use dwn::{
-    actor::Actor,
-    store::{DataStore, MessageStore},
-    DWN,
-};
+use dwn::{actor::Actor, DWN};
 
 use tracing::{error, info};
 
@@ -23,9 +18,9 @@ mod did;
 mod world_host;
 
 #[derive(Clone)]
-pub struct ServerOptions<D: DataStore, M: MessageStore> {
+pub struct ServerOptions {
     pub domain: String,
-    pub dwn: Arc<DWN<D, M>>,
+    pub dwn: DWN,
     pub port: u16,
     pub remote_dwn: String,
     pub remote_sync: bool,
@@ -39,7 +34,7 @@ pub enum Storage {
     Memory,
 }
 
-pub async fn start(opts: ServerOptions<impl DataStore, impl MessageStore>) -> std::io::Result<()> {
+pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
     let mut actor = did::create_actor(ActorOptions {
         domain: opts.domain.clone(),
         dwn: opts.dwn,
@@ -90,7 +85,7 @@ pub async fn start(opts: ServerOptions<impl DataStore, impl MessageStore>) -> st
     Ok(())
 }
 
-async fn sync_retry(actor: &mut Actor<impl DataStore, impl MessageStore>) {
+async fn sync_retry(actor: &mut Actor) {
     let mut synced = false;
     let mut delay = 3.0;
 

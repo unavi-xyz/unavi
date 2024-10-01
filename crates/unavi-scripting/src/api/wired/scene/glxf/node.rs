@@ -13,7 +13,7 @@ use crate::{
             Asset, AssetBorrow, Children, ChildrenBorrow, HostGlxfNode, Transform,
         },
     },
-    data::StoreData,
+    data::ScriptData,
 };
 
 use super::{asset_gltf::GltfAssetRes, asset_glxf::GlxfAssetRes};
@@ -60,14 +60,14 @@ impl RefCount for GlxfNodeRes {
 
 impl RefResource for GlxfNodeRes {}
 
-impl HostGlxfNode for StoreData {
+impl HostGlxfNode for ScriptData {
     fn new(&mut self) -> wasm_bridge::Result<Resource<GlxfNodeRes>> {
         let node = GlxfNodeRes::default();
         let table_res = self.table.push(node)?;
         let res = self.clone_res(&table_res)?;
         let rep = res.rep();
 
-        let glxf_nodes = self.entities.glxf_nodes.clone();
+        let glxf_nodes = self.api.wired_scene.as_ref().unwrap().glxf_nodes.clone();
         self.commands.push(move |world: &mut World| {
             let entity = world.spawn(GlxfNodeBundle::new(rep)).id();
             let mut nodes = glxf_nodes.write().unwrap();
@@ -150,7 +150,7 @@ impl HostGlxfNode for StoreData {
     ) -> wasm_bridge::Result<()> {
         // Clear previous children.
         let rep = self_.rep();
-        let glxf_nodes = self.entities.glxf_nodes.clone();
+        let glxf_nodes = self.api.wired_scene.as_ref().unwrap().glxf_nodes.clone();
         self.commands.push(move |world: &mut World| {
             let glxf_nodes = glxf_nodes.read().unwrap();
             let node_ent = glxf_nodes.get(&rep).unwrap();
@@ -165,8 +165,8 @@ impl HostGlxfNode for StoreData {
             Some(ChildrenBorrow::Asset(AssetBorrow::Gltf(res))) => {
                 let asset_rep = res.rep();
 
-                let assets = self.entities.assets.clone();
-                let glxf_nodes = self.entities.glxf_nodes.clone();
+                let assets = self.api.wired_scene.as_ref().unwrap().assets.clone();
+                let glxf_nodes = self.api.wired_scene.as_ref().unwrap().glxf_nodes.clone();
                 self.commands.push(move |world: &mut World| {
                     let assets = assets.read().unwrap();
                     let asset_ent = assets.get(&asset_rep).unwrap();
@@ -184,8 +184,8 @@ impl HostGlxfNode for StoreData {
             Some(ChildrenBorrow::Asset(AssetBorrow::Glxf(res))) => {
                 let asset_rep = res.rep();
 
-                let assets = self.entities.assets.clone();
-                let glxf_nodes = self.entities.glxf_nodes.clone();
+                let assets = self.api.wired_scene.as_ref().unwrap().assets.clone();
+                let glxf_nodes = self.api.wired_scene.as_ref().unwrap().glxf_nodes.clone();
                 self.commands.push(move |world: &mut World| {
                     let assets = assets.read().unwrap();
                     let asset_ent = assets.get(&asset_rep).unwrap();
@@ -204,7 +204,7 @@ impl HostGlxfNode for StoreData {
                 let node_reps = nodes.iter().map(|res| res.rep()).collect::<HashSet<_>>();
 
                 {
-                    let glxf_nodes = self.entities.glxf_nodes.clone();
+                    let glxf_nodes = self.api.wired_scene.as_ref().unwrap().glxf_nodes.clone();
                     let node_reps = node_reps.clone();
                     self.commands.push(move |world: &mut World| {
                         let glxf_nodes = glxf_nodes.read().unwrap();
@@ -236,7 +236,7 @@ impl HostGlxfNode for StoreData {
         let dropped = GlxfNodeRes::handle_drop(rep, &mut self.table)?;
 
         if dropped {
-            let glxf_nodes = self.entities.glxf_nodes.clone();
+            let glxf_nodes = self.api.wired_scene.as_ref().unwrap().glxf_nodes.clone();
             self.commands.push(move |world: &mut World| {
                 let mut nodes = glxf_nodes.write().unwrap();
                 let entity = nodes.remove(&id).unwrap();

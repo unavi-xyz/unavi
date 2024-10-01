@@ -9,7 +9,7 @@ use crate::{
             gltf::{document::GltfDocument, node::NodeRes},
         },
     },
-    data::StoreData,
+    data::ScriptData,
 };
 
 #[derive(Debug)]
@@ -27,7 +27,7 @@ impl RefCount for GltfAssetRes {
 
 impl RefResource for GltfAssetRes {}
 
-impl HostAssetGltf for StoreData {
+impl HostAssetGltf for ScriptData {
     fn new(
         &mut self,
         document: Resource<GltfDocument>,
@@ -40,8 +40,8 @@ impl HostAssetGltf for StoreData {
         let table_res = self.table.push(data)?;
         let res = self.clone_res(&table_res)?;
 
-        let assets = self.entities.assets.clone();
-        let documents = self.entities.documents.clone();
+        let assets = self.api.wired_scene.as_ref().unwrap().assets.clone();
+        let documents = self.api.wired_scene.as_ref().unwrap().documents.clone();
         let rep = res.rep();
         self.commands.push(move |world: &mut World| {
             let entity = world.spawn(SpatialBundle::default()).id();
@@ -105,7 +105,7 @@ impl HostAssetGltf for StoreData {
         let dropped = GltfAssetRes::handle_drop(rep, &mut self.table)?;
 
         if dropped {
-            let assets = self.entities.assets.clone();
+            let assets = self.api.wired_scene.as_ref().unwrap().assets.clone();
             self.commands.push(move |world: &mut World| {
                 let mut assets = assets.write().unwrap();
                 let entity = assets.remove(&id).unwrap();

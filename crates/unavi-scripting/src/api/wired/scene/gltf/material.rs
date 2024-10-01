@@ -6,9 +6,12 @@ use wasm_bridge::component::Resource;
 use crate::{
     api::{
         utils::{RefCount, RefCountCell, RefResource},
-        wired::scene::bindings::material::{Color, Host, HostMaterial},
+        wired::scene::{
+            bindings::material::{Color, Host, HostMaterial},
+            MaterialState,
+        },
     },
-    data::{MaterialState, StoreData},
+    data::ScriptData,
 };
 
 #[derive(Component, Clone, Copy, Debug)]
@@ -44,12 +47,12 @@ impl RefCount for MaterialRes {
 
 impl RefResource for MaterialRes {}
 
-impl HostMaterial for StoreData {
+impl HostMaterial for ScriptData {
     fn new(&mut self) -> wasm_bridge::Result<wasm_bridge::component::Resource<MaterialRes>> {
         let table_res = self.table.push(MaterialRes::default())?;
         let res = MaterialRes::from_res(&table_res, &self.table)?;
 
-        let materials = self.entities.materials.clone();
+        let materials = self.api.wired_scene.as_ref().unwrap().materials.clone();
         let rep = res.rep();
         self.commands.push(move |world: &mut World| {
             let mut assets = world.resource_mut::<Assets<StandardMaterial>>();
@@ -98,7 +101,7 @@ impl HostMaterial for StoreData {
             material.color.a,
         );
 
-        let materials = self.entities.materials.clone();
+        let materials = self.api.wired_scene.as_ref().unwrap().materials.clone();
         let rep = self_.rep();
         self.commands.push(move |world: &mut World| {
             let materials = materials.read().unwrap();
@@ -116,7 +119,7 @@ impl HostMaterial for StoreData {
         let dropped = MaterialRes::handle_drop(rep, &mut self.table)?;
 
         if dropped {
-            let materials = self.entities.materials.clone();
+            let materials = self.api.wired_scene.as_ref().unwrap().materials.clone();
             self.commands.push(move |world: &mut World| {
                 let mut materials = materials.write().unwrap();
                 let MaterialState { entity, .. } = materials.remove(&id).unwrap();
@@ -128,4 +131,4 @@ impl HostMaterial for StoreData {
     }
 }
 
-impl Host for StoreData {}
+impl Host for ScriptData {}

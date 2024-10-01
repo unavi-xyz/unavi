@@ -8,6 +8,7 @@ use self::load::ScriptMap;
 pub mod api;
 mod asset;
 mod data;
+mod env;
 mod execution;
 mod load;
 mod raycast;

@@ -1,15 +1,9 @@
-use std::{
-    path::PathBuf,
-    sync::{Arc, LazyLock},
-};
+use std::{path::PathBuf, sync::LazyLock};
 
 use anyhow::Result;
 use clap::{Parser, Subcommand, ValueEnum};
 use directories::ProjectDirs;
-use dwn::{
-    store::{DataStore, MessageStore},
-    DWN,
-};
+use dwn::DWN;
 use tracing::{debug, info_span, Instrument};
 
 pub static STORAGE_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
@@ -84,11 +78,7 @@ impl Default for StartOptions {
 }
 
 #[async_recursion::async_recursion]
-pub async fn start(
-    args: Args,
-    opts: StartOptions,
-    dwn: Arc<DWN<impl DataStore + 'static, impl MessageStore + 'static>>,
-) -> Result<()> {
+pub async fn start(args: Args, opts: StartOptions, dwn: DWN) -> Result<()> {
     debug!("Args: {:?}", args);
 
     match args.command {

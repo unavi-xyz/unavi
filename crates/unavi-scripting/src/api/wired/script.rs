@@ -3,6 +3,4 @@ pub mod bindings {
         path: "../../wired-protocol/spatial/wit/wired-script",
         async: true,
     });
-
-    pub use self::exports::wired::script::*;
 }

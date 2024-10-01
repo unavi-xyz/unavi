@@ -1,7 +1,8 @@
+use std::sync::Arc;
+
 use bevy::prelude::*;
-use dwn::{actor::Actor, store::SurrealStore};
+use dwn::actor::Actor;
 use home::JoinHome;
-use surrealdb::engine::local::Db;
 use wired_social::schemas::common::RecordLink;
 
 mod home;
@@ -67,4 +68,4 @@ fn add_atmosphere_cameras(
 }
 
 #[derive(Resource)]
-pub struct UserActor(pub Actor<SurrealStore<Db>, SurrealStore<Db>>);
+pub struct UserActor(pub Arc<Actor>);

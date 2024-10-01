@@ -6,7 +6,7 @@ use crate::{
         utils::{RefCount, RefCountCell, RefResource},
         wired::scene::bindings::scene::{Host, HostScene},
     },
-    data::StoreData,
+    data::ScriptData,
 };
 
 use super::node::NodeRes;
@@ -44,14 +44,14 @@ impl RefCount for SceneRes {
 
 impl RefResource for SceneRes {}
 
-impl HostScene for StoreData {
+impl HostScene for ScriptData {
     fn new(&mut self) -> wasm_bridge::Result<Resource<SceneRes>> {
         let node = SceneRes::default();
         let table_res = self.table.push(node)?;
         let res = self.clone_res(&table_res)?;
 
         let rep = res.rep();
-        let scenes = self.entities.scenes.clone();
+        let scenes = self.api.wired_scene.as_ref().unwrap().scenes.clone();
         self.commands.push(move |world: &mut World| {
             let entity = world.spawn(GltfSceneBundle::new(rep)).id();
             let mut scenes = scenes.write().unwrap();
@@ -96,8 +96,8 @@ impl HostScene for StoreData {
         let data = self.table.get_mut(&self_)?;
         data.nodes.push(res);
 
-        let nodes = self.entities.nodes.clone();
-        let scenes = self.entities.scenes.clone();
+        let nodes = self.api.wired_scene.as_ref().unwrap().nodes.clone();
+        let scenes = self.api.wired_scene.as_ref().unwrap().scenes.clone();
         self.commands.push(move |world: &mut World| {
             let scenes = scenes.read().unwrap();
             let scene_ent = scenes.get(&scene_rep).unwrap();
@@ -123,7 +123,7 @@ impl HostScene for StoreData {
             .position(|r| r.rep() == node_rep)
             .map(|index| data.nodes.remove(index));
 
-        let nodes = self.entities.nodes.clone();
+        let nodes = self.api.wired_scene.as_ref().unwrap().nodes.clone();
         self.commands.push(move |world: &mut World| {
             let nodes = nodes.read().unwrap();
             let node_ent = nodes.get(&node_rep).unwrap();
@@ -138,7 +138,7 @@ impl HostScene for StoreData {
         let dropped = SceneRes::handle_drop(rep, &mut self.table)?;
 
         if dropped {
-            let scenes = self.entities.scenes.clone();
+            let scenes = self.api.wired_scene.as_ref().unwrap().scenes.clone();
             self.commands.push(move |world: &mut World| {
                 let mut scenes = scenes.write().unwrap();
                 let entity = scenes.remove(&id).unwrap();
@@ -150,7 +150,7 @@ impl HostScene for StoreData {
     }
 }
 
-impl Host for StoreData {}
+impl Host for ScriptData {}
 
 #[cfg(test)]
 mod tests {
@@ -165,7 +165,7 @@ mod tests {
     fn test_new() {
         let mut world = World::new();
         let root_ent = world.spawn_empty().id();
-        let mut data = StoreData::new("test".to_string(), root_ent, Handle::default());
+        let mut data = ScriptData::default();
 
         let res = HostScene::new(&mut data).unwrap();
 
@@ -183,8 +183,7 @@ mod tests {
     #[traced_test]
     fn test_add_node() {
         let mut world = World::new();
-        let root_ent = world.spawn_empty().id();
-        let mut data = StoreData::new("test".to_string(), root_ent, Handle::default());
+        let mut data = ScriptData::default();
 
         let scene = HostScene::new(&mut data).unwrap();
         let node = HostNode::new(&mut data).unwrap();
@@ -208,8 +207,7 @@ mod tests {
     #[traced_test]
     fn test_remove_node() {
         let mut world = World::new();
-        let root_ent = world.spawn_empty().id();
-        let mut data = StoreData::new("test".to_string(), root_ent, Handle::default());
+        let mut data = ScriptData::default();
 
         let scene = HostScene::new(&mut data).unwrap();
         let node = HostNode::new(&mut data).unwrap();
@@ -233,8 +231,7 @@ mod tests {
     #[traced_test]
     fn test_nodes() {
         let mut world = World::new();
-        let root_ent = world.spawn_empty().id();
-        let mut data = StoreData::new("test".to_string(), root_ent, Handle::default());
+        let mut data = ScriptData::default();
 
         let scene = HostScene::new(&mut data).unwrap();
         let node = HostNode::new(&mut data).unwrap();

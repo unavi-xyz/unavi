@@ -14,7 +14,7 @@ use crate::{
         utils::{RefCount, RefCountCell, RefResource},
         wired::scene::bindings::mesh::{Host, HostMesh, HostPrimitive, Material},
     },
-    data::{PrimitiveState, StoreData},
+    data::ScriptData,
 };
 
 use super::{
@@ -88,7 +88,7 @@ impl RefCount for PrimitiveRes {
 
 impl RefResource for PrimitiveRes {}
 
-impl HostMesh for StoreData {
+impl HostMesh for ScriptData {
     fn new(&mut self) -> wasm_bridge::Result<Resource<MeshRes>> {
         let table_res = self.table.push(MeshRes::default())?;
         let res = self.clone_res(&table_res)?;
@@ -136,8 +136,8 @@ impl HostMesh for StoreData {
         mesh.primitives.push(res);
 
         let mesh_nodes = mesh.nodes.iter().map(|res| res.rep()).collect::<Vec<_>>();
-        let nodes = self.entities.nodes.clone();
-        let primitives = self.entities.primitives.clone();
+        let nodes = self.api.wired_scene.as_ref().unwrap().nodes.clone();
+        let primitives = self.api.wired_scene.as_ref().unwrap().primitives.clone();
         self.commands.push(move |world: &mut World| {
             let mut assets = world.resource_mut::<Assets<Mesh>>();
             let handle = assets.add(Mesh::new(
@@ -146,12 +146,7 @@ impl HostMesh for StoreData {
             ));
 
             let mut primitives = primitives.write().unwrap();
-            primitives.insert(
-                primitive_rep,
-                PrimitiveState {
-                    handle: handle.clone(),
-                },
-            );
+            primitives.insert(primitive_rep, handle.clone());
 
             // Create node primitives.
             let nodes = nodes.read().unwrap();
@@ -188,7 +183,7 @@ impl HostMesh for StoreData {
             .map(|index| mesh.primitives.remove(index));
 
         let node_ids = mesh.nodes.iter().map(|res| res.rep()).collect::<Vec<_>>();
-        let nodes = self.entities.nodes.clone();
+        let nodes = self.api.wired_scene.as_ref().unwrap().nodes.clone();
         self.commands.push(move |world: &mut World| {
             // Remove node primitives.
             let nodes = nodes.read().unwrap();
@@ -215,7 +210,7 @@ impl HostMesh for StoreData {
     }
 }
 
-impl HostPrimitive for StoreData {
+impl HostPrimitive for ScriptData {
     fn id(&mut self, self_: Resource<PrimitiveRes>) -> wasm_bridge::Result<u32> {
         Ok(self_.rep())
     }
@@ -247,9 +242,15 @@ impl HostPrimitive for StoreData {
 
         let mesh_nodes = mesh.nodes.iter().map(|r| r.rep()).collect::<Vec<_>>();
 
-        let default_material = self.default_material.clone();
-        let materials = self.entities.materials.clone();
-        let nodes = self.entities.nodes.clone();
+        let default_material = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .default_material
+            .clone();
+        let materials = self.api.wired_scene.as_ref().unwrap().materials.clone();
+        let nodes = self.api.wired_scene.as_ref().unwrap().nodes.clone();
         let rep = self_.rep();
         self.commands.push(move |world: &mut World| {
             let materials = materials.read().unwrap();
@@ -281,11 +282,11 @@ impl HostPrimitive for StoreData {
         self_: Resource<PrimitiveRes>,
         value: Vec<u32>,
     ) -> wasm_bridge::Result<()> {
-        let primitives = self.entities.primitives.clone();
+        let primitives = self.api.wired_scene.as_ref().unwrap().primitives.clone();
         let rep = self_.rep();
         self.commands.push(move |world: &mut World| {
             let primitives = primitives.read().unwrap();
-            let PrimitiveState { handle, .. } = primitives.get(&rep).unwrap();
+            let handle = primitives.get(&rep).unwrap();
             let mut assets = world.resource_mut::<Assets<Mesh>>();
             let mesh = assets.get_mut(handle).unwrap();
             mesh.insert_indices(Indices::U32(value));
@@ -297,11 +298,11 @@ impl HostPrimitive for StoreData {
         self_: Resource<PrimitiveRes>,
         value: Vec<f32>,
     ) -> wasm_bridge::Result<()> {
-        let primitives = self.entities.primitives.clone();
+        let primitives = self.api.wired_scene.as_ref().unwrap().primitives.clone();
         let rep = self_.rep();
         self.commands.push(move |world: &mut World| {
             let primitives = primitives.read().unwrap();
-            let PrimitiveState { handle, .. } = primitives.get(&rep).unwrap();
+            let handle = primitives.get(&rep).unwrap();
             let mut assets = world.resource_mut::<Assets<Mesh>>();
             let mesh = assets.get_mut(handle).unwrap();
 
@@ -319,11 +320,11 @@ impl HostPrimitive for StoreData {
         self_: Resource<PrimitiveRes>,
         value: Vec<f32>,
     ) -> wasm_bridge::Result<()> {
-        let primitives = self.entities.primitives.clone();
+        let primitives = self.api.wired_scene.as_ref().unwrap().primitives.clone();
         let rep = self_.rep();
         self.commands.push(move |world: &mut World| {
             let primitives = primitives.read().unwrap();
-            let PrimitiveState { handle, .. } = primitives.get(&rep).unwrap();
+            let handle = primitives.get(&rep).unwrap();
             let mut assets = world.resource_mut::<Assets<Mesh>>();
             let mesh = assets.get_mut(handle).unwrap();
 
@@ -341,11 +342,11 @@ impl HostPrimitive for StoreData {
         self_: Resource<PrimitiveRes>,
         value: Vec<f32>,
     ) -> wasm_bridge::Result<()> {
-        let primitives = self.entities.primitives.clone();
+        let primitives = self.api.wired_scene.as_ref().unwrap().primitives.clone();
         let rep = self_.rep();
         self.commands.push(move |world: &mut World| {
             let primitives = primitives.read().unwrap();
-            let PrimitiveState { handle, .. } = primitives.get(&rep).unwrap();
+            let handle = primitives.get(&rep).unwrap();
 
             let mut assets = world.resource_mut::<Assets<Mesh>>();
             let mesh = assets.get_mut(handle).unwrap();
@@ -369,7 +370,7 @@ impl HostPrimitive for StoreData {
     }
 }
 
-impl Host for StoreData {}
+impl Host for ScriptData {}
 
 #[cfg(test)]
 mod tests {

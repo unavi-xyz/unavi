@@ -13,13 +13,16 @@ use crate::{
     api::{
         utils::{RefCount, RefCountCell, RefResource},
         wired::{
-            input::{bindings::InputHandler, input_handler::InputHandlerSender},
+            input::input_handler::{InputHandler, InputHandlerSender},
             math::bindings::types::Transform,
             physics::bindings::types::{Collider, RigidBody},
-            scene::bindings::node::{Host, HostNode},
+            scene::{
+                bindings::node::{Host, HostNode},
+                MaterialState,
+            },
         },
     },
-    data::{MaterialState, PrimitiveState, StoreData},
+    data::ScriptData,
 };
 
 use super::mesh::MeshRes;
@@ -74,14 +77,14 @@ impl RefCount for NodeRes {
 
 impl RefResource for NodeRes {}
 
-impl HostNode for StoreData {
+impl HostNode for ScriptData {
     fn new(&mut self) -> wasm_bridge::Result<Resource<NodeRes>> {
         let node = NodeRes::default();
         let table_res = self.table.push(node)?;
         let res = self.clone_res(&table_res)?;
         let rep = res.rep();
 
-        let nodes = self.entities.nodes.clone();
+        let nodes = self.api.wired_scene.as_ref().unwrap().nodes.clone();
         self.commands.push(move |world: &mut World| {
             let entity = world.spawn(WiredNodeBundle::new(rep)).id();
             let mut nodes = nodes.write().unwrap();
@@ -153,11 +156,17 @@ impl HostNode for StoreData {
         let node = self.table.get_mut(&self_)?;
         node.mesh = res;
 
-        let default_material = self.default_material.clone();
-        let materials = self.entities.materials.clone();
+        let default_material = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .default_material
+            .clone();
+        let materials = self.api.wired_scene.as_ref().unwrap().materials.clone();
         let mesh_rep = node.mesh.as_ref().map(|res| res.rep());
-        let nodes = self.entities.nodes.clone();
-        let primitives = self.entities.primitives.clone();
+        let nodes = self.api.wired_scene.as_ref().unwrap().nodes.clone();
+        let primitives = self.api.wired_scene.as_ref().unwrap().primitives.clone();
         self.commands.push(move |world: &mut World| {
             let nodes = nodes.read().unwrap();
             let node_ent = nodes.get(&rep).unwrap();
@@ -179,7 +188,7 @@ impl HostNode for StoreData {
             let materials = materials.read().unwrap();
             let primitives = primitives.read().unwrap();
             for (primitive_id, material_id) in primitive_ids {
-                let PrimitiveState { handle, .. } = primitives.get(&primitive_id).unwrap();
+                let handle = primitives.get(&primitive_id).unwrap();
 
                 let p_ent = world
                     .spawn(PbrBundle {
@@ -264,7 +273,7 @@ impl HostNode for StoreData {
         child.parent = Some(parent_res);
 
         // Update ECS.
-        let nodes = self.entities.nodes.clone();
+        let nodes = self.api.wired_scene.as_ref().unwrap().nodes.clone();
         self.commands.push(move |world: &mut World| {
             let nodes = nodes.read().unwrap();
             let child_ent = nodes.get(&child_rep).unwrap();
@@ -288,7 +297,7 @@ impl HostNode for StoreData {
             .position(|r| r.rep() == child_rep)
             .map(|index| node.children.remove(index));
 
-        let nodes = self.entities.nodes.clone();
+        let nodes = self.api.wired_scene.as_ref().unwrap().nodes.clone();
         self.commands.push(move |world: &mut World| {
             let nodes = nodes.read().unwrap();
             let child_ent = nodes.get(&child_rep).unwrap();
@@ -449,7 +458,7 @@ impl HostNode for StoreData {
         let dropped = NodeRes::handle_drop(rep, &mut self.table)?;
 
         if dropped {
-            let nodes = self.entities.nodes.clone();
+            let nodes = self.api.wired_scene.as_ref().unwrap().nodes.clone();
             self.commands.push(move |world: &mut World| {
                 let mut nodes = nodes.write().unwrap();
                 let entity = nodes.remove(&id).unwrap();
@@ -461,7 +470,7 @@ impl HostNode for StoreData {
     }
 }
 
-impl Host for StoreData {}
+impl Host for ScriptData {}
 
 fn calc_global_transform(
     transform: BTransform,

@@ -1,5 +1,5 @@
 use bevy::{prelude::*, tasks::block_on};
-use wasm_bridge::{component::ResourceAny, AsContextMut};
+use wasm_bridge::component::ResourceAny;
 
 use crate::load::LoadedScript;
 
@@ -23,12 +23,13 @@ pub(crate) fn init_scripts(
             info!("Initializing script {}", name);
 
             let mut scripts = script_map.lock().unwrap();
-            let (script, store) = scripts.get_mut(&entity).expect("Script not found");
+            let script = scripts.get_mut(&entity).expect("Script not found");
 
             script
+                .script
                 .wired_script_types()
                 .script()
-                .call_constructor(store)
+                .call_constructor(&mut script.store)
                 .await
         });
 
@@ -65,15 +66,16 @@ pub(crate) fn update_scripts(
             trace!("Updating script");
 
             let mut scripts = script_map.lock().unwrap();
-            let (script, store) = scripts.get_mut(&entity).expect("Script not found");
+            let script = scripts.get_mut(&entity).expect("Script not found");
 
             let result = script
+                .script
                 .wired_script_types()
                 .script()
-                .call_update(store.as_context_mut(), resource.0, tickrate.delta)
+                .call_update(&mut script.store, resource.0, tickrate.delta)
                 .await;
 
-            commands.append(&mut store.data_mut().commands);
+            commands.append(&mut script.store.data_mut().commands);
 
             trace!("Done");
             drop(span);

@@ -6,7 +6,7 @@ use crate::{
         utils::{RefCount, RefCountCell, RefResource},
         wired::scene::bindings::wired::scene::glxf::HostAssetGlxf,
     },
-    data::StoreData,
+    data::ScriptData,
 };
 
 use super::{document::GlxfDocument, node::GlxfNodeRes};
@@ -26,7 +26,7 @@ impl RefCount for GlxfAssetRes {
 
 impl RefResource for GlxfAssetRes {}
 
-impl HostAssetGlxf for StoreData {
+impl HostAssetGlxf for ScriptData {
     fn new(
         &mut self,
         document: Resource<GlxfDocument>,
@@ -39,8 +39,8 @@ impl HostAssetGlxf for StoreData {
         let table_res = self.table.push(data)?;
         let res = self.clone_res(&table_res)?;
 
-        let assets = self.entities.assets.clone();
-        let documents = self.entities.documents.clone();
+        let assets = self.api.wired_scene.as_ref().unwrap().assets.clone();
+        let documents = self.api.wired_scene.as_ref().unwrap().documents.clone();
         let rep = res.rep();
         self.commands.push(move |world: &mut World| {
             let entity = world.spawn(SpatialBundle::default()).id();
@@ -104,7 +104,7 @@ impl HostAssetGlxf for StoreData {
         let dropped = GlxfAssetRes::handle_drop(rep, &mut self.table)?;
 
         if dropped {
-            let assets = self.entities.assets.clone();
+            let assets = self.api.wired_scene.as_ref().unwrap().assets.clone();
             self.commands.push(move |world: &mut World| {
                 let mut assets = assets.write().unwrap();
                 let entity = assets.remove(&id).unwrap();

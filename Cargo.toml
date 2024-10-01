@@ -30,7 +30,7 @@ capnp-rpc = "0.19.1"
 clap = { version = "4.5.4", features = ["derive"] }
 didkit = { version = "0.6.0", default-features = false, features = ["ed25519"] }
 directories = "5.0.1"
-dwn = "0.0.10"
+dwn = { version = "0.0.10", git = "https://github.com/unavi-xyz/dwn" }
 glam = "0.28.0"
 reqwest = "0.12.5"
 semver = "1.0.22"

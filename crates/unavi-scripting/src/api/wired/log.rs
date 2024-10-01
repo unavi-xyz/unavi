@@ -1,8 +1,9 @@
-use anyhow::Result;
 use bevy::log::{debug, error, info, info_span, warn};
 use wasm_bridge::component::Linker;
 
-use crate::data::StoreData;
+use crate::data::ScriptData;
+
+use self::bindings::api::LogLevel;
 
 pub mod bindings {
     wasm_bridge::component::bindgen!({
@@ -12,11 +13,18 @@ pub mod bindings {
     pub use self::wired::log::*;
 }
 
-use self::bindings::api::LogLevel;
+pub fn add_to_linker(linker: &mut Linker<ScriptData>) -> anyhow::Result<()> {
+    bindings::api::add_to_linker(linker, |s| s)?;
+    Ok(())
+}
 
-impl bindings::api::Host for StoreData {
+pub struct WiredLog {
+    pub name: String,
+}
+
+impl bindings::api::Host for ScriptData {
     fn log(&mut self, level: LogLevel, message: String) -> wasm_bridge::Result<()> {
-        let span = info_span!("Script", name = self.name);
+        let span = info_span!("Script", name = self.api.wired_log.as_ref().unwrap().name);
         let span = span.enter();
 
         match level {
@@ -30,9 +38,4 @@ impl bindings::api::Host for StoreData {
 
         Ok(())
     }
-}
-
-pub fn add_to_linker(linker: &mut Linker<StoreData>) -> Result<()> {
-    bindings::api::add_to_linker(linker, |s| s)?;
-    Ok(())
 }

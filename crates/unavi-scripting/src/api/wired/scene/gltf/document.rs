@@ -6,7 +6,7 @@ use crate::{
         utils::{RefCount, RefCountCell, RefResource},
         wired::scene::bindings::wired::scene::gltf::{Host, HostGltf},
     },
-    data::StoreData,
+    data::ScriptData,
 };
 
 use super::{material::MaterialRes, mesh::MeshRes, node::NodeRes, scene::SceneRes};
@@ -30,13 +30,13 @@ impl RefCount for GltfDocument {
 
 impl RefResource for GltfDocument {}
 
-impl HostGltf for StoreData {
+impl HostGltf for ScriptData {
     fn new(&mut self) -> wasm_bridge::Result<Resource<GltfDocument>> {
         let node = GltfDocument::default();
         let table_res = self.table.push(node)?;
         let res = self.clone_res(&table_res)?;
 
-        let documents = self.entities.documents.clone();
+        let documents = self.api.wired_scene.as_ref().unwrap().documents.clone();
         let rep = res.rep();
         self.commands.push(move |world: &mut World| {
             let entity = world.spawn(SpatialBundle::default()).id();
@@ -68,7 +68,7 @@ impl HostGltf for StoreData {
 
         if let Some(prev) = &data.active_scene {
             let prev_rep = prev.rep();
-            let scenes = self.entities.scenes.clone();
+            let scenes = self.api.wired_scene.as_ref().unwrap().scenes.clone();
             self.commands.push(move |world: &mut World| {
                 let scenes = scenes.read().unwrap();
                 let prev_ent = scenes.get(&prev_rep).unwrap();
@@ -79,10 +79,10 @@ impl HostGltf for StoreData {
         data.active_scene = res;
 
         if let Some(active_scene) = &data.active_scene {
-            let documents = self.entities.documents.clone();
+            let documents = self.api.wired_scene.as_ref().unwrap().documents.clone();
             let root_rep = self_.rep();
             let scene_rep = active_scene.rep();
-            let scenes = self.entities.scenes.clone();
+            let scenes = self.api.wired_scene.as_ref().unwrap().scenes.clone();
             self.commands.push(move |world: &mut World| {
                 let documents = documents.read().unwrap();
                 let root_ent = documents.get(&root_rep).unwrap();
@@ -263,7 +263,7 @@ impl HostGltf for StoreData {
         let dropped = GltfDocument::handle_drop(rep, &mut self.table)?;
 
         if dropped {
-            let documents = self.entities.documents.clone();
+            let documents = self.api.wired_scene.as_ref().unwrap().documents.clone();
             self.commands.push(move |world: &mut World| {
                 let mut nodes = documents.write().unwrap();
                 let entity = nodes.remove(&id).unwrap();
@@ -275,4 +275,4 @@ impl HostGltf for StoreData {
     }
 }
 
-impl Host for StoreData {}
+impl Host for ScriptData {}

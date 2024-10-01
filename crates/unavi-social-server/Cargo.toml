@@ -8,6 +8,6 @@ edition.workspace = true
 
 [dependencies]
 axum-server.workspace = true
-dwn-server = "0.0.10"
+dwn-server = { version = "0.0.10", git = "https://github.com/unavi-xyz/dwn" }
 dwn.workspace = true
 tracing.workspace = true

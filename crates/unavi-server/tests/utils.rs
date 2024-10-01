@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::time::Duration;
 
 use anyhow::Result;
 use dwn::{store::SurrealStore, DWN};
@@ -39,7 +39,7 @@ pub async fn setup_test_server() -> TestServer {
 
     let db = Surreal::new::<Mem>(()).await.unwrap();
     let store = SurrealStore::new(db).await.unwrap();
-    let dwn = Arc::new(DWN::from(store));
+    let dwn = DWN::from(store);
 
     let opts = StartOptions::default();
 

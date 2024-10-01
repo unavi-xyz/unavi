@@ -6,7 +6,7 @@ use wasm_bridge::component::Resource;
 
 use crate::{
     api::utils::{RefCount, RefCountCell, RefResource},
-    data::StoreData,
+    data::ScriptData,
 };
 
 use super::bindings::{
@@ -58,7 +58,7 @@ impl InputHandler {
     }
 }
 
-impl HostInputHandler for StoreData {
+impl HostInputHandler for ScriptData {
     fn new(&mut self) -> wasm_bridge::Result<Resource<InputHandler>> {
         let handler = InputHandler::new();
         let table_res = self.table.push(handler)?;

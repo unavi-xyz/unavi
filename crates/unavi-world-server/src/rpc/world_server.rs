@@ -6,7 +6,6 @@ use capnp_rpc::pry;
 use dwn::{
     actor::{Actor, MessageBuilder},
     message::descriptor::Descriptor,
-    store::{DataStore, MessageStore},
 };
 use tracing::{debug, error};
 use wired_social::protocols::world_host::world_host_protocol_url;
@@ -20,13 +19,13 @@ use crate::{
     update_loop::{IncomingCommand, IncomingEvent, TICKRATE},
 };
 
-pub struct WorldServer<D: DataStore, M: MessageStore> {
-    pub actor: Arc<Actor<D, M>>,
+pub struct WorldServer {
+    pub actor: Arc<Actor>,
     pub player_id: usize,
     pub context: Arc<GlobalContext>,
 }
 
-impl<D: DataStore + 'static, M: MessageStore + 'static> Server for WorldServer<D, M> {
+impl Server for WorldServer {
     fn join(&mut self, params: JoinParams, mut results: JoinResults) -> Promise<(), capnp::Error> {
         let params = pry!(params.get());
         let record_id = pry!(pry!(params.get_record_id()).to_string());
@@ -112,7 +111,7 @@ impl<D: DataStore + 'static, M: MessageStore + 'static> Server for WorldServer<D
 
 /// Verifies the provided `record_id` is a valid instance.
 async fn verify_instance(
-    actor: Arc<Actor<impl DataStore, impl MessageStore>>,
+    actor: Arc<Actor>,
     world_host_did: String,
     record_id: String,
 ) -> Result<()> {

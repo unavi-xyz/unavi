@@ -22,12 +22,12 @@ pub(crate) fn update_physics_transforms(
 
         let mut scripts = script_map.lock().unwrap();
 
-        let Some((_, store)) = scripts.get_mut(&entity) else {
+        let Some(script) = scripts.get_mut(&entity) else {
             continue;
         };
 
-        let data = store.data_mut();
-        let script_nodes = data.entities.nodes.read().unwrap();
+        let data = script.store.data_mut();
+        let script_nodes = data.api.wired_scene.as_ref().unwrap().nodes.read().unwrap();
 
         for (id, ent, transform) in nodes.iter() {
             // Check if phys node is from this script.

@@ -4,7 +4,7 @@ use wasm_bridge::component::Resource;
 
 use crate::{
     api::utils::{RefCount, RefCountCell, RefResource},
-    data::StoreData,
+    data::ScriptData,
 };
 
 use super::bindings::{
@@ -47,7 +47,7 @@ impl Collider {
     }
 }
 
-impl HostCollider for StoreData {
+impl HostCollider for ScriptData {
     fn new(&mut self, shape: Shape) -> wasm_bridge::Result<Resource<Collider>> {
         let collider = Collider::new(shape);
         let table_res = self.table.push(collider)?;

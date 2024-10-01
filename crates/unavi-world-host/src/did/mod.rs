@@ -1,9 +1,8 @@
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 use didkit::JWK;
 use dwn::{
     actor::{Actor, VerifiableCredential},
-    store::{DataStore, MessageStore},
     DWN,
 };
 use serde::{Deserialize, Serialize};
@@ -45,17 +44,13 @@ impl From<VcKey> for VerifiableCredential {
     }
 }
 
-pub struct ActorOptions<D: DataStore, M: MessageStore> {
+pub struct ActorOptions {
     pub domain: String,
-    pub dwn: Arc<DWN<D, M>>,
+    pub dwn: DWN,
     pub storage: Storage,
 }
 
-pub fn create_actor<D, M>(opts: ActorOptions<D, M>) -> Actor<D, M>
-where
-    D: DataStore,
-    M: MessageStore,
-{
+pub fn create_actor(opts: ActorOptions) -> Actor {
     let did = format!("did:web:{}", opts.domain.clone().replace(':', "%3A"));
 
     let actor = match &opts.storage {
@@ -91,11 +86,7 @@ where
     actor
 }
 
-fn create_identity<D, M>(did: String, dwn: Arc<DWN<D, M>>, path: Option<&Path>) -> Actor<D, M>
-where
-    D: DataStore,
-    M: MessageStore,
-{
+fn create_identity(did: String, dwn: DWN, path: Option<&Path>) -> Actor {
     // Create a did:key and convert it to a did:web.
     let mut actor = Actor::new_did_key(dwn).unwrap();
     let key_id = format!("{}#{}", did, KEY_FRAGMENT);

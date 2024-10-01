@@ -5,10 +5,7 @@ use std::{
     sync::Arc,
 };
 
-use dwn::{
-    store::{DataStore, MessageStore},
-    DWN,
-};
+use dwn::DWN;
 use tokio::task::LocalSet;
 use tracing::{debug, error, info, info_span, Instrument};
 use wtransport::{Identity, ServerConfig};
@@ -22,16 +19,14 @@ mod rpc;
 mod update_loop;
 
 #[derive(Clone)]
-pub struct ServerOptions<D: DataStore, M: MessageStore> {
+pub struct ServerOptions {
     pub domain: String,
-    pub dwn: Arc<DWN<D, M>>,
+    pub dwn: DWN,
     pub port: u16,
     pub threads: Option<usize>,
 }
 
-pub async fn start<D: DataStore + 'static, M: MessageStore + 'static>(
-    opts: ServerOptions<D, M>,
-) -> std::io::Result<()> {
+pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
     let opts = Arc::new(opts);
 
     let address = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), opts.port);

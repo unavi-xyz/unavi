@@ -2083,7 +2083,7 @@ dependencies = [
  "bitflags 2.6.0",
  "cexpr",
  "clang-sys",
- "itertools 0.13.0",
+ "itertools 0.12.1",
  "proc-macro2",
  "quote",
  "regex",
@@ -4205,8 +4205,7 @@ checksum = "f25c0e292a7ca6d6498557ff1df68f32c99850012b6ea401cf8daf771f22ff53"
 [[package]]
 name = "dwn"
 version = "0.0.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "564854c5b46edd27f8512a8b435e46ade271537e41fdf880d3bf4dd9c6dabc8b"
+source = "git+https://github.com/unavi-xyz/dwn#e6fb4b91d5405121d875c12e0de49b5213e07945"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -4232,8 +4231,7 @@ dependencies = [
 [[package]]
 name = "dwn-server"
 version = "0.0.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fbe2273314ace70daf4a8ba33829493f82b40ad9d155934a4c7d495903952a4"
+source = "git+https://github.com/unavi-xyz/dwn#e6fb4b91d5405121d875c12e0de49b5213e07945"
 dependencies = [
  "axum",
  "dwn",
@@ -12264,11 +12262,14 @@ dependencies = [
  "bevy_vr_controller",
  "bevy_vrm",
  "crossbeam",
+ "dwn",
+ "thiserror",
  "tokio",
  "tracing",
  "tracing-test",
  "unavi-constants",
  "unavi-player",
+ "unavi-world",
  "wasm-bridge",
  "wasm-bridge-wasi",
 ]

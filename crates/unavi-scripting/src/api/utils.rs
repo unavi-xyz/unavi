@@ -82,24 +82,23 @@ pub trait RefResource: RefCount + Send + Sized + 'static {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::{data::StoreData, load::DefaultMaterial};
+    use crate::{data::ScriptData, load::DefaultMaterial};
 
     use super::*;
 
-    pub fn init_test_data() -> (World, StoreData) {
+    pub fn init_test_data() -> (World, ScriptData) {
         let mut world = World::new();
         world.init_resource::<Assets<Mesh>>();
 
         let default_material = Handle::default();
         world.insert_resource(DefaultMaterial(default_material.clone()));
 
-        let root_ent = world.spawn_empty().id();
-        let data = StoreData::new("test".to_string(), root_ent, default_material);
+        let data = ScriptData::default();
 
         (world, data)
     }
 
-    pub fn test_drop<T: RefResource + Send>(data: &mut StoreData, res_a: Resource<T>) {
+    pub fn test_drop<T: RefResource + Send>(data: &mut ScriptData, res_a: Resource<T>) {
         let res_b = T::from_res(&res_a, &data.table).unwrap();
 
         let dummy = Resource::new_own(res_a.rep());
@@ -113,7 +112,7 @@ pub mod tests {
         assert!(err.is_err());
     }
 
-    pub fn test_new<T: RefResource + Send>(data: &mut StoreData, res_a: Resource<T>) {
+    pub fn test_new<T: RefResource + Send>(data: &mut ScriptData, res_a: Resource<T>) {
         let a = data.table.get(&res_a).unwrap();
         let res_b = a.new_own(res_a.rep());
         assert_eq!(res_a.rep(), res_b.rep());

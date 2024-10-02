@@ -1,14 +1,14 @@
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
-    unavi::{
-        scene::api::{Root, Scene},
-        shapes::api::Cuboid,
-    },
+    unavi::shapes::api::Cuboid,
     wired::{
         input::handler::InputHandler,
         log::api::{log, LogLevel},
         math::types::{Transform, Vec3},
-        scene::material::{Color, Material},
+        scene::{
+            material::{Color, Material},
+            node::Node,
+        },
     },
 };
 use rand::Rng;
@@ -18,17 +18,15 @@ mod bindings;
 mod wired_math_impls;
 
 struct Script {
+    _node: Node,
     input: InputHandler,
     material: Material,
 }
 
 impl GuestScript for Script {
     fn new() -> Self {
-        let scene = Scene::new();
-
         let node = Cuboid::new(Vec3::splat(1.0)).to_physics_node();
         node.set_transform(Transform::from_translation(Vec3::new(0.0, 0.1, -6.0)));
-        scene.add_node(&node);
 
         let material = Material::new();
 
@@ -39,9 +37,11 @@ impl GuestScript for Script {
         let input = InputHandler::new();
         node.set_input_handler(Some(&input));
 
-        Root::add_scene(&scene);
-
-        Script { input, material }
+        Script {
+            _node: node,
+            input,
+            material,
+        }
     }
 
     fn update(&self, _delta: f32) {

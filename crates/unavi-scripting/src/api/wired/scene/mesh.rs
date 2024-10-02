@@ -136,8 +136,23 @@ impl HostMesh for ScriptData {
         mesh.primitives.push(res);
 
         let mesh_nodes = mesh.nodes.iter().map(|res| res.rep()).collect::<Vec<_>>();
-        let nodes = self.api.wired_scene.as_ref().unwrap().nodes.clone();
-        let primitives = self.api.wired_scene.as_ref().unwrap().primitives.clone();
+        let nodes = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .nodes
+            .clone();
+        let primitives = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .primitives
+            .clone();
+
         self.commands.push(move |world: &mut World| {
             let mut assets = world.resource_mut::<Assets<Mesh>>();
             let handle = assets.add(Mesh::new(
@@ -183,7 +198,15 @@ impl HostMesh for ScriptData {
             .map(|index| mesh.primitives.remove(index));
 
         let node_ids = mesh.nodes.iter().map(|res| res.rep()).collect::<Vec<_>>();
-        let nodes = self.api.wired_scene.as_ref().unwrap().nodes.clone();
+        let nodes = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .nodes
+            .clone();
+
         self.commands.push(move |world: &mut World| {
             // Remove node primitives.
             let nodes = nodes.read().unwrap();
@@ -231,6 +254,7 @@ impl HostPrimitive for ScriptData {
         self_: Resource<PrimitiveRes>,
         value: Option<Resource<Material>>,
     ) -> wasm_bridge::Result<()> {
+        let rep = self_.rep();
         let material_rep = value.as_ref().map(|r| r.rep());
 
         let res = value.and_then(|v| self.clone_res(&v).ok());
@@ -249,9 +273,23 @@ impl HostPrimitive for ScriptData {
             .unwrap()
             .default_material
             .clone();
-        let materials = self.api.wired_scene.as_ref().unwrap().materials.clone();
-        let nodes = self.api.wired_scene.as_ref().unwrap().nodes.clone();
-        let rep = self_.rep();
+        let materials = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .materials
+            .clone();
+        let nodes = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .nodes
+            .clone();
+
         self.commands.push(move |world: &mut World| {
             let materials = materials.read().unwrap();
             let nodes = nodes.read().unwrap();
@@ -282,8 +320,16 @@ impl HostPrimitive for ScriptData {
         self_: Resource<PrimitiveRes>,
         value: Vec<u32>,
     ) -> wasm_bridge::Result<()> {
-        let primitives = self.api.wired_scene.as_ref().unwrap().primitives.clone();
         let rep = self_.rep();
+        let primitives = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .primitives
+            .clone();
+
         self.commands.push(move |world: &mut World| {
             let primitives = primitives.read().unwrap();
             let handle = primitives.get(&rep).unwrap();
@@ -298,8 +344,16 @@ impl HostPrimitive for ScriptData {
         self_: Resource<PrimitiveRes>,
         value: Vec<f32>,
     ) -> wasm_bridge::Result<()> {
-        let primitives = self.api.wired_scene.as_ref().unwrap().primitives.clone();
         let rep = self_.rep();
+        let primitives = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .primitives
+            .clone();
+
         self.commands.push(move |world: &mut World| {
             let primitives = primitives.read().unwrap();
             let handle = primitives.get(&rep).unwrap();
@@ -320,8 +374,16 @@ impl HostPrimitive for ScriptData {
         self_: Resource<PrimitiveRes>,
         value: Vec<f32>,
     ) -> wasm_bridge::Result<()> {
-        let primitives = self.api.wired_scene.as_ref().unwrap().primitives.clone();
         let rep = self_.rep();
+        let primitives = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .primitives
+            .clone();
+
         self.commands.push(move |world: &mut World| {
             let primitives = primitives.read().unwrap();
             let handle = primitives.get(&rep).unwrap();
@@ -342,8 +404,16 @@ impl HostPrimitive for ScriptData {
         self_: Resource<PrimitiveRes>,
         value: Vec<f32>,
     ) -> wasm_bridge::Result<()> {
-        let primitives = self.api.wired_scene.as_ref().unwrap().primitives.clone();
         let rep = self_.rep();
+        let primitives = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .primitives
+            .clone();
+
         self.commands.push(move |world: &mut World| {
             let primitives = primitives.read().unwrap();
             let handle = primitives.get(&rep).unwrap();

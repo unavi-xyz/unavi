@@ -75,7 +75,6 @@ fn main() {
         "unavi_vscreen.wasm",
         "unavi_ui.wasm",
         "unavi_shapes.wasm",
-        "unavi_scene.wasm",
         "unavi_layout.wasm",
     ] {
         let path_a: PathBuf = [wasm_out.to_str().unwrap(), name].iter().collect();

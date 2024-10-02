@@ -1,5 +1,5 @@
 use anyhow::Result;
-use wasm_bridge::component::{Linker, ResourceTable};
+use wasm_bridge::component::Linker;
 
 use crate::data::ScriptData;
 

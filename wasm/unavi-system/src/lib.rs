@@ -5,7 +5,7 @@ use bindings::{
     wired::{
         math::types::{Quat, Transform, Vec3},
         player::api::{local_player, Skeleton},
-        scene::gltf::Node,
+        scene::node::Node,
     },
 };
 use clock::Clock;

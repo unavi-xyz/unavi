@@ -4563,14 +4563,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "example-unavi-scene"
-version = "0.0.10"
-dependencies = [
- "glam 0.28.0",
- "wit-bindgen-rt",
-]
-
-[[package]]
 name = "example-unavi-shapes"
 version = "0.0.10"
 dependencies = [
@@ -12240,13 +12232,6 @@ dependencies = [
  "bevy_vr_controller",
  "bevy_vrm",
  "unavi-constants",
-]
-
-[[package]]
-name = "unavi-scene"
-version = "0.0.10"
-dependencies = [
- "wit-bindgen-rt",
 ]
 
 [[package]]

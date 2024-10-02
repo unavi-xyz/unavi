@@ -5,7 +5,7 @@ use crate::load::LoadedScript;
 
 use super::load::ScriptMap;
 
-pub(crate) fn init_scripts(
+pub fn init_scripts(
     mut commands: Commands,
     to_init: Query<
         (Entity, &Name),
@@ -46,7 +46,7 @@ pub(crate) fn init_scripts(
     }
 }
 
-pub(crate) fn update_scripts(
+pub fn update_scripts(
     mut commands: Commands,
     mut scripts: Query<(Entity, &Name, &ScriptResource, &mut ScriptTickrate)>,
     script_map: NonSendMut<ScriptMap>,

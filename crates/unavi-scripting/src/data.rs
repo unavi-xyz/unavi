@@ -45,7 +45,14 @@ impl ScriptData {
     /// Inserts a component into the given node if the value is `Some`.
     /// If the value is `None`, removes the component from the entity.
     pub fn node_insert_option<T: Bundle>(&mut self, node: u32, value: Option<T>) {
-        let nodes = self.api.wired_scene.as_ref().unwrap().nodes.clone();
+        let nodes = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .nodes
+            .clone();
 
         self.commands.push(move |world: &mut World| {
             let nodes = nodes.read().unwrap();

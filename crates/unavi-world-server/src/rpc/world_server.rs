@@ -30,7 +30,7 @@ impl Server for WorldServer {
         let params = pry!(params.get());
         let record_id = pry!(pry!(params.get_record_id()).to_string());
 
-        debug!("Request to join instance: {}", record_id);
+        debug!("Request to join world: {}", record_id);
 
         let actor = self.actor.clone();
         let context = self.context.clone();
@@ -40,14 +40,14 @@ impl Server for WorldServer {
         Promise::from_future(async move {
             let mut success = results.get().init_success();
 
-            match verify_instance(actor, world_host_did, record_id.clone()).await {
+            match verify_world(actor, world_host_did, record_id.clone()).await {
                 Ok(_) => {
-                    debug!("Instance {} verified.", record_id);
+                    debug!("World {} verified.", record_id);
 
                     context
                         .sender
                         .send(IncomingEvent {
-                            command: IncomingCommand::JoinInstance { id: record_id },
+                            command: IncomingCommand::JoinWorld { id: record_id },
                             player_id,
                         })
                         .map_err(|e| {
@@ -59,7 +59,7 @@ impl Server for WorldServer {
                 }
                 Err(e) => {
                     let e = e.to_string();
-                    debug!("Instance error {}", e);
+                    debug!("World error {}", e);
                     success.init_error(e.len() as u32).push_str(&e);
                 }
             };
@@ -79,7 +79,7 @@ impl Server for WorldServer {
             context
                 .sender
                 .send(IncomingEvent {
-                    command: IncomingCommand::LeaveInstance { id: record_id },
+                    command: IncomingCommand::LeaveWorld { id: record_id },
                     player_id,
                 })
                 .map_err(|e| {
@@ -109,12 +109,8 @@ impl Server for WorldServer {
     }
 }
 
-/// Verifies the provided `record_id` is a valid instance.
-async fn verify_instance(
-    actor: Arc<Actor>,
-    world_host_did: String,
-    record_id: String,
-) -> Result<()> {
+/// Verifies the provided `record_id` is a valid world.
+async fn verify_world(actor: Arc<Actor>, world_host_did: String, record_id: String) -> Result<()> {
     let read = actor
         .read_record(record_id)
         .target(world_host_did)
@@ -128,13 +124,13 @@ async fn verify_instance(
     };
 
     if descriptor.protocol != Some(world_host_protocol_url()) {
-        debug!("Invalid instance protocol: {:?}", descriptor.protocol);
+        debug!("Invalid world protocol: {:?}", descriptor.protocol);
         bail!("Invalid descriptor")
     }
 
-    if descriptor.protocol_path != Some("instance".to_string()) {
+    if descriptor.protocol_path != Some("world".to_string()) {
         debug!(
-            "Invalid instance protocol path: {:?}",
+            "Invalid world protocol path: {:?}",
             descriptor.protocol_path
         );
         bail!("Invalid descriptor")

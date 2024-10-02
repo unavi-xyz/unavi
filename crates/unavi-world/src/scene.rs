@@ -2,7 +2,7 @@ use avian3d::prelude::*;
 use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 use bevy_vrm::mtoon::MtoonSun;
 
-use crate::{InstanceRecord, WorldRecord};
+use crate::WorldRecord;
 
 pub fn setup_lights(mut commands: Commands, mut ambient: ResMut<AmbientLight>) {
     ambient.brightness = 40.0;
@@ -29,14 +29,7 @@ pub fn create_world_scene(
     mut commands: Commands,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
-    worlds: Query<
-        Entity,
-        (
-            With<WorldRecord>,
-            With<InstanceRecord>,
-            Without<Handle<Scene>>,
-        ),
-    >,
+    worlds: Query<Entity, (With<WorldRecord>, Without<Handle<Scene>>)>,
 ) {
     for entity in worlds.iter() {
         let mut entity = commands.entity(entity);

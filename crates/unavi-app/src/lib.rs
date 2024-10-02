@@ -27,6 +27,8 @@
 //! git submodule foreach git pull
 //! ```
 
+use std::sync::Arc;
+
 use bevy::{
     asset::AssetMetaCheck,
     log::{Level, LogPlugin},
@@ -105,14 +107,15 @@ pub async fn start(db: Surreal<Db>, opts: StartOptions) {
         })
         .finish(&mut app);
 
-    app.insert_resource(UserActor(actor)).add_plugins((
-        PhysicsPlugins::default(),
-        unavi_networking::NetworkingPlugin,
-        unavi_player::PlayerPlugin,
-        unavi_scripting::ScriptingPlugin,
-        unavi_settings::SettingsPlugin,
-        unavi_world::WorldPlugin,
-    ));
+    app.insert_resource(UserActor(Arc::new(actor)))
+        .add_plugins((
+            PhysicsPlugins::default(),
+            unavi_networking::NetworkingPlugin,
+            unavi_player::PlayerPlugin,
+            unavi_scripting::ScriptingPlugin,
+            unavi_settings::SettingsPlugin,
+            unavi_world::WorldPlugin,
+        ));
 
     app.add_systems(Startup, unavi_system::spawn_unavi_system);
     #[cfg(not(target_family = "wasm"))]

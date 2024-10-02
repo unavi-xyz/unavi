@@ -17,12 +17,11 @@ use wired_social::{
     schemas::{
         common::RecordLink,
         home::{home_schema_url, Home},
-        instance::{instance_schema_url, Instance},
         world::{world_schema_url, World},
     },
 };
 
-use crate::{InstanceRecord, InstanceServer, UserActor, WorldRecord};
+use crate::{UserActor, WorldRecord, WorldServer};
 
 #[derive(Event, Default)]
 pub struct JoinHome;
@@ -44,9 +43,8 @@ pub enum JoinHomeError {
 }
 
 pub struct JoinHomeResult {
-    instance: RecordLink,
-    instance_server: String,
     world: RecordLink,
+    world_server: String,
 }
 
 const ENV_WORLD_HOST_DID: Option<&str> = option_env!("UNAVI_WORLD_HOST_DID");
@@ -105,6 +103,7 @@ pub fn handle_join_home(
                             .data(serde_json::to_vec(&data).unwrap())
                             .data_format("application/json".to_string())
                             .schema(world_schema_url())
+                            .target(world_host.to_string())
                             .published(true)
                             .process()
                             .await?;
@@ -180,35 +179,9 @@ pub fn handle_join_home(
                         }
                     };
 
-                    // Create instance.
-                    let data = Instance {
-                        world: home.world.clone(),
-                    };
-
-                    let instance_reply = actor
-                        .create_record()
-                        .protocol(
-                            world_host_protocol_url(),
-                            WORLD_HOST_PROTOCOL_VERSION,
-                            "instance".to_string(),
-                        )
-                        .data(serde_json::to_vec(&data).unwrap())
-                        .data_format("application/json".to_string())
-                        .schema(instance_schema_url())
-                        .published(true)
-                        .target(world_host.to_string())
-                        .send(world_host)
-                        .await?;
-
-                    info!("Created home instance: {}", instance_reply.record_id);
-
                     Ok(JoinHomeResult {
-                        instance: RecordLink {
-                            record_id: instance_reply.record_id,
-                            did: world_host.to_string(),
-                        },
-                        instance_server: connect_url,
                         world: home.world,
+                        world_server: connect_url,
                     })
                 });
             }
@@ -217,15 +190,10 @@ pub fn handle_join_home(
         AsyncTaskStatus::Finished(res) => {
             match res {
                 Ok(JoinHomeResult {
-                    instance,
-                    instance_server,
                     world,
+                    world_server,
                 }) => {
-                    commands.spawn((
-                        InstanceRecord(instance),
-                        InstanceServer(instance_server),
-                        WorldRecord(world),
-                    ));
+                    commands.spawn((WorldRecord(world), WorldServer(world_server)));
                 }
                 Err(e) => {
                     error!("{}", e);

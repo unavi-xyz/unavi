@@ -39,7 +39,7 @@ pub enum Command {
         port: u16,
     },
     /// World server.
-    /// Hosts multiplayer instances of worlds.
+    /// Hosts multiplayer worlds of worlds.
     World {
         #[arg(short, long, default_value = "localhost:<port>")]
         domain: String,

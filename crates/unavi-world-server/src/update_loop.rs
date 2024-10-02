@@ -18,10 +18,10 @@ pub struct IncomingEvent {
 #[derive(Debug)]
 pub enum IncomingCommand {
     Disconnect,
-    JoinInstance {
+    JoinWorld {
         id: String,
     },
-    LeaveInstance {
+    LeaveWorld {
         id: String,
     },
     NewPlayer {
@@ -56,7 +56,7 @@ pub async fn update_loop(
     mut receiver: UnboundedReceiver<IncomingEvent>,
 ) -> Result<(), UpdateLoopError> {
     let duration = Duration::from_secs_f32(TICKRATE);
-    let mut instances = HashMap::<String, Instance>::default();
+    let mut worlds = HashMap::<String, World>::default();
     let mut players = HashMap::<usize, Player>::default();
 
     loop {
@@ -67,10 +67,10 @@ pub async fn update_loop(
 
             match msg.command {
                 IncomingCommand::Disconnect => {
-                    for (id, instance) in instances.iter_mut() {
-                        if instance.players.contains(&msg.player_id) {
+                    for (id, world) in worlds.iter_mut() {
+                        if world.players.contains(&msg.player_id) {
                             sender.send(IncomingEvent {
-                                command: IncomingCommand::LeaveInstance { id: id.to_owned() },
+                                command: IncomingCommand::LeaveWorld { id: id.to_owned() },
                                 player_id: msg.player_id,
                             })?;
                         }
@@ -78,25 +78,25 @@ pub async fn update_loop(
 
                     players.remove(&msg.player_id);
                 }
-                IncomingCommand::JoinInstance { id } => {
-                    let instance = match instances.get_mut(&id) {
+                IncomingCommand::JoinWorld { id } => {
+                    let world = match worlds.get_mut(&id) {
                         Some(i) => i,
                         None => {
-                            instances.insert(id.clone(), Instance::default());
-                            instances.get_mut(&id).unwrap()
+                            worlds.insert(id.clone(), World::default());
+                            worlds.get_mut(&id).unwrap()
                         }
                     };
 
                     let player = players.get_mut(&msg.player_id).unwrap();
 
-                    for other_id in instance.players.iter() {
+                    for other_id in world.players.iter() {
                         player.known_players.add(*other_id);
                         player
                             .sender
                             .send(OutgoingEvent::PlayerJoined { id: *other_id })?;
                     }
 
-                    for other_id in instance.players.iter() {
+                    for other_id in world.players.iter() {
                         let other = players.get_mut(other_id).unwrap();
                         other.known_players.add(msg.player_id);
                         other
@@ -104,17 +104,17 @@ pub async fn update_loop(
                             .send(OutgoingEvent::PlayerJoined { id: msg.player_id })?;
                     }
 
-                    instance.players.insert(msg.player_id);
+                    world.players.insert(msg.player_id);
                 }
-                IncomingCommand::LeaveInstance { id } => {
-                    let instance = match instances.get_mut(&id) {
+                IncomingCommand::LeaveWorld { id } => {
+                    let world = match worlds.get_mut(&id) {
                         Some(i) => i,
                         None => continue,
                     };
 
-                    instance.players.remove(&msg.player_id);
+                    world.players.remove(&msg.player_id);
 
-                    for player_id in instance.players.iter() {
+                    for player_id in world.players.iter() {
                         let player = players.get_mut(player_id).unwrap();
                         player.known_players.remove(*player_id);
                         player
@@ -122,8 +122,8 @@ pub async fn update_loop(
                             .send(OutgoingEvent::PlayerLeft { id: msg.player_id })?;
                     }
 
-                    if instance.players.is_empty() {
-                        instances.remove(&id);
+                    if world.players.is_empty() {
+                        worlds.remove(&id);
                     }
                 }
                 IncomingCommand::NewPlayer { sender } => {
@@ -157,7 +157,7 @@ pub async fn update_loop(
 }
 
 #[derive(Default)]
-struct Instance {
+struct World {
     players: HashSet<usize>,
 }
 

@@ -49,9 +49,17 @@ impl HostScene for ScriptData {
         let node = SceneRes::default();
         let table_res = self.table.push(node)?;
         let res = self.clone_res(&table_res)?;
-
         let rep = res.rep();
-        let scenes = self.api.wired_scene.as_ref().unwrap().scenes.clone();
+
+        let scenes = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .scenes
+            .clone();
+
         self.commands.push(move |world: &mut World| {
             let entity = world.spawn(GltfSceneBundle::new(rep)).id();
             let mut scenes = scenes.write().unwrap();
@@ -96,8 +104,23 @@ impl HostScene for ScriptData {
         let data = self.table.get_mut(&self_)?;
         data.nodes.push(res);
 
-        let nodes = self.api.wired_scene.as_ref().unwrap().nodes.clone();
-        let scenes = self.api.wired_scene.as_ref().unwrap().scenes.clone();
+        let nodes = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .nodes
+            .clone();
+        let scenes = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .scenes
+            .clone();
+
         self.commands.push(move |world: &mut World| {
             let scenes = scenes.read().unwrap();
             let scene_ent = scenes.get(&scene_rep).unwrap();
@@ -123,7 +146,15 @@ impl HostScene for ScriptData {
             .position(|r| r.rep() == node_rep)
             .map(|index| data.nodes.remove(index));
 
-        let nodes = self.api.wired_scene.as_ref().unwrap().nodes.clone();
+        let nodes = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .nodes
+            .clone();
+
         self.commands.push(move |world: &mut World| {
             let nodes = nodes.read().unwrap();
             let node_ent = nodes.get(&node_rep).unwrap();
@@ -138,7 +169,15 @@ impl HostScene for ScriptData {
         let dropped = SceneRes::handle_drop(rep, &mut self.table)?;
 
         if dropped {
-            let scenes = self.api.wired_scene.as_ref().unwrap().scenes.clone();
+            let scenes = self
+                .api
+                .wired_scene
+                .as_ref()
+                .unwrap()
+                .entities
+                .scenes
+                .clone();
+
             self.commands.push(move |world: &mut World| {
                 let mut scenes = scenes.write().unwrap();
                 let entity = scenes.remove(&id).unwrap();
@@ -156,7 +195,7 @@ impl Host for ScriptData {}
 mod tests {
     use tracing_test::traced_test;
 
-    use crate::api::wired::scene::{bindings::node::HostNode, gltf::node::NodeId};
+    use crate::api::wired::scene::{bindings::node::HostNode, node::NodeId};
 
     use super::*;
 
@@ -164,7 +203,6 @@ mod tests {
     #[traced_test]
     fn test_new() {
         let mut world = World::new();
-        let root_ent = world.spawn_empty().id();
         let mut data = ScriptData::default();
 
         let res = HostScene::new(&mut data).unwrap();
@@ -230,7 +268,6 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_nodes() {
-        let mut world = World::new();
         let mut data = ScriptData::default();
 
         let scene = HostScene::new(&mut data).unwrap();

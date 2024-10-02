@@ -2,18 +2,20 @@ use std::f32::consts::{FRAC_PI_2, PI};
 
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
-    unavi::{
-        scene::api::{Root, Scene},
-        shapes::api::{Axes, Circle, Cuboid, Cylinder, Ellipse, Rectangle, Sphere},
+    unavi::shapes::api::{Axes, Circle, Cuboid, Cylinder, Ellipse, Rectangle, Sphere},
+    wired::{
+        math::types::{Quat, Transform, Vec2, Vec3},
+        scene::scene::Scene,
     },
-    wired::math::types::{Quat, Transform, Vec2, Vec3},
 };
 
 #[allow(warnings)]
 mod bindings;
 mod wired_math_impls;
 
-struct Script;
+struct Script {
+    _scene: Scene,
+}
 
 impl GuestScript for Script {
     fn new() -> Self {
@@ -92,9 +94,7 @@ impl GuestScript for Script {
             axes.add_child(&ellipse);
         }
 
-        Root::add_scene(&scene);
-
-        Script
+        Script { _scene: scene }
     }
 
     fn update(&self, _delta: f32) {}

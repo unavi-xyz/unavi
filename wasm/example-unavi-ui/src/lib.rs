@@ -4,7 +4,6 @@ use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
     unavi::{
         layout::container::{Alignment, Container},
-        scene::api::{Root, Scene},
         shapes::api::Rectangle,
         ui::{
             api::update_ui,
@@ -15,7 +14,10 @@ use bindings::{
     wired::{
         log::api::{log, LogLevel},
         math::types::{Transform, Vec2, Vec3},
-        scene::material::{Color, Material},
+        scene::{
+            material::{Color, Material},
+            node::Node,
+        },
     },
 };
 
@@ -25,6 +27,7 @@ mod wired_math_impls;
 mod wired_scene_impls;
 
 struct Script {
+    _bg: Container,
     button: Button,
     clock: Text,
     time: Cell<f32>,
@@ -35,13 +38,10 @@ const HEIGHT: f32 = 3.0;
 
 impl GuestScript for Script {
     fn new() -> Self {
-        let scene = Scene::new();
-
         // Background container
         let bg = Container::new(Vec3::new(LENGTH, HEIGHT, 0.1));
         bg.root()
             .set_transform(Transform::from_translation(Vec3::new(0.0, 0.2, -8.0)));
-        scene.add_node(&bg.root());
 
         {
             let rect = Rectangle::new(Vec2::new(LENGTH, HEIGHT)).to_physics_node();
@@ -65,10 +65,11 @@ impl GuestScript for Script {
             let text = Text::new("");
             text.set_material(Some(&Material::from_color(Color::BLACK)));
 
-            let node = scene.create_node();
+            let node = Node::new();
             node.set_mesh(Some(&text.mesh()));
             node.set_transform(Transform::from_translation(Vec3::new(4.0, 1.0, 0.01)));
             bg.inner().add_child(&node);
+
             text
         };
 
@@ -93,9 +94,8 @@ impl GuestScript for Script {
             // TODO: Add buttons for controlling text settings
         }
 
-        Root::add_scene(&scene);
-
         Script {
+            _bg: bg,
             button,
             clock,
             time: Cell::default(),

@@ -6,7 +6,8 @@ pub mod wired {
         pub mod types {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             pub type Vec3 = super::super::super::wired::math::types::Vec3;
             pub type Quat = super::super::super::wired::math::types::Quat;
             #[repr(u8)]
@@ -16,10 +17,7 @@ pub mod wired {
                 Right,
             }
             impl ::core::fmt::Debug for HandSide {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
                         HandSide::Left => f.debug_tuple("HandSide::Left").finish(),
                         HandSide::Right => f.debug_tuple("HandSide::Right").finish(),
@@ -47,10 +45,7 @@ pub mod wired {
                 pub radius: f32,
             }
             impl ::core::fmt::Debug for Joint {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Joint")
                         .field("translation", &self.translation)
                         .field("rotation", &self.rotation)
@@ -67,10 +62,7 @@ pub mod wired {
                 pub metacarpal: Joint,
             }
             impl ::core::fmt::Debug for Finger {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Finger")
                         .field("tip", &self.tip)
                         .field("distal", &self.distal)
@@ -94,10 +86,7 @@ pub mod wired {
                 pub elbow: Option<Joint>,
             }
             impl ::core::fmt::Debug for Hand {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Hand")
                         .field("side", &self.side)
                         .field("thumb", &self.thumb)
@@ -119,10 +108,7 @@ pub mod wired {
                 pub origin: Vec3,
             }
             impl ::core::fmt::Debug for Ray {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Ray")
                         .field("orientation", &self.orientation)
                         .field("origin", &self.origin)
@@ -135,17 +121,10 @@ pub mod wired {
                 Ray(Ray),
             }
             impl ::core::fmt::Debug for InputData {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
-                        InputData::Hand(e) => {
-                            f.debug_tuple("InputData::Hand").field(e).finish()
-                        }
-                        InputData::Ray(e) => {
-                            f.debug_tuple("InputData::Ray").field(e).finish()
-                        }
+                        InputData::Hand(e) => f.debug_tuple("InputData::Hand").field(e).finish(),
+                        InputData::Ray(e) => f.debug_tuple("InputData::Ray").field(e).finish(),
                     }
                 }
             }
@@ -155,17 +134,10 @@ pub mod wired {
                 Hover,
             }
             impl ::core::fmt::Debug for InputAction {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
-                        InputAction::Collision => {
-                            f.debug_tuple("InputAction::Collision").finish()
-                        }
-                        InputAction::Hover => {
-                            f.debug_tuple("InputAction::Hover").finish()
-                        }
+                        InputAction::Collision => f.debug_tuple("InputAction::Collision").finish(),
+                        InputAction::Hover => f.debug_tuple("InputAction::Hover").finish(),
                     }
                 }
             }
@@ -180,10 +152,7 @@ pub mod wired {
                 pub data: InputData,
             }
             impl ::core::fmt::Debug for InputEvent {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("InputEvent")
                         .field("id", &self.id)
                         .field("action", &self.action)
@@ -196,7 +165,8 @@ pub mod wired {
         pub mod handler {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type InputEvent = super::super::super::wired::input::types::InputEvent;
             #[derive(Debug)]
@@ -263,9 +233,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(8))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 768]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 768],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 768]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:input/handler")]
@@ -881,7 +849,8 @@ pub mod wired {
         pub mod api {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             #[repr(u8)]
             #[derive(Clone, Copy, Eq, PartialEq)]
             pub enum LogLevel {
@@ -891,10 +860,7 @@ pub mod wired {
                 Error,
             }
             impl ::core::fmt::Debug for LogLevel {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
                         LogLevel::Debug => f.debug_tuple("LogLevel::Debug").finish(),
                         LogLevel::Info => f.debug_tuple("LogLevel::Info").finish(),
@@ -945,7 +911,8 @@ pub mod wired {
         pub mod types {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             #[repr(C)]
             #[derive(Clone, Copy)]
             pub struct Vec2 {
@@ -953,10 +920,7 @@ pub mod wired {
                 pub y: f32,
             }
             impl ::core::fmt::Debug for Vec2 {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Vec2")
                         .field("x", &self.x)
                         .field("y", &self.y)
@@ -971,10 +935,7 @@ pub mod wired {
                 pub z: f32,
             }
             impl ::core::fmt::Debug for Vec3 {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Vec3")
                         .field("x", &self.x)
                         .field("y", &self.y)
@@ -991,10 +952,7 @@ pub mod wired {
                 pub w: f32,
             }
             impl ::core::fmt::Debug for Quat {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Quat")
                         .field("x", &self.x)
                         .field("y", &self.y)
@@ -1011,10 +969,7 @@ pub mod wired {
                 pub translation: Vec3,
             }
             impl ::core::fmt::Debug for Transform {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Transform")
                         .field("rotation", &self.rotation)
                         .field("scale", &self.scale)
@@ -1067,7 +1022,11 @@ pub mod wired {
                     let l1 = *ptr0.add(0).cast::<f32>();
                     let l2 = *ptr0.add(4).cast::<f32>();
                     let l3 = *ptr0.add(8).cast::<f32>();
-                    Vec3 { x: l1, y: l2, z: l3 }
+                    Vec3 {
+                        x: l1,
+                        y: l2,
+                        z: l3,
+                    }
                 }
             }
             #[allow(unused_unsafe, clippy::all)]
@@ -1092,7 +1051,12 @@ pub mod wired {
                     let l2 = *ptr0.add(4).cast::<f32>();
                     let l3 = *ptr0.add(8).cast::<f32>();
                     let l4 = *ptr0.add(12).cast::<f32>();
-                    Quat { x: l1, y: l2, z: l3, w: l4 }
+                    Quat {
+                        x: l1,
+                        y: l2,
+                        z: l3,
+                        w: l4,
+                    }
                 }
             }
             #[allow(unused_unsafe, clippy::all)]
@@ -1124,9 +1088,22 @@ pub mod wired {
                     let l9 = *ptr0.add(32).cast::<f32>();
                     let l10 = *ptr0.add(36).cast::<f32>();
                     Transform {
-                        rotation: Quat { x: l1, y: l2, z: l3, w: l4 },
-                        scale: Vec3 { x: l5, y: l6, z: l7 },
-                        translation: Vec3 { x: l8, y: l9, z: l10 },
+                        rotation: Quat {
+                            x: l1,
+                            y: l2,
+                            z: l3,
+                            w: l4,
+                        },
+                        scale: Vec3 {
+                            x: l5,
+                            y: l6,
+                            z: l7,
+                        },
+                        translation: Vec3 {
+                            x: l8,
+                            y: l9,
+                            z: l10,
+                        },
                     }
                 }
             }
@@ -1138,7 +1115,8 @@ pub mod wired {
         pub mod types {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Vec3 = super::super::super::wired::math::types::Vec3;
             #[derive(Debug)]
@@ -1185,10 +1163,7 @@ pub mod wired {
                 pub radius: f32,
             }
             impl ::core::fmt::Debug for ShapeCylinder {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("ShapeCylinder")
                         .field("height", &self.height)
                         .field("radius", &self.radius)
@@ -1202,20 +1177,11 @@ pub mod wired {
                 Sphere(f32),
             }
             impl ::core::fmt::Debug for Shape {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
-                        Shape::Cuboid(e) => {
-                            f.debug_tuple("Shape::Cuboid").field(e).finish()
-                        }
-                        Shape::Cylinder(e) => {
-                            f.debug_tuple("Shape::Cylinder").field(e).finish()
-                        }
-                        Shape::Sphere(e) => {
-                            f.debug_tuple("Shape::Sphere").field(e).finish()
-                        }
+                        Shape::Cuboid(e) => f.debug_tuple("Shape::Cuboid").field(e).finish(),
+                        Shape::Cylinder(e) => f.debug_tuple("Shape::Cylinder").field(e).finish(),
+                        Shape::Sphere(e) => f.debug_tuple("Shape::Sphere").field(e).finish(),
                     }
                 }
             }
@@ -1264,17 +1230,10 @@ pub mod wired {
                 Kinematic,
             }
             impl ::core::fmt::Debug for RigidBodyType {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
-                        RigidBodyType::Dynamic => {
-                            f.debug_tuple("RigidBodyType::Dynamic").finish()
-                        }
-                        RigidBodyType::Fixed => {
-                            f.debug_tuple("RigidBodyType::Fixed").finish()
-                        }
+                        RigidBodyType::Dynamic => f.debug_tuple("RigidBodyType::Dynamic").finish(),
+                        RigidBodyType::Fixed => f.debug_tuple("RigidBodyType::Fixed").finish(),
                         RigidBodyType::Kinematic => {
                             f.debug_tuple("RigidBodyType::Kinematic").finish()
                         }
@@ -1309,7 +1268,10 @@ pub mod wired {
                                 (0i32, _rt::as_f32(x0), _rt::as_f32(y0), _rt::as_f32(z0))
                             }
                             Shape::Cylinder(e) => {
-                                let ShapeCylinder { height: height1, radius: radius1 } = e;
+                                let ShapeCylinder {
+                                    height: height1,
+                                    radius: radius1,
+                                } = e;
                                 (1i32, _rt::as_f32(height1), _rt::as_f32(radius1), 0.0f32)
                             }
                             Shape::Sphere(e) => (2i32, _rt::as_f32(e), 0.0f32, 0.0f32),
@@ -1391,9 +1353,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 12],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:physics/types")]
@@ -1451,9 +1411,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 12],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:physics/types")]
@@ -1513,7 +1471,8 @@ pub mod wired {
         pub mod api {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Node = super::super::super::wired::scene::node::Node;
             pub struct Skeleton {
@@ -1539,10 +1498,7 @@ pub mod wired {
                 pub right_foot: Node,
             }
             impl ::core::fmt::Debug for Skeleton {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Skeleton")
                         .field("hips", &self.hips)
                         .field("spine", &self.spine)
@@ -1619,9 +1575,7 @@ pub mod wired {
                             unreachable!()
                         }
                         let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::node::Node::from_handle(
-                            ret as u32,
-                        )
+                        super::super::super::wired::scene::node::Node::from_handle(ret as u32)
                     }
                 }
             }
@@ -1631,9 +1585,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 80]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 80],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 80]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:player/api")]
@@ -1685,45 +1637,55 @@ pub mod wired {
                             head: super::super::super::wired::scene::node::Node::from_handle(
                                 l6 as u32,
                             ),
-                            left_shoulder: super::super::super::wired::scene::node::Node::from_handle(
-                                l7 as u32,
-                            ),
-                            left_upper_arm: super::super::super::wired::scene::node::Node::from_handle(
-                                l8 as u32,
-                            ),
-                            left_lower_arm: super::super::super::wired::scene::node::Node::from_handle(
-                                l9 as u32,
-                            ),
+                            left_shoulder:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l7 as u32,
+                                ),
+                            left_upper_arm:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l8 as u32,
+                                ),
+                            left_lower_arm:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l9 as u32,
+                                ),
                             left_hand: super::super::super::wired::scene::node::Node::from_handle(
                                 l10 as u32,
                             ),
-                            right_shoulder: super::super::super::wired::scene::node::Node::from_handle(
-                                l11 as u32,
-                            ),
-                            right_upper_arm: super::super::super::wired::scene::node::Node::from_handle(
-                                l12 as u32,
-                            ),
-                            right_lower_arm: super::super::super::wired::scene::node::Node::from_handle(
-                                l13 as u32,
-                            ),
+                            right_shoulder:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l11 as u32,
+                                ),
+                            right_upper_arm:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l12 as u32,
+                                ),
+                            right_lower_arm:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l13 as u32,
+                                ),
                             right_hand: super::super::super::wired::scene::node::Node::from_handle(
                                 l14 as u32,
                             ),
-                            left_upper_leg: super::super::super::wired::scene::node::Node::from_handle(
-                                l15 as u32,
-                            ),
-                            left_lower_leg: super::super::super::wired::scene::node::Node::from_handle(
-                                l16 as u32,
-                            ),
+                            left_upper_leg:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l15 as u32,
+                                ),
+                            left_lower_leg:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l16 as u32,
+                                ),
                             left_foot: super::super::super::wired::scene::node::Node::from_handle(
                                 l17 as u32,
                             ),
-                            right_upper_leg: super::super::super::wired::scene::node::Node::from_handle(
-                                l18 as u32,
-                            ),
-                            right_lower_leg: super::super::super::wired::scene::node::Node::from_handle(
-                                l19 as u32,
-                            ),
+                            right_upper_leg:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l18 as u32,
+                                ),
+                            right_lower_leg:
+                                super::super::super::wired::scene::node::Node::from_handle(
+                                    l19 as u32,
+                                ),
                             right_foot: super::super::super::wired::scene::node::Node::from_handle(
                                 l20 as u32,
                             ),
@@ -1791,7 +1753,8 @@ pub mod wired {
         pub mod material {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             #[repr(C)]
             #[derive(Clone, Copy)]
@@ -1802,10 +1765,7 @@ pub mod wired {
                 pub a: f32,
             }
             impl ::core::fmt::Debug for Color {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     f.debug_struct("Color")
                         .field("r", &self.r)
                         .field("g", &self.g)
@@ -1915,9 +1875,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/material")]
@@ -1965,9 +1923,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 16],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/material")]
@@ -1997,7 +1953,12 @@ pub mod wired {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn set_color(&self, value: Color) {
                     unsafe {
-                        let Color { r: r0, g: g0, b: b0, a: a0 } = value;
+                        let Color {
+                            r: r0,
+                            g: g0,
+                            b: b0,
+                            a: a0,
+                        } = value;
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/material")]
                         extern "C" {
@@ -2023,7 +1984,8 @@ pub mod wired {
         pub mod mesh {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Material = super::super::super::wired::scene::material::Material;
             #[derive(Debug)]
@@ -2125,9 +2087,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/mesh")]
@@ -2327,9 +2287,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/mesh")]
@@ -2377,9 +2335,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/mesh")]
@@ -2443,10 +2399,7 @@ pub mod wired {
                         fn wit_import(_: i32, _: i32) {
                             unreachable!()
                         }
-                        wit_import(
-                            (self).handle() as i32,
-                            (&value).take_handle() as i32,
-                        );
+                        wit_import((self).handle() as i32, (&value).take_handle() as i32);
                     }
                 }
             }
@@ -2455,7 +2408,8 @@ pub mod wired {
         pub mod node {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Mesh = super::super::super::wired::scene::mesh::Mesh;
             pub type InputHandler = super::super::super::wired::input::handler::InputHandler;
@@ -2563,9 +2517,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -2609,13 +2561,45 @@ pub mod wired {
             }
             impl Node {
                 #[allow(unused_unsafe, clippy::all)]
+                pub fn parent(&self) -> Option<Node> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:scene/node")]
+                        extern "C" {
+                            #[link_name = "[method]node.parent"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<i32>();
+                                    Node::from_handle(l2 as u32)
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl Node {
+                #[allow(unused_unsafe, clippy::all)]
                 pub fn children(&self) -> _rt::Vec<Node> {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -2684,49 +2668,11 @@ pub mod wired {
             }
             impl Node {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn parent(&self) -> Option<Node> {
-                    unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
-                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/node")]
-                        extern "C" {
-                            #[link_name = "[method]node.parent"]
-                            fn wit_import(_: i32, _: *mut u8);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: *mut u8) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, ptr0);
-                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
-                        match l1 {
-                            0 => None,
-                            1 => {
-                                let e = {
-                                    let l2 = *ptr0.add(4).cast::<i32>();
-                                    Node::from_handle(l2 as u32)
-                                };
-                                Some(e)
-                            }
-                            _ => _rt::invalid_enum_discriminant(),
-                        }
-                    }
-                }
-            }
-            impl Node {
-                #[allow(unused_unsafe, clippy::all)]
                 pub fn global_transform(&self) -> Transform {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 40]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 40],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 40]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -2776,9 +2722,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 40]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 40],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 40]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -2903,9 +2847,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -2963,9 +2905,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -3023,9 +2963,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -3083,9 +3021,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -3142,7 +3078,8 @@ pub mod wired {
         pub mod scene {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Node = super::super::super::wired::scene::node::Node;
             #[derive(Debug)]
@@ -3226,9 +3163,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/scene")]
@@ -3276,9 +3211,7 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/scene")]
@@ -3349,23 +3282,21 @@ pub mod wired {
             }
         }
         #[allow(dead_code, clippy::all)]
-        pub mod gltf {
+        pub mod document {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
-            pub type Material = super::super::super::wired::scene::material::Material;
-            pub type Mesh = super::super::super::wired::scene::mesh::Mesh;
-            pub type Node = super::super::super::wired::scene::node::Node;
             pub type Scene = super::super::super::wired::scene::scene::Scene;
-            /// A glTF document.
-            /// Can be saved or loaded independently of the rest of the world.
+            /// A save-able collection of resources with an active scene.
+            /// Roughly equivalent to a glTF file.
             #[derive(Debug)]
             #[repr(transparent)]
-            pub struct Gltf {
-                handle: _rt::Resource<Gltf>,
+            pub struct Document {
+                handle: _rt::Resource<Document>,
             }
-            impl Gltf {
+            impl Document {
                 #[doc(hidden)]
                 pub unsafe fn from_handle(handle: u32) -> Self {
                     Self {
@@ -3381,30 +3312,30 @@ pub mod wired {
                     _rt::Resource::handle(&self.handle)
                 }
             }
-            unsafe impl _rt::WasmResource for Gltf {
+            unsafe impl _rt::WasmResource for Document {
                 #[inline]
                 unsafe fn drop(_handle: u32) {
                     #[cfg(not(target_arch = "wasm32"))]
                     unreachable!();
                     #[cfg(target_arch = "wasm32")]
                     {
-                        #[link(wasm_import_module = "wired:scene/gltf")]
+                        #[link(wasm_import_module = "wired:scene/document")]
                         extern "C" {
-                            #[link_name = "[resource-drop]gltf"]
+                            #[link_name = "[resource-drop]document"]
                             fn drop(_: u32);
                         }
                         drop(_handle);
                     }
                 }
             }
-            impl Gltf {
+            impl Document {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn new() -> Self {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/gltf")]
+                        #[link(wasm_import_module = "wired:scene/document")]
                         extern "C" {
-                            #[link_name = "[constructor]gltf"]
+                            #[link_name = "[constructor]document"]
                             fn wit_import() -> i32;
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -3412,24 +3343,22 @@ pub mod wired {
                             unreachable!()
                         }
                         let ret = wit_import();
-                        Gltf::from_handle(ret as u32)
+                        Document::from_handle(ret as u32)
                     }
                 }
             }
-            impl Gltf {
+            impl Document {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn list_materials(&self) -> _rt::Vec<Material> {
+                pub fn active_scene(&self) -> Option<Scene> {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/gltf")]
+                        #[link(wasm_import_module = "wired:scene/document")]
                         extern "C" {
-                            #[link_name = "[method]gltf.list-materials"]
+                            #[link_name = "[method]document.active-scene"]
                             fn wit_import(_: i32, _: *mut u8);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -3437,76 +3366,59 @@ pub mod wired {
                             unreachable!()
                         }
                         wit_import((self).handle() as i32, ptr0);
-                        let l1 = *ptr0.add(0).cast::<*mut u8>();
-                        let l2 = *ptr0.add(4).cast::<usize>();
-                        let base4 = l1;
-                        let len4 = l2;
-                        let mut result4 = _rt::Vec::with_capacity(len4);
-                        for i in 0..len4 {
-                            let base = base4.add(i * 4);
-                            let e4 = {
-                                let l3 = *base.add(0).cast::<i32>();
-                                super::super::super::wired::scene::material::Material::from_handle(
-                                    l3 as u32,
-                                )
-                            };
-                            result4.push(e4);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<i32>();
+                                    super::super::super::wired::scene::scene::Scene::from_handle(
+                                        l2 as u32,
+                                    )
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
                         }
-                        _rt::cabi_dealloc(base4, len4 * 4, 4);
-                        result4
                     }
                 }
             }
-            impl Gltf {
+            impl Document {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn add_material(&self, value: &Material) {
+                pub fn set_active_scene(&self, value: Option<&Scene>) {
                     unsafe {
+                        let (result0_0, result0_1) = match value {
+                            Some(e) => (1i32, (e).handle() as i32),
+                            None => (0i32, 0i32),
+                        };
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/gltf")]
+                        #[link(wasm_import_module = "wired:scene/document")]
                         extern "C" {
-                            #[link_name = "[method]gltf.add-material"]
-                            fn wit_import(_: i32, _: i32);
+                            #[link_name = "[method]document.set-active-scene"]
+                            fn wit_import(_: i32, _: i32, _: i32);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32) {
+                        fn wit_import(_: i32, _: i32, _: i32) {
                             unreachable!()
                         }
-                        wit_import((self).handle() as i32, (value).handle() as i32);
+                        wit_import((self).handle() as i32, result0_0, result0_1);
                     }
                 }
             }
-            impl Gltf {
+            impl Document {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn remove_material(&self, value: &Material) {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/gltf")]
-                        extern "C" {
-                            #[link_name = "[method]gltf.remove-material"]
-                            fn wit_import(_: i32, _: i32);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, (value).handle() as i32);
-                    }
-                }
-            }
-            impl Gltf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn list_meshes(&self) -> _rt::Vec<Mesh> {
+                /// The initial active scene, set on document load.
+                /// If none is provided, the first scene will be used.
+                pub fn default_scene(&self) -> Option<Scene> {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/gltf")]
+                        #[link(wasm_import_module = "wired:scene/document")]
                         extern "C" {
-                            #[link_name = "[method]gltf.list-meshes"]
+                            #[link_name = "[method]document.default-scene"]
                             fn wit_import(_: i32, _: *mut u8);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -3514,153 +3426,57 @@ pub mod wired {
                             unreachable!()
                         }
                         wit_import((self).handle() as i32, ptr0);
-                        let l1 = *ptr0.add(0).cast::<*mut u8>();
-                        let l2 = *ptr0.add(4).cast::<usize>();
-                        let base4 = l1;
-                        let len4 = l2;
-                        let mut result4 = _rt::Vec::with_capacity(len4);
-                        for i in 0..len4 {
-                            let base = base4.add(i * 4);
-                            let e4 = {
-                                let l3 = *base.add(0).cast::<i32>();
-                                super::super::super::wired::scene::mesh::Mesh::from_handle(
-                                    l3 as u32,
-                                )
-                            };
-                            result4.push(e4);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<i32>();
+                                    super::super::super::wired::scene::scene::Scene::from_handle(
+                                        l2 as u32,
+                                    )
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
                         }
-                        _rt::cabi_dealloc(base4, len4 * 4, 4);
-                        result4
                     }
                 }
             }
-            impl Gltf {
+            impl Document {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn add_mesh(&self, value: &Mesh) {
+                pub fn set_default_scene(&self, value: Option<&Scene>) {
                     unsafe {
+                        let (result0_0, result0_1) = match value {
+                            Some(e) => (1i32, (e).handle() as i32),
+                            None => (0i32, 0i32),
+                        };
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/gltf")]
+                        #[link(wasm_import_module = "wired:scene/document")]
                         extern "C" {
-                            #[link_name = "[method]gltf.add-mesh"]
-                            fn wit_import(_: i32, _: i32);
+                            #[link_name = "[method]document.set-default-scene"]
+                            fn wit_import(_: i32, _: i32, _: i32);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32) {
+                        fn wit_import(_: i32, _: i32, _: i32) {
                             unreachable!()
                         }
-                        wit_import((self).handle() as i32, (value).handle() as i32);
+                        wit_import((self).handle() as i32, result0_0, result0_1);
                     }
                 }
             }
-            impl Gltf {
+            impl Document {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn remove_mesh(&self, value: &Mesh) {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/gltf")]
-                        extern "C" {
-                            #[link_name = "[method]gltf.remove-mesh"]
-                            fn wit_import(_: i32, _: i32);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, (value).handle() as i32);
-                    }
-                }
-            }
-            impl Gltf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn list_nodes(&self) -> _rt::Vec<Node> {
+                pub fn scenes(&self) -> _rt::Vec<Scene> {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/gltf")]
+                        #[link(wasm_import_module = "wired:scene/document")]
                         extern "C" {
-                            #[link_name = "[method]gltf.list-nodes"]
-                            fn wit_import(_: i32, _: *mut u8);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: *mut u8) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, ptr0);
-                        let l1 = *ptr0.add(0).cast::<*mut u8>();
-                        let l2 = *ptr0.add(4).cast::<usize>();
-                        let base4 = l1;
-                        let len4 = l2;
-                        let mut result4 = _rt::Vec::with_capacity(len4);
-                        for i in 0..len4 {
-                            let base = base4.add(i * 4);
-                            let e4 = {
-                                let l3 = *base.add(0).cast::<i32>();
-                                super::super::super::wired::scene::node::Node::from_handle(
-                                    l3 as u32,
-                                )
-                            };
-                            result4.push(e4);
-                        }
-                        _rt::cabi_dealloc(base4, len4 * 4, 4);
-                        result4
-                    }
-                }
-            }
-            impl Gltf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn add_node(&self, value: &Node) {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/gltf")]
-                        extern "C" {
-                            #[link_name = "[method]gltf.add-node"]
-                            fn wit_import(_: i32, _: i32);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, (value).handle() as i32);
-                    }
-                }
-            }
-            impl Gltf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn remove_node(&self, value: &Node) {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/gltf")]
-                        extern "C" {
-                            #[link_name = "[method]gltf.remove-node"]
-                            fn wit_import(_: i32, _: i32);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, (value).handle() as i32);
-                    }
-                }
-            }
-            impl Gltf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn list_scenes(&self) -> _rt::Vec<Scene> {
-                    unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
-                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/gltf")]
-                        extern "C" {
-                            #[link_name = "[method]gltf.list-scenes"]
+                            #[link_name = "[method]document.scenes"]
                             fn wit_import(_: i32, _: *mut u8);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -3688,14 +3504,14 @@ pub mod wired {
                     }
                 }
             }
-            impl Gltf {
+            impl Document {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn add_scene(&self, value: &Scene) {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/gltf")]
+                        #[link(wasm_import_module = "wired:scene/document")]
                         extern "C" {
-                            #[link_name = "[method]gltf.add-scene"]
+                            #[link_name = "[method]document.add-scene"]
                             fn wit_import(_: i32, _: i32);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -3706,133 +3522,14 @@ pub mod wired {
                     }
                 }
             }
-            impl Gltf {
+            impl Document {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn remove_scene(&self, value: &Scene) {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/gltf")]
+                        #[link(wasm_import_module = "wired:scene/document")]
                         extern "C" {
-                            #[link_name = "[method]gltf.remove-scene"]
-                            fn wit_import(_: i32, _: i32);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, (value).handle() as i32);
-                    }
-                }
-            }
-            impl Gltf {
-                #[allow(unused_unsafe, clippy::all)]
-                /// The currently loaded scene.
-                pub fn active_scene(&self) -> Option<Scene> {
-                    unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
-                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/gltf")]
-                        extern "C" {
-                            #[link_name = "[method]gltf.active-scene"]
-                            fn wit_import(_: i32, _: *mut u8);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: *mut u8) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, ptr0);
-                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
-                        match l1 {
-                            0 => None,
-                            1 => {
-                                let e = {
-                                    let l2 = *ptr0.add(4).cast::<i32>();
-                                    super::super::super::wired::scene::scene::Scene::from_handle(
-                                        l2 as u32,
-                                    )
-                                };
-                                Some(e)
-                            }
-                            _ => _rt::invalid_enum_discriminant(),
-                        }
-                    }
-                }
-            }
-            impl Gltf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn set_active_scene(&self, value: Option<&Scene>) {
-                    unsafe {
-                        let (result0_0, result0_1) = match value {
-                            Some(e) => (1i32, (e).handle() as i32),
-                            None => (0i32, 0i32),
-                        };
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/gltf")]
-                        extern "C" {
-                            #[link_name = "[method]gltf.set-active-scene"]
-                            fn wit_import(_: i32, _: i32, _: i32);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32, _: i32) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, result0_0, result0_1);
-                    }
-                }
-            }
-            impl Gltf {
-                #[allow(unused_unsafe, clippy::all)]
-                /// The default active scene, used when an asset is first loaded.
-                /// If not explicitly set, the first scene will be used.
-                pub fn default_scene(&self) -> Option<Scene> {
-                    unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
-                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/gltf")]
-                        extern "C" {
-                            #[link_name = "[method]gltf.default-scene"]
-                            fn wit_import(_: i32, _: *mut u8);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: *mut u8) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, ptr0);
-                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
-                        match l1 {
-                            0 => None,
-                            1 => {
-                                let e = {
-                                    let l2 = *ptr0.add(4).cast::<i32>();
-                                    super::super::super::wired::scene::scene::Scene::from_handle(
-                                        l2 as u32,
-                                    )
-                                };
-                                Some(e)
-                            }
-                            _ => _rt::invalid_enum_discriminant(),
-                        }
-                    }
-                }
-            }
-            impl Gltf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn set_default_scene(&self, value: &Scene) {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/gltf")]
-                        extern "C" {
-                            #[link_name = "[method]gltf.set-default-scene"]
+                            #[link_name = "[method]document.remove-scene"]
                             fn wit_import(_: i32, _: i32);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -3845,22 +3542,20 @@ pub mod wired {
             }
         }
         #[allow(dead_code, clippy::all)]
-        pub mod glxf {
+        pub mod composition {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
-            pub type Gltf = super::super::super::wired::scene::gltf::Gltf;
-            pub type Node = super::super::super::wired::scene::node::Node;
+            pub type Document = super::super::super::wired::scene::document::Document;
             pub type Transform = super::super::super::wired::math::types::Transform;
-            /// A glXF document.
-            /// Used to compose multiple independent glTF assets together.
             #[derive(Debug)]
             #[repr(transparent)]
-            pub struct Glxf {
-                handle: _rt::Resource<Glxf>,
+            pub struct AssetNode {
+                handle: _rt::Resource<AssetNode>,
             }
-            impl Glxf {
+            impl AssetNode {
                 #[doc(hidden)]
                 pub unsafe fn from_handle(handle: u32) -> Self {
                     Self {
@@ -3876,28 +3571,30 @@ pub mod wired {
                     _rt::Resource::handle(&self.handle)
                 }
             }
-            unsafe impl _rt::WasmResource for Glxf {
+            unsafe impl _rt::WasmResource for AssetNode {
                 #[inline]
                 unsafe fn drop(_handle: u32) {
                     #[cfg(not(target_arch = "wasm32"))]
                     unreachable!();
                     #[cfg(target_arch = "wasm32")]
                     {
-                        #[link(wasm_import_module = "wired:scene/glxf")]
+                        #[link(wasm_import_module = "wired:scene/composition")]
                         extern "C" {
-                            #[link_name = "[resource-drop]glxf"]
+                            #[link_name = "[resource-drop]asset-node"]
                             fn drop(_: u32);
                         }
                         drop(_handle);
                     }
                 }
             }
+            /// A composition of assets.
+            /// Roughly equivalent to a glXF file.
             #[derive(Debug)]
             #[repr(transparent)]
-            pub struct AssetGltf {
-                handle: _rt::Resource<AssetGltf>,
+            pub struct Composition {
+                handle: _rt::Resource<Composition>,
             }
-            impl AssetGltf {
+            impl Composition {
                 #[doc(hidden)]
                 pub unsafe fn from_handle(handle: u32) -> Self {
                     Self {
@@ -3913,53 +3610,16 @@ pub mod wired {
                     _rt::Resource::handle(&self.handle)
                 }
             }
-            unsafe impl _rt::WasmResource for AssetGltf {
+            unsafe impl _rt::WasmResource for Composition {
                 #[inline]
                 unsafe fn drop(_handle: u32) {
                     #[cfg(not(target_arch = "wasm32"))]
                     unreachable!();
                     #[cfg(target_arch = "wasm32")]
                     {
-                        #[link(wasm_import_module = "wired:scene/glxf")]
+                        #[link(wasm_import_module = "wired:scene/composition")]
                         extern "C" {
-                            #[link_name = "[resource-drop]asset-gltf"]
-                            fn drop(_: u32);
-                        }
-                        drop(_handle);
-                    }
-                }
-            }
-            #[derive(Debug)]
-            #[repr(transparent)]
-            pub struct AssetGlxf {
-                handle: _rt::Resource<AssetGlxf>,
-            }
-            impl AssetGlxf {
-                #[doc(hidden)]
-                pub unsafe fn from_handle(handle: u32) -> Self {
-                    Self {
-                        handle: _rt::Resource::from_handle(handle),
-                    }
-                }
-                #[doc(hidden)]
-                pub fn take_handle(&self) -> u32 {
-                    _rt::Resource::take_handle(&self.handle)
-                }
-                #[doc(hidden)]
-                pub fn handle(&self) -> u32 {
-                    _rt::Resource::handle(&self.handle)
-                }
-            }
-            unsafe impl _rt::WasmResource for AssetGlxf {
-                #[inline]
-                unsafe fn drop(_handle: u32) {
-                    #[cfg(not(target_arch = "wasm32"))]
-                    unreachable!();
-                    #[cfg(target_arch = "wasm32")]
-                    {
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[resource-drop]asset-glxf"]
+                            #[link_name = "[resource-drop]composition"]
                             fn drop(_: u32);
                         }
                         drop(_handle);
@@ -3967,177 +3627,27 @@ pub mod wired {
                 }
             }
             pub enum Asset {
-                Gltf(AssetGltf),
-                Glxf(AssetGlxf),
+                Composition(Composition),
+                Document(Document),
             }
             impl ::core::fmt::Debug for Asset {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
-                        Asset::Gltf(e) => f.debug_tuple("Asset::Gltf").field(e).finish(),
-                        Asset::Glxf(e) => f.debug_tuple("Asset::Glxf").field(e).finish(),
-                    }
-                }
-            }
-            pub enum AssetBorrow<'a> {
-                Gltf(&'a AssetGltf),
-                Glxf(&'a AssetGlxf),
-            }
-            impl<'a> ::core::fmt::Debug for AssetBorrow<'a> {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
-                    match self {
-                        AssetBorrow::Gltf(e) => {
-                            f.debug_tuple("AssetBorrow::Gltf").field(e).finish()
+                        Asset::Composition(e) => {
+                            f.debug_tuple("Asset::Composition").field(e).finish()
                         }
-                        AssetBorrow::Glxf(e) => {
-                            f.debug_tuple("AssetBorrow::Glxf").field(e).finish()
-                        }
+                        Asset::Document(e) => f.debug_tuple("Asset::Document").field(e).finish(),
                     }
                 }
             }
-            #[derive(Debug)]
-            #[repr(transparent)]
-            pub struct GlxfNode {
-                handle: _rt::Resource<GlxfNode>,
-            }
-            impl GlxfNode {
-                #[doc(hidden)]
-                pub unsafe fn from_handle(handle: u32) -> Self {
-                    Self {
-                        handle: _rt::Resource::from_handle(handle),
-                    }
-                }
-                #[doc(hidden)]
-                pub fn take_handle(&self) -> u32 {
-                    _rt::Resource::take_handle(&self.handle)
-                }
-                #[doc(hidden)]
-                pub fn handle(&self) -> u32 {
-                    _rt::Resource::handle(&self.handle)
-                }
-            }
-            unsafe impl _rt::WasmResource for GlxfNode {
-                #[inline]
-                unsafe fn drop(_handle: u32) {
-                    #[cfg(not(target_arch = "wasm32"))]
-                    unreachable!();
-                    #[cfg(target_arch = "wasm32")]
-                    {
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[resource-drop]glxf-node"]
-                            fn drop(_: u32);
-                        }
-                        drop(_handle);
-                    }
-                }
-            }
-            pub enum Children {
-                Asset(Asset),
-                Nodes(_rt::Vec<GlxfNode>),
-            }
-            impl ::core::fmt::Debug for Children {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
-                    match self {
-                        Children::Asset(e) => {
-                            f.debug_tuple("Children::Asset").field(e).finish()
-                        }
-                        Children::Nodes(e) => {
-                            f.debug_tuple("Children::Nodes").field(e).finish()
-                        }
-                    }
-                }
-            }
-            pub enum ChildrenBorrow<'a> {
-                Asset(AssetBorrow<'a>),
-                Nodes(_rt::Vec<&'a GlxfNode>),
-            }
-            impl<'a> ::core::fmt::Debug for ChildrenBorrow<'a> {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
-                    match self {
-                        ChildrenBorrow::Asset(e) => {
-                            f.debug_tuple("ChildrenBorrow::Asset").field(e).finish()
-                        }
-                        ChildrenBorrow::Nodes(e) => {
-                            f.debug_tuple("ChildrenBorrow::Nodes").field(e).finish()
-                        }
-                    }
-                }
-            }
-            #[derive(Debug)]
-            #[repr(transparent)]
-            pub struct GlxfScene {
-                handle: _rt::Resource<GlxfScene>,
-            }
-            impl GlxfScene {
-                #[doc(hidden)]
-                pub unsafe fn from_handle(handle: u32) -> Self {
-                    Self {
-                        handle: _rt::Resource::from_handle(handle),
-                    }
-                }
-                #[doc(hidden)]
-                pub fn take_handle(&self) -> u32 {
-                    _rt::Resource::take_handle(&self.handle)
-                }
-                #[doc(hidden)]
-                pub fn handle(&self) -> u32 {
-                    _rt::Resource::handle(&self.handle)
-                }
-            }
-            unsafe impl _rt::WasmResource for GlxfScene {
-                #[inline]
-                unsafe fn drop(_handle: u32) {
-                    #[cfg(not(target_arch = "wasm32"))]
-                    unreachable!();
-                    #[cfg(target_arch = "wasm32")]
-                    {
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[resource-drop]glxf-scene"]
-                            fn drop(_: u32);
-                        }
-                        drop(_handle);
-                    }
-                }
-            }
-            #[allow(unused_unsafe, clippy::all)]
-            /// Returns the root glXF that the script is attached to.
-            pub fn get_root() -> Glxf {
-                unsafe {
-                    #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "wired:scene/glxf")]
-                    extern "C" {
-                        #[link_name = "get-root"]
-                        fn wit_import() -> i32;
-                    }
-                    #[cfg(not(target_arch = "wasm32"))]
-                    fn wit_import() -> i32 {
-                        unreachable!()
-                    }
-                    let ret = wit_import();
-                    Glxf::from_handle(ret as u32)
-                }
-            }
-            impl Glxf {
+            impl AssetNode {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn new() -> Self {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
+                        #[link(wasm_import_module = "wired:scene/composition")]
                         extern "C" {
-                            #[link_name = "[constructor]glxf"]
+                            #[link_name = "[constructor]asset-node"]
                             fn wit_import() -> i32;
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -4145,275 +3655,22 @@ pub mod wired {
                             unreachable!()
                         }
                         let ret = wit_import();
-                        Glxf::from_handle(ret as u32)
+                        AssetNode::from_handle(ret as u32)
                     }
                 }
             }
-            impl Glxf {
+            impl AssetNode {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn list_assets(&self) -> _rt::Vec<Asset> {
+                pub fn asset(&self) -> Option<Asset> {
                     unsafe {
                         #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
+                        #[link(wasm_import_module = "wired:scene/composition")]
                         extern "C" {
-                            #[link_name = "[method]glxf.list-assets"]
-                            fn wit_import(_: i32, _: *mut u8);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: *mut u8) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, ptr0);
-                        let l1 = *ptr0.add(0).cast::<*mut u8>();
-                        let l2 = *ptr0.add(4).cast::<usize>();
-                        let base7 = l1;
-                        let len7 = l2;
-                        let mut result7 = _rt::Vec::with_capacity(len7);
-                        for i in 0..len7 {
-                            let base = base7.add(i * 8);
-                            let e7 = {
-                                let l3 = i32::from(*base.add(0).cast::<u8>());
-                                let v6 = match l3 {
-                                    0 => {
-                                        let e6 = {
-                                            let l4 = *base.add(4).cast::<i32>();
-                                            AssetGltf::from_handle(l4 as u32)
-                                        };
-                                        Asset::Gltf(e6)
-                                    }
-                                    n => {
-                                        debug_assert_eq!(n, 1, "invalid enum discriminant");
-                                        let e6 = {
-                                            let l5 = *base.add(4).cast::<i32>();
-                                            AssetGlxf::from_handle(l5 as u32)
-                                        };
-                                        Asset::Glxf(e6)
-                                    }
-                                };
-                                v6
-                            };
-                            result7.push(e7);
-                        }
-                        _rt::cabi_dealloc(base7, len7 * 8, 4);
-                        result7
-                    }
-                }
-            }
-            impl Glxf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn add_asset(&self, value: &AssetBorrow<'_>) {
-                    unsafe {
-                        let (result0_0, result0_1) = match value {
-                            AssetBorrow::Gltf(e) => (0i32, (e).handle() as i32),
-                            AssetBorrow::Glxf(e) => (1i32, (e).handle() as i32),
-                        };
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]glxf.add-asset"]
-                            fn wit_import(_: i32, _: i32, _: i32);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32, _: i32) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, result0_0, result0_1);
-                    }
-                }
-            }
-            impl Glxf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn remove_asset(&self, value: &AssetBorrow<'_>) {
-                    unsafe {
-                        let (result0_0, result0_1) = match value {
-                            AssetBorrow::Gltf(e) => (0i32, (e).handle() as i32),
-                            AssetBorrow::Glxf(e) => (1i32, (e).handle() as i32),
-                        };
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]glxf.remove-asset"]
-                            fn wit_import(_: i32, _: i32, _: i32);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32, _: i32) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, result0_0, result0_1);
-                    }
-                }
-            }
-            impl Glxf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn list_nodes(&self) -> _rt::Vec<GlxfNode> {
-                    unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
-                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]glxf.list-nodes"]
-                            fn wit_import(_: i32, _: *mut u8);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: *mut u8) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, ptr0);
-                        let l1 = *ptr0.add(0).cast::<*mut u8>();
-                        let l2 = *ptr0.add(4).cast::<usize>();
-                        let base4 = l1;
-                        let len4 = l2;
-                        let mut result4 = _rt::Vec::with_capacity(len4);
-                        for i in 0..len4 {
-                            let base = base4.add(i * 4);
-                            let e4 = {
-                                let l3 = *base.add(0).cast::<i32>();
-                                GlxfNode::from_handle(l3 as u32)
-                            };
-                            result4.push(e4);
-                        }
-                        _rt::cabi_dealloc(base4, len4 * 4, 4);
-                        result4
-                    }
-                }
-            }
-            impl Glxf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn add_node(&self, value: &GlxfNode) {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]glxf.add-node"]
-                            fn wit_import(_: i32, _: i32);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, (value).handle() as i32);
-                    }
-                }
-            }
-            impl Glxf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn remove_node(&self, value: &GlxfNode) {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]glxf.remove-node"]
-                            fn wit_import(_: i32, _: i32);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, (value).handle() as i32);
-                    }
-                }
-            }
-            impl Glxf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn list_scenes(&self) -> _rt::Vec<GlxfScene> {
-                    unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
-                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]glxf.list-scenes"]
-                            fn wit_import(_: i32, _: *mut u8);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: *mut u8) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, ptr0);
-                        let l1 = *ptr0.add(0).cast::<*mut u8>();
-                        let l2 = *ptr0.add(4).cast::<usize>();
-                        let base4 = l1;
-                        let len4 = l2;
-                        let mut result4 = _rt::Vec::with_capacity(len4);
-                        for i in 0..len4 {
-                            let base = base4.add(i * 4);
-                            let e4 = {
-                                let l3 = *base.add(0).cast::<i32>();
-                                GlxfScene::from_handle(l3 as u32)
-                            };
-                            result4.push(e4);
-                        }
-                        _rt::cabi_dealloc(base4, len4 * 4, 4);
-                        result4
-                    }
-                }
-            }
-            impl Glxf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn add_scene(&self, value: &GlxfScene) {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]glxf.add-scene"]
-                            fn wit_import(_: i32, _: i32);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, (value).handle() as i32);
-                    }
-                }
-            }
-            impl Glxf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn remove_scene(&self, value: &GlxfScene) {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]glxf.remove-scene"]
-                            fn wit_import(_: i32, _: i32);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, (value).handle() as i32);
-                    }
-                }
-            }
-            impl Glxf {
-                #[allow(unused_unsafe, clippy::all)]
-                /// The currently loaded scene.
-                pub fn active_scene(&self) -> Option<GlxfScene> {
-                    unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
-                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]glxf.active-scene"]
+                            #[link_name = "[method]asset-node.asset"]
                             fn wit_import(_: i32, _: *mut u8);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -4426,8 +3683,27 @@ pub mod wired {
                             0 => None,
                             1 => {
                                 let e = {
-                                    let l2 = *ptr0.add(4).cast::<i32>();
-                                    GlxfScene::from_handle(l2 as u32)
+                                    let l2 = i32::from(*ptr0.add(4).cast::<u8>());
+                                    let v5 = match l2 {
+                                        0 => {
+                                            let e5 = {
+                                                let l3 = *ptr0.add(8).cast::<i32>();
+                                                Composition::from_handle(l3 as u32)
+                                            };
+                                            Asset::Composition(e5)
+                                        }
+                                        n => {
+                                            debug_assert_eq!(n, 1, "invalid enum discriminant");
+                                            let e5 = {
+                                                let l4 = *ptr0.add(8).cast::<i32>();
+                                                super::super::super::wired::scene::document::Document::from_handle(
+                                                    l4 as u32,
+                                                )
+                                            };
+                                            Asset::Document(e5)
+                                        }
+                                    };
+                                    v5
                                 };
                                 Some(e)
                             }
@@ -4436,370 +3712,46 @@ pub mod wired {
                     }
                 }
             }
-            impl Glxf {
+            impl AssetNode {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn set_active_scene(&self, value: Option<&GlxfScene>) {
+                pub fn set_asset(&self, value: Option<Asset>) {
                     unsafe {
-                        let (result0_0, result0_1) = match value {
-                            Some(e) => (1i32, (e).handle() as i32),
-                            None => (0i32, 0i32),
+                        let (result1_0, result1_1, result1_2) = match &value {
+                            Some(e) => {
+                                let (result0_0, result0_1) = match e {
+                                    Asset::Composition(e) => (0i32, (e).take_handle() as i32),
+                                    Asset::Document(e) => (1i32, (e).take_handle() as i32),
+                                };
+                                (1i32, result0_0, result0_1)
+                            }
+                            None => (0i32, 0i32, 0i32),
                         };
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
+                        #[link(wasm_import_module = "wired:scene/composition")]
                         extern "C" {
-                            #[link_name = "[method]glxf.set-active-scene"]
-                            fn wit_import(_: i32, _: i32, _: i32);
+                            #[link_name = "[method]asset-node.set-asset"]
+                            fn wit_import(_: i32, _: i32, _: i32, _: i32);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32, _: i32) {
+                        fn wit_import(_: i32, _: i32, _: i32, _: i32) {
                             unreachable!()
                         }
-                        wit_import((self).handle() as i32, result0_0, result0_1);
+                        wit_import((self).handle() as i32, result1_0, result1_1, result1_2);
                     }
                 }
             }
-            impl Glxf {
-                #[allow(unused_unsafe, clippy::all)]
-                /// The default active scene, used when an asset is first loaded.
-                /// If not explicitly set, the first scene will be used.
-                pub fn default_scene(&self) -> Option<GlxfScene> {
-                    unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
-                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]glxf.default-scene"]
-                            fn wit_import(_: i32, _: *mut u8);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: *mut u8) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, ptr0);
-                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
-                        match l1 {
-                            0 => None,
-                            1 => {
-                                let e = {
-                                    let l2 = *ptr0.add(4).cast::<i32>();
-                                    GlxfScene::from_handle(l2 as u32)
-                                };
-                                Some(e)
-                            }
-                            _ => _rt::invalid_enum_discriminant(),
-                        }
-                    }
-                }
-            }
-            impl Glxf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn set_default_scene(&self, value: &GlxfScene) {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]glxf.set-default-scene"]
-                            fn wit_import(_: i32, _: i32);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, (value).handle() as i32);
-                    }
-                }
-            }
-            impl AssetGltf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn new(document: &Gltf) -> Self {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[constructor]asset-gltf"]
-                            fn wit_import(_: i32) -> i32;
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32) -> i32 {
-                            unreachable!()
-                        }
-                        let ret = wit_import((document).handle() as i32);
-                        AssetGltf::from_handle(ret as u32)
-                    }
-                }
-            }
-            impl AssetGltf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn document(&self) -> Gltf {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]asset-gltf.document"]
-                            fn wit_import(_: i32) -> i32;
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32) -> i32 {
-                            unreachable!()
-                        }
-                        let ret = wit_import((self).handle() as i32);
-                        super::super::super::wired::scene::gltf::Gltf::from_handle(
-                            ret as u32,
-                        )
-                    }
-                }
-            }
-            impl AssetGltf {
-                #[allow(unused_unsafe, clippy::all)]
-                /// Asset nodes to use.
-                /// If empty, will use the default scene.
-                pub fn list_nodes(&self) -> _rt::Vec<Node> {
-                    unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
-                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]asset-gltf.list-nodes"]
-                            fn wit_import(_: i32, _: *mut u8);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: *mut u8) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, ptr0);
-                        let l1 = *ptr0.add(0).cast::<*mut u8>();
-                        let l2 = *ptr0.add(4).cast::<usize>();
-                        let base4 = l1;
-                        let len4 = l2;
-                        let mut result4 = _rt::Vec::with_capacity(len4);
-                        for i in 0..len4 {
-                            let base = base4.add(i * 4);
-                            let e4 = {
-                                let l3 = *base.add(0).cast::<i32>();
-                                super::super::super::wired::scene::node::Node::from_handle(
-                                    l3 as u32,
-                                )
-                            };
-                            result4.push(e4);
-                        }
-                        _rt::cabi_dealloc(base4, len4 * 4, 4);
-                        result4
-                    }
-                }
-            }
-            impl AssetGltf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn add_node(&self, value: &Node) {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]asset-gltf.add-node"]
-                            fn wit_import(_: i32, _: i32);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, (value).handle() as i32);
-                    }
-                }
-            }
-            impl AssetGltf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn remove_node(&self, value: &Node) {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]asset-gltf.remove-node"]
-                            fn wit_import(_: i32, _: i32);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, (value).handle() as i32);
-                    }
-                }
-            }
-            impl AssetGlxf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn new(document: &Glxf) -> Self {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[constructor]asset-glxf"]
-                            fn wit_import(_: i32) -> i32;
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32) -> i32 {
-                            unreachable!()
-                        }
-                        let ret = wit_import((document).handle() as i32);
-                        AssetGlxf::from_handle(ret as u32)
-                    }
-                }
-            }
-            impl AssetGlxf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn document(&self) -> Glxf {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]asset-glxf.document"]
-                            fn wit_import(_: i32) -> i32;
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32) -> i32 {
-                            unreachable!()
-                        }
-                        let ret = wit_import((self).handle() as i32);
-                        Glxf::from_handle(ret as u32)
-                    }
-                }
-            }
-            impl AssetGlxf {
-                #[allow(unused_unsafe, clippy::all)]
-                /// Asset nodes to use.
-                /// If empty, will use the default scene.
-                pub fn list_nodes(&self) -> _rt::Vec<GlxfNode> {
-                    unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
-                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]asset-glxf.list-nodes"]
-                            fn wit_import(_: i32, _: *mut u8);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: *mut u8) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, ptr0);
-                        let l1 = *ptr0.add(0).cast::<*mut u8>();
-                        let l2 = *ptr0.add(4).cast::<usize>();
-                        let base4 = l1;
-                        let len4 = l2;
-                        let mut result4 = _rt::Vec::with_capacity(len4);
-                        for i in 0..len4 {
-                            let base = base4.add(i * 4);
-                            let e4 = {
-                                let l3 = *base.add(0).cast::<i32>();
-                                GlxfNode::from_handle(l3 as u32)
-                            };
-                            result4.push(e4);
-                        }
-                        _rt::cabi_dealloc(base4, len4 * 4, 4);
-                        result4
-                    }
-                }
-            }
-            impl AssetGlxf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn add_node(&self, value: &GlxfNode) {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]asset-glxf.add-node"]
-                            fn wit_import(_: i32, _: i32);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, (value).handle() as i32);
-                    }
-                }
-            }
-            impl AssetGlxf {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn remove_node(&self, value: &GlxfNode) {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]asset-glxf.remove-node"]
-                            fn wit_import(_: i32, _: i32);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, (value).handle() as i32);
-                    }
-                }
-            }
-            impl GlxfNode {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn new() -> Self {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[constructor]glxf-node"]
-                            fn wit_import() -> i32;
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import() -> i32 {
-                            unreachable!()
-                        }
-                        let ret = wit_import();
-                        GlxfNode::from_handle(ret as u32)
-                    }
-                }
-            }
-            impl GlxfNode {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn id(&self) -> u32 {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]glxf-node.id"]
-                            fn wit_import(_: i32) -> i32;
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32) -> i32 {
-                            unreachable!()
-                        }
-                        let ret = wit_import((self).handle() as i32);
-                        ret as u32
-                    }
-                }
-            }
-            impl GlxfNode {
+            impl AssetNode {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn name(&self) -> _rt::String {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
+                        #[link(wasm_import_module = "wired:scene/composition")]
                         extern "C" {
-                            #[link_name = "[method]glxf-node.name"]
+                            #[link_name = "[method]asset-node.name"]
                             fn wit_import(_: i32, _: *mut u8);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -4815,7 +3767,7 @@ pub mod wired {
                     }
                 }
             }
-            impl GlxfNode {
+            impl AssetNode {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn set_name(&self, value: &str) {
                     unsafe {
@@ -4823,9 +3775,9 @@ pub mod wired {
                         let ptr0 = vec0.as_ptr().cast::<u8>();
                         let len0 = vec0.len();
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
+                        #[link(wasm_import_module = "wired:scene/composition")]
                         extern "C" {
-                            #[link_name = "[method]glxf-node.set-name"]
+                            #[link_name = "[method]asset-node.set-name"]
                             fn wit_import(_: i32, _: *mut u8, _: usize);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -4836,20 +3788,125 @@ pub mod wired {
                     }
                 }
             }
-            impl GlxfNode {
+            impl AssetNode {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn transform(&self) -> Transform {
+                pub fn parent(&self) -> Option<AssetNode> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:scene/composition")]
+                        extern "C" {
+                            #[link_name = "[method]asset-node.parent"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<i32>();
+                                    AssetNode::from_handle(l2 as u32)
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl AssetNode {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn children(&self) -> _rt::Vec<AssetNode> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:scene/composition")]
+                        extern "C" {
+                            #[link_name = "[method]asset-node.children"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<*mut u8>();
+                        let l2 = *ptr0.add(4).cast::<usize>();
+                        let base4 = l1;
+                        let len4 = l2;
+                        let mut result4 = _rt::Vec::with_capacity(len4);
+                        for i in 0..len4 {
+                            let base = base4.add(i * 4);
+                            let e4 = {
+                                let l3 = *base.add(0).cast::<i32>();
+                                AssetNode::from_handle(l3 as u32)
+                            };
+                            result4.push(e4);
+                        }
+                        _rt::cabi_dealloc(base4, len4 * 4, 4);
+                        result4
+                    }
+                }
+            }
+            impl AssetNode {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn add_child(&self, value: &AssetNode) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:scene/composition")]
+                        extern "C" {
+                            #[link_name = "[method]asset-node.add-child"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, (value).handle() as i32);
+                    }
+                }
+            }
+            impl AssetNode {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn remove_child(&self, value: &AssetNode) {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:scene/composition")]
+                        extern "C" {
+                            #[link_name = "[method]asset-node.remove-child"]
+                            fn wit_import(_: i32, _: i32);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, (value).handle() as i32);
+                    }
+                }
+            }
+            impl AssetNode {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn global_transform(&self) -> Transform {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 40]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 40],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 40]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
+                        #[link(wasm_import_module = "wired:scene/composition")]
                         extern "C" {
-                            #[link_name = "[method]glxf-node.transform"]
+                            #[link_name = "[method]asset-node.global-transform"]
                             fn wit_import(_: i32, _: *mut u8);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -4888,7 +3945,57 @@ pub mod wired {
                     }
                 }
             }
-            impl GlxfNode {
+            impl AssetNode {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn transform(&self) -> Transform {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 40]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 40]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wired:scene/composition")]
+                        extern "C" {
+                            #[link_name = "[method]asset-node.transform"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<f32>();
+                        let l2 = *ptr0.add(4).cast::<f32>();
+                        let l3 = *ptr0.add(8).cast::<f32>();
+                        let l4 = *ptr0.add(12).cast::<f32>();
+                        let l5 = *ptr0.add(16).cast::<f32>();
+                        let l6 = *ptr0.add(20).cast::<f32>();
+                        let l7 = *ptr0.add(24).cast::<f32>();
+                        let l8 = *ptr0.add(28).cast::<f32>();
+                        let l9 = *ptr0.add(32).cast::<f32>();
+                        let l10 = *ptr0.add(36).cast::<f32>();
+                        super::super::super::wired::math::types::Transform {
+                            rotation: super::super::super::wired::math::types::Quat {
+                                x: l1,
+                                y: l2,
+                                z: l3,
+                                w: l4,
+                            },
+                            scale: super::super::super::wired::math::types::Vec3 {
+                                x: l5,
+                                y: l6,
+                                z: l7,
+                            },
+                            translation: super::super::super::wired::math::types::Vec3 {
+                                x: l8,
+                                y: l9,
+                                z: l10,
+                            },
+                        }
+                    }
+                }
+            }
+            impl AssetNode {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn set_transform(&self, value: Transform) {
                     unsafe {
@@ -4914,9 +4021,9 @@ pub mod wired {
                             z: z3,
                         } = translation0;
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
+                        #[link(wasm_import_module = "wired:scene/composition")]
                         extern "C" {
-                            #[link_name = "[method]glxf-node.set-transform"]
+                            #[link_name = "[method]asset-node.set-transform"]
                             fn wit_import(
                                 _: i32,
                                 _: f32,
@@ -4963,203 +4070,14 @@ pub mod wired {
                     }
                 }
             }
-            impl GlxfNode {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn parent(&self) -> Option<GlxfNode> {
-                    unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
-                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]glxf-node.parent"]
-                            fn wit_import(_: i32, _: *mut u8);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: *mut u8) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, ptr0);
-                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
-                        match l1 {
-                            0 => None,
-                            1 => {
-                                let e = {
-                                    let l2 = *ptr0.add(4).cast::<i32>();
-                                    GlxfNode::from_handle(l2 as u32)
-                                };
-                                Some(e)
-                            }
-                            _ => _rt::invalid_enum_discriminant(),
-                        }
-                    }
-                }
-            }
-            impl GlxfNode {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn children(&self) -> Option<Children> {
-                    unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 16],
-                        );
-                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]glxf-node.children"]
-                            fn wit_import(_: i32, _: *mut u8);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: *mut u8) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, ptr0);
-                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
-                        match l1 {
-                            0 => None,
-                            1 => {
-                                let e = {
-                                    let l2 = i32::from(*ptr0.add(4).cast::<u8>());
-                                    let v11 = match l2 {
-                                        0 => {
-                                            let e11 = {
-                                                let l3 = i32::from(*ptr0.add(8).cast::<u8>());
-                                                let v6 = match l3 {
-                                                    0 => {
-                                                        let e6 = {
-                                                            let l4 = *ptr0.add(12).cast::<i32>();
-                                                            AssetGltf::from_handle(l4 as u32)
-                                                        };
-                                                        Asset::Gltf(e6)
-                                                    }
-                                                    n => {
-                                                        debug_assert_eq!(n, 1, "invalid enum discriminant");
-                                                        let e6 = {
-                                                            let l5 = *ptr0.add(12).cast::<i32>();
-                                                            AssetGlxf::from_handle(l5 as u32)
-                                                        };
-                                                        Asset::Glxf(e6)
-                                                    }
-                                                };
-                                                v6
-                                            };
-                                            Children::Asset(e11)
-                                        }
-                                        n => {
-                                            debug_assert_eq!(n, 1, "invalid enum discriminant");
-                                            let e11 = {
-                                                let l7 = *ptr0.add(8).cast::<*mut u8>();
-                                                let l8 = *ptr0.add(12).cast::<usize>();
-                                                let base10 = l7;
-                                                let len10 = l8;
-                                                let mut result10 = _rt::Vec::with_capacity(len10);
-                                                for i in 0..len10 {
-                                                    let base = base10.add(i * 4);
-                                                    let e10 = {
-                                                        let l9 = *base.add(0).cast::<i32>();
-                                                        GlxfNode::from_handle(l9 as u32)
-                                                    };
-                                                    result10.push(e10);
-                                                }
-                                                _rt::cabi_dealloc(base10, len10 * 4, 4);
-                                                result10
-                                            };
-                                            Children::Nodes(e11)
-                                        }
-                                    };
-                                    v11
-                                };
-                                Some(e)
-                            }
-                            _ => _rt::invalid_enum_discriminant(),
-                        }
-                    }
-                }
-            }
-            impl GlxfNode {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn set_children(&self, value: Option<&ChildrenBorrow<'_>>) {
-                    unsafe {
-                        let mut cleanup_list = _rt::Vec::new();
-                        let (result3_0, result3_1, result3_2, result3_3) = match value {
-                            Some(e) => {
-                                let (result2_0, result2_1, result2_2) = match e {
-                                    ChildrenBorrow::Asset(e) => {
-                                        let (result0_0, result0_1) = match e {
-                                            AssetBorrow::Gltf(e) => (0i32, (e).handle() as i32),
-                                            AssetBorrow::Glxf(e) => (1i32, (e).handle() as i32),
-                                        };
-                                        (0i32, result0_0 as *mut u8, result0_1 as usize)
-                                    }
-                                    ChildrenBorrow::Nodes(e) => {
-                                        let vec1 = e;
-                                        let len1 = vec1.len();
-                                        let layout1 = _rt::alloc::Layout::from_size_align_unchecked(
-                                            vec1.len() * 4,
-                                            4,
-                                        );
-                                        let result1 = if layout1.size() != 0 {
-                                            let ptr = _rt::alloc::alloc(layout1).cast::<u8>();
-                                            if ptr.is_null() {
-                                                _rt::alloc::handle_alloc_error(layout1);
-                                            }
-                                            ptr
-                                        } else {
-                                            { ::core::ptr::null_mut() }
-                                        };
-                                        for (i, e) in vec1.into_iter().enumerate() {
-                                            let base = result1.add(i * 4);
-                                            {
-                                                *base.add(0).cast::<i32>() = (e).handle() as i32;
-                                            }
-                                        }
-                                        cleanup_list.extend_from_slice(&[(result1, layout1)]);
-                                        (1i32, result1, len1)
-                                    }
-                                };
-                                (1i32, result2_0, result2_1, result2_2)
-                            }
-                            None => (0i32, 0i32, ::core::ptr::null_mut(), 0usize),
-                        };
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]glxf-node.set-children"]
-                            fn wit_import(_: i32, _: i32, _: i32, _: *mut u8, _: usize);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: i32, _: i32, _: *mut u8, _: usize) {
-                            unreachable!()
-                        }
-                        wit_import(
-                            (self).handle() as i32,
-                            result3_0,
-                            result3_1,
-                            result3_2,
-                            result3_3,
-                        );
-                        for (ptr, layout) in cleanup_list {
-                            if layout.size() != 0 {
-                                _rt::alloc::dealloc(ptr.cast(), layout);
-                            }
-                        }
-                    }
-                }
-            }
-            impl GlxfScene {
+            impl Composition {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn new() -> Self {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
+                        #[link(wasm_import_module = "wired:scene/composition")]
                         extern "C" {
-                            #[link_name = "[constructor]glxf-scene"]
+                            #[link_name = "[constructor]composition"]
                             fn wit_import() -> i32;
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -5167,93 +4085,22 @@ pub mod wired {
                             unreachable!()
                         }
                         let ret = wit_import();
-                        GlxfScene::from_handle(ret as u32)
+                        Composition::from_handle(ret as u32)
                     }
                 }
             }
-            impl GlxfScene {
+            impl Composition {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn id(&self) -> u32 {
-                    unsafe {
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]glxf-scene.id"]
-                            fn wit_import(_: i32) -> i32;
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32) -> i32 {
-                            unreachable!()
-                        }
-                        let ret = wit_import((self).handle() as i32);
-                        ret as u32
-                    }
-                }
-            }
-            impl GlxfScene {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn name(&self) -> _rt::String {
+                pub fn nodes(&self) -> _rt::Vec<AssetNode> {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
+                        #[link(wasm_import_module = "wired:scene/composition")]
                         extern "C" {
-                            #[link_name = "[method]glxf-scene.name"]
-                            fn wit_import(_: i32, _: *mut u8);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: *mut u8) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, ptr0);
-                        let l1 = *ptr0.add(0).cast::<*mut u8>();
-                        let l2 = *ptr0.add(4).cast::<usize>();
-                        let len3 = l2;
-                        let bytes3 = _rt::Vec::from_raw_parts(l1.cast(), len3, len3);
-                        _rt::string_lift(bytes3)
-                    }
-                }
-            }
-            impl GlxfScene {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn set_name(&self, value: &str) {
-                    unsafe {
-                        let vec0 = value;
-                        let ptr0 = vec0.as_ptr().cast::<u8>();
-                        let len0 = vec0.len();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]glxf-scene.set-name"]
-                            fn wit_import(_: i32, _: *mut u8, _: usize);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: i32, _: *mut u8, _: usize) {
-                            unreachable!()
-                        }
-                        wit_import((self).handle() as i32, ptr0.cast_mut(), len0);
-                    }
-                }
-            }
-            impl GlxfScene {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn nodes(&self) -> _rt::Vec<GlxfNode> {
-                    unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 8],
-                        );
-                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
-                        extern "C" {
-                            #[link_name = "[method]glxf-scene.nodes"]
+                            #[link_name = "[method]composition.nodes"]
                             fn wit_import(_: i32, _: *mut u8);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -5270,7 +4117,7 @@ pub mod wired {
                             let base = base4.add(i * 4);
                             let e4 = {
                                 let l3 = *base.add(0).cast::<i32>();
-                                GlxfNode::from_handle(l3 as u32)
+                                AssetNode::from_handle(l3 as u32)
                             };
                             result4.push(e4);
                         }
@@ -5279,40 +4126,68 @@ pub mod wired {
                     }
                 }
             }
-            impl GlxfScene {
+            impl Composition {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn add_node(&self, node: &GlxfNode) {
+                pub fn add_node(&self, value: &AssetNode) {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
+                        #[link(wasm_import_module = "wired:scene/composition")]
                         extern "C" {
-                            #[link_name = "[method]glxf-scene.add-node"]
+                            #[link_name = "[method]composition.add-node"]
                             fn wit_import(_: i32, _: i32);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
                         fn wit_import(_: i32, _: i32) {
                             unreachable!()
                         }
-                        wit_import((self).handle() as i32, (node).handle() as i32);
+                        wit_import((self).handle() as i32, (value).handle() as i32);
                     }
                 }
             }
-            impl GlxfScene {
+            impl Composition {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn remove_node(&self, node: &GlxfNode) {
+                pub fn remove_node(&self, value: &AssetNode) {
                     unsafe {
                         #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wired:scene/glxf")]
+                        #[link(wasm_import_module = "wired:scene/composition")]
                         extern "C" {
-                            #[link_name = "[method]glxf-scene.remove-node"]
+                            #[link_name = "[method]composition.remove-node"]
                             fn wit_import(_: i32, _: i32);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
                         fn wit_import(_: i32, _: i32) {
                             unreachable!()
                         }
-                        wit_import((self).handle() as i32, (node).handle() as i32);
+                        wit_import((self).handle() as i32, (value).handle() as i32);
                     }
+                }
+            }
+        }
+        #[allow(dead_code, clippy::all)]
+        pub mod api {
+            #[used]
+            #[doc(hidden)]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            pub type Composition = super::super::super::wired::scene::composition::Composition;
+            #[allow(unused_unsafe, clippy::all)]
+            /// The root composition that the script is attached to.
+            pub fn root() -> Composition {
+                unsafe {
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wired:scene/api")]
+                    extern "C" {
+                        #[link_name = "root"]
+                        fn wit_import() -> i32;
+                    }
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import() -> i32 {
+                        unreachable!()
+                    }
+                    let ret = wit_import();
+                    super::super::super::wired::scene::composition::Composition::from_handle(
+                        ret as u32,
+                    )
                 }
             }
         }
@@ -5328,7 +4203,8 @@ pub mod exports {
             pub mod types {
                 #[used]
                 #[doc(hidden)]
-                static __FORCE_SECTION_REF: fn() = super::super::super::super::__link_custom_section_describing_imports;
+                static __FORCE_SECTION_REF: fn() =
+                    super::super::super::super::__link_custom_section_describing_imports;
                 use super::super::super::super::_rt;
                 #[derive(Debug)]
                 #[repr(transparent)]
@@ -5345,9 +4221,7 @@ pub mod exports {
                     pub fn new<T: GuestScript>(val: T) -> Self {
                         Self::type_guard::<T>();
                         let val: _ScriptRep<T> = Some(val);
-                        let ptr: *mut _ScriptRep<T> = _rt::Box::into_raw(
-                            _rt::Box::new(val),
-                        );
+                        let ptr: *mut _ScriptRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
                         unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
                     }
                     /// Gets access to the underlying `T` which represents this resource.
@@ -5385,12 +4259,13 @@ pub mod exports {
                         use core::any::TypeId;
                         static mut LAST_TYPE: Option<TypeId> = None;
                         unsafe {
-                            assert!(! cfg!(target_feature = "atomics"));
+                            assert!(!cfg!(target_feature = "atomics"));
                             let id = TypeId::of::<T>();
                             match LAST_TYPE {
                                 Some(ty) => {
                                     assert!(
-                                        ty == id, "cannot use two types with this resource type"
+                                        ty == id,
+                                        "cannot use two types with this resource type"
                                     )
                                 }
                                 None => LAST_TYPE = Some(id),
@@ -5452,7 +4327,8 @@ pub mod exports {
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
                 pub unsafe fn _export_constructor_script_cabi<T: GuestScript>() -> i32 {
-                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
                     let result0 = Script::new(T::new());
                     (result0).take_handle() as i32
                 }
@@ -5462,7 +4338,8 @@ pub mod exports {
                     arg0: *mut u8,
                     arg1: f32,
                 ) {
-                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
                     T::update(ScriptBorrow::lift(arg0 as u32 as usize).get(), arg1);
                 }
                 pub trait Guest {
@@ -5600,7 +4477,9 @@ mod _rt {
     }
     impl<T: WasmResource> fmt::Debug for Resource<T> {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            f.debug_struct("Resource").field("handle", &self.handle).finish()
+            f.debug_struct("Resource")
+                .field("handle", &self.handle)
+                .finish()
         }
     }
     impl<T: WasmResource> Drop for Resource<T> {
@@ -5653,13 +4532,13 @@ mod _rt {
         let layout = alloc::Layout::from_size_align_unchecked(size, align);
         alloc::dealloc(ptr, layout);
     }
-    pub use alloc_crate::alloc;
     pub use alloc_crate::boxed::Box;
     #[cfg(target_arch = "wasm32")]
     pub fn run_ctors_once() {
         wit_bindgen_rt::run_ctors_once();
     }
     extern crate alloc as alloc_crate;
+    pub use alloc_crate::alloc;
 }
 /// Generates `#[no_mangle]` functions to export the specified type as the
 /// root implementation of all generated traits.
@@ -5694,8 +4573,8 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.30.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7425] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x849\x01A\x02\x01A&\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 5965] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xd0-\x01A\x02\x01A)\x01\
 B\x10\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\
 \x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01r\
 \x03\x08rotation\x05\x05scale\x03\x0btranslation\x03\x04\0\x09transform\x03\0\x06\
@@ -5761,105 +4640,73 @@ rm\x02\x03\0\x04\x08collider\x02\x03\0\x04\x0arigid-body\x01BE\x02\x03\x02\x01\x
 i\x0a\x01@\0\0\x0b\x04\0\x11[constructor]node\x01\x0c\x01h\x0a\x01@\x01\x04self\x0d\
 \0y\x04\0\x0f[method]node.id\x01\x0e\x01@\x01\x04self\x0d\0\x0b\x04\0\x10[method\
 ]node.ref\x01\x0f\x01@\x01\x04self\x0d\0s\x04\0\x11[method]node.name\x01\x10\x01\
-@\x02\x04self\x0d\x05values\x01\0\x04\0\x15[method]node.set-name\x01\x11\x01p\x0b\
-\x01@\x01\x04self\x0d\0\x12\x04\0\x15[method]node.children\x01\x13\x01@\x02\x04s\
-elf\x0d\x05value\x0d\x01\0\x04\0\x16[method]node.add-child\x01\x14\x04\0\x19[met\
-hod]node.remove-child\x01\x14\x01k\x0b\x01@\x01\x04self\x0d\0\x15\x04\0\x13[meth\
-od]node.parent\x01\x16\x01@\x01\x04self\x0d\0\x05\x04\0\x1d[method]node.global-t\
-ransform\x01\x17\x04\0\x16[method]node.transform\x01\x17\x01@\x02\x04self\x0d\x05\
-value\x05\x01\0\x04\0\x1a[method]node.set-transform\x01\x18\x01i\x01\x01k\x19\x01\
-@\x01\x04self\x0d\0\x1a\x04\0\x11[method]node.mesh\x01\x1b\x01h\x01\x01k\x1c\x01\
-@\x02\x04self\x0d\x05value\x1d\x01\0\x04\0\x15[method]node.set-mesh\x01\x1e\x01i\
-\x07\x01k\x1f\x01@\x01\x04self\x0d\0\x20\x04\0\x15[method]node.collider\x01!\x01\
-h\x07\x01k\"\x01@\x02\x04self\x0d\x05value#\x01\0\x04\0\x19[method]node.set-coll\
-ider\x01$\x01i\x09\x01k%\x01@\x01\x04self\x0d\0&\x04\0\x17[method]node.rigid-bod\
-y\x01'\x01h\x09\x01k(\x01@\x02\x04self\x0d\x05value)\x01\0\x04\0\x1b[method]node\
-.set-rigid-body\x01*\x01i\x03\x01k+\x01@\x01\x04self\x0d\0,\x04\0\x1a[method]nod\
-e.input-handler\x01-\x01h\x03\x01k.\x01@\x02\x04self\x0d\x05value/\x01\0\x04\0\x1e\
-[method]node.set-input-handler\x010\x03\x01\x10wired:scene/node\x05\x10\x02\x03\0\
-\x07\x04node\x01B\x11\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\0\x01i\x01\x01r\x14\
-\x04hips\x02\x05spine\x02\x05chest\x02\x0bupper-chest\x02\x04neck\x02\x04head\x02\
-\x0dleft-shoulder\x02\x0eleft-upper-arm\x02\x0eleft-lower-arm\x02\x09left-hand\x02\
-\x0eright-shoulder\x02\x0fright-upper-arm\x02\x0fright-lower-arm\x02\x0aright-ha\
-nd\x02\x0eleft-upper-leg\x02\x0eleft-lower-leg\x02\x09left-foot\x02\x0fright-upp\
-er-leg\x02\x0fright-lower-leg\x02\x0aright-foot\x02\x04\0\x08skeleton\x03\0\x03\x04\
-\0\x06player\x03\x01\x01h\x05\x01@\x01\x04self\x06\0\x02\x04\0\x13[method]player\
-.root\x01\x07\x01@\x01\x04self\x06\0\x04\x04\0\x17[method]player.skeleton\x01\x08\
-\x01i\x05\x01p\x09\x01@\0\0\x0a\x04\0\x0clist-players\x01\x0b\x01@\0\0\x09\x04\0\
-\x0clocal-player\x01\x0c\x03\x01\x10wired:player/api\x05\x12\x01B\x15\x02\x03\x02\
-\x01\x11\x04\0\x04node\x03\0\0\x04\0\x05scene\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\
-\x12[constructor]scene\x01\x04\x01h\x02\x01@\x01\x04self\x05\0y\x04\0\x10[method\
-]scene.id\x01\x06\x01@\x01\x04self\x05\0s\x04\0\x12[method]scene.name\x01\x07\x01\
-@\x02\x04self\x05\x05values\x01\0\x04\0\x16[method]scene.set-name\x01\x08\x01i\x01\
-\x01p\x09\x01@\x01\x04self\x05\0\x0a\x04\0\x13[method]scene.nodes\x01\x0b\x01h\x01\
-\x01@\x02\x04self\x05\x05value\x0c\x01\0\x04\0\x16[method]scene.add-node\x01\x0d\
-\x04\0\x19[method]scene.remove-node\x01\x0d\x03\x01\x11wired:scene/scene\x05\x13\
-\x02\x03\0\x09\x05scene\x01B5\x02\x03\x02\x01\x09\x04\0\x08material\x03\0\0\x02\x03\
-\x02\x01\x0b\x04\0\x04mesh\x03\0\x02\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x04\
-\x02\x03\x02\x01\x14\x04\0\x05scene\x03\0\x06\x04\0\x04gltf\x03\x01\x01i\x08\x01\
-@\0\0\x09\x04\0\x11[constructor]gltf\x01\x0a\x01h\x08\x01i\x01\x01p\x0c\x01@\x01\
-\x04self\x0b\0\x0d\x04\0\x1b[method]gltf.list-materials\x01\x0e\x01h\x01\x01@\x02\
-\x04self\x0b\x05value\x0f\x01\0\x04\0\x19[method]gltf.add-material\x01\x10\x04\0\
-\x1c[method]gltf.remove-material\x01\x10\x01i\x03\x01p\x11\x01@\x01\x04self\x0b\0\
-\x12\x04\0\x18[method]gltf.list-meshes\x01\x13\x01h\x03\x01@\x02\x04self\x0b\x05\
-value\x14\x01\0\x04\0\x15[method]gltf.add-mesh\x01\x15\x04\0\x18[method]gltf.rem\
-ove-mesh\x01\x15\x01i\x05\x01p\x16\x01@\x01\x04self\x0b\0\x17\x04\0\x17[method]g\
-ltf.list-nodes\x01\x18\x01h\x05\x01@\x02\x04self\x0b\x05value\x19\x01\0\x04\0\x15\
-[method]gltf.add-node\x01\x1a\x04\0\x18[method]gltf.remove-node\x01\x1a\x01i\x07\
-\x01p\x1b\x01@\x01\x04self\x0b\0\x1c\x04\0\x18[method]gltf.list-scenes\x01\x1d\x01\
-h\x07\x01@\x02\x04self\x0b\x05value\x1e\x01\0\x04\0\x16[method]gltf.add-scene\x01\
-\x1f\x04\0\x19[method]gltf.remove-scene\x01\x1f\x01k\x1b\x01@\x01\x04self\x0b\0\x20\
-\x04\0\x19[method]gltf.active-scene\x01!\x01k\x1e\x01@\x02\x04self\x0b\x05value\"\
-\x01\0\x04\0\x1d[method]gltf.set-active-scene\x01#\x04\0\x1a[method]gltf.default\
--scene\x01!\x04\0\x1e[method]gltf.set-default-scene\x01\x1f\x03\x01\x10wired:sce\
-ne/gltf\x05\x15\x02\x03\0\x0a\x04gltf\x01Bt\x02\x03\x02\x01\x16\x04\0\x04gltf\x03\
-\0\0\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\x02\x02\x03\x02\x01\x0d\x04\0\x09tr\
-ansform\x03\0\x04\x04\0\x04glxf\x03\x01\x04\0\x0aasset-gltf\x03\x01\x04\0\x0aass\
-et-glxf\x03\x01\x01i\x07\x01i\x08\x01q\x02\x04gltf\x01\x09\0\x04glxf\x01\x0a\0\x04\
-\0\x05asset\x03\0\x0b\x01h\x07\x01h\x08\x01q\x02\x04gltf\x01\x0d\0\x04glxf\x01\x0e\
-\0\x04\0\x0casset-borrow\x03\0\x0f\x04\0\x09glxf-node\x03\x01\x01i\x11\x01p\x12\x01\
-q\x02\x05asset\x01\x0c\0\x05nodes\x01\x13\0\x04\0\x08children\x03\0\x14\x01h\x11\
-\x01p\x16\x01q\x02\x05asset\x01\x10\0\x05nodes\x01\x17\0\x04\0\x0fchildren-borro\
-w\x03\0\x18\x04\0\x0aglxf-scene\x03\x01\x01i\x06\x01@\0\0\x1b\x04\0\x11[construc\
-tor]glxf\x01\x1c\x01h\x06\x01p\x0c\x01@\x01\x04self\x1d\0\x1e\x04\0\x18[method]g\
-lxf.list-assets\x01\x1f\x01@\x02\x04self\x1d\x05value\x10\x01\0\x04\0\x16[method\
-]glxf.add-asset\x01\x20\x04\0\x19[method]glxf.remove-asset\x01\x20\x01@\x01\x04s\
-elf\x1d\0\x13\x04\0\x17[method]glxf.list-nodes\x01!\x01@\x02\x04self\x1d\x05valu\
-e\x16\x01\0\x04\0\x15[method]glxf.add-node\x01\"\x04\0\x18[method]glxf.remove-no\
-de\x01\"\x01i\x1a\x01p#\x01@\x01\x04self\x1d\0$\x04\0\x18[method]glxf.list-scene\
-s\x01%\x01h\x1a\x01@\x02\x04self\x1d\x05value&\x01\0\x04\0\x16[method]glxf.add-s\
-cene\x01'\x04\0\x19[method]glxf.remove-scene\x01'\x01k#\x01@\x01\x04self\x1d\0(\x04\
-\0\x19[method]glxf.active-scene\x01)\x01k&\x01@\x02\x04self\x1d\x05value*\x01\0\x04\
-\0\x1d[method]glxf.set-active-scene\x01+\x04\0\x1a[method]glxf.default-scene\x01\
-)\x04\0\x1e[method]glxf.set-default-scene\x01'\x01h\x01\x01@\x01\x08document,\0\x09\
-\x04\0\x17[constructor]asset-gltf\x01-\x01i\x01\x01@\x01\x04self\x0d\0.\x04\0\x1b\
-[method]asset-gltf.document\x01/\x01i\x03\x01p0\x01@\x01\x04self\x0d\01\x04\0\x1d\
-[method]asset-gltf.list-nodes\x012\x01h\x03\x01@\x02\x04self\x0d\x05value3\x01\0\
-\x04\0\x1b[method]asset-gltf.add-node\x014\x04\0\x1e[method]asset-gltf.remove-no\
-de\x014\x01@\x01\x08document\x1d\0\x0a\x04\0\x17[constructor]asset-glxf\x015\x01\
-@\x01\x04self\x0e\0\x1b\x04\0\x1b[method]asset-glxf.document\x016\x01@\x01\x04se\
-lf\x0e\0\x13\x04\0\x1d[method]asset-glxf.list-nodes\x017\x01@\x02\x04self\x0e\x05\
-value\x16\x01\0\x04\0\x1b[method]asset-glxf.add-node\x018\x04\0\x1e[method]asset\
--glxf.remove-node\x018\x01@\0\0\x12\x04\0\x16[constructor]glxf-node\x019\x01@\x01\
-\x04self\x16\0y\x04\0\x14[method]glxf-node.id\x01:\x01@\x01\x04self\x16\0s\x04\0\
-\x16[method]glxf-node.name\x01;\x01@\x02\x04self\x16\x05values\x01\0\x04\0\x1a[m\
-ethod]glxf-node.set-name\x01<\x01@\x01\x04self\x16\0\x05\x04\0\x1b[method]glxf-n\
-ode.transform\x01=\x01@\x02\x04self\x16\x05value\x05\x01\0\x04\0\x1f[method]glxf\
--node.set-transform\x01>\x01k\x12\x01@\x01\x04self\x16\0?\x04\0\x18[method]glxf-\
-node.parent\x01@\x01k\x15\x01@\x01\x04self\x16\0\xc1\0\x04\0\x1a[method]glxf-nod\
-e.children\x01B\x01k\x19\x01@\x02\x04self\x16\x05value\xc3\0\x01\0\x04\0\x1e[met\
-hod]glxf-node.set-children\x01D\x01@\0\0#\x04\0\x17[constructor]glxf-scene\x01E\x01\
-@\x01\x04self&\0y\x04\0\x15[method]glxf-scene.id\x01F\x01@\x01\x04self&\0s\x04\0\
-\x17[method]glxf-scene.name\x01G\x01@\x02\x04self&\x05values\x01\0\x04\0\x1b[met\
-hod]glxf-scene.set-name\x01H\x01@\x01\x04self&\0\x13\x04\0\x18[method]glxf-scene\
-.nodes\x01I\x01@\x02\x04self&\x04node\x16\x01\0\x04\0\x1b[method]glxf-scene.add-\
-node\x01J\x04\0\x1e[method]glxf-scene.remove-node\x01J\x04\0\x08get-root\x01\x1c\
-\x03\x01\x10wired:scene/glxf\x05\x17\x01B\x07\x04\0\x06script\x03\x01\x01i\0\x01\
-@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01h\0\x01@\x02\x04self\x03\x05de\
-ltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\x01\x12wired:script/types\x05\
-\x18\x04\x01\x19test:wired-physics/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0\
-G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.215.0\x10wit-bindge\
-n-rust\x060.30.0";
+@\x02\x04self\x0d\x05values\x01\0\x04\0\x15[method]node.set-name\x01\x11\x01k\x0b\
+\x01@\x01\x04self\x0d\0\x12\x04\0\x13[method]node.parent\x01\x13\x01p\x0b\x01@\x01\
+\x04self\x0d\0\x14\x04\0\x15[method]node.children\x01\x15\x01@\x02\x04self\x0d\x05\
+value\x0d\x01\0\x04\0\x16[method]node.add-child\x01\x16\x04\0\x19[method]node.re\
+move-child\x01\x16\x01@\x01\x04self\x0d\0\x05\x04\0\x1d[method]node.global-trans\
+form\x01\x17\x04\0\x16[method]node.transform\x01\x17\x01@\x02\x04self\x0d\x05val\
+ue\x05\x01\0\x04\0\x1a[method]node.set-transform\x01\x18\x01i\x01\x01k\x19\x01@\x01\
+\x04self\x0d\0\x1a\x04\0\x11[method]node.mesh\x01\x1b\x01h\x01\x01k\x1c\x01@\x02\
+\x04self\x0d\x05value\x1d\x01\0\x04\0\x15[method]node.set-mesh\x01\x1e\x01i\x07\x01\
+k\x1f\x01@\x01\x04self\x0d\0\x20\x04\0\x15[method]node.collider\x01!\x01h\x07\x01\
+k\"\x01@\x02\x04self\x0d\x05value#\x01\0\x04\0\x19[method]node.set-collider\x01$\
+\x01i\x09\x01k%\x01@\x01\x04self\x0d\0&\x04\0\x17[method]node.rigid-body\x01'\x01\
+h\x09\x01k(\x01@\x02\x04self\x0d\x05value)\x01\0\x04\0\x1b[method]node.set-rigid\
+-body\x01*\x01i\x03\x01k+\x01@\x01\x04self\x0d\0,\x04\0\x1a[method]node.input-ha\
+ndler\x01-\x01h\x03\x01k.\x01@\x02\x04self\x0d\x05value/\x01\0\x04\0\x1e[method]\
+node.set-input-handler\x010\x03\x01\x10wired:scene/node\x05\x10\x02\x03\0\x07\x04\
+node\x01B\x11\x02\x03\x02\x01\x11\x04\0\x04node\x03\0\0\x01i\x01\x01r\x14\x04hip\
+s\x02\x05spine\x02\x05chest\x02\x0bupper-chest\x02\x04neck\x02\x04head\x02\x0dle\
+ft-shoulder\x02\x0eleft-upper-arm\x02\x0eleft-lower-arm\x02\x09left-hand\x02\x0e\
+right-shoulder\x02\x0fright-upper-arm\x02\x0fright-lower-arm\x02\x0aright-hand\x02\
+\x0eleft-upper-leg\x02\x0eleft-lower-leg\x02\x09left-foot\x02\x0fright-upper-leg\
+\x02\x0fright-lower-leg\x02\x0aright-foot\x02\x04\0\x08skeleton\x03\0\x03\x04\0\x06\
+player\x03\x01\x01h\x05\x01@\x01\x04self\x06\0\x02\x04\0\x13[method]player.root\x01\
+\x07\x01@\x01\x04self\x06\0\x04\x04\0\x17[method]player.skeleton\x01\x08\x01i\x05\
+\x01p\x09\x01@\0\0\x0a\x04\0\x0clist-players\x01\x0b\x01@\0\0\x09\x04\0\x0clocal\
+-player\x01\x0c\x03\x01\x10wired:player/api\x05\x12\x01B\x15\x02\x03\x02\x01\x11\
+\x04\0\x04node\x03\0\0\x04\0\x05scene\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\x12[co\
+nstructor]scene\x01\x04\x01h\x02\x01@\x01\x04self\x05\0y\x04\0\x10[method]scene.\
+id\x01\x06\x01@\x01\x04self\x05\0s\x04\0\x12[method]scene.name\x01\x07\x01@\x02\x04\
+self\x05\x05values\x01\0\x04\0\x16[method]scene.set-name\x01\x08\x01i\x01\x01p\x09\
+\x01@\x01\x04self\x05\0\x0a\x04\0\x13[method]scene.nodes\x01\x0b\x01h\x01\x01@\x02\
+\x04self\x05\x05value\x0c\x01\0\x04\0\x16[method]scene.add-node\x01\x0d\x04\0\x19\
+[method]scene.remove-node\x01\x0d\x03\x01\x11wired:scene/scene\x05\x13\x02\x03\0\
+\x09\x05scene\x01B\x17\x02\x03\x02\x01\x14\x04\0\x05scene\x03\0\0\x04\0\x08docum\
+ent\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\x15[constructor]document\x01\x04\x01h\x02\
+\x01i\x01\x01k\x06\x01@\x01\x04self\x05\0\x07\x04\0\x1d[method]document.active-s\
+cene\x01\x08\x01h\x01\x01k\x09\x01@\x02\x04self\x05\x05value\x0a\x01\0\x04\0![me\
+thod]document.set-active-scene\x01\x0b\x04\0\x1e[method]document.default-scene\x01\
+\x08\x04\0\"[method]document.set-default-scene\x01\x0b\x01p\x06\x01@\x01\x04self\
+\x05\0\x0c\x04\0\x17[method]document.scenes\x01\x0d\x01@\x02\x04self\x05\x05valu\
+e\x09\x01\0\x04\0\x1a[method]document.add-scene\x01\x0e\x04\0\x1d[method]documen\
+t.remove-scene\x01\x0e\x03\x01\x14wired:scene/document\x05\x15\x02\x03\0\x0a\x08\
+document\x01B-\x02\x03\x02\x01\x16\x04\0\x08document\x03\0\0\x02\x03\x02\x01\x0d\
+\x04\0\x09transform\x03\0\x02\x04\0\x0aasset-node\x03\x01\x04\0\x0bcomposition\x03\
+\x01\x01i\x05\x01i\x01\x01q\x02\x0bcomposition\x01\x06\0\x08document\x01\x07\0\x04\
+\0\x05asset\x03\0\x08\x01i\x04\x01@\0\0\x0a\x04\0\x17[constructor]asset-node\x01\
+\x0b\x01h\x04\x01k\x09\x01@\x01\x04self\x0c\0\x0d\x04\0\x18[method]asset-node.as\
+set\x01\x0e\x01@\x02\x04self\x0c\x05value\x0d\x01\0\x04\0\x1c[method]asset-node.\
+set-asset\x01\x0f\x01@\x01\x04self\x0c\0s\x04\0\x17[method]asset-node.name\x01\x10\
+\x01@\x02\x04self\x0c\x05values\x01\0\x04\0\x1b[method]asset-node.set-name\x01\x11\
+\x01k\x0a\x01@\x01\x04self\x0c\0\x12\x04\0\x19[method]asset-node.parent\x01\x13\x01\
+p\x0a\x01@\x01\x04self\x0c\0\x14\x04\0\x1b[method]asset-node.children\x01\x15\x01\
+@\x02\x04self\x0c\x05value\x0c\x01\0\x04\0\x1c[method]asset-node.add-child\x01\x16\
+\x04\0\x1f[method]asset-node.remove-child\x01\x16\x01@\x01\x04self\x0c\0\x03\x04\
+\0#[method]asset-node.global-transform\x01\x17\x04\0\x1c[method]asset-node.trans\
+form\x01\x17\x01@\x02\x04self\x0c\x05value\x03\x01\0\x04\0\x20[method]asset-node\
+.set-transform\x01\x18\x01@\0\0\x06\x04\0\x18[constructor]composition\x01\x19\x01\
+h\x05\x01@\x01\x04self\x1a\0\x14\x04\0\x19[method]composition.nodes\x01\x1b\x01@\
+\x02\x04self\x1a\x05value\x0c\x01\0\x04\0\x1c[method]composition.add-node\x01\x1c\
+\x04\0\x1f[method]composition.remove-node\x01\x1c\x03\x01\x17wired:scene/composi\
+tion\x05\x17\x02\x03\0\x0b\x0bcomposition\x01B\x05\x02\x03\x02\x01\x18\x04\0\x0b\
+composition\x03\0\0\x01i\x01\x01@\0\0\x02\x04\0\x04root\x01\x03\x03\x01\x0fwired\
+:scene/api\x05\x19\x01B\x07\x04\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13\
+[constructor]script\x01\x02\x01h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15\
+[method]script.update\x01\x04\x04\x01\x12wired:script/types\x05\x1a\x04\x01\x19t\
+est:wired-physics/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\
+\x0cprocessed-by\x02\x0dwit-component\x070.215.0\x10wit-bindgen-rust\x060.30.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {

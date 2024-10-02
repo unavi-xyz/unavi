@@ -51,9 +51,17 @@ impl HostMaterial for ScriptData {
     fn new(&mut self) -> wasm_bridge::Result<wasm_bridge::component::Resource<MaterialRes>> {
         let table_res = self.table.push(MaterialRes::default())?;
         let res = MaterialRes::from_res(&table_res, &self.table)?;
-
-        let materials = self.api.wired_scene.as_ref().unwrap().materials.clone();
         let rep = res.rep();
+
+        let materials = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .materials
+            .clone();
+
         self.commands.push(move |world: &mut World| {
             let mut assets = world.resource_mut::<Assets<StandardMaterial>>();
             let handle = assets.add(StandardMaterial::default());
@@ -91,6 +99,8 @@ impl HostMaterial for ScriptData {
         Ok(material.color)
     }
     fn set_color(&mut self, self_: Resource<MaterialRes>, value: Color) -> wasm_bridge::Result<()> {
+        let rep = self_.rep();
+
         let material = self.table.get_mut(&self_)?;
         material.color = value;
 
@@ -101,8 +111,15 @@ impl HostMaterial for ScriptData {
             material.color.a,
         );
 
-        let materials = self.api.wired_scene.as_ref().unwrap().materials.clone();
-        let rep = self_.rep();
+        let materials = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .materials
+            .clone();
+
         self.commands.push(move |world: &mut World| {
             let materials = materials.read().unwrap();
             let MaterialState { handle, .. } = materials.get(&rep).unwrap();
@@ -119,7 +136,15 @@ impl HostMaterial for ScriptData {
         let dropped = MaterialRes::handle_drop(rep, &mut self.table)?;
 
         if dropped {
-            let materials = self.api.wired_scene.as_ref().unwrap().materials.clone();
+            let materials = self
+                .api
+                .wired_scene
+                .as_ref()
+                .unwrap()
+                .entities
+                .materials
+                .clone();
+
             self.commands.push(move |world: &mut World| {
                 let mut materials = materials.write().unwrap();
                 let MaterialState { entity, .. } = materials.remove(&id).unwrap();

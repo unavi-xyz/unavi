@@ -84,7 +84,15 @@ impl HostNode for ScriptData {
         let res = self.clone_res(&table_res)?;
         let rep = res.rep();
 
-        let nodes = self.api.wired_scene.as_ref().unwrap().nodes.clone();
+        let nodes = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .nodes
+            .clone();
+
         self.commands.push(move |world: &mut World| {
             let entity = world.spawn(WiredNodeBundle::new(rep)).id();
             let mut nodes = nodes.write().unwrap();
@@ -163,10 +171,32 @@ impl HostNode for ScriptData {
             .unwrap()
             .default_material
             .clone();
-        let materials = self.api.wired_scene.as_ref().unwrap().materials.clone();
+        let materials = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .materials
+            .clone();
         let mesh_rep = node.mesh.as_ref().map(|res| res.rep());
-        let nodes = self.api.wired_scene.as_ref().unwrap().nodes.clone();
-        let primitives = self.api.wired_scene.as_ref().unwrap().primitives.clone();
+        let nodes = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .nodes
+            .clone();
+        let primitives = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .primitives
+            .clone();
+
         self.commands.push(move |world: &mut World| {
             let nodes = nodes.read().unwrap();
             let node_ent = nodes.get(&rep).unwrap();
@@ -273,7 +303,15 @@ impl HostNode for ScriptData {
         child.parent = Some(parent_res);
 
         // Update ECS.
-        let nodes = self.api.wired_scene.as_ref().unwrap().nodes.clone();
+        let nodes = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .nodes
+            .clone();
+
         self.commands.push(move |world: &mut World| {
             let nodes = nodes.read().unwrap();
             let child_ent = nodes.get(&child_rep).unwrap();
@@ -297,7 +335,15 @@ impl HostNode for ScriptData {
             .position(|r| r.rep() == child_rep)
             .map(|index| node.children.remove(index));
 
-        let nodes = self.api.wired_scene.as_ref().unwrap().nodes.clone();
+        let nodes = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .nodes
+            .clone();
+
         self.commands.push(move |world: &mut World| {
             let nodes = nodes.read().unwrap();
             let child_ent = nodes.get(&child_rep).unwrap();
@@ -458,7 +504,15 @@ impl HostNode for ScriptData {
         let dropped = NodeRes::handle_drop(rep, &mut self.table)?;
 
         if dropped {
-            let nodes = self.api.wired_scene.as_ref().unwrap().nodes.clone();
+            let nodes = self
+                .api
+                .wired_scene
+                .as_ref()
+                .unwrap()
+                .entities
+                .nodes
+                .clone();
+
             self.commands.push(move |world: &mut World| {
                 let mut nodes = nodes.write().unwrap();
                 let entity = nodes.remove(&id).unwrap();

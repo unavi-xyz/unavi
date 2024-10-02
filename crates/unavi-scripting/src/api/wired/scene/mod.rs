@@ -2,12 +2,17 @@ use std::sync::{Arc, RwLock};
 
 use anyhow::Result;
 use bevy::{prelude::*, utils::HashMap};
-use wasm_bridge::component::Linker;
+use wasm_bridge::component::{Linker, Resource};
 
 use crate::data::ScriptData;
 
-pub mod gltf;
-pub mod glxf;
+pub mod composition;
+pub mod document;
+pub mod material;
+pub mod mesh;
+pub mod node;
+#[allow(clippy::module_inception)]
+pub mod scene;
 
 pub mod bindings {
     wasm_bridge::component::bindgen!({
@@ -16,17 +21,14 @@ pub mod bindings {
             "wired:input": crate::api::wired::input::bindings,
             "wired:math": crate::api::wired::math::bindings,
             "wired:physics": crate::api::wired::physics::bindings,
-            "wired:scene/gltf/gltf": super::gltf::document::GltfDocument,
-            "wired:scene/glxf/asset-gltf": super::glxf::asset_gltf::GltfAssetRes,
-            "wired:scene/glxf/asset-glxf": super::glxf::asset_glxf::GlxfAssetRes,
-            "wired:scene/glxf/glxf": super::glxf::document::GlxfDocument,
-            "wired:scene/glxf/glxf-node": super::glxf::node::GlxfNodeRes,
-            "wired:scene/glxf/glxf-scene": super::glxf::scene::GlxfSceneRes,
-            "wired:scene/material/material": super::gltf::material::MaterialRes,
-            "wired:scene/mesh/mesh": super::gltf::mesh::MeshRes,
-            "wired:scene/mesh/primitive": super::gltf::mesh::PrimitiveRes,
-            "wired:scene/node/node": super::gltf::node::NodeRes,
-            "wired:scene/scene/scene": super::gltf::scene::SceneRes,
+            "wired:scene/composition/asset-node": super::composition::AssetNode,
+            "wired:scene/composition/composition": super::composition::Composition,
+            "wired:scene/document/document": super::document::Document,
+            "wired:scene/material/material": super::material::MaterialRes,
+            "wired:scene/mesh/mesh": super::mesh::MeshRes,
+            "wired:scene/mesh/primitive": super::mesh::PrimitiveRes,
+            "wired:scene/node/node": super::node::NodeRes,
+            "wired:scene/scene/scene": super::scene::SceneRes,
         }
     });
 
@@ -34,8 +36,8 @@ pub mod bindings {
 }
 
 pub fn add_to_linker(linker: &mut Linker<ScriptData>) -> Result<()> {
-    bindings::gltf::add_to_linker(linker, |s| s)?;
-    bindings::glxf::add_to_linker(linker, |s| s)?;
+    bindings::composition::add_to_linker(linker, |s| s)?;
+    bindings::document::add_to_linker(linker, |s| s)?;
     bindings::material::add_to_linker(linker, |s| s)?;
     bindings::mesh::add_to_linker(linker, |s| s)?;
     bindings::node::add_to_linker(linker, |s| s)?;
@@ -43,14 +45,16 @@ pub fn add_to_linker(linker: &mut Linker<ScriptData>) -> Result<()> {
     Ok(())
 }
 
-#[derive(Default)]
 pub struct WiredScene {
     pub default_material: Handle<StandardMaterial>,
+    pub entities: Entities,
+}
 
-    pub assets: Arc<RwLock<HashMap<u32, Entity>>>,
+#[derive(Default)]
+pub struct Entities {
+    pub asset_nodes: Arc<RwLock<HashMap<u32, Entity>>>,
+    pub compositions: Arc<RwLock<HashMap<u32, Entity>>>,
     pub documents: Arc<RwLock<HashMap<u32, Entity>>>,
-    pub glxf_nodes: Arc<RwLock<HashMap<u32, Entity>>>,
-    pub glxf_scenes: Arc<RwLock<HashMap<u32, Entity>>>,
     pub materials: Arc<RwLock<HashMap<u32, MaterialState>>>,
     pub nodes: Arc<RwLock<HashMap<u32, Entity>>>,
     pub primitives: Arc<RwLock<HashMap<u32, Handle<Mesh>>>>,
@@ -70,5 +74,11 @@ impl Default for bindings::material::Color {
             b: 0.0,
             a: 1.0,
         }
+    }
+}
+
+impl bindings::api::Host for ScriptData {
+    fn root(&mut self) -> wasm_bridge::Result<Resource<composition::Composition>> {
+        todo!();
     }
 }

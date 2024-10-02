@@ -1,11 +1,10 @@
 #![allow(dead_code)]
 
 use crate::bindings::wired::scene::{
-    gltf::Scene,
-    glxf::{GlxfNode, GlxfScene},
     material::{Color, Material},
     mesh::{Mesh, Primitive},
     node::Node,
+    scene::Scene,
 };
 
 impl Color {
@@ -53,18 +52,6 @@ impl PartialEq for Primitive {
 }
 
 impl PartialEq for Scene {
-    fn eq(&self, other: &Self) -> bool {
-        self.id() == other.id()
-    }
-}
-
-impl PartialEq for GlxfNode {
-    fn eq(&self, other: &Self) -> bool {
-        self.id() == other.id()
-    }
-}
-
-impl PartialEq for GlxfScene {
     fn eq(&self, other: &Self) -> bool {
         self.id() == other.id()
     }

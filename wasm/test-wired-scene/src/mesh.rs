@@ -1,47 +1,12 @@
-use crate::{
-    bindings::wired::{
-        log::api::{log, LogLevel},
-        scene::{
-            gltf::Gltf,
-            material::Material,
-            mesh::{Mesh, Primitive},
-        },
-    },
-    property_tests::{test_property, Property},
+use crate::bindings::wired::{
+    log::api::{log, LogLevel},
+    scene::{material::Material, mesh::Mesh},
 };
-
-impl Property for Mesh {
-    fn id(&self) -> u32 {
-        self.id()
-    }
-}
-
-impl Property for Primitive {
-    fn id(&self) -> u32 {
-        self.id()
-    }
-}
 
 pub fn test_mesh_api() {
     log(LogLevel::Debug, "testing mesh");
 
-    let document = Gltf::new();
-
-    test_property(
-        Mesh::new,
-        |v| document.add_mesh(v),
-        || document.list_meshes(),
-        |v| document.remove_mesh(&v),
-    );
-
-    log(LogLevel::Debug, "testing primitive");
     let mesh = Mesh::new();
-    test_property(
-        || mesh.create_primitive(),
-        |_| {},
-        || mesh.list_primitives(),
-        |v| mesh.remove_primitive(v),
-    );
 
     let primitive = mesh.create_primitive();
     primitive.set_indices(&[0, 1, 2]);

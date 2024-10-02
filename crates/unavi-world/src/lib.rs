@@ -44,10 +44,7 @@ pub enum WorldState {
 pub struct WorldRecord(pub RecordLink);
 
 #[derive(Component)]
-pub struct InstanceRecord(pub RecordLink);
-
-#[derive(Component)]
-pub struct InstanceServer(pub String);
+pub struct WorldServer(pub String);
 
 #[cfg(not(target_family = "wasm"))]
 fn add_atmosphere_cameras(

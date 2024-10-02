@@ -3,6 +3,5 @@ package example:unavi-shapes;
 world script {
     include wired:prelude/script;
 
-    import unavi:scene/api;
     import unavi:shapes/api;
 }

@@ -1,4 +1,4 @@
-//! Server for running multiplayer instances of worlds over WebTransport.
+//! Server for running multiplayer worlds over WebTransport.
 
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},

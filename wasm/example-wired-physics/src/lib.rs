@@ -1,11 +1,10 @@
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
-    unavi::scene::api::{Root, Scene},
     wired::{
         log::api::{log, LogLevel},
         math::types::Vec3,
         physics::types::{Collider, RigidBody, RigidBodyType, Shape},
-        scene::scene::Node,
+        scene::node::Node,
     },
 };
 
@@ -19,12 +18,10 @@ struct Script {
 
 impl GuestScript for Script {
     fn new() -> Self {
-        let scene = Scene::new();
-
         // Ground.
         let size = Vec3::new(10.0, 0.5, 10.0);
 
-        let node = scene.create_node();
+        let node = Node::new();
         let collider = Collider::new(Shape::Cuboid(size));
         let rigid_body = RigidBody::new(RigidBodyType::Fixed);
 
@@ -37,7 +34,7 @@ impl GuestScript for Script {
         for i in 1..5 {
             let radius = 0.25;
 
-            let node = scene.create_node();
+            let node = Node::new();
             let mut tr = node.transform();
             tr.translation.x += (i as f32) / 4.0;
             tr.translation.y += i as f32;
@@ -54,11 +51,9 @@ impl GuestScript for Script {
         }
 
         // Collider only.
-        let node = scene.create_node();
+        let node = Node::new();
         let collider = Collider::new(Shape::Sphere(1.0));
         node.set_collider(Some(&collider));
-
-        Root::add_scene(&scene);
 
         Script { spheres }
     }

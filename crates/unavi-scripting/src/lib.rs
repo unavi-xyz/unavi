@@ -9,8 +9,8 @@ pub mod api;
 mod asset;
 mod data;
 mod env;
-mod execution;
-mod load;
+pub mod execution;
+pub mod load;
 mod raycast;
 
 pub use asset::*;

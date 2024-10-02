@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use crate::{
     api::{
         utils::RefResource,
-        wired::scene::{bindings::gltf::Node, gltf::node::NodeId},
+        wired::scene::node::{NodeId, NodeRes},
     },
     execution::ScriptTickrate,
     load::ScriptMap,
@@ -27,7 +27,15 @@ pub(crate) fn update_physics_transforms(
         };
 
         let data = script.store.data_mut();
-        let script_nodes = data.api.wired_scene.as_ref().unwrap().nodes.read().unwrap();
+        let script_nodes = data
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .entities
+            .nodes
+            .read()
+            .unwrap();
 
         for (id, ent, transform) in nodes.iter() {
             // Check if phys node is from this script.
@@ -35,7 +43,7 @@ pub(crate) fn update_physics_transforms(
                 continue;
             }
 
-            let node = Node::from_rep(id.0, &data.table).unwrap();
+            let node = NodeRes::from_rep(id.0, &data.table).unwrap();
             let node = data.table.get_mut(&node).unwrap();
 
             node.transform = *transform;

@@ -5,13 +5,17 @@ use bevy_async_task::{AsyncTaskPool, AsyncTaskStatus};
 use unavi_world::UserActor;
 
 use crate::{
-    api::wired::{dwn::WiredDwn, log::WiredLog, scene::WiredScene},
+    api::wired::{
+        dwn::WiredDwn,
+        log::WiredLog,
+        scene::{Entities, WiredScene},
+    },
     env::{ScriptEnv, ScriptEnvBuilder},
 };
 
 use super::asset::Wasm;
 
-pub(crate) fn load_scripts(
+pub fn load_scripts(
     actor: Res<UserActor>,
     assets: Res<Assets<Wasm>>,
     default_material: Res<DefaultMaterial>,
@@ -36,9 +40,10 @@ pub(crate) fn load_scripts(
             name: name.to_string(),
         });
         builder.enable_wired_physics();
+        builder.enable_wired_player();
         builder.enable_wired_scene(WiredScene {
             default_material: default_material.0.clone(),
-            ..default()
+            entities: Entities::default(),
         });
 
         if *level == ScriptExecutionLevel::System {

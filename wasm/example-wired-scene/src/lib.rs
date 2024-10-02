@@ -6,8 +6,9 @@ use bindings::{
     wired::{
         math::types::Vec3,
         scene::{
-            gltf::Gltf,
-            glxf::{get_root, AssetBorrow, AssetGltf, ChildrenBorrow, GlxfNode, GlxfScene},
+            api::root,
+            composition::{Asset, AssetNode},
+            document::Document,
             material::{Color, Material},
             node::Node,
             scene::Scene,
@@ -27,21 +28,10 @@ struct Script {
 
 impl GuestScript for Script {
     fn new() -> Self {
-        let glxf = get_root();
-
-        let glxf_scene = GlxfScene::new();
-        glxf.set_active_scene(Some(&glxf_scene));
-
-        let glxf_node = GlxfNode::new();
-        glxf_scene.add_node(&glxf_node);
-
-        let gltf = Gltf::new();
-        let asset_gltf = AssetGltf::new(&gltf);
-        let children = ChildrenBorrow::Asset(AssetBorrow::Gltf(&asset_gltf));
-        glxf_node.set_children(Some(&children));
+        let document = Document::new();
 
         let scene = Scene::new();
-        gltf.set_active_scene(Some(&scene));
+        document.add_scene(&scene);
 
         let node = Node::new();
         scene.add_node(&node);
@@ -54,6 +44,12 @@ impl GuestScript for Script {
         for primitive in mesh.list_primitives() {
             primitive.set_material(Some(&material));
         }
+
+        let composition = root();
+
+        let asset_node = AssetNode::new();
+        asset_node.set_asset(Some(Asset::Document(document)));
+        composition.add_node(&asset_node);
 
         Script {
             color_delta: RefCell::new(Color {

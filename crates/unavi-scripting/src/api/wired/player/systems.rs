@@ -4,9 +4,11 @@ use bevy_vrm::BoneName;
 use unavi_constants::player::LOCAL_PLAYER_ID;
 use unavi_player::id::PlayerId;
 
-use crate::{api::utils::RefResource, execution::ScriptTickrate, load::ScriptMap};
-
-use super::bindings::api::Node;
+use crate::{
+    api::{utils::RefResource, wired::scene::node::NodeRes},
+    execution::ScriptTickrate,
+    load::ScriptMap,
+};
 
 #[derive(Component)]
 pub struct CopyTransform(pub Entity);
@@ -37,7 +39,7 @@ pub(crate) fn update_player_skeletons(
             .table
             .get(&data.api.wired_player.as_ref().unwrap().local_player)
             .unwrap();
-        let root = Node::from_res(&player.root, &data.table).unwrap();
+        let root = NodeRes::from_res(&player.root, &data.table).unwrap();
         let skeleton = player.skeleton.clone_ref(&data.table).unwrap();
 
         for (player_ent, id) in players.iter() {
@@ -45,7 +47,7 @@ pub(crate) fn update_player_skeletons(
                 continue;
             }
 
-            if let Ok(nodes) = data.api.wired_scene.as_ref().unwrap().nodes.read() {
+            if let Ok(nodes) = data.api.wired_scene.as_ref().unwrap().entities.nodes.read() {
                 if let Some(node_ent) = nodes.get(&root.rep()) {
                     commands
                         .entity(*node_ent)
@@ -53,7 +55,7 @@ pub(crate) fn update_player_skeletons(
                 }
             }
 
-            let pairs = [
+            let pairs: [(BoneName, &wasm_bridge::component::Resource<NodeRes>); 20] = [
                 (BoneName::Hips, &skeleton.hips),
                 (BoneName::Chest, &skeleton.chest),
                 (BoneName::UpperChest, &skeleton.upper_chest),
@@ -86,7 +88,8 @@ pub(crate) fn update_player_skeletons(
                         continue;
                     }
 
-                    if let Ok(nodes) = data.api.wired_scene.as_ref().unwrap().nodes.read() {
+                    if let Ok(nodes) = data.api.wired_scene.as_ref().unwrap().entities.nodes.read()
+                    {
                         if let Some(node_ent) = nodes.get(&node_res.rep()) {
                             commands.entity(*node_ent).insert(
                                 // "Parent" node entity to bone.

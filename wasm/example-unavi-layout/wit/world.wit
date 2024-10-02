@@ -4,6 +4,5 @@ world script {
     include unavi:layout/prelude;
     include wired:prelude/script;
 
-    import unavi:scene/api;
     import unavi:shapes/api;
 }

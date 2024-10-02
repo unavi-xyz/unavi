@@ -1,13 +1,11 @@
-
 use std::time::Duration;
 
 use bevy::prelude::*;
 use tracing_test::traced_test;
 
-use crate::{
-    asset::{Wasm, WasmLoader},
+use unavi_scripting::{
     load::{DefaultMaterial, LoadedScript, ScriptMap},
-    ScriptBundle,
+    ScriptBundle, Wasm, WasmLoader,
 };
 
 const UPDATES: usize = 4;
@@ -29,7 +27,7 @@ pub async fn test_script(name: &str) {
     .init_non_send_resource::<ScriptMap>()
     .insert_resource(DefaultMaterial(Handle::default()));
 
-    app.add_systems(Update, crate::load::load_scripts);
+    app.add_systems(Update, unavi_scripting::load::load_scripts);
 
     let world = app.world_mut();
     let asset_server = world.get_resource::<AssetServer>().unwrap();
@@ -53,8 +51,8 @@ pub async fn test_script(name: &str) {
     app.add_systems(
         Update,
         (
-            crate::execution::init_scripts,
-            crate::execution::update_scripts,
+            unavi_scripting::execution::init_scripts,
+            unavi_scripting::execution::update_scripts,
         )
             .chain(),
     );
@@ -159,16 +157,6 @@ async fn example_wired_physics() {
 #[traced_test]
 async fn example_unavi_layout() {
     test_script("example:unavi-layout").await;
-    assert!(!logs_contain("ERROR"));
-    assert!(!logs_contain("error"));
-    assert!(!logs_contain("WARN"));
-    assert!(!logs_contain("warn"));
-}
-
-#[tokio::test]
-#[traced_test]
-async fn example_unavi_scene() {
-    test_script("example:unavi-scene").await;
     assert!(!logs_contain("ERROR"));
     assert!(!logs_contain("error"));
     assert!(!logs_contain("WARN"));

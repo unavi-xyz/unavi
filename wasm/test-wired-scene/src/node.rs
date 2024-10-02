@@ -2,38 +2,18 @@ use crate::{
     bindings::wired::{
         log::api::{log, LogLevel},
         scene::{
-            gltf::Gltf,
             mesh::Mesh,
             node::{Node, Transform},
         },
     },
     panic_log,
-    property_tests::{test_property, Property},
 };
-
-impl Property for Node {
-    fn id(&self) -> u32 {
-        self.id()
-    }
-}
 
 pub fn test_node_api() {
     log(LogLevel::Debug, "testing node");
 
-    let document = Gltf::new();
-
-    test_property(
-        Node::new,
-        |v| document.add_node(v),
-        || document.list_nodes(),
-        |v| document.remove_node(&v),
-    );
-
     let node = Node::new();
-    document.add_node(&node);
-
     let node_2 = Node::new();
-    document.add_node(&node_2);
 
     node.add_child(&node_2);
 
@@ -70,12 +50,6 @@ pub fn test_node_api() {
     //     let err = format!("parent is Some: {:?}", parent);
     //     panic_log(&err);
     // }
-
-    let found_nodes = document.list_nodes();
-    if found_nodes.len() != 2 {
-        let err = format!("found list_nodes len: {}, expected 2", found_nodes.len());
-        panic_log(&err);
-    }
 
     let transform = node.transform();
     if transform != Transform::default() {

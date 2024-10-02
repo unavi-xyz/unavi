@@ -5,7 +5,7 @@ use thread::{NetworkingThread, NewSession, SessionRequest, SessionResponse};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use unavi_constants::player::{DEFAULT_VRM, PLAYER_HEIGHT};
 use unavi_player::id::PlayerId;
-use unavi_world::{InstanceRecord, InstanceServer};
+use unavi_world::{WorldRecord, WorldServer};
 use wired_world::datagram_capnp;
 
 pub mod thread;
@@ -17,7 +17,7 @@ impl Plugin for NetworkingPlugin {
         app.init_resource::<thread::NetworkingThread>().add_systems(
             FixedUpdate,
             (
-                connect_to_instances,
+                connect_to_worlds,
                 handle_session_response,
                 publish_transform,
             ),
@@ -31,10 +31,10 @@ struct Session {
     pub receiver: UnboundedReceiver<SessionResponse>,
 }
 
-fn connect_to_instances(
+fn connect_to_worlds(
     mut commands: Commands,
     runtime: Res<NetworkingThread>,
-    to_open: Query<(Entity, &InstanceServer, &InstanceRecord), Without<Session>>,
+    to_open: Query<(Entity, &WorldServer, &WorldRecord), Without<Session>>,
 ) {
     for (entity, server, record) in to_open.iter() {
         let address = server.0.clone();

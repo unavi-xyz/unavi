@@ -1,12 +1,11 @@
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
-    unavi::{
-        scene::api::{Node, Transform},
-        shapes::api::{Sphere, Vec3},
-    },
+    unavi::shapes::api::{Sphere, Vec3},
     wired::{
         log::api::{log, LogLevel},
+        math::types::Transform,
         player::api::{local_player, Skeleton},
+        scene::node::Node,
     },
 };
 

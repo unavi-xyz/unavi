@@ -3,9 +3,6 @@ use crate::{
     panic_log,
 };
 
-pub trait Property {
-    fn id(&self) -> u32;
-}
 
 pub fn test_property<T: Property>(
     create: impl Fn() -> T,

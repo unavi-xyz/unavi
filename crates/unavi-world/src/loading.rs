@@ -1,20 +1,13 @@
 use avian3d::prelude::*;
 use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 
-use crate::{InstanceRecord, InstanceServer, WorldState};
+use crate::{WorldRecord, WorldServer, WorldState};
 
 pub fn set_loading_state(
     mut next_state: ResMut<NextState<WorldState>>,
-    instances: Query<
-        Entity,
-        (
-            With<Handle<Scene>>,
-            With<InstanceRecord>,
-            With<InstanceServer>,
-        ),
-    >,
+    worlds: Query<Entity, (With<Handle<Scene>>, With<WorldRecord>, With<WorldServer>)>,
 ) {
-    if instances.is_empty() {
+    if worlds.is_empty() {
         next_state.set(WorldState::Loading);
     } else {
         next_state.set(WorldState::InWorld);

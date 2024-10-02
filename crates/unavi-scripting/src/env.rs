@@ -81,7 +81,7 @@ impl ScriptEnvBuilder {
             add_to_linker(&mut linker)?;
         }
 
-        let component = wasm_bridge::component::Component::new_safe(&store.engine(), bytes).await?;
+        let component = wasm_bridge::component::Component::new_safe(store.engine(), bytes).await?;
         let (script, _) = Script::instantiate_async(&mut store, &component, &linker).await?;
 
         Ok(ScriptEnv { script, store })

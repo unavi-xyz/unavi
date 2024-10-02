@@ -2,7 +2,6 @@ use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
     unavi::{
         layout::container::{Alignment, Container},
-        scene::api::{Root, Scene},
         shapes::api::Cuboid,
     },
     wired::{
@@ -20,8 +19,6 @@ struct Script {}
 
 impl GuestScript for Script {
     fn new() -> Self {
-        let scene = Scene::new();
-
         // Container alignments
         let root = Node::new();
         root.set_transform(Transform::from_translation(Vec3::new(4.0, 0.0, 0.0)));
@@ -54,8 +51,6 @@ impl GuestScript for Script {
                 }
             }
         }
-
-        Root::add_scene(&scene);
 
         Script {}
     }

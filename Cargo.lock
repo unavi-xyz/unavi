@@ -2083,7 +2083,7 @@ dependencies = [
  "bitflags 2.6.0",
  "cexpr",
  "clang-sys",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "proc-macro2",
  "quote",
  "regex",
@@ -5194,6 +5194,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "779ae4bf7e8421cf91c0b3b64e7e8b40b862fba4d393f59150042de7c4965a94"
 
 [[package]]
+name = "glam"
+version = "0.29.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c28091a37a5d09b555cb6628fd954da299b536433834f5b8e59eba78e0cbbf8a"
+
+[[package]]
 name = "glob"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5574,12 +5580,12 @@ dependencies = [
 
 [[package]]
 name = "hexasphere"
-version = "14.1.0"
+version = "15.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "344d5bf5d6b6da1020fcfd4014d44e0cc695356c603db9c774b30bd6d385ad2b"
+checksum = "741ab88b8cc670443da777c3daab02cebf5a3caccfc04e3c052f55c94d1643fe"
 dependencies = [
  "constgebra",
- "glam 0.28.0",
+ "glam 0.29.0",
 ]
 
 [[package]]
@@ -12293,7 +12299,7 @@ name = "unavi-shapes"
 version = "0.0.10"
 dependencies = [
  "glam 0.28.0",
- "hexasphere 14.1.0",
+ "hexasphere 15.0.0",
  "parry3d 0.17.1",
  "wit-bindgen-rt",
 ]

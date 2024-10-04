@@ -5,11 +5,7 @@ use bevy_async_task::{AsyncTaskPool, AsyncTaskStatus};
 use unavi_world::UserActor;
 
 use crate::{
-    api::wired::{
-        dwn::WiredDwn,
-        log::WiredLog,
-        scene::{Entities, WiredScene},
-    },
+    api::wired::dwn::WiredDwn,
     env::{ScriptEnv, ScriptEnvBuilder},
 };
 
@@ -36,15 +32,10 @@ pub fn load_scripts(
         let mut builder = ScriptEnvBuilder::default();
 
         builder.enable_wired_input();
-        builder.enable_wired_log(WiredLog {
-            name: name.to_string(),
-        });
+        builder.enable_wired_log(name.to_string());
         builder.enable_wired_physics();
         builder.enable_wired_player();
-        builder.enable_wired_scene(WiredScene {
-            default_material: default_material.0.clone(),
-            entities: Entities::default(),
-        });
+        builder.enable_wired_scene(default_material.0.clone());
 
         if *level == ScriptExecutionLevel::System {
             builder.enable_wired_dwn(WiredDwn::new(actor.0.dwn.clone()));

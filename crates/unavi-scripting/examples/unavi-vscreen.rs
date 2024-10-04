@@ -2,21 +2,25 @@ use avian3d::prelude::*;
 use bevy::prelude::*;
 use unavi_player::PlayerPlugin;
 use unavi_scripting::{ScriptBundle, ScriptingPlugin};
+use unavi_world::util::init_user_actor;
 
-fn main() {
-    App::new()
-        .add_plugins((
-            DefaultPlugins.set(AssetPlugin {
-                file_path: "../unavi-app/assets".to_string(),
-                ..Default::default()
-            }),
-            PhysicsDebugPlugin::default(),
-            PhysicsPlugins::default(),
-            PlayerPlugin,
-            ScriptingPlugin,
-        ))
-        .add_systems(Startup, (setup_scene, load_script))
-        .run();
+#[tokio::main]
+async fn main() {
+    let mut app = App::new();
+    init_user_actor(app.world_mut()).await;
+
+    app.add_plugins((
+        DefaultPlugins.set(AssetPlugin {
+            file_path: "../unavi-app/assets".to_string(),
+            ..Default::default()
+        }),
+        PhysicsDebugPlugin::default(),
+        PhysicsPlugins::default(),
+        PlayerPlugin,
+        ScriptingPlugin,
+    ))
+    .add_systems(Startup, (setup_scene, load_script))
+    .run();
 }
 
 fn setup_scene(mut ambient: ResMut<AmbientLight>, mut commands: Commands) {

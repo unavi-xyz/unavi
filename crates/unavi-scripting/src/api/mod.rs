@@ -1,6 +1,6 @@
 use wired::{dwn::WiredDwn, log::WiredLog, player::WiredPlayer, scene::WiredScene};
 
-pub(crate) mod utils;
+pub mod utils;
 pub mod wired;
 
 #[derive(Default)]

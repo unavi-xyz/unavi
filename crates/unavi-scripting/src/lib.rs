@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use execution::ScriptTickrate;
-use load::DefaultMaterial;
+use load::{DefaultMaterial, ScriptExecutionLevel};
 use unavi_constants::assets::WASM_ASSETS_DIR;
 
 use self::load::ScriptMap;
@@ -51,6 +51,7 @@ impl Plugin for ScriptingPlugin {
 
 #[derive(Bundle)]
 pub struct ScriptBundle {
+    pub execution_level: ScriptExecutionLevel,
     pub name: Name,
     pub tickrate: ScriptTickrate,
     pub wasm: Handle<Wasm>,
@@ -65,6 +66,7 @@ impl ScriptBundle {
         let wasm = asset_server.load(path);
 
         Self {
+            execution_level: ScriptExecutionLevel::World,
             name: name.into(),
             tickrate: ScriptTickrate::default(),
             wasm,

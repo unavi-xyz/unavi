@@ -14,7 +14,6 @@ pub fn test_node_api() {
 
     let node = Node::new();
     let node_2 = Node::new();
-
     node.add_child(&node_2);
 
     let children = node.children();

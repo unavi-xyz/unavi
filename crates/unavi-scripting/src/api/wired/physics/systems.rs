@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use crate::{
     api::{
         utils::RefResource,
-        wired::scene::node::{NodeId, NodeRes},
+        wired::scene::nodes::base::{NodeId, NodeRes},
     },
     execution::ScriptTickrate,
     load::ScriptMap,

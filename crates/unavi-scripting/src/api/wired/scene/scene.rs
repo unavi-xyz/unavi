@@ -9,7 +9,7 @@ use crate::{
     data::ScriptData,
 };
 
-use super::node::NodeRes;
+use super::nodes::base::NodeRes;
 
 #[derive(Component, Clone, Copy, Debug)]
 pub struct SceneId(pub u32);
@@ -195,15 +195,18 @@ impl Host for ScriptData {}
 mod tests {
     use tracing_test::traced_test;
 
-    use crate::api::wired::scene::{bindings::node::HostNode, node::NodeId};
+    use crate::api::{
+        utils::tests::init_test_data,
+        wired::scene::{bindings::node::HostNode, nodes::base::NodeId},
+    };
 
     use super::*;
 
     #[test]
     #[traced_test]
     fn test_new() {
-        let mut world = World::new();
-        let mut data = ScriptData::default();
+        let (mut app, mut data) = init_test_data();
+        let world = app.world_mut();
 
         let res = HostScene::new(&mut data).unwrap();
 
@@ -212,7 +215,7 @@ mod tests {
 
         world
             .query::<&SceneId>()
-            .iter(&world)
+            .iter(world)
             .find(|n| n.0 == res.rep())
             .unwrap();
     }
@@ -220,8 +223,8 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_add_node() {
-        let mut world = World::new();
-        let mut data = ScriptData::default();
+        let (mut app, mut data) = init_test_data();
+        let world = app.world_mut();
 
         let scene = HostScene::new(&mut data).unwrap();
         let node = HostNode::new(&mut data).unwrap();
@@ -233,19 +236,19 @@ mod tests {
 
         let (node_ent, _) = world
             .query::<(Entity, &NodeId)>()
-            .iter(&world)
+            .iter(world)
             .find(|(_, n)| n.0 == node_rep)
             .unwrap();
 
-        let (scene_children, _) = world.query::<(&Children, &SceneId)>().single(&world);
+        let (scene_children, _) = world.query::<(&Children, &SceneId)>().single(world);
         assert!(scene_children.contains(&node_ent));
     }
 
     #[test]
     #[traced_test]
     fn test_remove_node() {
-        let mut world = World::new();
-        let mut data = ScriptData::default();
+        let (mut app, mut data) = init_test_data();
+        let world = app.world_mut();
 
         let scene = HostScene::new(&mut data).unwrap();
         let node = HostNode::new(&mut data).unwrap();
@@ -261,14 +264,14 @@ mod tests {
         world.commands().append(&mut data.commands);
         world.flush_commands();
 
-        let children_query = world.query::<(&Children, &SceneId)>().get_single(&world);
+        let children_query = world.query::<(&Children, &SceneId)>().get_single(world);
         assert!(children_query.is_err());
     }
 
     #[test]
     #[traced_test]
     fn test_nodes() {
-        let mut data = ScriptData::default();
+        let (_, mut data) = init_test_data();
 
         let scene = HostScene::new(&mut data).unwrap();
         let node = HostNode::new(&mut data).unwrap();

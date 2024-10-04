@@ -5,7 +5,7 @@ use unavi_constants::player::LOCAL_PLAYER_ID;
 use unavi_player::id::PlayerId;
 
 use crate::{
-    api::{utils::RefResource, wired::scene::node::NodeRes},
+    api::{utils::RefResource, wired::scene::nodes::base::NodeRes},
     execution::ScriptTickrate,
     load::ScriptMap,
 };

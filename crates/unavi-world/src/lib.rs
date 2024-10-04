@@ -8,6 +8,7 @@ use wired_social::schemas::common::RecordLink;
 mod home;
 mod loading;
 mod scene;
+pub mod util;
 
 pub struct WorldPlugin;
 

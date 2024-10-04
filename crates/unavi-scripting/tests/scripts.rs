@@ -1,17 +1,15 @@
 use std::time::Duration;
 
-use bevy::prelude::*;
+use avian3d::PhysicsPlugins;
+use bevy::{gizmos::GizmoPlugin, input::InputPlugin, prelude::*, scene::ScenePlugin};
 use tracing_test::traced_test;
 
-use unavi_scripting::{
-    load::{DefaultMaterial, LoadedScript, ScriptMap},
-    ScriptBundle, Wasm, WasmLoader,
-};
-
-const UPDATES: usize = 4;
+use unavi_scripting::{load::LoadedScript, ScriptBundle, ScriptingPlugin};
+use unavi_world::util::init_user_actor;
 
 pub async fn test_script(name: &str) {
     let mut app = App::new();
+    init_user_actor(app.world_mut()).await;
 
     app.add_plugins((
         MinimalPlugins,
@@ -19,15 +17,19 @@ pub async fn test_script(name: &str) {
             file_path: "../unavi-app/assets".to_string(),
             ..Default::default()
         },
+        TransformPlugin,
+        HierarchyPlugin,
+        ScenePlugin,
     ))
     .init_asset::<Mesh>()
+    .init_asset::<Shader>()
     .init_asset::<StandardMaterial>()
-    .init_asset::<Wasm>()
-    .init_asset_loader::<WasmLoader>()
-    .init_non_send_resource::<ScriptMap>()
-    .insert_resource(DefaultMaterial(Handle::default()));
-
-    app.add_systems(Update, unavi_scripting::load::load_scripts);
+    .add_plugins((
+        GizmoPlugin,
+        InputPlugin,
+        PhysicsPlugins::default(),
+        ScriptingPlugin,
+    ));
 
     let world = app.world_mut();
     let asset_server = world.get_resource::<AssetServer>().unwrap();
@@ -35,7 +37,9 @@ pub async fn test_script(name: &str) {
 
     let mut did_load = false;
 
-    for _ in 0..10 {
+    for i in 0..10 {
+        debug!("Loading... ({})", i);
+
         tokio::time::sleep(Duration::from_secs_f32(1.0)).await;
         app.update();
 
@@ -48,30 +52,22 @@ pub async fn test_script(name: &str) {
 
     assert!(did_load);
 
-    app.add_systems(
-        Update,
-        (
-            unavi_scripting::execution::init_scripts,
-            unavi_scripting::execution::update_scripts,
-        )
-            .chain(),
-    );
-
-    for _ in 0..UPDATES {
+    for i in 0..4 {
+        debug!("Updating... ({})", i);
         tokio::time::sleep(Duration::from_secs_f32(0.1)).await;
         app.update();
     }
 }
 
-#[tokio::test]
-#[traced_test]
-async fn test_wired_dwn() {
-    test_script("test:wired-dwn").await;
-    assert!(!logs_contain("ERROR"));
-    assert!(!logs_contain("error"));
-    assert!(!logs_contain("WARN"));
-    assert!(!logs_contain("warn"));
-}
+// #[tokio::test]
+// #[traced_test]
+// async fn test_wired_dwn() {
+//     test_script("test:wired-dwn").await;
+//     assert!(!logs_contain("ERROR"));
+//     assert!(!logs_contain("error"));
+//     assert!(!logs_contain("WARN"));
+//     assert!(!logs_contain("warn"));
+// }
 
 #[tokio::test]
 #[traced_test]

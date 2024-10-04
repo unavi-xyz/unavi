@@ -19,7 +19,7 @@ use crate::{
 
 use super::{
     material::MaterialRes,
-    node::{NodeMesh, NodeRes},
+    nodes::{base::NodeRes, node::NodeMesh},
 };
 
 #[derive(Component, Clone, Copy, Debug)]
@@ -450,7 +450,8 @@ mod tests {
 
     #[test]
     fn test_new() {
-        let (mut world, mut data) = init_test_data();
+        let (mut app, mut data) = init_test_data();
+        let world = app.world_mut();
 
         let _ = HostMesh::new(&mut data).unwrap();
 

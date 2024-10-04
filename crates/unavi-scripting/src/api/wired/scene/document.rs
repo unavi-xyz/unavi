@@ -10,7 +10,7 @@ use super::{
     bindings::document::{Host, HostDocument},
     material::MaterialRes,
     mesh::MeshRes,
-    node::NodeRes,
+    nodes::base::NodeRes,
     scene::SceneRes,
 };
 

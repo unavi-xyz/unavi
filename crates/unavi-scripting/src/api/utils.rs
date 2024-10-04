@@ -82,20 +82,46 @@ pub trait RefResource: RefCount + Send + Sized + 'static {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::{data::ScriptData, load::DefaultMaterial};
+    use crate::{
+        api::{
+            wired::{
+                log::WiredLog,
+                scene::{Entities, WiredScene},
+            },
+            ApiData,
+        },
+        data::ScriptData,
+        load::DefaultMaterial,
+    };
 
     use super::*;
 
-    pub fn init_test_data() -> (World, ScriptData) {
-        let mut world = World::new();
-        world.init_resource::<Assets<Mesh>>();
+    pub fn init_test_data() -> (App, ScriptData) {
+        let mut app = App::new();
+
+        app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+            .init_asset::<Mesh>()
+            .init_asset::<StandardMaterial>();
 
         let default_material = Handle::default();
-        world.insert_resource(DefaultMaterial(default_material.clone()));
+        app.insert_resource(DefaultMaterial(default_material.clone()));
 
-        let data = ScriptData::default();
+        let data = ScriptData {
+            api: ApiData {
+                wired_log: Some(WiredLog {
+                    name: "test".to_string(),
+                }),
+                wired_scene: Some(WiredScene {
+                    default_material,
+                    entities: Entities::default(),
+                    root: Resource::new_own(0),
+                }),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
 
-        (world, data)
+        (app, data)
     }
 
     pub fn test_drop<T: RefResource + Send>(data: &mut ScriptData, res_a: Resource<T>) {

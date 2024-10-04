@@ -1,3 +1,4 @@
+use bevy::{asset::Handle, pbr::StandardMaterial};
 use wasm_bridge::{
     component::{Linker, Resource},
     Config, Engine, Store,
@@ -8,7 +9,7 @@ use crate::{
         dwn::WiredDwn,
         log::WiredLog,
         player::{player::Player, WiredPlayer},
-        scene::WiredScene,
+        scene::{Entities, WiredScene},
         script::bindings::Script,
     },
     data::ScriptData,
@@ -16,7 +17,7 @@ use crate::{
 
 #[derive(Default)]
 pub struct ScriptEnvBuilder {
-    data: ScriptData,
+    pub data: ScriptData,
     components: Vec<Box<dyn Send + Fn(&mut Linker<ScriptData>) -> anyhow::Result<()>>>,
 }
 
@@ -30,8 +31,8 @@ impl ScriptEnvBuilder {
         self.components
             .push(Box::new(crate::api::wired::input::add_to_linker));
     }
-    pub fn enable_wired_log(&mut self, data: WiredLog) {
-        self.data.api.wired_log.replace(data);
+    pub fn enable_wired_log(&mut self, name: String) {
+        self.data.api.wired_log.replace(WiredLog { name });
         self.components
             .push(Box::new(crate::api::wired::log::add_to_linker));
     }
@@ -47,10 +48,21 @@ impl ScriptEnvBuilder {
         self.components
             .push(Box::new(crate::api::wired::player::add_to_linker));
     }
-    pub fn enable_wired_scene(&mut self, data: WiredScene) {
+    pub fn enable_wired_scene(&mut self, default_material: Handle<StandardMaterial>) {
+        let data = WiredScene {
+            default_material,
+            entities: Entities::default(),
+            root: Resource::new_own(0),
+        };
+
         self.data.api.wired_scene.replace(data);
         self.components
             .push(Box::new(crate::api::wired::scene::add_to_linker));
+
+        self.data.api.wired_scene.as_mut().unwrap().root = {
+            use crate::api::wired::scene::bindings::composition::HostComposition;
+            self.data.new().unwrap()
+        };
     }
 
     pub async fn instantiate_script(self, bytes: &[u8]) -> anyhow::Result<ScriptEnv> {

@@ -1,23 +1,16 @@
-use std::cell::Cell;
-
-use avian3d::prelude::CollisionLayers;
-use bevy::{
-    prelude::{Transform as BTransform, *},
-    utils::HashMap,
-};
-use unavi_constants::player::layers::LAYER_WORLD;
+use bevy::{prelude::*, utils::HashMap};
 use wasm_bridge::component::Resource;
-use wasm_bridge_wasi::{ResourceTable, ResourceTableError};
 
 use crate::{
     api::{
-        utils::{RefCount, RefCountCell, RefResource},
+        utils::RefResource,
         wired::{
             input::input_handler::{InputHandler, InputHandlerSender},
             math::bindings::types::Transform,
             physics::bindings::types::{Collider, RigidBody},
             scene::{
                 bindings::node::{Host, HostNode},
+                mesh::MeshRes,
                 MaterialState,
             },
         },
@@ -25,17 +18,7 @@ use crate::{
     data::ScriptData,
 };
 
-use super::mesh::MeshRes;
-
-#[derive(Component, Clone, Copy, Debug)]
-pub struct NodeId(pub u32);
-
-#[derive(Bundle)]
-pub struct WiredNodeBundle {
-    pub id: NodeId,
-    pub layers: CollisionLayers,
-    pub spatial: SpatialBundle,
-}
+use super::base::NodeRes;
 
 #[derive(Component, Default)]
 pub struct NodeMesh {
@@ -43,63 +26,9 @@ pub struct NodeMesh {
     pub node_primitives: HashMap<u32, Entity>,
 }
 
-impl WiredNodeBundle {
-    pub fn new(id: u32) -> Self {
-        Self {
-            id: NodeId(id),
-            layers: CollisionLayers {
-                memberships: LAYER_WORLD,
-                filters: LAYER_WORLD,
-            },
-            spatial: SpatialBundle::default(),
-        }
-    }
-}
-
-#[derive(Default, Debug)]
-pub struct NodeRes {
-    pub children: Vec<Resource<NodeRes>>,
-    pub collider: Option<Resource<Collider>>,
-    pub input_handler: Option<Resource<InputHandler>>,
-    pub mesh: Option<Resource<MeshRes>>,
-    pub name: String,
-    pub parent: Option<Resource<NodeRes>>,
-    pub rigid_body: Option<Resource<RigidBody>>,
-    pub transform: BTransform,
-    ref_count: RefCountCell,
-}
-
-impl RefCount for NodeRes {
-    fn ref_count(&self) -> &Cell<usize> {
-        &self.ref_count
-    }
-}
-
-impl RefResource for NodeRes {}
-
 impl HostNode for ScriptData {
     fn new(&mut self) -> wasm_bridge::Result<Resource<NodeRes>> {
-        let node = NodeRes::default();
-        let table_res = self.table.push(node)?;
-        let res = self.clone_res(&table_res)?;
-        let rep = res.rep();
-
-        let nodes = self
-            .api
-            .wired_scene
-            .as_ref()
-            .unwrap()
-            .entities
-            .nodes
-            .clone();
-
-        self.commands.push(move |world: &mut World| {
-            let entity = world.spawn(WiredNodeBundle::new(rep)).id();
-            let mut nodes = nodes.write().unwrap();
-            nodes.insert(rep, entity);
-        });
-
-        Ok(res)
+        NodeRes::new_res(self)
     }
 
     fn id(&mut self, self_: Resource<NodeRes>) -> wasm_bridge::Result<u32> {
@@ -253,112 +182,9 @@ impl HostNode for ScriptData {
         Ok(())
     }
 
-    fn parent(
-        &mut self,
-        self_: Resource<NodeRes>,
-    ) -> wasm_bridge::Result<Option<Resource<NodeRes>>> {
-        let data = self.table.get(&self_)?;
-        let parent = match &data.parent {
-            Some(r) => Some(self.clone_res(r)?),
-            None => None,
-        };
-        Ok(parent)
-    }
-    fn children(
-        &mut self,
-        self_: Resource<NodeRes>,
-    ) -> wasm_bridge::Result<Vec<Resource<NodeRes>>> {
-        let node = self.table.get(&self_)?;
-        let children = node
-            .children
-            .iter()
-            .map(|res| self.clone_res(res))
-            .collect::<Result<_, _>>()?;
-        Ok(children)
-    }
-    fn add_child(
-        &mut self,
-        self_: Resource<NodeRes>,
-        value: Resource<NodeRes>,
-    ) -> wasm_bridge::Result<()> {
-        let child_rep = value.rep();
-        let parent_rep = self_.rep();
-
-        // Add child to children.
-        let res = self.clone_res(&value)?;
-        let node = self.table.get_mut(&self_)?;
-        node.children.push(res);
-
-        // Remove child from old parent's children.
-        let child = self.table.get(&value)?;
-        if let Some(parent) = &child.parent {
-            let parent_res = self.clone_res(parent)?;
-            let child_res = self.clone_res(&value)?;
-            self.remove_child(parent_res, child_res)?;
-        }
-
-        // Set parent.
-        let parent_res = self.clone_res(&self_)?;
-        let child = self.table.get_mut(&value)?;
-        child.parent = Some(parent_res);
-
-        // Update ECS.
-        let nodes = self
-            .api
-            .wired_scene
-            .as_ref()
-            .unwrap()
-            .entities
-            .nodes
-            .clone();
-
-        self.commands.push(move |world: &mut World| {
-            let nodes = nodes.read().unwrap();
-            let child_ent = nodes.get(&child_rep).unwrap();
-            let parent_ent = nodes.get(&parent_rep).unwrap();
-
-            world.entity_mut(*parent_ent).push_children(&[*child_ent]);
-        });
-
-        Ok(())
-    }
-    fn remove_child(
-        &mut self,
-        self_: Resource<NodeRes>,
-        value: Resource<NodeRes>,
-    ) -> wasm_bridge::Result<()> {
-        let child_rep = value.rep();
-
-        let node = self.table.get_mut(&self_)?;
-        node.children
-            .iter()
-            .position(|r| r.rep() == child_rep)
-            .map(|index| node.children.remove(index));
-
-        let nodes = self
-            .api
-            .wired_scene
-            .as_ref()
-            .unwrap()
-            .entities
-            .nodes
-            .clone();
-
-        self.commands.push(move |world: &mut World| {
-            let nodes = nodes.read().unwrap();
-            let child_ent = nodes.get(&child_rep).unwrap();
-            world.entity_mut(*child_ent).remove_parent();
-        });
-
-        Ok(())
-    }
-
     fn global_transform(&mut self, self_: Resource<NodeRes>) -> wasm_bridge::Result<Transform> {
-        let node = self.table.get(&self_)?;
-        let transform = calc_global_transform(BTransform::default(), node, &self.table)?;
-        Ok(transform.into())
+        NodeRes::global_transform(self, &self_)
     }
-
     fn transform(&mut self, self_: Resource<NodeRes>) -> wasm_bridge::Result<Transform> {
         let node = self.table.get(&self_)?;
         Ok(node.transform.into())
@@ -368,30 +194,34 @@ impl HostNode for ScriptData {
         self_: Resource<NodeRes>,
         value: Transform,
     ) -> wasm_bridge::Result<()> {
-        let node = self.table.get_mut(&self_)?;
-        node.transform = value.into();
+        NodeRes::set_transform(self, &self_, value)
+    }
 
-        let mut transform = BTransform {
-            translation: value.translation.into(),
-            rotation: value.rotation.into(),
-            scale: value.scale.into(),
-        };
-
-        // parry3d (used in avian physics) panics when scale is 0
-        const ALMOST_ZERO: f32 = 10e-10;
-        if transform.scale.x == 0.0 {
-            transform.scale.x = ALMOST_ZERO;
-        }
-        if transform.scale.y == 0.0 {
-            transform.scale.y = ALMOST_ZERO;
-        }
-        if transform.scale.z == 0.0 {
-            transform.scale.z = ALMOST_ZERO;
-        }
-
-        self.node_insert(self_.rep(), transform);
-
-        Ok(())
+    fn parent(
+        &mut self,
+        self_: Resource<NodeRes>,
+    ) -> wasm_bridge::Result<Option<Resource<NodeRes>>> {
+        NodeRes::parent(self, &self_)
+    }
+    fn children(
+        &mut self,
+        self_: Resource<NodeRes>,
+    ) -> wasm_bridge::Result<Vec<Resource<NodeRes>>> {
+        NodeRes::children(self, &self_)
+    }
+    fn add_child(
+        &mut self,
+        self_: Resource<NodeRes>,
+        value: Resource<NodeRes>,
+    ) -> wasm_bridge::Result<()> {
+        NodeRes::add_child(self, &self_, &value)
+    }
+    fn remove_child(
+        &mut self,
+        self_: Resource<NodeRes>,
+        value: Resource<NodeRes>,
+    ) -> wasm_bridge::Result<()> {
+        NodeRes::remove_child(self, &self_, &value)
     }
 
     fn collider(
@@ -526,33 +356,22 @@ impl HostNode for ScriptData {
 
 impl Host for ScriptData {}
 
-fn calc_global_transform(
-    transform: BTransform,
-    node: &NodeRes,
-    table: &ResourceTable,
-) -> Result<BTransform, ResourceTableError> {
-    let new_transform = node.transform * transform;
-
-    if let Some(parent) = &node.parent {
-        let parent = table.get(parent)?;
-        calc_global_transform(new_transform, parent, table)
-    } else {
-        Ok(new_transform)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use tracing_test::traced_test;
 
-    use crate::api::{utils::tests::init_test_data, wired::scene::bindings::mesh::HostMesh};
+    use crate::api::{
+        utils::tests::init_test_data,
+        wired::scene::{bindings::mesh::HostMesh, nodes::base::NodeId},
+    };
 
     use super::*;
 
     #[test]
     #[traced_test]
     fn test_new() {
-        let (mut world, mut data) = init_test_data();
+        let (mut app, mut data) = init_test_data();
+        let world = app.world_mut();
 
         let res = HostNode::new(&mut data).unwrap();
 
@@ -561,15 +380,62 @@ mod tests {
 
         world
             .query::<&NodeId>()
-            .iter(&world)
+            .iter(world)
             .find(|n| n.0 == res.rep())
             .unwrap();
     }
 
     #[test]
     #[traced_test]
+    fn test_children() {
+        let (_, mut data) = init_test_data();
+
+        let node_1 = HostNode::new(&mut data).unwrap();
+        let node_2 = HostNode::new(&mut data).unwrap();
+        assert!(data
+            .children(data.clone_res(&node_1).unwrap())
+            .unwrap()
+            .is_empty());
+        assert!(data
+            .parent(data.clone_res(&node_2).unwrap())
+            .unwrap()
+            .is_none());
+
+        // Add child.
+        data.add_child(
+            data.clone_res(&node_1).unwrap(),
+            data.clone_res(&node_2).unwrap(),
+        )
+        .unwrap();
+        let children = data.children(data.clone_res(&node_1).unwrap()).unwrap();
+        assert_eq!(children.len(), 1);
+        assert_eq!(children[0].rep(), node_2.rep());
+        assert_eq!(
+            data.parent(data.clone_res(&node_2).unwrap())
+                .unwrap()
+                .unwrap()
+                .rep(),
+            node_1.rep()
+        );
+
+        // Remove child.
+        data.remove_child(
+            data.clone_res(&node_1).unwrap(),
+            data.clone_res(&node_2).unwrap(),
+        )
+        .unwrap();
+        assert!(data
+            .children(data.clone_res(&node_1).unwrap())
+            .unwrap()
+            .is_empty());
+        assert!(data.parent(node_2).unwrap().is_none());
+    }
+
+    #[test]
+    #[traced_test]
     fn test_set_mesh() {
-        let (mut world, mut data) = init_test_data();
+        let (mut app, mut data) = init_test_data();
+        let world = app.world_mut();
 
         // Set mesh.
         let node = HostNode::new(&mut data).unwrap();
@@ -580,7 +446,7 @@ mod tests {
         world.commands().append(&mut data.commands);
         world.flush_commands();
 
-        let (node_mesh, node_children) = world.query::<(&NodeMesh, &Children)>().single(&world);
+        let (node_mesh, node_children) = world.query::<(&NodeMesh, &Children)>().single(world);
         assert_eq!(node_mesh.node_primitives.len(), 1);
 
         let primitive_ent = node_mesh.node_primitives.values().next().unwrap();
@@ -594,7 +460,7 @@ mod tests {
         world.commands().append(&mut data.commands);
         world.flush_commands();
 
-        let node_mesh = world.query::<&NodeMesh>().get_single(&world);
+        let node_mesh = world.query::<&NodeMesh>().get_single(world);
         assert!(node_mesh.is_err());
 
         assert!(!logs_contain("ERROR"));

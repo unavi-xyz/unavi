@@ -1,18 +1,17 @@
-use std::sync::{Arc, RwLock};
-
 use anyhow::Result;
-use bevy::{prelude::*, utils::HashMap};
+use bevy::prelude::*;
 use wasm_bridge::component::{Linker, Resource};
 
 use crate::data::ScriptData;
 
-use self::composition::Composition;
+use self::composition::CompositionRes;
 
 pub mod composition;
 pub mod document;
 pub mod material;
 pub mod mesh;
 pub mod nodes;
+pub mod primitive;
 #[allow(clippy::module_inception)]
 pub mod scene;
 
@@ -24,11 +23,11 @@ pub mod bindings {
             "wired:math": crate::api::wired::math::bindings,
             "wired:physics": crate::api::wired::physics::bindings,
             "wired:scene/composition/asset-node": super::nodes::base::NodeRes,
-            "wired:scene/composition/composition": super::composition::Composition,
-            "wired:scene/document/document": super::document::Document,
+            "wired:scene/composition/composition": super::composition::CompositionRes,
+            "wired:scene/document/document": super::document::DocumentRes,
             "wired:scene/material/material": super::material::MaterialRes,
             "wired:scene/mesh/mesh": super::mesh::MeshRes,
-            "wired:scene/mesh/primitive": super::mesh::PrimitiveRes,
+            "wired:scene/mesh/primitive": super::primitive::PrimitiveRes,
             "wired:scene/node/node": super::nodes::base::NodeRes,
             "wired:scene/scene/scene": super::scene::SceneRes,
         }
@@ -50,23 +49,7 @@ pub fn add_to_linker(linker: &mut Linker<ScriptData>) -> Result<()> {
 
 pub struct WiredScene {
     pub default_material: Handle<StandardMaterial>,
-    pub entities: Entities,
-    pub root: Resource<Composition>,
-}
-
-#[derive(Default)]
-pub struct Entities {
-    pub compositions: Arc<RwLock<HashMap<u32, Entity>>>,
-    pub documents: Arc<RwLock<HashMap<u32, Entity>>>,
-    pub materials: Arc<RwLock<HashMap<u32, MaterialState>>>,
-    pub nodes: Arc<RwLock<HashMap<u32, Entity>>>,
-    pub primitives: Arc<RwLock<HashMap<u32, Handle<Mesh>>>>,
-    pub scenes: Arc<RwLock<HashMap<u32, Entity>>>,
-}
-
-pub struct MaterialState {
-    pub entity: Entity,
-    pub handle: Handle<StandardMaterial>,
+    pub root: CompositionRes,
 }
 
 impl Default for bindings::material::Color {
@@ -81,8 +64,9 @@ impl Default for bindings::material::Color {
 }
 
 impl bindings::api::Host for ScriptData {
-    fn root(&mut self) -> wasm_bridge::Result<Resource<Composition>> {
-        let res = self.clone_res(&self.api.wired_scene.as_ref().unwrap().root)?;
+    fn root(&mut self) -> wasm_bridge::Result<Resource<CompositionRes>> {
+        let data = self.api.wired_scene.as_ref().unwrap().root.clone();
+        let res = self.table.push(data)?;
         Ok(res)
     }
 }

@@ -1,15 +1,12 @@
 use bevy::{asset::Handle, pbr::StandardMaterial};
-use wasm_bridge::{
-    component::{Linker, Resource},
-    Config, Engine, Store,
-};
+use wasm_bridge::{component::Linker, Config, Engine, Store};
 
 use crate::{
     api::wired::{
         dwn::WiredDwn,
         log::WiredLog,
-        player::{player::Player, WiredPlayer},
-        scene::{Entities, WiredScene},
+        player::{player::PlayerRes, WiredPlayer},
+        scene::{composition::CompositionRes, WiredScene},
         script::bindings::Script,
     },
     data::ScriptData,
@@ -42,7 +39,7 @@ impl ScriptEnvBuilder {
     }
     pub fn enable_wired_player(&mut self) {
         let data = WiredPlayer {
-            local_player: Resource::new_own(0),
+            local_player: PlayerRes::new(&mut self.data),
         };
         self.data.api.wired_player.replace(data);
         self.components
@@ -51,18 +48,12 @@ impl ScriptEnvBuilder {
     pub fn enable_wired_scene(&mut self, default_material: Handle<StandardMaterial>) {
         let data = WiredScene {
             default_material,
-            entities: Entities::default(),
-            root: Resource::new_own(0),
+            root: CompositionRes::new(&mut self.data),
         };
 
         self.data.api.wired_scene.replace(data);
         self.components
             .push(Box::new(crate::api::wired::scene::add_to_linker));
-
-        self.data.api.wired_scene.as_mut().unwrap().root = {
-            use crate::api::wired::scene::bindings::composition::HostComposition;
-            self.data.new().unwrap()
-        };
     }
 
     pub async fn instantiate_script(self, bytes: &[u8]) -> anyhow::Result<ScriptEnv> {
@@ -74,18 +65,6 @@ impl ScriptEnvBuilder {
 
         let mut store = Store::new(&engine, self.data);
         let mut linker = Linker::new(store.engine());
-
-        if store.data().api.wired_player.is_some() {
-            let local_player =
-                Player::new(store.data_mut()).expect("Failed to create local player resource");
-            store
-                .data_mut()
-                .api
-                .wired_player
-                .as_mut()
-                .unwrap()
-                .local_player = local_player;
-        }
 
         wasm_bridge_wasi::add_to_linker_async(&mut linker)?;
 

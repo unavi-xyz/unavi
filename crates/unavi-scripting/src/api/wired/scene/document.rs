@@ -1,10 +1,9 @@
+use std::sync::{Arc, OnceLock, RwLock};
+
 use bevy::prelude::*;
 use wasm_bridge::component::Resource;
 
-use crate::{
-    api::utils::{RefCount, RefCountCell, RefResource},
-    data::ScriptData,
-};
+use crate::data::ScriptData;
 
 use super::{
     bindings::document::{Host, HostDocument},
@@ -14,45 +13,28 @@ use super::{
     scene::SceneRes,
 };
 
+#[derive(Debug, Clone)]
+pub struct DocumentRes(pub Arc<RwLock<DocumentData>>);
+
 #[derive(Default, Debug)]
-pub struct Document {
-    pub active_scene: Option<Resource<SceneRes>>,
-    pub default_scene: Option<Resource<SceneRes>>,
-    pub materials: Vec<Resource<MaterialRes>>,
-    pub meshes: Vec<Resource<MeshRes>>,
-    pub nodes: Vec<Resource<NodeRes>>,
-    pub scenes: Vec<Resource<SceneRes>>,
-    ref_count: RefCountCell,
+pub struct DocumentData {
+    pub active_scene: Option<SceneRes>,
+    pub default_scene: Option<SceneRes>,
+    pub materials: Vec<MaterialRes>,
+    pub meshes: Vec<MeshRes>,
+    pub nodes: Vec<NodeRes>,
+    pub scenes: Vec<SceneRes>,
+    pub entity: OnceLock<Entity>,
 }
-
-impl RefCount for Document {
-    fn ref_count(&self) -> &std::cell::Cell<usize> {
-        &self.ref_count
-    }
-}
-
-impl RefResource for Document {}
 
 impl HostDocument for ScriptData {
-    fn new(&mut self) -> wasm_bridge::Result<Resource<Document>> {
-        let node = Document::default();
-        let table_res = self.table.push(node)?;
-        let res = self.clone_res(&table_res)?;
-        let rep = res.rep();
-
-        let documents = self
-            .api
-            .wired_scene
-            .as_ref()
-            .unwrap()
-            .entities
-            .documents
-            .clone();
+    fn new(&mut self) -> wasm_bridge::Result<Resource<DocumentRes>> {
+        let data = DocumentRes(Arc::new(RwLock::new(DocumentData::default())));
+        let res = self.table.push(data.clone())?;
 
         self.commands.push(move |world: &mut World| {
             let entity = world.spawn(SpatialBundle::default()).id();
-            let mut documents = documents.write().unwrap();
-            documents.insert(rep, entity);
+            data.0.write().unwrap().entity.set(entity).unwrap();
         });
 
         Ok(res)
@@ -60,70 +42,51 @@ impl HostDocument for ScriptData {
 
     fn active_scene(
         &mut self,
-        self_: Resource<Document>,
+        self_: Resource<DocumentRes>,
     ) -> wasm_bridge::Result<Option<Resource<SceneRes>>> {
-        let data = self.table.get(&self_)?;
-        Ok(data
+        let data = self
+            .table
+            .get(&self_)?
+            .0
+            .read()
+            .unwrap()
             .active_scene
-            .as_ref()
-            .and_then(|res| self.clone_res(res).ok()))
+            .clone();
+        let res = match data {
+            Some(d) => Some(self.table.push(d)?),
+            None => None,
+        };
+        Ok(res)
     }
     fn set_active_scene(
         &mut self,
-        self_: Resource<Document>,
+        self_: Resource<DocumentRes>,
         value: Option<Resource<SceneRes>>,
     ) -> wasm_bridge::Result<()> {
-        let res = value.and_then(|v| self.clone_res(&v).ok());
+        let data = self.table.get(&self_)?.clone();
+        let mut data_write = data.0.write().unwrap();
 
-        let data = self.table.get_mut(&self_)?;
-
-        if let Some(prev) = &data.active_scene {
-            let prev_rep = prev.rep();
-            let scenes = self
-                .api
-                .wired_scene
-                .as_ref()
-                .unwrap()
-                .entities
-                .scenes
-                .clone();
+        if let Some(prev) = data_write.active_scene.clone() {
             self.commands.push(move |world: &mut World| {
-                let scenes = scenes.read().unwrap();
-                let prev_ent = scenes.get(&prev_rep).unwrap();
-                world.entity_mut(*prev_ent).remove_parent();
+                let prev_ent = *prev.0.read().unwrap().entity.get().unwrap();
+                world.entity_mut(prev_ent).remove_parent();
             });
         }
 
-        data.active_scene = res;
+        let scene_data = match value {
+            Some(r) => Some(self.table.get(&r)?.clone()),
+            None => None,
+        };
 
-        if let Some(active_scene) = &data.active_scene {
-            let documents = self
-                .api
-                .wired_scene
-                .as_ref()
-                .unwrap()
-                .entities
-                .documents
-                .clone();
-            let scenes = self
-                .api
-                .wired_scene
-                .as_ref()
-                .unwrap()
-                .entities
-                .scenes
-                .clone();
-            let root_rep = self_.rep();
-            let scene_rep = active_scene.rep();
+        data_write.active_scene = scene_data.clone();
+        drop(data_write);
 
+        if let Some(scene_data) = scene_data {
             self.commands.push(move |world: &mut World| {
-                let documents = documents.read().unwrap();
-                let root_ent = documents.get(&root_rep).unwrap();
+                let document_ent = *data.0.read().unwrap().entity.get().unwrap();
+                let scene_ent = *scene_data.0.read().unwrap().entity.get().unwrap();
 
-                let scenes = scenes.read().unwrap();
-                let scene_ent = scenes.get(&scene_rep).unwrap();
-
-                world.entity_mut(*scene_ent).set_parent(*root_ent);
+                world.entity_mut(scene_ent).set_parent(document_ent);
             });
         }
 
@@ -132,85 +95,92 @@ impl HostDocument for ScriptData {
 
     fn default_scene(
         &mut self,
-        self_: Resource<Document>,
+        self_: Resource<DocumentRes>,
     ) -> wasm_bridge::Result<Option<Resource<SceneRes>>> {
-        let data = self.table.get(&self_)?;
-        Ok(data
+        let data = self
+            .table
+            .get(&self_)?
+            .0
+            .read()
+            .unwrap()
             .default_scene
-            .as_ref()
-            .and_then(|res| self.clone_res(res).ok()))
+            .clone();
+        let res = match data {
+            Some(d) => Some(self.table.push(d)?),
+            None => None,
+        };
+        Ok(res)
     }
     fn set_default_scene(
         &mut self,
-        self_: Resource<Document>,
+        self_: Resource<DocumentRes>,
         value: Option<Resource<SceneRes>>,
     ) -> wasm_bridge::Result<()> {
-        if let Some(value) = value {
-            let res = self.clone_res(&value)?;
-            let data = self.table.get_mut(&self_)?;
-            data.default_scene = Some(res);
+        let mut data_write = self.table.get(&self_)?.0.write().unwrap();
+
+        if let Some(value) = &value {
+            let scene_data = self.table.get(value)?.clone();
+            data_write.default_scene = Some(scene_data);
         } else {
-            let data = self.table.get_mut(&self_)?;
-            data.default_scene = None;
+            data_write.default_scene = None;
         }
         Ok(())
     }
 
     fn scenes(
         &mut self,
-        self_: Resource<Document>,
+        self_: Resource<DocumentRes>,
     ) -> wasm_bridge::Result<Vec<Resource<SceneRes>>> {
-        let data = self.table.get(&self_)?;
-        let scenes = data
-            .scenes
-            .iter()
-            .map(|res| self.clone_res(res))
+        let scenes = self.table.get(&self_)?.0.read().unwrap().scenes.clone();
+        let res = scenes
+            .into_iter()
+            .map(|r| self.table.push(r))
             .collect::<Result<_, _>>()?;
-        Ok(scenes)
+        Ok(res)
     }
     fn add_scene(
         &mut self,
-        self_: Resource<Document>,
+        self_: Resource<DocumentRes>,
         value: Resource<SceneRes>,
     ) -> wasm_bridge::Result<()> {
-        let res = self.clone_res(&value)?;
-        let data = self.table.get_mut(&self_)?;
-        data.scenes.push(res);
+        let mut data_write = self.table.get(&self_)?.0.write().unwrap();
+        let scene_data = self.table.get(&value)?.clone();
+        data_write.scenes.push(scene_data);
         Ok(())
     }
     fn remove_scene(
         &mut self,
-        self_: Resource<Document>,
+        self_: Resource<DocumentRes>,
         value: Resource<SceneRes>,
     ) -> wasm_bridge::Result<()> {
-        let data = self.table.get_mut(&self_)?;
-        data.scenes
+        let mut data_write = self.table.get(&self_)?.0.write().unwrap();
+        let scene_data = self.table.get(&value)?.0.read().unwrap();
+
+        data_write
+            .scenes
             .iter()
-            .position(|r| r.rep() == value.rep())
-            .map(|index| data.scenes.remove(index));
+            .position(|r| r.0.read().unwrap().id == scene_data.id)
+            .map(|index| data_write.scenes.remove(index));
         Ok(())
     }
 
-    fn drop(&mut self, rep: Resource<Document>) -> wasm_bridge::Result<()> {
-        let id = rep.rep();
-        let dropped = Document::handle_drop(rep, &mut self.table)?;
-
-        if dropped {
-            let documents = self
-                .api
-                .wired_scene
-                .as_ref()
-                .unwrap()
-                .entities
-                .documents
-                .clone();
-
-            self.commands.push(move |world: &mut World| {
-                let mut nodes = documents.write().unwrap();
-                let entity = nodes.remove(&id).unwrap();
-                world.despawn(entity);
-            });
-        }
+    fn drop(&mut self, rep: Resource<DocumentRes>) -> wasm_bridge::Result<()> {
+        // if dropped {
+        //     let documents = self
+        //         .api
+        //         .wired_scene
+        //         .as_ref()
+        //         .unwrap()
+        //         .entities
+        //         .documents
+        //         .clone();
+        //
+        //     self.commands.push(move |world: &mut World| {
+        //         let mut nodes = documents.write().unwrap();
+        //         let entity = nodes.remove(&id).unwrap();
+        //         world.despawn(entity);
+        //     });
+        // }
 
         Ok(())
     }

@@ -1,92 +1,82 @@
+use std::sync::{Arc, OnceLock, RwLock};
+
 use bevy::prelude::*;
 use wasm_bridge::component::Resource;
 
-use crate::{
-    api::utils::{RefCount, RefCountCell, RefResource},
-    data::ScriptData,
-};
+use crate::data::ScriptData;
 
 use super::{
     bindings::composition::{Host, HostComposition},
     nodes::base::NodeRes,
 };
 
-#[derive(Default)]
-pub struct Composition {
-    pub nodes: Vec<Resource<NodeRes>>,
-    ref_count: RefCountCell,
+#[derive(Debug, Clone)]
+pub struct CompositionRes(Arc<RwLock<CompositionData>>);
+
+#[derive(Default, Debug)]
+pub struct CompositionData {
+    pub entity: OnceLock<Entity>,
+    pub nodes: Vec<NodeRes>,
 }
 
-impl RefCount for Composition {
-    fn ref_count(&self) -> &std::cell::Cell<usize> {
-        &self.ref_count
+impl CompositionRes {
+    pub fn new(data: &mut ScriptData) -> Self {
+        let composition = CompositionRes(Arc::new(RwLock::new(CompositionData::default())));
+
+        {
+            let composition = composition.clone();
+            data.commands.push(move |world: &mut World| {
+                let entity = world.spawn(SpatialBundle::default()).id();
+                composition.0.write().unwrap().entity.set(entity).unwrap();
+            });
+        }
+
+        composition
     }
 }
 
-impl RefResource for Composition {}
-
 impl HostComposition for ScriptData {
-    fn new(&mut self) -> wasm_bridge::Result<Resource<Composition>> {
-        let node = Composition::default();
-        let table_res = self.table.push(node)?;
-        let res = self.clone_res(&table_res)?;
-        let rep = res.rep();
-
-        let compositions = self
-            .api
-            .wired_scene
-            .as_ref()
-            .unwrap()
-            .entities
-            .compositions
-            .clone();
-
-        self.commands.push(move |world: &mut World| {
-            let entity = world.spawn(SpatialBundle::default()).id();
-            let mut compositions = compositions.write().unwrap();
-            compositions.insert(rep, entity);
-        });
-
+    fn new(&mut self) -> wasm_bridge::Result<Resource<CompositionRes>> {
+        let data = CompositionRes::new(self);
+        let res = self.table.push(data)?;
         Ok(res)
     }
 
     fn nodes(
         &mut self,
-        self_: Resource<Composition>,
+        self_: Resource<CompositionRes>,
     ) -> wasm_bridge::Result<Vec<Resource<NodeRes>>> {
-        let data = self.table.get(&self_)?;
-        let nodes = data
-            .nodes
-            .iter()
-            .map(|res| self.clone_res(res))
-            .collect::<Result<_, _>>()?;
-        Ok(nodes)
+        let nodes = self.table.get(&self_)?.0.read().unwrap().nodes.clone();
+        Ok(nodes
+            .into_iter()
+            .map(|d| self.table.push(d))
+            .collect::<Result<_, _>>()?)
     }
     fn add_node(
         &mut self,
-        self_: Resource<Composition>,
+        self_: Resource<CompositionRes>,
         value: Resource<NodeRes>,
     ) -> wasm_bridge::Result<()> {
-        let res = self.clone_res(&value)?;
-        let data = self.table.get_mut(&self_)?;
-        data.nodes.push(res);
+        let value = self.table.get(&value)?.clone();
+        let data = self.table.get(&self_)?;
+        data.0.write().unwrap().nodes.push(value);
         Ok(())
     }
     fn remove_node(
         &mut self,
-        self_: Resource<Composition>,
+        self_: Resource<CompositionRes>,
         value: Resource<NodeRes>,
     ) -> wasm_bridge::Result<()> {
-        let data = self.table.get_mut(&self_)?;
+        let id = self.table.get(&value)?.0.read().unwrap().id;
+        let mut data = self.table.get(&self_)?.0.write().unwrap();
         data.nodes
             .iter()
-            .position(|r| r.rep() == value.rep())
+            .position(|r| r.0.read().unwrap().id == id)
             .map(|index| data.nodes.remove(index));
         Ok(())
     }
 
-    fn drop(&mut self, rep: Resource<Composition>) -> wasm_bridge::Result<()> {
-        Composition::handle_drop(rep, &mut self.table)?;
+    fn drop(&mut self, rep: Resource<CompositionRes>) -> wasm_bridge::Result<()> {
         Ok(())
     }
 }

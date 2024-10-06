@@ -1139,14 +1139,21 @@ pub mod wired {
                     }
                 }
             }
+        }
+        #[allow(dead_code, clippy::all)]
+        pub mod api {
+            #[used]
+            #[doc(hidden)]
+            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            pub type Dwn = super::super::super::wired::dwn::dwn::Dwn;
             #[allow(unused_unsafe, clippy::all)]
             /// Get the local user's DWN.
-            pub fn local_dwn() -> Dwn {
+            pub fn user_dwn() -> Dwn {
                 unsafe {
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "wired:dwn/dwn")]
+                    #[link(wasm_import_module = "wired:dwn/api")]
                     extern "C" {
-                        #[link_name = "local-dwn"]
+                        #[link_name = "user-dwn"]
                         fn wit_import() -> i32;
                     }
                     #[cfg(not(target_arch = "wasm32"))]
@@ -1154,7 +1161,7 @@ pub mod wired {
                         unreachable!()
                     }
                     let ret = wit_import();
-                    Dwn::from_handle(ret as u32)
+                    super::super::super::wired::dwn::dwn::Dwn::from_handle(ret as u32)
                 }
             }
             #[allow(unused_unsafe, clippy::all)]
@@ -1162,7 +1169,7 @@ pub mod wired {
             pub fn world_host_dwn() -> Dwn {
                 unsafe {
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "wired:dwn/dwn")]
+                    #[link(wasm_import_module = "wired:dwn/api")]
                     extern "C" {
                         #[link_name = "world-host-dwn"]
                         fn wit_import() -> i32;
@@ -1172,7 +1179,7 @@ pub mod wired {
                         unreachable!()
                     }
                     let ret = wit_import();
-                    Dwn::from_handle(ret as u32)
+                    super::super::super::wired::dwn::dwn::Dwn::from_handle(ret as u32)
                 }
             }
         }
@@ -1612,9 +1619,9 @@ pub(crate) use __export_script_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.30.0:script:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 2067] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x96\x0f\x01A\x02\x01\
-A\x10\x01B\x0b\x01ps\x01r\x05\x03algs\x0aciphertexts\x02ivs\x0arecipients\0\x03t\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 2109] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc0\x0f\x01A\x02\x01\
+A\x13\x01B\x0b\x01ps\x01r\x05\x03algs\x0aciphertexts\x02ivs\x0arecipients\0\x03t\
 ags\x04\0\x0eencrypted-data\x03\0\x01\x01q\x02\x06base64\x01s\0\x09encrypted\x01\
 \x02\0\x04\0\x04data\x03\0\x03\x01k\x04\x01r\x02\x09record-ids\x04data\x05\x04\0\
 \x07message\x03\0\x06\x01ks\x01r\x02\x04code{\x06detail\x08\x04\0\x06status\x03\0\
@@ -1643,19 +1650,21 @@ id\x01\x0e\x04\0+[method]records-write-builder.set-record-id\x01\x0f\x04\0$[meth
 od]records-write-builder.schema\x01\x0e\x04\0([method]records-write-builder.set-\
 schema\x01\x0f\x01i\x06\x01@\x01\x04self\x0c\0\x10\x04\0![method]records-write-b\
 uilder.run\x01\x11\x03\x01\x17wired:dwn/records-write\x05\x04\x02\x03\0\x01\x15r\
-ecords-query-builder\x02\x03\0\x02\x15records-write-builder\x01B\x10\x02\x03\x02\
+ecords-query-builder\x02\x03\0\x02\x15records-write-builder\x01B\x0c\x02\x03\x02\
 \x01\x05\x04\0\x15records-query-builder\x03\0\0\x02\x03\x02\x01\x06\x04\0\x15rec\
 ords-write-builder\x03\0\x02\x04\0\x03dwn\x03\x01\x01h\x04\x01i\x01\x01@\x01\x04\
 self\x05\0\x06\x04\0\x19[method]dwn.records-query\x01\x07\x01i\x03\x01@\x01\x04s\
-elf\x05\0\x08\x04\0\x19[method]dwn.records-write\x01\x09\x01i\x04\x01@\0\0\x0a\x04\
-\0\x09local-dwn\x01\x0b\x04\0\x0eworld-host-dwn\x01\x0b\x03\x01\x0dwired:dwn/dwn\
-\x05\x07\x01B\x04\x01m\x04\x05debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\
-\0\0\x01@\x02\x05level\x01\x07messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwir\
-ed:log/api\x05\x08\x01B\x07\x04\0\x06script\x03\x01\x01i\0\x01@\0\0\x01\x04\0\x13\
-[constructor]script\x01\x02\x01h\0\x01@\x02\x04self\x03\x05deltav\x01\0\x04\0\x15\
-[method]script.update\x01\x04\x04\x01\x12wired:script/types\x05\x09\x04\x01\x15t\
-est:wired-dwn/script\x04\0\x0b\x0c\x01\0\x06script\x03\0\0\0G\x09producers\x01\x0c\
-processed-by\x02\x0dwit-component\x070.215.0\x10wit-bindgen-rust\x060.30.0";
+elf\x05\0\x08\x04\0\x19[method]dwn.records-write\x01\x09\x03\x01\x0dwired:dwn/dw\
+n\x05\x07\x02\x03\0\x03\x03dwn\x01B\x06\x02\x03\x02\x01\x08\x04\0\x03dwn\x03\0\0\
+\x01i\x01\x01@\0\0\x02\x04\0\x08user-dwn\x01\x03\x04\0\x0eworld-host-dwn\x01\x03\
+\x03\x01\x0dwired:dwn/api\x05\x09\x01B\x04\x01m\x04\x05debug\x04info\x04warn\x05\
+error\x04\0\x09log-level\x03\0\0\x01@\x02\x05level\x01\x07messages\x01\0\x04\0\x03\
+log\x01\x02\x03\x01\x0dwired:log/api\x05\x0a\x01B\x07\x04\0\x06script\x03\x01\x01\
+i\0\x01@\0\0\x01\x04\0\x13[constructor]script\x01\x02\x01h\0\x01@\x02\x04self\x03\
+\x05deltav\x01\0\x04\0\x15[method]script.update\x01\x04\x04\x01\x12wired:script/\
+types\x05\x0b\x04\x01\x15test:wired-dwn/script\x04\0\x0b\x0c\x01\0\x06script\x03\
+\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.215.0\x10wit-\
+bindgen-rust\x060.30.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {

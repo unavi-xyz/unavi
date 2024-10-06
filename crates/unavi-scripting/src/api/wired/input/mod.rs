@@ -11,7 +11,7 @@ pub mod bindings {
         world: "host",
         with: {
             "wired:math": crate::api::wired::math::bindings,
-            "wired:input/handler/input-handler": super::input_handler::InputHandler,
+            "wired:input/handler/input-handler": super::input_handler::InputHandlerRes,
         }
     });
 

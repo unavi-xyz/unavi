@@ -3,8 +3,8 @@ use wasm_bridge::component::Linker;
 
 use crate::data::ScriptData;
 
-mod collider;
-mod rigid_body;
+pub mod collider;
+pub mod rigid_body;
 pub(crate) mod systems;
 
 pub mod bindings {
@@ -13,8 +13,8 @@ pub mod bindings {
         world: "host",
         with: {
             "wired:math": crate::api::wired::math::bindings,
-            "wired:physics/types/collider": super::collider::Collider,
-            "wired:physics/types/rigid-body": super::rigid_body::RigidBody,
+            "wired:physics/types/collider": super::collider::ColliderRes,
+            "wired:physics/types/rigid-body": super::rigid_body::RigidBodyRes,
         }
     });
 

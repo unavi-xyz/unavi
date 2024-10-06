@@ -2,7 +2,7 @@ use bevy::{ecs::world::CommandQueue, prelude::*};
 use wasm_bridge::component::{Resource, ResourceTable, ResourceTableError};
 use wasm_bridge_wasi::{WasiCtx, WasiCtxBuilder, WasiView};
 
-use crate::api::{utils::RefResource, ApiData};
+use crate::api::{wired::scene::nodes::base::NodeRes, ApiData};
 
 pub struct ScriptData {
     pub api: ApiData,
@@ -35,29 +35,22 @@ impl Default for ScriptData {
 }
 
 impl ScriptData {
-    pub fn clone_res<T: RefResource>(
-        &self,
+    pub fn clone_res<T: Clone + Send + 'static>(
+        &mut self,
         res: &Resource<T>,
     ) -> Result<Resource<T>, ResourceTableError> {
-        T::from_res(res, &self.table)
+        let data = self.table.get(res)?.clone();
+        let new_res = self.table.push(data)?;
+        Ok(new_res)
     }
 
     /// Inserts a component into the given node if the value is `Some`.
     /// If the value is `None`, removes the component from the entity.
-    pub fn node_insert_option<T: Bundle>(&mut self, node: u32, value: Option<T>) {
-        let nodes = self
-            .api
-            .wired_scene
-            .as_ref()
-            .unwrap()
-            .entities
-            .nodes
-            .clone();
-
+    pub fn node_insert_option<T: Bundle>(&mut self, node: NodeRes, value: Option<T>) {
         self.commands.push(move |world: &mut World| {
-            let nodes = nodes.read().unwrap();
-            let entity = nodes.get(&node).unwrap();
-            let mut entity = world.entity_mut(*entity);
+            let entity = *node.0.read().unwrap().entity.get().unwrap();
+
+            let mut entity = world.entity_mut(entity);
 
             if let Some(value) = value {
                 entity.insert(value);
@@ -68,12 +61,12 @@ impl ScriptData {
     }
 
     /// Inserts a component into the given node.
-    pub fn node_insert<T: Bundle>(&mut self, node: u32, value: T) {
+    pub fn node_insert<T: Bundle>(&mut self, node: NodeRes, value: T) {
         self.node_insert_option(node, Some(value))
     }
 
     /// Removes a component from the given node.
-    pub fn node_remove<T: Bundle>(&mut self, node: u32) {
+    pub fn node_remove<T: Bundle>(&mut self, node: NodeRes) {
         self.node_insert_option::<T>(node, None)
     }
 }

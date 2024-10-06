@@ -1,178 +1,130 @@
-use std::cell::Cell;
+use std::sync::{Arc, RwLock};
 
 use wasm_bridge::component::Resource;
-use wasm_bridge_wasi::{ResourceTable, ResourceTableError};
+use wasm_bridge_wasi::ResourceTable;
 
 use crate::{
-    api::{
-        utils::{RefCount, RefCountCell, RefResource},
-        wired::scene::bindings::node::HostNode,
-    },
+    api::wired::scene::{bindings::node::HostNode, nodes::base::NodeRes},
     data::ScriptData,
 };
 
 use super::bindings::api::{HostPlayer, Node, Skeleton};
 
 impl HostPlayer for ScriptData {
-    fn root(&mut self, self_: Resource<Player>) -> wasm_bridge::Result<Resource<Node>> {
-        let player = self.table.get(&self_)?;
-        let root = Node::from_res(&player.root, &self.table)?;
-        Ok(root)
+    fn root(&mut self, self_: Resource<PlayerRes>) -> wasm_bridge::Result<Resource<Node>> {
+        let data = self.table.get(&self_)?.0.read().unwrap().root.clone();
+        let res = self.table.push(data)?;
+        Ok(res)
     }
 
-    fn skeleton(&mut self, self_: Resource<Player>) -> wasm_bridge::Result<Skeleton> {
-        let player = self.table.get(&self_)?;
-        let skeleton = player.skeleton.clone_ref(&self.table)?;
-        Ok(skeleton)
+    fn skeleton(&mut self, self_: Resource<PlayerRes>) -> wasm_bridge::Result<Skeleton> {
+        let data = self.table.get(&self_)?.0.read().unwrap().skeleton.clone();
+        data.to_resource(&mut self.table)
     }
 
-    fn drop(&mut self, _rep: Resource<Player>) -> wasm_bridge::Result<()> {
+    fn drop(&mut self, _rep: Resource<PlayerRes>) -> wasm_bridge::Result<()> {
         Ok(())
     }
 }
 
-pub struct Player {
-    ref_count: RefCountCell,
-    pub root: Resource<Node>,
-    pub skeleton: Skeleton,
+#[derive(Clone)]
+pub struct PlayerRes(pub Arc<RwLock<PlayerData>>);
+
+pub struct PlayerData {
+    pub root: NodeRes,
+    pub skeleton: SkeletonData,
 }
 
-impl RefCount for Player {
-    fn ref_count(&self) -> &Cell<usize> {
-        &self.ref_count
-    }
+#[derive(Clone)]
+pub struct SkeletonData {
+    hips: NodeRes,
+    spine: NodeRes,
+    chest: NodeRes,
+    upper_chest: NodeRes,
+    neck: NodeRes,
+    head: NodeRes,
+    left_shoulder: NodeRes,
+    left_upper_arm: NodeRes,
+    left_lower_arm: NodeRes,
+    left_foot: NodeRes,
+    left_hand: NodeRes,
+    left_lower_leg: NodeRes,
+    left_upper_leg: NodeRes,
+    right_shoulder: NodeRes,
+    right_upper_arm: NodeRes,
+    right_lower_arm: NodeRes,
+    right_foot: NodeRes,
+    right_hand: NodeRes,
+    right_lower_leg: NodeRes,
+    right_upper_leg: NodeRes,
 }
 
-impl RefResource for Player {}
+impl PlayerRes {
+    pub fn new(data: &mut ScriptData) -> Self {
+        let root = NodeRes::new(data);
+        let hips = NodeRes::new(data);
+        NodeRes::add_child(data, root.clone(), hips.clone());
 
-impl Player {
-    pub fn new(data: &mut ScriptData) -> anyhow::Result<Resource<Self>> {
-        let root = data.new()?;
+        let spine = NodeRes::new(data);
+        NodeRes::add_child(data, hips.clone(), spine.clone());
 
-        let hips = data.new()?;
-        data.add_child(
-            Node::from_res(&root, &data.table)?,
-            Node::from_res(&hips, &data.table)?,
-        )?;
+        let chest = NodeRes::new(data);
+        NodeRes::add_child(data, spine.clone(), chest.clone());
 
-        let spine = data.new()?;
-        data.add_child(
-            Node::from_res(&hips, &data.table)?,
-            Node::from_res(&spine, &data.table)?,
-        )?;
+        let upper_chest = NodeRes::new(data);
+        NodeRes::add_child(data, chest.clone(), upper_chest.clone());
 
-        let chest = data.new()?;
-        data.add_child(
-            Node::from_res(&spine, &data.table)?,
-            Node::from_res(&chest, &data.table)?,
-        )?;
+        let neck = NodeRes::new(data);
+        NodeRes::add_child(data, upper_chest.clone(), neck.clone());
 
-        let upper_chest = data.new()?;
-        data.add_child(
-            Node::from_res(&chest, &data.table)?,
-            Node::from_res(&upper_chest, &data.table)?,
-        )?;
+        let head = NodeRes::new(data);
+        NodeRes::add_child(data, neck.clone(), head.clone());
 
-        let neck = data.new()?;
-        data.add_child(
-            Node::from_res(&upper_chest, &data.table)?,
-            Node::from_res(&neck, &data.table)?,
-        )?;
+        let left_shoulder = NodeRes::new(data);
+        NodeRes::add_child(data, upper_chest.clone(), left_shoulder.clone());
 
-        let head = data.new()?;
-        data.add_child(
-            Node::from_res(&neck, &data.table)?,
-            Node::from_res(&head, &data.table)?,
-        )?;
+        let left_upper_arm = NodeRes::new(data);
+        NodeRes::add_child(data, left_shoulder.clone(), left_upper_arm.clone());
 
-        let left_shoulder = data.new()?;
-        data.add_child(
-            Node::from_res(&upper_chest, &data.table)?,
-            Node::from_res(&left_shoulder, &data.table)?,
-        )?;
+        let left_lower_arm = NodeRes::new(data);
+        NodeRes::add_child(data, left_upper_arm.clone(), left_lower_arm.clone());
 
-        let left_upper_arm = data.new()?;
-        data.add_child(
-            Node::from_res(&left_shoulder, &data.table)?,
-            Node::from_res(&left_upper_arm, &data.table)?,
-        )?;
+        let left_hand = NodeRes::new(data);
+        NodeRes::add_child(data, left_lower_arm.clone(), left_hand.clone());
 
-        let left_lower_arm = data.new()?;
-        data.add_child(
-            Node::from_res(&left_upper_arm, &data.table)?,
-            Node::from_res(&left_lower_arm, &data.table)?,
-        )?;
+        let left_upper_leg = NodeRes::new(data);
+        NodeRes::add_child(data, hips.clone(), left_upper_leg.clone());
 
-        let left_hand = data.new()?;
-        data.add_child(
-            Node::from_res(&left_lower_arm, &data.table)?,
-            Node::from_res(&left_hand, &data.table)?,
-        )?;
+        let left_lower_leg = NodeRes::new(data);
+        NodeRes::add_child(data, left_upper_leg.clone(), left_lower_leg.clone());
 
-        let left_upper_leg = data.new()?;
-        data.add_child(
-            Node::from_res(&hips, &data.table)?,
-            Node::from_res(&left_upper_leg, &data.table)?,
-        )?;
+        let left_foot = NodeRes::new(data);
+        NodeRes::add_child(data, left_lower_leg.clone(), left_foot.clone());
 
-        let left_lower_leg = data.new()?;
-        data.add_child(
-            Node::from_res(&left_upper_leg, &data.table)?,
-            Node::from_res(&left_lower_leg, &data.table)?,
-        )?;
+        let right_shoulder = NodeRes::new(data);
+        NodeRes::add_child(data, upper_chest.clone(), right_shoulder.clone());
 
-        let left_foot = data.new()?;
-        data.add_child(
-            Node::from_res(&left_lower_leg, &data.table)?,
-            Node::from_res(&left_foot, &data.table)?,
-        )?;
+        let right_upper_arm = NodeRes::new(data);
+        NodeRes::add_child(data, right_shoulder.clone(), right_upper_arm.clone());
 
-        let right_shoulder = data.new()?;
-        data.add_child(
-            Node::from_res(&upper_chest, &data.table)?,
-            Node::from_res(&right_shoulder, &data.table)?,
-        )?;
+        let right_lower_arm = NodeRes::new(data);
+        NodeRes::add_child(data, right_upper_arm.clone(), right_lower_arm.clone());
 
-        let right_upper_arm = data.new()?;
-        data.add_child(
-            Node::from_res(&right_shoulder, &data.table)?,
-            Node::from_res(&right_upper_arm, &data.table)?,
-        )?;
+        let right_hand = NodeRes::new(data);
+        NodeRes::add_child(data, right_lower_arm.clone(), right_hand.clone());
 
-        let right_lower_arm = data.new()?;
-        data.add_child(
-            Node::from_res(&right_upper_arm, &data.table)?,
-            Node::from_res(&right_lower_arm, &data.table)?,
-        )?;
+        let right_upper_leg = NodeRes::new(data);
+        NodeRes::add_child(data, hips.clone(), right_upper_leg.clone());
 
-        let right_hand = data.new()?;
-        data.add_child(
-            Node::from_res(&right_lower_arm, &data.table)?,
-            Node::from_res(&right_hand, &data.table)?,
-        )?;
+        let right_lower_leg = NodeRes::new(data);
+        NodeRes::add_child(data, right_upper_leg.clone(), right_lower_leg.clone());
 
-        let right_upper_leg = data.new()?;
-        data.add_child(
-            Node::from_res(&hips, &data.table)?,
-            Node::from_res(&right_upper_leg, &data.table)?,
-        )?;
+        let right_foot = NodeRes::new(data);
+        NodeRes::add_child(data, right_lower_leg.clone(), right_foot.clone());
 
-        let right_lower_leg = data.new()?;
-        data.add_child(
-            Node::from_res(&right_upper_leg, &data.table)?,
-            Node::from_res(&right_lower_leg, &data.table)?,
-        )?;
-
-        let right_foot = data.new()?;
-        data.add_child(
-            Node::from_res(&right_lower_leg, &data.table)?,
-            Node::from_res(&right_foot, &data.table)?,
-        )?;
-
-        let player = Self {
-            ref_count: RefCountCell::default(),
+        PlayerRes(Arc::new(RwLock::new(PlayerData {
             root,
-            skeleton: Skeleton {
+            skeleton: SkeletonData {
                 hips,
                 spine,
                 chest,
@@ -194,39 +146,33 @@ impl Player {
                 right_lower_leg,
                 right_upper_leg,
             },
-        };
-
-        let res = data.table.push(player)?;
-        let player = Player::from_res(&res, &data.table)?;
-
-        Ok(player)
+        })))
     }
 }
 
-impl Skeleton {
-    /// Clones the [Skeleton] struct, while referencing the same underlying resources.
-    pub fn clone_ref(&self, table: &ResourceTable) -> Result<Self, ResourceTableError> {
+impl SkeletonData {
+    pub fn to_resource(self, table: &mut ResourceTable) -> wasm_bridge::Result<Skeleton> {
         Ok(Skeleton {
-            hips: Node::from_res(&self.hips, table)?,
-            chest: Node::from_res(&self.chest, table)?,
-            upper_chest: Node::from_res(&self.upper_chest, table)?,
-            neck: Node::from_res(&self.neck, table)?,
-            head: Node::from_res(&self.head, table)?,
-            left_foot: Node::from_res(&self.left_foot, table)?,
-            left_hand: Node::from_res(&self.left_hand, table)?,
-            left_lower_arm: Node::from_res(&self.left_lower_arm, table)?,
-            left_lower_leg: Node::from_res(&self.left_lower_leg, table)?,
-            left_shoulder: Node::from_res(&self.left_shoulder, table)?,
-            left_upper_arm: Node::from_res(&self.left_upper_arm, table)?,
-            left_upper_leg: Node::from_res(&self.left_upper_leg, table)?,
-            right_foot: Node::from_res(&self.right_foot, table)?,
-            right_hand: Node::from_res(&self.right_hand, table)?,
-            right_lower_arm: Node::from_res(&self.right_lower_arm, table)?,
-            right_lower_leg: Node::from_res(&self.right_lower_leg, table)?,
-            right_shoulder: Node::from_res(&self.right_shoulder, table)?,
-            right_upper_arm: Node::from_res(&self.right_upper_arm, table)?,
-            right_upper_leg: Node::from_res(&self.right_upper_leg, table)?,
-            spine: Node::from_res(&self.spine, table)?,
+            hips: table.push(self.hips)?,
+            chest: table.push(self.chest)?,
+            upper_chest: table.push(self.upper_chest)?,
+            neck: table.push(self.neck)?,
+            head: table.push(self.head)?,
+            left_foot: table.push(self.left_foot)?,
+            left_hand: table.push(self.left_hand)?,
+            left_lower_arm: table.push(self.left_lower_arm)?,
+            left_lower_leg: table.push(self.left_lower_leg)?,
+            left_shoulder: table.push(self.left_shoulder)?,
+            left_upper_arm: table.push(self.left_upper_arm)?,
+            left_upper_leg: table.push(self.left_upper_leg)?,
+            right_foot: table.push(self.right_foot)?,
+            right_hand: table.push(self.right_hand)?,
+            right_lower_arm: table.push(self.right_lower_arm)?,
+            right_lower_leg: table.push(self.right_lower_leg)?,
+            right_shoulder: table.push(self.right_shoulder)?,
+            right_upper_arm: table.push(self.right_upper_arm)?,
+            right_upper_leg: table.push(self.right_upper_leg)?,
+            spine: table.push(self.spine)?,
         })
     }
 }

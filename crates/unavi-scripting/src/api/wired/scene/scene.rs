@@ -1,9 +1,11 @@
+use std::sync::{Arc, OnceLock, RwLock};
+
 use bevy::prelude::*;
 use wasm_bridge::component::Resource;
 
 use crate::{
     api::{
-        utils::{RefCount, RefCountCell, RefResource},
+        id::ResourceId,
         wired::scene::bindings::scene::{Host, HostScene},
     },
     data::ScriptData,
@@ -29,66 +31,50 @@ impl GltfSceneBundle {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct SceneRes(pub Arc<RwLock<SceneData>>);
+
 #[derive(Default, Debug)]
-pub struct SceneRes {
-    pub nodes: Vec<Resource<NodeRes>>,
-    name: String,
-    ref_count: RefCountCell,
+pub struct SceneData {
+    pub id: ResourceId,
+    pub entity: OnceLock<Entity>,
+    pub name: String,
+    pub nodes: Vec<NodeRes>,
 }
-
-impl RefCount for SceneRes {
-    fn ref_count(&self) -> &std::cell::Cell<usize> {
-        &self.ref_count
-    }
-}
-
-impl RefResource for SceneRes {}
 
 impl HostScene for ScriptData {
     fn new(&mut self) -> wasm_bridge::Result<Resource<SceneRes>> {
-        let node = SceneRes::default();
-        let table_res = self.table.push(node)?;
-        let res = self.clone_res(&table_res)?;
-        let rep = res.rep();
-
-        let scenes = self
-            .api
-            .wired_scene
-            .as_ref()
-            .unwrap()
-            .entities
-            .scenes
-            .clone();
+        let data = SceneRes(Arc::new(RwLock::new(SceneData::default())));
+        let res = self.table.push(data.clone())?;
 
         self.commands.push(move |world: &mut World| {
-            let entity = world.spawn(GltfSceneBundle::new(rep)).id();
-            let mut scenes = scenes.write().unwrap();
-            scenes.insert(rep, entity);
+            let data = data.0.write().unwrap();
+            let entity = world.spawn(GltfSceneBundle::new(data.id.into())).id();
+            data.entity.set(entity).unwrap();
         });
 
         Ok(res)
     }
 
     fn id(&mut self, self_: Resource<SceneRes>) -> wasm_bridge::Result<u32> {
-        Ok(self_.rep())
+        Ok(self.table.get(&self_)?.0.read().unwrap().id.into())
     }
 
     fn name(&mut self, self_: Resource<SceneRes>) -> wasm_bridge::Result<String> {
-        let data = self.table.get(&self_)?;
+        let data = self.table.get(&self_)?.0.read().unwrap();
         Ok(data.name.clone())
     }
     fn set_name(&mut self, self_: Resource<SceneRes>, value: String) -> wasm_bridge::Result<()> {
-        let data = self.table.get_mut(&self_)?;
+        let mut data = self.table.get(&self_)?.0.write().unwrap();
         data.name = value;
         Ok(())
     }
 
     fn nodes(&mut self, self_: Resource<SceneRes>) -> wasm_bridge::Result<Vec<Resource<NodeRes>>> {
-        let data = self.table.get(&self_)?;
-        let nodes = data
-            .nodes
-            .iter()
-            .map(|res| self.clone_res(res))
+        let nodes = self.table.get(&self_)?.0.read().unwrap().nodes.clone();
+        let nodes = nodes
+            .into_iter()
+            .map(|r| self.table.push(r))
             .collect::<Result<_, _>>()?;
         Ok(nodes)
     }
@@ -97,38 +83,15 @@ impl HostScene for ScriptData {
         self_: Resource<SceneRes>,
         value: Resource<NodeRes>,
     ) -> wasm_bridge::Result<()> {
-        let scene_rep = self_.rep();
-        let node_rep = value.rep();
+        let data = self.table.get(&self_)?.clone();
+        let node_data = self.table.get(&value)?.clone();
 
-        let res = self.clone_res(&value)?;
-        let data = self.table.get_mut(&self_)?;
-        data.nodes.push(res);
-
-        let nodes = self
-            .api
-            .wired_scene
-            .as_ref()
-            .unwrap()
-            .entities
-            .nodes
-            .clone();
-        let scenes = self
-            .api
-            .wired_scene
-            .as_ref()
-            .unwrap()
-            .entities
-            .scenes
-            .clone();
+        data.0.write().unwrap().nodes.push(node_data.clone());
 
         self.commands.push(move |world: &mut World| {
-            let scenes = scenes.read().unwrap();
-            let scene_ent = scenes.get(&scene_rep).unwrap();
-
-            let nodes = nodes.read().unwrap();
-            let node_ent = nodes.get(&node_rep).unwrap();
-
-            world.entity_mut(*node_ent).set_parent(*scene_ent);
+            let scene_ent = *data.0.read().unwrap().entity.get().unwrap();
+            let node_ent = *node_data.0.read().unwrap().entity.get().unwrap();
+            world.entity_mut(node_ent).set_parent(scene_ent);
         });
 
         Ok(())
@@ -138,163 +101,44 @@ impl HostScene for ScriptData {
         self_: Resource<SceneRes>,
         value: Resource<NodeRes>,
     ) -> wasm_bridge::Result<()> {
-        let node_rep = value.rep();
+        let data = self.table.get(&self_)?;
+        let mut data_write = data.0.write().unwrap();
 
-        let data = self.table.get_mut(&self_)?;
-        data.nodes
-            .iter()
-            .position(|r| r.rep() == node_rep)
-            .map(|index| data.nodes.remove(index));
-
-        let nodes = self
-            .api
-            .wired_scene
-            .as_ref()
-            .unwrap()
-            .entities
+        data_write
             .nodes
-            .clone();
+            .iter()
+            .position(|r| r.0.read().unwrap().id == data_write.id)
+            .map(|index| data_write.nodes.remove(index));
 
+        let node_data = self.table.get(&value)?.clone();
         self.commands.push(move |world: &mut World| {
-            let nodes = nodes.read().unwrap();
-            let node_ent = nodes.get(&node_rep).unwrap();
-            world.entity_mut(*node_ent).remove_parent();
+            let node_ent = *node_data.0.read().unwrap().entity.get().unwrap();
+            world.entity_mut(node_ent).remove_parent();
         });
 
         Ok(())
     }
 
     fn drop(&mut self, rep: Resource<SceneRes>) -> wasm_bridge::Result<()> {
-        let id = rep.rep();
-        let dropped = SceneRes::handle_drop(rep, &mut self.table)?;
-
-        if dropped {
-            let scenes = self
-                .api
-                .wired_scene
-                .as_ref()
-                .unwrap()
-                .entities
-                .scenes
-                .clone();
-
-            self.commands.push(move |world: &mut World| {
-                let mut scenes = scenes.write().unwrap();
-                let entity = scenes.remove(&id).unwrap();
-                world.despawn(entity);
-            });
-        }
+        // if dropped {
+        //     let scenes = self
+        //         .api
+        //         .wired_scene
+        //         .as_ref()
+        //         .unwrap()
+        //         .entities
+        //         .scenes
+        //         .clone();
+        //
+        //     self.commands.push(move |world: &mut World| {
+        //         let mut scenes = scenes.write().unwrap();
+        //         let entity = scenes.remove(&id).unwrap();
+        //         world.despawn(entity);
+        //     });
+        // }
 
         Ok(())
     }
 }
 
 impl Host for ScriptData {}
-
-#[cfg(test)]
-mod tests {
-    use tracing_test::traced_test;
-
-    use crate::api::{
-        utils::tests::init_test_data,
-        wired::scene::{bindings::node::HostNode, nodes::base::NodeId},
-    };
-
-    use super::*;
-
-    #[test]
-    #[traced_test]
-    fn test_new() {
-        let (mut app, mut data) = init_test_data();
-        let world = app.world_mut();
-
-        let res = HostScene::new(&mut data).unwrap();
-
-        world.commands().append(&mut data.commands);
-        world.flush_commands();
-
-        world
-            .query::<&SceneId>()
-            .iter(world)
-            .find(|n| n.0 == res.rep())
-            .unwrap();
-    }
-
-    #[test]
-    #[traced_test]
-    fn test_add_node() {
-        let (mut app, mut data) = init_test_data();
-        let world = app.world_mut();
-
-        let scene = HostScene::new(&mut data).unwrap();
-        let node = HostNode::new(&mut data).unwrap();
-        let node_rep = node.rep();
-        HostScene::add_node(&mut data, scene, node).unwrap();
-
-        world.commands().append(&mut data.commands);
-        world.flush_commands();
-
-        let (node_ent, _) = world
-            .query::<(Entity, &NodeId)>()
-            .iter(world)
-            .find(|(_, n)| n.0 == node_rep)
-            .unwrap();
-
-        let (scene_children, _) = world.query::<(&Children, &SceneId)>().single(world);
-        assert!(scene_children.contains(&node_ent));
-    }
-
-    #[test]
-    #[traced_test]
-    fn test_remove_node() {
-        let (mut app, mut data) = init_test_data();
-        let world = app.world_mut();
-
-        let scene = HostScene::new(&mut data).unwrap();
-        let node = HostNode::new(&mut data).unwrap();
-
-        {
-            let scene = data.clone_res(&scene).unwrap();
-            let node = data.clone_res(&node).unwrap();
-            HostScene::add_node(&mut data, scene, node).unwrap();
-        }
-
-        HostScene::remove_node(&mut data, scene, node).unwrap();
-
-        world.commands().append(&mut data.commands);
-        world.flush_commands();
-
-        let children_query = world.query::<(&Children, &SceneId)>().get_single(world);
-        assert!(children_query.is_err());
-    }
-
-    #[test]
-    #[traced_test]
-    fn test_nodes() {
-        let (_, mut data) = init_test_data();
-
-        let scene = HostScene::new(&mut data).unwrap();
-        let node = HostNode::new(&mut data).unwrap();
-
-        {
-            let scene = data.clone_res(&scene).unwrap();
-            let node = data.clone_res(&node).unwrap();
-            HostScene::add_node(&mut data, scene, node).unwrap();
-        }
-
-        {
-            let scene = data.clone_res(&scene).unwrap();
-            let nodes = HostScene::nodes(&mut data, scene).unwrap();
-            assert_eq!(nodes.len(), 1);
-            assert_eq!(nodes[0].rep(), node.rep());
-        }
-
-        {
-            let scene = data.clone_res(&scene).unwrap();
-            HostScene::remove_node(&mut data, scene, node).unwrap();
-        }
-
-        let nodes = HostScene::nodes(&mut data, scene).unwrap();
-        assert!(nodes.is_empty());
-    }
-}

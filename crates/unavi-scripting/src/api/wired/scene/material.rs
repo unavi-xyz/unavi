@@ -1,16 +1,10 @@
-use std::cell::Cell;
+use std::sync::{Arc, OnceLock, RwLock};
 
 use bevy::prelude::*;
 use wasm_bridge::component::Resource;
 
 use crate::{
-    api::{
-        utils::{RefCount, RefCountCell, RefResource},
-        wired::scene::{
-            bindings::material::{Color, Host, HostMaterial},
-            MaterialState,
-        },
-    },
+    api::wired::scene::bindings::material::{Color, Host, HostMaterial},
     data::ScriptData,
 };
 
@@ -32,99 +26,76 @@ impl WiredMaterialBundle {
     }
 }
 
+#[derive(Default, Debug, Clone)]
+pub struct MaterialRes(pub Arc<RwLock<MaterialData>>);
+
 #[derive(Default, Debug)]
-pub struct MaterialRes {
-    pub name: String,
+pub struct MaterialData {
+    pub id: u32,
     pub color: Color,
-    ref_count: RefCountCell,
+    pub handle: OnceLock<Handle<StandardMaterial>>,
+    pub name: String,
 }
-
-impl RefCount for MaterialRes {
-    fn ref_count(&self) -> &Cell<usize> {
-        &self.ref_count
-    }
-}
-
-impl RefResource for MaterialRes {}
 
 impl HostMaterial for ScriptData {
     fn new(&mut self) -> wasm_bridge::Result<wasm_bridge::component::Resource<MaterialRes>> {
-        let table_res = self.table.push(MaterialRes::default())?;
-        let res = MaterialRes::from_res(&table_res, &self.table)?;
-        let rep = res.rep();
+        let res = MaterialRes::default();
+        let data = res.0.clone();
 
-        let materials = self
-            .api
-            .wired_scene
-            .as_ref()
-            .unwrap()
-            .entities
-            .materials
-            .clone();
+        let res = self.table.push(res)?;
 
         self.commands.push(move |world: &mut World| {
             let mut assets = world.resource_mut::<Assets<StandardMaterial>>();
             let handle = assets.add(StandardMaterial::default());
-            let entity = world
-                .spawn(WiredMaterialBundle::new(rep, handle.clone()))
-                .id();
-
-            let mut materials = materials.write().unwrap();
-            materials.insert(rep, MaterialState { entity, handle });
+            data.write().unwrap().handle.get_or_init(|| handle);
         });
 
         Ok(res)
     }
 
     fn id(&mut self, self_: Resource<MaterialRes>) -> wasm_bridge::Result<u32> {
-        Ok(self_.rep())
+        let data = self.table.get(&self_)?.0.read().unwrap();
+        Ok(data.id)
     }
     fn ref_(&mut self, self_: Resource<MaterialRes>) -> wasm_bridge::Result<Resource<MaterialRes>> {
-        let value = MaterialRes::from_res(&self_, &self.table)?;
-        Ok(value)
+        let data = self.table.get(&self_)?.clone();
+        let res = self.table.push(data)?;
+        Ok(res)
     }
 
     fn name(&mut self, self_: Resource<MaterialRes>) -> wasm_bridge::Result<String> {
-        let material = self.table.get(&self_)?;
-        Ok(material.name.clone())
+        let data = self.table.get(&self_)?.0.read().unwrap();
+        Ok(data.name.clone())
     }
     fn set_name(&mut self, self_: Resource<MaterialRes>, value: String) -> wasm_bridge::Result<()> {
-        let material = self.table.get_mut(&self_)?;
-        material.name = value;
+        let mut data = self.table.get_mut(&self_)?.0.write().unwrap();
+        data.name = value;
         Ok(())
     }
 
     fn color(&mut self, self_: Resource<MaterialRes>) -> wasm_bridge::Result<Color> {
-        let material = self.table.get(&self_)?;
-        Ok(material.color)
+        let data = self.table.get(&self_)?.0.read().unwrap();
+        Ok(data.color)
     }
     fn set_color(&mut self, self_: Resource<MaterialRes>, value: Color) -> wasm_bridge::Result<()> {
-        let rep = self_.rep();
+        let res = self.table.get_mut(&self_)?;
 
-        let material = self.table.get_mut(&self_)?;
-        material.color = value;
+        let mut data = res.0.write().unwrap();
+        data.color = value;
 
         let color = bevy::prelude::Color::linear_rgba(
-            material.color.r,
-            material.color.g,
-            material.color.b,
-            material.color.a,
+            data.color.r,
+            data.color.g,
+            data.color.b,
+            data.color.a,
         );
 
-        let materials = self
-            .api
-            .wired_scene
-            .as_ref()
-            .unwrap()
-            .entities
-            .materials
-            .clone();
+        let res = res.0.clone();
 
         self.commands.push(move |world: &mut World| {
-            let materials = materials.read().unwrap();
-            let MaterialState { handle, .. } = materials.get(&rep).unwrap();
+            let handle = &res.read().unwrap().handle;
             let mut assets = world.resource_mut::<Assets<StandardMaterial>>();
-            let material = assets.get_mut(handle).unwrap();
+            let material = assets.get_mut(handle.get().unwrap()).unwrap();
             material.base_color = color;
         });
 
@@ -132,28 +103,30 @@ impl HostMaterial for ScriptData {
     }
 
     fn drop(&mut self, rep: Resource<MaterialRes>) -> wasm_bridge::Result<()> {
-        let id = rep.rep();
-        let dropped = MaterialRes::handle_drop(rep, &mut self.table)?;
-
-        if dropped {
-            let materials = self
-                .api
-                .wired_scene
-                .as_ref()
-                .unwrap()
-                .entities
-                .materials
-                .clone();
-
-            self.commands.push(move |world: &mut World| {
-                let mut materials = materials.write().unwrap();
-                let MaterialState { entity, .. } = materials.remove(&id).unwrap();
-                world.despawn(entity);
-            });
-        }
-
+        self.table.delete(rep)?;
         Ok(())
     }
 }
 
 impl Host for ScriptData {}
+
+#[cfg(test)]
+mod tests {
+    use crate::api::tests::init_test_data;
+
+    use super::*;
+
+    #[test]
+    fn test_resource_drop() {
+        let (_, mut data) = init_test_data();
+
+        let res = HostMaterial::new(&mut data).unwrap();
+        let res_clone = Resource::<MaterialRes>::new_own(res.rep());
+
+        assert!(data.table.get(&res).is_ok());
+
+        HostMaterial::drop(&mut data, res).unwrap();
+
+        assert!(data.table.get(&res_clone).is_err());
+    }
+}

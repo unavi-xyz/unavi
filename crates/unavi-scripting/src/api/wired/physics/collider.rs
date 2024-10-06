@@ -1,38 +1,28 @@
-use std::cell::Cell;
+use std::sync::{Arc, RwLock};
 
 use wasm_bridge::component::Resource;
 
-use crate::{
-    api::utils::{RefCount, RefCountCell, RefResource},
-    data::ScriptData,
-};
+use crate::data::ScriptData;
 
 use super::bindings::{
     types::{ShapeCylinder, Vec3},
     wired::physics::types::{HostCollider, Shape},
 };
 
+#[derive(Debug, Clone)]
+pub struct ColliderRes(pub Arc<RwLock<ColliderData>>);
+
 #[derive(Debug)]
-pub struct Collider {
+pub struct ColliderData {
     pub density: f32,
     pub shape: Shape,
-    ref_count: RefCountCell,
 }
 
-impl RefCount for Collider {
-    fn ref_count(&self) -> &Cell<usize> {
-        &self.ref_count
-    }
-}
-
-impl RefResource for Collider {}
-
-impl Collider {
+impl ColliderData {
     pub fn new(shape: Shape) -> Self {
         Self {
             density: 1.0,
             shape,
-            ref_count: RefCountCell::default(),
         }
     }
 
@@ -48,56 +38,23 @@ impl Collider {
 }
 
 impl HostCollider for ScriptData {
-    fn new(&mut self, shape: Shape) -> wasm_bridge::Result<Resource<Collider>> {
-        let collider = Collider::new(shape);
-        let table_res = self.table.push(collider)?;
-        let res = Collider::from_res(&table_res, &self.table)?;
+    fn new(&mut self, shape: Shape) -> wasm_bridge::Result<Resource<ColliderRes>> {
+        let data = ColliderData::new(shape);
+        let res = self.table.push(ColliderRes(Arc::new(RwLock::new(data))))?;
         Ok(res)
     }
 
-    fn density(&mut self, self_: Resource<Collider>) -> wasm_bridge::Result<f32> {
-        let res = self.table.get(&self_)?;
-        Ok(res.density)
+    fn density(&mut self, self_: Resource<ColliderRes>) -> wasm_bridge::Result<f32> {
+        let data = self.table.get(&self_)?.0.read().unwrap();
+        Ok(data.density)
     }
-    fn set_density(&mut self, self_: Resource<Collider>, value: f32) -> wasm_bridge::Result<()> {
-        let res = self.table.get_mut(&self_)?;
-        res.density = value;
+    fn set_density(&mut self, self_: Resource<ColliderRes>, value: f32) -> wasm_bridge::Result<()> {
+        let mut data = self.table.get(&self_)?.0.write().unwrap();
+        data.density = value;
         Ok(())
     }
 
-    fn drop(&mut self, rep: Resource<Collider>) -> wasm_bridge::Result<()> {
-        Collider::handle_drop(rep, &mut self.table)?;
+    fn drop(&mut self, rep: Resource<ColliderRes>) -> wasm_bridge::Result<()> {
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use tracing_test::traced_test;
-
-    use crate::api::utils::tests::init_test_data;
-
-    use super::*;
-
-    #[test]
-    #[traced_test]
-    fn test_drop() {
-        let (_, mut data) = init_test_data();
-
-        let shape = Shape::Sphere(0.5);
-        let res = HostCollider::new(&mut data, shape).unwrap();
-
-        crate::api::utils::tests::test_drop(&mut data, res);
-    }
-
-    #[test]
-    #[traced_test]
-    fn test_new() {
-        let (_, mut data) = init_test_data();
-
-        let shape = Shape::Sphere(0.5);
-        let res = HostCollider::new(&mut data, shape).unwrap();
-
-        crate::api::utils::tests::test_new(&mut data, res);
     }
 }

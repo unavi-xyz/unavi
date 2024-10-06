@@ -1,7 +1,7 @@
 use bindings::{
     exports::wired::script::types::{Guest, GuestScript},
     wired::dwn::{
-        dwn::{local_dwn, world_host_dwn},
+        api::{user_dwn, world_host_dwn},
         records_query::RecordsQuery,
         records_write::RecordsWrite,
     },
@@ -22,22 +22,22 @@ impl GuestScript for Script {
     fn new() -> Self {
         log(LogLevel::Info, "Called script construct!");
 
-        let local = local_dwn();
+        let user = user_dwn();
         let _ = world_host_dwn();
 
         let missing_id = {
-            let builder = local.records_query();
+            let builder = user.records_query();
             builder.set_record_id(Some("missing"));
             builder.run()
         };
 
         let write = {
-            let builder = local.records_write();
+            let builder = user.records_write();
             builder.run()
         };
 
         let found_id = {
-            let builder = local.records_query();
+            let builder = user.records_query();
             builder.set_record_id(Some("test"));
             builder.run()
         };

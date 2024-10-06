@@ -1,17 +1,14 @@
 use wasm_bridge::component::Resource;
 
 use crate::{
-    api::{
-        utils::RefResource,
-        wired::{
-            math::bindings::types::Transform,
-            scene::bindings::composition::{Asset, HostAssetNode},
-        },
+    api::wired::{
+        math::bindings::types::Transform,
+        scene::bindings::composition::{Asset, HostAssetNode},
     },
     data::ScriptData,
 };
 
-use super::base::NodeRes;
+use super::base::{AssetData, NodeRes};
 
 impl HostAssetNode for ScriptData {
     fn new(&mut self) -> wasm_bridge::Result<wasm_bridge::component::Resource<NodeRes>> {
@@ -19,35 +16,41 @@ impl HostAssetNode for ScriptData {
     }
 
     fn name(&mut self, self_: Resource<NodeRes>) -> wasm_bridge::Result<String> {
-        let data = self.table.get(&self_)?;
+        let data = self.table.get(&self_)?.0.read().unwrap();
         Ok(data.name.clone())
     }
     fn set_name(&mut self, self_: Resource<NodeRes>, value: String) -> wasm_bridge::Result<()> {
-        let data = self.table.get_mut(&self_)?;
+        let mut data = self.table.get(&self_)?.0.write().unwrap();
         data.name = value;
         Ok(())
     }
 
     fn asset(&mut self, self_: Resource<NodeRes>) -> wasm_bridge::Result<Option<Asset>> {
-        let data = self.table.get(&self_)?;
+        let asset = self.table.get(&self_)?.0.read().unwrap().asset.clone();
 
-        let asset = match &data.asset {
+        let res = match asset {
             Some(v) => Some(match v {
-                Asset::Composition(v) => Asset::Composition(self.clone_res(v)?),
-                Asset::Document(v) => Asset::Document(self.clone_res(v)?),
+                AssetData::Composition(v) => Asset::Composition(self.table.push(v)?),
+                AssetData::Document(v) => Asset::Document(self.table.push(v)?),
             }),
             None => None,
         };
 
-        Ok(asset)
+        Ok(res)
     }
     fn set_asset(
         &mut self,
         self_: Resource<NodeRes>,
         value: Option<Asset>,
     ) -> wasm_bridge::Result<()> {
-        let data = self.table.get_mut(&self_)?;
-        data.asset = value;
+        let mut data = self.table.get(&self_)?.0.write().unwrap();
+        data.asset = match value {
+            Some(v) => Some(match v {
+                Asset::Composition(r) => AssetData::Composition(self.table.get(&r)?.clone()),
+                Asset::Document(r) => AssetData::Document(self.table.get(&r)?.clone()),
+            }),
+            None => None,
+        };
         Ok(())
     }
 
@@ -55,8 +58,8 @@ impl HostAssetNode for ScriptData {
         NodeRes::global_transform(self, &self_)
     }
     fn transform(&mut self, self_: Resource<NodeRes>) -> wasm_bridge::Result<Transform> {
-        let node = self.table.get(&self_)?;
-        Ok(node.transform.into())
+        let data = self.table.get(&self_)?.0.read().unwrap();
+        Ok(data.transform.into())
     }
     fn set_transform(
         &mut self,
@@ -70,31 +73,40 @@ impl HostAssetNode for ScriptData {
         &mut self,
         self_: Resource<NodeRes>,
     ) -> wasm_bridge::Result<Option<Resource<NodeRes>>> {
-        NodeRes::parent(self, &self_)
+        NodeRes::parent(self, self.table.get(&self_)?.clone())
     }
     fn children(
         &mut self,
         self_: Resource<NodeRes>,
     ) -> wasm_bridge::Result<Vec<Resource<NodeRes>>> {
-        NodeRes::children(self, &self_)
+        NodeRes::children(self, self.table.get(&self_)?.clone())
     }
     fn add_child(
         &mut self,
         self_: Resource<NodeRes>,
         value: Resource<NodeRes>,
     ) -> wasm_bridge::Result<()> {
-        NodeRes::add_child(self, &self_, &value)
+        NodeRes::add_child(
+            self,
+            self.table.get(&self_)?.clone(),
+            self.table.get(&value)?.clone(),
+        );
+        Ok(())
     }
     fn remove_child(
         &mut self,
         self_: Resource<NodeRes>,
         value: Resource<NodeRes>,
     ) -> wasm_bridge::Result<()> {
-        NodeRes::remove_child(self, &self_, &value)
+        NodeRes::remove_child(
+            self,
+            self.table.get(&self_)?.clone(),
+            self.table.get(&value)?.clone(),
+        );
+        Ok(())
     }
 
     fn drop(&mut self, rep: Resource<NodeRes>) -> wasm_bridge::Result<()> {
-        NodeRes::handle_drop(rep, &mut self.table)?;
         Ok(())
     }
 }

@@ -1,3 +1,6 @@
+use std::sync::{Arc, Mutex};
+
+use bevy::ecs::world::CommandQueue;
 use wired::{dwn::WiredDwn, log::WiredLog, player::WiredPlayer, scene::WiredScene};
 
 mod id;
@@ -10,6 +13,8 @@ pub struct ApiData {
     pub wired_player: Option<WiredPlayer>,
     pub wired_scene: Option<WiredScene>,
 }
+
+pub type ScriptCommandQueue = Arc<Mutex<CommandQueue>>;
 
 #[cfg(test)]
 pub mod tests {

@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use bevy::prelude::*;
 use crossbeam::channel::{Receiver, Sender};
@@ -23,7 +23,7 @@ pub enum ScriptInputEvent {
 pub struct InputHandlerSender(pub Sender<ScriptInputEvent>);
 
 #[derive(Default, Debug, Clone)]
-pub struct InputHandlerRes(pub Arc<RwLock<InputHandlerData>>);
+pub struct InputHandlerRes(Arc<RwLock<InputHandlerData>>);
 
 #[derive(Debug)]
 pub struct InputHandlerData {
@@ -35,6 +35,15 @@ impl Default for InputHandlerData {
     fn default() -> Self {
         let (sender, receiver) = crossbeam::channel::bounded(10);
         Self { receiver, sender }
+    }
+}
+
+impl InputHandlerRes {
+    pub fn read(&self) -> RwLockReadGuard<InputHandlerData> {
+        self.0.read().unwrap()
+    }
+    pub fn write(&self) -> RwLockWriteGuard<InputHandlerData> {
+        self.0.write().unwrap()
     }
 }
 

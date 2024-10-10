@@ -75,7 +75,7 @@ pub fn update_scripts(
                 .call_update(&mut script.store, resource.0, tickrate.delta)
                 .await;
 
-            commands.append(&mut script.store.data_mut().commands);
+            script.store.data().push_commands(&mut commands);
 
             trace!("Done");
             drop(span);

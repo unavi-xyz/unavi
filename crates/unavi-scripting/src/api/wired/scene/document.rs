@@ -1,4 +1,4 @@
-use std::sync::{Arc, OnceLock, RwLock};
+use std::sync::{Arc, OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use bevy::prelude::*;
 use wasm_bridge::component::Resource;
@@ -14,7 +14,7 @@ use super::{
 };
 
 #[derive(Debug, Clone)]
-pub struct DocumentRes(pub Arc<RwLock<DocumentData>>);
+pub struct DocumentRes(Arc<RwLock<DocumentData>>);
 
 #[derive(Default, Debug)]
 pub struct DocumentData {
@@ -27,15 +27,26 @@ pub struct DocumentData {
     pub entity: OnceLock<Entity>,
 }
 
+impl DocumentRes {
+    pub fn read(&self) -> RwLockReadGuard<DocumentData> {
+        self.0.read().unwrap()
+    }
+    pub fn write(&self) -> RwLockWriteGuard<DocumentData> {
+        self.0.write().unwrap()
+    }
+}
+
 impl HostDocument for ScriptData {
     fn new(&mut self) -> wasm_bridge::Result<Resource<DocumentRes>> {
         let data = DocumentRes(Arc::new(RwLock::new(DocumentData::default())));
         let res = self.table.push(data.clone())?;
 
-        self.commands.push(move |world: &mut World| {
-            let entity = world.spawn(SpatialBundle::default()).id();
-            data.0.write().unwrap().entity.set(entity).unwrap();
-        });
+        self.command_send
+            .try_send(Box::new(move |world: &mut World| {
+                let entity = world.spawn(SpatialBundle::default()).id();
+                data.write().entity.set(entity).unwrap();
+            }))
+            .unwrap();
 
         Ok(res)
     }
@@ -44,14 +55,7 @@ impl HostDocument for ScriptData {
         &mut self,
         self_: Resource<DocumentRes>,
     ) -> wasm_bridge::Result<Option<Resource<SceneRes>>> {
-        let data = self
-            .table
-            .get(&self_)?
-            .0
-            .read()
-            .unwrap()
-            .active_scene
-            .clone();
+        let data = self.table.get(&self_)?.read().active_scene.clone();
         let res = match data {
             Some(d) => Some(self.table.push(d)?),
             None => None,
@@ -64,13 +68,15 @@ impl HostDocument for ScriptData {
         value: Option<Resource<SceneRes>>,
     ) -> wasm_bridge::Result<()> {
         let data = self.table.get(&self_)?.clone();
-        let mut data_write = data.0.write().unwrap();
+        let mut data_write = data.write();
 
         if let Some(prev) = data_write.active_scene.clone() {
-            self.commands.push(move |world: &mut World| {
-                let prev_ent = *prev.0.read().unwrap().entity.get().unwrap();
-                world.entity_mut(prev_ent).remove_parent();
-            });
+            self.command_send
+                .try_send(Box::new(move |world: &mut World| {
+                    let prev_ent = *prev.read().entity.get().unwrap();
+                    world.entity_mut(prev_ent).remove_parent();
+                }))
+                .unwrap();
         }
 
         let scene_data = match value {
@@ -82,12 +88,14 @@ impl HostDocument for ScriptData {
         drop(data_write);
 
         if let Some(scene_data) = scene_data {
-            self.commands.push(move |world: &mut World| {
-                let document_ent = *data.0.read().unwrap().entity.get().unwrap();
-                let scene_ent = *scene_data.0.read().unwrap().entity.get().unwrap();
+            self.command_send
+                .try_send(Box::new(move |world: &mut World| {
+                    let document_ent = *data.read().entity.get().unwrap();
+                    let scene_ent = *scene_data.read().entity.get().unwrap();
 
-                world.entity_mut(scene_ent).set_parent(document_ent);
-            });
+                    world.entity_mut(scene_ent).set_parent(document_ent);
+                }))
+                .unwrap();
         }
 
         Ok(())
@@ -97,14 +105,7 @@ impl HostDocument for ScriptData {
         &mut self,
         self_: Resource<DocumentRes>,
     ) -> wasm_bridge::Result<Option<Resource<SceneRes>>> {
-        let data = self
-            .table
-            .get(&self_)?
-            .0
-            .read()
-            .unwrap()
-            .default_scene
-            .clone();
+        let data = self.table.get(&self_)?.read().default_scene.clone();
         let res = match data {
             Some(d) => Some(self.table.push(d)?),
             None => None,
@@ -153,13 +154,13 @@ impl HostDocument for ScriptData {
         self_: Resource<DocumentRes>,
         value: Resource<SceneRes>,
     ) -> wasm_bridge::Result<()> {
-        let mut data_write = self.table.get(&self_)?.0.write().unwrap();
-        let scene_data = self.table.get(&value)?.0.read().unwrap();
+        let mut data_write = self.table.get(&self_)?.write();
+        let scene_data = self.table.get(&value)?.read();
 
         data_write
             .scenes
             .iter()
-            .position(|r| r.0.read().unwrap().id == scene_data.id)
+            .position(|r| r.read().id == scene_data.id)
             .map(|index| data_write.scenes.remove(index));
         Ok(())
     }
@@ -175,11 +176,11 @@ impl HostDocument for ScriptData {
         //         .documents
         //         .clone();
         //
-        //     self.commands.push(move |world: &mut World| {
+        //     self.command_send.try_send(Box::new(move |world: &mut World| {
         //         let mut nodes = documents.write().unwrap();
         //         let entity = nodes.remove(&id).unwrap();
         //         world.despawn(entity);
-        //     });
+        //     }));
         // }
 
         Ok(())

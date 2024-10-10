@@ -7,6 +7,8 @@ use tracing_test::traced_test;
 use unavi_scripting::{load::LoadedScript, ScriptBundle, ScriptingPlugin};
 use unavi_world::util::init_user_actor;
 
+const NUM_UPDATES: usize = 4;
+
 pub async fn test_script(name: &str) {
     let mut app = App::new();
     init_user_actor(app.world_mut()).await;
@@ -52,10 +54,10 @@ pub async fn test_script(name: &str) {
 
     assert!(did_load);
 
-    for i in 0..4 {
+    for i in 0..NUM_UPDATES {
         debug!("Updating... ({})", i);
         tokio::time::sleep(Duration::from_secs_f32(0.1)).await;
-        app.update();
+        app.world_mut().run_schedule(FixedUpdate);
     }
 }
 
@@ -88,6 +90,7 @@ async fn test_wired_scene() {
     assert!(!logs_contain("WARN"));
     assert!(!logs_contain("warn"));
 
+    // TODO: Move this to an independent test
     logs_assert(|logs| {
         let mut found_constructs = 0;
         let mut found_updates = 0;
@@ -103,7 +106,7 @@ async fn test_wired_scene() {
         }
 
         assert_eq!(found_constructs, 1);
-        assert_eq!(found_updates, 1);
+        assert_eq!(found_updates, NUM_UPDATES);
 
         Ok(())
     });

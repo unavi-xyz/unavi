@@ -1,7 +1,7 @@
 use bevy::{prelude::*, tasks::block_on};
 use wasm_bridge::component::ResourceAny;
 
-use crate::load::LoadedScript;
+use crate::{data::ScriptControl, load::LoadedScript};
 
 use super::load::ScriptMap;
 
@@ -60,7 +60,7 @@ pub fn update_scripts(
 
         #[allow(clippy::await_holding_lock)]
         let result: anyhow::Result<_> = block_on(async {
-            let span = trace_span!("ScriptUpdate", name = name.to_string(), tickrate.delta);
+            let span = trace_span!("ScriptUpdate", name = name.to_string());
             let span = span.enter();
 
             trace!("Updating script");
@@ -76,6 +76,15 @@ pub fn update_scripts(
                 .await;
 
             script.store.data().push_commands(&mut commands);
+
+            while let Ok(control) = script.store.data().control_recv.try_recv() {
+                match control {
+                    ScriptControl::Exit(e) => {
+                        error!("Controlled exit: {}", e);
+                        todo!("stop script execution");
+                    }
+                }
+            }
 
             trace!("Done");
             drop(span);
@@ -93,8 +102,9 @@ pub fn update_scripts(
 pub struct ScriptTickrate {
     delta: f32,
     last: f32,
+    /// Ticks per second.
+    tps: f32,
     pub ready_for_update: bool,
-    tickrate: f32,
 }
 
 impl Default for ScriptTickrate {
@@ -102,8 +112,8 @@ impl Default for ScriptTickrate {
         Self {
             delta: 0.0,
             last: 0.0,
+            tps: 1.0 / 20.0,
             ready_for_update: true,
-            tickrate: 1.0 / 20.0,
         }
     }
 }
@@ -119,7 +129,7 @@ pub fn tick_scripts(time: Res<Time>, mut scripts: Query<&mut ScriptTickrate>) {
 
         let delta = now - tickrate.last;
 
-        if delta > tickrate.tickrate {
+        if delta > tickrate.tps {
             tickrate.delta = delta;
             tickrate.last = now;
             tickrate.ready_for_update = true;

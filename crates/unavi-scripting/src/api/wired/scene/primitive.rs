@@ -137,12 +137,12 @@ impl HostPrimitive for ScriptData {
         self_: Resource<PrimitiveRes>,
         value: Vec<u32>,
     ) -> wasm_bridge::Result<()> {
-        let handle = self.table.get(&self_)?.read().handle.clone();
+        let data = self.table.get(&self_)?.clone();
 
         self.command_send
             .try_send(Box::new(move |world: &mut World| {
                 let mut assets = world.resource_mut::<Assets<Mesh>>();
-                let mesh = assets.get_mut(handle.get().unwrap()).unwrap();
+                let mesh = assets.get_mut(data.read().handle.get().unwrap()).unwrap();
                 mesh.insert_indices(Indices::U32(value));
             }))
             .unwrap();
@@ -154,12 +154,12 @@ impl HostPrimitive for ScriptData {
         self_: Resource<PrimitiveRes>,
         value: Vec<f32>,
     ) -> wasm_bridge::Result<()> {
-        let handle = self.table.get(&self_)?.read().handle.clone();
+        let data = self.table.get(&self_)?.clone();
 
         self.command_send
             .try_send(Box::new(move |world: &mut World| {
                 let mut assets = world.resource_mut::<Assets<Mesh>>();
-                let mesh = assets.get_mut(handle.get().unwrap()).unwrap();
+                let mesh = assets.get_mut(data.read().handle.get().unwrap()).unwrap();
 
                 let value = value.chunks(3).map(|x| [x[0], x[1], x[2]]).collect();
 
@@ -177,12 +177,12 @@ impl HostPrimitive for ScriptData {
         self_: Resource<PrimitiveRes>,
         value: Vec<f32>,
     ) -> wasm_bridge::Result<()> {
-        let handle = self.table.get(&self_)?.read().handle.clone();
+        let data = self.table.get(&self_)?.clone();
 
         self.command_send
             .try_send(Box::new(move |world: &mut World| {
                 let mut assets = world.resource_mut::<Assets<Mesh>>();
-                let mesh = assets.get_mut(handle.get().unwrap()).unwrap();
+                let mesh = assets.get_mut(data.read().handle.get().unwrap()).unwrap();
 
                 let value = value.chunks(3).map(|x| [x[0], x[1], x[2]]).collect();
 
@@ -200,12 +200,12 @@ impl HostPrimitive for ScriptData {
         self_: Resource<PrimitiveRes>,
         value: Vec<f32>,
     ) -> wasm_bridge::Result<()> {
-        let handle = self.table.get(&self_)?.read().handle.clone();
+        let data = self.table.get(&self_)?.clone();
 
         self.command_send
             .try_send(Box::new(move |world: &mut World| {
                 let mut assets = world.resource_mut::<Assets<Mesh>>();
-                let mesh = assets.get_mut(handle.get().unwrap()).unwrap();
+                let mesh = assets.get_mut(data.read().handle.get().unwrap()).unwrap();
 
                 if value.len() % 2 != 0 {
                     warn!("UVs do not have an even length! Got: {}", value.len());

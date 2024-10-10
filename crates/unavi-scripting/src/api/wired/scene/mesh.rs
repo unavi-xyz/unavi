@@ -165,7 +165,7 @@ pub fn try_create_primitive(
         let material = primitive
             .material
             .as_ref()
-            .map(|m| m.read().handle.get().unwrap().clone())
+            .and_then(|m| m.read().handle.get().cloned())
             .unwrap_or_else(|| default_material.clone());
 
         let entity = world

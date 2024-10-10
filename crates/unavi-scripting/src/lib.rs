@@ -43,6 +43,7 @@ impl Plugin for ScriptingPlugin {
                     ),
                     execution::init_scripts,
                     execution::update_scripts,
+                    apply_deferred,
                 )
                     .chain(),
             );

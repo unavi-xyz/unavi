@@ -15,12 +15,13 @@ use crate::{
             scene::{composition::CompositionRes, document::DocumentRes, mesh::MeshRes},
         },
     },
-    data::{CommandSender, ScriptData},
+    data::{CommandSender, ControlSender, ScriptControl, ScriptData},
 };
 
 #[derive(Debug, Clone)]
 pub struct NodeRes {
     command_send: CommandSender,
+    control_send: ControlSender,
     data: Arc<RwLock<NodeData>>,
 }
 
@@ -83,6 +84,7 @@ impl NodeRes {
     pub fn new(data: &mut ScriptData) -> Self {
         let node = Self {
             command_send: data.command_send.clone(),
+            control_send: data.control_send.clone(),
             data: Arc::new(RwLock::new(NodeData::default())),
         };
 
@@ -90,7 +92,6 @@ impl NodeRes {
             let node = node.clone();
             data.command_send
                 .try_send(Box::new(move |world: &mut World| {
-                    println!("new NodeRes command");
                     let node_data = node.write();
                     let entity = world.spawn(WiredNodeBundle::new(node_data.id.into())).id();
                     node_data.entity.set(entity).unwrap();
@@ -167,6 +168,10 @@ impl NodeRes {
         Ok(res)
     }
     pub fn add_child(data: &mut ScriptData, parent: Self, child: Self) {
+        if parent.read().id == child.read().id {
+            return;
+        }
+
         // Add to children.
         parent.write().children.push(child.clone());
 
@@ -190,12 +195,18 @@ impl NodeRes {
     }
     pub fn remove_child(data: &mut ScriptData, parent: Self, child: Self) {
         // Remove from children.
-        let parent_read = parent.read();
-        parent_read
+        let mut parent_write = parent.write();
+        let child_id = child.read().id;
+
+        let found = parent_write
             .children
             .iter()
-            .position(|n| n.read().id == parent_read.id)
-            .map(|index| parent.write().children.remove(index));
+            .position(|c| c.read().id == child_id)
+            .map(|index| parent_write.children.remove(index));
+
+        if found.is_none() {
+            return;
+        }
 
         // Remove parent.
         child.write().parent = None;
@@ -227,12 +238,17 @@ impl Drop for NodeRes {
         if Arc::strong_count(&self.data) == 1 {
             let data = self.data.clone();
 
-            self.command_send
+            if let Err(e) = self
+                .command_send
                 .try_send(Box::new(move |world: &mut World| {
                     let entity = *data.read().unwrap().entity.get().unwrap();
                     world.entity_mut(entity).despawn();
                 }))
-                .unwrap()
+            {
+                // Should only error when the entire script environment is being
+                // dropped, in which case we do not matter.
+                let _ = self.control_send.send(ScriptControl::Exit(e.to_string()));
+            }
         }
     }
 }

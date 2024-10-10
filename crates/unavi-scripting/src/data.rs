@@ -1,4 +1,4 @@
-use std::sync::mpsc::{Receiver, SyncSender};
+use std::sync::mpsc::{Receiver, Sender, SyncSender};
 
 use bevy::prelude::*;
 use wasm_bridge::component::{Resource, ResourceTable, ResourceTableError};
@@ -9,10 +9,19 @@ use crate::api::{wired::scene::nodes::base::NodeRes, ApiData};
 pub type ScriptCommand = Box<dyn FnOnce(&mut World) + Send>;
 pub type CommandSender = SyncSender<ScriptCommand>;
 
+pub enum ScriptControl {
+    /// Unrecoverable error.
+    /// Stops script execution.
+    Exit(String),
+}
+pub type ControlSender = Sender<ScriptControl>;
+
 pub struct ScriptData {
     pub api: ApiData,
     pub command_recv: Receiver<ScriptCommand>,
     pub command_send: CommandSender,
+    pub control_recv: Receiver<ScriptControl>,
+    pub control_send: ControlSender,
     pub table: ResourceTable,
     pub wasi: WasiCtx,
     pub wasi_table: wasm_bridge_wasi::ResourceTable,
@@ -40,11 +49,14 @@ impl Default for ScriptData {
         //
         // TODO: Test that script ECS data is indeed within the script scene
         let (command_send, command_recv) = std::sync::mpsc::sync_channel(10_000);
+        let (control_send, control_recv) = std::sync::mpsc::channel();
 
         Self {
             api: ApiData::default(),
             command_recv,
             command_send,
+            control_recv,
+            control_send,
             table: ResourceTable::default(),
             wasi: WasiCtxBuilder::new().build(),
             wasi_table: wasm_bridge_wasi::ResourceTable::default(),
@@ -95,15 +107,5 @@ impl ScriptData {
     /// Removes a component from the given node.
     pub fn node_remove<T: Bundle>(&mut self, node: NodeRes) {
         self.node_insert_option::<T>(node, None)
-    }
-}
-
-impl Drop for ScriptData {
-    fn drop(&mut self) {
-        // Command queue must be cleared before the reciever is dropped.
-        // Commands in the queue may hold references to resource data that will
-        // attempt to send cleanup commands on drop. If the reciever is not open
-        // this will cause a panic.
-        while self.command_recv.try_recv().is_ok() {}
     }
 }

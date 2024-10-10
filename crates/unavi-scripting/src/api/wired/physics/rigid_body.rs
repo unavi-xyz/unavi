@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use wasm_bridge::component::Resource;
 
@@ -10,7 +10,7 @@ use super::bindings::{
 };
 
 #[derive(Debug, Clone)]
-pub struct RigidBodyRes(pub Arc<RwLock<RigidBodyData>>);
+pub struct RigidBodyRes(Arc<RwLock<RigidBodyData>>);
 
 #[derive(Debug)]
 pub struct RigidBodyData {
@@ -38,6 +38,15 @@ impl RigidBodyData {
     }
 }
 
+impl RigidBodyRes {
+    pub fn read(&self) -> RwLockReadGuard<RigidBodyData> {
+        self.0.read().unwrap()
+    }
+    pub fn write(&self) -> RwLockWriteGuard<RigidBodyData> {
+        self.0.write().unwrap()
+    }
+}
+
 impl HostRigidBody for ScriptData {
     fn new(
         &mut self,
@@ -49,7 +58,7 @@ impl HostRigidBody for ScriptData {
     }
 
     fn angvel(&mut self, self_: Resource<RigidBodyRes>) -> wasm_bridge::Result<Vec3> {
-        let data = self.table.get(&self_)?.0.read().unwrap();
+        let data = self.table.get(&self_)?.read();
         Ok(Vec3 {
             x: data.angvel.x,
             y: data.angvel.y,
@@ -61,7 +70,7 @@ impl HostRigidBody for ScriptData {
         self_: wasm_bridge::component::Resource<RigidBodyRes>,
         value: Vec3,
     ) -> wasm_bridge::Result<()> {
-        let mut data = self.table.get(&self_)?.0.write().unwrap();
+        let mut data = self.table.get(&self_)?.write();
         data.angvel.x = value.x;
         data.angvel.y = value.y;
         data.angvel.z = value.z;
@@ -69,7 +78,7 @@ impl HostRigidBody for ScriptData {
     }
 
     fn linvel(&mut self, self_: Resource<RigidBodyRes>) -> wasm_bridge::Result<Vec3> {
-        let data = self.table.get(&self_)?.0.read().unwrap();
+        let data = self.table.get(&self_)?.read();
         Ok(Vec3 {
             x: data.linvel.x,
             y: data.linvel.y,
@@ -81,7 +90,7 @@ impl HostRigidBody for ScriptData {
         self_: Resource<RigidBodyRes>,
         value: Vec3,
     ) -> wasm_bridge::Result<()> {
-        let mut data = self.table.get(&self_)?.0.write().unwrap();
+        let mut data = self.table.get(&self_)?.write();
         data.linvel.x = value.x;
         data.linvel.y = value.y;
         data.linvel.z = value.z;

@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use wasm_bridge::component::Resource;
 
@@ -10,7 +10,7 @@ use super::bindings::{
 };
 
 #[derive(Debug, Clone)]
-pub struct ColliderRes(pub Arc<RwLock<ColliderData>>);
+pub struct ColliderRes(Arc<RwLock<ColliderData>>);
 
 #[derive(Debug)]
 pub struct ColliderData {
@@ -37,6 +37,15 @@ impl ColliderData {
     }
 }
 
+impl ColliderRes {
+    pub fn read(&self) -> RwLockReadGuard<ColliderData> {
+        self.0.read().unwrap()
+    }
+    pub fn write(&self) -> RwLockWriteGuard<ColliderData> {
+        self.0.write().unwrap()
+    }
+}
+
 impl HostCollider for ScriptData {
     fn new(&mut self, shape: Shape) -> wasm_bridge::Result<Resource<ColliderRes>> {
         let data = ColliderData::new(shape);
@@ -45,11 +54,11 @@ impl HostCollider for ScriptData {
     }
 
     fn density(&mut self, self_: Resource<ColliderRes>) -> wasm_bridge::Result<f32> {
-        let data = self.table.get(&self_)?.0.read().unwrap();
+        let data = self.table.get(&self_)?.read();
         Ok(data.density)
     }
     fn set_density(&mut self, self_: Resource<ColliderRes>, value: f32) -> wasm_bridge::Result<()> {
-        let mut data = self.table.get(&self_)?.0.write().unwrap();
+        let mut data = self.table.get(&self_)?.write();
         data.density = value;
         Ok(())
     }

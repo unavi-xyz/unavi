@@ -8,7 +8,7 @@ use crate::{
         physics::{collider::ColliderRes, rigid_body::RigidBodyRes},
         scene::{
             bindings::node::{Host, HostNode},
-            mesh::MeshRes,
+            mesh::{try_create_primitive, MeshRes},
         },
     },
     data::ScriptData,
@@ -16,19 +16,13 @@ use crate::{
 
 use super::base::NodeRes;
 
-/// Instance of a mesh under a node.
-#[derive(Component)]
-pub struct NodeMesh {
-    pub primitives: Vec<Entity>,
-}
-
 impl HostNode for ScriptData {
     fn new(&mut self) -> wasm_bridge::Result<Resource<NodeRes>> {
         NodeRes::new_res(self)
     }
 
     fn id(&mut self, self_: Resource<NodeRes>) -> wasm_bridge::Result<u32> {
-        let data = self.table.get(&self_)?.0.read().unwrap();
+        let data = self.table.get(&self_)?.read();
         Ok(data.id.into())
     }
     fn ref_(&mut self, self_: Resource<NodeRes>) -> wasm_bridge::Result<Resource<NodeRes>> {
@@ -38,17 +32,17 @@ impl HostNode for ScriptData {
     }
 
     fn name(&mut self, self_: Resource<NodeRes>) -> wasm_bridge::Result<String> {
-        let data = self.table.get(&self_)?.0.read().unwrap();
+        let data = self.table.get(&self_)?.read();
         Ok(data.name.clone())
     }
     fn set_name(&mut self, self_: Resource<NodeRes>, value: String) -> wasm_bridge::Result<()> {
-        let mut data = self.table.get(&self_)?.0.write().unwrap();
+        let mut data = self.table.get(&self_)?.write();
         data.name = value;
         Ok(())
     }
 
     fn mesh(&mut self, self_: Resource<NodeRes>) -> wasm_bridge::Result<Option<Resource<MeshRes>>> {
-        let mesh = self.table.get(&self_)?.0.read().unwrap().mesh.clone();
+        let mesh = self.table.get(&self_)?.read().mesh.clone();
         let res = match mesh {
             Some(m) => Some(self.table.push(m)?),
             None => None,
@@ -63,15 +57,43 @@ impl HostNode for ScriptData {
         let data = self.table.get(&self_)?.clone();
 
         // Remove previous mesh.
-        if let Some(prev_mesh) = &data.0.read().unwrap().mesh {
-            let mut prev_mesh_data = prev_mesh.0.write().unwrap();
-            prev_mesh_data
+        if let Some(prev_mesh) = data.read().mesh.clone() {
+            let mut prev_write = prev_mesh.write();
+            prev_write
                 .nodes
                 .iter()
-                .position(|r| r.0.read().unwrap().id == prev_mesh_data.id)
-                .map(|index| prev_mesh_data.nodes.remove(index));
+                .position(|n| n.upgrade().unwrap().read().unwrap().id == prev_write.id)
+                .map(|index| prev_write.nodes.remove(index));
+            drop(prev_write);
 
-            // TODO: Remove node primitive
+            let data = data.clone();
+            self.command_send
+                .try_send(Box::new(move |world: &mut World| {
+                    let data_read = data.read();
+
+                    for primitive in prev_mesh.read().primitives.iter() {
+                        let mut primitive_data = primitive.write();
+
+                        if let Some((i, e)) = primitive_data
+                            .node_primitives
+                            .iter()
+                            .enumerate()
+                            .find_map(|(i, p)| {
+                                if let Some(n) = p.node.upgrade() {
+                                    if n.read().unwrap().id == data_read.id {
+                                        return Some((i, p.entity));
+                                    }
+                                }
+
+                                None
+                            })
+                        {
+                            primitive_data.node_primitives.remove(i);
+                            world.entity_mut(e).despawn();
+                        }
+                    }
+                }))
+                .unwrap();
         }
 
         // Set new mesh.
@@ -80,17 +102,8 @@ impl HostNode for ScriptData {
             None => None,
         };
 
-        let primitives = mesh_data
-            .as_ref()
-            .map(|d| {
-                let mut d_write = d.0.write().unwrap();
-                d_write.nodes.push(data.clone());
-                d_write.primitives.clone()
-            })
-            .unwrap_or_default();
-
-        let mut data_write = data.0.write().unwrap();
-        data_write.mesh = mesh_data;
+        let mut data_write = data.write();
+        data_write.mesh = mesh_data.clone();
         drop(data_write);
 
         let default_material = self
@@ -101,54 +114,22 @@ impl HostNode for ScriptData {
             .default_material
             .clone();
 
-        self.commands.push(move |world: &mut World| {
-            let data_read = data.0.read().unwrap();
-            let node_ent = data_read.entity.get().unwrap();
-
-            // Remove previous node primitives.
-            let to_remove = world
-                .get::<NodeMesh>(*node_ent)
-                .map(|m| m.primitives.clone())
-                .unwrap_or_default();
-
-            for e in to_remove {
-                world.despawn(e);
-            }
-
-            let mut p_ents = Vec::new();
-
-            // Add new node primitives.
-            for p in primitives.iter() {
-                let p_data = p.0.read().unwrap();
-
-                let mesh = p_data.handle.get().unwrap().clone();
-                let material = p_data
-                    .material
-                    .as_ref()
-                    .map(|m| m.0.read().unwrap().handle.get().unwrap().clone())
-                    .unwrap_or_else(|| default_material.clone());
-
-                let p_ent = world
-                    .spawn(PbrBundle {
-                        mesh,
-                        material,
-                        ..default()
-                    })
-                    .set_parent(*node_ent)
-                    .id();
-
-                p_ents.push(p_ent);
-            }
-
-            let mut node_ent = world.entity_mut(*node_ent);
-
-            // Add new mesh.
-            if primitives.is_empty() {
-                node_ent.remove::<NodeMesh>();
-            } else {
-                node_ent.insert(NodeMesh { primitives: p_ents });
-            }
-        });
+        if let Some(mesh_data) = mesh_data {
+            // Create node primitives.
+            self.command_send
+                .try_send(Box::new(move |world: &mut World| {
+                    for primitive in mesh_data.read().primitives.iter() {
+                        let mut primitive_write = primitive.write();
+                        try_create_primitive(
+                            world,
+                            data.raw_data(),
+                            &mut primitive_write,
+                            &default_material,
+                        );
+                    }
+                }))
+                .unwrap();
+        }
 
         Ok(())
     }
@@ -157,7 +138,7 @@ impl HostNode for ScriptData {
         NodeRes::global_transform(self, &self_)
     }
     fn transform(&mut self, self_: Resource<NodeRes>) -> wasm_bridge::Result<Transform> {
-        let data = self.table.get(&self_)?.0.read().unwrap();
+        let data = self.table.get(&self_)?.read();
         Ok(data.transform.into())
     }
     fn set_transform(
@@ -209,7 +190,7 @@ impl HostNode for ScriptData {
         &mut self,
         self_: Resource<NodeRes>,
     ) -> wasm_bridge::Result<Option<Resource<ColliderRes>>> {
-        let collider = self.table.get(&self_)?.0.read().unwrap().collider.clone();
+        let collider = self.table.get(&self_)?.read().collider.clone();
         let res = match collider {
             Some(c) => Some(self.table.push(c)?),
             None => None,
@@ -227,10 +208,10 @@ impl HostNode for ScriptData {
             None
         };
 
-        let component = c_data.as_ref().map(|d| d.0.read().unwrap().component());
+        let component = c_data.as_ref().map(|d| d.read().component());
 
         let data = self.table.get(&self_)?;
-        data.0.write().unwrap().collider = c_data;
+        data.write().collider = c_data;
 
         self.node_insert_option(data.clone(), component);
 
@@ -241,7 +222,7 @@ impl HostNode for ScriptData {
         &mut self,
         self_: Resource<NodeRes>,
     ) -> wasm_bridge::Result<Option<Resource<RigidBodyRes>>> {
-        let rigid_body = self.table.get(&self_)?.0.read().unwrap().rigid_body.clone();
+        let rigid_body = self.table.get(&self_)?.read().rigid_body.clone();
         let res = match rigid_body {
             Some(r) => Some(self.table.push(r)?),
             None => None,
@@ -258,10 +239,10 @@ impl HostNode for ScriptData {
             None => None,
         };
 
-        let component = r_data.as_ref().map(|d| d.0.read().unwrap().component());
+        let component = r_data.as_ref().map(|d| d.read().component());
 
         let data = self.table.get(&self_)?;
-        data.0.write().unwrap().rigid_body = r_data;
+        data.write().rigid_body = r_data;
 
         self.node_insert_option(data.clone(), component);
 
@@ -272,14 +253,7 @@ impl HostNode for ScriptData {
         &mut self,
         self_: Resource<NodeRes>,
     ) -> wasm_bridge::Result<Option<Resource<InputHandlerRes>>> {
-        let input_handler = self
-            .table
-            .get(&self_)?
-            .0
-            .read()
-            .unwrap()
-            .input_handler
-            .clone();
+        let input_handler = self.table.get(&self_)?.read().input_handler.clone();
 
         let res = if let Some(r) = input_handler {
             Some(self.table.push(r)?)
@@ -302,10 +276,10 @@ impl HostNode for ScriptData {
 
         let component = handler
             .as_ref()
-            .map(|r| InputHandlerSender(r.0.read().unwrap().sender.clone()));
+            .map(|r| InputHandlerSender(r.read().sender.clone()));
 
         let data = self.table.get(&self_)?;
-        data.0.write().unwrap().input_handler = handler;
+        data.write().input_handler = handler;
 
         self.node_insert_option(data.clone(), component);
 
@@ -314,25 +288,54 @@ impl HostNode for ScriptData {
 
     fn drop(&mut self, rep: Resource<NodeRes>) -> wasm_bridge::Result<()> {
         self.table.delete(rep)?;
-        // if dropped {
-        //     let nodes = self
-        //         .api
-        //         .wired_scene
-        //         .as_ref()
-        //         .unwrap()
-        //         .entities
-        //         .nodes
-        //         .clone();
-        //
-        //     self.commands.push(move |world: &mut World| {
-        //         let mut nodes = nodes.write().unwrap();
-        //         let entity = nodes.remove(&id).unwrap();
-        //         world.despawn(entity);
-        //     });
-        // }
-
         Ok(())
     }
 }
 
 impl Host for ScriptData {}
+
+#[cfg(test)]
+mod tests {
+    use crate::api::{tests::init_test_data, wired::scene::nodes::base::NodeId};
+
+    use super::*;
+
+    #[test]
+    fn test_cleanup_resource() {
+        let (_, mut data) = init_test_data();
+
+        let res = HostNode::new(&mut data).unwrap();
+        let res_weak = Resource::<NodeRes>::new_own(res.rep());
+
+        HostNode::drop(&mut data, res).unwrap();
+        assert!(data.table.get(&res_weak).is_err());
+    }
+
+    #[test]
+    fn test_cleanup_entity() {
+        let (mut app, mut data) = init_test_data();
+        let world = app.world_mut();
+
+        let res = HostNode::new(&mut data).unwrap();
+
+        data.push_commands(&mut world.commands());
+        world.flush_commands();
+
+        // Clone the inner resource data.
+        // The entity should not be despawned until this is also dropped.
+        let inner_clone = data.table.get(&res).unwrap().clone();
+
+        let entity = *inner_clone.read().entity.get().unwrap();
+        assert!(world.get::<NodeId>(entity).is_some());
+
+        HostNode::drop(&mut data, res).unwrap();
+
+        assert!(world.get::<NodeId>(entity).is_some());
+
+        drop(inner_clone);
+
+        data.push_commands(&mut world.commands());
+        world.flush_commands();
+        assert!(world.get::<NodeId>(entity).is_none());
+    }
+}

@@ -1,4 +1,4 @@
-use std::sync::{Arc, OnceLock, RwLock};
+use std::sync::{Arc, OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use avian3d::prelude::CollisionLayers;
 use bevy::prelude::{Transform as BTransform, *};
@@ -15,11 +15,14 @@ use crate::{
             scene::{composition::CompositionRes, document::DocumentRes, mesh::MeshRes},
         },
     },
-    data::ScriptData,
+    data::{CommandSender, ScriptData},
 };
 
 #[derive(Debug, Clone)]
-pub struct NodeRes(pub Arc<RwLock<NodeData>>);
+pub struct NodeRes {
+    command_send: CommandSender,
+    data: Arc<RwLock<NodeData>>,
+}
 
 /// Node data used by both the `node` and `asset-node` resources.
 #[derive(Default, Debug)]
@@ -67,17 +70,32 @@ impl WiredNodeBundle {
 }
 
 impl NodeRes {
+    pub fn read(&self) -> RwLockReadGuard<NodeData> {
+        self.data.read().unwrap()
+    }
+    pub fn write(&self) -> RwLockWriteGuard<NodeData> {
+        self.data.write().unwrap()
+    }
+    pub fn raw_data(&self) -> &Arc<RwLock<NodeData>> {
+        &self.data
+    }
+
     pub fn new(data: &mut ScriptData) -> Self {
-        let node = Self(Arc::new(RwLock::new(NodeData::default())));
+        let node = Self {
+            command_send: data.command_send.clone(),
+            data: Arc::new(RwLock::new(NodeData::default())),
+        };
 
         {
             let node = node.clone();
-            data.commands.push(move |world: &mut World| {
-                let entity = world
-                    .spawn(WiredNodeBundle::new(node.0.read().unwrap().id.into()))
-                    .id();
-                node.0.write().unwrap().entity.get_or_init(|| entity);
-            });
+            data.command_send
+                .try_send(Box::new(move |world: &mut World| {
+                    println!("new NodeRes command");
+                    let node_data = node.write();
+                    let entity = world.spawn(WiredNodeBundle::new(node_data.id.into())).id();
+                    node_data.entity.set(entity).unwrap();
+                }))
+                .unwrap();
         }
 
         node
@@ -102,7 +120,7 @@ impl NodeRes {
         res: &Resource<Self>,
         value: Transform,
     ) -> wasm_bridge::Result<()> {
-        let mut data = self_.table.get_mut(res)?.0.write().unwrap();
+        let mut data = self_.table.get_mut(res)?.write();
         data.transform = value.into();
 
         let mut transform = BTransform {
@@ -112,6 +130,7 @@ impl NodeRes {
         };
 
         // parry3d (used in avian physics) panics when scale is 0
+        // TODO: better solution for this, enforce it in the ECS every frame?
         const ALMOST_ZERO: f32 = 10e-10;
         if transform.scale.x == 0.0 {
             transform.scale.x = ALMOST_ZERO;
@@ -132,7 +151,7 @@ impl NodeRes {
         data: &mut ScriptData,
         node: Self,
     ) -> wasm_bridge::Result<Option<Resource<Self>>> {
-        let parent = node.0.read().unwrap().parent.clone();
+        let parent = node.read().parent.clone();
         let res = match parent {
             Some(d) => Some(data.table.push(d)?),
             None => None,
@@ -140,7 +159,7 @@ impl NodeRes {
         Ok(res)
     }
     pub fn children(data: &mut ScriptData, node: Self) -> wasm_bridge::Result<Vec<Resource<Self>>> {
-        let children = node.0.read().unwrap().children.clone();
+        let children = node.read().children.clone();
         let res = children
             .into_iter()
             .map(|n| data.table.push(n))
@@ -149,51 +168,71 @@ impl NodeRes {
     }
     pub fn add_child(data: &mut ScriptData, parent: Self, child: Self) {
         // Add to children.
-        parent.0.write().unwrap().children.push(child.clone());
+        parent.write().children.push(child.clone());
 
         // Remove child from old parent's children.
-        if let Some(parent) = &child.0.read().unwrap().parent {
+        if let Some(parent) = &child.read().parent {
             Self::remove_child(data, parent.clone(), child.clone());
         }
 
         // Set new parent.
-        child.0.write().unwrap().parent = Some(parent.clone());
+        child.write().parent = Some(parent.clone());
 
         // Update ECS.
-        data.commands.push(move |world: &mut World| {
-            let parent_ent = *parent.0.read().unwrap().entity.get().unwrap();
-            let child_ent = *child.0.read().unwrap().entity.get().unwrap();
+        data.command_send
+            .try_send(Box::new(move |world: &mut World| {
+                let parent_ent = *parent.read().entity.get().unwrap();
+                let child_ent = *child.read().entity.get().unwrap();
 
-            world.entity_mut(parent_ent).push_children(&[child_ent]);
-        });
+                world.entity_mut(parent_ent).push_children(&[child_ent]);
+            }))
+            .unwrap();
     }
     pub fn remove_child(data: &mut ScriptData, parent: Self, child: Self) {
         // Remove from children.
-        let parent_read = parent.0.read().unwrap();
+        let parent_read = parent.read();
         parent_read
             .children
             .iter()
-            .position(|n| n.0.read().unwrap().id == parent_read.id)
-            .map(|index| parent.0.write().unwrap().children.remove(index));
+            .position(|n| n.read().id == parent_read.id)
+            .map(|index| parent.write().children.remove(index));
 
         // Remove parent.
-        child.0.write().unwrap().parent = None;
+        child.write().parent = None;
 
         // Update ECS.
-        data.commands.push(move |world: &mut World| {
-            let child_ent = *child.0.read().unwrap().entity.get().unwrap();
-            world.entity_mut(child_ent).remove_parent();
-        });
+        data.command_send
+            .try_send(Box::new(move |world: &mut World| {
+                let child_ent = *child.read().entity.get().unwrap();
+                world.entity_mut(child_ent).remove_parent();
+            }))
+            .unwrap();
     }
 }
 
 fn calc_global_transform(transform: BTransform, node: &NodeRes) -> BTransform {
-    let data = node.0.read().unwrap();
+    let data = node.read();
     let new_transform = data.transform * transform;
 
     if let Some(parent) = &data.parent {
         calc_global_transform(new_transform, parent)
     } else {
         new_transform
+    }
+}
+
+impl Drop for NodeRes {
+    fn drop(&mut self) {
+        // Only cleanup when this is the last reference.
+        if Arc::strong_count(&self.data) == 1 {
+            let data = self.data.clone();
+
+            self.command_send
+                .try_send(Box::new(move |world: &mut World| {
+                    let entity = *data.read().unwrap().entity.get().unwrap();
+                    world.entity_mut(entity).despawn();
+                }))
+                .unwrap()
+        }
     }
 }

@@ -16,17 +16,17 @@ impl HostAssetNode for ScriptData {
     }
 
     fn name(&mut self, self_: Resource<NodeRes>) -> wasm_bridge::Result<String> {
-        let data = self.table.get(&self_)?.0.read().unwrap();
+        let data = self.table.get(&self_)?.read();
         Ok(data.name.clone())
     }
     fn set_name(&mut self, self_: Resource<NodeRes>, value: String) -> wasm_bridge::Result<()> {
-        let mut data = self.table.get(&self_)?.0.write().unwrap();
+        let mut data = self.table.get(&self_)?.write();
         data.name = value;
         Ok(())
     }
 
     fn asset(&mut self, self_: Resource<NodeRes>) -> wasm_bridge::Result<Option<Asset>> {
-        let asset = self.table.get(&self_)?.0.read().unwrap().asset.clone();
+        let asset = self.table.get(&self_)?.read().asset.clone();
 
         let res = match asset {
             Some(v) => Some(match v {
@@ -43,7 +43,7 @@ impl HostAssetNode for ScriptData {
         self_: Resource<NodeRes>,
         value: Option<Asset>,
     ) -> wasm_bridge::Result<()> {
-        let mut data = self.table.get(&self_)?.0.write().unwrap();
+        let mut data = self.table.get(&self_)?.write();
         data.asset = match value {
             Some(v) => Some(match v {
                 Asset::Composition(r) => AssetData::Composition(self.table.get(&r)?.clone()),
@@ -58,7 +58,7 @@ impl HostAssetNode for ScriptData {
         NodeRes::global_transform(self, &self_)
     }
     fn transform(&mut self, self_: Resource<NodeRes>) -> wasm_bridge::Result<Transform> {
-        let data = self.table.get(&self_)?.0.read().unwrap();
+        let data = self.table.get(&self_)?.read();
         Ok(data.transform.into())
     }
     fn set_transform(

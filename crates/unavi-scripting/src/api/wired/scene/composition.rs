@@ -1,4 +1,4 @@
-use std::sync::{Arc, OnceLock, RwLock};
+use std::sync::{Arc, OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use bevy::prelude::*;
 use wasm_bridge::component::Resource;
@@ -20,15 +20,24 @@ pub struct CompositionData {
 }
 
 impl CompositionRes {
+    pub fn read(&self) -> RwLockReadGuard<CompositionData> {
+        self.0.read().unwrap()
+    }
+    pub fn write(&self) -> RwLockWriteGuard<CompositionData> {
+        self.0.write().unwrap()
+    }
+
     pub fn new(data: &mut ScriptData) -> Self {
         let composition = CompositionRes(Arc::new(RwLock::new(CompositionData::default())));
 
         {
             let composition = composition.clone();
-            data.commands.push(move |world: &mut World| {
-                let entity = world.spawn(SpatialBundle::default()).id();
-                composition.0.write().unwrap().entity.set(entity).unwrap();
-            });
+            data.command_send
+                .try_send(Box::new(move |world: &mut World| {
+                    let entity = world.spawn(SpatialBundle::default()).id();
+                    composition.write().entity.set(entity).unwrap();
+                }))
+                .unwrap();
         }
 
         composition
@@ -46,7 +55,7 @@ impl HostComposition for ScriptData {
         &mut self,
         self_: Resource<CompositionRes>,
     ) -> wasm_bridge::Result<Vec<Resource<NodeRes>>> {
-        let nodes = self.table.get(&self_)?.0.read().unwrap().nodes.clone();
+        let nodes = self.table.get(&self_)?.read().nodes.clone();
         Ok(nodes
             .into_iter()
             .map(|d| self.table.push(d))
@@ -59,7 +68,7 @@ impl HostComposition for ScriptData {
     ) -> wasm_bridge::Result<()> {
         let value = self.table.get(&value)?.clone();
         let data = self.table.get(&self_)?;
-        data.0.write().unwrap().nodes.push(value);
+        data.write().nodes.push(value);
         Ok(())
     }
     fn remove_node(
@@ -67,11 +76,11 @@ impl HostComposition for ScriptData {
         self_: Resource<CompositionRes>,
         value: Resource<NodeRes>,
     ) -> wasm_bridge::Result<()> {
-        let id = self.table.get(&value)?.0.read().unwrap().id;
-        let mut data = self.table.get(&self_)?.0.write().unwrap();
+        let id = self.table.get(&value)?.read().id;
+        let mut data = self.table.get(&self_)?.write();
         data.nodes
             .iter()
-            .position(|r| r.0.read().unwrap().id == id)
+            .position(|r| r.read().id == id)
             .map(|index| data.nodes.remove(index));
         Ok(())
     }

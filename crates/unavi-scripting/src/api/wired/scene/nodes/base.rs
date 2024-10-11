@@ -241,8 +241,9 @@ impl Drop for NodeRes {
             if let Err(e) = self
                 .command_send
                 .try_send(Box::new(move |world: &mut World| {
-                    let entity = *data.read().unwrap().entity.get().unwrap();
-                    world.entity_mut(entity).despawn();
+                    let mut ent = world.entity_mut(*data.read().unwrap().entity.get().unwrap());
+                    ent.remove_parent();
+                    ent.despawn();
                 }))
             {
                 // Should only error when the entire script environment is being

@@ -58,13 +58,15 @@ impl HostNode for ScriptData {
 
         // Remove previous mesh.
         if let Some(prev_mesh) = data.read().mesh.clone() {
-            let mut prev_write = prev_mesh.write();
-            prev_write
+            let data_read = data.read();
+            let mut prev_mesh_write = prev_mesh.write();
+
+            prev_mesh_write
                 .nodes
                 .iter()
-                .position(|n| n.upgrade().unwrap().read().unwrap().id == prev_write.id)
-                .map(|index| prev_write.nodes.remove(index));
-            drop(prev_write);
+                .position(|n| n.upgrade().unwrap().read().unwrap().id == data_read.id)
+                .map(|index| prev_mesh_write.nodes.remove(index));
+            drop(prev_mesh_write);
 
             let data = data.clone();
             self.command_send
@@ -89,7 +91,9 @@ impl HostNode for ScriptData {
                             })
                         {
                             primitive_data.node_primitives.remove(i);
-                            world.entity_mut(e).despawn();
+                            let mut ent = world.entity_mut(e);
+                            ent.remove_parent();
+                            ent.despawn();
                         }
                     }
                 }))

@@ -134,10 +134,15 @@ impl HostMesh for ScriptData {
 
         self.command_send
             .try_send(Box::new(move |world: &mut World| {
-                // Remove node primitives.
-                for node_primitive in primitive.read().node_primitives.iter() {
-                    world.entity_mut(node_primitive.entity).despawn();
+                let mut primitive_write = primitive.write();
+
+                for node_primitive in primitive_write.node_primitives.iter() {
+                    let mut ent = world.entity_mut(node_primitive.entity);
+                    ent.remove_parent();
+                    ent.despawn();
                 }
+
+                primitive_write.node_primitives.clear();
             }))
             .unwrap();
 
@@ -202,19 +207,19 @@ mod tests {
     }
 
     fn test_create_node_primitives(
-        mut app: App,
+        app: &mut App,
         data: &mut ScriptData,
-        node: Resource<NodeRes>,
-        primitive: Resource<PrimitiveRes>,
+        node: &Resource<NodeRes>,
+        primitive: &Resource<PrimitiveRes>,
     ) {
         let world = app.world_mut();
         data.push_commands(&mut world.commands());
         world.flush_commands();
 
-        let inner = data.table.get(&primitive).unwrap().read();
+        let inner = data.table.get(primitive).unwrap().read();
         assert_eq!(inner.node_primitives.len(), 1);
 
-        let node_data = data.table.get(&node).unwrap().read();
+        let node_data = data.table.get(node).unwrap().read();
         let node_id = node_data.id;
         let node_entity = *node_data.entity.get().unwrap();
         assert_eq!(
@@ -227,7 +232,6 @@ mod tests {
                 .id,
             node_id
         );
-
         assert_eq!(
             world
                 .get::<Parent>(inner.node_primitives[0].entity)
@@ -235,22 +239,38 @@ mod tests {
                 .get(),
             node_entity
         );
+        assert_eq!(world.get::<Children>(node_entity).unwrap().len(), 1);
+    }
 
-        drop(inner);
-        drop(node_data);
+    fn test_remove_node_primitives(
+        app: &mut App,
+        data: &mut ScriptData,
+        node: &Resource<NodeRes>,
+        primitive: &PrimitiveRes,
+    ) {
+        let ent = primitive.read().node_primitives[0].entity;
 
-        HostNode::drop(data, node).unwrap();
-        HostPrimitive::drop(data, primitive).unwrap();
+        let world = app.world_mut();
+        data.push_commands(&mut world.commands());
+        world.flush_commands();
+
+        assert_eq!(primitive.read().node_primitives.len(), 0);
+
+        let node_data = data.table.get(node).unwrap().read();
+        let node_entity = *node_data.entity.get().unwrap();
+
+        assert!(world.get::<Parent>(ent).is_none());
+        assert!(world.get::<Children>(node_entity).is_none());
     }
 
     #[test]
     fn test_set_mesh() {
-        let (app, mut data) = init_test_data();
+        let (mut app, mut data) = init_test_data();
 
         let mesh = HostMesh::new(&mut data).unwrap();
-
         let primitive =
             HostMesh::create_primitive(&mut data, Resource::new_own(mesh.rep())).unwrap();
+        let primitive_data = data.table.get(&primitive).unwrap().clone();
 
         let node = HostNode::new(&mut data).unwrap();
         HostNode::set_mesh(
@@ -260,12 +280,16 @@ mod tests {
         )
         .unwrap();
 
-        test_create_node_primitives(app, &mut data, node, primitive);
+        test_create_node_primitives(&mut app, &mut data, &node, &primitive);
+
+        HostNode::set_mesh(&mut data, Resource::new_own(node.rep()), None).unwrap();
+
+        test_remove_node_primitives(&mut app, &mut data, &node, &primitive_data);
     }
 
     #[test]
-    fn test_create_primitive() {
-        let (app, mut data) = init_test_data();
+    fn test_create_remove_primitive() {
+        let (mut app, mut data) = init_test_data();
 
         let node = HostNode::new(&mut data).unwrap();
 
@@ -279,25 +303,12 @@ mod tests {
 
         let primitive =
             HostMesh::create_primitive(&mut data, Resource::new_own(mesh.rep())).unwrap();
+        let primitive_data = data.table.get(&primitive).unwrap().clone();
 
-        test_create_node_primitives(app, &mut data, node, primitive);
-    }
+        test_create_node_primitives(&mut app, &mut data, &node, &primitive);
 
-    #[test]
-    fn test_remove_primitive() {
-        // TODO
-        // let (app, mut data) = init_test_data();
-        //
-        // let mesh = HostMesh::new(&mut data).unwrap();
-        // let primitive =
-        //     HostMesh::create_primitive(&mut data, Resource::new_own(mesh.rep())).unwrap();
-        //
-        // let node = HostNode::new(&mut data).unwrap();
-        // HostNode::set_mesh(
-        //     &mut data,
-        //     Resource::new_own(node.rep()),
-        //     Some(Resource::new_own(mesh.rep())),
-        // )
-        // .unwrap();
+        HostMesh::remove_primitive(&mut data, mesh, primitive).unwrap();
+
+        test_remove_node_primitives(&mut app, &mut data, &node, &primitive_data);
     }
 }

@@ -212,6 +212,14 @@ mod tests {
         node: &Resource<NodeRes>,
         primitive: &Resource<PrimitiveRes>,
     ) {
+        let default_material = data
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .default_material
+            .clone();
+
         let world = app.world_mut();
         data.push_commands(&mut world.commands());
         world.flush_commands();
@@ -240,6 +248,12 @@ mod tests {
             node_entity
         );
         assert_eq!(world.get::<Children>(node_entity).unwrap().len(), 1);
+        assert_eq!(
+            world
+                .get::<Handle<StandardMaterial>>(inner.node_primitives[0].entity)
+                .unwrap(),
+            &default_material
+        );
     }
 
     fn test_remove_node_primitives(

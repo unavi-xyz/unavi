@@ -84,50 +84,28 @@ impl HostPrimitive for ScriptData {
             None => None,
         };
 
-        let primitive = self.table.get(&self_)?;
-        primitive.write().material = material;
+        let primitive = self.table.get(&self_)?.clone();
+        primitive.write().material = material.clone();
 
-        // let mesh = Resource::<MeshRes>::new_own(primitive.mesh);
-        // let mesh = self.table.get(&mesh)?;
-        //
-        // let mesh_nodes = mesh.nodes.iter().map(|r| r.rep()).collect::<Vec<_>>();
-        //
-        // let default_material = self
-        //     .api
-        //     .wired_scene
-        //     .as_ref()
-        //     .unwrap()
-        //     .default_material
-        //     .clone();
-        // let nodes = self
-        //     .api
-        //     .wired_scene
-        //     .as_ref()
-        //     .unwrap()
-        //     .entities
-        //     .nodes
-        //     .clone();
-        //
-        // self.c.unwrap()ommand_send.try_send(Box::new(move |world: &mut World| {
-        //     let nodes = nodes.read().unwrap();
-        //
-        //     // let material = material_rep.map(|r| materials.get(&r).unwrap().handle.clone());
-        //
-        //     for nid in mesh_nodes {
-        //         let node_ent = nodes.get(&nid).unwrap(); // TODO: is this unwrap safe?
-        //         let node_mesh = world.get::<NodeMesh>(*node_ent).unwrap();
-        //
-        //         for (pid, p_ent) in node_mesh.node_primitives.clone() {
-        //             if pid == rep {
-        //                 // if let Some(material) = &material {
-        //                 //     world.entity_mut(p_ent).insert(material.clone());
-        //                 // } else {
-        //                 //     world.entity_mut(p_ent).insert(default_material.clone());
-        //                 // }
-        //             }
-        //         }
-        //     }
-        // });
+        let default_material = self
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .default_material
+            .clone();
+
+        self.command_send
+            .try_send(Box::new(move |world: &mut World| {
+                let handle = material
+                    .map(|m| m.read().handle.get().unwrap().clone())
+                    .unwrap_or_else(|| default_material);
+
+                for np in primitive.read().node_primitives.iter() {
+                    world.entity_mut(np.entity).insert(handle.clone());
+                }
+            }))
+            .unwrap();
 
         Ok(())
     }
@@ -231,7 +209,10 @@ impl HostPrimitive for ScriptData {
 
 #[cfg(test)]
 mod tests {
-    use crate::api::tests::init_test_data;
+    use crate::api::{
+        tests::init_test_data,
+        wired::scene::bindings::{material::HostMaterial, node::HostNode},
+    };
 
     use super::*;
 
@@ -249,5 +230,69 @@ mod tests {
 
         HostPrimitive::drop(&mut data, res).unwrap();
         assert!(data.table.get(&res_weak).is_err());
+    }
+
+    #[test]
+    fn test_set_material() {
+        let (mut app, mut data) = init_test_data();
+        let default_material = data
+            .api
+            .wired_scene
+            .as_ref()
+            .unwrap()
+            .default_material
+            .clone();
+
+        let material = HostMaterial::new(&mut data).unwrap();
+        let mesh = HostMesh::new(&mut data).unwrap();
+        let primitive =
+            HostMesh::create_primitive(&mut data, Resource::new_own(mesh.rep())).unwrap();
+
+        let node = HostNode::new(&mut data).unwrap();
+        HostNode::set_mesh(&mut data, node, Some(mesh)).unwrap();
+
+        let world = app.world_mut();
+        data.push_commands(&mut world.commands());
+        world.flush_commands();
+
+        let entity = data.table.get(&primitive).unwrap().read().node_primitives[0].entity;
+
+        // Set new material.
+        HostPrimitive::set_material(
+            &mut data,
+            Resource::new_own(primitive.rep()),
+            Some(Resource::new_own(material.rep())),
+        )
+        .unwrap();
+
+        let world = app.world_mut();
+        data.push_commands(&mut world.commands());
+        world.flush_commands();
+
+        let material_handle = data
+            .table
+            .get(&material)
+            .unwrap()
+            .read()
+            .handle
+            .get()
+            .unwrap()
+            .clone();
+        assert_eq!(
+            *app.world().get::<Handle<StandardMaterial>>(entity).unwrap(),
+            material_handle
+        );
+
+        // Remove material.
+        HostPrimitive::set_material(&mut data, Resource::new_own(primitive.rep()), None).unwrap();
+
+        let world = app.world_mut();
+        data.push_commands(&mut world.commands());
+        world.flush_commands();
+
+        assert_eq!(
+            *app.world().get::<Handle<StandardMaterial>>(entity).unwrap(),
+            default_material
+        );
     }
 }

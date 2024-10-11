@@ -342,4 +342,93 @@ mod tests {
         world.flush_commands();
         assert!(world.get::<NodeId>(entity).is_none());
     }
+
+    #[test]
+    fn test_children() {
+        let (mut app, mut data) = init_test_data();
+
+        let node_1 = HostNode::new(&mut data).unwrap();
+        let node_2 = HostNode::new(&mut data).unwrap();
+        let node_3 = HostNode::new(&mut data).unwrap();
+
+        HostNode::add_child(
+            &mut data,
+            Resource::new_own(node_1.rep()),
+            Resource::new_own(node_2.rep()),
+        )
+        .unwrap();
+        HostNode::add_child(
+            &mut data,
+            Resource::new_own(node_1.rep()),
+            Resource::new_own(node_3.rep()),
+        )
+        .unwrap();
+
+        let world = app.world_mut();
+        data.push_commands(&mut world.commands());
+        world.flush_commands();
+
+        let ent_1 = *data
+            .table
+            .get(&node_1)
+            .unwrap()
+            .read()
+            .entity
+            .get()
+            .unwrap();
+        let ent_2 = *data
+            .table
+            .get(&node_2)
+            .unwrap()
+            .read()
+            .entity
+            .get()
+            .unwrap();
+        let ent_3 = *data
+            .table
+            .get(&node_3)
+            .unwrap()
+            .read()
+            .entity
+            .get()
+            .unwrap();
+
+        assert_eq!(world.get::<Children>(ent_1).unwrap().len(), 2);
+        assert_eq!(world.get::<Parent>(ent_2).unwrap().get(), ent_1);
+        assert_eq!(world.get::<Parent>(ent_3).unwrap().get(), ent_1);
+
+        let node_2_id = data.table.get(&node_2).unwrap().read().id;
+        let node_3_id = data.table.get(&node_3).unwrap().read().id;
+
+        let children = HostNode::children(&mut data, Resource::new_own(node_1.rep())).unwrap();
+        assert!(children
+            .iter()
+            .any(|n| data.table.get(n).unwrap().read().id == node_2_id));
+        assert!(children
+            .iter()
+            .any(|n| data.table.get(n).unwrap().read().id == node_3_id));
+
+        HostNode::remove_child(
+            &mut data,
+            Resource::new_own(node_1.rep()),
+            Resource::new_own(node_2.rep()),
+        )
+        .unwrap();
+
+        let world = app.world_mut();
+        data.push_commands(&mut world.commands());
+        world.flush_commands();
+
+        assert_eq!(world.get::<Children>(ent_1).unwrap().len(), 1);
+        assert!(world.get::<Parent>(ent_2).is_none());
+        assert_eq!(world.get::<Parent>(ent_3).unwrap().get(), ent_1);
+
+        let children = HostNode::children(&mut data, Resource::new_own(node_1.rep())).unwrap();
+        assert!(!children
+            .iter()
+            .any(|n| data.table.get(n).unwrap().read().id == node_2_id));
+        assert!(children
+            .iter()
+            .any(|n| data.table.get(n).unwrap().read().id == node_3_id));
+    }
 }

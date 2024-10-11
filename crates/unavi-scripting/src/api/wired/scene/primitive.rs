@@ -9,7 +9,7 @@ use wasm_bridge::component::Resource;
 use crate::{
     api::{
         id::ResourceId,
-        wired::scene::bindings::mesh::{HostMesh, HostPrimitive, Material},
+        wired::scene::bindings::mesh::{HostPrimitive, Material},
     },
     data::ScriptData,
 };
@@ -211,7 +211,7 @@ impl HostPrimitive for ScriptData {
 mod tests {
     use crate::api::{
         tests::init_test_data,
-        wired::scene::bindings::{material::HostMaterial, node::HostNode},
+        wired::scene::bindings::{material::HostMaterial, mesh::HostMesh, node::HostNode},
     };
 
     use super::*;

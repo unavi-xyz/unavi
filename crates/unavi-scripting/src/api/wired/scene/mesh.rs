@@ -302,7 +302,7 @@ mod tests {
     }
 
     #[test]
-    fn test_create_remove_primitive() {
+    fn test_primitives() {
         let (mut app, mut data) = init_test_data();
 
         let node = HostNode::new(&mut data).unwrap();
@@ -320,6 +320,14 @@ mod tests {
         let primitive_data = data.table.get(&primitive).unwrap().clone();
 
         test_create_node_primitives(&mut app, &mut data, &node, &primitive);
+
+        let primitives =
+            HostMesh::list_primitives(&mut data, Resource::new_own(mesh.rep())).unwrap();
+        assert_eq!(primitives.len(), 1);
+        assert_eq!(
+            data.table.get(&primitives[0]).unwrap().read().id,
+            primitive_data.read().id
+        );
 
         HostMesh::remove_primitive(&mut data, mesh, primitive).unwrap();
 

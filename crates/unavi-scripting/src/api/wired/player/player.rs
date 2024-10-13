@@ -3,10 +3,7 @@ use std::sync::{Arc, RwLock};
 use wasm_bridge::component::Resource;
 use wasm_bridge_wasi::ResourceTable;
 
-use crate::{
-    api::wired::scene::{bindings::node::HostNode, nodes::base::NodeRes},
-    data::ScriptData,
-};
+use crate::{api::wired::scene::nodes::base::NodeRes, data::ScriptData};
 
 use super::bindings::api::{HostPlayer, Node, Skeleton};
 

@@ -39,7 +39,7 @@ pub async fn test_script(name: &str) {
 
     let mut did_load = false;
 
-    let step = Duration::from_secs_f32(0.5);
+    let step = Duration::from_secs_f32(0.25);
     app.insert_resource(Time::<Fixed>::from_duration(step));
 
     for i in 0..10 {
@@ -56,9 +56,6 @@ pub async fn test_script(name: &str) {
     }
 
     assert!(did_load);
-
-    let step = Duration::from_secs_f32(0.1);
-    app.insert_resource(Time::<Fixed>::from_duration(step));
 
     for i in 0..NUM_UPDATES {
         debug!("Updating... ({})", i);

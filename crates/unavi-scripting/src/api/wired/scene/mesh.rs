@@ -8,14 +8,14 @@ use wasm_bridge::component::Resource;
 
 use crate::{
     api::{
-        id::ResourceId,
-        wired::scene::bindings::mesh::{Host, HostMesh, HostPrimitive},
+        id::UniqueId,
+        wired::scene::bindings::mesh::{Host, HostMesh},
     },
     data::ScriptData,
 };
 
 use super::{
-    nodes::base::{NodeData, NodeRes},
+    nodes::base::NodeData,
     primitive::{NodePrimitive, PrimitiveData, PrimitiveRes},
 };
 
@@ -27,7 +27,7 @@ pub struct MeshRes(Arc<RwLock<MeshData>>);
 
 #[derive(Default, Debug)]
 pub struct MeshData {
-    pub id: ResourceId,
+    pub id: UniqueId,
     pub name: String,
     /// Nodes that are using this mesh.
     pub nodes: Vec<Weak<RwLock<NodeData>>>,
@@ -190,7 +190,10 @@ pub fn try_create_primitive(
 
 #[cfg(test)]
 mod tests {
-    use crate::api::{tests::init_test_data, wired::scene::bindings::node::HostNode};
+    use crate::api::{
+        tests::init_test_data,
+        wired::scene::{bindings::node::HostNode, nodes::base::NodeRes},
+    };
 
     use super::*;
 

@@ -86,8 +86,27 @@ impl HostComposition for ScriptData {
     }
 
     fn drop(&mut self, rep: Resource<CompositionRes>) -> wasm_bridge::Result<()> {
+        self.table.delete(rep)?;
         Ok(())
     }
 }
 
 impl Host for ScriptData {}
+
+#[cfg(test)]
+mod tests {
+    use crate::api::tests::init_test_data;
+
+    use super::*;
+
+    #[test]
+    fn test_cleanup_resource() {
+        let (_, mut data) = init_test_data();
+
+        let res = HostComposition::new(&mut data).unwrap();
+        let res_weak = Resource::<CompositionRes>::new_own(res.rep());
+
+        HostComposition::drop(&mut data, res).unwrap();
+        assert!(data.table.get(&res_weak).is_err());
+    }
+}

@@ -39,10 +39,13 @@ pub async fn test_script(name: &str) {
 
     let mut did_load = false;
 
+    let step = Duration::from_secs_f32(0.5);
+    app.insert_resource(Time::<Fixed>::from_duration(step));
+
     for i in 0..10 {
         debug!("Loading... ({})", i);
 
-        tokio::time::sleep(Duration::from_secs_f32(1.0)).await;
+        tokio::time::sleep(step).await;
         app.update();
 
         let loaded_script = app.world().get::<LoadedScript>(entity);
@@ -54,10 +57,13 @@ pub async fn test_script(name: &str) {
 
     assert!(did_load);
 
+    let step = Duration::from_secs_f32(0.1);
+    app.insert_resource(Time::<Fixed>::from_duration(step));
+
     for i in 0..NUM_UPDATES {
         debug!("Updating... ({})", i);
-        tokio::time::sleep(Duration::from_secs_f32(0.1)).await;
-        app.world_mut().run_schedule(FixedUpdate);
+        tokio::time::sleep(step).await;
+        app.update();
     }
 }
 

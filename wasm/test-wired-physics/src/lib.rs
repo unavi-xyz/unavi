@@ -16,7 +16,7 @@ mod wired_math_impls;
 mod wired_scene_impls;
 
 struct Script {
-    is_first_update: Cell<bool>,
+    count: Cell<usize>,
     node: Node,
 }
 
@@ -46,7 +46,7 @@ impl GuestScript for Script {
         node.set_rigid_body(Some(&rigid_body));
 
         Script {
-            is_first_update: Cell::new(true),
+            count: Cell::new(0),
             node,
         }
     }
@@ -54,8 +54,9 @@ impl GuestScript for Script {
     fn update(&self, _delta: f32) {
         log(LogLevel::Info, "Called script update!");
 
-        if self.is_first_update.get() {
-            self.is_first_update.set(false);
+        self.count.set(self.count.get() + 1);
+
+        if self.count.get() < 2 {
             return;
         }
 

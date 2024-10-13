@@ -300,7 +300,9 @@ impl Host for ScriptData {}
 
 #[cfg(test)]
 mod tests {
-    use crate::api::{tests::init_test_data, wired::scene::nodes::base::NodeId};
+    use bevy::prelude::Transform as BTransform;
+
+    use crate::api::tests::init_test_data;
 
     use super::*;
 
@@ -330,17 +332,17 @@ mod tests {
         let inner_clone = data.table.get(&res).unwrap().clone();
 
         let entity = *inner_clone.read().entity.get().unwrap();
-        assert!(world.get::<NodeId>(entity).is_some());
+        assert!(world.get::<BTransform>(entity).is_some());
 
         HostNode::drop(&mut data, res).unwrap();
 
-        assert!(world.get::<NodeId>(entity).is_some());
+        assert!(world.get::<BTransform>(entity).is_some());
 
         drop(inner_clone);
 
         data.push_commands(&mut world.commands());
         world.flush_commands();
-        assert!(world.get::<NodeId>(entity).is_none());
+        assert!(world.get::<BTransform>(entity).is_none());
     }
 
     #[test]

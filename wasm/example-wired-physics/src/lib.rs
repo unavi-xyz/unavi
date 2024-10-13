@@ -4,7 +4,7 @@ use bindings::{
         log::api::{log, LogLevel},
         math::types::Vec3,
         physics::types::{Collider, RigidBody, RigidBodyType, Shape},
-        scene::node::Node,
+        scene::{node::Node, scene::Scene},
     },
 };
 
@@ -14,19 +14,26 @@ mod wired_math_impls;
 
 struct Script {
     spheres: Vec<Node>,
+    _scene: Scene,
 }
 
 impl GuestScript for Script {
     fn new() -> Self {
+        let scene = Scene::new();
+
         // Ground.
-        let size = Vec3::new(10.0, 0.5, 10.0);
+        {
+            let size = Vec3::new(10.0, 0.5, 10.0);
 
-        let node = Node::new();
-        let collider = Collider::new(Shape::Cuboid(size));
-        let rigid_body = RigidBody::new(RigidBodyType::Fixed);
+            let ground = Node::new();
+            let collider = Collider::new(Shape::Cuboid(size));
+            let rigid_body = RigidBody::new(RigidBodyType::Fixed);
 
-        node.set_collider(Some(&collider));
-        node.set_rigid_body(Some(&rigid_body));
+            ground.set_collider(Some(&collider));
+            ground.set_rigid_body(Some(&rigid_body));
+
+            scene.add_node(&ground);
+        }
 
         // Spheres.
         let mut spheres = Vec::default();
@@ -34,28 +41,36 @@ impl GuestScript for Script {
         for i in 1..5 {
             let radius = 0.25;
 
-            let node = Node::new();
-            let mut tr = node.transform();
+            let ball = Node::new();
+
+            let mut tr = ball.transform();
             tr.translation.x += (i as f32) / 4.0;
             tr.translation.y += i as f32;
-
-            node.set_transform(tr);
+            ball.set_transform(tr);
 
             let collider = Collider::new(Shape::Sphere(radius));
             let rigid_body = RigidBody::new(RigidBodyType::Dynamic);
 
-            node.set_collider(Some(&collider));
-            node.set_rigid_body(Some(&rigid_body));
+            ball.set_collider(Some(&collider));
+            ball.set_rigid_body(Some(&rigid_body));
 
-            spheres.push(node);
+            scene.add_node(&ball);
+            spheres.push(ball);
         }
 
         // Collider only.
-        let node = Node::new();
-        let collider = Collider::new(Shape::Sphere(1.0));
-        node.set_collider(Some(&collider));
+        {
+            let node = Node::new();
+            let collider = Collider::new(Shape::Sphere(1.0));
+            node.set_collider(Some(&collider));
 
-        Script { spheres }
+            scene.add_node(&node);
+        }
+
+        Script {
+            spheres,
+            _scene: scene,
+        }
     }
 
     fn update(&self, _delta: f32) {

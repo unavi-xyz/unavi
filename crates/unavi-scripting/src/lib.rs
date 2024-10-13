@@ -41,8 +41,8 @@ impl Plugin for ScriptingPlugin {
                         api::wired::player::systems::copy_transforms,
                         api::wired::player::systems::update_player_skeletons,
                     ),
-                    execution::init_scripts,
                     execution::update_scripts,
+                    execution::init_scripts,
                     apply_deferred,
                 )
                     .chain(),

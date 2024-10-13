@@ -166,25 +166,27 @@ impl HostDocument for ScriptData {
     }
 
     fn drop(&mut self, rep: Resource<DocumentRes>) -> wasm_bridge::Result<()> {
-        // if dropped {
-        //     let documents = self
-        //         .api
-        //         .wired_scene
-        //         .as_ref()
-        //         .unwrap()
-        //         .entities
-        //         .documents
-        //         .clone();
-        //
-        //     self.command_send.try_send(Box::new(move |world: &mut World| {
-        //         let mut nodes = documents.write().unwrap();
-        //         let entity = nodes.remove(&id).unwrap();
-        //         world.despawn(entity);
-        //     }));
-        // }
-
+        self.table.delete(rep)?;
         Ok(())
     }
 }
 
 impl Host for ScriptData {}
+
+#[cfg(test)]
+mod tests {
+    use crate::api::tests::init_test_data;
+
+    use super::*;
+
+    #[test]
+    fn test_cleanup_resource() {
+        let (_, mut data) = init_test_data();
+
+        let res = HostDocument::new(&mut data).unwrap();
+        let res_weak = Resource::<DocumentRes>::new_own(res.rep());
+
+        HostDocument::drop(&mut data, res).unwrap();
+        assert!(data.table.get(&res_weak).is_err());
+    }
+}

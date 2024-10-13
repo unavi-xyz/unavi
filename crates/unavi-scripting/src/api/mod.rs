@@ -1,9 +1,9 @@
 use std::sync::{Arc, Mutex};
 
-use bevy::ecs::world::CommandQueue;
+use bevy::{ecs::world::CommandQueue, prelude::*};
 use wired::{dwn::WiredDwn, log::WiredLog, player::WiredPlayer, scene::WiredScene};
 
-mod id;
+pub mod id;
 pub mod wired;
 
 #[derive(Default)]
@@ -13,6 +13,10 @@ pub struct ApiData {
     pub wired_player: Option<WiredPlayer>,
     pub wired_scene: Option<WiredScene>,
 }
+
+/// The ID of the scripting environment an entity is linked to.
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
+pub struct EnvId(pub id::UniqueId);
 
 pub type ScriptCommandQueue = Arc<Mutex<CommandQueue>>;
 

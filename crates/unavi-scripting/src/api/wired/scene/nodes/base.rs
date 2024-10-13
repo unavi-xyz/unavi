@@ -1,4 +1,4 @@
-use std::sync::{Arc, OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::sync::{Arc, OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard, Weak};
 
 use avian3d::prelude::CollisionLayers;
 use bevy::prelude::{Transform as BTransform, *};
@@ -7,13 +7,14 @@ use wasm_bridge::component::Resource;
 
 use crate::{
     api::{
-        id::ResourceId,
+        id::UniqueId,
         wired::{
             input::input_handler::InputHandlerRes,
             math::bindings::types::Transform,
             physics::{collider::ColliderRes, rigid_body::RigidBodyRes},
             scene::{composition::CompositionRes, document::DocumentRes, mesh::MeshRes},
         },
+        EnvId,
     },
     data::{CommandSender, ControlSender, ScriptControl, ScriptData},
 };
@@ -28,7 +29,7 @@ pub struct NodeRes {
 /// Node data used by both the `node` and `asset-node` resources.
 #[derive(Default, Debug)]
 pub struct NodeData {
-    pub id: ResourceId,
+    pub id: UniqueId,
     pub asset: Option<AssetData>,
     pub children: Vec<NodeRes>,
     pub collider: Option<ColliderRes>,
@@ -47,24 +48,26 @@ pub enum AssetData {
     Document(DocumentRes),
 }
 
-#[derive(Component, Clone, Copy, Debug)]
-pub struct NodeId(pub u32);
-
 #[derive(Bundle)]
 pub struct WiredNodeBundle {
-    pub id: NodeId,
+    pub env: EnvId,
     pub layers: CollisionLayers,
+    pub node: NodeRef,
     pub spatial: SpatialBundle,
 }
 
+#[derive(Component)]
+pub struct NodeRef(pub Weak<RwLock<NodeData>>);
+
 impl WiredNodeBundle {
-    pub fn new(id: u32) -> Self {
+    pub fn new(env_id: UniqueId, node: &Arc<RwLock<NodeData>>) -> Self {
         Self {
-            id: NodeId(id),
+            env: EnvId(env_id),
             layers: CollisionLayers {
                 memberships: LAYER_WORLD,
                 filters: LAYER_WORLD,
             },
+            node: NodeRef(Arc::downgrade(node)),
             spatial: SpatialBundle::default(),
         }
     }
@@ -90,10 +93,13 @@ impl NodeRes {
 
         {
             let node = node.clone();
+            let env_id = data.id;
             data.command_send
                 .try_send(Box::new(move |world: &mut World| {
                     let node_data = node.write();
-                    let entity = world.spawn(WiredNodeBundle::new(node_data.id.into())).id();
+                    let entity = world
+                        .spawn(WiredNodeBundle::new(env_id, node.raw_data()))
+                        .id();
                     node_data.entity.set(entity).unwrap();
                 }))
                 .unwrap();
@@ -121,8 +127,8 @@ impl NodeRes {
         res: &Resource<Self>,
         value: Transform,
     ) -> wasm_bridge::Result<()> {
-        let mut data = self_.table.get_mut(res)?.write();
-        data.transform = value.into();
+        let data = self_.table.get(res)?.clone();
+        data.write().transform = value.into();
 
         let mut transform = BTransform {
             translation: value.translation.into(),
@@ -143,7 +149,7 @@ impl NodeRes {
             transform.scale.z = ALMOST_ZERO;
         }
 
-        // self_.node_insert(res.rep(), transform);
+        self_.node_insert(data, transform);
 
         Ok(())
     }

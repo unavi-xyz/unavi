@@ -107,6 +107,25 @@ impl HostAssetNode for ScriptData {
     }
 
     fn drop(&mut self, rep: Resource<NodeRes>) -> wasm_bridge::Result<()> {
+        self.table.delete(rep)?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::api::tests::init_test_data;
+
+    use super::*;
+
+    #[test]
+    fn test_cleanup_resource() {
+        let (_, mut data) = init_test_data();
+
+        let res = HostAssetNode::new(&mut data).unwrap();
+        let res_weak = Resource::<NodeRes>::new_own(res.rep());
+
+        HostAssetNode::drop(&mut data, res).unwrap();
+        assert!(data.table.get(&res_weak).is_err());
     }
 }

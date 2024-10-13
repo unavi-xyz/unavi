@@ -1,10 +1,14 @@
 use avian3d::prelude::*;
 use bevy::prelude::*;
 
-use crate::{api::wired::scene::nodes::base::NodeId, execution::ScriptTickrate, load::ScriptMap};
+use crate::{
+    api::{wired::scene::nodes::base::NodeRef, EnvId},
+    execution::ScriptTickrate,
+    load::ScriptMap,
+};
 
 pub(crate) fn update_physics_transforms(
-    nodes: Query<(&NodeId, Entity, &Transform), With<Collider>>,
+    nodes: Query<(&EnvId, &NodeRef, &Transform), With<Collider>>,
     script_map: NonSendMut<ScriptMap>,
     scripts: Query<(Entity, &ScriptTickrate)>,
 ) {
@@ -19,18 +23,17 @@ pub(crate) fn update_physics_transforms(
             continue;
         };
 
-        let data = script.store.data_mut();
+        let data = script.store.data();
 
-        for (id, ent, transform) in nodes.iter() {
-            // Check if phys node is from this script.
-            // if Some(ent) != script_nodes.get(&id.0).copied() {
-            //     continue;
-            // }
-            //
-            // let node = NodeRes::from_rep(id.0, &data.table).unwrap();
-            // let node = data.table.get_mut(&node).unwrap();
-            //
-            // node.transform = *transform;
+        for (id, node, transform) in nodes.iter() {
+            if id.0 != data.id {
+                continue;
+            }
+
+            if let Some(node) = node.0.upgrade() {
+                info!("--------- FOUND NODE -----------> {:?}", transform);
+                node.write().unwrap().transform = *transform;
+            }
         }
     }
 }

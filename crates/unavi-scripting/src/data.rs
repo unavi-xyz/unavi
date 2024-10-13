@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use wasm_bridge::component::{Resource, ResourceTable, ResourceTableError};
 use wasm_bridge_wasi::{WasiCtx, WasiCtxBuilder, WasiView};
 
-use crate::api::{wired::scene::nodes::base::NodeRes, ApiData};
+use crate::api::{id::UniqueId, wired::scene::nodes::base::NodeRes, ApiData};
 
 pub type ScriptCommand = Box<dyn FnOnce(&mut World) + Send>;
 pub type CommandSender = SyncSender<ScriptCommand>;
@@ -22,6 +22,7 @@ pub struct ScriptData {
     pub command_send: CommandSender,
     pub control_recv: Receiver<ScriptControl>,
     pub control_send: ControlSender,
+    pub id: UniqueId,
     pub table: ResourceTable,
     pub wasi: WasiCtx,
     pub wasi_table: wasm_bridge_wasi::ResourceTable,
@@ -57,6 +58,7 @@ impl Default for ScriptData {
             command_send,
             control_recv,
             control_send,
+            id: UniqueId::default(),
             table: ResourceTable::default(),
             wasi: WasiCtxBuilder::new().build(),
             wasi_table: wasm_bridge_wasi::ResourceTable::default(),

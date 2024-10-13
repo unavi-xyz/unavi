@@ -2,18 +2,18 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 static ID: AtomicU32 = AtomicU32::new(0);
 
-/// Globally unique ID for a resource, constructed using `default`.
+/// Globally unique ID, constructed using `default`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct ResourceId(u32);
+pub struct UniqueId(u32);
 
-impl Default for ResourceId {
+impl Default for UniqueId {
     fn default() -> Self {
         Self(ID.fetch_add(1, Ordering::Relaxed))
     }
 }
 
-impl From<ResourceId> for u32 {
-    fn from(val: ResourceId) -> Self {
+impl From<UniqueId> for u32 {
+    fn from(val: UniqueId) -> Self {
         val.0
     }
 }

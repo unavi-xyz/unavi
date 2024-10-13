@@ -8,7 +8,7 @@ use wasm_bridge::component::Resource;
 
 use crate::{
     api::{
-        id::ResourceId,
+        id::UniqueId,
         wired::scene::bindings::mesh::{HostPrimitive, Material},
     },
     data::ScriptData,
@@ -21,7 +21,7 @@ pub struct PrimitiveRes(Arc<RwLock<PrimitiveData>>);
 
 #[derive(Debug, Default)]
 pub struct PrimitiveData {
-    pub id: ResourceId,
+    pub id: UniqueId,
     pub handle: OnceLock<Handle<Mesh>>,
     pub material: Option<MaterialRes>,
     /// Contains all nodes using this primitive.

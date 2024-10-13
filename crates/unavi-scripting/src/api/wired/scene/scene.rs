@@ -5,7 +5,7 @@ use wasm_bridge::component::Resource;
 
 use crate::{
     api::{
-        id::ResourceId,
+        id::UniqueId,
         wired::scene::bindings::scene::{Host, HostScene},
     },
     data::ScriptData,
@@ -36,7 +36,7 @@ pub struct SceneRes(Arc<RwLock<SceneData>>);
 
 #[derive(Default, Debug)]
 pub struct SceneData {
-    pub id: ResourceId,
+    pub id: UniqueId,
     pub entity: OnceLock<Entity>,
     pub name: String,
     pub nodes: Vec<NodeRes>,
@@ -135,25 +135,27 @@ impl HostScene for ScriptData {
     }
 
     fn drop(&mut self, rep: Resource<SceneRes>) -> wasm_bridge::Result<()> {
-        // if dropped {
-        //     let scenes = self
-        //         .api
-        //         .wired_scene
-        //         .as_ref()
-        //         .unwrap()
-        //         .entities
-        //         .scenes
-        //         .clone();
-        //
-        //     self.command_send.try_send(Box::new(move |world: &mut World| {
-        //         let mut scenes = scenes.write().unwrap();
-        //         let entity = scenes.remove(&id).unwrap();
-        //         world.despawn(entity);
-        //     });
-        // }
-
+        self.table.delete(rep)?;
         Ok(())
     }
 }
 
 impl Host for ScriptData {}
+
+#[cfg(test)]
+mod tests {
+    use crate::api::tests::init_test_data;
+
+    use super::*;
+
+    #[test]
+    fn test_cleanup_resource() {
+        let (_, mut data) = init_test_data();
+
+        let res = HostScene::new(&mut data).unwrap();
+        let res_weak = Resource::<SceneRes>::new_own(res.rep());
+
+        HostScene::drop(&mut data, res).unwrap();
+        assert!(data.table.get(&res_weak).is_err());
+    }
+}

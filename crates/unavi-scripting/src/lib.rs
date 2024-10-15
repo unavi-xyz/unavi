@@ -33,7 +33,6 @@ impl Plugin for ScriptingPlugin {
             .add_systems(
                 FixedUpdate,
                 (
-                    load::load_scripts,
                     execution::tick_scripts,
                     (
                         api::wired::physics::systems::update_physics_transforms,
@@ -41,8 +40,11 @@ impl Plugin for ScriptingPlugin {
                         api::wired::player::systems::copy_transforms,
                         api::wired::player::systems::update_player_skeletons,
                     ),
-                    execution::update_scripts,
-                    execution::init_scripts,
+                    (
+                        execution::init_scripts,
+                        execution::update_scripts,
+                        load::load_scripts,
+                    ),
                     apply_deferred,
                 )
                     .chain(),

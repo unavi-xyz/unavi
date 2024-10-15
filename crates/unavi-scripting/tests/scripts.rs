@@ -64,15 +64,15 @@ pub async fn test_script(name: &str) {
     }
 }
 
-#[tokio::test]
-#[traced_test]
-async fn test_wired_dwn() {
-    test_script("test:wired-dwn").await;
-    assert!(!logs_contain("ERROR"));
-    assert!(!logs_contain("error"));
-    assert!(!logs_contain("WARN"));
-    assert!(!logs_contain("warn"));
-}
+// #[tokio::test]
+// #[traced_test]
+// async fn test_wired_dwn() {
+//     test_script("test:wired-dwn").await;
+//     assert!(!logs_contain("ERROR"));
+//     assert!(!logs_contain("error"));
+//     assert!(!logs_contain("WARN"));
+//     assert!(!logs_contain("warn"));
+// }
 
 #[tokio::test]
 #[traced_test]

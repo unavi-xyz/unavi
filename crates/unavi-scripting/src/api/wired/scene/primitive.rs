@@ -211,7 +211,10 @@ impl HostPrimitive for ScriptData {
 mod tests {
     use crate::api::{
         tests::init_test_data,
-        wired::scene::bindings::{material::HostMaterial, mesh::HostMesh, node::HostNode},
+        wired::scene::{
+            bindings::{material::HostMaterial, mesh::HostMesh, node::HostNode},
+            nodes::base::NodeRef,
+        },
     };
 
     use super::*;
@@ -294,5 +297,45 @@ mod tests {
             *app.world().get::<Handle<StandardMaterial>>(entity).unwrap(),
             default_material
         );
+    }
+
+    #[test]
+    fn test_set_positions() {
+        let (mut app, mut data) = init_test_data();
+
+        let mesh = HostMesh::new(&mut data).unwrap();
+        let primitive =
+            HostMesh::create_primitive(&mut data, Resource::new_own(mesh.rep())).unwrap();
+
+        let node = HostNode::new(&mut data).unwrap();
+        HostNode::set_mesh(&mut data, node, Some(mesh)).unwrap();
+
+        let positions = vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6];
+        HostPrimitive::set_positions(&mut data, primitive, positions.clone()).unwrap();
+
+        let world = app.world_mut();
+        data.push_commands(&mut world.commands());
+        world.flush_commands();
+
+        let world = app.world_mut();
+
+        let node_children = world
+            .query_filtered::<&Children, With<NodeRef>>()
+            .single(world);
+        let primitive_ent = node_children[0];
+
+        let mesh_handle = world.get::<Handle<Mesh>>(primitive_ent).unwrap();
+
+        let assets = world.resource::<Assets<Mesh>>();
+        let mesh = assets.get(mesh_handle).unwrap();
+
+        let value = mesh
+            .attribute(Mesh::ATTRIBUTE_POSITION)
+            .unwrap()
+            .as_float3()
+            .unwrap()
+            .to_vec()
+            .into_flattened();
+        assert_eq!(value, positions);
     }
 }

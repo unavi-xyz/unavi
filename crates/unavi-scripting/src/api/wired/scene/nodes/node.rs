@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use bevy::prelude::*;
 use wasm_bridge::component::Resource;
 
@@ -102,7 +104,14 @@ impl HostNode for ScriptData {
 
         // Set new mesh.
         let mesh_data = match &value {
-            Some(v) => Some(self.table.get(v)?.clone()),
+            Some(v) => {
+                let mesh_data = self.table.get(v)?.clone();
+                mesh_data
+                    .write()
+                    .nodes
+                    .push(Arc::downgrade(data.raw_data()));
+                Some(mesh_data)
+            }
             None => None,
         };
 

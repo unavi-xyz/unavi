@@ -45,11 +45,9 @@ impl GuestScript for Script {
             primitive.set_material(Some(&material));
         }
 
-        let composition = root();
-
         let asset_node = AssetNode::new();
         asset_node.set_asset(Some(Asset::Document(document)));
-        composition.add_node(&asset_node);
+        root().add_node(&asset_node);
 
         Script {
             color_delta: RefCell::new(Color {

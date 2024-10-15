@@ -13,7 +13,7 @@ use super::asset::Wasm;
 
 pub fn load_scripts(
     actor: Res<UserActor>,
-    assets: Res<Assets<Wasm>>,
+    wasm_assets: Res<Assets<Wasm>>,
     default_material: Res<DefaultMaterial>,
     mut commands: Commands,
     mut pool: AsyncTaskPool<anyhow::Result<Entity>>,
@@ -21,7 +21,7 @@ pub fn load_scripts(
     to_load: Query<(Entity, &Name, &Handle<Wasm>, &ScriptExecutionLevel), Without<ProcessedScript>>,
 ) {
     for (entity, name, handle, level) in to_load.iter() {
-        let wasm = match assets.get(handle) {
+        let wasm = match wasm_assets.get(handle) {
             Some(a) => a,
             None => continue,
         };
@@ -35,7 +35,7 @@ pub fn load_scripts(
         builder.enable_wired_log(name.to_string());
         builder.enable_wired_physics();
         builder.enable_wired_player();
-        builder.enable_wired_scene(default_material.0.clone());
+        builder.enable_wired_scene(entity, default_material.0.clone());
 
         if *level == ScriptExecutionLevel::System {
             builder.enable_wired_dwn(WiredDwn::new(actor.0.dwn.clone()));

@@ -125,6 +125,7 @@ impl HostDocument for ScriptData {
         } else {
             data_write.default_scene = None;
         }
+
         Ok(())
     }
 

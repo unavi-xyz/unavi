@@ -67,8 +67,17 @@ impl HostComposition for ScriptData {
         value: Resource<NodeRes>,
     ) -> wasm_bridge::Result<()> {
         let value = self.table.get(&value)?.clone();
-        let data = self.table.get(&self_)?;
-        data.write().nodes.push(value);
+        let data = self.table.get(&self_)?.clone();
+        data.write().nodes.push(value.clone());
+
+        self.command_send
+            .send(Box::new(move |world: &mut World| {
+                let parent = *data.read().entity.get().unwrap();
+                let child = *value.read().entity.get().unwrap();
+                world.entity_mut(parent).add_child(child);
+            }))
+            .unwrap();
+
         Ok(())
     }
     fn remove_node(
@@ -76,12 +85,23 @@ impl HostComposition for ScriptData {
         self_: Resource<CompositionRes>,
         value: Resource<NodeRes>,
     ) -> wasm_bridge::Result<()> {
-        let id = self.table.get(&value)?.read().id;
-        let mut data = self.table.get(&self_)?.write();
-        data.nodes
+        let child = self.table.get(&value)?.clone();
+        let id = child.read().id;
+
+        let mut data_write = self.table.get(&self_)?.write();
+        data_write
+            .nodes
             .iter()
             .position(|r| r.read().id == id)
-            .map(|index| data.nodes.remove(index));
+            .map(|index| data_write.nodes.remove(index));
+
+        self.command_send
+            .send(Box::new(move |world: &mut World| {
+                let entity = *child.read().entity.get().unwrap();
+                world.entity_mut(entity).remove_parent();
+            }))
+            .unwrap();
+
         Ok(())
     }
 

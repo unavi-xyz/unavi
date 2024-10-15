@@ -107,7 +107,7 @@ impl HostMesh for ScriptData {
                 ));
 
                 let mut data_write = data.write();
-                data_write.handle.get_or_init(|| handle);
+                data_write.handle.set(handle).unwrap();
 
                 // Create node primitives.
                 for node in mesh.read().nodes.iter().map(|n| n.upgrade().unwrap()) {
@@ -159,33 +159,40 @@ impl HostMesh for ScriptData {
 impl Host for ScriptData {}
 
 /// Tries to create a node primitive.
-/// If the node does not have an entity yet, nothing will happen.
+/// Nothing will happen if the node or primitive has not yet been processed.
 pub fn try_create_primitive(
     world: &mut World,
     node: &Arc<RwLock<NodeData>>,
     primitive: &mut PrimitiveData,
     default_material: &Handle<StandardMaterial>,
 ) {
-    if let Some(node_ent) = node.read().unwrap().entity.get() {
-        let material = primitive
-            .material
-            .as_ref()
-            .and_then(|m| m.read().handle.get().cloned())
-            .unwrap_or_else(|| default_material.clone());
+    let Some(node_ent) = node.read().unwrap().entity.get().copied() else {
+        return;
+    };
 
-        let entity = world
-            .spawn(PbrBundle {
-                material,
-                ..default()
-            })
-            .set_parent(*node_ent)
-            .id();
+    let Some(mesh) = primitive.handle.get().cloned() else {
+        return;
+    };
 
-        primitive.node_primitives.push(NodePrimitive {
-            entity,
-            node: Arc::downgrade(node),
-        });
-    }
+    let material = primitive
+        .material
+        .as_ref()
+        .and_then(|m| m.read().handle.get().cloned())
+        .unwrap_or_else(|| default_material.clone());
+
+    let entity = world
+        .spawn(PbrBundle {
+            material,
+            mesh,
+            ..default()
+        })
+        .set_parent(node_ent)
+        .id();
+
+    primitive.node_primitives.push(NodePrimitive {
+        entity,
+        node: Arc::downgrade(node),
+    });
 }
 
 #[cfg(test)]

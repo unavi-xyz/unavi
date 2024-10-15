@@ -1,4 +1,4 @@
-use bevy::{asset::Handle, pbr::StandardMaterial};
+use bevy::prelude::*;
 use wasm_bridge::{component::Linker, Config, Engine, Store};
 
 use crate::{
@@ -45,15 +45,25 @@ impl ScriptEnvBuilder {
         self.components
             .push(Box::new(crate::api::wired::player::add_to_linker));
     }
-    pub fn enable_wired_scene(&mut self, default_material: Handle<StandardMaterial>) {
+    pub fn enable_wired_scene(&mut self, root: Entity, default_material: Handle<StandardMaterial>) {
+        let composition = CompositionRes::new(&mut self.data);
+
         let data = WiredScene {
             default_material,
-            root: CompositionRes::new(&mut self.data),
+            root: composition.clone(),
         };
 
         self.data.api.wired_scene.replace(data);
         self.components
             .push(Box::new(crate::api::wired::scene::add_to_linker));
+
+        self.data
+            .command_send
+            .send(Box::new(move |world: &mut World| {
+                let entity = *composition.read().entity.get().unwrap();
+                world.entity_mut(root).add_child(entity);
+            }))
+            .unwrap();
     }
 
     pub async fn instantiate_script(self, bytes: &[u8]) -> anyhow::Result<ScriptEnv> {

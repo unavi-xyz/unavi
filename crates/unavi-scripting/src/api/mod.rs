@@ -38,7 +38,9 @@ pub mod tests {
 
         let mut env = ScriptEnvBuilder::default();
         env.enable_wired_log("test".to_string());
-        env.enable_wired_scene(default_material);
+
+        let root = app.world_mut().spawn(SpatialBundle::default()).id();
+        env.enable_wired_scene(root, default_material);
 
         (app, env.data)
     }

@@ -2,6 +2,6 @@
 
 <!-- cargo-rdme start -->
 
-Server for running multiplayer worlds of worlds over WebTransport.
+Server for running multiplayer worlds over WebTransport.
 
 <!-- cargo-rdme end -->

@@ -18,12 +18,12 @@ pub fn init_scripts(
     script_map: NonSendMut<ScriptMap>,
 ) {
     for (entity, name) in to_init.iter() {
+        let mut scripts = script_map.lock().unwrap();
+        let script = scripts.get_mut(&entity).expect("Script not found");
+
         #[allow(clippy::await_holding_lock)]
         let result = block_on(async {
             info!("Initializing script {}", name);
-
-            let mut scripts = script_map.lock().unwrap();
-            let script = scripts.get_mut(&entity).expect("Script not found");
 
             script
                 .script
@@ -41,6 +41,8 @@ pub fn init_scripts(
                 continue;
             }
         };
+
+        script.store.data().push_commands(&mut commands);
 
         commands.entity(entity).insert(ScriptResource(result));
     }

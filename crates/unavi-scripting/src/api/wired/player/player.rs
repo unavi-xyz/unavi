@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use wasm_bridge::component::Resource;
 use wasm_bridge_wasi::ResourceTable;
@@ -27,6 +27,15 @@ impl HostPlayer for ScriptData {
 #[derive(Clone)]
 pub struct PlayerRes(pub Arc<RwLock<PlayerData>>);
 
+impl PlayerRes {
+    pub fn read(&self) -> RwLockReadGuard<PlayerData> {
+        self.0.read().unwrap()
+    }
+    pub fn write(&self) -> RwLockWriteGuard<PlayerData> {
+        self.0.write().unwrap()
+    }
+}
+
 pub struct PlayerData {
     pub root: NodeRes,
     pub skeleton: SkeletonData,
@@ -34,26 +43,26 @@ pub struct PlayerData {
 
 #[derive(Clone)]
 pub struct SkeletonData {
-    hips: NodeRes,
-    spine: NodeRes,
-    chest: NodeRes,
-    upper_chest: NodeRes,
-    neck: NodeRes,
-    head: NodeRes,
-    left_shoulder: NodeRes,
-    left_upper_arm: NodeRes,
-    left_lower_arm: NodeRes,
-    left_foot: NodeRes,
-    left_hand: NodeRes,
-    left_lower_leg: NodeRes,
-    left_upper_leg: NodeRes,
-    right_shoulder: NodeRes,
-    right_upper_arm: NodeRes,
-    right_lower_arm: NodeRes,
-    right_foot: NodeRes,
-    right_hand: NodeRes,
-    right_lower_leg: NodeRes,
-    right_upper_leg: NodeRes,
+    pub hips: NodeRes,
+    pub spine: NodeRes,
+    pub chest: NodeRes,
+    pub upper_chest: NodeRes,
+    pub neck: NodeRes,
+    pub head: NodeRes,
+    pub left_shoulder: NodeRes,
+    pub left_upper_arm: NodeRes,
+    pub left_lower_arm: NodeRes,
+    pub left_foot: NodeRes,
+    pub left_hand: NodeRes,
+    pub left_lower_leg: NodeRes,
+    pub left_upper_leg: NodeRes,
+    pub right_shoulder: NodeRes,
+    pub right_upper_arm: NodeRes,
+    pub right_lower_arm: NodeRes,
+    pub right_foot: NodeRes,
+    pub right_hand: NodeRes,
+    pub right_lower_leg: NodeRes,
+    pub right_upper_leg: NodeRes,
 }
 
 impl PlayerRes {

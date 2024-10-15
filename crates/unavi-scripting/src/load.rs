@@ -44,6 +44,8 @@ pub fn load_scripts(
         let bytes = wasm.0.clone();
         let scripts = scripts.clone();
 
+        builder.data.push_commands(&mut commands);
+
         pool.spawn(async move {
             let script = builder.instantiate_script(&bytes).await?;
 

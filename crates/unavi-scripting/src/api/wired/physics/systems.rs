@@ -31,7 +31,6 @@ pub(crate) fn update_physics_transforms(
             }
 
             if let Some(node) = node.0.upgrade() {
-                info!("--------- FOUND NODE -----------> {:?}", transform);
                 node.write().unwrap().transform = *transform;
             }
         }

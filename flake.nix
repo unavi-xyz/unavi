@@ -162,6 +162,7 @@
               cargo-rdme
               cargo-release
               cargo-watch
+              cargo-workspaces
               nodePackages.prettier
               openssh
               rust-analyzer

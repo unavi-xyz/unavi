@@ -11,7 +11,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 glam.workspace = true
-hexasphere = "14.1.0"
+hexasphere = "15.0.0"
 parry3d = "0.17.0"
 wit-bindgen-rt.workspace = true
 

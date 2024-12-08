@@ -1,4 +1,4 @@
-use dwn::actor::Actor;
+use dwn::Dwn;
 use wasm_bridge::component::Resource;
 
 use crate::data::ScriptData;
@@ -6,7 +6,7 @@ use crate::data::ScriptData;
 use super::bindings::dwn::{Host, HostDwn, RecordsQueryBuilder, RecordsWriteBuilder};
 
 pub struct DwnRes {
-    pub actor: Actor,
+    pub dwn: Dwn,
 }
 
 impl HostDwn for ScriptData {

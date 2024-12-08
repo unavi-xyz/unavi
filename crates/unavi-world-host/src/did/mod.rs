@@ -1,10 +1,5 @@
 use std::path::Path;
 
-use didkit::JWK;
-use dwn::{
-    actor::{Actor, VerifiableCredential},
-    DWN,
-};
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 

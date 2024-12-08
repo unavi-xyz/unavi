@@ -1,5 +1,5 @@
 use anyhow::Result;
-use dwn::{actor::Actor, DWN};
+use dwn::Dwn;
 use wasm_bridge::component::{Linker, Resource};
 
 use crate::data::ScriptData;
@@ -35,25 +35,23 @@ pub fn add_to_linker(linker: &mut Linker<ScriptData>) -> Result<()> {
 }
 
 pub struct WiredDwn {
-    dwn: DWN,
+    dwn: Dwn,
 }
 
 impl WiredDwn {
-    pub fn new(dwn: DWN) -> Self {
+    pub fn new(dwn: Dwn) -> Self {
         Self { dwn }
     }
 }
 
 impl Host for ScriptData {
     fn user_dwn(&mut self) -> wasm_bridge::Result<Resource<DwnRes>> {
-        let actor = Actor::new_did_key(self.api.wired_dwn.as_ref().unwrap().dwn.clone())?;
-        let res = self.table.push(DwnRes { actor })?;
-        Ok(res)
+        todo!();
+        // let res = self.table.push(DwnRes { dwn })?;
+        // Ok(res)
     }
 
     fn world_host_dwn(&mut self) -> wasm_bridge::Result<Resource<DwnRes>> {
-        let actor = Actor::new_did_key(self.api.wired_dwn.as_ref().unwrap().dwn.clone())?;
-        let res = self.table.push(DwnRes { actor })?;
-        Ok(res)
+        todo!();
     }
 }

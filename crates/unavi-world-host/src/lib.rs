@@ -8,19 +8,17 @@ use std::{
     time::Duration,
 };
 
-use axum::{routing::get, Json, Router};
-use did::ActorOptions;
-use dwn::{actor::Actor, DWN};
 
-use tracing::{error, info};
+use dwn::Dwn;
+use tracing::info;
 
-mod did;
+// mod did;
 mod world_host;
 
 #[derive(Clone)]
 pub struct ServerOptions {
     pub domain: String,
-    pub dwn: DWN,
+    pub dwn: Dwn,
     pub port: u16,
     pub remote_dwn: String,
     pub remote_sync: bool,
@@ -35,33 +33,33 @@ pub enum Storage {
 }
 
 pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
-    let mut actor = did::create_actor(ActorOptions {
-        domain: opts.domain.clone(),
-        dwn: opts.dwn,
-        storage: opts.storage.clone(),
-    });
+    // let mut actor = did::create_actor(ActorOptions {
+    //     domain: opts.domain.clone(),
+    //     dwn: opts.dwn,
+    //     storage: opts.storage.clone(),
+    // });
 
-    if opts.remote_sync {
-        actor.add_remote(opts.remote_dwn.clone());
-    }
+    // if opts.remote_sync {
+    //     actor.add_remote(opts.remote_dwn.clone());
+    // }
 
-    let document = did::document::create_document(&actor, opts.remote_dwn.clone());
+    // let document = did::document::create_document(&actor, opts.remote_dwn.clone());
 
-    let router = Router::new().route(
-        "/.well-known/did.json",
-        get(|| async move { Json(document.clone()) }),
-    );
+    // let router = Router::new().route(
+    //     "/.well-known/did.json",
+    //     get(|| async move { Json(document.clone()) }),
+    // );
 
     let addr = SocketAddr::new(Ipv4Addr::new(127, 0, 0, 1).into(), opts.port);
     info!("Starting world host on {}", addr);
-    let server = tokio::spawn(axum_server::bind(addr).serve(router.into_make_service()));
+    // let server = tokio::spawn(axum_server::bind(addr).serve(router.into_make_service()));
 
     tokio::time::sleep(Duration::from_secs(1)).await;
 
     // Sync first.
-    if opts.remote_sync {
-        sync_retry(&mut actor).await;
-    }
+    // if opts.remote_sync {
+    //     sync_retry(&mut actor).await;
+    // }
 
     // Interact with DWN.
     const LOCALHOST: &str = "localhost:";
@@ -72,34 +70,35 @@ pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
     };
     let connect_url = format!("https://{}", connect_domain);
 
-    world_host::create_world_host(&actor, &connect_url).await;
+    // world_host::create_world_host(&actor, &connect_url).await;
 
     // Sync after.
-    if opts.remote_sync {
-        sync_retry(&mut actor).await;
-    }
+    // if opts.remote_sync {
+    //     sync_retry(&mut actor).await;
+    // }
 
-    server.await??;
+    // server.await??;
 
     info!("Finished.");
     Ok(())
 }
 
-async fn sync_retry(actor: &mut Actor) {
-    let mut synced = false;
-    let mut delay = 3.0;
-
-    while !synced {
-        match actor.sync().await {
-            Ok(()) => {
-                info!("Sync successful.");
-                synced = true;
-            }
-            Err(e) => {
-                error!("Failed to sync: {}", e);
-                tokio::time::sleep(Duration::from_secs_f32(delay)).await;
-                delay *= 1.5;
-            }
-        }
-    }
-}
+// TODO
+// async fn sync_retry(actor: &mut Actor) {
+//     let mut synced = false;
+//     let mut delay = 3.0;
+//
+//     while !synced {
+//         match actor.sync().await {
+//             Ok(()) => {
+//                 info!("Sync successful.");
+//                 synced = true;
+//             }
+//             Err(e) => {
+//                 error!("Failed to sync: {}", e);
+//                 tokio::time::sleep(Duration::from_secs_f32(delay)).await;
+//                 delay *= 1.5;
+//             }
+//         }
+//     }
+// }

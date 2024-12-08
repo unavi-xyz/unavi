@@ -5,13 +5,11 @@ use bevy::{gizmos::GizmoPlugin, input::InputPlugin, prelude::*, scene::ScenePlug
 use tracing_test::traced_test;
 
 use unavi_scripting::{load::LoadedScript, ScriptBundle, ScriptingPlugin};
-use unavi_world::util::init_user_actor;
 
 const NUM_UPDATES: usize = 4;
 
 pub async fn test_script(name: &str) {
     let mut app = App::new();
-    init_user_actor(app.world_mut()).await;
 
     app.add_plugins((
         MinimalPlugins,

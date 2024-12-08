@@ -5,7 +5,7 @@ use std::{
     sync::Arc,
 };
 
-use dwn::DWN;
+use dwn::Dwn;
 use tokio::task::LocalSet;
 use tracing::{debug, error, info, info_span, Instrument};
 use wtransport::{Identity, ServerConfig};
@@ -21,7 +21,7 @@ mod update_loop;
 #[derive(Clone)]
 pub struct ServerOptions {
     pub domain: String,
-    pub dwn: DWN,
+    pub dwn: Arc<Dwn>,
     pub port: u16,
     pub threads: Option<usize>,
 }

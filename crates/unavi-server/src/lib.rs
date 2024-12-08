@@ -1,9 +1,12 @@
-use std::{path::PathBuf, sync::LazyLock};
+use std::{
+    path::PathBuf,
+    sync::LazyLock,
+};
 
 use anyhow::Result;
 use clap::{Parser, Subcommand, ValueEnum};
 use directories::ProjectDirs;
-use dwn::DWN;
+use dwn::Dwn;
 use tracing::{debug, info_span, Instrument};
 
 pub static STORAGE_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
@@ -78,7 +81,7 @@ impl Default for StartOptions {
 }
 
 #[async_recursion::async_recursion]
-pub async fn start(args: Args, opts: StartOptions, dwn: DWN) -> Result<()> {
+pub async fn start(args: Args, opts: StartOptions, dwn: Dwn) -> Result<()> {
     debug!("Args: {:?}", args);
 
     match args.command {
@@ -96,9 +99,12 @@ pub async fn start(args: Args, opts: StartOptions, dwn: DWN) -> Result<()> {
             }
         }
         Command::Social { port } => {
-            unavi_social_server::start(unavi_social_server::ServerOptions { dwn, port })
-                .instrument(info_span!("Social"))
-                .await?;
+            unavi_social_server::start(unavi_social_server::ServerOptions {
+                dwn: dwn.clone(),
+                port,
+            })
+            .instrument(info_span!("Social"))
+            .await?;
         }
         Command::World {
             domain,
@@ -119,7 +125,7 @@ pub async fn start(args: Args, opts: StartOptions, dwn: DWN) -> Result<()> {
 
             let server_options = unavi_world_server::ServerOptions {
                 domain: domain.clone(),
-                dwn: dwn.clone(),
+                dwn: dwn.clone().into(),
                 port,
                 threads,
             };

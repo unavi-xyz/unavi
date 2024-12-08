@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
-use dwn::DWN;
+use dwn::Dwn;
 use tracing::{error, info, info_span, Instrument};
 
 use xwt_core::{
@@ -22,7 +22,7 @@ mod event;
 pub async fn handle_connection(
     new_connection: NewConnection,
     context: Arc<GlobalContext>,
-    dwn: DWN,
+    dwn: Arc<Dwn>,
 ) -> Result<()> {
     let player_id = new_connection.id;
 
@@ -41,7 +41,7 @@ pub async fn handle_connection(
 async fn handle_connection_impl(
     new_connection: NewConnection,
     context: Arc<GlobalContext>,
-    dwn: DWN,
+    dwn: Arc<Dwn>,
 ) -> Result<()> {
     info!("Waiting for session request...");
     let session_request = new_connection.incoming_session.wait_accept().await?;

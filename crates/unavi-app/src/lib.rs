@@ -37,9 +37,11 @@ use bevy::{
 };
 
 use avian3d::prelude::*;
-use dwn::{actor::Actor, store::SurrealStore, DWN};
-use surrealdb::{engine::local::Db, Surreal};
-use unavi_world::UserActor;
+use dwn::{
+    core::store::{DataStore, RecordStore},
+    stores::NativeDbStore,
+    Dwn,
+};
 
 #[cfg(not(target_family = "wasm"))]
 pub mod native;
@@ -61,14 +63,7 @@ impl Default for StartOptions {
     }
 }
 
-pub async fn start(db: Surreal<Db>, opts: StartOptions) {
-    let store = SurrealStore::new(db)
-        .await
-        .expect("Failed to create DWN store.");
-
-    let dwn = DWN::from(store);
-    let actor = Actor::new_did_key(dwn).expect("Failed to create DWN actor.");
-
+pub async fn start(dwn: Dwn, opts: StartOptions) {
     let mut meta_paths = HashSet::new();
     meta_paths.insert("images/dev-white.png".into());
 
@@ -107,15 +102,14 @@ pub async fn start(db: Surreal<Db>, opts: StartOptions) {
         })
         .finish(&mut app);
 
-    app.insert_resource(UserActor(Arc::new(actor)))
-        .add_plugins((
-            PhysicsPlugins::default(),
-            unavi_networking::NetworkingPlugin,
-            unavi_player::PlayerPlugin,
-            unavi_scripting::ScriptingPlugin,
-            unavi_settings::SettingsPlugin,
-            unavi_world::WorldPlugin,
-        ));
+    app.add_plugins((
+        PhysicsPlugins::default(),
+        unavi_networking::NetworkingPlugin,
+        unavi_player::PlayerPlugin,
+        unavi_scripting::ScriptingPlugin,
+        unavi_settings::SettingsPlugin,
+        unavi_world::WorldPlugin,
+    ));
 
     app.add_systems(Startup, unavi_system::spawn_unavi_system);
     #[cfg(not(target_family = "wasm"))]

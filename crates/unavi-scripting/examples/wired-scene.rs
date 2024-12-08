@@ -3,12 +3,10 @@ use bevy::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use unavi_scripting::{ScriptBundle, ScriptingPlugin};
-use unavi_world::util::init_user_actor;
 
 #[tokio::main]
 async fn main() {
     let mut app = App::new();
-    init_user_actor(app.world_mut()).await;
 
     app.add_plugins((
         DefaultPlugins.set(AssetPlugin {

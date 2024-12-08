@@ -6,18 +6,20 @@ pub mod wired {
         pub mod types {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() =
-                super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
             pub type Vec3 = super::super::super::wired::math::types::Vec3;
             pub type Quat = super::super::super::wired::math::types::Quat;
             #[repr(u8)]
-            #[derive(Clone, Copy, Eq, PartialEq)]
+            #[derive(Clone, Copy, Eq, Ord, PartialEq, PartialOrd)]
             pub enum HandSide {
                 Left,
                 Right,
             }
             impl ::core::fmt::Debug for HandSide {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
                     match self {
                         HandSide::Left => f.debug_tuple("HandSide::Left").finish(),
                         HandSide::Right => f.debug_tuple("HandSide::Right").finish(),
@@ -45,7 +47,10 @@ pub mod wired {
                 pub radius: f32,
             }
             impl ::core::fmt::Debug for Joint {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
                     f.debug_struct("Joint")
                         .field("translation", &self.translation)
                         .field("rotation", &self.rotation)
@@ -62,7 +67,10 @@ pub mod wired {
                 pub metacarpal: Joint,
             }
             impl ::core::fmt::Debug for Finger {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
                     f.debug_struct("Finger")
                         .field("tip", &self.tip)
                         .field("distal", &self.distal)
@@ -86,7 +94,10 @@ pub mod wired {
                 pub elbow: Option<Joint>,
             }
             impl ::core::fmt::Debug for Hand {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
                     f.debug_struct("Hand")
                         .field("side", &self.side)
                         .field("thumb", &self.thumb)
@@ -108,7 +119,10 @@ pub mod wired {
                 pub origin: Vec3,
             }
             impl ::core::fmt::Debug for Ray {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
                     f.debug_struct("Ray")
                         .field("orientation", &self.orientation)
                         .field("origin", &self.origin)
@@ -121,10 +135,17 @@ pub mod wired {
                 Ray(Ray),
             }
             impl ::core::fmt::Debug for InputData {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
                     match self {
-                        InputData::Hand(e) => f.debug_tuple("InputData::Hand").field(e).finish(),
-                        InputData::Ray(e) => f.debug_tuple("InputData::Ray").field(e).finish(),
+                        InputData::Hand(e) => {
+                            f.debug_tuple("InputData::Hand").field(e).finish()
+                        }
+                        InputData::Ray(e) => {
+                            f.debug_tuple("InputData::Ray").field(e).finish()
+                        }
                     }
                 }
             }
@@ -134,10 +155,17 @@ pub mod wired {
                 Hover,
             }
             impl ::core::fmt::Debug for InputAction {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
                     match self {
-                        InputAction::Collision => f.debug_tuple("InputAction::Collision").finish(),
-                        InputAction::Hover => f.debug_tuple("InputAction::Hover").finish(),
+                        InputAction::Collision => {
+                            f.debug_tuple("InputAction::Collision").finish()
+                        }
+                        InputAction::Hover => {
+                            f.debug_tuple("InputAction::Hover").finish()
+                        }
                     }
                 }
             }
@@ -152,7 +180,10 @@ pub mod wired {
                 pub data: InputData,
             }
             impl ::core::fmt::Debug for InputEvent {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
                     f.debug_struct("InputEvent")
                         .field("id", &self.id)
                         .field("action", &self.action)
@@ -165,8 +196,7 @@ pub mod wired {
         pub mod handler {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() =
-                super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type InputEvent = super::super::super::wired::input::types::InputEvent;
             #[derive(Debug)]
@@ -233,7 +263,9 @@ pub mod wired {
                     unsafe {
                         #[repr(align(8))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 768]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 768]);
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 768],
+                        );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:input/handler")]
@@ -849,10 +881,9 @@ pub mod wired {
         pub mod api {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() =
-                super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
             #[repr(u8)]
-            #[derive(Clone, Copy, Eq, PartialEq)]
+            #[derive(Clone, Copy, Eq, Ord, PartialEq, PartialOrd)]
             pub enum LogLevel {
                 Debug,
                 Info,
@@ -860,7 +891,10 @@ pub mod wired {
                 Error,
             }
             impl ::core::fmt::Debug for LogLevel {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
                     match self {
                         LogLevel::Debug => f.debug_tuple("LogLevel::Debug").finish(),
                         LogLevel::Info => f.debug_tuple("LogLevel::Info").finish(),
@@ -911,8 +945,7 @@ pub mod wired {
         pub mod types {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() =
-                super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
             #[repr(C)]
             #[derive(Clone, Copy)]
             pub struct Vec2 {
@@ -920,7 +953,10 @@ pub mod wired {
                 pub y: f32,
             }
             impl ::core::fmt::Debug for Vec2 {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
                     f.debug_struct("Vec2")
                         .field("x", &self.x)
                         .field("y", &self.y)
@@ -935,7 +971,10 @@ pub mod wired {
                 pub z: f32,
             }
             impl ::core::fmt::Debug for Vec3 {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
                     f.debug_struct("Vec3")
                         .field("x", &self.x)
                         .field("y", &self.y)
@@ -952,7 +991,10 @@ pub mod wired {
                 pub w: f32,
             }
             impl ::core::fmt::Debug for Quat {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
                     f.debug_struct("Quat")
                         .field("x", &self.x)
                         .field("y", &self.y)
@@ -969,7 +1011,10 @@ pub mod wired {
                 pub translation: Vec3,
             }
             impl ::core::fmt::Debug for Transform {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
                     f.debug_struct("Transform")
                         .field("rotation", &self.rotation)
                         .field("scale", &self.scale)
@@ -1022,11 +1067,7 @@ pub mod wired {
                     let l1 = *ptr0.add(0).cast::<f32>();
                     let l2 = *ptr0.add(4).cast::<f32>();
                     let l3 = *ptr0.add(8).cast::<f32>();
-                    Vec3 {
-                        x: l1,
-                        y: l2,
-                        z: l3,
-                    }
+                    Vec3 { x: l1, y: l2, z: l3 }
                 }
             }
             #[allow(unused_unsafe, clippy::all)]
@@ -1051,12 +1092,7 @@ pub mod wired {
                     let l2 = *ptr0.add(4).cast::<f32>();
                     let l3 = *ptr0.add(8).cast::<f32>();
                     let l4 = *ptr0.add(12).cast::<f32>();
-                    Quat {
-                        x: l1,
-                        y: l2,
-                        z: l3,
-                        w: l4,
-                    }
+                    Quat { x: l1, y: l2, z: l3, w: l4 }
                 }
             }
             #[allow(unused_unsafe, clippy::all)]
@@ -1088,22 +1124,9 @@ pub mod wired {
                     let l9 = *ptr0.add(32).cast::<f32>();
                     let l10 = *ptr0.add(36).cast::<f32>();
                     Transform {
-                        rotation: Quat {
-                            x: l1,
-                            y: l2,
-                            z: l3,
-                            w: l4,
-                        },
-                        scale: Vec3 {
-                            x: l5,
-                            y: l6,
-                            z: l7,
-                        },
-                        translation: Vec3 {
-                            x: l8,
-                            y: l9,
-                            z: l10,
-                        },
+                        rotation: Quat { x: l1, y: l2, z: l3, w: l4 },
+                        scale: Vec3 { x: l5, y: l6, z: l7 },
+                        translation: Vec3 { x: l8, y: l9, z: l10 },
                     }
                 }
             }
@@ -1115,8 +1138,7 @@ pub mod wired {
         pub mod types {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() =
-                super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Vec3 = super::super::super::wired::math::types::Vec3;
             #[derive(Debug)]
@@ -1163,7 +1185,10 @@ pub mod wired {
                 pub radius: f32,
             }
             impl ::core::fmt::Debug for ShapeCylinder {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
                     f.debug_struct("ShapeCylinder")
                         .field("height", &self.height)
                         .field("radius", &self.radius)
@@ -1177,11 +1202,20 @@ pub mod wired {
                 Sphere(f32),
             }
             impl ::core::fmt::Debug for Shape {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
                     match self {
-                        Shape::Cuboid(e) => f.debug_tuple("Shape::Cuboid").field(e).finish(),
-                        Shape::Cylinder(e) => f.debug_tuple("Shape::Cylinder").field(e).finish(),
-                        Shape::Sphere(e) => f.debug_tuple("Shape::Sphere").field(e).finish(),
+                        Shape::Cuboid(e) => {
+                            f.debug_tuple("Shape::Cuboid").field(e).finish()
+                        }
+                        Shape::Cylinder(e) => {
+                            f.debug_tuple("Shape::Cylinder").field(e).finish()
+                        }
+                        Shape::Sphere(e) => {
+                            f.debug_tuple("Shape::Sphere").field(e).finish()
+                        }
                     }
                 }
             }
@@ -1223,17 +1257,24 @@ pub mod wired {
                 }
             }
             #[repr(u8)]
-            #[derive(Clone, Copy, Eq, PartialEq)]
+            #[derive(Clone, Copy, Eq, Ord, PartialEq, PartialOrd)]
             pub enum RigidBodyType {
                 Dynamic,
                 Fixed,
                 Kinematic,
             }
             impl ::core::fmt::Debug for RigidBodyType {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
                     match self {
-                        RigidBodyType::Dynamic => f.debug_tuple("RigidBodyType::Dynamic").finish(),
-                        RigidBodyType::Fixed => f.debug_tuple("RigidBodyType::Fixed").finish(),
+                        RigidBodyType::Dynamic => {
+                            f.debug_tuple("RigidBodyType::Dynamic").finish()
+                        }
+                        RigidBodyType::Fixed => {
+                            f.debug_tuple("RigidBodyType::Fixed").finish()
+                        }
                         RigidBodyType::Kinematic => {
                             f.debug_tuple("RigidBodyType::Kinematic").finish()
                         }
@@ -1268,10 +1309,7 @@ pub mod wired {
                                 (0i32, _rt::as_f32(x0), _rt::as_f32(y0), _rt::as_f32(z0))
                             }
                             Shape::Cylinder(e) => {
-                                let ShapeCylinder {
-                                    height: height1,
-                                    radius: radius1,
-                                } = e;
+                                let ShapeCylinder { height: height1, radius: radius1 } = e;
                                 (1i32, _rt::as_f32(height1), _rt::as_f32(radius1), 0.0f32)
                             }
                             Shape::Sphere(e) => (2i32, _rt::as_f32(e), 0.0f32, 0.0f32),
@@ -1353,7 +1391,9 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 12],
+                        );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:physics/types")]
@@ -1411,7 +1451,9 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 12],
+                        );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:physics/types")]
@@ -1471,8 +1513,7 @@ pub mod wired {
         pub mod material {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() =
-                super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             #[repr(C)]
             #[derive(Clone, Copy)]
@@ -1483,7 +1524,10 @@ pub mod wired {
                 pub a: f32,
             }
             impl ::core::fmt::Debug for Color {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
                     f.debug_struct("Color")
                         .field("r", &self.r)
                         .field("g", &self.g)
@@ -1593,7 +1637,9 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 8],
+                        );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/material")]
@@ -1641,7 +1687,9 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 16],
+                        );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/material")]
@@ -1671,12 +1719,7 @@ pub mod wired {
                 #[allow(unused_unsafe, clippy::all)]
                 pub fn set_color(&self, value: Color) {
                     unsafe {
-                        let Color {
-                            r: r0,
-                            g: g0,
-                            b: b0,
-                            a: a0,
-                        } = value;
+                        let Color { r: r0, g: g0, b: b0, a: a0 } = value;
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/material")]
                         extern "C" {
@@ -1702,8 +1745,7 @@ pub mod wired {
         pub mod mesh {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() =
-                super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Material = super::super::super::wired::scene::material::Material;
             #[derive(Debug)]
@@ -1805,7 +1847,9 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 8],
+                        );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/mesh")]
@@ -2005,7 +2049,9 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 8],
+                        );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/mesh")]
@@ -2053,7 +2099,9 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 8],
+                        );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/mesh")]
@@ -2117,7 +2165,10 @@ pub mod wired {
                         fn wit_import(_: i32, _: i32) {
                             unreachable!()
                         }
-                        wit_import((self).handle() as i32, (&value).take_handle() as i32);
+                        wit_import(
+                            (self).handle() as i32,
+                            (&value).take_handle() as i32,
+                        );
                     }
                 }
             }
@@ -2126,8 +2177,7 @@ pub mod wired {
         pub mod node {
             #[used]
             #[doc(hidden)]
-            static __FORCE_SECTION_REF: fn() =
-                super::super::super::__link_custom_section_describing_imports;
+            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Mesh = super::super::super::wired::scene::mesh::Mesh;
             pub type InputHandler = super::super::super::wired::input::handler::InputHandler;
@@ -2235,7 +2285,9 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 8],
+                        );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -2283,7 +2335,9 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 8],
+                        );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -2317,7 +2371,9 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 8],
+                        );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -2390,7 +2446,9 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 40]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 40]);
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 40],
+                        );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -2440,7 +2498,9 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 40]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 40]);
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 40],
+                        );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -2565,7 +2625,9 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 8],
+                        );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -2623,7 +2685,9 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 8],
+                        );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -2681,7 +2745,9 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 8],
+                        );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -2739,7 +2805,9 @@ pub mod wired {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 8],
+                        );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wired:scene/node")]
@@ -2804,8 +2872,7 @@ pub mod exports {
             pub mod api {
                 #[used]
                 #[doc(hidden)]
-                static __FORCE_SECTION_REF: fn() =
-                    super::super::super::super::__link_custom_section_describing_imports;
+                static __FORCE_SECTION_REF: fn() = super::super::super::super::__link_custom_section_describing_imports;
                 use super::super::super::super::_rt;
                 pub type Vec2 = super::super::super::super::wired::math::types::Vec2;
                 pub type Vec3 = super::super::super::super::wired::math::types::Vec3;
@@ -2826,7 +2893,9 @@ pub mod exports {
                     pub fn new<T: GuestRectangle>(val: T) -> Self {
                         Self::type_guard::<T>();
                         let val: _RectangleRep<T> = Some(val);
-                        let ptr: *mut _RectangleRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        let ptr: *mut _RectangleRep<T> = _rt::Box::into_raw(
+                            _rt::Box::new(val),
+                        );
                         unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
                     }
                     /// Gets access to the underlying `T` which represents this resource.
@@ -2864,13 +2933,12 @@ pub mod exports {
                         use core::any::TypeId;
                         static mut LAST_TYPE: Option<TypeId> = None;
                         unsafe {
-                            assert!(!cfg!(target_feature = "atomics"));
+                            assert!(! cfg!(target_feature = "atomics"));
                             let id = TypeId::of::<T>();
                             match LAST_TYPE {
                                 Some(ty) => {
                                     assert!(
-                                        ty == id,
-                                        "cannot use two types with this resource type"
+                                        ty == id, "cannot use two types with this resource type"
                                     )
                                 }
                                 None => LAST_TYPE = Some(id),
@@ -2944,7 +3012,9 @@ pub mod exports {
                     pub fn new<T: GuestCircle>(val: T) -> Self {
                         Self::type_guard::<T>();
                         let val: _CircleRep<T> = Some(val);
-                        let ptr: *mut _CircleRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        let ptr: *mut _CircleRep<T> = _rt::Box::into_raw(
+                            _rt::Box::new(val),
+                        );
                         unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
                     }
                     /// Gets access to the underlying `T` which represents this resource.
@@ -2982,13 +3052,12 @@ pub mod exports {
                         use core::any::TypeId;
                         static mut LAST_TYPE: Option<TypeId> = None;
                         unsafe {
-                            assert!(!cfg!(target_feature = "atomics"));
+                            assert!(! cfg!(target_feature = "atomics"));
                             let id = TypeId::of::<T>();
                             match LAST_TYPE {
                                 Some(ty) => {
                                     assert!(
-                                        ty == id,
-                                        "cannot use two types with this resource type"
+                                        ty == id, "cannot use two types with this resource type"
                                     )
                                 }
                                 None => LAST_TYPE = Some(id),
@@ -3062,7 +3131,9 @@ pub mod exports {
                     pub fn new<T: GuestEllipse>(val: T) -> Self {
                         Self::type_guard::<T>();
                         let val: _EllipseRep<T> = Some(val);
-                        let ptr: *mut _EllipseRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        let ptr: *mut _EllipseRep<T> = _rt::Box::into_raw(
+                            _rt::Box::new(val),
+                        );
                         unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
                     }
                     /// Gets access to the underlying `T` which represents this resource.
@@ -3100,13 +3171,12 @@ pub mod exports {
                         use core::any::TypeId;
                         static mut LAST_TYPE: Option<TypeId> = None;
                         unsafe {
-                            assert!(!cfg!(target_feature = "atomics"));
+                            assert!(! cfg!(target_feature = "atomics"));
                             let id = TypeId::of::<T>();
                             match LAST_TYPE {
                                 Some(ty) => {
                                     assert!(
-                                        ty == id,
-                                        "cannot use two types with this resource type"
+                                        ty == id, "cannot use two types with this resource type"
                                     )
                                 }
                                 None => LAST_TYPE = Some(id),
@@ -3180,7 +3250,9 @@ pub mod exports {
                     pub fn new<T: GuestCylinder>(val: T) -> Self {
                         Self::type_guard::<T>();
                         let val: _CylinderRep<T> = Some(val);
-                        let ptr: *mut _CylinderRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        let ptr: *mut _CylinderRep<T> = _rt::Box::into_raw(
+                            _rt::Box::new(val),
+                        );
                         unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
                     }
                     /// Gets access to the underlying `T` which represents this resource.
@@ -3218,13 +3290,12 @@ pub mod exports {
                         use core::any::TypeId;
                         static mut LAST_TYPE: Option<TypeId> = None;
                         unsafe {
-                            assert!(!cfg!(target_feature = "atomics"));
+                            assert!(! cfg!(target_feature = "atomics"));
                             let id = TypeId::of::<T>();
                             match LAST_TYPE {
                                 Some(ty) => {
                                     assert!(
-                                        ty == id,
-                                        "cannot use two types with this resource type"
+                                        ty == id, "cannot use two types with this resource type"
                                     )
                                 }
                                 None => LAST_TYPE = Some(id),
@@ -3298,7 +3369,9 @@ pub mod exports {
                     pub fn new<T: GuestCuboid>(val: T) -> Self {
                         Self::type_guard::<T>();
                         let val: _CuboidRep<T> = Some(val);
-                        let ptr: *mut _CuboidRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        let ptr: *mut _CuboidRep<T> = _rt::Box::into_raw(
+                            _rt::Box::new(val),
+                        );
                         unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
                     }
                     /// Gets access to the underlying `T` which represents this resource.
@@ -3336,13 +3409,12 @@ pub mod exports {
                         use core::any::TypeId;
                         static mut LAST_TYPE: Option<TypeId> = None;
                         unsafe {
-                            assert!(!cfg!(target_feature = "atomics"));
+                            assert!(! cfg!(target_feature = "atomics"));
                             let id = TypeId::of::<T>();
                             match LAST_TYPE {
                                 Some(ty) => {
                                     assert!(
-                                        ty == id,
-                                        "cannot use two types with this resource type"
+                                        ty == id, "cannot use two types with this resource type"
                                     )
                                 }
                                 None => LAST_TYPE = Some(id),
@@ -3407,7 +3479,10 @@ pub mod exports {
                     pub subdivisions: u8,
                 }
                 impl ::core::fmt::Debug for SphereIco {
-                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    fn fmt(
+                        &self,
+                        f: &mut ::core::fmt::Formatter<'_>,
+                    ) -> ::core::fmt::Result {
                         f.debug_struct("SphereIco")
                             .field("subdivisions", &self.subdivisions)
                             .finish()
@@ -3420,7 +3495,10 @@ pub mod exports {
                     pub stacks: u8,
                 }
                 impl ::core::fmt::Debug for SphereUv {
-                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    fn fmt(
+                        &self,
+                        f: &mut ::core::fmt::Formatter<'_>,
+                    ) -> ::core::fmt::Result {
                         f.debug_struct("SphereUv")
                             .field("sectors", &self.sectors)
                             .field("stacks", &self.stacks)
@@ -3435,12 +3513,17 @@ pub mod exports {
                     Uv(SphereUv),
                 }
                 impl ::core::fmt::Debug for SphereKind {
-                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    fn fmt(
+                        &self,
+                        f: &mut ::core::fmt::Formatter<'_>,
+                    ) -> ::core::fmt::Result {
                         match self {
                             SphereKind::Ico(e) => {
                                 f.debug_tuple("SphereKind::Ico").field(e).finish()
                             }
-                            SphereKind::Uv(e) => f.debug_tuple("SphereKind::Uv").field(e).finish(),
+                            SphereKind::Uv(e) => {
+                                f.debug_tuple("SphereKind::Uv").field(e).finish()
+                            }
                         }
                     }
                 }
@@ -3459,7 +3542,9 @@ pub mod exports {
                     pub fn new<T: GuestSphere>(val: T) -> Self {
                         Self::type_guard::<T>();
                         let val: _SphereRep<T> = Some(val);
-                        let ptr: *mut _SphereRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        let ptr: *mut _SphereRep<T> = _rt::Box::into_raw(
+                            _rt::Box::new(val),
+                        );
                         unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
                     }
                     /// Gets access to the underlying `T` which represents this resource.
@@ -3497,13 +3582,12 @@ pub mod exports {
                         use core::any::TypeId;
                         static mut LAST_TYPE: Option<TypeId> = None;
                         unsafe {
-                            assert!(!cfg!(target_feature = "atomics"));
+                            assert!(! cfg!(target_feature = "atomics"));
                             let id = TypeId::of::<T>();
                             match LAST_TYPE {
                                 Some(ty) => {
                                     assert!(
-                                        ty == id,
-                                        "cannot use two types with this resource type"
+                                        ty == id, "cannot use two types with this resource type"
                                     )
                                 }
                                 None => LAST_TYPE = Some(id),
@@ -3577,7 +3661,9 @@ pub mod exports {
                     pub fn new<T: GuestAxes>(val: T) -> Self {
                         Self::type_guard::<T>();
                         let val: _AxesRep<T> = Some(val);
-                        let ptr: *mut _AxesRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        let ptr: *mut _AxesRep<T> = _rt::Box::into_raw(
+                            _rt::Box::new(val),
+                        );
                         unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
                     }
                     /// Gets access to the underlying `T` which represents this resource.
@@ -3615,13 +3701,12 @@ pub mod exports {
                         use core::any::TypeId;
                         static mut LAST_TYPE: Option<TypeId> = None;
                         unsafe {
-                            assert!(!cfg!(target_feature = "atomics"));
+                            assert!(! cfg!(target_feature = "atomics"));
                             let id = TypeId::of::<T>();
                             match LAST_TYPE {
                                 Some(ty) => {
                                     assert!(
-                                        ty == id,
-                                        "cannot use two types with this resource type"
+                                        ty == id, "cannot use two types with this resource type"
                                     )
                                 }
                                 None => LAST_TYPE = Some(id),
@@ -3686,11 +3771,13 @@ pub mod exports {
                     arg0: f32,
                     arg1: f32,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = Rectangle::new(T::new(
-                        super::super::super::super::wired::math::types::Vec2 { x: arg0, y: arg1 },
-                    ));
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = Rectangle::new(
+                        T::new(super::super::super::super::wired::math::types::Vec2 {
+                            x: arg0,
+                            y: arg1,
+                        }),
+                    );
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
@@ -3698,12 +3785,15 @@ pub mod exports {
                 pub unsafe fn _export_method_rectangle_size_cabi<T: GuestRectangle>(
                     arg0: *mut u8,
                 ) -> *mut u8 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::size(RectangleBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::size(
+                        RectangleBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
-                    let super::super::super::super::wired::math::types::Vec2 { x: x2, y: y2 } =
-                        result0;
+                    let super::super::super::super::wired::math::types::Vec2 {
+                        x: x2,
+                        y: y2,
+                    } = result0;
                     *ptr1.add(0).cast::<f32>() = _rt::as_f32(x2);
                     *ptr1.add(4).cast::<f32>() = _rt::as_f32(y2);
                     ptr1
@@ -3715,11 +3805,13 @@ pub mod exports {
                     arg1: f32,
                     arg2: f32,
                 ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
                     T::set_size(
                         RectangleBorrow::lift(arg0 as u32 as usize).get(),
-                        super::super::super::super::wired::math::types::Vec2 { x: arg1, y: arg2 },
+                        super::super::super::super::wired::math::types::Vec2 {
+                            x: arg1,
+                            y: arg2,
+                        },
                     );
                 }
                 #[doc(hidden)]
@@ -3727,9 +3819,10 @@ pub mod exports {
                 pub unsafe fn _export_method_rectangle_to_mesh_cabi<T: GuestRectangle>(
                     arg0: *mut u8,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::to_mesh(RectangleBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::to_mesh(
+                        RectangleBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
@@ -3737,27 +3830,29 @@ pub mod exports {
                 pub unsafe fn _export_method_rectangle_to_node_cabi<T: GuestRectangle>(
                     arg0: *mut u8,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::to_node(RectangleBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::to_node(
+                        RectangleBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_rectangle_to_physics_node_cabi<T: GuestRectangle>(
-                    arg0: *mut u8,
+                pub unsafe fn _export_method_rectangle_to_physics_node_cabi<
+                    T: GuestRectangle,
+                >(arg0: *mut u8) -> i32 {
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::to_physics_node(
+                        RectangleBorrow::lift(arg0 as u32 as usize).get(),
+                    );
+                    (result0).take_handle() as i32
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_constructor_circle_cabi<T: GuestCircle>(
+                    arg0: f32,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 =
-                        T::to_physics_node(RectangleBorrow::lift(arg0 as u32 as usize).get());
-                    (result0).take_handle() as i32
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_constructor_circle_cabi<T: GuestCircle>(arg0: f32) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
                     let result0 = Circle::new(T::new(arg0));
                     (result0).take_handle() as i32
                 }
@@ -3766,9 +3861,10 @@ pub mod exports {
                 pub unsafe fn _export_method_circle_radius_cabi<T: GuestCircle>(
                     arg0: *mut u8,
                 ) -> f32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::radius(CircleBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::radius(
+                        CircleBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     _rt::as_f32(result0)
                 }
                 #[doc(hidden)]
@@ -3777,8 +3873,7 @@ pub mod exports {
                     arg0: *mut u8,
                     arg1: f32,
                 ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
                     T::set_radius(CircleBorrow::lift(arg0 as u32 as usize).get(), arg1);
                 }
                 #[doc(hidden)]
@@ -3786,9 +3881,10 @@ pub mod exports {
                 pub unsafe fn _export_method_circle_resolution_cabi<T: GuestCircle>(
                     arg0: *mut u8,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::resolution(CircleBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::resolution(
+                        CircleBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     _rt::as_i32(result0)
                 }
                 #[doc(hidden)]
@@ -3797,18 +3893,21 @@ pub mod exports {
                     arg0: *mut u8,
                     arg1: i32,
                 ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    T::set_resolution(CircleBorrow::lift(arg0 as u32 as usize).get(), arg1 as u16);
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    T::set_resolution(
+                        CircleBorrow::lift(arg0 as u32 as usize).get(),
+                        arg1 as u16,
+                    );
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
                 pub unsafe fn _export_method_circle_to_mesh_cabi<T: GuestCircle>(
                     arg0: *mut u8,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::to_mesh(CircleBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::to_mesh(
+                        CircleBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
@@ -3816,9 +3915,10 @@ pub mod exports {
                 pub unsafe fn _export_method_circle_to_node_cabi<T: GuestCircle>(
                     arg0: *mut u8,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::to_node(CircleBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::to_node(
+                        CircleBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
@@ -3826,10 +3926,10 @@ pub mod exports {
                 pub unsafe fn _export_method_circle_to_physics_node_cabi<T: GuestCircle>(
                     arg0: *mut u8,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 =
-                        T::to_physics_node(CircleBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::to_physics_node(
+                        CircleBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
@@ -3838,11 +3938,13 @@ pub mod exports {
                     arg0: f32,
                     arg1: f32,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = Ellipse::new(T::new(
-                        super::super::super::super::wired::math::types::Vec2 { x: arg0, y: arg1 },
-                    ));
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = Ellipse::new(
+                        T::new(super::super::super::super::wired::math::types::Vec2 {
+                            x: arg0,
+                            y: arg1,
+                        }),
+                    );
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
@@ -3850,12 +3952,15 @@ pub mod exports {
                 pub unsafe fn _export_method_ellipse_half_size_cabi<T: GuestEllipse>(
                     arg0: *mut u8,
                 ) -> *mut u8 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::half_size(EllipseBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::half_size(
+                        EllipseBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
-                    let super::super::super::super::wired::math::types::Vec2 { x: x2, y: y2 } =
-                        result0;
+                    let super::super::super::super::wired::math::types::Vec2 {
+                        x: x2,
+                        y: y2,
+                    } = result0;
                     *ptr1.add(0).cast::<f32>() = _rt::as_f32(x2);
                     *ptr1.add(4).cast::<f32>() = _rt::as_f32(y2);
                     ptr1
@@ -3867,11 +3972,13 @@ pub mod exports {
                     arg1: f32,
                     arg2: f32,
                 ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
                     T::set_half_size(
                         EllipseBorrow::lift(arg0 as u32 as usize).get(),
-                        super::super::super::super::wired::math::types::Vec2 { x: arg1, y: arg2 },
+                        super::super::super::super::wired::math::types::Vec2 {
+                            x: arg1,
+                            y: arg2,
+                        },
                     );
                 }
                 #[doc(hidden)]
@@ -3879,29 +3986,32 @@ pub mod exports {
                 pub unsafe fn _export_method_ellipse_resolution_cabi<T: GuestEllipse>(
                     arg0: *mut u8,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::resolution(EllipseBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::resolution(
+                        EllipseBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     _rt::as_i32(result0)
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_ellipse_set_resolution_cabi<T: GuestEllipse>(
-                    arg0: *mut u8,
-                    arg1: i32,
-                ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    T::set_resolution(EllipseBorrow::lift(arg0 as u32 as usize).get(), arg1 as u16);
+                pub unsafe fn _export_method_ellipse_set_resolution_cabi<
+                    T: GuestEllipse,
+                >(arg0: *mut u8, arg1: i32) {
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    T::set_resolution(
+                        EllipseBorrow::lift(arg0 as u32 as usize).get(),
+                        arg1 as u16,
+                    );
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
                 pub unsafe fn _export_method_ellipse_to_mesh_cabi<T: GuestEllipse>(
                     arg0: *mut u8,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::to_mesh(EllipseBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::to_mesh(
+                        EllipseBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
@@ -3909,20 +4019,21 @@ pub mod exports {
                 pub unsafe fn _export_method_ellipse_to_node_cabi<T: GuestEllipse>(
                     arg0: *mut u8,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::to_node(EllipseBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::to_node(
+                        EllipseBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_ellipse_to_physics_node_cabi<T: GuestEllipse>(
-                    arg0: *mut u8,
-                ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 =
-                        T::to_physics_node(EllipseBorrow::lift(arg0 as u32 as usize).get());
+                pub unsafe fn _export_method_ellipse_to_physics_node_cabi<
+                    T: GuestEllipse,
+                >(arg0: *mut u8) -> i32 {
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::to_physics_node(
+                        EllipseBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
@@ -3931,8 +4042,7 @@ pub mod exports {
                     arg0: f32,
                     arg1: f32,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
                     let result0 = Cylinder::new(T::new(arg0, arg1));
                     (result0).take_handle() as i32
                 }
@@ -3941,9 +4051,10 @@ pub mod exports {
                 pub unsafe fn _export_method_cylinder_cap_cabi<T: GuestCylinder>(
                     arg0: *mut u8,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::cap(CylinderBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::cap(
+                        CylinderBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     match result0 {
                         true => 1,
                         false => 0,
@@ -3955,8 +4066,7 @@ pub mod exports {
                     arg0: *mut u8,
                     arg1: i32,
                 ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
                     T::set_cap(
                         CylinderBorrow::lift(arg0 as u32 as usize).get(),
                         _rt::bool_lift(arg1 as u8),
@@ -3967,9 +4077,10 @@ pub mod exports {
                 pub unsafe fn _export_method_cylinder_height_cabi<T: GuestCylinder>(
                     arg0: *mut u8,
                 ) -> f32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::height(CylinderBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::height(
+                        CylinderBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     _rt::as_f32(result0)
                 }
                 #[doc(hidden)]
@@ -3978,18 +4089,21 @@ pub mod exports {
                     arg0: *mut u8,
                     arg1: f32,
                 ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    T::set_height(CylinderBorrow::lift(arg0 as u32 as usize).get(), arg1);
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    T::set_height(
+                        CylinderBorrow::lift(arg0 as u32 as usize).get(),
+                        arg1,
+                    );
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
                 pub unsafe fn _export_method_cylinder_radius_cabi<T: GuestCylinder>(
                     arg0: *mut u8,
                 ) -> f32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::radius(CylinderBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::radius(
+                        CylinderBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     _rt::as_f32(result0)
                 }
                 #[doc(hidden)]
@@ -3998,58 +4112,65 @@ pub mod exports {
                     arg0: *mut u8,
                     arg1: f32,
                 ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    T::set_radius(CylinderBorrow::lift(arg0 as u32 as usize).get(), arg1);
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    T::set_radius(
+                        CylinderBorrow::lift(arg0 as u32 as usize).get(),
+                        arg1,
+                    );
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
                 pub unsafe fn _export_method_cylinder_resolution_cabi<T: GuestCylinder>(
                     arg0: *mut u8,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::resolution(CylinderBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::resolution(
+                        CylinderBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     _rt::as_i32(result0)
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_cylinder_set_resolution_cabi<T: GuestCylinder>(
-                    arg0: *mut u8,
-                    arg1: i32,
-                ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    T::set_resolution(CylinderBorrow::lift(arg0 as u32 as usize).get(), arg1 as u8);
+                pub unsafe fn _export_method_cylinder_set_resolution_cabi<
+                    T: GuestCylinder,
+                >(arg0: *mut u8, arg1: i32) {
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    T::set_resolution(
+                        CylinderBorrow::lift(arg0 as u32 as usize).get(),
+                        arg1 as u8,
+                    );
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
                 pub unsafe fn _export_method_cylinder_segments_cabi<T: GuestCylinder>(
                     arg0: *mut u8,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::segments(CylinderBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::segments(
+                        CylinderBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     _rt::as_i32(result0)
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_cylinder_set_segments_cabi<T: GuestCylinder>(
-                    arg0: *mut u8,
-                    arg1: i32,
-                ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    T::set_segments(CylinderBorrow::lift(arg0 as u32 as usize).get(), arg1 as u8);
+                pub unsafe fn _export_method_cylinder_set_segments_cabi<
+                    T: GuestCylinder,
+                >(arg0: *mut u8, arg1: i32) {
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    T::set_segments(
+                        CylinderBorrow::lift(arg0 as u32 as usize).get(),
+                        arg1 as u8,
+                    );
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
                 pub unsafe fn _export_method_cylinder_to_mesh_cabi<T: GuestCylinder>(
                     arg0: *mut u8,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::to_mesh(CylinderBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::to_mesh(
+                        CylinderBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
@@ -4057,20 +4178,21 @@ pub mod exports {
                 pub unsafe fn _export_method_cylinder_to_node_cabi<T: GuestCylinder>(
                     arg0: *mut u8,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::to_node(CylinderBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::to_node(
+                        CylinderBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_cylinder_to_physics_node_cabi<T: GuestCylinder>(
-                    arg0: *mut u8,
-                ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 =
-                        T::to_physics_node(CylinderBorrow::lift(arg0 as u32 as usize).get());
+                pub unsafe fn _export_method_cylinder_to_physics_node_cabi<
+                    T: GuestCylinder,
+                >(arg0: *mut u8) -> i32 {
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::to_physics_node(
+                        CylinderBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
@@ -4080,15 +4202,14 @@ pub mod exports {
                     arg1: f32,
                     arg2: f32,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = Cuboid::new(T::new(
-                        super::super::super::super::wired::math::types::Vec3 {
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = Cuboid::new(
+                        T::new(super::super::super::super::wired::math::types::Vec3 {
                             x: arg0,
                             y: arg1,
                             z: arg2,
-                        },
-                    ));
+                        }),
+                    );
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
@@ -4096,9 +4217,10 @@ pub mod exports {
                 pub unsafe fn _export_method_cuboid_size_cabi<T: GuestCuboid>(
                     arg0: *mut u8,
                 ) -> *mut u8 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::size(CuboidBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::size(
+                        CuboidBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
                     let super::super::super::super::wired::math::types::Vec3 {
                         x: x2,
@@ -4118,8 +4240,7 @@ pub mod exports {
                     arg2: f32,
                     arg3: f32,
                 ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
                     T::set_size(
                         CuboidBorrow::lift(arg0 as u32 as usize).get(),
                         super::super::super::super::wired::math::types::Vec3 {
@@ -4134,9 +4255,10 @@ pub mod exports {
                 pub unsafe fn _export_method_cuboid_to_mesh_cabi<T: GuestCuboid>(
                     arg0: *mut u8,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::to_mesh(CuboidBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::to_mesh(
+                        CuboidBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
@@ -4144,9 +4266,10 @@ pub mod exports {
                 pub unsafe fn _export_method_cuboid_to_node_cabi<T: GuestCuboid>(
                     arg0: *mut u8,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::to_node(CuboidBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::to_node(
+                        CuboidBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
@@ -4154,25 +4277,27 @@ pub mod exports {
                 pub unsafe fn _export_method_cuboid_to_physics_node_cabi<T: GuestCuboid>(
                     arg0: *mut u8,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 =
-                        T::to_physics_node(CuboidBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::to_physics_node(
+                        CuboidBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_static_sphere_new_ico_cabi<T: GuestSphere>(arg0: f32) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
+                pub unsafe fn _export_static_sphere_new_ico_cabi<T: GuestSphere>(
+                    arg0: f32,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
                     let result0 = T::new_ico(arg0);
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_static_sphere_new_uv_cabi<T: GuestSphere>(arg0: f32) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
+                pub unsafe fn _export_static_sphere_new_uv_cabi<T: GuestSphere>(
+                    arg0: f32,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
                     let result0 = T::new_uv(arg0);
                     (result0).take_handle() as i32
                 }
@@ -4181,9 +4306,10 @@ pub mod exports {
                 pub unsafe fn _export_method_sphere_radius_cabi<T: GuestSphere>(
                     arg0: *mut u8,
                 ) -> f32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::radius(SphereBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::radius(
+                        SphereBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     _rt::as_f32(result0)
                 }
                 #[doc(hidden)]
@@ -4192,8 +4318,7 @@ pub mod exports {
                     arg0: *mut u8,
                     arg1: f32,
                 ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
                     T::set_radius(SphereBorrow::lift(arg0 as u32 as usize).get(), arg1);
                 }
                 #[doc(hidden)]
@@ -4201,24 +4326,21 @@ pub mod exports {
                 pub unsafe fn _export_method_sphere_kind_cabi<T: GuestSphere>(
                     arg0: *mut u8,
                 ) -> *mut u8 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::kind(SphereBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::kind(
+                        SphereBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
                     match result0 {
                         SphereKind::Ico(e) => {
                             *ptr1.add(0).cast::<u8>() = (0i32) as u8;
-                            let SphereIco {
-                                subdivisions: subdivisions2,
-                            } = e;
-                            *ptr1.add(1).cast::<u8>() = (_rt::as_i32(subdivisions2)) as u8;
+                            let SphereIco { subdivisions: subdivisions2 } = e;
+                            *ptr1.add(1).cast::<u8>() = (_rt::as_i32(subdivisions2))
+                                as u8;
                         }
                         SphereKind::Uv(e) => {
                             *ptr1.add(0).cast::<u8>() = (1i32) as u8;
-                            let SphereUv {
-                                sectors: sectors3,
-                                stacks: stacks3,
-                            } = e;
+                            let SphereUv { sectors: sectors3, stacks: stacks3 } = e;
                             *ptr1.add(1).cast::<u8>() = (_rt::as_i32(sectors3)) as u8;
                             *ptr1.add(2).cast::<u8>() = (_rt::as_i32(stacks3)) as u8;
                         }
@@ -4233,8 +4355,7 @@ pub mod exports {
                     arg2: i32,
                     arg3: i32,
                 ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
                     let v0 = match arg1 {
                         0 => {
                             let e0 = SphereIco {
@@ -4258,9 +4379,10 @@ pub mod exports {
                 pub unsafe fn _export_method_sphere_to_mesh_cabi<T: GuestSphere>(
                     arg0: *mut u8,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::to_mesh(SphereBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::to_mesh(
+                        SphereBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
@@ -4268,9 +4390,10 @@ pub mod exports {
                 pub unsafe fn _export_method_sphere_to_node_cabi<T: GuestSphere>(
                     arg0: *mut u8,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::to_node(SphereBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::to_node(
+                        SphereBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
@@ -4278,25 +4401,25 @@ pub mod exports {
                 pub unsafe fn _export_method_sphere_to_physics_node_cabi<T: GuestSphere>(
                     arg0: *mut u8,
                 ) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 =
-                        T::to_physics_node(SphereBorrow::lift(arg0 as u32 as usize).get());
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::to_physics_node(
+                        SphereBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
                 pub unsafe fn _export_constructor_axes_cabi<T: GuestAxes>() -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
                     let result0 = Axes::new(T::new());
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_axes_size_cabi<T: GuestAxes>(arg0: *mut u8) -> f32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
+                pub unsafe fn _export_method_axes_size_cabi<T: GuestAxes>(
+                    arg0: *mut u8,
+                ) -> f32 {
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
                     let result0 = T::size(AxesBorrow::lift(arg0 as u32 as usize).get());
                     _rt::as_f32(result0)
                 }
@@ -4306,16 +4429,18 @@ pub mod exports {
                     arg0: *mut u8,
                     arg1: f32,
                 ) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
                     T::set_size(AxesBorrow::lift(arg0 as u32 as usize).get(), arg1);
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_method_axes_to_node_cabi<T: GuestAxes>(arg0: *mut u8) -> i32 {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    let result0 = T::to_node(AxesBorrow::lift(arg0 as u32 as usize).get());
+                pub unsafe fn _export_method_axes_to_node_cabi<T: GuestAxes>(
+                    arg0: *mut u8,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let result0 = T::to_node(
+                        AxesBorrow::lift(arg0 as u32 as usize).get(),
+                    );
                     (result0).take_handle() as i32
                 }
                 pub trait Guest {
@@ -4996,7 +5121,9 @@ pub mod exports {
                 pub(crate) use __export_unavi_shapes_api_cabi;
                 #[repr(align(4))]
                 struct _RetArea([::core::mem::MaybeUninit<u8>; 12]);
-                static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 12]);
+                static mut _RET_AREA: _RetArea = _RetArea(
+                    [::core::mem::MaybeUninit::uninit(); 12],
+                );
             }
         }
     }
@@ -5063,9 +5190,7 @@ mod _rt {
     }
     impl<T: WasmResource> fmt::Debug for Resource<T> {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            f.debug_struct("Resource")
-                .field("handle", &self.handle)
-                .finish()
+            f.debug_struct("Resource").field("handle", &self.handle).finish()
         }
     }
     impl<T: WasmResource> Drop for Resource<T> {
@@ -5227,20 +5352,20 @@ macro_rules! __export_guest_impl {
 #[doc(inline)]
 pub(crate) use __export_guest_impl as export;
 #[cfg(target_arch = "wasm32")]
-#[link_section = "component-type:wit-bindgen:0.30.0:guest:encoded world"]
+#[link_section = "component-type:wit-bindgen:0.35.0:unavi:shapes:guest:encoded world"]
 #[doc(hidden)]
 pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6234] = *b"\
 \0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xde/\x01A\x02\x01A\x1d\
 \x01B\x04\x01m\x04\x05debug\x04info\x04warn\x05error\x04\0\x09log-level\x03\0\0\x01\
-@\x02\x05level\x01\x07messages\x01\0\x04\0\x03log\x01\x02\x03\x01\x0dwired:log/a\
-pi\x05\0\x01B\x13\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
+@\x02\x05level\x01\x07messages\x01\0\x04\0\x03log\x01\x02\x03\0\x0dwired:log/api\
+\x05\0\x01B\x13\x01r\x04\x01rv\x01gv\x01bv\x01av\x04\0\x05color\x03\0\0\x04\0\x08\
 material\x03\x01\x01i\x02\x01@\0\0\x03\x04\0\x15[constructor]material\x01\x04\x01\
 h\x02\x01@\x01\x04self\x05\0y\x04\0\x13[method]material.id\x01\x06\x01@\x01\x04s\
 elf\x05\0\x03\x04\0\x14[method]material.ref\x01\x07\x01@\x01\x04self\x05\0s\x04\0\
 \x15[method]material.name\x01\x08\x01@\x02\x04self\x05\x05values\x01\0\x04\0\x19\
 [method]material.set-name\x01\x09\x01@\x01\x04self\x05\0\x01\x04\0\x16[method]ma\
 terial.color\x01\x0a\x01@\x02\x04self\x05\x05value\x01\x01\0\x04\0\x1a[method]ma\
-terial.set-color\x01\x0b\x03\x01\x14wired:scene/material\x05\x01\x02\x03\0\x01\x08\
+terial.set-color\x01\x0b\x03\0\x14wired:scene/material\x05\x01\x02\x03\0\x01\x08\
 material\x01B+\x02\x03\x02\x01\x02\x04\0\x08material\x03\0\0\x04\0\x09primitive\x03\
 \x01\x04\0\x04mesh\x03\x01\x01h\x02\x01@\x01\x04self\x04\0y\x04\0\x14[method]pri\
 mitive.id\x01\x05\x01i\x01\x01k\x06\x01@\x01\x04self\x04\0\x07\x04\0\x1a[method]\
@@ -5256,117 +5381,116 @@ self\x12\0y\x04\0\x0f[method]mesh.id\x01\x13\x01@\x01\x04self\x12\0\x10\x04\0\x1
 i\x02\x01p\x17\x01@\x01\x04self\x12\0\x18\x04\0\x1c[method]mesh.list-primitives\x01\
 \x19\x01@\x01\x04self\x12\0\x17\x04\0\x1d[method]mesh.create-primitive\x01\x1a\x01\
 @\x02\x04self\x12\x05value\x17\x01\0\x04\0\x1d[method]mesh.remove-primitive\x01\x1b\
-\x03\x01\x10wired:scene/mesh\x05\x03\x01B\x10\x01r\x02\x01xv\x01yv\x04\0\x04vec2\
-\x03\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\
-\x01zv\x01wv\x04\0\x04quat\x03\0\x04\x01r\x03\x08rotation\x05\x05scale\x03\x0btr\
-anslation\x03\x04\0\x09transform\x03\0\x06\x01@\0\0\x01\x04\0\x09fake-fn-a\x01\x08\
-\x01@\0\0\x03\x04\0\x09fake-fn-b\x01\x09\x01@\0\0\x05\x04\0\x09fake-fn-c\x01\x0a\
-\x01@\0\0\x07\x04\0\x09fake-fn-d\x01\x0b\x03\x01\x10wired:math/types\x05\x04\x02\
-\x03\0\x03\x04vec3\x02\x03\0\x03\x04quat\x01B\x15\x02\x03\x02\x01\x05\x04\0\x04v\
-ec3\x03\0\0\x02\x03\x02\x01\x06\x04\0\x04quat\x03\0\x02\x01m\x02\x04left\x05righ\
-t\x04\0\x09hand-side\x03\0\x04\x01r\x03\x0btranslation\x01\x08rotation\x03\x06ra\
-diusv\x04\0\x05joint\x03\0\x06\x01r\x04\x03tip\x07\x06distal\x07\x08proximal\x07\
-\x0ametacarpal\x07\x04\0\x06finger\x03\0\x08\x01k\x07\x01r\x09\x04side\x05\x05th\
-umb\x09\x05index\x09\x06middle\x09\x04ring\x09\x06little\x09\x04palm\x07\x05wris\
-t\x07\x05elbow\x0a\x04\0\x04hand\x03\0\x0b\x01r\x02\x0borientation\x03\x06origin\
-\x01\x04\0\x03ray\x03\0\x0d\x01q\x02\x04hand\x01\x0c\0\x03ray\x01\x0e\0\x04\0\x0a\
-input-data\x03\0\x0f\x01q\x02\x09collision\0\0\x05hover\0\0\x04\0\x0cinput-actio\
-n\x03\0\x11\x01r\x03\x02idw\x06action\x12\x04data\x10\x04\0\x0binput-event\x03\0\
-\x13\x03\x01\x11wired:input/types\x05\x07\x02\x03\0\x04\x0binput-event\x01B\x0a\x02\
-\x03\x02\x01\x08\x04\0\x0binput-event\x03\0\0\x04\0\x0dinput-handler\x03\x01\x01\
-i\x02\x01@\0\0\x03\x04\0\x1a[constructor]input-handler\x01\x04\x01h\x02\x01k\x01\
-\x01@\x01\x04self\x05\0\x06\x04\0\x1a[method]input-handler.next\x01\x07\x03\x01\x13\
-wired:input/handler\x05\x09\x01B\x1c\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\0\x04\
-\0\x08collider\x03\x01\x01r\x02\x06heightv\x06radiusv\x04\0\x0eshape-cylinder\x03\
-\0\x03\x01q\x03\x06cuboid\x01\x01\0\x08cylinder\x01\x04\0\x06sphere\x01v\0\x04\0\
-\x05shape\x03\0\x05\x04\0\x0arigid-body\x03\x01\x01m\x03\x07dynamic\x05fixed\x09\
-kinematic\x04\0\x0frigid-body-type\x03\0\x08\x01i\x02\x01@\x01\x05shape\x06\0\x0a\
-\x04\0\x15[constructor]collider\x01\x0b\x01h\x02\x01@\x01\x04self\x0c\0v\x04\0\x18\
-[method]collider.density\x01\x0d\x01@\x02\x04self\x0c\x05valuev\x01\0\x04\0\x1c[\
-method]collider.set-density\x01\x0e\x01i\x07\x01@\x01\x0frigid-body-type\x09\0\x0f\
-\x04\0\x17[constructor]rigid-body\x01\x10\x01h\x07\x01@\x01\x04self\x11\0\x01\x04\
-\0\x19[method]rigid-body.angvel\x01\x12\x01@\x02\x04self\x11\x05value\x01\x01\0\x04\
-\0\x1d[method]rigid-body.set-angvel\x01\x13\x04\0\x19[method]rigid-body.linvel\x01\
-\x12\x04\0\x1d[method]rigid-body.set-linvel\x01\x13\x03\x01\x13wired:physics/typ\
-es\x05\x0a\x02\x03\0\x02\x04mesh\x02\x03\0\x05\x0dinput-handler\x02\x03\0\x03\x09\
-transform\x02\x03\0\x06\x08collider\x02\x03\0\x06\x0arigid-body\x01BE\x02\x03\x02\
-\x01\x0b\x04\0\x04mesh\x03\0\0\x02\x03\x02\x01\x0c\x04\0\x0dinput-handler\x03\0\x02\
-\x02\x03\x02\x01\x0d\x04\0\x09transform\x03\0\x04\x02\x03\x02\x01\x0e\x04\0\x08c\
-ollider\x03\0\x06\x02\x03\x02\x01\x0f\x04\0\x0arigid-body\x03\0\x08\x04\0\x04nod\
-e\x03\x01\x01i\x0a\x01@\0\0\x0b\x04\0\x11[constructor]node\x01\x0c\x01h\x0a\x01@\
-\x01\x04self\x0d\0y\x04\0\x0f[method]node.id\x01\x0e\x01@\x01\x04self\x0d\0\x0b\x04\
-\0\x10[method]node.ref\x01\x0f\x01@\x01\x04self\x0d\0s\x04\0\x11[method]node.nam\
-e\x01\x10\x01@\x02\x04self\x0d\x05values\x01\0\x04\0\x15[method]node.set-name\x01\
-\x11\x01k\x0b\x01@\x01\x04self\x0d\0\x12\x04\0\x13[method]node.parent\x01\x13\x01\
-p\x0b\x01@\x01\x04self\x0d\0\x14\x04\0\x15[method]node.children\x01\x15\x01@\x02\
-\x04self\x0d\x05value\x0d\x01\0\x04\0\x16[method]node.add-child\x01\x16\x04\0\x19\
-[method]node.remove-child\x01\x16\x01@\x01\x04self\x0d\0\x05\x04\0\x1d[method]no\
-de.global-transform\x01\x17\x04\0\x16[method]node.transform\x01\x17\x01@\x02\x04\
-self\x0d\x05value\x05\x01\0\x04\0\x1a[method]node.set-transform\x01\x18\x01i\x01\
-\x01k\x19\x01@\x01\x04self\x0d\0\x1a\x04\0\x11[method]node.mesh\x01\x1b\x01h\x01\
-\x01k\x1c\x01@\x02\x04self\x0d\x05value\x1d\x01\0\x04\0\x15[method]node.set-mesh\
-\x01\x1e\x01i\x07\x01k\x1f\x01@\x01\x04self\x0d\0\x20\x04\0\x15[method]node.coll\
-ider\x01!\x01h\x07\x01k\"\x01@\x02\x04self\x0d\x05value#\x01\0\x04\0\x19[method]\
-node.set-collider\x01$\x01i\x09\x01k%\x01@\x01\x04self\x0d\0&\x04\0\x17[method]n\
-ode.rigid-body\x01'\x01h\x09\x01k(\x01@\x02\x04self\x0d\x05value)\x01\0\x04\0\x1b\
-[method]node.set-rigid-body\x01*\x01i\x03\x01k+\x01@\x01\x04self\x0d\0,\x04\0\x1a\
-[method]node.input-handler\x01-\x01h\x03\x01k.\x01@\x02\x04self\x0d\x05value/\x01\
-\0\x04\0\x1e[method]node.set-input-handler\x010\x03\x01\x10wired:scene/node\x05\x10\
-\x02\x03\0\x03\x04vec2\x02\x03\0\x07\x04node\x01B\x88\x01\x02\x03\x02\x01\x11\x04\
-\0\x04vec2\x03\0\0\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\x02\x02\x03\x02\x01\x0b\
-\x04\0\x04mesh\x03\0\x04\x02\x03\x02\x01\x12\x04\0\x04node\x03\0\x06\x04\0\x09re\
-ctangle\x03\x01\x04\0\x06circle\x03\x01\x04\0\x07ellipse\x03\x01\x04\0\x08cylind\
-er\x03\x01\x04\0\x06cuboid\x03\x01\x01r\x01\x0csubdivisions}\x04\0\x0asphere-ico\
-\x03\0\x0d\x01r\x02\x07sectors}\x06stacks}\x04\0\x09sphere-uv\x03\0\x0f\x01q\x02\
-\x03ico\x01\x0e\0\x02uv\x01\x10\0\x04\0\x0bsphere-kind\x03\0\x11\x04\0\x06sphere\
-\x03\x01\x04\0\x04axes\x03\x01\x01i\x08\x01@\x01\x04size\x01\0\x15\x04\0\x16[con\
-structor]rectangle\x01\x16\x01h\x08\x01@\x01\x04self\x17\0\x01\x04\0\x16[method]\
-rectangle.size\x01\x18\x01@\x02\x04self\x17\x05value\x01\x01\0\x04\0\x1a[method]\
-rectangle.set-size\x01\x19\x01i\x05\x01@\x01\x04self\x17\0\x1a\x04\0\x19[method]\
-rectangle.to-mesh\x01\x1b\x01i\x07\x01@\x01\x04self\x17\0\x1c\x04\0\x19[method]r\
-ectangle.to-node\x01\x1d\x04\0![method]rectangle.to-physics-node\x01\x1d\x01i\x09\
-\x01@\x01\x06radiusv\0\x1e\x04\0\x13[constructor]circle\x01\x1f\x01h\x09\x01@\x01\
-\x04self\x20\0v\x04\0\x15[method]circle.radius\x01!\x01@\x02\x04self\x20\x05valu\
-ev\x01\0\x04\0\x19[method]circle.set-radius\x01\"\x01@\x01\x04self\x20\0{\x04\0\x19\
-[method]circle.resolution\x01#\x01@\x02\x04self\x20\x05value{\x01\0\x04\0\x1d[me\
-thod]circle.set-resolution\x01$\x01@\x01\x04self\x20\0\x1a\x04\0\x16[method]circ\
-le.to-mesh\x01%\x01@\x01\x04self\x20\0\x1c\x04\0\x16[method]circle.to-node\x01&\x04\
-\0\x1e[method]circle.to-physics-node\x01&\x01i\x0a\x01@\x01\x09half-size\x01\0'\x04\
-\0\x14[constructor]ellipse\x01(\x01h\x0a\x01@\x01\x04self)\0\x01\x04\0\x19[metho\
-d]ellipse.half-size\x01*\x01@\x02\x04self)\x05value\x01\x01\0\x04\0\x1d[method]e\
-llipse.set-half-size\x01+\x01@\x01\x04self)\0{\x04\0\x1a[method]ellipse.resoluti\
-on\x01,\x01@\x02\x04self)\x05value{\x01\0\x04\0\x1e[method]ellipse.set-resolutio\
-n\x01-\x01@\x01\x04self)\0\x1a\x04\0\x17[method]ellipse.to-mesh\x01.\x01@\x01\x04\
-self)\0\x1c\x04\0\x17[method]ellipse.to-node\x01/\x04\0\x1f[method]ellipse.to-ph\
-ysics-node\x01/\x01i\x0b\x01@\x02\x06radiusv\x06heightv\00\x04\0\x15[constructor\
-]cylinder\x011\x01h\x0b\x01@\x01\x04self2\0\x7f\x04\0\x14[method]cylinder.cap\x01\
-3\x01@\x02\x04self2\x05value\x7f\x01\0\x04\0\x18[method]cylinder.set-cap\x014\x01\
-@\x01\x04self2\0v\x04\0\x17[method]cylinder.height\x015\x01@\x02\x04self2\x05val\
-uev\x01\0\x04\0\x1b[method]cylinder.set-height\x016\x04\0\x17[method]cylinder.ra\
-dius\x015\x04\0\x1b[method]cylinder.set-radius\x016\x01@\x01\x04self2\0}\x04\0\x1b\
-[method]cylinder.resolution\x017\x01@\x02\x04self2\x05value}\x01\0\x04\0\x1f[met\
-hod]cylinder.set-resolution\x018\x04\0\x19[method]cylinder.segments\x017\x04\0\x1d\
-[method]cylinder.set-segments\x018\x01@\x01\x04self2\0\x1a\x04\0\x18[method]cyli\
-nder.to-mesh\x019\x01@\x01\x04self2\0\x1c\x04\0\x18[method]cylinder.to-node\x01:\
-\x04\0\x20[method]cylinder.to-physics-node\x01:\x01i\x0c\x01@\x01\x04size\x03\0;\
-\x04\0\x13[constructor]cuboid\x01<\x01h\x0c\x01@\x01\x04self=\0\x03\x04\0\x13[me\
-thod]cuboid.size\x01>\x01@\x02\x04self=\x05value\x03\x01\0\x04\0\x17[method]cubo\
-id.set-size\x01?\x01@\x01\x04self=\0\x1a\x04\0\x16[method]cuboid.to-mesh\x01@\x01\
-@\x01\x04self=\0\x1c\x04\0\x16[method]cuboid.to-node\x01A\x04\0\x1e[method]cuboi\
-d.to-physics-node\x01A\x01i\x13\x01@\x01\x06radiusv\0\xc2\0\x04\0\x16[static]sph\
-ere.new-ico\x01C\x04\0\x15[static]sphere.new-uv\x01C\x01h\x13\x01@\x01\x04self\xc4\
-\0\0v\x04\0\x15[method]sphere.radius\x01E\x01@\x02\x04self\xc4\0\x05valuev\x01\0\
-\x04\0\x19[method]sphere.set-radius\x01F\x01@\x01\x04self\xc4\0\0\x12\x04\0\x13[\
-method]sphere.kind\x01G\x01@\x02\x04self\xc4\0\x05value\x12\x01\0\x04\0\x17[meth\
-od]sphere.set-kind\x01H\x01@\x01\x04self\xc4\0\0\x1a\x04\0\x16[method]sphere.to-\
-mesh\x01I\x01@\x01\x04self\xc4\0\0\x1c\x04\0\x16[method]sphere.to-node\x01J\x04\0\
-\x1e[method]sphere.to-physics-node\x01J\x01i\x14\x01@\0\0\xcb\0\x04\0\x11[constr\
-uctor]axes\x01L\x01h\x14\x01@\x01\x04self\xcd\0\0v\x04\0\x11[method]axes.size\x01\
-N\x01@\x02\x04self\xcd\0\x05valuev\x01\0\x04\0\x15[method]axes.set-size\x01O\x01\
-@\x01\x04self\xcd\0\0\x1c\x04\0\x14[method]axes.to-node\x01P\x04\x01\x10unavi:sh\
-apes/api\x05\x13\x04\x01\x12unavi:shapes/guest\x04\0\x0b\x0b\x01\0\x05guest\x03\0\
-\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.215.0\x10wit-bi\
-ndgen-rust\x060.30.0";
+\x03\0\x10wired:scene/mesh\x05\x03\x01B\x10\x01r\x02\x01xv\x01yv\x04\0\x04vec2\x03\
+\0\0\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\x02\x01r\x04\x01xv\x01yv\x01\
+zv\x01wv\x04\0\x04quat\x03\0\x04\x01r\x03\x08rotation\x05\x05scale\x03\x0btransl\
+ation\x03\x04\0\x09transform\x03\0\x06\x01@\0\0\x01\x04\0\x09fake-fn-a\x01\x08\x01\
+@\0\0\x03\x04\0\x09fake-fn-b\x01\x09\x01@\0\0\x05\x04\0\x09fake-fn-c\x01\x0a\x01\
+@\0\0\x07\x04\0\x09fake-fn-d\x01\x0b\x03\0\x10wired:math/types\x05\x04\x02\x03\0\
+\x03\x04vec3\x02\x03\0\x03\x04quat\x01B\x15\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\
+\0\0\x02\x03\x02\x01\x06\x04\0\x04quat\x03\0\x02\x01m\x02\x04left\x05right\x04\0\
+\x09hand-side\x03\0\x04\x01r\x03\x0btranslation\x01\x08rotation\x03\x06radiusv\x04\
+\0\x05joint\x03\0\x06\x01r\x04\x03tip\x07\x06distal\x07\x08proximal\x07\x0ametac\
+arpal\x07\x04\0\x06finger\x03\0\x08\x01k\x07\x01r\x09\x04side\x05\x05thumb\x09\x05\
+index\x09\x06middle\x09\x04ring\x09\x06little\x09\x04palm\x07\x05wrist\x07\x05el\
+bow\x0a\x04\0\x04hand\x03\0\x0b\x01r\x02\x0borientation\x03\x06origin\x01\x04\0\x03\
+ray\x03\0\x0d\x01q\x02\x04hand\x01\x0c\0\x03ray\x01\x0e\0\x04\0\x0ainput-data\x03\
+\0\x0f\x01q\x02\x09collision\0\0\x05hover\0\0\x04\0\x0cinput-action\x03\0\x11\x01\
+r\x03\x02idw\x06action\x12\x04data\x10\x04\0\x0binput-event\x03\0\x13\x03\0\x11w\
+ired:input/types\x05\x07\x02\x03\0\x04\x0binput-event\x01B\x0a\x02\x03\x02\x01\x08\
+\x04\0\x0binput-event\x03\0\0\x04\0\x0dinput-handler\x03\x01\x01i\x02\x01@\0\0\x03\
+\x04\0\x1a[constructor]input-handler\x01\x04\x01h\x02\x01k\x01\x01@\x01\x04self\x05\
+\0\x06\x04\0\x1a[method]input-handler.next\x01\x07\x03\0\x13wired:input/handler\x05\
+\x09\x01B\x1c\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\0\x04\0\x08collider\x03\x01\
+\x01r\x02\x06heightv\x06radiusv\x04\0\x0eshape-cylinder\x03\0\x03\x01q\x03\x06cu\
+boid\x01\x01\0\x08cylinder\x01\x04\0\x06sphere\x01v\0\x04\0\x05shape\x03\0\x05\x04\
+\0\x0arigid-body\x03\x01\x01m\x03\x07dynamic\x05fixed\x09kinematic\x04\0\x0frigi\
+d-body-type\x03\0\x08\x01i\x02\x01@\x01\x05shape\x06\0\x0a\x04\0\x15[constructor\
+]collider\x01\x0b\x01h\x02\x01@\x01\x04self\x0c\0v\x04\0\x18[method]collider.den\
+sity\x01\x0d\x01@\x02\x04self\x0c\x05valuev\x01\0\x04\0\x1c[method]collider.set-\
+density\x01\x0e\x01i\x07\x01@\x01\x0frigid-body-type\x09\0\x0f\x04\0\x17[constru\
+ctor]rigid-body\x01\x10\x01h\x07\x01@\x01\x04self\x11\0\x01\x04\0\x19[method]rig\
+id-body.angvel\x01\x12\x01@\x02\x04self\x11\x05value\x01\x01\0\x04\0\x1d[method]\
+rigid-body.set-angvel\x01\x13\x04\0\x19[method]rigid-body.linvel\x01\x12\x04\0\x1d\
+[method]rigid-body.set-linvel\x01\x13\x03\0\x13wired:physics/types\x05\x0a\x02\x03\
+\0\x02\x04mesh\x02\x03\0\x05\x0dinput-handler\x02\x03\0\x03\x09transform\x02\x03\
+\0\x06\x08collider\x02\x03\0\x06\x0arigid-body\x01BE\x02\x03\x02\x01\x0b\x04\0\x04\
+mesh\x03\0\0\x02\x03\x02\x01\x0c\x04\0\x0dinput-handler\x03\0\x02\x02\x03\x02\x01\
+\x0d\x04\0\x09transform\x03\0\x04\x02\x03\x02\x01\x0e\x04\0\x08collider\x03\0\x06\
+\x02\x03\x02\x01\x0f\x04\0\x0arigid-body\x03\0\x08\x04\0\x04node\x03\x01\x01i\x0a\
+\x01@\0\0\x0b\x04\0\x11[constructor]node\x01\x0c\x01h\x0a\x01@\x01\x04self\x0d\0\
+y\x04\0\x0f[method]node.id\x01\x0e\x01@\x01\x04self\x0d\0\x0b\x04\0\x10[method]n\
+ode.ref\x01\x0f\x01@\x01\x04self\x0d\0s\x04\0\x11[method]node.name\x01\x10\x01@\x02\
+\x04self\x0d\x05values\x01\0\x04\0\x15[method]node.set-name\x01\x11\x01k\x0b\x01\
+@\x01\x04self\x0d\0\x12\x04\0\x13[method]node.parent\x01\x13\x01p\x0b\x01@\x01\x04\
+self\x0d\0\x14\x04\0\x15[method]node.children\x01\x15\x01@\x02\x04self\x0d\x05va\
+lue\x0d\x01\0\x04\0\x16[method]node.add-child\x01\x16\x04\0\x19[method]node.remo\
+ve-child\x01\x16\x01@\x01\x04self\x0d\0\x05\x04\0\x1d[method]node.global-transfo\
+rm\x01\x17\x04\0\x16[method]node.transform\x01\x17\x01@\x02\x04self\x0d\x05value\
+\x05\x01\0\x04\0\x1a[method]node.set-transform\x01\x18\x01i\x01\x01k\x19\x01@\x01\
+\x04self\x0d\0\x1a\x04\0\x11[method]node.mesh\x01\x1b\x01h\x01\x01k\x1c\x01@\x02\
+\x04self\x0d\x05value\x1d\x01\0\x04\0\x15[method]node.set-mesh\x01\x1e\x01i\x07\x01\
+k\x1f\x01@\x01\x04self\x0d\0\x20\x04\0\x15[method]node.collider\x01!\x01h\x07\x01\
+k\"\x01@\x02\x04self\x0d\x05value#\x01\0\x04\0\x19[method]node.set-collider\x01$\
+\x01i\x09\x01k%\x01@\x01\x04self\x0d\0&\x04\0\x17[method]node.rigid-body\x01'\x01\
+h\x09\x01k(\x01@\x02\x04self\x0d\x05value)\x01\0\x04\0\x1b[method]node.set-rigid\
+-body\x01*\x01i\x03\x01k+\x01@\x01\x04self\x0d\0,\x04\0\x1a[method]node.input-ha\
+ndler\x01-\x01h\x03\x01k.\x01@\x02\x04self\x0d\x05value/\x01\0\x04\0\x1e[method]\
+node.set-input-handler\x010\x03\0\x10wired:scene/node\x05\x10\x02\x03\0\x03\x04v\
+ec2\x02\x03\0\x07\x04node\x01B\x88\x01\x02\x03\x02\x01\x11\x04\0\x04vec2\x03\0\0\
+\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\x02\x02\x03\x02\x01\x0b\x04\0\x04mesh\x03\
+\0\x04\x02\x03\x02\x01\x12\x04\0\x04node\x03\0\x06\x04\0\x09rectangle\x03\x01\x04\
+\0\x06circle\x03\x01\x04\0\x07ellipse\x03\x01\x04\0\x08cylinder\x03\x01\x04\0\x06\
+cuboid\x03\x01\x01r\x01\x0csubdivisions}\x04\0\x0asphere-ico\x03\0\x0d\x01r\x02\x07\
+sectors}\x06stacks}\x04\0\x09sphere-uv\x03\0\x0f\x01q\x02\x03ico\x01\x0e\0\x02uv\
+\x01\x10\0\x04\0\x0bsphere-kind\x03\0\x11\x04\0\x06sphere\x03\x01\x04\0\x04axes\x03\
+\x01\x01i\x08\x01@\x01\x04size\x01\0\x15\x04\0\x16[constructor]rectangle\x01\x16\
+\x01h\x08\x01@\x01\x04self\x17\0\x01\x04\0\x16[method]rectangle.size\x01\x18\x01\
+@\x02\x04self\x17\x05value\x01\x01\0\x04\0\x1a[method]rectangle.set-size\x01\x19\
+\x01i\x05\x01@\x01\x04self\x17\0\x1a\x04\0\x19[method]rectangle.to-mesh\x01\x1b\x01\
+i\x07\x01@\x01\x04self\x17\0\x1c\x04\0\x19[method]rectangle.to-node\x01\x1d\x04\0\
+![method]rectangle.to-physics-node\x01\x1d\x01i\x09\x01@\x01\x06radiusv\0\x1e\x04\
+\0\x13[constructor]circle\x01\x1f\x01h\x09\x01@\x01\x04self\x20\0v\x04\0\x15[met\
+hod]circle.radius\x01!\x01@\x02\x04self\x20\x05valuev\x01\0\x04\0\x19[method]cir\
+cle.set-radius\x01\"\x01@\x01\x04self\x20\0{\x04\0\x19[method]circle.resolution\x01\
+#\x01@\x02\x04self\x20\x05value{\x01\0\x04\0\x1d[method]circle.set-resolution\x01\
+$\x01@\x01\x04self\x20\0\x1a\x04\0\x16[method]circle.to-mesh\x01%\x01@\x01\x04se\
+lf\x20\0\x1c\x04\0\x16[method]circle.to-node\x01&\x04\0\x1e[method]circle.to-phy\
+sics-node\x01&\x01i\x0a\x01@\x01\x09half-size\x01\0'\x04\0\x14[constructor]ellip\
+se\x01(\x01h\x0a\x01@\x01\x04self)\0\x01\x04\0\x19[method]ellipse.half-size\x01*\
+\x01@\x02\x04self)\x05value\x01\x01\0\x04\0\x1d[method]ellipse.set-half-size\x01\
++\x01@\x01\x04self)\0{\x04\0\x1a[method]ellipse.resolution\x01,\x01@\x02\x04self\
+)\x05value{\x01\0\x04\0\x1e[method]ellipse.set-resolution\x01-\x01@\x01\x04self)\
+\0\x1a\x04\0\x17[method]ellipse.to-mesh\x01.\x01@\x01\x04self)\0\x1c\x04\0\x17[m\
+ethod]ellipse.to-node\x01/\x04\0\x1f[method]ellipse.to-physics-node\x01/\x01i\x0b\
+\x01@\x02\x06radiusv\x06heightv\00\x04\0\x15[constructor]cylinder\x011\x01h\x0b\x01\
+@\x01\x04self2\0\x7f\x04\0\x14[method]cylinder.cap\x013\x01@\x02\x04self2\x05val\
+ue\x7f\x01\0\x04\0\x18[method]cylinder.set-cap\x014\x01@\x01\x04self2\0v\x04\0\x17\
+[method]cylinder.height\x015\x01@\x02\x04self2\x05valuev\x01\0\x04\0\x1b[method]\
+cylinder.set-height\x016\x04\0\x17[method]cylinder.radius\x015\x04\0\x1b[method]\
+cylinder.set-radius\x016\x01@\x01\x04self2\0}\x04\0\x1b[method]cylinder.resoluti\
+on\x017\x01@\x02\x04self2\x05value}\x01\0\x04\0\x1f[method]cylinder.set-resoluti\
+on\x018\x04\0\x19[method]cylinder.segments\x017\x04\0\x1d[method]cylinder.set-se\
+gments\x018\x01@\x01\x04self2\0\x1a\x04\0\x18[method]cylinder.to-mesh\x019\x01@\x01\
+\x04self2\0\x1c\x04\0\x18[method]cylinder.to-node\x01:\x04\0\x20[method]cylinder\
+.to-physics-node\x01:\x01i\x0c\x01@\x01\x04size\x03\0;\x04\0\x13[constructor]cub\
+oid\x01<\x01h\x0c\x01@\x01\x04self=\0\x03\x04\0\x13[method]cuboid.size\x01>\x01@\
+\x02\x04self=\x05value\x03\x01\0\x04\0\x17[method]cuboid.set-size\x01?\x01@\x01\x04\
+self=\0\x1a\x04\0\x16[method]cuboid.to-mesh\x01@\x01@\x01\x04self=\0\x1c\x04\0\x16\
+[method]cuboid.to-node\x01A\x04\0\x1e[method]cuboid.to-physics-node\x01A\x01i\x13\
+\x01@\x01\x06radiusv\0\xc2\0\x04\0\x16[static]sphere.new-ico\x01C\x04\0\x15[stat\
+ic]sphere.new-uv\x01C\x01h\x13\x01@\x01\x04self\xc4\0\0v\x04\0\x15[method]sphere\
+.radius\x01E\x01@\x02\x04self\xc4\0\x05valuev\x01\0\x04\0\x19[method]sphere.set-\
+radius\x01F\x01@\x01\x04self\xc4\0\0\x12\x04\0\x13[method]sphere.kind\x01G\x01@\x02\
+\x04self\xc4\0\x05value\x12\x01\0\x04\0\x17[method]sphere.set-kind\x01H\x01@\x01\
+\x04self\xc4\0\0\x1a\x04\0\x16[method]sphere.to-mesh\x01I\x01@\x01\x04self\xc4\0\
+\0\x1c\x04\0\x16[method]sphere.to-node\x01J\x04\0\x1e[method]sphere.to-physics-n\
+ode\x01J\x01i\x14\x01@\0\0\xcb\0\x04\0\x11[constructor]axes\x01L\x01h\x14\x01@\x01\
+\x04self\xcd\0\0v\x04\0\x11[method]axes.size\x01N\x01@\x02\x04self\xcd\0\x05valu\
+ev\x01\0\x04\0\x15[method]axes.set-size\x01O\x01@\x01\x04self\xcd\0\0\x1c\x04\0\x14\
+[method]axes.to-node\x01P\x04\0\x10unavi:shapes/api\x05\x13\x04\0\x12unavi:shape\
+s/guest\x04\0\x0b\x0b\x01\0\x05guest\x03\0\0\0G\x09producers\x01\x0cprocessed-by\
+\x02\x0dwit-component\x070.220.0\x10wit-bindgen-rust\x060.35.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {

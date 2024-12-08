@@ -3,18 +3,18 @@
 
 use std::net::{Ipv4Addr, SocketAddr};
 
-use dwn::DWN;
+use dwn::Dwn;
 use tracing::info;
 
 #[derive(Clone)]
 pub struct ServerOptions {
-    pub dwn: DWN,
+    pub dwn: Dwn,
     pub port: u16,
 }
 
 pub async fn start(opts: ServerOptions) -> std::io::Result<()> {
     let addr = SocketAddr::new(Ipv4Addr::new(127, 0, 0, 1).into(), opts.port);
-    let router = dwn_server::router(opts.dwn.clone());
+    let router = dwn_server::create_router(opts.dwn);
 
     info!("Listening on {}", addr);
 

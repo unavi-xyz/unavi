@@ -1,8 +1,7 @@
 use std::time::Duration;
 
 use anyhow::Result;
-use dwn::{store::SurrealStore, DWN};
-use surrealdb::{engine::local::Mem, Surreal};
+use dwn::{stores::NativeDbStore, Dwn};
 use tokio::task::JoinHandle;
 use unavi_server::{Args, Command, StartOptions, Storage};
 
@@ -37,9 +36,8 @@ pub async fn setup_test_server() -> TestServer {
         },
     };
 
-    let db = Surreal::new::<Mem>(()).await.unwrap();
-    let store = SurrealStore::new(db).await.unwrap();
-    let dwn = DWN::from(store);
+    let store = NativeDbStore::new_in_memory().unwrap();
+    let dwn = Dwn::from(store);
 
     let opts = StartOptions::default();
 

@@ -7,11 +7,7 @@
 //! ```
 
 use clap::Parser;
-use dwn::{store::SurrealStore, DWN};
-use surrealdb::{
-    engine::local::{Mem, SurrealKV},
-    Surreal,
-};
+use dwn::{stores::NativeDbStore, Dwn};
 use tracing::{error, Level};
 use unavi_server::{StartOptions, Storage, STORAGE_PATH};
 
@@ -26,19 +22,11 @@ async fn main() {
     };
     tracing_subscriber::fmt().with_max_level(log_level).init();
 
-    let store = match &args.storage {
-        Storage::Filesystem => {
-            let db = Surreal::new::<SurrealKV>(STORAGE_PATH.clone())
-                .await
-                .unwrap();
-            SurrealStore::new(db).await.unwrap()
-        }
-        Storage::Memory => {
-            let db = Surreal::new::<Mem>(()).await.unwrap();
-            SurrealStore::new(db).await.unwrap()
-        }
+    let db = match &args.storage {
+        Storage::Filesystem => NativeDbStore::new(STORAGE_PATH.clone()).unwrap(),
+        Storage::Memory => NativeDbStore::new_in_memory().unwrap(),
     };
-    let dwn = DWN::from(store);
+    let dwn = Dwn::from(db);
 
     if let Err(e) = unavi_server::start(args, StartOptions::default(), dwn).await {
         error!("{}", e);

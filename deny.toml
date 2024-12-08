@@ -20,6 +20,7 @@ allow = [
   "MIT",
   "MIT-0",
   "MPL-2.0",
+  "Unicode-3.0",
   "Unlicense",
   "Zlib",
 ]
@@ -37,32 +38,13 @@ expression = "ISC AND MIT AND OpenSSL"
 license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }]
 
 [[licenses.exceptions]]
-allow = ["BUSL-1.1"]
-crate = "surrealdb"
-
-[[licenses.exceptions]]
-allow = ["BUSL-1.1"]
-crate = "surrealdb-core"
-
-[[licenses.exceptions]]
 allow = ["OpenSSL"]
 crate = "ring"
-
-[[licenses.exceptions]]
-allow = ["Unicode-DFS-2016"]
-crate = "unicode-ident"
-
-[[licenses.exceptions]]
-allow = ["W3C-20150513", "CC-BY-SA-3.0"]
-crate = "ssi-contexts"
 
 [advisories]
 version = 2
 ignore = [
-  "RUSTSEC-2023-0055", # lexical json number parsing
   "RUSTSEC-2023-0071", # rsa sidechannel
-  "RUSTSEC-2024-0370", # proc-macro-error unmaintained
-  "RUSTSEC-2023-0086", # lexical-core soundness issues
 ]
 
 [bans]
@@ -79,6 +61,6 @@ allow-registry = ["https://github.com/rust-lang/crates.io-index"]
 allow-git = [
   "https://github.com/kayhhh/wasm-bridge",
   "https://github.com/kayhhh/xwt",
-  "https://github.com/unavi-xyz/bevy_vrm",
   "https://github.com/unavi-xyz/dwn",
+  "https://github.com/vincent-herlemont/native_db",
 ]

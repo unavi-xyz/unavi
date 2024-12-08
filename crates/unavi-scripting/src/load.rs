@@ -2,7 +2,6 @@ use std::sync::{Arc, Mutex};
 
 use bevy::{prelude::*, utils::HashMap};
 use bevy_async_task::{AsyncTaskPool, AsyncTaskStatus};
-use unavi_world::UserActor;
 
 use crate::{
     api::wired::dwn::WiredDwn,
@@ -12,7 +11,6 @@ use crate::{
 use super::asset::Wasm;
 
 pub fn load_scripts(
-    actor: Res<UserActor>,
     wasm_assets: Res<Assets<Wasm>>,
     default_material: Res<DefaultMaterial>,
     mut commands: Commands,
@@ -38,7 +36,8 @@ pub fn load_scripts(
         builder.enable_wired_scene(entity, default_material.0.clone());
 
         if *level == ScriptExecutionLevel::System {
-            builder.enable_wired_dwn(WiredDwn::new(actor.0.dwn.clone()));
+            // TODO
+            // builder.enable_wired_dwn(WiredDwn::new(actor.0.dwn.clone()));
         }
 
         let bytes = wasm.0.clone();

@@ -1,14 +1,10 @@
-use std::sync::Arc;
 
 use bevy::prelude::*;
-use dwn::actor::Actor;
-use home::JoinHome;
 use wired_social::schemas::common::RecordLink;
 
-mod home;
+// mod home;
 mod loading;
 mod scene;
-pub mod util;
 
 pub struct WorldPlugin;
 
@@ -18,13 +14,17 @@ impl Plugin for WorldPlugin {
         app.add_plugins(bevy_atmosphere::plugin::AtmospherePlugin)
             .add_systems(Update, add_atmosphere_cameras);
 
-        app.add_event::<JoinHome>()
+        app
+            // .add_event::<JoinHome>()
             .init_state::<WorldState>()
-            .add_systems(Startup, (home::join_home, scene::setup_lights))
+            .add_systems(
+                Startup,
+                scene::setup_lights,
+            )
             .add_systems(
                 Update,
                 (
-                    home::handle_join_home,
+                    // home::handle_join_home,
                     scene::create_world_scene,
                     loading::set_loading_state,
                 ),
@@ -64,6 +64,3 @@ fn add_atmosphere_cameras(
             .insert(bevy_atmosphere::plugin::AtmosphereCamera::default());
     }
 }
-
-#[derive(Resource)]
-pub struct UserActor(pub Arc<Actor>);

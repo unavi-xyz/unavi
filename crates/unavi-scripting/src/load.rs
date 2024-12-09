@@ -3,10 +3,7 @@ use std::sync::{Arc, Mutex};
 use bevy::{prelude::*, utils::HashMap};
 use bevy_async_task::{AsyncTaskPool, AsyncTaskStatus};
 
-use crate::{
-    api::wired::dwn::WiredDwn,
-    env::{ScriptEnv, ScriptEnvBuilder},
-};
+use crate::env::{ScriptEnv, ScriptEnvBuilder};
 
 use super::asset::Wasm;
 

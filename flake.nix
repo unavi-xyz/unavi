@@ -158,6 +158,7 @@
             (with pkgs; [
               cargo-component
               cargo-deny
+              cargo-edit
               cargo-machete
               cargo-rdme
               cargo-release

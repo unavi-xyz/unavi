@@ -1,4 +1,3 @@
-
 use bevy::prelude::*;
 use wired_social::schemas::common::RecordLink;
 
@@ -17,10 +16,7 @@ impl Plugin for WorldPlugin {
         app
             // .add_event::<JoinHome>()
             .init_state::<WorldState>()
-            .add_systems(
-                Startup,
-                scene::setup_lights,
-            )
+            .add_systems(Startup, scene::setup_lights)
             .add_systems(
                 Update,
                 (

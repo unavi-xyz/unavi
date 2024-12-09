@@ -27,8 +27,6 @@
 //! git submodule foreach git pull
 //! ```
 
-use std::sync::Arc;
-
 use bevy::{
     asset::AssetMetaCheck,
     log::{Level, LogPlugin},
@@ -37,11 +35,7 @@ use bevy::{
 };
 
 use avian3d::prelude::*;
-use dwn::{
-    core::store::{DataStore, RecordStore},
-    stores::NativeDbStore,
-    Dwn,
-};
+use dwn::Dwn;
 
 #[cfg(not(target_family = "wasm"))]
 pub mod native;

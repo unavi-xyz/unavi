@@ -2254,9 +2254,9 @@ checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 
 [[package]]
 name = "chrono"
-version = "0.4.38"
+version = "0.4.39"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a21f936df1771bf62b77f047b726c4625ff2e8aa607c01ec06e5a05bd8463401"
+checksum = "7e36cc9d416881d2e24f9a963be5fb1cd90966419ac844274161d10488b3e825"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
@@ -3069,8 +3069,8 @@ checksum = "f25c0e292a7ca6d6498557ff1df68f32c99850012b6ea401cf8daf771f22ff53"
 
 [[package]]
 name = "dwn"
-version = "0.0.10"
-source = "git+https://github.com/unavi-xyz/dwn#88318731bbb605ebbc9364c981145fde31773034"
+version = "0.1.0"
+source = "git+https://github.com/unavi-xyz/dwn#73ee7f9963e9986f2a01a9e865d785c9469603f1"
 dependencies = [
  "base64 0.22.1",
  "dwn-core",
@@ -3080,15 +3080,15 @@ dependencies = [
  "reqwest",
  "ring",
  "serde_json",
- "thiserror 2.0.4",
+ "thiserror 2.0.6",
  "tracing",
  "xdid",
 ]
 
 [[package]]
 name = "dwn-core"
-version = "0.0.10"
-source = "git+https://github.com/unavi-xyz/dwn#88318731bbb605ebbc9364c981145fde31773034"
+version = "0.1.0"
+source = "git+https://github.com/unavi-xyz/dwn#73ee7f9963e9986f2a01a9e865d785c9469603f1"
 dependencies = [
  "base64 0.22.1",
  "ipld-core",
@@ -3101,15 +3101,15 @@ dependencies = [
  "serde_json",
  "serde_with",
  "sha3",
- "thiserror 2.0.4",
+ "thiserror 2.0.6",
  "time",
  "xdid",
 ]
 
 [[package]]
 name = "dwn-native-db"
-version = "0.0.10"
-source = "git+https://github.com/unavi-xyz/dwn#88318731bbb605ebbc9364c981145fde31773034"
+version = "0.1.0"
+source = "git+https://github.com/unavi-xyz/dwn#73ee7f9963e9986f2a01a9e865d785c9469603f1"
 dependencies = [
  "dwn-core",
  "native_db",
@@ -3121,8 +3121,8 @@ dependencies = [
 
 [[package]]
 name = "dwn-server"
-version = "0.0.10"
-source = "git+https://github.com/unavi-xyz/dwn#88318731bbb605ebbc9364c981145fde31773034"
+version = "0.1.0"
+source = "git+https://github.com/unavi-xyz/dwn#73ee7f9963e9986f2a01a9e865d785c9469603f1"
 dependencies = [
  "axum",
  "axum-macros",
@@ -3477,9 +3477,9 @@ dependencies = [
 
 [[package]]
 name = "fastrand"
-version = "2.2.0"
+version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "486f806e73c5707928240ddc295403b1b93c96a02038563881c4a2fd84b81ac4"
+checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
 
 [[package]]
 name = "fd-lock"
@@ -5035,9 +5035,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.167"
+version = "0.2.168"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09d6582e104315a817dff97f75133544b2e094ee22447d2acf4a74e189ba06fc"
+checksum = "5aaeb2981e0606ca11d79718f8bb01164f1d6ed75080182d3abf017e6d244b6d"
 
 [[package]]
 name = "libfuzzer-sys"
@@ -5476,7 +5476,7 @@ dependencies = [
 [[package]]
 name = "native_db"
 version = "0.8.1"
-source = "git+https://github.com/vincent-herlemont/native_db?branch=main#ecc25ff8cb96c989801ad144fe7a1ef05cd6785e"
+source = "git+https://github.com/vincent-herlemont/native_db#ecc25ff8cb96c989801ad144fe7a1ef05cd6785e"
 dependencies = [
  "native_db_macro",
  "native_model",
@@ -5484,13 +5484,13 @@ dependencies = [
  "semver",
  "serde",
  "skeptic",
- "thiserror 2.0.4",
+ "thiserror 2.0.6",
 ]
 
 [[package]]
 name = "native_db_macro"
 version = "0.8.1"
-source = "git+https://github.com/vincent-herlemont/native_db?branch=main#ecc25ff8cb96c989801ad144fe7a1ef05cd6785e"
+source = "git+https://github.com/vincent-herlemont/native_db#ecc25ff8cb96c989801ad144fe7a1ef05cd6785e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5509,7 +5509,7 @@ dependencies = [
  "native_model_macro",
  "rmp-serde",
  "serde",
- "thiserror 2.0.4",
+ "thiserror 2.0.6",
  "zerocopy 0.8.13",
 ]
 
@@ -6631,7 +6631,7 @@ dependencies = [
  "rustc-hash 2.1.0",
  "rustls",
  "socket2",
- "thiserror 2.0.4",
+ "thiserror 2.0.6",
  "tokio",
  "tracing",
 ]
@@ -6650,7 +6650,7 @@ dependencies = [
  "rustls",
  "rustls-pki-types",
  "slab",
- "thiserror 2.0.4",
+ "thiserror 2.0.6",
  "tinyvec",
  "tracing",
  "web-time",
@@ -6658,9 +6658,9 @@ dependencies = [
 
 [[package]]
 name = "quinn-udp"
-version = "0.5.7"
+version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d5a626c6807713b15cac82a6acaccd6043c9a5408c24baae07611fec3f243da"
+checksum = "52cd4b1eff68bf27940dd39811292c49e007f4d0b4c357358dc9b0197be6b527"
 dependencies = [
  "cfg_aliases 0.2.1",
  "libc",
@@ -7177,9 +7177,9 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "0.38.41"
+version = "0.38.42"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7f649912bc1495e167a6edee79151c84b1bad49748cb4f1f1167f459f6224f6"
+checksum = "f93dc38ecbab2eb790ff964bb77fa94faf256fd3e73285fd7ba0903b76bedb85"
 dependencies = [
  "bitflags 2.6.0",
  "errno",
@@ -7187,7 +7187,7 @@ dependencies = [
  "libc",
  "linux-raw-sys",
  "once_cell",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -8034,11 +8034,11 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "2.0.4"
+version = "2.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f49a1853cf82743e3b7950f77e0f4d622ca36cf4317cba00c767838bac8d490"
+checksum = "8fec2a1820ebd077e2b90c4df007bebf344cd394098a13c563957d0afc83ea47"
 dependencies = [
- "thiserror-impl 2.0.4",
+ "thiserror-impl 2.0.6",
 ]
 
 [[package]]
@@ -8054,9 +8054,9 @@ dependencies = [
 
 [[package]]
 name = "thiserror-impl"
-version = "2.0.4"
+version = "2.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8381894bb3efe0c4acac3ded651301ceee58a15d47c2e34885ed1908ad667061"
+checksum = "d65750cab40f4ff1929fb1ba509e9914eb756131cef4210da8d5d700d26f6312"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -10645,7 +10645,7 @@ dependencies = [
  "flate2",
  "indexmap 2.7.0",
  "memchr",
- "thiserror 2.0.4",
+ "thiserror 2.0.6",
  "zopfli",
 ]
 

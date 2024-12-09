@@ -17,7 +17,7 @@ clap.workspace = true
 directories.workspace = true
 dwn.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "signal"] }
-tracing-subscriber = "0.3.18"
+tracing-subscriber = "0.3.19"
 tracing.workspace = true
 unavi-social-server = { path = "../unavi-social-server" }
 unavi-world-host = { path = "../unavi-world-host" }

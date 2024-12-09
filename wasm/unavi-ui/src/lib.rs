@@ -25,6 +25,7 @@ static ELEMENT_ID: AtomicUsize = AtomicUsize::new(0);
 /// You will likely want to add this call to [Drop].
 static mut ELEMENTS: LazyCell<RefCell<Vec<Rc<dyn Updatable>>>> = LazyCell::new(RefCell::default);
 
+#[allow(static_mut_refs)]
 trait Updatable {
     fn id(&self) -> usize;
     fn update(&self, delta: f32);
@@ -51,6 +52,7 @@ trait Updatable {
 
 struct GuestImpl;
 
+#[allow(static_mut_refs)]
 impl Guest for GuestImpl {
     fn update_ui(delta: f32) {
         // WASM is single-threaded, mutable statics are fine.

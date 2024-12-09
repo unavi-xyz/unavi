@@ -46,7 +46,10 @@ impl Args {
 
 #[cfg(not(target_family = "wasm"))]
 fn main() {
-    use unavi_app::native::update::check_for_updates;
+    use unavi_app::native::{
+        dirs::{get_project_dirs, init_dirs},
+        update::check_for_updates,
+    };
 
     let args = Args::parse();
 
@@ -56,6 +59,8 @@ fn main() {
         };
     }
 
+    init_dirs().expect("init project dirs");
+
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -63,7 +68,13 @@ fn main() {
 
     rt.block_on(async {
         let db = match args.storage {
-            Storage::Filesystem => NativeDbStore::new_in_memory(),
+            Storage::Filesystem => {
+                let dirs = get_project_dirs();
+                let mut path = dirs.data_dir().to_path_buf();
+                path.push("app.db");
+
+                NativeDbStore::new(path)
+            }
             Storage::Memory => NativeDbStore::new_in_memory(),
         }
         .expect("Failed to create db");

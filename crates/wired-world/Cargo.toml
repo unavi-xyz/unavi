@@ -10,4 +10,4 @@ edition.workspace = true
 capnp.workspace = true
 
 [build-dependencies]
-capnpc = "0.19.0"
+capnpc = "0.20.1"

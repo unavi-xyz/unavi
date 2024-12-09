@@ -2135,15 +2135,6 @@ dependencies = [
 
 [[package]]
 name = "capnp"
-version = "0.19.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e985a566bdaae9a428a957d12b10c318d41b2afddb54cfbb764878059df636e"
-dependencies = [
- "embedded-io 0.6.1",
-]
-
-[[package]]
-name = "capnp"
 version = "0.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bce4e2d41c16cf9188f47ca4d59fdcdca1f33705af211bdb41f0afbd3442f8b5"
@@ -2157,7 +2148,7 @@ version = "0.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7b70b0d44372d42654e3efac38c1643c7b0f9d3a9e9b72b635f942ff3f17e891"
 dependencies = [
- "capnp 0.20.3",
+ "capnp",
  "futures-channel",
  "futures-util",
 ]
@@ -2168,18 +2159,18 @@ version = "0.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37b3a18a82e01b63bf375f15b5771de6d4b4b6f1ad89882332b841f0faa25ad2"
 dependencies = [
- "capnp 0.20.3",
+ "capnp",
  "capnp-futures",
  "futures",
 ]
 
 [[package]]
 name = "capnpc"
-version = "0.19.0"
+version = "0.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c75ba30e0f08582d53c2f3710cf4bb65ff562614b1ba86906d7391adffe189ec"
+checksum = "1aa3d5f01e69ed11656d2c7c47bf34327ea9bfb5c85c7de787fcd7b6c5e45b61"
 dependencies = [
- "capnp 0.19.8",
+ "capnp",
 ]
 
 [[package]]
@@ -8529,7 +8520,7 @@ dependencies = [
  "bevy",
  "bevy_vr_controller",
  "bevy_vrm",
- "capnp 0.20.3",
+ "capnp",
  "capnp-rpc",
  "thiserror 1.0.69",
  "tokio",
@@ -8688,7 +8679,7 @@ name = "unavi-world-server"
 version = "0.0.10"
 dependencies = [
  "anyhow",
- "capnp 0.20.3",
+ "capnp",
  "capnp-rpc",
  "dwn",
  "thiserror 1.0.69",
@@ -10224,7 +10215,7 @@ dependencies = [
 name = "wired-world"
 version = "0.0.10"
 dependencies = [
- "capnp 0.20.3",
+ "capnp",
  "capnpc",
 ]
 

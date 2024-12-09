@@ -71,7 +71,7 @@ impl ScriptEnvBuilder {
         config.async_support(true);
         config.wasm_component_model(true);
 
-        let engine = Engine::new(&config).expect("Failed to create wasm engine");
+        let engine = Engine::new(&config)?;
 
         let mut store = Store::new(&engine, self.data);
         let mut linker = Linker::new(store.engine());

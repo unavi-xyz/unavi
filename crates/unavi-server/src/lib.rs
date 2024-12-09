@@ -1,7 +1,4 @@
-use std::{
-    path::PathBuf,
-    sync::LazyLock,
-};
+use std::{path::PathBuf, sync::LazyLock};
 
 use anyhow::Result;
 use clap::{Parser, Subcommand, ValueEnum};

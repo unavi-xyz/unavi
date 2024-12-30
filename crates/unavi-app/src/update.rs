@@ -11,7 +11,7 @@ pub fn check_for_updates() -> Result<()> {
     println!("Checking for updates...");
 
     // Get latest GitHub release.
-    let target = std::env::var("TARGET")?;
+    let target = env!("TARGET");
     let pkg = env!("CARGO_PKG_NAME");
 
     let target = if target.contains("linux") {

@@ -14,9 +14,7 @@ anyhow = "1.0.95"
 bevy = { workspace = true, features = ["wayland"] }
 directories = "5.0.1"
 image = { version = "0.25.5", default-features = false, features = ["png"] }
-reqwest = { version = "0.12.11", default-features = false, features = [
-  "rustls-tls",
-] }
+reqwest = "0.12.11"
 self_update = "0.41.0"
 tempfile = "3.14.0"
 winit = { version = "0.30.7", default-features = false }

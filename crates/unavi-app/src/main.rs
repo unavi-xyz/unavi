@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use unavi_app::{icon::set_window_icon, update::check_for_updates};
+use unavi_app::update::check_for_updates;
 
 fn main() {
     if cfg!(not(debug_assertions)) {
@@ -21,7 +21,14 @@ fn main() {
         })
         .finish(&mut app);
 
-    app.add_systems(Startup, set_window_icon);
+    app.add_systems(
+        Startup,
+        (
+            unavi_app::icon::set_window_icon,
+            unavi_app::scene::spawn_lights,
+            unavi_app::scene::spawn_scene,
+        ),
+    );
 
     app.run();
 }

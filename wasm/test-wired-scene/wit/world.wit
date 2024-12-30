@@ -1,5 +1,0 @@
-package test:wired-scene;
-
-world script {
-    include wired:prelude/script; 
-}

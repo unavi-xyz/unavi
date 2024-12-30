@@ -1,5 +1,4 @@
 <div align="center">
-  <img src="./crates/unavi-app/assets/images/logo.png" alt="UNAVI Logo" height="200" />
   <h1>UNAVI</h1>
   <strong>An open-source VR social platform.</strong>
 </div>
@@ -26,29 +25,9 @@
 UNAVI is an open-source VR social platform, built on [The Wired 🔌](https://github.com/unavi-xyz/wired-protocol).
 Anyone can run their own servers, modify their client, and extend the underlying protocol to add new features.
 
-UNAVI is almost entirely written in Rust 🦀.
-The app is built using [Bevy](https://bevyengine.org/) and makes heavy use of [WebAssembly](https://webassembly.org/) for user scripting.
+UNAVI is primarily written in Rust 🦀.
+The app is built with the [Bevy](https://bevyengine.org/) game engine, and makes heavy use of [WebAssembly](https://webassembly.org/) for user scripting.
 Multiplayer is handled by self-hostable servers acting as relays for communication between players.
 
 This project is still early, any feedback or contributions are greatly appreciated!
 Come join the [Discord](https://discord.gg/cazUfCCgHJ) and say hi!
-
-## ❄️ Development (with Nix)
-
-First enter a development shell:
-
-```bash
-nix develop
-```
-
-You can then run crates using cargo:
-
-```bash
-cargo run -p unavi-app
-```
-
-Or serve the web app (WIP) using trunk:
-
-```bash
-trunk serve
-```

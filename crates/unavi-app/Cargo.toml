@@ -1,52 +1,23 @@
 [package]
-name = "unavi-app"
-publish = false
-version.workspace = true
-authors.workspace = true
 edition.workspace = true
 license.workspace = true
+name = "unavi-app"
+publish = false
 repository.workspace = true
-
-[package.metadata.wix]
-eula = false
+version.workspace = true
 
 [lints]
 workspace = true
 
 [dependencies]
-anyhow.workspace = true
-avian3d.workspace = true
+anyhow = "1.0.95"
 bevy = { workspace = true, features = ["wayland"] }
-clap.workspace = true
-directories.workspace = true
-dwn.workspace = true
-tracing.workspace = true
-unavi-networking = { path = "../unavi-networking" }
-unavi-player = { path = "../unavi-player" }
-unavi-scripting = { path = "../unavi-scripting" }
-unavi-settings = { path = "../unavi-settings" }
-unavi-world = { path = "../unavi-world" }
-
-[target.'cfg(target_family = "wasm")'.dependencies]
-tokio.workspace = true
-wasm-bindgen-futures.workspace = true
-wasm-bindgen.workspace = true
-web-sys = { workspace = true, features = [
-  "Location",
-  "UrlSearchParams",
-  "Window",
-] }
-
-[target.'cfg(not(target_family = "wasm"))'.dependencies]
-bevy_oxr = "0.3.0"
+directories = "5.0.1"
 image = { version = "0.25.5", default-features = false, features = ["png"] }
-reqwest.workspace = true
+reqwest = { version = "0.12.11", default-features = false, features = [
+  "rustls-tls",
+] }
 self_update = "0.41.0"
 tempfile = "3.14.0"
-tokio.workspace = true
-winit = { version = "0.30.5", default-features = false }
-zip = { version = "2.2.1", default-features = false, features = ["deflate"] }
-
-[build-dependencies]
-unavi-constants = { path = "../unavi-constants" }
-winres = "0.1.12"
+winit = { version = "0.30.7", default-features = false }
+zip = { version = "2.2.2", default-features = false, features = ["deflate"] }

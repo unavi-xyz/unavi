@@ -1,7 +1,0 @@
-package example:unavi-shapes;
-
-world script {
-    include wired:prelude/script;
-
-    import unavi:shapes/api;
-}

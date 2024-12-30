@@ -1,10 +1,9 @@
 [workspace]
 resolver = "2"
-members = ["crates/*", "wasm/*"]
+members = ["crates/*"]
 
 [workspace.package]
 version = "0.0.10"
-authors = ["kayh"]
 edition = "2021"
 license = "MPL-2.0"
 repository = "https://github.com/unavi-xyz/unavi"
@@ -13,55 +12,13 @@ repository = "https://github.com/unavi-xyz/unavi"
 too_many_arguments = "allow"
 type_complexity = "allow"
 
-[workspace.dependencies]
-anyhow = "1.0.94"
-avian3d = { version = "0.1.2", features = ["simd"] }
-axum = "0.7.9"
-axum-server = "0.7.1"
-base64 = "0.22.1"
-bevy = "0.14.2"
-bevy-inspector-egui = "0.25.2"
-bevy_async_task = "0.2.0"
-bevy_panorbit_camera = "0.19.5"
-bevy_vr_controller = "0.1.1"
-bevy_vrm = "0.0.12"
-capnp = "0.20.3"
-capnp-rpc = "0.20.2"
-clap = { version = "4.5.23", features = ["derive"] }
-directories = "5.0.1"
-dwn = { git = "https://github.com/unavi-xyz/dwn" }
-glam = "0.28.0"
-reqwest = "0.12.9"
-semver = "1.0.23"
-serde = { version = "1.0.215", features = ["derive"] }
-serde_json = "1.0.133"
-thiserror = "1.0.69"
-tokio = { version = "1.42.0", features = ["macros", "rt", "time"] }
-tracing = "0.1.41"
-tracing-test = "0.2.5"
-wasm-bindgen = "0.2.99"
-wasm-bindgen-futures = "0.4.49"
-web-sys = "0.3.76"
-wit-bindgen-rt = { version = "0.36.0", features = ["bitflags"] }
-wtransport = "0.3.1"
-xdid = "0.2.0"
-xwt-core = { git = "https://github.com/kayhhh/xwt" }
-xwt-wtransport = { git = "https://github.com/kayhhh/xwt" }
-
 [workspace.metadata.release]
 publish = false
 shared-version = true
 tag-name = "v{{version}}"
 
-[profile.dev]
-opt-level = 1
-
-[profile.dev.package.bevy]
-opt-level = 3
+[workspace.dependencies]
+bevy = "0.15"
 
 [profile.release]
 lto = "thin"
-
-[profile.release-wasm]
-inherits = "release"
-opt-level = "s"

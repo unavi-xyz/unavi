@@ -34,10 +34,6 @@ jobs:
       - run: nix develop -c cargo component check
 
       - run: nix develop -c cargo clippy --all-features --fix --no-deps --allow-dirty
-      - run: nix develop -c cargo fmt --all
-      - run: nix develop -c cargo ws exec --no-bail -- cargo rdme --force
-      - run: nix develop -c prettier -w .
-      - run: nix develop -c terraform fmt -recursive
       - run: nix fmt
 
       - uses: EndBug/add-and-commit@v9
@@ -46,5 +42,4 @@ jobs:
           default_author: github_actions
 
       - run: nix develop -c cargo doc --all-features --no-deps
-      - run: nix develop -c cargo clean
       - run: nix develop -c cargo test --all-features

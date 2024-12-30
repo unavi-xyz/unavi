@@ -1,6 +1,12 @@
 use bevy::prelude::*;
+use unavi_app::{icon::set_window_icon, update::check_for_updates};
 
 fn main() {
+    if cfg!(not(debug_assertions)) {
+        // Only run in release builds.
+        check_for_updates().expect("update");
+    }
+
     let mut app = App::new();
 
     DefaultPlugins
@@ -15,7 +21,7 @@ fn main() {
         })
         .finish(&mut app);
 
-    app.add_systems(Startup, unavi_app::icon::set_window_icon);
+    app.add_systems(Startup, set_window_icon);
 
     app.run();
 }

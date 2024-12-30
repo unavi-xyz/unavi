@@ -1,17 +1,5 @@
-# Terraform
-*.tfstate*
-*.tfvars
-.terraform
-
 # Nix
-/result
+result
 
 # Rust
-/target
-
-# Trunk
-/crates/unavi-app/dist
-
-# Other
-/crates/unavi-app/assets/wasm
-/crates/unavi-app/wix/assets.wxs
+target

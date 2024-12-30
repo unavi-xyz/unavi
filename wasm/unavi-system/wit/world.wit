@@ -1,8 +1,0 @@
-package unavi:system;
-
-world guest {
-    include unavi:ui/prelude; 
-    include wired:prelude/script; 
-
-    import unavi:vscreen/screen;
-}

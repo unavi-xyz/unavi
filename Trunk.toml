@@ -1,2 +1,0 @@
-[build]
-target = "./crates/unavi-app/index.html"

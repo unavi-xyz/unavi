@@ -66,7 +66,10 @@
         formatter = treefmtEval.config.build.wrapper;
 
         apps = rec {
-          app = flake-utils.lib.mkApp { drv = unavi-app.package; };
+          app = flake-utils.lib.mkApp {
+            drv = unavi-app.package;
+            exePath = "/unavi-app";
+          };
           default = app;
         };
 

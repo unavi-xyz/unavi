@@ -3,6 +3,7 @@ use std::sync::LazyLock;
 use directories::ProjectDirs;
 
 pub mod icon;
+pub mod scene;
 pub mod update;
 
 pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {

@@ -75,6 +75,8 @@ let
       ];
 
     postInstall = ''
+      mv $out/bin/* $out
+      rm -r $out/bin
       cp -r crates/unavi-app/assets $out
       cp LICENSE $out
     '';

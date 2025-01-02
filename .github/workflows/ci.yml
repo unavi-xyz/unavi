@@ -1,11 +1,9 @@
 name: CI
-
 on:
   push:
     branches:
       - main
   pull_request:
-
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -19,27 +17,21 @@ jobs:
           remove-dotnet: true
           remove-haskell: true
           remove-large-packages: true
-
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           submodules: true
-
       - uses: DeterminateSystems/flake-checker-action@v9
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
-
       - run: nix develop -c cargo deny check
       - run: nix develop -c cargo component check
-
       - run: nix develop -c cargo clippy --all-features --fix --no-deps --allow-dirty
       - run: nix fmt
-
       - uses: EndBug/add-and-commit@v9
         with:
           message: "chore: lint"
           default_author: github_actions
-
       - run: nix develop -c cargo doc --all-features --no-deps
       - run: nix develop -c cargo test --all-features

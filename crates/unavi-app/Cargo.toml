@@ -18,4 +18,4 @@ reqwest = "0.12.11"
 self_update = "0.41.0"
 tempfile = "3.14.0"
 winit = { version = "0.30.7", default-features = false }
-zip = { version = "2.2.2", default-features = false, features = ["deflate"] }
+zip = { version = "2.3.0", default-features = false, features = ["deflate"] }

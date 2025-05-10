@@ -16,18 +16,17 @@
     <img alt="Discord" src="https://img.shields.io/discord/918705784311939134.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" />
   </a>
   <a href="https://twitter.com/unavi_xyz">
-    <img alt="Twitter" src="https://img.shields.io/badge/unavi__xyz--1DA1F2?logo=twitter" />
+    <img alt="Twitter" src="https://img.shields.io/badge/unavi__xyz--1DA1F2?logo=x" />
   </a>
 </div>
 
 ## ⬜ About
 
-UNAVI is an open-source VR social platform, built on [The Wired 🔌](https://github.com/unavi-xyz/wired-protocol).
-Anyone can run their own servers, modify their client, and extend the underlying protocol to add new features.
+UNAVI is an open-source VR social platform.
+Anyone can run their own servers, modify their client, and extend the underlying [protocol](https://github.com/unavi-xyz/wired-protocol) to add new features.
 
 UNAVI is primarily written in Rust 🦀.
-The app is built with the [Bevy](https://bevyengine.org/) game engine, and makes heavy use of [WebAssembly](https://webassembly.org/) for user scripting.
-Multiplayer is handled by self-hostable servers acting as relays for communication between players.
+The app is built with the [Bevy](https://bevyengine.org/) game engine, making heavy use of [WebAssembly](https://webassembly.org/) for user scripting.
 
 This project is still early, any feedback or contributions are greatly appreciated!
 Come join the [Discord](https://discord.gg/cazUfCCgHJ) and say hi!

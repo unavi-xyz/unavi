@@ -24,10 +24,6 @@ cargo install wac-cli
 
 The [mold](https://github.com/rui314/mold) linker is used by default when targeting Linux.
 
-### Cap'n Proto
-
-[Cap'n Proto](https://capnproto.org/install.html) must be installed to compile networking schemas.
-
 ### Git Submodules
 
 Make sure your Git submodules are up to date:

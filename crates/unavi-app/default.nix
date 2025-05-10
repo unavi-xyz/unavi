@@ -2,29 +2,10 @@
   craneLib,
   pkgs,
   src,
+  wac-cli,
   ...
 }:
 let
-  wac-cli = pkgs.rustPlatform.buildRustPackage rec {
-    pname = "wac-cli";
-    version = "0.3.0";
-
-    src = pkgs.fetchFromGitHub {
-      owner = "bytecodealliance";
-      repo = "wac";
-      rev = "v${version}";
-      sha256 = "sha256-xv+lSsJ+SSRovJ0mt8/AbEjEdyaRvO3qzY44ih9oSF0=";
-    };
-
-    cargoHash = "sha256-+hmTsTfcxygdU/pDTkmkuQgujEOR1+H8YZG4ScVBKcc=";
-
-    nativeBuildInputs = [ pkgs.pkg-config ];
-
-    buildInputs =
-      [ pkgs.openssl ]
-      ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.SystemConfiguration ];
-  };
-
   config = {
     pname = "unavi-app";
     strictDeps = true;
@@ -66,7 +47,6 @@ let
         ]
       )
       ++ (with pkgs; [
-        capnproto
         cargo-component
         rustPlatform.bindgenHook
       ])

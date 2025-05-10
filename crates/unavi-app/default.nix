@@ -46,10 +46,6 @@ let
           pkg-config
         ]
       )
-      ++ (with pkgs; [
-        cargo-component
-        rustPlatform.bindgenHook
-      ])
       ++ [
         wac-cli
       ];

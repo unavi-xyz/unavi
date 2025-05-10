@@ -4,7 +4,6 @@ use directories::ProjectDirs;
 
 pub mod icon;
 pub mod scene;
-pub mod update;
 
 pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
     let dirs = ProjectDirs::from("", "UNAVI", "unavi-app").expect("project dirs");

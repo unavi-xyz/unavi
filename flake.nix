@@ -2,7 +2,7 @@
   inputs = {
     crane.url = "github:ipetkov/crane";
     flake-utils.url = "github:numtide/flake-utils";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/release-24.11";
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs = {
@@ -21,7 +21,6 @@
       treefmt-nix,
       ...
     }:
-
     flake-utils.lib.eachDefaultSystem (
       localSystem:
       let
@@ -33,9 +32,29 @@
           ];
         };
 
+        wac-cli = pkgs.rustPlatform.buildRustPackage rec {
+          pname = "wac-cli";
+          version = "0.6.1";
+
+          src = pkgs.fetchFromGitHub {
+            owner = "bytecodealliance";
+            repo = "wac";
+            rev = "v${version}";
+            sha256 = "sha256-noBVAhoHXl3FI6ZlnmCwpnqu7pub6FCtuY+026vdlYo=";
+          };
+
+          cargoHash = "sha256-sSV5zzDUaR0JUuoigZDbkvZE43R+f66sUl9ytRFj9u0=";
+
+          nativeBuildInputs = [ pkgs.pkg-config ];
+
+          buildInputs =
+            [ pkgs.openssl ]
+            ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.SystemConfiguration ];
+        };
+
         rustToolchain = pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
           targets = [
-            "wasm32-wasip1"
+            "wasm32-wasip2"
           ];
         };
         craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
@@ -48,7 +67,6 @@
             path: type:
             (pkgs.lib.hasInfix "crates/unavi-app/assets/" path)
             || (pkgs.lib.hasInfix "wired-protocol" path)
-            || (pkgs.lib.hasSuffix ".capnp" path)
             || (pkgs.lib.hasSuffix ".html" path)
             || (pkgs.lib.hasSuffix ".json" path)
             || (pkgs.lib.hasSuffix ".wit" path)
@@ -57,7 +75,14 @@
             || (craneLib.filterCargoSources path type);
         };
 
-        unavi-app = import ./crates/unavi-app { inherit craneLib pkgs src; };
+        unavi-app = import ./crates/unavi-app {
+          inherit
+            craneLib
+            pkgs
+            src
+            wac-cli
+            ;
+        };
 
         buildInputs = unavi-app.buildInputs;
         nativeBuildInputs = unavi-app.nativeBuildInputs;
@@ -85,11 +110,10 @@
               cargo-deny
               cargo-edit
               cargo-machete
-              cargo-rdme
               cargo-release
               cargo-watch
               cargo-workspaces
-              rust-analyzer
+              wac-cli
             ])
             ++ buildInputs
             ++ nativeBuildInputs;

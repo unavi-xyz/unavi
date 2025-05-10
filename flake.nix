@@ -43,7 +43,7 @@
             sha256 = "sha256-noBVAhoHXl3FI6ZlnmCwpnqu7pub6FCtuY+026vdlYo=";
           };
 
-          cargoHash = "sha256-sSV5zzDUaR0JUuoigZDbkvZE43R+f66sUl9ytRFj9u0=";
+          cargoHash = "sha256-sSV5zzDUaR0JUuoigZDbkvZE43R+f66sUl9ytRFj9u0";
 
           nativeBuildInputs = [ pkgs.pkg-config ];
 
@@ -106,7 +106,6 @@
         devShells.default = craneLib.devShell {
           packages =
             (with pkgs; [
-              cargo-component
               cargo-deny
               cargo-edit
               cargo-machete

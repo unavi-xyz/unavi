@@ -1,12 +1,6 @@
 use bevy::prelude::*;
-use unavi_app::update::check_for_updates;
 
 fn main() {
-    if cfg!(not(debug_assertions)) {
-        // Only run in release builds.
-        check_for_updates().expect("update");
-    }
-
     let mut app = App::new();
 
     DefaultPlugins

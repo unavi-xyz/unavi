@@ -41,6 +41,12 @@ license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }]
 allow = ["OpenSSL"]
 crate = "ring"
 
+[advisories]
+ignore = [
+  "RUSTSEC-2024-0436", # paste unmaintained
+]
+version = 2
+
 [bans]
 deny = [
   { name = "bevy", deny-multiple-versions = true },

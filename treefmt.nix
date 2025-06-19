@@ -10,9 +10,7 @@
       enable = true;
       edition = "2024";
     };
-    shfmt.enable = true;
     taplo.enable = true;
     terraform.enable = true;
-    yamlfmt.enable = true;
   };
 }

@@ -25,9 +25,12 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
+
       - run: nix develop -c cargo deny check
       - run: nix develop -c cargo component check
+
       - run: nix develop -c cargo clippy --all-features --fix --no-deps --allow-dirty
       - run: nix fmt
+
       - run: nix develop -c cargo doc --all-features --no-deps
       - run: nix develop -c cargo test --all-features

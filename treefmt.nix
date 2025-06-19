@@ -12,5 +12,6 @@
     };
     taplo.enable = true;
     terraform.enable = true;
+    yamlfmt.enable = true;
   };
 }

@@ -2,7 +2,7 @@
   inputs = {
     crane.url = "github:ipetkov/crane";
     flake-utils.url = "github:numtide/flake-utils";
-    nixpkgs.url = "github:NixOS/nixpkgs/release-24.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs = {
@@ -43,7 +43,7 @@
             sha256 = "sha256-noBVAhoHXl3FI6ZlnmCwpnqu7pub6FCtuY+026vdlYo=";
           };
 
-          cargoHash = "sha256-sSV5zzDUaR0JUuoigZDbkvZE43R+f66sUl9ytRFj9u0";
+          cargoHash = "sha256-5oLt1wnadtEKCOAtpbzPQRuU76qLWRtcCv6Jcozon4E=";
 
           nativeBuildInputs = [ pkgs.pkg-config ];
 
@@ -58,8 +58,6 @@
           ];
         };
         craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
-
-        treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
 
         src = pkgs.lib.cleanSourceWith {
           src = ./.;
@@ -86,6 +84,8 @@
 
         buildInputs = unavi-app.buildInputs;
         nativeBuildInputs = unavi-app.nativeBuildInputs;
+
+        treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
       in
       {
         formatter = treefmtEval.config.build.wrapper;

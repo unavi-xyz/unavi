@@ -1,21 +1,21 @@
 [workspace]
-members = ["crates/*"]
+members  = ["crates/*"]
 resolver = "2"
 
 [workspace.package]
-edition = "2021"
-license = "MPL-2.0"
+edition    = "2021"
+license    = "MPL-2.0"
 repository = "https://github.com/unavi-xyz/unavi"
-version = "0.0.10"
+version    = "0.0.10"
 
 [workspace.lints.clippy]
 too_many_arguments = "allow"
-type_complexity = "allow"
+type_complexity    = "allow"
 
 [workspace.metadata.release]
-publish = false
+publish        = false
 shared-version = true
-tag-name = "v{{version}}"
+tag-name       = "v{{version}}"
 
 [workspace.dependencies]
 bevy = "0.16"

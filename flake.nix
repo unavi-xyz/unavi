@@ -82,8 +82,8 @@
             ;
         };
 
-        buildInputs = unavi-app.buildInputs;
-        nativeBuildInputs = unavi-app.nativeBuildInputs;
+        inherit (unavi-app) buildInputs;
+        inherit (unavi-app) nativeBuildInputs;
 
         treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
       in

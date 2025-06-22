@@ -1,17 +1,17 @@
 [package]
-edition.workspace = true
-license.workspace = true
-name = "unavi-app"
-publish = false
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-app"
+publish              = false
 repository.workspace = true
-version.workspace = true
+version.workspace    = true
 
 [lints]
 workspace = true
 
 [dependencies]
-anyhow = "1.0.98"
-bevy = { workspace = true, features = ["wayland"] }
+anyhow      = "1.0.98"
+bevy        = { features = ["wayland"], workspace = true }
 directories = "6.0.0"
-image = { version = "0.25.6", default-features = false, features = ["png"] }
-winit = { version = "0.30.11", default-features = false }
+image       = { default-features = false, features = ["png"], version = "0.25.6" }
+winit       = { default-features = false, version = "0.30.11" }

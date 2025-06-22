@@ -1,4 +1,4 @@
-{ ... }:
+_:
 {
   projectRootFile = "flake.nix";
   programs = {
@@ -10,6 +10,7 @@
       enable = true;
       edition = "2024";
     };
+    statix.enable = true;
     taplo.enable = true;
     terraform.enable = true;
     yamlfmt.enable = true;

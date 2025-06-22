@@ -18,7 +18,9 @@ shared-version = true
 tag-name       = "v{{version}}"
 
 [workspace.dependencies]
-bevy = "0.16"
+avian3d     = "0.3"
+bevy        = "0.16.1"
+directories = "6.0.0"
 
 [profile.release]
 lto = "thin"

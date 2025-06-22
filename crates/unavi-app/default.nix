@@ -60,7 +60,7 @@ let
 
 in
 {
-  buildInputs = config.buildInputs;
-  nativeBuildInputs = config.nativeBuildInputs;
+  inherit (config) buildInputs;
+  inherit (config) nativeBuildInputs;
   package = craneLib.buildPackage config;
 }

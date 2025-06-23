@@ -10,6 +10,6 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-bevy = { default-features = true, workspace = true }
-schminput = { version = "0.3.0", features = ["xr"] }
-schminput_rebinding = { version = "0.3.0", features = ["xr"] }
+bevy                = { default-features = true, workspace = true }
+schminput           = { features = ["xr"], version = "0.3.0" }
+schminput_rebinding = { features = ["xr"], version = "0.3.0" }

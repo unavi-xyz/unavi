@@ -5302,8 +5302,11 @@ dependencies = [
  "anyhow",
  "avian3d",
  "bevy",
+ "bevy_mod_openxr",
  "directories",
  "image",
+ "unavi-input",
+ "unavi-player",
  "winit",
 ]
 
@@ -5325,6 +5328,7 @@ dependencies = [
  "bevy-tnua",
  "bevy-tnua-avian3d",
  "bevy_vrm",
+ "unavi-input",
 ]
 
 [[package]]

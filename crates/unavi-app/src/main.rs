@@ -1,4 +1,7 @@
+use avian3d::PhysicsPlugins;
 use bevy::prelude::*;
+use unavi_input::InputPlugin;
+use unavi_player::PlayerPlugin;
 
 fn main() {
     let mut app = App::new();
@@ -14,6 +17,8 @@ fn main() {
             ..default()
         })
         .finish(&mut app);
+
+    app.add_plugins((PhysicsPlugins::default(), InputPlugin, PlayerPlugin));
 
     app.add_systems(
         Startup,

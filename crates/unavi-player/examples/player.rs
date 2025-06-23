@@ -2,12 +2,21 @@ use avian3d::{
     PhysicsPlugins,
     prelude::{Collider, RigidBody},
 };
-use bevy::{color::palettes::tailwind::GRAY_500, prelude::*};
-use unavi_player::{Player, PlayerPlugin, PlayerSpawner};
+use bevy::{
+    color::palettes::tailwind::{BLUE_400, GRAY_200},
+    prelude::*,
+};
+use unavi_input::InputPlugin;
+use unavi_player::{PlayerPlugin, PlayerSpawner};
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins, PhysicsPlugins::default(), PlayerPlugin))
+        .add_plugins((
+            DefaultPlugins,
+            PhysicsPlugins::default(),
+            InputPlugin,
+            PlayerPlugin,
+        ))
         .add_systems(Startup, setup_scene)
         .run();
 }
@@ -33,8 +42,8 @@ fn setup_scene(
 
     // Ground
     commands.spawn((
-        Mesh3d(meshes.add(Plane3d::default().mesh().size(128.0, 128.0))),
-        MeshMaterial3d(materials.add(Color::WHITE)),
+        Mesh3d(meshes.add(Plane3d::default().mesh().size(32.0, 32.0))),
+        MeshMaterial3d(materials.add(Color::from(GRAY_200))),
         RigidBody::Static,
         Collider::half_space(Vec3::Y),
     ));
@@ -42,8 +51,8 @@ fn setup_scene(
     // Platform
     commands.spawn((
         Mesh3d(meshes.add(Cuboid::new(4.0, 1.0, 4.0))),
-        MeshMaterial3d(materials.add(Color::from(GRAY_500))),
-        Transform::from_xyz(-6.0, 2.0, 0.0),
+        MeshMaterial3d(materials.add(Color::from(BLUE_400))),
+        Transform::from_xyz(-3.0, 1.0, -6.0),
         RigidBody::Static,
         Collider::cuboid(4.0, 1.0, 4.0),
     ));

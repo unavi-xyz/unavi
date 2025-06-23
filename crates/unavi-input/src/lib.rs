@@ -2,6 +2,8 @@ use bevy::prelude::*;
 use schminput::prelude::*;
 use schminput_rebinding::DefaultSchminputRebindingPlugins;
 
+pub use schminput;
+
 pub struct InputPlugin;
 
 impl Plugin for InputPlugin {

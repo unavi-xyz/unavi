@@ -6,6 +6,7 @@ use bevy_tnua_avian3d::TnuaAvian3dPlugin;
 use bevy_vrm::VrmPlugins;
 
 mod head;
+mod input;
 mod spawner;
 
 pub use spawner::*;
@@ -18,15 +19,13 @@ impl Plugin for PlayerPlugin {
             TnuaControllerPlugin::new(FixedUpdate),
             TnuaAvian3dPlugin::new(FixedUpdate),
             VrmPlugins,
-        ));
+        ))
+        .add_systems(
+            Update,
+            (input::apply_head_input, input::apply_body_input).chain(),
+        );
     }
 }
-
-/// | Group            | Height        |
-/// | ---------------- | ------------- |
-/// | Adult Male       | 1.70 – 1.78 m |
-/// | Adult Female     | 1.60 – 1.67 m |
-const DEFAULT_HEIGHT: f32 = 1.7;
 
 #[derive(Component, Default)]
 #[require(Transform)]
@@ -35,23 +34,11 @@ pub struct Player {}
 #[derive(Component)]
 struct PlayerHeight(f32);
 
-impl Default for PlayerHeight {
-    fn default() -> Self {
-        Self(DEFAULT_HEIGHT)
-    }
-}
-
 #[derive(Component)]
-struct AvatarHeight(f32);
-
-impl Default for AvatarHeight {
-    fn default() -> Self {
-        Self(DEFAULT_HEIGHT)
-    }
-}
+struct PlayerSpeed(f32);
 
 #[derive(Component, Default)]
-#[require(Transform, PlayerHeight)]
+#[require(Transform)]
 struct PlayerBody;
 
 #[derive(Component, Default)]

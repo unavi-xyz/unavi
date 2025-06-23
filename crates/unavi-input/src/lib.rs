@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 use schminput::prelude::*;
-use schminput_rebinding::DefaultSchminputRebindingPlugins;
+use schminput_rebinding::{
+    config::{ConfigFilePath, LoadSchminputConfig, SaveSchminputConfig},
+    DefaultSchminputRebindingPlugins,
+};
 
 pub use schminput;
 
@@ -8,9 +11,31 @@ pub struct InputPlugin;
 
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((DefaultSchminputPlugins, DefaultSchminputRebindingPlugins));
-        app.add_systems(Startup, setup_actions);
+        let config_path = ConfigFilePath::Config {
+            app_name: "unavi",
+            file_name: "input.toml",
+        };
+
+        if config_path.path_buf().unwrap().exists() {
+            info!("Loading input config on startup");
+            app.add_systems(Startup, load_config);
+        } else {
+            info!("Saving input config on startup");
+            app.add_systems(Startup, save_config);
+        }
+
+        app.add_plugins((DefaultSchminputPlugins, DefaultSchminputRebindingPlugins))
+            .add_systems(Startup, setup_actions)
+            .insert_resource(config_path);
     }
+}
+
+fn load_config(mut load: EventWriter<LoadSchminputConfig>) {
+    load.write_default();
+}
+
+fn save_config(mut save: EventWriter<SaveSchminputConfig>) {
+    save.write_default();
 }
 
 #[derive(Component, Clone, Copy)]

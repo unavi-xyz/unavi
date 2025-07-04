@@ -27,9 +27,7 @@
         pkgs = import nixpkgs {
           inherit localSystem;
 
-          overlays = [
-            (import rust-overlay)
-          ];
+          overlays = [ (import rust-overlay) ];
         };
 
         wac-cli = pkgs.rustPlatform.buildRustPackage rec {
@@ -53,9 +51,7 @@
         };
 
         rustToolchain = pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
-          targets = [
-            "wasm32-wasip2"
-          ];
+          targets = [ "wasm32-wasip2" ];
         };
         craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 

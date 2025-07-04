@@ -46,9 +46,7 @@ let
           pkg-config
         ]
       )
-      ++ [
-        wac-cli
-      ];
+      ++ [ wac-cli ];
 
     postInstall = ''
       mv $out/bin/* $out

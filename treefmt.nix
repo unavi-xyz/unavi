@@ -1,11 +1,11 @@
-_:
-{
+_: {
   projectRootFile = "flake.nix";
   programs = {
     actionlint.enable = true;
     deadnix.enable = true;
     mdformat.enable = true;
     nixfmt.enable = true;
+    oxipng.enable = true;
     rustfmt = {
       enable = true;
       edition = "2024";

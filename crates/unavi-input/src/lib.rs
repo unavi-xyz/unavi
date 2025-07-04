@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use schminput::prelude::*;
 use schminput_rebinding::{
-    config::{ConfigFilePath, LoadSchminputConfig, SaveSchminputConfig},
     DefaultSchminputRebindingPlugins,
+    config::{ConfigFilePath, LoadSchminputConfig, SaveSchminputConfig},
 };
 
 pub use schminput;

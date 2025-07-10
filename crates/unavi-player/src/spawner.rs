@@ -1,6 +1,6 @@
 use avian3d::prelude::{Collider, LockedAxes, RigidBody};
 use bevy::{
-    core_pipeline::bloom::Bloom,
+    core_pipeline::{auto_exposure::AutoExposure, bloom::Bloom},
     pbr::{Atmosphere, AtmosphereSettings},
     prelude::*,
     render::camera::Exposure,
@@ -42,8 +42,12 @@ impl PlayerSpawner {
                 PlayerCamera,
                 Atmosphere::EARTH,
                 AtmosphereSettings::default(),
-                Bloom::OLD_SCHOOL,
+                AutoExposure {
+                    range: -4.0..=8.0,
+                    ..Default::default()
+                },
                 Exposure::SUNLIGHT,
+                Bloom::OLD_SCHOOL,
                 Transform::default().looking_at(Vec3::NEG_Z, Vec3::Y),
             ))
             .id();

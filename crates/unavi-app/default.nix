@@ -17,11 +17,11 @@ _: {
 
         cargoHash = "sha256-5oLt1wnadtEKCOAtpbzPQRuU76qLWRtcCv6Jcozon4E=";
 
-        nativeBuildInputs = [ pkgs.pkg-config ];
+        nativeBuildInputs = with pkgs; [ pkg-config ];
 
         buildInputs =
-          [ pkgs.openssl ]
-          ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.SystemConfiguration ];
+          (with pkgs; [ openssl ])
+          ++ lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.SystemConfiguration ];
       };
 
       buildInputs =

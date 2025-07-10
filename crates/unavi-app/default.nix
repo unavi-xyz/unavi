@@ -98,7 +98,7 @@ _: {
         );
       };
 
-      packages.app = pkgs.crane.buildPackage cargoArgs // {
+      packages.app = pkgs.crane.buildPackage (cargoArgs // {
         inherit cargoArtifacts;
         doCheck = false;
         postInstall = ''
@@ -107,6 +107,6 @@ _: {
           cp -r crates/unavi-app/assets $out
           cp LICENSE $out
         '';
-      };
+      });
     };
 }

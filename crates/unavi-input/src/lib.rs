@@ -77,9 +77,8 @@ fn setup_actions(mut cmds: Commands) {
     ));
     cmds.spawn((
         Action::new("jump", "Jump", set),
-        GamepadBindings::new()
-            .bind(GamepadBinding::new(GamepadBindingSource::South).button_just_pressed()),
-        KeyboardBindings::new().bind(KeyboardBinding::new(KeyCode::Space).just_pressed()),
+        GamepadBindings::new().bind(GamepadBinding::new(GamepadBindingSource::South)),
+        KeyboardBindings::new().bind(KeyboardBinding::new(KeyCode::Space)),
         BoolActionValue::new(),
         JumpAction,
     ));

@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy_tnua::prelude::{TnuaBuiltinJump, TnuaBuiltinWalk, TnuaController};
 use unavi_input::{schminput::prelude::*, JumpAction, LookAction, MoveAction};
 
-use crate::{PlayerBody, PlayerHead, PlayerHeight, PlayerSpeed};
+use crate::{JumpStrength, PlayerBody, PlayerHead, RealHeight, WalkSpeed};
 
 pub fn apply_head_input(
     look_action: Query<&Vec2ActionValue, With<LookAction>>,
@@ -43,22 +43,32 @@ pub fn apply_head_input(
 }
 
 pub fn apply_body_input(
-    move_action: Query<&Vec2ActionValue, With<MoveAction>>,
+    head: Query<&GlobalTransform, With<PlayerHead>>,
     jump_action: Query<&BoolActionValue, With<JumpAction>>,
-    mut controller: Query<(&mut TnuaController, &PlayerSpeed, &PlayerHeight)>,
+    move_action: Query<&Vec2ActionValue, With<MoveAction>>,
+    mut controller: Query<(&mut TnuaController, &WalkSpeed, &RealHeight, &JumpStrength)>,
 ) {
-    let Ok((mut controller, speed, height)) = controller.single_mut() else {
+    let Ok(head_tr) = head.single() else {
+        return;
+    };
+
+    let Ok((mut controller, speed, height, jump_height)) = controller.single_mut() else {
         return;
     };
 
     if let Ok(action) = move_action.single() {
+        let input = action.normalize_or_zero();
+
+        let dir_f = head_tr.rotation().mul_vec3(Vec3::NEG_Z);
+        let dir_l = head_tr.rotation().mul_vec3(Vec3::X);
+
         let mut dir = Vec3::ZERO;
-        dir.x += action.x;
-        dir.z -= action.y;
+        dir += dir_f * input.y;
+        dir += dir_l * input.x;
 
         controller.basis(TnuaBuiltinWalk {
-            desired_velocity: dir.normalize_or_zero() * speed.0,
-            float_height: height.0 / 1.9,
+            desired_velocity: dir * speed.0,
+            float_height: height.0 * 0.8,
             ..Default::default()
         });
     };
@@ -66,7 +76,7 @@ pub fn apply_body_input(
     if let Ok(action) = jump_action.single() {
         if action.any {
             controller.action(TnuaBuiltinJump {
-                height: height.0,
+                height: jump_height.0 * height.0,
                 ..Default::default()
             });
         }

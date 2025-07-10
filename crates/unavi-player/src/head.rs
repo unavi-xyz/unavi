@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 
-use crate::{PlayerBody, PlayerHead, PlayerHeight};
+use crate::{PlayerBody, PlayerHead, RealHeight};
 
 pub fn position_head(
-    bodies: Query<(&PlayerHeight, &Children), (With<PlayerBody>, Changed<PlayerHeight>)>,
+    bodies: Query<(&RealHeight, &Children), (With<PlayerBody>, Changed<RealHeight>)>,
     mut heads: Query<&mut Transform, With<PlayerHead>>,
 ) {
     for (player_height, children) in bodies {

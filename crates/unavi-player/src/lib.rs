@@ -1,6 +1,6 @@
 //! VRM player controller.
 
-use bevy::prelude::*;
+use bevy::{core_pipeline::auto_exposure::AutoExposurePlugin, prelude::*};
 use bevy_tnua::prelude::TnuaControllerPlugin;
 use bevy_tnua_avian3d::TnuaAvian3dPlugin;
 use bevy_vrm::VrmPlugins;
@@ -17,6 +17,7 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
+            AutoExposurePlugin,
             TnuaControllerPlugin::new(FixedUpdate),
             TnuaAvian3dPlugin::new(FixedUpdate),
             VrmPlugins,

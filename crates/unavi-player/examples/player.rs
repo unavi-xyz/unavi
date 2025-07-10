@@ -1,10 +1,10 @@
 use avian3d::{
-    prelude::{Collider, RigidBody},
     PhysicsPlugins,
+    prelude::{Collider, RigidBody},
 };
 use bevy::{
     color::palettes::tailwind::BLUE_400,
-    pbr::{light_consts::lux, CascadeShadowConfigBuilder},
+    pbr::{CascadeShadowConfigBuilder, light_consts::lux},
     prelude::*,
     render::mesh::VertexAttributeValues,
 };
@@ -39,7 +39,7 @@ fn setup_scene(
     PlayerSpawner::default().spawn(&mut commands);
 
     // Lighting
-    ambient.brightness = lux::OVERCAST_DAY;
+    ambient.brightness = lux::LIVING_ROOM;
     commands.spawn((
         CascadeShadowConfigBuilder {
             maximum_distance: SIZE * 1.2,

@@ -23,5 +23,7 @@ jobs:
           submodules: true
       - uses: DeterminateSystems/flake-checker-action@v10
       - uses: DeterminateSystems/determinate-nix-action@v3
+        with:
+          extra-conf: extra-experimental-features = pipe-operators
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - run: nix flake check

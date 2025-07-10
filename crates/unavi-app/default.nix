@@ -90,7 +90,7 @@ _: {
     {
       checks = {
         "${pname}-doc" = pkgs.crane.cargoDoc (cargoArgs // { inherit cargoArtifacts; });
-        "${pname}-doctest"=pkgs.crane.cargoDocTest (cargoArgs // { inherit cargoArtifacts; });
+        "${pname}-doctest" = pkgs.crane.cargoDocTest (cargoArgs // { inherit cargoArtifacts; });
         "${pname}-nextest" = pkgs.crane.cargoNextest (
           cargoArgs
           // {
@@ -100,15 +100,18 @@ _: {
         );
       };
 
-      packages."${pname}" = pkgs.crane.buildPackage (cargoArgs // {
-        inherit cargoArtifacts;
-        doCheck = false;
-        postInstall = ''
-          mv $out/bin/* $out
-          rm -r $out/bin
-          cp -r crates/${pname}/assets $out
-          cp LICENSE $out
-        '';
-      });
+      packages."${pname}" = pkgs.crane.buildPackage (
+        cargoArgs
+        // {
+          inherit cargoArtifacts;
+          doCheck = false;
+          postInstall = ''
+            mv $out/bin/* $out
+            rm -r $out/bin
+            cp -r crates/${pname}/assets $out
+            cp LICENSE $out
+          '';
+        }
+      );
     };
 }

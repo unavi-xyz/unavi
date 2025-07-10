@@ -1,120 +1,104 @@
 {
   inputs = {
-    crane.url = "github:ipetkov/crane";
-    flake-utils.url = "github:numtide/flake-utils";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-      };
+    flake-parts = {
+      inputs.nixpkgs-lib.follows = "nixpkgs";
+      url = "github:hercules-ci/flake-parts";
     };
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    systems.url = "github:nix-systems/default";
+
+    # Rust
+    advisory-db = {
+      url = "github:rustsec/advisory-db";
+      flake = false;
+    };
+    crane.url = "github:ipetkov/crane";
+    fenix = {
+      url = "github:nix-community/fenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # Other
     treefmt-nix.url = "github:numtide/treefmt-nix";
   };
 
   outputs =
-    {
-      crane,
-      flake-utils,
-      nixpkgs,
-      rust-overlay,
-      treefmt-nix,
-      ...
-    }:
-    flake-utils.lib.eachDefaultSystem (
-      localSystem:
-      let
-        pkgs = import nixpkgs {
-          inherit localSystem;
-
-          overlays = [ (import rust-overlay) ];
-        };
-
-        wac-cli = pkgs.rustPlatform.buildRustPackage rec {
-          pname = "wac-cli";
-          version = "0.6.1";
-
-          src = pkgs.fetchFromGitHub {
-            owner = "bytecodealliance";
-            repo = "wac";
-            rev = "v${version}";
-            sha256 = "sha256-noBVAhoHXl3FI6ZlnmCwpnqu7pub6FCtuY+026vdlYo=";
-          };
-
-          cargoHash = "sha256-5oLt1wnadtEKCOAtpbzPQRuU76qLWRtcCv6Jcozon4E=";
-
-          nativeBuildInputs = [ pkgs.pkg-config ];
-
-          buildInputs =
-            [ pkgs.openssl ]
-            ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.SystemConfiguration ];
-        };
-
-        rustToolchain = pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
-          targets = [ "wasm32-wasip2" ];
-        };
-        craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
-
-        src = pkgs.lib.cleanSourceWith {
-          src = ./.;
-          filter =
-            path: type:
-            (pkgs.lib.hasInfix "crates/unavi-app/assets/" path)
-            || (pkgs.lib.hasInfix "wired-protocol" path)
-            || (pkgs.lib.hasSuffix ".html" path)
-            || (pkgs.lib.hasSuffix ".json" path)
-            || (pkgs.lib.hasSuffix ".wit" path)
-            || (pkgs.lib.hasSuffix "LICENSE" path)
-            || (pkgs.lib.hasSuffix "README.md" path)
-            || (craneLib.filterCargoSources path type);
-        };
-
-        unavi-app = import ./crates/unavi-app {
-          inherit
-            craneLib
-            pkgs
-            src
-            wac-cli
-            ;
-        };
-
-        inherit (unavi-app) buildInputs;
-        inherit (unavi-app) nativeBuildInputs;
-
-        treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
-      in
+    inputs@{ flake-parts, systems, ... }:
+    flake-parts.lib.mkFlake { inherit inputs; } (
+      { ... }:
       {
-        formatter = treefmtEval.config.build.wrapper;
+        systems = import systems;
 
-        apps = rec {
-          app = flake-utils.lib.mkApp {
-            drv = unavi-app.package;
-            exePath = "/unavi-app";
+        imports = [
+          inputs.treefmt-nix.flakeModule
+          ./crates/unavi-app
+        ];
+
+        perSystem =
+          {
+            config,
+            lib,
+            pkgs,
+            system,
+            ...
+          }:
+          {
+            _module.args.pkgs = import inputs.nixpkgs {
+              inherit system;
+              overlays = [
+                inputs.fenix.overlays.default
+                (self: _: { crane = (inputs.crane.mkLib self).overrideToolchain self.fenix.stable.toolchain; })
+              ];
+            };
+
+            checks = {
+              audit = pkgs.crane.cargoAudit {
+                inherit (inputs) advisory-db;
+                src = ./.;
+                pname = "unavi";
+              };
+              deny = pkgs.crane.cargoDeny {
+                src = ./.;
+                pname = "unavi";
+              };
+            };
+
+            treefmt.programs = {
+              actionlint.enable = true;
+              deadnix.enable = true;
+              mdformat.enable = true;
+              nixfmt = {
+                enable = true;
+                strict = true;
+              };
+              oxipng.enable = true;
+              rustfmt.enable = true;
+              statix.enable = true;
+              taplo.enable = true;
+              terraform.enable = true;
+              yamlfmt.enable = true;
+            };
+
+            devShells.default = pkgs.crane.devShell {
+              packages =
+                (with pkgs; [
+                  cargo-deny
+                  cargo-edit
+                  cargo-machete
+                  cargo-release
+                  cargo-workspaces
+                ])
+                ++ (
+                  config.packages
+                  |> lib.attrValues
+                  |> lib.flip pkgs.lib.forEach (x: x.buildInputs ++ x.nativeBuildInputs)
+                );
+
+              LD_LIBRARY_PATH = lib.makeLibraryPath (
+                pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [ wayland ])
+              );
+            };
           };
-          default = app;
-        };
-
-        packages = {
-          default = unavi-app.package;
-          unavi-app = unavi-app.package;
-        };
-
-        devShells.default = craneLib.devShell {
-          packages =
-            (with pkgs; [
-              cargo-deny
-              cargo-edit
-              cargo-machete
-              cargo-release
-              cargo-watch
-              cargo-workspaces
-              wac-cli
-            ])
-            ++ buildInputs
-            ++ nativeBuildInputs;
-
-          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
-        };
       }
     );
 }

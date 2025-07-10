@@ -26,7 +26,7 @@ pub fn apply_head_input(
     };
 
     let delta = time.delta_secs();
-    let sensitivity = 0.15;
+    let sensitivity = 0.1;
     *target += action.any * delta * sensitivity;
 
     const PITCH_BOUND: f32 = FRAC_PI_2 - 1E-3;
@@ -47,6 +47,7 @@ pub fn apply_body_input(
     jump_action: Query<&BoolActionValue, With<JumpAction>>,
     move_action: Query<&Vec2ActionValue, With<MoveAction>>,
     mut controller: Query<(&mut TnuaController, &WalkSpeed, &RealHeight, &JumpStrength)>,
+    mut target: Local<Vec3>,
 ) {
     let Ok(head_tr) = head.single() else {
         return;
@@ -66,9 +67,13 @@ pub fn apply_body_input(
         dir += dir_f * input.y;
         dir += dir_l * input.x;
 
+        const S: f32 = 0.2;
+
+        *target = target.lerp(dir, S);
+
         controller.basis(TnuaBuiltinWalk {
-            desired_velocity: dir * speed.0,
-            float_height: height.0 * 0.8,
+            desired_velocity: *target * speed.0,
+            float_height: height.0 * 0.9,
             ..Default::default()
         });
     };

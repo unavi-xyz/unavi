@@ -2,6 +2,8 @@ _: {
   perSystem =
     { pkgs, lib, ... }:
     let
+      pname = "unavi-app";
+
       wac-cli = pkgs.rustPlatform.buildRustPackage rec {
         pname = "wac-cli";
         version = "0.6.1";
@@ -74,12 +76,12 @@ _: {
       };
 
       cargoArgs = {
-        inherit src;
         inherit buildInputs;
         inherit nativeBuildInputs;
+        inherit pname;
+        inherit src;
 
-        pname = "unavi-app";
-        cargoExtraArgs = "-p unavi-app";
+        cargoExtraArgs = "-p ${pname}";
         strictDeps = true;
       };
 
@@ -87,9 +89,9 @@ _: {
     in
     {
       checks = {
-        unavi-app-doc = pkgs.crane.cargoDoc (cargoArgs // { inherit cargoArtifacts; });
-        unavi-app-doctest = pkgs.crane.cargoDocTest (cargoArgs // { inherit cargoArtifacts; });
-        unavi-app-nextest = pkgs.crane.cargoNextest (
+        "${pname}-doc" = pkgs.crane.cargoDoc (cargoArgs // { inherit cargoArtifacts; });
+        "${pname}-doctest"=pkgs.crane.cargoDocTest (cargoArgs // { inherit cargoArtifacts; });
+        "${pname}-nextest" = pkgs.crane.cargoNextest (
           cargoArgs
           // {
             inherit cargoArtifacts;
@@ -98,13 +100,13 @@ _: {
         );
       };
 
-      packages.app = pkgs.crane.buildPackage (cargoArgs // {
+      packages."${pname}" = pkgs.crane.buildPackage (cargoArgs // {
         inherit cargoArtifacts;
         doCheck = false;
         postInstall = ''
           mv $out/bin/* $out
           rm -r $out/bin
-          cp -r crates/unavi-app/assets $out
+          cp -r crates/${pname}/assets $out
           cp LICENSE $out
         '';
       });

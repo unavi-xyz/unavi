@@ -2,7 +2,7 @@ use std::f32::consts::FRAC_PI_2;
 
 use bevy::prelude::*;
 use bevy_tnua::prelude::{TnuaBuiltinJump, TnuaBuiltinWalk, TnuaController};
-use unavi_input::{schminput::prelude::*, JumpAction, LookAction, MoveAction};
+use unavi_input::{JumpAction, LookAction, MoveAction, schminput::prelude::*};
 
 use crate::{JumpStrength, PlayerBody, PlayerHead, RealHeight, WalkSpeed};
 

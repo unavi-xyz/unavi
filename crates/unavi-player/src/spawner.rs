@@ -1,5 +1,10 @@
 use avian3d::prelude::{Collider, LockedAxes, RigidBody};
-use bevy::prelude::*;
+use bevy::{
+    core_pipeline::bloom::Bloom,
+    pbr::{Atmosphere, AtmosphereSettings},
+    prelude::*,
+    render::camera::Exposure,
+};
 use bevy_tnua::prelude::TnuaController;
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
 
@@ -30,7 +35,15 @@ impl PlayerSpawner {
 
         let camera = commands
             .spawn((
+                Camera {
+                    hdr: true,
+                    ..Default::default()
+                },
                 PlayerCamera,
+                Atmosphere::EARTH,
+                AtmosphereSettings::default(),
+                Bloom::OLD_SCHOOL,
+                Exposure::SUNLIGHT,
                 Transform::default().looking_at(Vec3::NEG_Z, Vec3::Y),
             ))
             .id();

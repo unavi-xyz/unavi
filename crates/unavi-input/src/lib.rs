@@ -1,8 +1,8 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, window::CursorGrabMode};
 use schminput::prelude::*;
 use schminput_rebinding::{
-    DefaultSchminputRebindingPlugins,
     config::{ConfigFilePath, LoadSchminputConfig, SaveSchminputConfig},
+    DefaultSchminputRebindingPlugins,
 };
 
 pub use schminput;
@@ -26,6 +26,7 @@ impl Plugin for InputPlugin {
 
         app.add_plugins((DefaultSchminputPlugins, DefaultSchminputRebindingPlugins))
             .add_systems(Startup, setup_actions)
+            .add_systems(Update, cursor_grab)
             .insert_resource(config_path);
     }
 }
@@ -82,4 +83,32 @@ fn setup_actions(mut cmds: Commands) {
         BoolActionValue::new(),
         JumpAction,
     ));
+}
+
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
+pub enum CursorGrabState {
+    #[default]
+    Unlocked,
+    Locked,
+}
+
+pub fn cursor_grab(
+    key: Res<ButtonInput<KeyCode>>,
+    mouse: Res<ButtonInput<MouseButton>>,
+    mut next_state: ResMut<NextState<CursorGrabState>>,
+    mut windows: Query<&mut Window>,
+) {
+    for mut window in windows.iter_mut() {
+        if mouse.just_pressed(MouseButton::Left) {
+            window.cursor_options.visible = false;
+            window.cursor_options.grab_mode = CursorGrabMode::Locked;
+            next_state.set(CursorGrabState::Locked);
+        }
+
+        if key.just_pressed(KeyCode::Escape) {
+            window.cursor_options.visible = true;
+            window.cursor_options.grab_mode = CursorGrabMode::None;
+            next_state.set(CursorGrabState::Unlocked);
+        }
+    }
 }

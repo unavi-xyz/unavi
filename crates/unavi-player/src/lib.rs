@@ -10,6 +10,7 @@ mod input;
 mod spawner;
 
 pub use spawner::*;
+use unavi_input::CursorGrabState;
 
 pub struct PlayerPlugin;
 
@@ -20,9 +21,14 @@ impl Plugin for PlayerPlugin {
             TnuaAvian3dPlugin::new(FixedUpdate),
             VrmPlugins,
         ))
+        .init_state::<CursorGrabState>()
         .add_systems(
             Update,
-            (input::apply_head_input, input::apply_body_input).chain(),
+            (
+                input::apply_head_input.run_if(in_state(CursorGrabState::Locked)),
+                input::apply_body_input,
+            )
+                .chain(),
         );
     }
 }

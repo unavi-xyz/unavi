@@ -1,16 +1,45 @@
+use std::f32::consts::FRAC_PI_2;
+
 use bevy::prelude::*;
 use bevy_tnua::prelude::{TnuaBuiltinJump, TnuaBuiltinWalk, TnuaController};
-use unavi_input::{JumpAction, LookAction, MoveAction, schminput::prelude::*};
+use unavi_input::{schminput::prelude::*, JumpAction, LookAction, MoveAction};
 
-use crate::{PlayerHead, PlayerHeight, PlayerSpeed};
+use crate::{PlayerBody, PlayerHead, PlayerHeight, PlayerSpeed};
 
 pub fn apply_head_input(
     look_action: Query<&Vec2ActionValue, With<LookAction>>,
-    head: Query<&mut Transform, With<PlayerHead>>,
+    mut body: Query<&mut Transform, (With<PlayerBody>, Without<PlayerHead>)>,
+    mut head: Query<&mut Transform, (With<PlayerHead>, Without<PlayerBody>)>,
+    mut target: Local<Vec2>,
+    time: Res<Time>,
 ) {
     let Ok(action) = look_action.single() else {
         return;
     };
+
+    let Ok(mut body_tr) = body.single_mut() else {
+        return;
+    };
+
+    let Ok(mut head_tr) = head.single_mut() else {
+        return;
+    };
+
+    let delta = time.delta_secs();
+    let sensitivity = 0.15;
+    *target += action.any * delta * sensitivity;
+
+    const PITCH_BOUND: f32 = FRAC_PI_2 - 1E-3;
+
+    target.y = target.y.clamp(-PITCH_BOUND, PITCH_BOUND);
+
+    const S: f32 = 0.4;
+
+    let pitch = Quat::from_rotation_x(target.y);
+    head_tr.rotation = head_tr.rotation.lerp(pitch, S);
+
+    let yaw = Quat::from_rotation_y(-target.x);
+    body_tr.rotation = body_tr.rotation.lerp(yaw, S);
 }
 
 pub fn apply_body_input(

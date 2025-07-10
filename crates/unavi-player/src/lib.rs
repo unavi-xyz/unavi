@@ -38,10 +38,13 @@ impl Plugin for PlayerPlugin {
 pub struct Player {}
 
 #[derive(Component)]
-struct PlayerHeight(f32);
+struct RealHeight(f32);
 
 #[derive(Component)]
-struct PlayerSpeed(f32);
+struct WalkSpeed(f32);
+
+#[derive(Component)]
+struct JumpStrength(f32);
 
 #[derive(Component, Default)]
 #[require(Transform)]

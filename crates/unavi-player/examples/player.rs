@@ -1,6 +1,6 @@
 use avian3d::{
-    PhysicsPlugins,
     prelude::{Collider, RigidBody},
+    PhysicsPlugins,
 };
 use bevy::{
     color::palettes::tailwind::{BLUE_400, GRAY_200},
@@ -42,18 +42,19 @@ fn setup_scene(
 
     // Ground
     commands.spawn((
+        Collider::half_space(Vec3::Y),
         Mesh3d(meshes.add(Plane3d::default().mesh().size(32.0, 32.0))),
         MeshMaterial3d(materials.add(Color::from(GRAY_200))),
         RigidBody::Static,
-        Collider::half_space(Vec3::Y),
+        Transform::from_xyz(0.0, -1.0, 0.0),
     ));
 
     // Platform
     commands.spawn((
+        Collider::cuboid(4.0, 1.0, 4.0),
         Mesh3d(meshes.add(Cuboid::new(4.0, 1.0, 4.0))),
         MeshMaterial3d(materials.add(Color::from(BLUE_400))),
-        Transform::from_xyz(-3.0, 1.0, -6.0),
         RigidBody::Static,
-        Collider::cuboid(4.0, 1.0, 4.0),
+        Transform::from_xyz(-3.0, 0.0, -6.0),
     ));
 }

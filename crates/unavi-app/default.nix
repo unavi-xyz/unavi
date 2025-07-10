@@ -81,6 +81,8 @@ _: {
         inherit pname;
         inherit src;
 
+        runtimeDependencies = buildInputs;
+
         cargoExtraArgs = "-p ${pname}";
         strictDeps = true;
       };

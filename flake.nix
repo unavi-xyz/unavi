@@ -94,9 +94,12 @@
                   |> lib.flip pkgs.lib.forEach (x: x.buildInputs ++ x.nativeBuildInputs)
                 );
 
-              LD_LIBRARY_PATH = lib.makeLibraryPath (
-                pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [ wayland ])
-              );
+              LD_LIBRARY_PATH =
+                config.packages
+                |> lib.attrValues
+                |> lib.flip pkgs.lib.forEach (x: x.runtimeDependencies)
+                |> lib.concatLists
+                |> lib.makeLibraryPath;
             };
           };
       }

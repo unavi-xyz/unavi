@@ -1,0 +1,16 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "wasm-example"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen.workspace = true

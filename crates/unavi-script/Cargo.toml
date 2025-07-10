@@ -1,0 +1,15 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-script"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace = true
+bevy             = { default-features = true, workspace = true }
+wasmtime         = "34.0.1"

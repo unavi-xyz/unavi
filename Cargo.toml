@@ -1,5 +1,5 @@
 [workspace]
-members  = ["crates/*"]
+members  = ["crates/*", "wasm/*"]
 resolver = "2"
 
 [workspace.package]
@@ -18,9 +18,11 @@ shared-version = true
 tag-name       = "v{{version}}"
 
 [workspace.dependencies]
+anyhow      = "1.0.98"
 avian3d     = "0.3"
 bevy        = "0.16.1"
 directories = "6.0.0"
+wit-bindgen = "0.43.0"
 
 [profile.release]
 lto = "thin"

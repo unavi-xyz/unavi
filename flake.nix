@@ -47,7 +47,27 @@
               inherit system;
               overlays = [
                 inputs.fenix.overlays.default
-                (self: _: { crane = (inputs.crane.mkLib self).overrideToolchain self.fenix.stable.toolchain; })
+
+                (
+                  self: _:
+                  let
+                    myRust = (
+                      with self.fenix;
+                      combine [
+                        stable.toolchain
+                        targets.wasm32-wasip2.stable.rust-std
+                      ]
+                    );
+                  in
+                  {
+                    rustPlatform = pkgs.makeRustPlatform {
+                      cargo = myRust;
+                      rustc = myRust;
+                    };
+
+                    crane = (inputs.crane.mkLib self).overrideToolchain myRust;
+                  }
+                )
               ];
             };
 
@@ -87,12 +107,15 @@
                   cargo-machete
                   cargo-release
                   cargo-workspaces
+                  lld
                 ])
                 ++ (
                   config.packages
                   |> lib.attrValues
                   |> lib.flip pkgs.lib.forEach (x: x.buildInputs ++ x.nativeBuildInputs)
                 );
+
+              CARGO_TARGET_WASM32_WASIP2_LINKER = "lld";
 
               LD_LIBRARY_PATH =
                 config.packages

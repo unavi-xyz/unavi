@@ -22,7 +22,6 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           submodules: true
       - uses: DeterminateSystems/flake-checker-action@v10
-      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/determinate-nix-action@v3
       - uses: DeterminateSystems/magic-nix-cache-action@main
-      - uses: Swatinem/rust-cache@v2
       - run: nix flake check

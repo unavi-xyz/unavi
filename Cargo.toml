@@ -3,7 +3,7 @@ members  = ["crates/*", "wasm/*"]
 resolver = "2"
 
 [workspace.package]
-edition    = "2021"
+edition    = "2024"
 license    = "MPL-2.0"
 repository = "https://github.com/unavi-xyz/unavi"
 version    = "0.0.10"
@@ -26,3 +26,7 @@ wit-bindgen = "0.43.0"
 
 [profile.release]
 lto = "thin"
+
+[profile.release-wasm]
+inherits  = "release"
+opt-level = "s"

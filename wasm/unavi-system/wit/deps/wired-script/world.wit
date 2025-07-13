@@ -1,0 +1,14 @@
+package wired:script;
+
+world script {
+  export types;
+}
+
+interface types {
+  resource script {
+    constructor();
+
+    /// Called every tick.
+    update: func(delta: f32);
+  }
+}

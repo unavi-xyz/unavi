@@ -17,6 +17,7 @@
       url = "github:nix-community/fenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    wit-deps.url = "github:bytecodealliance/wit-deps";
 
     # Other
     treefmt-nix.url = "github:numtide/treefmt-nix";
@@ -107,15 +108,14 @@
                   cargo-machete
                   cargo-release
                   cargo-workspaces
-                  lld
+                  just
+                  wasm-tools
                 ])
                 ++ (
                   config.packages
                   |> lib.attrValues
                   |> lib.flip pkgs.lib.forEach (x: x.buildInputs ++ x.nativeBuildInputs)
                 );
-
-              CARGO_TARGET_WASM32_WASIP2_LINKER = "lld";
 
               LD_LIBRARY_PATH =
                 config.packages

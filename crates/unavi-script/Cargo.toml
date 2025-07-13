@@ -13,3 +13,4 @@ workspace = true
 anyhow.workspace = true
 bevy             = { default-features = true, workspace = true }
 wasmtime         = "34.0.1"
+wit-bindgen      = "0.43.0"

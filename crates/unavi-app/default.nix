@@ -1,4 +1,5 @@
-_: {
+{ inputs, ... }:
+{
   perSystem =
     { pkgs, lib, ... }:
     let
@@ -53,17 +54,22 @@ _: {
           with pkgs;
           [
             clang
+            lld
             mold
             pkg-config
           ]
         )
-        ++ [ wac-cli ];
+        ++ [
+          wac-cli
+          inputs.wit-deps.packages.${pkgs.system}.wit-deps
+        ];
 
       src = lib.fileset.toSource rec {
         root = ../..;
         fileset = lib.fileset.unions [
           (pkgs.crane.fileset.commonCargoSources root)
           ../../LICENSE
+          ../../scripts
           ./assets
           (lib.fileset.fileFilter (
             file:
@@ -107,6 +113,11 @@ _: {
         // {
           inherit cargoArtifacts;
           doCheck = false;
+
+          preBuild = ''
+            ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
+          '';
+
           postInstall = ''
             mv $out/bin/* $out
             rm -r $out/bin

@@ -78,12 +78,12 @@ pub fn apply_body_input(
         });
     };
 
-    if let Ok(action) = jump_action.single() {
-        if action.any {
-            controller.action(TnuaBuiltinJump {
-                height: jump_height.0 * height.0,
-                ..Default::default()
-            });
-        }
+    if let Ok(action) = jump_action.single()
+        && action.any
+    {
+        controller.action(TnuaBuiltinJump {
+            height: jump_height.0 * height.0,
+            ..Default::default()
+        });
     };
 }

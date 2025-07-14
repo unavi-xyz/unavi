@@ -55,17 +55,16 @@
                     myRust = (
                       with self.fenix;
                       combine [
-                        stable.toolchain
+                        # complete.toolchain
+                        (fromToolchainName {
+                          name = "nightly-2025-06-01";
+                          sha256 = "sha256-wYZcB7PPFfKLbTL+T1lDBYyZcc9xvLTWtBZ0t2NoZ/s=";
+                        }).toolchain # https://github.com/rust-lang/rust/issues/143834
                         targets.wasm32-wasip2.stable.rust-std
                       ]
                     );
                   in
                   {
-                    rustPlatform = pkgs.makeRustPlatform {
-                      cargo = myRust;
-                      rustc = myRust;
-                    };
-
                     crane = (inputs.crane.mkLib self).overrideToolchain myRust;
                   }
                 )
@@ -108,7 +107,6 @@
                   cargo-machete
                   cargo-release
                   cargo-workspaces
-                  just
                   wasm-tools
                 ])
                 ++ (

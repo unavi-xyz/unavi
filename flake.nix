@@ -88,6 +88,7 @@
             treefmt.programs = {
               actionlint.enable = true;
               deadnix.enable = true;
+              jsonfmt.enable = true;
               mdformat.enable = true;
               nixfmt = {
                 enable = true;

@@ -21,6 +21,7 @@ jobs:
       - run: |
           mkdir out
           echo "wired-protocol.org" >> out/CNAME
+          cp protocol/README.md out/
 
           mkdir out/v0
           cp -r protocol/dwn/protocols out/v0/protocols

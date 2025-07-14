@@ -18,11 +18,11 @@
 
         cargoHash = "sha256-5oLt1wnadtEKCOAtpbzPQRuU76qLWRtcCv6Jcozon4E=";
 
-        nativeBuildInputs = with pkgs; [ pkg-config ];
-
         buildInputs =
-          (with pkgs; [ openssl ])
+          pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [ openssl ])
           ++ lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.SystemConfiguration ];
+
+        nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [ pkg-config ]);
       };
 
       buildInputs =
@@ -58,6 +58,7 @@
             lld
             mold
             pkg-config
+            wasm-tools
           ]
         )
         ++ [
@@ -117,7 +118,6 @@
 
           preBuild = ''
             ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
-            ${pkgs.nushell}/bin/nu scripts/optimize-wasm.nu
           '';
 
           postInstall = ''

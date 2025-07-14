@@ -1,0 +1,33 @@
+name: Deploy Protocol
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          mkdir -p out
+          cp -r protocol/dwn/protocols out/protocols
+          cp -r protocol/dwn/schemas out/schemas
+      - uses: s0/git-publish-subdir-action@develop
+        env:
+          BRANCH: gh-pages
+          COMMIT_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          COMMIT_NAME: github-actions[bot]
+          FOLDER: out
+          GITHUB_TOKEN: ${{ github.token }}
+          REPO: self
+          SQUASH_HISTORY: true
+          TARGET_DIR: v0

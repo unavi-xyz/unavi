@@ -31,13 +31,14 @@ for crate_dir in (ls $wasm_src | where type == "dir") {
      let src_path = $"target/($wasm_target)/($wasm_profile)/($wasm_file)"
      let dst_path = $"($wasm_out)/($wasm_file)"
 
+     print $"  | optimizing"
+     let b_info = ls $src_path | first
+     wasm-opt -O4 -ffm $src_path -o $dst_path
+
      print $"  | converting to component"
      # https://github.com/bytecodealliance/wasmtime/tree/main/crates/wasi-preview1-component-adapter
-     wasm-tools component new $src_path -o $dst_path --adapt scripts/wasi_snapshot_preview1.reactor.wasm
+     wasm-tools component new $dst_path -o $dst_path --adapt scripts/wasi_snapshot_preview1.reactor.wasm
 
-     print $"  | optimizing"
-     let b_info = ls $dst_path | first
-     wasm-opt -O4 -ffm $src_path -o $dst_path
      let a_info = ls $dst_path | first
      print $"  | size ($b_info.size) -> ($a_info.size)"
   }

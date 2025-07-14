@@ -19,11 +19,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: |
-          echo "**/*" > .clear
-          echo "!.git" >> .clear
-          echo "!CNAME" >> .clear
-
           mkdir -p out/v0
+
+          echo "**/*" > out/.clear
+          echo "!.git" >> out/.clear
+          echo "!CNAME" >> out/.clear
+
           cp -r protocol/dwn/protocols out/v0/protocols
           cp -r protocol/dwn/schemas out/v0/schemas
       - uses: s0/git-publish-subdir-action@develop

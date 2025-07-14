@@ -1,0 +1,5 @@
+package unavi:ui;
+
+world system {
+  include wired:script/script;
+}

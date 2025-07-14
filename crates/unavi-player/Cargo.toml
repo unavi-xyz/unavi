@@ -1,0 +1,18 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-player"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+avian3d.workspace = true
+bevy              = { default-features = true, workspace = true }
+bevy-tnua         = "0.24.0"
+bevy-tnua-avian3d = "0.5.0"
+bevy_vrm          = "0.1.0"
+unavi-input.path  = "../unavi-input"

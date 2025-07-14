@@ -1,3 +1,15 @@
 [target.x86_64-unknown-linux-gnu]
-linker = "clang"
-rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+linker    = "clang"
+rustflags = ["-Clink-arg=-fuse-ld=mold", "-Zshare-generics=y"]
+
+[target.wasm32-wasip2]
+linker = "lld"
+
+[unstable]
+codegen-backend = true
+
+[profile.dev]
+codegen-backend = "cranelift"
+
+[profile.dev.package."*"]
+codegen-backend = "llvm"

@@ -1,0 +1,15 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-input"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy                = { default-features = true, workspace = true }
+schminput           = { features = ["xr"], version = "0.3.0" }
+schminput_rebinding = { features = ["xr"], version = "0.3.0" }

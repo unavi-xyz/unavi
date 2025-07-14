@@ -10,8 +10,16 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow      = "1.0.98"
-bevy        = { features = ["wayland"], workspace = true }
-directories = "6.0.0"
-image       = { default-features = false, features = ["png"], version = "0.25.6" }
-winit       = { default-features = false, version = "0.30.11" }
+anyhow = "1.0.98"
+avian3d.workspace = true
+bevy = { default-features = true, features = ["wayland"], workspace = true }
+bevy_mod_openxr = "0.3.0"
+directories.workspace = true
+image = { default-features = false, features = ["png"], version = "0.25.6" }
+log = { features = [
+  "max_level_debug",
+  "release_max_level_info",
+], version = "*" }
+unavi-input.path = "../unavi-input"
+unavi-player.path = "../unavi-player"
+winit = { default-features = false, version = "0.30.11" }

@@ -12,5 +12,6 @@ workspace = true
 [dependencies]
 anyhow.workspace = true
 bevy             = { default-features = true, workspace = true }
+bevy_async_task  = "0.8.1"
 wasmtime         = "34.0.1"
 wit-bindgen      = "0.43.0"

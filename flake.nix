@@ -110,7 +110,6 @@
                   cargo-machete
                   cargo-release
                   cargo-workspaces
-                  wasm-tools
                 ])
                 ++ (
                   config.packages

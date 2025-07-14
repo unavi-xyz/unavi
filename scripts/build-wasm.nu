@@ -3,12 +3,10 @@ const wasm_profile = "release-wasm"
 const wasm_src = "wasm"
 const wasm_target = "wasm32-wasip2"
 
-print "🧹 Cleaning old wasm outputs..."
+print "Building WASM crates"
 
 rm -rf $wasm_out
 mkdir $wasm_out
-
-print "🛠  Building WASM crates..."
 
 for crate_dir in (ls $wasm_src | where type == "dir") {
    let crate = $crate_dir.name | path basename
@@ -35,12 +33,8 @@ for crate_dir in (ls $wasm_src | where type == "dir") {
      cp $src_path $dst_path
   }
 
-  let time_ms = ($time | into int) / 1_000_000 | into int
-
-  print $"  | took ($time_ms)ms"
+  print $"  | took ($time)"
 }
-
-print "📦 Organizing WASM outputs..."
 
 for file in (ls $wasm_out) {
   let base = ($file.name | path basename | str replace '.wasm' '')
@@ -58,5 +52,3 @@ for file in (ls $wasm_out) {
   print $"→ Moving ($src) → ($dst)"
   mv $src $dst
 }
-
-print "✅ Done."

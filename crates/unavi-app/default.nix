@@ -53,6 +53,7 @@
         pkgs.lib.optionals pkgs.stdenv.isLinux (
           with pkgs;
           [
+            binaryen
             clang
             lld
             mold
@@ -116,6 +117,7 @@
 
           preBuild = ''
             ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
+            ${pkgs.nushell}/bin/nu scripts/optimize-wasm.nu
           '';
 
           postInstall = ''

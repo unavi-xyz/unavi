@@ -52,20 +52,22 @@
                 (
                   self: _:
                   let
-                    myRust = (
+                    nightly = (
                       with self.fenix;
                       combine [
                         # complete.toolchain
-                        (fromToolchainName {
-                          name = "nightly-2025-06-01";
+                        # targets.wasm32-wasip2.latest.rust-std
+
+                        # https://github.com/rust-lang/rust/issues/143834
+                        (fromToolchainFile {
+                          file = ./rust-toolchain.toml;
                           sha256 = "sha256-wYZcB7PPFfKLbTL+T1lDBYyZcc9xvLTWtBZ0t2NoZ/s=";
-                        }).toolchain # https://github.com/rust-lang/rust/issues/143834
-                        targets.wasm32-wasip2.stable.rust-std
+                        })
                       ]
                     );
                   in
                   {
-                    crane = (inputs.crane.mkLib self).overrideToolchain myRust;
+                    crane = (inputs.crane.mkLib self).overrideToolchain nightly;
                   }
                 )
               ];

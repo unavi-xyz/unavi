@@ -1,20 +1,13 @@
 name: Deploy Protocol
-
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
-
 concurrency:
   group: pages
   cancel-in-progress: false
-
 jobs:
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

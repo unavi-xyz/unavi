@@ -7,8 +7,6 @@ world script {
 interface types {
   resource script {
     constructor();
-
-    /// Called every tick.
     update: func(delta: f32);
   }
 }

@@ -31,4 +31,3 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           REPO: self
           SQUASH_HISTORY: true
-          TARGET_DIR: v0

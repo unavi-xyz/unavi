@@ -1,0 +1,4 @@
+[wired-script]
+path = "../../../wired-protocol/spatial/wit/wired-script"
+sha256 = "89504a1bc558bb159451711ff648fdddece37a94ef32b8d190b8ea21bc27ab81"
+sha512 = "a27213cae2d9f5fda3158387a549a95150edac91e1e8329827c697e30599fd24c512f8a3d682f7ac1459f1559127c066b736fcc15b4a6157d9dbcdc63bdf775c"

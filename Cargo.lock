@@ -5897,6 +5897,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-ui"
+version = "0.0.10"
+dependencies = [
+ "wit-bindgen",
+]
+
+[[package]]
 name = "unicode-bidi"
 version = "0.3.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"

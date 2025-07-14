@@ -12,12 +12,12 @@ struct Script;
 
 impl GuestScript for Script {
     fn new() -> Self {
-        println!("unavi:system new");
+        println!("unavi:vui new");
         Self
     }
 
     fn update(&self, _delta: f32) {
-        println!("unavi:system update");
+        println!("unavi:vui update");
     }
 }
 

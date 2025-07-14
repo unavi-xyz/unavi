@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
-      - uses: DeterminateSystems/flake-checker-action@v10
+      - uses: DeterminateSystems/flake-checker-action@v11
       - uses: DeterminateSystems/determinate-nix-action@v3
         with:
           extra-conf: extra-experimental-features = pipe-operators

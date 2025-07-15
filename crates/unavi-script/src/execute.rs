@@ -17,8 +17,6 @@ use crate::{
     },
 };
 
-const TICK_DURATION: Duration = Duration::from_millis(100);
-
 pub fn increment_epochs(engines: Query<&WasmEngine>) {
     for engine in engines {
         engine.0.increment_epoch();
@@ -30,6 +28,7 @@ pub struct RuntimeCtx {
     stdout: ScriptStdout,
     stderr: ScriptStderr,
     script: Option<ResourceAny>,
+    last_tick: Duration,
 }
 
 impl RuntimeCtx {
@@ -39,6 +38,7 @@ impl RuntimeCtx {
             stdout,
             stderr,
             script: None,
+            last_tick: Duration::from_secs(0),
         }
     }
 }
@@ -56,7 +56,6 @@ pub fn execute_script_updates(
         Option<&Name>,
     )>,
     mut pool: TaskPool<anyhow::Result<Entity>>,
-    mut last_tick: Local<Duration>,
 ) {
     for item in pool.iter_poll() {
         match item {
@@ -74,15 +73,6 @@ pub fn execute_script_updates(
         }
     }
 
-    let elapsed = time.elapsed();
-    let delta = elapsed - *last_tick;
-
-    if delta < TICK_DURATION {
-        return;
-    }
-
-    *last_tick = elapsed;
-
     for (ent, mut executing, instance, rt, name) in scripts.iter_mut() {
         if **executing {
             continue;
@@ -90,16 +80,19 @@ pub fn execute_script_updates(
 
         **executing = true;
 
+        let elapsed = time.elapsed();
         let instance = instance.0.clone();
         let name = name
             .map(|n| n.to_string())
             .unwrap_or_else(|| "unknown".to_string());
-
         let rt = rt.0.clone();
 
         pool.spawn(async move {
             let mut rt = rt.lock().await;
             rt.store.set_epoch_deadline(1);
+
+            let delta = elapsed - rt.last_tick;
+            rt.last_tick = elapsed;
 
             match rt.script {
                 None => {

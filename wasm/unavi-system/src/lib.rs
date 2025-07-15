@@ -16,8 +16,8 @@ impl GuestScript for Script {
         Self
     }
 
-    fn update(&self, _delta: f32) {
-        println!("unavi:system update");
+    fn update(&self, delta: f32) {
+        println!("unavi:system update: {delta:.4}");
     }
 }
 

@@ -1,7 +1,7 @@
 use std::{borrow::Cow, future::poll_fn, pin::Pin, sync::Arc, task::Poll, time::Duration};
 
 use anyhow::Context;
-use bevy::{ecs::entity::EntityHashMap, prelude::*, utils::synccell::SyncCell};
+use bevy::prelude::*;
 use bevy_async_task::TaskPool;
 use tokio::{
     io::{AsyncRead, DuplexStream, ReadBuf},
@@ -9,13 +9,21 @@ use tokio::{
 };
 use wasmtime::{AsContextMut, Store, component::ResourceAny};
 
-use crate::load::{
-    LoadedScript, StoreState,
-    log::{ScriptStderr, ScriptStdout},
+use crate::{
+    WasmEngine,
+    load::{
+        Executing, LoadedScript, StoreState,
+        log::{ScriptStderr, ScriptStdout},
+    },
 };
 
-const TICK_DURATION: Duration = Duration::from_millis(200);
-const YIELD_DURATION: Duration = Duration::from_millis(20);
+const TICK_DURATION: Duration = Duration::from_millis(100);
+
+pub fn increment_epochs(engines: Query<&WasmEngine>) {
+    for engine in engines {
+        engine.0.increment_epoch();
+    }
+}
 
 pub struct RuntimeCtx {
     pub(crate) store: Store<StoreState>,
@@ -35,34 +43,35 @@ impl RuntimeCtx {
     }
 }
 
-#[derive(Resource)]
-pub struct Runtimes(pub SyncCell<EntityHashMap<Arc<Mutex<RuntimeCtx>>>>);
-
-impl Default for Runtimes {
-    fn default() -> Self {
-        Self(SyncCell::new(EntityHashMap::default()))
-    }
-}
+#[derive(Component)]
+pub struct ScriptRuntime(pub Arc<Mutex<RuntimeCtx>>);
 
 pub fn execute_script_updates(
     time: Res<Time>,
-    scripts: Query<(Entity, &LoadedScript, Option<&Name>)>,
-    mut runtimes: NonSendMut<Runtimes>,
-    mut pool: TaskPool<anyhow::Result<()>>,
+    mut scripts: Query<(
+        Entity,
+        &mut Executing,
+        &LoadedScript,
+        &ScriptRuntime,
+        Option<&Name>,
+    )>,
+    mut pool: TaskPool<anyhow::Result<Entity>>,
     mut last_tick: Local<Duration>,
 ) {
     for item in pool.iter_poll() {
         match item {
-            Poll::Ready(Ok(_)) => {}
+            Poll::Ready(Ok(ent)) => {
+                for (e, mut executing, ..) in scripts.iter_mut() {
+                    if e == ent {
+                        **executing = false;
+                    }
+                }
+            }
             Poll::Ready(Err(e)) => {
-                error!("Script execution error: {e}");
+                error!("Script execution error: {e:?}");
             }
             Poll::Pending => {}
         }
-    }
-
-    if !pool.is_idle() {
-        return;
     }
 
     let elapsed = time.elapsed();
@@ -74,19 +83,23 @@ pub fn execute_script_updates(
 
     *last_tick = elapsed;
 
-    for (ent, instance, name) in scripts {
-        let Some(rt) = runtimes.0.get().get(&ent).cloned() else {
-            warn!("Script {ent} has no store");
+    for (ent, mut executing, instance, rt, name) in scripts.iter_mut() {
+        if **executing {
             continue;
-        };
+        }
+
+        **executing = true;
 
         let instance = instance.0.clone();
         let name = name
             .map(|n| n.to_string())
             .unwrap_or_else(|| "unknown".to_string());
 
+        let rt = rt.0.clone();
+
         pool.spawn(async move {
             let mut rt = rt.lock().await;
+            rt.store.set_epoch_deadline(1);
 
             match rt.script {
                 None => {
@@ -95,8 +108,7 @@ pub fn execute_script_updates(
                         .script()
                         .call_constructor(rt.store.as_context_mut())
                         .await
-                        .context("construct script resource")?;
-
+                        .context("script constructor")?;
                     rt.script = Some(script);
                 }
                 Some(script) => {
@@ -104,7 +116,8 @@ pub fn execute_script_updates(
                         .wired_script_types()
                         .script()
                         .call_update(rt.store.as_context_mut(), script, delta.as_secs_f32())
-                        .await?;
+                        .await
+                        .context("script update")?;
                 }
             }
 
@@ -116,7 +129,7 @@ pub fn execute_script_updates(
                 error!("[{name}] {}", s.trim_end());
             }
 
-            Ok(())
+            Ok(ent)
         });
     }
 }

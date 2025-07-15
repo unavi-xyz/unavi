@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use exports::wired::script::types::{Guest, GuestScript};
 
 wit_bindgen::generate!({ generate_all });
@@ -12,12 +14,16 @@ struct Script;
 
 impl GuestScript for Script {
     fn new() -> Self {
-        println!("unavi:vui new");
+        println!("unavi:ui new");
         Self
     }
 
     fn update(&self, _delta: f32) {
-        println!("unavi:vui update");
+        println!("unavi:ui update");
+
+        loop {
+            std::thread::sleep(Duration::from_secs(1));
+        }
     }
 }
 

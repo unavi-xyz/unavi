@@ -11,11 +11,14 @@ impl Plugin for ScriptPlugin {
     fn build(&self, app: &mut App) {
         app.register_asset_loader(wasm::WasmLoader)
             .init_asset::<wasm::Wasm>()
-            .init_non_send_resource::<execute::Runtimes>()
             .add_systems(Startup, add_unavi_system)
             .add_systems(
-                Update,
-                (execute::execute_script_updates, load::load_scripts),
+                FixedUpdate,
+                (
+                    execute::increment_epochs,
+                    execute::execute_script_updates,
+                    load::load_scripts,
+                ),
             );
     }
 }
@@ -35,6 +38,9 @@ fn add_unavi_system(asset_server: Res<AssetServer>, mut commands: Commands) {
 
     let bin = asset_server.load("wasm/unavi/system.wasm");
     commands.spawn((Script(engine), WasmBinary(bin), Name::new("unavi:system")));
+
+    let bin = asset_server.load("wasm/unavi/ui.wasm");
+    commands.spawn((Script(engine), WasmBinary(bin), Name::new("unavi:ui")));
 }
 
 #[derive(Component)]

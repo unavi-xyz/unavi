@@ -13,7 +13,7 @@ use wasmtime_wasi::p2::{IoView, WasiCtx, WasiCtxBuilder, WasiView};
 
 use crate::{
     Script, WasmBinary, WasmEngine,
-    execute::{RuntimeCtx, Runtimes},
+    execute::{RuntimeCtx, ScriptRuntime},
     wasm::Wasm,
 };
 
@@ -32,7 +32,11 @@ type LoadResult = anyhow::Result<(Entity, bindings::Script)>;
 pub struct LoadingScript;
 
 #[derive(Component)]
+#[require(Executing)]
 pub struct LoadedScript(pub Arc<bindings::Script>);
+
+#[derive(Component, Default, Deref, DerefMut)]
+pub struct Executing(bool);
 
 pub struct StoreState {
     wasi: WasiCtx,
@@ -53,7 +57,6 @@ impl WasiView for StoreState {
 
 pub fn load_scripts(
     mut commands: Commands,
-    mut stores: NonSendMut<Runtimes>,
     wasm_assets: Res<Assets<Wasm>>,
     engines: Query<&WasmEngine>,
     to_load: Query<
@@ -87,7 +90,6 @@ pub fn load_scripts(
         };
         let mut store = Store::new(&engine.0, state);
         store.epoch_deadline_async_yield_and_update(1);
-        store.set_epoch_deadline(1);
 
         let component = wasmtime::component::Component::from_binary(&engine.0, &wasm.0);
         let name = name
@@ -95,9 +97,9 @@ pub fn load_scripts(
             .unwrap_or_else(|| "unknown".to_string());
 
         let rt = Arc::new(Mutex::new(RuntimeCtx::new(store, stdout, stderr)));
-        stores.0.get().insert(ent, rt.clone());
-
-        commands.entity(ent).insert(LoadingScript);
+        commands
+            .entity(ent)
+            .insert((LoadingScript, ScriptRuntime(rt.clone())));
 
         pool.spawn(async move {
             let mut rt = rt.lock().await;

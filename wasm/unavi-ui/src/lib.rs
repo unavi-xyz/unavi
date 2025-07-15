@@ -18,12 +18,9 @@ impl GuestScript for Script {
         Self
     }
 
-    fn update(&self, _delta: f32) {
-        println!("unavi:ui update");
-
-        loop {
-            std::thread::sleep(Duration::from_secs(1));
-        }
+    fn update(&self, delta: f32) {
+        println!("unavi:ui update: {delta:.4}");
+        std::thread::sleep(Duration::from_secs(1));
     }
 }
 

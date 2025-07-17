@@ -1,4 +1,4 @@
-const wasm_out = "crates/unavi-app/assets/wasm"
+const wasm_out = "crates/unavi/assets/wasm"
 const wasm_profile = "release-wasm"
 const wasm_src = "wasm"
 const wasm_target = "wasm32-wasip2"

@@ -3,7 +3,7 @@
   perSystem =
     { pkgs, lib, ... }:
     let
-      pname = "unavi-app";
+      pname = "unavi";
 
       wac-cli = pkgs.rustPlatform.buildRustPackage rec {
         pname = "wac-cli";

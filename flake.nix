@@ -32,7 +32,7 @@
 
         imports = [
           inputs.treefmt-nix.flakeModule
-          ./crates/unavi-app
+          ./crates/unavi
         ];
 
         perSystem =

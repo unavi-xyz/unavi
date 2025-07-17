@@ -1,5 +1,5 @@
 package unavi:system;
 
 world system {
-  include wired:script/script;
+  include wired:prelude/script;
 }

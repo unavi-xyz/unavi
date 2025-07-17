@@ -1,17 +1,14 @@
 [wired-math]
+path = "../wired-math"
 sha256 = "ede2249f1a20c35f7e559a47a0b14492a43410db9cabeead2b5012e9905c8686"
 sha512 = "64265fb82f9c5df40e4ded3a5929c8c97d7f434bd52d260fafee932b9474691b4222422d539a303dd64df8f575c6c613b7626834d55780bc08b8c9dca5d75eed"
 
-[wired-prelude]
-path = "../../../protocol/wit/wired-prelude"
-sha256 = "c6c00d0d1d2bdab9a56a43faaa03c9307eddb3fe8fe5be12b6d6c86fa94ff633"
-sha512 = "d0286840198e324b24dd4871ce4958c2b5d753ca62650f0fde7496fef1ed945617db040cf3732fbe1ae16b4a877252995c0a9c89b4c84abbc37036937c46a450"
-deps = ["wired-math", "wired-scene", "wired-script"]
-
 [wired-scene]
+path = "../wired-scene"
 sha256 = "0bd89c87ccf7d90d6ef2ae79e519e696a6703bb7438e32fd881decc3295c4eb1"
 sha512 = "3bb6fd00c451b3be36f7c3fd6b379b5436f91d01ccd216896d4891a10ae3053fea8614d406b6c277d07b791496a98c7e865e2dfd706f7bc5f66a8e4ebecdc492"
 
 [wired-script]
+path = "../wired-script"
 sha256 = "15f03deed8e6060df1978adb79b88ec2fe0904744c98826e77663b76853a601b"
 sha512 = "c90646916469c19f6b4cbb23409e984a345e6d465951c792cfcaf906f2f8fc0e208ea8e24b0132c02fefdce578a7d8b1f35d9d0140394e21598868f84977bfb8"

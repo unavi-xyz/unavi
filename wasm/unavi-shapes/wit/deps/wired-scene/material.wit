@@ -1,0 +1,22 @@
+interface material {
+  record color {
+    r: f32,
+    g: f32,
+    b: f32,
+    a: f32,
+  }
+
+  resource material {
+    constructor();
+
+    id: func() -> u32;
+    /// Returns another reference to the same resource.
+    ref: func() -> material;
+
+    name: func() -> string;
+    set-name: func(value: string);
+
+    color: func() -> color;
+    set-color: func(value: color);
+  }
+}

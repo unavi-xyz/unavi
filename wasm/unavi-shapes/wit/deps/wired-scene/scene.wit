@@ -1,0 +1,16 @@
+interface scene {
+  use node.{node};
+
+  resource scene {
+    constructor();
+
+    id: func() -> u32;
+
+    name: func() -> string;
+    set-name: func(value: string);
+
+    nodes: func() -> list<node>;
+    add-node: func(value: borrow<node>);
+    remove-node: func(value: borrow<node>);
+  }
+}

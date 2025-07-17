@@ -22,6 +22,8 @@ impl GuestScript for Script {
         println!("unavi:ui update: {delta:.4}");
         std::thread::sleep(Duration::from_secs(1));
     }
+
+    fn render(&self, _delta: f32) {}
 }
 
 export!(World);

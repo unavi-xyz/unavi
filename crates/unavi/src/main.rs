@@ -23,9 +23,9 @@ fn main() {
     app.add_systems(
         Startup,
         (
-            unavi_app::icon::set_window_icon,
-            unavi_app::scene::spawn_lights,
-            unavi_app::scene::spawn_scene,
+            unavi::icon::set_window_icon,
+            unavi::scene::spawn_lights,
+            unavi::scene::spawn_scene,
         ),
     );
 

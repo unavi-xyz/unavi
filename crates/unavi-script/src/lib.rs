@@ -28,9 +28,12 @@ fn add_unavi_system(asset_server: Res<AssetServer>, mut commands: Commands) {
         let mut config = Config::new();
         config.async_support(true).epoch_interruption(true);
 
-        let Ok(engine) = wasmtime::Engine::new(&config) else {
-            error!("Error creating wasmtime engine");
+        let engine= match wasmtime::Engine::new(&config) {
+            Ok(e)=>e,
+            Err(e)=> {
+            error!("Error creating wasmtime engine: {e:?}");
             return;
+            }
         };
 
         commands.spawn(WasmEngine(engine)).id()

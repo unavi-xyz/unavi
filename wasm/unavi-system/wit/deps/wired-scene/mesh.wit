@@ -1,0 +1,30 @@
+interface mesh {
+  use material.{material};
+
+  resource primitive {
+    id: func() -> u32;
+
+    material: func() -> option<material>;
+    set-material: func(value: option<borrow<material>>);
+
+    set-indices: func(value: list<u32>);
+    set-normals: func(value: list<f32>);
+    set-positions: func(value: list<f32>);
+    set-uvs: func(value: list<f32>);
+  }
+
+  resource mesh {
+    constructor();
+
+    id: func() -> u32;
+    /// Returns another reference to the same resource.
+    ref: func() -> mesh;
+
+    name: func() -> string;
+    set-name: func(value: string);
+
+    list-primitives: func() -> list<primitive>;
+    create-primitive: func() -> primitive;
+    remove-primitive: func(value: primitive);
+  }
+}

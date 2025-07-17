@@ -19,6 +19,8 @@ impl GuestScript for Script {
     fn update(&self, delta: f32) {
         println!("unavi:system update: {delta:.4}");
     }
+
+    fn render(&self, _delta: f32) {}
 }
 
 export!(World);

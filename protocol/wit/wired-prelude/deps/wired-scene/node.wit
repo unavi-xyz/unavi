@@ -1,0 +1,38 @@
+interface node {
+  use mesh.{mesh};
+  use wired:math/types.{transform};
+
+  resource node {
+    constructor();
+
+    id: func() -> u32;
+    /// Returns another reference to the same resource.
+    ref: func() -> node;
+
+    name: func() -> string;
+    set-name: func(value: string);
+
+    children: func() -> list<node>;
+    add-child: func(value: borrow<node>);
+    remove-child: func(value: borrow<node>);
+
+    parent: func() -> option<node>;
+
+    global-transform: func() -> transform;
+
+    transform: func() -> transform;
+    set-transform: func(value: transform);
+
+    mesh: func() -> option<mesh>;
+    set-mesh: func(value: option<borrow<mesh>>);
+
+    // collider: func() -> option<collider>;
+    // set-collider: func(value: option<borrow<collider>>);
+
+    // rigid-body: func() -> option<rigid-body>;
+    // set-rigid-body: func(value: option<borrow<rigid-body>>);
+
+    // input-handler: func() -> option<input-handler>;
+    // set-input-handler: func(value: option<borrow<input-handler>>);
+  }
+}

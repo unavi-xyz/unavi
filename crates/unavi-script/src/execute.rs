@@ -3,10 +3,7 @@ use std::{borrow::Cow, future::poll_fn, pin::Pin, sync::Arc, task::Poll, time::D
 use anyhow::Context;
 use bevy::prelude::*;
 use bevy_async_task::TaskPool;
-use tokio::{
-    io::{AsyncRead, DuplexStream, ReadBuf},
-    sync::Mutex,
-};
+use tokio::io::{AsyncRead, DuplexStream, ReadBuf};
 use wasmtime::{AsContextMut, Store, component::ResourceAny};
 
 use crate::{
@@ -29,22 +26,36 @@ pub struct RuntimeCtx {
     stderr: ScriptStderr,
     script: Option<ResourceAny>,
     last_tick: Duration,
+    logs_send: std::sync::mpsc::SyncSender<Log>,
 }
 
-impl RuntimeCtx {
-    pub fn new(store: Store<StoreState>, stdout: ScriptStdout, stderr: ScriptStderr) -> Self {
-        Self {
-            store,
-            stdout,
-            stderr,
-            script: None,
-            last_tick: Duration::from_secs(0),
-        }
-    }
+enum Log {
+    Stdout(String),
+    Stderr(String),
 }
 
 #[derive(Component)]
-pub struct ScriptRuntime(pub Arc<Mutex<RuntimeCtx>>);
+pub struct ScriptRuntime {
+    pub ctx: Arc<tokio::sync::Mutex<RuntimeCtx>>,
+    logs_recv: Arc<std::sync::Mutex<std::sync::mpsc::Receiver<Log>>>,
+}
+
+impl ScriptRuntime {
+    pub fn new(store: Store<StoreState>, stdout: ScriptStdout, stderr: ScriptStderr) -> Self {
+        let (logs_send, logs_recv) = std::sync::mpsc::sync_channel(20);
+        Self {
+            ctx: Arc::new(tokio::sync::Mutex::new(RuntimeCtx {
+                store,
+                stdout,
+                stderr,
+                script: None,
+                last_tick: Duration::from_secs(0),
+                logs_send,
+            })),
+            logs_recv: Arc::new(std::sync::Mutex::new(logs_recv)),
+        }
+    }
+}
 
 pub fn execute_script_updates(
     time: Res<Time>,
@@ -82,44 +93,65 @@ pub fn execute_script_updates(
 
         let elapsed = time.elapsed();
         let instance = instance.0.clone();
+        let ctx = rt.ctx.clone();
+
         let name = name
             .map(|n| n.to_string())
             .unwrap_or_else(|| "unknown".to_string());
-        let rt = rt.0.clone();
+
+        let recv = rt.logs_recv.lock().expect("logs_recv poisioned");
+        while let Ok(log) = recv.try_recv() {
+            match log {
+                Log::Stdout(s) => info!("[{name}] {s}"),
+                Log::Stderr(s) => error!("[{name}] {s}"),
+            }
+        }
 
         pool.spawn(async move {
-            let mut rt = rt.lock().await;
-            rt.store.set_epoch_deadline(1);
+            let mut ctx = ctx.lock().await;
+            ctx.store.set_epoch_deadline(1);
 
-            let delta = elapsed - rt.last_tick;
-            rt.last_tick = elapsed;
+            let delta = elapsed - ctx.last_tick;
+            ctx.last_tick = elapsed;
 
-            match rt.script {
+            match ctx.script {
                 None => {
                     let script = instance
                         .wired_script_types()
                         .script()
-                        .call_constructor(rt.store.as_context_mut())
+                        .call_constructor(ctx.store.as_context_mut())
                         .await
                         .context("script constructor")?;
-                    rt.script = Some(script);
+                    ctx.script = Some(script);
                 }
                 Some(script) => {
                     instance
                         .wired_script_types()
                         .script()
-                        .call_update(rt.store.as_context_mut(), script, delta.as_secs_f32())
+                        .call_update(ctx.store.as_context_mut(), script, delta.as_secs_f32())
                         .await
                         .context("script update")?;
                 }
             }
 
             let mut buf = [0; 1024];
-            if let Some(s) = try_read_text_stream(&mut buf, &mut rt.stdout.0).await {
-                info!("[{name}] {}", s.trim_end());
+            if let Some(s) = try_read_text_stream(&mut buf, &mut ctx.stdout.0).await {
+                while ctx
+                    .logs_send
+                    .try_send(Log::Stdout(s.trim_end().to_string()))
+                    .is_err()
+                {
+                    tokio::time::sleep(Duration::from_millis(10)).await;
+                }
             }
-            if let Some(s) = try_read_text_stream(&mut buf, &mut rt.stderr.0).await {
-                error!("[{name}] {}", s.trim_end());
+            if let Some(s) = try_read_text_stream(&mut buf, &mut ctx.stderr.0).await {
+                while ctx
+                    .logs_send
+                    .try_send(Log::Stderr(s.trim_end().to_string()))
+                    .is_err()
+                {
+                    tokio::time::sleep(Duration::from_millis(10)).await;
+                }
             }
 
             Ok(ent)

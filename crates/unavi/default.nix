@@ -106,6 +106,9 @@
           // {
             inherit cargoArtifacts;
             cargoExtraArgs = cargoArgs.cargoExtraArgs + " --no-tests pass";
+            preBuild = ''
+              ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
+            '';
           }
         );
       };

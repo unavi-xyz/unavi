@@ -1,6 +1,8 @@
 use std::sync::LazyLock;
 
+use bevy::prelude::*;
 use directories::ProjectDirs;
+use unavi_script::LoadScriptAsset;
 
 pub mod icon;
 pub mod scene;
@@ -12,3 +14,14 @@ pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
 
     dirs
 });
+
+pub fn add_scripts(mut events: EventWriter<LoadScriptAsset>) {
+    events.write(LoadScriptAsset {
+        namespace: "unavi",
+        package: "system",
+    });
+    events.write(LoadScriptAsset {
+        namespace: "unavi",
+        package: "ui",
+    });
+}

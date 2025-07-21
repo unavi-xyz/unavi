@@ -6001,6 +6001,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-log"
+version = "0.0.10"
+dependencies = [
+ "wit-bindgen",
+]
+
+[[package]]
 name = "thiserror"
 version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6326,6 +6333,7 @@ dependencies = [
  "log",
  "unavi-input",
  "unavi-player",
+ "unavi-script",
  "winit",
 ]
 
@@ -6359,6 +6367,8 @@ dependencies = [
  "bevy_async_task",
  "tokio",
  "tokio-stream",
+ "tracing",
+ "tracing-subscriber",
  "wasmtime",
  "wasmtime-wasi",
  "wit-bindgen",

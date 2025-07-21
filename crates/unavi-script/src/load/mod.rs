@@ -4,7 +4,6 @@ use anyhow::Context;
 use bevy::prelude::*;
 use bevy_async_task::TaskPool;
 use log::{ScriptStderr, ScriptStdout};
-use tokio::sync::Mutex;
 use wasmtime::{
     AsContextMut, Store,
     component::{Linker, ResourceTable},
@@ -13,8 +12,8 @@ use wasmtime_wasi::p2::{IoView, WasiCtx, WasiCtxBuilder, WasiView};
 
 use crate::{
     Script, WasmBinary, WasmEngine,
+    asset::Wasm,
     execute::{RuntimeCtx, ScriptRuntime},
-    wasm::Wasm,
 };
 
 pub(crate) mod log;
@@ -76,7 +75,10 @@ pub fn load_scripts(
             None => continue,
         };
 
-        info!("Loading script. size={}", wasm.0.len());
+        let name = name
+            .map(|n| n.to_string())
+            .unwrap_or_else(|| "unknown".to_string());
+        info!("Loading script {name}: size={}", wasm.0.len());
 
         let (stdout, stdout_stream) = ScriptStdout::new();
         let (stderr, stderr_stream) = ScriptStderr::new();
@@ -92,18 +94,14 @@ pub fn load_scripts(
         store.epoch_deadline_async_yield_and_update(1);
 
         let component = wasmtime::component::Component::from_binary(&engine.0, &wasm.0);
-        let name = name
-            .map(|n| n.to_string())
-            .unwrap_or_else(|| "unknown".to_string());
 
-        let rt = Arc::new(Mutex::new(RuntimeCtx::new(store, stdout, stderr)));
-        commands
-            .entity(ent)
-            .insert((LoadingScript, ScriptRuntime(rt.clone())));
+        let rt = ScriptRuntime::new(store, stdout, stderr);
+        let ctx = rt.ctx.clone();
+        commands.entity(ent).insert((LoadingScript, rt));
 
         pool.spawn(async move {
-            let mut rt = rt.lock().await;
-            let res = instantiate_component(ent, component, &mut rt)
+            let mut ctx = ctx.lock().await;
+            let res = instantiate_component(ent, component, &mut ctx)
                 .await
                 .with_context(|| name)?;
             Ok(res)

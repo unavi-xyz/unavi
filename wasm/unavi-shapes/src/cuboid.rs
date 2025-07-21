@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::Cell;
 
 use crate::{
     exports::unavi::shapes::shapes::GuestCuboid,
@@ -9,21 +9,21 @@ use crate::{
 };
 
 pub struct Cuboid {
-    size: RefCell<Vec3>,
+    size: Cell<Vec3>,
 }
 
 impl GuestCuboid for Cuboid {
     fn new(size: Vec3) -> Self {
         Self {
-            size: RefCell::new(size),
+            size: Cell::new(size),
         }
     }
 
     fn size(&self) -> Vec3 {
-        *self.size.borrow()
+        self.size.get()
     }
     fn set_size(&self, value: Vec3) {
-        self.size.replace(value);
+        self.size.set(value);
     }
 
     fn to_mesh(&self) -> Mesh {

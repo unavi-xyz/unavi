@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use unavi_script::ScriptPlugin;
+use unavi_script::{LoadScriptAsset, ScriptPlugin};
 
 fn main() {
     App::new()
@@ -10,5 +10,13 @@ fn main() {
             }),
             ScriptPlugin,
         ))
+        .add_systems(Startup, setup)
         .run();
+}
+
+fn setup(mut events: EventWriter<LoadScriptAsset>) {
+    events.write(LoadScriptAsset {
+        namespace: "unavi",
+        package: "system",
+    });
 }

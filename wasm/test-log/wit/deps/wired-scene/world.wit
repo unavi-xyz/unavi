@@ -1,6 +1,0 @@
-package wired:scene;
-
-world prelude {
-  import gltf;
-  import glxf;
-}

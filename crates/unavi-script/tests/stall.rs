@@ -4,7 +4,7 @@ mod setup;
 
 #[test]
 fn script_log() {
-    let mut app = setup::setup_test_app("log");
+    let mut app = setup::setup_test_app("stall");
 
     // Load script asset.
     app.update();
@@ -16,13 +16,11 @@ fn script_log() {
 
     // Execute script constructor.
     app.update();
-    std::thread::sleep(Duration::from_millis(50));
 
-    // Execute script update.
+    // Execute script updates.
+    // Should never complete, but the ECS should go on fine.
     app.update();
-    std::thread::sleep(Duration::from_millis(50));
-
-    // Flush logs.
+    app.update();
     app.update();
 
     assert_eq!(
@@ -31,16 +29,16 @@ fn script_log() {
             .lock()
             .unwrap()
             .iter()
-            .filter(|line| line.contains("[test:log] new"))
+            .filter(|line| line.contains("[test:stall] new"))
             .count(),
         1
     );
     assert!(
-        setup::LOGS
+        !setup::LOGS
             .logs
             .lock()
             .unwrap()
             .iter()
-            .any(|line| line.contains("[test:log] update"))
+            .any(|line| line.contains("[test:stall] update"))
     );
 }

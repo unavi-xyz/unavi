@@ -3,7 +3,7 @@ use std::time::Duration;
 mod setup;
 
 #[test]
-fn script_log() {
+fn script_stall() {
     let mut app = setup::setup_test_app("stall");
 
     // Load script asset.

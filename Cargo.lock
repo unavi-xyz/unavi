@@ -6008,6 +6008,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-stall"
+version = "0.0.10"
+dependencies = [
+ "wit-bindgen",
+]
+
+[[package]]
 name = "thiserror"
 version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"

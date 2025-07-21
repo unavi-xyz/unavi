@@ -22,4 +22,5 @@ log = { features = [
 ], version = "*" }
 unavi-input.path = "../unavi-input"
 unavi-player.path = "../unavi-player"
+unavi-script.path = "../unavi-script"
 winit = { default-features = false, version = "0.30.11" }

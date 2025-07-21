@@ -1,0 +1,20 @@
+package wired:script;
+
+world script {
+  export types;
+}
+
+interface types {
+  resource script {
+    /// Called once to construct the script.
+    constructor();
+
+    /// Called on a regular interval.
+    /// Most script logic should go here.
+    update: func(delta: f32);
+
+    /// Called every render frame.
+    /// Has a much shorter time window to execute compared to `update`.
+    render: func(delta: f32);
+  }
+}

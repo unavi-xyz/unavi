@@ -1,4 +1,4 @@
-package unavi:ui;
+package test:log;
 
 world guest {
   include wired:script/script;

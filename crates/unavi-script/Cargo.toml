@@ -18,3 +18,7 @@ tokio-stream     = "0.1.17"
 wasmtime         = "34.0.1"
 wasmtime-wasi    = { default-features = false, version = "34.0.1" }
 wit-bindgen      = "0.43.0"
+
+[dev-dependencies]
+tracing            = "0.1.41"
+tracing-subscriber = "0.3.19"

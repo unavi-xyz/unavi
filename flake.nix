@@ -108,6 +108,7 @@
                   cargo-deny
                   cargo-edit
                   cargo-machete
+                  cargo-nextest
                   cargo-release
                   cargo-workspaces
                 ])

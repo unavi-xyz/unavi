@@ -9,6 +9,7 @@ use wasmtime::{
     component::{Linker, ResourceTable},
 };
 use wasmtime_wasi::p2::{IoView, WasiCtx, WasiCtxBuilder, WasiView};
+use wired::ecs::WiredEcsData;
 
 use crate::{
     Script, WasmBinary, WasmEngine,
@@ -17,22 +18,24 @@ use crate::{
 };
 
 pub(crate) mod log;
+mod wired;
 
 pub mod bindings {
     wasmtime::component::bindgen!({
-        path: "../../protocol/wit/wired-script",
+        world: "guest",
+        path: "../../protocol/wit/wired-ecs",
         async: true,
     });
 }
 
-type LoadResult = anyhow::Result<(Entity, bindings::Script)>;
+type LoadResult = anyhow::Result<(Entity, bindings::Guest)>;
 
 #[derive(Component)]
 pub struct LoadingScript;
 
 #[derive(Component)]
 #[require(Executing)]
-pub struct LoadedScript(pub Arc<bindings::Script>);
+pub struct LoadedScript(pub Arc<bindings::Guest>);
 
 #[derive(Component, Default, Deref, DerefMut)]
 pub struct Executing(bool);
@@ -40,6 +43,12 @@ pub struct Executing(bool);
 pub struct StoreState {
     wasi: WasiCtx,
     resource_table: ResourceTable,
+    data: RuntimeData,
+}
+
+#[derive(Default)]
+pub struct RuntimeData {
+    pub wired_ecs: WiredEcsData,
 }
 
 impl IoView for StoreState {
@@ -89,6 +98,7 @@ pub fn load_scripts(
         let state = StoreState {
             wasi,
             resource_table: ResourceTable::default(),
+            data: RuntimeData::default(),
         };
         let mut store = Store::new(&engine.0, state);
         store.epoch_deadline_async_yield_and_update(1);
@@ -131,13 +141,13 @@ async fn instantiate_component(
 ) -> LoadResult {
     let mut linker = Linker::new(rt.store.engine());
     wasmtime_wasi::p2::add_to_linker_async(&mut linker).context("add wasi to linker")?;
+    wired::add_to_linker(&mut linker)?;
 
     let component = component.context("component load")?;
 
-    let instance =
-        bindings::Script::instantiate_async(rt.store.as_context_mut(), &component, &linker)
-            .await
-            .context("instantiate")?;
+    let guest = bindings::Guest::instantiate_async(rt.store.as_context_mut(), &component, &linker)
+        .await
+        .context("instantiate guest")?;
 
-    Ok((ent, instance))
+    Ok((ent, guest))
 }

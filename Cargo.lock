@@ -2776,6 +2776,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-ecs"
+version = "0.0.10"
+dependencies = [
+ "wired-ecs",
+ "wit-bindgen",
+]
+
+[[package]]
+name = "example-shapes"
+version = "0.0.10"
+dependencies = [
+ "wit-bindgen",
+]
+
+[[package]]
 name = "exr"
 version = "1.73.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5896,9 +5911,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.103"
+version = "2.0.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e4307e30089d6fd6aff212f2da3a1f9e32f3223b1f010fb09b7c95f90f3ca1e8"
+checksum = "17b6f705963418cdb9927482fa304bc562ece2fdd4f616084c50b7023b435a40"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -7942,6 +7957,24 @@ checksum = "3f3fd376f71958b862e7afb20cfe5a22830e1963462f3a17f49d82a6c1d1f42d"
 dependencies = [
  "bitflags 2.9.1",
  "windows-sys 0.59.0",
+]
+
+[[package]]
+name = "wired-ecs"
+version = "0.0.10"
+dependencies = [
+ "bytemuck",
+ "wired-ecs-derive",
+ "wit-bindgen",
+]
+
+[[package]]
+name = "wired-ecs-derive"
+version = "0.0.10"
+dependencies = [
+ "quote",
+ "syn",
+ "wit-bindgen",
 ]
 
 [[package]]

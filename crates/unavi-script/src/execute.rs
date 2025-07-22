@@ -84,7 +84,7 @@ pub fn execute_script_updates(
         }
     }
 
-    for (ent, mut executing, instance, rt, name) in scripts.iter_mut() {
+    for (ent, mut executing, guest, rt, name) in scripts.iter_mut() {
         if **executing {
             continue;
         }
@@ -92,7 +92,7 @@ pub fn execute_script_updates(
         **executing = true;
 
         let elapsed = time.elapsed();
-        let instance = instance.0.clone();
+        let guest = guest.0.clone();
         let ctx = rt.ctx.clone();
 
         let name = name
@@ -116,8 +116,8 @@ pub fn execute_script_updates(
 
             match ctx.script {
                 None => {
-                    let script = instance
-                        .wired_script_types()
+                    let script = guest
+                        .wired_ecs_guest_api()
                         .script()
                         .call_constructor(ctx.store.as_context_mut())
                         .await
@@ -125,12 +125,12 @@ pub fn execute_script_updates(
                     ctx.script = Some(script);
                 }
                 Some(script) => {
-                    instance
-                        .wired_script_types()
-                        .script()
-                        .call_update(ctx.store.as_context_mut(), script, delta.as_secs_f32())
-                        .await
-                        .context("script update")?;
+                    // guest
+                    //     .wired_ecs_guest_api()
+                    //     .script()
+                    //     .call_update(ctx.store.as_context_mut(), script, delta.as_secs_f32())
+                    //     .await
+                    //     .context("script update")?;
                 }
             }
 

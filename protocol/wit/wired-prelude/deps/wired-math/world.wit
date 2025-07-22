@@ -2,6 +2,7 @@ package wired:math;
 
 world prelude {
   import types;
+  import codegen-fix;
 }
 
 interface types {
@@ -28,4 +29,14 @@ interface types {
     rotation: quat,
     scale: vec3,
   }
+}
+
+// wit-bindgen may not include types if they are not used by functions.
+interface codegen-fix {
+  use types.{vec2, vec3, quat, transform};
+
+  a: func() -> vec2;
+  b: func() -> vec3;
+  c: func() -> quat;
+  d: func() -> transform;
 }

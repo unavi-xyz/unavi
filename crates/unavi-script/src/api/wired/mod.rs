@@ -1,6 +1,6 @@
 use wasmtime::component::Linker;
 
-use super::StoreState;
+use crate::load::state::StoreState;
 
 pub mod ecs;
 

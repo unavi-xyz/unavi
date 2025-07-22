@@ -1,7 +1,13 @@
 use std::collections::{BTreeMap, HashMap};
 
-use wasmtime::component::HasData;
+use anyhow::Context;
+use wasmtime::{
+    AsContextMut,
+    component::{HasData, ResourceAny},
+};
 use wired::ecs::types::{ParamId, ParamType, Schedule, System, SystemId};
+
+use crate::{execute::RuntimeCtx, load::bindings::Guest};
 
 wasmtime::component::bindgen!({
     world: "host",
@@ -17,6 +23,7 @@ impl HasData for HasWiredEcsData {
 
 #[derive(Default)]
 pub struct WiredEcsData {
+    pub initialized: bool,
     pub params: Vec<ParamType>,
     pub systems: Vec<System>,
     pub schedules: HashMap<Schedule, Vec<SystemId>>,

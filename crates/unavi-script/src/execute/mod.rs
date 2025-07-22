@@ -1,18 +1,22 @@
-use std::{borrow::Cow, future::poll_fn, pin::Pin, sync::Arc, task::Poll, time::Duration};
+use std::{sync::Arc, task::Poll, time::Duration};
 
 use anyhow::Context;
 use bevy::prelude::*;
 use bevy_async_task::TaskPool;
-use tokio::io::{AsyncRead, DuplexStream, ReadBuf};
 use wasmtime::{AsContextMut, Store, component::ResourceAny};
 
 use crate::{
     WasmEngine,
+    api::wired::ecs::wired::ecs::types::Schedule,
     load::{
-        Executing, LoadedScript, StoreState,
+        Executing, LoadedScript,
+        bindings::Guest,
         log::{ScriptStderr, ScriptStdout},
+        state::StoreState,
     },
 };
+
+mod log;
 
 pub fn increment_epochs(engines: Query<&WasmEngine>) {
     for engine in engines {
@@ -125,17 +129,23 @@ pub fn execute_script_updates(
                     ctx.script = Some(script);
                 }
                 Some(script) => {
-                    // guest
-                    //     .wired_ecs_guest_api()
-                    //     .script()
-                    //     .call_update(ctx.store.as_context_mut(), script, delta.as_secs_f32())
-                    //     .await
-                    //     .context("script update")?;
+                    let ecs = &mut ctx.store.data_mut().data.wired_ecs;
+
+                    let schedule = if ecs.initialized {
+                        Schedule::Update
+                    } else {
+                        ecs.initialized = true;
+                        Schedule::Startup
+                    };
+
+                    exec_schedule(&mut ctx.store, script, &guest, &schedule)
+                        .await
+                        .with_context(|| format!("exec schedule {schedule:?}"))?;
                 }
             }
 
             let mut buf = [0; 1024];
-            if let Some(s) = try_read_text_stream(&mut buf, &mut ctx.stdout.0).await {
+            if let Some(s) = log::try_read_text_stream(&mut buf, &mut ctx.stdout.0).await {
                 while ctx
                     .logs_send
                     .try_send(Log::Stdout(s.trim_end().to_string()))
@@ -144,7 +154,7 @@ pub fn execute_script_updates(
                     tokio::time::sleep(Duration::from_millis(10)).await;
                 }
             }
-            if let Some(s) = try_read_text_stream(&mut buf, &mut ctx.stderr.0).await {
+            if let Some(s) = log::try_read_text_stream(&mut buf, &mut ctx.stderr.0).await {
                 while ctx
                     .logs_send
                     .try_send(Log::Stderr(s.trim_end().to_string()))
@@ -159,27 +169,51 @@ pub fn execute_script_updates(
     }
 }
 
-async fn try_read_text_stream<'a>(
-    buf: &'a mut [u8],
-    stream: &mut DuplexStream,
-) -> Option<Cow<'a, str>> {
-    let mut pinned = Pin::new(stream);
-    let mut read_buf = ReadBuf::new(buf);
+async fn exec_schedule(
+    store: &mut Store<StoreState>,
+    script: ResourceAny,
+    guest: &Guest,
+    schedule: &Schedule,
+) -> anyhow::Result<()> {
+    let Some(systems) = store.data().data.wired_ecs.schedules.get(schedule) else {
+        return Ok(());
+    };
 
-    let n = poll_fn(|cx| match pinned.as_mut().poll_read(cx, &mut read_buf) {
-        Poll::Ready(Ok(())) => Poll::Ready(read_buf.filled().len()),
-        Poll::Ready(Err(e)) => Poll::Ready({
-            error!("Error reading buf: {e}");
-            0
-        }),
-        Poll::Pending => Poll::Ready(0),
-    })
-    .await;
-
-    if n == 0 {
-        return None;
+    for id in systems.clone() {
+        exec_system(store, script, guest, id)
+            .await
+            .with_context(|| format!("exec system {id}"))?;
     }
 
-    let s = String::from_utf8_lossy(&buf[0..n]);
-    Some(s)
+    Ok(())
+}
+
+async fn exec_system(
+    store: &mut Store<StoreState>,
+    script: ResourceAny,
+    guest: &Guest,
+    id: u64,
+) -> anyhow::Result<()> {
+    let ecs = &store.data().data.wired_ecs;
+    let Some(sys) = ecs.systems.get(id as usize) else {
+        anyhow::bail!("system {id} not found")
+    };
+
+    let mut param_data = Vec::new();
+
+    for query in &sys.queries {
+        for p in &query.params {
+            let Some(param) = ecs.params.get(*p as usize) else {
+                anyhow::bail!("system {id} not found")
+            };
+        }
+    }
+
+    guest
+        .wired_ecs_guest_api()
+        .script()
+        .call_exec_system(store.as_context_mut(), script, id, &param_data)
+        .await?;
+
+    Ok(())
 }

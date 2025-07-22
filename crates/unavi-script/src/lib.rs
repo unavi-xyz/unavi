@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use wasmtime::Config;
 
+mod api;
 mod asset;
 mod event;
 mod execute;

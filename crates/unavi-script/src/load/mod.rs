@@ -4,12 +4,12 @@ use anyhow::Context;
 use bevy::prelude::*;
 use bevy_async_task::TaskPool;
 use log::{ScriptStderr, ScriptStdout};
+use state::StoreState;
 use wasmtime::{
     AsContextMut, Store,
     component::{Linker, ResourceTable},
 };
 use wasmtime_wasi::p2::{IoView, WasiCtx, WasiCtxBuilder, WasiView};
-use wired::ecs::WiredEcsData;
 
 use crate::{
     Script, WasmBinary, WasmEngine,
@@ -18,7 +18,7 @@ use crate::{
 };
 
 pub(crate) mod log;
-mod wired;
+pub(crate) mod state;
 
 pub mod bindings {
     wasmtime::component::bindgen!({
@@ -39,29 +39,6 @@ pub struct LoadedScript(pub Arc<bindings::Guest>);
 
 #[derive(Component, Default, Deref, DerefMut)]
 pub struct Executing(bool);
-
-pub struct StoreState {
-    wasi: WasiCtx,
-    resource_table: ResourceTable,
-    data: RuntimeData,
-}
-
-#[derive(Default)]
-pub struct RuntimeData {
-    pub wired_ecs: WiredEcsData,
-}
-
-impl IoView for StoreState {
-    fn table(&mut self) -> &mut ResourceTable {
-        &mut self.resource_table
-    }
-}
-
-impl WasiView for StoreState {
-    fn ctx(&mut self) -> &mut WasiCtx {
-        &mut self.wasi
-    }
-}
 
 pub fn load_scripts(
     mut commands: Commands,
@@ -95,11 +72,7 @@ pub fn load_scripts(
             .stdout(stdout_stream)
             .stderr(stderr_stream)
             .build();
-        let state = StoreState {
-            wasi,
-            resource_table: ResourceTable::default(),
-            data: RuntimeData::default(),
-        };
+        let state = StoreState::new(wasi);
         let mut store = Store::new(&engine.0, state);
         store.epoch_deadline_async_yield_and_update(1);
 
@@ -141,7 +114,7 @@ async fn instantiate_component(
 ) -> LoadResult {
     let mut linker = Linker::new(rt.store.engine());
     wasmtime_wasi::p2::add_to_linker_async(&mut linker).context("add wasi to linker")?;
-    wired::add_to_linker(&mut linker)?;
+    crate::api::wired::add_to_linker(&mut linker)?;
 
     let component = component.context("component load")?;
 

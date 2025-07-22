@@ -1,0 +1,15 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "wired-ecs"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bytemuck              = { features = ["derive"], version = "1.23.1" }
+wired-ecs-derive.path = "../../crates/wired-ecs-derive"
+wit-bindgen.workspace = true

@@ -1,0 +1,86 @@
+package wired:ecs;
+
+interface types {
+  type entity-id = u64;
+  type param-id = u64;
+  type system-id = u64;
+  type param-data = list<u8>;
+
+  enum primitive {
+    boolean,
+    float32,
+    float64,
+    int8,
+    int16,
+    int32,
+    int64,
+    uint8,
+    uint16,
+    uint32,
+    uint64,
+    text,
+  }
+
+  variant param-type {
+    primitive(primitive),
+    vec(list<primitive>),
+    map(list<tuple<primitive, primitive>>),
+  }
+
+  variant constraint {
+    with-param(list<param-id>),
+    without-param(list<param-id>),
+  }
+
+  record query {
+    params: list<param-id>,
+    constraints: list<constraint>
+  }
+
+  enum schedule {
+    startup,
+    update,
+    fixed-update,
+  }
+
+  record system {
+    schedule: schedule,
+    queries: list<query>,
+  }
+}
+
+interface host-api {
+  use types.{
+    param-data,
+    param-id,
+    param-type,
+    query,
+    system,
+    system-id,
+  };
+
+  register-param: func(param-type: param-type) -> param-id;
+  register-system: func(system: system) -> system-id;
+
+  write-query: func(system: system-id, query-index: u32, data: list<param-data>);
+}
+
+interface guest-api {
+  use types.{param-data, system-id};
+
+  resource script {
+    constructor();
+    exec-system: func(id: system-id, params: list<param-data>);
+  }
+}
+
+world host {
+  import host-api;
+  export host-api;
+}
+
+
+world guest {
+  import host-api;
+  export guest-api;
+}

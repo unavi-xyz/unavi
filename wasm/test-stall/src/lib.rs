@@ -22,9 +22,7 @@ impl GuestScript for Script {
         }
     }
 
-    fn render(&self, _delta: f32) {
-        println!("render");
-    }
+    fn render(&self, _delta: f32) {}
 }
 
 export!(World);

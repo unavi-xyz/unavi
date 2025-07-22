@@ -16,7 +16,7 @@ fn main() {
 
 fn setup(mut events: EventWriter<LoadScriptAsset>) {
     events.write(LoadScriptAsset {
-        namespace: "unavi",
-        package: "system",
+        namespace: "example",
+        package: "shapes",
     });
 }

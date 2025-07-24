@@ -1,10 +1,12 @@
+//! Entity component system (ECS) for The Wired.
+
 package wired:ecs;
 
 interface types {
   type entity-id = u64;
-  type param-id = u64;
+  type component-id = u64;
+  type query-id = u64;
   type system-id = u64;
-  type param-data = list<u8>;
 
   enum primitive {
     boolean,
@@ -21,56 +23,86 @@ interface types {
     text,
   }
 
-  variant param-type {
+  variant component-type {
+    map(tuple<primitive, primitive>),
     primitive(primitive),
-    vec(list<primitive>),
-    map(list<tuple<primitive, primitive>>),
+    vec(primitive),
+  }
+
+  record component {
+    /// A unique string for the component.
+    /// If the component is a WIT type, `key` is assumed to be the type path (`namespace:package/path/to/type`).
+    key: string,
+    types: list<component-type>,
   }
 
   variant constraint {
-    with-param(list<param-id>),
-    without-param(list<param-id>),
+    with-component(list<component-id>),
+    without-component(list<component-id>),
   }
 
+  /// A view into ECS data.
+  ///
+  /// Queries data for all entities that have `components` and
+  /// conform to `constraints`.
   record query {
-    params: list<param-id>,
+    components: list<component-id>,
     constraints: list<constraint>
   }
 
-  enum schedule {
-    startup,
-    update,
-    fixed-update,
+  variant param {
+    query(query)
   }
 
+  type query-item = list<u8>;
+  type query-data = list<query-item>;
+
+  variant param-data {
+    query(query-data)
+  }
+
+  enum schedule {
+    /// Runs once when the script starts.
+    startup,
+    /// Runs every render frame.
+    /// For most logic, consider using `update` instead.
+    render,
+    /// Runs at a fixed interval.
+    update,
+  }
+
+  /// A system is function that gets called with requested query data.
+  /// The system will be executed whenever the schedule activates.
   record system {
     schedule: schedule,
-    queries: list<query>,
+    params: list<param>,
   }
 }
 
 interface host-api {
   use types.{
-    param-data,
-    param-id,
-    param-type,
-    query,
+    component,
+    component-id,
     system,
     system-id,
   };
 
-  register-param: func(param-type: param-type) -> param-id;
-  register-system: func(system: system) -> system-id;
+  /// Registers a component, returning an id.
+  ///
+  /// If the component key has already been registered, the same id will be returned.
+  /// This provides an interface for sharing ECS components across WASM components.
+  register-component: func(component: component) -> component-id;
 
-  write-query: func(system: system-id, query-index: u32, data: list<param-data>);
+  /// Registers a system, returning an id.
+  register-system: func(system: system) -> system-id;
 }
 
 interface guest-api {
-  use types.{param-data, system-id};
+  use types.{entity-id, system-id, param-data};
 
   resource script {
     constructor();
-    exec-system: func(id: system-id, params: list<param-data>);
+    exec-system: func(id: system-id, data: list<param-data>);
   }
 }
 

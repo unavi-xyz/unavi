@@ -1,20 +1,7 @@
-use std::{sync::Arc, task::Poll};
+use wasmtime::component::ResourceTable;
+use wasmtime_wasi::p2::{IoView, WasiCtx, WasiView};
 
-use anyhow::Context;
-use bevy::prelude::*;
-use bevy_async_task::TaskPool;
-use wasmtime::{
-    AsContextMut, Store,
-    component::{Linker, ResourceAny, ResourceTable},
-};
-use wasmtime_wasi::p2::{IoView, WasiCtx, WasiCtxBuilder, WasiView};
-
-use crate::{
-    Script, WasmBinary, WasmEngine,
-    api::wired::ecs::WiredEcsData,
-    asset::Wasm,
-    execute::{RuntimeCtx, ScriptRuntime},
-};
+use crate::api::wired::ecs::WiredEcsData;
 
 pub struct StoreState {
     wasi: WasiCtx,

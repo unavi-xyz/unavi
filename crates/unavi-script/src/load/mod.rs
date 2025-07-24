@@ -5,11 +5,8 @@ use bevy::prelude::*;
 use bevy_async_task::TaskPool;
 use log::{ScriptStderr, ScriptStdout};
 use state::StoreState;
-use wasmtime::{
-    AsContextMut, Store,
-    component::{Linker, ResourceTable},
-};
-use wasmtime_wasi::p2::{IoView, WasiCtx, WasiCtxBuilder, WasiView};
+use wasmtime::{AsContextMut, Store, component::Linker};
+use wasmtime_wasi::p2::WasiCtxBuilder;
 
 use crate::{
     Script, WasmBinary, WasmEngine,

@@ -1,71 +1,72 @@
-use crate::{
-    Component, Query,
-    types::{Param, ParamData},
-};
+use crate::types::{Param as BParam, ParamData};
 
-pub trait Params {
-    fn from_param_data(data: Vec<ParamData>) -> Self;
-    fn register_params() -> Vec<Param>;
+pub trait Param {
+    fn parse_param(data: ParamData) -> Self;
+    fn register_param() -> BParam;
 }
 
-impl Params for () {
-    fn from_param_data(_: Vec<ParamData>) -> Self {}
-    fn register_params() -> Vec<Param> {
+pub trait ParamGroup {
+    fn parse_params(data: Vec<ParamData>) -> Self;
+    fn register_params() -> Vec<BParam>;
+}
+
+impl ParamGroup for () {
+    fn parse_params(_: Vec<ParamData>) -> Self {}
+    fn register_params() -> Vec<BParam> {
         Vec::new()
     }
 }
 
-impl<A> Params for (Query<A>,)
+impl<A> ParamGroup for (A,)
 where
-    A: Component,
+    A: Param,
 {
-    fn from_param_data(data: Vec<ParamData>) -> Self {
-        (Query::<A>::from_param_data(
-            data.into_iter().next().unwrap(),
-        ),)
+    fn parse_params(data: Vec<ParamData>) -> Self {
+        (A::parse_param(data.into_iter().next().unwrap()),)
     }
-    fn register_params() -> Vec<Param> {
-        vec![Param::Query(crate::types::Query {
-            components: vec![A::register()],
-            constraints: Vec::new(),
-        })]
+    fn register_params() -> Vec<BParam> {
+        vec![A::register_param()]
     }
 }
 
-impl<A, B> Params for (Query<A>, Query<B>)
+impl<A, B> ParamGroup for (A, B)
 where
-    A: Component,
-    B: Component,
+    A: Param,
+    B: Param,
 {
-    fn from_param_data(data: Vec<ParamData>) -> Self {
+    fn parse_params(data: Vec<ParamData>) -> Self {
         let mut iter = data.into_iter();
 
         (
-            Query::<A>::from_param_data(iter.next().unwrap()),
-            Query::<B>::from_param_data(iter.next().unwrap()),
+            A::parse_param(iter.next().unwrap()),
+            B::parse_param(iter.next().unwrap()),
         )
     }
-    fn register_params() -> Vec<Param> {
-        Vec::new()
+    fn register_params() -> Vec<BParam> {
+        vec![A::register_param(), B::register_param()]
     }
 }
 
-impl<A, B, C> Params for (Query<A>, Query<B>, Query<C>)
+impl<A, B, C> ParamGroup for (A, B, C)
 where
-    A: Component,
-    B: Component,
-    C: Component,
+    A: Param,
+    B: Param,
+    C: Param,
 {
-    fn from_param_data(data: Vec<ParamData>) -> Self {
+    fn parse_params(data: Vec<ParamData>) -> Self {
         let mut iter = data.into_iter();
 
         (
-            Query::<A>::from_param_data(iter.next().unwrap()),
-            Query::<B>::from_param_data(iter.next().unwrap()),
-            Query::<C>::from_param_data(iter.next().unwrap()),
+            A::parse_param(iter.next().unwrap()),
+            B::parse_param(iter.next().unwrap()),
+            C::parse_param(iter.next().unwrap()),
         )
     }
-    fn register_params() -> Vec<Param> {
-        Vec::new()
+    fn register_params() -> Vec<BParam> {
+        vec![
+            A::register_param(),
+            B::register_param(),
+            C::register_param(),
+        ]
     }
 }

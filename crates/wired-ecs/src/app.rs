@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::{
     host_api::register_system,
-    param::Params,
+    param::ParamGroup,
     system::{BlindSystem, IntoSystem, System, function_system::FunctionSystem},
     types::{ParamData, Schedule, SystemId},
 };
@@ -17,7 +17,7 @@ impl App {
     where
         F: IntoSystem<FunctionSystem<F, In>>,
         FunctionSystem<F, In>: System<In = In>,
-        In: Params + Send + Sync + 'static,
+        In: ParamGroup + Send + Sync + 'static,
     {
         let params = In::register_params();
         let id = register_system(&crate::types::System { schedule, params });

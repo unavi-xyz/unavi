@@ -1,4 +1,4 @@
-use crate::{param::Params, types::ParamData};
+use crate::{param::ParamGroup, types::ParamData};
 
 pub mod function_system;
 
@@ -15,10 +15,10 @@ pub trait BlindSystem {
 impl<S, In> BlindSystem for S
 where
     S: System<In = In>,
-    In: Params + 'static,
+    In: ParamGroup + 'static,
 {
     fn run_blind(&self, data: Vec<ParamData>) {
-        let a = In::from_param_data(data);
+        let a = In::parse_params(data);
         self.run(a)
     }
 }

@@ -7,10 +7,10 @@ use wasmtime::{AsContextMut, Store, component::ResourceAny};
 
 use crate::{
     WasmEngine,
-    api::wired::ecs::wired::ecs::types::Schedule,
+    api::wired::ecs::wired::ecs::types::{ComponentType, Primitive, Schedule},
     load::{
         Executing, LoadedScript,
-        bindings::Guest,
+        bindings::{Guest, wired::ecs::types::ParamData},
         log::{ScriptStderr, ScriptStdout},
         state::StoreState,
     },
@@ -140,7 +140,7 @@ pub fn execute_script_updates(
 
                     exec_schedule(&mut ctx.store, script, &guest, &schedule)
                         .await
-                        .with_context(|| format!("exec schedule {schedule:?}"))?;
+                        .with_context(|| format!("{schedule:?}"))?;
                 }
             }
 
@@ -199,15 +199,9 @@ async fn exec_system(
         anyhow::bail!("system {id} not found")
     };
 
-    let mut param_data = Vec::new();
+    let param_data = Vec::new();
 
-    for query in &sys.queries {
-        for p in &query.params {
-            let Some(param) = ecs.params.get(*p as usize) else {
-                anyhow::bail!("system {id} not found")
-            };
-        }
-    }
+    for param in sys.params.iter() {}
 
     guest
         .wired_ecs_guest_api()

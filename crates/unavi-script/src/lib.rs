@@ -30,6 +30,7 @@ impl Plugin for ScriptPlugin {
         app.register_asset_loader(asset::WasmLoader)
             .init_asset::<asset::Wasm>()
             .add_event::<event::LoadScriptAsset>()
+            .add_observer(commands::cleanup_vobjects)
             .add_systems(
                 FixedUpdate,
                 (

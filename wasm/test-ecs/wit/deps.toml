@@ -1,0 +1,2 @@
+wired-ecs  = "../../../protocol/wit/wired-ecs"
+wired-math = "../../../protocol/wit/wired-math"

@@ -1,0 +1,17 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "test-ecs"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wired-ecs.path        = "../../crates/wired-ecs"
+wit-bindgen.workspace = true

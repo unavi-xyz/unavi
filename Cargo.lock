@@ -6016,6 +6016,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-ecs"
+version = "0.0.10"
+dependencies = [
+ "wired-ecs",
+ "wit-bindgen",
+]
+
+[[package]]
 name = "test-log"
 version = "0.0.10"
 dependencies = [

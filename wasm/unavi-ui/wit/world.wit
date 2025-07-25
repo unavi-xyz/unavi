@@ -1,5 +1,5 @@
 package unavi:ui;
 
 world guest {
-  include wired:script/script;
+  include wired:ecs/guest;
 }

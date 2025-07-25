@@ -1,5 +1,5 @@
 package test:log;
 
 world guest {
-  include wired:prelude/script;
+  include wired:prelude/guest;
 }

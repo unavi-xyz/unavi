@@ -1,7 +1,16 @@
-use exports::wired::script::types::{Guest, GuestScript};
-use wired::scene::{mesh::Mesh, node::Node, scene::Scene};
+use exports::wired::ecs::guest_api::{Guest, GuestScript};
+use wired_ecs::{
+    App,
+    types::{ParamData, SystemId},
+};
 
-wit_bindgen::generate!({ generate_all });
+wit_bindgen::generate!({
+    generate_all,
+    additional_derives: [wired_ecs::Component],
+    with: {
+        "wired:ecs/types": wired_ecs::types,
+    },
+});
 
 struct World;
 
@@ -9,27 +18,19 @@ impl Guest for World {
     type Script = Script;
 }
 
-#[allow(dead_code)]
 struct Script {
-    scene: Scene,
+    app: App,
 }
 
 impl GuestScript for Script {
     fn new() -> Self {
-        let scene = Scene::new();
-
-        let node = Node::new();
-        scene.add_node(&node);
-
-        let mesh = Mesh::new();
-        node.set_mesh(Some(&mesh));
-
-        Self { scene }
+        let app = App::default();
+        Self { app }
     }
 
-    fn update(&self, _delta: f32) {}
-
-    fn render(&self, _delta: f32) {}
+    fn exec_system(&self, id: SystemId, data: Vec<ParamData>) {
+        self.app.exec_system(id, data);
+    }
 }
 
 export!(World);

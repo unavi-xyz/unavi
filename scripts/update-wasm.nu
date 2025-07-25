@@ -8,6 +8,7 @@ for dir in (ls $protocol_src | where type == "dir") {
 
   if ("deps.toml" | path exists) {
     print $"→ Updating (basename $dir.name)"
+    rm -r "deps";
     wit-deps -d deps -m deps.toml -l deps.lock update;
   }
 

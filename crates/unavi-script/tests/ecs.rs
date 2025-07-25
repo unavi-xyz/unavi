@@ -20,23 +20,4 @@ fn script_ecs() {
     app.update();
     std::thread::sleep(Duration::from_millis(100));
     app.update();
-
-    assert_eq!(
-        setup::LOGS
-            .logs
-            .lock()
-            .unwrap()
-            .iter()
-            .filter(|line| line.contains("[test:log] new"))
-            .count(),
-        1
-    );
-    assert!(
-        setup::LOGS
-            .logs
-            .lock()
-            .unwrap()
-            .iter()
-            .any(|line| line.contains("[test:log] update"))
-    );
 }

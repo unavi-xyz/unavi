@@ -218,7 +218,6 @@ async fn exec_system(
                             ComponentType::Primitive(p) => match p {
                                 Primitive::F32 => {
                                     let val = (i + 1) as f32;
-                                    info!("sending sys comp: {val}");
                                     ent_data.extend(bytemuck::bytes_of(&val).to_vec());
                                 }
                                 _ => todo!("primitive type unsupported"),

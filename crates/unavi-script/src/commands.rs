@@ -6,7 +6,7 @@ use bevy::{
 };
 use tokio::sync::mpsc::error::TryRecvError;
 
-use crate::load::ScriptCommands;
+use crate::load::{LoadedScript, ScriptCommands};
 
 pub enum WasmCommand {
     RegisterComponent { id: u64, key: String, size: usize },
@@ -54,7 +54,7 @@ pub fn process_commands(world: &mut World, mut commands: Local<Vec<(Entity, Wasm
     for (ent, cmd) in commands.drain(..) {
         match cmd {
             WasmCommand::RegisterComponent { id, key, size } => {
-                debug!("Registering component {id} ({key}):\n - size={size}");
+                info!("Registering component {id} ({key}): size={size}");
 
                 let layout = match Layout::array::<u8>(size) {
                     Ok(l) => l,
@@ -87,4 +87,10 @@ pub fn process_commands(world: &mut World, mut commands: Local<Vec<(Entity, Wasm
             WasmCommand::RegisterSystem { id } => {}
         }
     }
+}
+
+pub fn cleanup_vobjects(trigger: Trigger<OnRemove, LoadedScript>, mut commands: Commands) {
+    let ent = trigger.target();
+    info!("Cleaning up vobjects for {ent}");
+    commands.entity(ent).despawn_related::<VObjects>();
 }

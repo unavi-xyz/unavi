@@ -1,0 +1,6 @@
+package test:ecs;
+
+world guest {
+  include wired:ecs/guest;
+  include wired:math/prelude;
+}

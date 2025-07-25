@@ -1,5 +1,5 @@
 package unavi:system;
 
 world guest {
-  include wired:prelude/script;
+  include wired:prelude/guest;
 }

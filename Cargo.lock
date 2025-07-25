@@ -2787,6 +2787,7 @@ dependencies = [
 name = "example-shapes"
 version = "0.0.10"
 dependencies = [
+ "wired-ecs",
  "wit-bindgen",
 ]
 
@@ -6027,6 +6028,7 @@ dependencies = [
 name = "test-log"
 version = "0.0.10"
 dependencies = [
+ "wired-ecs",
  "wit-bindgen",
 ]
 
@@ -6034,6 +6036,7 @@ dependencies = [
 name = "test-stall"
 version = "0.0.10"
 dependencies = [
+ "wired-ecs",
  "wit-bindgen",
 ]
 
@@ -6403,6 +6406,7 @@ dependencies = [
 name = "unavi-system"
 version = "0.0.10"
 dependencies = [
+ "wired-ecs",
  "wit-bindgen",
 ]
 
@@ -6410,6 +6414,7 @@ dependencies = [
 name = "unavi-ui"
 version = "0.0.10"
 dependencies = [
+ "wired-ecs",
  "wit-bindgen",
 ]
 

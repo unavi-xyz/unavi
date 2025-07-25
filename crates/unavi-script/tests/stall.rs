@@ -29,7 +29,7 @@ fn script_stall() {
             .lock()
             .unwrap()
             .iter()
-            .filter(|line| line.contains("[test:stall] new"))
+            .filter(|line| line.contains("[test:stall] hello from startup"))
             .count(),
         1
     );
@@ -39,6 +39,6 @@ fn script_stall() {
             .lock()
             .unwrap()
             .iter()
-            .any(|line| line.contains("[test:stall] update"))
+            .any(|line| line.contains("[test:stall] hello from update"))
     );
 }

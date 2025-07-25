@@ -31,7 +31,7 @@ fn script_log() {
             .lock()
             .unwrap()
             .iter()
-            .filter(|line| line.contains("[test:log] new"))
+            .filter(|line| line.contains("[test:log] hello from startup"))
             .count(),
         1
     );
@@ -41,6 +41,6 @@ fn script_log() {
             .lock()
             .unwrap()
             .iter()
-            .any(|line| line.contains("[test:log] update"))
+            .any(|line| line.contains("[test:log] hello from update"))
     );
 }

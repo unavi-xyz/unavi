@@ -1,11 +1,7 @@
 package wired:prelude;
 
-world imports {
-  import wired:math/types;
+world guest {
+  include wired:ecs/guest;
+  include wired:math/prelude;
   include wired:scene/prelude;
-}
-
-world script {
-  include imports;
-  include wired:script/script;
 }

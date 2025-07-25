@@ -14,7 +14,8 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
     // Generate component types.
     let fields = match &input.data {
         Data::Struct(data) => &data.fields,
-        _ => panic!("#[derive(Component)] only supports structs"),
+        _ => return TokenStream::from(quote! {}),
+        // _ => panic!("#[derive(Component)] only supports structs"),
     };
 
     let field_component_types = fields.iter().map(|f| {

@@ -25,7 +25,6 @@ struct Script {
 
 impl GuestScript for Script {
     fn new() -> Self {
-        println!("new");
         let mut app = App::default();
         app.add_system(Schedule::Startup, startup_system);
         app.add_system(Schedule::Startup, point_system);
@@ -35,7 +34,6 @@ impl GuestScript for Script {
     }
 
     fn exec_system(&self, id: SystemId, data: Vec<ParamData>) {
-        println!("exec system {id}");
         self.app.exec_system(id, data);
     }
 }

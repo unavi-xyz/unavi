@@ -1,7 +1,7 @@
 use exports::wired::ecs::guest_api::{Guest, GuestScript};
 use wired::math::types::{Vec2, Vec3};
 use wired_ecs::{
-    App, Query,
+    App, Component, Query,
     types::{ParamData, Schedule, SystemId},
 };
 
@@ -40,10 +40,12 @@ impl GuestScript for Script {
         // let v2 = Vec3::from_bytes(&v_bytes);
         // println!("v: {v:?}\nv2: {v2:?}");
 
+        println!("{}", std::any::type_name::<MyPoint>());
+
         let mut app = App::default();
         app.add_system(Schedule::Startup, startup_system);
         app.add_system(Schedule::Startup, point_system);
-        app.add_system(Schedule::Startup, multi_system);
+        // app.add_system(Schedule::Startup, multi_system);
 
         Self { app }
     }
@@ -58,13 +60,13 @@ fn startup_system() {
     println!("running on startup!");
 }
 
-#[derive(Debug)]
+#[derive(Component, Clone, Copy, Debug)]
 struct MyPoint {
     x: f32,
     y: f32,
 }
 
-fn point_system(points: Query<Vec2>) {
+fn point_system(points: Query<MyPoint>) {
     println!("point system");
 
     for point in &points.items {

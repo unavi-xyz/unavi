@@ -7,10 +7,10 @@ use wasmtime::{AsContextMut, Store, component::ResourceAny};
 
 use crate::{
     WasmEngine,
-    api::wired::ecs::wired::ecs::types::{ComponentType, Primitive, Schedule},
+    api::wired::ecs::wired::ecs::types::{ComponentType, Param, ParamData, Primitive, Schedule},
     load::{
         Executing, LoadedScript,
-        bindings::{Guest, wired::ecs::types::ParamData},
+        bindings::Guest,
         log::{ScriptStderr, ScriptStdout},
         state::StoreState,
     },
@@ -129,7 +129,7 @@ pub fn execute_script_updates(
                     ctx.script = Some(script);
                 }
                 Some(script) => {
-                    let ecs = &mut ctx.store.data_mut().data.wired_ecs;
+                    let ecs = &mut ctx.store.data_mut().rt.wired_ecs;
 
                     let schedule = if ecs.initialized {
                         Schedule::Update
@@ -175,7 +175,7 @@ async fn exec_schedule(
     guest: &Guest,
     schedule: &Schedule,
 ) -> anyhow::Result<()> {
-    let Some(systems) = store.data().data.wired_ecs.schedules.get(schedule) else {
+    let Some(systems) = store.data().rt.wired_ecs.schedules.get(schedule) else {
         return Ok(());
     };
 
@@ -194,14 +194,45 @@ async fn exec_system(
     guest: &Guest,
     id: u64,
 ) -> anyhow::Result<()> {
-    let ecs = &store.data().data.wired_ecs;
+    let ecs = &store.data().rt.wired_ecs;
     let Some(sys) = ecs.systems.get(id as usize) else {
         anyhow::bail!("system {id} not found")
     };
 
-    let param_data = Vec::new();
+    let mut param_data = Vec::new();
 
-    for param in sys.params.iter() {}
+    for param in sys.params.iter() {
+        match param {
+            Param::Query(query) => {
+                let mut query_data = Vec::new();
+
+                let mut ent_data = Vec::new();
+
+                for c in &query.components {
+                    let Some(comp) = ecs.components.get(*c as usize) else {
+                        anyhow::bail!("system {id} not found")
+                    };
+
+                    for (i, ty) in comp.types.iter().enumerate() {
+                        match ty {
+                            ComponentType::Primitive(p) => match p {
+                                Primitive::F32 => {
+                                    let val = (i + 1) as f32;
+                                    info!("sending sys comp: {val}");
+                                    ent_data.extend(bytemuck::bytes_of(&val).to_vec());
+                                }
+                                _ => todo!("primitive type unsupported"),
+                            },
+                            _ => todo!("component type unsupported"),
+                        }
+                    }
+                }
+                query_data.push(ent_data);
+
+                param_data.push(ParamData::Query(query_data));
+            }
+        }
+    }
 
     guest
         .wired_ecs_guest_api()

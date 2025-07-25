@@ -10,12 +10,13 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace = true
-bevy             = { default-features = true, workspace = true }
-bevy_async_task  = "0.8.1"
-tokio.workspace  = true
-wasmtime         = "34.0.1"
-wasmtime-wasi    = { default-features = false, version = "34.0.1" }
+anyhow.workspace   = true
+bevy               = { default-features = true, workspace = true }
+bevy_async_task    = "0.8.1"
+bytemuck.workspace = true
+tokio.workspace    = true
+wasmtime           = "34.0.1"
+wasmtime-wasi      = { default-features = false, version = "34.0.1" }
 
 [dev-dependencies]
 tracing            = "0.1.41"

@@ -9,10 +9,13 @@ pub trait Component: Sized + 'static {
     fn component_types() -> Vec<ComponentType>;
 
     fn register() -> u64 {
-        register_component(&crate::types::Component {
+        match register_component(&crate::types::Component {
             key: Self::key(),
             types: Self::component_types(),
-        })
+        }) {
+            Ok(id) => id,
+            Err(e) => panic!("Failed to register component: {e}"),
+        }
     }
 
     fn byte_len() -> usize {

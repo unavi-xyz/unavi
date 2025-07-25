@@ -9,18 +9,18 @@ interface types {
   type system-id = u64;
 
   enum primitive {
-    boolean,
-    float32,
-    float64,
-    int8,
-    int16,
-    int32,
-    int64,
-    uint8,
-    uint16,
-    uint32,
-    uint64,
-    text,
+    %bool,
+    %f32,
+    %f64,
+    %i8,
+    %i16,
+    %i32,
+    %i64,
+    %u8,
+    %u16,
+    %u32,
+    %u64,
+    %string,
   }
 
   variant component-type {
@@ -91,10 +91,10 @@ interface host-api {
   ///
   /// If the component key has already been registered, the same id will be returned.
   /// This provides an interface for sharing ECS components across WASM components.
-  register-component: func(component: component) -> component-id;
+  register-component: func(component: component) -> result<component-id, string>;
 
   /// Registers a system, returning an id.
-  register-system: func(system: system) -> system-id;
+  register-system: func(system: system) -> result<system-id, string>;
 }
 
 interface guest-api {

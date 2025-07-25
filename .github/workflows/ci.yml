@@ -12,11 +12,11 @@ jobs:
         with:
           remove-android: true
           remove-cached-tools: true
-          remove-codeql: true
-          remove-docker-images: true
-          remove-dotnet: true
-          remove-haskell: true
-          remove-large-packages: true
+          # remove-codeql: true
+          # remove-docker-images: true
+          # remove-dotnet: true
+          # remove-haskell: true
+          # remove-large-packages: true
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}

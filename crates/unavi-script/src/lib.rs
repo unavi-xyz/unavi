@@ -47,16 +47,16 @@ impl Plugin for ScriptPlugin {
 }
 
 #[derive(Component)]
-#[require(EngineScripts)]
+#[require(Scripts)]
 pub struct WasmEngine(wasmtime::Engine);
 
 #[derive(Component, Default)]
-#[relationship_target(relationship = Script)]
-pub struct EngineScripts(Vec<Entity>);
+#[relationship_target(relationship = ScriptEngine)]
+pub struct Scripts(Vec<Entity>);
 
 #[derive(Component)]
-#[relationship(relationship_target = EngineScripts)]
-pub struct Script(pub Entity);
+#[relationship(relationship_target = Scripts)]
+pub struct ScriptEngine(pub Entity);
 
 #[derive(Component)]
 pub struct WasmBinary(pub Handle<asset::Wasm>);

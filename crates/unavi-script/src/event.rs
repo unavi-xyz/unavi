@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{Script, WasmBinary, WasmEngine};
+use crate::{ScriptEngine, WasmBinary, WasmEngine};
 
 /// Load a script from the assets folder.
 #[derive(Event)]
@@ -21,7 +21,7 @@ pub fn handle_loads(
             .expect("wasm engine should be spawned on startup");
         let bin = asset_server.load(format!("wasm/{namespace}/{package}.wasm"));
         commands.spawn((
-            Script(engine),
+            ScriptEngine(engine),
             WasmBinary(bin),
             Name::new(format!("{namespace}:{package}")),
         ));

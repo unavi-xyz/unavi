@@ -10,7 +10,7 @@ use wasmtime::{AsContextMut, Store, component::Linker};
 use wasmtime_wasi::p2::WasiCtxBuilder;
 
 use crate::{
-    Script, WasmBinary, WasmEngine,
+    ScriptEngine, WasmBinary, WasmEngine,
     asset::Wasm,
     commands::WasmCommand,
     execute::{RuntimeCtx, ScriptRuntime},
@@ -50,7 +50,7 @@ pub fn load_scripts(
     wasm_assets: Res<Assets<Wasm>>,
     engines: Query<&WasmEngine>,
     to_load: Query<
-        (Entity, &WasmBinary, &Script, Option<&Name>),
+        (Entity, &WasmBinary, &ScriptEngine, Option<&Name>),
         (Without<LoadingScript>, Without<LoadedScript>),
     >,
     mut pool: TaskPool<LoadResult>,

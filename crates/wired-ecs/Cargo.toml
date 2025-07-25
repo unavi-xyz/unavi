@@ -10,6 +10,6 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-bytemuck              = { features = ["derive"], version = "1.23.1" }
+bytemuck              = { workspace = true, features = ["derive"] }
 wired-ecs-derive.path = "../../crates/wired-ecs-derive"
 wit-bindgen.workspace = true

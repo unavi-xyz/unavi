@@ -20,7 +20,10 @@ impl App {
         In: ParamGroup + Send + Sync + 'static,
     {
         let params = In::register_params();
-        let id = register_system(&crate::types::System { schedule, params });
+        let id = match register_system(&crate::types::System { schedule, params }) {
+            Ok(id) => id,
+            Err(e) => panic!("Failed to register system: {e}"),
+        };
 
         let system = F::into_system(f);
         self.systems.insert(id, Box::new(system));

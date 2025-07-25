@@ -4,13 +4,15 @@ use anyhow::Context;
 use bevy::prelude::*;
 use bevy_async_task::TaskPool;
 use log::{ScriptStderr, ScriptStdout};
-use state::StoreState;
+use state::{RuntimeData, RuntimeDataResult, StoreState};
+use tokio::sync::mpsc::Receiver;
 use wasmtime::{AsContextMut, Store, component::Linker};
 use wasmtime_wasi::p2::WasiCtxBuilder;
 
 use crate::{
     Script, WasmBinary, WasmEngine,
     asset::Wasm,
+    commands::WasmCommand,
     execute::{RuntimeCtx, ScriptRuntime},
 };
 
@@ -22,6 +24,9 @@ pub mod bindings {
         world: "guest",
         path: "../../protocol/wit/wired-ecs",
         async: true,
+        with: {
+            "wired:ecs/types": crate::api::wired::ecs::wired::ecs::types,
+        },
     });
 }
 
@@ -36,6 +41,9 @@ pub struct LoadedScript(pub Arc<bindings::Guest>);
 
 #[derive(Component, Default, Deref, DerefMut)]
 pub struct Executing(bool);
+
+#[derive(Component)]
+pub struct ScriptCommands(pub Receiver<WasmCommand>);
 
 pub fn load_scripts(
     mut commands: Commands,
@@ -69,7 +77,11 @@ pub fn load_scripts(
             .stdout(stdout_stream)
             .stderr(stderr_stream)
             .build();
-        let state = StoreState::new(wasi);
+
+        let RuntimeDataResult { rt, commands_recv } = RuntimeData::spawn();
+
+        let state = StoreState::new(wasi, rt);
+
         let mut store = Store::new(&engine.0, state);
         store.epoch_deadline_async_yield_and_update(1);
 
@@ -77,7 +89,9 @@ pub fn load_scripts(
 
         let rt = ScriptRuntime::new(store, stdout, stderr);
         let ctx = rt.ctx.clone();
-        commands.entity(ent).insert((LoadingScript, rt));
+        commands
+            .entity(ent)
+            .insert((LoadingScript, rt, ScriptCommands(commands_recv)));
 
         pool.spawn(async move {
             let mut ctx = ctx.lock().await;

@@ -3,6 +3,7 @@ use wasmtime::Config;
 
 mod api;
 mod asset;
+mod commands;
 mod event;
 mod execute;
 mod load;
@@ -33,9 +34,13 @@ impl Plugin for ScriptPlugin {
                 FixedUpdate,
                 (
                     event::handle_loads,
-                    execute::increment_epochs,
-                    execute::execute_script_updates,
                     load::load_scripts,
+                    (
+                        execute::increment_epochs,
+                        execute::execute_script_updates,
+                        commands::process_commands,
+                    )
+                        .chain(),
                 ),
             );
     }

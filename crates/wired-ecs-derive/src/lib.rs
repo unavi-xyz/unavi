@@ -24,18 +24,18 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
             {
                 use wired_ecs::types::{ComponentType, Primitive};
                 match std::any::type_name::<#ty>() {
-                    "bool" => ComponentType::Primitive(Primitive::Boolean),
-                    "f32" => ComponentType::Primitive(Primitive::Float32),
-                    "f64" => ComponentType::Primitive(Primitive::Float64),
-                    "i8"  => ComponentType::Primitive(Primitive::Int8),
-                    "i16" => ComponentType::Primitive(Primitive::Int16),
-                    "i32" => ComponentType::Primitive(Primitive::Int32),
-                    "i64" => ComponentType::Primitive(Primitive::Int64),
-                    "u8"  => ComponentType::Primitive(Primitive::Uint8),
-                    "u16" => ComponentType::Primitive(Primitive::Uint16),
-                    "u32" => ComponentType::Primitive(Primitive::Uint32),
-                    "u64" => ComponentType::Primitive(Primitive::Uint64),
-                    "&str" | "alloc::string::String" => ComponentType::Primitive(Primitive::Text),
+                    "bool" => ComponentType::Primitive(Primitive::Bool),
+                    "f32" => ComponentType::Primitive(Primitive::F32),
+                    "f64" => ComponentType::Primitive(Primitive::F64),
+                    "i8"  => ComponentType::Primitive(Primitive::I8),
+                    "i16" => ComponentType::Primitive(Primitive::I16),
+                    "i32" => ComponentType::Primitive(Primitive::I32),
+                    "i64" => ComponentType::Primitive(Primitive::I64),
+                    "u8"  => ComponentType::Primitive(Primitive::U8),
+                    "u16" => ComponentType::Primitive(Primitive::U16),
+                    "u32" => ComponentType::Primitive(Primitive::U32),
+                    "u64" => ComponentType::Primitive(Primitive::U64),
+                    "&str" | "alloc::string::String" => ComponentType::Primitive(Primitive::String),
                     other => panic!("Unsupported primitive type in #[derive(Component)]: {}", other),
                 }
             }

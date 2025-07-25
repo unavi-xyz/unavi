@@ -31,9 +31,11 @@ struct VComponent {
 
 const MAX_THROUGHPUT: usize = 400;
 
-pub fn process_commands(world: &mut World, mut commands: Local<Vec<(Entity, WasmCommand)>>) {
-    let mut scripts = world.query::<(Entity, &mut ScriptCommands)>();
-
+pub fn process_commands(
+    world: &mut World,
+    mut scripts: Local<QueryState<(Entity, &mut ScriptCommands)>>,
+    mut commands: Local<Vec<(Entity, WasmCommand)>>,
+) {
     for (ent, mut recv) in scripts.iter_mut(world) {
         loop {
             if commands.len() >= MAX_THROUGHPUT {

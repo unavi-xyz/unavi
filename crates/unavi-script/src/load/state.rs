@@ -21,11 +21,9 @@ impl RuntimeData {
         RuntimeDataResult {
             rt: RuntimeData {
                 wired_ecs: WiredEcsData {
-                    initialized: false,
+                    commands: commands_send,
                     components: Default::default(),
                     systems: Default::default(),
-                    schedules: Default::default(),
-                    commands: commands_send,
                 },
             },
             commands_recv,

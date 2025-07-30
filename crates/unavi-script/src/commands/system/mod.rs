@@ -1,7 +1,11 @@
-use std::{sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use anyhow::{Context, bail};
 use bevy::{
+    ecs::{
+        component::ComponentId, query::ComponentAccessKind, system::QueryParamBuilder,
+        world::FilteredEntityRef,
+    },
     prelude::*,
     tasks::{AsyncComputeTaskPool, Task, block_on, poll_once},
 };
@@ -9,14 +13,19 @@ use tracing::Instrument;
 use wasmtime::{AsContextMut, Store, component::ResourceAny};
 
 use crate::{
-    api::wired::ecs::wired::ecs::types::{ComponentType, Param, ParamData, Primitive},
+    api::wired::ecs::wired::ecs::types::{Param, ParamData},
     load::{
         LoadedScript,
-        bindings::{Guest, wired::ecs::types::Schedule as BSchedule},
+        bindings::{
+            Guest,
+            wired::ecs::types::{Constraint, Schedule as WSchedule, System as WSystem},
+        },
         log::{ScriptStderr, ScriptStdout},
         state::StoreState,
     },
 };
+
+use super::{VComponent, VOwner};
 
 mod log;
 
@@ -63,8 +72,138 @@ impl ScriptRuntime {
     }
 }
 
-pub fn build_system(world: &mut World, entity: Entity, id: u64, schedule: BSchedule) {
-    let f = move |time: Res<Time>,
+pub fn build_system(
+    world: &mut World,
+    entity: Entity,
+    id: u64,
+    system: WSystem,
+) -> anyhow::Result<()> {
+    let mut queries = Vec::new();
+    let mut component_lens = HashMap::new();
+
+    for param in system.params {
+        match param {
+            Param::Query(q) => {
+                let mut vcomp_query = world.query::<(&VOwner, &VComponent)>();
+
+                let mut find_component = |wasm_id: u64| -> Option<ComponentId> {
+                    vcomp_query.iter(&world).find_map(|(owner, vcomp)| {
+                        if owner.0 == entity && vcomp.wasm_id == wasm_id {
+                            Some(vcomp.bevy_id)
+                        } else {
+                            None
+                        }
+                    })
+                };
+
+                let mut components = Vec::new();
+                let mut with = Vec::new();
+                let mut without = Vec::new();
+
+                for wasm_id in q.components {
+                    let Some(found) = find_component(wasm_id) else {
+                        bail!("Query::components virtual component not found");
+                    };
+
+                    components.push(found);
+                }
+
+                for constraint in q.constraints {
+                    match constraint {
+                        Constraint::WithComponent(wasm_id) => {
+                            let Some(found) = find_component(wasm_id) else {
+                                bail!("Query::with virtual component not found");
+                            };
+
+                            with.push(found);
+                        }
+                        Constraint::WithoutComponent(wasm_id) => {
+                            let Some(found) = find_component(wasm_id) else {
+                                bail!("Query::without virtual component not found");
+                            };
+
+                            without.push(found);
+                        }
+                    }
+                }
+
+                for id in components.iter().chain(with.iter()).chain(without.iter()) {
+                    if component_lens.contains_key(id) {
+                        continue;
+                    }
+                    let Some(info) = world.components().get_info(*id) else {
+                        bail!("component info not found")
+                    };
+                    let byte_len = info.layout().size() / size_of::<u8>();
+                    component_lens.insert(*id, byte_len);
+                }
+
+                let builder = QueryParamBuilder::new_box(|builder| {
+                    for id in components {
+                        builder.ref_id(id);
+                    }
+                    for id in with {
+                        builder.with_id(id);
+                    }
+                    for id in without {
+                        builder.without_id(id);
+                    }
+                });
+
+                queries.push(builder);
+            }
+        }
+    }
+
+    let f_input = (queries,).build_state(world).build_system(
+        move |queries: Vec<Query<FilteredEntityRef>>| -> Vec<ParamData> {
+            let mut out = Vec::new();
+
+            for query in queries {
+                let mut query_data = Vec::new();
+
+                for ent in query {
+                    let mut ent_data = Vec::new();
+
+                    for access in ent
+                        .access()
+                        .try_iter_component_access()
+                        .expect("unbounded access")
+                    {
+                        match access {
+                            ComponentAccessKind::Shared(id) => {
+                                let ptr = ent.get_by_id(id).unwrap();
+                                let byte_len = component_lens.get(&id).copied().unwrap();
+
+                                // SAFETY:
+                                // - All virtual components are created with layout [u8]
+                                // - len is calculated from the component descriptor
+                                let data = unsafe {
+                                    std::slice::from_raw_parts(
+                                        ptr.assert_unique().as_ptr().cast::<u8>(),
+                                        byte_len,
+                                    )
+                                };
+
+                                ent_data.extend(&data[0..byte_len]);
+                            }
+                            ComponentAccessKind::Exclusive(_id) => {}
+                            ComponentAccessKind::Archetypal(_id) => {}
+                        }
+                    }
+
+                    query_data.push(ent_data)
+                }
+
+                out.push(ParamData::Query(query_data));
+            }
+
+            out
+        },
+    );
+
+    let f = move |input: In<Vec<ParamData>>,
+                  time: Res<Time>,
                   scripts: Query<(&LoadedScript, &ScriptRuntime, Option<&Name>)>,
                   mut started: Local<bool>,
                   mut executing: Local<Option<Task<anyhow::Result<()>>>>| {
@@ -89,11 +228,11 @@ pub fn build_system(world: &mut World, entity: Entity, id: u64, schedule: BSched
         if !*started {
             *started = true;
 
-            if schedule == BSchedule::Update {
+            if system.schedule == WSchedule::Update {
                 // Startup has not yet run.
                 return;
             }
-        } else if schedule == BSchedule::Startup {
+        } else if system.schedule == WSchedule::Startup {
             // Startup already ran.
             return;
         }
@@ -106,7 +245,7 @@ pub fn build_system(world: &mut World, entity: Entity, id: u64, schedule: BSched
         let elapsed = time.elapsed();
         let guest = loaded.0.clone();
 
-        info!("Spawning system task: {id} ({schedule:?})");
+        info!("Spawning system task: {id} ({:?})", system.schedule);
 
         let pool = AsyncComputeTaskPool::get();
         let task = pool.spawn(
@@ -121,7 +260,7 @@ pub fn build_system(world: &mut World, entity: Entity, id: u64, schedule: BSched
                     bail!("Script resource not found")
                 };
 
-                exec_system(&mut ctx.store, script, &guest, id)
+                exec_system(&mut ctx.store, script, &guest, id, &input)
                     .await
                     .with_context(|| format!("exec {id}"))?;
 
@@ -135,14 +274,16 @@ pub fn build_system(world: &mut World, entity: Entity, id: u64, schedule: BSched
         *executing = Some(task);
     };
 
-    match schedule {
-        BSchedule::Render => world.schedule_scope(Update, |_, s| {
-            s.add_systems(f);
+    match system.schedule {
+        WSchedule::Render => world.schedule_scope(Update, |_, s| {
+            s.add_systems(f_input.pipe(f));
         }),
-        BSchedule::Startup | BSchedule::Update => world.schedule_scope(FixedUpdate, |_, s| {
-            s.add_systems(f);
+        WSchedule::Startup | WSchedule::Update => world.schedule_scope(FixedUpdate, |_, s| {
+            s.add_systems(f_input.pipe(f));
         }),
     };
+
+    Ok(())
 }
 
 async fn exec_system(
@@ -150,50 +291,12 @@ async fn exec_system(
     script: ResourceAny,
     guest: &Guest,
     id: u64,
+    params: &[ParamData],
 ) -> anyhow::Result<()> {
-    let ecs = &store.data().rt.wired_ecs;
-    let Some(sys) = ecs.systems.get(id as usize) else {
-        bail!("system {id} not found")
-    };
-
-    let mut param_data = Vec::new();
-
-    for param in sys.params.iter() {
-        match param {
-            Param::Query(query) => {
-                let mut query_data = Vec::new();
-
-                let mut ent_data = Vec::new();
-
-                for c in &query.components {
-                    let Some(comp) = ecs.components.get(*c as usize) else {
-                        bail!("system {id} not found")
-                    };
-
-                    for (i, ty) in comp.types.iter().enumerate() {
-                        match ty {
-                            ComponentType::Primitive(p) => match p {
-                                Primitive::F32 => {
-                                    let val = (i + 1) as f32;
-                                    ent_data.extend(bytemuck::bytes_of(&val).to_vec());
-                                }
-                                _ => todo!("primitive type unsupported"),
-                            },
-                            _ => todo!("component type unsupported"),
-                        }
-                    }
-                }
-                query_data.push(ent_data);
-
-                param_data.push(ParamData::Query(query_data));
-            }
-        }
-    }
-
     guest
         .wired_ecs_guest_api()
         .script()
-        .call_exec_system(store.as_context_mut(), script, id, &param_data)
+        .call_exec_system(store.as_context_mut(), script, id, params)
         .await?;
 
     Ok(())

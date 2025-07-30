@@ -1,10 +1,6 @@
-use std::collections::HashMap;
-
 use tokio::sync::mpsc::Sender;
 use wasmtime::component::HasData;
-use wired::ecs::types::{
-    Component, ComponentId, ComponentType, Primitive, Schedule, System, SystemId,
-};
+use wired::ecs::types::{Component, ComponentId, ComponentType, Primitive, System, SystemId};
 
 use crate::commands::WasmCommand;
 
@@ -22,13 +18,9 @@ impl HasData for HasWiredEcsData {
 }
 
 pub struct WiredEcsData {
-    pub initialized: bool,
-
+    pub commands: Sender<WasmCommand>,
     pub components: Vec<Component>,
     pub systems: Vec<System>,
-    pub schedules: HashMap<Schedule, Vec<SystemId>>,
-
-    pub commands: Sender<WasmCommand>,
 }
 
 const MAX_COMPONENTS: usize = 1_000;
@@ -93,11 +85,10 @@ impl wired::ecs::host_api::Host for WiredEcsData {
         self.commands
             .send(WasmCommand::RegisterSystem {
                 id,
-                schedule: system.schedule,
+                system: system.clone(),
             })
             .await
             .map_err(|e| format!("Error sending command: {e}"))?;
-        self.schedules.entry(system.schedule).or_default().push(id);
         self.systems.push(system);
         Ok(id)
     }

@@ -37,8 +37,8 @@ interface types {
   }
 
   variant constraint {
-    with-component(list<component-id>),
-    without-component(list<component-id>),
+    with-component(component-id),
+    without-component(component-id),
   }
 
   /// A view into ECS data.

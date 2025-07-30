@@ -11,14 +11,14 @@ use tokio::sync::mpsc::error::TryRecvError;
 
 use crate::{
     execute::init::InitializedScript,
-    load::{LoadedScript, ScriptCommands, bindings::wired::ecs::types::Schedule as BSchedule},
+    load::{LoadedScript, ScriptCommands, bindings::wired::ecs::types::System as WSystem},
 };
 
 pub(crate) mod system;
 
 pub enum WasmCommand {
     RegisterComponent { id: u64, key: String, size: usize },
-    RegisterSystem { id: u64, schedule: BSchedule },
+    RegisterSystem { id: u64, system: WSystem },
 }
 
 /// "Virtual" objects owned by a script.
@@ -73,8 +73,9 @@ pub fn process_commands(
     for (entity, cmd) in commands.drain(..) {
         match cmd {
             WasmCommand::RegisterComponent { id, key, size } => {
-                info!("Registering component {id} ({key}): size={size}");
+                info!("Registering component {id} ({key}): size={size}b");
 
+                // TODO: rename size -> byte_len
                 let layout = match Layout::array::<u8>(size) {
                     Ok(l) => l,
                     Err(e) => {
@@ -103,10 +104,12 @@ pub fn process_commands(
                     },
                 ));
             }
-            WasmCommand::RegisterSystem { id, schedule } => {
-                info!("Registering system {id} with {schedule:?}");
+            WasmCommand::RegisterSystem { id, system } => {
+                info!("Registering system {id} with {:?}", system.schedule);
 
-                system::build_system(world, entity, id, schedule);
+                if let Err(e) = system::build_system(world, entity, id, system) {
+                    error!("Error building system {id}: {e:?}");
+                };
 
                 // world.spawn((
                 //     VOwner(ent),

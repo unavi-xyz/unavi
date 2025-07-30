@@ -3,11 +3,6 @@ use std::{borrow::Cow, future::poll_fn, pin::Pin, task::Poll};
 use bevy::prelude::*;
 use tokio::io::{AsyncRead, DuplexStream, ReadBuf};
 
-pub enum Log {
-    Stdout(String),
-    Stderr(String),
-}
-
 pub async fn try_read_text_stream<'a>(
     buf: &'a mut [u8],
     stream: &mut DuplexStream,

@@ -1,7 +1,7 @@
 [wired-ecs]
 path = "../../../protocol/wit/wired-ecs"
-sha256 = "6cfba57f9ba6d358b99ebd46d2d19e6ee2bb682bb03b49619f08329d85c407f1"
-sha512 = "b20eba90213814f29e87c2ea1d047f3543416955a697f073d95312bf1941ceaf3ecca0e6764a2f63fbb60a3496eeeeab311d66e8b0a6976922b79461a5bbdcb1"
+sha256 = "b7c710d8f7ebd7bc2f392425b524a635b1d05809cd7f09d3bf550aef3d2b69fd"
+sha512 = "532020b2c113aaef53038f5dacf3dc98df405e1ab42fa3d9b98801af035846d47a95381fcd2b228bad727d73bf636a1feb5f6f6ac34ff9d2d4c86bd457e25bcc"
 
 [wired-math]
 path = "../../../protocol/wit/wired-math"

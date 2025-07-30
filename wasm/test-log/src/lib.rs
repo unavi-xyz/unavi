@@ -25,9 +25,8 @@ struct Script {
 impl GuestScript for Script {
     fn new() -> Self {
         let mut app = App::default();
-        app.add_system(Schedule::Startup, on_startup);
-        app.add_system(Schedule::Update, on_update);
-
+        app.add_system(Schedule::Startup, on_startup)
+            .add_system(Schedule::Update, on_update);
         Self { app }
     }
 

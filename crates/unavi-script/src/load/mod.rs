@@ -12,8 +12,10 @@ use wasmtime_wasi::p2::WasiCtxBuilder;
 use crate::{
     ScriptEngine, WasmBinary, WasmEngine,
     asset::Wasm,
-    commands::WasmCommand,
-    execute::{RuntimeCtx, ScriptRuntime},
+    commands::{
+        WasmCommand,
+        system::{RuntimeCtx, ScriptRuntime},
+    },
 };
 
 pub(crate) mod log;
@@ -69,7 +71,7 @@ pub fn load_scripts(
         let name = name
             .map(|n| n.to_string())
             .unwrap_or_else(|| "unknown".to_string());
-        info!("Loading script {name}: size={}", wasm.0.len());
+        info!("Instantiating script {name}");
 
         let (stdout, stdout_stream) = ScriptStdout::new();
         let (stderr, stderr_stream) = ScriptStderr::new();
@@ -111,7 +113,7 @@ pub fn load_scripts(
                     .insert(LoadedScript(Arc::new(script)));
             }
             Poll::Ready(Err(e)) => {
-                error!("Error loading script: {e:?}");
+                error!("Error instantiating script component: {e:?}");
             }
             _ => {}
         }

@@ -1,4 +1,4 @@
-use std::time::Duration;
+use setup::{construct_script, logs::LOGS, tick_app};
 
 mod setup;
 
@@ -6,41 +6,32 @@ mod setup;
 fn script_log() {
     let mut app = setup::setup_test_app("log");
 
-    // Load script asset.
-    app.update();
-    std::thread::sleep(Duration::from_millis(200));
+    construct_script(&mut app);
 
-    // Instantiate script wasm.
-    app.update();
-    std::thread::sleep(Duration::from_millis(200));
-
-    // Execute script constructor.
-    app.update();
-    std::thread::sleep(Duration::from_millis(100));
+    // Execute script startup.
+    tick_app(&mut app);
+    assert_eq!(n_startup_logs(), 1);
+    assert!(!has_update_log());
 
     // Execute script update.
-    app.update();
-    std::thread::sleep(Duration::from_millis(100));
+    tick_app(&mut app);
+    assert_eq!(n_startup_logs(), 1);
+    assert!(has_update_log());
+}
 
-    // Flush logs.
-    app.update();
+fn n_startup_logs() -> usize {
+    LOGS.logs
+        .lock()
+        .unwrap()
+        .iter()
+        .filter(|line| line.contains("test:log") && line.contains("hello from startup"))
+        .count()
+}
 
-    assert_eq!(
-        setup::LOGS
-            .logs
-            .lock()
-            .unwrap()
-            .iter()
-            .filter(|line| line.contains("[test:log] hello from startup"))
-            .count(),
-        1
-    );
-    assert!(
-        setup::LOGS
-            .logs
-            .lock()
-            .unwrap()
-            .iter()
-            .any(|line| line.contains("[test:log] hello from update"))
-    );
+fn has_update_log() -> bool {
+    LOGS.logs
+        .lock()
+        .unwrap()
+        .iter()
+        .any(|line| line.contains("test:log") && line.contains("hello from update"))
 }

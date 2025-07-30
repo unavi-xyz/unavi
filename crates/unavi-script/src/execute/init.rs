@@ -1,0 +1,91 @@
+use std::time::Duration;
+
+use anyhow::Context;
+use bevy::{
+    prelude::*,
+    tasks::{AsyncComputeTaskPool, Task, block_on, poll_once},
+};
+use wasmtime::AsContextMut;
+
+use crate::{commands::system::ScriptRuntime, load::LoadedScript};
+
+#[derive(Component)]
+pub struct InitializedScript;
+
+#[derive(Component)]
+pub struct InitializingScript {
+    started: Duration,
+    task: Task<anyhow::Result<()>>,
+}
+
+const MAX_INIT_DURATION: Duration = Duration::from_secs(60);
+
+pub fn begin_init_scripts(
+    mut commands: Commands,
+    time: Res<Time>,
+    to_init: Query<
+        (Entity, &LoadedScript, &ScriptRuntime, Option<&Name>),
+        (Without<InitializedScript>, Added<LoadedScript>),
+    >,
+) {
+    for (entity, loaded, rt, name) in to_init {
+        let ctx = rt.ctx.clone();
+        let guest = loaded.0.clone();
+        let name = name
+            .map(|n| n.to_string())
+            .unwrap_or_else(|| "unknown".to_string());
+        let name2 = name.clone();
+
+        let pool = AsyncComputeTaskPool::get();
+
+        let task = pool.spawn(async move {
+            let mut ctx = ctx.lock().await;
+            ctx.store.set_epoch_deadline(1);
+
+            let script = guest
+                .wired_ecs_guest_api()
+                .script()
+                .call_constructor(ctx.store.as_context_mut())
+                .await
+                .with_context(|| format!("construct script: {name2}"))?;
+            ctx.script = Some(script);
+
+            Ok(())
+        });
+
+        info!("Initializing script {name}");
+
+        commands.entity(entity).insert(InitializingScript {
+            task,
+            started: time.elapsed(),
+        });
+    }
+}
+
+pub fn end_init_scripts(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut initializing: Query<(Entity, &mut InitializingScript)>,
+) {
+    for (entity, mut init) in initializing.iter_mut() {
+        if time.elapsed() - init.started > MAX_INIT_DURATION {
+            warn!("Script init took too long");
+            commands.entity(entity).remove::<InitializingScript>();
+            continue;
+        }
+
+        match block_on(poll_once(&mut init.task)) {
+            Some(Ok(_)) => {
+                commands
+                    .entity(entity)
+                    .remove::<InitializingScript>()
+                    .insert(InitializedScript);
+            }
+            Some(Err(e)) => {
+                error!("Script init error: {e:?}");
+                commands.entity(entity).remove::<InitializingScript>();
+            }
+            None => continue,
+        }
+    }
+}

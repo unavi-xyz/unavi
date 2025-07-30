@@ -15,9 +15,9 @@ bevy               = { default-features = true, workspace = true }
 bevy_async_task    = "0.8.1"
 bytemuck.workspace = true
 tokio.workspace    = true
+tracing            = "0.1.41"
 wasmtime           = "35.0.0"
 wasmtime-wasi      = { default-features = false, version = "35.0.0" }
 
 [dev-dependencies]
-tracing            = "0.1.41"
 tracing-subscriber = "0.3.19"

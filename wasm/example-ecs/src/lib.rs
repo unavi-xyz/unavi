@@ -25,8 +25,6 @@ struct Script {
 
 impl GuestScript for Script {
     fn new() -> Self {
-        println!("new");
-
         // let k = Vec3::param_key();
         // let t = Vec3::param_type();
         // println!("vec3:\n{k}\n{t:?}");
@@ -40,24 +38,23 @@ impl GuestScript for Script {
         // let v2 = Vec3::from_bytes(&v_bytes);
         // println!("v: {v:?}\nv2: {v2:?}");
 
-        println!("{}", std::any::type_name::<MyPoint>());
+        // println!("{}", std::any::type_name::<MyPoint>());
 
         let mut app = App::default();
         app.add_system(Schedule::Startup, startup_system);
-        app.add_system(Schedule::Startup, point_system);
+        app.add_system(Schedule::Update, point_system);
         // app.add_system(Schedule::Startup, multi_system);
 
         Self { app }
     }
 
     fn exec_system(&self, id: SystemId, data: Vec<ParamData>) {
-        println!("exec system {id}");
         self.app.exec_system(id, data);
     }
 }
 
 fn startup_system() {
-    println!("running on startup!");
+    println!("hello from startup");
 }
 
 #[derive(Component, Clone, Copy, Debug)]
@@ -67,7 +64,7 @@ struct MyPoint {
 }
 
 fn point_system(points: Query<MyPoint>) {
-    println!("point system");
+    println!("hello from point system");
 
     for point in &points.items {
         println!("point: {point:?}");

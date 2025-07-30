@@ -13,7 +13,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn add_system<F, In>(&mut self, schedule: Schedule, f: F)
+    pub fn add_system<F, In>(&mut self, schedule: Schedule, f: F) -> &mut Self
     where
         F: IntoSystem<FunctionSystem<F, In>>,
         FunctionSystem<F, In>: System<In = In>,
@@ -27,6 +27,7 @@ impl App {
 
         let system = F::into_system(f);
         self.systems.insert(id, Box::new(system));
+        self
     }
 
     pub fn exec_system(&self, id: u64, data: Vec<ParamData>) {

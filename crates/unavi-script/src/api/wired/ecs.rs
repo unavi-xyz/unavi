@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use bevy::prelude::info;
 use tokio::sync::mpsc::Sender;
 use wasmtime::component::HasData;
 use wired::ecs::types::{
@@ -55,7 +54,6 @@ impl wired::ecs::host_api::Host for WiredEcsData {
             }
 
             let id = self.components.len() as u64;
-            info!("Registering component {id}: {}", component.key);
 
             if self.components.len() >= MAX_COMPONENTS {
                 return Err("Max component count reached".to_string());
@@ -84,7 +82,6 @@ impl wired::ecs::host_api::Host for WiredEcsData {
 
     async fn register_system(&mut self, system: System) -> Result<SystemId, String> {
         let id = self.systems.len() as u64;
-        info!("Registering system {id}");
 
         if self.systems.len() >= MAX_SYSTEMS {
             return Err("Max system count reached".to_string());
@@ -94,7 +91,10 @@ impl wired::ecs::host_api::Host for WiredEcsData {
         }
 
         self.commands
-            .send(WasmCommand::RegisterSystem { id })
+            .send(WasmCommand::RegisterSystem {
+                id,
+                schedule: system.schedule,
+            })
             .await
             .map_err(|e| format!("Error sending command: {e}"))?;
         self.schedules.entry(system.schedule).or_default().push(id);

@@ -31,19 +31,18 @@ impl Plugin for ScriptPlugin {
             .init_asset::<asset::Wasm>()
             .add_event::<event::LoadScriptAsset>()
             .add_observer(commands::cleanup_vobjects)
+            .add_systems(PreUpdate, execute::increment_epochs)
             .add_systems(
                 FixedUpdate,
                 (
-                    event::handle_loads,
+                    event::handle_load_events,
+                    execute::init::begin_init_scripts,
+                    execute::init::end_init_scripts,
                     load::load_scripts,
-                    (
-                        execute::increment_epochs,
-                        execute::execute_script_updates,
-                        commands::process_commands,
-                    )
-                        .chain(),
                 ),
-            );
+            )
+            .add_systems(FixedPostUpdate, commands::process_commands)
+            .add_systems(PostUpdate, commands::process_commands);
     }
 }
 

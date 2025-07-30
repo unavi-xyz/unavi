@@ -1,16 +1,24 @@
 use std::alloc::Layout;
 
 use bevy::{
-    ecs::component::{ComponentCloneBehavior, ComponentDescriptor, ComponentId, StorageType},
+    ecs::{
+        component::{ComponentCloneBehavior, ComponentDescriptor, ComponentId, StorageType},
+        system::SystemId,
+    },
     prelude::*,
 };
 use tokio::sync::mpsc::error::TryRecvError;
 
-use crate::load::{LoadedScript, ScriptCommands};
+use crate::{
+    execute::init::InitializedScript,
+    load::{LoadedScript, ScriptCommands, bindings::wired::ecs::types::Schedule as BSchedule},
+};
+
+pub(crate) mod system;
 
 pub enum WasmCommand {
     RegisterComponent { id: u64, key: String, size: usize },
-    RegisterSystem { id: u64 },
+    RegisterSystem { id: u64, schedule: BSchedule },
 }
 
 /// "Virtual" objects owned by a script.
@@ -29,14 +37,23 @@ struct VComponent {
     wasm_id: u64,
 }
 
+#[derive(Component)]
+struct VSystem {
+    bevy_id: SystemId,
+    wasm_id: u64,
+}
+
 const MAX_THROUGHPUT: usize = 400;
+
+// TODO: process commands immuediately after system execution
+// use deferred bevy commands?
 
 pub fn process_commands(
     world: &mut World,
-    mut scripts: Local<QueryState<(Entity, &mut ScriptCommands)>>,
+    mut script_commands: Local<QueryState<(Entity, &mut ScriptCommands), With<InitializedScript>>>,
     mut commands: Local<Vec<(Entity, WasmCommand)>>,
 ) {
-    for (ent, mut recv) in scripts.iter_mut(world) {
+    for (ent, mut recv) in script_commands.iter_mut(world) {
         loop {
             if commands.len() >= MAX_THROUGHPUT {
                 break;
@@ -53,7 +70,7 @@ pub fn process_commands(
         }
     }
 
-    for (ent, cmd) in commands.drain(..) {
+    for (entity, cmd) in commands.drain(..) {
         match cmd {
             WasmCommand::RegisterComponent { id, key, size } => {
                 info!("Registering component {id} ({key}): size={size}");
@@ -79,14 +96,27 @@ pub fn process_commands(
                 });
 
                 world.spawn((
-                    VOwner(ent),
+                    VOwner(entity),
                     VComponent {
                         bevy_id,
                         wasm_id: id,
                     },
                 ));
             }
-            WasmCommand::RegisterSystem { id } => {}
+            WasmCommand::RegisterSystem { id, schedule } => {
+                info!("Registering system {id} with {schedule:?}");
+
+                system::build_system(world, entity, id, schedule);
+
+                // world.spawn((
+                //     VOwner(ent),
+                //     VSystem {
+                //         bevy_id,
+                //         wasm_id: id,
+                //     },
+                //     SystemExecution::default(),
+                // ));
+            }
         }
     }
 }

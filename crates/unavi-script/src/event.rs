@@ -9,7 +9,7 @@ pub struct LoadScriptAsset {
     pub package: &'static str,
 }
 
-pub fn handle_loads(
+pub fn handle_load_events(
     mut events: EventReader<LoadScriptAsset>,
     asset_server: Res<AssetServer>,
     mut commands: Commands,

@@ -71,7 +71,7 @@ interface types {
     update,
   }
 
-  /// A system is function that gets called with requested query data.
+  /// A system is function that gets called with requested param data.
   /// The system will be executed whenever the schedule activates.
   record system {
     schedule: schedule,
@@ -83,18 +83,28 @@ interface host-api {
   use types.{
     component,
     component-id,
+    entity-id,
     system,
     system-id,
   };
 
-  /// Registers a component, returning an id.
+  /// Registers a component.
   ///
   /// If the component key has already been registered, the same id will be returned.
   /// This provides an interface for sharing ECS components across WASM components.
   register-component: func(component: component) -> result<component-id, string>;
-
-  /// Registers a system, returning an id.
+  /// Registers a system.
   register-system: func(system: system) -> result<system-id, string>;
+
+  /// Spawns an entity.
+  spawn: func() -> result<entity-id, string>;
+  /// Despawns an entity.
+  despawn: func(entity: entity-id) -> result<_, string>;
+
+  /// Inserts a component to an entity, overwriting any data if the component is already added.
+  insert-component: func(entity: entity-id, component: component-id, data: list<u8>) -> result<_, string>;
+  /// Removes a component from an entity.
+  remove-component: func(entity: entity-id, component: component-id) -> result<_, string>;
 }
 
 interface guest-api {

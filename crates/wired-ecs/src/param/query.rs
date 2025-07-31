@@ -1,8 +1,9 @@
 use crate::{
     Component,
-    param::Param,
-    types::{Param as BParam, ParamData, Query as BQuery},
+    types::{Param as WParam, ParamData, Query as WQuery},
 };
+
+use super::Param;
 
 pub struct Query<T> {
     pub items: Vec<T>,
@@ -12,7 +13,9 @@ impl<A> Param for Query<A>
 where
     A: Component,
 {
-    fn parse_param(data: ParamData) -> Self {
+    fn parse_param(data: &mut std::vec::IntoIter<ParamData>) -> Self {
+        let data = data.next().unwrap();
+
         let ParamData::Query(query_data) = data;
 
         let mut items = Vec::with_capacity(query_data.len());
@@ -23,11 +26,11 @@ where
 
         Self { items }
     }
-    fn register_param() -> BParam {
-        BParam::Query(BQuery {
+    fn register_param() -> Option<WParam> {
+        Some(WParam::Query(WQuery {
             components: vec![A::register()],
             constraints: Vec::new(),
-        })
+        }))
     }
 }
 
@@ -35,7 +38,8 @@ impl<A> Param for Query<(A,)>
 where
     A: Component,
 {
-    fn parse_param(data: ParamData) -> Self {
+    fn parse_param(data: &mut std::vec::IntoIter<ParamData>) -> Self {
+        let data = data.next().unwrap();
         let ParamData::Query(query_data) = data;
 
         let mut items = Vec::with_capacity(query_data.len());
@@ -46,11 +50,11 @@ where
 
         Self { items }
     }
-    fn register_param() -> BParam {
-        BParam::Query(BQuery {
+    fn register_param() -> Option<WParam> {
+        Some(WParam::Query(WQuery {
             components: vec![A::register()],
             constraints: Vec::new(),
-        })
+        }))
     }
 }
 
@@ -59,12 +63,13 @@ where
     A: Component,
     B: Component,
 {
-    fn parse_param(data: ParamData) -> Self {
+    fn parse_param(data: &mut std::vec::IntoIter<ParamData>) -> Self {
+        let data = data.next().unwrap();
         let ParamData::Query(query_data) = data;
 
         let mut items = Vec::with_capacity(query_data.len());
         for q_item in &query_data {
-            let xa = A::byte_len();
+            let xa = A::size();
 
             let a = A::from_bytes(&q_item[..xa]);
             let b = B::from_bytes(&q_item[xa..]);
@@ -74,11 +79,11 @@ where
 
         Self { items }
     }
-    fn register_param() -> BParam {
-        BParam::Query(BQuery {
+    fn register_param() -> Option<WParam> {
+        Some(WParam::Query(WQuery {
             components: vec![A::register(), B::register()],
             constraints: Vec::new(),
-        })
+        }))
     }
 }
 
@@ -88,13 +93,14 @@ where
     B: Component,
     C: Component,
 {
-    fn parse_param(data: ParamData) -> Self {
+    fn parse_param(data: &mut std::vec::IntoIter<ParamData>) -> Self {
+        let data = data.next().unwrap();
         let ParamData::Query(query_data) = data;
 
         let mut items = Vec::with_capacity(query_data.len());
         for q_item in &query_data {
-            let xa = A::byte_len();
-            let xb = xa + B::byte_len();
+            let xa = A::size();
+            let xb = xa + B::size();
 
             let a = A::from_bytes(&q_item[..xa]);
             let b = B::from_bytes(&q_item[xa..xb]);
@@ -105,10 +111,10 @@ where
 
         Self { items }
     }
-    fn register_param() -> BParam {
-        BParam::Query(BQuery {
+    fn register_param() -> Option<WParam> {
+        Some(WParam::Query(WQuery {
             components: vec![A::register(), B::register(), C::register()],
             constraints: Vec::new(),
-        })
+        }))
     }
 }

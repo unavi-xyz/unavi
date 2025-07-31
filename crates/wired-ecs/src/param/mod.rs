@@ -1,18 +1,27 @@
-use crate::types::{Param as BParam, ParamData};
+use crate::types::{Param as WParam, ParamData};
+
+mod commands;
+mod query;
+mod resource;
+
+pub use commands::*;
+pub use query::*;
+pub use resource::*;
 
 pub trait Param {
-    fn parse_param(data: ParamData) -> Self;
-    fn register_param() -> BParam;
+    fn parse_param(data: &mut std::vec::IntoIter<ParamData>) -> Self;
+    /// Registers the param with the host, if it needs to be registered.
+    fn register_param() -> Option<WParam>;
 }
 
 pub trait ParamGroup {
     fn parse_params(data: Vec<ParamData>) -> Self;
-    fn register_params() -> Vec<BParam>;
+    fn register_params() -> Vec<Option<WParam>>;
 }
 
 impl ParamGroup for () {
     fn parse_params(_: Vec<ParamData>) -> Self {}
-    fn register_params() -> Vec<BParam> {
+    fn register_params() -> Vec<Option<WParam>> {
         Vec::new()
     }
 }
@@ -22,9 +31,11 @@ where
     A: Param,
 {
     fn parse_params(data: Vec<ParamData>) -> Self {
-        (A::parse_param(data.into_iter().next().unwrap()),)
+        let mut iter = data.into_iter();
+
+        (A::parse_param(&mut iter),)
     }
-    fn register_params() -> Vec<BParam> {
+    fn register_params() -> Vec<Option<WParam>> {
         vec![A::register_param()]
     }
 }
@@ -37,12 +48,9 @@ where
     fn parse_params(data: Vec<ParamData>) -> Self {
         let mut iter = data.into_iter();
 
-        (
-            A::parse_param(iter.next().unwrap()),
-            B::parse_param(iter.next().unwrap()),
-        )
+        (A::parse_param(&mut iter), B::parse_param(&mut iter))
     }
-    fn register_params() -> Vec<BParam> {
+    fn register_params() -> Vec<Option<WParam>> {
         vec![A::register_param(), B::register_param()]
     }
 }
@@ -57,12 +65,12 @@ where
         let mut iter = data.into_iter();
 
         (
-            A::parse_param(iter.next().unwrap()),
-            B::parse_param(iter.next().unwrap()),
-            C::parse_param(iter.next().unwrap()),
+            A::parse_param(&mut iter),
+            B::parse_param(&mut iter),
+            C::parse_param(&mut iter),
         )
     }
-    fn register_params() -> Vec<BParam> {
+    fn register_params() -> Vec<Option<WParam>> {
         vec![
             A::register_param(),
             B::register_param(),

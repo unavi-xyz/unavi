@@ -79,7 +79,7 @@ pub fn build_system(
     system: WSystem,
 ) -> anyhow::Result<()> {
     let mut queries = Vec::new();
-    let mut component_lens = HashMap::new();
+    let mut component_sizes = HashMap::new();
 
     for param in system.params {
         match param {
@@ -87,7 +87,7 @@ pub fn build_system(
                 let mut vcomp_query = world.query::<(&VOwner, &VComponent)>();
 
                 let mut find_component = |wasm_id: u64| -> Option<ComponentId> {
-                    vcomp_query.iter(&world).find_map(|(owner, vcomp)| {
+                    vcomp_query.iter(world).find_map(|(owner, vcomp)| {
                         if owner.0 == entity && vcomp.wasm_id == wasm_id {
                             Some(vcomp.bevy_id)
                         } else {
@@ -128,14 +128,14 @@ pub fn build_system(
                 }
 
                 for id in components.iter().chain(with.iter()).chain(without.iter()) {
-                    if component_lens.contains_key(id) {
+                    if component_sizes.contains_key(id) {
                         continue;
                     }
                     let Some(info) = world.components().get_info(*id) else {
                         bail!("component info not found")
                     };
-                    let byte_len = info.layout().size() / size_of::<u8>();
-                    component_lens.insert(*id, byte_len);
+                    let size = info.layout().size() / size_of::<u8>();
+                    component_sizes.insert(*id, size);
                 }
 
                 let builder = QueryParamBuilder::new_box(|builder| {
@@ -173,7 +173,7 @@ pub fn build_system(
                         match access {
                             ComponentAccessKind::Shared(id) => {
                                 let ptr = ent.get_by_id(id).unwrap();
-                                let byte_len = component_lens.get(&id).copied().unwrap();
+                                let size = component_sizes.get(&id).copied().unwrap();
 
                                 // SAFETY:
                                 // - All virtual components are created with layout [u8]
@@ -181,11 +181,11 @@ pub fn build_system(
                                 let data = unsafe {
                                     std::slice::from_raw_parts(
                                         ptr.assert_unique().as_ptr().cast::<u8>(),
-                                        byte_len,
+                                        size,
                                     )
                                 };
 
-                                ent_data.extend(&data[0..byte_len]);
+                                ent_data.extend(&data[0..size]);
                             }
                             ComponentAccessKind::Exclusive(_id) => {}
                             ComponentAccessKind::Archetypal(_id) => {}
@@ -244,8 +244,6 @@ pub fn build_system(
         let ctx = rt.ctx.clone();
         let elapsed = time.elapsed();
         let guest = loaded.0.clone();
-
-        info!("Spawning system task: {id} ({:?})", system.schedule);
 
         let pool = AsyncComputeTaskPool::get();
         let task = pool.spawn(

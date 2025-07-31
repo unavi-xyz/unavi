@@ -4,7 +4,7 @@ use crate::{
     host_api::register_system,
     param::ParamGroup,
     system::{BlindSystem, IntoSystem, System, function_system::FunctionSystem},
-    types::{ParamData, Schedule, SystemId},
+    types::{ParamData, Schedule, System as WSystem, SystemId},
 };
 
 #[derive(Default)]
@@ -19,8 +19,9 @@ impl App {
         FunctionSystem<F, In>: System<In = In>,
         In: ParamGroup + Send + Sync + 'static,
     {
-        let params = In::register_params();
-        let id = match register_system(&crate::types::System { schedule, params }) {
+        let params = In::register_params().into_iter().flatten().collect();
+
+        let id = match register_system(&WSystem { schedule, params }) {
             Ok(id) => id,
             Err(e) => panic!("Failed to register system: {e}"),
         };

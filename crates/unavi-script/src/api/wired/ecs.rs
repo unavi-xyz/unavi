@@ -1,6 +1,8 @@
 use tokio::sync::mpsc::Sender;
 use wasmtime::component::HasData;
-use wired::ecs::types::{Component, ComponentId, ComponentType, Primitive, System, SystemId};
+use wired::ecs::types::{
+    Component, ComponentId, ComponentType, EntityId, Primitive, System, SystemId,
+};
 
 use crate::commands::WasmCommand;
 
@@ -20,6 +22,7 @@ impl HasData for HasWiredEcsData {
 pub struct WiredEcsData {
     pub commands: Sender<WasmCommand>,
     pub components: Vec<Component>,
+    pub entity_id: EntityId,
     pub systems: Vec<System>,
 }
 
@@ -68,10 +71,10 @@ impl wired::ecs::host_api::Host for WiredEcsData {
                 .await
                 .map_err(|e| format!("Error sending command: {e}"))?;
             self.components.push(component);
+
             Ok(id)
         }
     }
-
     async fn register_system(&mut self, system: System) -> Result<SystemId, String> {
         let id = self.systems.len() as u64;
 
@@ -90,7 +93,58 @@ impl wired::ecs::host_api::Host for WiredEcsData {
             .await
             .map_err(|e| format!("Error sending command: {e}"))?;
         self.systems.push(system);
+
         Ok(id)
+    }
+
+    async fn spawn(&mut self) -> Result<EntityId, String> {
+        let id = self.entity_id + 1;
+
+        self.commands
+            .send(WasmCommand::Spawn { id })
+            .await
+            .map_err(|e| format!("Error sending command: {e}"))?;
+        self.entity_id = id;
+
+        Ok(id)
+    }
+    async fn despawn(&mut self, entity: EntityId) -> Result<(), String> {
+        self.commands
+            .send(WasmCommand::Despawn { id: entity })
+            .await
+            .map_err(|e| format!("Error sending command: {e}"))?;
+        Ok(())
+    }
+
+    async fn insert_component(
+        &mut self,
+        entity: EntityId,
+        component: ComponentId,
+        data: Vec<u8>,
+    ) -> Result<(), String> {
+        self.commands
+            .send(WasmCommand::InsertComponent {
+                entity_id: entity,
+                component_id: component,
+                data,
+            })
+            .await
+            .map_err(|e| format!("Error sending command: {e}"))?;
+        Ok(())
+    }
+    async fn remove_component(
+        &mut self,
+        entity: EntityId,
+        component: ComponentId,
+    ) -> Result<(), String> {
+        self.commands
+            .send(WasmCommand::RemoveComponent {
+                entity_id: entity,
+                component_id: component,
+            })
+            .await
+            .map_err(|e| format!("Error sending command: {e}"))?;
+        Ok(())
     }
 }
 
@@ -118,7 +172,7 @@ impl Primitive {
             Primitive::U16 => std::mem::size_of::<u16>(),
             Primitive::U32 => std::mem::size_of::<u32>(),
             Primitive::U64 => std::mem::size_of::<u64>(),
-            Primitive::String => todo!(),
+            Primitive::String => std::mem::size_of::<String>(),
         }
     }
 }

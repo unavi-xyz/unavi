@@ -22,8 +22,9 @@ impl RuntimeData {
             rt: RuntimeData {
                 wired_ecs: WiredEcsData {
                     commands: commands_send,
-                    components: Default::default(),
-                    systems: Default::default(),
+                    components: Vec::new(),
+                    entity_id: 0,
+                    systems: Vec::new(),
                 },
             },
             commands_recv,

@@ -1,7 +1,8 @@
 use exports::wired::ecs::guest_api::{Guest, GuestScript};
 use wired::math::types::{Vec2, Vec3};
 use wired_ecs::{
-    App, Component, Query,
+    App, Component,
+    param::{Commands, Query},
     types::{ParamData, Schedule, SystemId},
 };
 
@@ -53,8 +54,11 @@ impl GuestScript for Script {
     }
 }
 
-fn startup_system() {
-    println!("hello from startup");
+fn startup_system(commands: Commands) {
+    println!("Running startup");
+
+    let entity = commands.spawn();
+    entity.insert(MyPoint { x: 1.0, y: 2.0 });
 }
 
 #[derive(Component, Clone, Copy, Debug)]
@@ -64,8 +68,6 @@ struct MyPoint {
 }
 
 fn point_system(points: Query<MyPoint>) {
-    println!("hello from point system");
-
     for point in &points.items {
         println!("point: {point:?}");
     }

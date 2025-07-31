@@ -1,7 +1,6 @@
 mod app;
 mod component;
-mod param;
-mod query;
+pub mod param;
 mod system;
 
 mod bindings {
@@ -15,5 +14,4 @@ pub use app::*;
 pub use bindings::wired::ecs::*;
 pub use bytemuck;
 pub use component::*;
-pub use query::*;
 pub use wired_ecs_derive::*;

@@ -18,7 +18,8 @@ pub trait Component: Sized + 'static {
         }
     }
 
-    fn byte_len() -> usize {
+    /// Length of the component, in bytes.
+    fn size() -> usize {
         std::mem::size_of::<Self>()
     }
     fn from_bytes(bytes: &[u8]) -> Self;

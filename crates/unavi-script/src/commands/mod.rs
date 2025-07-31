@@ -1,11 +1,10 @@
-use std::alloc::Layout;
+use std::{alloc::Layout, ptr::NonNull};
 
+use anyhow::bail;
 use bevy::{
-    ecs::{
-        component::{ComponentCloneBehavior, ComponentDescriptor, ComponentId, StorageType},
-        system::SystemId,
-    },
+    ecs::component::{ComponentCloneBehavior, ComponentDescriptor, ComponentId, StorageType},
     prelude::*,
+    ptr::OwningPtr,
 };
 use tokio::sync::mpsc::error::TryRecvError;
 
@@ -17,108 +16,243 @@ use crate::{
 pub(crate) mod system;
 
 pub enum WasmCommand {
-    RegisterComponent { id: u64, key: String, size: usize },
-    RegisterSystem { id: u64, system: WSystem },
+    RegisterComponent {
+        id: u64,
+        key: String,
+        size: usize,
+    },
+    RegisterSystem {
+        id: u64,
+        system: WSystem,
+    },
+    Spawn {
+        id: u64,
+    },
+    Despawn {
+        id: u64,
+    },
+    InsertComponent {
+        entity_id: u64,
+        component_id: u64,
+        data: Vec<u8>,
+    },
+    RemoveComponent {
+        entity_id: u64,
+        component_id: u64,
+    },
 }
 
 /// "Virtual" objects owned by a script.
 /// These will be automatically cleaned up on script removal.
 #[derive(Component, Default)]
 #[relationship_target(relationship = VOwner)]
-struct VObjects(Vec<Entity>);
+pub struct VObjects(Vec<Entity>);
 
 #[derive(Component)]
 #[relationship(relationship_target = VObjects)]
-struct VOwner(Entity);
+pub struct VOwner(Entity);
 
 #[derive(Component)]
-struct VComponent {
+pub struct VEntity {
+    wasm_id: u64,
+}
+
+#[derive(Component)]
+pub struct VComponent {
     bevy_id: ComponentId,
     wasm_id: u64,
 }
 
-#[derive(Component)]
-struct VSystem {
-    bevy_id: SystemId,
-    wasm_id: u64,
-}
-
-const MAX_THROUGHPUT: usize = 400;
+const BATCH_SIZE: usize = 32;
 
 // TODO: process commands immuediately after system execution
-// use deferred bevy commands?
 
 pub fn process_commands(
-    world: &mut World,
-    mut script_commands: Local<QueryState<(Entity, &mut ScriptCommands), With<InitializedScript>>>,
-    mut commands: Local<Vec<(Entity, WasmCommand)>>,
+    mut commands: Commands,
+    mut script_commands: Query<(Entity, &mut ScriptCommands), With<InitializedScript>>,
+    mut queue: Local<Vec<(Entity, WasmCommand)>>,
 ) {
-    for (ent, mut recv) in script_commands.iter_mut(world) {
-        loop {
-            if commands.len() >= MAX_THROUGHPUT {
-                break;
-            }
-
-            match recv.0.try_recv() {
-                Ok(cmd) => commands.push((ent, cmd)),
-                Err(TryRecvError::Empty) => break,
-                Err(TryRecvError::Disconnected) => {
-                    warn!("ScriptCommands disconnected");
+    loop {
+        for (ent, mut recv) in script_commands.iter_mut() {
+            loop {
+                if queue.len() >= BATCH_SIZE {
                     break;
+                }
+
+                match recv.0.try_recv() {
+                    Ok(cmd) => queue.push((ent, cmd)),
+                    Err(TryRecvError::Empty) => break,
+                    Err(TryRecvError::Disconnected) => {
+                        warn!("ScriptCommands disconnected");
+                        break;
+                    }
                 }
             }
         }
-    }
 
-    for (entity, cmd) in commands.drain(..) {
-        match cmd {
-            WasmCommand::RegisterComponent { id, key, size } => {
-                info!("Registering component {id} ({key}): size={size}b");
+        if queue.is_empty() {
+            break;
+        }
 
-                // TODO: rename size -> byte_len
-                let layout = match Layout::array::<u8>(size) {
-                    Ok(l) => l,
-                    Err(e) => {
-                        error!("Error registering component layout: {e:?}");
-                        continue;
-                    }
-                };
+        for (script_ent, cmd) in queue.drain(..) {
+            match cmd {
+                WasmCommand::RegisterComponent { id, key, size } => {
+                    debug!("Registering component {id} ({key}): size={size}b");
 
-                // SAFETY: [u8] is Send + Sync
-                let bevy_id = world.register_component_with_descriptor(unsafe {
-                    ComponentDescriptor::new_with_layout(
-                        key,
-                        StorageType::Table,
-                        layout,
-                        None,
-                        true,
-                        ComponentCloneBehavior::Default,
-                    )
-                });
+                    let layout = match Layout::array::<u8>(size) {
+                        Ok(l) => l,
+                        Err(e) => {
+                            error!("Error registering component layout: {e:?}");
+                            continue;
+                        }
+                    };
 
-                world.spawn((
-                    VOwner(entity),
-                    VComponent {
-                        bevy_id,
-                        wasm_id: id,
-                    },
-                ));
-            }
-            WasmCommand::RegisterSystem { id, system } => {
-                info!("Registering system {id} with {:?}", system.schedule);
+                    commands.queue(move |world: &mut World| {
+                        // SAFETY: [u8] is Send + Sync
+                        let bevy_id = world.register_component_with_descriptor(unsafe {
+                            ComponentDescriptor::new_with_layout(
+                                key,
+                                StorageType::Table,
+                                layout,
+                                None,
+                                true,
+                                ComponentCloneBehavior::Default,
+                            )
+                        });
 
-                if let Err(e) = system::build_system(world, entity, id, system) {
-                    error!("Error building system {id}: {e:?}");
-                };
+                        world.spawn((
+                            VOwner(script_ent),
+                            VComponent {
+                                bevy_id,
+                                wasm_id: id,
+                            },
+                        ));
+                    });
+                }
+                WasmCommand::RegisterSystem { id, system } => {
+                    debug!("Registering system {id} with {:?}", system.schedule);
 
-                // world.spawn((
-                //     VOwner(ent),
-                //     VSystem {
-                //         bevy_id,
-                //         wasm_id: id,
-                //     },
-                //     SystemExecution::default(),
-                // ));
+                    commands.queue(move |world: &mut World| {
+                        if let Err(e) = system::build_system(world, script_ent, id, system) {
+                            error!("Error building system {id}: {e:?}");
+                        };
+                    });
+                }
+                WasmCommand::Spawn { id } => {
+                    commands.spawn((VOwner(script_ent), VEntity { wasm_id: id }));
+                }
+                WasmCommand::Despawn { id } => {
+                    commands.queue(move |world: &mut World| {
+                        let Some(e) = world
+                            .query::<(Entity, &VOwner, &VEntity)>()
+                            .iter(world)
+                            .find_map(|(e, e_owner, v_ent)| {
+                                if e_owner.0 == script_ent && v_ent.wasm_id == id {
+                                    Some(e)
+                                } else {
+                                    None
+                                }
+                            })
+                        else {
+                            error!("Despawn: entity {id} not found");
+                            return;
+                        };
+
+                        world.despawn(e);
+                    });
+                }
+                WasmCommand::InsertComponent {
+                    entity_id,
+                    component_id,
+                    mut data,
+                } => {
+                    commands.queue(move |world: &mut World| {
+                        let Some(e) = world
+                            .query::<(Entity, &VOwner, &VEntity)>()
+                            .iter(world)
+                            .find_map(|(e, e_owner, v_ent)| {
+                                if e_owner.0 == script_ent && v_ent.wasm_id == entity_id {
+                                    Some(e)
+                                } else {
+                                    None
+                                }
+                            })
+                        else {
+                            error!("InsertComponent: entity {entity_id} not found");
+                            return;
+                        };
+
+                        let Some(bevy_id) = world
+                            .query::<(&VOwner, &VComponent)>()
+                            .iter(world)
+                            .find_map(|(c_owner, v_comp)| {
+                                if c_owner.0 == script_ent && v_comp.wasm_id == component_id {
+                                    Some(v_comp.bevy_id)
+                                } else {
+                                    None
+                                }
+                            })
+                        else {
+                            error!("InsertComponent: component {component_id} not found");
+                            return;
+                        };
+
+                        let Some(info) = world.components().get_info(bevy_id) else {
+                            error!("component info not found");
+                            return;
+                        };
+                        let size = info.layout().size() / size_of::<u8>();
+                        data.resize(size, 0);
+
+                        let ptr = data.as_mut_ptr();
+
+                        // SAFETY:
+                        // - Component ids have been taken from the same world
+                        // - Each array is created to the layout specified in the world
+                        unsafe {
+                            let ptr = OwningPtr::new(NonNull::new_unchecked(ptr.cast()));
+                            world.entity_mut(e).insert_by_id(bevy_id, ptr);
+                        }
+                    });
+                }
+                WasmCommand::RemoveComponent {
+                    entity_id,
+                    component_id,
+                } => {
+                    commands.queue(move |world: &mut World| {
+                        let Some(e) = world
+                            .query::<(Entity, &VOwner, &VEntity)>()
+                            .iter(world)
+                            .find_map(|(e, e_owner, v_ent)| {
+                                if e_owner.0 == script_ent && v_ent.wasm_id == entity_id {
+                                    Some(e)
+                                } else {
+                                    None
+                                }
+                            })
+                        else {
+                            error!("RemoveComponent: entity {entity_id} not found");
+                            return;
+                        };
+
+                        let Some(bevy_id) = world
+                            .query::<(&VOwner, &VComponent)>()
+                            .iter(world)
+                            .find_map(|(c_owner, v_comp)| {
+                                if c_owner.0 == script_ent && v_comp.wasm_id == component_id {
+                                    Some(v_comp.bevy_id)
+                                } else {
+                                    None
+                                }
+                            })
+                        else {
+                            error!("RemoveComponent: component {component_id} not found");
+                            return;
+                        };
+
+                        world.entity_mut(e).remove_by_id(bevy_id);
+                    });
+                }
             }
         }
     }

@@ -1,7 +1,8 @@
 use exports::wired::ecs::guest_api::{Guest, GuestScript};
 use wired::math::types::{Vec2, Vec3};
 use wired_ecs::{
-    App, Component, Query,
+    App, Component,
+    param::Query,
     types::{ParamData, Schedule, SystemId},
 };
 

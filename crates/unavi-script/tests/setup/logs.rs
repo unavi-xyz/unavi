@@ -1,13 +1,9 @@
 use std::{
     fmt::Display,
     sync::{Arc, LazyLock, Mutex},
-    time::Duration,
 };
 
-use bevy::{
-    log::{BoxedLayer, LogPlugin},
-    prelude::*,
-};
+use bevy::{log::BoxedLayer, prelude::*};
 use tracing::{
     Event, Subscriber,
     span::{Attributes, Id},
@@ -19,7 +15,6 @@ use tracing_subscriber::{
     layer::Context,
     registry::LookupSpan,
 };
-use unavi_script::{LoadScriptAsset, ScriptPlugin};
 
 pub static LOGS: LazyLock<VecStorageLayer> = LazyLock::new(VecStorageLayer::default);
 
@@ -89,4 +84,12 @@ where
             logs.push(line);
         }
     }
+}
+
+pub fn has_error_log() -> bool {
+    LOGS.logs
+        .lock()
+        .unwrap()
+        .iter()
+        .any(|line| line.to_lowercase().contains("error"))
 }

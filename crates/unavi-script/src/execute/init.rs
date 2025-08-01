@@ -5,6 +5,7 @@ use bevy::{
     prelude::*,
     tasks::{AsyncComputeTaskPool, Task, block_on, poll_once},
 };
+use tracing::Instrument;
 use wasmtime::AsContextMut;
 
 use crate::{commands::system::ScriptRuntime, load::LoadedScript};
@@ -34,7 +35,6 @@ pub fn begin_init_scripts(
         let name = name
             .map(|n| n.to_string())
             .unwrap_or_else(|| "unknown".to_string());
-        let name2 = name.clone();
 
         let pool = AsyncComputeTaskPool::get();
 
@@ -42,18 +42,21 @@ pub fn begin_init_scripts(
             let mut ctx = ctx.lock().await;
             ctx.store.set_epoch_deadline(1);
 
+            info!("Constructing script {name}");
+
             let script = guest
                 .wired_ecs_guest_api()
                 .script()
                 .call_constructor(ctx.store.as_context_mut())
                 .await
-                .with_context(|| format!("construct script: {name2}"))?;
-            ctx.script = Some(script);
+                .with_context(|| format!("construct script {name}"));
+
+            ctx.flush_logs().await;
+
+            ctx.script = Some(script?);
 
             Ok(())
         });
-
-        info!("Initializing script {name}");
 
         commands.entity(entity).insert(InitializingScript {
             task,

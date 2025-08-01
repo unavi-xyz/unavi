@@ -29,8 +29,8 @@ pub struct WiredEcsData {
 const MAX_COMPONENTS: usize = 1_000;
 const MAX_COMPONENT_SIZE: usize = 10_000;
 const MAX_COMPONENT_TYPES: usize = 100;
+const MAX_ENTITIES: u64 = 1_000_000;
 const MAX_KEY_LEN: usize = 200;
-
 const MAX_SYSTEMS: usize = 1_000;
 const MAX_SYSTEM_PARAMS: usize = 16;
 
@@ -99,6 +99,10 @@ impl wired::ecs::host_api::Host for WiredEcsData {
 
     async fn spawn(&mut self) -> Result<EntityId, String> {
         let id = self.entity_id + 1;
+
+        if id >= MAX_ENTITIES {
+            return Err("Max entity count reached".to_string());
+        }
 
         self.commands
             .send(WasmCommand::Spawn { id })

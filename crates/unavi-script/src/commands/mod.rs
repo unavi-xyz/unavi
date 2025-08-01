@@ -15,6 +15,7 @@ use crate::{
 
 pub(crate) mod system;
 
+#[derive(Debug)]
 pub enum WasmCommand {
     RegisterComponent {
         id: u64,
@@ -65,7 +66,8 @@ pub struct VComponent {
 
 const BATCH_SIZE: usize = 32;
 
-// TODO: process commands immuediately after system execution
+// TODO: process commands after each script cycle (in case of multiple fixed virtual frames)
+// TODO: limit script execution until full cycle completes
 
 pub fn process_commands(
     mut commands: Commands,
@@ -95,10 +97,10 @@ pub fn process_commands(
         }
 
         for (script_ent, cmd) in queue.drain(..) {
+            // info!("processing: {cmd:?}");
+
             match cmd {
                 WasmCommand::RegisterComponent { id, key, size } => {
-                    debug!("Registering component {id} ({key}): size={size}b");
-
                     let layout = match Layout::array::<u8>(size) {
                         Ok(l) => l,
                         Err(e) => {
@@ -130,8 +132,6 @@ pub fn process_commands(
                     });
                 }
                 WasmCommand::RegisterSystem { id, system } => {
-                    debug!("Registering system {id} with {:?}", system.schedule);
-
                     commands.queue(move |world: &mut World| {
                         if let Err(e) = system::build_system(world, script_ent, id, system) {
                             error!("Error building system {id}: {e:?}");

@@ -13,6 +13,7 @@ let time = timeit {
     let crate = $crate_dir.name | path basename
     let crate_path = $crate_dir.name
     let wasm_file = ($crate | str replace '-' '_') + ".wasm"
+    let target_dir = $"target/($crate)"
 
     mut logs = $"→ Building ($crate)\n"
 
@@ -21,7 +22,7 @@ let time = timeit {
         --target $wasm_target 
         --profile $wasm_profile 
         --manifest-path $"($crate_path)/Cargo.toml"
-        --target-dir $"target/($crate)"
+        --target-dir $target_dir
         | complete)
 
     if $status.exit_code != 0 {
@@ -30,7 +31,7 @@ let time = timeit {
         }
     }
 
-    let src_path = $"target/($wasm_target)/($wasm_profile)/($wasm_file)"
+    let src_path = $"($target_dir)/($wasm_target)/($wasm_profile)/($wasm_file)"
     let dst_path = $"($wasm_out)/($wasm_file)"
 
     $logs += $"  | optimizing\n"

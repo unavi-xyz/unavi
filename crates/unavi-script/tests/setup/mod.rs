@@ -1,29 +1,14 @@
-use std::{
-    fmt::Display,
-    sync::{Arc, LazyLock, Mutex},
-    time::Duration,
-};
+use std::time::Duration;
 
 use bevy::{
-    log::{BoxedLayer, LogPlugin},
+    log::{Level, LogPlugin},
     prelude::*,
-};
-use tracing::{
-    Event, Subscriber,
-    span::{Attributes, Id},
-};
-use tracing_subscriber::{
-    Layer,
-    field::MakeVisitor,
-    fmt::format::{PrettyFields, Writer},
-    layer::Context,
-    registry::LookupSpan,
 };
 use unavi_script::{LoadScriptAsset, ScriptPlugin};
 
 pub mod logs;
 
-const TICK: Duration = Duration::from_millis(200);
+const TICK: Duration = Duration::from_millis(100);
 
 pub fn setup_test_app(package: &'static str) -> App {
     let mut app = App::new();

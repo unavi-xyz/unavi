@@ -1,11 +1,14 @@
-use setup::{construct_script, logs::LOGS, tick_app};
+use setup::{
+    construct_script,
+    logs::{LOGS, has_error_log},
+    tick_app,
+};
 
 mod setup;
 
 #[test]
 fn script_stall() {
     let mut app = setup::setup_test_app("stall");
-
     construct_script(&mut app);
 
     // Execute script startup.
@@ -33,4 +36,6 @@ fn script_stall() {
             .iter()
             .any(|line| line.contains("test:stall") && line.contains("hello from update"))
     );
+
+    assert!(!has_error_log());
 }

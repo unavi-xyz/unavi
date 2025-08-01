@@ -1,8 +1,7 @@
 use exports::wired::ecs::guest_api::{Guest, GuestScript};
-use wired::math::types::{Vec2, Vec3};
 use wired_ecs::{
     App, Component,
-    param::Query,
+    param::{Commands, Query},
     types::{ParamData, Schedule, SystemId},
 };
 
@@ -27,10 +26,8 @@ struct Script {
 impl GuestScript for Script {
     fn new() -> Self {
         let mut app = App::default();
-        app.add_system(Schedule::Startup, startup_system);
-        app.add_system(Schedule::Startup, point_system);
-        // app.add_system(Schedule::Startup, multi_system);
-
+        app.add_system(Schedule::Startup, startup_system)
+            .add_system(Schedule::Update, single_system);
         Self { app }
     }
 
@@ -39,8 +36,16 @@ impl GuestScript for Script {
     }
 }
 
-fn startup_system() {
-    println!("running on startup!");
+fn startup_system(commands: Commands) {
+    println!("startup_system");
+
+    let _ = commands.spawn();
+
+    let ent_a = commands.spawn();
+    ent_a.insert(MyPoint { y: 1.0, x: 2.0 });
+
+    let ent_b = commands.spawn();
+    ent_b.insert(MyPoint { y: 3.0, x: 4.0 });
 }
 
 #[derive(Component, Clone, Copy, Debug)]
@@ -49,14 +54,18 @@ struct MyPoint {
     y: f32,
 }
 
-fn point_system(points: Query<MyPoint>) {
-    println!("point system");
+fn single_system(points: Query<MyPoint>) {
+    println!("single_system");
 
-    for point in &points.items {
-        println!("point: {point:?}");
-    }
+    assert_eq!(points.items.len(), 2);
+
+    let a = &points.items[0];
+    assert_eq!(a.x, 1.0);
+    assert_eq!(a.y, 2.0);
+
+    let b = &points.items[1];
+    assert_eq!(b.x, 3.0);
+    assert_eq!(b.y, 4.0);
 }
-
-fn multi_system(a: Query<Vec2>, b: Query<Vec3>) {}
 
 export!(World);

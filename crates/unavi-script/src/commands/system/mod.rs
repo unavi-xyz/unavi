@@ -42,12 +42,18 @@ impl RuntimeCtx {
         let mut buf = [0; 1024];
         if let Some(s) = log::try_read_text_stream(&mut buf, &mut self.stdout.0).await {
             for line in s.lines() {
-                info!("{}", line.trim());
+                let line = line.trim();
+                if !line.is_empty() {
+                    info!("{line}");
+                }
             }
         }
         if let Some(s) = log::try_read_text_stream(&mut buf, &mut self.stderr.0).await {
             for line in s.lines() {
-                error!("{}", line.trim());
+                let line = line.trim();
+                if !line.is_empty() {
+                    error!("{line}");
+                }
             }
         }
     }
@@ -225,16 +231,16 @@ pub fn build_system(
             return;
         };
 
-        if !*started {
-            *started = true;
-
-            if system.schedule == WSchedule::Update {
-                // Startup has not yet run.
+        match (*started, system.schedule) {
+            (false, WSchedule::Startup) => {
+                *started = true;
+            }
+            (false, _) => {
+                *started = true;
                 return;
             }
-        } else if system.schedule == WSchedule::Startup {
-            // Startup already ran.
-            return;
+            (true, WSchedule::Startup) => return,
+            (true, _) => {}
         }
 
         let name = name
@@ -258,13 +264,13 @@ pub fn build_system(
                     bail!("Script resource not found")
                 };
 
-                exec_system(&mut ctx.store, script, &guest, id, &input)
+                let res = exec_system(&mut ctx.store, script, &guest, id, &input)
                     .await
-                    .with_context(|| format!("exec {id}"))?;
+                    .with_context(|| format!("exec {id}"));
 
                 ctx.flush_logs().await;
 
-                Ok(())
+                res
             }
             .instrument(info_span!("", script = name)),
         );

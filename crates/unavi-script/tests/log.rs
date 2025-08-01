@@ -1,11 +1,14 @@
-use setup::{construct_script, logs::LOGS, tick_app};
+use setup::{
+    construct_script,
+    logs::{LOGS, has_error_log},
+    tick_app,
+};
 
 mod setup;
 
 #[test]
 fn script_log() {
     let mut app = setup::setup_test_app("log");
-
     construct_script(&mut app);
 
     // Execute script startup.
@@ -17,6 +20,8 @@ fn script_log() {
     tick_app(&mut app);
     assert_eq!(n_startup_logs(), 1);
     assert!(has_update_log());
+
+    assert!(!has_error_log());
 }
 
 fn n_startup_logs() -> usize {

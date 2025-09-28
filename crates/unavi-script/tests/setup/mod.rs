@@ -1,9 +1,6 @@
 use std::time::Duration;
 
-use bevy::{
-    log::{Level, LogPlugin},
-    prelude::*,
-};
+use bevy::{log::LogPlugin, prelude::*};
 use unavi_script::{LoadScriptAsset, ScriptPlugin};
 
 pub mod logs;
@@ -49,10 +46,11 @@ pub fn construct_script(app: &mut App) {
     // Execute script constructor.
     tick_app(app);
     tick_app(app);
+
+    assert!(!logs::has_error_log());
 }
 
 pub fn tick_app(app: &mut App) {
     app.update();
-    std::thread::sleep(TICK);
-    std::thread::sleep(TICK);
+    std::thread::sleep(2 * TICK);
 }

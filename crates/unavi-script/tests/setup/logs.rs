@@ -86,10 +86,23 @@ where
     }
 }
 
-pub fn has_error_log() -> bool {
+pub fn count_logs_with(value: &'static str) -> usize {
     LOGS.logs
         .lock()
         .unwrap()
         .iter()
-        .any(|line| line.to_lowercase().contains("error"))
+        .filter(|line| line.to_lowercase().contains(value))
+        .count()
+}
+
+pub fn has_log(value: &'static str) -> bool {
+    LOGS.logs
+        .lock()
+        .unwrap()
+        .iter()
+        .any(|line| line.to_lowercase().contains(value))
+}
+
+pub fn has_error_log() -> bool {
+    has_log("error")
 }

@@ -1,10 +1,6 @@
 use exports::wired::ecs::guest_api::{Guest, GuestScript};
 use wired::math::types::{Vec2, Vec3};
-use wired_ecs::{
-    App, Component,
-    param::{Commands, Query},
-    types::{ParamData, Schedule, SystemId},
-};
+use wired_ecs::prelude::*;
 
 wit_bindgen::generate!({
     generate_all,
@@ -67,8 +63,8 @@ struct MyPoint {
     y: f32,
 }
 
-fn point_system(points: Query<MyPoint>) {
-    for point in &points.items {
+fn point_system(points: Query<&MyPoint>) {
+    for point in points.iter() {
         println!("point: {point:?}");
     }
 }

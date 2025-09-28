@@ -1,10 +1,12 @@
 use crate::types::{Param as WParam, ParamData};
 
 mod commands;
+mod local;
 mod query;
 mod resource;
 
 pub use commands::*;
+pub use local::*;
 pub use query::*;
 pub use resource::*;
 

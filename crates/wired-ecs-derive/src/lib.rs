@@ -62,11 +62,14 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
                     #(#field_component_types),*
                 ]
             }
-            fn from_bytes(bytes: &[u8]) -> Self {
-                wired_ecs::bytemuck::from_bytes::<Self>(bytes).clone()
-            }
             fn to_bytes(&self) -> Vec<u8> {
                 wired_ecs::bytemuck::bytes_of(self).to_vec()
+            }
+            fn view(bytes: &[u8]) -> &Self {
+                wired_ecs::bytemuck::from_bytes(bytes)
+            }
+            fn view_mut(bytes: &mut [u8]) -> &mut Self {
+                wired_ecs::bytemuck::from_bytes_mut(bytes)
             }
         }
     };

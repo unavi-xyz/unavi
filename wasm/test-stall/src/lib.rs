@@ -1,8 +1,5 @@
 use exports::wired::ecs::guest_api::{Guest, GuestScript};
-use wired_ecs::{
-    App,
-    types::{ParamData, Schedule, SystemId},
-};
+use wired_ecs::prelude::*;
 
 wit_bindgen::generate!({
     generate_all,

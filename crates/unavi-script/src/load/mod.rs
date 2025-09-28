@@ -14,7 +14,7 @@ use crate::{
     asset::Wasm,
     commands::{
         WasmCommand,
-        system::{RuntimeCtx, ScriptRuntime},
+        system::{RuntimeCtx, ScriptRuntime, StartupSystems},
     },
 };
 
@@ -38,7 +38,7 @@ type LoadResult = anyhow::Result<(Entity, bindings::Guest)>;
 pub struct LoadingScript;
 
 #[derive(Component)]
-#[require(Executing)]
+#[require(Executing, StartupSystems)]
 pub struct LoadedScript(pub Arc<bindings::Guest>);
 
 #[derive(Component, Default, Deref, DerefMut)]

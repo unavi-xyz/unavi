@@ -1,4 +1,8 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+    time::Duration,
+};
 
 use anyhow::{Context, bail};
 use bevy::{
@@ -77,6 +81,9 @@ impl ScriptRuntime {
         }
     }
 }
+
+#[derive(Component, Default)]
+pub struct StartupSystems(HashMap<u64, bool>);
 
 pub fn build_system(
     world: &mut World,
@@ -210,12 +217,22 @@ pub fn build_system(
 
     let f = move |input: In<Vec<ParamData>>,
                   time: Res<Time>,
-                  scripts: Query<(&LoadedScript, &ScriptRuntime, Option<&Name>)>,
-                  mut started: Local<bool>,
+                  mut scripts: Query<(
+        &LoadedScript,
+        &ScriptRuntime,
+        Option<&Name>,
+        &mut StartupSystems,
+    )>,
                   mut executing: Local<Option<Task<anyhow::Result<()>>>>| {
         if let Some(mut task) = executing.as_mut() {
             match block_on(poll_once(&mut task)) {
-                Some(Ok(_)) => *executing = None,
+                Some(Ok(_)) => {
+                    *executing = None;
+
+                    if let Ok((_, _, _, mut startup)) = scripts.get_mut(entity) {
+                        startup.0.insert(id, true);
+                    }
+                }
                 Some(Err(e)) => {
                     error!("Script system execution error: {e:?}");
                     *executing = None;
@@ -224,23 +241,20 @@ pub fn build_system(
             }
         }
 
-        let Ok((loaded, rt, name)) = scripts.get(entity) else {
+        let Ok((loaded, rt, name, startup)) = scripts.get(entity) else {
             // Return early if script is not found. Eventually we will remove
             // this system from its schedule on script removal, but for now it runs indefinitely.
             // Waiting on https://github.com/bevyengine/bevy/issues/20115.
             return;
         };
 
-        match (*started, system.schedule) {
-            (false, WSchedule::Startup) => {
-                *started = true;
-            }
-            (false, _) => {
-                *started = true;
+        if system.schedule == WSchedule::Startup {
+            if startup.0.get(&id) == Some(&true) {
                 return;
             }
-            (true, WSchedule::Startup) => return,
-            (true, _) => {}
+        } else if startup.0.iter().any(|(_, x)| !x) {
+            // Startup not finished.
+            return;
         }
 
         let name = name
@@ -282,9 +296,17 @@ pub fn build_system(
         WSchedule::Render => world.schedule_scope(Update, |_, s| {
             s.add_systems(f_input.pipe(f));
         }),
-        WSchedule::Startup | WSchedule::Update => world.schedule_scope(FixedUpdate, |_, s| {
+        WSchedule::Update => world.schedule_scope(FixedUpdate, |_, s| {
             s.add_systems(f_input.pipe(f));
         }),
+        WSchedule::Startup => {
+            let mut startup = world.get_mut::<StartupSystems>(entity).unwrap();
+            startup.0.insert(id, false);
+
+            world.schedule_scope(FixedUpdate, |_, s| {
+                s.add_systems(f_input.pipe(f));
+            })
+        }
     };
 
     Ok(())

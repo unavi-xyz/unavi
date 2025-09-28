@@ -1,6 +1,5 @@
 use std::{alloc::Layout, ptr::NonNull};
 
-use anyhow::bail;
 use bevy::{
     ecs::component::{ComponentCloneBehavior, ComponentDescriptor, ComponentId, StorageType},
     prelude::*,
@@ -66,14 +65,16 @@ pub struct VComponent {
 
 const BATCH_SIZE: usize = 32;
 
-// TODO: process commands after each script cycle (in case of multiple fixed virtual frames)
+// TODO: apply commands after each script cycle (in case of multiple fixed virtual frames)
 // TODO: limit script execution until full cycle completes
 
-pub fn process_commands(
+pub fn apply_wasm_commands(
     mut commands: Commands,
     mut script_commands: Query<(Entity, &mut ScriptCommands), With<InitializedScript>>,
     mut queue: Local<Vec<(Entity, WasmCommand)>>,
 ) {
+    // info!("apply_wasm_commands");
+
     loop {
         for (ent, mut recv) in script_commands.iter_mut() {
             loop {
@@ -97,7 +98,7 @@ pub fn process_commands(
         }
 
         for (script_ent, cmd) in queue.drain(..) {
-            // info!("processing: {cmd:?}");
+            info!("> {cmd:?}");
 
             match cmd {
                 WasmCommand::RegisterComponent { id, key, size } => {

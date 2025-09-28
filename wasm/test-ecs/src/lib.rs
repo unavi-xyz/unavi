@@ -23,8 +23,8 @@ impl GuestScript for Script {
     fn new() -> Self {
         let mut app = App::default();
         app.add_system(Schedule::Startup, startup_system)
-            .add_system(Schedule::Update, write_system)
-            .add_system(Schedule::Update, read_system);
+            .add_system(Schedule::Update, read_system)
+            .add_system(Schedule::Update, write_system);
         Self { app }
     }
 
@@ -44,8 +44,8 @@ fn startup_system(commands: Commands) {
 
     let _ = commands.spawn();
 
-    commands.spawn().insert(MyPoint { y: 1.0, x: 2.0 });
-    commands.spawn().insert(MyPoint { y: 3.0, x: 4.0 });
+    commands.spawn().insert(MyPoint { x: 1.0, y: 2.0 });
+    commands.spawn().insert(MyPoint { x: 3.0, y: 4.0 });
 }
 
 fn read_system(points: Query<&MyPoint>) {

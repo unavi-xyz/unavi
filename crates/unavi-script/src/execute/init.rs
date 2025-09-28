@@ -5,7 +5,6 @@ use bevy::{
     prelude::*,
     tasks::{AsyncComputeTaskPool, Task, block_on, poll_once},
 };
-use tracing::Instrument;
 use wasmtime::AsContextMut;
 
 use crate::{commands::system::ScriptRuntime, load::LoadedScript};

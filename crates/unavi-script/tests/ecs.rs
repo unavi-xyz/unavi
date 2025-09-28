@@ -17,6 +17,7 @@ fn script_ecs() {
 
     // Update
     tick_app(&mut app);
+    tick_app(&mut app);
     assert!(has_log("read_system"));
     assert!(has_log("write_system"));
 

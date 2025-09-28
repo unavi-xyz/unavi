@@ -10,6 +10,14 @@ mod bindings {
     });
 }
 
+pub mod prelude {
+    pub use super::{
+        App, Component,
+        param::{Commands, Local, Query, Resource},
+        types::{ParamData, Schedule, SystemId},
+    };
+}
+
 pub use app::*;
 pub use bindings::wired::ecs::*;
 pub use bytemuck;

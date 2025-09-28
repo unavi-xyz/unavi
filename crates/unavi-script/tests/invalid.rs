@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use setup::{construct_script, logs::LOGS};
+use setup::{construct_script, logs::count_logs_with};
 
 mod setup;
 
@@ -16,13 +16,5 @@ fn script_invalid() {
 
     // This should error, but not panic.
     construct_script(&mut app);
-    assert_eq!(
-        LOGS.logs
-            .lock()
-            .unwrap()
-            .iter()
-            .filter(|line| line.contains("Error instantiating script component"))
-            .count(),
-        1
-    );
+    assert_eq!(count_logs_with("Instantiating script component"), 1);
 }

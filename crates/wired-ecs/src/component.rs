@@ -22,6 +22,8 @@ pub trait Component: Sized + 'static {
     fn size() -> usize {
         std::mem::size_of::<Self>()
     }
-    fn from_bytes(bytes: &[u8]) -> Self;
     fn to_bytes(&self) -> Vec<u8>;
+
+    fn view(bytes: &[u8]) -> &Self;
+    fn view_mut(bytes: &mut [u8]) -> &mut Self;
 }

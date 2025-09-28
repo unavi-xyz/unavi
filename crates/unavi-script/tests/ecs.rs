@@ -1,4 +1,8 @@
-use setup::{construct_script, logs::has_error_log, tick_app};
+use setup::{
+    construct_script,
+    logs::{has_error_log, has_log},
+    tick_app,
+};
 
 mod setup;
 
@@ -9,9 +13,12 @@ fn script_ecs() {
 
     // Startup
     tick_app(&mut app);
+    assert!(has_log("startup_system"));
 
     // Update
     tick_app(&mut app);
+    assert!(has_log("read_system"));
+    assert!(has_log("write_system"));
 
     assert!(!has_error_log());
 }

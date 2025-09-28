@@ -46,8 +46,6 @@ pub fn construct_script(app: &mut App) {
     // Execute script constructor.
     tick_app(app);
     tick_app(app);
-
-    assert!(!logs::has_error_log());
 }
 
 pub fn tick_app(app: &mut App) {

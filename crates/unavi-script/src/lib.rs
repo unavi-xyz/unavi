@@ -31,7 +31,10 @@ impl Plugin for ScriptPlugin {
             .init_asset::<asset::Wasm>()
             .add_event::<event::LoadScriptAsset>()
             .add_observer(commands::cleanup_vobjects)
-            .add_systems(PreUpdate, execute::increment_epochs)
+            .add_systems(
+                PreUpdate,
+                (execute::increment_epochs, commands::apply_wasm_commands),
+            )
             .add_systems(
                 FixedUpdate,
                 (
@@ -40,9 +43,7 @@ impl Plugin for ScriptPlugin {
                     execute::init::end_init_scripts,
                     load::load_scripts,
                 ),
-            )
-            .add_systems(FixedPostUpdate, commands::process_commands)
-            .add_systems(PostUpdate, commands::process_commands);
+            );
     }
 }
 

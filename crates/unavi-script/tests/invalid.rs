@@ -16,5 +16,6 @@ fn script_invalid() {
 
     // This should error, but not panic.
     construct_script(&mut app);
-    assert_eq!(count_logs_with("Instantiating script component"), 1);
+
+    assert_eq!(count_logs_with("error instantiating script component"), 1);
 }

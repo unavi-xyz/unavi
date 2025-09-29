@@ -3,7 +3,7 @@ use super::component::QueriedComponent;
 pub trait QueryGroup<'a> {
     type Ref;
 
-    fn register_components() -> Vec<u64>;
+    fn register_components() -> Vec<u32>;
     fn from_bytes(bytes: &'a [u8]) -> Self::Ref;
     fn from_bytes_mut(bytes: &'a mut [u8]) -> Self;
 }
@@ -14,7 +14,7 @@ where
 {
     type Ref = &'a A::Component;
 
-    fn register_components() -> Vec<u64> {
+    fn register_components() -> Vec<u32> {
         vec![A::register()]
     }
     fn from_bytes(bytes: &'a [u8]) -> Self::Ref {
@@ -31,7 +31,7 @@ where
 {
     type Ref = (&'a A::Component,);
 
-    fn register_components() -> Vec<u64> {
+    fn register_components() -> Vec<u32> {
         vec![A::register()]
     }
     fn from_bytes(bytes: &'a [u8]) -> Self::Ref {
@@ -49,7 +49,7 @@ where
 {
     type Ref = (&'a A::Component, &'a B::Component);
 
-    fn register_components() -> Vec<u64> {
+    fn register_components() -> Vec<u32> {
         vec![A::register(), B::register()]
     }
     fn from_bytes(bytes: &'a [u8]) -> Self::Ref {
@@ -82,7 +82,7 @@ where
 {
     type Ref = (&'a A::Component, &'a B::Component, &'a C::Component);
 
-    fn register_components() -> Vec<u64> {
+    fn register_components() -> Vec<u32> {
         vec![A::register(), B::register(), C::register()]
     }
     fn from_bytes(bytes: &'a [u8]) -> Self::Ref {

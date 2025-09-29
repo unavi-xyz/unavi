@@ -31,7 +31,7 @@ impl App {
         self
     }
 
-    pub fn exec_system(&self, id: u64, data: Vec<ParamData>) {
+    pub fn exec_system(&self, id: u32, data: Vec<ParamData>) {
         let sys = &self.systems[&id];
         sys.run_blind(data);
     }

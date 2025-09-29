@@ -6,7 +6,7 @@ pub trait QueriedComponent<'a> {
     fn size() -> usize {
         Self::Component::size()
     }
-    fn register() -> u64 {
+    fn register() -> u32 {
         Self::Component::register()
     }
 

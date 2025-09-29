@@ -26,13 +26,15 @@ pub struct WiredEcsData {
     pub systems: Vec<System>,
 }
 
-const MAX_COMPONENTS: usize = 1_000;
-const MAX_COMPONENT_SIZE: usize = 10_000;
-const MAX_COMPONENT_TYPES: usize = 100;
+const MAX_COMPONENTS: usize = 10_000;
+const MAX_COMPONENT_SIZE: usize = 512 * 8;
+const MAX_COMPONENT_TYPES: usize = 64;
 const MAX_ENTITIES: u64 = 1_000_000;
-const MAX_KEY_LEN: usize = 200;
-const MAX_SYSTEMS: usize = 1_000;
+const MAX_KEY_LEN: usize = 256;
+const MAX_SYSTEMS: usize = 10_000;
 const MAX_SYSTEM_PARAMS: usize = 16;
+
+// TODO: VObject memory tracking (counter on component add / remove)
 
 impl wired::ecs::host_api::Host for WiredEcsData {
     async fn register_component(&mut self, component: Component) -> Result<ComponentId, String> {
@@ -42,13 +44,13 @@ impl wired::ecs::host_api::Host for WiredEcsData {
         //    (This is important to avoid key sabotage, where script A registers script B's
         //    component with the wrong type.)
         if let Some(id) = self.components.iter().position(|c| *c == component) {
-            Ok(id as u64)
+            Ok(id as u32)
         } else {
             if component.key.len() > MAX_KEY_LEN {
                 return Err("Key too long".to_string());
             }
 
-            let id = self.components.len() as u64;
+            let id = self.components.len() as u32;
 
             if self.components.len() >= MAX_COMPONENTS {
                 return Err("Max component count reached".to_string());
@@ -76,7 +78,7 @@ impl wired::ecs::host_api::Host for WiredEcsData {
         }
     }
     async fn register_system(&mut self, system: System) -> Result<SystemId, String> {
-        let id = self.systems.len() as u64;
+        let id = self.systems.len() as u32;
 
         if self.systems.len() >= MAX_SYSTEMS {
             return Err("Max system count reached".to_string());
@@ -126,11 +128,35 @@ impl wired::ecs::host_api::Host for WiredEcsData {
         component: ComponentId,
         data: Vec<u8>,
     ) -> Result<(), String> {
+        if data.len() > MAX_COMPONENT_SIZE / 8 {
+            return Err("Max data len reached".to_string());
+        }
         self.commands
-            .send(WasmCommand::InsertComponent {
+            .send(WasmCommand::WriteComponent {
                 entity_id: entity,
                 component_id: component,
                 data,
+                insert: true,
+            })
+            .await
+            .map_err(|e| format!("Error sending command: {e}"))?;
+        Ok(())
+    }
+    async fn write_component(
+        &mut self,
+        entity: EntityId,
+        component: ComponentId,
+        data: Vec<u8>,
+    ) -> Result<(), String> {
+        if data.len() > MAX_COMPONENT_SIZE / 8 {
+            return Err("Max data len reached".to_string());
+        }
+        self.commands
+            .send(WasmCommand::WriteComponent {
+                entity_id: entity,
+                component_id: component,
+                data,
+                insert: false,
             })
             .await
             .map_err(|e| format!("Error sending command: {e}"))?;

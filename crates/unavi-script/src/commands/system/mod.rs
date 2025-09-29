@@ -83,12 +83,12 @@ impl ScriptRuntime {
 }
 
 #[derive(Component, Default)]
-pub struct StartupSystems(HashMap<u64, bool>);
+pub struct StartupSystems(HashMap<u32, bool>);
 
 pub fn build_system(
     world: &mut World,
     entity: Entity,
-    id: u64,
+    id: u32,
     system: WSystem,
 ) -> anyhow::Result<()> {
     let mut queries = Vec::new();
@@ -99,7 +99,7 @@ pub fn build_system(
             Param::Query(q) => {
                 let mut vcomp_query = world.query::<(&VOwner, &VComponent)>();
 
-                let mut find_component = |wasm_id: u64| -> Option<ComponentId> {
+                let mut find_component = |wasm_id: u32| -> Option<ComponentId> {
                     vcomp_query.iter(world).find_map(|(owner, vcomp)| {
                         if owner.0 == entity && vcomp.wasm_id == wasm_id {
                             Some(vcomp.bevy_id)
@@ -316,7 +316,7 @@ async fn exec_system(
     store: &mut Store<StoreState>,
     script: ResourceAny,
     guest: &Guest,
-    id: u64,
+    id: u32,
     params: &[ParamData],
 ) -> anyhow::Result<()> {
     guest

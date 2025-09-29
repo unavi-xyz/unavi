@@ -4,9 +4,8 @@ package wired:ecs;
 
 interface types {
   type entity-id = u64;
-  type component-id = u64;
-  type query-id = u64;
-  type system-id = u64;
+  type component-id = u32;
+  type system-id = u32;
 
   enum primitive {
     %bool,
@@ -103,6 +102,8 @@ interface host-api {
 
   /// Inserts a component to an entity, overwriting any data if the component is already added.
   insert-component: func(entity: entity-id, component: component-id, data: list<u8>) -> result<_, string>;
+  /// Writes to a component, if it exists on the entity.
+  write-component: func(entity: entity-id, component: component-id, data: list<u8>) -> result<_, string>;
   /// Removes a component from an entity.
   remove-component: func(entity: entity-id, component: component-id) -> result<_, string>;
 }

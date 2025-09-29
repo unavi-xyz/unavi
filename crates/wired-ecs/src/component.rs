@@ -8,7 +8,7 @@ pub trait Component: Sized + 'static {
     }
     fn component_types() -> Vec<ComponentType>;
 
-    fn register() -> u64 {
+    fn register() -> u32 {
         match register_component(&crate::types::Component {
             key: Self::key(),
             types: Self::component_types(),

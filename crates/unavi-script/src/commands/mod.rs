@@ -17,12 +17,12 @@ pub(crate) mod system;
 #[derive(Debug)]
 pub enum WasmCommand {
     RegisterComponent {
-        id: u64,
+        id: u32,
         key: String,
         size: usize,
     },
     RegisterSystem {
-        id: u64,
+        id: u32,
         system: WSystem,
     },
     Spawn {
@@ -31,14 +31,15 @@ pub enum WasmCommand {
     Despawn {
         id: u64,
     },
-    InsertComponent {
+    WriteComponent {
         entity_id: u64,
-        component_id: u64,
+        component_id: u32,
         data: Vec<u8>,
+        insert: bool,
     },
     RemoveComponent {
         entity_id: u64,
-        component_id: u64,
+        component_id: u32,
     },
 }
 
@@ -60,7 +61,7 @@ pub struct VEntity {
 #[derive(Component)]
 pub struct VComponent {
     bevy_id: ComponentId,
-    wasm_id: u64,
+    wasm_id: u32,
 }
 
 const BATCH_SIZE: usize = 32;
@@ -98,7 +99,7 @@ pub fn apply_wasm_commands(
         }
 
         for (script_ent, cmd) in queue.drain(..) {
-            info!("> {cmd:?}");
+            // info!("> {cmd:?}");
 
             match cmd {
                 WasmCommand::RegisterComponent { id, key, size } => {
@@ -162,10 +163,11 @@ pub fn apply_wasm_commands(
                         world.despawn(e);
                     });
                 }
-                WasmCommand::InsertComponent {
+                WasmCommand::WriteComponent {
                     entity_id,
                     component_id,
                     mut data,
+                    insert,
                 } => {
                     commands.queue(move |world: &mut World| {
                         let Some(e) = world
@@ -199,20 +201,27 @@ pub fn apply_wasm_commands(
                         };
 
                         let Some(info) = world.components().get_info(bevy_id) else {
-                            error!("component info not found");
+                            error!("InsertComponent: component info not found");
                             return;
                         };
                         let size = info.layout().size() / size_of::<u8>();
                         data.resize(size, 0);
 
-                        let ptr = data.as_mut_ptr();
-
                         // SAFETY:
                         // - Component ids have been taken from the same world
                         // - Each array is created to the layout specified in the world
                         unsafe {
-                            let ptr = OwningPtr::new(NonNull::new_unchecked(ptr.cast()));
-                            world.entity_mut(e).insert_by_id(bevy_id, ptr);
+                            let mut ent = world.entity_mut(e);
+
+                            if insert {
+                                let ptr = data.as_mut_ptr();
+                                let ptr = OwningPtr::new(NonNull::new_unchecked(ptr.cast()));
+                                ent.insert_by_id(bevy_id, ptr);
+                            } else if let Ok(mut prev_ptr) = ent.get_mut_by_id(bevy_id) {
+                                let prev_data = prev_ptr.as_mut().deref_mut::<Vec<u8>>();
+                                debug_assert_eq!(prev_data.len(), data.len());
+                                *prev_data = data;
+                            }
                         }
                     });
                 }

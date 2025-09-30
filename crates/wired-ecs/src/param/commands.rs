@@ -3,7 +3,7 @@ use crate::{
     types::{EntityId, Param as WParam, ParamData},
 };
 
-use super::Param;
+use super::{Param, ParamMeta};
 
 pub struct Commands;
 
@@ -11,8 +11,11 @@ impl Param for Commands {
     fn register_param() -> Option<WParam> {
         None
     }
-    fn is_mutable() -> bool {
+    fn mutability() -> bool {
         false
+    }
+    fn meta() -> Option<ParamMeta> {
+        None
     }
     fn parse_param(_: &mut std::slice::IterMut<ParamData>) -> Self {
         Commands

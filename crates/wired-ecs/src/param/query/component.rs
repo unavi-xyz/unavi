@@ -15,7 +15,7 @@ pub trait QueriedComponent<'d> {
     fn from_bytes(bytes: &'d [u8]) -> Self::Ref;
     fn from_bytes_mut(bytes: &'d mut [u8]) -> Self::Mut;
 
-    fn is_mutable() -> bool;
+    fn mutability() -> bool;
 }
 
 impl<'d, T: Component> QueriedComponent<'d> for &'d T {
@@ -29,7 +29,7 @@ impl<'d, T: Component> QueriedComponent<'d> for &'d T {
     fn from_bytes_mut(bytes: &'d mut [u8]) -> Self::Mut {
         T::view(bytes)
     }
-    fn is_mutable() -> bool {
+    fn mutability() -> bool {
         false
     }
 }
@@ -44,7 +44,7 @@ impl<'d, T: Component> QueriedComponent<'d> for &'d mut T {
     fn from_bytes_mut(bytes: &'d mut [u8]) -> Self::Mut {
         T::view_mut(bytes)
     }
-    fn is_mutable() -> bool {
+    fn mutability() -> bool {
         true
     }
 }

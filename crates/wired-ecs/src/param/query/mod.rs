@@ -5,7 +5,7 @@ use iter::{QueryIter, QueryIterMut};
 
 use crate::types::{Param as WParam, ParamData, Query as WQuery};
 
-use super::Param;
+use super::{Param, ParamMeta};
 
 mod component;
 mod group;
@@ -44,9 +44,16 @@ where
             constraints: Vec::new(),
         }))
     }
-    fn is_mutable() -> bool {
-        T::is_mutable()
+    fn mutability() -> bool {
+        T::mutability().iter().any(|x| *x)
     }
+    fn meta() -> Option<ParamMeta> {
+        Some(ParamMeta::Query {
+            component_mut: T::mutability(),
+            component_sizes: T::component_sizes(),
+        })
+    }
+
     /// SAFETY:
     /// - Underlying data must remain alive through other means, Query holds a weak reference.
     fn parse_param(data: &mut std::slice::IterMut<ParamData>) -> Self {

@@ -8,7 +8,8 @@ pub trait QueryGroup<'d> {
     fn from_bytes_mut(bytes: &'d mut [u8]) -> Self::Mut;
 
     fn register_components() -> Vec<u32>;
-    fn is_mutable() -> bool;
+    fn mutability() -> Vec<bool>;
+    fn component_sizes() -> Vec<usize>;
 }
 
 impl<'d, A> QueryGroup<'d> for A
@@ -28,8 +29,11 @@ where
     fn register_components() -> Vec<u32> {
         vec![A::register()]
     }
-    fn is_mutable() -> bool {
-        A::is_mutable()
+    fn mutability() -> Vec<bool> {
+        vec![A::mutability()]
+    }
+    fn component_sizes() -> Vec<usize> {
+        vec![A::size()]
     }
 }
 
@@ -50,8 +54,11 @@ where
     fn register_components() -> Vec<u32> {
         vec![A::register()]
     }
-    fn is_mutable() -> bool {
-        A::is_mutable()
+    fn mutability() -> Vec<bool> {
+        vec![A::mutability()]
+    }
+    fn component_sizes() -> Vec<usize> {
+        vec![A::size()]
     }
 }
 
@@ -87,8 +94,11 @@ where
     fn register_components() -> Vec<u32> {
         vec![A::register(), B::register()]
     }
-    fn is_mutable() -> bool {
-        A::is_mutable() || B::is_mutable()
+    fn mutability() -> Vec<bool> {
+        vec![A::mutability(), B::mutability()]
+    }
+    fn component_sizes() -> Vec<usize> {
+        vec![A::size(), B::size()]
     }
 }
 
@@ -131,7 +141,10 @@ where
     fn register_components() -> Vec<u32> {
         vec![A::register(), B::register(), C::register()]
     }
-    fn is_mutable() -> bool {
-        A::is_mutable() || B::is_mutable() || C::is_mutable()
+    fn mutability() -> Vec<bool> {
+        vec![A::mutability(), B::mutability(), C::mutability()]
+    }
+    fn component_sizes() -> Vec<usize> {
+        vec![A::size(), B::size(), C::size()]
     }
 }

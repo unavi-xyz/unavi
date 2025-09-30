@@ -10,16 +10,25 @@ pub use local::*;
 pub use query::*;
 pub use resource::*;
 
+pub enum ParamMeta {
+    Query {
+        component_mut: Vec<bool>,
+        component_sizes: Vec<usize>,
+    },
+}
+
 pub trait Param {
     /// Registers the param with the host, if it needs to be registered.
     fn register_param() -> Option<WParam>;
-    fn is_mutable() -> bool;
+    fn mutability() -> bool;
+    fn meta() -> Option<ParamMeta>;
     fn parse_param(data: &mut std::slice::IterMut<ParamData>) -> Self;
 }
 
 pub trait ParamGroup {
     fn register_params() -> Vec<Option<WParam>>;
     fn mutability() -> Vec<bool>;
+    fn meta() -> Vec<Option<ParamMeta>>;
     fn parse_params(data: &mut Vec<ParamData>) -> Self;
 }
 
@@ -28,6 +37,9 @@ impl ParamGroup for () {
         Vec::new()
     }
     fn mutability() -> Vec<bool> {
+        Vec::new()
+    }
+    fn meta() -> Vec<Option<ParamMeta>> {
         Vec::new()
     }
     fn parse_params(_: &mut Vec<ParamData>) -> Self {}
@@ -41,7 +53,10 @@ where
         vec![A::register_param()]
     }
     fn mutability() -> Vec<bool> {
-        vec![A::is_mutable()]
+        vec![A::mutability()]
+    }
+    fn meta() -> Vec<Option<ParamMeta>> {
+        vec![A::meta()]
     }
     fn parse_params(data: &mut Vec<ParamData>) -> Self {
         let mut iter = data.iter_mut();
@@ -58,7 +73,10 @@ where
         vec![A::register_param(), B::register_param()]
     }
     fn mutability() -> Vec<bool> {
-        vec![A::is_mutable(), B::is_mutable()]
+        vec![A::mutability(), B::mutability()]
+    }
+    fn meta() -> Vec<Option<ParamMeta>> {
+        vec![A::meta(), B::meta()]
     }
     fn parse_params(data: &mut Vec<ParamData>) -> Self {
         let mut iter = data.iter_mut();
@@ -80,7 +98,10 @@ where
         ]
     }
     fn mutability() -> Vec<bool> {
-        vec![A::is_mutable(), B::is_mutable(), C::is_mutable()]
+        vec![A::mutability(), B::mutability(), C::mutability()]
+    }
+    fn meta() -> Vec<Option<ParamMeta>> {
+        vec![A::meta(), B::meta(), C::meta()]
     }
     fn parse_params(data: &mut Vec<ParamData>) -> Self {
         let mut iter = data.iter_mut();

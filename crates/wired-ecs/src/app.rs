@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::{
     host_api::{register_system, write_component},
-    param::ParamGroup,
+    param::{ParamGroup, ParamMeta},
     system::{BlindSystem, IntoSystem, System, function_system::FunctionSystem},
     types::{Param as WParam, ParamData, Schedule, System as WSystem, SystemId},
 };
@@ -10,6 +10,7 @@ use crate::{
 struct SystemCache {
     immutable: bool,
     mutability: Vec<bool>,
+    metas: Vec<Option<ParamMeta>>,
     params: Vec<WParam>,
     system: Box<dyn BlindSystem>,
 }
@@ -29,6 +30,7 @@ impl App {
         let system = F::into_system(f);
 
         let mutability = In::mutability();
+        let metas = In::meta();
         let params: Vec<WParam> = In::register_params().into_iter().flatten().collect();
 
         let id = match register_system(&WSystem {
@@ -44,6 +46,7 @@ impl App {
             SystemCache {
                 immutable: !mutability.iter().any(|x| *x),
                 mutability,
+                metas,
                 params,
                 system: Box::new(system),
             },
@@ -73,7 +76,6 @@ impl App {
                 }
             }
 
-            // println!("exec: {data:?}");
             cache.system.run_blind(&mut data);
 
             for (i, bef) in before {
@@ -84,13 +86,32 @@ impl App {
                         }
 
                         // Data was modified, write to host.
-                        // println!("modified: {aft:?}");
                         let WParam::Query(q) = &cache.params[i];
+                        let Some(ParamMeta::Query {
+                            component_mut,
+                            component_sizes,
+                        }) = &cache.metas[i]
+                        else {
+                            panic!("Param meta not found")
+                        };
 
                         for (entity, d) in aft.ents.iter().zip(aft.data.iter()) {
-                            for component in &q.components {
-                                // TODO: slice d to match component size
-                                // println!("writing {entity} > {component}: {d:?}");
+                            let mut i = 0;
+
+                            for ((component, size), is_mut) in q
+                                .components
+                                .iter()
+                                .zip(component_sizes.iter())
+                                .zip(component_mut.iter())
+                            {
+                                let i_end = i + size;
+                                let d = &d[i..i_end];
+                                i = i_end;
+
+                                if !is_mut {
+                                    continue;
+                                }
+
                                 if let Err(e) = write_component(*entity, *component, d) {
                                     panic!("Failed to write component data: {e}")
                                 }

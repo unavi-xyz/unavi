@@ -1,8 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-    time::Duration,
-};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use anyhow::{Context, bail};
 use bevy::{
@@ -17,7 +13,7 @@ use tracing::Instrument;
 use wasmtime::{AsContextMut, Store, component::ResourceAny};
 
 use crate::{
-    api::wired::ecs::wired::ecs::types::{Param, ParamData},
+    api::wired::ecs::wired::ecs::types::{Param, ParamData, QueryData},
     load::{
         LoadedScript,
         bindings::{
@@ -29,7 +25,7 @@ use crate::{
     },
 };
 
-use super::{VComponent, VOwner};
+use super::{VComponent, VEntity, VOwner};
 
 mod log;
 
@@ -91,6 +87,12 @@ pub fn build_system(
     id: u32,
     system: WSystem,
 ) -> anyhow::Result<()> {
+    let vent_id = if let Some(vent_id) = world.component_id::<VEntity>() {
+        vent_id
+    } else {
+        world.register_component::<VEntity>()
+    };
+
     let mut queries = Vec::new();
     let mut component_sizes = HashMap::new();
 
@@ -152,6 +154,8 @@ pub fn build_system(
                 }
 
                 let builder = QueryParamBuilder::new_box(|builder| {
+                    builder.ref_id(vent_id);
+
                     for id in components {
                         builder.ref_id(id);
                     }
@@ -173,16 +177,28 @@ pub fn build_system(
             let mut out = Vec::new();
 
             for query in queries {
-                let mut query_data = Vec::new();
+                let mut query_data = QueryData {
+                    ents: Vec::new(),
+                    data: Vec::new(),
+                };
 
                 for ent in query {
+                    let Some(wasm_id) = ent.get::<VEntity>().map(|x| x.wasm_id) else {
+                        continue;
+                    };
+
                     let mut ent_data = Vec::new();
 
-                    for access in ent
+                    for (i, access) in ent
                         .access()
                         .try_iter_component_access()
                         .expect("unbounded access")
+                        .enumerate()
                     {
+                        if i == 0 {
+                            continue;
+                        }
+
                         match access {
                             ComponentAccessKind::Shared(id) => {
                                 let ptr = ent.get_by_id(id).unwrap();
@@ -205,7 +221,8 @@ pub fn build_system(
                         }
                     }
 
-                    query_data.push(ent_data)
+                    query_data.ents.push(wasm_id);
+                    query_data.data.push(ent_data);
                 }
 
                 out.push(ParamData::Query(query_data));

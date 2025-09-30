@@ -55,7 +55,7 @@ pub struct VOwner(Entity);
 
 #[derive(Component)]
 pub struct VEntity {
-    wasm_id: u64,
+    pub wasm_id: u64,
 }
 
 #[derive(Component)]
@@ -207,21 +207,21 @@ pub fn apply_wasm_commands(
                         let size = info.layout().size() / size_of::<u8>();
                         data.resize(size, 0);
 
+                        let mut ent = world.entity_mut(e);
+                        let has_component = ent.contains_id(bevy_id);
+
+                        if !has_component && !insert {
+                            return;
+                        }
+
+                        let ptr = data.as_mut_ptr();
+
                         // SAFETY:
                         // - Component ids have been taken from the same world
                         // - Each array is created to the layout specified in the world
                         unsafe {
-                            let mut ent = world.entity_mut(e);
-
-                            if insert {
-                                let ptr = data.as_mut_ptr();
-                                let ptr = OwningPtr::new(NonNull::new_unchecked(ptr.cast()));
-                                ent.insert_by_id(bevy_id, ptr);
-                            } else if let Ok(mut prev_ptr) = ent.get_mut_by_id(bevy_id) {
-                                let prev_data = prev_ptr.as_mut().deref_mut::<Vec<u8>>();
-                                debug_assert_eq!(prev_data.len(), data.len());
-                                *prev_data = data;
-                            }
+                            let ptr = OwningPtr::new(NonNull::new_unchecked(ptr.cast()));
+                            ent.insert_by_id(bevy_id, ptr);
                         }
                     });
                 }

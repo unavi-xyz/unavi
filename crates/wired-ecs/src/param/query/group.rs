@@ -1,58 +1,69 @@
 use super::component::QueriedComponent;
 
-pub trait QueryGroup<'a> {
+pub trait QueryGroup<'d> {
     type Ref;
+    type Mut;
+
+    fn from_bytes(bytes: &'d [u8]) -> Self::Ref;
+    fn from_bytes_mut(bytes: &'d mut [u8]) -> Self::Mut;
 
     fn register_components() -> Vec<u32>;
-    fn from_bytes(bytes: &'a [u8]) -> Self::Ref;
-    fn from_bytes_mut(bytes: &'a mut [u8]) -> Self;
+    fn is_mutable() -> bool;
 }
 
-impl<'a, A> QueryGroup<'a> for A
+impl<'d, A> QueryGroup<'d> for A
 where
-    A: QueriedComponent<'a>,
+    A: QueriedComponent<'d>,
 {
-    type Ref = &'a A::Component;
+    type Ref = A::Ref;
+    type Mut = A::Mut;
 
-    fn register_components() -> Vec<u32> {
-        vec![A::register()]
-    }
-    fn from_bytes(bytes: &'a [u8]) -> Self::Ref {
+    fn from_bytes(bytes: &'d [u8]) -> Self::Ref {
         A::from_bytes(bytes)
     }
-    fn from_bytes_mut(bytes: &'a mut [u8]) -> Self {
+    fn from_bytes_mut(bytes: &'d mut [u8]) -> Self::Mut {
         A::from_bytes_mut(bytes)
     }
-}
-
-impl<'a, A> QueryGroup<'a> for (A,)
-where
-    A: QueriedComponent<'a>,
-{
-    type Ref = (&'a A::Component,);
 
     fn register_components() -> Vec<u32> {
         vec![A::register()]
     }
-    fn from_bytes(bytes: &'a [u8]) -> Self::Ref {
-        (A::from_bytes(bytes),)
-    }
-    fn from_bytes_mut(bytes: &'a mut [u8]) -> Self {
-        (A::from_bytes_mut(bytes),)
+    fn is_mutable() -> bool {
+        A::is_mutable()
     }
 }
 
-impl<'a, A, B> QueryGroup<'a> for (A, B)
+impl<'d, A> QueryGroup<'d> for (A,)
 where
-    A: QueriedComponent<'a>,
-    B: QueriedComponent<'a>,
+    A: QueriedComponent<'d>,
 {
-    type Ref = (&'a A::Component, &'a B::Component);
+    type Ref = (A::Ref,);
+    type Mut = (A::Mut,);
+
+    fn from_bytes(bytes: &'d [u8]) -> Self::Ref {
+        (A::from_bytes(bytes),)
+    }
+    fn from_bytes_mut(bytes: &'d mut [u8]) -> Self::Mut {
+        (A::from_bytes_mut(bytes),)
+    }
 
     fn register_components() -> Vec<u32> {
-        vec![A::register(), B::register()]
+        vec![A::register()]
     }
-    fn from_bytes(bytes: &'a [u8]) -> Self::Ref {
+    fn is_mutable() -> bool {
+        A::is_mutable()
+    }
+}
+
+impl<'d, A, B> QueryGroup<'d> for (A, B)
+where
+    A: QueriedComponent<'d>,
+    B: QueriedComponent<'d>,
+{
+    type Ref = (A::Ref, B::Ref);
+    type Mut = (A::Mut, B::Mut);
+
+    fn from_bytes(bytes: &'d [u8]) -> Self::Ref {
         let xa = A::size();
 
         let (ba, bb) = bytes.split_at(xa);
@@ -62,7 +73,7 @@ where
 
         (a, b)
     }
-    fn from_bytes_mut(bytes: &'a mut [u8]) -> Self {
+    fn from_bytes_mut(bytes: &'d mut [u8]) -> Self::Mut {
         let xa = A::size();
 
         let (ba, bb) = bytes.split_at_mut(xa);
@@ -72,20 +83,25 @@ where
 
         (a, b)
     }
-}
-
-impl<'a, A, B, C> QueryGroup<'a> for (A, B, C)
-where
-    A: QueriedComponent<'a>,
-    B: QueriedComponent<'a>,
-    C: QueriedComponent<'a>,
-{
-    type Ref = (&'a A::Component, &'a B::Component, &'a C::Component);
 
     fn register_components() -> Vec<u32> {
-        vec![A::register(), B::register(), C::register()]
+        vec![A::register(), B::register()]
     }
-    fn from_bytes(bytes: &'a [u8]) -> Self::Ref {
+    fn is_mutable() -> bool {
+        A::is_mutable() || B::is_mutable()
+    }
+}
+
+impl<'d, A, B, C> QueryGroup<'d> for (A, B, C)
+where
+    A: QueriedComponent<'d>,
+    B: QueriedComponent<'d>,
+    C: QueriedComponent<'d>,
+{
+    type Ref = (A::Ref, B::Ref, C::Ref);
+    type Mut = (A::Mut, B::Mut, C::Mut);
+
+    fn from_bytes(bytes: &'d [u8]) -> Self::Ref {
         let xa = A::size();
         let xb = B::size();
 
@@ -98,7 +114,7 @@ where
 
         (a, b, c)
     }
-    fn from_bytes_mut(bytes: &'a mut [u8]) -> Self {
+    fn from_bytes_mut(bytes: &'d mut [u8]) -> Self::Mut {
         let xa = A::size();
         let xb = B::size();
 
@@ -110,5 +126,12 @@ where
         let c = C::from_bytes_mut(bc);
 
         (a, b, c)
+    }
+
+    fn register_components() -> Vec<u32> {
+        vec![A::register(), B::register(), C::register()]
+    }
+    fn is_mutable() -> bool {
+        A::is_mutable() || B::is_mutable() || C::is_mutable()
     }
 }

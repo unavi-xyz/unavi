@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, ptr::NonNull};
 
 use group::QueryGroup;
 use iter::{QueryIter, QueryIterMut};
@@ -11,42 +11,50 @@ mod component;
 mod group;
 mod iter;
 
+/// Typed view of query data.
 pub struct Query<T> {
-    raw: Vec<Vec<u8>>,
+    // This should be a safe reference, not a raw pointer, but despite my best
+    // efforts I could not figure out the lifetimes to do so. ｡ﾟ･ (>﹏<) ･ﾟ｡
+    raw: NonNull<Vec<Vec<u8>>>,
     _t: PhantomData<T>,
 }
+
 impl<T> Query<T> {
     pub fn len(&self) -> usize {
-        self.raw.len()
+        unsafe { self.raw.as_ref().len() }
     }
     pub fn is_empty(&self) -> bool {
-        self.raw.is_empty()
+        unsafe { self.raw.as_ref().is_empty() }
     }
-}
-impl<T> Query<T> {
     pub fn iter(&self) -> QueryIter<T> {
-        QueryIter::new(self.raw.iter())
+        unsafe { QueryIter::new(self.raw.as_ref().iter()) }
     }
     pub fn iter_mut(&mut self) -> QueryIterMut<T> {
-        QueryIterMut::new(self.raw.iter_mut())
+        unsafe { QueryIterMut::new(self.raw.as_mut().iter_mut()) }
     }
 }
 
-impl<'a, T> Param for Query<T>
+impl<T> Param for Query<T>
 where
-    T: QueryGroup<'a>,
+    T: QueryGroup<'static>,
 {
-    fn parse_param(data: &mut std::vec::IntoIter<ParamData>) -> Self {
-        let ParamData::Query(raw) = data.next().unwrap();
-        Self {
-            raw,
-            _t: PhantomData,
-        }
-    }
     fn register_param() -> Option<WParam> {
         Some(WParam::Query(WQuery {
             components: T::register_components(),
             constraints: Vec::new(),
         }))
+    }
+    fn is_mutable() -> bool {
+        T::is_mutable()
+    }
+    /// SAFETY:
+    /// - Underlying data must remain alive through other means, Query holds a weak reference.
+    fn parse_param(data: &mut std::slice::IterMut<ParamData>) -> Self {
+        let ParamData::Query(raw) = data.next().unwrap();
+
+        Self {
+            raw: (&mut raw.data).into(),
+            _t: PhantomData,
+        }
     }
 }

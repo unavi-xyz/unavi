@@ -17,14 +17,14 @@ impl<F, In> FunctionSystem<F, In> {
 }
 
 impl<F, In> IntoSystem<FunctionSystem<F, In>> for F {
-    fn into_system(this: Self) -> FunctionSystem<F, In> {
-        FunctionSystem::new(this)
+    fn into_system(self) -> FunctionSystem<F, In> {
+        FunctionSystem::new(self)
     }
 }
 
 impl<F> System for FunctionSystem<F, ()>
 where
-    F: Fn() + Send + Sync + 'static,
+    F: Fn() + 'static,
 {
     type In = ();
 
@@ -35,8 +35,7 @@ where
 
 impl<F, A> System for FunctionSystem<F, (A,)>
 where
-    F: Fn(A) + Send + Sync + 'static,
-    A: Send + Sync + 'static,
+    F: Fn(A) + 'static,
 {
     type In = (A,);
 
@@ -47,9 +46,7 @@ where
 
 impl<F, A, B> System for FunctionSystem<F, (A, B)>
 where
-    F: Fn(A, B) + Send + Sync + 'static,
-    A: Send + Sync + 'static,
-    B: Send + Sync + 'static,
+    F: Fn(A, B) + 'static,
 {
     type In = (A, B);
 
@@ -60,10 +57,7 @@ where
 
 impl<F, A, B, C> System for FunctionSystem<F, (A, B, C)>
 where
-    F: Fn(A, B, C) + Send + Sync + 'static,
-    A: Send + Sync + 'static,
-    B: Send + Sync + 'static,
-    C: Send + Sync + 'static,
+    F: Fn(A, B, C) + 'static,
 {
     type In = (A, B, C);
 

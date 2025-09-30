@@ -53,8 +53,10 @@ interface types {
     query(query)
   }
 
-  type query-item = list<u8>;
-  type query-data = list<query-item>;
+  record query-data {
+    ents: list<entity-id>,
+    data: list<list<u8>>,
+  }
 
   variant param-data {
     query(query-data)

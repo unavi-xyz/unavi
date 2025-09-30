@@ -16,10 +16,11 @@ fn script_ecs() {
     assert!(has_log("startup_system"));
 
     // Update
-    tick_app(&mut app);
-    tick_app(&mut app);
-    assert!(has_log("read_system"));
-    assert!(has_log("write_system"));
+    for _ in 0..5 {
+        tick_app(&mut app);
+        tick_app(&mut app);
+    }
+    assert!(has_log("update_system"));
 
     assert!(!has_error_log());
 }

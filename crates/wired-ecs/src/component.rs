@@ -2,7 +2,7 @@ use std::any::type_name;
 
 use crate::{host_api::register_component, types::ComponentType};
 
-pub trait Component: Sized + 'static {
+pub trait Component: Sized {
     fn key() -> String {
         type_name::<Self>().to_string()
     }

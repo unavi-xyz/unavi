@@ -1,7 +1,9 @@
 use crate::Component;
 
-pub trait QueriedComponent<'a> {
+pub trait QueriedComponent<'d> {
     type Component: Component;
+    type Ref;
+    type Mut;
 
     fn size() -> usize {
         Self::Component::size()
@@ -10,27 +12,39 @@ pub trait QueriedComponent<'a> {
         Self::Component::register()
     }
 
-    fn from_bytes(bytes: &'a [u8]) -> &'a Self::Component;
-    fn from_bytes_mut(bytes: &'a mut [u8]) -> Self;
+    fn from_bytes(bytes: &'d [u8]) -> Self::Ref;
+    fn from_bytes_mut(bytes: &'d mut [u8]) -> Self::Mut;
+
+    fn is_mutable() -> bool;
 }
 
-impl<'a, T: Component> QueriedComponent<'a> for &'a T {
+impl<'d, T: Component> QueriedComponent<'d> for &'d T {
     type Component = T;
+    type Ref = &'d T;
+    type Mut = &'d T;
 
-    fn from_bytes(bytes: &'a [u8]) -> &'a T {
+    fn from_bytes(bytes: &'d [u8]) -> Self::Ref {
         T::view(bytes)
     }
-    fn from_bytes_mut(bytes: &'a mut [u8]) -> Self {
+    fn from_bytes_mut(bytes: &'d mut [u8]) -> Self::Mut {
         T::view(bytes)
+    }
+    fn is_mutable() -> bool {
+        false
     }
 }
-impl<'a, T: Component> QueriedComponent<'a> for &'a mut T {
+impl<'d, T: Component> QueriedComponent<'d> for &'d mut T {
     type Component = T;
+    type Ref = &'d T;
+    type Mut = &'d mut T;
 
-    fn from_bytes(bytes: &'a [u8]) -> &'a T {
+    fn from_bytes(bytes: &'d [u8]) -> Self::Ref {
         T::view(bytes)
     }
-    fn from_bytes_mut(bytes: &'a mut [u8]) -> Self {
+    fn from_bytes_mut(bytes: &'d mut [u8]) -> Self::Mut {
         T::view_mut(bytes)
+    }
+    fn is_mutable() -> bool {
+        true
     }
 }

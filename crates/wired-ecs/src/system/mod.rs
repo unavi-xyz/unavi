@@ -2,27 +2,26 @@ use crate::{param::ParamGroup, types::ParamData};
 
 pub mod function_system;
 
-pub trait System: Send + Sync + 'static {
+pub trait System {
     type In;
-
     fn run(&self, data: Self::In);
 }
 
 pub trait BlindSystem {
-    fn run_blind(&self, data: Vec<ParamData>);
+    fn run_blind(&self, data: &mut Vec<ParamData>);
 }
 
-impl<S, In> BlindSystem for S
+impl<S, P> BlindSystem for S
 where
-    S: System<In = In>,
-    In: ParamGroup + 'static,
+    P: ParamGroup,
+    S: System<In = P>,
 {
-    fn run_blind(&self, data: Vec<ParamData>) {
-        let a = In::parse_params(data);
-        self.run(a)
+    fn run_blind(&self, data: &mut Vec<ParamData>) {
+        let a = P::parse_params(data);
+        self.run(a);
     }
 }
 
-pub trait IntoSystem<T> {
-    fn into_system(this: Self) -> T;
+pub trait IntoSystem<T>: Sized {
+    fn into_system(self) -> T;
 }

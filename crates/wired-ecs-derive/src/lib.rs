@@ -36,6 +36,7 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
                     "u16" => ComponentType::Primitive(Primitive::U16),
                     "u32" => ComponentType::Primitive(Primitive::U32),
                     "u64" => ComponentType::Primitive(Primitive::U64),
+                    "usize" => ComponentType::Primitive(Primitive::U32),
                     "&str" | "alloc::string::String" => ComponentType::Primitive(Primitive::String),
                     other => panic!("Unsupported primitive type in #[derive(Component)]: {}", other),
                 }

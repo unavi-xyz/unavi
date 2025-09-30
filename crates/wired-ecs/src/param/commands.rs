@@ -8,11 +8,14 @@ use super::Param;
 pub struct Commands;
 
 impl Param for Commands {
-    fn parse_param(_: &mut std::vec::IntoIter<ParamData>) -> Self {
-        Commands
-    }
     fn register_param() -> Option<WParam> {
         None
+    }
+    fn is_mutable() -> bool {
+        false
+    }
+    fn parse_param(_: &mut std::slice::IterMut<ParamData>) -> Self {
+        Commands
     }
 }
 

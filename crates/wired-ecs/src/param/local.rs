@@ -6,10 +6,13 @@ use super::Param;
 pub struct Local<T: Default>(pub T);
 
 impl<T: Default> Param for Local<T> {
-    fn parse_param(_data: &mut std::vec::IntoIter<ParamData>) -> Self {
-        Local(T::default())
-    }
     fn register_param() -> Option<WParam> {
         None
+    }
+    fn is_mutable() -> bool {
+        false
+    }
+    fn parse_param(_: &mut std::slice::IterMut<ParamData>) -> Self {
+        Local(T::default())
     }
 }

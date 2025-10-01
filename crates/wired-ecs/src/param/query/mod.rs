@@ -1,6 +1,7 @@
 use std::{marker::PhantomData, ptr::NonNull};
 
-use group::QueryGroup;
+use component_group::ComponentGroup;
+use constraint::Constraint;
 use iter::{QueryIter, QueryIterMut};
 
 use crate::types::{Param as WParam, ParamData, Query as WQuery};
@@ -8,18 +9,20 @@ use crate::types::{Param as WParam, ParamData, Query as WQuery};
 use super::{Param, ParamMeta};
 
 mod component;
-mod group;
+mod component_group;
+pub mod constraint;
 mod iter;
 
 /// Typed view of query data.
-pub struct Query<T> {
+pub struct Query<T, U = ()> {
     // This should be a safe reference, not a raw pointer, but despite my best
     // efforts I could not figure out the lifetimes to do so. ｡ﾟ･ (>﹏<) ･ﾟ｡
     raw: NonNull<Vec<Vec<u8>>>,
     _t: PhantomData<T>,
+    _u: PhantomData<U>,
 }
 
-impl<T> Query<T> {
+impl<T, U> Query<T, U> {
     pub fn len(&self) -> usize {
         unsafe { self.raw.as_ref().len() }
     }
@@ -34,14 +37,15 @@ impl<T> Query<T> {
     }
 }
 
-impl<T> Param for Query<T>
+impl<T, U> Param for Query<T, U>
 where
-    T: QueryGroup<'static>,
+    T: ComponentGroup<'static>,
+    U: Constraint,
 {
     fn register_param() -> Option<WParam> {
         Some(WParam::Query(WQuery {
             components: T::register_components(),
-            constraints: Vec::new(),
+            constraints: U::build_constraints(),
         }))
     }
     fn mutability() -> bool {
@@ -51,6 +55,7 @@ where
         Some(ParamMeta::Query {
             component_mut: T::mutability(),
             component_sizes: T::component_sizes(),
+            constraints: U::concrete_constraints(),
         })
     }
 
@@ -58,10 +63,10 @@ where
     /// - Underlying data must remain alive through other means, Query holds a weak reference.
     fn parse_param(data: &mut std::slice::IterMut<ParamData>) -> Self {
         let ParamData::Query(raw) = data.next().unwrap();
-
         Self {
             raw: (&mut raw.data).into(),
             _t: PhantomData,
+            _u: PhantomData,
         }
     }
 }

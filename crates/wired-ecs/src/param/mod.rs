@@ -14,7 +14,14 @@ pub enum ParamMeta {
     Query {
         component_mut: Vec<bool>,
         component_sizes: Vec<usize>,
+        constraints: Vec<ConcreteConstraint>,
     },
+}
+
+#[derive(PartialEq)]
+pub enum ConcreteConstraint {
+    With { component: u32 },
+    Without { component: u32 },
 }
 
 pub trait Param {

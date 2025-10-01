@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use super::group::QueryGroup;
+use super::component_group::ComponentGroup;
 
 pub struct QueryIter<'d, T> {
     raw: core::slice::Iter<'d, Vec<u8>>,
@@ -16,7 +16,7 @@ impl<'d, T> QueryIter<'d, T> {
 }
 impl<'d, T> Iterator for QueryIter<'d, T>
 where
-    T: QueryGroup<'d>,
+    T: ComponentGroup<'d>,
 {
     type Item = T::Ref;
     fn next(&mut self) -> Option<Self::Item> {
@@ -38,7 +38,7 @@ impl<'d, T> QueryIterMut<'d, T> {
 }
 impl<'d, T> Iterator for QueryIterMut<'d, T>
 where
-    T: QueryGroup<'d>,
+    T: ComponentGroup<'d>,
 {
     type Item = T::Mut;
     fn next(&mut self) -> Option<Self::Item> {

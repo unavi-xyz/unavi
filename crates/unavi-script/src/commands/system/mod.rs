@@ -186,7 +186,6 @@ pub fn build_system(
                     let Some(wasm_id) = ent.get::<VEntity>().map(|x| x.wasm_id) else {
                         continue;
                     };
-
                     let mut ent_data = Vec::new();
 
                     for (i, access) in ent
@@ -194,6 +193,9 @@ pub fn build_system(
                         .try_iter_component_access()
                         .expect("unbounded access")
                         .enumerate()
+                        .collect::<Vec<_>>()
+                        .into_iter()
+                        .rev()
                     {
                         if i == 0 {
                             continue;
@@ -201,6 +203,8 @@ pub fn build_system(
 
                         match access {
                             ComponentAccessKind::Shared(id) => {
+                                info!("> reading bevy_{id:?}");
+
                                 let ptr = ent.get_by_id(id).unwrap();
                                 let size = component_sizes.get(&id).copied().unwrap();
 
@@ -225,6 +229,7 @@ pub fn build_system(
                     query_data.data.push(ent_data);
                 }
 
+                info!("Got query data: {query_data:?}");
                 out.push(ParamData::Query(query_data));
             }
 

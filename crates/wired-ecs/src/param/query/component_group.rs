@@ -1,6 +1,6 @@
 use super::component::QueriedComponent;
 
-pub trait QueryGroup<'d> {
+pub trait ComponentGroup<'d> {
     type Ref;
     type Mut;
 
@@ -12,7 +12,7 @@ pub trait QueryGroup<'d> {
     fn component_sizes() -> Vec<usize>;
 }
 
-impl<'d, A> QueryGroup<'d> for A
+impl<'d, A> ComponentGroup<'d> for A
 where
     A: QueriedComponent<'d>,
 {
@@ -37,7 +37,7 @@ where
     }
 }
 
-impl<'d, A> QueryGroup<'d> for (A,)
+impl<'d, A> ComponentGroup<'d> for (A,)
 where
     A: QueriedComponent<'d>,
 {
@@ -62,7 +62,7 @@ where
     }
 }
 
-impl<'d, A, B> QueryGroup<'d> for (A, B)
+impl<'d, A, B> ComponentGroup<'d> for (A, B)
 where
     A: QueriedComponent<'d>,
     B: QueriedComponent<'d>,
@@ -102,7 +102,7 @@ where
     }
 }
 
-impl<'d, A, B, C> QueryGroup<'d> for (A, B, C)
+impl<'d, A, B, C> ComponentGroup<'d> for (A, B, C)
 where
     A: QueriedComponent<'d>,
     B: QueriedComponent<'d>,

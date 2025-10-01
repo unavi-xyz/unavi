@@ -13,7 +13,10 @@ mod bindings {
 pub mod prelude {
     pub use super::{
         App, Component,
-        param::{Commands, Local, Query, Resource},
+        param::{
+            Commands, Local, Query, Resource,
+            constraint::{With, Without},
+        },
         types::{ParamData, Schedule, SystemId},
     };
 }

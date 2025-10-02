@@ -1,6 +1,7 @@
 use crate::{param::ParamGroup, types::ParamData};
 
 pub mod function_system;
+pub mod register_system;
 
 pub trait System {
     type In;
@@ -20,8 +21,4 @@ where
         let a = P::parse_params(data);
         self.run(a);
     }
-}
-
-pub trait IntoSystem<T>: Sized {
-    fn into_system(self) -> T;
 }

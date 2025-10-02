@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use super::{IntoSystem, System};
+use super::System;
 
 pub struct FunctionSystem<F, In> {
     f: F,
@@ -8,17 +8,11 @@ pub struct FunctionSystem<F, In> {
 }
 
 impl<F, In> FunctionSystem<F, In> {
-    fn new(f: F) -> Self {
+    pub fn new(f: F) -> Self {
         Self {
             f,
             _in: PhantomData,
         }
-    }
-}
-
-impl<F, In> IntoSystem<FunctionSystem<F, In>> for F {
-    fn into_system(self) -> FunctionSystem<F, In> {
-        FunctionSystem::new(self)
     }
 }
 

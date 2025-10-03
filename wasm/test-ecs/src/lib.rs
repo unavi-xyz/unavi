@@ -81,7 +81,7 @@ fn test_mut_queries(
     mut points: Query<&mut MyPoint, Without<MyFloat>>,
     mut points_and_float: Query<(&mut MyPoint, &mut MyFloat)>,
 ) {
-    println!("update_system");
+    println!("update_1");
     let count = COUNT.fetch_add(1, Ordering::AcqRel);
 
     let x1 = X1 + count;
@@ -126,6 +126,7 @@ fn test_with_without(
     floats_with: Query<&MyFloat, With<MyPoint>>,
     floats_without: Query<&MyFloat, Without<MyPoint>>,
 ) {
+    println!("update_2");
     assert_eq!(floats_with.len(), 1);
     assert_eq!(floats_without.len(), 1);
 

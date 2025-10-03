@@ -1,6 +1,6 @@
 use setup::{
     construct_script,
-    logs::{has_error_log, has_log},
+    logs::{count_logs_with, has_error_log, has_log},
     tick_app,
 };
 
@@ -14,13 +14,14 @@ fn script_ecs() {
     // Startup
     tick_app(&mut app);
     assert!(has_log("startup_system"));
+    assert!(!has_log("update_"));
 
     // Update
-    for _ in 0..5 {
+    for i in 1..=5 {
         tick_app(&mut app);
-        tick_app(&mut app);
+        assert_eq!(count_logs_with("update_1"), i);
+        assert_eq!(count_logs_with("update_2"), i);
     }
-    assert!(has_log("update_system"));
 
     assert!(!has_error_log());
 }

@@ -18,6 +18,7 @@ use wasmtime::{AsContextMut, Store, component::ResourceAny};
 
 use crate::{
     api::wired::ecs::wired::ecs::types::{Param, ParamData, QueryData},
+    execute::init::InitializedScript,
     load::{
         LoadedScript,
         bindings::{
@@ -106,10 +107,112 @@ impl StartupSystems {
     }
 }
 
-#[derive(Component, Default)]
-pub struct VSystemDependencies {
+const SCHEDULES: &[WSchedule] = &[WSchedule::Render, WSchedule::Startup, WSchedule::Update];
+
+#[derive(Component)]
+pub struct VSystemDependencies(pub HashMap<WSchedule, ScheduleDependencies>);
+
+impl Default for VSystemDependencies {
+    fn default() -> Self {
+        let mut map = HashMap::default();
+        for s in SCHEDULES {
+            map.insert(*s, ScheduleDependencies::default());
+        }
+        Self(map)
+    }
+}
+
+#[derive(Default)]
+pub struct ScheduleDependencies {
     pub dependencies: HashMap<u32, Vec<u32>>,
     complete: HashMap<u32, Arc<Notify>>,
+    ready: HashMap<u32, Arc<Notify>>,
+    start: Arc<Notify>,
+}
+
+#[derive(Component)]
+pub struct ScriptCycle {
+    i: usize,
+    task: Option<Task<()>>,
+}
+
+impl Default for ScriptCycle {
+    fn default() -> Self {
+        Self { i: 1, task: None }
+    }
+}
+
+/// Increase the script cycle once all vsystems are complete.
+pub fn tick_script_cycle(
+    mut scripts: Query<(&VSystemDependencies, &mut ScriptCycle), With<InitializedScript>>,
+) {
+    for (vsystem_deps, mut cycle) in scripts.iter_mut() {
+        if let Some(mut task) = cycle.task.as_mut() {
+            match block_on(poll_once(&mut task)) {
+                Some(_) => {
+                    info!("Completed cycle {}", cycle.i);
+                    cycle.i += 1;
+                    cycle.task = None;
+                }
+                None => continue,
+            }
+        }
+
+        let mut waiters = Vec::new();
+        for s in SCHEDULES {
+            if *s == WSchedule::Startup && cycle.i > 1 {
+                continue;
+            }
+
+            let deps = vsystem_deps.0.get(s).unwrap();
+            waiters.extend(deps.complete.values().cloned());
+        }
+        if waiters.is_empty() {
+            continue;
+        }
+
+        let pool = AsyncComputeTaskPool::get();
+        cycle.task = Some(pool.spawn(async move {
+            futures::future::join_all(waiters.iter().map(|n| n.notified())).await;
+        }));
+    }
+}
+
+/// Starts script execution once all vsystems are ready.
+pub fn start_script_cycle(
+    mut scripts: Query<&VSystemDependencies, With<InitializedScript>>,
+    mut tasks: Local<HashMap<WSchedule, Option<Task<()>>>>,
+) {
+    for vsystem_deps in scripts.iter_mut() {
+        for s in SCHEDULES {
+            let task = tasks.entry(*s).or_default();
+
+            if let Some(mut t) = task.as_mut() {
+                match block_on(poll_once(&mut t)) {
+                    Some(_) => {
+                        *task = None;
+                    }
+                    None => continue,
+                }
+            }
+
+            let deps = vsystem_deps.0.get(s).unwrap();
+
+            let waiters = deps.ready.values().cloned().collect::<Vec<_>>();
+            if waiters.is_empty() {
+                continue;
+            }
+
+            let start = deps.start.clone();
+
+            let pool = AsyncComputeTaskPool::get();
+            *task = Some(pool.spawn(async move {
+                futures::future::join_all(waiters.iter().map(|n| n.notified())).await;
+                info!("Starting {s:?}");
+                start.notify_waiters();
+            }));
+        }
+    }
 }
 
 pub fn build_system(
@@ -118,10 +221,13 @@ pub fn build_system(
     id: u32,
     system: WSystem,
 ) -> anyhow::Result<()> {
+    let ready = Arc::new(Notify::default());
     let complete = Arc::new(Notify::default());
 
-    if let Some(mut deps) = world.get_mut::<VSystemDependencies>(entity) {
-        deps.complete.insert(id, complete.clone());
+    if let Some(mut vsystem_deps) = world.get_mut::<VSystemDependencies>(entity) {
+        let schedule_deps = vsystem_deps.0.get_mut(&system.schedule).unwrap();
+        schedule_deps.ready.insert(id, ready.clone());
+        schedule_deps.complete.insert(id, complete.clone());
     } else {
         bail!("VSystemDependencies not found on script entity")
     }
@@ -286,9 +392,11 @@ pub fn build_system(
         Option<&Name>,
         &mut StartupSystems,
         &VSystemDependencies,
+        &ScriptCycle,
     )>,
                   mut executing: Local<Option<Task<anyhow::Result<()>>>>,
-                  mut upstream: Local<UpstreamDeps>| {
+                  mut upstream: Local<UpstreamDeps>,
+                  mut prev_i: Local<usize>| {
         if let Some(mut task) = executing.as_mut() {
             match block_on(poll_once(&mut task)) {
                 Some(Ok(_)) => {
@@ -302,12 +410,18 @@ pub fn build_system(
             }
         }
 
-        let Ok((loaded, rt, name, mut startup, all_deps)) = scripts.get_mut(entity) else {
+        let Ok((loaded, rt, name, mut startup, vsystem_deps, cycle)) = scripts.get_mut(entity)
+        else {
             // Return early if script is not found. Eventually we will remove
             // this system from its schedule on script removal, but for now it runs indefinitely.
             // Waiting on https://github.com/bevyengine/bevy/issues/20115.
             return;
         };
+
+        if cycle.i == *prev_i {
+            // Previous cycle not yet complete.
+            return;
+        }
 
         while let Ok(r) = startup.complete_recv.try_recv() {
             startup.complete.insert(r, true);
@@ -322,12 +436,14 @@ pub fn build_system(
             return;
         }
 
-        if let Some(deps) = all_deps.dependencies.get(&id)
+        let schedule_deps = vsystem_deps.0.get(&system.schedule).unwrap();
+
+        if let Some(deps) = schedule_deps.dependencies.get(&id)
             && *deps != *upstream.ids
         {
             let mut waiters = Vec::new();
             for d in deps {
-                if let Some(notify) = all_deps.complete.get(d) {
+                if let Some(notify) = schedule_deps.complete.get(d) {
                     waiters.push(notify.clone());
                 }
             }
@@ -344,15 +460,25 @@ pub fn build_system(
         let ctx = rt.ctx.clone();
         let elapsed = time.elapsed();
         let guest = loaded.0.clone();
+        let ready = ready.clone();
+        let start = schedule_deps.start.clone();
         let startup_complete = startup.complete_send.clone();
         let waiters = upstream.waiters.clone();
 
         let pool = AsyncComputeTaskPool::get();
         let task = pool.spawn(
             async move {
-                futures::future::join_all(waiters.iter().map(|n| n.notified())).await;
-                // TODO: cycle enforcement (in case cycle takes longer than tick)
-                // TODO: what if system finishes before downstream deps are listening
+                let start = start.notified();
+                let dep_fut = futures::future::join_all(waiters.iter().map(|n| n.notified()));
+
+                ready.notify_one();
+
+                // Wait for all VSystems to be ready. We don't want to execute
+                // and signal completion before dependants are listening.
+                start.await;
+
+                // Wait for dependencies to complete.
+                dep_fut.await;
 
                 let mut ctx = ctx.lock().await;
                 ctx.store.set_epoch_deadline(1);
@@ -382,6 +508,7 @@ pub fn build_system(
         );
 
         *executing = Some(task);
+        *prev_i = cycle.i;
     };
 
     if system.schedule == WSchedule::Startup {
@@ -389,15 +516,14 @@ pub fn build_system(
         startup.complete.insert(id, false);
     };
 
-    let sys = f_input.pipe(f).into_configs();
+    let s_func = move |_: &mut World, s: &mut Schedule| {
+        let sys = f_input.pipe(f);
+        s.add_systems(sys);
+    };
 
     match system.schedule {
-        WSchedule::Render => world.schedule_scope(Update, |_, s| {
-            s.add_systems(sys);
-        }),
-        WSchedule::Update | WSchedule::Startup => world.schedule_scope(FixedUpdate, |_, s| {
-            s.add_systems(sys);
-        }),
+        WSchedule::Render => world.schedule_scope(Update, s_func),
+        WSchedule::Update | WSchedule::Startup => world.schedule_scope(FixedUpdate, s_func),
     };
 
     Ok(())

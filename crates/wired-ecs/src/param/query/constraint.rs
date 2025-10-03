@@ -61,12 +61,12 @@ where
 {
     fn build_constraints() -> Vec<WConstraint> {
         let mut out = A::build_constraints();
-        out.append(&mut B::build_constraints());
+        out.extend(B::build_constraints());
         out
     }
     fn concrete_constraints() -> Vec<ConcreteConstraint> {
         let mut out = A::concrete_constraints();
-        out.append(&mut B::concrete_constraints());
+        out.extend(B::concrete_constraints());
         out
     }
 }

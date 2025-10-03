@@ -33,7 +33,15 @@ impl Plugin for ScriptPlugin {
             .add_observer(commands::cleanup_vobjects)
             .add_systems(
                 PreUpdate,
-                (execute::increment_epochs, commands::apply_wasm_commands),
+                (
+                    commands::apply_wasm_commands,
+                    execute::increment_epochs,
+                    (
+                        commands::system::tick_script_cycle,
+                        commands::system::start_script_cycle,
+                    )
+                        .chain(),
+                ),
             )
             .add_systems(
                 FixedUpdate,

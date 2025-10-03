@@ -46,6 +46,9 @@ pub fn construct_script(app: &mut App) {
     // Execute script constructor.
     tick_app(app);
     tick_app(app);
+
+    // Init script cycle.
+    tick_app(app);
 }
 
 pub fn tick_app(app: &mut App) {

@@ -150,7 +150,6 @@ pub fn tick_script_cycle(
         if let Some(mut task) = cycle.task.as_mut() {
             match block_on(poll_once(&mut task)) {
                 Some(_) => {
-                    info!("Completed cycle {}", cycle.i);
                     cycle.i += 1;
                     cycle.task = None;
                 }
@@ -208,7 +207,6 @@ pub fn start_script_cycle(
             let pool = AsyncComputeTaskPool::get();
             *task = Some(pool.spawn(async move {
                 futures::future::join_all(waiters.iter().map(|n| n.notified())).await;
-                info!("Starting {s:?}");
                 start.notify_waiters();
             }));
         }

@@ -9,6 +9,7 @@ use bevy::{
     prelude::*,
     tasks::{AsyncComputeTaskPool, Task, block_on, poll_once},
 };
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel};
 use tracing::Instrument;
 use wasmtime::{AsContextMut, Store, component::ResourceAny};
 
@@ -78,8 +79,23 @@ impl ScriptRuntime {
     }
 }
 
-#[derive(Component, Default)]
-pub struct StartupSystems(HashMap<u32, bool>);
+#[derive(Component)]
+pub struct StartupSystems {
+    complete: HashMap<u32, bool>,
+    complete_send: UnboundedSender<u32>,
+    complete_recv: UnboundedReceiver<u32>,
+}
+
+impl Default for StartupSystems {
+    fn default() -> Self {
+        let (send, recv) = unbounded_channel();
+        Self {
+            complete: HashMap::default(),
+            complete_send: send,
+            complete_recv: recv,
+        }
+    }
+}
 
 pub fn build_system(
     world: &mut World,
@@ -203,8 +219,6 @@ pub fn build_system(
 
                         match access {
                             ComponentAccessKind::Shared(id) => {
-                                info!("> reading bevy_{id:?}");
-
                                 let ptr = ent.get_by_id(id).unwrap();
                                 let size = component_sizes.get(&id).copied().unwrap();
 
@@ -229,7 +243,6 @@ pub fn build_system(
                     query_data.data.push(ent_data);
                 }
 
-                info!("Got query data: {query_data:?}");
                 out.push(ParamData::Query(query_data));
             }
 
@@ -250,10 +263,6 @@ pub fn build_system(
             match block_on(poll_once(&mut task)) {
                 Some(Ok(_)) => {
                     *executing = None;
-
-                    if let Ok((_, _, _, mut startup)) = scripts.get_mut(entity) {
-                        startup.0.insert(id, true);
-                    }
                 }
                 Some(Err(e)) => {
                     error!("Script system execution error: {e:?}");
@@ -263,18 +272,22 @@ pub fn build_system(
             }
         }
 
-        let Ok((loaded, rt, name, startup)) = scripts.get(entity) else {
+        let Ok((loaded, rt, name, mut startup)) = scripts.get_mut(entity) else {
             // Return early if script is not found. Eventually we will remove
             // this system from its schedule on script removal, but for now it runs indefinitely.
             // Waiting on https://github.com/bevyengine/bevy/issues/20115.
             return;
         };
 
+        while let Ok(r) = startup.complete_recv.try_recv() {
+            startup.complete.insert(r, true);
+        }
+
         if system.schedule == WSchedule::Startup {
-            if startup.0.get(&id) == Some(&true) {
+            if startup.complete.get(&id) == Some(&true) {
                 return;
             }
-        } else if startup.0.iter().any(|(_, x)| !x) {
+        } else if startup.complete.iter().any(|(_, x)| !x) {
             // Startup not finished.
             return;
         }
@@ -286,6 +299,7 @@ pub fn build_system(
         let ctx = rt.ctx.clone();
         let elapsed = time.elapsed();
         let guest = loaded.0.clone();
+        let complete_send = startup.complete_send.clone();
 
         let pool = AsyncComputeTaskPool::get();
         let task = pool.spawn(
@@ -306,6 +320,10 @@ pub fn build_system(
 
                 ctx.flush_logs().await;
 
+                if system.schedule == WSchedule::Startup {
+                    complete_send.send(id)?;
+                }
+
                 res
             }
             .instrument(info_span!("", script = name)),
@@ -323,7 +341,7 @@ pub fn build_system(
         }),
         WSchedule::Startup => {
             let mut startup = world.get_mut::<StartupSystems>(entity).unwrap();
-            startup.0.insert(id, false);
+            startup.complete.insert(id, false);
 
             world.schedule_scope(FixedUpdate, |_, s| {
                 s.add_systems(f_input.pipe(f));

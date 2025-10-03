@@ -161,8 +161,11 @@ pub fn apply_wasm_commands(
                             SystemOrder::Before => (a, b),
                         };
 
-                        let deps = vsystem_deps.dependencies.entry(down).or_default();
-                        deps.push(up);
+                        // TODO: Only add deps to a's schedule.
+                        for schedule_deps in vsystem_deps.0.values_mut() {
+                            let deps = schedule_deps.dependencies.entry(down).or_default();
+                            deps.push(up);
+                        }
                     });
                 }
                 WasmCommand::Spawn { id } => {

@@ -5,9 +5,11 @@ use bevy::{
     prelude::*,
     ptr::OwningPtr,
 };
+use system::VSystemDependencies;
 use tokio::sync::mpsc::error::TryRecvError;
 
 use crate::{
+    api::wired::ecs::wired::ecs::host_api::SystemOrder,
     execute::init::InitializedScript,
     load::{LoadedScript, ScriptCommands, bindings::wired::ecs::types::System as WSystem},
 };
@@ -24,6 +26,11 @@ pub enum WasmCommand {
     RegisterSystem {
         id: u32,
         system: WSystem,
+    },
+    OrderSystems {
+        a: u32,
+        order: SystemOrder,
+        b: u32,
     },
     Spawn {
         id: u64,
@@ -77,13 +84,13 @@ pub fn apply_wasm_commands(
     // info!("apply_wasm_commands");
 
     loop {
-        for (ent, mut recv) in script_commands.iter_mut() {
+        for (ent, mut recv_commands) in script_commands.iter_mut() {
             loop {
                 if queue.len() >= BATCH_SIZE {
                     break;
                 }
 
-                match recv.0.try_recv() {
+                match recv_commands.0.try_recv() {
                     Ok(cmd) => queue.push((ent, cmd)),
                     Err(TryRecvError::Empty) => break,
                     Err(TryRecvError::Disconnected) => {
@@ -138,6 +145,24 @@ pub fn apply_wasm_commands(
                         if let Err(e) = system::build_system(world, script_ent, id, system) {
                             error!("Error building system {id}: {e:?}");
                         };
+                    });
+                }
+                WasmCommand::OrderSystems { a, order, b } => {
+                    commands.queue(move |world: &mut World| {
+                        let Some(mut vsystem_deps) =
+                            world.get_mut::<VSystemDependencies>(script_ent)
+                        else {
+                            warn!("VSystemDependencies not found on script ent");
+                            return;
+                        };
+
+                        let (up, down) = match order {
+                            SystemOrder::After => (b, a),
+                            SystemOrder::Before => (a, b),
+                        };
+
+                        let deps = vsystem_deps.dependencies.entry(down).or_default();
+                        deps.push(up);
                     });
                 }
                 WasmCommand::Spawn { id } => {

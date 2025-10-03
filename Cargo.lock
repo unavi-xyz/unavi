@@ -6379,6 +6379,7 @@ dependencies = [
  "bevy",
  "bevy_async_task",
  "bytemuck",
+ "futures",
  "tokio",
  "tracing",
  "tracing-subscriber",

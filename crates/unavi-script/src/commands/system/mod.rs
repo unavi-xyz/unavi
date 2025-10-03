@@ -9,7 +9,10 @@ use bevy::{
     prelude::*,
     tasks::{AsyncComputeTaskPool, Task, block_on, poll_once},
 };
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel};
+use tokio::sync::{
+    Notify,
+    mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel},
+};
 use tracing::Instrument;
 use wasmtime::{AsContextMut, Store, component::ResourceAny};
 
@@ -97,12 +100,32 @@ impl Default for StartupSystems {
     }
 }
 
+impl StartupSystems {
+    pub fn is_complete(&self) -> bool {
+        !self.complete.iter().any(|(_, x)| !x)
+    }
+}
+
+#[derive(Component, Default)]
+pub struct VSystemDependencies {
+    pub dependencies: HashMap<u32, Vec<u32>>,
+    complete: HashMap<u32, Arc<Notify>>,
+}
+
 pub fn build_system(
     world: &mut World,
     entity: Entity,
     id: u32,
     system: WSystem,
 ) -> anyhow::Result<()> {
+    let complete = Arc::new(Notify::default());
+
+    if let Some(mut deps) = world.get_mut::<VSystemDependencies>(entity) {
+        deps.complete.insert(id, complete.clone());
+    } else {
+        bail!("VSystemDependencies not found on script entity")
+    }
+
     let vent_id = if let Some(vent_id) = world.component_id::<VEntity>() {
         vent_id
     } else {
@@ -204,21 +227,20 @@ pub fn build_system(
                     };
                     let mut ent_data = Vec::new();
 
-                    for (i, access) in ent
+                    for access in ent
                         .access()
                         .try_iter_component_access()
                         .expect("unbounded access")
-                        .enumerate()
                         .collect::<Vec<_>>()
                         .into_iter()
                         .rev()
                     {
-                        if i == 0 {
-                            continue;
-                        }
-
                         match access {
                             ComponentAccessKind::Shared(id) => {
+                                if id == vent_id {
+                                    continue;
+                                }
+
                                 let ptr = ent.get_by_id(id).unwrap();
                                 let size = component_sizes.get(&id).copied().unwrap();
 
@@ -250,6 +272,12 @@ pub fn build_system(
         },
     );
 
+    #[derive(Default)]
+    struct UpstreamDeps {
+        ids: Vec<u32>,
+        waiters: Arc<Vec<Arc<Notify>>>,
+    }
+
     let f = move |input: In<Vec<ParamData>>,
                   time: Res<Time>,
                   mut scripts: Query<(
@@ -257,8 +285,10 @@ pub fn build_system(
         &ScriptRuntime,
         Option<&Name>,
         &mut StartupSystems,
+        &VSystemDependencies,
     )>,
-                  mut executing: Local<Option<Task<anyhow::Result<()>>>>| {
+                  mut executing: Local<Option<Task<anyhow::Result<()>>>>,
+                  mut upstream: Local<UpstreamDeps>| {
         if let Some(mut task) = executing.as_mut() {
             match block_on(poll_once(&mut task)) {
                 Some(Ok(_)) => {
@@ -272,7 +302,7 @@ pub fn build_system(
             }
         }
 
-        let Ok((loaded, rt, name, mut startup)) = scripts.get_mut(entity) else {
+        let Ok((loaded, rt, name, mut startup, all_deps)) = scripts.get_mut(entity) else {
             // Return early if script is not found. Eventually we will remove
             // this system from its schedule on script removal, but for now it runs indefinitely.
             // Waiting on https://github.com/bevyengine/bevy/issues/20115.
@@ -287,23 +317,43 @@ pub fn build_system(
             if startup.complete.get(&id) == Some(&true) {
                 return;
             }
-        } else if startup.complete.iter().any(|(_, x)| !x) {
+        } else if !startup.is_complete() {
             // Startup not finished.
             return;
+        }
+
+        if let Some(deps) = all_deps.dependencies.get(&id)
+            && *deps != *upstream.ids
+        {
+            let mut waiters = Vec::new();
+            for d in deps {
+                if let Some(notify) = all_deps.complete.get(d) {
+                    waiters.push(notify.clone());
+                }
+            }
+
+            upstream.ids = deps.clone();
+            upstream.waiters = Arc::new(waiters);
         }
 
         let name = name
             .map(|n| n.to_string())
             .unwrap_or_else(|| "unknown".to_string());
 
+        let complete = complete.clone();
         let ctx = rt.ctx.clone();
         let elapsed = time.elapsed();
         let guest = loaded.0.clone();
-        let complete_send = startup.complete_send.clone();
+        let startup_complete = startup.complete_send.clone();
+        let waiters = upstream.waiters.clone();
 
         let pool = AsyncComputeTaskPool::get();
         let task = pool.spawn(
             async move {
+                futures::future::join_all(waiters.iter().map(|n| n.notified())).await;
+                // TODO: cycle enforcement (in case cycle takes longer than tick)
+                // TODO: what if system finishes before downstream deps are listening
+
                 let mut ctx = ctx.lock().await;
                 ctx.store.set_epoch_deadline(1);
 
@@ -321,8 +371,10 @@ pub fn build_system(
                 ctx.flush_logs().await;
 
                 if system.schedule == WSchedule::Startup {
-                    complete_send.send(id)?;
+                    startup_complete.send(id)?;
                 }
+
+                complete.notify_waiters();
 
                 res
             }
@@ -332,21 +384,20 @@ pub fn build_system(
         *executing = Some(task);
     };
 
+    if system.schedule == WSchedule::Startup {
+        let mut startup = world.get_mut::<StartupSystems>(entity).unwrap();
+        startup.complete.insert(id, false);
+    };
+
+    let sys = f_input.pipe(f).into_configs();
+
     match system.schedule {
         WSchedule::Render => world.schedule_scope(Update, |_, s| {
-            s.add_systems(f_input.pipe(f));
+            s.add_systems(sys);
         }),
-        WSchedule::Update => world.schedule_scope(FixedUpdate, |_, s| {
-            s.add_systems(f_input.pipe(f));
+        WSchedule::Update | WSchedule::Startup => world.schedule_scope(FixedUpdate, |_, s| {
+            s.add_systems(sys);
         }),
-        WSchedule::Startup => {
-            let mut startup = world.get_mut::<StartupSystems>(entity).unwrap();
-            startup.complete.insert(id, false);
-
-            world.schedule_scope(FixedUpdate, |_, s| {
-                s.add_systems(f_input.pipe(f));
-            })
-        }
     };
 
     Ok(())

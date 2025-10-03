@@ -97,6 +97,14 @@ interface host-api {
   /// Registers a system.
   register-system: func(system: system) -> result<system-id, string>;
 
+  enum system-order {
+    after,
+    before
+  }
+
+  /// Sets constraints for system execution.
+  order-systems: func(a: system-id, order: system-order, b: system-id) -> result<_, string>;
+
   /// Spawns an entity.
   spawn: func() -> result<entity-id, string>;
   /// Despawns an entity.

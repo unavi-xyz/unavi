@@ -1,7 +1,8 @@
 use tokio::sync::mpsc::Sender;
 use wasmtime::component::HasData;
-use wired::ecs::types::{
-    Component, ComponentId, ComponentType, EntityId, Primitive, System, SystemId,
+use wired::ecs::{
+    host_api::SystemOrder,
+    types::{Component, ComponentId, ComponentType, EntityId, Primitive, System, SystemId},
 };
 
 use crate::commands::WasmCommand;
@@ -97,6 +98,22 @@ impl wired::ecs::host_api::Host for WiredEcsData {
         self.systems.push(system);
 
         Ok(id)
+    }
+
+    async fn order_systems(
+        &mut self,
+        a: SystemId,
+        order: SystemOrder,
+        b: SystemId,
+    ) -> Result<(), String> {
+        if a == b {
+            return Err("Cannot order a system against itself".to_string());
+        }
+        self.commands
+            .send(WasmCommand::OrderSystems { a, order, b })
+            .await
+            .map_err(|e| format!("Error sending command: {e}"))?;
+        Ok(())
     }
 
     async fn spawn(&mut self) -> Result<EntityId, String> {

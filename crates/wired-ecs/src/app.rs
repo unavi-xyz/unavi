@@ -1,7 +1,7 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 use crate::{
-    host_api::write_component,
+    host_api::{SystemOrder, order_systems, write_component},
     param::{ParamGroup, ParamMeta},
     system::{
         System,
@@ -13,7 +13,8 @@ use crate::{
 
 #[derive(Default)]
 pub struct App {
-    systems: BTreeMap<SystemId, SystemCache>,
+    system_ids: HashMap<&'static str, SystemId>,
+    systems: HashMap<SystemId, SystemCache>,
 }
 
 impl App {
@@ -23,10 +24,33 @@ impl App {
         In: ParamGroup + 'static,
         FunctionSystem<F, In>: System<In = In>,
     {
+        let name = std::any::type_name::<F>();
+
         let f = FunctionSystem::new(f);
-        for (id, sys) in f.register_system(schedule) {
-            self.systems.insert(id, sys);
+        let (id, sys) = f.register_system(schedule);
+
+        self.system_ids.insert(name, id);
+        self.systems.insert(id, sys);
+
+        self
+    }
+
+    #[allow(unused_variables)]
+    pub fn order_systems<A, B>(&mut self, a: A, order: SystemOrder, b: B) -> &mut Self {
+        let a_name = std::any::type_name::<A>();
+        let b_name = std::any::type_name::<B>();
+
+        let Some(a_id) = self.system_ids.get(a_name) else {
+            panic!("System {a_name} not registered")
+        };
+        let Some(b_id) = self.system_ids.get(b_name) else {
+            panic!("System {b_name} not registered")
+        };
+
+        if let Err(e) = order_systems(*a_id, order, *b_id) {
+            panic!("Failed to order systems: {e}")
         }
+
         self
     }
 

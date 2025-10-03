@@ -1,7 +1,7 @@
 use crate::{
     host_api::register_system,
     param::{ConcreteConstraint, ParamGroup, ParamMeta},
-    types::{Param as WParam, Schedule, System as WSystem},
+    types::{Param as WParam, Schedule, System as WSystem, SystemId},
 };
 
 use super::{BlindSystem, System, function_system::FunctionSystem};
@@ -15,7 +15,7 @@ pub struct SystemCache {
 }
 
 pub trait RegisterSystem {
-    fn register_system(self, schedule: Schedule) -> Vec<(u32, SystemCache)>;
+    fn register_system(self, schedule: Schedule) -> (SystemId, SystemCache);
 }
 
 impl<F, In> RegisterSystem for FunctionSystem<F, In>
@@ -24,7 +24,7 @@ where
     In: ParamGroup + 'static,
     FunctionSystem<F, In>: System<In = In>,
 {
-    fn register_system(self, schedule: Schedule) -> Vec<(u32, SystemCache)> {
+    fn register_system(self, schedule: Schedule) -> (SystemId, SystemCache) {
         let mutability = In::mutability();
         let metas = In::meta();
         let params: Vec<WParam> = In::register_params().into_iter().flatten().collect();
@@ -153,7 +153,7 @@ where
             Err(e) => panic!("Failed to register system: {e}"),
         };
 
-        vec![(
+        (
             id,
             SystemCache {
                 immutable: !mutability.iter().any(|x| *x),
@@ -162,39 +162,6 @@ where
                 params,
                 system: Box::new(self),
             },
-        )]
-    }
-}
-
-impl<A> RegisterSystem for (A,)
-where
-    A: RegisterSystem,
-{
-    fn register_system(self, schedule: Schedule) -> Vec<(u32, SystemCache)> {
-        self.0.register_system(schedule)
-    }
-}
-impl<A, B> RegisterSystem for (A, B)
-where
-    A: RegisterSystem,
-    B: RegisterSystem,
-{
-    fn register_system(self, schedule: Schedule) -> Vec<(u32, SystemCache)> {
-        let mut out = self.0.register_system(schedule);
-        out.append(&mut self.1.register_system(schedule));
-        out
-    }
-}
-impl<A, B, C> RegisterSystem for (A, B, C)
-where
-    A: RegisterSystem,
-    B: RegisterSystem,
-    C: RegisterSystem,
-{
-    fn register_system(self, schedule: Schedule) -> Vec<(u32, SystemCache)> {
-        let mut out = self.0.register_system(schedule);
-        out.append(&mut self.1.register_system(schedule));
-        out.append(&mut self.2.register_system(schedule));
-        out
+        )
     }
 }

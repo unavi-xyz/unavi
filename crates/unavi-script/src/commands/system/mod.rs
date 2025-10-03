@@ -130,7 +130,9 @@ pub struct ScheduleDependencies {
     start: Arc<Notify>,
 }
 
-#[derive(Component)]
+#[derive(Component, Default)]
+pub struct ScriptCycles(HashMap<WSchedule, ScriptCycle>);
+
 pub struct ScriptCycle {
     i: usize,
     task: Option<Task<()>>,
@@ -144,36 +146,37 @@ impl Default for ScriptCycle {
 
 /// Increase the script cycle once all vsystems are complete.
 pub fn tick_script_cycle(
-    mut scripts: Query<(&VSystemDependencies, &mut ScriptCycle), With<InitializedScript>>,
+    mut scripts: Query<(&VSystemDependencies, &mut ScriptCycles), With<InitializedScript>>,
 ) {
-    for (vsystem_deps, mut cycle) in scripts.iter_mut() {
-        if let Some(mut task) = cycle.task.as_mut() {
-            match block_on(poll_once(&mut task)) {
-                Some(_) => {
-                    cycle.i += 1;
-                    cycle.task = None;
-                }
-                None => continue,
-            }
-        }
-
-        let mut waiters = Vec::new();
+    for (vsystem_deps, mut cycles) in scripts.iter_mut() {
         for s in SCHEDULES {
+            let cycle = cycles.0.entry(*s).or_default();
+
+            if let Some(mut t) = cycle.task.as_mut() {
+                match block_on(poll_once(&mut t)) {
+                    Some(_) => {
+                        cycle.i += 1;
+                        cycle.task = None;
+                    }
+                    None => continue,
+                }
+            }
+
             if *s == WSchedule::Startup && cycle.i > 1 {
                 continue;
             }
 
             let deps = vsystem_deps.0.get(s).unwrap();
-            waiters.extend(deps.complete.values().cloned());
-        }
-        if waiters.is_empty() {
-            continue;
-        }
+            let waiters = deps.complete.values().cloned().collect::<Vec<_>>();
+            if waiters.is_empty() {
+                continue;
+            }
 
-        let pool = AsyncComputeTaskPool::get();
-        cycle.task = Some(pool.spawn(async move {
-            futures::future::join_all(waiters.iter().map(|n| n.notified())).await;
-        }));
+            let pool = AsyncComputeTaskPool::get();
+            cycle.task = Some(pool.spawn(async move {
+                futures::future::join_all(waiters.iter().map(|n| n.notified())).await;
+            }));
+        }
     }
 }
 
@@ -390,7 +393,7 @@ pub fn build_system(
         Option<&Name>,
         &mut StartupSystems,
         &VSystemDependencies,
-        &ScriptCycle,
+        &ScriptCycles,
     )>,
                   mut executing: Local<Option<Task<anyhow::Result<()>>>>,
                   mut upstream: Local<UpstreamDeps>,
@@ -408,7 +411,7 @@ pub fn build_system(
             }
         }
 
-        let Ok((loaded, rt, name, mut startup, vsystem_deps, cycle)) = scripts.get_mut(entity)
+        let Ok((loaded, rt, name, mut startup, vsystem_deps, cycles)) = scripts.get_mut(entity)
         else {
             // Return early if script is not found. Eventually we will remove
             // this system from its schedule on script removal, but for now it runs indefinitely.
@@ -416,6 +419,7 @@ pub fn build_system(
             return;
         };
 
+        let cycle = cycles.0.get(&system.schedule).unwrap();
         if cycle.i == *prev_i {
             // Previous cycle not yet complete.
             return;

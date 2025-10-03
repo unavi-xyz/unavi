@@ -1,6 +1,6 @@
 use setup::{
     construct_script,
-    logs::{count_logs_with, has_error_log, has_log},
+    logs::{LOGS, count_logs_with, has_error_log, has_log},
     tick_app,
 };
 
@@ -21,6 +21,21 @@ fn script_ecs() {
         tick_app(&mut app);
         assert_eq!(count_logs_with("update_1"), i);
         assert_eq!(count_logs_with("update_2"), i);
+    }
+
+    // Validate system order
+    {
+        let logs = LOGS.logs.lock().unwrap();
+
+        let first_update = logs
+            .iter()
+            .find(|line| line.to_lowercase().contains("update_"))
+            .unwrap();
+        let first_num = first_update.split('_').collect::<Vec<_>>()[1]
+            .parse::<usize>()
+            .unwrap();
+
+        assert_eq!(first_num, 1)
     }
 
     assert!(!has_error_log());

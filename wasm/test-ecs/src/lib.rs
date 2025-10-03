@@ -4,7 +4,7 @@ use std::sync::{
 };
 
 use exports::wired::ecs::guest_api::{Guest, GuestScript};
-use wired_ecs::prelude::*;
+use wired_ecs::{host_api::SystemOrder, prelude::*};
 
 wit_bindgen::generate!({
     generate_all,
@@ -27,9 +27,11 @@ struct Script {
 impl GuestScript for Script {
     fn new() -> Self {
         let mut app = App::default();
+
         app.add_system(Schedule::Startup, startup_system)
             .add_system(Schedule::Update, test_mut_queries)
-            .add_system(Schedule::Update, test_with_without);
+            .add_system(Schedule::Update, test_with_without)
+            .order_systems(test_mut_queries, SystemOrder::Before, test_with_without);
 
         Self { app }
     }

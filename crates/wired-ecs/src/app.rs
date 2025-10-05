@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{any::TypeId, collections::HashMap};
 
 use crate::{
     Component,
@@ -14,7 +14,7 @@ use crate::{
 
 #[derive(Default)]
 pub struct App {
-    system_ids: HashMap<&'static str, SystemId>,
+    system_ids: HashMap<TypeId, SystemId>,
     systems: HashMap<SystemId, SystemCache>,
 }
 
@@ -36,27 +36,31 @@ impl App {
         In: ParamGroup + 'static,
         FunctionSystem<F, In>: System<In = In>,
     {
-        let name = std::any::type_name::<F>();
-
         let f = FunctionSystem::new(f);
         let (id, sys) = f.register_system(schedule);
 
-        self.system_ids.insert(name, id);
         self.systems.insert(id, sys);
+
+        let ty = std::any::TypeId::of::<F>();
+        self.system_ids.insert(ty, id);
 
         self
     }
 
     #[allow(unused_variables)]
-    pub fn order_systems<A, B>(&mut self, a: A, order: SystemOrder, b: B) -> &mut Self {
-        let a_name = std::any::type_name::<A>();
-        let b_name = std::any::type_name::<B>();
+    pub fn order_systems<A, B>(&mut self, a: A, order: SystemOrder, b: B) -> &mut Self
+    where
+        A: 'static,
+        B: 'static,
+    {
+        let a_ty = std::any::TypeId::of::<A>();
+        let b_ty = std::any::TypeId::of::<B>();
 
-        let Some(a_id) = self.system_ids.get(a_name) else {
-            panic!("System {a_name} not registered")
+        let Some(a_id) = self.system_ids.get(&a_ty) else {
+            panic!("System {a_ty:?} not registered")
         };
-        let Some(b_id) = self.system_ids.get(b_name) else {
-            panic!("System {b_name} not registered")
+        let Some(b_id) = self.system_ids.get(&b_ty) else {
+            panic!("System {b_ty:?} not registered")
         };
 
         if let Err(e) = order_systems(*a_id, order, *b_id) {

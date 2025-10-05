@@ -7,7 +7,9 @@ use wired_ecs::prelude::*;
 
 pub fn add(app: &mut App) {
     app.add_system(Schedule::Startup, startup)
-        .add_system(Schedule::Update, test_mut_queries);
+        .add_system(Schedule::Update, test_mut_query)
+        .add_system(Schedule::Update, test_mutation)
+        .order_systems(test_mutation, SystemOrder::After, test_mut_query);
 }
 
 #[derive(Component, Clone, Copy, Debug)]
@@ -34,7 +36,7 @@ fn startup(commands: Commands) {
 
 static COUNT: LazyLock<AtomicUsize> = LazyLock::new(AtomicUsize::default);
 
-fn test_mut_queries(mut points: Query<&mut MyPoint>) {
+fn test_mut_query(mut points: Query<&mut MyPoint>) {
     assert_eq!(points.len(), 2);
 
     let count = COUNT.fetch_add(1, Ordering::AcqRel);
@@ -44,13 +46,13 @@ fn test_mut_queries(mut points: Query<&mut MyPoint>) {
     let y2 = Y2 + count;
 
     {
-        let mut iter_ref = points.iter();
+        let mut iter = points.iter();
 
-        let a = iter_ref.next().unwrap();
+        let a = iter.next().unwrap();
         assert_eq!(a.x, x1);
         assert_eq!(a.y, y1);
 
-        let b = iter_ref.next().unwrap();
+        let b = iter.next().unwrap();
         assert_eq!(b.x, x2);
         assert_eq!(b.y, y2);
     }
@@ -70,4 +72,25 @@ fn test_mut_queries(mut points: Query<&mut MyPoint>) {
         b.x += 1;
         b.y += 1;
     }
+}
+
+/// Test that the mutated [MyPoint] data is seen in future systems.
+fn test_mutation(points: Query<&MyPoint>) {
+    assert_eq!(points.len(), 2);
+
+    let count = COUNT.load(Ordering::Acquire);
+    let x1 = X1 + count;
+    let y1 = Y1 + count;
+    let x2 = X2 + count;
+    let y2 = Y2 + count;
+
+    let mut iter = points.iter();
+
+    let a = iter.next().unwrap();
+    assert_eq!(a.x, x1);
+    assert_eq!(a.y, y1);
+
+    let b = iter.next().unwrap();
+    assert_eq!(b.x, x2);
+    assert_eq!(b.y, y2);
 }

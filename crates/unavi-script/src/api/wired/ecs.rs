@@ -1,4 +1,5 @@
-use tokio::sync::mpsc::Sender;
+use std::sync::Arc;
+
 use wasmtime::component::HasData;
 use wired::ecs::{
     host_api::SystemOrder,
@@ -20,8 +21,16 @@ impl HasData for HasWiredEcsData {
     type Data<'a> = &'a mut WiredEcsData;
 }
 
+#[derive(Clone)]
+pub struct ComponentWrite {
+    pub entity: EntityId,
+    pub component: ComponentId,
+    pub data: Arc<Vec<u8>>,
+}
+
 pub struct WiredEcsData {
-    pub commands: Sender<WasmCommand>,
+    pub commands: tokio::sync::mpsc::Sender<WasmCommand>,
+    pub write: tokio::sync::broadcast::Sender<ComponentWrite>,
     pub components: Vec<Component>,
     pub entity_id: EntityId,
     pub systems: Vec<System>,
@@ -168,6 +177,19 @@ impl wired::ecs::host_api::Host for WiredEcsData {
         if data.len() > MAX_COMPONENT_SIZE / 8 {
             return Err("Max data len reached".to_string());
         }
+
+        // Immediate write to any pending system calls.
+        if self.write.receiver_count() > 1 {
+            self.write
+                .send(ComponentWrite {
+                    entity,
+                    component,
+                    data: Arc::new(data.clone()),
+                })
+                .map_err(|e| format!("Error sending write: {e}"))?;
+        }
+
+        // Deferred write to Bevy.
         self.commands
             .send(WasmCommand::WriteComponent {
                 entity_id: entity,
@@ -177,6 +199,7 @@ impl wired::ecs::host_api::Host for WiredEcsData {
             })
             .await
             .map_err(|e| format!("Error sending command: {e}"))?;
+
         Ok(())
     }
     async fn remove_component(

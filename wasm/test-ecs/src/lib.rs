@@ -3,6 +3,7 @@ use wired_ecs::prelude::*;
 
 mod constraint;
 mod mut_query;
+mod resource;
 mod system_order;
 
 wit_bindgen::generate!({
@@ -29,6 +30,7 @@ impl GuestScript for Script {
 
         constraint::add(&mut app);
         mut_query::add(&mut app);
+        resource::add(&mut app);
         system_order::add(&mut app);
 
         Self { app }

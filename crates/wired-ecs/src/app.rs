@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use crate::{
-    host_api::{SystemOrder, order_systems, write_component},
+    Component,
+    host_api::{SystemOrder, insert_component, order_systems, spawn, write_component},
     param::{ParamGroup, ParamMeta},
     system::{
         System,
@@ -18,6 +19,17 @@ pub struct App {
 }
 
 impl App {
+    pub fn insert_resource<T>(&mut self, value: T) -> &mut Self
+    where
+        T: Component,
+    {
+        let component = T::register();
+        let entity = spawn().expect("failed to spawn entity");
+        let data = value.to_bytes();
+        insert_component(entity, component, &data).expect("failed to insert resource component");
+        self
+    }
+
     pub fn add_system<F, In>(&mut self, schedule: Schedule, f: F) -> &mut Self
     where
         F: 'static,

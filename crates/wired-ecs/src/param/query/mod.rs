@@ -8,8 +8,8 @@ use crate::types::{Param as WParam, ParamData, Query as WQuery};
 
 use super::{Param, ParamMeta};
 
-mod component;
-mod component_group;
+pub(crate) mod component;
+pub(crate) mod component_group;
 pub mod constraint;
 mod iter;
 
@@ -61,6 +61,7 @@ where
 
     /// SAFETY:
     /// - Underlying data must remain alive through other means, Query holds a weak reference.
+    /// - Data must remain effectively mutably owned by this Query.
     fn parse_param(data: &mut std::slice::IterMut<ParamData>) -> Self {
         let ParamData::Query(raw) = data.next().unwrap();
         Self {

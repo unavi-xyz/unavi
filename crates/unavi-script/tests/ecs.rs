@@ -23,7 +23,11 @@ fn script_ecs() {
         tick_app(&mut app);
 
         for n in 1..=N_UPDATE_SYSTEMS {
-            assert_eq!(count_logs_with(&format!("update_{n}")), i);
+            assert_eq!(
+                count_logs_with(&format!("update_{n}")),
+                i,
+                "update {n} cycle {i} not found"
+            );
         }
     }
 

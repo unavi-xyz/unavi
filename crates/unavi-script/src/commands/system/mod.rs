@@ -7,6 +7,7 @@ use bevy::{
         world::FilteredEntityRef,
     },
     prelude::*,
+    render::render_resource::encase::private::BufferMut,
     tasks::{AsyncComputeTaskPool, Task, block_on, poll_once},
 };
 use tokio::sync::{
@@ -20,7 +21,7 @@ use crate::{
     api::wired::ecs::wired::ecs::types::{Param, ParamData, QueryData},
     execute::init::InitializedScript,
     load::{
-        LoadedScript,
+        ComponentWriteReceiver, LoadedScript,
         bindings::{
             Guest,
             wired::ecs::types::{Constraint, Schedule as WSchedule, System as WSystem},
@@ -220,13 +221,13 @@ pub fn build_system(
     world: &mut World,
     entity: Entity,
     id: u32,
-    system: WSystem,
+    WSystem { schedule, params }: WSystem,
 ) -> anyhow::Result<()> {
     let ready = Arc::new(Notify::default());
     let complete = Arc::new(Notify::default());
 
     if let Some(mut vsystem_deps) = world.get_mut::<VSystemDependencies>(entity) {
-        let schedule_deps = vsystem_deps.0.get_mut(&system.schedule).unwrap();
+        let schedule_deps = vsystem_deps.0.get_mut(&schedule).unwrap();
         schedule_deps.ready.insert(id, ready.clone());
         schedule_deps.complete.insert(id, complete.clone());
     } else {
@@ -239,10 +240,11 @@ pub fn build_system(
         world.register_component::<VEntity>()
     };
 
+    let mut bevy_component_sizes = HashMap::new();
     let mut queries = Vec::new();
-    let mut component_sizes = HashMap::new();
+    let mut wasm_component_sizes = HashMap::new();
 
-    for param in system.params {
+    for param in &params {
         match param {
             Param::Query(q) => {
                 let mut vcomp_query = world.query::<(&VOwner, &VComponent)>();
@@ -261,7 +263,7 @@ pub fn build_system(
                 let mut with = Vec::new();
                 let mut without = Vec::new();
 
-                for wasm_id in q.components {
+                for wasm_id in q.components.iter().copied() {
                     let Some(found) = find_component(wasm_id) else {
                         bail!("Query::components virtual component not found");
                     };
@@ -269,7 +271,19 @@ pub fn build_system(
                     components.push(found);
                 }
 
-                for constraint in q.constraints {
+                for (bevy_id, wasm_id) in components.iter().zip(q.components.iter()) {
+                    if wasm_component_sizes.contains_key(wasm_id) {
+                        continue;
+                    }
+                    let Some(info) = world.components().get_info(*bevy_id) else {
+                        bail!("component info not found")
+                    };
+                    let size = info.layout().size() / size_of::<u8>();
+                    bevy_component_sizes.insert(*bevy_id, size);
+                    wasm_component_sizes.insert(*wasm_id, size);
+                }
+
+                for constraint in q.constraints.iter().copied() {
                     match constraint {
                         Constraint::WithComponent(wasm_id) => {
                             let Some(found) = find_component(wasm_id) else {
@@ -286,17 +300,6 @@ pub fn build_system(
                             without.push(found);
                         }
                     }
-                }
-
-                for id in components.iter().chain(with.iter()).chain(without.iter()) {
-                    if component_sizes.contains_key(id) {
-                        continue;
-                    }
-                    let Some(info) = world.components().get_info(*id) else {
-                        bail!("component info not found")
-                    };
-                    let size = info.layout().size() / size_of::<u8>();
-                    component_sizes.insert(*id, size);
                 }
 
                 let builder = QueryParamBuilder::new_box(|builder| {
@@ -349,7 +352,7 @@ pub fn build_system(
                                 }
 
                                 let ptr = ent.get_by_id(id).unwrap();
-                                let size = component_sizes.get(&id).copied().unwrap();
+                                let size = bevy_component_sizes.get(&id).copied().unwrap();
 
                                 // SAFETY:
                                 // - All virtual components are created with layout [u8]
@@ -385,7 +388,10 @@ pub fn build_system(
         waiters: Arc<Vec<Arc<Notify>>>,
     }
 
-    let f = move |input: In<Vec<ParamData>>,
+    let params = Arc::new(params);
+    let wasm_component_sizes = Arc::new(wasm_component_sizes);
+
+    let f = move |mut input: In<Vec<ParamData>>,
                   time: Res<Time>,
                   mut scripts: Query<(
         &LoadedScript,
@@ -394,6 +400,7 @@ pub fn build_system(
         &mut StartupSystems,
         &VSystemDependencies,
         &ScriptCycles,
+        &ComponentWriteReceiver,
     )>,
                   mut executing: Local<Option<Task<anyhow::Result<()>>>>,
                   mut upstream: Local<UpstreamDeps>,
@@ -411,7 +418,8 @@ pub fn build_system(
             }
         }
 
-        let Ok((loaded, rt, name, mut startup, vsystem_deps, cycles)) = scripts.get_mut(entity)
+        let Ok((loaded, rt, name, mut startup, vsystem_deps, cycles, write_recv)) =
+            scripts.get_mut(entity)
         else {
             // Return early if script is not found. Eventually we will remove
             // this system from its schedule on script removal, but for now it runs indefinitely.
@@ -419,7 +427,7 @@ pub fn build_system(
             return;
         };
 
-        let cycle = cycles.0.get(&system.schedule).unwrap();
+        let cycle = cycles.0.get(&schedule).unwrap();
         if cycle.i == *prev_i {
             // Previous cycle not yet complete.
             return;
@@ -429,7 +437,7 @@ pub fn build_system(
             startup.complete.insert(r, true);
         }
 
-        if system.schedule == WSchedule::Startup {
+        if schedule == WSchedule::Startup {
             if startup.complete.get(&id) == Some(&true) {
                 return;
             }
@@ -438,7 +446,7 @@ pub fn build_system(
             return;
         }
 
-        let schedule_deps = vsystem_deps.0.get(&system.schedule).unwrap();
+        let schedule_deps = vsystem_deps.0.get(&schedule).unwrap();
 
         if let Some(deps) = schedule_deps.dependencies.get(&id)
             && *deps != *upstream.ids
@@ -462,10 +470,13 @@ pub fn build_system(
         let ctx = rt.ctx.clone();
         let elapsed = time.elapsed();
         let guest = loaded.0.clone();
+        let mut write_recv = write_recv.0.resubscribe();
+        let params = params.clone();
         let ready = ready.clone();
         let start = schedule_deps.start.clone();
         let startup_complete = startup.complete_send.clone();
         let waiters = upstream.waiters.clone();
+        let wasm_component_sizes = wasm_component_sizes.clone();
 
         let pool = AsyncComputeTaskPool::get();
         let task = pool.spawn(
@@ -482,14 +493,64 @@ pub fn build_system(
                 // Wait for dependencies to complete.
                 dep_fut.await;
 
+                // Acquire script lock.
                 let mut ctx = ctx.lock().await;
                 ctx.store.set_epoch_deadline(1);
+
+                // Apply component writes to queried data.
+                while let Ok(write) = write_recv.try_recv() {
+                    let Some(c_size) = wasm_component_sizes.get(&write.component) else {
+                        // System does not reference component.
+                        continue;
+                    };
+                    if write.data.len() != *c_size {
+                        bail!("invalid data size")
+                    }
+
+                    for (i, p) in params.iter().enumerate() {
+                        match p {
+                            Param::Query(q) => {
+                                let Some(c_idx) =
+                                    q.components.iter().position(|x| *x == write.component)
+                                else {
+                                    continue;
+                                };
+
+                                let mut d_start = 0;
+
+                                for c in q.components.iter().take(c_idx) {
+                                    let Some(size) = wasm_component_sizes.get(c) else {
+                                        bail!("component size not found")
+                                    };
+                                    d_start += *size;
+                                }
+
+                                let Some(p_data) = input.get_mut(i) else {
+                                    bail!("param data not found")
+                                };
+
+                                let ParamData::Query(q_data) = p_data;
+
+                                let Some(e_idx) =
+                                    q_data.ents.iter().position(|x| *x == write.entity)
+                                else {
+                                    bail!("entity not found")
+                                };
+
+                                let Some(data) = q_data.data.get_mut(e_idx) else {
+                                    bail!("query data not found")
+                                };
+                                data.write_slice(d_start, &write.data);
+                            }
+                        }
+                    }
+                }
 
                 // let delta = elapsed - ctx.last_tick;
                 ctx.last_tick = elapsed;
 
                 let Some(script) = ctx.script else {
-                    bail!("Script resource not found")
+                    bail!("script resource not found")
                 };
 
                 let res = exec_system(&mut ctx.store, script, &guest, id, &input)
@@ -498,7 +559,7 @@ pub fn build_system(
 
                 ctx.flush_logs().await;
 
-                if system.schedule == WSchedule::Startup {
+                if schedule == WSchedule::Startup {
                     startup_complete.send(id)?;
                 }
 
@@ -513,7 +574,7 @@ pub fn build_system(
         *prev_i = cycle.i;
     };
 
-    if system.schedule == WSchedule::Startup {
+    if schedule == WSchedule::Startup {
         let mut startup = world.get_mut::<StartupSystems>(entity).unwrap();
         startup.complete.insert(id, false);
     };
@@ -523,7 +584,7 @@ pub fn build_system(
         s.add_systems(sys);
     };
 
-    match system.schedule {
+    match schedule {
         WSchedule::Render => world.schedule_scope(Update, s_func),
         WSchedule::Update | WSchedule::Startup => world.schedule_scope(FixedUpdate, s_func),
     };

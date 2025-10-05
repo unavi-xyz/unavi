@@ -5,12 +5,12 @@ use bevy::prelude::*;
 use bevy_async_task::TaskPool;
 use log::{ScriptStderr, ScriptStdout};
 use state::{RuntimeData, RuntimeDataResult, StoreState};
-use tokio::sync::mpsc::Receiver;
 use wasmtime::{AsContextMut, Store, component::Linker};
 use wasmtime_wasi::p2::WasiCtxBuilder;
 
 use crate::{
     ScriptEngine, WasmBinary, WasmEngine,
+    api::wired::ecs::ComponentWrite,
     asset::Wasm,
     commands::{
         WasmCommand,
@@ -45,7 +45,10 @@ pub struct LoadedScript(pub Arc<bindings::Guest>);
 pub struct Executing(bool);
 
 #[derive(Component)]
-pub struct ScriptCommands(pub Receiver<WasmCommand>);
+pub struct ScriptCommands(pub tokio::sync::mpsc::Receiver<WasmCommand>);
+
+#[derive(Component)]
+pub struct ComponentWriteReceiver(pub tokio::sync::broadcast::Receiver<ComponentWrite>);
 
 pub fn load_scripts(
     mut commands: Commands,
@@ -80,7 +83,11 @@ pub fn load_scripts(
             .stderr(stderr_stream)
             .build();
 
-        let RuntimeDataResult { rt, commands_recv } = RuntimeData::spawn();
+        let RuntimeDataResult {
+            rt,
+            commands_recv,
+            write_recv,
+        } = RuntimeData::spawn();
 
         let state = StoreState::new(wasi, rt);
 
@@ -91,9 +98,12 @@ pub fn load_scripts(
 
         let rt = ScriptRuntime::new(store, stdout, stderr);
         let ctx = rt.ctx.clone();
-        commands
-            .entity(ent)
-            .insert((LoadingScript, rt, ScriptCommands(commands_recv)));
+        commands.entity(ent).insert((
+            LoadingScript,
+            rt,
+            ScriptCommands(commands_recv),
+            ComponentWriteReceiver(write_recv),
+        ));
 
         pool.spawn(async move {
             let mut ctx = ctx.lock().await;

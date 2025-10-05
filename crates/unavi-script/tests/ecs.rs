@@ -6,6 +6,8 @@ use setup::{
 
 mod setup;
 
+const N_UPDATE_SYSTEMS: usize = 3;
+
 #[test]
 fn script_ecs() {
     let mut app = setup::setup_test_app("ecs");
@@ -19,23 +21,37 @@ fn script_ecs() {
     // Update
     for i in 1..=5 {
         tick_app(&mut app);
-        assert_eq!(count_logs_with("update_1"), i);
-        assert_eq!(count_logs_with("update_2"), i);
+
+        for n in 1..=N_UPDATE_SYSTEMS {
+            assert_eq!(count_logs_with(&format!("update_{n}")), i);
+        }
     }
 
     // Validate system order
     {
         let logs = LOGS.logs.lock().unwrap();
 
-        let first_update = logs
+        let update_order = logs
             .iter()
-            .find(|line| line.to_lowercase().contains("update_"))
-            .unwrap();
-        let first_num = first_update.split('_').collect::<Vec<_>>()[1]
-            .parse::<usize>()
-            .unwrap();
+            .filter_map(|line| {
+                if line.to_lowercase().contains("update_") {
+                    let num = line.split('_').collect::<Vec<_>>()[1]
+                        .parse::<usize>()
+                        .unwrap();
+                    Some(num)
+                } else {
+                    None
+                }
+            })
+            .take(N_UPDATE_SYSTEMS);
 
-        assert_eq!(first_num, 1)
+        let mut i = 1;
+        println!("Update order: {update_order:?}");
+
+        for num in update_order {
+            assert_eq!(num, i);
+            i += 1;
+        }
     }
 
     assert!(!has_error_log());

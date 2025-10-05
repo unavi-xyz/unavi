@@ -86,7 +86,7 @@ where
     }
 }
 
-pub fn count_logs_with(value: &'static str) -> usize {
+pub fn count_logs_with(value: &str) -> usize {
     LOGS.logs
         .lock()
         .unwrap()
@@ -95,7 +95,7 @@ pub fn count_logs_with(value: &'static str) -> usize {
         .count()
 }
 
-pub fn has_log(value: &'static str) -> bool {
+pub fn has_log(value: &str) -> bool {
     LOGS.logs
         .lock()
         .unwrap()

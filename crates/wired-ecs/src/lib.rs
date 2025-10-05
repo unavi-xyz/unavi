@@ -13,6 +13,7 @@ mod bindings {
 pub mod prelude {
     pub use super::{
         App, Component,
+        bindings::wired::ecs::host_api::SystemOrder,
         param::{
             Commands, Local, Query, Resource,
             constraint::{With, Without},

@@ -3,7 +3,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
 };
 
-use wired_ecs::{param::ResMut, prelude::*};
+use wired_ecs::prelude::*;
 
 const X: usize = 1;
 

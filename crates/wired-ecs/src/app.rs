@@ -1,4 +1,4 @@
-use std::{any::TypeId, collections::HashMap};
+use std::{any::TypeId, cell::RefCell, collections::HashMap};
 
 use crate::{
     Component,
@@ -13,9 +13,25 @@ use crate::{
 };
 
 #[derive(Default)]
+pub struct ParamState {
+    pub raw: Vec<u8>,
+}
+
+#[derive(Default)]
+pub struct SystemState {
+    pub param_state: Vec<ParamState>,
+}
+
+#[derive(Default)]
+pub struct AppState {
+    pub system_state: HashMap<SystemId, SystemState>,
+}
+
+#[derive(Default)]
 pub struct App {
     system_ids: HashMap<TypeId, SystemId>,
     systems: HashMap<SystemId, SystemCache>,
+    state: RefCell<AppState>,
 }
 
 impl App {
@@ -36,8 +52,10 @@ impl App {
         In: ParamGroup + 'static,
         FunctionSystem<F, In>: System<In = In>,
     {
+        let state = self.state.get_mut();
+
         let f = FunctionSystem::new(f);
-        let (id, sys) = f.register_system(schedule);
+        let (id, sys) = f.register_system(state, schedule);
 
         self.systems.insert(id, sys);
 
@@ -72,9 +90,11 @@ impl App {
 
     pub fn exec_system(&self, id: u32, mut data: Vec<ParamData>) {
         let cache = &self.systems[&id];
+        let mut app_state = self.state.borrow_mut();
+        let mut sys_state = app_state.system_state.entry(id).or_default();
 
         if cache.immutable {
-            cache.system.run_blind(&mut data);
+            cache.system.run_blind(sys_state, &mut data);
         } else {
             let mut before = Vec::new();
 
@@ -92,7 +112,7 @@ impl App {
             }
 
             // println!("exec {id}: {data:?}");
-            cache.system.run_blind(&mut data);
+            cache.system.run_blind(sys_state, &mut data);
 
             for (i, bef) in before {
                 match &data[i] {

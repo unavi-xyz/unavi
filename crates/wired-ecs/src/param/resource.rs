@@ -1,6 +1,9 @@
 use std::{marker::PhantomData, ptr::NonNull};
 
-use crate::types::{Param as WParam, ParamData, Query as WQuery};
+use crate::{
+    ParamState,
+    types::{Param as WParam, ParamData, Query as WQuery},
+};
 
 use super::{Param, ParamMeta, component_group::ComponentGroup};
 
@@ -55,7 +58,7 @@ impl<T> Param for Res<T>
 where
     for<'a> &'a T: ComponentGroup<'a>,
 {
-    fn register_param() -> Option<WParam> {
+    fn register_param(_: &mut Vec<ParamState>) -> Option<WParam> {
         Some(WParam::Query(WQuery {
             components: <&T>::register_components(),
             constraints: Vec::new(),
@@ -71,7 +74,10 @@ where
             constraints: Vec::new(),
         })
     }
-    fn parse_param(data: &mut std::slice::IterMut<ParamData>) -> Self {
+    fn parse_param(
+        _: &mut std::slice::IterMut<ParamState>,
+        data: &mut std::slice::IterMut<ParamData>,
+    ) -> Self {
         let ParamData::Query(q) = data.next().unwrap();
         let c_data = q.data.get_mut(0).expect("resource should always exist");
         Self {
@@ -85,7 +91,7 @@ where
     for<'a> &'a T: ComponentGroup<'a>,
     for<'a> &'a mut T: ComponentGroup<'a>,
 {
-    fn register_param() -> Option<WParam> {
+    fn register_param(_: &mut Vec<ParamState>) -> Option<WParam> {
         Some(WParam::Query(WQuery {
             components: <&mut T>::register_components(),
             constraints: Vec::new(),
@@ -101,7 +107,10 @@ where
             constraints: Vec::new(),
         })
     }
-    fn parse_param(data: &mut std::slice::IterMut<ParamData>) -> Self {
+    fn parse_param(
+        _: &mut std::slice::IterMut<ParamState>,
+        data: &mut std::slice::IterMut<ParamData>,
+    ) -> Self {
         let ParamData::Query(q) = data.next().unwrap();
         let c_data = q.data.get_mut(0).expect("resource should always exist");
         Self {

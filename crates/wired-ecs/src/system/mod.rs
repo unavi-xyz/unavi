@@ -1,4 +1,4 @@
-use crate::{param::ParamGroup, types::ParamData};
+use crate::{SystemState, param::ParamGroup, types::ParamData};
 
 pub mod function_system;
 pub mod register_system;
@@ -9,7 +9,7 @@ pub trait System {
 }
 
 pub trait BlindSystem {
-    fn run_blind(&self, data: &mut Vec<ParamData>);
+    fn run_blind(&self, state: &mut SystemState, data: &mut Vec<ParamData>);
 }
 
 impl<S, P> BlindSystem for S
@@ -17,8 +17,8 @@ where
     P: ParamGroup,
     S: System<In = P>,
 {
-    fn run_blind(&self, data: &mut Vec<ParamData>) {
-        let a = P::parse_params(data);
+    fn run_blind(&self, state: &mut SystemState, data: &mut Vec<ParamData>) {
+        let a = P::parse_params(state, data);
         self.run(a);
     }
 }

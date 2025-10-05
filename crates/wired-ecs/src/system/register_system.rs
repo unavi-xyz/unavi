@@ -1,4 +1,5 @@
 use crate::{
+    AppState, SystemState,
     host_api::register_system,
     param::{ConcreteConstraint, ParamGroup, ParamMeta},
     types::{Param as WParam, Schedule, System as WSystem, SystemId},
@@ -15,7 +16,7 @@ pub struct SystemCache {
 }
 
 pub trait RegisterSystem {
-    fn register_system(self, schedule: Schedule) -> (SystemId, SystemCache);
+    fn register_system(self, state: &mut AppState, schedule: Schedule) -> (SystemId, SystemCache);
 }
 
 impl<F, In> RegisterSystem for FunctionSystem<F, In>
@@ -24,10 +25,15 @@ where
     In: ParamGroup + 'static,
     FunctionSystem<F, In>: System<In = In>,
 {
-    fn register_system(self, schedule: Schedule) -> (SystemId, SystemCache) {
+    fn register_system(self, state: &mut AppState, schedule: Schedule) -> (SystemId, SystemCache) {
         let mutability = In::mutability();
         let metas = In::meta();
-        let params: Vec<WParam> = In::register_params().into_iter().flatten().collect();
+
+        let mut sys_state = SystemState::default();
+        let params: Vec<WParam> = In::register_params(&mut sys_state)
+            .into_iter()
+            .flatten()
+            .collect();
 
         // Validate parameters.
         for (i, (p1, m1)) in params.iter().zip(metas.iter()).enumerate() {
@@ -152,6 +158,8 @@ where
             Ok(id) => id,
             Err(e) => panic!("Failed to register system: {e}"),
         };
+
+        state.system_state.insert(id, sys_state);
 
         (
             id,

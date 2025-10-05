@@ -4,7 +4,10 @@ use component_group::ComponentGroup;
 use constraint::Constraint;
 use iter::{QueryIter, QueryIterMut};
 
-use crate::types::{Param as WParam, ParamData, Query as WQuery};
+use crate::{
+    ParamState,
+    types::{Param as WParam, ParamData, Query as WQuery},
+};
 
 use super::{Param, ParamMeta};
 
@@ -42,7 +45,7 @@ where
     T: ComponentGroup<'static>,
     U: Constraint,
 {
-    fn register_param() -> Option<WParam> {
+    fn register_param(_: &mut Vec<ParamState>) -> Option<WParam> {
         Some(WParam::Query(WQuery {
             components: T::register_components(),
             constraints: U::build_constraints(),
@@ -62,7 +65,10 @@ where
     /// SAFETY:
     /// - Underlying data must remain alive through other means, Query holds a weak reference.
     /// - Data must remain effectively mutably owned by this Query.
-    fn parse_param(data: &mut std::slice::IterMut<ParamData>) -> Self {
+    fn parse_param(
+        _: &mut std::slice::IterMut<ParamState>,
+        data: &mut std::slice::IterMut<ParamData>,
+    ) -> Self {
         let ParamData::Query(raw) = data.next().unwrap();
         Self {
             raw: (&mut raw.data).into(),

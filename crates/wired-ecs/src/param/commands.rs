@@ -1,5 +1,5 @@
 use crate::{
-    Component, host_api,
+    Component, ParamState, host_api,
     types::{EntityId, Param as WParam, ParamData},
 };
 
@@ -8,7 +8,7 @@ use super::{Param, ParamMeta};
 pub struct Commands;
 
 impl Param for Commands {
-    fn register_param() -> Option<WParam> {
+    fn register_param(_: &mut Vec<ParamState>) -> Option<WParam> {
         None
     }
     fn mutability() -> bool {
@@ -17,7 +17,10 @@ impl Param for Commands {
     fn meta() -> Option<ParamMeta> {
         None
     }
-    fn parse_param(_: &mut std::slice::IterMut<ParamData>) -> Self {
+    fn parse_param(
+        _: &mut std::slice::IterMut<ParamState>,
+        _: &mut std::slice::IterMut<ParamData>,
+    ) -> Self {
         Commands
     }
 }

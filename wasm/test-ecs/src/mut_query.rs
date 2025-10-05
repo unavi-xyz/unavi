@@ -1,0 +1,73 @@
+use std::sync::{
+    LazyLock,
+    atomic::{AtomicUsize, Ordering},
+};
+
+use wired_ecs::prelude::*;
+
+pub fn add(app: &mut App) {
+    app.add_system(Schedule::Startup, startup)
+        .add_system(Schedule::Update, test_mut_queries);
+}
+
+#[derive(Component, Clone, Copy, Debug)]
+struct MyPoint {
+    x: usize,
+    y: usize,
+}
+
+const X1: usize = 1;
+const Y1: usize = 2;
+
+const X2: usize = 3;
+const Y2: usize = 4;
+
+fn startup(commands: Commands) {
+    let _ = commands.spawn();
+
+    let a = commands.spawn();
+    a.insert(MyPoint { x: X1, y: Y1 });
+
+    let b = commands.spawn();
+    b.insert(MyPoint { x: X2, y: Y2 });
+}
+
+static COUNT: LazyLock<AtomicUsize> = LazyLock::new(AtomicUsize::default);
+
+fn test_mut_queries(mut points: Query<&mut MyPoint>) {
+    assert_eq!(points.len(), 2);
+
+    let count = COUNT.fetch_add(1, Ordering::AcqRel);
+    let x1 = X1 + count;
+    let y1 = Y1 + count;
+    let x2 = X2 + count;
+    let y2 = Y2 + count;
+
+    {
+        let mut iter_ref = points.iter();
+
+        let a = iter_ref.next().unwrap();
+        assert_eq!(a.x, x1);
+        assert_eq!(a.y, y1);
+
+        let b = iter_ref.next().unwrap();
+        assert_eq!(b.x, x2);
+        assert_eq!(b.y, y2);
+    }
+
+    {
+        let mut iter_mut = points.iter_mut();
+
+        let a = iter_mut.next().unwrap();
+        assert_eq!(a.x, x1);
+        assert_eq!(a.y, y1);
+        a.x += 1;
+        a.y += 1;
+
+        let b = iter_mut.next().unwrap();
+        assert_eq!(b.x, x2);
+        assert_eq!(b.y, y2);
+        b.x += 1;
+        b.y += 1;
+    }
+}

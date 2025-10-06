@@ -29,7 +29,7 @@ where
 {
     fn as_ref(&self) -> &T {
         let data = unsafe { self.raw.as_ref() };
-        <&T>::from_bytes(data)
+        <&T>::from_bytes(0, data)
     }
 }
 impl<T> AsRef<T> for ResMut<T>
@@ -39,7 +39,7 @@ where
 {
     fn as_ref(&self) -> &T {
         let data = unsafe { self.raw.as_ref() };
-        <&T>::from_bytes(data)
+        <&T>::from_bytes(0, data)
     }
 }
 
@@ -50,7 +50,7 @@ where
 {
     fn as_mut(&mut self) -> &mut T {
         let data = unsafe { self.raw.as_mut() };
-        <&mut T>::from_bytes_mut(data)
+        <&mut T>::from_bytes_mut(0, data)
     }
 }
 

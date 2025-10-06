@@ -15,7 +15,7 @@ pub mod prelude {
         App, Component,
         bindings::wired::ecs::host_api::SystemOrder,
         param::{
-            Commands, Local, Query, Res, ResMut,
+            Commands, Entity, Local, Query, Res, ResMut,
             constraint::{With, Without},
         },
         types::{ParamData, Schedule, SystemId},

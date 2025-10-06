@@ -1,4 +1,5 @@
 use proc_macro::TokenStream;
+use proc_macro_crate::{FoundCrate, crate_name};
 use quote::quote;
 use syn::{Data, DeriveInput, GenericParam, Generics, parse_macro_input, parse_quote};
 
@@ -7,8 +8,17 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
 
+    let crate_ident = match crate_name("wired-ecs") {
+        Ok(FoundCrate::Itself) => quote!(crate),
+        Ok(FoundCrate::Name(name)) => {
+            let ident = syn::Ident::new(&name, proc_macro2::Span::call_site());
+            quote!(#ident)
+        }
+        Err(_) => quote!(wired_ecs),
+    };
+
     // Add a bound `T: Component` to every type T.
-    let generics = add_trait_bounds(input.generics);
+    let generics = add_trait_bounds(crate_ident.clone(), input.generics);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     // Generate component types.
@@ -23,7 +33,7 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
 
         quote! {
             {
-                use wired_ecs::types::{ComponentType, Primitive};
+                use #crate_ident::types::{ComponentType, Primitive};
                 match std::any::type_name::<#ty>() {
                     "bool" => ComponentType::Primitive(Primitive::Bool),
                     "f32" => ComponentType::Primitive(Primitive::F32),
@@ -45,10 +55,10 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
     });
 
     let expanded = quote! {
-        unsafe impl #impl_generics wired_ecs::bytemuck::Zeroable for #name #ty_generics #where_clause {}
-        unsafe impl #impl_generics wired_ecs::bytemuck::Pod for #name #ty_generics #where_clause {}
+        unsafe impl #impl_generics #crate_ident::bytemuck::Zeroable for #name #ty_generics #where_clause {}
+        unsafe impl #impl_generics #crate_ident::bytemuck::Pod for #name #ty_generics #where_clause {}
 
-        impl #impl_generics wired_ecs::Component for #name #ty_generics #where_clause {
+        impl #impl_generics #crate_ident::Component for #name #ty_generics #where_clause {
             fn key() -> String {
                 let name = std::any::type_name::<Self>();
                 let parts: Vec<&str> = name.split("::").collect();
@@ -58,19 +68,19 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
 
                 format!("{namespace}:{path}")
             }
-            fn component_types() -> Vec<wired_ecs::types::ComponentType> {
+            fn component_types() -> Vec<#crate_ident::types::ComponentType> {
                 vec![
                     #(#field_component_types),*
                 ]
             }
             fn to_bytes(&self) -> Vec<u8> {
-                wired_ecs::bytemuck::bytes_of(self).to_vec()
+                #crate_ident::bytemuck::bytes_of(self).to_vec()
             }
             fn view(bytes: &[u8]) -> &Self {
-                wired_ecs::bytemuck::from_bytes(bytes)
+                #crate_ident::bytemuck::from_bytes(bytes)
             }
             fn view_mut(bytes: &mut [u8]) -> &mut Self {
-                wired_ecs::bytemuck::from_bytes_mut(bytes)
+                #crate_ident::bytemuck::from_bytes_mut(bytes)
             }
         }
     };
@@ -78,12 +88,12 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-fn add_trait_bounds(mut generics: Generics) -> Generics {
+fn add_trait_bounds(crate_ident: proc_macro2::TokenStream, mut generics: Generics) -> Generics {
     for component in &mut generics.params {
         if let GenericParam::Type(ref mut type_component) = *component {
             type_component
                 .bounds
-                .push(parse_quote!(wired_ecs::types::Component));
+                .push(parse_quote!(#crate_ident::types::Component));
         }
     }
     generics

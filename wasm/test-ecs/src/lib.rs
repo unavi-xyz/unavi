@@ -2,6 +2,7 @@ use exports::wired::ecs::guest_api::{Guest, GuestScript};
 use wired_ecs::prelude::*;
 
 mod constraint;
+mod entity;
 mod local;
 mod mut_query;
 mod resource;
@@ -30,6 +31,7 @@ impl GuestScript for Script {
         let mut app = App::default();
 
         constraint::add(&mut app);
+        entity::add(&mut app);
         local::add(&mut app);
         mut_query::add(&mut app);
         resource::add(&mut app);

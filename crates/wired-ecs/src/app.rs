@@ -91,7 +91,7 @@ impl App {
     pub fn exec_system(&self, id: u32, mut data: Vec<ParamData>) {
         let cache = &self.systems[&id];
         let mut app_state = self.state.borrow_mut();
-        let mut sys_state = app_state.system_state.entry(id).or_default();
+        let sys_state = app_state.system_state.entry(id).or_default();
 
         if cache.immutable {
             cache.system.run_blind(sys_state, &mut data);

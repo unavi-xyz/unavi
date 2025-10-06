@@ -20,23 +20,26 @@ mod iter;
 pub struct Query<T, U = ()> {
     // This should be a safe reference, not a raw pointer, but despite my best
     // efforts I could not figure out the lifetimes to do so. ｡ﾟ･ (>﹏<) ･ﾟ｡
-    raw: NonNull<Vec<Vec<u8>>>,
+    //
+    // This goes for all params that use this pattern, not just Queries.
+    data: NonNull<Vec<Vec<u8>>>,
+    ents: NonNull<Vec<u64>>,
     _t: PhantomData<T>,
     _u: PhantomData<U>,
 }
 
 impl<T, U> Query<T, U> {
     pub fn len(&self) -> usize {
-        unsafe { self.raw.as_ref().len() }
+        unsafe { self.data.as_ref().len() }
     }
     pub fn is_empty(&self) -> bool {
-        unsafe { self.raw.as_ref().is_empty() }
+        unsafe { self.data.as_ref().is_empty() }
     }
     pub fn iter(&self) -> QueryIter<T> {
-        unsafe { QueryIter::new(self.raw.as_ref().iter()) }
+        unsafe { QueryIter::new(self.data.as_ref().iter(), self.ents.as_ref().iter()) }
     }
     pub fn iter_mut(&mut self) -> QueryIterMut<T> {
-        unsafe { QueryIterMut::new(self.raw.as_mut().iter_mut()) }
+        unsafe { QueryIterMut::new(self.data.as_mut().iter_mut(), self.ents.as_ref().iter()) }
     }
 }
 
@@ -71,7 +74,8 @@ where
     ) -> Self {
         let ParamData::Query(raw) = data.next().unwrap();
         Self {
-            raw: (&mut raw.data).into(),
+            data: (&mut raw.data).into(),
+            ents: (&mut raw.ents).into(),
             _t: PhantomData,
             _u: PhantomData,
         }

@@ -3,7 +3,7 @@ use crate::{
     types::{EntityId, Param as WParam, ParamData},
 };
 
-use super::{Param, ParamMeta};
+use super::{Param, ParamMeta, component::QueriedComponent};
 
 pub struct Commands;
 
@@ -34,6 +34,10 @@ impl Commands {
 pub struct Entity(EntityId);
 
 impl Entity {
+    pub fn id(&self) -> u64 {
+        self.0
+    }
+
     pub fn insert<T: Component>(&self, data: T) {
         let c_id = T::register();
         host_api::insert_component(self.0, c_id, &data.to_bytes()).expect("insert component");
@@ -41,5 +45,27 @@ impl Entity {
     pub fn remove<T: Component>(&self) {
         let c_id = T::register();
         host_api::remove_component(self.0, c_id).expect("remove component");
+    }
+}
+
+impl<'d> QueriedComponent<'d> for Entity {
+    type Ref = Self;
+    type Mut = Self;
+
+    fn size() -> Option<usize> {
+        None
+    }
+    fn register() -> Option<u32> {
+        None
+    }
+    fn mutability() -> Option<bool> {
+        None
+    }
+
+    fn from_bytes(id: u64, _: &'d [u8]) -> Self::Ref {
+        Entity(id)
+    }
+    fn from_bytes_mut(id: u64, _: &'d mut [u8]) -> Self::Mut {
+        Entity(id)
     }
 }

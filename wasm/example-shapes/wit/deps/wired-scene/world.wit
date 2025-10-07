@@ -1,6 +1,22 @@
 package wired:scene;
 
 world prelude {
-  import gltf;
-  import glxf;
+  import scene;
+}
+
+interface scene {
+  use wired:ecs/types.{entity-id};
+  use wired:math/types.{vec3};
+
+  record name {
+    value: string
+  }
+
+  record parent {
+    id: entity-id
+  }
+
+  record children {
+    ids: list<entity-id>
+  }
 }

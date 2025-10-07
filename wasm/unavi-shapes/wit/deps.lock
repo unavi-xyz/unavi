@@ -1,9 +1,0 @@
-[wired-math]
-path = "../../../protocol/wit/wired-math"
-sha256 = "eeba7983ee9161bede85728d15f2e525289596cfa14cc228eeccf953004e5341"
-sha512 = "d70d759488024ceda7f0e2326cc582e97358ed6bfc57eb170c125f7436328b989838ec786e3e1f7a0da3a11a0a801ca4e8a0251c1571646acf25801ffa995cd1"
-
-[wired-scene]
-path = "../../../protocol/wit/wired-scene"
-sha256 = "0bd89c87ccf7d90d6ef2ae79e519e696a6703bb7438e32fd881decc3295c4eb1"
-sha512 = "3bb6fd00c451b3be36f7c3fd6b379b5436f91d01ccd216896d4891a10ae3053fea8614d406b6c277d07b791496a98c7e865e2dfd706f7bc5f66a8e4ebecdc492"

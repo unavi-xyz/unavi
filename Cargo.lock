@@ -6027,6 +6027,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-scene"
+version = "0.0.10"
+dependencies = [
+ "wired-ecs",
+ "wit-bindgen",
+]
+
+[[package]]
 name = "test-stall"
 version = "0.0.10"
 dependencies = [
@@ -6418,21 +6426,6 @@ dependencies = [
  "tracing-subscriber",
  "wasmtime",
  "wasmtime-wasi",
-]
-
-[[package]]
-name = "unavi-shapes"
-version = "0.0.10"
-dependencies = [
- "wit-bindgen",
-]
-
-[[package]]
-name = "unavi-system"
-version = "0.0.10"
-dependencies = [
- "wired-ecs",
- "wit-bindgen",
 ]
 
 [[package]]

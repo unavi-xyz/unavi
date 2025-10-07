@@ -21,7 +21,9 @@ struct Script {
 
 impl GuestScript for Script {
     fn new() -> Self {
-        let app = App::default();
+        let mut app = App::default();
+        app.add_system(Schedule::Startup, startup);
+
         Self { app }
     }
 
@@ -29,5 +31,7 @@ impl GuestScript for Script {
         self.app.exec_system(id, data);
     }
 }
+
+fn startup(commands: Commands) {}
 
 export!(World);

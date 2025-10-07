@@ -2776,14 +2776,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "example-ecs"
-version = "0.0.10"
-dependencies = [
- "wired-ecs",
- "wit-bindgen",
-]
-
-[[package]]
 name = "example-shapes"
 version = "0.0.10"
 dependencies = [

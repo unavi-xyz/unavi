@@ -1,8 +1,8 @@
-use std::{marker::PhantomData, ptr::NonNull};
+use std::marker::PhantomData;
 
 use component_group::ComponentGroup;
 use constraint::Constraint;
-use iter::{QueryIter, QueryIterMut};
+use tuple_ref::{AsTupleMut, AsTupleRef};
 
 use crate::{
     ParamState,
@@ -13,39 +13,40 @@ use super::{Param, ParamMeta};
 
 pub(crate) mod component;
 pub(crate) mod component_group;
+pub(crate) mod component_ref;
 pub mod constraint;
-mod iter;
+pub(crate) mod tuple_ref;
 
-/// Typed view of query data.
-pub struct Query<T, U = ()> {
-    // This should be a safe reference, not a raw pointer, but despite my best
-    // efforts I could not figure out the lifetimes to do so. ｡ﾟ･ (>﹏<) ･ﾟ｡
-    //
-    // This goes for all params that use this pattern, not just Queries.
-    data: NonNull<Vec<Vec<u8>>>,
-    ents: NonNull<Vec<u64>>,
+pub struct Query<T, U = ()>
+where
+    T: ComponentGroup,
+{
+    items: Vec<T::Owned>,
     _t: PhantomData<T>,
     _u: PhantomData<U>,
 }
 
-impl<T, U> Query<T, U> {
+impl<T, U> Query<T, U>
+where
+    T: ComponentGroup,
+{
     pub fn len(&self) -> usize {
-        unsafe { self.data.as_ref().len() }
+        self.items.len()
     }
     pub fn is_empty(&self) -> bool {
-        unsafe { self.data.as_ref().is_empty() }
+        self.items.is_empty()
     }
-    pub fn iter(&self) -> QueryIter<T> {
-        unsafe { QueryIter::new(self.data.as_ref().iter(), self.ents.as_ref().iter()) }
+    pub fn iter(&self) -> impl Iterator<Item = <T::Owned as AsTupleRef<T::Ref>>::TRef<'_>> {
+        self.items.iter().map(|x| x.as_tuple_ref())
     }
-    pub fn iter_mut(&mut self) -> QueryIterMut<T> {
-        unsafe { QueryIterMut::new(self.data.as_mut().iter_mut(), self.ents.as_ref().iter()) }
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = <T::Owned as AsTupleMut<T::Mut>>::TMut<'_>> {
+        self.items.iter_mut().map(|x| x.as_tuple_mut())
     }
 }
 
 impl<T, U> Param for Query<T, U>
 where
-    T: ComponentGroup<'static>,
+    T: ComponentGroup,
     U: Constraint,
 {
     fn register_param(_: &mut Vec<ParamState>) -> Option<WParam> {
@@ -60,22 +61,18 @@ where
     fn meta() -> Option<ParamMeta> {
         Some(ParamMeta::Query {
             component_mut: T::mutability(),
-            component_sizes: T::component_sizes(),
             constraints: U::concrete_constraints(),
         })
     }
 
-    /// SAFETY:
-    /// - Underlying data must remain alive through other means, Query holds a weak reference.
-    /// - Data must remain effectively mutably owned by this Query.
     fn parse_param(
         _: &mut std::slice::IterMut<ParamState>,
-        data: &mut std::slice::IterMut<ParamData>,
+        data: &mut std::vec::IntoIter<ParamData>,
     ) -> Self {
-        let ParamData::Query(raw) = data.next().unwrap();
+        let ParamData::Query(data) = data.next().unwrap();
+        let items = data.clone().into_iter().map(T::from_data).collect();
         Self {
-            data: (&mut raw.data).into(),
-            ents: (&mut raw.ents).into(),
+            items,
             _t: PhantomData,
             _u: PhantomData,
         }

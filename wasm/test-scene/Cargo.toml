@@ -13,5 +13,6 @@ workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
+serde.workspace       = true
 wired-ecs.path        = "../../crates/wired-ecs"
 wit-bindgen.workspace = true

@@ -326,10 +326,7 @@ pub fn build_system(
             let mut out = Vec::new();
 
             for query in queries {
-                let mut query_data = QueryData {
-                    ents: Vec::new(),
-                    data: Vec::new(),
-                };
+                let mut query_data = Vec::new();
 
                 for ent in query {
                     let Some(wasm_id) = ent.get::<VEntity>().map(|x| x.wasm_id) else {
@@ -351,28 +348,29 @@ pub fn build_system(
                                     continue;
                                 }
 
-                                let ptr = ent.get_by_id(id).unwrap();
-                                let size = bevy_component_sizes.get(&id).copied().unwrap();
-
-                                // SAFETY:
-                                // - All virtual components are created with layout [u8]
-                                // - len is calculated from the component descriptor
-                                let data = unsafe {
-                                    std::slice::from_raw_parts(
-                                        ptr.assert_unique().as_ptr().cast::<u8>(),
-                                        size,
-                                    )
-                                };
-
-                                ent_data.extend(&data[0..size]);
+                                // let ptr = ent.get_by_id(id).unwrap();
+                                // let size = bevy_component_sizes.get(&id).copied().unwrap();
+                                //
+                                // // SAFETY:
+                                // // - All virtual components are created with layout [u8]
+                                // // - len is calculated from the component descriptor
+                                // let data = unsafe {
+                                //     std::slice::from_raw_parts(
+                                //         ptr.assert_unique().as_ptr().cast::<u8>(),
+                                //         size,
+                                //     )
+                                // };
+                                //
+                                // ent_data.extend(&data[0..size]);
                             }
                             ComponentAccessKind::Exclusive(_id) => {}
                             ComponentAccessKind::Archetypal(_id) => {}
                         }
                     }
-
-                    query_data.ents.push(wasm_id);
-                    query_data.data.push(ent_data);
+                    query_data.push(QueryData {
+                        entity: wasm_id,
+                        components: ent_data,
+                    });
                 }
 
                 out.push(ParamData::Query(query_data));
@@ -516,14 +514,14 @@ pub fn build_system(
                                     continue;
                                 };
 
-                                let mut d_start = 0;
-
-                                for c in q.components.iter().take(c_idx) {
-                                    let Some(size) = wasm_component_sizes.get(c) else {
-                                        bail!("component size not found")
-                                    };
-                                    d_start += *size;
-                                }
+                                // let mut d_start = 0;
+                                //
+                                // for c in q.components.iter().take(c_idx) {
+                                //     let Some(size) = wasm_component_sizes.get(c) else {
+                                //         bail!("component size not found")
+                                //     };
+                                //     d_start += *size;
+                                // }
 
                                 let Some(p_data) = input.get_mut(i) else {
                                     bail!("param data not found")
@@ -532,15 +530,15 @@ pub fn build_system(
                                 let ParamData::Query(q_data) = p_data;
 
                                 let Some(e_idx) =
-                                    q_data.ents.iter().position(|x| *x == write.entity)
+                                    q_data.iter().position(|x| x.entity == write.entity)
                                 else {
                                     bail!("entity not found")
                                 };
 
-                                let Some(data) = q_data.data.get_mut(e_idx) else {
+                                let Some(data) = q_data.get_mut(e_idx) else {
                                     bail!("query data not found")
                                 };
-                                data.write_slice(d_start, &write.data);
+                                // data.components.write_slice(d_start, &write.data);
                             }
                         }
                     }

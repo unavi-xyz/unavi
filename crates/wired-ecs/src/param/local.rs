@@ -1,7 +1,3 @@
-use std::{marker::PhantomData, ptr::NonNull};
-
-use bytemuck::Pod;
-
 use crate::{
     ParamState,
     types::{Param as WParam, ParamData},
@@ -10,35 +6,28 @@ use crate::{
 use super::{Param, ParamMeta};
 
 pub struct Local<T> {
-    raw: NonNull<Vec<u8>>,
-    _t: PhantomData<T>,
+    inner: T,
 }
 
-impl<T> AsRef<T> for Local<T>
-where
-    T: Pod,
-{
+impl<T> AsRef<T> for Local<T> {
     fn as_ref(&self) -> &T {
-        bytemuck::from_bytes(unsafe { self.raw.as_ref() })
+        &self.inner
     }
 }
-impl<T> AsMut<T> for Local<T>
-where
-    T: Pod,
-{
+impl<T> AsMut<T> for Local<T> {
     fn as_mut(&mut self) -> &mut T {
-        bytemuck::from_bytes_mut(unsafe { self.raw.as_mut() })
+        &mut self.inner
     }
 }
 
 impl<T> Param for Local<T>
 where
-    T: Default + Pod,
+    T: Default,
 {
     fn register_param(states: &mut Vec<ParamState>) -> Option<WParam> {
-        let inner = T::default();
-        let raw = bytemuck::bytes_of(&inner).to_vec();
-        states.push(ParamState { raw });
+        // let inner = T::default();
+        // let raw = bytemuck::bytes_of(&inner).to_vec();
+        // states.push(ParamState { raw });
 
         None
     }
@@ -50,12 +39,10 @@ where
     }
     fn parse_param(
         state: &mut std::slice::IterMut<ParamState>,
-        _: &mut std::slice::IterMut<ParamData>,
+        _: &mut std::vec::IntoIter<ParamData>,
     ) -> Self {
-        let p_state = state.next().expect("param state not found");
-        Local {
-            raw: (&mut p_state.raw).into(),
-            _t: PhantomData,
-        }
+        // let p_state = state.next().expect("param state not found");
+        // Local { inner }
+        todo!()
     }
 }

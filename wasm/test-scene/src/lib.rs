@@ -1,6 +1,8 @@
 use exports::wired::ecs::guest_api::{Guest, GuestScript};
 use wired_ecs::prelude::*;
 
+mod name;
+
 wit_bindgen::generate!({
     generate_all,
     additional_derives: [wired_ecs::Component],
@@ -22,7 +24,8 @@ struct Script {
 impl GuestScript for Script {
     fn new() -> Self {
         let mut app = App::default();
-        app.add_system(Schedule::Startup, startup);
+
+        name::add(&mut app);
 
         Self { app }
     }
@@ -31,7 +34,5 @@ impl GuestScript for Script {
         self.app.exec_system(id, data);
     }
 }
-
-fn startup(commands: Commands) {}
 
 export!(World);

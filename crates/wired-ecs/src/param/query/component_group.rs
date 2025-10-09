@@ -1,174 +1,125 @@
-use super::component::QueriedComponent;
+use crate::types::QueryData;
 
-pub trait ComponentGroup<'d> {
+use super::{
+    component::{OwnedComponent, QueriedComponent}, component_ref::{AsComponentMut, AsComponentRef}, tuple_ref::{ AsTupleMut, AsTupleRef}
+};
+
+pub trait ComponentGroup {
+    type Owned: AsTupleRef<Self::Ref> + AsTupleMut<Self::Mut>;
     type Ref;
     type Mut;
 
     fn register_components() -> Vec<u32>;
-    fn component_sizes() -> Vec<usize>;
     fn mutability() -> Vec<bool>;
 
-    fn from_bytes(id: u64, bytes: &'d [u8]) -> Self::Ref;
-    fn from_bytes_mut(id: u64, bytes: &'d mut [u8]) -> Self::Mut;
+    fn from_data(data: QueryData) -> Self::Owned;
 }
 
-impl<'d, A> ComponentGroup<'d> for A
+impl<A> ComponentGroup for A
 where
-    A: QueriedComponent<'d>,
+    A: QueriedComponent,
+    OwnedComponent<A::Owned, A::Ref, A::Mut>: AsComponentRef<A::Ref> + AsComponentMut<A::Mut>,
+    OwnedComponent<A::Owned, A::Ref, A::Mut>: AsTupleRef<A::Ref> + AsTupleMut<A::Mut>,
 {
+    type Owned = OwnedComponent<A::Owned, A::Ref, A::Mut>;
     type Ref = A::Ref;
     type Mut = A::Mut;
 
     fn register_components() -> Vec<u32> {
-        vec![A::register()].into_iter().filter_map(|x| x).collect()
-    }
-    fn component_sizes() -> Vec<usize> {
-        vec![A::size()].into_iter().filter_map(|x| x).collect()
+        vec![A::register()].into_iter().flatten().collect()
     }
     fn mutability() -> Vec<bool> {
-        vec![A::mutability()]
-            .into_iter()
-            .filter_map(|x| x)
-            .collect()
+        vec![A::mutability()].into_iter().flatten().collect()
     }
 
-    fn from_bytes(id: u64, bytes: &'d [u8]) -> Self::Ref {
-        A::from_bytes(id, bytes)
-    }
-    fn from_bytes_mut(id: u64, bytes: &'d mut [u8]) -> Self::Mut {
-        A::from_bytes_mut(id, bytes)
+    fn from_data(data: QueryData) -> Self::Owned {
+        let mut iter = data.components.into_iter();
+        A::from_bytes(data.entity, iter.next().unwrap())
     }
 }
 
-impl<'d, A> ComponentGroup<'d> for (A,)
+impl<A> ComponentGroup for (A,)
 where
-    A: QueriedComponent<'d>,
+    A: QueriedComponent,
+    OwnedComponent<A::Owned, A::Ref, A::Mut>: AsComponentRef<A::Ref> + AsComponentMut<A::Mut>,
+    (OwnedComponent<A::Owned, A::Ref, A::Mut>,): AsTupleRef<(A::Ref,)> + AsTupleMut<(A::Mut,)>,
 {
+    type Owned = (OwnedComponent<A::Owned, A::Ref, A::Mut>,);
     type Ref = (A::Ref,);
     type Mut = (A::Mut,);
 
     fn register_components() -> Vec<u32> {
-        vec![A::register()].into_iter().filter_map(|x| x).collect()
-    }
-    fn component_sizes() -> Vec<usize> {
-        vec![A::size()].into_iter().filter_map(|x| x).collect()
+        vec![A::register()].into_iter().flatten().collect()
     }
     fn mutability() -> Vec<bool> {
-        vec![A::mutability()]
-            .into_iter()
-            .filter_map(|x| x)
-            .collect()
+        vec![A::mutability()].into_iter().flatten().collect()
     }
 
-    fn from_bytes(id: u64, bytes: &'d [u8]) -> Self::Ref {
-        (A::from_bytes(id, bytes),)
-    }
-    fn from_bytes_mut(id: u64, bytes: &'d mut [u8]) -> Self::Mut {
-        (A::from_bytes_mut(id, bytes),)
+    fn from_data(data: QueryData) -> Self::Owned {
+        let mut iter = data.components.into_iter();
+        (A::from_bytes(data.entity, iter.next().unwrap()),)
     }
 }
 
-impl<'d, A, B> ComponentGroup<'d> for (A, B)
-where
-    A: QueriedComponent<'d>,
-    B: QueriedComponent<'d>,
-{
-    type Ref = (A::Ref, B::Ref);
-    type Mut = (A::Mut, B::Mut);
+// impl<A, B> ComponentGroup for (A, B)
+// where
+//     A: QueriedComponent,
+//     B: QueriedComponent,
+// {
+//     type Owned = (
+//         OwnedComponent<A::Owned, A::Ref, A::Mut>,
+//         OwnedComponent<B::Owned, B::Ref, B::Mut>,
+//     );
+//     type Ref = (A::Ref, B::Ref);
+//     type Mut = (A::Mut, B::Mut);
+//
+//     fn register_components() -> Vec<u32> {
+//         vec![A::register(), B::register()]
+//             .into_iter()
+//             .flatten()
+//             .collect()
+//     }
+//     fn mutability() -> Vec<bool> {
+//         vec![A::mutability(), B::mutability()]
+//             .into_iter()
+//             .flatten()
+//             .collect()
+//     }
+//
+//     fn from_data(data: QueryData) -> Self::Owned {
+//         let mut iter = data.components.into_iter();
+//         (
+//             A::from_bytes(data.entity, iter.next().unwrap()),
+//             B::from_bytes(data.entity, iter.next().unwrap()),
+//         )
+//     }
+// }
 
-    fn register_components() -> Vec<u32> {
-        vec![A::register(), B::register()]
-            .into_iter()
-            .filter_map(|x| x)
-            .collect()
-    }
-    fn component_sizes() -> Vec<usize> {
-        vec![A::size(), B::size()]
-            .into_iter()
-            .filter_map(|x| x)
-            .collect()
-    }
-    fn mutability() -> Vec<bool> {
-        vec![A::mutability(), B::mutability()]
-            .into_iter()
-            .filter_map(|x| x)
-            .collect()
-    }
-
-    fn from_bytes(id: u64, bytes: &'d [u8]) -> Self::Ref {
-        let xa = A::size().unwrap();
-
-        let (ba, bb) = bytes.split_at(xa);
-
-        let a = A::from_bytes(id, ba);
-        let b = B::from_bytes(id, bb);
-
-        (a, b)
-    }
-    fn from_bytes_mut(id: u64, bytes: &'d mut [u8]) -> Self::Mut {
-        let xa = A::size().unwrap();
-
-        let (ba, bb) = bytes.split_at_mut(xa);
-
-        let a = A::from_bytes_mut(id, ba);
-        let b = B::from_bytes_mut(id, bb);
-
-        (a, b)
-    }
-}
-
-impl<'d, A, B, C> ComponentGroup<'d> for (A, B, C)
-where
-    A: QueriedComponent<'d>,
-    B: QueriedComponent<'d>,
-    C: QueriedComponent<'d>,
-{
-    type Ref = (A::Ref, B::Ref, C::Ref);
-    type Mut = (A::Mut, B::Mut, C::Mut);
-
-    fn register_components() -> Vec<u32> {
-        vec![A::register(), B::register(), C::register()]
-            .into_iter()
-            .filter_map(|x| x)
-            .collect()
-    }
-    fn component_sizes() -> Vec<usize> {
-        vec![A::size(), B::size(), C::size()]
-            .into_iter()
-            .filter_map(|x| x)
-            .collect()
-    }
-    fn mutability() -> Vec<bool> {
-        vec![A::mutability(), B::mutability(), C::mutability()]
-            .into_iter()
-            .filter_map(|x| x)
-            .collect()
-    }
-
-    fn from_bytes(id: u64, bytes: &'d [u8]) -> Self::Ref {
-        let xa = A::size().unwrap();
-        let xb = B::size().unwrap();
-
-        let (ba, bb) = bytes.split_at(xa);
-        let (bb, bc) = bb.split_at(xb);
-
-        let a = A::from_bytes(id, ba);
-        let b = B::from_bytes(id, bb);
-        let c = C::from_bytes(id, bc);
-
-        (a, b, c)
-    }
-    fn from_bytes_mut(id: u64, bytes: &'d mut [u8]) -> Self::Mut {
-        let xa = A::size().unwrap();
-        let xb = B::size().unwrap();
-
-        let (ba, bb) = bytes.split_at_mut(xa);
-        let (bb, bc) = bb.split_at_mut(xb);
-
-        let a = A::from_bytes_mut(id, ba);
-        let b = B::from_bytes_mut(id, bb);
-        let c = C::from_bytes_mut(id, bc);
-
-        (a, b, c)
-    }
-}
+// impl<A, B, C> ComponentGroup for (A, B, C)
+// where
+//     A: QueriedComponent,
+//     B: QueriedComponent,
+//     C: QueriedComponent,
+// {
+//     fn register_components() -> Vec<u32> {
+//         vec![A::register(), B::register(), C::register()]
+//             .into_iter()
+//             .filter_map(|x| x)
+//             .collect()
+//     }
+//     fn mutability() -> Vec<bool> {
+//         vec![A::mutability(), B::mutability(), C::mutability()]
+//             .into_iter()
+//             .filter_map(|x| x)
+//             .collect()
+//     }
+//
+//     fn from_data(data: QueryData) -> Self {
+//         let mut iter = data.components.into_iter();
+//         (
+//             A::from_bytes(data.entity, iter.next().unwrap()),
+//             B::from_bytes(data.entity, iter.next().unwrap()),
+//             C::from_bytes(data.entity, iter.next().unwrap()),
+//         )
+//     }
+// }

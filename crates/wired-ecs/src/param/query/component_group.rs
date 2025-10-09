@@ -1,7 +1,9 @@
 use crate::types::QueryData;
 
 use super::{
-    component::{OwnedComponent, QueriedComponent}, component_ref::{AsComponentMut, AsComponentRef}, tuple_ref::{ AsTupleMut, AsTupleRef}
+    component::{OwnedComponent, QueriedComponent},
+    component_ref::{AsComponentMut, AsComponentRef},
+    tuple_ref::{AsTupleMut, AsTupleRef},
 };
 
 pub trait ComponentGroup {

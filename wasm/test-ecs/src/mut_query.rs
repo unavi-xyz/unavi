@@ -12,7 +12,7 @@ pub fn add(app: &mut App) {
         .order_systems(test_mutation, SystemOrder::After, test_mut_query);
 }
 
-#[derive(Component, Clone, Copy, Debug)]
+#[derive(Decode, Encode, Component, Clone)]
 struct MyPoint {
     x: usize,
     y: usize,

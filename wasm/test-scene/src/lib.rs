@@ -3,13 +3,7 @@ use wired_ecs::prelude::*;
 
 mod name;
 
-wit_bindgen::generate!({
-    generate_all,
-    additional_derives: [wired_ecs::Component],
-    with: {
-        "wired:ecs/types": wired_ecs::types,
-    },
-});
+wired_ecs::generate_bindgen!();
 
 struct World;
 

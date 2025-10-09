@@ -2799,6 +2799,7 @@ dependencies = [
 name = "example-shapes"
 version = "0.0.10"
 dependencies = [
+ "bincode",
  "wired-ecs",
  "wit-bindgen",
 ]
@@ -6034,6 +6035,7 @@ dependencies = [
 name = "test-ecs"
 version = "0.0.10"
 dependencies = [
+ "bincode",
  "wired-ecs",
  "wit-bindgen",
 ]
@@ -6042,6 +6044,7 @@ dependencies = [
 name = "test-log"
 version = "0.0.10"
 dependencies = [
+ "bincode",
  "wired-ecs",
  "wit-bindgen",
 ]
@@ -6050,7 +6053,7 @@ dependencies = [
 name = "test-scene"
 version = "0.0.10"
 dependencies = [
- "serde",
+ "bincode",
  "wired-ecs",
  "wit-bindgen",
 ]
@@ -6059,6 +6062,7 @@ dependencies = [
 name = "test-stall"
 version = "0.0.10"
 dependencies = [
+ "bincode",
  "wired-ecs",
  "wit-bindgen",
 ]

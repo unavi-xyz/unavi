@@ -12,7 +12,7 @@ pub fn add(app: &mut App) {
 
 static ID: LazyLock<AtomicU64> = LazyLock::new(AtomicU64::default);
 
-#[derive(Component, Clone, Copy)]
+#[derive(Decode, Encode, Component, Clone)]
 struct EntMarker;
 
 fn startup(commands: Commands) {

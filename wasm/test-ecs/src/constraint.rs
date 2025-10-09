@@ -5,12 +5,12 @@ pub fn add(app: &mut App) {
         .add_system(Schedule::Update, test_with_without);
 }
 
-#[derive(Component, Clone, Copy, Debug)]
+#[derive(Decode, Encode, Component, Clone)]
 struct CompX {
     value: f64,
 }
 
-#[derive(Component, Clone, Copy, Debug)]
+#[derive(Decode, Encode, Component, Clone)]
 struct CompY;
 
 const X1: f64 = 1.0;

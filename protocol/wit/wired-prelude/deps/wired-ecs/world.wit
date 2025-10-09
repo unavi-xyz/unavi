@@ -54,12 +54,12 @@ interface types {
   }
 
   record query-data {
-    ents: list<entity-id>,
-    data: list<list<u8>>,
+    entity: entity-id,
+    components: list<list<u8>>,
   }
 
   variant param-data {
-    query(query-data)
+    query(list<query-data>)
   }
 
   enum schedule {

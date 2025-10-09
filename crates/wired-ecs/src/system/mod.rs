@@ -9,7 +9,7 @@ pub trait System {
 }
 
 pub trait BlindSystem {
-    fn run_blind(&self, state: &mut SystemState, data: &mut Vec<ParamData>);
+    fn run_blind(&self, state: &mut SystemState, data: Vec<ParamData>);
 }
 
 impl<S, P> BlindSystem for S
@@ -17,7 +17,7 @@ where
     P: ParamGroup,
     S: System<In = P>,
 {
-    fn run_blind(&self, state: &mut SystemState, data: &mut Vec<ParamData>) {
+    fn run_blind(&self, state: &mut SystemState, data: Vec<ParamData>) {
         let a = P::parse_params(state, data);
         self.run(a);
     }

@@ -23,7 +23,7 @@ pub mod prelude {
 }
 
 pub use app::*;
+pub use bincode;
 pub use bindings::wired::ecs::*;
-pub use bytemuck;
 pub use component::*;
 pub use wired_ecs_derive::*;

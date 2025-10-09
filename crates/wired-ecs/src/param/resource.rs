@@ -1,5 +1,3 @@
-use std::{marker::PhantomData, ptr::NonNull};
-
 use crate::{
     ParamState,
     types::{Param as WParam, ParamData, Query as WQuery},
@@ -7,56 +5,51 @@ use crate::{
 
 use super::{Param, ParamMeta, component_group::ComponentGroup};
 
-pub struct Res<T>
+pub struct Res<'d, T>
 where
-    for<'a> &'a T: ComponentGroup<'a>,
+    &'d T: ComponentGroup,
 {
-    raw: NonNull<Vec<u8>>,
-    _t: PhantomData<T>,
+    owned: <&'d T as ComponentGroup>::Owned,
 }
-pub struct ResMut<T>
+pub struct ResMut<'d, T>
 where
-    for<'a> &'a T: ComponentGroup<'a>,
-    for<'a> &'a mut T: ComponentGroup<'a>,
+    &'d mut T: ComponentGroup,
 {
-    raw: NonNull<Vec<u8>>,
-    _t: PhantomData<T>,
+    owned: <&'d mut T as ComponentGroup>::Owned,
 }
 
-impl<T> AsRef<T> for Res<T>
+impl<'d, T> AsRef<T> for Res<'d, T>
 where
-    for<'a> &'a T: ComponentGroup<'a, Ref = &'a T>,
+    &'d T: ComponentGroup,
+    <&'d T as ComponentGroup>::Owned: AsRef<T>,
 {
     fn as_ref(&self) -> &T {
-        let data = unsafe { self.raw.as_ref() };
-        <&T>::from_bytes(0, data)
+        self.owned.as_ref()
     }
 }
-impl<T> AsRef<T> for ResMut<T>
+impl<'d, T> AsRef<T> for ResMut<'d, T>
 where
-    for<'a> &'a T: ComponentGroup<'a, Ref = &'a T>,
-    for<'a> &'a mut T: ComponentGroup<'a>,
+    &'d mut T: ComponentGroup,
+    <&'d mut T as ComponentGroup>::Owned: AsRef<T>,
 {
     fn as_ref(&self) -> &T {
-        let data = unsafe { self.raw.as_ref() };
-        <&T>::from_bytes(0, data)
+        self.owned.as_ref()
     }
 }
 
-impl<T> AsMut<T> for ResMut<T>
+impl<'d, T> AsMut<T> for ResMut<'d, T>
 where
-    for<'a> &'a T: ComponentGroup<'a>,
-    for<'a> &'a mut T: ComponentGroup<'a, Mut = &'a mut T>,
+    &'d mut T: ComponentGroup,
+    <&'d mut T as ComponentGroup>::Owned: AsMut<T>,
 {
     fn as_mut(&mut self) -> &mut T {
-        let data = unsafe { self.raw.as_mut() };
-        <&mut T>::from_bytes_mut(0, data)
+        self.owned.as_mut()
     }
 }
 
-impl<T> Param for Res<T>
+impl<'d, T> Param for Res<'d, T>
 where
-    for<'a> &'a T: ComponentGroup<'a>,
+    &'d T: ComponentGroup,
 {
     fn register_param(_: &mut Vec<ParamState>) -> Option<WParam> {
         Some(WParam::Query(WQuery {
@@ -70,26 +63,21 @@ where
     fn meta() -> Option<ParamMeta> {
         Some(ParamMeta::Query {
             component_mut: <&T>::mutability(),
-            component_sizes: <&T>::component_sizes(),
             constraints: Vec::new(),
         })
     }
     fn parse_param(
         _: &mut std::slice::IterMut<ParamState>,
-        data: &mut std::slice::IterMut<ParamData>,
+        data: &mut std::vec::IntoIter<ParamData>,
     ) -> Self {
         let ParamData::Query(q) = data.next().unwrap();
-        let c_data = q.data.get_mut(0).expect("resource should always exist");
-        Self {
-            raw: c_data.into(),
-            _t: PhantomData,
-        }
+        let owned = <&T>::from_data(q.into_iter().next().unwrap());
+        Self { owned }
     }
 }
-impl<T> Param for ResMut<T>
+impl<'d, T> Param for ResMut<'d, T>
 where
-    for<'a> &'a T: ComponentGroup<'a>,
-    for<'a> &'a mut T: ComponentGroup<'a>,
+    &'d mut T: ComponentGroup,
 {
     fn register_param(_: &mut Vec<ParamState>) -> Option<WParam> {
         Some(WParam::Query(WQuery {
@@ -98,24 +86,20 @@ where
         }))
     }
     fn mutability() -> bool {
-        true
+        false
     }
     fn meta() -> Option<ParamMeta> {
         Some(ParamMeta::Query {
             component_mut: <&mut T>::mutability(),
-            component_sizes: <&mut T>::component_sizes(),
             constraints: Vec::new(),
         })
     }
     fn parse_param(
         _: &mut std::slice::IterMut<ParamState>,
-        data: &mut std::slice::IterMut<ParamData>,
+        data: &mut std::vec::IntoIter<ParamData>,
     ) -> Self {
         let ParamData::Query(q) = data.next().unwrap();
-        let c_data = q.data.get_mut(0).expect("resource should always exist");
-        Self {
-            raw: c_data.into(),
-            _t: PhantomData,
-        }
+        let owned = <&mut T>::from_data(q.into_iter().next().unwrap());
+        Self { owned }
     }
 }

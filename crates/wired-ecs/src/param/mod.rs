@@ -16,7 +16,6 @@ pub use resource::*;
 pub enum ParamMeta {
     Query {
         component_mut: Vec<bool>,
-        component_sizes: Vec<usize>,
         constraints: Vec<ConcreteConstraint>,
     },
 }
@@ -34,7 +33,7 @@ pub trait Param {
     fn meta() -> Option<ParamMeta>;
     fn parse_param(
         state: &mut std::slice::IterMut<ParamState>,
-        data: &mut std::slice::IterMut<ParamData>,
+        data: &mut std::vec::IntoIter<ParamData>,
     ) -> Self;
 }
 
@@ -42,7 +41,7 @@ pub trait ParamGroup {
     fn register_params(state: &mut SystemState) -> Vec<Option<WParam>>;
     fn mutability() -> Vec<bool>;
     fn meta() -> Vec<Option<ParamMeta>>;
-    fn parse_params(state: &mut SystemState, data: &mut Vec<ParamData>) -> Self;
+    fn parse_params(state: &mut SystemState, data: Vec<ParamData>) -> Self;
 }
 
 impl ParamGroup for () {
@@ -55,7 +54,7 @@ impl ParamGroup for () {
     fn meta() -> Vec<Option<ParamMeta>> {
         Vec::new()
     }
-    fn parse_params(_: &mut SystemState, _: &mut Vec<ParamData>) -> Self {}
+    fn parse_params(_: &mut SystemState, _: Vec<ParamData>) -> Self {}
 }
 
 impl<A> ParamGroup for (A,)
@@ -71,9 +70,9 @@ where
     fn meta() -> Vec<Option<ParamMeta>> {
         vec![A::meta()]
     }
-    fn parse_params(state: &mut SystemState, data: &mut Vec<ParamData>) -> Self {
+    fn parse_params(state: &mut SystemState, data: Vec<ParamData>) -> Self {
         let mut s_iter = state.param_state.iter_mut();
-        let mut d_iter = data.iter_mut();
+        let mut d_iter = data.into_iter();
         (A::parse_param(&mut s_iter, &mut d_iter),)
     }
 }
@@ -95,9 +94,9 @@ where
     fn meta() -> Vec<Option<ParamMeta>> {
         vec![A::meta(), B::meta()]
     }
-    fn parse_params(state: &mut SystemState, data: &mut Vec<ParamData>) -> Self {
+    fn parse_params(state: &mut SystemState, data: Vec<ParamData>) -> Self {
         let mut s_iter = state.param_state.iter_mut();
-        let mut d_iter = data.iter_mut();
+        let mut d_iter = data.into_iter();
         (
             A::parse_param(&mut s_iter, &mut d_iter),
             B::parse_param(&mut s_iter, &mut d_iter),
@@ -124,9 +123,9 @@ where
     fn meta() -> Vec<Option<ParamMeta>> {
         vec![A::meta(), B::meta(), C::meta()]
     }
-    fn parse_params(state: &mut SystemState, data: &mut Vec<ParamData>) -> Self {
+    fn parse_params(state: &mut SystemState, data: Vec<ParamData>) -> Self {
         let mut s_iter = state.param_state.iter_mut();
-        let mut d_iter = data.iter_mut();
+        let mut d_iter = data.into_iter();
         (
             A::parse_param(&mut s_iter, &mut d_iter),
             B::parse_param(&mut s_iter, &mut d_iter),

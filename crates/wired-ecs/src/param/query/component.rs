@@ -1,24 +1,127 @@
+use std::marker::PhantomData;
+
 use crate::Component;
 
-pub trait QueriedComponent<'d> {
+use super::component_ref::{AsComponentMut, AsComponentRef};
+
+pub struct OwnedComponent<T, R, M> {
+    owned: T,
+    _r: PhantomData<R>,
+    _m: PhantomData<M>,
+}
+
+impl<T, R, M> OwnedComponent<T, R, M> {
+    pub fn new(owned: T) -> Self {
+        OwnedComponent {
+            owned,
+            _r: PhantomData,
+            _m: PhantomData,
+        }
+    }
+}
+
+impl<T, M> AsRef<T> for OwnedComponent<T, &T, M> {
+    fn as_ref(&self) -> &T {
+        &self.owned
+    }
+}
+impl<T, R> AsMut<T> for OwnedComponent<T, R, &mut T> {
+    fn as_mut(&mut self) -> &mut T {
+        &mut self.owned
+    }
+}
+
+impl<T> AsComponentRef<T> for OwnedComponent<T, T, T>
+where
+    T: Copy,
+{
+    type CRef<'a>
+        = T
+    where
+        Self: 'a;
+    fn as_component_ref<'a>(&'a self) -> Self::CRef<'a> {
+        self.owned
+    }
+}
+impl<T> AsComponentMut<T> for OwnedComponent<T, T, T>
+where
+    T: Copy,
+{
+    type CMut<'a>
+        = T
+    where
+        Self: 'a;
+    fn as_component_mut<'a>(&'a mut self) -> Self::CMut<'a> {
+        self.owned
+    }
+}
+
+impl<T, M> AsComponentRef<T> for OwnedComponent<T, &T, M> {
+    type CRef<'a>
+        = &'a T
+    where
+        Self: 'a;
+    fn as_component_ref<'a>(&'a self) -> Self::CRef<'a> {
+        &self.owned
+    }
+}
+impl<T, M> AsComponentRef<&T> for OwnedComponent<T, &T, M> {
+    type CRef<'a>
+        = &'a T
+    where
+        Self: 'a;
+    fn as_component_ref<'a>(&'a self) -> Self::CRef<'a> {
+        &self.owned
+    }
+}
+impl<T, R> AsComponentMut<T> for OwnedComponent<T, R, &mut T> {
+    type CMut<'a>
+        = &'a mut T
+    where
+        Self: 'a;
+    fn as_component_mut<'a>(&'a mut self) -> Self::CMut<'a> {
+        &mut self.owned
+    }
+}
+impl<T, R> AsComponentMut<&T> for OwnedComponent<T, R, &T> {
+    type CMut<'a>
+        = &'a T
+    where
+        Self: 'a;
+    fn as_component_mut<'a>(&'a mut self) -> Self::CMut<'a> {
+        &self.owned
+    }
+}
+impl<T, R> AsComponentMut<&mut T> for OwnedComponent<T, R, &mut T> {
+    type CMut<'a>
+        = &'a mut T
+    where
+        Self: 'a;
+    fn as_component_mut<'a>(&'a mut self) -> Self::CMut<'a> {
+        &mut self.owned
+    }
+}
+
+pub trait QueriedComponent: Sized {
+    type Owned: AsComponentRef<Self::Ref> + AsComponentMut<Self::Mut>;
     type Ref;
     type Mut;
 
-    fn size() -> Option<usize>;
     fn register() -> Option<u32>;
     fn mutability() -> Option<bool>;
 
-    fn from_bytes(id: u64, bytes: &'d [u8]) -> Self::Ref;
-    fn from_bytes_mut(id: u64, bytes: &'d mut [u8]) -> Self::Mut;
+    fn from_bytes(entity: u64, bytes: Vec<u8>) -> OwnedComponent<Self::Owned, Self::Ref, Self::Mut>
+    where
+        OwnedComponent<Self::Owned, Self::Ref, Self::Mut>:
+            AsComponentRef<Self::Ref> + AsComponentMut<Self::Mut>;
+    fn to_bytes(&self) -> Vec<u8>;
 }
 
-impl<'d, T: Component> QueriedComponent<'d> for &'d T {
-    type Ref = &'d T;
-    type Mut = &'d T;
+impl<'t, T: Component> QueriedComponent for &'t T {
+    type Owned = T;
+    type Ref = &'t T;
+    type Mut = &'t T;
 
-    fn size() -> Option<usize> {
-        Some(T::size())
-    }
     fn register() -> Option<u32> {
         Some(T::register())
     }
@@ -26,31 +129,32 @@ impl<'d, T: Component> QueriedComponent<'d> for &'d T {
         Some(false)
     }
 
-    fn from_bytes(_: u64, bytes: &'d [u8]) -> Self::Ref {
-        T::view(bytes)
+    fn from_bytes(_: u64, bytes: Vec<u8>) -> OwnedComponent<Self::Owned, Self::Ref, Self::Mut> {
+        let owned = T::from_bytes(bytes);
+        OwnedComponent::new(owned)
     }
-    fn from_bytes_mut(_: u64, bytes: &'d mut [u8]) -> Self::Mut {
-        T::view(bytes)
+    fn to_bytes(&self) -> Vec<u8> {
+        T::to_bytes(self)
     }
 }
-impl<'d, T: Component> QueriedComponent<'d> for &'d mut T {
-    type Ref = &'d T;
-    type Mut = &'d mut T;
 
-    fn size() -> Option<usize> {
-        Some(T::size())
-    }
+impl<'t, T: Component> QueriedComponent for &'t mut T {
+    type Owned = T;
+    type Ref = &'t T;
+    type Mut = &'t mut T;
+
     fn register() -> Option<u32> {
         Some(T::register())
     }
     fn mutability() -> Option<bool> {
-        Some(true)
+        Some(false)
     }
 
-    fn from_bytes(_: u64, bytes: &'d [u8]) -> Self::Ref {
-        T::view(bytes)
+    fn from_bytes(_: u64, bytes: Vec<u8>) -> OwnedComponent<Self::Owned, Self::Ref, Self::Mut> {
+        let owned = T::from_bytes(bytes);
+        OwnedComponent::new(owned)
     }
-    fn from_bytes_mut(_: u64, bytes: &'d mut [u8]) -> Self::Mut {
-        T::view_mut(bytes)
+    fn to_bytes(&self) -> Vec<u8> {
+        T::to_bytes(self)
     }
 }

@@ -3,7 +3,10 @@ use crate::{
     types::{EntityId, Param as WParam, ParamData},
 };
 
-use super::{Param, ParamMeta, component::QueriedComponent};
+use super::{
+    Param, ParamMeta,
+    component::{OwnedComponent, QueriedComponent},
+};
 
 pub struct Commands;
 
@@ -19,7 +22,7 @@ impl Param for Commands {
     }
     fn parse_param(
         _: &mut std::slice::IterMut<ParamState>,
-        _: &mut std::slice::IterMut<ParamData>,
+        _: &mut std::vec::IntoIter<ParamData>,
     ) -> Self {
         Commands
     }
@@ -31,6 +34,7 @@ impl Commands {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct Entity(EntityId);
 
 impl Entity {
@@ -48,13 +52,11 @@ impl Entity {
     }
 }
 
-impl<'d> QueriedComponent<'d> for Entity {
+impl QueriedComponent for Entity {
+    type Owned = Self;
     type Ref = Self;
     type Mut = Self;
 
-    fn size() -> Option<usize> {
-        None
-    }
     fn register() -> Option<u32> {
         None
     }
@@ -62,10 +64,10 @@ impl<'d> QueriedComponent<'d> for Entity {
         None
     }
 
-    fn from_bytes(id: u64, _: &'d [u8]) -> Self::Ref {
-        Entity(id)
+    fn from_bytes(entity: u64, _: Vec<u8>) -> OwnedComponent<Self::Owned, Self::Ref, Self::Mut> {
+        OwnedComponent::new(Entity(entity))
     }
-    fn from_bytes_mut(id: u64, _: &'d mut [u8]) -> Self::Mut {
-        Entity(id)
+    fn to_bytes(&self) -> Vec<u8> {
+        Vec::new()
     }
 }

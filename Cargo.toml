@@ -23,6 +23,7 @@ avian3d     = "0.3"
 bevy        = "0.16.1"
 bytemuck    = "1.23.1"
 directories = "6.0.0"
+serde       = "1.0.228"
 tokio       = "1.46.1"
 wit-bindgen = "0.43.0"
 

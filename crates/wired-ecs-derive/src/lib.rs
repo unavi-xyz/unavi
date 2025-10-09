@@ -55,9 +55,6 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
     });
 
     let expanded = quote! {
-        unsafe impl #impl_generics #crate_ident::bytemuck::Zeroable for #name #ty_generics #where_clause {}
-        unsafe impl #impl_generics #crate_ident::bytemuck::Pod for #name #ty_generics #where_clause {}
-
         impl #impl_generics #crate_ident::Component for #name #ty_generics #where_clause {
             fn key() -> String {
                 let name = std::any::type_name::<Self>();
@@ -74,13 +71,11 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
                 ]
             }
             fn to_bytes(&self) -> Vec<u8> {
-                #crate_ident::bytemuck::bytes_of(self).to_vec()
+                // #crate_ident::bincode::to_vec(&self).unwrap()
+                todo!()
             }
-            fn view(bytes: &[u8]) -> &Self {
-                #crate_ident::bytemuck::from_bytes(bytes)
-            }
-            fn view_mut(bytes: &mut [u8]) -> &mut Self {
-                #crate_ident::bytemuck::from_bytes_mut(bytes)
+            fn from_bytes(bytes: Vec<u8>) -> Self {
+                todo!()
             }
         }
     };

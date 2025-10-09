@@ -71,11 +71,11 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
                 ]
             }
             fn to_bytes(&self) -> Vec<u8> {
-                // #crate_ident::bincode::to_vec(&self).unwrap()
-                todo!()
+                #crate_ident::bincode::encode_to_vec(&self, #crate_ident::bincode::config::standard()).unwrap()
             }
             fn from_bytes(bytes: Vec<u8>) -> Self {
-                todo!()
+                let (val, _) = #crate_ident::bincode::decode_from_slice(&bytes, #crate_ident::bincode::config::standard()).unwrap();
+                val
             }
         }
     };

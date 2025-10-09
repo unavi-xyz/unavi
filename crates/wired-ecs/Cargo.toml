@@ -10,6 +10,6 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-bincode               = "2.0.1"
+bincode.workspace     = true
 wired-ecs-derive.path = "../../crates/wired-ecs-derive"
 wit-bindgen.workspace = true

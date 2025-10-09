@@ -42,7 +42,9 @@ where
         _: &mut std::vec::IntoIter<ParamData>,
     ) -> Self {
         // let p_state = state.next().expect("param state not found");
-        // Local { inner }
-        todo!()
+        Local {
+            inner: T::default(),
+        }
+        // todo!()
     }
 }

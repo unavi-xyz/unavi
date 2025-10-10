@@ -5,7 +5,7 @@ mod component;
 mod constraint;
 mod entity;
 mod local;
-mod mut_query;
+mod query;
 mod resource;
 mod system_order;
 
@@ -29,7 +29,7 @@ impl GuestScript for Script {
         constraint::add(&mut app);
         entity::add(&mut app);
         local::add(&mut app);
-        mut_query::add(&mut app);
+        query::add(&mut app);
         resource::add(&mut app);
         system_order::add(&mut app);
 

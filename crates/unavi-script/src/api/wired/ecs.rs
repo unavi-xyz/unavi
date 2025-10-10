@@ -39,9 +39,9 @@ pub struct WiredEcsData {
 const KB: usize = 1024;
 
 const MAX_COMPONENTS: usize = 10_000;
-const MAX_COMPONENT_BYTES: usize = 30 * KB;
+const MAX_COMPONENT_BYTES: usize = 50 * KB;
 const MAX_ENTITIES: u64 = 1_000_000;
-const MAX_KEY_LEN: usize = 256;
+const MAX_KEY_LEN: usize = 512;
 const MAX_SYSTEMS: usize = 10_000;
 const MAX_SYSTEM_PARAMS: usize = 16;
 
@@ -49,31 +49,23 @@ const MAX_SYSTEM_PARAMS: usize = 16;
 
 impl wired::ecs::host_api::Host for WiredEcsData {
     async fn register_component(&mut self, component: Component) -> Result<ComponentId, String> {
-        // Each component is a unique (key, type) pair. This ensures that:
-        // 1. Multiple components with the same type can be created.
-        // 2. Multiple components with the same key don't cause type conflicts.
-        //    (This is important to avoid key sabotage, where script A registers script B's
-        //    component with the wrong type.)
         if let Some(id) = self.components.iter().position(|c| *c == component) {
             Ok(id as u32)
         } else {
             if component.key.len() > MAX_KEY_LEN {
-                return Err("Key too long".to_string());
+                return Err("Component key too long".to_string());
             }
-
-            let id = self.components.len() as u32;
-
             if self.components.len() >= MAX_COMPONENTS {
                 return Err("Max component count reached".to_string());
             }
 
+            let id = self.components.len() as u32;
+
             self.commands
-                .send(WasmCommand::RegisterComponent {
-                    id,
-                    key: component.key.clone(),
-                })
+                .send(WasmCommand::RegisterComponent { id })
                 .await
                 .map_err(|e| format!("Error sending command: {e}"))?;
+
             self.components.push(component);
 
             Ok(id)

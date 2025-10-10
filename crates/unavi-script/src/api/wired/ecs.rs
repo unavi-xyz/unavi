@@ -39,7 +39,7 @@ pub struct WiredEcsData {
 const KB: usize = 1024;
 
 const MAX_COMPONENTS: usize = 10_000;
-const MAX_COMPONENT_BYTES: usize = 10 * KB;
+const MAX_COMPONENT_BYTES: usize = 30 * KB;
 const MAX_ENTITIES: u64 = 1_000_000;
 const MAX_KEY_LEN: usize = 256;
 const MAX_SYSTEMS: usize = 10_000;
@@ -147,7 +147,7 @@ impl wired::ecs::host_api::Host for WiredEcsData {
         data: Vec<u8>,
     ) -> Result<(), String> {
         if data.len() > MAX_COMPONENT_BYTES {
-            return Err("Max data len reached".to_string());
+            return Err("Max component size reached".to_string());
         }
         self.commands
             .send(WasmCommand::WriteComponent {
@@ -167,7 +167,7 @@ impl wired::ecs::host_api::Host for WiredEcsData {
         data: Vec<u8>,
     ) -> Result<(), String> {
         if data.len() > MAX_COMPONENT_BYTES {
-            return Err("Max data len reached".to_string());
+            return Err("Max component size reached".to_string());
         }
 
         // Immediate write to any pending system calls.

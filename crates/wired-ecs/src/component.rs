@@ -1,18 +1,14 @@
 use std::any::type_name;
 
-use crate::{host_api::register_component, types::ComponentType};
+use crate::host_api::register_component;
 
 pub trait Component: Sized {
     fn key() -> String {
         type_name::<Self>().to_string()
     }
-    fn component_types() -> Vec<ComponentType>;
 
     fn register() -> u32 {
-        match register_component(&crate::types::Component {
-            key: Self::key(),
-            types: Self::component_types(),
-        }) {
+        match register_component(&crate::types::Component { key: Self::key() }) {
             Ok(id) => id,
             Err(e) => panic!("Failed to register component: {e}"),
         }

@@ -11,5 +11,6 @@ workspace = true
 
 [dependencies]
 bincode.workspace     = true
+bytemuck              = "1.23.1"
 wired-ecs-derive.path = "../../crates/wired-ecs-derive"
 wit-bindgen.workspace = true

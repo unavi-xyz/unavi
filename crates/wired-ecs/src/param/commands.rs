@@ -5,7 +5,8 @@ use crate::{
 
 use super::{
     Param, ParamMeta,
-    component::{OwnedComponent, QueriedComponent},
+    component::QueriedComponent,
+    owned_component::{HostWriteable, OwnedComponent},
 };
 
 pub struct Commands;
@@ -13,9 +14,6 @@ pub struct Commands;
 impl Param for Commands {
     fn register_param(_: &mut Vec<ParamState>) -> Option<WParam> {
         None
-    }
-    fn mutability() -> bool {
-        false
     }
     fn meta() -> Option<ParamMeta> {
         None
@@ -52,6 +50,10 @@ impl Entity {
     }
 }
 
+impl HostWriteable for Entity {
+    fn write(&self, _: u64, _: u32) {}
+}
+
 impl QueriedComponent for Entity {
     type Owned = Self;
     type Ref = Self;
@@ -64,10 +66,10 @@ impl QueriedComponent for Entity {
         None
     }
 
-    fn from_bytes(entity: u64, _: Vec<u8>) -> OwnedComponent<Self::Owned, Self::Ref, Self::Mut> {
+    fn from_bytes(
+        entity: u64,
+        _: &mut std::vec::IntoIter<Vec<u8>>,
+    ) -> OwnedComponent<Self::Owned, Self::Ref, Self::Mut> {
         OwnedComponent::new(Entity(entity))
-    }
-    fn to_bytes(&self) -> Vec<u8> {
-        Vec::new()
     }
 }

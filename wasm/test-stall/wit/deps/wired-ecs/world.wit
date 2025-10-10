@@ -7,32 +7,10 @@ interface types {
   type component-id = u32;
   type system-id = u32;
 
-  enum primitive {
-    %bool,
-    %f32,
-    %f64,
-    %i8,
-    %i16,
-    %i32,
-    %i64,
-    %u8,
-    %u16,
-    %u32,
-    %u64,
-    %string,
-  }
-
-  variant component-type {
-    map(tuple<primitive, primitive>),
-    primitive(primitive),
-    vec(primitive),
-  }
-
   record component {
     /// A unique string for the component.
     /// If the component is a WIT type, `key` is assumed to be the type path (`namespace:package/path/to/type`).
     key: string,
-    types: list<component-type>,
   }
 
   variant constraint {

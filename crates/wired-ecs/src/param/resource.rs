@@ -57,9 +57,6 @@ where
             constraints: Vec::new(),
         }))
     }
-    fn mutability() -> bool {
-        false
-    }
     fn meta() -> Option<ParamMeta> {
         Some(ParamMeta::Query {
             component_mut: <&T>::mutability(),
@@ -84,9 +81,6 @@ where
             components: <&mut T>::register_components(),
             constraints: Vec::new(),
         }))
-    }
-    fn mutability() -> bool {
-        false
     }
     fn meta() -> Option<ParamMeta> {
         Some(ParamMeta::Query {

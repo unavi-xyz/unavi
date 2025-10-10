@@ -15,11 +15,13 @@ pub(crate) mod component;
 pub(crate) mod component_group;
 pub(crate) mod component_ref;
 pub mod constraint;
+pub(crate) mod owned_component;
 pub(crate) mod tuple_ref;
 
 pub struct Query<T, U = ()>
 where
     T: ComponentGroup,
+    U: Constraint,
 {
     items: Vec<T::Owned>,
     _t: PhantomData<T>,
@@ -29,6 +31,7 @@ where
 impl<T, U> Query<T, U>
 where
     T: ComponentGroup,
+    U: Constraint,
 {
     pub fn len(&self) -> usize {
         self.items.len()
@@ -54,9 +57,6 @@ where
             components: T::register_components(),
             constraints: U::build_constraints(),
         }))
-    }
-    fn mutability() -> bool {
-        T::mutability().iter().any(|x| *x)
     }
     fn meta() -> Option<ParamMeta> {
         Some(ParamMeta::Query {

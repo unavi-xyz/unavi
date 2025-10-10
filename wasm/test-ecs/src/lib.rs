@@ -1,6 +1,7 @@
 use exports::wired::ecs::guest_api::{Guest, GuestScript};
 use wired_ecs::prelude::*;
 
+mod component;
 mod constraint;
 mod entity;
 mod local;
@@ -24,6 +25,7 @@ impl GuestScript for Script {
     fn new() -> Self {
         let mut app = App::default();
 
+        component::add(&mut app);
         constraint::add(&mut app);
         entity::add(&mut app);
         local::add(&mut app);

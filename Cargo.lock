@@ -6444,7 +6444,6 @@ dependencies = [
  "anyhow",
  "bevy",
  "bevy_async_task",
- "bytemuck",
  "futures",
  "tokio",
  "tracing",
@@ -6457,6 +6456,7 @@ dependencies = [
 name = "unavi-ui"
 version = "0.0.10"
 dependencies = [
+ "bincode",
  "wired-ecs",
  "wit-bindgen",
 ]
@@ -8011,6 +8011,7 @@ name = "wired-ecs"
 version = "0.0.10"
 dependencies = [
  "bincode",
+ "bytemuck",
  "wired-ecs-derive",
  "wit-bindgen",
 ]

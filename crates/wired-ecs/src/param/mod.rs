@@ -29,7 +29,6 @@ pub enum ConcreteConstraint {
 pub trait Param {
     /// Registers the param with the host, if it needs to be registered.
     fn register_param(state: &mut Vec<ParamState>) -> Option<WParam>;
-    fn mutability() -> bool;
     fn meta() -> Option<ParamMeta>;
     fn parse_param(
         state: &mut std::slice::IterMut<ParamState>,
@@ -39,16 +38,12 @@ pub trait Param {
 
 pub trait ParamGroup {
     fn register_params(state: &mut SystemState) -> Vec<Option<WParam>>;
-    fn mutability() -> Vec<bool>;
     fn meta() -> Vec<Option<ParamMeta>>;
     fn parse_params(state: &mut SystemState, data: Vec<ParamData>) -> Self;
 }
 
 impl ParamGroup for () {
     fn register_params(_: &mut SystemState) -> Vec<Option<WParam>> {
-        Vec::new()
-    }
-    fn mutability() -> Vec<bool> {
         Vec::new()
     }
     fn meta() -> Vec<Option<ParamMeta>> {
@@ -63,9 +58,6 @@ where
 {
     fn register_params(state: &mut SystemState) -> Vec<Option<WParam>> {
         vec![A::register_param(&mut state.param_state)]
-    }
-    fn mutability() -> Vec<bool> {
-        vec![A::mutability()]
     }
     fn meta() -> Vec<Option<ParamMeta>> {
         vec![A::meta()]
@@ -87,9 +79,6 @@ where
             A::register_param(&mut state.param_state),
             B::register_param(&mut state.param_state),
         ]
-    }
-    fn mutability() -> Vec<bool> {
-        vec![A::mutability(), B::mutability()]
     }
     fn meta() -> Vec<Option<ParamMeta>> {
         vec![A::meta(), B::meta()]
@@ -116,9 +105,6 @@ where
             B::register_param(&mut state.param_state),
             C::register_param(&mut state.param_state),
         ]
-    }
-    fn mutability() -> Vec<bool> {
-        vec![A::mutability(), B::mutability(), C::mutability()]
     }
     fn meta() -> Vec<Option<ParamMeta>> {
         vec![A::meta(), B::meta(), C::meta()]

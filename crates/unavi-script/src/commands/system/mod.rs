@@ -7,7 +7,6 @@ use bevy::{
         world::FilteredEntityRef,
     },
     prelude::*,
-    render::render_resource::encase::private::BufferMut,
     tasks::{AsyncComputeTaskPool, Task, block_on, poll_once},
 };
 use tokio::sync::{
@@ -19,6 +18,7 @@ use wasmtime::{AsContextMut, Store, component::ResourceAny};
 
 use crate::{
     api::wired::ecs::wired::ecs::types::{Param, ParamData, QueryData},
+    commands::OpaqueComponent,
     execute::init::InitializedScript,
     load::{
         ComponentWriteReceiver, LoadedScript,
@@ -240,9 +240,7 @@ pub fn build_system(
         world.register_component::<VEntity>()
     };
 
-    let mut bevy_component_sizes = HashMap::new();
     let mut queries = Vec::new();
-    let mut wasm_component_sizes = HashMap::new();
 
     for param in &params {
         match param {
@@ -269,18 +267,6 @@ pub fn build_system(
                     };
 
                     components.push(found);
-                }
-
-                for (bevy_id, wasm_id) in components.iter().zip(q.components.iter()) {
-                    if wasm_component_sizes.contains_key(wasm_id) {
-                        continue;
-                    }
-                    let Some(info) = world.components().get_info(*bevy_id) else {
-                        bail!("component info not found")
-                    };
-                    let size = info.layout().size() / size_of::<u8>();
-                    bevy_component_sizes.insert(*bevy_id, size);
-                    wasm_component_sizes.insert(*wasm_id, size);
                 }
 
                 for constraint in q.constraints.iter().copied() {
@@ -332,7 +318,7 @@ pub fn build_system(
                     let Some(wasm_id) = ent.get::<VEntity>().map(|x| x.wasm_id) else {
                         continue;
                     };
-                    let mut ent_data = Vec::new();
+                    let mut components = Vec::new();
 
                     for access in ent
                         .access()
@@ -348,20 +334,10 @@ pub fn build_system(
                                     continue;
                                 }
 
-                                // let ptr = ent.get_by_id(id).unwrap();
-                                // let size = bevy_component_sizes.get(&id).copied().unwrap();
-                                //
-                                // // SAFETY:
-                                // // - All virtual components are created with layout [u8]
-                                // // - len is calculated from the component descriptor
-                                // let data = unsafe {
-                                //     std::slice::from_raw_parts(
-                                //         ptr.assert_unique().as_ptr().cast::<u8>(),
-                                //         size,
-                                //     )
-                                // };
-                                //
-                                // ent_data.extend(&data[0..size]);
+                                let ptr = ent.get_by_id(id).unwrap();
+                                let data = unsafe { ptr.deref::<OpaqueComponent>() };
+
+                                components.push(data.0.clone());
                             }
                             ComponentAccessKind::Exclusive(_id) => {}
                             ComponentAccessKind::Archetypal(_id) => {}
@@ -369,7 +345,7 @@ pub fn build_system(
                     }
                     query_data.push(QueryData {
                         entity: wasm_id,
-                        components: ent_data,
+                        components,
                     });
                 }
 
@@ -387,7 +363,6 @@ pub fn build_system(
     }
 
     let params = Arc::new(params);
-    let wasm_component_sizes = Arc::new(wasm_component_sizes);
 
     let f = move |mut input: In<Vec<ParamData>>,
                   time: Res<Time>,
@@ -474,7 +449,6 @@ pub fn build_system(
         let start = schedule_deps.start.clone();
         let startup_complete = startup.complete_send.clone();
         let waiters = upstream.waiters.clone();
-        let wasm_component_sizes = wasm_component_sizes.clone();
 
         let pool = AsyncComputeTaskPool::get();
         let task = pool.spawn(
@@ -497,14 +471,6 @@ pub fn build_system(
 
                 // Apply component writes to queried data.
                 while let Ok(write) = write_recv.try_recv() {
-                    let Some(c_size) = wasm_component_sizes.get(&write.component) else {
-                        // System does not reference component.
-                        continue;
-                    };
-                    if write.data.len() != *c_size {
-                        bail!("invalid data size")
-                    }
-
                     for (i, p) in params.iter().enumerate() {
                         match p {
                             Param::Query(q) => {
@@ -513,15 +479,6 @@ pub fn build_system(
                                 else {
                                     continue;
                                 };
-
-                                // let mut d_start = 0;
-                                //
-                                // for c in q.components.iter().take(c_idx) {
-                                //     let Some(size) = wasm_component_sizes.get(c) else {
-                                //         bail!("component size not found")
-                                //     };
-                                //     d_start += *size;
-                                // }
 
                                 let Some(p_data) = input.get_mut(i) else {
                                     bail!("param data not found")
@@ -538,7 +495,8 @@ pub fn build_system(
                                 let Some(data) = q_data.get_mut(e_idx) else {
                                     bail!("query data not found")
                                 };
-                                // data.components.write_slice(d_start, &write.data);
+
+                                data.components[c_idx] = write.data.to_vec();
                             }
                         }
                     }

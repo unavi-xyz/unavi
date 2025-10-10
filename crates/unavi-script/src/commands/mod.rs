@@ -1,7 +1,7 @@
-use std::{alloc::Layout, ptr::NonNull};
+use std::ops::DerefMut;
 
 use bevy::{
-    ecs::component::{ComponentCloneBehavior, ComponentDescriptor, ComponentId, StorageType},
+    ecs::component::{ComponentDescriptor, ComponentId},
     prelude::*,
     ptr::OwningPtr,
 };
@@ -21,7 +21,6 @@ pub enum WasmCommand {
     RegisterComponent {
         id: u32,
         key: String,
-        size: usize,
     },
     RegisterSystem {
         id: u32,
@@ -76,6 +75,9 @@ const BATCH_SIZE: usize = 32;
 // TODO: apply commands after each script cycle (in case of multiple fixed virtual frames)
 // TODO: limit script execution until full cycle completes
 
+#[derive(Component)]
+pub struct OpaqueComponent(pub Vec<u8>);
+
 pub fn apply_wasm_commands(
     mut commands: Commands,
     mut script_commands: Query<(Entity, &mut ScriptCommands), With<InitializedScript>>,
@@ -109,28 +111,12 @@ pub fn apply_wasm_commands(
             // info!("> {cmd:?}");
 
             match cmd {
-                WasmCommand::RegisterComponent { id, key, size } => {
-                    let layout = match Layout::array::<u8>(size) {
-                        Ok(l) => l,
-                        Err(e) => {
-                            error!("Error registering component layout: {e:?}");
-                            continue;
-                        }
-                    };
+                WasmCommand::RegisterComponent { id, key: _ } => {
+                    // TODO: map key to same bevy id
 
                     commands.queue(move |world: &mut World| {
-                        // SAFETY: [u8] is Send + Sync
-                        let bevy_id = world.register_component_with_descriptor(unsafe {
-                            ComponentDescriptor::new_with_layout(
-                                key,
-                                StorageType::Table,
-                                layout,
-                                None,
-                                true,
-                                ComponentCloneBehavior::Default,
-                            )
-                        });
-
+                        let desc = ComponentDescriptor::new::<OpaqueComponent>();
+                        let bevy_id = world.register_component_with_descriptor(desc);
                         world.spawn((
                             VOwner(script_ent),
                             VComponent {
@@ -184,7 +170,7 @@ pub fn apply_wasm_commands(
                                 }
                             })
                         else {
-                            error!("Despawn: entity {id} not found");
+                            error!("entity {id} not found");
                             return;
                         };
 
@@ -194,7 +180,7 @@ pub fn apply_wasm_commands(
                 WasmCommand::WriteComponent {
                     entity_id,
                     component_id,
-                    mut data,
+                    data,
                     insert,
                 } => {
                     commands.queue(move |world: &mut World| {
@@ -209,7 +195,7 @@ pub fn apply_wasm_commands(
                                 }
                             })
                         else {
-                            error!("InsertComponent: entity {entity_id} not found");
+                            error!("Entity {entity_id} not found");
                             return;
                         };
 
@@ -224,32 +210,38 @@ pub fn apply_wasm_commands(
                                 }
                             })
                         else {
-                            error!("InsertComponent: component {component_id} not found");
+                            error!("Component {component_id} not found");
                             return;
                         };
-
-                        let Some(info) = world.components().get_info(bevy_id) else {
-                            error!("InsertComponent: component info not found");
-                            return;
-                        };
-                        let size = info.layout().size() / size_of::<u8>();
-                        data.resize(size, 0);
 
                         let mut ent = world.entity_mut(e);
                         let has_component = ent.contains_id(bevy_id);
 
-                        if !has_component && !insert {
-                            return;
-                        }
+                        if has_component {
+                            let c_ptr = match ent.get_mut_by_id(bevy_id) {
+                                Ok(c) => c,
+                                Err(e) => {
+                                    error!("Entity component {component_id} not found: {e}");
+                                    return;
+                                }
+                            };
 
-                        let ptr = data.as_mut_ptr();
+                            let mut c_ptr = unsafe { c_ptr.with_type::<OpaqueComponent>() };
 
-                        // SAFETY:
-                        // - Component ids have been taken from the same world
-                        // - Each array is created to the layout specified in the world
-                        unsafe {
-                            let ptr = OwningPtr::new(NonNull::new_unchecked(ptr.cast()));
-                            ent.insert_by_id(bevy_id, ptr);
+                            let c = c_ptr.deref_mut();
+                            c.0 = data;
+                        } else {
+                            if !insert {
+                                return;
+                            }
+
+                            OwningPtr::make(OpaqueComponent(data), |ptr| {
+                                // SAFETY:
+                                // - Component id has been taken from the same world
+                                unsafe {
+                                    ent.insert_by_id(bevy_id, ptr);
+                                }
+                            });
                         }
                     });
                 }

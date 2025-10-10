@@ -3,7 +3,7 @@ use std::sync::Arc;
 use wasmtime::component::HasData;
 use wired::ecs::{
     host_api::SystemOrder,
-    types::{Component, ComponentId, ComponentType, EntityId, Primitive, System, SystemId},
+    types::{Component, ComponentId, EntityId, System, SystemId},
 };
 
 use crate::commands::WasmCommand;
@@ -36,9 +36,10 @@ pub struct WiredEcsData {
     pub systems: Vec<System>,
 }
 
+const KB: usize = 1024;
+
 const MAX_COMPONENTS: usize = 10_000;
-const MAX_COMPONENT_SIZE: usize = 512 * 8;
-const MAX_COMPONENT_TYPES: usize = 64;
+const MAX_COMPONENT_BYTES: usize = 10 * KB;
 const MAX_ENTITIES: u64 = 1_000_000;
 const MAX_KEY_LEN: usize = 256;
 const MAX_SYSTEMS: usize = 10_000;
@@ -65,20 +66,11 @@ impl wired::ecs::host_api::Host for WiredEcsData {
             if self.components.len() >= MAX_COMPONENTS {
                 return Err("Max component count reached".to_string());
             }
-            if component.types.len() > MAX_COMPONENT_TYPES {
-                return Err("Too many component types".to_string());
-            }
-
-            let size = component.types.iter().map(|t| t.size()).sum::<usize>();
-            if size > MAX_COMPONENT_SIZE {
-                return Err("Component too large".to_string());
-            }
 
             self.commands
                 .send(WasmCommand::RegisterComponent {
                     id,
                     key: component.key.clone(),
-                    size,
                 })
                 .await
                 .map_err(|e| format!("Error sending command: {e}"))?;
@@ -154,7 +146,7 @@ impl wired::ecs::host_api::Host for WiredEcsData {
         component: ComponentId,
         data: Vec<u8>,
     ) -> Result<(), String> {
-        if data.len() > MAX_COMPONENT_SIZE / 8 {
+        if data.len() > MAX_COMPONENT_BYTES {
             return Err("Max data len reached".to_string());
         }
         self.commands
@@ -174,7 +166,7 @@ impl wired::ecs::host_api::Host for WiredEcsData {
         component: ComponentId,
         data: Vec<u8>,
     ) -> Result<(), String> {
-        if data.len() > MAX_COMPONENT_SIZE / 8 {
+        if data.len() > MAX_COMPONENT_BYTES {
             return Err("Max data len reached".to_string());
         }
 
@@ -215,34 +207,5 @@ impl wired::ecs::host_api::Host for WiredEcsData {
             .await
             .map_err(|e| format!("Error sending command: {e}"))?;
         Ok(())
-    }
-}
-
-impl ComponentType {
-    fn size(&self) -> usize {
-        match self {
-            ComponentType::Primitive(p) => p.size(),
-            ComponentType::Map(_) => todo!(),
-            ComponentType::Vec(_) => todo!(),
-        }
-    }
-}
-
-impl Primitive {
-    fn size(&self) -> usize {
-        match self {
-            Primitive::Bool => std::mem::size_of::<bool>(),
-            Primitive::F32 => std::mem::size_of::<f32>(),
-            Primitive::F64 => std::mem::size_of::<f64>(),
-            Primitive::I8 => std::mem::size_of::<i8>(),
-            Primitive::I16 => std::mem::size_of::<i16>(),
-            Primitive::I32 => std::mem::size_of::<i32>(),
-            Primitive::I64 => std::mem::size_of::<i64>(),
-            Primitive::U8 => std::mem::size_of::<u8>(),
-            Primitive::U16 => std::mem::size_of::<u16>(),
-            Primitive::U32 => std::mem::size_of::<u32>(),
-            Primitive::U64 => std::mem::size_of::<u64>(),
-            Primitive::String => std::mem::size_of::<String>(),
-        }
     }
 }

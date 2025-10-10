@@ -8,10 +8,6 @@ use crate::{
 use super::{BlindSystem, System, function_system::FunctionSystem};
 
 pub struct SystemCache {
-    pub immutable: bool,
-    pub mutability: Vec<bool>,
-    pub metas: Vec<Option<ParamMeta>>,
-    pub params: Vec<WParam>,
     pub system: Box<dyn BlindSystem>,
 }
 
@@ -26,7 +22,6 @@ where
     FunctionSystem<F, In>: System<In = In>,
 {
     fn register_system(self, state: &mut AppState, schedule: Schedule) -> (SystemId, SystemCache) {
-        let mutability = In::mutability();
         let metas = In::meta();
 
         let mut sys_state = SystemState::default();
@@ -164,10 +159,6 @@ where
         (
             id,
             SystemCache {
-                immutable: !mutability.iter().any(|x| *x),
-                mutability,
-                metas,
-                params,
                 system: Box::new(self),
             },
         )

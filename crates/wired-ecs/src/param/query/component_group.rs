@@ -1,8 +1,9 @@
 use crate::types::QueryData;
 
 use super::{
-    component::{OwnedComponent, QueriedComponent},
+    component::QueriedComponent,
     component_ref::{AsComponentMut, AsComponentRef},
+    owned_component::OwnedComponent,
     tuple_ref::{AsTupleMut, AsTupleRef},
 };
 
@@ -36,7 +37,7 @@ where
 
     fn from_data(data: QueryData) -> Self::Owned {
         let mut iter = data.components.into_iter();
-        A::from_bytes(data.entity, iter.next().unwrap())
+        A::from_bytes(data.entity, &mut iter)
     }
 }
 
@@ -59,7 +60,7 @@ where
 
     fn from_data(data: QueryData) -> Self::Owned {
         let mut iter = data.components.into_iter();
-        (A::from_bytes(data.entity, iter.next().unwrap()),)
+        (A::from_bytes(data.entity, &mut iter),)
     }
 }
 

@@ -9,6 +9,9 @@ pub fn add(app: &mut App) {
     app.add_system(Schedule::Startup, startup)
         .add_system(Schedule::Update, test_mut_query)
         .add_system(Schedule::Update, test_mutation)
+        .add_system(Schedule::Update, test_query_0)
+        .add_system(Schedule::Update, test_query_1)
+        .add_system(Schedule::Update, test_query_2)
         .order_systems(test_mutation, SystemOrder::After, test_mut_query);
 }
 
@@ -32,6 +35,12 @@ fn startup(commands: Commands) {
 
     let b = commands.spawn();
     b.insert(MyPoint { x: X2, y: Y2 });
+
+    let c = commands.spawn();
+    c.insert(A);
+    c.insert(B);
+    c.insert(C);
+    c.insert(D);
 }
 
 static COUNT: LazyLock<AtomicUsize> = LazyLock::new(AtomicUsize::default);
@@ -94,3 +103,31 @@ fn test_mutation(points: Query<&MyPoint>) {
     assert_eq!(b.x, x2);
     assert_eq!(b.y, y2);
 }
+
+#[derive(Decode, Encode, Component)]
+struct A;
+
+#[derive(Decode, Encode, Component)]
+struct B;
+
+#[derive(Decode, Encode, Component)]
+struct C;
+
+#[derive(Decode, Encode, Component)]
+struct D;
+
+fn test_query_0(points: Query<&A>) {
+    assert_eq!(points.len(), 1);
+}
+fn test_query_1(points: Query<(&A,)>) {
+    assert_eq!(points.len(), 1);
+}
+fn test_query_2(points: Query<(&A, &B)>) {
+    assert_eq!(points.len(), 1);
+}
+// fn test_query_3(points: Query<(&A, &B, &C)>) {
+//     assert_eq!(points.len(), 1);
+// }
+// fn test_query_4(points: Query<(&A, &B, &C, &D)>) {
+//     assert_eq!(points.len(), 1);
+// }

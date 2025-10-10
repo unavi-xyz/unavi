@@ -20,7 +20,6 @@ pub(crate) mod system;
 pub enum WasmCommand {
     RegisterComponent {
         id: u32,
-        key: String,
     },
     RegisterSystem {
         id: u32,
@@ -111,9 +110,7 @@ pub fn apply_wasm_commands(
             // info!("> {cmd:?}");
 
             match cmd {
-                WasmCommand::RegisterComponent { id, key: _ } => {
-                    // TODO: map key to same bevy id
-
+                WasmCommand::RegisterComponent { id } => {
                     commands.queue(move |world: &mut World| {
                         let desc = ComponentDescriptor::new::<OpaqueComponent>();
                         let bevy_id = world.register_component_with_descriptor(desc);

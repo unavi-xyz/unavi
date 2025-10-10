@@ -2,6 +2,7 @@ use wired_ecs::prelude::*;
 
 pub fn add(app: &mut App) {
     app.add_system(Schedule::Startup, startup)
+        .add_system(Schedule::Startup, test_multiple_registers)
         .add_system(Schedule::Update, test_heap_types)
         .add_system(Schedule::Update, test_large_data);
 }
@@ -43,6 +44,16 @@ fn startup(commands: Commands) {
     b.insert(MyLarge {
         v: (0..N_LARGE).collect(),
     });
+}
+
+fn test_multiple_registers() {
+    let a_1 = MyHeap::register();
+    let a_2 = MyHeap::register();
+    let b_1 = MyLarge::register();
+    let b_2 = MyLarge::register();
+    assert_ne!(a_1, b_1);
+    assert_eq!(a_1, a_2);
+    assert_eq!(b_1, b_2);
 }
 
 fn test_heap_types(items: Query<&MyHeap>) {

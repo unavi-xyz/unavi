@@ -13,7 +13,7 @@ workspace = true
 anyhow.workspace  = true
 bevy              = { default-features = true, workspace = true }
 bevy_async_task   = "0.8.1"
-futures           = "0.3.31"
+futures.workspace = true
 tokio.workspace   = true
 tracing.workspace = true
 wasmtime          = "35.0.0"

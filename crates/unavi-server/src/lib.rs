@@ -1,10 +1,6 @@
 use anyhow::Context;
 use cert::CertRes;
-use server::Server;
-use std::{
-    net::SocketAddr,
-    sync::{Arc, LazyLock},
-};
+use std::{net::SocketAddr, sync::LazyLock};
 use tracing::error;
 use xwt_wtransport::wtransport;
 
@@ -34,16 +30,13 @@ pub async fn run_server(addr: SocketAddr) -> anyhow::Result<()> {
     let endpoint = wtransport::Endpoint::server(cfg).context("create wtranspart endpoint")?;
     let endpoint = xwt_wtransport::Endpoint(endpoint);
 
-    let server = Arc::new(Server {});
-
     println!("Server running on {addr}");
 
     loop {
         let incoming = endpoint.accept().await;
 
-        let server = Arc::clone(&server);
         tokio::spawn(async move {
-            if let Err(e) = server::handle(server, incoming).await {
+            if let Err(e) = server::handle(incoming).await {
                 error!("Handling error: {e:?}");
             }
         });

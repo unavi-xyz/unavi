@@ -1,0 +1,14 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-server-service"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+semver          = { features = ["serde"], version = "1.0.27" }
+tarpc.workspace = true

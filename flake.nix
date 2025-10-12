@@ -33,6 +33,7 @@
         imports = [
           inputs.treefmt-nix.flakeModule
           ./crates/unavi
+          ./crates/unavi-server
         ];
 
         perSystem =

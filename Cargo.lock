@@ -6453,6 +6453,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-server"
+version = "0.0.10"
+dependencies = [
+ "anyhow",
+]
+
+[[package]]
 name = "unavi-ui"
 version = "0.0.10"
 dependencies = [

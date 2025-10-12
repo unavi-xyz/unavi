@@ -15,7 +15,7 @@ avian3d.workspace = true
 bevy = { default-features = true, features = ["wayland"], workspace = true }
 bevy_mod_openxr = "0.3.0"
 directories.workspace = true
-image = { default-features = false, features = ["png"], version = "0.25.6" }
+image = { default-features = false, features = ["png"], version = "0.25.8" }
 log = { features = [
   "max_level_debug",
   "release_max_level_info",
@@ -23,4 +23,4 @@ log = { features = [
 unavi-input.path = "../unavi-input"
 unavi-player.path = "../unavi-player"
 unavi-script.path = "../unavi-script"
-winit = { default-features = false, version = "0.30.11" }
+winit = { default-features = false, version = "0.30.12" }

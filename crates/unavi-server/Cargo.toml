@@ -10,4 +10,16 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace = true
+anyhow.workspace             = true
+clap                         = { features = ["derive"], version = "4.5.48" }
+directories.workspace        = true
+p256                         = "0.13.2"
+sha2                         = { features = ["oid"], version = "0.10.9" }
+spki                         = "0.7.3"
+time                         = "0.3.44"
+tokio                        = { features = ["full"], workspace = true }
+tracing.workspace            = true
+tracing-subscriber.workspace = true
+x509-cert                    = { features = ["builder"], version = "0.2.5" }
+xwt-core                     = "0.9.0"
+xwt-wtransport               = "0.17.0"

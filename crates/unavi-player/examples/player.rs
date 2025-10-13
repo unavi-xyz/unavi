@@ -26,7 +26,7 @@ fn main() {
         .run();
 }
 
-const SIZE: f32 = 32.0;
+const SIZE: f32 = 64.0;
 
 fn setup_scene(
     asset_server: Res<AssetServer>,
@@ -39,7 +39,7 @@ fn setup_scene(
     PlayerSpawner::default().spawn(&mut commands);
 
     // Lighting
-    ambient.brightness = lux::LIVING_ROOM;
+    ambient.brightness = lux::OVERCAST_DAY;
     commands.spawn((
         CascadeShadowConfigBuilder {
             maximum_distance: SIZE * 1.2,
@@ -47,7 +47,7 @@ fn setup_scene(
         }
         .build(),
         DirectionalLight {
-            illuminance: lux::RAW_SUNLIGHT,
+            illuminance: lux::DIRECT_SUNLIGHT / 2.0,
             shadows_enabled: true,
             ..Default::default()
         },

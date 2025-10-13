@@ -1,7 +1,7 @@
 use anyhow::Context;
 use cert::CertRes;
 use std::{net::SocketAddr, sync::LazyLock};
-use tracing::error;
+use tracing::{error, info};
 use xwt_wtransport::wtransport;
 
 use directories::ProjectDirs;
@@ -30,7 +30,7 @@ pub async fn run_server(addr: SocketAddr) -> anyhow::Result<()> {
     let endpoint = wtransport::Endpoint::server(cfg).context("create wtranspart endpoint")?;
     let endpoint = xwt_wtransport::Endpoint(endpoint);
 
-    println!("Server running on {addr}");
+    info!("Server running on {addr}");
 
     loop {
         let incoming = endpoint.accept().await;

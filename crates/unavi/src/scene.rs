@@ -1,19 +1,30 @@
-use bevy::{prelude::*, render::mesh::VertexAttributeValues};
+use avian3d::prelude::*;
+use bevy::{
+    color::palettes::tailwind::BLUE_400,
+    pbr::{CascadeShadowConfigBuilder, light_consts::lux},
+    prelude::*,
+    render::mesh::VertexAttributeValues,
+};
+use unavi_player::PlayerSpawner;
 
 pub fn spawn_lights(mut commands: Commands, mut ambient: ResMut<AmbientLight>) {
-    ambient.brightness = 40.0;
-    ambient.color = Color::linear_rgb(0.95, 0.95, 1.0);
-
+    ambient.brightness = lux::OVERCAST_DAY;
     commands.spawn((
+        CascadeShadowConfigBuilder {
+            maximum_distance: SIZE * 1.2,
+            ..Default::default()
+        }
+        .build(),
         DirectionalLight {
-            color: Color::linear_rgb(1.0, 1.0, 0.98),
-            illuminance: 5000.0,
+            illuminance: lux::DIRECT_SUNLIGHT / 2.0,
             shadows_enabled: true,
-            ..default()
+            ..Default::default()
         },
-        Transform::from_xyz(-4.5, 10.0, 7.0).looking_at(Vec3::ZERO, Vec3::Y),
+        Transform::from_xyz(1.0, 0.4, 0.1).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 }
+
+const SIZE: f32 = 128.0;
 
 pub fn spawn_scene(
     asset_server: Res<AssetServer>,
@@ -21,33 +32,43 @@ pub fn spawn_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    let ground_size = 30.0;
+    PlayerSpawner::default().spawn(&mut commands);
 
     let ground_texture = asset_server.load("images/dev-white.png");
-    let ground_texture_scale = ground_size / 4.0;
 
-    let mut ground_mesh = Mesh::from(Cuboid {
-        half_size: Vec3::new(ground_size / 2.0, 0.05, ground_size / 2.0),
-    });
-
+    let mut ground_mesh = Plane3d::default().mesh().size(SIZE, SIZE).build();
     match ground_mesh.attribute_mut(Mesh::ATTRIBUTE_UV_0).unwrap() {
         VertexAttributeValues::Float32x2(uvs) => {
+            const TEXTURE_SCALE: f32 = 4.0;
+            const UV_SCALE: f32 = SIZE / TEXTURE_SCALE;
             for uv in uvs {
-                uv[0] *= ground_texture_scale;
-                uv[1] *= ground_texture_scale;
+                uv[0] *= UV_SCALE;
+                uv[1] *= UV_SCALE;
             }
         }
         _ => unreachable!(),
     }
 
     commands.spawn((
+        Collider::half_space(Vec3::Y),
         Mesh3d(meshes.add(ground_mesh)),
         MeshMaterial3d(materials.add(StandardMaterial {
             base_color_texture: Some(ground_texture),
-            ..default()
+            perceptual_roughness: 0.8,
+            ..Default::default()
         })),
-        Transform::from_xyz(0.0, -0.1, 0.0),
+        RigidBody::Static,
     ));
 
-    commands.spawn((Camera3d::default(), Transform::from_xyz(0.0, 1.0, 0.0)));
+    let x = 4.0;
+    let y = 4.0;
+    let z = 8.0;
+
+    commands.spawn((
+        Collider::cuboid(x, y, z),
+        Mesh3d(meshes.add(Cuboid::new(x, y, z))),
+        MeshMaterial3d(materials.add(Color::from(BLUE_400))),
+        RigidBody::Static,
+        Transform::from_xyz(-x * 2.0, y / 2.0, -z * 2.0),
+    ));
 }

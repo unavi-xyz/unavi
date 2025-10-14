@@ -9,7 +9,7 @@ mod scene;
 
 pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
     let dirs = ProjectDirs::from("", "UNAVI", "unavi").expect("project dirs");
-    std::fs::create_dir_all(dirs.data_dir()).expect("data dir");
+    std::fs::create_dir_all(dirs.data_local_dir()).expect("data local dir");
     dirs
 });
 
@@ -34,6 +34,9 @@ impl Plugin for UnaviPlugin {
             unavi_input::InputPlugin,
             unavi_player::PlayerPlugin,
         ))
+        .add_event::<auth::LoginEvent>()
+        .add_observer(auth::handle_login)
+        .init_resource::<auth::LocalIdentity>()
         .add_systems(
             Startup,
             (
@@ -42,7 +45,6 @@ impl Plugin for UnaviPlugin {
                 scene::spawn_lights,
                 scene::spawn_scene,
             ),
-        )
-        .add_observer(auth::handle_login);
+        );
     }
 }

@@ -18,36 +18,26 @@
 
         cargoHash = "sha256-5oLt1wnadtEKCOAtpbzPQRuU76qLWRtcCv6Jcozon4E=";
 
-        buildInputs =
-          pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [ openssl ])
-          ++ lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.SystemConfiguration ];
+        buildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [ openssl ]);
 
         nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [ pkg-config ]);
       };
 
-      buildInputs =
-        pkgs.lib.optionals pkgs.stdenv.isLinux (
-          with pkgs;
-          [
-            alsa-lib
-            libxkbcommon
-            openssl
-            udev
-            vulkan-loader
-            wayland
-            xorg.libX11
-            xorg.libXcursor
-            xorg.libXi
-            xorg.libXrandr
-          ]
-        )
-        ++ pkgs.lib.optionals pkgs.stdenv.isDarwin (
-          with pkgs;
-          [
-            darwin.apple_sdk.frameworks.AudioUnit
-            darwin.apple_sdk.frameworks.Cocoa
-          ]
-        );
+      buildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (
+        with pkgs;
+        [
+          alsa-lib
+          libxkbcommon
+          openssl
+          udev
+          vulkan-loader
+          wayland
+          xorg.libX11
+          xorg.libXcursor
+          xorg.libXi
+          xorg.libXrandr
+        ]
+      );
 
       nativeBuildInputs =
         pkgs.lib.optionals pkgs.stdenv.isLinux (

@@ -7377,7 +7377,6 @@ dependencies = [
  "anyhow",
  "avian3d",
  "bevy",
- "bevy_mod_openxr",
  "directories",
  "image",
  "log",

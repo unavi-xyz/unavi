@@ -37,10 +37,12 @@ impl Plugin for UnaviPlugin {
         .add_systems(
             Startup,
             (
+                auth::trigger_login,
                 icon::set_window_icon,
                 scene::spawn_lights,
                 scene::spawn_scene,
             ),
-        );
+        )
+        .add_observer(auth::handle_login);
     }
 }

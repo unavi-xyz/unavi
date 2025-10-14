@@ -56,14 +56,8 @@
                     nightly = (
                       with self.fenix;
                       combine [
-                        # complete.toolchain
-                        # targets.wasm32-wasip2.latest.rust-std
-
-                        # https://github.com/rust-lang/rust/issues/143834
-                        (fromToolchainFile {
-                          file = ./rust-toolchain.toml;
-                          sha256 = "sha256-wYZcB7PPFfKLbTL+T1lDBYyZcc9xvLTWtBZ0t2NoZ/s=";
-                        })
+                        complete.toolchain
+                        targets.wasm32-wasip2.latest.rust-std
                       ]
                     );
                   in

@@ -4,18 +4,6 @@ _: {
     let
       pname = "unavi-server";
 
-      buildInputs = [ ];
-
-      nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (
-        with pkgs;
-        [
-          clang
-          lld
-          mold
-          pkg-config
-        ]
-      );
-
       src = lib.fileset.toSource rec {
         root = ../..;
         fileset = lib.fileset.unions [
@@ -24,16 +12,26 @@ _: {
         ];
       };
 
-      cargoArgs = {
-        inherit buildInputs;
-        inherit nativeBuildInputs;
+      cargoArgs = rec {
         inherit pname;
         inherit src;
 
-        runtimeDependencies = buildInputs;
-
         cargoExtraArgs = "-p ${pname}";
         strictDeps = true;
+
+        runtimeDependencies = [ ];
+
+        nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (
+          with pkgs;
+          [
+            clang
+            lld
+            mold
+            pkg-config
+          ]
+        );
+
+        buildInputs = runtimeDependencies;
       };
 
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;

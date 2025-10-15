@@ -47,8 +47,7 @@ fn get_or_create_keypair() -> anyhow::Result<P256KeyPair> {
     };
 
     if key_path.exists() {
-        let raw = std::fs::read_to_string(key_path)?;
-        let pem = Zeroizing::new(raw);
+        let pem = Zeroizing::new(std::fs::read_to_string(key_path)?);
         let pair = P256KeyPair::from_pkcs8_pem(pem.as_str())?;
         Ok(pair)
     } else {

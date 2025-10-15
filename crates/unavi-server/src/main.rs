@@ -6,7 +6,7 @@ use tracing::error;
 #[derive(Parser, Debug)]
 #[command(version)]
 struct Args {
-    #[arg(short, long, default_value_t = 8080)]
+    #[arg(short, long, default_value_t = 5000)]
     port: u16,
 }
 

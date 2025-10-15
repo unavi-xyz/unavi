@@ -111,6 +111,7 @@
                   config.packages
                   |> lib.attrValues
                   |> lib.flip pkgs.lib.forEach (x: x.buildInputs ++ x.nativeBuildInputs)
+                  |> lib.concatLists
                 );
 
               LD_LIBRARY_PATH =

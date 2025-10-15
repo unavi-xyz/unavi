@@ -23,39 +23,6 @@
         nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [ pkg-config ]);
       };
 
-      buildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (
-        with pkgs;
-        [
-          alsa-lib
-          libxkbcommon
-          openssl
-          udev
-          vulkan-loader
-          wayland
-          xorg.libX11
-          xorg.libXcursor
-          xorg.libXi
-          xorg.libXrandr
-        ]
-      );
-
-      nativeBuildInputs =
-        pkgs.lib.optionals pkgs.stdenv.isLinux (
-          with pkgs;
-          [
-            binaryen
-            clang
-            lld
-            mold
-            pkg-config
-            wasm-tools
-          ]
-        )
-        ++ [
-          wac-cli
-          inputs.wit-deps.packages.${pkgs.system}.wit-deps
-        ];
-
       src = lib.fileset.toSource rec {
         root = ../..;
         fileset = lib.fileset.unions [
@@ -73,16 +40,47 @@
         ];
       };
 
-      cargoArgs = {
-        inherit buildInputs;
-        inherit nativeBuildInputs;
+      cargoArgs = rec {
         inherit pname;
         inherit src;
 
-        runtimeDependencies = buildInputs;
-
         cargoExtraArgs = "-p ${pname}";
         strictDeps = true;
+
+        runtimeDependencies = pkgs.lib.optionals pkgs.stdenv.isLinux (
+          with pkgs;
+          [
+            alsa-lib
+            libxkbcommon
+            openssl
+            udev
+            vulkan-loader
+            wayland
+            xorg.libX11
+            xorg.libXcursor
+            xorg.libXi
+            xorg.libXrandr
+          ]
+        );
+
+        nativeBuildInputs =
+          pkgs.lib.optionals pkgs.stdenv.isLinux (
+            with pkgs;
+            [
+              binaryen
+              clang
+              lld
+              mold
+              pkg-config
+              wasm-tools
+            ]
+          )
+          ++ [
+            wac-cli
+            inputs.wit-deps.packages.${pkgs.system}.wit-deps
+          ];
+
+        buildInputs = runtimeDependencies;
       };
 
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;

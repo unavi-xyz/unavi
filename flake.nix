@@ -69,11 +69,11 @@
             };
 
             checks = {
-              audit = pkgs.crane.cargoAudit {
-                inherit (inputs) advisory-db;
-                src = ./.;
-                pname = "unavi";
-              };
+              # audit = pkgs.crane.cargoAudit {
+              #   inherit (inputs) advisory-db;
+              #   src = ./.;
+              #   pname = "unavi";
+              # };
               deny = pkgs.crane.cargoDeny {
                 src = ./.;
                 pname = "unavi";

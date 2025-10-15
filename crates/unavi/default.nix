@@ -15,11 +15,9 @@
           rev = "v${version}";
           sha256 = "sha256-noBVAhoHXl3FI6ZlnmCwpnqu7pub6FCtuY+026vdlYo=";
         };
-
         cargoHash = "sha256-5oLt1wnadtEKCOAtpbzPQRuU76qLWRtcCv6Jcozon4E=";
 
         buildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [ openssl ]);
-
         nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [ pkg-config ]);
       };
 
@@ -27,9 +25,6 @@
         root = ../..;
         fileset = lib.fileset.unions [
           (pkgs.crane.fileset.commonCargoSources root)
-          ../../LICENSE
-          ../../scripts
-          ./assets
           (lib.fileset.fileFilter (
             file:
             lib.any file.hasExt [
@@ -37,6 +32,9 @@
               "md"
             ]
           ) root)
+          ../../LICENSE
+          ../../scripts
+          ./assets
         ];
       };
 

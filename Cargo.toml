@@ -23,13 +23,17 @@ avian3d            = "0.3"
 bevy               = "0.16.1"
 bincode            = "2.0.1"
 directories        = "6.0.0"
+dwn                = { git = "https://github.com/unavi-xyz/dwn", version = "0.3.0" }
 futures            = "0.3.31"
 serde              = "1.0.228"
+serde_json         = "1.0.145"
 tarpc              = "0.37.0"
 tokio              = "1.47.1"
 tracing            = "0.1.41"
 tracing-subscriber = "0.3.19"
 wit-bindgen        = "0.46.0"
+xdid               = { git = "https://github.com/unavi-xyz/dwn", version = "0.3.0" }
+zeroize            = "1.8.2"
 
 [profile.release]
 lto = "thin"

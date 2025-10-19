@@ -28,8 +28,9 @@
           (lib.fileset.fileFilter (
             file:
             lib.any file.hasExt [
-              "wit"
+              "json"
               "md"
+              "wit"
             ]
           ) root)
           ../../LICENSE

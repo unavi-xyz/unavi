@@ -2,21 +2,23 @@
   "protocol": "https://wired-protocol.org/v0/protocols/home-world.json",
   "published": false,
   "types": {
-    "uri": {
+    "home": {
+      "schema": "https://wired-protocol.org/v0/schemas/remote-record.json",
       "dataFormat": [
-        "text/plain"
+        "application/json"
       ]
     }
   },
   "structure": {
-    "uri": {
+    "home": {
       "$actions": [
         {
           "who": "recipient",
           "can": [
             "create",
-            "update",
-            "read"
+            "query",
+            "read",
+            "update"
           ]
         }
       ]

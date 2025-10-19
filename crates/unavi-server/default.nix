@@ -8,6 +8,7 @@ _: {
         root = ../..;
         fileset = lib.fileset.unions [
           (pkgs.crane.fileset.commonCargoSources root)
+          (lib.fileset.fileFilter (file: lib.any file.hasExt [ "json" ]) root)
           ../../LICENSE
         ];
       };
@@ -19,7 +20,7 @@ _: {
         cargoExtraArgs = "-p ${pname}";
         strictDeps = true;
 
-        runtimeDependencies = [ ];
+        runtimeDependencies = with pkgs; [ openssl ];
 
         nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (
           with pkgs;

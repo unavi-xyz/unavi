@@ -1,9 +1,11 @@
-use anyhow::Context;
-use cert::CertRes;
-use directories::ProjectDirs;
 use std::{net::SocketAddr, sync::LazyLock};
+
+use anyhow::Context;
+use directories::ProjectDirs;
 use tracing::{error, info};
 use xwt_wtransport::wtransport;
+
+use crate::{cert::CertRes, server::Server};
 
 mod cert;
 mod server;
@@ -29,13 +31,16 @@ pub async fn run_server(addr: SocketAddr) -> anyhow::Result<()> {
     let endpoint = wtransport::Endpoint::server(cfg).context("create wtranspart endpoint")?;
     let endpoint = xwt_wtransport::Endpoint(endpoint);
 
+    let svr = Server::new().await?;
+
     info!("UNAVI server running on {addr}");
 
     loop {
         let incoming = endpoint.accept().await;
 
+        let svr = svr.clone();
         tokio::spawn(async move {
-            if let Err(e) = server::handle(incoming).await {
+            if let Err(e) = svr.handle(incoming).await {
                 error!("Handling error: {e:?}");
             }
         });

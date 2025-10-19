@@ -2,6 +2,11 @@
   "protocol": "https://wired-protocol.org/v0/protocols/world-host.json",
   "published": true,
   "types": {
+    "url": {
+      "dataFormat": [
+        "text/plain"
+      ]
+    },
     "world": {
       "schema": "https://wired-protocol.org/v0/schemas/world.json",
       "dataFormat": [
@@ -16,12 +21,32 @@
     }
   },
   "structure": {
+    "connect-url": {
+      "$actions": [
+        {
+          "who": "anyone",
+          "can": [
+            "query",
+            "read"
+          ]
+        },
+        {
+          "who": "recipient",
+          "can": [
+            "create",
+            "update",
+            "delete"
+          ]
+        }
+      ]
+    },
     "world": {
       "$actions": [
         {
           "who": "anyone",
           "can": [
             "create",
+            "query",
             "read"
           ]
         },
@@ -30,6 +55,12 @@
           "can": [
             "update"
           ]
+        },
+        {
+          "who": "recipient",
+          "can": [
+            "delete"
+          ]
         }
       ],
       "server-info": {
@@ -37,6 +68,7 @@
           {
             "who": "anyone",
             "can": [
+              "query",
               "read"
             ]
           },
@@ -44,7 +76,8 @@
             "who": "recipient",
             "can": [
               "create",
-              "update"
+              "update",
+              "delete"
             ]
           }
         ]

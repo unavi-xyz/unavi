@@ -1,11 +1,16 @@
-use bevy::prelude::*;
-use xdid::{
-    core::did::Did,
-    methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair},
-};
-use zeroize::Zeroizing;
+use std::sync::Arc;
 
-use crate::DIRS;
+use bevy::{prelude::*, tasks::TaskPool};
+use dwn::{Actor, document_key::DocumentKey};
+use xdid::methods::{
+    key::{DidKeyPair, PublicKey},
+    web::reqwest::Url,
+};
+
+use crate::LocalDwn;
+
+mod home_world;
+mod key_pair;
 
 #[derive(Event, Default)]
 pub struct LoginEvent;
@@ -16,12 +21,16 @@ pub fn trigger_login(world: &mut World) {
 
 #[derive(Resource, Default)]
 /// Identity of the local user.
-pub struct LocalIdentity {
-    pub did: Option<Did>,
-}
+pub struct LocalActor(pub Option<Actor>);
 
-pub fn handle_login(_: Trigger<LoginEvent>, mut identity: ResMut<LocalIdentity>) {
-    let pair = match get_or_create_keypair() {
+const REMOTE_DWN_URL: &str = "http://localhost:8080";
+
+pub fn handle_login(
+    _: Trigger<LoginEvent>,
+    mut local_actor: ResMut<LocalActor>,
+    dwn: Res<LocalDwn>,
+) {
+    let pair = match key_pair::get_or_create_key() {
         Ok(p) => p,
         Err(e) => {
             error!("Failed to get or create keypair: {e:?}");
@@ -32,27 +41,35 @@ pub fn handle_login(_: Trigger<LoginEvent>, mut identity: ResMut<LocalIdentity>)
     let did = pair.public().to_did();
     info!("Loaded identity: {did}");
 
-    identity.did = Some(did);
-}
+    let mut actor = Actor::new(did, dwn.0.clone());
 
-const KEY_FILE: &str = "key.pem";
+    let key = Arc::<DocumentKey>::new(pair.into());
+    actor.sign_key = Some(key.clone());
+    actor.auth_key = Some(key);
 
-fn get_or_create_keypair() -> anyhow::Result<P256KeyPair> {
-    let dir = DIRS.data_local_dir();
+    let remote_url = Url::parse(REMOTE_DWN_URL).expect("parse remote url");
+    info!("Syncing with remote DWN: {remote_url}");
+    actor.remote = Some(remote_url);
 
-    let key_path = {
-        let mut path = dir.to_path_buf();
-        path.push(KEY_FILE);
-        path
-    };
+    local_actor.0 = Some(actor.clone());
 
-    if key_path.exists() {
-        let pem = Zeroizing::new(std::fs::read_to_string(key_path)?);
-        let pair = P256KeyPair::from_pkcs8_pem(pem.as_str())?;
-        Ok(pair)
-    } else {
-        let pair = P256KeyPair::generate();
-        std::fs::write(&key_path, pair.to_pkcs8_pem()?)?;
-        Ok(pair)
-    }
+    let pool = TaskPool::get_thread_executor();
+
+    pool.spawn(async move {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("build tokio runtime");
+
+        rt.block_on(async move {
+            if let Err(e) = actor.sync().await {
+                error!("Failed to sync with remote DWN: {e:?}");
+            }
+
+            if let Err(e) = home_world::join_home_world(actor).await {
+                error!("Failed to join home world: {e:?}");
+            }
+        });
+    })
+    .detach();
 }

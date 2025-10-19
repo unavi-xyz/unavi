@@ -2,52 +2,37 @@
   "protocol": "https://wired-protocol.org/v0/protocols/world-host.json",
   "published": true,
   "types": {
-    "server": {
-      "dataFormat": [
-        "text/plain"
-      ]
-    },
-    "world-meta": {
-      "schema": "https://wired-protocol.org/v0/schemas/world-meta.json",
+    "world": {
+      "schema": "https://wired-protocol.org/v0/schemas/world.json",
       "dataFormat": [
         "application/json"
       ]
     },
-    "world": {
-      "schema": "https://wired-protocol.org/v0/schemas/world.json",
+    "server-info": {
+      "schema": "https://wired-protocol.org/v0/schemas/server-info.json",
       "dataFormat": [
         "application/json"
       ]
     }
   },
   "structure": {
-    "server": {
-      "$actions": [
-        {
-          "who": "anyone",
-          "can": [
-            "read"
-          ]
-        },
-        {
-          "who": "recipient",
-          "can": [
-            "write"
-          ]
-        }
-      ]
-    },
     "world": {
       "$actions": [
         {
           "who": "anyone",
           "can": [
-            "read",
-            "write"
+            "create",
+            "read"
+          ]
+        },
+        {
+          "who": "author",
+          "can": [
+            "update"
           ]
         }
       ],
-      "world-meta": {
+      "server-info": {
         "$actions": [
           {
             "who": "anyone",
@@ -57,9 +42,9 @@
           },
           {
             "who": "recipient",
-            "of": "world",
             "can": [
-              "write"
+              "create",
+              "update"
             ]
           }
         ]

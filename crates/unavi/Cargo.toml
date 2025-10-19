@@ -13,6 +13,7 @@ workspace = true
 anyhow.workspace = true
 avian3d.workspace = true
 bevy = { default-features = true, features = ["wayland"], workspace = true }
+constcat = "0.6.1"
 directories.workspace = true
 dwn = { git = "https://github.com/unavi-xyz/dwn", version = "0.3.0" }
 image = { default-features = false, features = ["png"], version = "0.25.8" }
@@ -20,6 +21,8 @@ log = { features = [
   "max_level_debug",
   "release_max_level_info",
 ], version = "*" }
+serde_json = "1.0.145"
+tokio.workspace = true
 unavi-input.path = "../unavi-input"
 unavi-player.path = "../unavi-player"
 unavi-script.path = "../unavi-script"

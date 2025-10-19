@@ -2382,6 +2382,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c74b8349d32d297c9134b8c88677813a227df8f779daa29bfc29c183fe3dca6"
 
 [[package]]
+name = "constcat"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "136d3e02915a2cea4d74caa8681e2d44b1c3254bdbf17d11d41d587ff858832c"
+
+[[package]]
 name = "constgebra"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3061,8 +3067,9 @@ checksum = "d8b14ccef22fc6f5a8f4d7d768562a182c04ce9a3b3157b91390b52ddfdf1a76"
 [[package]]
 name = "dwn"
 version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/dwn#414d7165555c34d5fe48436f1e668feaa0d382d0"
+source = "git+https://github.com/unavi-xyz/dwn#4980677d96ade17033a21e8b17f158b485f9a2e0"
 dependencies = [
+ "anyhow",
  "base64 0.22.1",
  "dwn-core",
  "dwn-native-db",
@@ -3072,6 +3079,7 @@ dependencies = [
  "ring",
  "serde_json",
  "thiserror 2.0.17",
+ "tokio",
  "tracing",
  "xdid",
 ]
@@ -3079,7 +3087,7 @@ dependencies = [
 [[package]]
 name = "dwn-core"
 version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/dwn#414d7165555c34d5fe48436f1e668feaa0d382d0"
+source = "git+https://github.com/unavi-xyz/dwn#4980677d96ade17033a21e8b17f158b485f9a2e0"
 dependencies = [
  "base64 0.22.1",
  "ipld-core",
@@ -3100,11 +3108,12 @@ dependencies = [
 [[package]]
 name = "dwn-native-db"
 version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/dwn#414d7165555c34d5fe48436f1e668feaa0d382d0"
+source = "git+https://github.com/unavi-xyz/dwn#4980677d96ade17033a21e8b17f158b485f9a2e0"
 dependencies = [
  "dwn-core",
  "native_db",
  "native_model",
+ "semver",
  "serde",
  "tracing",
  "xdid",
@@ -4307,7 +4316,7 @@ dependencies = [
  "libc",
  "percent-encoding",
  "pin-project-lite",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "system-configuration",
  "tokio",
  "tower-service",
@@ -4327,7 +4336,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.57.0",
+ "windows-core 0.58.0",
 ]
 
 [[package]]
@@ -6529,7 +6538,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash 2.1.1",
  "rustls",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "thiserror 2.0.17",
  "tokio",
  "tracing",
@@ -6566,7 +6575,7 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "tracing",
  "windows-sys 0.60.2",
 ]
@@ -8657,10 +8666,13 @@ dependencies = [
  "anyhow",
  "avian3d",
  "bevy",
+ "constcat",
  "directories",
  "dwn",
  "image",
  "log",
+ "serde_json",
+ "tokio",
  "unavi-input",
  "unavi-player",
  "unavi-script",
@@ -9766,7 +9778,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.48.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -10689,7 +10701,7 @@ checksum = "bec9e4a500ca8864c5b47b8b482a73d62e4237670e5b5f1d6b9e3cae50f28f2b"
 [[package]]
 name = "xdid"
 version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/dwn#414d7165555c34d5fe48436f1e668feaa0d382d0"
+source = "git+https://github.com/unavi-xyz/dwn#4980677d96ade17033a21e8b17f158b485f9a2e0"
 dependencies = [
  "thiserror 2.0.17",
  "xdid-core",
@@ -10700,7 +10712,7 @@ dependencies = [
 [[package]]
 name = "xdid-core"
 version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/dwn#414d7165555c34d5fe48436f1e668feaa0d382d0"
+source = "git+https://github.com/unavi-xyz/dwn#4980677d96ade17033a21e8b17f158b485f9a2e0"
 dependencies = [
  "jose-jwk",
  "serde",
@@ -10711,7 +10723,7 @@ dependencies = [
 [[package]]
 name = "xdid-method-key"
 version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/dwn#414d7165555c34d5fe48436f1e668feaa0d382d0"
+source = "git+https://github.com/unavi-xyz/dwn#4980677d96ade17033a21e8b17f158b485f9a2e0"
 dependencies = [
  "anyhow",
  "jose-jwk",
@@ -10728,7 +10740,7 @@ dependencies = [
 [[package]]
 name = "xdid-method-web"
 version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/dwn#414d7165555c34d5fe48436f1e668feaa0d382d0"
+source = "git+https://github.com/unavi-xyz/dwn#4980677d96ade17033a21e8b17f158b485f9a2e0"
 dependencies = [
  "reqwest",
  "xdid-core",

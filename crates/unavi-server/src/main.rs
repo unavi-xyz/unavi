@@ -1,7 +1,7 @@
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
 use clap::Parser;
-use tracing::error;
+use tracing::{Level, error};
 
 #[derive(Parser, Debug)]
 #[command(version)]
@@ -14,7 +14,9 @@ struct Args {
 async fn main() {
     let args = Args::parse();
 
-    tracing_subscriber::fmt().init();
+    tracing_subscriber::fmt()
+        .with_max_level(Level::DEBUG)
+        .init();
 
     let addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), args.port));
 

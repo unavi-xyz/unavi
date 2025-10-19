@@ -2,6 +2,7 @@ use std::sync::LazyLock;
 
 use bevy::prelude::*;
 use directories::ProjectDirs;
+use dwn::{Dwn, stores::NativeDbStore};
 
 mod auth;
 mod icon;
@@ -29,14 +30,22 @@ impl Plugin for UnaviPlugin {
             })
             .finish(app);
 
+        let store = {
+            let mut path = DIRS.data_local_dir().to_path_buf();
+            path.push("data.db");
+            NativeDbStore::new(path).expect("access native db")
+        };
+        let dwn = Dwn::from(store);
+
         app.add_plugins((
             avian3d::PhysicsPlugins::default(),
             unavi_input::InputPlugin,
             unavi_player::PlayerPlugin,
         ))
+        .insert_resource(LocalDwn(dwn))
         .add_event::<auth::LoginEvent>()
         .add_observer(auth::handle_login)
-        .init_resource::<auth::LocalIdentity>()
+        .init_resource::<auth::LocalActor>()
         .add_systems(
             Startup,
             (
@@ -48,3 +57,6 @@ impl Plugin for UnaviPlugin {
         );
     }
 }
+
+#[derive(Resource)]
+struct LocalDwn(pub Dwn);

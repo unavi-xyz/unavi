@@ -3,6 +3,9 @@
   "$id": "https://wired-protocol.org/v0/schemas/world-meta.json",
   "type": "object",
   "properties": {
+    "url": {
+      "type": "string"
+    },
     "numPlayers": {
       "description": "The number of currently connected players.",
       "type": "number"

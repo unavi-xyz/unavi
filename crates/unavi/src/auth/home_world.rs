@@ -1,23 +1,43 @@
+use std::str::FromStr;
+
+use anyhow::{Context, bail};
 use bevy::prelude::*;
 use dwn::{
     Actor,
     core::message::{Version, mime::APPLICATION_JSON},
 };
+use serde::{Deserialize, Serialize};
 use serde_json::json;
+use xdid::{core::did::Did, methods::web::reqwest::Url};
 
 const WP_PREFIX: &str = "https://wired-protocol.org/v0/";
 const WP_VERSION: Version = Version::new(0, 1, 0);
 
 const PROTOCOL_PREFIX: &str = constcat::concat!(WP_PREFIX, "protocols/");
-// const SCHEMA_PREFIX: &str = constcat::concat!(WP_PREFIX, "schemas/");
+const SCHEMA_PREFIX: &str = constcat::concat!(WP_PREFIX, "schemas/");
 
 const HOME_PROTOCOL: &str = constcat::concat!(PROTOCOL_PREFIX, "home-world.json");
-// const WORLD_HOST_PROTOCOL: &str = constcat::concat!(PROTOCOL_PREFIX, "world-host.json");
+const WORLD_HOST_PROTOCOL: &str = constcat::concat!(PROTOCOL_PREFIX, "world-host.json");
 
-// const SERVER_INFO_SCHEMA: &str = constcat::concat!(SCHEMA_PREFIX, "server-info.json");
-// const WORLD_SCHEMA: &str = constcat::concat!(SCHEMA_PREFIX, "world.json");
+const SERVER_INFO_SCHEMA: &str = constcat::concat!(SCHEMA_PREFIX, "server-info.json");
+const WORLD_SCHEMA: &str = constcat::concat!(SCHEMA_PREFIX, "world.json");
 
 const HOME_DEFINITION: &[u8] = include_bytes!("../../../../protocol/dwn/protocols/home-world.json");
+
+const WORLD_HOST_DID: &str = "did:web:localhost%3A5000";
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RemoteRecord {
+    did: Did,
+    record_id: String,
+}
+
+#[derive(Debug)]
+struct ConnectInfo {
+    url: Url,
+    world_id: String,
+}
 
 pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
     let home_definition = serde_json::from_slice(HOME_DEFINITION)?;
@@ -34,7 +54,7 @@ pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
         .process()
         .await?;
 
-    let mut home_uri = None;
+    let mut connect_info = None;
 
     for home in found_homes {
         let record_id = home.entry().record_id.clone();
@@ -50,19 +70,54 @@ pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
                 data
             }
         };
-        let data = String::from_utf8(data)?;
-        home_uri = Some(data);
+
+        let rr = serde_json::from_slice::<RemoteRecord>(&data)?;
+
+        // TODO: Fetch from did document
+        let host_dwn = actor.remote.clone().unwrap();
+
+        let Some(url) = fetch_connect_url(&actor, &rr.did, &host_dwn)
+            .await
+            .context("fetch connect url")?
+        else {
+            continue;
+        };
+
+        connect_info = Some(ConnectInfo {
+            url,
+            world_id: rr.record_id,
+        });
         break;
     }
 
-    let home_uri = match home_uri {
-        Some(h) => h,
+    let world_host =
+        Did::from_str(WORLD_HOST_DID).map_err(|_| anyhow::anyhow!("failed to parse world host"))?;
+
+    let connect_info = match connect_info {
+        Some(c) => c,
         None => {
-            let home_did = "test-did".to_string();
-            let home_record_id = "test-record".to_string();
+            let data = json!({
+                "name": format!("{}'s Home", actor.did),
+            });
+
+            // TODO: Fetch from did document
+            let host_dwn = actor.remote.clone().unwrap();
+
+            let home_record_id = actor
+                .write()
+                .protocol(
+                    WORLD_HOST_PROTOCOL.to_string(),
+                    WP_VERSION,
+                    "world".to_string(),
+                )
+                .data(APPLICATION_JSON, data.to_string().into_bytes())
+                .target(&world_host)
+                .send(&host_dwn)
+                .await
+                .context("write world")?;
 
             let data = json!({
-                "did": home_did,
+                "did": world_host,
                 "recordId": home_record_id,
             });
 
@@ -71,15 +126,66 @@ pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
                 .protocol(HOME_PROTOCOL.to_string(), WP_VERSION, "home".to_string())
                 .data(APPLICATION_JSON, data.to_string().into_bytes())
                 .process()
-                .await?;
+                .await
+                .context("write home")?;
 
-            info!("Created new home");
+            info!("Created new home: {world_host}/{home_record_id}");
 
-            todo!()
+            let Some(url) = fetch_connect_url(&actor, &world_host, &host_dwn)
+                .await
+                .context("fetch connect url")?
+            else {
+                bail!("host connect url not found")
+            };
+
+            ConnectInfo {
+                url,
+                world_id: home_record_id,
+            }
         }
     };
 
-    info!("Home URI: {home_uri}");
+    info!("Home ready: {connect_info:?}");
 
     Ok(())
+}
+
+async fn fetch_connect_url(
+    actor: &Actor,
+    host_did: &Did,
+    host_dwn: &Url,
+) -> anyhow::Result<Option<Url>> {
+    let found_urls = actor
+        .query()
+        .protocol(WORLD_HOST_PROTOCOL.to_string())
+        .protocol_version(WP_VERSION)
+        .protocol_path("connect-url".to_string())
+        .target(host_did)
+        .send(host_dwn)
+        .await
+        .context("query connect url")?;
+
+    for found in found_urls {
+        let record_id = found.entry().record_id.clone();
+
+        let data = match found.into_data() {
+            Some(d) => d,
+            None => {
+                let Some(read) = actor.read(record_id).process().await? else {
+                    continue;
+                };
+                let Some(data) = read.into_data() else {
+                    continue;
+                };
+                data
+            }
+        };
+
+        let url = String::from_utf8(data)?;
+        let url = Url::parse(&url)?;
+
+        return Ok(Some(url));
+    }
+
+    Ok(None)
 }

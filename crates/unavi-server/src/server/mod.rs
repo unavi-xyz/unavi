@@ -7,11 +7,10 @@ use tarpc::{
     tokio_util::codec::{Framed, LengthDelimitedCodec},
 };
 use tokio_serde::formats::Bincode;
-use tracing::info;
 use unavi_server_service::ControlService;
-use xdid::methods::{
-    key::{DidKeyPair, PublicKey},
-    web::reqwest::Url,
+use xdid::{
+    core::{did::Did, did_url::DidUrl},
+    methods::{key::p256::P256KeyPair, web::reqwest::Url},
 };
 use xwt_wtransport::wtransport::{endpoint::IncomingSession, stream::BiStream};
 
@@ -19,8 +18,8 @@ use crate::{DIRS, server::control::ControlServer};
 
 mod control;
 mod init_world_host;
-mod key_pair;
 
+pub const KEY_FRAGMENT: &str = "owner";
 const REMOTE_DWN_URL: &str = "http://localhost:8080";
 
 #[derive(Clone)]
@@ -29,7 +28,7 @@ pub struct Server {
 }
 
 impl Server {
-    pub async fn new() -> anyhow::Result<Self> {
+    pub async fn new(did: Did, vc: P256KeyPair) -> anyhow::Result<Self> {
         let store = {
             let mut path = DIRS.data_local_dir().to_path_buf();
             path.push("data.db");
@@ -37,17 +36,20 @@ impl Server {
         };
         let dwn = Dwn::from(store);
 
-        let pair = key_pair::get_or_create_key()?;
-
-        let did = pair.public().to_did();
-        info!("Loaded identity: {did}");
-
-        let mut actor = Actor::new(did, dwn);
+        let mut actor = Actor::new(did.clone(), dwn);
 
         let remote_url = Url::parse(REMOTE_DWN_URL)?;
         actor.remote = Some(remote_url);
 
-        let key = Arc::<DocumentKey>::new(pair.into());
+        let mut key: DocumentKey = vc.into();
+        key.url = DidUrl {
+            did,
+            query: None,
+            fragment: Some(KEY_FRAGMENT.to_string()),
+            path_abempty: String::new(),
+        };
+
+        let key = Arc::new(key);
         actor.sign_key = Some(key.clone());
         actor.auth_key = Some(key);
 

@@ -21,6 +21,7 @@ log = { features = [
   "max_level_debug",
   "release_max_level_info",
 ], version = "*" }
+serde.workspace = true
 serde_json.workspace = true
 tokio.workspace = true
 unavi-input.path = "../unavi-input"

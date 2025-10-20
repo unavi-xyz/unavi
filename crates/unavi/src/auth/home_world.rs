@@ -2,29 +2,15 @@ use std::str::FromStr;
 
 use anyhow::{Context, bail};
 use bevy::prelude::*;
-use dwn::{
-    Actor,
-    core::message::{Version, mime::APPLICATION_JSON},
-};
+use dwn::{Actor, core::message::mime::APPLICATION_JSON};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use unavi_constants::{
+    WORLD_HOST_DID, WP_VERSION,
+    protocols::{HOME_WORLD_DEFINITION, HOME_WORLD_PROTOCOL, WORLD_HOST_PROTOCOL},
+    schemas::{REMOTE_RECORD_SCHEMA, WORLD_SCHEMA},
+};
 use xdid::{core::did::Did, methods::web::reqwest::Url};
-
-const WP_PREFIX: &str = "https://wired-protocol.org/v0/";
-const WP_VERSION: Version = Version::new(0, 1, 0);
-
-const PROTOCOL_PREFIX: &str = constcat::concat!(WP_PREFIX, "protocols/");
-const SCHEMA_PREFIX: &str = constcat::concat!(WP_PREFIX, "schemas/");
-
-const HOME_PROTOCOL: &str = constcat::concat!(PROTOCOL_PREFIX, "home-world.json");
-const WORLD_HOST_PROTOCOL: &str = constcat::concat!(PROTOCOL_PREFIX, "world-host.json");
-
-const SERVER_INFO_SCHEMA: &str = constcat::concat!(SCHEMA_PREFIX, "server-info.json");
-const WORLD_SCHEMA: &str = constcat::concat!(SCHEMA_PREFIX, "world.json");
-
-const HOME_DEFINITION: &[u8] = include_bytes!("../../../../protocol/dwn/protocols/home-world.json");
-
-const WORLD_HOST_DID: &str = "did:web:localhost%3A5000";
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -40,7 +26,7 @@ struct ConnectInfo {
 }
 
 pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
-    let home_definition = serde_json::from_slice(HOME_DEFINITION)?;
+    let home_definition = serde_json::from_slice(HOME_WORLD_DEFINITION)?;
     actor
         .configure_protocol(WP_VERSION, home_definition)
         .process()
@@ -48,7 +34,7 @@ pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
 
     let found_homes = actor
         .query()
-        .protocol(HOME_PROTOCOL.to_string())
+        .protocol(HOME_WORLD_PROTOCOL.to_string())
         .protocol_version(WP_VERSION)
         .protocol_path("home".to_string())
         .process()
@@ -110,6 +96,7 @@ pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
                     WP_VERSION,
                     "world".to_string(),
                 )
+                .schema(WORLD_SCHEMA.to_string())
                 .data(APPLICATION_JSON, data.to_string().into_bytes())
                 .target(&world_host)
                 .send(&host_dwn)
@@ -123,7 +110,12 @@ pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
 
             actor
                 .write()
-                .protocol(HOME_PROTOCOL.to_string(), WP_VERSION, "home".to_string())
+                .protocol(
+                    HOME_WORLD_PROTOCOL.to_string(),
+                    WP_VERSION,
+                    "home".to_string(),
+                )
+                .schema(REMOTE_RECORD_SCHEMA.to_string())
                 .data(APPLICATION_JSON, data.to_string().into_bytes())
                 .process()
                 .await

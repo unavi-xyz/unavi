@@ -69,13 +69,20 @@ pub async fn run_server(addr: SocketAddr) -> anyhow::Result<()> {
             tokio::time::sleep(Duration::from_secs(5)).await;
 
             loop {
-                let server_handler = match Server::new(did.clone(), vc.clone()).await {
-                    Ok(s) => s,
-                    Err(e) => {
-                        error!("Failed to crate sever handler: {e:?}");
-                        tokio::time::sleep(Duration::from_secs(30)).await;
-                        continue;
-                    }
+                let server_handler =
+                    match Server::new(did.clone(), vc.clone(), domain.clone()).await {
+                        Ok(s) => s,
+                        Err(e) => {
+                            error!("Failed to crate sever handler: {e:?}");
+                            tokio::time::sleep(Duration::from_secs(30)).await;
+                            continue;
+                        }
+                    };
+
+                if let Err(e) = server_handler.init_world_host().await {
+                    error!("Failed to init world host: {e:?}");
+                    tokio::time::sleep(Duration::from_secs(30)).await;
+                    continue;
                 };
 
                 info!("WebTransport listening on {addr}");

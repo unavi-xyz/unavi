@@ -8676,7 +8676,6 @@ dependencies = [
  "anyhow",
  "avian3d",
  "bevy",
- "constcat",
  "directories",
  "dwn",
  "image",
@@ -8684,12 +8683,21 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
+ "unavi-constants",
  "unavi-input",
  "unavi-player",
  "unavi-script",
  "winit",
  "xdid",
  "zeroize",
+]
+
+[[package]]
+name = "unavi-constants"
+version = "0.0.10"
+dependencies = [
+ "constcat",
+ "semver",
 ]
 
 [[package]]
@@ -8751,6 +8759,7 @@ dependencies = [
  "tokio-serde",
  "tracing",
  "tracing-subscriber",
+ "unavi-constants",
  "unavi-server-service",
  "x509-cert",
  "xdid",

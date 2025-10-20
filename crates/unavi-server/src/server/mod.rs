@@ -7,6 +7,7 @@ use tarpc::{
     tokio_util::codec::{Framed, LengthDelimitedCodec},
 };
 use tokio_serde::formats::Bincode;
+use unavi_constants::REMOTE_DWN_URL;
 use unavi_server_service::ControlService;
 use xdid::{
     core::{did::Did, did_url::DidUrl},
@@ -20,15 +21,15 @@ mod control;
 mod init_world_host;
 
 pub const KEY_FRAGMENT: &str = "owner";
-const REMOTE_DWN_URL: &str = "http://localhost:8080";
 
 #[derive(Clone)]
 pub struct Server {
     pub actor: Actor,
+    pub domain: String,
 }
 
 impl Server {
-    pub async fn new(did: Did, vc: P256KeyPair) -> anyhow::Result<Self> {
+    pub async fn new(did: Did, vc: P256KeyPair, domain: String) -> anyhow::Result<Self> {
         let store = {
             let mut path = DIRS.data_local_dir().to_path_buf();
             path.push("data.db");
@@ -55,9 +56,7 @@ impl Server {
 
         actor.sync().await?;
 
-        init_world_host::init_world_host(&actor).await?;
-
-        Ok(Self { actor })
+        Ok(Self { actor, domain })
     }
 
     pub async fn handle(self, incoming: IncomingSession) -> anyhow::Result<()> {

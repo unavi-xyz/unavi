@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use bevy::{prelude::*, tasks::TaskPool};
 use dwn::{Actor, document_key::DocumentKey};
+use unavi_constants::REMOTE_DWN_URL;
 use xdid::methods::{
     key::{DidKeyPair, PublicKey},
     web::reqwest::Url,
@@ -22,8 +23,6 @@ pub fn trigger_login(world: &mut World) {
 #[derive(Resource, Default)]
 /// Identity of the local user.
 pub struct LocalActor(pub Option<Actor>);
-
-const REMOTE_DWN_URL: &str = "http://localhost:8080";
 
 pub fn handle_login(
     _: Trigger<LoginEvent>,

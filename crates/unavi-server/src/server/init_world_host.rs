@@ -1,18 +1,31 @@
-use dwn::Actor;
-use unavi_server_service::Version;
+use dwn::core::message::mime::TEXT_PLAIN;
+use unavi_constants::{
+    WP_VERSION,
+    protocols::{WORLD_HOST_DEFINITION, WORLD_HOST_PROTOCOL},
+};
 
-const WP_PREFIX: &str = "https://wired-protocol.org/v0/";
-const WP_VERSION: Version = Version::new(0, 1, 0);
+use crate::server::Server;
 
-const HOST_DEFINITION: &[u8] = include_bytes!("../../../../protocol/dwn/protocols/world-host.json");
+impl Server {
+    pub async fn init_world_host(&self) -> anyhow::Result<()> {
+        let host_def = serde_json::from_slice(WORLD_HOST_DEFINITION)?;
 
-pub async fn init_world_host(actor: &Actor) -> anyhow::Result<()> {
-    let host_def = serde_json::from_slice(HOST_DEFINITION)?;
+        self.actor
+            .configure_protocol(WP_VERSION, host_def)
+            .process()
+            .await?;
 
-    actor
-        .configure_protocol(WP_VERSION, host_def)
-        .process()
-        .await?;
+        self.actor
+            .write()
+            .protocol(
+                WORLD_HOST_PROTOCOL.to_string(),
+                WP_VERSION,
+                "connect-url".to_string(),
+            )
+            .data(TEXT_PLAIN, self.domain.clone().into_bytes())
+            .process()
+            .await?;
 
-    Ok(())
+        Ok(())
+    }
 }

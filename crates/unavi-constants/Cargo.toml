@@ -1,7 +1,7 @@
 [package]
 edition.workspace    = true
 license.workspace    = true
-name                 = "unavi-server-service"
+name                 = "unavi-constants"
 publish              = false
 repository.workspace = true
 version.workspace    = true
@@ -10,5 +10,5 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-semver          = { features = ["serde"], workspace = true }
-tarpc.workspace = true
+constcat         = "0.6.1"
+semver.workspace = true

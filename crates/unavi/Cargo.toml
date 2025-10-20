@@ -13,7 +13,6 @@ workspace = true
 anyhow.workspace = true
 avian3d.workspace = true
 bevy = { default-features = true, features = ["wayland"], workspace = true }
-constcat = "0.6.1"
 directories.workspace = true
 dwn.workspace = true
 image = { default-features = false, features = ["png"], version = "0.25.8" }
@@ -24,6 +23,7 @@ log = { features = [
 serde.workspace = true
 serde_json.workspace = true
 tokio.workspace = true
+unavi-constants.path = "../unavi-constants"
 unavi-input.path = "../unavi-input"
 unavi-player.path = "../unavi-player"
 unavi-script.path = "../unavi-script"

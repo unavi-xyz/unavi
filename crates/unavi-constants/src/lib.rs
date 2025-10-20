@@ -27,5 +27,5 @@ pub mod schemas {
     pub const WORLD_SCHEMA: &str = constcat::concat!(SCHEMA_PREFIX, "world.json");
 }
 
-pub const WORLD_HOST_DID: &str = "did:web:localhost%3A5000";
 pub const REMOTE_DWN_URL: &str = "http://localhost:8080";
+pub const WORLD_HOST_DID: &str = "did:web:localhost%3A5000";

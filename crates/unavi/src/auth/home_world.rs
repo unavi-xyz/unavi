@@ -137,7 +137,7 @@ pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
         }
     };
 
-    info!("Home ready: {connect_info:?}");
+    info!("Home ready: {connect_info:#?}");
 
     Ok(())
 }
@@ -163,10 +163,17 @@ async fn fetch_connect_url(
         let data = match found.into_data() {
             Some(d) => d,
             None => {
-                let Some(read) = actor.read(record_id).process().await? else {
+                let Some(read) = actor
+                    .read(record_id)
+                    .target(host_did)
+                    .send(host_dwn)
+                    .await?
+                else {
+                    warn!("connect url record not found");
                     continue;
                 };
                 let Some(data) = read.into_data() else {
+                    warn!("connect url data not found");
                     continue;
                 };
                 data

@@ -16,8 +16,8 @@ mod key_pair;
 #[derive(Event, Default)]
 pub struct LoginEvent;
 
-pub fn trigger_login(world: &mut World) {
-    world.trigger(LoginEvent);
+pub fn trigger_login(mut commands: Commands) {
+    commands.trigger(LoginEvent);
 }
 
 #[derive(Resource, Default)]

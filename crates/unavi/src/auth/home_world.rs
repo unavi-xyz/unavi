@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use anyhow::{Context, bail};
-use bevy::prelude::*;
+use bevy::{ecs::world::CommandQueue, prelude::*};
 use dwn::{Actor, core::message::mime::APPLICATION_JSON};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -12,17 +12,16 @@ use unavi_constants::{
 };
 use xdid::{core::did::Did, methods::web::reqwest::Url};
 
+use crate::{
+    async_commands::ASYNC_COMMAND_QUEUE,
+    join_world::{ConnectInfo, JoinWorld},
+};
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct RemoteRecord {
     did: Did,
     record_id: String,
-}
-
-#[derive(Debug)]
-struct ConnectInfo {
-    url: Url,
-    world_id: String,
 }
 
 pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
@@ -121,8 +120,6 @@ pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
                 .await
                 .context("write home")?;
 
-            info!("Created new home: {world_host}/{home_record_id}");
-
             let Some(url) = fetch_connect_url(&actor, &world_host, &host_dwn)
                 .await
                 .context("fetch connect url")?
@@ -137,7 +134,12 @@ pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
         }
     };
 
-    info!("Home ready: {connect_info:#?}");
+    info!("Got home: {}@{}", connect_info.world_id, connect_info.url);
+
+    let mut commands = CommandQueue::default();
+    commands.push(bevy::ecs::system::command::trigger(JoinWorld(connect_info)));
+
+    ASYNC_COMMAND_QUEUE.0.send(commands)?;
 
     Ok(())
 }

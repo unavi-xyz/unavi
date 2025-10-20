@@ -4,8 +4,10 @@ use bevy::prelude::*;
 use directories::ProjectDirs;
 use dwn::{Dwn, stores::NativeDbStore};
 
+mod async_commands;
 mod auth;
 mod icon;
+mod join_world;
 mod scene;
 
 pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
@@ -44,7 +46,9 @@ impl Plugin for UnaviPlugin {
         ))
         .insert_resource(LocalDwn(dwn))
         .add_event::<auth::LoginEvent>()
+        .add_event::<join_world::JoinWorld>()
         .add_observer(auth::handle_login)
+        .add_observer(join_world::handle_join_world)
         .init_resource::<auth::LocalActor>()
         .add_systems(
             Startup,
@@ -54,7 +58,8 @@ impl Plugin for UnaviPlugin {
                 scene::spawn_lights,
                 scene::spawn_scene,
             ),
-        );
+        )
+        .add_systems(FixedUpdate, async_commands::apply_async_commands);
     }
 }
 

@@ -3147,7 +3147,7 @@ checksum = "d8b14ccef22fc6f5a8f4d7d768562a182c04ce9a3b3157b91390b52ddfdf1a76"
 [[package]]
 name = "dwn"
 version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/dwn#42db558094d34a7b14d9064bd1ea4d23a0e043d9"
+source = "git+https://github.com/unavi-xyz/dwn#bff81f933df12266e738cc34a44928dc934579ae"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -3167,7 +3167,7 @@ dependencies = [
 [[package]]
 name = "dwn-core"
 version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/dwn#42db558094d34a7b14d9064bd1ea4d23a0e043d9"
+source = "git+https://github.com/unavi-xyz/dwn#bff81f933df12266e738cc34a44928dc934579ae"
 dependencies = [
  "base64 0.22.1",
  "ipld-core",
@@ -3188,7 +3188,7 @@ dependencies = [
 [[package]]
 name = "dwn-native-db"
 version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/dwn#42db558094d34a7b14d9064bd1ea4d23a0e043d9"
+source = "git+https://github.com/unavi-xyz/dwn#bff81f933df12266e738cc34a44928dc934579ae"
 dependencies = [
  "dwn-core",
  "native_db",
@@ -10731,7 +10731,7 @@ checksum = "bec9e4a500ca8864c5b47b8b482a73d62e4237670e5b5f1d6b9e3cae50f28f2b"
 [[package]]
 name = "xdid"
 version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/dwn#42db558094d34a7b14d9064bd1ea4d23a0e043d9"
+source = "git+https://github.com/unavi-xyz/dwn#bff81f933df12266e738cc34a44928dc934579ae"
 dependencies = [
  "thiserror 2.0.17",
  "xdid-core",
@@ -10742,7 +10742,7 @@ dependencies = [
 [[package]]
 name = "xdid-core"
 version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/dwn#42db558094d34a7b14d9064bd1ea4d23a0e043d9"
+source = "git+https://github.com/unavi-xyz/dwn#bff81f933df12266e738cc34a44928dc934579ae"
 dependencies = [
  "anyhow",
  "jose-jwk",
@@ -10754,7 +10754,7 @@ dependencies = [
 [[package]]
 name = "xdid-method-key"
 version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/dwn#42db558094d34a7b14d9064bd1ea4d23a0e043d9"
+source = "git+https://github.com/unavi-xyz/dwn#bff81f933df12266e738cc34a44928dc934579ae"
 dependencies = [
  "anyhow",
  "jose-jwk",
@@ -10771,7 +10771,7 @@ dependencies = [
 [[package]]
 name = "xdid-method-web"
 version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/dwn#42db558094d34a7b14d9064bd1ea4d23a0e043d9"
+source = "git+https://github.com/unavi-xyz/dwn#bff81f933df12266e738cc34a44928dc934579ae"
 dependencies = [
  "reqwest",
  "xdid-core",

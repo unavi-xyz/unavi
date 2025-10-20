@@ -35,11 +35,11 @@ pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
 pub async fn run_server(addr: SocketAddr) -> anyhow::Result<()> {
     let domain = std::env::var("DOMAIN")
         .unwrap_or_else(|_| addr.to_string())
-        .replace("127.0.0.1", "localhost")
-        .replace(":", "%3A");
+        .replace("127.0.0.1", "localhost");
+    let domain_encoded = domain.replace(":", "%3A");
     let did = Did {
         method_name: MethodName("web".to_string()),
-        method_id: MethodId(domain.clone()),
+        method_id: MethodId(domain_encoded),
     };
     info!("Running server as {did}");
 

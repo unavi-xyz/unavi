@@ -1,8 +1,10 @@
 use dwn::core::message::mime::TEXT_PLAIN;
+use tracing::info;
 use unavi_constants::{
     WP_VERSION,
     protocols::{WORLD_HOST_DEFINITION, WORLD_HOST_PROTOCOL},
 };
+use xdid::methods::web::reqwest::Url;
 
 use crate::server::Server;
 
@@ -15,16 +17,44 @@ impl Server {
             .process()
             .await?;
 
-        self.actor
+        let http = if self.domain.starts_with("localhost:") {
+            "http"
+        } else {
+            "https"
+        };
+        let connect_url = Url::parse(&format!("{http}://{}", self.domain))?;
+        info!("Publishing connect URL: {connect_url}");
+
+        let prev_connect_url = self
+            .actor
+            .query()
+            .protocol(WORLD_HOST_PROTOCOL.to_string())
+            .protocol_version(WP_VERSION)
+            .protocol_path("connect-url".to_string())
+            .process()
+            .await?;
+
+        let prev_record_id = prev_connect_url
+            .into_iter()
+            .next()
+            .map(|v| v.entry().record_id.clone());
+
+        let mut builder = self
+            .actor
             .write()
             .protocol(
                 WORLD_HOST_PROTOCOL.to_string(),
                 WP_VERSION,
                 "connect-url".to_string(),
             )
-            .data(TEXT_PLAIN, self.domain.clone().into_bytes())
-            .process()
-            .await?;
+            .data(TEXT_PLAIN, connect_url.to_string().into_bytes())
+            .published(true);
+
+        if let Some(prev_record_id) = prev_record_id {
+            builder = builder.record_id(prev_record_id);
+        }
+
+        builder.process().await?;
 
         Ok(())
     }

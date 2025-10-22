@@ -3112,12 +3112,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "doc-comment"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fea41bba32d969b513997752735605054bc0dfa92b4c56bf1189f2e174be7a10"
-
-[[package]]
 name = "document-features"
 version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3146,8 +3140,8 @@ checksum = "d8b14ccef22fc6f5a8f4d7d768562a182c04ce9a3b3157b91390b52ddfdf1a76"
 
 [[package]]
 name = "dwn"
-version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/dwn#bff81f933df12266e738cc34a44928dc934579ae"
+version = "0.4.0"
+source = "git+https://github.com/unavi-xyz/dwn#1399a2092be7b41bbc61da997f59b452d2970d9e"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -3166,8 +3160,8 @@ dependencies = [
 
 [[package]]
 name = "dwn-core"
-version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/dwn#bff81f933df12266e738cc34a44928dc934579ae"
+version = "0.4.0"
+source = "git+https://github.com/unavi-xyz/dwn#1399a2092be7b41bbc61da997f59b452d2970d9e"
 dependencies = [
  "base64 0.22.1",
  "ipld-core",
@@ -3187,8 +3181,8 @@ dependencies = [
 
 [[package]]
 name = "dwn-native-db"
-version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/dwn#bff81f933df12266e738cc34a44928dc934579ae"
+version = "0.4.0"
+source = "git+https://github.com/unavi-xyz/dwn#1399a2092be7b41bbc61da997f59b452d2970d9e"
 dependencies = [
  "dwn-core",
  "native_db",
@@ -5364,22 +5358,25 @@ dependencies = [
 
 [[package]]
 name = "native_db"
-version = "0.8.1"
-source = "git+https://github.com/vincent-herlemont/native_db#b9554fdabbdd44997aa480c883e067ee3f823046"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b13e4a851c3b641728712a946c4cf2bf7eb8dbcfd2cbc35f7ba4b19ce59f4ac"
 dependencies = [
  "native_db_macro",
  "native_model",
- "redb",
+ "redb 1.5.1",
+ "redb 2.6.3",
  "semver",
  "serde",
  "skeptic",
- "thiserror 2.0.17",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
 name = "native_db_macro"
-version = "0.8.1"
-source = "git+https://github.com/vincent-herlemont/native_db#b9554fdabbdd44997aa480c883e067ee3f823046"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0809fa4be7c67b5fcc5aea1b43644fa4bd4fa57f5a956a84018628fba51c2b11"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5388,25 +5385,25 @@ dependencies = [
 
 [[package]]
 name = "native_model"
-version = "0.6.2"
+version = "0.4.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50622b3adb2f3f2b8d6fddc8b030db343680c7fa7f24222a3be89e4cd725365e"
+checksum = "c10f4542302b7fa69ef18b49d93106e27f20b59d695555121d9ed22fe5d716a8"
 dependencies = [
  "anyhow",
  "bincode 1.3.3",
- "doc-comment",
+ "bincode 2.0.1",
  "native_model_macro",
- "rmp-serde",
  "serde",
- "thiserror 2.0.17",
+ "skeptic",
+ "thiserror 1.0.69",
  "zerocopy",
 ]
 
 [[package]]
 name = "native_model_macro"
-version = "0.6.2"
+version = "0.4.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "907e09bdd2fceb72bcd9b2e950c0bcb58e09d63d4ec5d6dbfa905537bbda068e"
+checksum = "2f385f3d57adaea8d8868e65a0bc821bcb8ba2228bbf87a1c3c6144ac48f3791"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -6814,9 +6811,18 @@ checksum = "a0d463f2884048e7153449a55166f91028d5b0ea53c79377099ce4e8cf0cf9bb"
 
 [[package]]
 name = "redb"
-version = "3.0.2"
+version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "afb1bfd2a09cb3c362dd10ea63427315cf3c79a84feb279394509981c4a3a91c"
+checksum = "fd7f82ecd6ba647a39dd1a7172b8a1cd9453c0adee6da20cb553d83a9a460fa5"
+dependencies = [
+ "libc",
+]
+
+[[package]]
+name = "redb"
+version = "2.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8eca1e9d98d5a7e9002d0013e18d5a9b000aee942eb134883a82f06ebffb6c01"
 dependencies = [
  "libc",
 ]
@@ -7024,28 +7030,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd124222d17ad93a644ed9d011a40f4fb64aa54275c08cc216524a9ea82fb09f"
 dependencies = [
  "digest",
-]
-
-[[package]]
-name = "rmp"
-version = "0.8.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "228ed7c16fa39782c3b3468e974aec2795e9089153cd08ee2e9aefb3613334c4"
-dependencies = [
- "byteorder",
- "num-traits",
- "paste",
-]
-
-[[package]]
-name = "rmp-serde"
-version = "1.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "52e599a477cf9840e92f2cde9a7189e67b42c57532749bf90aea6ec10facd4db"
-dependencies = [
- "byteorder",
- "rmp",
- "serde",
 ]
 
 [[package]]
@@ -10730,8 +10714,8 @@ checksum = "bec9e4a500ca8864c5b47b8b482a73d62e4237670e5b5f1d6b9e3cae50f28f2b"
 
 [[package]]
 name = "xdid"
-version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/dwn#bff81f933df12266e738cc34a44928dc934579ae"
+version = "0.4.0"
+source = "git+https://github.com/unavi-xyz/dwn#1399a2092be7b41bbc61da997f59b452d2970d9e"
 dependencies = [
  "thiserror 2.0.17",
  "xdid-core",
@@ -10741,8 +10725,8 @@ dependencies = [
 
 [[package]]
 name = "xdid-core"
-version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/dwn#bff81f933df12266e738cc34a44928dc934579ae"
+version = "0.4.0"
+source = "git+https://github.com/unavi-xyz/dwn#1399a2092be7b41bbc61da997f59b452d2970d9e"
 dependencies = [
  "anyhow",
  "jose-jwk",
@@ -10753,8 +10737,8 @@ dependencies = [
 
 [[package]]
 name = "xdid-method-key"
-version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/dwn#bff81f933df12266e738cc34a44928dc934579ae"
+version = "0.4.0"
+source = "git+https://github.com/unavi-xyz/dwn#1399a2092be7b41bbc61da997f59b452d2970d9e"
 dependencies = [
  "anyhow",
  "jose-jwk",
@@ -10770,8 +10754,8 @@ dependencies = [
 
 [[package]]
 name = "xdid-method-web"
-version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/dwn#bff81f933df12266e738cc34a44928dc934579ae"
+version = "0.4.0"
+source = "git+https://github.com/unavi-xyz/dwn#1399a2092be7b41bbc61da997f59b452d2970d9e"
 dependencies = [
  "reqwest",
  "xdid-core",

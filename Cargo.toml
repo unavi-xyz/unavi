@@ -34,8 +34,8 @@ tracing-subscriber = "0.3.19"
 wit-bindgen        = "0.46.0"
 zeroize            = "1.8.2"
 
-dwn  = { git = "https://github.com/unavi-xyz/dwn", version = "0.3.0" }
-xdid = { git = "https://github.com/unavi-xyz/dwn", version = "0.3.0" }
+dwn  = { git = "https://github.com/unavi-xyz/dwn", version = "0.4.0" }
+xdid = { git = "https://github.com/unavi-xyz/dwn", version = "0.4.0" }
 # dwn  = { path = "../dwn/crates/dwn" }
 # xdid = { path = "../dwn/crates/xdid" }
 

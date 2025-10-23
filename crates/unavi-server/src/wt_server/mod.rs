@@ -15,7 +15,7 @@ use xdid::{
 };
 use xwt_wtransport::wtransport::{endpoint::IncomingSession, stream::BiStream};
 
-use crate::{DIRS, server::control::ControlServer};
+use crate::{DIRS, wt_server::control::ControlServer};
 
 mod control;
 mod init_world_host;
@@ -23,12 +23,12 @@ mod init_world_host;
 pub const KEY_FRAGMENT: &str = "owner";
 
 #[derive(Clone)]
-pub struct Server {
+pub struct WtServer {
     pub actor: Actor,
     pub domain: String,
 }
 
-impl Server {
+impl WtServer {
     pub async fn new(did: Did, vc: P256KeyPair, domain: String) -> anyhow::Result<Self> {
         let store = {
             let mut path = DIRS.data_local_dir().to_path_buf();

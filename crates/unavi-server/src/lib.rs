@@ -18,12 +18,12 @@ use xwt_wtransport::wtransport;
 
 use crate::{
     cert::CertRes,
-    server::{KEY_FRAGMENT, Server},
+    wt_server::{KEY_FRAGMENT, WtServer},
 };
 
 mod cert;
 mod key_pair;
-mod server;
+mod wt_server;
 
 pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
     let dirs = ProjectDirs::from("", "UNAVI", "unavi-server").expect("project dirs");
@@ -69,17 +69,16 @@ pub async fn run_server(addr: SocketAddr) -> anyhow::Result<()> {
             tokio::time::sleep(Duration::from_secs(5)).await;
 
             loop {
-                let server_handler =
-                    match Server::new(did.clone(), vc.clone(), domain.clone()).await {
-                        Ok(s) => s,
-                        Err(e) => {
-                            error!("Failed to crate sever handler: {e:?}");
-                            tokio::time::sleep(Duration::from_secs(30)).await;
-                            continue;
-                        }
-                    };
+                let server = match WtServer::new(did.clone(), vc.clone(), domain.clone()).await {
+                    Ok(s) => s,
+                    Err(e) => {
+                        error!("Failed to crate sever handler: {e:?}");
+                        tokio::time::sleep(Duration::from_secs(30)).await;
+                        continue;
+                    }
+                };
 
-                if let Err(e) = server_handler.init_world_host().await {
+                if let Err(e) = server.init_world_host().await {
                     error!("Failed to init world host: {e:?}");
                     tokio::time::sleep(Duration::from_secs(30)).await;
                     continue;
@@ -88,7 +87,7 @@ pub async fn run_server(addr: SocketAddr) -> anyhow::Result<()> {
                 info!("WebTransport listening on {addr}");
                 loop {
                     let incoming = endpoint.accept().await;
-                    let svr = server_handler.clone();
+                    let svr = server.clone();
                     tokio::spawn(async move {
                         if let Err(e) = svr.handle(incoming).await {
                             error!("Handling error: {e:?}");

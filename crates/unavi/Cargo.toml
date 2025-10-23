@@ -13,6 +13,7 @@ workspace = true
 anyhow.workspace = true
 avian3d.workspace = true
 bevy = { default-features = true, features = ["wayland"], workspace = true }
+bincode.workspace = true
 directories.workspace = true
 dwn.workspace = true
 image = { default-features = false, features = ["png"], version = "0.25.8" }

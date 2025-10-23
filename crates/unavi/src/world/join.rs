@@ -10,6 +10,8 @@ use unavi_server_service::ControlServiceClient;
 use wtransport::{ClientConfig, Endpoint, stream::BiStream, tls::Sha256Digest};
 use xdid::methods::web::reqwest::Url;
 
+use crate::world::WorldConnection;
+
 #[derive(Event)]
 pub struct JoinWorld(pub ConnectInfo);
 
@@ -34,11 +36,16 @@ pub fn handle_join_world(trigger: Trigger<JoinWorld>) {
             .expect("build tokio runtime");
 
         let task = rt.spawn(async move {
-            match connect_to_world(event).await {
-                Ok(_) => {}
+            let world = match connect_to_world(event).await {
+                Ok(w) => w,
                 Err(e) => {
                     error!("Error connecting to world server: {e:?}");
+                    return;
                 }
+            };
+
+            if let Err(e) = super::handle_world_connection(world).await {
+                error!("Error handling world connection: {e:?}");
             }
         });
 
@@ -53,9 +60,9 @@ async fn connect_to_world(
     ConnectInfo {
         url,
         cert_hash,
-        world_id: _,
+        world_id,
     }: ConnectInfo,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<WorldConnection> {
     let cfg = ClientConfig::builder()
         .with_bind_default()
         .with_server_certificate_hashes(vec![cert_hash])
@@ -76,12 +83,17 @@ async fn connect_to_world(
 
     let control_service = ControlServiceClient::new(Config::default(), transport);
 
-    let version = control_service
-        .spawn()
-        .version(tarpc::context::current())
-        .await?;
+    let control = control_service.spawn();
 
-    info!("Got server version: {version}");
+    control
+        .join_world(tarpc::context::current(), world_id.clone())
+        .await?
+        .map_err(|e| anyhow::anyhow!("rpc error: {e}"))?;
 
-    Ok(())
+    info!("Joined world {world_id}");
+
+    Ok(WorldConnection {
+        connection,
+        control,
+    })
 }

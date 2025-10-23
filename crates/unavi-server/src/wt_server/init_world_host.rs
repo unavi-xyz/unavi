@@ -6,9 +6,9 @@ use unavi_constants::{
 };
 use xdid::methods::web::reqwest::Url;
 
-use crate::server::Server;
+use crate::wt_server::WtServer;
 
-impl Server {
+impl WtServer {
     pub async fn init_world_host(&self) -> anyhow::Result<()> {
         let host_def = serde_json::from_slice(WORLD_HOST_DEFINITION)?;
 

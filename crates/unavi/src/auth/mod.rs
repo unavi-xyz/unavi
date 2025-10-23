@@ -47,20 +47,21 @@ pub fn handle_login(
     actor.auth_key = Some(key);
 
     let remote_url = Url::parse(REMOTE_DWN_URL).expect("parse remote url");
-    info!("Syncing with remote DWN: {remote_url}");
-    actor.remote = Some(remote_url);
+    actor.remote = Some(remote_url.clone());
 
     local_actor.0 = Some(actor.clone());
 
     let pool = TaskPool::get_thread_executor();
 
     pool.spawn(async move {
-        let rt = tokio::runtime::Builder::new_current_thread()
+        let rt = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
             .build()
             .expect("build tokio runtime");
 
-        rt.block_on(async move {
+        let task = rt.spawn(async move {
+            info!("Syncing with remote DWN: {remote_url}");
+
             if let Err(e) = actor.sync().await {
                 error!("Failed to sync with remote DWN: {e:?}");
             }
@@ -69,6 +70,10 @@ pub fn handle_login(
                 error!("Failed to join home world: {e:?}");
             }
         });
+
+        if let Err(e) = task.await {
+            error!("Task join error: {e:?}");
+        }
     })
     .detach();
 }

@@ -1,11 +1,14 @@
-use std::{net::SocketAddr, sync::LazyLock, time::Duration};
+use std::{
+    net::{Ipv4Addr, SocketAddr, SocketAddrV4},
+    sync::LazyLock,
+    time::Duration,
+};
 
 use anyhow::Context;
 use axum::{Json, Router};
 use directories::ProjectDirs;
-use p256::pkcs8::EncodePrivateKey;
-use spki::der::Encode;
 use tracing::{error, info};
+use wtransport::{Endpoint, Identity, ServerConfig};
 use xdid::{
     core::{
         did::{Did, MethodId, MethodName},
@@ -14,14 +17,9 @@ use xdid::{
     },
     methods::key::{DidKeyPair, PublicKey},
 };
-use xwt_wtransport::wtransport;
 
-use crate::{
-    cert::CertRes,
-    wt_server::{KEY_FRAGMENT, WtServer},
-};
+use crate::wt_server::{KEY_FRAGMENT, WtServer, WtServerOptions};
 
-mod cert;
 mod key_pair;
 mod wt_server;
 
@@ -32,10 +30,15 @@ pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
     dirs
 });
 
-pub async fn run_server(addr: SocketAddr) -> anyhow::Result<()> {
-    let domain = std::env::var("DOMAIN")
-        .unwrap_or_else(|_| addr.to_string())
-        .replace("127.0.0.1", "localhost");
+pub struct ServerOptions {
+    pub port: u16,
+    pub in_memory: bool,
+}
+
+pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
+    let port = opts.port;
+
+    let domain = std::env::var("DOMAIN").unwrap_or_else(|_| format!("localhost:{port}"));
     let domain_encoded = domain.replace(":", "%3A");
     let did = Did {
         method_name: MethodName("web".to_string()),
@@ -43,60 +46,62 @@ pub async fn run_server(addr: SocketAddr) -> anyhow::Result<()> {
     };
     info!("Running server as {did}");
 
-    let CertRes { cert, key } = cert::get_or_generate_cert().await.context("get cert")?;
+    let identity = Identity::self_signed_builder()
+        .subject_alt_names([domain.clone()])
+        .from_now_utc()
+        .validity_days(14)
+        .build()?;
+    let cert_hash = identity.certificate_chain().as_slice()[0].hash();
 
-    let private_key =
-        wtransport::tls::PrivateKey::from_der_pkcs8(key.to_pkcs8_der()?.to_bytes().to_vec());
-    let cert =
-        wtransport::tls::Certificate::from_der(cert.to_der()?).context("create tls certificate")?;
-    let cert_chain = wtransport::tls::CertificateChain::single(cert);
-    let identity = wtransport::Identity::new(cert_chain, private_key);
-
-    let cfg = wtransport::ServerConfig::builder()
-        .with_bind_address(addr)
+    let cfg = ServerConfig::builder()
+        .with_bind_default(port)
         .with_identity(identity)
+        .max_idle_timeout(Some(Duration::from_mins(2)))?
         .build();
-    let endpoint = wtransport::Endpoint::server(cfg).context("create wtranspart endpoint")?;
-    let endpoint = xwt_wtransport::Endpoint(endpoint);
+    let endpoint = Endpoint::server(cfg).context("create wtranspart endpoint")?;
 
     let vc = key_pair::get_or_create_key()?;
 
-    {
-        let did = did.clone();
-        let vc = vc.clone();
-        tokio::spawn(async move {
-            // Wait for did:web route to come online.
-            tokio::time::sleep(Duration::from_secs(5)).await;
+    let wt_opts = WtServerOptions {
+        did: did.clone(),
+        vc: vc.clone(),
+        domain,
+        in_memory: opts.in_memory,
+    };
 
-            loop {
-                let server = match WtServer::new(did.clone(), vc.clone(), domain.clone()).await {
-                    Ok(s) => s,
-                    Err(e) => {
-                        error!("Failed to crate sever handler: {e:?}");
-                        tokio::time::sleep(Duration::from_secs(30)).await;
-                        continue;
-                    }
-                };
+    tokio::spawn(async move {
+        // Wait for did:web route to come online.
+        tokio::time::sleep(Duration::from_secs(1)).await;
 
-                if let Err(e) = server.init_world_host().await {
-                    error!("Failed to init world host: {e:?}");
+        loop {
+            let server = match WtServer::new(wt_opts.clone()).await {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("Failed to crate sever handler: {e:?}");
                     tokio::time::sleep(Duration::from_secs(30)).await;
                     continue;
-                };
-
-                info!("WebTransport listening on {addr}");
-                loop {
-                    let incoming = endpoint.accept().await;
-                    let svr = server.clone();
-                    tokio::spawn(async move {
-                        if let Err(e) = svr.handle(incoming).await {
-                            error!("Handling error: {e:?}");
-                        }
-                    });
                 }
+            };
+
+            if let Err(e) = server.init_world_host(cert_hash.to_string()).await {
+                error!("Failed to init world host: {e:?}");
+                tokio::time::sleep(Duration::from_secs(30)).await;
+                continue;
+            };
+
+            info!("WebTransport listening on port {port}");
+            loop {
+                let incoming = endpoint.accept().await;
+                info!("Incoming session");
+                let server = server.clone();
+                tokio::spawn(async move {
+                    if let Err(e) = server.handle(incoming).await {
+                        error!("Handling error: {e:?}");
+                    }
+                });
             }
-        });
-    }
+        }
+    });
 
     let app = Router::new().route(
         "/.well-known/did.json",
@@ -137,7 +142,9 @@ pub async fn run_server(addr: SocketAddr) -> anyhow::Result<()> {
         }),
     );
 
-    info!("HTTP listening on {addr}");
+    info!("HTTP listening on port {port}");
+
+    let addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, port));
 
     axum_server::bind(addr)
         .serve(app.into_make_service())

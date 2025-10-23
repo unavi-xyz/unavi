@@ -2,9 +2,10 @@
   "protocol": "https://wired-protocol.org/v0/protocols/world-host.json",
   "published": true,
   "types": {
-    "url": {
+    "connect-url": {
+      "schema": "https://wired-protocol.org/v0/schemas/connect-url.json",
       "dataFormat": [
-        "text/plain"
+        "application/json"
       ]
     },
     "world": {

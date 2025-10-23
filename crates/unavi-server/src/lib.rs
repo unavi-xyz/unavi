@@ -25,7 +25,6 @@ mod wt_server;
 
 pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
     let dirs = ProjectDirs::from("", "UNAVI", "unavi-server").expect("project dirs");
-    std::fs::create_dir_all(dirs.config_dir()).expect("config dir");
     std::fs::create_dir_all(dirs.data_local_dir()).expect("data local dir");
     dirs
 });
@@ -60,7 +59,7 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
         .build();
     let endpoint = Endpoint::server(cfg).context("create wtranspart endpoint")?;
 
-    let vc = key_pair::get_or_create_key()?;
+    let vc = key_pair::get_or_create_key(opts.in_memory)?;
 
     let wt_opts = WtServerOptions {
         did: did.clone(),

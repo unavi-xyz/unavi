@@ -15,7 +15,7 @@ use xdid::{core::did::Did, methods::web::reqwest::Url};
 
 use crate::{
     async_commands::ASYNC_COMMAND_QUEUE,
-    join_world::{ConnectInfo, JoinWorld},
+    world::join::{ConnectInfo, JoinWorld},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -99,6 +99,7 @@ pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
                 )
                 .schema(WORLD_SCHEMA.to_string())
                 .data(APPLICATION_JSON, data.to_string().into_bytes())
+                .published(true)
                 .target(&world_host)
                 .send(&host_dwn)
                 .await

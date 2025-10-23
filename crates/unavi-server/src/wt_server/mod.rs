@@ -82,7 +82,7 @@ impl WtServer {
             let transport = tarpc::serde_transport::new(framed, Bincode::default());
             let channel = BaseChannel::with_defaults(transport).max_concurrent_requests(2);
 
-            let server = ControlServer { actor: self.actor };
+            let server = ControlServer::new(self.actor.clone());
 
             tokio::spawn(channel.execute(server.serve()).for_each(|res| async move {
                 tokio::spawn(res);

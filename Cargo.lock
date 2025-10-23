@@ -3152,7 +3152,7 @@ checksum = "d8b14ccef22fc6f5a8f4d7d768562a182c04ce9a3b3157b91390b52ddfdf1a76"
 [[package]]
 name = "dwn"
 version = "0.4.0"
-source = "git+https://github.com/unavi-xyz/dwn#090ac96784bda7c00c9d1a7a81e4bbb946aaa502"
+source = "git+https://github.com/unavi-xyz/dwn#0208a86a83997d1128d0d9846715d7f6e53220bf"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -3172,7 +3172,7 @@ dependencies = [
 [[package]]
 name = "dwn-core"
 version = "0.4.0"
-source = "git+https://github.com/unavi-xyz/dwn#090ac96784bda7c00c9d1a7a81e4bbb946aaa502"
+source = "git+https://github.com/unavi-xyz/dwn#0208a86a83997d1128d0d9846715d7f6e53220bf"
 dependencies = [
  "base64 0.22.1",
  "ipld-core",
@@ -3193,7 +3193,7 @@ dependencies = [
 [[package]]
 name = "dwn-native-db"
 version = "0.4.0"
-source = "git+https://github.com/unavi-xyz/dwn#090ac96784bda7c00c9d1a7a81e4bbb946aaa502"
+source = "git+https://github.com/unavi-xyz/dwn#0208a86a83997d1128d0d9846715d7f6e53220bf"
 dependencies = [
  "dwn-core",
  "native_db",
@@ -3208,7 +3208,7 @@ dependencies = [
 [[package]]
 name = "dwn-server"
 version = "0.4.0"
-source = "git+https://github.com/unavi-xyz/dwn#090ac96784bda7c00c9d1a7a81e4bbb946aaa502"
+source = "git+https://github.com/unavi-xyz/dwn#0208a86a83997d1128d0d9846715d7f6e53220bf"
 dependencies = [
  "anyhow",
  "axum",
@@ -4408,7 +4408,7 @@ dependencies = [
  "libc",
  "percent-encoding",
  "pin-project-lite",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "system-configuration",
  "tokio",
  "tower-service",
@@ -4428,7 +4428,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.57.0",
+ "windows-core 0.58.0",
 ]
 
 [[package]]
@@ -6584,7 +6584,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash 2.1.1",
  "rustls",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "thiserror 2.0.17",
  "tokio",
  "tracing",
@@ -6621,7 +6621,7 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "tracing",
  "windows-sys 0.60.2",
 ]
@@ -8711,6 +8711,7 @@ dependencies = [
  "anyhow",
  "avian3d",
  "bevy",
+ "bincode 2.0.1",
  "directories",
  "dwn",
  "image",
@@ -8812,8 +8813,12 @@ dependencies = [
 name = "unavi-server-service"
 version = "0.0.10"
 dependencies = [
+ "anyhow",
+ "bincode 2.0.1",
  "semver",
+ "serde",
  "tarpc",
+ "xdid",
 ]
 
 [[package]]
@@ -9848,7 +9853,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.48.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -10771,7 +10776,7 @@ checksum = "bec9e4a500ca8864c5b47b8b482a73d62e4237670e5b5f1d6b9e3cae50f28f2b"
 [[package]]
 name = "xdid"
 version = "0.4.0"
-source = "git+https://github.com/unavi-xyz/dwn#090ac96784bda7c00c9d1a7a81e4bbb946aaa502"
+source = "git+https://github.com/unavi-xyz/dwn#0208a86a83997d1128d0d9846715d7f6e53220bf"
 dependencies = [
  "thiserror 2.0.17",
  "xdid-core",
@@ -10782,7 +10787,7 @@ dependencies = [
 [[package]]
 name = "xdid-core"
 version = "0.4.0"
-source = "git+https://github.com/unavi-xyz/dwn#090ac96784bda7c00c9d1a7a81e4bbb946aaa502"
+source = "git+https://github.com/unavi-xyz/dwn#0208a86a83997d1128d0d9846715d7f6e53220bf"
 dependencies = [
  "anyhow",
  "jose-jwk",
@@ -10794,7 +10799,7 @@ dependencies = [
 [[package]]
 name = "xdid-method-key"
 version = "0.4.0"
-source = "git+https://github.com/unavi-xyz/dwn#090ac96784bda7c00c9d1a7a81e4bbb946aaa502"
+source = "git+https://github.com/unavi-xyz/dwn#0208a86a83997d1128d0d9846715d7f6e53220bf"
 dependencies = [
  "anyhow",
  "jose-jwk",
@@ -10811,7 +10816,7 @@ dependencies = [
 [[package]]
 name = "xdid-method-web"
 version = "0.4.0"
-source = "git+https://github.com/unavi-xyz/dwn#090ac96784bda7c00c9d1a7a81e4bbb946aaa502"
+source = "git+https://github.com/unavi-xyz/dwn#0208a86a83997d1128d0d9846715d7f6e53220bf"
 dependencies = [
  "reqwest",
  "xdid-core",

@@ -7,8 +7,8 @@ use dwn::{Dwn, stores::NativeDbStore};
 mod async_commands;
 mod auth;
 mod icon;
-mod join_world;
 mod scene;
+mod world;
 
 pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
     let dirs = ProjectDirs::from("", "UNAVI", "unavi").expect("project dirs");
@@ -46,9 +46,9 @@ impl Plugin for UnaviPlugin {
         ))
         .insert_resource(LocalDwn(dwn))
         .add_event::<auth::LoginEvent>()
-        .add_event::<join_world::JoinWorld>()
+        .add_event::<world::join::JoinWorld>()
         .add_observer(auth::handle_login)
-        .add_observer(join_world::handle_join_world)
+        .add_observer(world::join::handle_join_world)
         .init_resource::<auth::LocalActor>()
         .add_systems(
             Startup,

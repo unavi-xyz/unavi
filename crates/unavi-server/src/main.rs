@@ -1,7 +1,6 @@
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
-
 use clap::Parser;
 use tracing::{Level, error};
+use unavi_server::ServerOptions;
 
 #[derive(Parser, Debug)]
 #[command(version)]
@@ -18,9 +17,12 @@ async fn main() {
         .with_max_level(Level::DEBUG)
         .init();
 
-    let addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), args.port));
-
-    if let Err(e) = unavi_server::run_server(addr).await {
+    if let Err(e) = unavi_server::run_server(ServerOptions {
+        port: args.port,
+        in_memory: false,
+    })
+    .await
+    {
         error!("{e:?}");
     }
 }

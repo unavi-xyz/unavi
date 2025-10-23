@@ -86,6 +86,7 @@ where
     }
 }
 
+#[allow(unused)]
 pub fn count_logs_with(value: &str) -> usize {
     LOGS.logs
         .lock()
@@ -95,6 +96,7 @@ pub fn count_logs_with(value: &str) -> usize {
         .count()
 }
 
+#[allow(unused)]
 pub fn has_log(value: &str) -> bool {
     LOGS.logs
         .lock()
@@ -103,6 +105,7 @@ pub fn has_log(value: &str) -> bool {
         .any(|line| line.to_lowercase().contains(value))
 }
 
+#[allow(unused)]
 pub fn has_error_log() -> bool {
     has_log("error")
 }

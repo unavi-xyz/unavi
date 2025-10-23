@@ -9,11 +9,11 @@ use tarpc::{
 use tokio_serde::formats::Bincode;
 use unavi_constants::REMOTE_DWN_URL;
 use unavi_server_service::ControlService;
+use wtransport::{endpoint::IncomingSession, stream::BiStream};
 use xdid::{
     core::{did::Did, did_url::DidUrl},
     methods::{key::p256::P256KeyPair, web::reqwest::Url},
 };
-use xwt_wtransport::wtransport::{endpoint::IncomingSession, stream::BiStream};
 
 use crate::{DIRS, wt_server::control::ControlServer};
 
@@ -28,23 +28,33 @@ pub struct WtServer {
     pub domain: String,
 }
 
+#[derive(Clone)]
+pub struct WtServerOptions {
+    pub did: Did,
+    pub vc: P256KeyPair,
+    pub domain: String,
+    pub in_memory: bool,
+}
+
 impl WtServer {
-    pub async fn new(did: Did, vc: P256KeyPair, domain: String) -> anyhow::Result<Self> {
-        let store = {
+    pub async fn new(opts: WtServerOptions) -> anyhow::Result<Self> {
+        let store = if opts.in_memory {
+            NativeDbStore::new_in_memory()?
+        } else {
             let mut path = DIRS.data_local_dir().to_path_buf();
             path.push("data.db");
             NativeDbStore::new(path)?
         };
         let dwn = Dwn::from(store);
 
-        let mut actor = Actor::new(did.clone(), dwn);
+        let mut actor = Actor::new(opts.did.clone(), dwn);
 
         let remote_url = Url::parse(REMOTE_DWN_URL)?;
         actor.remote = Some(remote_url);
 
-        let mut key: DocumentKey = vc.into();
+        let mut key: DocumentKey = opts.vc.into();
         key.url = DidUrl {
-            did,
+            did: opts.did,
             query: None,
             fragment: Some(KEY_FRAGMENT.to_string()),
             path_abempty: String::new(),
@@ -56,7 +66,10 @@ impl WtServer {
 
         actor.sync().await?;
 
-        Ok(Self { actor, domain })
+        Ok(Self {
+            actor,
+            domain: opts.domain,
+        })
     }
 
     pub async fn handle(self, incoming: IncomingSession) -> anyhow::Result<()> {

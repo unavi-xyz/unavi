@@ -10,6 +10,7 @@ use unavi_constants::{
     protocols::{HOME_WORLD_DEFINITION, HOME_WORLD_PROTOCOL, WORLD_HOST_PROTOCOL},
     schemas::{REMOTE_RECORD_SCHEMA, WORLD_SCHEMA},
 };
+use wtransport::tls::Sha256Digest;
 use xdid::{core::did::Did, methods::web::reqwest::Url};
 
 use crate::{
@@ -61,7 +62,7 @@ pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
         // TODO: Fetch from did document
         let host_dwn = actor.remote.clone().unwrap();
 
-        let Some(url) = fetch_connect_url(&actor, &rr.did, &host_dwn)
+        let Some((url, cert_hash)) = fetch_connect_url(&actor, &rr.did, &host_dwn)
             .await
             .context("fetch connect url")?
         else {
@@ -70,6 +71,7 @@ pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
 
         connect_info = Some(ConnectInfo {
             url,
+            cert_hash,
             world_id: rr.record_id,
         });
         break;
@@ -120,7 +122,7 @@ pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
                 .await
                 .context("write home")?;
 
-            let Some(url) = fetch_connect_url(&actor, &world_host, &host_dwn)
+            let Some((url, cert_hash)) = fetch_connect_url(&actor, &world_host, &host_dwn)
                 .await
                 .context("fetch connect url")?
             else {
@@ -129,6 +131,7 @@ pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
 
             ConnectInfo {
                 url,
+                cert_hash,
                 world_id: home_record_id,
             }
         }
@@ -144,11 +147,18 @@ pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
     Ok(())
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ParsedConnectInfo {
+    url: String,
+    cert_hash: String,
+}
+
 async fn fetch_connect_url(
     actor: &Actor,
     host_did: &Did,
     host_dwn: &Url,
-) -> anyhow::Result<Option<Url>> {
+) -> anyhow::Result<Option<(Url, Sha256Digest)>> {
     let found_urls = actor
         .query()
         .protocol(WORLD_HOST_PROTOCOL.to_string())
@@ -182,10 +192,12 @@ async fn fetch_connect_url(
             }
         };
 
-        let url = String::from_utf8(data)?;
-        let url = Url::parse(&url)?;
+        let parsed: ParsedConnectInfo = serde_json::from_slice(&data)?;
 
-        return Ok(Some(url));
+        let url = Url::parse(&parsed.url)?;
+        let cert_hash = Sha256Digest::from_str(&parsed.cert_hash)?;
+
+        return Ok(Some((url, cert_hash)));
     }
 
     Ok(None)

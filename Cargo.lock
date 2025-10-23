@@ -4398,7 +4398,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.58.0",
+ "windows-core 0.62.2",
 ]
 
 [[package]]
@@ -8584,6 +8584,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "tracing-test"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "557b891436fe0d5e0e363427fc7f217abf9ccd510d5136549847bdcbcd011d68"
+dependencies = [
+ "tracing-core",
+ "tracing-subscriber",
+ "tracing-test-macro",
+]
+
+[[package]]
+name = "tracing-test-macro"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04659ddb06c87d233c566112c1c9c5b9e98256d9af50ec3bc9c8327f873a7568"
+dependencies = [
+ "quote",
+ "syn 2.0.106",
+]
+
+[[package]]
 name = "tracing-wasm"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8672,6 +8693,7 @@ dependencies = [
  "unavi-player",
  "unavi-script",
  "winit",
+ "wtransport",
  "xdid",
  "zeroize",
 ]
@@ -8743,12 +8765,12 @@ dependencies = [
  "tokio-serde",
  "tracing",
  "tracing-subscriber",
+ "tracing-test",
  "unavi-constants",
  "unavi-server-service",
+ "wtransport",
  "x509-cert",
  "xdid",
- "xwt-core",
- "xwt-wtransport",
  "zeroize",
 ]
 
@@ -10785,24 +10807,6 @@ name = "xml-rs"
 version = "0.8.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6fd8403733700263c6eb89f192880191f1b83e332f7a20371ddcf421c4a337c7"
-
-[[package]]
-name = "xwt-core"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7f8515b46b1f2da17080b50744b2c14affab6795dd8a29b56708348839576d6"
-
-[[package]]
-name = "xwt-wtransport"
-version = "0.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75dc61d8e9645cd0011bb057eede4c5336a328f6cd1728b1f6ce069d0f187424"
-dependencies = [
- "thiserror 2.0.17",
- "tokio",
- "wtransport",
- "xwt-core",
-]
 
 [[package]]
 name = "yasna"

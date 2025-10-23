@@ -5,7 +5,11 @@ use crate::DIRS;
 
 const KEY_FILE: &str = "key.pem";
 
-pub fn get_or_create_key() -> anyhow::Result<P256KeyPair> {
+pub fn get_or_create_key(in_memory: bool) -> anyhow::Result<P256KeyPair> {
+    if in_memory {
+        return Ok(P256KeyPair::generate());
+    }
+
     let dir = DIRS.data_local_dir();
 
     let key_path = {

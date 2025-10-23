@@ -28,10 +28,10 @@ rustls = { default-features = false, features = [
 serde_json.workspace = true
 sha2 = { features = ["oid"], version = "0.10.9" }
 spki = "0.7.3"
-tarpc = { features = ["serde-transport", "unix"], workspace = true }
+tarpc = { features = ["serde-transport"], workspace = true }
 time = "0.3.44"
 tokio = { features = ["full"], workspace = true }
-tokio-serde = { features = ["bincode"], version = "0.9.0" }
+tokio-serde = { features = ["bincode"], workspace = true }
 tracing.workspace = true
 tracing-subscriber.workspace = true
 unavi-constants.path = "../unavi-constants"

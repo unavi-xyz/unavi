@@ -22,11 +22,14 @@ log = { features = [
 ], version = "*" }
 serde.workspace = true
 serde_json.workspace = true
+tarpc = { features = ["serde-transport"], workspace = true }
 tokio.workspace = true
+tokio-serde = { features = ["bincode"], workspace = true }
 unavi-constants.path = "../unavi-constants"
 unavi-input.path = "../unavi-input"
 unavi-player.path = "../unavi-player"
 unavi-script.path = "../unavi-script"
+unavi-server-service.path = "../unavi-server-service"
 winit = { default-features = false, version = "0.30.12" }
 wtransport.workspace = true
 xdid.workspace = true

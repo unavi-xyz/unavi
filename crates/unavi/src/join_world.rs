@@ -1,7 +1,13 @@
 use std::time::Duration;
 
 use bevy::{prelude::*, tasks::TaskPool};
-use wtransport::{ClientConfig, Endpoint, tls::Sha256Digest};
+use tarpc::{
+    client::Config,
+    tokio_serde::formats::Bincode,
+    tokio_util::codec::{Framed, LengthDelimitedCodec},
+};
+use unavi_server_service::ControlServiceClient;
+use wtransport::{ClientConfig, Endpoint, stream::BiStream, tls::Sha256Digest};
 use xdid::methods::web::reqwest::Url;
 
 #[derive(Event)]
@@ -60,13 +66,22 @@ async fn connect_to_world(
     let endpoint = Endpoint::client(cfg)?;
 
     let url = url.to_string().replace("http://", "https://");
-    info!("Connecting to {url}");
-
     let connection = endpoint.connect(url).await?;
-    info!("Connection opened");
 
-    let _control_stream = connection.open_bi().await?;
-    info!("Control stream opened");
+    let stream = connection.open_bi().await?.await?;
+
+    let bi_stream = BiStream::join(stream);
+    let framed = Framed::new(bi_stream, LengthDelimitedCodec::default());
+    let transport = tarpc::serde_transport::new(framed, Bincode::default());
+
+    let control_service = ControlServiceClient::new(Config::default(), transport);
+
+    let version = control_service
+        .spawn()
+        .version(tarpc::context::current())
+        .await?;
+
+    info!("Got server version: {version}");
 
     Ok(())
 }

@@ -1,22 +1,40 @@
 use std::{net::UdpSocket, time::Duration};
 
+use dwn_server::DwnServerOpions;
 use tracing::info;
 use tracing_test::traced_test;
 use unavi_server::ServerOptions;
 use wtransport::{ClientConfig, Endpoint};
+use xdid::methods::web::reqwest::Url;
 
 #[tokio::test]
 #[traced_test]
 async fn test_connect_wtransport() {
     let socket = UdpSocket::bind("127.0.0.1:0").unwrap();
+    let dwn_addr = socket.local_addr().unwrap();
+    drop(socket);
+
+    let remote_dwn = Url::parse(&format!("http://{dwn_addr}")).unwrap();
+
+    tokio::spawn(async move {
+        dwn_server::run_server(DwnServerOpions {
+            addr: dwn_addr,
+            in_memory: true,
+        })
+        .await
+        .unwrap()
+    });
+
+    let socket = UdpSocket::bind("127.0.0.1:0").unwrap();
     let addr = socket.local_addr().unwrap();
     let port = addr.port();
     drop(socket);
 
-    tokio::task::spawn(async move {
+    tokio::spawn(async move {
         unavi_server::run_server(ServerOptions {
-            port,
             in_memory: true,
+            port,
+            remote_dwn,
         })
         .await
         .unwrap();

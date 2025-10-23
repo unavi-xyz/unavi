@@ -1,6 +1,7 @@
 use clap::Parser;
 use tracing::{Level, error};
 use unavi_server::ServerOptions;
+use xdid::methods::web::reqwest::Url;
 
 #[derive(Parser, Debug)]
 #[command(version)]
@@ -18,8 +19,9 @@ async fn main() {
         .init();
 
     if let Err(e) = unavi_server::run_server(ServerOptions {
-        port: args.port,
         in_memory: false,
+        port: args.port,
+        remote_dwn: Url::parse(unavi_constants::REMOTE_DWN_URL).unwrap(),
     })
     .await
     {

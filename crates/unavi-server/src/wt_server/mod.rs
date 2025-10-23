@@ -7,7 +7,6 @@ use tarpc::{
     tokio_util::codec::{Framed, LengthDelimitedCodec},
 };
 use tokio_serde::formats::Bincode;
-use unavi_constants::REMOTE_DWN_URL;
 use unavi_server_service::ControlService;
 use wtransport::{endpoint::IncomingSession, stream::BiStream};
 use xdid::{
@@ -31,9 +30,10 @@ pub struct WtServer {
 #[derive(Clone)]
 pub struct WtServerOptions {
     pub did: Did,
-    pub vc: P256KeyPair,
     pub domain: String,
     pub in_memory: bool,
+    pub remote: Url,
+    pub vc: P256KeyPair,
 }
 
 impl WtServer {
@@ -49,8 +49,7 @@ impl WtServer {
 
         let mut actor = Actor::new(opts.did.clone(), dwn);
 
-        let remote_url = Url::parse(REMOTE_DWN_URL)?;
-        actor.remote = Some(remote_url);
+        actor.remote = Some(opts.remote);
 
         let mut key: DocumentKey = opts.vc.into();
         key.url = DidUrl {

@@ -15,7 +15,10 @@ use xdid::{
         did_url::{DidUrl, RelativeDidUrl, RelativeDidUrlPath},
         document::{Document, VerificationMethod, VerificationMethodMap},
     },
-    methods::key::{DidKeyPair, PublicKey},
+    methods::{
+        key::{DidKeyPair, PublicKey},
+        web::reqwest::Url,
+    },
 };
 
 use crate::wt_server::{KEY_FRAGMENT, WtServer, WtServerOptions};
@@ -30,8 +33,9 @@ pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
 });
 
 pub struct ServerOptions {
-    pub port: u16,
+    pub remote_dwn: Url,
     pub in_memory: bool,
+    pub port: u16,
 }
 
 pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
@@ -63,9 +67,10 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
 
     let wt_opts = WtServerOptions {
         did: did.clone(),
-        vc: vc.clone(),
         domain,
         in_memory: opts.in_memory,
+        remote: opts.remote_dwn,
+        vc: vc.clone(),
     };
 
     tokio::spawn(async move {

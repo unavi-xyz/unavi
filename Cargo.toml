@@ -36,10 +36,12 @@ wit-bindgen        = "0.46.0"
 wtransport         = "0.6.1"
 zeroize            = "1.8.2"
 
-dwn  = { git = "https://github.com/unavi-xyz/dwn", version = "0.4.0" }
-xdid = { git = "https://github.com/unavi-xyz/dwn", version = "0.4.0" }
-# dwn  = { path = "../dwn/crates/dwn" }
-# xdid = { path = "../dwn/crates/xdid" }
+dwn        = { git = "https://github.com/unavi-xyz/dwn", version = "0.4.0" }
+dwn-server = { git = "https://github.com/unavi-xyz/dwn", version = "0.4.0" }
+xdid       = { git = "https://github.com/unavi-xyz/dwn", version = "0.4.0" }
+# dwn        = { path = "../dwn/crates/dwn" }
+# dwn-server = { path = "../dwn/crates/dwn-server" }
+# xdid       = { path = "../dwn/crates/xdid" }
 
 [profile.release]
 lto = "thin"

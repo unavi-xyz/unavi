@@ -17,6 +17,7 @@ bincode = "1.3.3"
 clap = { features = ["derive"], version = "4.5.48" }
 directories.workspace = true
 dwn.workspace = true
+dwn-server.workspace = true
 futures.workspace = true
 p256 = "0.13.2"
 rustls = { default-features = false, features = [
@@ -42,6 +43,5 @@ xdid.workspace = true
 zeroize.workspace = true
 
 [dev-dependencies]
-dwn-server.workspace   = true
 tracing-test.workspace = true
 wtransport             = { features = ["dangerous-configuration"], workspace = true }

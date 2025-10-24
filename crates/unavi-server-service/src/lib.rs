@@ -1,4 +1,3 @@
-use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use xdid::core::did::Did;
 
@@ -18,13 +17,33 @@ pub struct Player {
     pub did: Did,
 }
 
-#[derive(Encode, Decode)]
-pub enum StreamHeader {
-    Transform,
-    Voice,
+pub mod from_client {
+    use bincode::{Decode, Encode};
+    use serde::{Deserialize, Serialize};
+    use xdid::core::did::Did;
+
+    #[derive(Encode, Decode)]
+    pub enum StreamHeader {
+        Transform,
+        Voice,
+    }
+
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct TransformMeta {
+        pub player: Did,
+    }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct TransformClientMeta {
-    pub player: Did,
+pub mod from_server {
+    use bincode::{Decode, Encode};
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Encode, Decode)]
+    pub enum StreamHeader {
+        Transform,
+        Voice,
+    }
+
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct TransformMeta {}
 }

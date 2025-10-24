@@ -5,6 +5,8 @@ use bevy_tnua::prelude::TnuaControllerPlugin;
 use bevy_tnua_avian3d::TnuaAvian3dPlugin;
 use bevy_vrm::VrmPlugins;
 
+pub use bevy_vrm;
+
 // mod head;
 mod input;
 mod spawner;

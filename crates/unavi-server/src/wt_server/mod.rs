@@ -6,9 +6,14 @@ use tarpc::{
     server::{BaseChannel, Channel},
     tokio_util::codec::{Framed, LengthDelimitedCodec},
 };
+use tokio::io::AsyncReadExt;
 use tokio_serde::formats::Bincode;
-use unavi_server_service::ControlService;
-use wtransport::{endpoint::IncomingSession, stream::BiStream};
+use tracing::{error, info};
+use unavi_server_service::{
+    ControlService,
+    from_client::{StreamHeader, TransformMeta},
+};
+use wtransport::{RecvStream, endpoint::IncomingSession, stream::BiStream};
 use xdid::{
     core::{did::Did, did_url::DidUrl},
     methods::{key::p256::P256KeyPair, web::reqwest::Url},
@@ -75,22 +80,66 @@ impl WtServer {
         let req = incoming.await?;
         let con = req.accept().await?;
 
-        let ctrl_task = {
-            let stream = con.accept_bi().await?;
-            let bi_stream = BiStream::join(stream);
-            let framed = Framed::new(bi_stream, LengthDelimitedCodec::default());
-            let transport = tarpc::serde_transport::new(framed, Bincode::default());
-            let channel = BaseChannel::with_defaults(transport).max_concurrent_requests(2);
+        let stream = con.accept_bi().await?;
+        let bi_stream = BiStream::join(stream);
+        let framed = Framed::new(bi_stream, LengthDelimitedCodec::default());
+        let transport = tarpc::serde_transport::new(framed, Bincode::default());
+        let channel = BaseChannel::with_defaults(transport).max_concurrent_requests(2);
 
-            let server = ControlServer::new(self.actor.clone());
+        let server = ControlServer::new(self.actor.clone());
 
-            tokio::spawn(channel.execute(server.serve()).for_each(|res| async move {
-                tokio::spawn(res);
-            }))
-        };
+        tokio::spawn(channel.execute(server.serve()).for_each(|res| async move {
+            tokio::spawn(res);
+        }));
 
-        ctrl_task.await?;
+        loop {
+            let stream = con.accept_uni().await?;
 
-        Ok(())
+            tokio::spawn(async move {
+                if let Err(e) = handle_stream(stream).await {
+                    error!("Error handling stream: {e:?}");
+                }
+            });
+        }
     }
+}
+
+async fn handle_stream(mut stream: RecvStream) -> anyhow::Result<()> {
+    let header_len = stream.read_u16().await? as usize;
+
+    let mut header_buf = vec![0; header_len];
+    stream.read_exact(&mut header_buf).await?;
+
+    let (header, _) = bincode::decode_from_slice(&header_buf, bincode::config::standard())?;
+
+    match header {
+        StreamHeader::Transform => {
+            handle_transform_stream(stream).await?;
+        }
+        StreamHeader::Voice => {
+            handle_voice_stream(stream).await?;
+        }
+    }
+
+    Ok(())
+}
+
+async fn handle_transform_stream(mut stream: RecvStream) -> anyhow::Result<()> {
+    let meta_len = stream.read_u16().await? as usize;
+
+    let mut meta_buf = vec![0; meta_len];
+    stream.read_exact(&mut meta_buf).await?;
+
+    let (meta, _) = bincode::serde::decode_from_slice::<TransformMeta, _>(
+        &meta_buf,
+        bincode::config::standard(),
+    )?;
+
+    info!("Got transform stream: {meta:?}");
+
+    Ok(())
+}
+
+async fn handle_voice_stream(_stream: RecvStream) -> anyhow::Result<()> {
+    Ok(())
 }

@@ -59,7 +59,13 @@ impl Plugin for UnaviPlugin {
                 scene::spawn_scene,
             ),
         )
-        .add_systems(FixedUpdate, async_commands::apply_async_commands);
+        .add_systems(
+            FixedUpdate,
+            (
+                async_commands::apply_async_commands,
+                world::transform::publish_user_transforms,
+            ),
+        );
     }
 }
 

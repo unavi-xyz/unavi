@@ -4,9 +4,10 @@ use avian3d::{
 };
 use bevy::{
     color::palettes::tailwind::BLUE_400,
-    pbr::{CascadeShadowConfigBuilder, light_consts::lux},
+    core_pipeline::{auto_exposure::AutoExposure, bloom::Bloom},
+    pbr::{Atmosphere, AtmosphereSettings, CascadeShadowConfigBuilder, light_consts::lux},
     prelude::*,
-    render::mesh::VertexAttributeValues,
+    render::{camera::Exposure, mesh::VertexAttributeValues},
 };
 use unavi_input::InputPlugin;
 use unavi_player::{PlayerPlugin, PlayerSpawner};
@@ -23,6 +24,7 @@ fn main() {
             PlayerPlugin,
         ))
         .add_systems(Startup, setup_scene)
+        .add_systems(Update, handle_input)
         .run();
 }
 
@@ -35,11 +37,29 @@ fn setup_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    // Player
-    PlayerSpawner::default().spawn(&mut commands);
-
-    // Lighting
     ambient.brightness = lux::OVERCAST_DAY;
+
+    PlayerSpawner::default().spawn(&mut commands, &asset_server);
+
+    commands.spawn((
+        SkyCamera,
+        Camera {
+            hdr: true,
+            is_active: false,
+            ..Default::default()
+        },
+        Camera3d::default(),
+        Transform::from_xyz(10.0, 10.0, 10.0).looking_at(Vec3::ZERO, Vec3::Y),
+        Atmosphere::EARTH,
+        AtmosphereSettings::default(),
+        AutoExposure {
+            range: -4.0..=8.0,
+            ..Default::default()
+        },
+        Exposure::SUNLIGHT,
+        Bloom::OLD_SCHOOL,
+    ));
+
     commands.spawn((
         CascadeShadowConfigBuilder {
             maximum_distance: SIZE * 1.2,
@@ -54,7 +74,6 @@ fn setup_scene(
         Transform::from_xyz(1.0, 0.4, 0.1).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 
-    // Ground
     let ground_texture = asset_server.load("images/dev-white.png");
 
     let mut ground_mesh = Plane3d::default().mesh().size(SIZE, SIZE).build();
@@ -83,7 +102,6 @@ fn setup_scene(
         RigidBody::Static,
     ));
 
-    // Platform
     commands.spawn((
         Collider::cuboid(4.0, 1.0, 4.0),
         Mesh3d(meshes.add(Cuboid::new(4.0, 1.0, 4.0))),
@@ -91,4 +109,26 @@ fn setup_scene(
         RigidBody::Static,
         Transform::from_xyz(-3.0, 0.75, -6.0),
     ));
+}
+
+#[derive(Component)]
+struct SkyCamera;
+
+fn handle_input(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut player_cam: Query<&mut Camera, Without<SkyCamera>>,
+    mut sky_cam: Query<&mut Camera, With<SkyCamera>>,
+) {
+    if keyboard.just_pressed(KeyCode::KeyC) {
+        let mut pc = player_cam.iter_mut().next().unwrap();
+        let mut sc = sky_cam.iter_mut().next().unwrap();
+
+        if pc.is_active {
+            pc.is_active = false;
+            sc.is_active = true;
+        } else {
+            pc.is_active = true;
+            sc.is_active = false;
+        }
+    }
 }

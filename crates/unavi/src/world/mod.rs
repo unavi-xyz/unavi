@@ -1,9 +1,13 @@
 use bevy::prelude::*;
 use tokio::io::AsyncReadExt;
-use unavi_server_service::{ControlServiceClient, StreamHeader, TransformClientMeta};
+use unavi_server_service::{
+    ControlServiceClient,
+    from_server::{StreamHeader, TransformMeta},
+};
 use wtransport::{Connection, RecvStream};
 
 pub mod join;
+pub mod transform;
 
 struct WorldConnection {
     connection: Connection,
@@ -16,7 +20,7 @@ async fn handle_world_connection(world: WorldConnection) -> anyhow::Result<()> {
 
         tokio::spawn(async move {
             if let Err(e) = handle_stream(stream).await {
-                error!("Error handling world stream: {e:?}");
+                error!("Error handling stream: {e:?}");
             };
         });
     }
@@ -48,7 +52,7 @@ async fn handle_transform_stream(mut stream: RecvStream) -> anyhow::Result<()> {
     let mut meta_buf = vec![0; meta_len];
     stream.read_exact(&mut meta_buf).await?;
 
-    let (meta, _) = bincode::serde::decode_from_slice::<TransformClientMeta, _>(
+    let (meta, _) = bincode::serde::decode_from_slice::<TransformMeta, _>(
         &meta_buf,
         bincode::config::standard(),
     )?;

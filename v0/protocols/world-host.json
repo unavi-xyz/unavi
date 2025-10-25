@@ -1,0 +1,88 @@
+{
+  "protocol": "https://wired-protocol.org/v0/protocols/world-host.json",
+  "published": true,
+  "types": {
+    "connect-url": {
+      "schema": "https://wired-protocol.org/v0/schemas/connect-url.json",
+      "dataFormat": [
+        "application/json"
+      ]
+    },
+    "world": {
+      "schema": "https://wired-protocol.org/v0/schemas/world.json",
+      "dataFormat": [
+        "application/json"
+      ]
+    },
+    "server-info": {
+      "schema": "https://wired-protocol.org/v0/schemas/server-info.json",
+      "dataFormat": [
+        "application/json"
+      ]
+    }
+  },
+  "structure": {
+    "connect-url": {
+      "$actions": [
+        {
+          "who": "anyone",
+          "can": [
+            "query",
+            "read"
+          ]
+        },
+        {
+          "who": "recipient",
+          "can": [
+            "create",
+            "update",
+            "delete"
+          ]
+        }
+      ]
+    },
+    "world": {
+      "$actions": [
+        {
+          "who": "anyone",
+          "can": [
+            "create",
+            "query",
+            "read"
+          ]
+        },
+        {
+          "who": "author",
+          "can": [
+            "update"
+          ]
+        },
+        {
+          "who": "recipient",
+          "can": [
+            "delete"
+          ]
+        }
+      ],
+      "server-info": {
+        "$actions": [
+          {
+            "who": "anyone",
+            "can": [
+              "query",
+              "read"
+            ]
+          },
+          {
+            "who": "recipient",
+            "can": [
+              "create",
+              "update",
+              "delete"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

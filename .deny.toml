@@ -43,8 +43,8 @@ multiple-versions = "warn"
 
 [sources]
 allow-git = [
+  "https://github.com/unavi-xyz/bevy_vrm",
   "https://github.com/unavi-xyz/dwn",
-  "https://github.com/vincent-herlemont/native_db",
 ]
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
 unknown-git = "deny"

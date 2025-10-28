@@ -11,7 +11,7 @@ pub mod transform;
 
 struct WorldConnection {
     connection: Connection,
-    control: ControlServiceClient,
+    _control: ControlServiceClient,
 }
 
 async fn handle_world_connection(world: WorldConnection) -> anyhow::Result<()> {

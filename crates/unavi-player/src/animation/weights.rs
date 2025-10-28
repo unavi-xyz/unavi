@@ -112,7 +112,7 @@ pub(crate) fn play_avatar_animations(
         let mut idle_weight = 1.0;
 
         for (weight, value) in weights.clone().iter() {
-            if matches!(weight, AnimationName::Other(_)) {
+            if matches!(weight, AnimationName::_Other(_)) {
                 idle_weight -= value;
 
                 let mut target_weight = *targets.get(weight).unwrap_or(&0.0);

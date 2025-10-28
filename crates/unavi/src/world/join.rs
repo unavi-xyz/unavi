@@ -94,6 +94,6 @@ async fn connect_to_world(
 
     Ok(WorldConnection {
         connection,
-        control,
+        _control: control,
     })
 }

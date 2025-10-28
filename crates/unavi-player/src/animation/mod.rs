@@ -17,7 +17,7 @@ pub enum AnimationName {
     Walk,
     WalkLeft,
     WalkRight,
-    Other(&'static str),
+    _Other(&'static str),
 }
 
 pub(crate) fn init_animations(

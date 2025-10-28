@@ -10,7 +10,6 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace        = true
 avian3d.workspace       = true
 bevy                    = { default-features = true, workspace = true }
 bevy-tnua               = "0.24.0"

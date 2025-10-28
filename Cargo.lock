@@ -8748,7 +8748,6 @@ dependencies = [
 name = "unavi-player"
 version = "0.0.10"
 dependencies = [
- "anyhow",
  "avian3d",
  "bevy",
  "bevy-tnua",

@@ -120,12 +120,12 @@ fn create_chain() -> ChainWrapper<'static> {
     chain
 }
 
-pub static MIXAMO_ANIMATION_TARGETS: LazyLock<HashMap<BoneName, AnimationTargetId>> =
-    LazyLock::new(|| {
-        let chain = create_chain();
-        let (_, targets) = chain.into_maps();
-        targets
-    });
+// pub static MIXAMO_ANIMATION_TARGETS: LazyLock<HashMap<BoneName, AnimationTargetId>> =
+//     LazyLock::new(|| {
+//         let chain = create_chain();
+//         let (_, targets) = chain.into_maps();
+//         targets
+//     });
 
 pub static MIXAMO_BONE_NAMES: LazyLock<HashMap<BoneName, &'static str>> = LazyLock::new(|| {
     let chain = create_chain();

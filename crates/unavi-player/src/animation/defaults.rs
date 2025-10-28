@@ -10,14 +10,19 @@ const ASSET: &str = "models/animations.glb";
 pub fn default_character_animations(asset_server: &AssetServer) -> AvatarAnimationClips {
     let mut map = HashMap::default();
 
+    let gltf = asset_server.load(ASSET);
+
     let load_animation = |i: usize| -> AvatarAnimation {
-        let handle = asset_server.load_with_settings::<RawGltfAnimation, GltfLoaderSettings>(
+        let animation = asset_server.load_with_settings::<RawGltfAnimation, GltfLoaderSettings>(
             format!("{ASSET}#RawAnimation{i}"),
             |settings| {
                 settings.expose_raw_animation_curves = true;
             },
         );
-        AvatarAnimation(handle)
+        AvatarAnimation {
+            gltf: gltf.clone(),
+            animation,
+        }
     };
 
     map.insert(AnimationName::Falling, load_animation(0));

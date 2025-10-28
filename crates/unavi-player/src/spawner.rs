@@ -3,15 +3,19 @@ use bevy::{
     core_pipeline::{auto_exposure::AutoExposure, bloom::Bloom},
     pbr::{Atmosphere, AtmosphereSettings},
     prelude::*,
-    render::camera::Exposure,
+    render::{camera::Exposure, view::RenderLayers},
 };
 use bevy_tnua::prelude::TnuaController;
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
-use bevy_vrm::{VrmBundle, VrmInstance};
+use bevy_vrm::{
+    VrmBundle, VrmInstance,
+    first_person::{FirstPersonFlag, RENDER_LAYERS},
+};
 
 use crate::{
     JumpStrength, Player, PlayerAvatar, PlayerBody, PlayerCamera, PlayerHead, RealHeight,
-    WalkSpeed, animation::defaults::default_character_animations,
+    WalkSpeed,
+    animation::{defaults::default_character_animations, velocity::AverageVelocity},
 };
 
 const PLAYER_RADIUS: f32 = 0.5;
@@ -43,11 +47,11 @@ impl PlayerSpawner {
 
         let camera = commands
             .spawn((
+                PlayerCamera,
                 Camera {
                     hdr: true,
                     ..Default::default()
                 },
-                PlayerCamera,
                 Atmosphere::EARTH,
                 AtmosphereSettings::default(),
                 AutoExposure {
@@ -57,29 +61,13 @@ impl PlayerSpawner {
                 Exposure::SUNLIGHT,
                 Bloom::OLD_SCHOOL,
                 Transform::default().looking_at(Vec3::NEG_Z, Vec3::Y),
+                render_layers(),
             ))
             .id();
 
         let mut head = commands.spawn(PlayerHead);
         head.add_child(camera);
         let head = head.id();
-
-        let vrm_path = self.vrm_asset.as_deref().unwrap_or(DEFAULT_VRM);
-        let vrm_handle = asset_server.load(vrm_path);
-
-        let animations = default_character_animations(asset_server);
-
-        let avatar = commands
-            .spawn((
-                PlayerAvatar,
-                VrmBundle {
-                    vrm: VrmInstance(vrm_handle),
-                    ..Default::default()
-                },
-                Transform::from_xyz(0.0, -real_height / 2.0, 0.0),
-                animations,
-            ))
-            .id();
 
         let mut body = commands.spawn((
             PlayerBody,
@@ -93,11 +81,34 @@ impl PlayerSpawner {
             LockedAxes::ROTATION_LOCKED,
             Transform::from_xyz(0.0, real_height / 5.0, 0.0),
         ));
-        body.add_child(avatar);
         body.add_child(head);
         let body = body.id();
+
+        let vrm_path = self.vrm_asset.as_deref().unwrap_or(DEFAULT_VRM);
+        let vrm_handle = asset_server.load(vrm_path);
+        let animations = default_character_animations(asset_server);
+        let avatar = commands
+            .spawn((
+                PlayerAvatar,
+                AverageVelocity {
+                    target: Some(body),
+                    ..Default::default()
+                },
+                VrmBundle {
+                    vrm: VrmInstance(vrm_handle),
+                    ..Default::default()
+                },
+                Transform::from_xyz(0.0, -real_height / 2.0, 0.0),
+                animations,
+            ))
+            .id();
+        commands.entity(body).add_child(avatar);
 
         let mut root = commands.spawn(Player::default());
         root.add_child(body);
     }
+}
+
+fn render_layers() -> RenderLayers {
+    RenderLayers::layer(0).union(&RENDER_LAYERS[&FirstPersonFlag::FirstPersonOnly])
 }

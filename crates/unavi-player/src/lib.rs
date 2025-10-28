@@ -7,8 +7,9 @@ use bevy_vrm::VrmPlugins;
 
 pub use bevy_vrm;
 
-// mod head;
 mod animation;
+mod first_person;
+mod head;
 mod input;
 mod spawner;
 
@@ -29,14 +30,20 @@ impl Plugin for PlayerPlugin {
         .add_systems(
             Update,
             (
-                animation::init_animations,
-                animation::load::load_animation_nodes,
-                animation::velocity::calc_average_velocity,
-                animation::weights::play_avatar_animations,
                 input::apply_head_input.run_if(in_state(CursorGrabState::Locked)),
                 input::apply_body_input,
             )
                 .chain(),
+        )
+        .add_systems(
+            FixedUpdate,
+            (
+                animation::init_animations,
+                animation::load::load_animation_nodes,
+                animation::velocity::calc_average_velocity,
+                animation::weights::play_avatar_animations,
+                first_person::setup_first_person,
+            ),
         );
     }
 }

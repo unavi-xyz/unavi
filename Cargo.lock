@@ -1084,7 +1084,7 @@ dependencies = [
 [[package]]
 name = "bevy_gltf_kun"
 version = "0.2.0"
-source = "git+https://github.com/unavi-xyz/gltf_kun#b28fad1a24190ee944cf1dbd77e4ade232143ee7"
+source = "git+https://github.com/unavi-xyz/gltf_kun#0d76db6cafa7c016c9e98752e5762c6fd05c6d81"
 dependencies = [
  "anyhow",
  "bevy",
@@ -4048,7 +4048,7 @@ dependencies = [
 [[package]]
 name = "gltf_kun"
 version = "0.2.0"
-source = "git+https://github.com/unavi-xyz/gltf_kun#b28fad1a24190ee944cf1dbd77e4ade232143ee7"
+source = "git+https://github.com/unavi-xyz/gltf_kun#0d76db6cafa7c016c9e98752e5762c6fd05c6d81"
 dependencies = [
  "base64 0.22.1",
  "bevy_math",
@@ -8748,6 +8748,7 @@ dependencies = [
 name = "unavi-player"
 version = "0.0.10"
 dependencies = [
+ "anyhow",
  "avian3d",
  "bevy",
  "bevy-tnua",

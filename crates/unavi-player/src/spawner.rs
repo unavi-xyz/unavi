@@ -16,6 +16,7 @@ use crate::{
     JumpStrength, Player, PlayerAvatar, PlayerBody, PlayerCamera, PlayerHead, RealHeight,
     WalkSpeed,
     animation::{defaults::default_character_animations, velocity::AverageVelocity},
+    first_person::FirstPerson,
 };
 
 const PLAYER_RADIUS: f32 = 0.5;
@@ -61,7 +62,7 @@ impl PlayerSpawner {
                 Exposure::SUNLIGHT,
                 Bloom::OLD_SCHOOL,
                 Transform::default().looking_at(Vec3::NEG_Z, Vec3::Y),
-                render_layers(),
+                RenderLayers::layer(0).union(&RENDER_LAYERS[&FirstPersonFlag::FirstPersonOnly]),
             ))
             .id();
 
@@ -90,6 +91,7 @@ impl PlayerSpawner {
         let avatar = commands
             .spawn((
                 PlayerAvatar,
+                FirstPerson,
                 AverageVelocity {
                     target: Some(body),
                     ..Default::default()
@@ -107,8 +109,4 @@ impl PlayerSpawner {
         let mut root = commands.spawn(Player::default());
         root.add_child(body);
     }
-}
-
-fn render_layers() -> RenderLayers {
-    RenderLayers::layer(0).union(&RENDER_LAYERS[&FirstPersonFlag::FirstPersonOnly])
 }

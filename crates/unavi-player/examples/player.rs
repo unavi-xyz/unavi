@@ -7,8 +7,9 @@ use bevy::{
     core_pipeline::{auto_exposure::AutoExposure, bloom::Bloom},
     pbr::{Atmosphere, AtmosphereSettings, CascadeShadowConfigBuilder, light_consts::lux},
     prelude::*,
-    render::{camera::Exposure, mesh::VertexAttributeValues},
+    render::{camera::Exposure, mesh::VertexAttributeValues, view::RenderLayers},
 };
+use bevy_vrm::first_person::{FirstPersonFlag, RENDER_LAYERS};
 use unavi_input::InputPlugin;
 use unavi_player::{PlayerPlugin, PlayerSpawner};
 
@@ -58,6 +59,7 @@ fn setup_scene(
         },
         Exposure::SUNLIGHT,
         Bloom::OLD_SCHOOL,
+        RenderLayers::layer(0).union(&RENDER_LAYERS[&FirstPersonFlag::ThirdPersonOnly]),
     ));
 
     commands.spawn((

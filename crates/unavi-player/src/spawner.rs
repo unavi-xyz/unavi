@@ -9,7 +9,10 @@ use bevy_tnua::prelude::TnuaController;
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
 use bevy_vrm::{VrmBundle, VrmInstance};
 
-use crate::{JumpStrength, Player, PlayerBody, PlayerCamera, PlayerHead, RealHeight, WalkSpeed};
+use crate::{
+    JumpStrength, Player, PlayerAvatar, PlayerBody, PlayerCamera, PlayerHead, RealHeight,
+    WalkSpeed, animation::defaults::default_character_animations,
+};
 
 const PLAYER_RADIUS: f32 = 0.5;
 
@@ -34,9 +37,9 @@ pub struct PlayerSpawner {
 
 impl PlayerSpawner {
     pub fn spawn(&self, commands: &mut Commands, asset_server: &AssetServer) {
-        let jump_height = self.player_height.unwrap_or(DEFAULT_JUMP);
+        let jump_height = self.jump_strength.unwrap_or(DEFAULT_JUMP);
         let real_height = self.player_height.unwrap_or(DEFAULT_HEIGHT);
-        let walk_speed = self.player_height.unwrap_or(DEFAULT_SPEED);
+        let walk_speed = self.player_speed.unwrap_or(DEFAULT_SPEED);
 
         let camera = commands
             .spawn((
@@ -64,6 +67,20 @@ impl PlayerSpawner {
         let vrm_path = self.vrm_asset.as_deref().unwrap_or(DEFAULT_VRM);
         let vrm_handle = asset_server.load(vrm_path);
 
+        let animations = default_character_animations(asset_server);
+
+        let avatar = commands
+            .spawn((
+                PlayerAvatar,
+                VrmBundle {
+                    vrm: VrmInstance(vrm_handle),
+                    ..Default::default()
+                },
+                Transform::from_xyz(0.0, -real_height / 2.0, 0.0),
+                animations,
+            ))
+            .id();
+
         let mut body = commands.spawn((
             PlayerBody,
             JumpStrength(jump_height),
@@ -75,11 +92,8 @@ impl PlayerSpawner {
             TnuaAvian3dSensorShape(Collider::cylinder(PLAYER_RADIUS - 0.01, 0.0)),
             LockedAxes::ROTATION_LOCKED,
             Transform::from_xyz(0.0, real_height / 5.0, 0.0),
-            VrmBundle {
-                vrm: VrmInstance(vrm_handle),
-                ..Default::default()
-            },
         ));
+        body.add_child(avatar);
         body.add_child(head);
         let body = body.id();
 

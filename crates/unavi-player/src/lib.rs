@@ -8,6 +8,7 @@ use bevy_vrm::VrmPlugins;
 pub use bevy_vrm;
 
 // mod head;
+mod animation;
 mod input;
 mod spawner;
 
@@ -28,6 +29,10 @@ impl Plugin for PlayerPlugin {
         .add_systems(
             Update,
             (
+                animation::init_animations,
+                animation::load::load_animation_nodes,
+                animation::velocity::calc_average_velocity,
+                animation::weights::play_avatar_animations,
                 input::apply_head_input.run_if(in_state(CursorGrabState::Locked)),
                 input::apply_body_input,
             )
@@ -56,6 +61,10 @@ struct PlayerBody;
 #[derive(Component, Default)]
 #[require(Transform)]
 struct PlayerHead;
+
+#[derive(Component, Default)]
+#[require(Transform)]
+struct PlayerAvatar;
 
 #[derive(Component, Default)]
 #[require(Camera3d, Transform)]

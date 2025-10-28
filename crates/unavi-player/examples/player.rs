@@ -119,7 +119,7 @@ fn handle_input(
     mut player_cam: Query<&mut Camera, Without<SkyCamera>>,
     mut sky_cam: Query<&mut Camera, With<SkyCamera>>,
 ) {
-    if keyboard.just_pressed(KeyCode::KeyC) {
+    if keyboard.just_pressed(KeyCode::KeyP) {
         let mut pc = player_cam.iter_mut().next().unwrap();
         let mut sc = sky_cam.iter_mut().next().unwrap();
 

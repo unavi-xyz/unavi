@@ -37,12 +37,20 @@ wit-bindgen        = "0.46.0"
 wtransport         = "0.6.1"
 zeroize            = "1.8.2"
 
-dwn        = { git = "https://github.com/unavi-xyz/dwn", version = "0.4.0" }
-dwn-server = { git = "https://github.com/unavi-xyz/dwn", version = "0.4.0" }
-xdid       = { git = "https://github.com/unavi-xyz/dwn", version = "0.4.0" }
-# dwn        = { path = "../dwn/crates/dwn" }
-# dwn-server = { path = "../dwn/crates/dwn-server" }
-# xdid       = { path = "../dwn/crates/xdid" }
+bevy_gltf_kun = "0.2.0"
+gltf_kun      = "0.2.0"
+
+dwn        = "0.4.0"
+dwn-server = "0.4.0"
+xdid       = "0.4.0"
+
+[patch.crates-io]
+bevy_gltf_kun = { git = "https://github.com/unavi-xyz/gltf_kun" }
+bevy_vrm      = { git = "https://github.com/unavi-xyz/bevy_vrm" }
+dwn           = { git = "https://github.com/unavi-xyz/dwn" }
+dwn-server    = { git = "https://github.com/unavi-xyz/dwn" }
+gltf_kun      = { git = "https://github.com/unavi-xyz/gltf_kun" }
+xdid          = { git = "https://github.com/unavi-xyz/dwn" }
 
 [profile.release]
 lto = "thin"

@@ -14,7 +14,7 @@ mod input;
 mod spawner;
 pub mod tracking;
 
-pub use config::PlayerConfig;
+pub use config::{PlayerConfig, WorldScale};
 pub use spawner::PlayerSpawner;
 pub use tracking::{TrackedHand, TrackedHead, TrackedPose, TrackingSource};
 

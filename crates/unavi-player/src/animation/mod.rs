@@ -36,7 +36,10 @@ pub(crate) struct AnimationPlayerInitialized;
 /// Initializes animation components when AnimationPlayer is added.
 pub(crate) fn init_animation_players(
     mut commands: Commands,
-    animation_players: Query<(Entity, &ChildOf), (With<AnimationPlayer>, Without<AnimationPlayerInitialized>)>,
+    animation_players: Query<
+        (Entity, &ChildOf),
+        (With<AnimationPlayer>, Without<AnimationPlayerInitialized>),
+    >,
     animation_nodes: Query<&AnimationGraphHandle, With<AvatarAnimationNodes>>,
 ) {
     for (entity, parent) in animation_players.iter() {

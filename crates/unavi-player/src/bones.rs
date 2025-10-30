@@ -17,7 +17,10 @@ pub(crate) struct AvatarBonesPopulated;
 /// Finds and stores VRM bone entities for avatars with loaded scenes.
 pub(crate) fn populate_avatar_bones(
     mut commands: Commands,
-    avatars: Query<(Entity, &AvatarBones), (With<bevy_vrm::VrmScene>, Without<AvatarBonesPopulated>)>,
+    avatars: Query<
+        (Entity, &AvatarBones),
+        (With<bevy_vrm::VrmScene>, Without<AvatarBonesPopulated>),
+    >,
     bones: Query<(Entity, &BoneName)>,
     parents: Query<&ChildOf>,
 ) {
@@ -35,7 +38,9 @@ pub(crate) fn populate_avatar_bones(
         }
 
         if avatar_bones.head.is_some() {
-            commands.entity(avatar_ent).insert((avatar_bones, AvatarBonesPopulated));
+            commands
+                .entity(avatar_ent)
+                .insert((avatar_bones, AvatarBonesPopulated));
         }
     }
 }

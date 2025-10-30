@@ -1,20 +1,24 @@
-//! VRM player controller.
+//! VRM player controller for desktop and VR.
 
 use bevy::{core_pipeline::auto_exposure::AutoExposurePlugin, prelude::*};
 use bevy_tnua::prelude::TnuaControllerPlugin;
 use bevy_tnua_avian3d::TnuaAvian3dPlugin;
 use bevy_vrm::VrmPlugins;
-
-mod animation;
-mod eye_offset;
-mod first_person;
-mod head;
-mod input;
-mod spawner;
-
-pub use spawner::*;
 use unavi_input::CursorGrabState;
 
+mod animation;
+mod bones;
+pub mod config;
+mod eye_offset;
+mod input;
+mod spawner;
+pub mod tracking;
+
+pub use config::PlayerConfig;
+pub use spawner::PlayerSpawner;
+pub use tracking::{TrackedHand, TrackedHead, TrackedPose, TrackingSource};
+
+/// Main player plugin.
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
@@ -29,52 +33,52 @@ impl Plugin for PlayerPlugin {
         .add_systems(
             Update,
             (
-                // head::rotate_avatar_head,
+                eye_offset::setup_vrm_eye_offset,
+                animation::init_animation_players,
+                bones::populate_avatar_bones,
                 input::apply_head_input.run_if(in_state(CursorGrabState::Locked)),
                 input::apply_body_input,
+                tracking::sync_tracked_pose_to_transform,
+                bones::apply_head_tracking,
             )
                 .chain(),
         )
         .add_systems(
             FixedUpdate,
             (
-                animation::init_animations,
                 animation::load::load_animation_nodes,
                 animation::velocity::calc_average_velocity,
-                animation::weights::play_avatar_animations,
-                eye_offset::calc_eye_offset,
-                first_person::setup_first_person,
-                head::set_avatar_head,
+                animation::weights::play_avatar_animations.run_if(animation::is_desktop_mode),
             ),
         );
     }
 }
 
-#[derive(Component, Default)]
-#[require(Transform)]
-pub struct Player {}
-
+/// References to player entity children for efficient lookups.
 #[derive(Component)]
-struct RealHeight(f32);
+pub struct PlayerEntities {
+    pub avatar: Entity,
+    pub camera: Entity,
+    pub rig: Entity,
+    pub tracked_head: Entity,
+}
 
-#[derive(Component)]
-struct WalkSpeed(f32);
-
-#[derive(Component)]
-struct JumpStrength(f32);
-
+/// Marker for the local player entity.
 #[derive(Component, Default)]
-#[require(Transform)]
-struct PlayerBody;
+#[require(Transform, GlobalTransform, Visibility)]
+pub struct LocalPlayer;
 
+/// Marker for the physics rig entity.
 #[derive(Component, Default)]
-#[require(Transform)]
-struct PlayerHead;
+#[require(Transform, GlobalTransform, Visibility)]
+pub struct PlayerRig;
 
+/// Marker for the player's avatar entity.
 #[derive(Component, Default)]
-#[require(Transform)]
-struct PlayerAvatar;
+#[require(Transform, GlobalTransform, Visibility)]
+pub struct PlayerAvatar;
 
+/// Marker for the player's camera entity.
 #[derive(Component, Default)]
-#[require(Camera3d, Transform)]
-struct PlayerCamera;
+#[require(Camera3d, Transform, GlobalTransform, Visibility)]
+pub struct PlayerCamera;

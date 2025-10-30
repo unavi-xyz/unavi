@@ -1,6 +1,6 @@
 use avian3d::{
     PhysicsPlugins,
-    prelude::{Collider, RigidBody},
+    prelude::{Collider, PhysicsDebugPlugin, RigidBody},
 };
 use bevy::{
     color::palettes::tailwind::BLUE_400,
@@ -21,6 +21,7 @@ fn main() {
                 ..Default::default()
             }),
             PhysicsPlugins::default(),
+            PhysicsDebugPlugin::default(),
             InputPlugin,
             PlayerPlugin,
         ))

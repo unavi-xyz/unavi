@@ -37,6 +37,8 @@ wit-bindgen        = "0.46.0"
 wtransport         = "0.6.1"
 zeroize            = "1.8.2"
 
+bevy_vrm = "0.1.0"
+
 bevy_gltf_kun = "0.2.0"
 gltf_kun      = "0.2.0"
 

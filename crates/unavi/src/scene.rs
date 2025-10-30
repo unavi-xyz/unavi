@@ -5,7 +5,8 @@ use bevy::{
     prelude::*,
     render::mesh::VertexAttributeValues,
 };
-use unavi_player::{PlayerSpawner, bevy_vrm::mtoon::MtoonSun};
+use bevy_vrm::mtoon::MtoonSun;
+use unavi_player::PlayerSpawner;
 
 pub fn spawn_lights(mut commands: Commands, mut ambient: ResMut<AmbientLight>) {
     ambient.brightness = lux::OVERCAST_DAY;

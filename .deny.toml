@@ -45,6 +45,7 @@ multiple-versions = "warn"
 allow-git = [
   "https://github.com/unavi-xyz/bevy_vrm",
   "https://github.com/unavi-xyz/dwn",
+  "https://github.com/unavi-xyz/gltf_kun",
 ]
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
 unknown-git = "deny"

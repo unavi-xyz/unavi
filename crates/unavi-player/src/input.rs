@@ -6,7 +6,7 @@ use unavi_input::{JumpAction, LookAction, MoveAction, schminput::prelude::*};
 
 use crate::{
     PlayerRig,
-    config::PlayerConfig,
+    config::{FLOAT_HEIGHT_OFFSET, PLAYER_RADIUS, PlayerConfig},
     tracking::{TrackedHead, TrackedPose},
 };
 
@@ -45,6 +45,8 @@ pub(crate) fn apply_head_input(
     }
 }
 
+const CAYOTE_TIME: f32 = 0.1;
+
 /// Applies movement input to the physics controller (all modes).
 pub(crate) fn apply_body_input(
     players: Query<(&crate::PlayerEntities, &PlayerConfig)>,
@@ -75,19 +77,22 @@ pub(crate) fn apply_body_input(
 
             const S: f32 = 0.2;
             *target = target.lerp(dir, S);
-
-            controller.basis(TnuaBuiltinWalk {
-                desired_velocity: *target * config.walk_speed,
-                float_height: config.real_height * 0.9,
-                ..Default::default()
-            });
         }
+
+        let radius = config.vrm_radius.unwrap_or(PLAYER_RADIUS);
+        controller.basis(TnuaBuiltinWalk {
+            desired_velocity: *target * config.walk_speed,
+            float_height: radius * 2.0 + FLOAT_HEIGHT_OFFSET,
+            coyote_time: CAYOTE_TIME,
+            ..Default::default()
+        });
 
         if let Ok(action) = jump_action.single()
             && action.any
         {
+            let height = config.vrm_height.unwrap_or(config.real_height);
             controller.action(TnuaBuiltinJump {
-                height: config.jump_strength * config.real_height,
+                height: config.jump_strength * height,
                 ..Default::default()
             });
         }

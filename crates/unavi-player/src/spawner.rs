@@ -117,7 +117,9 @@ impl PlayerSpawner {
             ))
             .id();
 
-        commands.entity(player_rig).add_children(&[avatar, tracked_head]);
+        commands
+            .entity(player_rig)
+            .add_children(&[avatar, tracked_head]);
 
         commands
             .spawn((

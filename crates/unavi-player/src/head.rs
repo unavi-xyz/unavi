@@ -1,24 +1,68 @@
 use bevy::prelude::*;
+use bevy_vrm::BoneName;
 
-use crate::{PlayerBody, PlayerHead, RealHeight};
+use crate::{PlayerCamera, eye_offset::EyeOffset};
 
-pub fn position_head(
-    bodies: Query<(&RealHeight, &Children), (With<PlayerBody>, Changed<RealHeight>)>,
-    mut heads: Query<&mut Transform, With<PlayerHead>>,
+#[derive(Component)]
+pub struct AvatarHead(pub Entity);
+
+pub(crate) fn set_avatar_head(
+    avatars: Query<Entity, (With<EyeOffset>, Without<AvatarHead>)>,
+    bones: Query<(Entity, &BoneName)>,
+    mut commands: Commands,
+    parents: Query<&ChildOf>,
 ) {
-    for (player_height, children) in bodies {
-        for child in children {
-            let Ok(mut head_tr) = heads.get_mut(*child) else {
+    for avatar_ent in avatars.iter() {
+        for (bone_ent, bone_name) in bones.iter() {
+            if *bone_name != BoneName::Head {
                 continue;
-            };
+            }
 
-            // The body is 8 heads tall for adults, or 6 for children (see Da Vinci, Michelangelo).
-            let heads_tall = if player_height.0 >= 1.5 { 8.0 } else { 6.0 };
-            let head_height = player_height.0 - (player_height.0 / heads_tall);
-
-            head_tr.translation.x = 0.0;
-            head_tr.translation.y = head_height;
-            head_tr.translation.z = 0.0;
+            if is_child(bone_ent, avatar_ent, &parents) {
+                commands.entity(avatar_ent).insert(AvatarHead(bone_ent));
+                break;
+            }
         }
+    }
+}
+
+/// Walks up the parent tree, searching for a specific Entity.
+fn is_child(target_child: Entity, target_parent: Entity, parents: &Query<&ChildOf>) -> bool {
+    if target_child == target_parent {
+        true
+    } else if let Ok(child_of) = parents.get(target_child) {
+        is_child(child_of.parent(), target_parent, parents)
+    } else {
+        false
+    }
+}
+
+#[derive(Component)]
+pub struct BaseRotation(pub Quat);
+
+pub(crate) fn rotate_avatar_head(
+    avatars: Query<(&AvatarHead, &EyeOffset)>,
+    mut bones: Query<
+        (&mut Transform, Option<&BaseRotation>),
+        (With<BoneName>, Without<PlayerCamera>),
+    >,
+    mut player_cam: Query<&mut Transform, With<PlayerCamera>>,
+    mut commands: Commands,
+) {
+    for (head, offset) in avatars.iter() {
+        let (mut head_tr, base) = bones.get_mut(head.0).expect("Avatar head bone not found");
+
+        let Some(base) = base else {
+            commands
+                .entity(head.0)
+                .insert(BaseRotation(head_tr.rotation));
+            continue;
+        };
+
+        let mut camera_tr = player_cam.single_mut().unwrap();
+        camera_tr.translation = offset.0;
+
+        let new_rot = base.0 * camera_tr.rotation;
+        head_tr.rotation = new_rot;
     }
 }

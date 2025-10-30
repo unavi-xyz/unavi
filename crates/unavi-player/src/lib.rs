@@ -5,9 +5,8 @@ use bevy_tnua::prelude::TnuaControllerPlugin;
 use bevy_tnua_avian3d::TnuaAvian3dPlugin;
 use bevy_vrm::VrmPlugins;
 
-pub use bevy_vrm;
-
 mod animation;
+mod eye_offset;
 mod first_person;
 mod head;
 mod input;
@@ -30,6 +29,7 @@ impl Plugin for PlayerPlugin {
         .add_systems(
             Update,
             (
+                // head::rotate_avatar_head,
                 input::apply_head_input.run_if(in_state(CursorGrabState::Locked)),
                 input::apply_body_input,
             )
@@ -42,7 +42,9 @@ impl Plugin for PlayerPlugin {
                 animation::load::load_animation_nodes,
                 animation::velocity::calc_average_velocity,
                 animation::weights::play_avatar_animations,
+                eye_offset::calc_eye_offset,
                 first_person::setup_first_person,
+                head::set_avatar_head,
             ),
         );
     }

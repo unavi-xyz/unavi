@@ -1,8 +1,8 @@
 use bevy::prelude::*;
-use unavi_player::Player;
+use unavi_player::LocalPlayer;
 
-pub fn publish_user_transforms(body: Query<Entity, With<Player>>) {
-    let Some(_body) = body.iter().next() else {
+pub fn publish_user_transforms(player: Query<Entity, With<LocalPlayer>>) {
+    let Some(_player) = player.iter().next() else {
         return;
     };
 }

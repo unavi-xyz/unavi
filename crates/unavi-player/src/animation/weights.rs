@@ -1,6 +1,6 @@
 use bevy::{animation::ActiveAnimation, platform::collections::HashMap, prelude::*};
 
-use crate::{PlayerAvatar, PlayerBody, animation::velocity::AverageVelocity};
+use crate::{PlayerAvatar, PlayerRig, animation::velocity::AverageVelocity};
 
 use super::{AnimationName, AvatarAnimationNodes};
 
@@ -17,8 +17,9 @@ const WEIGHT_THRESHOLD: f32 = 0.02;
 
 pub(crate) fn play_avatar_animations(
     time: Res<Time>,
-    players: Query<&Transform, With<PlayerBody>>,
-    mut avatars: Query<(&AvatarAnimationNodes, &AverageVelocity, &ChildOf), With<PlayerAvatar>>,
+    _players: Query<&crate::PlayerEntities>,
+    rigs: Query<&Transform, With<PlayerRig>>,
+    avatars: Query<(&AvatarAnimationNodes, &AverageVelocity), With<PlayerAvatar>>,
     mut animation_players: Query<(
         &mut AnimationWeights,
         &TargetAnimationWeights,
@@ -29,11 +30,15 @@ pub(crate) fn play_avatar_animations(
     let alpha = (time.delta_secs() * ALPHA_FACTOR).min(0.9);
 
     for (mut weights, targets, mut player, parent) in animation_players.iter_mut() {
-        let Ok((nodes, avg, parent)) = avatars.get_mut(parent.parent()) else {
+        let Ok((nodes, avg)) = avatars.get(parent.parent()) else {
             continue;
         };
 
-        let Ok(transform) = players.get(parent.parent()) else {
+        let Some(rig_entity) = avg.target else {
+            continue;
+        };
+
+        let Ok(transform) = rigs.get(rig_entity) else {
             continue;
         };
 

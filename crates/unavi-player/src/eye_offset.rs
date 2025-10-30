@@ -1,90 +1,77 @@
 use bevy::prelude::*;
-use bevy_vrm::{BoneName, VrmScene};
+use bevy_vrm::{BoneName, VrmScene, first_person::SetupFirstPerson};
 
-use crate::{RealHeight, first_person::FirstPerson};
+use crate::{PlayerAvatar, PlayerEntities, PlayerRig, config::PlayerConfig};
 
-#[derive(Component, Deref, DerefMut)]
-pub struct EyeOffset(pub Vec3);
+/// Marker to track which avatars have been processed for eye offset.
+#[derive(Component)]
+pub(crate) struct EyeOffsetProcessed;
 
-pub(crate) fn calc_eye_offset(
+/// Sets up eye offset and tracked head position based on VRM model bones.
+pub(crate) fn setup_vrm_eye_offset(
     mut commands: Commands,
     mut scene_assets: ResMut<Assets<Scene>>,
-    mut to_calc: Local<Vec<(Entity, f32)>>,
-    mut to_remove: Local<Vec<Entity>>,
-    new_scenes: Query<(Entity, &RealHeight), (With<FirstPerson>, Added<VrmScene>)>,
-    vrm_scenes: Query<&VrmScene>,
+    avatars: Query<(Entity, &VrmScene, &ChildOf), (With<PlayerAvatar>, Without<EyeOffsetProcessed>)>,
+    rigs: Query<&ChildOf, With<PlayerRig>>,
+    players: Query<(&PlayerConfig, &PlayerEntities)>,
+    mut transforms: Query<&mut Transform>,
+    mut first_person_writer: EventWriter<SetupFirstPerson>,
 ) {
-    for (ent, height) in new_scenes.iter() {
-        to_calc.push((ent, height.0));
-    }
-
-    for (ent, height) in to_calc.iter() {
-        let vrm_scene = vrm_scenes.get(*ent).expect("Scene handle not found");
-
+    for (avatar_ent, vrm_scene, avatar_parent) in avatars.iter() {
         let Some(scene) = scene_assets.get_mut(vrm_scene.0.id()) else {
-            // Asset might not be loaded yet.
             continue;
         };
 
-        let mut bones = scene.world.query::<(Entity, &BoneName)>();
+        let Ok(rig_parent) = rigs.get(avatar_parent.parent()) else {
+            continue;
+        };
+        let player_entity = rig_parent.parent();
 
+        let Ok((config, entities)) = players.get(player_entity) else {
+            continue;
+        };
+
+        let mut bones = scene.world.query::<(Entity, &BoneName, &GlobalTransform)>();
         let mut left_eye = None;
         let mut right_eye = None;
         let mut head = None;
+        let mut lowest_y = f32::MAX;
 
-        for (bone_ent, bone_name) in bones.iter(&scene.world) {
-            if *bone_name == BoneName::LeftEye {
-                left_eye = Some(bone_ent);
-            }
-            if *bone_name == BoneName::RightEye {
-                right_eye = Some(bone_ent);
-            }
-            if *bone_name == BoneName::Head {
-                head = Some(bone_ent);
+        for (bone_ent, bone_name, bone_transform) in bones.iter(&scene.world) {
+            let y = bone_transform.translation().y;
+            lowest_y = lowest_y.min(y);
+
+            match bone_name {
+                BoneName::LeftEye => left_eye = Some((bone_ent, y)),
+                BoneName::RightEye => right_eye = Some((bone_ent, y)),
+                BoneName::Head => head = Some((bone_ent, y)),
+                _ => {}
             }
         }
 
-        let mut offset = if let Some(left_eye) = left_eye
-            && let Some(right_eye) = right_eye
+        let eye_y = if let Some((_, left_y)) = left_eye
+            && let Some((_, right_y)) = right_eye
         {
-            let left_tr = scene
-                .world
-                .entity(left_eye)
-                .get::<GlobalTransform>()
-                .unwrap();
-            let right_tr = scene
-                .world
-                .entity(right_eye)
-                .get::<GlobalTransform>()
-                .unwrap();
-
-            (left_tr.translation() + right_tr.translation()) / 2.0
+            (left_y + right_y) / 2.0
+        } else if let Some((_, head_y)) = head {
+            head_y + 0.08
         } else {
-            let head_tr = scene
-                .world
-                .entity(head.unwrap())
-                .get::<GlobalTransform>()
-                .unwrap();
-
-            head_tr.translation()
+            config.real_height / 2.0
         };
 
-        offset.y += 0.08 - height / 2.0;
-        offset.z -= 0.08;
+        let avatar_y_in_rig = -config.real_height / 2.0 - lowest_y;
 
-        commands.entity(*ent).insert(EyeOffset(offset));
+        if let Ok(mut avatar_transform) = transforms.get_mut(avatar_ent) {
+            avatar_transform.translation.y = avatar_y_in_rig;
+        }
 
-        to_remove.push(*ent);
+        let head_y_in_rig = avatar_y_in_rig + eye_y;
+
+        if let Ok(mut head_transform) = transforms.get_mut(entities.tracked_head) {
+            head_transform.translation.y = head_y_in_rig;
+        }
+
+        first_person_writer.write(SetupFirstPerson(avatar_ent));
+        commands.entity(avatar_ent).insert(EyeOffsetProcessed);
     }
-
-    for ent in to_remove.iter() {
-        let new_calc = to_calc
-            .iter()
-            .copied()
-            .filter(|(x, _)| x == ent)
-            .collect::<Vec<_>>();
-        *to_calc = new_calc;
-    }
-
-    to_remove.clear();
 }

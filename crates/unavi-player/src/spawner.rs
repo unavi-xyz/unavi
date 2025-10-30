@@ -13,38 +13,46 @@ use bevy_vrm::{
 };
 
 use crate::{
-    JumpStrength, Player, PlayerAvatar, PlayerBody, PlayerCamera, PlayerHead, RealHeight,
-    WalkSpeed,
+    LocalPlayer, PlayerAvatar, PlayerCamera, PlayerEntities, PlayerRig,
     animation::{defaults::default_character_animations, velocity::AverageVelocity},
-    first_person::FirstPerson,
+    bones::AvatarBones,
+    config::{PLAYER_RADIUS, PlayerConfig},
+    tracking::{TrackedHead, TrackedPose, TrackingSource},
 };
-
-const PLAYER_RADIUS: f32 = 0.5;
-
-/// | Group            | Height        |
-/// | ---------------- | ------------- |
-/// | Adult Male       | 1.70 – 1.78 m |
-/// | Adult Female     | 1.60 – 1.67 m |
-const DEFAULT_HEIGHT: f32 = 1.7;
-
-const DEFAULT_JUMP: f32 = 1.5;
-const DEFAULT_SPEED: f32 = 4.0;
 
 const DEFAULT_VRM: &str = "models/default.vrm";
 
+/// Builder for spawning a player entity.
 #[derive(Default)]
 pub struct PlayerSpawner {
-    pub jump_strength: Option<f32>,
-    pub player_height: Option<f32>,
-    pub player_speed: Option<f32>,
+    pub config: Option<PlayerConfig>,
+    pub tracking_source: Option<TrackingSource>,
     pub vrm_asset: Option<String>,
 }
 
 impl PlayerSpawner {
-    pub fn spawn(&self, commands: &mut Commands, asset_server: &AssetServer) {
-        let jump_height = self.jump_strength.unwrap_or(DEFAULT_JUMP);
-        let real_height = self.player_height.unwrap_or(DEFAULT_HEIGHT);
-        let walk_speed = self.player_speed.unwrap_or(DEFAULT_SPEED);
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn with_config(mut self, config: PlayerConfig) -> Self {
+        self.config = Some(config);
+        self
+    }
+
+    pub fn with_tracking_source(mut self, source: TrackingSource) -> Self {
+        self.tracking_source = Some(source);
+        self
+    }
+
+    pub fn with_vrm(mut self, vrm_asset: impl Into<String>) -> Self {
+        self.vrm_asset = Some(vrm_asset.into());
+        self
+    }
+
+    pub fn spawn(&self, commands: &mut Commands, asset_server: &AssetServer) -> Entity {
+        let config = self.config.clone().unwrap_or_default();
+        let tracking_source = self.tracking_source.unwrap_or_default();
 
         let camera = commands
             .spawn((
@@ -66,47 +74,65 @@ impl PlayerSpawner {
             ))
             .id();
 
-        let mut head = commands.spawn(PlayerHead);
-        head.add_child(camera);
-        let head = head.id();
+        let player_rig = commands
+            .spawn((
+                PlayerRig,
+                RigidBody::Dynamic,
+                Collider::capsule(PLAYER_RADIUS, config.real_height),
+                TnuaController::default(),
+                TnuaAvian3dSensorShape(Collider::cylinder(PLAYER_RADIUS - 0.01, 0.0)),
+                LockedAxes::ROTATION_LOCKED,
+                Transform::from_xyz(0.0, config.real_height / 2.0, 0.0),
+            ))
+            .id();
 
-        let mut body = commands.spawn((
-            PlayerBody,
-            JumpStrength(jump_height),
-            RealHeight(real_height),
-            WalkSpeed(walk_speed),
-            RigidBody::Dynamic,
-            Collider::capsule(PLAYER_RADIUS, real_height),
-            TnuaController::default(),
-            TnuaAvian3dSensorShape(Collider::cylinder(PLAYER_RADIUS - 0.01, 0.0)),
-            LockedAxes::ROTATION_LOCKED,
-            Transform::from_xyz(0.0, real_height / 5.0, 0.0),
-        ));
-        body.add_child(head);
-        let body = body.id();
+        let initial_eye_y = config.real_height / 2.0 - 0.1;
+        let tracked_head = commands
+            .spawn((
+                TrackedHead,
+                TrackedPose::new(Vec3::new(0.0, initial_eye_y, 0.0), Quat::IDENTITY),
+                Transform::from_xyz(0.0, initial_eye_y, 0.0),
+            ))
+            .add_child(camera)
+            .id();
 
         let vrm_path = self.vrm_asset.as_deref().unwrap_or(DEFAULT_VRM);
         let vrm_handle = asset_server.load(vrm_path);
         let animations = default_character_animations(asset_server);
+
         let avatar = commands
             .spawn((
                 PlayerAvatar,
-                FirstPerson,
+                AvatarBones::default(),
                 AverageVelocity {
-                    target: Some(body),
+                    target: Some(player_rig),
                     ..Default::default()
                 },
                 VrmBundle {
                     vrm: VrmInstance(vrm_handle),
                     ..Default::default()
                 },
-                Transform::from_xyz(0.0, -real_height / 2.0, 0.0),
+                Transform::from_xyz(0.0, -config.real_height / 2.0, 0.0),
                 animations,
             ))
             .id();
-        commands.entity(body).add_child(avatar);
 
-        let mut root = commands.spawn(Player::default());
-        root.add_child(body);
+        commands.entity(player_rig).add_children(&[avatar, tracked_head]);
+
+        commands
+            .spawn((
+                LocalPlayer,
+                PlayerEntities {
+                    avatar,
+                    camera,
+                    rig: player_rig,
+                    tracked_head,
+                },
+                config,
+                tracking_source,
+                Transform::default(),
+            ))
+            .add_child(player_rig)
+            .id()
     }
 }

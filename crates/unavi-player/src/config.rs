@@ -37,7 +37,7 @@ pub const DEFAULT_JUMP_STRENGTH: f32 = 1.0;
 pub const DEFAULT_WALK_SPEED: f32 = 4.0;
 
 pub const PLAYER_RADIUS: f32 = 0.5;
-pub const FLOAT_HEIGHT_OFFSET: f32 = 0.05;
+pub const FLOAT_HEIGHT_OFFSET: f32 = 0.01;
 
 /// World scale factor resource.
 /// Multiply world entities by this to make the player perceive correct scale.

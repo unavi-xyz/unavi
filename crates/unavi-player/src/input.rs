@@ -80,9 +80,10 @@ pub(crate) fn apply_body_input(
         }
 
         let radius = config.vrm_radius.unwrap_or(PLAYER_RADIUS);
+        let height = config.vrm_height.unwrap_or(config.real_height);
         controller.basis(TnuaBuiltinWalk {
             desired_velocity: *target * config.walk_speed,
-            float_height: radius * 2.0 + FLOAT_HEIGHT_OFFSET,
+            float_height: height / 2.0 + radius + FLOAT_HEIGHT_OFFSET,
             coyote_time: CAYOTE_TIME,
             ..Default::default()
         });
@@ -90,7 +91,6 @@ pub(crate) fn apply_body_input(
         if let Ok(action) = jump_action.single()
             && action.any
         {
-            let height = config.vrm_height.unwrap_or(config.real_height);
             controller.action(TnuaBuiltinJump {
                 height: config.jump_strength * height,
                 ..Default::default()

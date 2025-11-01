@@ -1,0 +1,70 @@
+name: Build Nix
+
+on:
+  workflow_call:
+    inputs:
+      channel:
+        description: channel to build
+        required: true
+        type: string
+      ref:
+        description: ref to build
+        type: string
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: DeterminateSystems/determinate-nix-action@v3
+        with:
+          extra-conf: extra-experimental-features = pipe-operators
+      - run: nix profile add nixpkgs#omnix
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - id: set-matrix
+        run: |
+          SYSTEMS=("x86_64-linux" "aarch64-darwin")
+          PACKAGES=("unavi-bundle" "unavi-server-bundle")
+
+          MATRIX="["
+          for SYS in "${SYSTEMS[@]}"; do
+            for PKG in "${PACKAGES[@]}"; do
+              [ "$MATRIX" != "[" ] && MATRIX+=","
+              MATRIX+="{\"system\":\"$SYS\",\"package\":\"$PKG\",\"name\":\"$PKG-$SYS\"}"
+            done
+          done
+          MATRIX+="]"
+
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: configure
+    strategy:
+      matrix: ${{ fromJSON(needs.configure.outputs.matrix) }}
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.system }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          submodules: true
+
+      - uses: DeterminateSystems/determinate-nix-action@v3
+        with:
+          extra-conf: extra-experimental-features = pipe-operators
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Build package
+        run: nix build -L .#packages.${{ matrix.package }}-${{ inputs.channel }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: result
+          retention-days: 1

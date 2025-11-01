@@ -1,0 +1,74 @@
+name: Build Windows
+
+on:
+  workflow_call:
+    inputs:
+      channel:
+        description: The channel to build.
+        required: true
+        type: string
+      ref:
+        description: The ref to build.
+        required: true
+        type: string
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        package: [unavi-app, unavi-server]
+    name: ${{ matrix.package }}-windows
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          submodules: true
+
+      - uses: crazy-max/ghaction-chocolatey@v3
+        with:
+          args: install wixtoolset
+
+      - uses: Swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - run: cargo install cargo-wix
+
+      - name: Build assets
+        if: ${{ matrix.package == 'unavi-app' }}
+        run: |
+          cargo wix -p ${{ matrix.package }} --nocapture
+          cd crates/${{ matrix.package }}/wix
+          ./gen-assets.bat
+
+      - name: Build package
+        run: |
+          cargo wix -p ${{ matrix.package }} --nocapture
+          mkdir result
+          mv target/x86_64-pc-windows-msvc/release/*.exe result
+          cp crates/${{ matrix.package }}/README.md result
+          cp LICENSE result
+        env:
+          UNAVI_REGISTRY_DID: ${{ inputs.channel == 'stable' && 'app' || inputs.channel }}.unavi.xyz
+
+      - name: Create zip
+        run: Compress-Archive -Path result/* -DestinationPath ${{ matrix.package }}-windows.zip
+
+      - name: Create msi
+        run: |
+          ls target/wix/
+          mv target/wix/*.msi ${{ matrix.package }}-windows.msi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.package }}-windows
+          path: ${{ matrix.package }}-windows.zip
+          retention-days: 1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-installer-${{ matrix.package }}-windows
+          path: ${{ matrix.package }}-windows.msi
+          retention-days: 1

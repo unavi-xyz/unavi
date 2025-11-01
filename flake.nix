@@ -104,10 +104,8 @@
                   cargo-edit
                   cargo-machete
                   cargo-nextest
-                  cargo-release
                   cargo-watch
                   cargo-workspaces
-                  rustup
                 ])
                 ++ (
                   config.packages

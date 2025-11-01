@@ -1,0 +1,175 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      increment:
+        description: version bump level
+        required: true
+        default: beta
+        type: choice
+        options:
+          - beta
+          - patch
+          - minor
+          - major
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Git config
+        run: |
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git config user.name github-actions
+
+      - uses: DeterminateSystems/determinate-nix-action@v3
+      - run: |
+          nix profile install nixpkgs#rustup
+          rustup default nightly
+          nix profile add nixpkgs#cargo-release
+
+      - name: Bump version
+        run: cargo release ${{ inputs.increment }} -x --no-confirm --no-publish --no-push --no-tag
+
+      - id: version
+        run: |
+          VERSION=$(grep '^version' Cargo.toml | sed -E 's/^version[[:space:]]*=[[:space:]]*"//; s/"$//')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create release branch
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          git push origin --delete "release/v$VERSION" || echo "Branch doesn't exist"
+
+          # Prefer beta branch as base if it exists
+          if git show-ref --quiet refs/remotes/origin/beta; then
+            BASE=beta
+          else
+            BASE=main
+          fi
+
+          echo "Creating release branch from $BASE"
+          git checkout $BASE
+          git checkout -b "release/v$VERSION"
+          git push origin "release/v$VERSION"
+
+  build-nix:
+    needs: version
+    uses: ./.github/workflows/build-nix.yml
+    with:
+      channel: ${{ inputs.increment == 'beta' && 'beta' || 'stable' }}
+      ref: release/v${{ needs.version.outputs.version }}
+
+  # build-windows:
+  #   needs: version
+  #   uses: ./.github/workflows/build-windows.yml
+  #   with:
+  #     channel: ${{ inputs.increment == 'beta' && 'beta' || 'stable' }}
+  #     ref: release/v${{ needs.version.outputs.version }}
+
+  # deploy:
+  #   needs: version
+  #   secrets: inherit
+  #   uses: ./.github/workflows/deploy.yml
+  #   with:
+  #     channel: ${{ inputs.increment == 'beta' && 'beta' || 'stable' }}
+  #     ref: release/v${{ needs.version.outputs.version }}
+
+  release:
+    needs:
+      - build-nix
+      # - build-windows
+      # - deploy
+      - version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: release/v${{ needs.version.outputs.version }}
+
+      - name: Git config
+        run: |
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git config user.name github-actions
+          git fetch --all
+
+      - uses: DeterminateSystems/determinate-nix-action@v3
+      - run: |
+          nix profile install nixpkgs#rustup
+          rustup default nightly
+          nix profile add nixpkgs#cargo-release
+
+      - name: Cargo release
+        run: cargo release release -x --no-confirm --no-push
+
+      - name: Merge release into main
+        run: |
+          git switch -c main --track origin/main
+          git merge --no-ff --no-edit release/v${{ needs.version.outputs.version }}
+          git push origin main
+
+      - if: ${{ inputs.increment == 'beta' }}
+        name: Merge release into beta
+        run: |
+          git fetch origin beta || echo "No remote beta yet"
+          if git show-ref --quiet refs/heads/beta; then
+            git checkout beta
+          else
+            git checkout -b beta
+          fi
+          git merge --no-ff --no-edit release/v${{ needs.version.outputs.version }}
+          git push origin beta
+
+      - if: ${{ inputs.increment != 'beta' }}
+        name: Merge release into stable
+        run: |
+          git checkout release/v${{ needs.version.outputs.version }}
+          git checkout -b stable || git checkout stable
+          git merge --no-ff --no-edit release/v${{ needs.version.outputs.version }}
+          git push origin stable
+
+          # Delete beta after promoting to stable
+          git push origin --delete beta || echo "Beta branch already deleted"
+
+      - name: Delete release branch
+        run: git push origin --delete release/v${{ needs.version.outputs.version }}
+
+      - run: mkdir artifacts
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: "build-*"
+          path: artifacts
+
+      - name: Add version to build file names
+        run: |
+          cd artifacts
+          for dir in *; do
+            cd "$dir"
+            for file in *; do
+              ext="${file##*.}"
+              name="${file%.*}"
+              mv "$file" "../${name}-${{ needs.version.outputs.version }}.$ext"
+            done
+            cd ..
+            rm -rf "$dir"
+          done
+
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: artifacts/*
+          generateReleaseNotes: true
+          prerelease: ${{ contains(needs.version.outputs.version, 'beta') }}
+          tag: v${{ needs.version.outputs.version }}

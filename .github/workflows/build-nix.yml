@@ -22,7 +22,7 @@ jobs:
           extra-conf: extra-experimental-features = pipe-operators
       - run: nix profile add nixpkgs#omnix
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.ref || github.ref }}
 
@@ -49,7 +49,7 @@ jobs:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.system }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.ref || github.ref }}
           submodules: true

@@ -107,7 +107,6 @@
                   cargo-release
                   cargo-watch
                   cargo-workspaces
-                  rustup
                 ])
                 ++ (
                   config.packages

@@ -1,0 +1,67 @@
+name: Build Nix
+on:
+  workflow_call:
+    inputs:
+      channel:
+        description: channel to build
+        required: true
+        type: string
+      ref:
+        description: ref to build
+        type: string
+jobs:
+  set-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate.outputs.matrix }}
+    steps:
+      - name: Generate build matrix
+        id: generate
+        run: |
+          PACKAGES=("unavi" "unavi-server")
+          # SYSTEMS=("x86_64-linux" "x86_64-darwin")
+          SYSTEMS=("x86_64-linux")
+
+          declare -A OS_MAP
+          OS_MAP["x86_64-linux"]="ubuntu-latest"
+          OS_MAP["x86_64-darwin"]="macos-latest"
+
+          MATRIX="["
+          for SYS in "${SYSTEMS[@]}"; do
+            for PKG in "${PACKAGES[@]}"; do
+              [ "$MATRIX" != "[" ] && MATRIX+=","
+              OS="${OS_MAP[$SYS]}"
+              MATRIX+="{\"package\":\"$PKG\",\"os\":\"$OS\",\"name\":\"$PKG-$SYS\"}"
+            done
+          done
+          MATRIX+="]"
+
+          echo "$MATRIX"
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+  build:
+    needs: set-matrix
+    strategy:
+      matrix:
+        include: ${{ fromJSON(needs.set-matrix.outputs.matrix) }}
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          submodules: true
+      - uses: DeterminateSystems/determinate-nix-action@v3
+        with:
+          extra-conf: extra-experimental-features = pipe-operators
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - run: nix profile add nixpkgs#gnutar nixpkgs#xz
+      - name: Build package
+        run: |
+          nix build -L .#${{ matrix.package }}
+          tar -cJf ${{ matrix.name }}.tar.xz -C result .
+      - name: Upload artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: build.${{ matrix.name }}
+          path: ${{ matrix.name }}.tar.xz
+          retention-days: 1

@@ -63,7 +63,7 @@ jobs:
         run: nix build -L .#packages.${{ matrix.package }}-${{ inputs.channel }}
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.name }}
           path: result

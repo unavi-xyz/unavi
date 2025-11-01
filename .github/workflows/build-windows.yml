@@ -61,13 +61,13 @@ jobs:
           ls target/wix/
           mv target/wix/*.msi ${{ matrix.package }}-windows.msi
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: build-${{ matrix.package }}-windows
           path: ${{ matrix.package }}-windows.zip
           retention-days: 1
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: build-installer-${{ matrix.package }}-windows
           path: ${{ matrix.package }}-windows.msi

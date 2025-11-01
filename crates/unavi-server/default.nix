@@ -36,6 +36,20 @@ _: {
       };
 
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;
+
+      packageDrv = pkgs.crane.buildPackage (
+        cargoArgs
+        // {
+          inherit cargoArtifacts;
+          doCheck = false;
+
+          postInstall = ''
+            mv $out/bin/* $out
+            rm -r $out/bin
+            cp LICENSE $out
+          '';
+        }
+      );
     in
     {
       checks = {
@@ -50,18 +64,27 @@ _: {
         );
       };
 
-      packages."${pname}" = pkgs.crane.buildPackage (
-        cargoArgs
-        // {
-          inherit cargoArtifacts;
-          doCheck = false;
+      packages = {
+        "${pname}" = packageDrv;
 
-          postInstall = ''
-            mv $out/bin/* $out
-            rm -r $out/bin
-            cp LICENSE $out
+        "${pname}-bundle" = pkgs.stdenv.mkDerivation {
+          inherit pname;
+          version = cargoArgs.pname;
+
+          src = packageDrv;
+
+          nativeBuildInputs = [
+            pkgs.gnutar
+            pkgs.gzip
+          ];
+          buildInputs = [ ];
+          runtimeDependencies = [ ];
+
+          installPhase = ''
+            mkdir -p $out
+            tar -czf $out/${pname}-${pkgs.system}.tar.gz -C $src .
           '';
-        }
-      );
+        };
+      };
     };
 }

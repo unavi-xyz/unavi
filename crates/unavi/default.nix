@@ -82,24 +82,8 @@
       };
 
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;
-    in
-    {
-      checks = {
-        "${pname}-doc" = pkgs.crane.cargoDoc (cargoArgs // { inherit cargoArtifacts; });
-        "${pname}-doctest" = pkgs.crane.cargoDocTest (cargoArgs // { inherit cargoArtifacts; });
-        "${pname}-nextest" = pkgs.crane.cargoNextest (
-          cargoArgs
-          // {
-            inherit cargoArtifacts;
-            cargoExtraArgs = cargoArgs.cargoExtraArgs + " --no-tests pass";
-            preBuild = ''
-              ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
-            '';
-          }
-        );
-      };
 
-      packages."${pname}" = pkgs.crane.buildPackage (
+      packageDrv = pkgs.crane.buildPackage (
         cargoArgs
         // {
           inherit cargoArtifacts;
@@ -117,5 +101,44 @@
           '';
         }
       );
+    in
+    {
+      checks = {
+        "${pname}-doc" = pkgs.crane.cargoDoc (cargoArgs // { inherit cargoArtifacts; });
+        "${pname}-doctest" = pkgs.crane.cargoDocTest (cargoArgs // { inherit cargoArtifacts; });
+        "${pname}-nextest" = pkgs.crane.cargoNextest (
+          cargoArgs
+          // {
+            inherit cargoArtifacts;
+            cargoExtraArgs = cargoArgs.cargoExtraArgs + " --no-tests pass";
+            preBuild = ''
+              ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
+            '';
+          }
+        );
+      };
+
+      packages = {
+        "${pname}" = packageDrv;
+
+        "${pname}-bundle" = pkgs.stdenv.mkDerivation {
+          inherit pname;
+          version = cargoArgs.pname;
+
+          src = packageDrv;
+
+          nativeBuildInputs = [
+            pkgs.gnutar
+            pkgs.gzip
+          ];
+          buildInputs = [ ];
+          runtimeDependencies = [ ];
+
+          installPhase = ''
+            mkdir -p $out
+            tar -czf $out/${pname}-${pkgs.system}.tar.gz -C $src .
+          '';
+        };
+      };
     };
 }

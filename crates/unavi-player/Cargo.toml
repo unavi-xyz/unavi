@@ -19,3 +19,6 @@ bevy_vrm.workspace      = true
 gltf_kun.workspace      = true
 paste                   = "1.0.15"
 unavi-input.path        = "../unavi-input"
+
+[dev-dependencies]
+bevy_rich_text3d = "0.4.2"

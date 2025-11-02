@@ -147,7 +147,7 @@ mod tests {
     //     app.add_plugins((
     //         MinimalPlugins,
     //         AssetPlugin {
-    //             file_path: "../unavi/assets".to_string(),
+    //             file_path: "../unavi-client/assets".to_string(),
     //             ..default()
     //         },
     //         AnimationPlugin,

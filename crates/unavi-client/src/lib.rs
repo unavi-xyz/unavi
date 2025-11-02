@@ -11,7 +11,7 @@ mod scene;
 mod world;
 
 pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
-    let dirs = ProjectDirs::from("", "UNAVI", "unavi").expect("project dirs");
+    let dirs = ProjectDirs::from("", "UNAVI", "unavi-client").expect("project dirs");
     std::fs::create_dir_all(dirs.data_local_dir()).expect("data local dir");
     dirs
 });

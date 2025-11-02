@@ -15,7 +15,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        package: [unavi-app, unavi-server]
+        package: [unavi-client]
     name: ${{ matrix.package }}-windows
     steps:
       - uses: actions/checkout@v5
@@ -26,38 +26,28 @@ jobs:
         with:
           args: install wixtoolset
       - uses: Swatinem/rust-cache@v2
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@nightly
         with:
           targets: x86_64-pc-windows-msvc
       - run: cargo install cargo-wix
+      - run: cargo install cargo-component
       - name: Build assets
-        if: ${{ matrix.package == 'unavi-app' }}
+        if: ${{ matrix.package == 'unavi' }}
         run: |
           cargo wix -p ${{ matrix.package }} --nocapture
           cd crates/${{ matrix.package }}/wix
           ./gen-assets.bat
       - name: Build package
         run: |
-          cargo wix -p ${{ matrix.package }} --nocapture
+          cargo build -p ${{ matrix.package }} --release
           mkdir result
           mv target/x86_64-pc-windows-msvc/release/*.exe result
           cp crates/${{ matrix.package }}/README.md result
           cp LICENSE result
-        env:
-          UNAVI_REGISTRY_DID: ${{ inputs.channel == 'stable' && 'app' || inputs.channel }}.unavi.xyz
       - name: Create zip
         run: Compress-Archive -Path result/* -DestinationPath ${{ matrix.package }}-windows.zip
-      - name: Create msi
-        run: |
-          ls target/wix/
-          mv target/wix/*.msi ${{ matrix.package }}-windows.msi
       - uses: actions/upload-artifact@v5
         with:
-          name: build.${{ matrix.package }}-windows
-          path: ${{ matrix.package }}-windows.zip
-          retention-days: 1
-      - uses: actions/upload-artifact@v5
-        with:
-          name: build.installer-${{ matrix.package }}-windows
-          path: ${{ matrix.package }}-windows.msi
+          name: build-${{ matrix.package }}-x86_64-windows
+          path: ${{ matrix.package }}-x86_64-windows.zip
           retention-days: 1

@@ -18,7 +18,7 @@ jobs:
       - name: Generate build matrix
         id: generate
         run: |
-          PACKAGES=("unavi" "unavi-server")
+          PACKAGES=("unavi-client" "unavi-server")
           # SYSTEMS=("x86_64-linux" "x86_64-darwin")
           SYSTEMS=("x86_64-linux")
 

@@ -11,7 +11,7 @@ fn script_invalid() {
     // Write an invalid wasm asset.
     let bytes = [0; 128];
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push("../unavi/assets/wasm/test/invalid.wasm");
+    path.push("../unavi-client/assets/wasm/test/invalid.wasm");
     std::fs::write(path, bytes).expect("write file");
 
     // This should error, but not panic.

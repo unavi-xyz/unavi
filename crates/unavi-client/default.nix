@@ -3,7 +3,7 @@
   perSystem =
     { pkgs, lib, ... }:
     let
-      pname = "unavi";
+      pname = "unavi-client";
 
       wac-cli = pkgs.rustPlatform.buildRustPackage rec {
         pname = "wac-cli";
@@ -120,25 +120,6 @@
 
       packages = {
         "${pname}" = packageDrv;
-
-        "${pname}-bundle" = pkgs.stdenv.mkDerivation {
-          inherit pname;
-          version = cargoArgs.pname;
-
-          src = packageDrv;
-
-          nativeBuildInputs = [
-            pkgs.gnutar
-            pkgs.gzip
-          ];
-          buildInputs = [ ];
-          runtimeDependencies = [ ];
-
-          installPhase = ''
-            mkdir -p $out
-            tar -czf $out/${pname}-${pkgs.system}.tar.gz -C $src .
-          '';
-        };
       };
     };
 }

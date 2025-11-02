@@ -8737,7 +8737,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8c1ae7cc0fdb8b842d65d127cb981574b0d2b249b74d1c7a2986863dc134f71"
 
 [[package]]
-name = "unavi"
+name = "unavi-client"
 version = "0.0.11-beta.1"
 dependencies = [
  "anyhow",

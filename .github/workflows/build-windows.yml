@@ -15,7 +15,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        package: [unavi-client]
+        package: [unavi-client unavi-launcher]
     name: ${{ matrix.package }}-windows
     steps:
       - uses: actions/checkout@v5

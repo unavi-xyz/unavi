@@ -61,6 +61,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v5
         with:
-          name: build.${{ matrix.name }}
+          name: build-${{ matrix.name }}
           path: ${{ matrix.name }}.tar.xz
           retention-days: 1

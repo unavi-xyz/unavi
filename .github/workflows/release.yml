@@ -51,7 +51,9 @@ jobs:
 
           VERSION=${{ steps.version.outputs.version }}
 
-          git push origin --delete "release/v$VERSION" || "No existing release branch"
+          if git show-ref --quiet "refs/remotes/origin/release/v$VERSION"; then
+            git push origin --delete "release/v$VERSION"
+          fi
 
           echo "Creating release branch from $BASE"
           git checkout $BASE
@@ -100,7 +102,7 @@ jobs:
       - run: mkdir artifacts
       - uses: actions/download-artifact@v6
         with:
-          pattern: "build.*"
+          pattern: "build-*"
           path: artifacts
       - name: Add version to build file names
         run: |
@@ -133,7 +135,7 @@ jobs:
       - name: Merge release into beta
         if: ${{ inputs.increment == 'beta' }}
         run: |
-          if git show-ref --quiet refs/heads/beta; then
+          if git show-ref --quiet refs/remotes/origin/beta; then
             git fetch origin beta
             git checkout beta
           else

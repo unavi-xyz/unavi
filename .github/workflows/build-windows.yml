@@ -78,5 +78,5 @@ jobs:
       - uses: actions/upload-artifact@v5
         with:
           name: build-${{ matrix.package }}-x86_64-windows-installer
-          path: ${{ matrix.package }}-86_64-windows.msi
+          path: ${{ matrix.package }}-x86_64-windows.msi
           retention-days: 1

@@ -63,12 +63,12 @@ jobs:
     with:
       channel: ${{ inputs.increment == 'beta' && 'beta' || 'stable' }}
       ref: release/v${{ needs.version.outputs.version }}
-  # build-windows:
-  #   needs: version
-  #   uses: ./.github/workflows/build-windows.yml
-  #   with:
-  #     channel: ${{ inputs.increment == 'beta' && 'beta' || 'stable' }}
-  #     ref: release/v${{ needs.version.outputs.version }}
+  build-windows:
+    needs: version
+    uses: ./.github/workflows/build-windows.yml
+    with:
+      channel: ${{ inputs.increment == 'beta' && 'beta' || 'stable' }}
+      ref: release/v${{ needs.version.outputs.version }}
   # deploy:
   #   needs: version
   #   secrets: inherit
@@ -79,7 +79,7 @@ jobs:
   release:
     needs:
       - build-nix
-      # - build-windows
+      - build-windows
       # - deploy
       - version
     runs-on: ubuntu-latest
@@ -108,7 +108,7 @@ jobs:
               # Split at the first dot
               base="${file%%.*}"
               ext="${file#*.}"
-              mv "$file" "../${base}.${{ needs.version.outputs.version }}.${ext}"
+              mv "$file" "../${base}-${{ needs.version.outputs.version }}.${ext}"
             done
             cd ..
             rm -rf "$dir"

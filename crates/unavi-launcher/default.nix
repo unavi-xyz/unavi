@@ -1,5 +1,4 @@
-_:
-{
+_: {
   perSystem =
     { pkgs, lib, ... }:
     let
@@ -43,10 +42,6 @@ _:
         // {
           inherit cargoArtifacts;
           doCheck = false;
-
-          preBuild = ''
-            ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
-          '';
 
           postInstall = ''
             mv $out/bin/* $out

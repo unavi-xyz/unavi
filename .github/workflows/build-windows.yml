@@ -3,25 +3,48 @@ on:
   workflow_call:
     inputs:
       channel:
-        description: The channel to build.
+        description: channel to build
         required: true
         type: string
       ref:
-        description: The ref to build.
-        required: true
+        description: ref to build
         type: string
 jobs:
-  build-windows:
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        package: [unavi-client unavi-launcher]
-    name: ${{ matrix.package }}-windows
+  build-wasm:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.ref || github.ref }}
-          submodules: true
+      - uses: DeterminateSystems/determinate-nix-action@v3
+        with:
+          extra-conf: extra-experimental-features = pipe-operators
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - run: ls
+      - run: ls scripts
+      - name: Build WASM assets
+        run: nix develop -c "nu scripts/build-wasm.nu"
+      - name: Upload artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: wasm-assets
+          path: crates/unavi-client/assets/wasm
+          retention-days: 1
+  build-windows:
+    needs: build-wasm
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        package: [unavi-client unavi-launcher]
+    name: ${{ matrix.package }}-x86_64-windows
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - uses: actions/download-artifact@v6
+        with:
+          pattern: wasm-assets
+          path: crates/unavi-client/assets/wasm
       - uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: install wixtoolset
@@ -30,13 +53,10 @@ jobs:
         with:
           targets: x86_64-pc-windows-msvc
       - run: cargo install cargo-wix
-      - run: cargo install cargo-component
-      - name: Build assets
-        if: ${{ matrix.package == 'unavi' }}
+      - name: Build wix
+        if: ${{ matrix.package == 'unavi-launcher' }}
         run: |
           cargo wix -p ${{ matrix.package }} --nocapture
-          cd crates/${{ matrix.package }}/wix
-          ./gen-assets.bat
       - name: Build package
         run: |
           cargo build -p ${{ matrix.package }} --release
@@ -45,9 +65,19 @@ jobs:
           cp crates/${{ matrix.package }}/README.md result
           cp LICENSE result
       - name: Create zip
-        run: Compress-Archive -Path result/* -DestinationPath ${{ matrix.package }}-windows.zip
+        if: ${{ matrix.package != 'unavi-launcher' }}
+        run: Compress-Archive -Path result/* -DestinationPath ${{ matrix.package }}-x86_64-windows.zip
       - uses: actions/upload-artifact@v5
         with:
           name: build-${{ matrix.package }}-x86_64-windows
           path: ${{ matrix.package }}-x86_64-windows.zip
+          retention-days: 1
+      - name: Create msi
+        run: |
+          ls target/wix/
+          mv target/wix/*.msi ${{ matrix.package }}-x86_64-windows.msi
+      - uses: actions/upload-artifact@v5
+        with:
+          name: build-${{ matrix.package }}-x86_64-windows-installer
+          path: ${{ matrix.package }}-86_64-windows.msi
           retention-days: 1

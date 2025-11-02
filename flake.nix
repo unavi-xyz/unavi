@@ -115,33 +115,42 @@
               yamlfmt.enable = true;
             };
 
-            devShells.default = pkgs.crane.devShell {
-              packages =
-                (with pkgs; [
-                  cargo-deny
-                  cargo-edit
-                  cargo-machete
-                  cargo-nextest
-                  cargo-release
-                  cargo-watch
-                  cargo-workspaces
-                  rustup
-                ])
-                ++ [ cargo-wix ]
-                ++ (
+            devShells =
+              let
+                packages =
                   config.packages
                   |> lib.attrValues
                   |> lib.flip pkgs.lib.forEach (x: x.buildInputs ++ x.nativeBuildInputs)
-                  |> lib.concatLists
-                );
+                  |> lib.concatLists;
 
-              LD_LIBRARY_PATH =
-                config.packages
-                |> lib.attrValues
-                |> lib.flip pkgs.lib.forEach (x: x.runtimeDependencies)
-                |> lib.concatLists
-                |> lib.makeLibraryPath;
-            };
+                LD_LIBRARY_PATH =
+                  config.packages
+                  |> lib.attrValues
+                  |> lib.flip pkgs.lib.forEach (x: x.runtimeDependencies)
+                  |> lib.concatLists
+                  |> lib.makeLibraryPath;
+              in
+              {
+                minimal = pkgs.crane.devShell { inherit packages LD_LIBRARY_PATH; };
+
+                default = pkgs.crane.devShell {
+                  packages =
+                    (with pkgs; [
+                      cargo-deny
+                      cargo-edit
+                      cargo-machete
+                      cargo-nextest
+                      cargo-release
+                      cargo-watch
+                      cargo-workspaces
+                      rustup
+                    ])
+                    ++ [ cargo-wix ]
+                    ++ packages;
+
+                  inherit LD_LIBRARY_PATH;
+                };
+              };
           };
       }
     );

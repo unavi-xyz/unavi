@@ -94,7 +94,7 @@
                     <Component Id="binary0" Guid="*">
                         <File
                             Id="exe0"
-                            Name="unavi.exe"
+                            Name="unavi-launcher.exe"
                             DiskId="1"
                             Source="$(var.CargoTargetBinDir)\unavi-launcher.exe"
                             KeyPath="yes"
@@ -111,7 +111,7 @@
                             Directory="ProgramMenuDir" Name="$(var.AppName)"
                             WorkingDirectory="APPLICATIONFOLDER"
                             Icon="ProductICO"
-                            Target="[APPLICATIONFOLDER]unavi.exe"
+                            Target="[APPLICATIONFOLDER]unavi-launcher.exe"
                             />
 
                         <RemoveFolder Id="RemoveProgramMenuDir" On="uninstall" Directory="ProgramMenuDir" />
@@ -137,10 +137,8 @@
             AllowAdvertise="no"
             Display="expand"
             Absent="disallow">
-
             <ComponentRef Id="binary0"/>
             <ComponentRef Id="License"/>
-            <ComponentGroupRef Id="AssetsGroup" />
         </Feature>
 
         <Feature

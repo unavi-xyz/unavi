@@ -30,7 +30,7 @@ jobs:
           git config user.name github-actions
       - uses: DeterminateSystems/determinate-nix-action@v3
       - run: |
-          nix profile install nixpkgs#rustup
+          nix profile add nixpkgs#rustup
           rustup default nightly
           nix profile add nixpkgs#cargo-release
       - name: Bump version
@@ -115,7 +115,7 @@ jobs:
           done
       - uses: DeterminateSystems/determinate-nix-action@v3
       - run: |
-          nix profile install nixpkgs#rustup
+          nix profile add nixpkgs#rustup
           rustup default nightly
           nix profile add nixpkgs#cargo-release
       - name: Merge release into main

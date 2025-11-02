@@ -1,6 +1,6 @@
 .serena
 CLAUDE.md
-crates/unavi/assets/models
-crates/unavi/assets/wasm
+crates/unavi-client/assets/models
+crates/unavi-client/assets/wasm
 result
 target

@@ -69,6 +69,7 @@
               clang
               lld
               mold
+              nushell
               pkg-config
               wasm-tools
             ]
@@ -90,7 +91,7 @@
           doCheck = false;
 
           preBuild = ''
-            ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
+            nu scripts/build-wasm.nu
           '';
 
           postInstall = ''
@@ -112,7 +113,7 @@
             inherit cargoArtifacts;
             cargoExtraArgs = cargoArgs.cargoExtraArgs + " --no-tests pass";
             preBuild = ''
-              ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
+              nu scripts/build-wasm.nu
             '';
           }
         );

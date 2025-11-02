@@ -67,15 +67,18 @@ jobs:
         if: ${{ matrix.package != 'unavi-launcher' }}
         run: Compress-Archive -Path result/* -DestinationPath ${{ matrix.package }}-x86_64-windows.zip
       - uses: actions/upload-artifact@v5
+        if: ${{ matrix.package != 'unavi-launcher' }}
         with:
           name: build-${{ matrix.package }}-x86_64-windows
           path: ${{ matrix.package }}-x86_64-windows.zip
           retention-days: 1
       - name: Create msi
+        if: ${{ matrix.package == 'unavi-launcher' }}
         run: |
           ls target/wix/
           mv target/wix/*.msi ${{ matrix.package }}-x86_64-windows.msi
       - uses: actions/upload-artifact@v5
+        if: ${{ matrix.package == 'unavi-launcher' }}
         with:
           name: build-${{ matrix.package }}-x86_64-windows-installer
           path: ${{ matrix.package }}-x86_64-windows.msi

@@ -20,8 +20,6 @@ _: {
         cargoExtraArgs = "-p ${pname}";
         strictDeps = true;
 
-        runtimeDependencies = [ ];
-
         nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (
           with pkgs;
           [
@@ -29,10 +27,26 @@ _: {
             lld
             mold
             pkg-config
+            python3
           ]
         );
 
-        buildInputs = runtimeDependencies;
+        buildInputs = with pkgs; [
+          at-spi2-atk
+          atkmm
+          cairo
+          gdk-pixbuf
+          glib
+          gtk3
+          harfbuzz
+          libiconv
+          librsvg
+          libsoup_3
+          openssl
+          pango
+          webkitgtk_4_1
+          xdotool
+        ];
       };
 
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;

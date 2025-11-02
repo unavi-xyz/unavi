@@ -20,8 +20,6 @@ _: {
         cargoExtraArgs = "-p ${pname}";
         strictDeps = true;
 
-        runtimeDependencies = [ ];
-
         nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (
           with pkgs;
           [
@@ -32,7 +30,7 @@ _: {
           ]
         );
 
-        buildInputs = runtimeDependencies;
+        buildInputs = [ ];
       };
 
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;

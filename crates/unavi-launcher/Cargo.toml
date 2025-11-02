@@ -11,3 +11,4 @@ workspace = true
 
 [dependencies]
 anyhow.workspace = true
+dioxus           = { features = ["native", "router"], version = "0.7.0" }

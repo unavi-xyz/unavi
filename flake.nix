@@ -126,7 +126,7 @@
                 LD_LIBRARY_PATH =
                   config.packages
                   |> lib.attrValues
-                  |> lib.flip pkgs.lib.forEach (x: x.runtimeDependencies)
+                  |> lib.flip pkgs.lib.forEach (x: x.buildInputs)
                   |> lib.concatLists
                   |> lib.makeLibraryPath;
               in
@@ -143,6 +143,7 @@
                       cargo-release
                       cargo-watch
                       cargo-workspaces
+                      dioxus-cli
                       rustup
                     ])
                     ++ [ cargo-wix ]

@@ -46,21 +46,6 @@
         cargoExtraArgs = "-p ${pname}";
         strictDeps = true;
 
-        runtimeDependencies = pkgs.lib.optionals pkgs.stdenv.isLinux (
-          with pkgs;
-          [
-            alsa-lib
-            libxkbcommon
-            udev
-            vulkan-loader
-            wayland
-            xorg.libX11
-            xorg.libXcursor
-            xorg.libXi
-            xorg.libXrandr
-          ]
-        );
-
         nativeBuildInputs =
           pkgs.lib.optionals pkgs.stdenv.isLinux (
             with pkgs;
@@ -79,7 +64,20 @@
             inputs.wit-deps.packages.${pkgs.system}.wit-deps
           ];
 
-        buildInputs = runtimeDependencies;
+        buildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (
+          with pkgs;
+          [
+            alsa-lib
+            libxkbcommon
+            udev
+            vulkan-loader
+            wayland
+            xorg.libX11
+            xorg.libXcursor
+            xorg.libXi
+            xorg.libXrandr
+          ]
+        );
       };
 
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;

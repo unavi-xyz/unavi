@@ -33,6 +33,7 @@
         imports = [
           inputs.treefmt-nix.flakeModule
           ./crates/unavi-client
+          ./crates/unavi-launcher
           ./crates/unavi-server
         ];
 

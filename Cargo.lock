@@ -8783,6 +8783,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-launcher"
+version = "0.0.10"
+dependencies = [
+ "anyhow",
+]
+
+[[package]]
 name = "unavi-player"
 version = "0.0.11-beta.1"
 dependencies = [

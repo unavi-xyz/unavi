@@ -43,7 +43,10 @@ pub fn SelfUpdate() -> Element {
 
     let status_text = match status() {
         UpdateStatus::Checking => "checking for updates...",
-        UpdateStatus::Downloading { ref version, progress } => {
+        UpdateStatus::Downloading {
+            ref version,
+            progress,
+        } => {
             return rsx! {
                 div { class: "container",
                     h1 { "UNAVI Launcher" }

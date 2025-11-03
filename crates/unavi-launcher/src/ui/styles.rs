@@ -16,8 +16,9 @@ pub const APP_STYLES: &str = r#"
     .container {
         width: 100%;
         max-width: 400px;
-        padding: 40px;
+        padding: 40px 50px;
         text-align: center;
+        position: relative;
     }
     h1 {
         margin: 0 0 40px 0;
@@ -25,11 +26,12 @@ pub const APP_STYLES: &str = r#"
         font-size: 32px;
         font-weight: 600;
         letter-spacing: -0.02em;
+        min-height: 38px;
     }
     .play-button {
         width: 100%;
         max-width: 300px;
-        margin: 0 auto 40px;
+        margin: 0 auto 20px;
         background: #fff;
         color: #000;
         border: none;
@@ -38,10 +40,13 @@ pub const APP_STYLES: &str = r#"
         font-size: 18px;
         font-weight: 600;
         cursor: pointer;
-        transition: opacity 0.15s;
+        transition: background 0.2s ease;
     }
     .play-button:hover:not(:disabled) {
-        opacity: 0.9;
+        background: #e0e0e0;
+    }
+    .play-button:active:not(:disabled) {
+        background: #d0d0d0;
     }
     .play-button:disabled {
         background: #333;
@@ -73,6 +78,7 @@ pub const APP_STYLES: &str = r#"
         align-items: center;
         justify-content: center;
         gap: 10px;
+        min-height: 20px;
     }
     .loading {
         width: 14px;
@@ -94,11 +100,14 @@ pub const APP_STYLES: &str = r#"
         font-size: 14px;
         font-weight: 500;
         cursor: pointer;
-        transition: opacity 0.15s;
+        transition: background 0.2s ease;
         font-family: inherit;
     }
     button:hover:not(:disabled) {
-        opacity: 0.9;
+        background: #e0e0e0;
+    }
+    button:active:not(:disabled) {
+        background: #d0d0d0;
     }
     button:disabled {
         background: #333;
@@ -111,38 +120,44 @@ pub const APP_STYLES: &str = r#"
         border-radius: 8px;
         color: #f88;
         padding: 12px;
-        margin: 20px 0;
+        margin: 0 0 20px 0;
         font-size: 13px;
     }
     .version {
         color: #444;
         font-size: 11px;
-        margin-top: 40px;
+        margin-top: 20px;
         display: flex;
         flex-direction: column;
         gap: 4px;
     }
     .gear-button {
         position: absolute;
-        top: 20px;
-        right: 20px;
-        width: 32px;
-        height: 32px;
+        top: 8px;
+        right: 8px;
+        width: 40px;
+        height: 40px;
         padding: 0;
-        background: transparent;
-        border: 1px solid #333;
-        border-radius: 6px;
+        background: transparent !important;
+        border: 1px solid transparent;
+        border-radius: 50%;
         color: #666;
-        font-size: 16px;
+        font-size: 18px;
         cursor: pointer;
-        transition: all 0.15s;
+        transition: all 0.2s ease;
         display: flex;
         align-items: center;
         justify-content: center;
     }
     .gear-button:hover {
-        background: #111;
-        border-color: #666;
-        color: #999;
+        color: #aaa !important;
+        background: rgba(255, 255, 255, 0.03) !important;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+    .gear-button:active {
+        color: #ccc !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-color: rgba(255, 255, 255, 0.15);
+        transform: scale(0.95);
     }
 "#;

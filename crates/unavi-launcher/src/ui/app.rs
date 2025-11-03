@@ -7,14 +7,26 @@ use super::{
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 pub enum Route {
+    #[route("/settings")]
+    Settings,
+
+    #[layout(Title)]
     #[route("/")]
     SelfUpdate,
     #[route("/client-update")]
     ClientUpdate,
     #[route("/play")]
     Play,
-    #[route("/settings")]
-    Settings,
+}
+
+#[component]
+pub fn Title() -> Element {
+    rsx! {
+            div { class: "container",
+                h1 { "UNAVI" }
+        Outlet::<Route> {}
+    }
+        }
 }
 
 #[component]

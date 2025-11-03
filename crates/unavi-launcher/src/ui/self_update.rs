@@ -30,11 +30,11 @@ pub fn SelfUpdate() -> Element {
             }
             Ok(Err(e)) => {
                 error!("Error updating launcher: {e:?}");
-                status.set(UpdateStatus::Error(format!("{e}")));
+                status.set(UpdateStatus::Error(format!("launcher update failed: {e}")));
             }
             Err(e) => {
                 error!("Task error: {e:?}");
-                status.set(UpdateStatus::Error(format!("task error: {e}")));
+                status.set(UpdateStatus::Error(format!("launcher update error: {e}")));
             }
         }
     });
@@ -46,16 +46,13 @@ pub fn SelfUpdate() -> Element {
             progress,
         } => {
             return rsx! {
-                div { class: "container",
-                    h1 { "UNAVI" }
-                    div { class: "status",
-                        span { class: "loading" }
-                        {
-                            if let Some(p) = progress {
-                                format!("downloading launcher ({:.0}%)", p)
-                            } else {
-                                "downloading launcher...".to_string()
-                            }
+                div { class: "status",
+                    span { class: "loading" }
+                    {
+                        if let Some(p) = progress {
+                            format!("downloading launcher ({:.0}%)", p)
+                        } else {
+                            "downloading launcher...".to_string()
                         }
                     }
                 }
@@ -65,41 +62,32 @@ pub fn SelfUpdate() -> Element {
         UpdateStatus::UpdatedNeedsRestart => "updated, please restart",
         UpdateStatus::Offline => {
             return rsx! {
-                div { class: "container",
-                    h1 { "UNAVI" }
-                    div { class: "status", "offline, skipping update" }
-                    button {
-                        onclick: move |_| {
-                            nav.push(Route::ClientUpdate);
-                        },
-                        "Continue"
-                    }
+                div { class: "status", "offline, skipping update" }
+                button {
+                    onclick: move |_| {
+                        nav.push(Route::ClientUpdate);
+                    },
+                    "Continue"
                 }
             };
         }
         UpdateStatus::Error(ref e) => {
             return rsx! {
-                div { class: "container",
-                    h1 { "UNAVI" }
-                    div { class: "error", "error: {e}" }
-                    button {
-                        onclick: move |_| {
-                            nav.push(Route::ClientUpdate);
-                        },
-                        "Continue Anyway"
-                    }
+                div { class: "error", "{e}" }
+                button {
+                    onclick: move |_| {
+                        nav.push(Route::ClientUpdate);
+                    },
+                    "Continue Anyway"
                 }
             };
         }
     };
 
     rsx! {
-        div { class: "container",
-            h1 { "UNAVI" }
-            div { class: "status",
-                span { class: "loading" }
-                "{status_text}"
-            }
+        div { class: "status",
+            span { class: "loading" }
+            "{status_text}"
         }
     }
 }

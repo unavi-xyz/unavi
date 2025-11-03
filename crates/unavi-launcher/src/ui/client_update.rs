@@ -31,11 +31,15 @@ pub fn ClientUpdate() -> Element {
             }
             Ok(Err(e)) => {
                 error!("Error checking client updates: {e:?}");
-                update_status.set(Some(UpdateStatus::Error(format!("{e}"))));
+                update_status.set(Some(UpdateStatus::Error(format!(
+                    "client update failed: {e}"
+                ))));
             }
             Err(e) => {
                 error!("Task error: {e:?}");
-                update_status.set(Some(UpdateStatus::Error(format!("task error: {e}"))));
+                update_status.set(Some(UpdateStatus::Error(format!(
+                    "client update error: {e}"
+                ))));
             }
         }
     });
@@ -44,16 +48,13 @@ pub fn ClientUpdate() -> Element {
         Some(UpdateStatus::Checking) => "checking for updates...",
         Some(UpdateStatus::Downloading { version, progress }) => {
             return rsx! {
-                div { class: "container",
-                    h1 { "UNAVI" }
-                    div { class: "status",
-                        span { class: "loading" }
-                        {
-                            if let Some(p) = progress {
-                                format!("downloading v{version} ({:.0}%)", p)
-                            } else {
-                                format!("downloading v{version}...")
-                            }
+                div { class: "status",
+                    span { class: "loading" }
+                    {
+                        if let Some(p) = progress {
+                            format!("downloading v{version} ({:.0}%)", p)
+                        } else {
+                            format!("downloading v{version}...")
                         }
                     }
                 }
@@ -63,23 +64,17 @@ pub fn ClientUpdate() -> Element {
         Some(UpdateStatus::UpdatedNeedsRestart) => "updated successfully",
         Some(UpdateStatus::Offline) => {
             return rsx! {
-                div { class: "container",
-                    h1 { "UNAVI" }
-                    div { class: "status", "offline, skipping update" }
-                }
+                div { class: "status", "offline, skipping update" }
             };
         }
         Some(UpdateStatus::Error(e)) => {
             return rsx! {
-                div { class: "container",
-                    h1 { "UNAVI" }
-                    div { class: "error", "error: {e}" }
-                    button {
-                        onclick: move |_| {
-                            nav.push(Route::Play);
-                        },
-                        "Continue Anyway"
-                    }
+                div { class: "error", "{e}" }
+                button {
+                    onclick: move |_| {
+                        nav.push(Route::Play);
+                    },
+                    "Continue Anyway"
                 }
             };
         }
@@ -87,12 +82,9 @@ pub fn ClientUpdate() -> Element {
     };
 
     rsx! {
-        div { class: "container",
-            h1 { "UNAVI" }
-            div { class: "status",
-                span { class: "loading" }
-                "{status_text}"
-            }
+        div { class: "status",
+            span { class: "loading" }
+            "{status_text}"
         }
     }
 }

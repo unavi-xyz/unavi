@@ -5,7 +5,7 @@ use super::app::Route;
 use crate::update::client;
 
 #[component]
-pub fn Play() -> Element {
+fn PlayContent() -> Element {
     let mut launch_error = use_signal(|| None::<String>);
     let mut client_running = use_signal(|| false);
 
@@ -29,47 +29,52 @@ pub fn Play() -> Element {
         }
     };
 
-    let nav = navigator();
-
     rsx! {
-        div { class: "container",
-            button {
-                class: "gear-button",
-                onclick: move |_| {
-                    nav.push(Route::Settings);
-                },
-                "⚙"
-            }
-
-            h1 { "UNAVI" }
-
-            button {
-                class: "play-button",
-                onclick: handle_launch,
-                disabled: client_running(),
-                {
-                    if client_running() {
-                        "Running"
-                    } else {
-                        "Play"
-                    }
-                }
-            }
-
-            if let Some(ref err) = *launch_error.read() {
-                div { class: "error", "{err}" }
-            }
-
-            div { class: "version",
-                div { "launcher v{env!(\"CARGO_PKG_VERSION\")}" }
-                {
-                    if let Some(client_ver) = client::installed_client_version() {
-                        rsx! { div { "client v{client_ver}" } }
-                    } else {
-                        rsx! {}
-                    }
+        button {
+            class: "play-button",
+            onclick: handle_launch,
+            disabled: client_running(),
+            {
+                if client_running() {
+                    "Running"
+                } else {
+                    "Play"
                 }
             }
         }
+
+        div { style: "min-height: 40px;",
+            if let Some(ref err) = *launch_error.read() {
+                div { class: "error", "{err}" }
+            }
+        }
+
+        div { class: "version",
+            div { "launcher v{env!(\"CARGO_PKG_VERSION\")}" }
+            {
+                if let Some(client_ver) = client::installed_client_version() {
+                    rsx! { div { "client v{client_ver}" } }
+                } else {
+                    rsx! {}
+                }
+            }
+        }
+    }
+}
+
+#[component]
+pub fn Play() -> Element {
+    let nav = navigator();
+
+    rsx! {
+        button {
+            class: "gear-button",
+            onclick: move |_| {
+                nav.push(Route::Settings);
+            },
+            "⚙"
+        }
+
+        PlayContent {}
     }
 }

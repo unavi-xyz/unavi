@@ -5,6 +5,7 @@ use std::{
 
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
+use tracing::info;
 
 use crate::DIRS;
 
@@ -62,6 +63,7 @@ impl Config {
     pub fn save(&self) -> anyhow::Result<()> {
         let path = Self::config_path();
         let contents = toml::to_string_pretty(self).context("serialize config")?;
+        info!("writing config to {}", path.to_string_lossy());
         fs::write(&path, contents).context("write config file")?;
         Ok(())
     }

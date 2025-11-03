@@ -1,4 +1,7 @@
-use std::{fs, io::{Read, Write}};
+use std::{
+    fs,
+    io::{Read, Write},
+};
 
 use anyhow::{Context, bail};
 use self_update::ArchiveKind;

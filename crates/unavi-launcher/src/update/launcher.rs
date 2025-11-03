@@ -1,6 +1,5 @@
 use std::{path::Path, process::Command};
 
-use anyhow::Context;
 use self_update::ArchiveKind;
 use semver::Version;
 use tracing::info;

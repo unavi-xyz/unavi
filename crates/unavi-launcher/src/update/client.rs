@@ -1,10 +1,4 @@
-use std::{
-    fs,
-    io::{Read, Write},
-    path::PathBuf,
-    process::Command,
-    sync::{Arc, Mutex},
-};
+use std::{fs, path::PathBuf, process::Command};
 
 use anyhow::Context;
 use self_update::ArchiveKind;

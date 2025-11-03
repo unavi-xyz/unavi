@@ -2,49 +2,47 @@ use dioxus::prelude::*;
 use tracing::error;
 
 use super::app::Route;
-
-use crate::update::{UpdateStatus, launcher};
+use crate::update::{UpdateStatus, client};
 
 #[component]
-pub fn SelfUpdate() -> Element {
+pub fn ClientUpdate() -> Element {
     let nav = navigator();
-    let mut status = use_signal(|| UpdateStatus::Checking);
+    let mut update_status = use_signal(|| None::<UpdateStatus>);
 
     use_coroutine(move |_: UnboundedReceiver<()>| async move {
+        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+
         let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
 
         let handle = tokio::task::spawn_blocking(move || {
-            launcher::update_launcher_with_callback(move |s| {
+            client::update_client_with_callback(move |s| {
                 let _ = tx.send(s);
             })
         });
 
-        while let Some(update_status) = rx.recv().await {
-            status.set(update_status);
+        while let Some(status) = rx.recv().await {
+            update_status.set(Some(status));
         }
 
         match handle.await {
             Ok(Ok(())) => {
                 tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-                nav.push(Route::ClientUpdate);
+                nav.push(Route::Play);
             }
             Ok(Err(e)) => {
-                error!("Error updating launcher: {e:?}");
-                status.set(UpdateStatus::Error(format!("{e}")));
+                error!("Error checking client updates: {e:?}");
+                update_status.set(Some(UpdateStatus::Error(format!("{e}"))));
             }
             Err(e) => {
                 error!("Task error: {e:?}");
-                status.set(UpdateStatus::Error(format!("task error: {e}")));
+                update_status.set(Some(UpdateStatus::Error(format!("task error: {e}"))));
             }
         }
     });
 
-    let status_text = match status() {
-        UpdateStatus::Checking => "checking for updates...",
-        UpdateStatus::Downloading {
-            version: _,
-            progress,
-        } => {
+    let status_text = match update_status.read().as_ref() {
+        Some(UpdateStatus::Checking) => "checking for updates...",
+        Some(UpdateStatus::Downloading { version, progress }) => {
             return rsx! {
                 div { class: "container",
                     h1 { "UNAVI" }
@@ -52,45 +50,40 @@ pub fn SelfUpdate() -> Element {
                         span { class: "loading" }
                         {
                             if let Some(p) = progress {
-                                format!("downloading launcher ({:.0}%)", p)
+                                format!("downloading v{version} ({:.0}%)", p)
                             } else {
-                                "downloading launcher...".to_string()
+                                format!("downloading v{version}...")
                             }
                         }
                     }
                 }
             };
         }
-        UpdateStatus::UpToDate => "up to date, launching...",
-        UpdateStatus::UpdatedNeedsRestart => "updated, please restart",
-        UpdateStatus::Offline => {
+        Some(UpdateStatus::UpToDate) => "up to date",
+        Some(UpdateStatus::UpdatedNeedsRestart) => "updated successfully",
+        Some(UpdateStatus::Offline) => {
             return rsx! {
                 div { class: "container",
                     h1 { "UNAVI" }
                     div { class: "status", "offline, skipping update" }
-                    button {
-                        onclick: move |_| {
-                            nav.push(Route::ClientUpdate);
-                        },
-                        "Continue"
-                    }
                 }
             };
         }
-        UpdateStatus::Error(ref e) => {
+        Some(UpdateStatus::Error(e)) => {
             return rsx! {
                 div { class: "container",
                     h1 { "UNAVI" }
                     div { class: "error", "error: {e}" }
                     button {
                         onclick: move |_| {
-                            nav.push(Route::ClientUpdate);
+                            nav.push(Route::Play);
                         },
                         "Continue Anyway"
                     }
                 }
             };
         }
+        None => "checking for updates...",
     };
 
     rsx! {

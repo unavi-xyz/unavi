@@ -1,4 +1,10 @@
-use std::{fs, path::PathBuf, process::Command};
+use std::{
+    fs,
+    io::{Read, Write},
+    path::PathBuf,
+    process::Command,
+    sync::{Arc, Mutex},
+};
 
 use anyhow::Context;
 use self_update::ArchiveKind;
@@ -8,7 +14,8 @@ use tracing::info;
 use super::{
     UpdateStatus,
     common::{
-        REPO_NAME, REPO_OWNER, USE_BETA, decompress_xz, extract_archive, get_platform_target,
+        REPO_NAME, REPO_OWNER, decompress_xz, download_with_progress, extract_archive,
+        get_platform_target, use_beta,
     },
 };
 use crate::DIRS;
@@ -108,7 +115,7 @@ where
         .build()?
         .fetch()?
         .into_iter()
-        .find(|r| r.version.contains("beta") == USE_BETA)
+        .find(|r| r.version.contains("beta") == use_beta())
         .ok_or(anyhow::anyhow!("no valid release found"))?;
 
     let latest_version = Version::parse(&latest_release.version)?;
@@ -132,21 +139,27 @@ where
         .find(|a| a.name.contains("unavi-client") && a.name.contains(simple_target.release_str()))
         .ok_or(anyhow::anyhow!("client asset not found in release"))?;
 
-    on_status(UpdateStatus::Downloading(latest_version.to_string()));
+    on_status(UpdateStatus::Downloading {
+        version: latest_version.to_string(),
+        progress: None,
+    });
 
     let tmp_dir = tempfile::Builder::new()
         .prefix("unavi-client-update")
         .tempdir()?;
     let tmp_archive_path = tmp_dir.path().join(&asset.name);
-    let tmp_archive = fs::File::create(&tmp_archive_path).context("create archive file")?;
     info!(
         "Downloading client to: {}",
         tmp_archive_path.to_string_lossy()
     );
 
-    self_update::Download::from_url(&asset.download_url)
-        .set_header(reqwest::header::ACCEPT, "application/octet-stream".parse()?)
-        .download_to(&tmp_archive)?;
+    // Download with progress tracking
+    download_with_progress(&asset.download_url, &tmp_archive_path, |progress| {
+        on_status(UpdateStatus::Downloading {
+            version: latest_version.to_string(),
+            progress: Some(progress),
+        });
+    })?;
 
     let extract_path = client_dir(&latest_version);
     fs::create_dir_all(&extract_path)?;

@@ -11277,8 +11277,10 @@ dependencies = [
  "self-replace",
  "self_update",
  "semver",
+ "serde",
  "tempfile",
  "tokio",
+ "toml",
  "tracing",
  "xz2",
 ]

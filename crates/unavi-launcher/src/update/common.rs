@@ -1,11 +1,14 @@
-use std::io::{Read, Write};
+use std::{fs, io::{Read, Write}};
 
 use anyhow::{Context, bail};
 use self_update::ArchiveKind;
 
-pub const USE_BETA: bool = true;
 pub const REPO_OWNER: &str = "unavi-xyz";
 pub const REPO_NAME: &str = "unavi";
+
+pub fn use_beta() -> bool {
+    crate::CONFIG.get().update_channel.is_beta()
+}
 
 #[derive(Debug, Clone, Copy)]
 pub enum SimpleTarget {
@@ -67,5 +70,48 @@ pub fn extract_archive(
     self_update::Extract::from_source(archive_path)
         .archive(archive_kind)
         .extract_into(dest)?;
+    Ok(())
+}
+
+/// Download a file with progress reporting
+pub fn download_with_progress<F>(
+    url: &str,
+    dest_path: &std::path::Path,
+    on_progress: F,
+) -> anyhow::Result<()>
+where
+    F: Fn(f32),
+{
+    let client = reqwest::blocking::Client::new();
+    let mut response = client
+        .get(url)
+        .header(reqwest::header::ACCEPT, "application/octet-stream")
+        .send()
+        .context("failed to start download")?;
+
+    let total_size = response.content_length().unwrap_or(0);
+    let mut downloaded: u64 = 0;
+    let mut file = fs::File::create(dest_path).context("failed to create file")?;
+
+    let mut buffer = [0; 8192];
+    loop {
+        let bytes_read = response
+            .read(&mut buffer)
+            .context("failed to read from response")?;
+        if bytes_read == 0 {
+            break;
+        }
+
+        file.write_all(&buffer[..bytes_read])
+            .context("failed to write to file")?;
+
+        downloaded += bytes_read as u64;
+
+        if total_size > 0 {
+            let progress = (downloaded as f32 / total_size as f32) * 100.0;
+            on_progress(progress);
+        }
+    }
+
     Ok(())
 }

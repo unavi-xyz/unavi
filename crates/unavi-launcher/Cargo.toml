@@ -13,11 +13,13 @@ workspace = true
 anyhow.workspace      = true
 dioxus                = { features = ["native", "router"], version = "0.7.0" }
 directories.workspace = true
-reqwest               = { default-features = false, version = "0.12.24" }
+reqwest               = { default-features = false, features = ["blocking"], version = "0.12.24" }
 self-replace          = "1.5.0"
 self_update           = { features = ["archive-tar", "archive-zip"], version = "0.42.0" }
 semver.workspace      = true
+serde.workspace       = true
 tempfile              = "3.23.0"
 tokio.workspace       = true
+toml                  = "0.8"
 tracing.workspace     = true
 xz2                   = { features = ["tokio"], version = "0.1.7" }

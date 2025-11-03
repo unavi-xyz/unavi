@@ -1,0 +1,103 @@
+use std::{
+    fs,
+    sync::{Arc, Mutex},
+};
+
+use anyhow::Context;
+use serde::{Deserialize, Serialize};
+
+use crate::DIRS;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum UpdateChannel {
+    Stable,
+    Beta,
+}
+
+impl UpdateChannel {
+    pub fn is_beta(self) -> bool {
+        matches!(self, Self::Beta)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Config {
+    pub update_channel: UpdateChannel,
+    pub auto_close_on_launch: bool,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            update_channel: UpdateChannel::Beta,
+            auto_close_on_launch: false,
+        }
+    }
+}
+
+impl Config {
+    fn config_path() -> std::path::PathBuf {
+        DIRS.data_local_dir().join("config.toml")
+    }
+
+    pub fn load() -> Self {
+        let path = Self::config_path();
+        if !path.exists() {
+            return Self::default();
+        }
+
+        match fs::read_to_string(&path) {
+            Ok(contents) => match toml::from_str(&contents) {
+                Ok(config) => config,
+                Err(e) => {
+                    tracing::warn!("failed to parse config file: {e}, using defaults");
+                    Self::default()
+                }
+            },
+            Err(e) => {
+                tracing::warn!("failed to read config file: {e}, using defaults");
+                Self::default()
+            }
+        }
+    }
+
+    pub fn save(&self) -> anyhow::Result<()> {
+        let path = Self::config_path();
+        let contents = toml::to_string_pretty(self).context("serialize config")?;
+        fs::write(&path, contents).context("write config file")?;
+        Ok(())
+    }
+}
+
+/// Global config store
+pub struct ConfigStore {
+    config: Arc<Mutex<Config>>,
+}
+
+impl ConfigStore {
+    pub fn new() -> Self {
+        Self {
+            config: Arc::new(Mutex::new(Config::load())),
+        }
+    }
+
+    pub fn get(&self) -> Config {
+        self.config.lock().unwrap().clone()
+    }
+
+    pub fn update<F>(&self, f: F) -> anyhow::Result<()>
+    where
+        F: FnOnce(&mut Config),
+    {
+        let mut config = self.config.lock().unwrap();
+        f(&mut config);
+        config.save()?;
+        Ok(())
+    }
+}
+
+impl Default for ConfigStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}

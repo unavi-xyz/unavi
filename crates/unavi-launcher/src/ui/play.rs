@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use tracing::error;
 
-use super::settings::Settings;
+use super::app::Route;
 use crate::update::client;
 
 #[component]
@@ -29,8 +29,18 @@ pub fn Play() -> Element {
         }
     };
 
+    let nav = navigator();
+
     rsx! {
         div { class: "container",
+            button {
+                class: "gear-button",
+                onclick: move |_| {
+                    nav.push(Route::Settings);
+                },
+                "⚙"
+            }
+
             h1 { "UNAVI" }
 
             button {
@@ -50,13 +60,11 @@ pub fn Play() -> Element {
                 div { class: "error", "{err}" }
             }
 
-            Settings {}
-
             div { class: "version",
-                "v{env!(\"CARGO_PKG_VERSION\")}"
+                div { "launcher v{env!(\"CARGO_PKG_VERSION\")}" }
                 {
                     if let Some(client_ver) = client::installed_client_version() {
-                        rsx! { " • client v{client_ver}" }
+                        rsx! { div { "client v{client_ver}" } }
                     } else {
                         rsx! {}
                     }

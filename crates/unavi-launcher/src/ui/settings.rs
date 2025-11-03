@@ -1,8 +1,11 @@
 use dioxus::prelude::*;
 use tracing::error;
 
+use super::app::Route;
+
 #[component]
 pub fn Settings() -> Element {
+    let nav = navigator();
     let config = use_signal(|| crate::CONFIG.get());
 
     let toggle_beta = move |_| {
@@ -18,14 +21,26 @@ pub fn Settings() -> Element {
     };
 
     rsx! {
-        div { class: "settings",
-            label {
-                input {
-                    r#type: "checkbox",
-                    checked: config().update_channel.is_beta(),
-                    onchange: toggle_beta,
+        div { class: "container",
+            h1 { "Settings" }
+
+            div { class: "settings",
+                label {
+                    input {
+                        r#type: "checkbox",
+                        checked: config().update_channel.is_beta(),
+                        onchange: toggle_beta,
+                    }
+                    " Enable beta releases"
                 }
-                " Enable beta releases"
+            }
+
+            button {
+                onclick: move |_| {
+                    nav.push(Route::Play);
+                },
+                style: "margin-top: 40px;",
+                "Back"
             }
         }
     }

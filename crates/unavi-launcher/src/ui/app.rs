@@ -1,7 +1,8 @@
 use dioxus::prelude::*;
 
 use super::{
-    client_update::ClientUpdate, play::Play, self_update::SelfUpdate, styles::APP_STYLES,
+    client_update::ClientUpdate, play::Play, self_update::SelfUpdate, settings::Settings,
+    styles::APP_STYLES,
 };
 
 #[derive(Debug, Clone, Routable, PartialEq)]
@@ -12,6 +13,8 @@ pub enum Route {
     ClientUpdate,
     #[route("/play")]
     Play,
+    #[route("/settings")]
+    Settings,
 }
 
 #[component]

@@ -27,23 +27,21 @@ pub const APP_STYLES: &str = r#"
         letter-spacing: -0.02em;
     }
     .play-button {
-        width: 200px;
-        height: 200px;
+        width: 100%;
+        max-width: 300px;
         margin: 0 auto 40px;
-        border-radius: 50%;
         background: #fff;
         color: #000;
         border: none;
-        font-size: 24px;
+        border-radius: 8px;
+        padding: 16px 32px;
+        font-size: 18px;
         font-weight: 600;
         cursor: pointer;
-        transition: transform 0.15s;
+        transition: opacity 0.15s;
     }
     .play-button:hover:not(:disabled) {
-        transform: scale(1.05);
-    }
-    .play-button:active:not(:disabled) {
-        transform: scale(0.95);
+        opacity: 0.9;
     }
     .play-button:disabled {
         background: #333;
@@ -120,5 +118,31 @@ pub const APP_STYLES: &str = r#"
         color: #444;
         font-size: 11px;
         margin-top: 40px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .gear-button {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        background: transparent;
+        border: 1px solid #333;
+        border-radius: 6px;
+        color: #666;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .gear-button:hover {
+        background: #111;
+        border-color: #666;
+        color: #999;
     }
 "#;

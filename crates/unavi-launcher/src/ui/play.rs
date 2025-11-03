@@ -4,8 +4,10 @@ use tracing::error;
 use super::app::Route;
 use crate::update::client;
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 #[component]
-fn PlayContent() -> Element {
+pub fn Play() -> Element {
     let mut launch_error = use_signal(|| None::<String>);
     let mut client_running = use_signal(|| false);
 
@@ -59,7 +61,7 @@ fn PlayContent() -> Element {
         }
 
         div { class: "version",
-            div { "launcher v{env!(\"CARGO_PKG_VERSION\")}" }
+            div { "launcher v{VERSION}" }
             {
                 if let Some(client_ver) = client::installed_client_version() {
                     rsx! {
@@ -70,12 +72,5 @@ fn PlayContent() -> Element {
                 }
             }
         }
-    }
-}
-
-#[component]
-pub fn Play() -> Element {
-    rsx! {
-        PlayContent {}
     }
 }

@@ -23,14 +23,12 @@ impl UpdateChannel {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub update_channel: UpdateChannel,
-    pub auto_close_on_launch: bool,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             update_channel: UpdateChannel::Beta,
-            auto_close_on_launch: false,
         }
     }
 }

@@ -1,15 +1,17 @@
 use dioxus::prelude::*;
 
-use super::{play::Play, self_update::SelfUpdate, settings::Settings, styles::APP_STYLES};
+use super::{
+    client_update::ClientUpdate, play::Play, self_update::SelfUpdate, styles::APP_STYLES,
+};
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 pub enum Route {
     #[route("/")]
     SelfUpdate,
+    #[route("/client-update")]
+    ClientUpdate,
     #[route("/play")]
     Play,
-    #[route("/settings")]
-    Settings,
 }
 
 #[component]

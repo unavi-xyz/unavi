@@ -21,27 +21,24 @@ pub fn Settings() -> Element {
     };
 
     rsx! {
-        div { class: "container",
-            h1 { "Settings" }
-
-            div { class: "settings",
-                label {
-                    input {
-                        r#type: "checkbox",
-                        checked: config().update_channel.is_beta(),
-                        onchange: toggle_beta,
-                    }
-                    " Enable beta releases"
+        div { class: "settings",
+            label {
+                input {
+                    r#type: "checkbox",
+                    checked: config().update_channel.is_beta(),
+                    onchange: toggle_beta,
                 }
+                " Beta releases"
             }
+        }
 
-            button {
-                onclick: move |_| {
-                    nav.push(Route::Play);
-                },
-                style: "margin-top: 40px;",
-                "Back"
-            }
+        button {
+            class: "nav-button",
+            onclick: move |_| {
+                nav.push(Route::Play);
+            },
+            style: "margin-top: 40px;",
+            "Back"
         }
     }
 }

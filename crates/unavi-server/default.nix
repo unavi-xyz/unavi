@@ -30,7 +30,9 @@ _: {
           ]
         );
 
-        buildInputs = [ ];
+        linkedInputs = [ ];
+
+        buildInputs = linkedInputs;
       };
 
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;

@@ -126,7 +126,7 @@
                 LD_LIBRARY_PATH =
                   config.packages
                   |> lib.attrValues
-                  |> lib.flip pkgs.lib.forEach (x: x.buildInputs)
+                  |> lib.flip pkgs.lib.forEach (x: x.linkedInputs)
                   |> lib.concatLists
                   |> lib.makeLibraryPath;
               in

@@ -8,7 +8,6 @@ _: {
         root = ../..;
         fileset = lib.fileset.unions [
           (pkgs.crane.fileset.commonCargoSources root)
-          (lib.fileset.fileFilter (file: lib.any file.hasExt [ "md" ]) root)
           ../../LICENSE
         ];
       };
@@ -31,22 +30,27 @@ _: {
           ]
         );
 
-        buildInputs = with pkgs; [
-          at-spi2-atk
-          atkmm
+        linkedInputs = with pkgs; [
           cairo
           gdk-pixbuf
           glib
           gtk3
-          harfbuzz
-          libiconv
-          librsvg
           libsoup_3
           openssl
           pango
           webkitgtk_4_1
           xdotool
         ];
+
+        buildInputs =
+          (with pkgs; [
+            at-spi2-atk
+            atkmm
+            harfbuzz
+            libiconv
+            librsvg
+          ])
+          ++ linkedInputs;
       };
 
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;

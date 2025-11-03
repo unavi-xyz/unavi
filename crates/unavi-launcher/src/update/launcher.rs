@@ -12,6 +12,15 @@ use tracing::info;
 
 const USE_BETA: bool = true;
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum UpdateStatus {
+    Checking,
+    Downloading(String),
+    UpToDate,
+    UpdatedNeedsRestart,
+    Error(String),
+}
+
 enum SimpleTarget {
     Apple,
     Linux,
@@ -28,7 +37,12 @@ impl SimpleTarget {
     }
 }
 
-pub fn update_launcher() -> anyhow::Result<()> {
+pub fn update_launcher_with_callback<F>(on_status: F) -> anyhow::Result<()>
+where
+    F: Fn(UpdateStatus),
+{
+    on_status(UpdateStatus::Checking);
+
     let current_version = Version::parse(env!("CARGO_PKG_VERSION"))?;
 
     let target = self_update::get_target();
@@ -60,6 +74,7 @@ pub fn update_launcher() -> anyhow::Result<()> {
 
     if current_version >= latest_version {
         info!("Up to date");
+        on_status(UpdateStatus::UpToDate);
         return Ok(());
     }
 
@@ -70,6 +85,8 @@ pub fn update_launcher() -> anyhow::Result<()> {
         .find(|a| a.name.contains("unavi-launcher") && a.name.contains(simple_target.release_str()))
         .ok_or(anyhow::anyhow!("latest asset not found"))?;
     info!("Latest asset: {asset:#?}");
+
+    on_status(UpdateStatus::Downloading(latest_version.to_string()));
 
     let tmp_dir = tempfile::Builder::new().prefix("unavi-update").tempdir()?;
     let tmp_archive_path = tmp_dir.path().join(&asset.name);
@@ -117,6 +134,7 @@ pub fn update_launcher() -> anyhow::Result<()> {
         }
     }
 
+    on_status(UpdateStatus::UpdatedNeedsRestart);
     Ok(())
 }
 

@@ -1,41 +1,16 @@
-use std::{
-    io::{Read, Write},
-    os::unix::fs::MetadataExt,
-    path::Path,
-    process::Command,
-};
+use std::{path::Path, process::Command};
 
-use anyhow::{Context, bail};
+use anyhow::Context;
 use self_update::ArchiveKind;
 use semver::Version;
 use tracing::info;
 
-const USE_BETA: bool = true;
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum UpdateStatus {
-    Checking,
-    Downloading(String),
-    UpToDate,
-    UpdatedNeedsRestart,
-    Error(String),
-}
-
-enum SimpleTarget {
-    Apple,
-    Linux,
-    Windows,
-}
-
-impl SimpleTarget {
-    fn release_str(&self) -> &'static str {
-        match self {
-            Self::Apple => "macos",
-            Self::Linux => "linux",
-            Self::Windows => "windows",
-        }
-    }
-}
+use super::{
+    UpdateStatus,
+    common::{
+        REPO_NAME, REPO_OWNER, USE_BETA, decompress_xz, extract_archive, get_platform_target,
+    },
+};
 
 pub fn update_launcher_with_callback<F>(on_status: F) -> anyhow::Result<()>
 where
@@ -44,23 +19,16 @@ where
     on_status(UpdateStatus::Checking);
 
     let current_version = Version::parse(env!("CARGO_PKG_VERSION"))?;
+    let simple_target = get_platform_target()?;
 
-    let target = self_update::get_target();
-    let simple_target = if target.contains("linux") {
-        SimpleTarget::Linux
-    } else if target.contains("windows") {
-        SimpleTarget::Windows
-    } else if target.contains("apple") {
-        SimpleTarget::Apple
-    } else {
-        bail!("unsupported platform: {target}")
-    };
-
-    info!("Launcher version: {current_version} on {target}");
+    info!(
+        "Launcher version: {current_version} on {}",
+        simple_target.release_str()
+    );
 
     let latest_release = self_update::backends::github::ReleaseList::configure()
-        .repo_owner("unavi-xyz")
-        .repo_name("unavi")
+        .repo_owner(REPO_OWNER)
+        .repo_name(REPO_NAME)
         .with_target(simple_target.release_str())
         .build()?
         .fetch()?
@@ -98,38 +66,20 @@ where
         .download_to(&tmp_archive)?;
 
     match simple_target {
-        SimpleTarget::Apple | SimpleTarget::Linux => {
+        super::common::SimpleTarget::Apple | super::common::SimpleTarget::Linux => {
             let tmp_tar_path = tmp_dir.path().join(
                 asset
                     .name
                     .strip_suffix(".xz")
                     .ok_or(anyhow::anyhow!("invalid asset name (.xz not found)"))?,
             );
-            let mut tmp_tar = std::fs::File::create(&tmp_tar_path).context("create tar file")?;
 
-            let tmp_archive =
-                std::fs::File::open(&tmp_archive_path).context("reopen archive for reading")?;
-            info!(
-                "Decoding {} KB archive",
-                tmp_archive.metadata()?.size() / 1024
-            );
-
-            let mut dec = xz2::read::XzDecoder::new(tmp_archive);
-            let mut buf = [0u8; 1024];
-
-            loop {
-                let n = dec.read(&mut buf).context("read archive file")?;
-                if n == 0 {
-                    break;
-                }
-                tmp_tar.write_all(&buf[0..n]).context("write tar file")?;
-            }
-
+            decompress_xz(&tmp_archive_path, &tmp_tar_path)?;
             info!("Uncompressed archive: {}", tmp_tar_path.to_string_lossy());
 
             replace_launcher(&tmp_tar_path, ArchiveKind::Tar(None))?;
         }
-        SimpleTarget::Windows => {
+        super::common::SimpleTarget::Windows => {
             replace_launcher(&tmp_archive_path, ArchiveKind::Zip)?;
         }
     }
@@ -144,9 +94,7 @@ fn replace_launcher(path: &Path, archive_kind: ArchiveKind) -> anyhow::Result<()
         .ok_or(anyhow::anyhow!("extract path has no parent"))?
         .join("out");
 
-    self_update::Extract::from_source(path)
-        .archive(archive_kind)
-        .extract_into(&out_path)?;
+    extract_archive(path, archive_kind, &out_path)?;
 
     for item in std::fs::read_dir(&out_path)? {
         let item = item?;

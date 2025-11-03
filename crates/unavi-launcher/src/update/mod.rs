@@ -1,4 +1,6 @@
 pub mod client;
+pub mod common;
 pub mod launcher;
+pub mod status;
 
-pub use launcher::UpdateStatus;
+pub use status::UpdateStatus;

@@ -1,14 +1,14 @@
 use dioxus::prelude::*;
 use tracing::error;
 
-use crate::config::{Config, UpdateChannel};
+use crate::config::UpdateChannel;
 
 use super::app::Route;
 
 #[component]
 pub fn Settings() -> Element {
     let nav = navigator();
-    let config = use_signal(|| crate::CONFIG.get());
+    let mut config = use_signal(|| crate::CONFIG.get());
 
     let toggle_channel = move |_| {
         let new_channel = match config().update_channel {

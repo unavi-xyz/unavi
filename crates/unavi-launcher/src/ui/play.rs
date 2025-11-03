@@ -18,15 +18,21 @@ fn PlayContent() -> Element {
         }
     });
 
-    let handle_launch = move |_| match client::launch_client() {
-        Ok(()) => {
-            launch_error.set(None);
-            client_running.set(true);
+    let handle_launch = move |_| {
+        if client_running() {
+            return;
         }
-        Err(e) => {
-            error!("Failed to launch client: {e:?}");
-            launch_error.set(Some(format!("{e}")));
-        }
+
+        match client::launch_client() {
+            Ok(()) => {
+                launch_error.set(None);
+                client_running.set(true);
+            }
+            Err(e) => {
+                error!("Failed to launch client: {e:?}");
+                launch_error.set(Some(format!("{e}")));
+            }
+        };
     };
 
     let nav = navigator();
@@ -35,7 +41,6 @@ fn PlayContent() -> Element {
         button {
             class: "play-button",
             onclick: handle_launch,
-            disabled: client_running(),
             {if client_running() { "Running" } else { "Play" }}
         }
 

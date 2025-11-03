@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 use tracing::error;
 
+use super::app::Route;
 use crate::update::{UpdateStatus, client};
 
 #[component]
@@ -51,6 +52,8 @@ pub fn Play() -> Element {
         }
     };
 
+    let nav = navigator();
+
     rsx! {
         div { class: "container",
             h1 { "UNAVI Launcher" }
@@ -66,10 +69,16 @@ pub fn Play() -> Element {
                         "checking for updates..."
                     }
                 },
-                Some(UpdateStatus::Downloading(version)) => rsx! {
+                Some(UpdateStatus::Downloading { version, progress }) => rsx! {
                     div { class: "status",
                         span { class: "loading" },
-                        "downloading v{version}..."
+                        {
+                            if let Some(p) = progress {
+                                format!("downloading v{version} ({:.0}%)", p)
+                            } else {
+                                format!("downloading v{version}...")
+                            }
+                        }
                     }
                 },
                 Some(UpdateStatus::UpToDate) => rsx! {
@@ -77,6 +86,9 @@ pub fn Play() -> Element {
                 },
                 Some(UpdateStatus::UpdatedNeedsRestart) => rsx! {
                     div { class: "status", "updated successfully" }
+                },
+                Some(UpdateStatus::Offline) => rsx! {
+                    div { class: "status", "⚠ offline mode" }
                 },
                 Some(UpdateStatus::Error(e)) => rsx! {
                     div { class: "error", "{e}" }
@@ -100,6 +112,15 @@ pub fn Play() -> Element {
                     } else {
                         rsx! {}
                     }
+                }
+            }
+
+            div { style: "margin-top: 20px;",
+                button {
+                    onclick: move |_| {
+                        nav.push(Route::Settings);
+                    },
+                    "Settings"
                 }
             }
         }

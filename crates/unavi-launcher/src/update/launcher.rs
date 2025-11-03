@@ -8,7 +8,8 @@ use tracing::info;
 use super::{
     UpdateStatus,
     common::{
-        REPO_NAME, REPO_OWNER, USE_BETA, decompress_xz, extract_archive, get_platform_target,
+        REPO_NAME, REPO_OWNER, decompress_xz, download_with_progress, extract_archive,
+        get_platform_target, use_beta,
     },
 };
 
@@ -33,7 +34,7 @@ where
         .build()?
         .fetch()?
         .into_iter()
-        .find(|r| r.version.contains("beta") == USE_BETA)
+        .find(|r| r.version.contains("beta") == use_beta())
         .ok_or(anyhow::anyhow!("no valid release found"))?;
 
     info!("Latest release: {latest_release:#?}");
@@ -54,16 +55,22 @@ where
         .ok_or(anyhow::anyhow!("latest asset not found"))?;
     info!("Latest asset: {asset:#?}");
 
-    on_status(UpdateStatus::Downloading(latest_version.to_string()));
+    on_status(UpdateStatus::Downloading {
+        version: latest_version.to_string(),
+        progress: None,
+    });
 
     let tmp_dir = tempfile::Builder::new().prefix("unavi-update").tempdir()?;
     let tmp_archive_path = tmp_dir.path().join(&asset.name);
-    let tmp_archive = std::fs::File::create(&tmp_archive_path).context("create archive file")?;
     info!("Downloading to: {}", tmp_archive_path.to_string_lossy());
 
-    self_update::Download::from_url(&asset.download_url)
-        .set_header(reqwest::header::ACCEPT, "application/octet-stream".parse()?)
-        .download_to(&tmp_archive)?;
+    // Download with progress tracking
+    download_with_progress(&asset.download_url, &tmp_archive_path, |progress| {
+        on_status(UpdateStatus::Downloading {
+            version: latest_version.to_string(),
+            progress: Some(progress),
+        });
+    })?;
 
     match simple_target {
         super::common::SimpleTarget::Apple | super::common::SimpleTarget::Linux => {

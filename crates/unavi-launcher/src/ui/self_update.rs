@@ -43,19 +43,39 @@ pub fn SelfUpdate() -> Element {
 
     let status_text = match status() {
         UpdateStatus::Checking => "checking for updates...",
-        UpdateStatus::Downloading(ref version) => {
+        UpdateStatus::Downloading { ref version, progress } => {
             return rsx! {
                 div { class: "container",
                     h1 { "UNAVI Launcher" }
                     div { class: "status",
                         span { class: "loading" }
-                        "downloading version {version}..."
+                        {
+                            if let Some(p) = progress {
+                                format!("downloading version {version} ({:.0}%)", p)
+                            } else {
+                                format!("downloading version {version}...")
+                            }
+                        }
                     }
                 }
             };
         }
         UpdateStatus::UpToDate => "up to date, launching...",
         UpdateStatus::UpdatedNeedsRestart => "updated, please restart",
+        UpdateStatus::Offline => {
+            return rsx! {
+                div { class: "container",
+                    h1 { "UNAVI Launcher" }
+                    div { class: "status", "⚠ offline mode, skipping update" }
+                    button {
+                        onclick: move |_| {
+                            nav.push(Route::Play);
+                        },
+                        "Continue"
+                    }
+                }
+            };
+        }
         UpdateStatus::Error(ref e) => {
             return rsx! {
                 div { class: "container",

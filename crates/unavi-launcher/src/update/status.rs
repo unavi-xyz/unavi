@@ -1,8 +1,12 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum UpdateStatus {
     Checking,
-    Downloading(String),
+    Downloading {
+        version: String,
+        progress: Option<f32>,
+    },
     UpToDate,
     UpdatedNeedsRestart,
+    Offline,
     Error(String),
 }

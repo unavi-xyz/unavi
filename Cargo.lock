@@ -11272,6 +11272,7 @@ version = "0.0.11-beta.4"
 dependencies = [
  "anyhow",
  "dioxus",
+ "directories",
  "reqwest",
  "self-replace",
  "self_update",

@@ -1,35 +1,17 @@
-use std::{
-    fs,
-    io::{Read, Write},
-    path::{Path, PathBuf},
-    process::Command,
-};
+use std::{fs, path::PathBuf, process::Command};
 
-use anyhow::{Context, bail};
+use anyhow::Context;
 use self_update::ArchiveKind;
 use semver::Version;
 use tracing::info;
 
-use super::UpdateStatus;
+use super::{
+    UpdateStatus,
+    common::{
+        REPO_NAME, REPO_OWNER, USE_BETA, decompress_xz, extract_archive, get_platform_target,
+    },
+};
 use crate::DIRS;
-
-const USE_BETA: bool = true;
-
-enum SimpleTarget {
-    Apple,
-    Linux,
-    Windows,
-}
-
-impl SimpleTarget {
-    fn release_str(&self) -> &'static str {
-        match self {
-            Self::Apple => "macos",
-            Self::Linux => "linux",
-            Self::Windows => "windows",
-        }
-    }
-}
 
 /// Get the path to the current version file
 fn current_version_file() -> PathBuf {
@@ -56,7 +38,9 @@ fn set_installed_version(version: &Version) -> anyhow::Result<()> {
 
 /// Get the path to a versioned client directory
 fn client_dir(version: &Version) -> PathBuf {
-    DIRS.data_local_dir().join("clients").join(version.to_string())
+    DIRS.data_local_dir()
+        .join("clients")
+        .join(version.to_string())
 }
 
 /// Get the path to the client executable for a given version
@@ -75,7 +59,10 @@ pub fn launch_client() -> anyhow::Result<()> {
     if let Some(version) = get_installed_version() {
         let exe_path = client_exe_path(&version);
         if exe_path.exists() {
-            info!("Launching client version {version} from {}", exe_path.display());
+            info!(
+                "Launching client version {version} from {}",
+                exe_path.display()
+            );
             Command::new(exe_path)
                 .spawn()
                 .context("failed to launch client")?;
@@ -112,20 +99,11 @@ where
 {
     on_status(UpdateStatus::Checking);
 
-    let target = self_update::get_target();
-    let simple_target = if target.contains("linux") {
-        SimpleTarget::Linux
-    } else if target.contains("windows") {
-        SimpleTarget::Windows
-    } else if target.contains("apple") {
-        SimpleTarget::Apple
-    } else {
-        bail!("unsupported platform: {target}")
-    };
+    let simple_target = get_platform_target()?;
 
     let latest_release = self_update::backends::github::ReleaseList::configure()
-        .repo_owner("unavi-xyz")
-        .repo_name("unavi")
+        .repo_owner(REPO_OWNER)
+        .repo_name(REPO_NAME)
         .with_target(simple_target.release_str())
         .build()?
         .fetch()?
@@ -156,10 +134,15 @@ where
 
     on_status(UpdateStatus::Downloading(latest_version.to_string()));
 
-    let tmp_dir = tempfile::Builder::new().prefix("unavi-client-update").tempdir()?;
+    let tmp_dir = tempfile::Builder::new()
+        .prefix("unavi-client-update")
+        .tempdir()?;
     let tmp_archive_path = tmp_dir.path().join(&asset.name);
     let tmp_archive = fs::File::create(&tmp_archive_path).context("create archive file")?;
-    info!("Downloading client to: {}", tmp_archive_path.to_string_lossy());
+    info!(
+        "Downloading client to: {}",
+        tmp_archive_path.to_string_lossy()
+    );
 
     self_update::Download::from_url(&asset.download_url)
         .set_header(reqwest::header::ACCEPT, "application/octet-stream".parse()?)
@@ -169,43 +152,20 @@ where
     fs::create_dir_all(&extract_path)?;
 
     match simple_target {
-        SimpleTarget::Apple | SimpleTarget::Linux => {
+        super::common::SimpleTarget::Apple | super::common::SimpleTarget::Linux => {
             let tmp_tar_path = tmp_dir.path().join(
                 asset
                     .name
                     .strip_suffix(".xz")
                     .ok_or(anyhow::anyhow!("invalid asset name (.xz not found)"))?,
             );
-            let mut tmp_tar = fs::File::create(&tmp_tar_path).context("create tar file")?;
 
-            let tmp_archive =
-                fs::File::open(&tmp_archive_path).context("reopen archive for reading")?;
-
-            #[cfg(target_os = "linux")]
-            {
-                use std::os::unix::fs::MetadataExt;
-                info!(
-                    "Decoding {} KB archive",
-                    tmp_archive.metadata()?.size() / 1024
-                );
-            }
-
-            let mut dec = xz2::read::XzDecoder::new(tmp_archive);
-            let mut buf = [0u8; 1024];
-
-            loop {
-                let n = dec.read(&mut buf).context("read archive file")?;
-                if n == 0 {
-                    break;
-                }
-                tmp_tar.write_all(&buf[0..n]).context("write tar file")?;
-            }
-
+            decompress_xz(&tmp_archive_path, &tmp_tar_path)?;
             info!("Extracting to: {}", extract_path.display());
-            extract_client(&tmp_tar_path, ArchiveKind::Tar(None), &extract_path)?;
+            extract_archive(&tmp_tar_path, ArchiveKind::Tar(None), &extract_path)?;
         }
-        SimpleTarget::Windows => {
-            extract_client(&tmp_archive_path, ArchiveKind::Zip, &extract_path)?;
+        super::common::SimpleTarget::Windows => {
+            extract_archive(&tmp_archive_path, ArchiveKind::Zip, &extract_path)?;
         }
     }
 
@@ -228,13 +188,6 @@ where
     clean_old_versions(&latest_version, 2)?;
 
     on_status(UpdateStatus::UpToDate);
-    Ok(())
-}
-
-fn extract_client(archive_path: &Path, archive_kind: ArchiveKind, dest: &Path) -> anyhow::Result<()> {
-    self_update::Extract::from_source(archive_path)
-        .archive(archive_kind)
-        .extract_into(dest)?;
     Ok(())
 }
 

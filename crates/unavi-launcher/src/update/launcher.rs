@@ -58,7 +58,13 @@ where
 
     let latest_release = releases
         .into_iter()
-        .find(|r| r.version.contains("beta") == use_beta())
+        .find(|r| {
+            if use_beta() {
+                true
+            } else {
+                !r.version.contains("beta")
+            }
+        })
         .ok_or(anyhow::anyhow!("no valid release found"))?;
 
     info!("Latest release: {latest_release:#?}");

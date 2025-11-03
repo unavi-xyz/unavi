@@ -70,9 +70,10 @@ pub fn launch_client() -> anyhow::Result<()> {
                 "Launching client version {version} from {}",
                 exe_path.display()
             );
-            Command::new(exe_path)
+            let child = Command::new(exe_path)
                 .spawn()
                 .context("failed to launch client")?;
+            crate::CLIENT_PROCESS.set(child);
             return Ok(());
         }
     }
@@ -92,9 +93,10 @@ pub fn launch_client() -> anyhow::Result<()> {
     }
 
     info!("Launching client from {}", exe_path.display());
-    Command::new(exe_path)
+    let child = Command::new(exe_path)
         .spawn()
         .context("failed to launch client")?;
+    crate::CLIENT_PROCESS.set(child);
 
     Ok(())
 }

@@ -9,6 +9,7 @@ pub fn Play() -> Element {
     let mut launch_error = use_signal(|| None::<String>);
     let mut update_status = use_signal(|| None::<UpdateStatus>);
     let mut is_updating = use_signal(|| true);
+    let mut client_running = use_signal(|| false);
 
     use_coroutine(move |_: UnboundedReceiver<()>| async move {
         tokio::time::sleep(std::time::Duration::from_millis(200)).await;
@@ -42,9 +43,25 @@ pub fn Play() -> Element {
         }
     });
 
+    // Poll client process status
+    use_coroutine(move |_: UnboundedReceiver<()>| async move {
+        loop {
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            let is_running = crate::CLIENT_PROCESS.is_running();
+            client_running.set(is_running);
+        }
+    });
+
     let handle_launch = move |_| match client::launch_client() {
         Ok(()) => {
             launch_error.set(None);
+            client_running.set(true);
+
+            // Check if auto-close is enabled
+            if crate::CONFIG.get().auto_close_on_launch {
+                // Close the window
+                std::process::exit(0);
+            }
         }
         Err(e) => {
             error!("Failed to launch client: {e:?}");
@@ -60,6 +77,10 @@ pub fn Play() -> Element {
 
             if let Some(ref err) = *launch_error.read() {
                 div { class: "error", "failed to launch client: {err}" }
+            }
+
+            if client_running() {
+                div { class: "status", "✓ Client is running" }
             }
 
             {match update_status.read().as_ref() {
@@ -99,8 +120,14 @@ pub fn Play() -> Element {
             div { style: "margin: 20px 0;",
                 button {
                     onclick: handle_launch,
-                    disabled: is_updating(),
-                    "Launch Client"
+                    disabled: is_updating() || client_running(),
+                    {
+                        if client_running() {
+                            "Client Running"
+                        } else {
+                            "Launch Client"
+                        }
+                    }
                 }
             }
 

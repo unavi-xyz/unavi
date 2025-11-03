@@ -1,10 +1,89 @@
-use std::process::Command;
+use std::{
+    fs,
+    io::{Read, Write},
+    path::{Path, PathBuf},
+    process::Command,
+};
 
-use anyhow::Context;
+use anyhow::{Context, bail};
+use self_update::ArchiveKind;
+use semver::Version;
+use tracing::info;
 
-/// Launch the UNAVI client.
-/// This function will spawn the client process and return immediately.
+use super::UpdateStatus;
+use crate::DIRS;
+
+const USE_BETA: bool = true;
+
+enum SimpleTarget {
+    Apple,
+    Linux,
+    Windows,
+}
+
+impl SimpleTarget {
+    fn release_str(&self) -> &'static str {
+        match self {
+            Self::Apple => "macos",
+            Self::Linux => "linux",
+            Self::Windows => "windows",
+        }
+    }
+}
+
+/// Get the path to the current version file
+fn current_version_file() -> PathBuf {
+    DIRS.data_local_dir().join("current_client_version.txt")
+}
+
+/// Get the currently installed client version
+fn get_installed_version() -> Option<Version> {
+    fs::read_to_string(current_version_file())
+        .ok()
+        .and_then(|s| Version::parse(s.trim()).ok())
+}
+
+/// Get the currently installed client version (public)
+pub fn installed_client_version() -> Option<String> {
+    get_installed_version().map(|v| v.to_string())
+}
+
+/// Set the currently installed client version
+fn set_installed_version(version: &Version) -> anyhow::Result<()> {
+    fs::write(current_version_file(), version.to_string())?;
+    Ok(())
+}
+
+/// Get the path to a versioned client directory
+fn client_dir(version: &Version) -> PathBuf {
+    DIRS.data_local_dir().join("clients").join(version.to_string())
+}
+
+/// Get the path to the client executable for a given version
+fn client_exe_path(version: &Version) -> PathBuf {
+    let exe_name = if cfg!(windows) {
+        "unavi-client.exe"
+    } else {
+        "unavi-client"
+    };
+    client_dir(version).join(exe_name)
+}
+
+/// Launch the UNAVI client using the most recent installed version
 pub fn launch_client() -> anyhow::Result<()> {
+    // Try versioned client first
+    if let Some(version) = get_installed_version() {
+        let exe_path = client_exe_path(&version);
+        if exe_path.exists() {
+            info!("Launching client version {version} from {}", exe_path.display());
+            Command::new(exe_path)
+                .spawn()
+                .context("failed to launch client")?;
+            return Ok(());
+        }
+    }
+
+    // Fall back to sibling executable
     let exe_path = std::env::current_exe()?
         .parent()
         .ok_or(anyhow::anyhow!("failed to get executable directory"))?
@@ -18,6 +97,7 @@ pub fn launch_client() -> anyhow::Result<()> {
         anyhow::bail!("client executable not found at {}", exe_path.display());
     }
 
+    info!("Launching client from {}", exe_path.display());
     Command::new(exe_path)
         .spawn()
         .context("failed to launch client")?;
@@ -25,9 +105,164 @@ pub fn launch_client() -> anyhow::Result<()> {
     Ok(())
 }
 
-// TODO: Implement client update checking
-#[allow(dead_code)]
-pub fn check_client_updates() -> anyhow::Result<bool> {
-    // Placeholder for future client update functionality
-    Ok(false)
+/// Check for and download client updates
+pub fn update_client_with_callback<F>(on_status: F) -> anyhow::Result<()>
+where
+    F: Fn(UpdateStatus),
+{
+    on_status(UpdateStatus::Checking);
+
+    let target = self_update::get_target();
+    let simple_target = if target.contains("linux") {
+        SimpleTarget::Linux
+    } else if target.contains("windows") {
+        SimpleTarget::Windows
+    } else if target.contains("apple") {
+        SimpleTarget::Apple
+    } else {
+        bail!("unsupported platform: {target}")
+    };
+
+    let latest_release = self_update::backends::github::ReleaseList::configure()
+        .repo_owner("unavi-xyz")
+        .repo_name("unavi")
+        .with_target(simple_target.release_str())
+        .build()?
+        .fetch()?
+        .into_iter()
+        .find(|r| r.version.contains("beta") == USE_BETA)
+        .ok_or(anyhow::anyhow!("no valid release found"))?;
+
+    let latest_version = Version::parse(&latest_release.version)?;
+    info!("Latest client release: {latest_version}");
+
+    let installed_version = get_installed_version();
+    info!("Installed client version: {installed_version:?}");
+
+    if let Some(ref current) = installed_version
+        && current >= &latest_version
+    {
+        info!("Client is up to date");
+        on_status(UpdateStatus::UpToDate);
+        return Ok(());
+    }
+
+    info!("Updating client to {latest_version}");
+    let asset = latest_release
+        .assets
+        .into_iter()
+        .find(|a| a.name.contains("unavi-client") && a.name.contains(simple_target.release_str()))
+        .ok_or(anyhow::anyhow!("client asset not found in release"))?;
+
+    on_status(UpdateStatus::Downloading(latest_version.to_string()));
+
+    let tmp_dir = tempfile::Builder::new().prefix("unavi-client-update").tempdir()?;
+    let tmp_archive_path = tmp_dir.path().join(&asset.name);
+    let tmp_archive = fs::File::create(&tmp_archive_path).context("create archive file")?;
+    info!("Downloading client to: {}", tmp_archive_path.to_string_lossy());
+
+    self_update::Download::from_url(&asset.download_url)
+        .set_header(reqwest::header::ACCEPT, "application/octet-stream".parse()?)
+        .download_to(&tmp_archive)?;
+
+    let extract_path = client_dir(&latest_version);
+    fs::create_dir_all(&extract_path)?;
+
+    match simple_target {
+        SimpleTarget::Apple | SimpleTarget::Linux => {
+            let tmp_tar_path = tmp_dir.path().join(
+                asset
+                    .name
+                    .strip_suffix(".xz")
+                    .ok_or(anyhow::anyhow!("invalid asset name (.xz not found)"))?,
+            );
+            let mut tmp_tar = fs::File::create(&tmp_tar_path).context("create tar file")?;
+
+            let tmp_archive =
+                fs::File::open(&tmp_archive_path).context("reopen archive for reading")?;
+
+            #[cfg(target_os = "linux")]
+            {
+                use std::os::unix::fs::MetadataExt;
+                info!(
+                    "Decoding {} KB archive",
+                    tmp_archive.metadata()?.size() / 1024
+                );
+            }
+
+            let mut dec = xz2::read::XzDecoder::new(tmp_archive);
+            let mut buf = [0u8; 1024];
+
+            loop {
+                let n = dec.read(&mut buf).context("read archive file")?;
+                if n == 0 {
+                    break;
+                }
+                tmp_tar.write_all(&buf[0..n]).context("write tar file")?;
+            }
+
+            info!("Extracting to: {}", extract_path.display());
+            extract_client(&tmp_tar_path, ArchiveKind::Tar(None), &extract_path)?;
+        }
+        SimpleTarget::Windows => {
+            extract_client(&tmp_archive_path, ArchiveKind::Zip, &extract_path)?;
+        }
+    }
+
+    // Set executable permissions on unix
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let exe_path = client_exe_path(&latest_version);
+        if exe_path.exists() {
+            let mut perms = fs::metadata(&exe_path)?.permissions();
+            perms.set_mode(0o755);
+            fs::set_permissions(&exe_path, perms)?;
+        }
+    }
+
+    set_installed_version(&latest_version)?;
+    info!("Client updated to {latest_version}");
+
+    // Clean up old versions (keep last 2)
+    clean_old_versions(&latest_version, 2)?;
+
+    on_status(UpdateStatus::UpToDate);
+    Ok(())
+}
+
+fn extract_client(archive_path: &Path, archive_kind: ArchiveKind, dest: &Path) -> anyhow::Result<()> {
+    self_update::Extract::from_source(archive_path)
+        .archive(archive_kind)
+        .extract_into(dest)?;
+    Ok(())
+}
+
+fn clean_old_versions(current: &Version, keep_count: usize) -> anyhow::Result<()> {
+    let clients_dir = DIRS.data_local_dir().join("clients");
+
+    let mut versions: Vec<Version> = fs::read_dir(&clients_dir)?
+        .filter_map(|entry| entry.ok())
+        .filter_map(|entry| {
+            let name = entry.file_name();
+            let name_str = name.to_string_lossy();
+            Version::parse(&name_str).ok()
+        })
+        .collect();
+
+    // Sort versions in descending order (newest first)
+    versions.sort_by(|a, b| b.cmp(a));
+
+    // Keep current version plus keep_count-1 older versions
+    for version in versions.iter().skip(keep_count) {
+        if version != current {
+            let dir_to_remove = client_dir(version);
+            info!("Removing old client version: {version}");
+            if let Err(e) = fs::remove_dir_all(&dir_to_remove) {
+                tracing::warn!("Failed to remove old version {version}: {e}");
+            }
+        }
+    }
+
+    Ok(())
 }

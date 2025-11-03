@@ -101,6 +101,16 @@ pub fn launch_client() -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Check if an error is a network-related error
+fn is_network_error(err: &anyhow::Error) -> bool {
+    let err_str = format!("{err:?}").to_lowercase();
+    err_str.contains("dns")
+        || err_str.contains("connection")
+        || err_str.contains("timeout")
+        || err_str.contains("network")
+        || err_str.contains("unreachable")
+}
+
 /// Check for and download client updates
 pub fn update_client_with_callback<F>(on_status: F) -> anyhow::Result<()>
 where
@@ -110,12 +120,27 @@ where
 
     let simple_target = get_platform_target()?;
 
-    let latest_release = self_update::backends::github::ReleaseList::configure()
+    let releases_result = self_update::backends::github::ReleaseList::configure()
         .repo_owner(REPO_OWNER)
         .repo_name(REPO_NAME)
         .with_target(simple_target.release_str())
-        .build()?
-        .fetch()?
+        .build()
+        .and_then(|list| list.fetch());
+
+    let releases = match releases_result {
+        Ok(r) => r,
+        Err(e) => {
+            let err = anyhow::Error::from(e);
+            if is_network_error(&err) {
+                info!("Network unavailable, skipping update check");
+                on_status(UpdateStatus::Offline);
+                return Ok(());
+            }
+            return Err(err);
+        }
+    };
+
+    let latest_release = releases
         .into_iter()
         .find(|r| r.version.contains("beta") == use_beta())
         .ok_or(anyhow::anyhow!("no valid release found"))?;

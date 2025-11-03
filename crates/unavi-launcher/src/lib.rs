@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 
+mod update;
+
 pub fn run_launcher() {
     dioxus::launch(App);
 }
@@ -29,6 +31,14 @@ fn App() -> Element {
 
 #[component]
 fn SelfUpdate() -> Element {
+    use_hook(|| {
+        std::thread::spawn(|| {
+            if let Err(e) = update::launcher::update_launcher() {
+                error!("Error updating launcher: {e:?}");
+            }
+        });
+    });
+
     rsx! {
         p {
             "Self updating..."

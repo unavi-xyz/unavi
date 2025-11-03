@@ -64,7 +64,7 @@
             inputs.wit-deps.packages.${pkgs.system}.wit-deps
           ];
 
-        buildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (
+        linkedInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (
           with pkgs;
           [
             alsa-lib
@@ -78,6 +78,8 @@
             xorg.libXrandr
           ]
         );
+
+        buildInputs = linkedInputs;
       };
 
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;

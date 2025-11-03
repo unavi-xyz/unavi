@@ -4736,7 +4736,7 @@ dependencies = [
 
 [[package]]
 name = "example-shapes"
-version = "0.0.11-beta.4"
+version = "0.0.11-beta.5"
 dependencies = [
  "bincode 2.0.1",
  "wired-ecs",
@@ -10561,7 +10561,7 @@ dependencies = [
 
 [[package]]
 name = "test-ecs"
-version = "0.0.11-beta.4"
+version = "0.0.11-beta.5"
 dependencies = [
  "bincode 2.0.1",
  "wired-ecs",
@@ -10570,7 +10570,7 @@ dependencies = [
 
 [[package]]
 name = "test-log"
-version = "0.0.11-beta.4"
+version = "0.0.11-beta.5"
 dependencies = [
  "bincode 2.0.1",
  "wired-ecs",
@@ -10579,7 +10579,7 @@ dependencies = [
 
 [[package]]
 name = "test-scene"
-version = "0.0.11-beta.4"
+version = "0.0.11-beta.5"
 dependencies = [
  "bincode 2.0.1",
  "wired-ecs",
@@ -10588,7 +10588,7 @@ dependencies = [
 
 [[package]]
 name = "test-stall"
-version = "0.0.11-beta.4"
+version = "0.0.11-beta.5"
 dependencies = [
  "bincode 2.0.1",
  "wired-ecs",
@@ -11222,7 +11222,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-client"
-version = "0.0.11-beta.4"
+version = "0.0.11-beta.5"
 dependencies = [
  "anyhow",
  "avian3d",
@@ -11251,7 +11251,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-constants"
-version = "0.0.11-beta.4"
+version = "0.0.11-beta.5"
 dependencies = [
  "constcat",
  "semver",
@@ -11259,7 +11259,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-input"
-version = "0.0.11-beta.4"
+version = "0.0.11-beta.5"
 dependencies = [
  "bevy",
  "schminput",
@@ -11268,7 +11268,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-launcher"
-version = "0.0.11-beta.4"
+version = "0.0.11-beta.5"
 dependencies = [
  "anyhow",
  "dioxus",
@@ -11285,7 +11285,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-player"
-version = "0.0.11-beta.4"
+version = "0.0.11-beta.5"
 dependencies = [
  "avian3d",
  "bevy",
@@ -11301,7 +11301,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-script"
-version = "0.0.11-beta.4"
+version = "0.0.11-beta.5"
 dependencies = [
  "anyhow",
  "bevy",
@@ -11316,7 +11316,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-server"
-version = "0.0.11-beta.4"
+version = "0.0.11-beta.5"
 dependencies = [
  "anyhow",
  "axum",
@@ -11349,7 +11349,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-server-service"
-version = "0.0.11-beta.4"
+version = "0.0.11-beta.5"
 dependencies = [
  "anyhow",
  "bincode 2.0.1",
@@ -11361,7 +11361,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-ui"
-version = "0.0.11-beta.4"
+version = "0.0.11-beta.5"
 dependencies = [
  "bincode 2.0.1",
  "wired-ecs",
@@ -13409,7 +13409,7 @@ dependencies = [
 
 [[package]]
 name = "wired-ecs"
-version = "0.0.11-beta.4"
+version = "0.0.11-beta.5"
 dependencies = [
  "bincode 2.0.1",
  "bytemuck",
@@ -13419,7 +13419,7 @@ dependencies = [
 
 [[package]]
 name = "wired-ecs-derive"
-version = "0.0.11-beta.4"
+version = "0.0.11-beta.5"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",

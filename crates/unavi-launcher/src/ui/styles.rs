@@ -19,6 +19,13 @@ pub const APP_STYLES: &str = r#"
         padding: 40px 50px;
         text-align: center;
         position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .content {
+        width: 100%;
+        min-height: 400px;
     }
     h1 {
         margin: 0 0 40px 0;
@@ -52,9 +59,6 @@ pub const APP_STYLES: &str = r#"
         background: #333;
         color: #666;
         cursor: not-allowed;
-    }
-    .settings {
-        margin: 30px 0;
     }
     .settings label {
         display: flex;
@@ -126,38 +130,32 @@ pub const APP_STYLES: &str = r#"
     .version {
         color: #444;
         font-size: 11px;
-        margin-top: 20px;
         display: flex;
         flex-direction: column;
         gap: 4px;
     }
-    .gear-button {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        width: 40px;
-        height: 40px;
-        padding: 0;
+    .nav-button {
         background: transparent !important;
-        border: 1px solid transparent;
-        border-radius: 50%;
-        color: #666;
-        font-size: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        color: #888;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 6px 12px;
         cursor: pointer;
         transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        margin: 0 auto;
+        display: block;
+        width: 100%;
     }
-    .gear-button:hover {
-        color: #aaa !important;
-        background: rgba(255, 255, 255, 0.03) !important;
-        border-color: rgba(255, 255, 255, 0.1);
+    .nav-button:hover {
+        color: #bbb !important;
+        border-color: rgba(255, 255, 255, 0.3);
+        background: transparent !important;
     }
-    .gear-button:active {
-        color: #ccc !important;
-        background: rgba(255, 255, 255, 0.05) !important;
-        border-color: rgba(255, 255, 255, 0.15);
-        transform: scale(0.95);
+    .nav-button:active {
+        color: #ddd !important;
+        border-color: rgba(255, 255, 255, 0.4);
+        background: transparent !important;
     }
 "#;

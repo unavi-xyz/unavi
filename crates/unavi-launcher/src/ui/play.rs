@@ -29,18 +29,22 @@ fn PlayContent() -> Element {
         }
     };
 
+    let nav = navigator();
+
     rsx! {
         button {
             class: "play-button",
             onclick: handle_launch,
             disabled: client_running(),
-            {
-                if client_running() {
-                    "Running"
-                } else {
-                    "Play"
-                }
-            }
+            {if client_running() { "Running" } else { "Play" }}
+        }
+
+        button {
+            class: "nav-button",
+            onclick: move |_| {
+                nav.push(Route::Settings);
+            },
+            "Settings"
         }
 
         div { style: "min-height: 40px;",
@@ -53,7 +57,9 @@ fn PlayContent() -> Element {
             div { "launcher v{env!(\"CARGO_PKG_VERSION\")}" }
             {
                 if let Some(client_ver) = client::installed_client_version() {
-                    rsx! { div { "client v{client_ver}" } }
+                    rsx! {
+                        div { "client v{client_ver}" }
+                    }
                 } else {
                     rsx! {}
                 }
@@ -64,17 +70,7 @@ fn PlayContent() -> Element {
 
 #[component]
 pub fn Play() -> Element {
-    let nav = navigator();
-
     rsx! {
-        button {
-            class: "gear-button",
-            onclick: move |_| {
-                nav.push(Route::Settings);
-            },
-            "⚙"
-        }
-
         PlayContent {}
     }
 }

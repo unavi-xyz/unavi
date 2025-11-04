@@ -3,11 +3,6 @@ output "server_ipv4_address" {
   value       = digitalocean_droplet.unavi.ipv4_address
 }
 
-output "server_ipv6_address" {
-  description = "public ipv6 address of the unavi server"
-  value       = digitalocean_droplet.unavi.ipv6_address
-}
-
 output "server_id" {
   description = "droplet id"
   value       = digitalocean_droplet.unavi.id
@@ -16,7 +11,6 @@ output "server_id" {
 resource "local_file" "deploy_info" {
   content = jsonencode({
     server_ipv4 = digitalocean_droplet.unavi.ipv4_address
-    server_ipv6 = digitalocean_droplet.unavi.ipv6_address
   })
   filename = "${path.module}/deploy.json"
 }

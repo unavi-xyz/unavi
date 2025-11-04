@@ -10,4 +10,4 @@ deploy.json
 # sensitive files
 *.key
 *.pem
-.env
+.envrc

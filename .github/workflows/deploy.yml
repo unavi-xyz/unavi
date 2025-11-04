@@ -24,11 +24,20 @@ concurrency:
   group: deploy
   cancel-in-progress: false
 jobs:
-  deploy-unavi-server:
+  unavi-server:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
+      - uses: AdityaGarg8/remove-unwanted-software@v4
+        with:
+          remove-android: true
+          remove-cached-tools: true
+          remove-codeql: true
+          remove-docker-images: true
+          remove-dotnet: true
+          remove-haskell: true
+          remove-large-packages: true
       - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.ref || github.ref }}

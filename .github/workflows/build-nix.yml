@@ -46,6 +46,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.name }}
     steps:
+      - uses: AdityaGarg8/remove-unwanted-software@v4
+        with:
+          remove-android: true
+          remove-cached-tools: true
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || github.ref }}

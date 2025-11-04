@@ -1,6 +1,6 @@
 {
   "beta": {
-    "server_ipv4": "104.236.67.32",
+    "server_ipv4": "143.198.20.136",
     "services": {
       "dwn_server": {
         "domain": "beta.dwn.unavi.xyz",
@@ -17,7 +17,7 @@
     "kayh": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/Fq6xrATrHb1Bsv8UH4eJ4orHDBerB5DsYFfi382Zb kayh"
   },
   "stable": {
-    "server_ipv4": "159.89.41.254",
+    "server_ipv4": "167.71.181.219",
     "services": {
       "dwn_server": {
         "domain": "dwn.unavi.xyz",

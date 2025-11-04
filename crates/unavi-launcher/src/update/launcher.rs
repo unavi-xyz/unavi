@@ -8,19 +8,9 @@ use super::{
     UpdateStatus,
     common::{
         REPO_NAME, REPO_OWNER, decompress_xz, download_with_progress, extract_archive,
-        get_platform_target, use_beta,
+        get_platform_target, is_network_error, use_beta,
     },
 };
-
-/// Check if an error is a network-related error
-fn is_network_error(err: &anyhow::Error) -> bool {
-    let err_str = format!("{err:?}").to_lowercase();
-    err_str.contains("dns")
-        || err_str.contains("connection")
-        || err_str.contains("timeout")
-        || err_str.contains("network")
-        || err_str.contains("unreachable")
-}
 
 pub fn update_launcher_with_callback<F>(on_status: F) -> anyhow::Result<()>
 where

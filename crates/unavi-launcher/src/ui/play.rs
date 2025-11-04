@@ -9,9 +9,8 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 #[component]
 pub fn Play() -> Element {
     let mut launch_error = use_signal(|| None::<String>);
-    let mut client_running = use_signal(|| false);
+    let mut client_running = use_signal(|| crate::CLIENT_PROCESS.is_running());
 
-    // Poll client process status
     use_coroutine(move |_: UnboundedReceiver<()>| async move {
         loop {
             tokio::time::sleep(std::time::Duration::from_millis(500)).await;
@@ -20,29 +19,27 @@ pub fn Play() -> Element {
         }
     });
 
-    let handle_launch = move |_| {
-        if client_running() {
-            return;
+    let mut handle_launch = move |_| match client::launch_client() {
+        Ok(()) => {
+            launch_error.set(None);
+            client_running.set(true);
         }
-
-        match client::launch_client() {
-            Ok(()) => {
-                launch_error.set(None);
-                client_running.set(true);
-            }
-            Err(e) => {
-                error!("Failed to launch client: {e:?}");
-                launch_error.set(Some(format!("{e}")));
-            }
-        };
+        Err(e) => {
+            error!("Failed to launch client: {e:?}");
+            launch_error.set(Some(format!("{e}")));
+        }
     };
 
     let nav = navigator();
 
     rsx! {
         button {
-            class: "play-button",
-            onclick: handle_launch,
+            class: if client_running() { "play-button disabled" } else { "play-button" },
+            onclick: move |e| {
+                if !client_running() {
+                    handle_launch(e);
+                }
+            },
             {if client_running() { "Running" } else { "Play" }}
         }
 

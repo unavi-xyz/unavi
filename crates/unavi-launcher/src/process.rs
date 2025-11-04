@@ -3,7 +3,6 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-/// Tracks a spawned client process
 #[derive(Clone)]
 pub struct ProcessTracker {
     child: Arc<Mutex<Option<Child>>>,
@@ -16,12 +15,10 @@ impl ProcessTracker {
         }
     }
 
-    /// Set the tracked process
     pub fn set(&self, child: Child) {
         *self.child.lock().unwrap() = Some(child);
     }
 
-    /// Check if the process is still running
     pub fn is_running(&self) -> bool {
         let mut guard = self.child.lock().unwrap();
         if let Some(ref mut child) = *guard {
@@ -46,7 +43,6 @@ impl ProcessTracker {
         }
     }
 
-    /// Try to kill the process if it's running
     pub fn kill(&self) -> anyhow::Result<()> {
         let mut guard = self.child.lock().unwrap();
         if let Some(ref mut child) = *guard {

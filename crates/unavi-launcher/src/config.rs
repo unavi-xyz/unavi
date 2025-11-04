@@ -69,7 +69,6 @@ impl Config {
     }
 }
 
-/// Global config store
 pub struct ConfigStore {
     config: Arc<Mutex<Config>>,
 }

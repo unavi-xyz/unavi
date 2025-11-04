@@ -91,9 +91,7 @@
               };
             };
 
-            checks = {
-              x86_64-linux = { inherit (self.deploy.nodes.unavi-server.profiles) beta stable; };
-            };
+            checks = builtins.mapAttrs (_system: deployLib: deployLib.deployChecks self.deploy) deploy-rs.lib;
           };
 
         perSystem =

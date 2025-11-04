@@ -99,7 +99,6 @@
             rm -r $out/bin
             strip $out/${pname}
             cp -r crates/${pname}/assets $out
-            chmod -R u+w $out/assets
             cp LICENSE $out
           '';
         }

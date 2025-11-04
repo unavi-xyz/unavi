@@ -1,4 +1,4 @@
-use std::sync::LazyLock;
+use std::{path::PathBuf, sync::LazyLock};
 
 use bevy::prelude::*;
 use directories::ProjectDirs;
@@ -17,12 +17,32 @@ pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
     dirs
 });
 
+pub fn assets_dir() -> PathBuf {
+    DIRS.data_local_dir().join("assets")
+}
+
+pub fn models_dir() -> PathBuf {
+    assets_dir().join("models")
+}
+
+pub fn images_dir() -> PathBuf {
+    assets_dir().join("images")
+}
+
+pub fn db_path() -> PathBuf {
+    DIRS.data_local_dir().join("data.db")
+}
+
 pub struct UnaviPlugin;
 
 impl Plugin for UnaviPlugin {
     fn build(&self, app: &mut App) {
         DefaultPlugins
             .build()
+            .set(AssetPlugin {
+                file_path: assets_dir().to_string_lossy().to_string(),
+                ..default()
+            })
             .set(WindowPlugin {
                 primary_window: Some(Window {
                     name: Some("unavi".to_string()),
@@ -34,8 +54,7 @@ impl Plugin for UnaviPlugin {
             .finish(app);
 
         let store = {
-            let mut path = DIRS.data_local_dir().to_path_buf();
-            path.push("data.db");
+            let path = db_path();
             NativeDbStore::new(path).expect("access native db")
         };
         let dwn = Dwn::from(store);

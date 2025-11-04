@@ -13,7 +13,7 @@ pub fn set_window_icon(windows: NonSend<WinitWindows>) {
 }
 
 fn try_get_icon() -> Result<Icon> {
-    let icon_path = images_dir().join("logo.png");
+    let icon_path = images_dir().join("logo-rounded.png");
 
     let (icon_rgba, icon_width, icon_height) = {
         let image = image::open(icon_path)?.into_rgba8();

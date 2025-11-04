@@ -98,7 +98,11 @@
             mv $out/bin/* $out
             rm -r $out/bin
             strip $out/${pname}
-            cp -r crates/${pname}/assets $out
+
+            mkdir -p $out/assets
+            cp -r crates/${pname}/assets/* $out/assets/
+            rm -rf $out/assets/wasm/test $out/assets/wasm/example
+
             cp LICENSE $out
           '';
         }

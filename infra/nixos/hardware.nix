@@ -2,8 +2,10 @@
 {
   imports = [ (modulesPath + "/profiles/qemu-guest.nix") ];
 
-  boot.loader.grub.enable = true;
-  boot.loader.grub.device = "/dev/vda";
+  boot.loader.grub = {
+    enable = true;
+    device = "/dev/vda";
+  };
 
   fileSystems."/" = {
     device = "/dev/vda1";
@@ -12,6 +14,8 @@
 
   swapDevices = [ ];
 
-  networking.useDHCP = lib.mkDefault true;
-  networking.useNetworkd = true;
+  networking = {
+    useDHCP = lib.mkDefault true;
+    useNetworkd = true;
+  };
 }

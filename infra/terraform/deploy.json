@@ -1,12 +1,12 @@
 {
   "beta": {
-    "server_ipv4": "157.245.116.18"
+    "server_ipv4": "104.236.67.32"
   },
   "ssh_public_keys": {
     "gh_unavi": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN5GYGW+HwhFR0oUafANn2mmvf6OzT/1LswSaUf/9AbS github-actions-deploy",
     "kayh": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/Fq6xrATrHb1Bsv8UH4eJ4orHDBerB5DsYFfi382Zb kayh"
   },
   "stable": {
-    "server_ipv4": "157.245.116.18"
+    "server_ipv4": "159.89.41.254"
   }
 }

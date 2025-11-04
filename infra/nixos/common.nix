@@ -1,45 +1,70 @@
 { pkgs, deployInfo, ... }:
 {
-  system.stateVersion = "23.11";
+  boot.tmp.cleanOnBoot = true;
 
-  nix.settings.experimental-features = [
-    "nix-command"
-    "flakes"
-  ];
+  environment = {
+    systemPackages = with pkgs; [
+      curl
+      git
+      htop
+      jq
+      vim
+      wget
+    ];
+  };
 
   networking.firewall.enable = false;
 
-  services.openssh = {
-    enable = true;
+  nix = {
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 30d";
+    };
     settings = {
-      PermitRootLogin = "prohibit-password";
-      PasswordAuthentication = false;
+      auto-optimise-store = true;
+      experimental-features = [
+        "flakes"
+        "nix-command"
+      ];
     };
   };
 
-  users.users.root.openssh.authorizedKeys.keys = builtins.attrValues deployInfo.ssh_public_keys;
-
-  system.autoUpgrade = {
+  programs.fish = {
     enable = true;
-    allowReboot = false;
-  };
-
-  nix.gc = {
-    automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 30d";
+    interactiveShellInit = ''
+      fish_vi_key_bindings
+    '';
   };
 
   security.sudo.wheelNeedsPassword = true;
 
-  environment.systemPackages = with pkgs; [
-    curl
-    git
-    htop
-    jq
-    vim
-    wget
-  ];
+  services = {
+    journald.extraConfig = ''
+      MaxRetentionSec=7d
+      SystemMaxUse=1G
+    '';
+    openssh = {
+      enable = true;
+      settings = {
+        PasswordAuthentication = false;
+        PermitRootLogin = "prohibit-password";
+      };
+    };
+  };
 
-  time.timeZone = "UTC";
+  system = {
+    autoUpgrade = {
+      allowReboot = false;
+      enable = true;
+    };
+    stateVersion = "23.11";
+  };
+
+  time.timeZone = "America/New_York";
+
+  users.users.root = {
+    openssh.authorizedKeys.keys = builtins.attrValues deployInfo.ssh_public_keys;
+    shell = pkgs.fish;
+  };
 }

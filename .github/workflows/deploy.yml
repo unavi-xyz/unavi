@@ -54,4 +54,4 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan ${{ steps.deploy_info.outputs.server_ip }} >> ~/.ssh/known_hosts
       - name: deploy
-        run: nix run .#deploy.nodes.unavi-server.profiles.${{ inputs.channel }}
+        run: nix develop --command deploy .#unavi-${{ inputs.channel }}

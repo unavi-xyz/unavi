@@ -3,18 +3,20 @@
   imports = [
     ./common.nix
     ./hardware.nix
-    ./services/unavi-server.nix
     ./services/nginx.nix
+    ./services/unavi-server.nix
   ];
 
-  networking.hostName = "unavi-server";
+  networking.hostName = "unavi-stable";
 
   services.unavi-server = {
+    channel = "stable";
     enable = true;
     package = inputs.self.packages.${pkgs.system}.unavi-server;
-    channel = "stable";
   };
 
-  sops.defaultSopsFile = ../secrets/secrets.yaml;
-  sops.age.keyFile = "/var/lib/sops-nix/key.txt";
+  sops = {
+    age.keyFile = "/var/lib/sops-nix/key.txt";
+    defaultSopsFile = ../secrets/secrets.yaml;
+  };
 }

@@ -1,12 +1,32 @@
 {
   "beta": {
-    "server_ipv4": "104.236.67.32"
+    "server_ipv4": "104.236.67.32",
+    "services": {
+      "dwn_server": {
+        "domain": "beta.dwn.unavi.xyz",
+        "port": 8080
+      },
+      "unavi_server": {
+        "domain": "beta.world.unavi.xyz",
+        "port": 5000
+      }
+    }
   },
   "ssh_public_keys": {
     "gh_unavi": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN5GYGW+HwhFR0oUafANn2mmvf6OzT/1LswSaUf/9AbS github-actions-deploy",
     "kayh": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/Fq6xrATrHb1Bsv8UH4eJ4orHDBerB5DsYFfi382Zb kayh"
   },
   "stable": {
-    "server_ipv4": "159.89.41.254"
+    "server_ipv4": "159.89.41.254",
+    "services": {
+      "dwn_server": {
+        "domain": "dwn.unavi.xyz",
+        "port": 8080
+      },
+      "unavi_server": {
+        "domain": "world.unavi.xyz",
+        "port": 5000
+      }
+    }
   }
 }

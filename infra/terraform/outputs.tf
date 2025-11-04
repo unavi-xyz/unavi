@@ -22,9 +22,11 @@ resource "local_file" "deploy_info" {
   content = jsonencode({
     beta = {
       server_ipv4 = digitalocean_droplet.beta.ipv4_address
+      services    = local.beta_services
     }
     stable = {
       server_ipv4 = digitalocean_droplet.stable.ipv4_address
+      services    = local.stable_services
     }
     ssh_public_keys = {
       kayh     = data.digitalocean_ssh_key.kayh.public_key

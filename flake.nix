@@ -107,24 +107,6 @@
             system,
             ...
           }:
-          let
-            cargo-wix = pkgs.rustPlatform.buildRustPackage rec {
-              pname = "cargo-wix";
-              version = "0.3.9";
-
-              src = pkgs.fetchFromGitHub {
-                owner = "volks73";
-                repo = "cargo-wix";
-                tag = "${version}";
-                sha256 = "sha256-WoyBb/+FYoZhIfWn+PDgWEqziqw7gUsSi8uSgenGKb4=";
-              };
-
-              cargoHash = "sha256-LkN+3QX/VE2Y/l3PhteyDHkxZjUBE/S9mp8/q9uOg28=";
-
-              doCheck = false;
-            };
-
-          in
           {
             _module.args.pkgs = import inputs.nixpkgs {
               inherit system;
@@ -215,7 +197,6 @@
                       sops
                       terraform
                     ])
-                    ++ [ cargo-wix ]
                     ++ packages;
 
                   inherit LD_LIBRARY_PATH;

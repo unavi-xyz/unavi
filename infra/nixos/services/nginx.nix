@@ -1,4 +1,24 @@
-_: {
+{
+  config,
+  lib,
+  deployInfo,
+  ...
+}:
+let
+  inherit (config.services.unavi-server) channel;
+  inherit (deployInfo.${channel}) services;
+
+  # Generate virtualHosts configuration from services
+  virtualHosts = lib.mapAttrs (_serviceName: serviceConfig: {
+    enableACME = true;
+    forceSSL = true;
+    locations."/" = {
+      proxyPass = "http://127.0.0.1:${toString serviceConfig.port}";
+      proxyWebsockets = true;
+    };
+  }) (lib.mapAttrs' (_name: config: lib.nameValuePair config.domain config) services);
+in
+{
   services.nginx = {
     enable = true;
     recommendedProxySettings = true;
@@ -6,43 +26,7 @@ _: {
     recommendedOptimisation = true;
     recommendedGzipSettings = true;
 
-    virtualHosts = {
-      "world.unavi.xyz" = {
-        enableACME = true;
-        forceSSL = true;
-        locations."/" = {
-          proxyPass = "http://127.0.0.1:5001";
-          proxyWebsockets = true;
-        };
-      };
-
-      "dwn.unavi.xyz" = {
-        enableACME = true;
-        forceSSL = true;
-        locations."/" = {
-          proxyPass = "http://127.0.0.1:8081";
-          proxyWebsockets = true;
-        };
-      };
-
-      "beta.world.unavi.xyz" = {
-        enableACME = true;
-        forceSSL = true;
-        locations."/" = {
-          proxyPass = "http://127.0.0.1:5000";
-          proxyWebsockets = true;
-        };
-      };
-
-      "beta.dwn.unavi.xyz" = {
-        enableACME = true;
-        forceSSL = true;
-        locations."/" = {
-          proxyPass = "http://127.0.0.1:8080";
-          proxyWebsockets = true;
-        };
-      };
-    };
+    inherit virtualHosts;
   };
 
   security.acme = {

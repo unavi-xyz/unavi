@@ -53,6 +53,13 @@ jobs:
         with:
           targets: x86_64-pc-windows-msvc
       - run: cargo install cargo-wix
+      - name: Set build environment from deploy.json
+        shell: bash
+        run: |
+          DWN_DOMAIN=$(jq -r '.${{ inputs.channel }}.services.dwn_server.domain' infra/terraform/deploy.json)
+          WORLD_DOMAIN=$(jq -r '.${{ inputs.channel }}.services.unavi_server.domain' infra/terraform/deploy.json)
+          echo "DWN_URL=https://$DWN_DOMAIN" >> "$GITHUB_ENV"
+          echo "WORLD_DID=did:web:$WORLD_DOMAIN" >> "$GITHUB_ENV"
       - name: Build wix
         if: ${{ matrix.package == 'unavi-launcher' }}
         run: |

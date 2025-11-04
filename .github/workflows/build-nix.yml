@@ -54,7 +54,17 @@ jobs:
           extra-conf: extra-experimental-features = pipe-operators
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - run: nix profile add nixpkgs#gnutar nixpkgs#xz
+      - name: Set build environment from deploy.json
+        id: deploy_info
+        run: |
+          DWN_DOMAIN=$(jq -r '.${{ inputs.channel }}.services.dwn_server.domain' infra/terraform/deploy.json)
+          WORLD_DOMAIN=$(jq -r '.${{ inputs.channel }}.services.unavi_server.domain' infra/terraform/deploy.json)
+          echo "DWN_URL=https://$DWN_DOMAIN" >> "$GITHUB_OUTPUT"
+          echo "WORLD_DID=did:web:$WORLD_DOMAIN" >> "$GITHUB_OUTPUT"
       - name: Build package
+        env:
+          DWN_URL: ${{ steps.deploy_info.outputs.DWN_URL }}
+          WORLD_DID: ${{ steps.deploy_info.outputs.WORLD_DID }}
         run: |
           nix build -L .#${{ matrix.package }}
           tar -cJf ${{ matrix.name }}.tar.xz -C result .

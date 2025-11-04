@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf, process::Command};
+use std::{path::PathBuf, process::Command};
 
 use anyhow::Context;
 use self_update::ArchiveKind;
@@ -19,7 +19,7 @@ fn current_version_file() -> PathBuf {
 }
 
 fn get_installed_version() -> Option<Version> {
-    fs::read_to_string(current_version_file())
+    std::fs::read_to_string(current_version_file())
         .ok()
         .and_then(|s| Version::parse(s.trim()).ok())
 }
@@ -29,7 +29,7 @@ pub fn installed_client_version() -> Option<String> {
 }
 
 fn set_installed_version(version: &Version) -> anyhow::Result<()> {
-    fs::write(current_version_file(), version.to_string())?;
+    std::fs::write(current_version_file(), version.to_string())?;
     Ok(())
 }
 
@@ -171,7 +171,7 @@ where
     })?;
 
     let extract_path = client_dir(&latest_version);
-    fs::create_dir_all(&extract_path)?;
+    std::fs::create_dir_all(&extract_path)?;
 
     match simple_target {
         super::common::SimpleTarget::Apple | super::common::SimpleTarget::Linux => {
@@ -197,9 +197,9 @@ where
         use std::os::unix::fs::PermissionsExt;
         let exe_path = client_exe_path(&latest_version);
         if exe_path.exists() {
-            let mut perms = fs::metadata(&exe_path)?.permissions();
+            let mut perms = std::fs::metadata(&exe_path)?.permissions();
             perms.set_mode(0o755);
-            fs::set_permissions(&exe_path, perms)?;
+            std::fs::set_permissions(&exe_path, perms)?;
         }
     }
 
@@ -216,7 +216,7 @@ where
 fn clean_old_versions(current: &Version, keep_count: usize) -> anyhow::Result<()> {
     let clients_dir = DIRS.data_local_dir().join("clients");
 
-    let mut versions: Vec<Version> = fs::read_dir(&clients_dir)?
+    let mut versions: Vec<Version> = std::fs::read_dir(&clients_dir)?
         .filter_map(|entry| entry.ok())
         .filter_map(|entry| {
             let name = entry.file_name();
@@ -233,7 +233,7 @@ fn clean_old_versions(current: &Version, keep_count: usize) -> anyhow::Result<()
         if version != current {
             let dir_to_remove = client_dir(version);
             info!("Removing old client version: {version}");
-            if let Err(e) = fs::remove_dir_all(&dir_to_remove) {
+            if let Err(e) = std::fs::remove_dir_all(&dir_to_remove) {
                 tracing::warn!("Failed to remove old version {version}: {e}");
             }
         }

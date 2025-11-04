@@ -75,18 +75,18 @@ jobs:
     with:
       channel: ${{ inputs.increment == 'beta' && 'beta' || 'stable' }}
       ref: release/v${{ needs.version.outputs.version }}
-  # deploy:
-  #   needs: version
-  #   secrets: inherit
-  #   uses: ./.github/workflows/deploy.yml
-  #   with:
-  #     channel: ${{ inputs.increment == 'beta' && 'beta' || 'stable' }}
-  #     ref: release/v${{ needs.version.outputs.version }}
+  deploy:
+    needs: version
+    secrets: inherit
+    uses: ./.github/workflows/deploy.yml
+    with:
+      channel: ${{ inputs.increment == 'beta' && 'beta' || 'stable' }}
+      ref: release/v${{ needs.version.outputs.version }}
   release:
     needs:
       - build-nix
       - build-windows
-      # - deploy
+      - deploy
       - version
     runs-on: ubuntu-latest
     steps:

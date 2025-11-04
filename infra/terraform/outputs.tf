@@ -10,7 +10,12 @@ output "server_id" {
 
 resource "local_file" "deploy_info" {
   content = jsonencode({
-    server_ipv4 = digitalocean_droplet.unavi.ipv4_address
+    beta = {
+      server_ipv4 = digitalocean_droplet.unavi.ipv4_address
+    }
+    stable = {
+      server_ipv4 = digitalocean_droplet.unavi.ipv4_address
+    }
   })
   filename = "${path.module}/deploy.json"
 }

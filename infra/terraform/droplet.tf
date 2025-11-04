@@ -7,5 +7,5 @@ resource "digitalocean_droplet" "unavi" {
 
   ssh_keys = var.ssh_keys
 
-  tags = ["unavi", "production"]
+  tags = ["stable", "beta", "production"]
 }

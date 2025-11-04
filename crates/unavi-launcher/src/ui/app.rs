@@ -1,8 +1,6 @@
 use dioxus::prelude::*;
 
-use super::{
-    client_update::ClientUpdate, play::Play, self_update::SelfUpdate, settings::Settings,
-};
+use super::{client_update::ClientUpdate, play::Play, self_update::SelfUpdate, settings::Settings};
 
 const BASE_STYLES: &str = include_str!("../../styles/base.css");
 const LAYOUT_STYLES: &str = include_str!("../../styles/layout.css");

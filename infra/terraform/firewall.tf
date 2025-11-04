@@ -1,7 +1,10 @@
 resource "digitalocean_firewall" "unavi" {
   name = "unavi-server-firewall"
 
-  droplet_ids = [digitalocean_droplet.unavi.id]
+  droplet_ids = [
+    digitalocean_droplet.beta.id,
+    digitalocean_droplet.stable.id
+  ]
 
   # ssh
   inbound_rule {

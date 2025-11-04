@@ -57,7 +57,7 @@
           in
           {
             nixosConfigurations = {
-              unavi-beta = nixpkgs.lib.nixosSystem {
+              beta = nixpkgs.lib.nixosSystem {
                 system = "x86_64-linux";
                 specialArgs = { inherit inputs self deployInfo; };
                 modules = [
@@ -66,7 +66,7 @@
                 ];
               };
 
-              unavi-stable = nixpkgs.lib.nixosSystem {
+              stable = nixpkgs.lib.nixosSystem {
                 system = "x86_64-linux";
                 specialArgs = { inherit inputs self deployInfo; };
                 modules = [
@@ -76,17 +76,22 @@
               };
             };
 
-            deploy.nodes.unavi-server = {
-              hostname = deployInfo.beta.server_ipv4;
-              sshUser = "root";
-              profiles = {
-                beta = {
+            deploy.nodes = {
+              unavi-beta = {
+                hostname = deployInfo.beta.server_ipv4;
+                sshUser = "root";
+                profiles.system = {
                   user = "root";
-                  path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.unavi-beta;
+                  path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.beta;
                 };
-                stable = {
+              };
+
+              unavi-stable = {
+                hostname = deployInfo.stable.server_ipv4;
+                sshUser = "root";
+                profiles.system = {
                   user = "root";
-                  path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.unavi-stable;
+                  path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.stable;
                 };
               };
             };
@@ -118,6 +123,7 @@
 
               doCheck = false;
             };
+
           in
           {
             _module.args.pkgs = import inputs.nixpkgs {

@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, deployInfo, ... }:
 {
   system.stateVersion = "23.11";
 
@@ -16,6 +16,8 @@
       PasswordAuthentication = false;
     };
   };
+
+  users.users.root.openssh.authorizedKeys.keys = builtins.attrValues deployInfo.ssh_public_keys;
 
   system.autoUpgrade = {
     enable = true;

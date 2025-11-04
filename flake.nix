@@ -59,7 +59,7 @@
             nixosConfigurations = {
               unavi-beta = nixpkgs.lib.nixosSystem {
                 system = "x86_64-linux";
-                specialArgs = { inherit inputs self; };
+                specialArgs = { inherit inputs self deployInfo; };
                 modules = [
                   "${self}/infra/nixos/beta.nix"
                   sops-nix.nixosModules.sops
@@ -68,7 +68,7 @@
 
               unavi-stable = nixpkgs.lib.nixosSystem {
                 system = "x86_64-linux";
-                specialArgs = { inherit inputs self; };
+                specialArgs = { inherit inputs self deployInfo; };
                 modules = [
                   "${self}/infra/nixos/stable.nix"
                   sops-nix.nixosModules.sops

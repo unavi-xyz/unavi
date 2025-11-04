@@ -20,8 +20,7 @@ jobs:
         with:
           extra-conf: extra-experimental-features = pipe-operators
       - uses: DeterminateSystems/magic-nix-cache-action@main
-      - run: ls
-      - run: ls scripts
+      - run: nix profile add nixpkgs#nushell
       - name: Build WASM assets
         run: nix develop .#minimal -c nu scripts/build-wasm.nu
       - name: Upload artifact

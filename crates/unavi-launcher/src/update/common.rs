@@ -85,12 +85,25 @@ pub fn download_with_progress<F>(
 where
     F: Fn(f32),
 {
-    let client = reqwest::blocking::Client::new();
+    let client = reqwest::blocking::Client::builder()
+        .redirect(reqwest::redirect::Policy::default())
+        .build()
+        .context("failed to build http client")?;
     let mut response = client
         .get(url)
         .header(reqwest::header::ACCEPT, "application/octet-stream")
+        .header(reqwest::header::USER_AGENT, "unavi-launcher")
         .send()
         .context("failed to start download")?;
+
+    // Check if the request was successful
+    if !response.status().is_success() {
+        anyhow::bail!(
+            "download failed with status {}: {}",
+            response.status(),
+            response.text().unwrap_or_default()
+        );
+    }
 
     let total_size = response.content_length().unwrap_or(0);
     let mut downloaded: u64 = 0;

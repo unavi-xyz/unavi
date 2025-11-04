@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::Context;
+use bevy::log::info;
 
 pub fn ensure_model_assets() -> anyhow::Result<()> {
     let assets_dir = get_assets_dir()?;
@@ -9,17 +10,40 @@ pub fn ensure_model_assets() -> anyhow::Result<()> {
 
     let files = ["default.vrm", "animations.glb"];
 
-    for filename in files {
-        let path = models_dir.join(filename);
-        if !path.exists() {
-            download_asset(filename, &path)?;
-        }
+    let missing_files: Vec<_> = files
+        .iter()
+        .filter(|filename| !models_dir.join(filename).exists())
+        .copied()
+        .collect();
+
+    if missing_files.is_empty() {
+        return Ok(());
     }
 
-    Ok(())
+    std::thread::scope(|s| {
+        let handles: Vec<_> = missing_files
+            .iter()
+            .map(|filename| {
+                let path = models_dir.join(filename);
+                s.spawn(move || download_asset(filename, &path))
+            })
+            .collect();
+
+        for handle in handles {
+            handle.join().unwrap()?;
+        }
+
+        Ok(())
+    })
 }
 
 fn get_assets_dir() -> anyhow::Result<PathBuf> {
+    // Development: use cargo manifest dir if available
+    if let Ok(manifest_dir) = std::env::var("CARGO_MANIFEST_DIR") {
+        return Ok(PathBuf::from(manifest_dir).join("assets"));
+    }
+
+    // Release: use exe directory
     let exe = std::env::current_exe().context("get current exe")?;
     let exe_dir = exe
         .parent()
@@ -29,7 +53,7 @@ fn get_assets_dir() -> anyhow::Result<PathBuf> {
 }
 
 fn download_asset(filename: &str, dest_path: &PathBuf) -> anyhow::Result<()> {
-    println!("Downloading {filename}...");
+    info!("Downloading {filename}...");
 
     let url = format!("{}{}", unavi_constants::MODELS_URL, filename);
     let client = reqwest::blocking::Client::new();
@@ -46,6 +70,6 @@ fn download_asset(filename: &str, dest_path: &PathBuf) -> anyhow::Result<()> {
     let bytes = response.bytes().context("failed to read response bytes")?;
     std::fs::write(dest_path, bytes).context("failed to write asset file")?;
 
-    println!("Downloaded {filename}");
+    info!("Downloaded {filename}");
     Ok(())
 }

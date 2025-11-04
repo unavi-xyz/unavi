@@ -1,4 +1,9 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  deployInfo,
+  ...
+}:
 
 with lib;
 
@@ -24,13 +29,13 @@ in
 
     port = mkOption {
       type = types.port;
-      default = if cfg.channel == "beta" then 5000 else 5001;
+      default = deployInfo.${cfg.channel}.services.unavi_server.port;
       description = "port for unavi-server";
     };
 
     dwnPort = mkOption {
       type = types.port;
-      default = if cfg.channel == "beta" then 8080 else 8081;
+      default = deployInfo.${cfg.channel}.services.dwn_server.port;
       description = "port for dwn-server";
     };
 

@@ -1,5 +1,5 @@
 variable "cloudflare_zone_id" {
-  description = "cloudflare zone id for unavi.xyz"
+  description = "cloudflare zone id"
   type        = string
 }
 
@@ -12,5 +12,5 @@ variable "droplet_region" {
 variable "droplet_size" {
   description = "digitalocean droplet size"
   type        = string
-  default     = "s-2vcpu-4gb"
+  default     = "s-1vcpu-1gb"
 }

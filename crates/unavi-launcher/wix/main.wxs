@@ -64,7 +64,7 @@
                             />
                         <RemoveFolder Id="CleanupProgramMenuDir" On="uninstall" />
                         <RegistryValue
-                            Root="HKLM"
+                            Root="HKCU"
                             Key="Software\$(var.Manufacturer)\$(var.AppName)"
                             Name="Installed"
                             Type="integer"

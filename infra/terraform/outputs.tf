@@ -16,6 +16,10 @@ resource "local_file" "deploy_info" {
     stable = {
       server_ipv4 = digitalocean_droplet.unavi.ipv4_address
     }
+    ssh_public_keys = {
+      kayh     = data.digitalocean_ssh_key.kayh.public_key
+      gh_unavi = data.digitalocean_ssh_key.gh_unavi.public_key
+    }
   })
   filename = "${path.module}/deploy.json"
 }

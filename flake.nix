@@ -1,11 +1,13 @@
 {
   inputs = {
+    # Nix
     flake-parts = {
       inputs.nixpkgs-lib.follows = "nixpkgs";
       url = "github:hercules-ci/flake-parts";
     };
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     systems.url = "github:nix-systems/default";
+    treefmt-nix.url = "github:numtide/treefmt-nix";
 
     # Rust
     advisory-db = {
@@ -19,12 +21,24 @@
     };
     wit-deps.url = "github:bytecodealliance/wit-deps";
 
-    # Other
-    treefmt-nix.url = "github:numtide/treefmt-nix";
+    # Deployment
+    deploy-rs.url = "github:serokell/deploy-rs";
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
-    inputs@{ flake-parts, systems, ... }:
+    inputs@{
+      self,
+      flake-parts,
+      systems,
+      nixpkgs,
+      deploy-rs,
+      sops-nix,
+      ...
+    }:
     flake-parts.lib.mkFlake { inherit inputs; } (
       { ... }:
       {
@@ -36,6 +50,50 @@
           ./crates/unavi-launcher
           ./crates/unavi-server
         ];
+
+        flake =
+          let
+            deployInfo = builtins.fromJSON (builtins.readFile ./infra/terraform/deploy.json);
+          in
+          {
+            nixosConfigurations = {
+              unavi-beta = nixpkgs.lib.nixosSystem {
+                system = "x86_64-linux";
+                specialArgs = { inherit inputs self; };
+                modules = [
+                  "${self}/infra/nixos/beta.nix"
+                  sops-nix.nixosModules.sops
+                ];
+              };
+
+              unavi-stable = nixpkgs.lib.nixosSystem {
+                system = "x86_64-linux";
+                specialArgs = { inherit inputs self; };
+                modules = [
+                  "${self}/infra/nixos/stable.nix"
+                  sops-nix.nixosModules.sops
+                ];
+              };
+            };
+
+            deploy.nodes.unavi-server = {
+              hostname = deployInfo.server_ipv4;
+              profiles = {
+                beta = {
+                  user = "root";
+                  path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.unavi-beta;
+                };
+                stable = {
+                  user = "root";
+                  path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.unavi-stable;
+                };
+              };
+            };
+
+            checks = {
+              x86_64-linux = { inherit (self.deploy.nodes.unavi-server.profiles) beta stable; };
+            };
+          };
 
         perSystem =
           {
@@ -65,6 +123,7 @@
           {
             _module.args.pkgs = import inputs.nixpkgs {
               inherit system;
+              config.allowUnfree = true;
               overlays = [
                 inputs.fenix.overlays.default
 
@@ -136,6 +195,7 @@
                 default = pkgs.crane.devShell {
                   packages =
                     (with pkgs; [
+                      age
                       cargo-deny
                       cargo-edit
                       cargo-machete
@@ -143,8 +203,12 @@
                       cargo-release
                       cargo-watch
                       cargo-workspaces
+                      deploy-rs.packages.${system}.default
                       dioxus-cli
+                      doctl
                       rustup
+                      sops
+                      terraform
                     ])
                     ++ [ cargo-wix ]
                     ++ packages;

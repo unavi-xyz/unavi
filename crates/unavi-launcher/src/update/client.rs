@@ -9,42 +9,36 @@ use super::{
     UpdateStatus,
     common::{
         REPO_NAME, REPO_OWNER, decompress_xz, download_with_progress, extract_archive,
-        get_platform_target, use_beta,
+        get_platform_target, is_network_error, use_beta,
     },
 };
 use crate::DIRS;
 
-/// Get the path to the current version file
 fn current_version_file() -> PathBuf {
     DIRS.data_local_dir().join("current_client_version.txt")
 }
 
-/// Get the currently installed client version
 fn get_installed_version() -> Option<Version> {
     fs::read_to_string(current_version_file())
         .ok()
         .and_then(|s| Version::parse(s.trim()).ok())
 }
 
-/// Get the currently installed client version (public)
 pub fn installed_client_version() -> Option<String> {
     get_installed_version().map(|v| v.to_string())
 }
 
-/// Set the currently installed client version
 fn set_installed_version(version: &Version) -> anyhow::Result<()> {
     fs::write(current_version_file(), version.to_string())?;
     Ok(())
 }
 
-/// Get the path to a versioned client directory
 fn client_dir(version: &Version) -> PathBuf {
     DIRS.data_local_dir()
         .join("clients")
         .join(version.to_string())
 }
 
-/// Get the path to the client executable for a given version
 fn client_exe_path(version: &Version) -> PathBuf {
     let exe_name = if cfg!(windows) {
         "unavi-client.exe"
@@ -54,7 +48,6 @@ fn client_exe_path(version: &Version) -> PathBuf {
     client_dir(version).join(exe_name)
 }
 
-/// Launch the UNAVI client using the most recent installed version
 pub fn launch_client() -> anyhow::Result<()> {
     // Try versioned client first
     if let Some(version) = get_installed_version() {
@@ -95,17 +88,6 @@ pub fn launch_client() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Check if an error is a network-related error
-fn is_network_error(err: &anyhow::Error) -> bool {
-    let err_str = format!("{err:?}").to_lowercase();
-    err_str.contains("dns")
-        || err_str.contains("connection")
-        || err_str.contains("timeout")
-        || err_str.contains("network")
-        || err_str.contains("unreachable")
-}
-
-/// Check for and download client updates
 pub fn update_client_with_callback<F>(on_status: F) -> anyhow::Result<()>
 where
     F: Fn(UpdateStatus),

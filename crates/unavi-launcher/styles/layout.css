@@ -1,0 +1,24 @@
+.container {
+    width: 100%;
+    max-width: 400px;
+    padding: 40px 50px;
+    text-align: center;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.content {
+    width: 100%;
+    min-height: 400px;
+}
+
+h1 {
+    margin: 0 0 40px 0;
+    color: #fff;
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    min-height: 38px;
+}

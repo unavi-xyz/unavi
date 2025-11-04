@@ -1,0 +1,89 @@
+button {
+    background: #fff;
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-family: inherit;
+}
+
+button:hover:not(:disabled) {
+    background: #e0e0e0;
+}
+
+button:active:not(:disabled) {
+    background: #d0d0d0;
+}
+
+button:disabled {
+    background: #333;
+    color: #666;
+    cursor: not-allowed;
+}
+
+.play-button {
+    width: 240px;
+    margin: 0 auto 20px;
+    background: #fff;
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 16px 32px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.play-button:hover {
+    background: #e0e0e0;
+}
+
+.play-button:active {
+    background: #d0d0d0;
+}
+
+.play-button.disabled {
+    background: #333;
+    color: #666;
+    cursor: not-allowed;
+}
+
+.play-button.disabled:hover {
+    background: #333;
+}
+
+.play-button.disabled:active {
+    background: #333;
+}
+
+.nav-button {
+    background: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: #888;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin: 0 auto;
+    display: block;
+    width: 100%;
+}
+
+.nav-button:hover {
+    color: #bbb !important;
+    border-color: rgba(255, 255, 255, 0.3);
+    background: transparent !important;
+}
+
+.nav-button:active {
+    color: #ddd !important;
+    border-color: rgba(255, 255, 255, 0.4);
+    background: transparent !important;
+}

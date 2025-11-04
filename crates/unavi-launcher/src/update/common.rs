@@ -30,7 +30,6 @@ impl SimpleTarget {
     }
 }
 
-/// Get the platform target for the current system
 pub fn get_platform_target() -> anyhow::Result<SimpleTarget> {
     let target = self_update::get_target();
 
@@ -45,7 +44,6 @@ pub fn get_platform_target() -> anyhow::Result<SimpleTarget> {
     }
 }
 
-/// Decompress an XZ archive to a tar file
 pub fn decompress_xz(xz_path: &std::path::Path, tar_path: &std::path::Path) -> anyhow::Result<()> {
     let xz_file = std::fs::File::open(xz_path).context("open xz file")?;
 
@@ -64,7 +62,6 @@ pub fn decompress_xz(xz_path: &std::path::Path, tar_path: &std::path::Path) -> a
     Ok(())
 }
 
-/// Extract an archive to a destination directory
 pub fn extract_archive(
     archive_path: &std::path::Path,
     archive_kind: ArchiveKind,
@@ -76,7 +73,6 @@ pub fn extract_archive(
     Ok(())
 }
 
-/// Download a file with progress reporting
 pub fn download_with_progress<F>(
     url: &str,
     dest_path: &std::path::Path,
@@ -130,4 +126,13 @@ where
     }
 
     Ok(())
+}
+
+pub fn is_network_error(err: &anyhow::Error) -> bool {
+    let err_str = format!("{err:?}").to_lowercase();
+    err_str.contains("dns")
+        || err_str.contains("connection")
+        || err_str.contains("timeout")
+        || err_str.contains("network")
+        || err_str.contains("unreachable")
 }

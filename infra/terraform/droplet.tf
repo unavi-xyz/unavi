@@ -5,7 +5,10 @@ resource "digitalocean_droplet" "unavi" {
 
   image = "152510211" # nixos-23.11
 
-  ssh_keys = var.ssh_keys
+  ssh_keys = [
+    data.digitalocean_ssh_key.kayh.id,
+    data.digitalocean_ssh_key.gh_unavi.id,
+  ]
 
-  tags = ["stable", "beta", "production"]
+  tags = ["beta", "production", "stable"]
 }

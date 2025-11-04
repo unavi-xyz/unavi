@@ -1,5 +1,4 @@
-_:
-{
+_: {
   services.nginx = {
     enable = true;
     recommendedProxySettings = true;

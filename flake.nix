@@ -77,16 +77,16 @@
             };
 
             deploy.nodes.unavi-server = {
+              hostname = deployInfo.beta.server_ipv4;
+              sshUser = "root";
               profiles = {
                 beta = {
                   user = "root";
                   path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.unavi-beta;
-                  hostname = deployInfo.beta.server_ipv4;
                 };
                 stable = {
                   user = "root";
                   path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.unavi-stable;
-                  hostname = deployInfo.stable.server_ipv4;
                 };
               };
             };

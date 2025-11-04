@@ -14,8 +14,3 @@ variable "droplet_size" {
   type        = string
   default     = "s-2vcpu-4gb"
 }
-
-variable "ssh_keys" {
-  description = "ssh key fingerprints for droplet access"
-  type        = list(string)
-}

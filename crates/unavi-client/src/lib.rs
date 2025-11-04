@@ -5,6 +5,7 @@ use directories::ProjectDirs;
 use dwn::{Dwn, stores::NativeDbStore};
 
 mod async_commands;
+pub mod asset_download;
 mod auth;
 mod icon;
 mod scene;

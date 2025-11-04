@@ -1,5 +1,6 @@
 use std::{path::Path, process::Command};
 
+use anyhow::Context;
 use self_update::ArchiveKind;
 use semver::Version;
 use tracing::info;
@@ -71,7 +72,14 @@ where
     let asset = latest_release
         .assets
         .into_iter()
-        .find(|a| a.name.contains("unavi-launcher") && a.name.contains(simple_target.release_str()))
+        .find(|a| {
+            a.name.contains("unavi-launcher")
+                && a.name.contains(simple_target.release_str())
+                && match simple_target {
+                    super::common::SimpleTarget::Windows => a.name.ends_with(".msi"),
+                    _ => true,
+                }
+        })
         .ok_or(anyhow::anyhow!("latest asset not found"))?;
     info!("Latest asset: {asset:#?}");
 
@@ -107,12 +115,42 @@ where
             replace_launcher(&tmp_tar_path, ArchiveKind::Tar(None))?;
         }
         super::common::SimpleTarget::Windows => {
-            replace_launcher(&tmp_archive_path, ArchiveKind::Zip)?;
+            install_msi_update(&tmp_archive_path)?;
         }
     }
 
     on_status(UpdateStatus::UpdatedNeedsRestart);
     Ok(())
+}
+
+fn install_msi_update(msi_path: &Path) -> anyhow::Result<()> {
+    info!("Installing MSI update: {}", msi_path.to_string_lossy());
+
+    let status = Command::new("msiexec.exe")
+        .arg("/i")
+        .arg(msi_path)
+        .arg("/qn")
+        .arg("/norestart")
+        .status()
+        .context("failed to execute msiexec")?;
+
+    if !status.success() {
+        let code = status.code().unwrap_or(-1);
+        if code == 3010 {
+            info!("MSI installation succeeded (reboot required code)");
+        } else {
+            anyhow::bail!("msiexec failed with exit code: {code}");
+        }
+    }
+
+    info!("MSI installation complete, relaunching launcher");
+    let exe = std::env::current_exe()?;
+    Command::new(exe)
+        .args(std::env::args().skip(1))
+        .spawn()
+        .context("failed to relaunch launcher")?;
+
+    std::process::exit(0);
 }
 
 fn replace_launcher(path: &Path, archive_kind: ArchiveKind) -> anyhow::Result<()> {

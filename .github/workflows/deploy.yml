@@ -24,12 +24,12 @@ concurrency:
   group: deploy
   cancel-in-progress: false
 jobs:
-  deploy:
+  deploy-unavi-server:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.ref || github.ref }}
       - uses: DeterminateSystems/determinate-nix-action@v3

@@ -8,6 +8,7 @@ _: {
         root = ../..;
         fileset = lib.fileset.unions [
           (pkgs.crane.fileset.commonCargoSources root)
+          (lib.fileset.fileFilter (file: lib.any file.hasExt [ "css" ]) root)
           ../../LICENSE
         ];
       };

@@ -1,0 +1,13 @@
+# terraform state
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# generated files
+deploy.json
+
+# sensitive files
+*.key
+*.pem
+.env

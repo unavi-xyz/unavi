@@ -8,8 +8,4 @@ resource "digitalocean_droplet" "unavi" {
   ssh_keys = var.ssh_keys
 
   tags = ["unavi", "production"]
-
-  ipv6 = true
-
-  monitoring = true
 }

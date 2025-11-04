@@ -15,7 +15,7 @@ terraform {
   backend "s3" {
     bucket = "unavi-org"
     key    = "terraform/unavi.tfstate"
-    region = "us-east-1" 
+    region = "us-east-1"
 
     endpoints = {
       s3 = "https://nyc3.digitaloceanspaces.com"
@@ -26,6 +26,7 @@ terraform {
     skip_region_validation      = true
     skip_requesting_account_id  = true
     skip_s3_checksum            = true
+    use_path_style              = true
   }
 }
 

@@ -20,38 +20,32 @@ on:
         description: git ref to deploy
         required: false
         type: string
+concurrency:
+  group: deploy
+  cancel-in-progress: false
 jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - name: checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || github.ref }}
-      - name: install nix
-        uses: DeterminateSystems/nix-installer-action@main
-      - name: setup nix cache
-        uses: DeterminateSystems/magic-nix-cache-action@main
-      - name: generate deploy info from terraform
-        working-directory: infra/terraform
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.SPACES_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.SPACES_SECRET_ACCESS_KEY }}
-        run: |
-          nix develop --command terraform init
-          nix develop --command terraform apply -refresh-only -auto-approve
-      - name: get deploy info
+      - uses: DeterminateSystems/determinate-nix-action@v3
+        with:
+          extra-conf: extra-experimental-features = pipe-operators
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - name: Get deploy info
         id: deploy_info
         run: |
           SERVER_IP=$(jq -r '.${{ inputs.channel }}.server_ipv4' infra/terraform/deploy.json)
           echo "server_ip=$SERVER_IP" >> "$GITHUB_OUTPUT"
-      - name: setup ssh
+      - name: Setup ssh
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan ${{ steps.deploy_info.outputs.server_ip }} >> ~/.ssh/known_hosts
-      - name: deploy
+      - name: Deploy
         run: nix develop --command deploy .#unavi-${{ inputs.channel }}

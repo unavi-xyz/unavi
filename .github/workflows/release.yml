@@ -124,11 +124,15 @@ jobs:
           nix profile add nixpkgs#rustup
           rustup default nightly
           nix profile add nixpkgs#cargo-release
-      - name: Merge release into main
+      - name: Create PR to main
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git switch -c main --track origin/main
-          git merge --no-ff --no-edit release/v${{ needs.version.outputs.version }}
-          git push origin main
+          gh pr create \
+            --base main \
+            --head release/v${{ needs.version.outputs.version }} \
+            --title "chore: bump version to ${{ needs.version.outputs.version }}" \
+            --body "Automated version bump to ${{ needs.version.outputs.version }} from release workflow."
       - name: Cargo release
         if: ${{ inputs.increment != 'beta' }}
         run: cargo release release -x --no-confirm --no-push

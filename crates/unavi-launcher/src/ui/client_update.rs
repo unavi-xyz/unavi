@@ -27,7 +27,7 @@ pub fn ClientUpdate() -> Element {
         match handle.await {
             Ok(Ok(())) => {
                 tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-                nav.push(Route::Play);
+                nav.push(Route::Home);
             }
             Ok(Err(e)) => {
                 error!("Error checking client updates: {e:?}");
@@ -72,7 +72,7 @@ pub fn ClientUpdate() -> Element {
                 div { class: "error", "{e}" }
                 button {
                     onclick: move |_| {
-                        nav.push(Route::Play);
+                        nav.push(Route::Home);
                     },
                     "Continue Anyway"
                 }

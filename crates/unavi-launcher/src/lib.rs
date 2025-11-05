@@ -33,6 +33,7 @@ pub fn run_launcher() {
                     WindowBuilder::new()
                         .with_title("UNAVI Launcher")
                         .with_maximizable(false)
+                        .with_resizable(false)
                         .with_background_color(bg)
                         .with_inner_size(LogicalSize::new(400, 500))
                         .with_min_inner_size(LogicalSize::new(400, 500)),

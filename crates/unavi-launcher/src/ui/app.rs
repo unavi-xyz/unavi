@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use super::{client_update::ClientUpdate, play::Play, self_update::SelfUpdate, settings::Settings};
+use super::{client_update::ClientUpdate, home::Home, self_update::SelfUpdate, settings::Settings};
 
 const BASE_STYLES: &str = include_str!("../../styles/base.css");
 const BUTTON_STYLES: &str = include_str!("../../styles/buttons.css");
@@ -17,8 +17,8 @@ pub enum Route {
     SelfUpdate,
     #[route("/client-update")]
     ClientUpdate,
-    #[route("/play")]
-    Play,
+    #[route("/home")]
+    Home,
     #[route("/settings")]
     Settings,
 }

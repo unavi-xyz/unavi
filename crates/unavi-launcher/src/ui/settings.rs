@@ -28,7 +28,7 @@ pub fn Settings() -> Element {
                 input {
                     r#type: "checkbox",
                     checked: config().update_channel.is_beta(),
-                    oninput: toggle_beta, // onchange not yet supported by blitz
+                    onchange: toggle_beta,
                 }
                 " Beta releases"
             }
@@ -37,7 +37,7 @@ pub fn Settings() -> Element {
         button {
             class: "nav-button",
             onclick: move |_| {
-                nav.push(Route::Play);
+                nav.push(Route::Home);
             },
             style: "margin-top: 40px;",
             "Back"

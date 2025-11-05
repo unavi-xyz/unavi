@@ -25,7 +25,7 @@ button:disabled {
     cursor: not-allowed;
 }
 
-.play-button {
+.home-button {
     width: 240px;
     margin: 0 auto 20px;
     background: #fff;
@@ -39,25 +39,25 @@ button:disabled {
     transition: background 0.2s ease;
 }
 
-.play-button:hover {
+.home-button:hover {
     background: #e0e0e0;
 }
 
-.play-button:active {
+.home-button:active {
     background: #d0d0d0;
 }
 
-.play-button.disabled {
+.home-button.disabled {
     background: #333;
     color: #666;
     cursor: not-allowed;
 }
 
-.play-button.disabled:hover {
+.home-button.disabled:hover {
     background: #333;
 }
 
-.play-button.disabled:active {
+.home-button.disabled:active {
     background: #333;
 }
 

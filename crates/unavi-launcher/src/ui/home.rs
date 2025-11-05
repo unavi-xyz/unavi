@@ -7,7 +7,7 @@ use crate::update::client;
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[component]
-pub fn Play() -> Element {
+pub fn Home() -> Element {
     let mut launch_error = use_signal(|| None::<String>);
     let mut client_running = use_signal(|| crate::CLIENT_PROCESS.is_running());
 
@@ -34,13 +34,13 @@ pub fn Play() -> Element {
 
     rsx! {
         button {
-            class: if client_running() { "play-button disabled" } else { "play-button" },
+            class: if client_running() { "home-button disabled" } else { "home-button" },
             onclick: move |e| {
                 if !client_running() {
                     handle_launch(e);
                 }
             },
-            {if client_running() { "Running" } else { "Play" }}
+            {if client_running() { "Running" } else { "Enter" }}
         }
 
         button {

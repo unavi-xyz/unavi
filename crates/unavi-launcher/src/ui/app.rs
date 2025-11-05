@@ -3,10 +3,11 @@ use dioxus::prelude::*;
 use super::{client_update::ClientUpdate, play::Play, self_update::SelfUpdate, settings::Settings};
 
 const BASE_STYLES: &str = include_str!("../../styles/base.css");
-const LAYOUT_STYLES: &str = include_str!("../../styles/layout.css");
 const BUTTON_STYLES: &str = include_str!("../../styles/buttons.css");
 const COMPONENT_STYLES: &str = include_str!("../../styles/components.css");
+const LAYOUT_STYLES: &str = include_str!("../../styles/layout.css");
 const PAGE_STYLES: &str = include_str!("../../styles/pages.css");
+
 const FAVICON: Asset = asset!("/wix/logo.ico");
 
 #[derive(Debug, Clone, Routable, PartialEq)]

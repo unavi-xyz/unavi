@@ -201,7 +201,7 @@
 
                   inherit LD_LIBRARY_PATH;
 
-                  WEBKIT_DISABLE_DMABUF_RENDERER = 1;
+                  WEBKIT_DISABLE_DMABUF_RENDERER = 1; # Nvida + Wayland launcher bug
                 };
               };
           };

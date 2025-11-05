@@ -9,6 +9,11 @@ on:
       ref:
         description: ref to build
         type: string
+    secrets:
+      WINDOWS_CERTIFICATE:
+        required: false
+      WINDOWS_CERTIFICATE_PASSWORD:
+        required: false
 jobs:
   build-wasm:
     runs-on: ubuntu-latest
@@ -36,6 +41,8 @@ jobs:
       matrix:
         package: [unavi-client, unavi-launcher]
     name: ${{ matrix.package }}-x86_64-windows
+    env:
+      CERTIFICATE_PATH: ${{ github.workspace }}/certificate.pfx
     steps:
       - uses: actions/checkout@v5
         with:
@@ -74,6 +81,30 @@ jobs:
           mkdir result
           mv target/release/*.exe result
           cp LICENSE result
+      - name: Setup code signing certificate
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE }}
+        shell: bash
+        run: |
+          if [ -n "$CERTIFICATE_BASE64" ]; then
+            echo "$CERTIFICATE_BASE64" | base64 -d > "${{ env.CERTIFICATE_PATH }}"
+            echo "SIGNING_ENABLED=true" >> "$GITHUB_ENV"
+          fi
+      - name: Sign executable
+        if: ${{ env.SIGNING_ENABLED == 'true' }}
+        env:
+          CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        shell: powershell
+        run: |
+          $signtool = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe"
+          & $signtool sign /f "${{ env.CERTIFICATE_PATH }}" /p "$env:CERTIFICATE_PASSWORD" /tr http://timestamp.digicert.com /td sha256 /fd sha256 result/*.exe
+      - name: Cleanup certificate
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          if [ -f "${{ env.CERTIFICATE_PATH }}" ]; then
+            rm -f "${{ env.CERTIFICATE_PATH }}"
+          fi
       - name: Create zip
         if: ${{ matrix.package != 'unavi-launcher' }}
         run: Compress-Archive -Path result/* -DestinationPath ${{ matrix.package }}-x86_64-windows.zip
@@ -88,6 +119,14 @@ jobs:
         run: |
           ls target/wix/
           mv target/wix/*.msi ${{ matrix.package }}-x86_64-windows.msi
+      - name: Sign MSI installer
+        if: ${{ matrix.package == 'unavi-launcher' && env.SIGNING_ENABLED == 'true' }}
+        env:
+          CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        shell: powershell
+        run: |
+          $signtool = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe"
+          & $signtool sign /f "${{ env.CERTIFICATE_PATH }}" /p "$env:CERTIFICATE_PASSWORD" /tr http://timestamp.digicert.com /td sha256 /fd sha256 ${{ matrix.package }}-x86_64-windows.msi
       - uses: actions/upload-artifact@v5
         if: ${{ matrix.package == 'unavi-launcher' }}
         with:

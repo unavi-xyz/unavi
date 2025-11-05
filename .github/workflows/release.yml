@@ -72,6 +72,7 @@ jobs:
   build-windows:
     needs: version
     uses: ./.github/workflows/build-windows.yml
+    secrets: inherit
     with:
       channel: ${{ inputs.increment == 'beta' && 'beta' || 'stable' }}
       ref: release/v${{ needs.version.outputs.version }}

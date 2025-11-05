@@ -8,7 +8,8 @@ const COMPONENT_STYLES: &str = include_str!("../../styles/components.css");
 const LAYOUT_STYLES: &str = include_str!("../../styles/layout.css");
 const PAGE_STYLES: &str = include_str!("../../styles/pages.css");
 
-const FAVICON: Asset = asset!("/wix/logo.ico");
+const FAVICON: Asset = asset!("/assets/logo.ico");
+const LOGO: Asset = asset!("/assets/logo.png");
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 pub enum Route {
@@ -27,7 +28,7 @@ pub enum Route {
 pub fn Title() -> Element {
     rsx! {
         div { class: "container",
-            h1 { "UNAVI" }
+            img { class: "logo", src: LOGO }
             div { class: "content", Outlet::<Route> {} }
         }
     }

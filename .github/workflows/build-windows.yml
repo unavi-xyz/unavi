@@ -44,6 +44,11 @@ jobs:
         with:
           pattern: wasm-assets
           path: crates/unavi-client/assets/wasm
+      - name: Remove test and example WASM
+        shell: bash
+        run: |
+          rm -rf crates/unavi-client/assets/wasm/test
+          rm -rf crates/unavi-client/assets/wasm/example
       - uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: install wixtoolset

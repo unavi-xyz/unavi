@@ -61,7 +61,7 @@
                 system = "x86_64-linux";
                 specialArgs = { inherit inputs self deployInfo; };
                 modules = [
-                  "${self}/infra/nixos/beta.nix"
+                  ./infra/nixos/beta.nix
                   sops-nix.nixosModules.sops
                 ];
               };
@@ -70,7 +70,7 @@
                 system = "x86_64-linux";
                 specialArgs = { inherit inputs self deployInfo; };
                 modules = [
-                  "${self}/infra/nixos/stable.nix"
+                  ./infra/nixos/stable.nix
                   sops-nix.nixosModules.sops
                 ];
               };
@@ -200,6 +200,8 @@
                     ++ packages;
 
                   inherit LD_LIBRARY_PATH;
+
+                  WEBKIT_DISABLE_DMABUF_RENDERER = 1;
                 };
               };
           };

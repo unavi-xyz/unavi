@@ -57,7 +57,7 @@
                         <Shortcut
                             Id="ApplicationShortcut"
                             Name="$(var.AppName)"
-                            Description="Launch UNAVI VR platform"
+                            Description="Launch UNAVI"
                             Target="[APPLICATIONFOLDER]unavi-launcher.exe"
                             WorkingDirectory="APPLICATIONFOLDER"
                             Icon="ProductICO"
@@ -74,6 +74,27 @@
                     </Component>
                 </Directory>
             </Directory>
+
+            <Directory Id="DesktopFolder">
+                <Component Id="DesktopShortcut" Guid="*">
+                    <Shortcut
+                        Id="DesktopApplicationShortcut"
+                        Name="$(var.AppName)"
+                        Description="Launch UNAVI VR platform"
+                        Target="[APPLICATIONFOLDER]unavi-launcher.exe"
+                        WorkingDirectory="APPLICATIONFOLDER"
+                        Icon="ProductICO"
+                        />
+                    <RegistryValue
+                        Root="HKCU"
+                        Key="Software\$(var.Manufacturer)\$(var.AppName)"
+                        Name="DesktopShortcut"
+                        Type="integer"
+                        Value="1"
+                        KeyPath="yes"
+                        />
+                </Component>
+            </Directory>
         </Directory>
 
         <Feature
@@ -85,6 +106,7 @@
             AllowAdvertise="no">
             <ComponentRef Id="MainExecutable"/>
             <ComponentRef Id="StartMenuShortcut"/>
+            <ComponentRef Id="DesktopShortcut"/>
         </Feature>
 
         <SetProperty Id="ARPINSTALLLOCATION" Value="[APPLICATIONFOLDER]" After="CostFinalize"/>
@@ -94,8 +116,12 @@
         <Property Id="ARPHELPLINK" Value="https://github.com/unavi-xyz/unavi"/>
         <Property Id="ARPURLINFOABOUT" Value="https://unavi.xyz"/>
 
+        <Property Id="WIXUI_INSTALLDIR" Value="APPLICATIONFOLDER" />
+
         <UI>
-            <UIRef Id="WixUI_Minimal"/>
+            <UIRef Id="WixUI_InstallDir"/>
+            <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="InstallDirDlg" Order="2">1</Publish>
+            <Publish Dialog="InstallDirDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2">1</Publish>
         </UI>
     </Product>
 </Wix>

@@ -11,7 +11,7 @@ workspace = true
 
 [dependencies]
 anyhow.workspace = true
-dioxus = { features = ["native", "router"], version = "0.7.0" }
+dioxus = { features = ["desktop", "router"], version = "0.7.0" }
 directories.workspace = true
 reqwest = { default-features = false, features = [
   "blocking",

@@ -1,6 +1,7 @@
 use std::sync::LazyLock;
 
 use config::ConfigStore;
+use dioxus::desktop::{LogicalSize, WindowBuilder};
 use directories::ProjectDirs;
 use process::ProcessTracker;
 
@@ -20,5 +21,22 @@ pub static CONFIG: LazyLock<ConfigStore> = LazyLock::new(ConfigStore::new);
 pub static CLIENT_PROCESS: LazyLock<ProcessTracker> = LazyLock::new(ProcessTracker::new);
 
 pub fn run_launcher() {
-    dioxus::launch(ui::app::App);
+    let bg = (0, 0, 0, 255);
+
+    dioxus::LaunchBuilder::new()
+        .with_cfg(
+            dioxus::desktop::Config::new()
+                .with_menu(None)
+                .with_background_color(bg)
+                .with_data_directory(DIRS.data_local_dir())
+                .with_window(
+                    WindowBuilder::new()
+                        .with_title("UNAVI Launcher")
+                        .with_maximizable(false)
+                        .with_background_color(bg)
+                        .with_inner_size(LogicalSize::new(400, 500))
+                        .with_min_inner_size(LogicalSize::new(400, 500)),
+                ),
+        )
+        .launch(ui::app::App);
 }

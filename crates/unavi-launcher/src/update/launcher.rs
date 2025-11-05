@@ -1,21 +1,20 @@
 use std::{path::Path, process::Command};
 
 use anyhow::Context;
-use self_update::ArchiveKind;
 use semver::Version;
 use tracing::info;
 
 use super::{
     UpdateStatus,
     common::{
-        REPO_NAME, REPO_OWNER, decompress_xz, download_with_progress, extract_archive,
+        ArchiveKind, decompress_xz, download_with_progress, extract_archive, fetch_github_releases,
         get_platform_target, is_network_error, use_beta,
     },
 };
 
-pub fn update_launcher_with_callback<F>(on_status: F) -> anyhow::Result<()>
+pub async fn update_launcher_with_callback<F>(on_status: F) -> anyhow::Result<()>
 where
-    F: Fn(UpdateStatus),
+    F: Fn(UpdateStatus) + Send + Sync,
 {
     on_status(UpdateStatus::Checking);
 
@@ -27,23 +26,17 @@ where
         simple_target.release_str()
     );
 
-    let releases_result = self_update::backends::github::ReleaseList::configure()
-        .repo_owner(REPO_OWNER)
-        .repo_name(REPO_NAME)
-        .with_target(simple_target.release_str())
-        .build()
-        .and_then(|list| list.fetch());
+    let releases_result = fetch_github_releases().await;
 
     let releases = match releases_result {
         Ok(r) => r,
         Err(e) => {
-            let err = anyhow::Error::from(e);
-            if is_network_error(&err) {
+            if is_network_error(&e) {
                 info!("Network unavailable, skipping launcher update check");
                 on_status(UpdateStatus::Offline);
                 return Ok(());
             }
-            return Err(err);
+            return Err(e);
         }
     };
 
@@ -53,14 +46,19 @@ where
             if use_beta() {
                 true
             } else {
-                !r.version.contains("beta")
+                !r.tag_name.contains("beta")
             }
         })
         .ok_or(anyhow::anyhow!("no valid release found"))?;
 
     info!("Latest release: {latest_release:#?}");
 
-    let latest_version = Version::parse(&latest_release.version)?;
+    let latest_version = Version::parse(
+        latest_release
+            .tag_name
+            .strip_prefix('v')
+            .unwrap_or(&latest_release.tag_name),
+    )?;
 
     if current_version >= latest_version {
         info!("Up to date");
@@ -93,12 +91,13 @@ where
     info!("Downloading to: {}", tmp_archive_path.to_string_lossy());
 
     // Download with progress tracking
-    download_with_progress(&asset.download_url, &tmp_archive_path, |progress| {
+    download_with_progress(&asset.browser_download_url, &tmp_archive_path, |progress| {
         on_status(UpdateStatus::Downloading {
             version: latest_version.to_string(),
             progress: Some(progress),
         });
-    })?;
+    })
+    .await?;
 
     match simple_target {
         super::common::SimpleTarget::Apple | super::common::SimpleTarget::Linux => {
@@ -112,7 +111,7 @@ where
             decompress_xz(&tmp_archive_path, &tmp_tar_path)?;
             info!("Uncompressed archive: {}", tmp_tar_path.to_string_lossy());
 
-            replace_launcher(&tmp_tar_path, ArchiveKind::Tar(None))?;
+            replace_launcher(&tmp_tar_path, ArchiveKind::Tar)?;
         }
         super::common::SimpleTarget::Windows => {
             install_msi_update(&tmp_archive_path)?;

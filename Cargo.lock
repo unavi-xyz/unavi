@@ -11390,6 +11390,7 @@ dependencies = [
  "anyhow",
  "dioxus",
  "directories",
+ "image",
  "reqwest",
  "self-replace",
  "self_update",

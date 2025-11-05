@@ -8,7 +8,6 @@ let
   inherit (config.services.unavi-server) channel;
   inherit (deployInfo.${channel}) services;
 
-  # Generate virtualHosts configuration from services
   virtualHosts = lib.mapAttrs (_serviceName: serviceConfig: {
     enableACME = true;
     forceSSL = true;

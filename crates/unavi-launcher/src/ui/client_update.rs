@@ -14,10 +14,11 @@ pub fn ClientUpdate() -> Element {
 
         let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
 
-        let handle = tokio::task::spawn_blocking(move || {
+        let handle = tokio::spawn(async move {
             client::update_client_with_callback(move |s| {
                 let _ = tx.send(s);
             })
+            .await
         });
 
         while let Some(status) = rx.recv().await {

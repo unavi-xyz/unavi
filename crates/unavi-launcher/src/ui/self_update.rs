@@ -13,10 +13,11 @@ pub fn SelfUpdate() -> Element {
     use_coroutine(move |_: UnboundedReceiver<()>| async move {
         let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
 
-        let handle = tokio::task::spawn_blocking(move || {
+        let handle = tokio::spawn(async move {
             launcher::update_launcher_with_callback(move |s| {
                 let _ = tx.send(s);
             })
+            .await
         });
 
         while let Some(update_status) = rx.recv().await {

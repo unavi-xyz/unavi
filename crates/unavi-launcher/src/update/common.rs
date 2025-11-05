@@ -1,16 +1,24 @@
 use std::{
     fs,
     io::{Read, Write},
+    path::Path,
 };
 
 use anyhow::{Context, bail};
-use self_update::ArchiveKind;
+use futures::StreamExt;
+use serde::Deserialize;
 
 pub const REPO_OWNER: &str = "unavi-xyz";
 pub const REPO_NAME: &str = "unavi";
 
 pub fn use_beta() -> bool {
     crate::CONFIG.get().update_channel.is_beta()
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum ArchiveKind {
+    Tar,
+    Zip,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -31,17 +39,50 @@ impl SimpleTarget {
 }
 
 pub fn get_platform_target() -> anyhow::Result<SimpleTarget> {
-    let target = self_update::get_target();
-
-    if target.contains("linux") {
-        Ok(SimpleTarget::Linux)
-    } else if target.contains("windows") {
-        Ok(SimpleTarget::Windows)
-    } else if target.contains("apple") {
-        Ok(SimpleTarget::Apple)
-    } else {
-        bail!("unsupported platform: {target}")
+    match std::env::consts::OS {
+        "linux" => Ok(SimpleTarget::Linux),
+        "windows" => Ok(SimpleTarget::Windows),
+        "macos" => Ok(SimpleTarget::Apple),
+        os => bail!("unsupported platform: {os}"),
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GitHubRelease {
+    pub tag_name: String,
+    pub assets: Vec<GitHubAsset>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GitHubAsset {
+    pub name: String,
+    pub browser_download_url: String,
+}
+
+pub async fn fetch_github_releases() -> anyhow::Result<Vec<GitHubRelease>> {
+    let url = format!(
+        "https://api.github.com/repos/{}/{}/releases",
+        REPO_OWNER, REPO_NAME
+    );
+
+    let client = reqwest::Client::new();
+    let response = client
+        .get(&url)
+        .header(reqwest::header::USER_AGENT, "unavi-launcher")
+        .send()
+        .await
+        .context("failed to fetch releases")?;
+
+    if !response.status().is_success() {
+        bail!("GitHub API returned status: {}", response.status());
+    }
+
+    let releases: Vec<GitHubRelease> = response
+        .json()
+        .await
+        .context("failed to parse releases JSON")?;
+
+    Ok(releases)
 }
 
 pub fn decompress_xz(xz_path: &std::path::Path, tar_path: &std::path::Path) -> anyhow::Result<()> {
@@ -63,41 +104,53 @@ pub fn decompress_xz(xz_path: &std::path::Path, tar_path: &std::path::Path) -> a
 }
 
 pub fn extract_archive(
-    archive_path: &std::path::Path,
+    archive_path: &Path,
     archive_kind: ArchiveKind,
-    dest: &std::path::Path,
+    dest: &Path,
 ) -> anyhow::Result<()> {
-    self_update::Extract::from_source(archive_path)
-        .archive(archive_kind)
-        .extract_into(dest)?;
+    match archive_kind {
+        ArchiveKind::Tar => {
+            let tar_file = fs::File::open(archive_path).context("failed to open tar file")?;
+            let mut archive = tar::Archive::new(tar_file);
+            archive
+                .unpack(dest)
+                .context("failed to extract tar archive")?;
+        }
+        ArchiveKind::Zip => {
+            let zip_file = fs::File::open(archive_path).context("failed to open zip file")?;
+            let mut archive =
+                zip::ZipArchive::new(zip_file).context("failed to read zip archive")?;
+            archive
+                .extract(dest)
+                .context("failed to extract zip archive")?;
+        }
+    }
     Ok(())
 }
 
-pub fn download_with_progress<F>(
+pub async fn download_with_progress<F>(
     url: &str,
-    dest_path: &std::path::Path,
+    dest_path: &Path,
     on_progress: F,
 ) -> anyhow::Result<()>
 where
     F: Fn(f32),
 {
-    let client = reqwest::blocking::Client::builder()
-        .redirect(reqwest::redirect::Policy::default())
-        .build()
-        .context("failed to build http client")?;
-    let mut response = client
+    let client = reqwest::Client::new();
+    let response = client
         .get(url)
         .header(reqwest::header::ACCEPT, "application/octet-stream")
         .header(reqwest::header::USER_AGENT, "unavi-launcher")
         .send()
+        .await
         .context("failed to start download")?;
 
     // Check if the request was successful
     if !response.status().is_success() {
-        anyhow::bail!(
+        bail!(
             "download failed with status {}: {}",
             response.status(),
-            response.text().unwrap_or_default()
+            response.text().await.unwrap_or_default()
         );
     }
 
@@ -105,19 +158,13 @@ where
     let mut downloaded: u64 = 0;
     let mut file = fs::File::create(dest_path).context("failed to create file")?;
 
-    let mut buffer = [0; 8192];
-    loop {
-        let bytes_read = response
-            .read(&mut buffer)
-            .context("failed to read from response")?;
-        if bytes_read == 0 {
-            break;
-        }
+    let mut stream = response.bytes_stream();
 
-        file.write_all(&buffer[..bytes_read])
-            .context("failed to write to file")?;
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.context("failed to read chunk from response")?;
+        file.write_all(&chunk).context("failed to write to file")?;
 
-        downloaded += bytes_read as u64;
+        downloaded += chunk.len() as u64;
 
         if total_size > 0 {
             let progress = (downloaded as f32 / total_size as f32) * 100.0;

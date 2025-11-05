@@ -8,8 +8,14 @@ _: {
         root = ../..;
         fileset = lib.fileset.unions [
           (pkgs.crane.fileset.commonCargoSources root)
-          (lib.fileset.fileFilter (file: lib.any file.hasExt [ "css" ]) root)
-          (lib.fileset.fileFilter (file: lib.any file.hasExt [ "ico" ]) root)
+          (lib.fileset.fileFilter (
+            file:
+            lib.any file.hasExt [
+              "css"
+              "ico"
+              "png"
+            ]
+          ) root)
           ../../LICENSE
         ];
       };
@@ -33,12 +39,12 @@ _: {
         );
 
         linkedInputs = with pkgs; [
+          bzip2
           cairo
           gdk-pixbuf
           glib
           gtk3
           libsoup_3
-          openssl
           pango
           webkitgtk_4_1
           xdotool

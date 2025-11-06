@@ -61,8 +61,8 @@ pub fn ClientUpdate() -> Element {
                 }
             };
         }
-        Some(UpdateStatus::UpToDate) => "up to date",
-        Some(UpdateStatus::UpdatedNeedsRestart) => "updated successfully",
+        Some(UpdateStatus::UpToDate) => "client up to date",
+        Some(UpdateStatus::UpdatedNeedsRestart) => "client updated successfully",
         Some(UpdateStatus::Offline) => {
             return rsx! {
                 div { class: "status", "offline, skipping update" }

@@ -2,11 +2,11 @@ use dioxus::prelude::*;
 
 use super::{client_update::ClientUpdate, home::Home, self_update::SelfUpdate, settings::Settings};
 
-const BASE_STYLES: &str = include_str!("../../styles/base.css");
-const BUTTON_STYLES: &str = include_str!("../../styles/buttons.css");
-const COMPONENT_STYLES: &str = include_str!("../../styles/components.css");
-const LAYOUT_STYLES: &str = include_str!("../../styles/layout.css");
-const PAGE_STYLES: &str = include_str!("../../styles/pages.css");
+const BASE_STYLES: Asset = asset!("/assets/base.css");
+const BUTTON_STYLES: Asset = asset!("/assets/buttons.css");
+const COMPONENT_STYLES: Asset = asset!("/assets/components.css");
+const LAYOUT_STYLES: Asset = asset!("/assets/layout.css");
+const PAGE_STYLES: Asset = asset!("/assets/pages.css");
 
 const LOGO: Asset = asset!("/assets/logo-clear.png");
 
@@ -37,7 +37,11 @@ pub fn Title() -> Element {
 pub fn App() -> Element {
     rsx! {
         document::Title { "UNAVI Launcher" }
-        style { {BASE_STYLES} {LAYOUT_STYLES} {BUTTON_STYLES} {COMPONENT_STYLES} {PAGE_STYLES} }
+        document::Link { rel: "stylesheet", href: BASE_STYLES }
+        document::Link { rel: "stylesheet", href: LAYOUT_STYLES }
+        document::Link { rel: "stylesheet", href: BUTTON_STYLES }
+        document::Link { rel: "stylesheet", href: COMPONENT_STYLES }
+        document::Link { rel: "stylesheet", href: PAGE_STYLES }
         Router::<Route> {}
     }
 }

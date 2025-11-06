@@ -52,7 +52,7 @@ pub fn run_launcher() {
                         .with_resizable(false)
                         .with_background_color(bg)
                         .with_window_icon(Some(icon))
-                        .with_inner_size(size.clone())
+                        .with_inner_size(size)
                         .with_min_inner_size(size),
                 ),
         )

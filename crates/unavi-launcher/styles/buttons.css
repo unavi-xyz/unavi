@@ -74,6 +74,7 @@ button:disabled {
     margin: 0 auto;
     display: block;
     width: 100%;
+    max-width: 240px;
 }
 
 .nav-button:hover {

@@ -29,9 +29,10 @@ h1 {
 .logo {
     width: 120px;
     height: auto;
-    margin: 0 0 40px 0;
+    margin: 0 0 50px 0;
     flex-shrink: 0;
     user-select: none;
     -webkit-user-select: none;
     pointer-events: none;
+    filter: drop-shadow(0 8px 24px rgba(0, 240, 255, 0.15));
 }

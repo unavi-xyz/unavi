@@ -1,75 +1,218 @@
-button {
-    background: var(--bg-button);
-    color: var(--text-button);
-    border: none;
-    border-radius: 8px;
-    padding: 12px 24px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.2s ease;
-    font-family: inherit;
-}
-
-button:hover:not(:disabled) {
-    background: var(--bg-button-hover);
-}
-
-button:active:not(:disabled) {
-    background: var(--bg-button-active);
-}
-
-button:disabled {
-    background: var(--bg-disabled);
-    color: var(--text-muted);
-    cursor: not-allowed;
-}
-
 .home-button {
+    position: relative;
     width: 240px;
     margin: 0 auto 20px;
-    background: var(--bg-button);
-    color: var(--text-button);
-    border: none;
-    border-radius: 8px;
-    padding: 16px 32px;
-    font-size: 18px;
+    background: rgba(0, 15, 20, 0.6);
+    color: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    border-radius: 16px;
+    padding: 20px 40px;
+    font-size: 20px;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s ease;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                background 0.3s ease,
+                border-color 0.3s ease,
+                box-shadow 0.3s ease;
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.15),
+                0 4px 16px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    will-change: transform;
+}
+
+.home-button::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 16px;
+    padding: 2px;
+    background: linear-gradient(
+        90deg,
+        var(--glow-cyan),
+        var(--glow-purple),
+        var(--glow-magenta),
+        var(--glow-cyan)
+    );
+    background-size: 300% 100%;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: rotate-gradient 6s linear infinite;
+    opacity: 0.15;
+    z-index: -1;
+}
+
+.home-button::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    background: radial-gradient(
+        circle at 50% 50%,
+        rgba(0, 240, 255, 0.04) 0%,
+        rgba(160, 0, 255, 0.02) 50%,
+        transparent 100%
+    );
+    opacity: 1;
+    animation: subtle-drift 12s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes subtle-drift {
+    0%, 100% {
+        transform: translate(0, 0);
+    }
+    25% {
+        transform: translate(10%, -5%);
+    }
+    50% {
+        transform: translate(-5%, 10%);
+    }
+    75% {
+        transform: translate(-10%, -10%);
+    }
 }
 
 .home-button:hover {
-    background: var(--bg-button-hover);
+    background: rgba(0, 20, 30, 0.7);
+    color: var(--text-primary);
+    border-color: rgba(0, 240, 255, 0.5);
+    text-shadow: 0 0 20px rgba(0, 240, 255, 0.6);
+    box-shadow: 0 0 40px rgba(0, 240, 255, 0.4),
+                0 0 60px rgba(160, 0, 255, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    animation: hover-pulse 2s ease-in-out infinite;
+}
+
+.home-button:hover::before {
+    animation-duration: 1.2s;
+    opacity: 1;
+}
+
+.home-button:hover::after {
+    animation: subtle-drift 12s ease-in-out infinite;
+}
+
+@keyframes hover-pulse {
+    0%, 100% {
+        box-shadow: 0 0 40px rgba(0, 240, 255, 0.4),
+                    0 0 60px rgba(160, 0, 255, 0.2),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    50% {
+        box-shadow: 0 0 60px rgba(0, 240, 255, 0.6),
+                    0 0 80px rgba(160, 0, 255, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
+}
+
+@keyframes orbit-glow {
+    0% {
+        transform: translate(-50%, -50%) rotate(0deg) translateX(30px) rotate(0deg);
+    }
+    100% {
+        transform: translate(-50%, -50%) rotate(360deg) translateX(30px) rotate(-360deg);
+    }
 }
 
 .home-button:active {
-    background: var(--bg-button-active);
+    transform: scale(0.97);
+    background: rgba(0, 40, 50, 0.8);
+    border-color: rgba(0, 240, 255, 0.6);
+    box-shadow: 0 0 40px rgba(0, 240, 255, 0.5),
+                0 0 60px rgba(160, 0, 255, 0.3),
+                inset 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
-.home-button.disabled {
-    background: var(--bg-disabled);
-    color: var(--text-muted);
-    cursor: not-allowed;
+.home-button:active::before {
+    opacity: 0.8;
+    animation: none;
 }
 
-.home-button.disabled:hover {
-    background: var(--bg-disabled);
+.home-button:active::after {
+    opacity: 1;
+    animation: none;
+    background: radial-gradient(
+        circle at 50% 50%,
+        rgba(0, 240, 255, 0.3) 0%,
+        rgba(160, 0, 255, 0.15) 50%,
+        transparent 100%
+    );
 }
 
-.home-button.disabled:active {
-    background: var(--bg-disabled);
+.home-button.running {
+    cursor: default;
+    animation: none;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    color: rgba(255, 255, 255, 0.65);
+    text-shadow: none;
+}
+
+.home-button.running::before,
+.home-button.running::after {
+    display: none;
+}
+
+@keyframes rotate-gradient {
+    0% {
+        background-position: 0% 50%;
+    }
+    100% {
+        background-position: 300% 50%;
+    }
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 30px rgba(0, 240, 255, 0.3),
+                    0 0 50px rgba(160, 0, 255, 0.2),
+                    inset 0 0 20px rgba(255, 255, 255, 0.05);
+    }
+    50% {
+        box-shadow: 0 0 50px rgba(0, 240, 255, 0.5),
+                    0 0 80px rgba(160, 0, 255, 0.3),
+                    inset 0 0 30px rgba(255, 255, 255, 0.1);
+    }
+}
+
+@keyframes shimmer-wave {
+    0%, 100% {
+        opacity: 0.5;
+        background: radial-gradient(
+            circle at 30% 50%,
+            rgba(0, 240, 255, 0.2) 0%,
+            transparent 70%
+        );
+    }
+    50% {
+        opacity: 0.8;
+        background: radial-gradient(
+            circle at 70% 50%,
+            rgba(160, 0, 255, 0.2) 0%,
+            transparent 70%
+        );
+    }
 }
 
 .nav-button {
-    background: transparent !important;
-    border: 1px solid var(--border-subtle);
-    border-radius: 6px;
-    color: var(--text-secondary);
-    font-size: 13px;
-    font-weight: 500;
-    padding: 6px 12px;
+    position: relative;
+    background: rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 12px;
+    font-weight: 400;
+    padding: 8px 16px;
     cursor: pointer;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     transition: all 0.2s ease;
     margin: 0 auto;
     display: block;
@@ -78,13 +221,12 @@ button:disabled {
 }
 
 .nav-button:hover {
-    color: var(--text-hover) !important;
-    border-color: var(--border-subtle-hover);
-    background: transparent !important;
+    color: rgba(255, 255, 255, 0.7);
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.02);
 }
 
 .nav-button:active {
-    color: var(--text-active) !important;
-    border-color: var(--border-subtle-active);
-    background: transparent !important;
+    transform: scale(0.98);
+    background: rgba(255, 255, 255, 0.05);
 }

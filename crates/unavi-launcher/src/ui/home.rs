@@ -34,13 +34,13 @@ pub fn Home() -> Element {
 
     rsx! {
         button {
-            class: if client_running() { "home-button disabled" } else { "home-button" },
+            class: if client_running() { "home-button running" } else { "home-button" },
             onclick: move |e| {
                 if !client_running() {
                     handle_launch(e);
                 }
             },
-            {if client_running() { "Running" } else { "Enter" }}
+            {if client_running() { "⟨  connected  ⟩" } else { "Enter" }}
         }
 
         button {

@@ -18,6 +18,12 @@
     --border-subtle-hover: rgba(255, 255, 255, 0.3);
     --border-subtle-active: rgba(255, 255, 255, 0.4);
     --border-error: #500;
+
+    --glow-cyan: #00f0ff;
+    --glow-purple: #a000ff;
+    --glow-magenta: #ff00ff;
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.1);
 }
 
 * {

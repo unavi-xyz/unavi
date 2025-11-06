@@ -1,15 +1,36 @@
 .loading {
-    width: 14px;
-    height: 14px;
-    border: 2px solid var(--bg-disabled);
-    border-top-color: var(--text-primary);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+    width: 16px;
+    height: 16px;
+    position: relative;
 }
 
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
+.loading::before,
+.loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 3px;
+    background: linear-gradient(45deg, var(--glow-cyan), var(--glow-purple));
+    animation: morph-shape 2s ease-in-out infinite;
+}
+
+.loading::after {
+    animation-delay: -1s;
+    opacity: 0.5;
+}
+
+@keyframes morph-shape {
+    0%, 100% {
+        border-radius: 3px;
+        transform: rotate(0deg);
+    }
+    33% {
+        border-radius: 50%;
+        transform: rotate(120deg);
+    }
+    66% {
+        border-radius: 0%;
+        transform: rotate(240deg);
     }
 }
 
@@ -25,19 +46,29 @@
 }
 
 .error {
-    background: var(--bg-error);
-    border: 1px solid var(--border-error);
-    border-radius: 8px;
-    color: var(--text-error);
-    padding: 12px;
+    position: relative;
+    background: rgba(20, 0, 0, 0.3);
+    border: 1px solid rgba(255, 80, 80, 0.2);
+    border-radius: 10px;
+    color: rgba(255, 120, 120, 0.9);
+    padding: 12px 16px;
     margin: 0 0 20px 0;
-    font-size: 13px;
+    font-size: 12px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
 }
 
 .version {
-    color: var(--text-muted);
-    font-size: 11px;
+    color: rgba(255, 255, 255, 0.25);
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.5px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }

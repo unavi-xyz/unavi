@@ -34,6 +34,10 @@ pub fn run_launcher() {
     let bg = (0, 0, 0, 255);
     let icon = load_icon();
 
+    let width = 380;
+    let phi = 1.61803;
+    let size = LogicalSize::new(width, (width as f32 * phi).round() as i32);
+
     dioxus::LaunchBuilder::new()
         .with_cfg(
             dioxus::desktop::Config::new()
@@ -48,8 +52,8 @@ pub fn run_launcher() {
                         .with_resizable(false)
                         .with_background_color(bg)
                         .with_window_icon(Some(icon))
-                        .with_inner_size(LogicalSize::new(400, 500))
-                        .with_min_inner_size(LogicalSize::new(400, 500)),
+                        .with_inner_size(size.clone())
+                        .with_min_inner_size(size),
                 ),
         )
         .launch(ui::app::App);

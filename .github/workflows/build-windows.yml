@@ -64,6 +64,7 @@ jobs:
         with:
           targets: x86_64-pc-windows-msvc
       - run: cargo install cargo-wix
+      - run: cargo install dioxus-cli
       - name: Set build environment from deploy.json
         shell: bash
         run: |
@@ -76,10 +77,19 @@ jobs:
         run: |
           cargo wix -p ${{ matrix.package }} --nocapture
       - name: Build package
+        shell: bash
         run: |
-          cargo build -p ${{ matrix.package }} --release
+          if [ "${{ matrix.package }}" == "unavi-launcher" ]; then
+            dx build -p ${{ matrix.package }} --release --platform windows
+          else
+            cargo build -p ${{ matrix.package }} --release
+          fi
           mkdir result
-          mv target/release/*.exe result
+          if [ "${{ matrix.package }}" == "unavi-launcher" ]; then
+            cp -r target/dx/${{ matrix.package }}/release/windows/app/* result/
+          else
+            mv target/release/*.exe result
+          fi
           cp LICENSE result
       - name: Setup code signing certificate
         env:

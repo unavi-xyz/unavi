@@ -31,6 +31,7 @@ _: {
           with pkgs;
           [
             clang
+            dioxus-cli
             lld
             mold
             pkg-config
@@ -65,13 +66,26 @@ _: {
 
       packageDrv = pkgs.crane.buildPackage (
         cargoArgs
-        // {
+        // rec {
           inherit cargoArtifacts;
           doCheck = false;
 
+          cargoBuildCommand = ''
+            dx build -p ${pname} --release
+          '';
+
+          buildPhaseCargoCommand = ''
+            ${cargoBuildCommand}
+          '';
+
+          doNotPostBuildInstallCargoBinaries = true;
+
+          installPhaseCommand = ''
+            mkdir -p $out
+            cp -r target/dx/${pname}/release/**/app/* $out
+          '';
+
           postInstall = ''
-            mv $out/bin/* $out
-            rm -r $out/bin
             strip $out/${pname}
             cp LICENSE $out
           '';

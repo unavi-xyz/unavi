@@ -19,7 +19,7 @@
 
 h1 {
     margin: 0 0 40px 0;
-    color: #fff;
+    color: var(--text-primary);
     font-size: 32px;
     font-weight: 600;
     letter-spacing: -0.02em;

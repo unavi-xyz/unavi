@@ -1,6 +1,6 @@
 button {
-    background: #fff;
-    color: #000;
+    background: var(--bg-button);
+    color: var(--text-button);
     border: none;
     border-radius: 8px;
     padding: 12px 24px;
@@ -12,24 +12,24 @@ button {
 }
 
 button:hover:not(:disabled) {
-    background: #e0e0e0;
+    background: var(--bg-button-hover);
 }
 
 button:active:not(:disabled) {
-    background: #d0d0d0;
+    background: var(--bg-button-active);
 }
 
 button:disabled {
-    background: #333;
-    color: #666;
+    background: var(--bg-disabled);
+    color: var(--text-muted);
     cursor: not-allowed;
 }
 
 .home-button {
     width: 240px;
     margin: 0 auto 20px;
-    background: #fff;
-    color: #000;
+    background: var(--bg-button);
+    color: var(--text-button);
     border: none;
     border-radius: 8px;
     padding: 16px 32px;
@@ -40,32 +40,32 @@ button:disabled {
 }
 
 .home-button:hover {
-    background: #e0e0e0;
+    background: var(--bg-button-hover);
 }
 
 .home-button:active {
-    background: #d0d0d0;
+    background: var(--bg-button-active);
 }
 
 .home-button.disabled {
-    background: #333;
-    color: #666;
+    background: var(--bg-disabled);
+    color: var(--text-muted);
     cursor: not-allowed;
 }
 
 .home-button.disabled:hover {
-    background: #333;
+    background: var(--bg-disabled);
 }
 
 .home-button.disabled:active {
-    background: #333;
+    background: var(--bg-disabled);
 }
 
 .nav-button {
     background: transparent !important;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--border-subtle);
     border-radius: 6px;
-    color: #888;
+    color: var(--text-secondary);
     font-size: 13px;
     font-weight: 500;
     padding: 6px 12px;
@@ -78,13 +78,13 @@ button:disabled {
 }
 
 .nav-button:hover {
-    color: #bbb !important;
-    border-color: rgba(255, 255, 255, 0.3);
+    color: var(--text-hover) !important;
+    border-color: var(--border-subtle-hover);
     background: transparent !important;
 }
 
 .nav-button:active {
-    color: #ddd !important;
-    border-color: rgba(255, 255, 255, 0.4);
+    color: var(--text-active) !important;
+    border-color: var(--border-subtle-active);
     background: transparent !important;
 }

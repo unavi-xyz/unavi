@@ -1,13 +1,35 @@
+:root {
+    --bg-primary: #000;
+    --bg-button: #fff;
+    --bg-button-hover: #e0e0e0;
+    --bg-button-active: #d0d0d0;
+    --bg-disabled: #333;
+    --bg-error: #1a0000;
+
+    --text-primary: #fff;
+    --text-button: #000;
+    --text-secondary: #888;
+    --text-muted: #666;
+    --text-hover: #bbb;
+    --text-active: #ddd;
+    --text-error: #f88;
+
+    --border-subtle: rgba(255, 255, 255, 0.2);
+    --border-subtle-hover: rgba(255, 255, 255, 0.3);
+    --border-subtle-active: rgba(255, 255, 255, 0.4);
+    --border-error: #500;
+}
+
 * {
     box-sizing: border-box;
 }
 
 body {
     font-family: system-ui, -apple-system, sans-serif;
-    background: #000;
+    background: var(--bg-primary);
     margin: 0;
     padding: 0;
-    color: #fff;
+    color: var(--text-primary);
     display: flex;
     align-items: center;
     justify-content: center;

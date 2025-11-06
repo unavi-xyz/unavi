@@ -1,8 +1,8 @@
 .loading {
     width: 14px;
     height: 14px;
-    border: 2px solid #333;
-    border-top-color: #fff;
+    border: 2px solid var(--bg-disabled);
+    border-top-color: var(--text-primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -15,7 +15,7 @@
 
 .status {
     margin: 20px 0;
-    color: #888;
+    color: var(--text-secondary);
     font-size: 14px;
     display: flex;
     align-items: center;
@@ -25,17 +25,17 @@
 }
 
 .error {
-    background: #1a0000;
-    border: 1px solid #500;
+    background: var(--bg-error);
+    border: 1px solid var(--border-error);
     border-radius: 8px;
-    color: #f88;
+    color: var(--text-error);
     padding: 12px;
     margin: 0 0 20px 0;
     font-size: 13px;
 }
 
 .version {
-    color: #444;
+    color: var(--text-muted);
     font-size: 11px;
     display: flex;
     flex-direction: column;

@@ -5,7 +5,7 @@ strategic direction of **UNAVI** and **The Wired**.
 
 ## What is UNAVI?
 
-**UNAVI** is an open-source platform for spatial communication and shared
+**UNAVI** is an open-source VR platform for spatial communication and shared
 creation.
 
 Built primarily in [Rust](https://www.rust-lang.org/) using the

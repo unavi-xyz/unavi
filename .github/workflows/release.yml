@@ -158,8 +158,6 @@ jobs:
 
           # Delete beta after promoting to stable
           git push origin --delete beta || echo "Beta branch already deleted"
-      - name: Delete release branch
-        run: git push origin --delete release/v${{ needs.version.outputs.version }}
       - uses: ncipollo/release-action@v1
         with:
           artifacts: artifacts/*

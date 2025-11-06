@@ -1,4 +1,5 @@
 [package]
+build                = "build.rs"
 edition.workspace    = true
 license.workspace    = true
 name                 = "unavi-client"
@@ -8,6 +9,9 @@ version.workspace    = true
 
 [lints]
 workspace = true
+
+[build-dependencies]
+embed-resource = "2.5"
 
 [dependencies]
 anyhow.workspace = true

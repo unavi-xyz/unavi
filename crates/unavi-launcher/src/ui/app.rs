@@ -8,8 +8,7 @@ const COMPONENT_STYLES: &str = include_str!("../../styles/components.css");
 const LAYOUT_STYLES: &str = include_str!("../../styles/layout.css");
 const PAGE_STYLES: &str = include_str!("../../styles/pages.css");
 
-const FAVICON: Asset = asset!("/assets/logo.ico");
-const LOGO: Asset = asset!("/assets/logo.png");
+const LOGO: Asset = asset!("/assets/logo-clear.png");
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 pub enum Route {
@@ -37,7 +36,6 @@ pub fn Title() -> Element {
 #[component]
 pub fn App() -> Element {
     rsx! {
-        document::Link { rel: "icon", href: FAVICON }
         document::Title { "UNAVI Launcher" }
         style { {BASE_STYLES} {LAYOUT_STYLES} {BUTTON_STYLES} {COMPONENT_STYLES} {PAGE_STYLES} }
         Router::<Route> {}

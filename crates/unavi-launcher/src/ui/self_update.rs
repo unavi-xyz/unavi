@@ -59,8 +59,8 @@ pub fn SelfUpdate() -> Element {
                 }
             };
         }
-        UpdateStatus::UpToDate => "up to date, launching...",
-        UpdateStatus::UpdatedNeedsRestart => "updated, please restart",
+        UpdateStatus::UpToDate => "launcher up to date",
+        UpdateStatus::UpdatedNeedsRestart => "launcher updated, restarting...",
         UpdateStatus::Offline => {
             return rsx! {
                 div { class: "status", "offline, skipping update" }

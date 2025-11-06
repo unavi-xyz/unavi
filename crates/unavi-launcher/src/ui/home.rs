@@ -65,7 +65,9 @@ pub fn Home() -> Element {
                         div { "client v{client_ver}" }
                     }
                 } else {
-                    rsx! {}
+                    rsx! {
+                        div { "client not found" }
+                    }
                 }
             }
         }

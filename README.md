@@ -22,7 +22,7 @@
 
 ## ⬜ About
 
-> **[→ Read the Vision](./docs/vision.md)** for a more in-depth look into UNAVI and The Wired.
+> **[Read the Vision](./docs/vision.md)** for a more in-depth look into UNAVI and The Wired.
 
 UNAVI is an open-source VR social platform.
 Anyone can run their own servers, modify their client, and extend the underlying [protocol](./protocol) to add new features.

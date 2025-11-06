@@ -8,22 +8,35 @@
 
     --text-primary: #fff;
     --text-button: #000;
-    --text-secondary: #888;
-    --text-muted: #666;
+    --text-secondary: #aaa;
+    --text-muted: #999;
     --text-hover: #bbb;
     --text-active: #ddd;
     --text-error: #f88;
 
-    --border-subtle: rgba(255, 255, 255, 0.2);
-    --border-subtle-hover: rgba(255, 255, 255, 0.3);
-    --border-subtle-active: rgba(255, 255, 255, 0.4);
+    --border-subtle: rgba(255, 255, 255, 0.25);
+    --border-subtle-hover: rgba(255, 255, 255, 0.35);
+    --border-subtle-active: rgba(255, 255, 255, 0.45);
     --border-error: #500;
 
     --glow-cyan: #00f0ff;
     --glow-purple: #a000ff;
-    --glow-magenta: #ff00ff;
-    --glass-bg: rgba(255, 255, 255, 0.03);
-    --glass-border: rgba(255, 255, 255, 0.1);
+
+    --glass-bg-light: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.75) 100%);
+    --glass-bg-medium: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+    --glass-bg-error: linear-gradient(135deg, rgba(255, 50, 50, 0.08) 0%, rgba(255, 20, 20, 0.05) 100%);
+    --glass-blur-strong: blur(20px) saturate(180%);
+    --glass-blur-medium: blur(12px) saturate(150%);
+    --glass-blur-light: blur(4px);
+    --glass-radius: 16px;
+    --glass-radius-large: 30px;
+    --glass-radius-small: 8px;
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    --glass-shadow-small: 0 4px 16px rgba(0, 0, 0, 0.1);
+    --glass-shadow-tiny: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --glass-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    --glass-inset-highlight-subtle: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    --glass-inset-highlight-bright: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 * {
@@ -31,7 +44,7 @@
 }
 
 body {
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Fira Mono', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
     background: var(--bg-primary);
     margin: 0;
     padding: 0;

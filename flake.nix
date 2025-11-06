@@ -192,7 +192,6 @@
                       cargo-watch
                       cargo-workspaces
                       deploy-rs.packages.${system}.default
-                      dioxus-cli
                       doctl
                       rustup
                       sops

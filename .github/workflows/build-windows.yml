@@ -80,7 +80,7 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.package }}" == "unavi-launcher" ]; then
-            dx build -p ${{ matrix.package }} --release --platform windows
+            dx build -p ${{ matrix.package }} --release
           else
             cargo build -p ${{ matrix.package }} --release
           fi

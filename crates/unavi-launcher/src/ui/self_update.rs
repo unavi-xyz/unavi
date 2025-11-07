@@ -42,10 +42,7 @@ pub fn SelfUpdate() -> Element {
 
     let status_text = match status() {
         UpdateStatus::Checking => "checking for updates...",
-        UpdateStatus::Downloading {
-            version,
-            progress,
-        } => {
+        UpdateStatus::Downloading { version, progress } => {
             return rsx! {
                 div { class: "status",
                     span { class: "loading" }

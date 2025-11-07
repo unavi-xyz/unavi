@@ -56,7 +56,6 @@ jobs:
       - uses: DeterminateSystems/determinate-nix-action@v3
         with:
           extra-conf: extra-experimental-features = pipe-operators
-      - uses: DeterminateSystems/magic-nix-cache-action@main
       - run: nix profile add nixpkgs#gnutar nixpkgs#xz
       - name: Set build environment from deploy.json
         id: deploy_info

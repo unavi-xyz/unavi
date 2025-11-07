@@ -176,6 +176,22 @@
                   |> lib.flip pkgs.lib.forEach (x: x.linkedInputs)
                   |> lib.concatLists
                   |> lib.makeLibraryPath;
+
+                cargo-wix = pkgs.rustPlatform.buildRustPackage rec {
+                  pname = "cargo-wix";
+                  version = "0.3.9";
+
+                  src = pkgs.fetchFromGitHub {
+                    owner = "volks73";
+                    repo = "cargo-wix";
+                    rev = "${version}";
+                    sha256 = "sha256-WoyBb/+FYoZhIfWn+PDgWEqziqw7gUsSi8uSgenGKb4=";
+                  };
+
+                  doCheck = false;
+
+                  cargoHash = "sha256-LkN+3QX/VE2Y/l3PhteyDHkxZjUBE/S9mp8/q9uOg28=";
+                };
               in
               {
                 minimal = pkgs.crane.devShell { inherit packages LD_LIBRARY_PATH; };
@@ -184,6 +200,7 @@
                   packages =
                     (with pkgs; [
                       age
+                      cargo-wix
                       cargo-deny
                       cargo-edit
                       cargo-machete

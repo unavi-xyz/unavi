@@ -8,7 +8,7 @@ use super::{
     UpdateStatus,
     common::{
         ArchiveKind, decompress_xz, download_with_progress, extract_archive, fetch_github_releases,
-        get_platform_target, is_network_error, use_beta,
+        get_platform_target, is_network_error, needs_update, use_beta,
     },
 };
 
@@ -60,7 +60,9 @@ where
             .unwrap_or(&latest_release.tag_name),
     )?;
 
-    if current_version >= latest_version {
+    let current_is_beta = current_version.pre.as_str().contains("beta");
+
+    if !needs_update(&current_version, &latest_version, current_is_beta) {
         info!("Up to date");
         on_status(UpdateStatus::UpToDate);
         return Ok(());
@@ -78,7 +80,7 @@ where
                     _ => true,
                 }
         })
-        .ok_or(anyhow::anyhow!("latest asset not found"))?;
+        .ok_or(anyhow::anyhow!("launcher asset not found in release"))?;
     info!("Latest asset: {asset:#?}");
 
     on_status(UpdateStatus::Downloading {

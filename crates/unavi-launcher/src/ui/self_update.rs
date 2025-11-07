@@ -35,7 +35,7 @@ pub fn SelfUpdate() -> Element {
             }
             Err(e) => {
                 error!("Task error: {e:?}");
-                status.set(UpdateStatus::Error(format!("launcher update error: {e}")));
+                status.set(UpdateStatus::Error(format!("launcher update failed: {e}")));
             }
         }
     });
@@ -43,7 +43,7 @@ pub fn SelfUpdate() -> Element {
     let status_text = match status() {
         UpdateStatus::Checking => "checking for updates...",
         UpdateStatus::Downloading {
-            version: _,
+            version,
             progress,
         } => {
             return rsx! {
@@ -51,9 +51,9 @@ pub fn SelfUpdate() -> Element {
                     span { class: "loading" }
                     {
                         if let Some(p) = progress {
-                            format!("downloading launcher ({:.0}%)", p)
+                            format!("downloading launcher v{version} ({:.0}%)", p)
                         } else {
-                            "downloading launcher...".to_string()
+                            format!("downloading launcher v{version}...")
                         }
                     }
                 }
@@ -65,6 +65,7 @@ pub fn SelfUpdate() -> Element {
             return rsx! {
                 div { class: "status", "offline, skipping update" }
                 button {
+                    class: "nav-button",
                     onclick: move |_| {
                         nav.push(Route::ClientUpdate);
                     },
@@ -76,6 +77,7 @@ pub fn SelfUpdate() -> Element {
             return rsx! {
                 div { class: "error", "{e}" }
                 button {
+                    class: "nav-button",
                     onclick: move |_| {
                         nav.push(Route::ClientUpdate);
                     },

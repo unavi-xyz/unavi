@@ -8,7 +8,7 @@ use super::{
     UpdateStatus,
     common::{
         ArchiveKind, decompress_xz, download_with_progress, extract_archive, fetch_github_releases,
-        get_platform_target, is_network_error, use_beta,
+        get_platform_target, is_network_error, needs_update, use_beta,
     },
 };
 use crate::DIRS;
@@ -131,12 +131,14 @@ where
     let installed_version = get_installed_version();
     info!("Installed client version: {installed_version:?}");
 
-    if let Some(ref current) = installed_version
-        && current >= &latest_version
-    {
-        info!("Client is up to date");
-        on_status(UpdateStatus::UpToDate);
-        return Ok(());
+    if let Some(ref current) = installed_version {
+        let installed_is_beta = current.pre.as_str().contains("beta");
+
+        if !needs_update(current, &latest_version, installed_is_beta) {
+            info!("Client is up to date");
+            on_status(UpdateStatus::UpToDate);
+            return Ok(());
+        }
     }
 
     info!("Updating client to {latest_version}");

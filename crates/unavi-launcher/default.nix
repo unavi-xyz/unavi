@@ -82,7 +82,7 @@ _: {
 
           installPhaseCommand = ''
             mkdir -p $out
-            cp -r target/dx/${pname}/release/**/app/* $out
+            cp -r target/dx/${pname}/release/*/app/* $out
           '';
 
           postInstall = ''

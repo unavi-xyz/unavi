@@ -11265,6 +11265,7 @@ dependencies = [
  "anyhow",
  "dioxus",
  "directories",
+ "embed-resource",
  "futures 0.3.31",
  "image",
  "reqwest",

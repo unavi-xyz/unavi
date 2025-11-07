@@ -1,4 +1,5 @@
 [package]
+build                = "build.rs"
 edition.workspace    = true
 license.workspace    = true
 name                 = "unavi-launcher"
@@ -8,6 +9,9 @@ version.workspace    = true
 
 [lints]
 workspace = true
+
+[build-dependencies]
+embed-resource.workspace = true
 
 [dependencies]
 anyhow.workspace = true

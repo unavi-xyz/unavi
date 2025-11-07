@@ -86,9 +86,10 @@ jobs:
           fi
           mkdir result
           if [ "${{ matrix.package }}" == "unavi-launcher" ]; then
-            cp -r target/dx/${{ matrix.package }}/release/windows/app/* result/
+            cp -r target/dx/${{ matrix.package }}/release/*/app/* result/
           else
             mv target/release/*.exe result
+            cp -r crates/${{ matrix.package }}/assets result/
           fi
           cp LICENSE result
       - name: Setup code signing certificate

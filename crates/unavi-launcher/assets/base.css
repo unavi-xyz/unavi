@@ -13,6 +13,8 @@
     --text-hover: #bbb;
     --text-active: #ddd;
     --text-error: #f88;
+    --text-version: rgba(255, 255, 255, 0.4);
+    --text-label: rgba(255, 255, 255, 0.6);
 
     --border-subtle: rgba(255, 255, 255, 0.25);
     --border-subtle-hover: rgba(255, 255, 255, 0.35);

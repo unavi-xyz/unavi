@@ -8,7 +8,8 @@ use super::app::Route;
 #[component]
 pub fn Settings() -> Element {
     let nav = navigator();
-    let config = use_signal(|| crate::CONFIG.get());
+    let mut current_beta = use_signal(|| crate::CONFIG.get().update_channel.is_beta());
+    let initial_beta = use_hook(|| current_beta());
 
     let toggle_beta = move |_| {
         if let Err(e) = CONFIG.update(|c| {
@@ -19,6 +20,16 @@ pub fn Settings() -> Element {
             }
         }) {
             error!("Failed to save config: {e}");
+        } else {
+            current_beta.set(!current_beta());
+        }
+    };
+
+    let handle_back = move |_| {
+        if current_beta() != initial_beta {
+            nav.push(Route::SelfUpdate);
+        } else {
+            nav.push(Route::Home);
         }
     };
 
@@ -27,7 +38,7 @@ pub fn Settings() -> Element {
             label {
                 input {
                     r#type: "checkbox",
-                    checked: config().update_channel.is_beta(),
+                    checked: current_beta(),
                     onchange: toggle_beta,
                 }
                 " Beta releases"
@@ -36,9 +47,7 @@ pub fn Settings() -> Element {
 
         button {
             class: "nav-button",
-            onclick: move |_| {
-                nav.push(Route::Home);
-            },
+            onclick: handle_back,
             style: "margin-top: 40px;",
             "Back"
         }

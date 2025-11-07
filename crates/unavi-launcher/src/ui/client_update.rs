@@ -39,7 +39,7 @@ pub fn ClientUpdate() -> Element {
             Err(e) => {
                 error!("Task error: {e:?}");
                 update_status.set(Some(UpdateStatus::Error(format!(
-                    "client update error: {e}"
+                    "client update failed: {e}"
                 ))));
             }
         }
@@ -72,6 +72,7 @@ pub fn ClientUpdate() -> Element {
             return rsx! {
                 div { class: "error", "{e}" }
                 button {
+                    class: "nav-button",
                     onclick: move |_| {
                         nav.push(Route::Home);
                     },

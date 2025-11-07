@@ -61,7 +61,7 @@
 }
 
 .version {
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--text-version);
     font-size: 10px;
     font-weight: 400;
     letter-spacing: 0.5px;

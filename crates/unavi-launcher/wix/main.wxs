@@ -48,6 +48,41 @@
                             KeyPath="yes"
                             />
                     </Component>
+                    <Directory Id="AssetsFolder" Name="assets">
+                        <Component Id="AssetsComponent" Guid="*">
+                            <File
+                                Id="BaseCss"
+                                Name="base.css"
+                                Source="assets\base.css"
+                                />
+                            <File
+                                Id="ButtonsCss"
+                                Name="buttons.css"
+                                Source="assets\buttons.css"
+                                />
+                            <File
+                                Id="ComponentsCss"
+                                Name="components.css"
+                                Source="assets\components.css"
+                                />
+                            <File
+                                Id="LayoutCss"
+                                Name="layout.css"
+                                Source="assets\layout.css"
+                                />
+                            <File
+                                Id="PagesCss"
+                                Name="pages.css"
+                                Source="assets\pages.css"
+                                />
+                            <File
+                                Id="LogoClearPng"
+                                Name="logo-clear.png"
+                                Source="assets\logo-clear.png"
+                                KeyPath="yes"
+                                />
+                        </Component>
+                    </Directory>
                 </Directory>
             </Directory>
 
@@ -105,6 +140,7 @@
             ConfigurableDirectory="APPLICATIONFOLDER"
             AllowAdvertise="no">
             <ComponentRef Id="MainExecutable"/>
+            <ComponentRef Id="AssetsComponent"/>
             <ComponentRef Id="StartMenuShortcut"/>
             <ComponentRef Id="DesktopShortcut"/>
         </Feature>

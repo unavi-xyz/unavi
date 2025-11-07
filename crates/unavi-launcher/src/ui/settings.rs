@@ -9,7 +9,7 @@ use super::app::Route;
 pub fn Settings() -> Element {
     let nav = navigator();
     let mut current_beta = use_signal(|| crate::CONFIG.get().update_channel.is_beta());
-    let initial_beta = use_hook(|| current_beta());
+    let initial_beta = use_hook(|| current_beta);
 
     let toggle_beta = move |_| {
         if let Err(e) = CONFIG.update(|c| {
@@ -26,7 +26,7 @@ pub fn Settings() -> Element {
     };
 
     let handle_back = move |_| {
-        if current_beta() != initial_beta {
+        if current_beta != initial_beta {
             nav.push(Route::SelfUpdate);
         } else {
             nav.push(Route::Home);
@@ -38,7 +38,7 @@ pub fn Settings() -> Element {
             label {
                 input {
                     r#type: "checkbox",
-                    checked: current_beta(),
+                    checked: current_beta,
                     onchange: toggle_beta,
                 }
                 " Beta releases"

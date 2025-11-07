@@ -42,7 +42,7 @@ jobs:
         package: [unavi-client, unavi-launcher]
     name: ${{ matrix.package }}-x86_64-windows
     env:
-      CERTIFICATE_PATH: ${{ github.workspace }}/certificate.pfx
+      CERTIFICATE_PATH: certificate.pfx
     steps:
       - uses: actions/checkout@v5
         with:
@@ -106,20 +106,21 @@ jobs:
           CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         shell: powershell
         run: |
+          $certPath = "$env:CERTIFICATE_PATH"
+          if (-not (Test-Path $certPath)) {
+            Write-Error "Certificate file not found at: $certPath"
+            exit 1
+          }
+
           $signtool = (Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
           if (-not $signtool) {
             Write-Error "signtool.exe not found"
             exit 1
           }
+
+          Write-Host "Using certificate: $certPath"
           Write-Host "Using signtool: $signtool"
-          & $signtool sign /f "${{ env.CERTIFICATE_PATH }}" /p "$env:CERTIFICATE_PASSWORD" /tr http://timestamp.digicert.com /td sha256 /fd sha256 result/*.exe
-      - name: Cleanup certificate
-        if: ${{ always() }}
-        shell: bash
-        run: |
-          if [ -f "${{ env.CERTIFICATE_PATH }}" ]; then
-            rm -f "${{ env.CERTIFICATE_PATH }}"
-          fi
+          & $signtool sign /f $certPath /p "$env:CERTIFICATE_PASSWORD" /tr http://timestamp.digicert.com /td sha256 /fd sha256 result/*.exe
       - name: Create zip
         if: ${{ matrix.package != 'unavi-launcher' }}
         run: Compress-Archive -Path result/* -DestinationPath ${{ matrix.package }}-x86_64-windows.zip
@@ -140,16 +141,31 @@ jobs:
           CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         shell: powershell
         run: |
+          $certPath = "$env:CERTIFICATE_PATH"
+          if (-not (Test-Path $certPath)) {
+            Write-Error "Certificate file not found at: $certPath"
+            exit 1
+          }
+
           $signtool = (Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
           if (-not $signtool) {
             Write-Error "signtool.exe not found"
             exit 1
           }
+
+          Write-Host "Using certificate: $certPath"
           Write-Host "Using signtool: $signtool"
-          & $signtool sign /f "${{ env.CERTIFICATE_PATH }}" /p "$env:CERTIFICATE_PASSWORD" /tr http://timestamp.digicert.com /td sha256 /fd sha256 ${{ matrix.package }}-x86_64-windows.msi
+          & $signtool sign /f $certPath /p "$env:CERTIFICATE_PASSWORD" /tr http://timestamp.digicert.com /td sha256 /fd sha256 ${{ matrix.package }}-x86_64-windows.msi
       - uses: actions/upload-artifact@v5
         if: ${{ matrix.package == 'unavi-launcher' }}
         with:
           name: build-${{ matrix.package }}-x86_64-windows-installer
           path: ${{ matrix.package }}-x86_64-windows.msi
           retention-days: 1
+      - name: Cleanup certificate
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          if [ -f "${{ env.CERTIFICATE_PATH }}" ]; then
+            rm -f "${{ env.CERTIFICATE_PATH }}"
+          fi

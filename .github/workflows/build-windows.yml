@@ -63,7 +63,8 @@ jobs:
         with:
           targets: x86_64-pc-windows-msvc
       - run: cargo install cargo-wix
-      - run: cargo install dioxus-cli
+      - run: cargo install cargo-binstall
+      - run: cargo binstall dioxus-cli --version 0.6.3 --locked --no-confirm
       - name: Set build environment from deploy.json
         shell: bash
         run: |
@@ -71,10 +72,6 @@ jobs:
           WORLD_DOMAIN=$(jq -r '.${{ inputs.channel }}.services.unavi_server.domain' infra/terraform/deploy.json)
           echo "DWN_URL=https://$DWN_DOMAIN" >> "$GITHUB_ENV"
           echo "WORLD_DID=did:web:$WORLD_DOMAIN" >> "$GITHUB_ENV"
-      - name: Build wix
-        if: ${{ matrix.package == 'unavi-launcher' }}
-        run: |
-          cargo wix -p ${{ matrix.package }} --nocapture
       - name: Build package
         shell: bash
         run: |
@@ -83,6 +80,19 @@ jobs:
           else
             cargo build -p ${{ matrix.package }} --release
           fi
+      - name: Generate assets manifest
+        if: ${{ matrix.package == 'unavi-launcher' }}
+        shell: cmd
+        run: |
+          cd crates\unavi-launcher\wix
+          gen-assets.bat
+      - name: Build wix
+        if: ${{ matrix.package == 'unavi-launcher' }}
+        run: |
+          cargo wix -p ${{ matrix.package }} --nocapture --no-build
+      - name: Package release
+        shell: bash
+        run: |
           mkdir result
           if [ "${{ matrix.package }}" == "unavi-launcher" ]; then
             cp -r target/dx/${{ matrix.package }}/release/*/app/* result/

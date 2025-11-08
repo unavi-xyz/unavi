@@ -80,12 +80,36 @@ jobs:
           else
             cargo build -p ${{ matrix.package }} --release
           fi
+      - name: Debug dx build output
+        if: ${{ matrix.package == 'unavi-launcher' }}
+        shell: bash
+        run: |
+          echo "=== Checking dx build output ==="
+          ls -la target/dx/unavi-launcher/release/ || echo "Release dir not found"
+          echo ""
+          echo "=== Platform directories ==="
+          ls -la target/dx/unavi-launcher/release/*/ 2>/dev/null || echo "No platform dirs"
+          echo ""
+          echo "=== App directory ==="
+          ls -la target/dx/unavi-launcher/release/*/app/ 2>/dev/null || echo "No app dir"
+          echo ""
+          echo "=== Assets directory ==="
+          ls -la target/dx/unavi-launcher/release/*/app/assets/ 2>/dev/null || echo "No assets dir"
       - name: Generate assets manifest
         if: ${{ matrix.package == 'unavi-launcher' }}
         shell: cmd
         run: |
           cd crates\unavi-launcher\wix
           gen-assets.bat
+      - name: Debug assets.wxs
+        if: ${{ matrix.package == 'unavi-launcher' }}
+        shell: bash
+        run: |
+          echo "=== Contents of assets.wxs ==="
+          cat crates/unavi-launcher/wix/assets.wxs || echo "File not found"
+          echo ""
+          echo "=== First 100 characters (hex dump) ==="
+          head -c 100 crates/unavi-launcher/wix/assets.wxs | od -A x -t x1z -v || echo "File not found"
       - name: Build wix
         if: ${{ matrix.package == 'unavi-launcher' }}
         run: |

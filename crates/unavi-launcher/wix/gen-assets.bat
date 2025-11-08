@@ -14,7 +14,7 @@ set "assets_path=..\..\..\target\dx\unavi-launcher\release\!platform_dir!\app\as
 echo Platform directory: !platform_dir!
 echo Assets path: !assets_path!
 
-heat dir "!assets_path!" -cg AssetsGroup -dr AssetsFolder -ag -sfrag -out %file%
+heat dir "!assets_path!" -cg AssetsGroup -dr APPLICATIONFOLDER -ag -sfrag -out %file%
 
 if errorlevel 1 (
     echo ERROR: heat command failed

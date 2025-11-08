@@ -113,7 +113,7 @@
 
         <SetProperty Id="ARPINSTALLLOCATION" Value="[APPLICATIONFOLDER]" After="CostFinalize"/>
 
-        <Icon Id="ProductICO" SourceFile="assets/logo.ico"/>
+        <Icon Id="ProductICO" SourceFile="assets/unavi-rounded-inverse.ico"/>
         <Property Id="ARPPRODUCTICON" Value="ProductICO" />
         <Property Id="ARPHELPLINK" Value="https://github.com/unavi-xyz/unavi"/>
         <Property Id="ARPURLINFOABOUT" Value="https://unavi.xyz"/>

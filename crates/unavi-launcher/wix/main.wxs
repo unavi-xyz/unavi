@@ -49,7 +49,6 @@
                             KeyPath="yes"
                             />
                     </Component>
-                    <Directory Id="AssetsFolder" Name="assets" />
                 </Directory>
             </Directory>
 

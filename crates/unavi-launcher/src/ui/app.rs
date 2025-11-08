@@ -8,7 +8,7 @@ const COMPONENT_STYLES: Asset = asset!("/assets/components.css");
 const LAYOUT_STYLES: Asset = asset!("/assets/layout.css");
 const PAGE_STYLES: Asset = asset!("/assets/pages.css");
 
-const LOGO: Asset = asset!("/assets/logo-clear.png");
+const LOGO: Asset = asset!("/assets/unavi-clear.png");
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 pub enum Route {

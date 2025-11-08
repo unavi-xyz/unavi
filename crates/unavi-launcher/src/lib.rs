@@ -21,7 +21,7 @@ pub static CONFIG: LazyLock<ConfigStore> = LazyLock::new(ConfigStore::new);
 pub static CLIENT_PROCESS: LazyLock<ProcessTracker> = LazyLock::new(ProcessTracker::new);
 
 fn load_icon() -> Icon {
-    let icon_bytes = include_bytes!("../assets/logo-clear.png");
+    let icon_bytes = include_bytes!("../assets/unavi-clear.png");
     let image = image::load_from_memory(icon_bytes)
         .expect("failed to load icon")
         .into_rgba8();

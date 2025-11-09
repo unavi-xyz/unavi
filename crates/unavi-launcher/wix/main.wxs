@@ -34,6 +34,7 @@
 
         <MajorUpgrade
             Schedule="afterInstallInitialize"
+            AllowSameVersionUpgrades="yes"
             DowngradeErrorMessage="A newer version of [ProductName] is already installed. Setup will now exit."/>
 
         <Media Id="1" Cabinet="media1.cab" EmbedCab="yes" />

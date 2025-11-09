@@ -94,13 +94,11 @@
           '';
 
           postInstall = ''
-            mv $out/bin/* $out
-            rm -r $out/bin
-            strip $out/${pname}
+            strip $out/bin/${pname}
 
-            mkdir -p $out/assets
-            cp -r crates/${pname}/assets/* $out/assets/
-            rm -rf $out/assets/wasm/test $out/assets/wasm/example
+            mkdir -p $out/bin/assets
+            cp -r crates/${pname}/assets/* $out/bin/assets/
+            rm -rf $out/bin/assets/wasm/test $out/bin/assets/wasm/example
 
             cp LICENSE $out
           '';

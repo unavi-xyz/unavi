@@ -1,6 +1,16 @@
+# Claude
 .serena
 CLAUDE.md
+
+# Needed for release workflow, to avoid "uncommitted changes" errors.
+artifacts/
+
+# Client assets
 crates/unavi-client/assets/models
 crates/unavi-client/assets/wasm
+
+# Nix
 result
+
+# Rust
 target

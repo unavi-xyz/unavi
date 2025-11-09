@@ -1,4 +1,4 @@
-use std::{path::Path, process::Command};
+use std::path::Path;
 
 use anyhow::Context;
 use semver::Version;
@@ -127,7 +127,8 @@ where
 fn install_msi_update(msi_path: &Path) -> anyhow::Result<()> {
     info!("Installing MSI update: {}", msi_path.to_string_lossy());
 
-    let status = Command::new("msiexec.exe")
+    // Use runas::Command to request UAC elevation for msiexec.
+    let status = runas::Command::new("msiexec.exe")
         .arg("/i")
         .arg(msi_path)
         .arg("/qn")
@@ -146,7 +147,7 @@ fn install_msi_update(msi_path: &Path) -> anyhow::Result<()> {
 
     info!("MSI installation complete, relaunching launcher");
     let exe = std::env::current_exe()?;
-    Command::new(exe)
+    std::process::Command::new(exe)
         .args(std::env::args().skip(1))
         .spawn()
         .context("failed to relaunch launcher")?;
@@ -174,7 +175,9 @@ fn replace_launcher(path: &Path, archive_kind: ArchiveKind) -> anyhow::Result<()
             );
             let exe = std::env::current_exe()?;
             self_replace::self_replace(item.path())?;
-            Command::new(exe).args(std::env::args().skip(1)).spawn()?;
+            std::process::Command::new(exe)
+                .args(std::env::args().skip(1))
+                .spawn()?;
             std::process::exit(0);
         }
     }

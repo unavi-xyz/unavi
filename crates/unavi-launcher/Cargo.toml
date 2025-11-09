@@ -24,6 +24,7 @@ reqwest = { default-features = false, features = [
   "rustls-tls",
   "stream",
 ], version = "0.12.24" }
+runas = "1.2.0"
 self-replace = "1.5.0"
 semver.workspace = true
 serde.workspace = true

@@ -42,21 +42,12 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Create release branch
         run: |
-          # Prefer beta branch as base if it exists
-          if git show-ref --quiet refs/remotes/origin/beta; then
-            BASE=beta
-          else
-            BASE=main
-          fi
-
           VERSION=${{ steps.version.outputs.version }}
 
           if git show-ref --quiet "refs/remotes/origin/release/v$VERSION"; then
             git push origin --delete "release/v$VERSION"
           fi
 
-          echo "Creating release branch from $BASE"
-          git checkout $BASE
           git checkout -b "release/v$VERSION"
 
           git add -A
@@ -112,7 +103,7 @@ jobs:
             [ -d "$dir" ] || continue
             cd "$dir" || exit
             for file in *; do
-              # Split at the first dot
+              # Split at the last dot
               base="${file%%.*}"
               ext="${file#*.}"
               mv "$file" "../${base}-${{ needs.version.outputs.version }}.${ext}"
@@ -125,15 +116,6 @@ jobs:
           nix profile add nixpkgs#rustup
           rustup default nightly
           nix profile add nixpkgs#cargo-release
-      - name: Create PR to main
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh pr create \
-            --base main \
-            --head release/v${{ needs.version.outputs.version }} \
-            --title "chore: bump version to ${{ needs.version.outputs.version }}" \
-            --body "Automated version bump to ${{ needs.version.outputs.version }} from release workflow."
       - name: Cargo release
         if: ${{ inputs.increment != 'beta' }}
         run: cargo release release -x --no-confirm --no-push
@@ -155,9 +137,15 @@ jobs:
           git checkout -b stable || git checkout stable
           git merge --no-ff --no-edit release/v${{ needs.version.outputs.version }}
           git push origin stable
-
-          # Delete beta after promoting to stable
-          git push origin --delete beta || echo "Beta branch already deleted"
+      - name: Create PR to main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr create \
+            --base main \
+            --head release/v${{ needs.version.outputs.version }} \
+            --title "chore: bump version to ${{ needs.version.outputs.version }}" \
+            --body "Automated version bump to ${{ needs.version.outputs.version }} from release workflow."
       - uses: ncipollo/release-action@v1
         with:
           artifacts: artifacts/*

@@ -81,12 +81,12 @@ _: {
           doNotPostBuildInstallCargoBinaries = true;
 
           installPhaseCommand = ''
-            mkdir -p $out
-            cp -r target/dx/${pname}/release/*/app/* $out
+            mkdir -p $out/bin
+            cp -r target/dx/${pname}/release/*/app/* $out/bin
           '';
 
           postInstall = ''
-            strip $out/${pname}
+            strip $out/bin/${pname}
             cp LICENSE $out
           '';
         }

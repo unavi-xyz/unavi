@@ -1,5 +1,5 @@
 {
-  "protocol": "https://wired-protocol.org/v0/protocols/world-host.json",
+  "protocol": "https://wired-protocol.org/v0/protocols/space-host.json",
   "published": true,
   "types": {
     "connect-url": {
@@ -8,8 +8,8 @@
         "application/json"
       ]
     },
-    "world": {
-      "schema": "https://wired-protocol.org/v0/schemas/world.json",
+    "space": {
+      "schema": "https://wired-protocol.org/v0/schemas/space.json",
       "dataFormat": [
         "application/json"
       ]
@@ -41,7 +41,7 @@
         }
       ]
     },
-    "world": {
+    "space": {
       "$actions": [
         {
           "who": "anyone",

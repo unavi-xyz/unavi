@@ -22,7 +22,7 @@ use xdid::{
 use crate::{DIRS, wt_server::control::ControlServer};
 
 mod control;
-mod init_world_host;
+mod init_space_host;
 
 pub const KEY_FRAGMENT: &str = "owner";
 

@@ -9,14 +9,14 @@ use wtransport::{Connection, RecvStream};
 pub mod join;
 pub mod transform;
 
-struct WorldConnection {
+struct SpaceConnection {
     connection: Connection,
     _control: ControlServiceClient,
 }
 
-async fn handle_world_connection(world: WorldConnection) -> anyhow::Result<()> {
+async fn handle_space_connection(space: SpaceConnection) -> anyhow::Result<()> {
     loop {
-        let stream = world.connection.accept_uni().await?;
+        let stream = space.connection.accept_uni().await?;
 
         tokio::spawn(async move {
             if let Err(e) = handle_stream(stream).await {

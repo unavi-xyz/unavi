@@ -87,8 +87,8 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
                 }
             };
 
-            if let Err(e) = server.init_world_host(cert_hash.to_string()).await {
-                error!("Failed to init world host: {e:?}");
+            if let Err(e) = server.init_space_host(cert_hash.to_string()).await {
+                error!("Failed to init space host: {e:?}");
                 tokio::time::sleep(Duration::from_secs(30)).await;
                 continue;
             };

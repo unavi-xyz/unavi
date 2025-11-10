@@ -5,7 +5,7 @@ locals {
     beta = {
       unavi_server = {
         port      = 5000
-        subdomain = "beta.world"
+        subdomain = "beta.space"
       }
       dwn_server = {
         port      = 8080
@@ -15,7 +15,7 @@ locals {
     stable = {
       unavi_server = {
         port      = 5000
-        subdomain = "world"
+        subdomain = "space"
       }
       dwn_server = {
         port      = 8080

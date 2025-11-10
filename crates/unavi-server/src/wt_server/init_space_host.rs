@@ -3,15 +3,15 @@ use serde_json::json;
 use tracing::info;
 use unavi_constants::{
     WP_VERSION,
-    protocols::{WORLD_HOST_DEFINITION, WORLD_HOST_PROTOCOL},
+    protocols::{SPACE_HOST_DEFINITION, SPACE_HOST_PROTOCOL},
 };
 use xdid::methods::web::reqwest::Url;
 
 use crate::wt_server::WtServer;
 
 impl WtServer {
-    pub async fn init_world_host(&self, cert_hash: String) -> anyhow::Result<()> {
-        let host_def = serde_json::from_slice(WORLD_HOST_DEFINITION)?;
+    pub async fn init_space_host(&self, cert_hash: String) -> anyhow::Result<()> {
+        let host_def = serde_json::from_slice(SPACE_HOST_DEFINITION)?;
 
         self.actor
             .configure_protocol(WP_VERSION, host_def)
@@ -29,7 +29,7 @@ impl WtServer {
         let prev_connect_url = self
             .actor
             .query()
-            .protocol(WORLD_HOST_PROTOCOL.to_string())
+            .protocol(SPACE_HOST_PROTOCOL.to_string())
             .protocol_version(WP_VERSION)
             .protocol_path("connect-url".to_string())
             .process()
@@ -49,7 +49,7 @@ impl WtServer {
             .actor
             .write()
             .protocol(
-                WORLD_HOST_PROTOCOL.to_string(),
+                SPACE_HOST_PROTOCOL.to_string(),
                 WP_VERSION,
                 "connect-url".to_string(),
             )

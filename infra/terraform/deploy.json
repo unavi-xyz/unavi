@@ -7,7 +7,7 @@
         "port": 8080
       },
       "unavi_server": {
-        "domain": "beta.world.unavi.xyz",
+        "domain": "beta.space.unavi.xyz",
         "port": 5000
       }
     }
@@ -24,7 +24,7 @@
         "port": 8080
       },
       "unavi_server": {
-        "domain": "world.unavi.xyz",
+        "domain": "space.unavi.xyz",
         "port": 5000
       }
     }

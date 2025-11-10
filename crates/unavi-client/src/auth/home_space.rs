@@ -6,16 +6,16 @@ use dwn::{Actor, core::message::mime::APPLICATION_JSON};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use unavi_constants::{
-    WORLD_HOST_DID, WP_VERSION,
-    protocols::{HOME_WORLD_DEFINITION, HOME_WORLD_PROTOCOL, WORLD_HOST_PROTOCOL},
-    schemas::{REMOTE_RECORD_SCHEMA, WORLD_SCHEMA},
+    SPACE_HOST_DID, WP_VERSION,
+    protocols::{HOME_SPACE_DEFINITION, HOME_SPACE_PROTOCOL, SPACE_HOST_PROTOCOL},
+    schemas::{REMOTE_RECORD_SCHEMA, SPACE_SCHEMA},
 };
 use wtransport::tls::Sha256Digest;
 use xdid::{core::did::Did, methods::web::reqwest::Url};
 
 use crate::{
     async_commands::ASYNC_COMMAND_QUEUE,
-    world::join::{ConnectInfo, JoinWorld},
+    space::join::{ConnectInfo, JoinSpace},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -25,8 +25,8 @@ struct RemoteRecord {
     record_id: String,
 }
 
-pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
-    let home_definition = serde_json::from_slice(HOME_WORLD_DEFINITION)?;
+pub async fn join_home_space(actor: Actor) -> anyhow::Result<()> {
+    let home_definition = serde_json::from_slice(HOME_SPACE_DEFINITION)?;
     actor
         .configure_protocol(WP_VERSION, home_definition)
         .process()
@@ -34,7 +34,7 @@ pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
 
     let found_homes = actor
         .query()
-        .protocol(HOME_WORLD_PROTOCOL.to_string())
+        .protocol(HOME_SPACE_PROTOCOL.to_string())
         .protocol_version(WP_VERSION)
         .protocol_path("home".to_string())
         .process()
@@ -72,13 +72,13 @@ pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
         connect_info = Some(ConnectInfo {
             url,
             cert_hash,
-            world_id: rr.record_id,
+            space_id: rr.record_id,
         });
         break;
     }
 
-    let world_host =
-        Did::from_str(WORLD_HOST_DID).map_err(|_| anyhow::anyhow!("failed to parse world host"))?;
+    let space_host =
+        Did::from_str(SPACE_HOST_DID).map_err(|_| anyhow::anyhow!("failed to parse space host"))?;
 
     let connect_info = match connect_info {
         Some(c) => c,
@@ -93,27 +93,27 @@ pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
             let home_record_id = actor
                 .write()
                 .protocol(
-                    WORLD_HOST_PROTOCOL.to_string(),
+                    SPACE_HOST_PROTOCOL.to_string(),
                     WP_VERSION,
-                    "world".to_string(),
+                    "space".to_string(),
                 )
-                .schema(WORLD_SCHEMA.to_string())
+                .schema(SPACE_SCHEMA.to_string())
                 .data(APPLICATION_JSON, data.to_string().into_bytes())
                 .published(true)
-                .target(&world_host)
+                .target(&space_host)
                 .send(&host_dwn)
                 .await
-                .context("write world")?;
+                .context("write space")?;
 
             let data = json!({
-                "did": world_host,
+                "did": space_host,
                 "recordId": home_record_id,
             });
 
             actor
                 .write()
                 .protocol(
-                    HOME_WORLD_PROTOCOL.to_string(),
+                    HOME_SPACE_PROTOCOL.to_string(),
                     WP_VERSION,
                     "home".to_string(),
                 )
@@ -123,7 +123,7 @@ pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
                 .await
                 .context("write home")?;
 
-            let Some((url, cert_hash)) = fetch_connect_url(&actor, &world_host, &host_dwn)
+            let Some((url, cert_hash)) = fetch_connect_url(&actor, &space_host, &host_dwn)
                 .await
                 .context("fetch connect url")?
             else {
@@ -133,15 +133,15 @@ pub async fn join_home_world(actor: Actor) -> anyhow::Result<()> {
             ConnectInfo {
                 url,
                 cert_hash,
-                world_id: home_record_id,
+                space_id: home_record_id,
             }
         }
     };
 
-    info!("Got home: {}@{}", connect_info.world_id, connect_info.url);
+    info!("Got home: {}@{}", connect_info.space_id, connect_info.url);
 
     let mut commands = CommandQueue::default();
-    commands.push(bevy::ecs::system::command::trigger(JoinWorld(connect_info)));
+    commands.push(bevy::ecs::system::command::trigger(JoinSpace(connect_info)));
 
     ASYNC_COMMAND_QUEUE.0.send(commands)?;
 
@@ -162,7 +162,7 @@ async fn fetch_connect_url(
 ) -> anyhow::Result<Option<(Url, Sha256Digest)>> {
     let found_urls = actor
         .query()
-        .protocol(WORLD_HOST_PROTOCOL.to_string())
+        .protocol(SPACE_HOST_PROTOCOL.to_string())
         .protocol_version(WP_VERSION)
         .protocol_path("connect-url".to_string())
         .target(host_did)

@@ -144,6 +144,8 @@
               };
             };
 
+            packages.default = config.packages.unavi-client;
+
             treefmt.programs = {
               actionlint.enable = true;
               deadnix.enable = true;

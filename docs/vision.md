@@ -1,12 +1,12 @@
-# UNAVI Vision
+# The UNAVI Vision
 
 This document outlines the philosophical foundation, aesthetic principles, and
 strategic direction of **UNAVI** and **The Wired**.
 
 ## What is UNAVI?
 
-**UNAVI** is an open-source VR platform for spatial communication and shared
-creation.
+**UNAVI** is an open-source VR platform for accessing a new, spatial
+representation of the Internet.
 
 Built primarily in [Rust](https://www.rust-lang.org/) using the
 [Bevy](https://bevy.org/) engine, UNAVI serves as a reference
@@ -37,7 +37,7 @@ from the environments we inhabit.
 
 The Wired reimagines information as **spatial** — something we move through,
 inhabit, and shape with others. It is the restoration of form to the formless,
-the rejoining of human and world through digital means.
+the rejoining of human and world.
 
 ### Creation and Autopoiesis
 
@@ -48,17 +48,17 @@ The goal is not simple scripting, but something more akin to
 of maintaining and regenerating their own structure.
 Much of UNAVI is itself built within the WebAssembly layer.
 
-Space in The Wired is seamless: transitions between areas, environments, or worlds
-happen naturally, without artificial loading or separation. Portals, connections,
-and interfaces preserve continuity, creating the sense of a single, persistent
-reality.
+Space in The Wired is seamless: transition between areas naturally, without
+artificial loading or separation. Portals, compositions, and user interfaces
+preserve continuity, creating the sense of a single, persistent reality.
 
-Worlds connect to worlds, forming continuous space.
+Spaces are sovereign units addressed by decentralized identifiers, stored on
+personal servers, and linked through hypermedia.
 Agents traverse this space, carrying with them whatever objects they please.
-Object behavior is managed at the object level, independent of any world.
+Object behavior is managed at the object level, independent of any space.
 
-Through this model, The Wired forms an ecology of computation — where entities,
-environments, and users co-create experiences in a network of dynamic feedback.
+Through this model, The Wired forms an ecology of computation — where agents
+co-create experiences in a network of dynamic feedback.
 Every addition, modification, or interaction propagates through the system,
 contributing to its emergent behaviors.
 
@@ -79,11 +79,12 @@ To let interaction, creation, and connection unfold in the medium most natural
 to us.
 
 This is not about simulation or escapism — it is about *integration*.
-The Wired is the continuation of the internet into a more expressive, human
-form — one that acknowledges that **information itself must live in space**.
+The Wired is the continuation of the Internet into a more expressive, human
+form — one that acknowledges that **information itself must live in space**,
+alongside us.
 
 We aim to open the floodgates of this new medium — to invite exploration,
-discovery, and the emergence of new forms of culture, art, and communication
+discovery, and the emergence of new forms in culture, art, and communication
 that can only exist when these are the axioms.
 
 ## Principles
@@ -125,13 +126,13 @@ concerned with **technology, space, and the fate of the individual**.
   a prophetic artistic vision of The Wired as a psychic network and mirror of
   consciousness.
   UNAVI treats Lain not as fiction but as myth: an intuition of what the
-  internet could become (and has become) when interior life and technology converge.
+  Internet could become (and has become) when interior life and technology converge.
 
 - **[Nick Land](https://en.wikipedia.org/wiki/Nick_Land)** and accelerationist
   philosophy — recognizing that technological systems possess autonomous tendencies
   of self-organization and escape.
-  UNAVI accepts this as fact but redirects it toward the renewal of human
-  form within the storm, rather than accepting its dissolution.
+  UNAVI accepts this as fact but redirects our efforts toward the renewal of
+  human form within the storm, rather than accepting its dissolution.
 
 ## The Wired Manifesto
 

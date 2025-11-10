@@ -1,5 +1,5 @@
 {
-  "protocol": "https://wired-protocol.org/v0/protocols/home-world.json",
+  "protocol": "https://wired-protocol.org/v0/protocols/home-space.json",
   "published": false,
   "types": {
     "home": {

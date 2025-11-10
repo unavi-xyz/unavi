@@ -12,7 +12,7 @@ pub const REMOTE_DWN_URL: &str = match option_env!("DWN_URL") {
     None => "http://localhost:8080",
 };
 
-pub const WORLD_HOST_DID: &str = match option_env!("WORLD_DID") {
+pub const SPACE_HOST_DID: &str = match option_env!("SPACE_DID") {
     Some(did) => did,
     None => "did:web:localhost%3A5000",
 };

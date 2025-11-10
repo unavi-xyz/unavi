@@ -10,22 +10,22 @@ use unavi_server_service::ControlServiceClient;
 use wtransport::{ClientConfig, Endpoint, stream::BiStream, tls::Sha256Digest};
 use xdid::methods::web::reqwest::Url;
 
-use crate::world::WorldConnection;
+use crate::space::SpaceConnection;
 
 #[derive(Event)]
-pub struct JoinWorld(pub ConnectInfo);
+pub struct JoinSpace(pub ConnectInfo);
 
 #[derive(Debug, Clone)]
 pub struct ConnectInfo {
     pub url: Url,
     pub cert_hash: Sha256Digest,
-    pub world_id: String,
+    pub space_id: String,
 }
 
-pub fn handle_join_world(trigger: Trigger<JoinWorld>) {
+pub fn handle_join_space(trigger: Trigger<JoinSpace>) {
     let event = trigger.0.clone();
 
-    info!("Joining world: {}@{}", event.world_id, event.url);
+    info!("Joining space: {}@{}", event.space_id, event.url);
 
     let pool = TaskPool::get_thread_executor();
 
@@ -36,16 +36,16 @@ pub fn handle_join_world(trigger: Trigger<JoinWorld>) {
             .expect("build tokio runtime");
 
         let task = rt.spawn(async move {
-            let world = match connect_to_world(event).await {
+            let space = match connect_to_space(event).await {
                 Ok(w) => w,
                 Err(e) => {
-                    error!("Error connecting to world server: {e:?}");
+                    error!("Error connecting to space server: {e:?}");
                     return;
                 }
             };
 
-            if let Err(e) = super::handle_world_connection(world).await {
-                error!("Error handling world connection: {e:?}");
+            if let Err(e) = super::handle_space_connection(space).await {
+                error!("Error handling space connection: {e:?}");
             }
         });
 
@@ -56,13 +56,13 @@ pub fn handle_join_world(trigger: Trigger<JoinWorld>) {
     .detach();
 }
 
-async fn connect_to_world(
+async fn connect_to_space(
     ConnectInfo {
         url,
         cert_hash,
-        world_id,
+        space_id,
     }: ConnectInfo,
-) -> anyhow::Result<WorldConnection> {
+) -> anyhow::Result<SpaceConnection> {
     let cfg = ClientConfig::builder()
         .with_bind_default()
         .with_server_certificate_hashes(vec![cert_hash])
@@ -86,13 +86,13 @@ async fn connect_to_world(
     let control = control_service.spawn();
 
     control
-        .join_world(tarpc::context::current(), world_id.clone())
+        .join_space(tarpc::context::current(), space_id.clone())
         .await?
         .map_err(|e| anyhow::anyhow!("rpc error: {e}"))?;
 
-    info!("Joined world {world_id}");
+    info!("Joined space {space_id}");
 
-    Ok(WorldConnection {
+    Ok(SpaceConnection {
         connection,
         _control: control,
     })

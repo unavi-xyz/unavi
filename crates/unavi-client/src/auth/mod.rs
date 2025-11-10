@@ -10,7 +10,7 @@ use xdid::methods::{
 
 use crate::LocalDwn;
 
-mod home_world;
+mod home_space;
 mod key_pair;
 
 #[derive(Event, Default)]
@@ -66,8 +66,8 @@ pub fn handle_login(
                 error!("Failed to sync with remote DWN: {e:?}");
             }
 
-            if let Err(e) = home_world::join_home_world(actor).await {
-                error!("Failed to join home world: {e:?}");
+            if let Err(e) = home_space::join_home_space(actor).await {
+                error!("Failed to join home space: {e:?}");
             }
         });
 

@@ -1,6 +1,6 @@
-resource "cloudflare_record" "world_stable" {
+resource "cloudflare_record" "space_stable" {
   zone_id = var.cloudflare_zone_id
-  name    = "world"
+  name    = "space"
   content = digitalocean_droplet.stable.ipv4_address
   type    = "A"
   ttl     = 1 # automatic
@@ -16,9 +16,9 @@ resource "cloudflare_record" "dwn_stable" {
   proxied = false
 }
 
-resource "cloudflare_record" "world_beta" {
+resource "cloudflare_record" "space_beta" {
   zone_id = var.cloudflare_zone_id
-  name    = "beta.world"
+  name    = "beta.space"
   content = digitalocean_droplet.beta.ipv4_address
   type    = "A"
   ttl     = 1

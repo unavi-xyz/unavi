@@ -9,7 +9,7 @@ mod async_commands;
 mod auth;
 mod icon;
 mod scene;
-mod world;
+mod space;
 
 pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
     let dirs = ProjectDirs::from("", "UNAVI", "unavi-client").expect("project dirs");
@@ -66,9 +66,9 @@ impl Plugin for UnaviPlugin {
         ))
         .insert_resource(LocalDwn(dwn))
         .add_event::<auth::LoginEvent>()
-        .add_event::<world::join::JoinWorld>()
+        .add_event::<space::join::JoinSpace>()
         .add_observer(auth::handle_login)
-        .add_observer(world::join::handle_join_world)
+        .add_observer(space::join::handle_join_space)
         .init_resource::<auth::LocalActor>()
         .add_systems(
             Startup,
@@ -83,7 +83,7 @@ impl Plugin for UnaviPlugin {
             FixedUpdate,
             (
                 async_commands::apply_async_commands,
-                world::transform::publish_user_transforms,
+                space::transform::publish_user_transforms,
             ),
         );
     }

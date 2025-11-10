@@ -14,7 +14,7 @@ implementation of **The Wired protocol** — a framework for decentralized,
 interoperable virtual worlds.
 
 UNAVI is not a walled garden. It is a foundation for an open, composable
-ecosystem — where every world, identity, and creation can connect through
+ecosystem — where every space, identity, and creation can connect through
 shared standards.
 
 ## What is The Wired?

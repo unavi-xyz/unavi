@@ -24,7 +24,7 @@ did:web:example.com?service=dwn&relativeRef=/records/{record-id}
 
 ### Record Schema
 
-DWN records follow [`/protocol/dwn/schemas/world.json`](../../../protocol/dwn/schemas/world.json)
+DWN records follow [`/protocol/dwn/schemas/space.json`](../../protocol/dwn/schemas/space.json)
 containing metadata (name, description, tags) plus references to assets.
 
 ## Instances

@@ -5,9 +5,9 @@ pub type RpcResult<T> = Result<T, String>;
 
 #[tarpc::service]
 pub trait ControlService {
-    async fn join_world(id: String) -> RpcResult<()>;
-    async fn leave_world(id: String) -> RpcResult<()>;
-    async fn worlds() -> Vec<String>;
+    async fn join_space(id: String) -> RpcResult<()>;
+    async fn leave_space(id: String) -> RpcResult<()>;
+    async fn spaces() -> Vec<String>;
 
     async fn players() -> Vec<Player>;
 }

@@ -3,8 +3,9 @@
 ## What
 
 A **Decentralized Identifier** (DID) is a globally unique identifier that doesn't
-require a centralized authority. Format: `did:method:identifier`
-(e.g., `did:web:example.com`).
+require a centralized authority.
+
+Format: `did:method:identifier` (e.g., `did:web:example.com`).
 
 [W3C DID Specification](https://www.w3.org/TR/did-core/)
 

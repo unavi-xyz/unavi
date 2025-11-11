@@ -2,13 +2,16 @@ use std::str::FromStr;
 
 use anyhow::{Context, bail};
 use bevy::{ecs::world::CommandQueue, prelude::*};
-use dwn::{Actor, core::message::mime::APPLICATION_JSON};
-use serde::{Deserialize, Serialize};
+use dwn::{
+    Actor,
+    core::message::mime::{APPLICATION_JSON, TEXT_PLAIN},
+};
+use serde::Deserialize;
 use serde_json::json;
 use unavi_constants::{
     SPACE_HOST_DID, WP_VERSION,
     protocols::{HOME_SPACE_DEFINITION, HOME_SPACE_PROTOCOL, SPACE_HOST_PROTOCOL},
-    schemas::{REMOTE_RECORD_SCHEMA, SPACE_SCHEMA},
+    schemas::SPACE_SCHEMA,
 };
 use wtransport::tls::Sha256Digest;
 use xdid::{core::did::Did, methods::web::reqwest::Url};
@@ -18,12 +21,7 @@ use crate::{
     space::join::{ConnectInfo, JoinSpace},
 };
 
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct RemoteRecord {
-    did: Did,
-    record_id: String,
-}
+use super::record_ref_url::parse_record_ref_url;
 
 pub async fn join_home_space(actor: Actor) -> anyhow::Result<()> {
     let home_definition = serde_json::from_slice(HOME_SPACE_DEFINITION)?;
@@ -57,12 +55,13 @@ pub async fn join_home_space(actor: Actor) -> anyhow::Result<()> {
             }
         };
 
-        let rr = serde_json::from_slice::<RemoteRecord>(&data)?;
+        let record_ref_url = String::from_utf8(data)?;
+        let (host_did, space_record_id) = parse_record_ref_url(&record_ref_url)?;
 
         // TODO: Fetch from did document
         let host_dwn = actor.remote.clone().unwrap();
 
-        let Some((url, cert_hash)) = fetch_connect_url(&actor, &rr.did, &host_dwn)
+        let Some((url, cert_hash)) = fetch_connect_url(&actor, &host_did, &host_dwn)
             .await
             .context("fetch connect url")?
         else {
@@ -72,7 +71,7 @@ pub async fn join_home_space(actor: Actor) -> anyhow::Result<()> {
         connect_info = Some(ConnectInfo {
             url,
             cert_hash,
-            space_id: rr.record_id,
+            space_id: space_record_id,
         });
         break;
     }
@@ -105,10 +104,10 @@ pub async fn join_home_space(actor: Actor) -> anyhow::Result<()> {
                 .await
                 .context("write space")?;
 
-            let data = json!({
-                "did": space_host,
-                "recordId": home_record_id,
-            });
+            let record_ref_url = format!(
+                "{}?service=dwn&relativeRef=/records/{}",
+                space_host, home_record_id
+            );
 
             actor
                 .write()
@@ -117,8 +116,7 @@ pub async fn join_home_space(actor: Actor) -> anyhow::Result<()> {
                     WP_VERSION,
                     "home".to_string(),
                 )
-                .schema(REMOTE_RECORD_SCHEMA.to_string())
-                .data(APPLICATION_JSON, data.to_string().into_bytes())
+                .data(TEXT_PLAIN, record_ref_url.into_bytes())
                 .process()
                 .await
                 .context("write home")?;

@@ -3,9 +3,8 @@
   "published": false,
   "types": {
     "home": {
-      "schema": "https://wired-protocol.org/v0/schemas/remote-record.json",
       "dataFormat": [
-        "application/json"
+        "text/plain"
       ]
     }
   },

@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use anyhow::{Context, bail};
+use anyhow::Context;
 use bevy::{ecs::world::CommandQueue, prelude::*};
 use dwn::{
     Actor,
@@ -14,14 +14,12 @@ use unavi_constants::{
     schemas::SPACE_SCHEMA,
 };
 use wtransport::tls::Sha256Digest;
-use xdid::{core::did::Did, methods::web::reqwest::Url};
-
-use crate::{
-    async_commands::ASYNC_COMMAND_QUEUE,
-    space::join::{ConnectInfo, JoinSpace},
+use xdid::{
+    core::{did::Did, did_url::DidUrl},
+    methods::web::reqwest::Url,
 };
 
-use super::record_ref_url::parse_record_ref_url;
+use crate::{async_commands::ASYNC_COMMAND_QUEUE, space::Space};
 
 pub async fn join_home_space(actor: Actor) -> anyhow::Result<()> {
     let home_definition = serde_json::from_slice(HOME_SPACE_DEFINITION)?;
@@ -38,7 +36,7 @@ pub async fn join_home_space(actor: Actor) -> anyhow::Result<()> {
         .process()
         .await?;
 
-    let mut connect_info = None;
+    let mut space_url = None;
 
     for home in found_homes {
         let home_id = home.entry().record_id.clone();
@@ -55,33 +53,14 @@ pub async fn join_home_space(actor: Actor) -> anyhow::Result<()> {
             }
         };
 
-        let record_ref_url = String::from_utf8(data)?;
-        info!("parsing {record_ref_url}");
-        let (host_did, space_id) =
-            parse_record_ref_url(&record_ref_url).context("parse record ref url")?;
-
-        // TODO: Fetch from did document
-        let host_dwn = actor.remote.clone().unwrap();
-
-        let Some((connect_url, cert_hash)) = fetch_connect_url(&actor, &host_did, &host_dwn)
-            .await
-            .context("fetch connect url")?
-        else {
-            continue;
-        };
-
-        connect_info = Some(ConnectInfo {
-            connect_url,
-            cert_hash,
-            space_id,
-        });
+        space_url = Some(DidUrl::from_str(&String::from_utf8(data)?)?);
         break;
     }
 
     let space_host =
         Did::from_str(SPACE_HOST_DID).map_err(|_| anyhow::anyhow!("failed to parse space host"))?;
 
-    let connect_info = match connect_info {
+    let space_url = match space_url {
         Some(c) => c,
         None => {
             let data = json!({
@@ -106,10 +85,12 @@ pub async fn join_home_space(actor: Actor) -> anyhow::Result<()> {
                 .await
                 .context("write space")?;
 
-            let record_ref_url = format!(
-                "{}?service=dwn&relativeRef=/records/{}",
-                space_host, space_id
-            );
+            let space_url = DidUrl {
+                did: space_host,
+                query: Some(format!("service=dwn&relativeRef=/records/{space_id}")),
+                fragment: None,
+                path_abempty: None,
+            };
 
             actor
                 .write()
@@ -118,28 +99,19 @@ pub async fn join_home_space(actor: Actor) -> anyhow::Result<()> {
                     WP_VERSION,
                     "home".to_string(),
                 )
-                .data(TEXT_PLAIN, record_ref_url.into_bytes())
+                .data(TEXT_PLAIN, space_url.to_string().into_bytes())
                 .process()
                 .await
                 .context("write home")?;
 
-            let Some((url, cert_hash)) = fetch_connect_url(&actor, &space_host, &host_dwn)
-                .await
-                .context("fetch connect url")?
-            else {
-                bail!("host connect url not found")
-            };
-
-            ConnectInfo {
-                connect_url: url,
-                cert_hash,
-                space_id,
-            }
+            space_url
         }
     };
 
     let mut commands = CommandQueue::default();
-    commands.push(bevy::ecs::system::command::trigger(JoinSpace(connect_info)));
+    commands.push(bevy::ecs::system::command::spawn_batch([(Space {
+        url: space_url,
+    })]));
     ASYNC_COMMAND_QUEUE.0.send(commands)?;
 
     Ok(())

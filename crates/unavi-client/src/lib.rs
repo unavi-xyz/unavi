@@ -66,9 +66,7 @@ impl Plugin for UnaviPlugin {
         ))
         .insert_resource(LocalDwn(dwn))
         .add_event::<auth::LoginEvent>()
-        .add_event::<space::join::JoinSpace>()
         .add_observer(auth::handle_login)
-        .add_observer(space::join::handle_join_space)
         .init_resource::<auth::LocalActor>()
         .add_systems(
             Startup,

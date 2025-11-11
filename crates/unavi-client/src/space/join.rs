@@ -10,7 +10,7 @@ use unavi_server_service::ControlServiceClient;
 use wtransport::{ClientConfig, Endpoint, stream::BiStream, tls::Sha256Digest};
 use xdid::methods::web::reqwest::Url;
 
-use crate::space::SpaceConnection;
+use crate::space::connection::{SpaceConnection, handle_space_connection};
 
 #[derive(Event)]
 pub struct JoinSpace(pub ConnectInfo);
@@ -44,7 +44,7 @@ pub fn handle_join_space(trigger: Trigger<JoinSpace>) {
                 }
             };
 
-            if let Err(e) = super::handle_space_connection(space).await {
+            if let Err(e) = handle_space_connection(space).await {
                 error!("Error handling space connection: {e:?}");
             }
         });

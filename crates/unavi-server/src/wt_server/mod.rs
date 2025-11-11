@@ -61,7 +61,7 @@ impl WtServer {
             did: opts.did,
             query: None,
             fragment: Some(KEY_FRAGMENT.to_string()),
-            path_abempty: String::new(),
+            path_abempty: None,
         };
 
         let key = Arc::new(key);

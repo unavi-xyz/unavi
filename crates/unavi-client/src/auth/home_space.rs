@@ -41,11 +41,11 @@ pub async fn join_home_space(actor: Actor) -> anyhow::Result<()> {
     let mut connect_info = None;
 
     for home in found_homes {
-        let record_id = home.entry().record_id.clone();
+        let home_id = home.entry().record_id.clone();
         let data = match home.into_data() {
             Some(d) => d,
             None => {
-                let Some(read) = actor.read(record_id).process().await? else {
+                let Some(read) = actor.read(home_id).process().await? else {
                     continue;
                 };
                 let Some(data) = read.into_data() else {
@@ -56,12 +56,14 @@ pub async fn join_home_space(actor: Actor) -> anyhow::Result<()> {
         };
 
         let record_ref_url = String::from_utf8(data)?;
-        let (host_did, space_record_id) = parse_record_ref_url(&record_ref_url)?;
+        info!("parsing {record_ref_url}");
+        let (host_did, space_id) =
+            parse_record_ref_url(&record_ref_url).context("parse record ref url")?;
 
         // TODO: Fetch from did document
         let host_dwn = actor.remote.clone().unwrap();
 
-        let Some((url, cert_hash)) = fetch_connect_url(&actor, &host_did, &host_dwn)
+        let Some((connect_url, cert_hash)) = fetch_connect_url(&actor, &host_did, &host_dwn)
             .await
             .context("fetch connect url")?
         else {
@@ -69,9 +71,9 @@ pub async fn join_home_space(actor: Actor) -> anyhow::Result<()> {
         };
 
         connect_info = Some(ConnectInfo {
-            url,
+            connect_url,
             cert_hash,
-            space_id: space_record_id,
+            space_id,
         });
         break;
     }
@@ -89,7 +91,7 @@ pub async fn join_home_space(actor: Actor) -> anyhow::Result<()> {
             // TODO: Fetch from did document
             let host_dwn = actor.remote.clone().unwrap();
 
-            let home_record_id = actor
+            let space_id = actor
                 .write()
                 .protocol(
                     SPACE_HOST_PROTOCOL.to_string(),
@@ -106,7 +108,7 @@ pub async fn join_home_space(actor: Actor) -> anyhow::Result<()> {
 
             let record_ref_url = format!(
                 "{}?service=dwn&relativeRef=/records/{}",
-                space_host, home_record_id
+                space_host, space_id
             );
 
             actor
@@ -129,18 +131,15 @@ pub async fn join_home_space(actor: Actor) -> anyhow::Result<()> {
             };
 
             ConnectInfo {
-                url,
+                connect_url: url,
                 cert_hash,
-                space_id: home_record_id,
+                space_id,
             }
         }
     };
 
-    info!("Got home: {}@{}", connect_info.space_id, connect_info.url);
-
     let mut commands = CommandQueue::default();
     commands.push(bevy::ecs::system::command::trigger(JoinSpace(connect_info)));
-
     ASYNC_COMMAND_QUEUE.0.send(commands)?;
 
     Ok(())

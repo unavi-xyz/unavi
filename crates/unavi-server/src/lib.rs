@@ -133,7 +133,7 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
                         did: did.clone(),
                         fragment: Some(KEY_FRAGMENT.to_string()),
                         query: None,
-                        path_abempty: String::new(),
+                        path_abempty: None,
                     },
                     controller: did,
                     typ: "JsonWebKey2020".to_string(),

@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use bevy::{prelude::*, tasks::TaskPool};
+use bevy::{log::tracing::Instrument, prelude::*, tasks::TaskPool};
 use tarpc::{
     client::Config,
     tokio_serde::formats::Bincode,
@@ -17,15 +17,13 @@ pub struct JoinSpace(pub ConnectInfo);
 
 #[derive(Debug, Clone)]
 pub struct ConnectInfo {
-    pub url: Url,
     pub cert_hash: Sha256Digest,
+    pub connect_url: Url,
     pub space_id: String,
 }
 
 pub fn handle_join_space(trigger: Trigger<JoinSpace>) {
     let event = trigger.0.clone();
-
-    info!("Joining space: {}@{}", event.space_id, event.url);
 
     let pool = TaskPool::get_thread_executor();
 
@@ -36,7 +34,9 @@ pub fn handle_join_space(trigger: Trigger<JoinSpace>) {
             .expect("build tokio runtime");
 
         let task = rt.spawn(async move {
-            let space = match connect_to_space(event).await {
+            let connect_span = info_span!("connect", url = event.connect_url.to_string());
+
+            let space = match connect_to_space(event).instrument(connect_span).await {
                 Ok(w) => w,
                 Err(e) => {
                     error!("Error connecting to space server: {e:?}");
@@ -58,7 +58,7 @@ pub fn handle_join_space(trigger: Trigger<JoinSpace>) {
 
 async fn connect_to_space(
     ConnectInfo {
-        url,
+        connect_url,
         cert_hash,
         space_id,
     }: ConnectInfo,
@@ -72,7 +72,7 @@ async fn connect_to_space(
 
     let endpoint = Endpoint::client(cfg)?;
 
-    let url = url.to_string().replace("http://", "https://");
+    let url = connect_url.to_string().replace("http://", "https://");
     let connection = endpoint.connect(url).await?;
 
     let stream = connection.open_bi().await?.await?;
@@ -90,7 +90,7 @@ async fn connect_to_space(
         .await?
         .map_err(|e| anyhow::anyhow!("rpc error: {e}"))?;
 
-    info!("Joined space {space_id}");
+    info!("Joined space {space_id}@{connect_url}");
 
     Ok(SpaceConnection {
         connection,

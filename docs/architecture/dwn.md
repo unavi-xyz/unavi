@@ -18,12 +18,12 @@ infrastructure instead of relying on centralized platforms.
 ## In The Wired
 
 DWNs store nearly all data in The Wired and facilitate interactions between
-entities. This includes spatial data ([spaces](./spaces.md)), user metadata,
-access control, and coordination for operations like hosting a space on a server.
+agents. This includes spatial data ([spaces](./spaces.md)), user metadata,
+access control, and coordination for operations like server hosting.
 
-DWN endpoints are declared in [DID](./did.md) Documents, enabling discovery.
-Advanced queries support filtering and sorting, such as listing public spaces by
-criteria (tags, creation date, popularity).
+DWN endpoints are declared in DID Documents, enabling discovery.
+Queries support advanced filtering and sorting, such as listing public spaces by
+arbitrary criteria (tags, creation date, player count).
 
 ## Key Concepts
 

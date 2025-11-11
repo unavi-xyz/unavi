@@ -49,4 +49,4 @@ Entity Component System for scripts:
   define systems, spawn entities, add components.
 
 Scripts are stored within glXF scene files, such as those used by
-[spaces](./spaces.md). The WASM is loaded and executed within the 3D runtime.
+spaces. The WASM is loaded and executed within the scene's 3D runtime.

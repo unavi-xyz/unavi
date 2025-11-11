@@ -2,30 +2,27 @@
 
 ## What
 
-A **space** is the fundamental unit of [The Wired](./the-wired.md). A bounded
+A **space** is the fundamental unit of The Wired: A bounded
 3D region containing geometry, entities, and interactive elements.
+
+Spaces are hyperdocuments in The Wired's spatial hypermedia system —
+addressable, linkable, and composable units of 3D information.
 
 ## Properties
 
 - **Metadata**: Name, description, tags, creator [DID](./did.md), timestamp.
 - **Geometry**: [glXF](https://github.com/KhronosGroup/glTF-External-Reference)
   scene format (glTF with external references).
-- **Scripts**: References to [WASM](./wasm.md) components for interactive behavior.
-- **Slots**: AABB regions where child spaces can be nested.
+- **Scripts**: [WASM](./wasm.md) components for interactive behavior.
+- **Slots**: Regions where child spaces can be nested.
 - **Portals**: Links to other spaces for seamless navigation.
 
 ## Storage
 
-Spaces are stored as records on [DWNs](./dwn.md), referenced by DID URLs:
+Spaces are stored as records on [DWNs](./dwn.md), referenced by DID URLs.
 
-```
-did:web:example.com?service=dwn&relativeRef=/records/{record-id}
-```
-
-### Record Schema
-
-DWN records follow [`/protocol/dwn/schemas/space.json`](../../protocol/dwn/schemas/space.json)
-containing metadata (name, description, tags) plus references to assets.
+Space records follow [`/protocol/dwn/schemas/space.json`](../../protocol/dwn/schemas/space.json),
+containing metadata (name, description) plus references to assets.
 
 ## Instances
 
@@ -35,14 +32,13 @@ Loaded from filesystem or DWN, runs locally in the client. Offline, single-user.
 
 ### Hosted
 
+Remote server hosts a space, facilitating multiplayer networking within it.
+Online, multi-user.
+
 Server clones space from DWN on initialization, creating a live instance with
-its own DID URL:
-
-```
-did:web:server.example.com?service=dwn&relativeRef=/records/{instance-record-id}
-```
-
-Runtime mutations affect the instance, not the original space.
+its own DID URL. Runtime mutations affect the instance, not the original space.
+However, mutations *are* persistent within the instance and can be saved as a
+new space to be loaded or used elsewhere.
 
 #### Chunking
 
@@ -50,7 +46,7 @@ Servers may spatially partition spaces (e.g., octree, grid) across multiple
 machines for horizontal scaling. Clients connect to nearby chunks via
 [WebTransport](https://www.w3.org/TR/webtransport/), unifying them seamlessly.
 
-## Hypermedia
+## Hypermedia Controls
 
 ### Slots (Composition)
 
@@ -67,6 +63,7 @@ Portals are seamless windows into other spaces. Agents can walk through portals
 between spaces (potentially on different servers) and carry objects with them.
 
 Unlike slots (which embed child spaces), portals link independent spaces.
+Portals function as hyperlinks in hyperspace, addressing other spaces by DID URL.
 
 ## Key Concepts
 

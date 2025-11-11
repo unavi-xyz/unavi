@@ -12,6 +12,7 @@ use crate::LocalDwn;
 
 mod home_space;
 mod key_pair;
+mod record_ref_url;
 
 #[derive(Event, Default)]
 pub struct LoginEvent;

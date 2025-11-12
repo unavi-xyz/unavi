@@ -6,7 +6,7 @@ A **Decentralized Web Node** (DWN) is a personal data server for storing and
 sharing data associated with a [DID](./did.md). Users operate their own
 infrastructure instead of relying on centralized platforms.
 
-[Specification](https://identity.foundation/decentralized-web-node/spec/)
+[DWN Specification](https://identity.foundation/decentralized-web-node/spec/)
 
 ## Why
 

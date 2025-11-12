@@ -17,7 +17,7 @@ pub fn apply_async_commands(mut commands: Commands) {
     let Ok(rx) = ASYNC_COMMAND_QUEUE.1.try_lock() else {
         return;
     };
-    while let Ok(mut item) = rx.try_recv() {
-        commands.append(&mut item);
+    while let Ok(mut queue) = rx.try_recv() {
+        commands.append(&mut queue);
     }
 }

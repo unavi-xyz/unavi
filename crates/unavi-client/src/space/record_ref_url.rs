@@ -1,14 +1,9 @@
-use std::str::FromStr;
-
-use xdid::core::{did::Did, did_url::DidUrl};
+use xdid::core::did_url::DidUrl;
 
 /// Parse a record reference URL to extract the DID and record ID.
 ///
 /// Expected format: `{did}?service=dwn&relativeRef=/records/{record-id}`
-pub fn parse_record_ref_url(url: &str) -> anyhow::Result<(Did, String)> {
-    let did_url = DidUrl::from_str(url)?;
-
-    // Extract record ID from relativeRef query parameter.
+pub fn parse_record_ref_url(did_url: &DidUrl) -> anyhow::Result<&str> {
     let relative_ref = did_url
         .query
         .as_ref()
@@ -21,8 +16,7 @@ pub fn parse_record_ref_url(url: &str) -> anyhow::Result<(Did, String)> {
 
     let record_id = relative_ref
         .strip_prefix("/records/")
-        .ok_or_else(|| anyhow::anyhow!("invalid relativeRef format"))?
-        .to_string();
+        .ok_or_else(|| anyhow::anyhow!("invalid relativeRef format"))?;
 
-    Ok((did_url.did, record_id))
+    Ok(record_id)
 }

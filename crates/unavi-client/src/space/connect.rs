@@ -7,23 +7,26 @@ use tarpc::{
     tokio_util::codec::{Framed, LengthDelimitedCodec},
 };
 use unavi_server_service::ControlServiceClient;
-use wtransport::{ClientConfig, Endpoint, stream::BiStream, tls::Sha256Digest};
-use xdid::methods::web::reqwest::Url;
+use wtransport::{ClientConfig, Endpoint, stream::BiStream};
 
-use crate::space::connection::{SpaceConnection, handle_space_connection};
+use crate::space::{
+    Space,
+    connect_info::ConnectInfo,
+    record_ref_url::parse_record_ref_url,
+    runtime::{SpaceConnection, handle_space_connection},
+};
 
-#[derive(Event)]
-pub struct JoinSpace(pub ConnectInfo);
+pub fn handle_space_connect(
+    event: On<Add, ConnectInfo>,
+    spaces: Query<(&Space, &ConnectInfo)>,
+) -> Result {
+    let entity = event.event().entity;
 
-#[derive(Debug, Clone)]
-pub struct ConnectInfo {
-    pub cert_hash: Sha256Digest,
-    pub connect_url: Url,
-    pub space_id: String,
-}
-
-pub fn handle_join_space(trigger: On<JoinSpace>) {
-    let event = trigger.0.clone();
+    let Ok((space, info)) = spaces.get(entity) else {
+        Err(anyhow::anyhow!("space not found"))?
+    };
+    let info = info.clone();
+    let space_id = parse_record_ref_url(&space.url)?.to_string();
 
     let pool = TaskPool::get_thread_executor();
 
@@ -34,9 +37,12 @@ pub fn handle_join_space(trigger: On<JoinSpace>) {
             .expect("build tokio runtime");
 
         let task = rt.spawn(async move {
-            let connect_span = info_span!("connect", url = event.connect_url.to_string());
+            let connect_span = info_span!("connect", url = info.connect_url.to_string());
 
-            let space = match connect_to_space(event).instrument(connect_span).await {
+            let space = match connect_to_space(info, &space_id)
+                .instrument(connect_span)
+                .await
+            {
                 Ok(w) => w,
                 Err(e) => {
                     error!("Error connecting to space server: {e:?}");
@@ -54,20 +60,22 @@ pub fn handle_join_space(trigger: On<JoinSpace>) {
         }
     })
     .detach();
+
+    Ok(())
 }
 
 async fn connect_to_space(
     ConnectInfo {
         connect_url,
         cert_hash,
-        space_id,
     }: ConnectInfo,
+    space_id: &str,
 ) -> anyhow::Result<SpaceConnection> {
     let cfg = ClientConfig::builder()
         .with_bind_default()
         .with_server_certificate_hashes(vec![cert_hash])
         .max_idle_timeout(Some(Duration::from_mins(1)))?
-        .keep_alive_interval(Some(Duration::from_secs(25)))
+        .keep_alive_interval(Some(Duration::from_secs(15)))
         .build();
 
     let endpoint = Endpoint::client(cfg)?;
@@ -86,7 +94,7 @@ async fn connect_to_space(
     let control = control_service.spawn();
 
     control
-        .join_space(tarpc::context::current(), space_id.clone())
+        .join_space(tarpc::context::current(), space_id.to_string())
         .await?
         .map_err(|e| anyhow::anyhow!("rpc error: {e}"))?;
 

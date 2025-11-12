@@ -65,8 +65,11 @@ impl Plugin for UnaviPlugin {
             unavi_player::PlayerPlugin,
         ))
         .insert_resource(LocalDwn(dwn))
-        .add_observer(auth::handle_login)
         .init_resource::<auth::LocalActor>()
+        .add_observer(auth::handle_login)
+        .add_observer(space::handle_space_add)
+        .add_observer(space::handle_connect_info_fetched)
+        .add_observer(space::connect::handle_space_connect)
         .add_systems(
             Startup,
             (

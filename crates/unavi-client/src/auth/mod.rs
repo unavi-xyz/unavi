@@ -25,11 +25,7 @@ pub fn trigger_login(mut commands: Commands) {
 /// Identity of the local user.
 pub struct LocalActor(pub Option<Actor>);
 
-pub fn handle_login(
-    _: Trigger<LoginEvent>,
-    mut local_actor: ResMut<LocalActor>,
-    dwn: Res<LocalDwn>,
-) {
+pub fn handle_login(_: On<LoginEvent>, mut local_actor: ResMut<LocalActor>, dwn: Res<LocalDwn>) {
     let pair = match key_pair::get_or_create_key() {
         Ok(p) => p,
         Err(e) => {

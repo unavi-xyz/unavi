@@ -12,8 +12,8 @@ workspace = true
 [dependencies]
 avian3d.workspace       = true
 bevy                    = { default-features = true, workspace = true }
-bevy-tnua               = "0.24.0"
-bevy-tnua-avian3d       = "0.5.0"
+bevy-tnua               = "0.26.0"
+bevy-tnua-avian3d       = "0.8.0"
 bevy_gltf_kun.workspace = true
 bevy_vrm.workspace      = true
 gltf_kun.workspace      = true
@@ -21,4 +21,4 @@ paste                   = "1.0.15"
 unavi-input.path        = "../unavi-input"
 
 [dev-dependencies]
-bevy_rich_text3d = "0.4.2"
+bevy_rich_text3d = "0.5.1"

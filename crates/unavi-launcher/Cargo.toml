@@ -15,10 +15,10 @@ embed-resource.workspace = true
 
 [dependencies]
 anyhow.workspace = true
-dioxus = { features = ["desktop", "router"], version = "0.6.3" }
+dioxus = { features = ["desktop", "router"], version = "0.7.1" }
 directories.workspace = true
 futures.workspace = true
-image.workspace = true
+image = { features = ["png"], workspace = true }
 reqwest = { default-features = false, features = [
   "json",
   "rustls-tls",
@@ -34,4 +34,4 @@ tokio.workspace = true
 toml = "0.9.8"
 tracing.workspace = true
 xz2 = { features = ["tokio"], version = "0.1.7" }
-zip = "2.2"
+zip = "6.0"

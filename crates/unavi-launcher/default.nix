@@ -46,6 +46,7 @@ _: {
           glib
           gtk3
           libsoup_3
+          openssl
           pango
           webkitgtk_4_1
           xdotool

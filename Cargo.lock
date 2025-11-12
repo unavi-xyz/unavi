@@ -1226,26 +1226,11 @@ dependencies = [
 [[package]]
 name = "bevy_gltf_kun"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "586e504a17a643c7afce524b9f27fc211e083f6cf7a84f553ea80336c072ed19"
+source = "git+https://github.com/unavi-xyz/gltf_kun#242bfc837152c4a6c762b79806ef11e5edccf3e0"
 dependencies = [
  "anyhow",
  "bevy",
- "gltf_kun 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "image",
- "serde",
- "serde_json",
- "thiserror 2.0.17",
-]
-
-[[package]]
-name = "bevy_gltf_kun"
-version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/gltf_kun#af09257193859f314cf5cfe04538c0c8489f8e97"
-dependencies = [
- "anyhow",
- "bevy",
- "gltf_kun 0.3.0 (git+https://github.com/unavi-xyz/gltf_kun)",
+ "gltf_kun",
  "image",
  "serde",
  "serde_json",
@@ -2029,9 +2014,9 @@ version = "0.1.0"
 source = "git+https://github.com/unavi-xyz/bevy_vrm#ccac456b36636d9dba2b226d5535e02a19bce8eb"
 dependencies = [
  "bevy",
- "bevy_gltf_kun 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bevy_gltf_kun",
  "bevy_shader_mtoon",
- "gltf_kun 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gltf_kun",
  "gltf_kun_vrm",
  "paste",
  "petgraph",
@@ -5457,24 +5442,7 @@ dependencies = [
 [[package]]
 name = "gltf_kun"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86546837cddc3e2986dff96247452906cd22542805394dfe0f9815f134ce5184"
-dependencies = [
- "base64 0.22.1",
- "bevy_math",
- "byteorder",
- "gltf",
- "petgraph",
- "serde",
- "serde_json",
- "thiserror 2.0.17",
- "tracing",
-]
-
-[[package]]
-name = "gltf_kun"
-version = "0.3.0"
-source = "git+https://github.com/unavi-xyz/gltf_kun#af09257193859f314cf5cfe04538c0c8489f8e97"
+source = "git+https://github.com/unavi-xyz/gltf_kun#242bfc837152c4a6c762b79806ef11e5edccf3e0"
 dependencies = [
  "base64 0.22.1",
  "bevy_math",
@@ -5492,7 +5460,7 @@ name = "gltf_kun_vrm"
 version = "0.1.0"
 source = "git+https://github.com/unavi-xyz/bevy_vrm#ccac456b36636d9dba2b226d5535e02a19bce8eb"
 dependencies = [
- "gltf_kun 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gltf_kun",
  "serde",
  "serde_json",
  "serde_vrm",
@@ -7408,9 +7376,9 @@ dependencies = [
 
 [[package]]
 name = "num-bigint-dig"
-version = "0.8.5"
+version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82c79c15c05d4bf82b6f5ef163104cc81a760d8e874d38ac50ab67c8877b647b"
+checksum = "e661dda6640fad38e827a6d4a310ff4763082116fe217f279885c97f511bb0b7"
 dependencies = [
  "lazy_static",
  "libm",
@@ -11445,10 +11413,10 @@ dependencies = [
  "bevy",
  "bevy-tnua",
  "bevy-tnua-avian3d",
- "bevy_gltf_kun 0.3.0 (git+https://github.com/unavi-xyz/gltf_kun)",
+ "bevy_gltf_kun",
  "bevy_rich_text3d",
  "bevy_vrm",
- "gltf_kun 0.3.0 (git+https://github.com/unavi-xyz/gltf_kun)",
+ "gltf_kun",
  "paste",
  "unavi-input",
 ]

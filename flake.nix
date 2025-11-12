@@ -117,7 +117,7 @@
                 (
                   self: _:
                   let
-                    nightly = (
+                    toolchain = (
                       with self.fenix;
                       combine [
                         complete.toolchain
@@ -126,7 +126,7 @@
                     );
                   in
                   {
-                    crane = (inputs.crane.mkLib self).overrideToolchain nightly;
+                    crane = (inputs.crane.mkLib self).overrideToolchain toolchain;
                   }
                 )
               ];

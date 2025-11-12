@@ -12,7 +12,12 @@ wasmtime::component::bindgen!({
     world: "host",
     path: "../../protocol/wit/wired-ecs",
     additional_derives: [Hash, PartialEq],
-    async: true,
+    imports: {
+        default: async,
+    },
+    exports: {
+        default: async,
+    }
 });
 
 pub struct HasWiredEcsData;

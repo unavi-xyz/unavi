@@ -25,7 +25,7 @@ pub(crate) fn setup_vrm_eye_offset(
     mut transforms: Query<&mut Transform>,
     mut colliders: Query<&mut Collider, With<PlayerRig>>,
     mut sensor_shapes: Query<&mut TnuaAvian3dSensorShape, With<PlayerRig>>,
-    mut first_person_writer: EventWriter<SetupFirstPerson>,
+    mut first_person_writer: MessageWriter<SetupFirstPerson>,
 ) {
     for (avatar_ent, vrm_scene, avatar_parent) in avatars.iter() {
         let Some(scene) = scene_assets.get_mut(vrm_scene.0.id()) else {

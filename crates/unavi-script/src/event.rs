@@ -3,14 +3,14 @@ use bevy::prelude::*;
 use crate::{ScriptEngine, WasmBinary, WasmEngine};
 
 /// Load a script from the assets folder.
-#[derive(Event)]
+#[derive(Message)]
 pub struct LoadScriptAsset {
     pub namespace: &'static str,
     pub package: &'static str,
 }
 
 pub fn handle_load_events(
-    mut events: EventReader<LoadScriptAsset>,
+    mut events: MessageReader<LoadScriptAsset>,
     asset_server: Res<AssetServer>,
     mut commands: Commands,
     engine: Query<Entity, With<WasmEngine>>,

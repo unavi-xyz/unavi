@@ -1,9 +1,9 @@
 use avian3d::prelude::*;
 use bevy::{
     color::palettes::tailwind::BLUE_400,
-    pbr::{CascadeShadowConfigBuilder, light_consts::lux},
+    light::{CascadeShadowConfigBuilder, SunDisk, light_consts::lux},
+    mesh::VertexAttributeValues,
     prelude::*,
-    render::mesh::VertexAttributeValues,
 };
 use bevy_vrm::mtoon::MtoonSun;
 use unavi_player::PlayerSpawner;
@@ -21,6 +21,7 @@ pub fn spawn_lights(mut commands: Commands, mut ambient: ResMut<AmbientLight>) {
             shadows_enabled: true,
             ..Default::default()
         },
+        SunDisk::EARTH,
         Transform::from_xyz(1.0, 0.4, 0.1).looking_at(Vec3::ZERO, Vec3::Y),
         MtoonSun,
     ));

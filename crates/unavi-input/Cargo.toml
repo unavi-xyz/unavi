@@ -11,5 +11,5 @@ workspace = true
 
 [dependencies]
 bevy                = { default-features = true, workspace = true }
-schminput           = { features = ["xr"], version = "0.3.0" }
-schminput_rebinding = { features = ["xr"], version = "0.3.0" }
+schminput           = { git = "https://github.com/oelison/Schminput" }
+schminput_rebinding = { git = "https://github.com/oelison/Schminput" }

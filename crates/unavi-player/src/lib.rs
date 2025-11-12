@@ -1,6 +1,6 @@
 //! VRM player controller for desktop and VR.
 
-use bevy::{core_pipeline::auto_exposure::AutoExposurePlugin, prelude::*};
+use bevy::{post_process::auto_exposure::AutoExposurePlugin, prelude::*};
 use bevy_tnua::prelude::TnuaControllerPlugin;
 use bevy_tnua_avian3d::TnuaAvian3dPlugin;
 use bevy_vrm::VrmPlugins;

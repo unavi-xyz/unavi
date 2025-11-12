@@ -1,5 +1,5 @@
 use wasmtime::component::ResourceTable;
-use wasmtime_wasi::p2::{IoView, WasiCtx, WasiView};
+use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
 
 use crate::{
     api::wired::ecs::{ComponentWrite, WiredEcsData},
@@ -46,15 +46,12 @@ impl RuntimeData {
     }
 }
 
-impl IoView for StoreState {
-    fn table(&mut self) -> &mut ResourceTable {
-        &mut self.resource_table
-    }
-}
-
 impl WasiView for StoreState {
-    fn ctx(&mut self) -> &mut WasiCtx {
-        &mut self.wasi
+    fn ctx(&mut self) -> WasiCtxView<'_> {
+        WasiCtxView {
+            ctx: &mut self.wasi,
+            table: &mut self.resource_table,
+        }
     }
 }
 

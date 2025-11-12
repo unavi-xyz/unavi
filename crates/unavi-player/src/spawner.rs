@@ -1,9 +1,10 @@
 use avian3d::prelude::{Collider, LockedAxes, RigidBody};
 use bevy::{
-    core_pipeline::{auto_exposure::AutoExposure, bloom::Bloom},
+    camera::{Exposure, visibility::RenderLayers},
     pbr::{Atmosphere, AtmosphereSettings},
+    post_process::{auto_exposure::AutoExposure, bloom::Bloom},
     prelude::*,
-    render::{camera::Exposure, view::RenderLayers},
+    render::view::Hdr,
 };
 use bevy_tnua::prelude::TnuaController;
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
@@ -57,14 +58,12 @@ impl PlayerSpawner {
         let camera = commands
             .spawn((
                 PlayerCamera,
-                Camera {
-                    hdr: true,
-                    ..Default::default()
-                },
+                Camera::default(),
+                Hdr,
                 Atmosphere::EARTH,
                 AtmosphereSettings::default(),
                 AutoExposure {
-                    range: -4.0..=8.0,
+                    range: -3.0..=6.0,
                     ..Default::default()
                 },
                 Exposure::SUNLIGHT,
@@ -96,7 +95,7 @@ impl PlayerSpawner {
             .add_child(camera)
             .id();
 
-        let vrm_path = self.vrm_asset.as_deref().unwrap_or(DEFAULT_VRM);
+        let vrm_path = self.vrm_asset.as_deref().unwrap_or(DEFAULT_VRM).to_string();
         let vrm_handle = asset_server.load(vrm_path);
         let animations = default_character_animations(asset_server);
 

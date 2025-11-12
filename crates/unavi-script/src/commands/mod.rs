@@ -285,8 +285,8 @@ pub fn apply_wasm_commands(
     }
 }
 
-pub fn cleanup_vobjects(trigger: Trigger<OnRemove, LoadedScript>, mut commands: Commands) {
-    let ent = trigger.target();
+pub fn cleanup_vobjects(trigger: On<Remove, LoadedScript>, mut commands: Commands) {
+    let ent = trigger.entity;
     info!("Cleaning up vobjects for {ent}");
     commands.entity(ent).despawn_related::<VObjects>();
 }

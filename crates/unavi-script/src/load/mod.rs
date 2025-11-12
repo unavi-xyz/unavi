@@ -6,7 +6,7 @@ use bevy_async_task::TaskPool;
 use log::{ScriptStderr, ScriptStdout};
 use state::{RuntimeData, RuntimeDataResult, StoreState};
 use wasmtime::{AsContextMut, Store, component::Linker};
-use wasmtime_wasi::p2::WasiCtxBuilder;
+use wasmtime_wasi::WasiCtxBuilder;
 
 use crate::{
     ScriptEngine, WasmBinary, WasmEngine,
@@ -25,10 +25,15 @@ pub mod bindings {
     wasmtime::component::bindgen!({
         world: "guest",
         path: "../../protocol/wit/wired-ecs",
-        async: true,
         with: {
             "wired:ecs/types": crate::api::wired::ecs::wired::ecs::types,
         },
+        imports: {
+            default: async,
+        },
+        exports: {
+            default: async,
+        }
     });
 }
 

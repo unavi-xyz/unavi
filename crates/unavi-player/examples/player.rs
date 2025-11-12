@@ -5,13 +5,16 @@ use avian3d::{
     prelude::{Collider, PhysicsDebugPlugin, RigidBody},
 };
 use bevy::{
+    camera::{Exposure, visibility::RenderLayers},
     color::palettes::tailwind::{
         BLUE_400, EMERALD_400, ORANGE_400, PURPLE_400, RED_400, YELLOW_400,
     },
-    core_pipeline::{auto_exposure::AutoExposure, bloom::Bloom},
-    pbr::{Atmosphere, AtmosphereSettings, CascadeShadowConfigBuilder, light_consts::lux},
+    light::{CascadeShadowConfigBuilder, SunDisk, light_consts::lux},
+    mesh::VertexAttributeValues,
+    pbr::{Atmosphere, AtmosphereSettings},
+    post_process::{auto_exposure::AutoExposure, bloom::Bloom},
     prelude::*,
-    render::{camera::Exposure, mesh::VertexAttributeValues, view::RenderLayers},
+    render::view::Hdr,
 };
 use bevy_rich_text3d::{Text3d, Text3dPlugin, Text3dStyling, TextAtlas};
 use bevy_vrm::first_person::{FirstPersonFlag, RENDER_LAYERS};
@@ -26,7 +29,7 @@ fn main() {
                 ..Default::default()
             }),
             PhysicsPlugins::default(),
-            PhysicsDebugPlugin::default(),
+            PhysicsDebugPlugin,
             InputPlugin,
             PlayerPlugin,
             Text3dPlugin {
@@ -177,16 +180,16 @@ fn setup_scene(
     commands.spawn((
         SkyCamera,
         Camera {
-            hdr: true,
             is_active: false,
             ..Default::default()
         },
+        Hdr,
         Camera3d::default(),
         Transform::from_translation(Vec3::splat(8.0)).looking_at(Vec3::ZERO, Vec3::Y),
         Atmosphere::EARTH,
         AtmosphereSettings::default(),
         AutoExposure {
-            range: -4.0..=8.0,
+            range: -3.0..=6.0,
             ..Default::default()
         },
         Exposure::SUNLIGHT,
@@ -206,6 +209,7 @@ fn setup_scene(
             shadows_enabled: true,
             ..Default::default()
         },
+        SunDisk::EARTH,
         Transform::from_xyz(1.0, 0.4, 0.1).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 

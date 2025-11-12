@@ -14,7 +14,7 @@ fn main() {
         .run();
 }
 
-fn setup(mut events: EventWriter<LoadScriptAsset>) {
+fn setup(mut events: MessageWriter<LoadScriptAsset>) {
     events.write(LoadScriptAsset {
         namespace: "example",
         package: "shapes",

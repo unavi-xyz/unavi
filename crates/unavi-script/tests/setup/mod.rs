@@ -24,12 +24,15 @@ pub fn setup_test_app(package: &'static str) -> App {
     ))
     .insert_resource(Time::<Virtual>::from_max_delta(TICK))
     .insert_resource(Time::<Fixed>::from_duration(TICK))
-    .add_systems(Startup, move |mut events: EventWriter<LoadScriptAsset>| {
-        events.write(LoadScriptAsset {
-            namespace: "test",
-            package,
-        });
-    });
+    .add_systems(
+        Startup,
+        move |mut events: MessageWriter<LoadScriptAsset>| {
+            events.write(LoadScriptAsset {
+                namespace: "test",
+                package,
+            });
+        },
+    );
 
     app
 }

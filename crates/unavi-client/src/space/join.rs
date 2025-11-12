@@ -22,7 +22,7 @@ pub struct ConnectInfo {
     pub space_id: String,
 }
 
-pub fn handle_join_space(trigger: Trigger<JoinSpace>) {
+pub fn handle_join_space(trigger: On<JoinSpace>) {
     let event = trigger.0.clone();
 
     let pool = TaskPool::get_thread_executor();

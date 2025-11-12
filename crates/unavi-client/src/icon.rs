@@ -1,14 +1,16 @@
 use anyhow::Result;
-use bevy::{prelude::*, winit::WinitWindows};
+use bevy::winit::WINIT_WINDOWS;
 use winit::window::Icon;
 
 use crate::images_dir;
 
-pub fn set_window_icon(windows: NonSend<WinitWindows>) {
+pub fn set_window_icon() {
     if let Ok(icon) = try_get_icon() {
-        for window in windows.windows.values() {
-            window.set_window_icon(Some(icon.clone()));
-        }
+        WINIT_WINDOWS.with_borrow(|windows| {
+            for window in windows.windows.values() {
+                window.set_window_icon(Some(icon.clone()));
+            }
+        });
     }
 }
 

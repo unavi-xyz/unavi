@@ -1,4 +1,10 @@
-use std::sync::Arc;
+use std::{
+    collections::HashMap,
+    sync::{
+        Arc,
+        atomic::{AtomicU64, Ordering},
+    },
+};
 
 use dwn::{Actor, Dwn, document_key::DocumentKey, stores::NativeDbStore};
 use futures::StreamExt;
@@ -8,32 +14,35 @@ use tarpc::{
 };
 use tokio::io::AsyncReadExt;
 use tokio_serde::formats::Bincode;
-use tracing::{error, info};
-use unavi_server_service::{
-    ControlService,
-    from_client::{StreamHeader, TransformMeta},
-};
+use tracing::error;
+use unavi_server_service::{ControlService, from_client::StreamHeader};
 use wtransport::{RecvStream, endpoint::IncomingSession, stream::BiStream};
 use xdid::{
     core::{did::Did, did_url::DidUrl},
     methods::{key::p256::P256KeyPair, web::reqwest::Url},
 };
 
-use crate::{DIRS, wt_server::control::ControlServer};
+use crate::{DIRS, session::control::ControlServer};
 
 mod control;
 mod init_space_host;
+mod transform;
+mod voice;
 
 pub const KEY_FRAGMENT: &str = "owner";
 
 #[derive(Clone)]
-pub struct WtServer {
+pub struct SessionSpawner {
     pub actor: Actor,
     pub domain: String,
+    player_id: Arc<AtomicU64>,
+    players: Arc<HashMap<u64, Player>>,
 }
 
+struct Player {}
+
 #[derive(Clone)]
-pub struct WtServerOptions {
+pub struct SpawnerOptions {
     pub did: Did,
     pub domain: String,
     pub in_memory: bool,
@@ -41,8 +50,8 @@ pub struct WtServerOptions {
     pub vc: P256KeyPair,
 }
 
-impl WtServer {
-    pub async fn new(opts: WtServerOptions) -> anyhow::Result<Self> {
+impl SessionSpawner {
+    pub async fn new(opts: SpawnerOptions) -> anyhow::Result<Self> {
         let store = if opts.in_memory {
             NativeDbStore::new_in_memory()?
         } else {
@@ -73,10 +82,12 @@ impl WtServer {
         Ok(Self {
             actor,
             domain: opts.domain,
+            player_id: Arc::new(AtomicU64::default()),
+            players: Arc::new(HashMap::default()),
         })
     }
 
-    pub async fn handle(self, incoming: IncomingSession) -> anyhow::Result<()> {
+    pub async fn handle_session(self, incoming: IncomingSession) -> anyhow::Result<()> {
         let req = incoming.await?;
         let con = req.accept().await?;
 
@@ -86,7 +97,8 @@ impl WtServer {
         let transport = tarpc::serde_transport::new(framed, Bincode::default());
         let channel = BaseChannel::with_defaults(transport).max_concurrent_requests(2);
 
-        let server = ControlServer::new(self.actor.clone());
+        let player_id = self.player_id.fetch_add(1, Ordering::AcqRel);
+        let server = ControlServer::new(self.actor.clone(), player_id);
 
         tokio::spawn(channel.execute(server.serve()).for_each(|res| async move {
             tokio::spawn(res);
@@ -114,32 +126,12 @@ async fn handle_stream(mut stream: RecvStream) -> anyhow::Result<()> {
 
     match header {
         StreamHeader::Transform => {
-            handle_transform_stream(stream).await?;
+            transform::handle_transform_stream(stream).await?;
         }
         StreamHeader::Voice => {
-            handle_voice_stream(stream).await?;
+            voice::handle_voice_stream(stream).await?;
         }
     }
 
-    Ok(())
-}
-
-async fn handle_transform_stream(mut stream: RecvStream) -> anyhow::Result<()> {
-    let meta_len = stream.read_u16().await? as usize;
-
-    let mut meta_buf = vec![0; meta_len];
-    stream.read_exact(&mut meta_buf).await?;
-
-    let (meta, _) = bincode::serde::decode_from_slice::<TransformMeta, _>(
-        &meta_buf,
-        bincode::config::standard(),
-    )?;
-
-    info!("Got transform stream: {meta:?}");
-
-    Ok(())
-}
-
-async fn handle_voice_stream(_stream: RecvStream) -> anyhow::Result<()> {
     Ok(())
 }

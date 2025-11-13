@@ -9,10 +9,8 @@ pub async fn handle_transform_stream(mut stream: RecvStream) -> anyhow::Result<(
     let mut meta_buf = vec![0; meta_len];
     stream.read_exact(&mut meta_buf).await?;
 
-    let (meta, _) = bincode::serde::decode_from_slice::<TransformMeta, _>(
-        &meta_buf,
-        bincode::config::standard(),
-    )?;
+    let (meta, _) =
+        bincode::decode_from_slice::<TransformMeta, _>(&meta_buf, bincode::config::standard())?;
 
     info!("Got transform stream: {meta:?}");
 

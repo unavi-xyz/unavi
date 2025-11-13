@@ -10,9 +10,10 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace  = true
-bincode.workspace = true
-semver            = { features = ["serde"], workspace = true }
-serde.workspace   = true
-tarpc.workspace   = true
-xdid.workspace    = true
+anyhow.workspace    = true
+bincode.workspace   = true
+semver              = { features = ["serde"], workspace = true }
+serde.workspace     = true
+serde_vrm.workspace = true
+tarpc.workspace     = true
+xdid.workspace      = true

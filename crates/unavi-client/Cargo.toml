@@ -34,7 +34,7 @@ reqwest = { default-features = false, features = [
 serde.workspace = true
 serde_json.workspace = true
 tarpc = { features = ["serde-transport"], workspace = true }
-tokio.workspace = true
+tokio = { features = ["rt", "rt-multi-thread"], workspace = true }
 tokio-serde = { features = ["bincode"], workspace = true }
 unavi-constants.path = "../unavi-constants"
 unavi-input.path = "../unavi-input"

@@ -16,7 +16,9 @@ pub struct SpacePlugin;
 
 impl Plugin for SpacePlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(handle_space_add)
+        app.init_resource::<connect::HostConnections>()
+            .init_resource::<connect::SpaceSessions>()
+            .add_observer(handle_space_add)
             .add_observer(insert_connect_info)
             .add_observer(connect::handle_space_connect)
             .add_observer(connect::handle_space_disconnect)

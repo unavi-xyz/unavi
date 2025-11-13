@@ -15,9 +15,11 @@ use tarpc::{
 };
 use tokio::{io::AsyncReadExt, sync::RwLock};
 use tokio_serde::formats::Bincode;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use unavi_server_service::{ControlService, TrackingPFrame, from_client::StreamHeader};
-use wtransport::{Connection, RecvStream, endpoint::IncomingSession, stream::BiStream};
+use wtransport::{
+    Connection, RecvStream, endpoint::IncomingSession, error::ConnectionError, stream::BiStream,
+};
 use xdid::{
     core::{did::Did, did_url::DidUrl},
     methods::{key::p256::P256KeyPair, web::reqwest::Url},
@@ -152,9 +154,19 @@ impl SessionSpawner {
                     });
                 }
                 Err(e) => {
+                    match e {
+                        ConnectionError::LocallyClosed | ConnectionError::TimedOut => {
+                            info!("Session connection ended: {e}");
+                        }
+                        e => {
+                            warn!("Session connection ended: {e}");
+                        }
+                    }
+
                     let mut players = self.ctx.players.write().await;
                     players.remove(&player_id);
-                    info!("Session connection ended: {e}");
+
+                    break Ok(());
                 }
             }
         }

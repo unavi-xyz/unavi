@@ -10,9 +10,9 @@ use tarpc::{
     tokio_serde::formats::Bincode,
     tokio_util::codec::{Framed, LengthDelimitedCodec},
 };
-use tokio::sync::RwLock;
+use tokio::{sync::RwLock, task::AbortHandle};
 use unavi_server_service::ControlServiceClient;
-use wtransport::{ClientConfig, Connection, Endpoint, stream::BiStream};
+use wtransport::{ClientConfig, Connection, Endpoint, VarInt, stream::BiStream};
 
 use crate::{
     networking::handle_space_session,
@@ -27,19 +27,20 @@ pub struct HostConnection {
     pub control: ControlServiceClient,
 }
 
-pub fn handle_space_disconnect(_event: On<Remove, ConnectInfo>) {
-    // TODO
-}
+#[derive(Resource, Default)]
+pub struct HostConnections(Arc<RwLock<HashMap<String, HostConnection>>>);
+
+#[derive(Resource, Default)]
+pub struct SpaceSessions(Arc<RwLock<HashMap<String, AbortHandle>>>);
 
 pub fn handle_space_connect(
     event: On<Add, ConnectInfo>,
     spaces: Query<(&Space, &ConnectInfo)>,
-    connections: Local<Arc<RwLock<HashMap<String, HostConnection>>>>,
+    connections: Res<HostConnections>,
+    sessions: Res<SpaceSessions>,
     initiated: Local<Arc<RwLock<HashSet<String>>>>,
 ) -> Result {
-    let entity = event.entity;
-
-    let Ok((space, info)) = spaces.get(entity) else {
+    let Ok((space, info)) = spaces.get(event.entity) else {
         Err(anyhow::anyhow!("space not found"))?
     };
     let info = info.clone();
@@ -47,10 +48,11 @@ pub fn handle_space_connect(
     let space_id = parse_record_ref_url(&space.url)?.to_string();
     let space_url = space.url.clone();
 
-    let connections = connections.clone();
+    let connections = connections.0.clone();
     let initiated = initiated.clone();
-    let pool = TaskPool::get_thread_executor();
+    let sessions = sessions.0.clone();
 
+    let pool = TaskPool::get_thread_executor();
     pool.spawn(async move {
         let rt = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
@@ -58,9 +60,10 @@ pub fn handle_space_connect(
             .expect("build tokio runtime");
 
         let span = info_span!("connection", url = connect_url);
+        let space_url_str = space_url.to_string();
 
-        let _task = rt
-            .spawn(async move {
+        let task = rt.spawn(
+            async move {
                 loop {
                     let connection = if let Some(c) = connections.read().await.get(&connect_url) {
                         c.clone()
@@ -91,8 +94,72 @@ pub fn handle_space_connect(
                         tokio::time::sleep(Duration::from_secs(15)).await;
                     }
                 }
-            })
-            .instrument(span);
+            }
+            .instrument(span),
+        );
+
+        let session_handle = task.abort_handle();
+        sessions.write().await.insert(space_url_str, session_handle);
+
+        let Err(e) = task.await;
+        error!("Task join error: {e:?}");
+    })
+    .detach();
+
+    Ok(())
+}
+
+pub fn handle_space_disconnect(
+    event: On<Remove, ConnectInfo>,
+    connections: Res<HostConnections>,
+    sessions: Res<SpaceSessions>,
+    spaces: Query<(Entity, &Space, &ConnectInfo), With<Space>>,
+) -> Result {
+    let Ok((_, space, info)) = spaces.get(event.entity) else {
+        Err(anyhow::anyhow!("space not found"))?
+    };
+
+    let mut other_spaces_found = 0;
+
+    for (other_entity, _, other_info) in spaces.iter() {
+        if other_entity == event.entity {
+            continue;
+        }
+        if other_info.connect_url != info.connect_url {
+            continue;
+        }
+        other_spaces_found += 1;
+    }
+
+    let connect_url = info.connect_url.to_string();
+    let connections = connections.0.clone();
+    let sessions = sessions.0.clone();
+    let space_url = space.url.to_string();
+
+    let pool = TaskPool::get_thread_executor();
+    pool.spawn(async move {
+        let rt = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .expect("build tokio runtime");
+
+        let task = rt.spawn(async move {
+            // End space session.
+            if let Some(handle) = sessions.write().await.remove(&space_url) {
+                handle.abort();
+            }
+
+            // Disconnect from host, if no other spaces using the connection.
+            if other_spaces_found == 0
+                && let Some(connection) = connections.write().await.remove(&connect_url)
+            {
+                connection.connection.close(VarInt::from_u32(200), &[]);
+            }
+        });
+
+        if let Err(e) = task.await {
+            error!("Task join error: {e:?}");
+        }
     })
     .detach();
 

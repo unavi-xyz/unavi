@@ -7,9 +7,9 @@ use unavi_constants::{
 };
 use xdid::methods::web::reqwest::Url;
 
-use crate::wt_server::WtServer;
+use crate::session::SessionSpawner;
 
-impl WtServer {
+impl SessionSpawner {
     pub async fn init_space_host(&self, cert_hash: String) -> anyhow::Result<()> {
         let host_def = serde_json::from_slice(SPACE_HOST_DEFINITION)?;
 

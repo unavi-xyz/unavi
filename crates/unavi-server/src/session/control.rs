@@ -9,19 +9,21 @@ use unavi_server_service::{ControlService, Player, RpcResult};
 #[derive(Clone)]
 pub struct ControlServer {
     actor: Actor,
+    player_id: u64,
     spaces: Arc<Mutex<HashSet<String>>>,
 }
 
 impl ControlServer {
-    pub fn new(actor: Actor) -> Self {
+    pub fn new(actor: Actor, player_id: u64) -> Self {
         Self {
             actor,
+            player_id,
             spaces: Default::default(),
         }
     }
 }
 
-const MAX_SPACES: usize = 16;
+const MAX_SPACES_PER_PLAYER: usize = 16;
 const MAX_SPACE_ID_LEN: usize = 128;
 
 impl ControlService for ControlServer {
@@ -55,7 +57,7 @@ impl ControlService for ControlServer {
         }
 
         let mut spaces = self.spaces.lock().await;
-        if spaces.len() > MAX_SPACES {
+        if spaces.len() > MAX_SPACES_PER_PLAYER {
             return Err("joined too many spaces".to_string());
         }
         spaces.insert(id);

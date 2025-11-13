@@ -21,10 +21,10 @@ use xdid::{
     },
 };
 
-use crate::wt_server::{KEY_FRAGMENT, WtServer, WtServerOptions};
+use crate::session::{KEY_FRAGMENT, SessionSpawner, SpawnerOptions};
 
 mod key_pair;
-mod wt_server;
+mod session;
 
 pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
     let dirs = ProjectDirs::from("", "UNAVI", "unavi-server").expect("project dirs");
@@ -65,7 +65,7 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
 
     let vc = key_pair::get_or_create_key(opts.in_memory)?;
 
-    let wt_opts = WtServerOptions {
+    let spawner_opts = SpawnerOptions {
         did: did.clone(),
         domain,
         in_memory: opts.in_memory,
@@ -78,16 +78,16 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
         tokio::time::sleep(Duration::from_secs(1)).await;
 
         loop {
-            let server = match WtServer::new(wt_opts.clone()).await {
+            let spawner = match SessionSpawner::new(spawner_opts.clone()).await {
                 Ok(s) => s,
                 Err(e) => {
-                    error!("Failed to crate sever handler: {e:?}");
+                    error!("Failed to create session spawner: {e:?}");
                     tokio::time::sleep(Duration::from_secs(30)).await;
                     continue;
                 }
             };
 
-            if let Err(e) = server.init_space_host(cert_hash.to_string()).await {
+            if let Err(e) = spawner.init_space_host(cert_hash.to_string()).await {
                 error!("Failed to init space host: {e:?}");
                 tokio::time::sleep(Duration::from_secs(30)).await;
                 continue;
@@ -97,9 +97,9 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
             loop {
                 let incoming = endpoint.accept().await;
                 info!("Incoming session");
-                let server = server.clone();
+                let spawner = spawner.clone();
                 tokio::spawn(async move {
-                    if let Err(e) = server.handle(incoming).await {
+                    if let Err(e) = spawner.handle_session(incoming).await {
                         error!("Handling error: {e:?}");
                     }
                 });

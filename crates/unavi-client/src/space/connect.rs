@@ -10,7 +10,7 @@ use unavi_server_service::ControlServiceClient;
 use wtransport::{ClientConfig, Endpoint, stream::BiStream};
 
 use crate::{
-    networking::{SpaceConnection, handle_space_connection},
+    networking::{SpaceSession, handle_space_session},
     space::{Space, connect_info::ConnectInfo, record_ref_url::parse_record_ref_url},
 };
 
@@ -25,6 +25,7 @@ pub fn handle_space_connect(
     };
     let info = info.clone();
     let space_id = parse_record_ref_url(&space.url)?.to_string();
+    let space_url = space.url.clone();
 
     let pool = TaskPool::get_thread_executor();
 
@@ -34,24 +35,23 @@ pub fn handle_space_connect(
             .build()
             .expect("build tokio runtime");
 
-        let task = rt.spawn(async move {
-            let connect_span = info_span!("connect", url = info.connect_url.to_string());
+        let span = info_span!("session", url = info.connect_url.to_string());
 
-            let space = match connect_to_space(info, &space_id)
-                .instrument(connect_span)
-                .await
-            {
-                Ok(w) => w,
-                Err(e) => {
-                    error!("Error connecting to space server: {e:?}");
-                    return;
+        let task = rt
+            .spawn(async move {
+                let session = match connect_to_space(info).await {
+                    Ok(w) => w,
+                    Err(e) => {
+                        error!("Error connecting to space server: {e:?}");
+                        return;
+                    }
+                };
+
+                if let Err(e) = handle_space_session(session, space_id, space_url).await {
+                    error!("Error handling space connection: {e:?}");
                 }
-            };
-
-            if let Err(e) = handle_space_connection(space).await {
-                error!("Error handling space connection: {e:?}");
-            }
-        });
+            })
+            .instrument(span);
 
         if let Err(e) = task.await {
             error!("Task join error: {e:?}");
@@ -67,8 +67,7 @@ async fn connect_to_space(
         connect_url,
         cert_hash,
     }: ConnectInfo,
-    space_id: &str,
-) -> anyhow::Result<SpaceConnection> {
+) -> anyhow::Result<SpaceSession> {
     let cfg = ClientConfig::builder()
         .with_bind_default()
         .with_server_certificate_hashes(vec![cert_hash])
@@ -91,15 +90,8 @@ async fn connect_to_space(
 
     let control = control_service.spawn();
 
-    control
-        .join_space(tarpc::context::current(), space_id.to_string())
-        .await?
-        .map_err(|e| anyhow::anyhow!("rpc error: {e}"))?;
-
-    info!("Joined space {space_id}@{connect_url}");
-
-    Ok(SpaceConnection {
+    Ok(SpaceSession {
         connection,
-        _control: control,
+        control,
     })
 }

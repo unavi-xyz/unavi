@@ -11340,6 +11340,7 @@ dependencies = [
  "anyhow",
  "avian3d",
  "bevy",
+ "bevy_async_task",
  "bevy_vrm",
  "bincode 2.0.1",
  "directories",

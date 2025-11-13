@@ -20,7 +20,7 @@ pub fn handle_space_connect(
     event: On<Add, ConnectInfo>,
     spaces: Query<(&Space, &ConnectInfo)>,
 ) -> Result {
-    let entity = event.event().entity;
+    let entity = event.entity;
 
     let Ok((space, info)) = spaces.get(entity) else {
         Err(anyhow::anyhow!("space not found"))?

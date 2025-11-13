@@ -1,4 +1,5 @@
 use bevy::{ecs::world::CommandQueue, prelude::*, tasks::TaskPool};
+use unavi_player::{LocalPlayer, PlayerSpawner};
 use xdid::core::did_url::DidUrl;
 
 use crate::{
@@ -15,13 +16,22 @@ pub mod transform;
 /// Upon add, the space will be fetched and joined.
 #[derive(Component)]
 pub struct Space {
-    pub url: DidUrl,
+    url: DidUrl,
+}
+
+impl Space {
+    pub fn new(url: DidUrl) -> Self {
+        Self { url }
+    }
 }
 
 pub fn handle_space_add(
-    on: On<Add, Space>,
+    event: On<Add, Space>,
+    asset_server: Res<AssetServer>,
     actor: Res<LocalActor>,
     spaces: Query<&Space>,
+    local_players: Query<Entity, With<LocalPlayer>>,
+    mut commands: Commands,
 ) -> Result {
     let pool = TaskPool::get_thread_executor();
 
@@ -29,7 +39,7 @@ pub fn handle_space_add(
         Err(anyhow::anyhow!("actor not found"))?
     };
 
-    let entity = on.event().entity;
+    let entity = event.entity;
 
     let Ok(space) = spaces.get(entity) else {
         Err(anyhow::anyhow!("space not found"))?
@@ -69,6 +79,10 @@ pub fn handle_space_add(
         }
     })
     .detach();
+
+    if local_players.is_empty() {
+        PlayerSpawner::default().spawn(&mut commands, &asset_server);
+    }
 
     Ok(())
 }

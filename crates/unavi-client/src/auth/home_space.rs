@@ -104,9 +104,9 @@ pub async fn join_home_space(actor: Actor) -> anyhow::Result<()> {
     };
 
     let mut commands = CommandQueue::default();
-    commands.push(bevy::ecs::system::command::spawn_batch([Space {
-        url: space_url,
-    }]));
+    commands.push(bevy::ecs::system::command::spawn_batch([Space::new(
+        space_url,
+    )]));
     ASYNC_COMMAND_QUEUE.0.send(commands)?;
 
     Ok(())

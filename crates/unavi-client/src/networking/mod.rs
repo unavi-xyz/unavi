@@ -1,23 +1,63 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
 use tokio::io::AsyncReadExt;
 use unavi_server_service::{ControlServiceClient, from_server::StreamHeader};
 use wtransport::{Connection, RecvStream};
+use xdid::core::did_url::DidUrl;
 
+use crate::networking::tickrate::{SetTickrate, TICKRATE_QUEUE};
+
+mod publish;
+mod tickrate;
 mod transform;
 mod voice;
 
 pub struct NetworkingPlugin;
 
 impl Plugin for NetworkingPlugin {
-    fn build(&self, _app: &mut App) {}
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            FixedUpdate,
+            (
+                publish::publish_transform_data,
+                tickrate::set_space_tickrates,
+            ),
+        );
+    }
 }
 
-pub struct SpaceConnection {
+pub struct SpaceSession {
     pub connection: Connection,
-    pub _control: ControlServiceClient,
+    pub control: ControlServiceClient,
 }
 
-pub async fn handle_space_connection(space: SpaceConnection) -> anyhow::Result<()> {
+const MAX_TICKRATE: u64 = 1_000;
+const MIN_TICKRATE: u64 = 25;
+
+pub async fn handle_space_session(
+    space: SpaceSession,
+    space_id: String,
+    space_url: DidUrl,
+) -> anyhow::Result<()> {
+    let tickrate_ms = space
+        .control
+        .tickrate_ms(tarpc::context::current())
+        .await?
+        .clamp(MIN_TICKRATE, MAX_TICKRATE);
+
+    TICKRATE_QUEUE.0.send(SetTickrate {
+        space_url,
+        tickrate: Duration::from_millis(tickrate_ms),
+    })?;
+
+    space
+        .control
+        .join_space(tarpc::context::current(), space_id.clone())
+        .await?
+        .map_err(|e| anyhow::anyhow!("rpc error: {e}"))?;
+    info!("Joined space {space_id}");
+
     loop {
         let stream = space.connection.accept_uni().await?;
 

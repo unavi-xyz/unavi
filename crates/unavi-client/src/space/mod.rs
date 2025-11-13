@@ -24,7 +24,7 @@ impl Plugin for SpacePlugin {
 /// Upon add, the space will be fetched and joined.
 #[derive(Component)]
 pub struct Space {
-    url: DidUrl,
+    pub url: DidUrl,
 }
 
 impl Space {

@@ -7,7 +7,7 @@ pub mod publish;
 mod transform;
 mod voice;
 
-pub async fn handle_stream(mut stream: RecvStream) -> anyhow::Result<()> {
+pub async fn recv_stream(mut stream: RecvStream) -> anyhow::Result<()> {
     let header_len = stream.read_u16().await? as usize;
 
     let mut header_buf = vec![0; header_len];
@@ -17,10 +17,10 @@ pub async fn handle_stream(mut stream: RecvStream) -> anyhow::Result<()> {
 
     match header {
         StreamHeader::Transform => {
-            transform::handle_transform_stream(stream).await?;
+            transform::recv_transform_stream(stream).await?;
         }
         StreamHeader::Voice => {
-            voice::handle_voice_stream(stream).await?;
+            voice::recv_voice_stream(stream).await?;
         }
     }
 

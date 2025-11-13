@@ -7,7 +7,6 @@ use std::{
 };
 
 use bevy::prelude::*;
-use tokio::time::{MissedTickBehavior, interval};
 use xdid::core::did_url::DidUrl;
 
 use crate::space::{Space, stream::publish::PublishInterval};
@@ -33,12 +32,10 @@ pub fn set_space_tickrates(spaces: Query<(Entity, &Space)>, mut commands: Comman
                 continue;
             }
 
-            let mut interval = interval(msg.tickrate);
-            interval.set_missed_tick_behavior(MissedTickBehavior::Delay);
-
-            commands
-                .entity(entity)
-                .insert(PublishInterval(Arc::new(tokio::sync::Mutex::new(interval))));
+            commands.entity(entity).insert(PublishInterval {
+                last_tick: Duration::default(),
+                tickrate: msg.tickrate,
+            });
             break;
         }
     }

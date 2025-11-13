@@ -16,7 +16,6 @@ bevy-tnua               = "0.26.0"
 bevy-tnua-avian3d       = "0.8.0"
 bevy_gltf_kun.workspace = true
 bevy_vrm.workspace      = true
-gltf_kun.workspace      = true
 paste                   = "1.0.15"
 unavi-input.path        = "../unavi-input"
 

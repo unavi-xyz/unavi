@@ -8,7 +8,6 @@ pub mod asset_download;
 mod async_commands;
 mod auth;
 mod icon;
-mod networking;
 mod scene;
 mod space;
 
@@ -65,7 +64,6 @@ impl Plugin for UnaviPlugin {
             unavi_input::InputPlugin,
             unavi_player::PlayerPlugin,
             space::SpacePlugin,
-            networking::NetworkingPlugin,
         ))
         .insert_resource(LocalDwn(dwn))
         .init_resource::<auth::LocalActor>()

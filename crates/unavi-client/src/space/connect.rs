@@ -13,10 +13,13 @@ use tarpc::{
 use tokio::{sync::RwLock, task::AbortHandle};
 use unavi_server_service::ControlServiceClient;
 use wtransport::{ClientConfig, Connection, Endpoint, VarInt, stream::BiStream};
+use xdid::core::did_url::DidUrl;
 
-use crate::{
-    networking::handle_space_session,
-    space::{Space, connect_info::ConnectInfo, record_ref_url::parse_record_ref_url},
+use crate::space::{
+    Space,
+    connect_info::ConnectInfo,
+    record_ref_url::parse_record_ref_url,
+    tickrate::{SetTickrate, TICKRATE_QUEUE},
 };
 
 /// Connection to a host server.
@@ -71,12 +74,32 @@ pub fn handle_space_connect(
                         tokio::time::sleep(Duration::from_secs(1)).await;
                         continue;
                     } else {
-                        match connect_to_space(info.clone()).await {
+                        match connect_to_host(info.clone()).await {
                             Ok(c) => {
+                                // Recieve and handle incoming streams.
+                                let con = c.connection.clone();
+                                tokio::spawn(async move {
+                                    loop {
+                                        let Ok(stream) = con.accept_uni().await else {
+                                            break;
+                                        };
+
+                                        tokio::spawn(async move {
+                                            if let Err(e) =
+                                                super::stream::handle_stream(stream).await
+                                            {
+                                                error!("Error handling stream: {e:?}");
+                                            };
+                                        });
+                                    }
+                                });
+
+                                // Save the connection for re-use by other spaces.
                                 let mut initiated = initiated.write().await;
                                 let mut connections = connections.write().await;
                                 initiated.remove(&connect_url);
                                 connections.insert(connect_url.clone(), c.clone());
+
                                 c
                             }
                             Err(e) => {
@@ -105,6 +128,68 @@ pub fn handle_space_connect(
         error!("Task join error: {e:?}");
     })
     .detach();
+
+    Ok(())
+}
+
+async fn connect_to_host(
+    ConnectInfo {
+        connect_url,
+        cert_hash,
+    }: ConnectInfo,
+) -> anyhow::Result<HostConnection> {
+    let cfg = ClientConfig::builder()
+        .with_bind_default()
+        .with_server_certificate_hashes(vec![cert_hash])
+        .max_idle_timeout(Some(Duration::from_mins(1)))?
+        .keep_alive_interval(Some(Duration::from_secs(15)))
+        .build();
+
+    let endpoint = Endpoint::client(cfg)?;
+
+    let url = connect_url.to_string().replace("http://", "https://");
+    let connection = endpoint.connect(url).await?;
+
+    let stream = connection.open_bi().await?.await?;
+
+    let bi_stream = BiStream::join(stream);
+    let framed = Framed::new(bi_stream, LengthDelimitedCodec::default());
+    let transport = tarpc::serde_transport::new(framed, Bincode::default());
+
+    let control_service = ControlServiceClient::new(Config::default(), transport);
+
+    let control = control_service.spawn();
+
+    Ok(HostConnection {
+        connection,
+        control,
+    })
+}
+
+const MAX_TICKRATE: u64 = 1_000;
+const MIN_TICKRATE: u64 = 25;
+
+async fn handle_space_session(
+    host: HostConnection,
+    space_id: String,
+    space_url: DidUrl,
+) -> anyhow::Result<()> {
+    let tickrate_ms = host
+        .control
+        .tickrate_ms(tarpc::context::current())
+        .await?
+        .clamp(MIN_TICKRATE, MAX_TICKRATE);
+
+    TICKRATE_QUEUE.0.send(SetTickrate {
+        space_url,
+        tickrate: Duration::from_millis(tickrate_ms),
+    })?;
+
+    host.control
+        .join_space(tarpc::context::current(), space_id.clone())
+        .await?
+        .map_err(|e| anyhow::anyhow!("rpc error: {e}"))?;
+    info!("Joined space {space_id}");
 
     Ok(())
 }
@@ -164,38 +249,4 @@ pub fn handle_space_disconnect(
     .detach();
 
     Ok(())
-}
-
-async fn connect_to_space(
-    ConnectInfo {
-        connect_url,
-        cert_hash,
-    }: ConnectInfo,
-) -> anyhow::Result<HostConnection> {
-    let cfg = ClientConfig::builder()
-        .with_bind_default()
-        .with_server_certificate_hashes(vec![cert_hash])
-        .max_idle_timeout(Some(Duration::from_mins(1)))?
-        .keep_alive_interval(Some(Duration::from_secs(15)))
-        .build();
-
-    let endpoint = Endpoint::client(cfg)?;
-
-    let url = connect_url.to_string().replace("http://", "https://");
-    let connection = endpoint.connect(url).await?;
-
-    let stream = connection.open_bi().await?.await?;
-
-    let bi_stream = BiStream::join(stream);
-    let framed = Framed::new(bi_stream, LengthDelimitedCodec::default());
-    let transport = tarpc::serde_transport::new(framed, Bincode::default());
-
-    let control_service = ControlServiceClient::new(Config::default(), transport);
-
-    let control = control_service.spawn();
-
-    Ok(HostConnection {
-        connection,
-        control,
-    })
 }

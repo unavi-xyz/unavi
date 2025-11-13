@@ -9,11 +9,9 @@ use tarpc::{
 use unavi_server_service::ControlServiceClient;
 use wtransport::{ClientConfig, Endpoint, stream::BiStream};
 
-use crate::space::{
-    Space,
-    connect_info::ConnectInfo,
-    record_ref_url::parse_record_ref_url,
-    runtime::{SpaceConnection, handle_space_connection},
+use crate::{
+    networking::{SpaceConnection, handle_space_connection},
+    space::{Space, connect_info::ConnectInfo, record_ref_url::parse_record_ref_url},
 };
 
 pub fn handle_space_connect(

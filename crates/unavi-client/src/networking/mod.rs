@@ -1,10 +1,16 @@
 use bevy::prelude::*;
 use tokio::io::AsyncReadExt;
-use unavi_server_service::{
-    ControlServiceClient,
-    from_server::{StreamHeader, TransformMeta},
-};
+use unavi_server_service::{ControlServiceClient, from_server::StreamHeader};
 use wtransport::{Connection, RecvStream};
+
+mod transform;
+mod voice;
+
+pub struct NetworkingPlugin;
+
+impl Plugin for NetworkingPlugin {
+    fn build(&self, _app: &mut App) {}
+}
 
 pub struct SpaceConnection {
     pub connection: Connection,
@@ -33,32 +39,12 @@ async fn handle_stream(mut stream: RecvStream) -> anyhow::Result<()> {
 
     match header {
         StreamHeader::Transform => {
-            handle_transform_stream(stream).await?;
+            transform::handle_transform_stream(stream).await?;
         }
         StreamHeader::Voice => {
-            handle_voice_stream(stream).await?;
+            voice::handle_voice_stream(stream).await?;
         }
     }
 
-    Ok(())
-}
-
-async fn handle_transform_stream(mut stream: RecvStream) -> anyhow::Result<()> {
-    let meta_len = stream.read_u16().await? as usize;
-
-    let mut meta_buf = vec![0; meta_len];
-    stream.read_exact(&mut meta_buf).await?;
-
-    let (meta, _) = bincode::serde::decode_from_slice::<TransformMeta, _>(
-        &meta_buf,
-        bincode::config::standard(),
-    )?;
-
-    info!("Got transform stream: {meta:?}");
-
-    Ok(())
-}
-
-async fn handle_voice_stream(_stream: RecvStream) -> anyhow::Result<()> {
     Ok(())
 }

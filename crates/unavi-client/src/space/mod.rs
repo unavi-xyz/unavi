@@ -6,11 +6,19 @@ use crate::{
     async_commands::ASYNC_COMMAND_QUEUE, auth::LocalActor, space::connect_info::ConnectInfo,
 };
 
-pub mod connect;
+mod connect;
 mod connect_info;
 mod record_ref_url;
-pub mod runtime;
-pub mod transform;
+
+pub struct SpacePlugin;
+
+impl Plugin for SpacePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_observer(handle_space_add)
+            .add_observer(handle_connect_info_fetched)
+            .add_observer(connect::handle_space_connect);
+    }
+}
 
 /// Declarative space definition.
 /// Upon add, the space will be fetched and joined.

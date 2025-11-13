@@ -8,6 +8,7 @@ pub mod asset_download;
 mod async_commands;
 mod auth;
 mod icon;
+mod networking;
 mod scene;
 mod space;
 
@@ -63,13 +64,12 @@ impl Plugin for UnaviPlugin {
             avian3d::PhysicsPlugins::default(),
             unavi_input::InputPlugin,
             unavi_player::PlayerPlugin,
+            space::SpacePlugin,
+            networking::NetworkingPlugin,
         ))
         .insert_resource(LocalDwn(dwn))
         .init_resource::<auth::LocalActor>()
         .add_observer(auth::handle_login)
-        .add_observer(space::handle_space_add)
-        .add_observer(space::handle_connect_info_fetched)
-        .add_observer(space::connect::handle_space_connect)
         .add_systems(
             Startup,
             (
@@ -79,13 +79,7 @@ impl Plugin for UnaviPlugin {
                 scene::spawn_scene,
             ),
         )
-        .add_systems(
-            FixedUpdate,
-            (
-                async_commands::apply_async_commands,
-                space::transform::publish_user_transforms,
-            ),
-        );
+        .add_systems(FixedUpdate, async_commands::apply_async_commands);
     }
 }
 

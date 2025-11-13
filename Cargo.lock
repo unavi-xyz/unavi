@@ -11478,6 +11478,7 @@ dependencies = [
  "bincode 2.0.1",
  "semver",
  "serde",
+ "serde_vrm",
  "tarpc",
  "xdid",
 ]

@@ -13,7 +13,8 @@ impl SessionSpawner {
     pub async fn init_space_host(&self, cert_hash: String) -> anyhow::Result<()> {
         let host_def = serde_json::from_slice(SPACE_HOST_DEFINITION)?;
 
-        self.actor
+        self.ctx
+            .actor
             .configure_protocol(WP_VERSION, host_def)
             .process()
             .await?;
@@ -27,6 +28,7 @@ impl SessionSpawner {
         info!("Publishing connect URL: {connect_url}");
 
         let prev_connect_url = self
+            .ctx
             .actor
             .query()
             .protocol(SPACE_HOST_PROTOCOL.to_string())
@@ -46,6 +48,7 @@ impl SessionSpawner {
         });
 
         let mut builder = self
+            .ctx
             .actor
             .write()
             .protocol(

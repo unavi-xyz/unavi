@@ -1,9 +1,10 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     sync::{
         Arc,
         atomic::{AtomicU64, Ordering},
     },
+    time::Duration,
 };
 
 use dwn::{Actor, Dwn, document_key::DocumentKey, stores::NativeDbStore};
@@ -12,11 +13,11 @@ use tarpc::{
     server::{BaseChannel, Channel},
     tokio_util::codec::{Framed, LengthDelimitedCodec},
 };
-use tokio::io::AsyncReadExt;
+use tokio::{io::AsyncReadExt, sync::RwLock};
 use tokio_serde::formats::Bincode;
-use tracing::error;
-use unavi_server_service::{ControlService, from_client::StreamHeader};
-use wtransport::{RecvStream, endpoint::IncomingSession, stream::BiStream};
+use tracing::{error, info};
+use unavi_server_service::{ControlService, TrackingPFrame, from_client::StreamHeader};
+use wtransport::{Connection, RecvStream, endpoint::IncomingSession, stream::BiStream};
 use xdid::{
     core::{did::Did, did_url::DidUrl},
     methods::{key::p256::P256KeyPair, web::reqwest::Url},
@@ -31,15 +32,35 @@ mod voice;
 
 pub const KEY_FRAGMENT: &str = "owner";
 
+const TICKRATE: Duration = Duration::from_millis(50);
+
+type PlayerId = u64;
+type SpaceId = String;
+
 #[derive(Clone)]
 pub struct SessionSpawner {
-    pub actor: Actor,
+    ctx: ServerContext,
+    player_id_count: Arc<AtomicU64>,
     pub domain: String,
-    player_id: Arc<AtomicU64>,
-    players: Arc<HashMap<u64, Player>>,
 }
 
-struct Player {}
+#[derive(Clone)]
+struct ServerContext {
+    actor: Actor,
+    players: Arc<RwLock<HashMap<PlayerId, Player>>>,
+    spaces: Arc<RwLock<HashMap<SpaceId, Space>>>,
+}
+
+struct Player {
+    connection: Connection,
+    spaces: HashSet<String>,
+    latest_pframe: TrackingPFrame,
+}
+
+#[derive(Default)]
+struct Space {
+    players: HashSet<PlayerId>,
+}
 
 #[derive(Clone)]
 pub struct SpawnerOptions {
@@ -80,10 +101,13 @@ impl SessionSpawner {
         actor.sync().await?;
 
         Ok(Self {
-            actor,
+            ctx: ServerContext {
+                actor,
+                players: Default::default(),
+                spaces: Default::default(),
+            },
             domain: opts.domain,
-            player_id: Arc::new(AtomicU64::default()),
-            players: Arc::new(HashMap::default()),
+            player_id_count: Default::default(),
         })
     }
 
@@ -97,26 +121,51 @@ impl SessionSpawner {
         let transport = tarpc::serde_transport::new(framed, Bincode::default());
         let channel = BaseChannel::with_defaults(transport).max_concurrent_requests(2);
 
-        let player_id = self.player_id.fetch_add(1, Ordering::AcqRel);
-        let server = ControlServer::new(self.actor.clone(), player_id);
+        let player_id = self.player_id_count.fetch_add(1, Ordering::AcqRel);
+        let server = ControlServer::new(self.ctx.clone(), player_id);
 
         tokio::spawn(channel.execute(server.serve()).for_each(|res| async move {
             tokio::spawn(res);
         }));
 
-        loop {
-            let stream = con.accept_uni().await?;
+        {
+            let mut players = self.ctx.players.write().await;
+            players.insert(
+                player_id,
+                Player {
+                    connection: con.clone(),
+                    spaces: Default::default(),
+                    latest_pframe: Default::default(),
+                },
+            );
+        }
 
-            tokio::spawn(async move {
-                if let Err(e) = handle_stream(stream).await {
-                    error!("Error handling stream: {e:?}");
+        loop {
+            match con.accept_uni().await {
+                Ok(stream) => {
+                    let ctx = self.ctx.clone();
+
+                    tokio::spawn(async move {
+                        if let Err(e) = handle_stream(ctx, player_id, stream).await {
+                            error!("Error handling stream: {e:?}");
+                        }
+                    });
                 }
-            });
+                Err(e) => {
+                    let mut players = self.ctx.players.write().await;
+                    players.remove(&player_id);
+                    info!("Session connection ended: {e}");
+                }
+            }
         }
     }
 }
 
-async fn handle_stream(mut stream: RecvStream) -> anyhow::Result<()> {
+async fn handle_stream(
+    ctx: ServerContext,
+    player_id: u64,
+    mut stream: RecvStream,
+) -> anyhow::Result<()> {
     let header_len = stream.read_u16().await? as usize;
 
     let mut header_buf = vec![0; header_len];
@@ -126,7 +175,7 @@ async fn handle_stream(mut stream: RecvStream) -> anyhow::Result<()> {
 
     match header {
         StreamHeader::Transform => {
-            transform::handle_transform_stream(stream).await?;
+            transform::handle_transform_stream(ctx, player_id, stream).await?;
         }
         StreamHeader::Voice => {
             voice::handle_voice_stream(stream).await?;

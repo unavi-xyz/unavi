@@ -10,7 +10,7 @@ use bevy::prelude::*;
 use tokio::time::{MissedTickBehavior, interval};
 use xdid::core::did_url::DidUrl;
 
-use crate::{networking::publish::PublishInterval, space::Space};
+use crate::space::{Space, stream::publish::PublishInterval};
 
 pub struct SetTickrate {
     pub space_url: DidUrl,

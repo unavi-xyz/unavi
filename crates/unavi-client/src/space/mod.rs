@@ -9,6 +9,8 @@ use crate::{
 pub mod connect;
 mod connect_info;
 mod record_ref_url;
+mod stream;
+mod tickrate;
 
 pub struct SpacePlugin;
 
@@ -17,7 +19,14 @@ impl Plugin for SpacePlugin {
         app.add_observer(handle_space_add)
             .add_observer(insert_connect_info)
             .add_observer(connect::handle_space_connect)
-            .add_observer(connect::handle_space_disconnect);
+            .add_observer(connect::handle_space_disconnect)
+            .add_systems(
+                FixedUpdate,
+                (
+                    stream::publish::publish_transform_data,
+                    tickrate::set_space_tickrates,
+                ),
+            );
     }
 }
 

@@ -12,7 +12,9 @@ use tarpc::{
 };
 use tokio::{sync::RwLock, task::AbortHandle};
 use unavi_server_service::ControlServiceClient;
-use wtransport::{ClientConfig, Connection, Endpoint, VarInt, stream::BiStream};
+use wtransport::{
+    ClientConfig, Connection, Endpoint, VarInt, error::ConnectionError, stream::BiStream,
+};
 use xdid::core::did_url::DidUrl;
 
 use crate::space::{
@@ -68,16 +70,16 @@ pub fn handle_space_connect(
         let task = rt.spawn(
             async move {
                 loop {
-                    let connection = if let Some(c) = connections.read().await.get(&connect_url) {
-                        c.clone()
+                    let host = if let Some(host) = connections.read().await.get(&connect_url) {
+                        host.clone()
                     } else if initiated.read().await.contains(&connect_url) {
                         tokio::time::sleep(Duration::from_secs(1)).await;
                         continue;
                     } else {
                         match connect_to_host(info.clone()).await {
-                            Ok(c) => {
+                            Ok(host) => {
                                 // Recieve and handle incoming streams.
-                                let con = c.connection.clone();
+                                let con = host.connection.clone();
                                 tokio::spawn(async move {
                                     loop {
                                         let Ok(stream) = con.accept_uni().await else {
@@ -85,8 +87,7 @@ pub fn handle_space_connect(
                                         };
 
                                         tokio::spawn(async move {
-                                            if let Err(e) =
-                                                super::stream::handle_stream(stream).await
+                                            if let Err(e) = super::stream::recv_stream(stream).await
                                             {
                                                 error!("Error handling stream: {e:?}");
                                             };
@@ -98,9 +99,9 @@ pub fn handle_space_connect(
                                 let mut initiated = initiated.write().await;
                                 let mut connections = connections.write().await;
                                 initiated.remove(&connect_url);
-                                connections.insert(connect_url.clone(), c.clone());
+                                connections.insert(connect_url.clone(), host.clone());
 
-                                c
+                                host
                             }
                             Err(e) => {
                                 warn!("Failed to connect to space: {e:?}");
@@ -111,10 +112,19 @@ pub fn handle_space_connect(
                     };
 
                     if let Err(e) =
-                        handle_space_session(connection, space_id.clone(), space_url.clone()).await
+                        handle_space_session(&host, space_id.clone(), space_url.clone()).await
                     {
                         warn!("Space session error: {e:?}");
                         tokio::time::sleep(Duration::from_secs(15)).await;
+                        continue;
+                    }
+
+                    match host.connection.closed().await {
+                        ConnectionError::LocallyClosed => break,
+                        e => {
+                            warn!("Connection closed: {e:?}");
+                            tokio::time::sleep(Duration::from_secs(10)).await;
+                        }
                     }
                 }
             }
@@ -124,8 +134,9 @@ pub fn handle_space_connect(
         let session_handle = task.abort_handle();
         sessions.write().await.insert(space_url_str, session_handle);
 
-        let Err(e) = task.await;
-        error!("Task join error: {e:?}");
+        if let Err(e) = task.await {
+            error!("Task join error: {e:?}");
+        }
     })
     .detach();
 
@@ -170,7 +181,7 @@ const MAX_TICKRATE: u64 = 1_000;
 const MIN_TICKRATE: u64 = 25;
 
 async fn handle_space_session(
-    host: HostConnection,
+    host: &HostConnection,
     space_id: String,
     space_url: DidUrl,
 ) -> anyhow::Result<()> {

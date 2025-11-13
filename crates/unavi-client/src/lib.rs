@@ -63,6 +63,7 @@ impl Plugin for UnaviPlugin {
             avian3d::PhysicsPlugins::default(),
             unavi_input::InputPlugin,
             unavi_player::PlayerPlugin,
+            unavi_script::ScriptPlugin,
             space::SpacePlugin,
         ))
         .insert_resource(LocalDwn(dwn))

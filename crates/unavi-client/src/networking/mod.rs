@@ -2,11 +2,14 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 use tokio::io::AsyncReadExt;
-use unavi_server_service::{ControlServiceClient, from_server::StreamHeader};
-use wtransport::{Connection, RecvStream};
+use unavi_server_service::from_server::StreamHeader;
+use wtransport::RecvStream;
 use xdid::core::did_url::DidUrl;
 
-use crate::networking::tickrate::{SetTickrate, TICKRATE_QUEUE};
+use crate::{
+    networking::tickrate::{SetTickrate, TICKRATE_QUEUE},
+    space::connect::HostConnection,
+};
 
 mod publish;
 mod tickrate;
@@ -27,20 +30,15 @@ impl Plugin for NetworkingPlugin {
     }
 }
 
-pub struct SpaceSession {
-    pub connection: Connection,
-    pub control: ControlServiceClient,
-}
-
 const MAX_TICKRATE: u64 = 1_000;
 const MIN_TICKRATE: u64 = 25;
 
 pub async fn handle_space_session(
-    space: SpaceSession,
+    host: HostConnection,
     space_id: String,
     space_url: DidUrl,
 ) -> anyhow::Result<()> {
-    let tickrate_ms = space
+    let tickrate_ms = host
         .control
         .tickrate_ms(tarpc::context::current())
         .await?
@@ -51,15 +49,14 @@ pub async fn handle_space_session(
         tickrate: Duration::from_millis(tickrate_ms),
     })?;
 
-    space
-        .control
+    host.control
         .join_space(tarpc::context::current(), space_id.clone())
         .await?
         .map_err(|e| anyhow::anyhow!("rpc error: {e}"))?;
     info!("Joined space {space_id}");
 
     loop {
-        let stream = space.connection.accept_uni().await?;
+        let stream = host.connection.accept_uni().await?;
 
         tokio::spawn(async move {
             if let Err(e) = handle_stream(stream).await {

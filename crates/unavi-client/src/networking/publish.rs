@@ -42,11 +42,11 @@ pub fn publish_transform_data(
         return;
     }
 
-    let Ok(player) = player.single() else {
+    let Ok(_player) = player.single() else {
         return;
     };
 
-    for space_ent in to_publish.iter() {
+    for _space_ent in to_publish.iter() {
         tokio::spawn(async move {
             // send
         });

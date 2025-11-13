@@ -6,7 +6,7 @@ use crate::{
     async_commands::ASYNC_COMMAND_QUEUE, auth::LocalActor, space::connect_info::ConnectInfo,
 };
 
-mod connect;
+pub mod connect;
 mod connect_info;
 mod record_ref_url;
 
@@ -15,7 +15,7 @@ pub struct SpacePlugin;
 impl Plugin for SpacePlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(handle_space_add)
-            .add_observer(handle_connect_info_fetched)
+            .add_observer(insert_connect_info)
             .add_observer(connect::handle_space_connect);
     }
 }
@@ -101,6 +101,6 @@ pub struct ConnectInfoFetched {
     info: ConnectInfo,
 }
 
-pub fn handle_connect_info_fetched(event: On<ConnectInfoFetched>, mut commands: Commands) {
+pub fn insert_connect_info(event: On<ConnectInfoFetched>, mut commands: Commands) {
     commands.entity(event.space).insert(event.info.clone());
 }

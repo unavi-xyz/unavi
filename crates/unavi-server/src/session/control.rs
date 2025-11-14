@@ -107,4 +107,29 @@ impl ControlService for ControlServer {
     async fn players(self, _: tarpc::context::Context) -> Vec<Player> {
         Vec::new()
     }
+
+    async fn set_player_tickrate(
+        self,
+        _: tarpc::context::Context,
+        player_id: u64,
+        tickrate_ms: u64,
+    ) -> RpcResult<()> {
+        // Validate tickrate is at least the server minimum.
+        if tickrate_ms < TICKRATE.as_millis() as u64 {
+            return Err(format!(
+                "tickrate must be at least {} ms",
+                TICKRATE.as_millis()
+            ));
+        }
+
+        let tickrate = std::time::Duration::from_millis(tickrate_ms);
+
+        let mut player_tickrates = self.ctx.player_tickrates.write().await;
+        player_tickrates
+            .entry(self.player_id)
+            .or_default()
+            .insert(player_id, tickrate);
+
+        Ok(())
+    }
 }

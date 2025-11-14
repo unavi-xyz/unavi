@@ -23,6 +23,12 @@ use xdid::{
 
 use crate::session::{KEY_FRAGMENT, SessionSpawner, SpawnerOptions};
 
+const MAX_IDLE_TIMEOUT: Duration = Duration::from_mins(2);
+const KEEP_ALIVE_INTERVAL: Duration = Duration::from_secs(15);
+
+const INITIAL_RETRY_DELAY: Duration = Duration::from_secs(1);
+const SPACE_RETRY_DELAY: Duration = Duration::from_secs(30);
+
 mod key_pair;
 mod session;
 
@@ -59,7 +65,8 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     let cfg = ServerConfig::builder()
         .with_bind_default(port)
         .with_identity(identity)
-        .max_idle_timeout(Some(Duration::from_mins(2)))?
+        .max_idle_timeout(Some(MAX_IDLE_TIMEOUT))?
+        .keep_alive_interval(Some(KEEP_ALIVE_INTERVAL))
         .build();
     let endpoint = Endpoint::server(cfg).context("create wtranspart endpoint")?;
 
@@ -75,21 +82,21 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
 
     tokio::spawn(async move {
         // Wait for did:web route to come online.
-        tokio::time::sleep(Duration::from_secs(1)).await;
+        tokio::time::sleep(INITIAL_RETRY_DELAY).await;
 
         loop {
             let spawner = match SessionSpawner::new(spawner_opts.clone()).await {
                 Ok(s) => s,
                 Err(e) => {
                     error!("Failed to create session spawner: {e:?}");
-                    tokio::time::sleep(Duration::from_secs(30)).await;
+                    tokio::time::sleep(SPACE_RETRY_DELAY).await;
                     continue;
                 }
             };
 
             if let Err(e) = spawner.init_space_host(cert_hash.to_string()).await {
                 error!("Failed to init space host: {e:?}");
-                tokio::time::sleep(Duration::from_secs(30)).await;
+                tokio::time::sleep(SPACE_RETRY_DELAY).await;
                 continue;
             };
 

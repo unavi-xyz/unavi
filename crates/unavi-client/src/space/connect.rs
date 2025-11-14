@@ -21,8 +21,20 @@ use crate::space::{
     Space,
     connect_info::ConnectInfo,
     record_ref_url::parse_record_ref_url,
+    streams::publish::HostTransformStreams,
     tickrate::{SetTickrate, TICKRATE_QUEUE},
 };
+
+const MAX_IDLE_TIMEOUT: Duration = Duration::from_mins(2);
+const KEEP_ALIVE_INTERVAL: Duration = Duration::from_secs(15);
+
+const INITIAL_RETRY_DELAY: Duration = Duration::from_secs(1);
+const CONNECTION_RETRY_DELAY: Duration = Duration::from_secs(10);
+const SESSION_RETRY_DELAY: Duration = Duration::from_secs(15);
+const SPACE_CONNECT_RETRY_DELAY: Duration = Duration::from_secs(30);
+
+const MIN_TICKRATE: u64 = 25;
+const MAX_TICKRATE: u64 = 1_000;
 
 /// Connection to a host server.
 /// Used as transport for one or more spaces.
@@ -74,7 +86,7 @@ pub fn handle_space_connect(
                     let host = if let Some(host) = connections.read().await.get(&connect_url) {
                         host.clone()
                     } else if initiated.read().await.contains(&connect_url) {
-                        tokio::time::sleep(Duration::from_secs(1)).await;
+                        tokio::time::sleep(INITIAL_RETRY_DELAY).await;
                         continue;
                     } else {
                         match connect_to_host(info.clone()).await {
@@ -110,7 +122,7 @@ pub fn handle_space_connect(
                             }
                             Err(e) => {
                                 warn!("Failed to connect to space: {e:?}");
-                                tokio::time::sleep(Duration::from_secs(30)).await;
+                                tokio::time::sleep(SPACE_CONNECT_RETRY_DELAY).await;
                                 continue;
                             }
                         }
@@ -120,7 +132,7 @@ pub fn handle_space_connect(
                         handle_space_session(&host, space_id.clone(), space_url.clone()).await
                     {
                         warn!("Space session error: {e:?}");
-                        tokio::time::sleep(Duration::from_secs(15)).await;
+                        tokio::time::sleep(SESSION_RETRY_DELAY).await;
                         continue;
                     }
 
@@ -128,7 +140,7 @@ pub fn handle_space_connect(
                         ConnectionError::LocallyClosed => break,
                         e => {
                             warn!("Connection closed: {e:?}");
-                            tokio::time::sleep(Duration::from_secs(10)).await;
+                            tokio::time::sleep(CONNECTION_RETRY_DELAY).await;
                         }
                     }
                 }
@@ -157,8 +169,8 @@ async fn connect_to_host(
     let cfg = ClientConfig::builder()
         .with_bind_default()
         .with_server_certificate_hashes(vec![cert_hash])
-        .max_idle_timeout(Some(Duration::from_mins(1)))?
-        .keep_alive_interval(Some(Duration::from_secs(15)))
+        .max_idle_timeout(Some(MAX_IDLE_TIMEOUT))?
+        .keep_alive_interval(Some(KEEP_ALIVE_INTERVAL))
         .build();
 
     let endpoint = Endpoint::client(cfg)?;
@@ -181,9 +193,6 @@ async fn connect_to_host(
         control,
     })
 }
-
-const MAX_TICKRATE: u64 = 1_000;
-const MIN_TICKRATE: u64 = 25;
 
 async fn handle_space_session(
     host: &HostConnection,
@@ -214,6 +223,7 @@ pub fn handle_space_disconnect(
     event: On<Remove, ConnectInfo>,
     connections: Res<HostConnections>,
     sessions: Res<SpaceSessions>,
+    transform_streams: Res<HostTransformStreams>,
     spaces: Query<(Entity, &Space, &ConnectInfo), With<Space>>,
 ) -> Result {
     let Ok((_, space, info)) = spaces.get(event.entity) else {
@@ -235,6 +245,7 @@ pub fn handle_space_disconnect(
     let connect_url = info.connect_url.to_string();
     let connections = connections.0.clone();
     let sessions = sessions.0.clone();
+    let streams = transform_streams.0.clone();
     let space_url = space.url.to_string();
 
     let pool = TaskPool::get_thread_executor();
@@ -251,10 +262,12 @@ pub fn handle_space_disconnect(
             }
 
             // Disconnect from host, if no other spaces using the connection.
-            if other_spaces_found == 0
-                && let Some(connection) = connections.write().await.remove(&connect_url)
-            {
-                connection.connection.close(VarInt::from_u32(200), &[]);
+            if other_spaces_found == 0 {
+                streams.lock().await.remove(&connect_url);
+
+                if let Some(connection) = connections.write().await.remove(&connect_url) {
+                    connection.connection.close(VarInt::from_u32(200), &[]);
+                }
             }
         });
 

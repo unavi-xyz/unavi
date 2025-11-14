@@ -1,19 +1,27 @@
-use std::time::Duration;
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use bevy::{prelude::*, tasks::TaskPool};
 use bevy_vrm::BoneName;
 use futures::SinkExt;
-use tarpc::tokio_util::codec::LengthDelimitedCodec;
+use tarpc::tokio_util::codec::{FramedWrite, LengthDelimitedCodec};
+use tokio::sync::Mutex;
 use unavi_player::{AvatarBones, LocalPlayer, PlayerEntities};
 use unavi_server_service::{
     JointIFrame, JointPFrame, TRANSFORM_LENGTH_FIELD_LENGTH, TRANSFORM_MAX_FRAME_LENGTH,
     TrackingIFrame, TrackingPFrame, TrackingUpdate,
 };
+use wtransport::SendStream;
 
 use crate::space::{Space, connect::HostConnections, connect_info::ConnectInfo};
 
 // 1 tick = 20hz (default server value)
 const IFRAME_INTERVAL_TICKS: u32 = 30;
+
+type FramedTransformWriter = FramedWrite<SendStream, LengthDelimitedCodec>;
+
+/// Cached transform streams, one per host connection.
+#[derive(Resource, Default, Clone)]
+pub struct HostTransformStreams(pub Arc<Mutex<HashMap<String, FramedTransformWriter>>>);
 
 /// The interval at which data should be published to the space's server.
 #[derive(Component)]
@@ -22,7 +30,7 @@ pub struct PublishInterval {
     pub tickrate: Duration,
 }
 
-#[derive(Component, Default)]
+#[derive(Component, Default, Clone)]
 pub struct TransformPublishState {
     tick_count: u32,
     last_hips_pos: [f32; 3],
@@ -118,9 +126,44 @@ fn record_transforms(
     }
 }
 
+async fn get_or_create_transform_stream(
+    streams: &Arc<Mutex<HashMap<String, FramedTransformWriter>>>,
+    connect_url: &str,
+    connection: &wtransport::Connection,
+) -> anyhow::Result<()> {
+    use unavi_server_service::from_client;
+
+    let mut guard = streams.lock().await;
+
+    if guard.contains_key(connect_url) {
+        return Ok(());
+    }
+
+    let stream = connection.open_uni().await?.await?;
+
+    let mut framed = LengthDelimitedCodec::builder()
+        .little_endian()
+        .length_field_length(TRANSFORM_LENGTH_FIELD_LENGTH)
+        .max_frame_length(TRANSFORM_MAX_FRAME_LENGTH)
+        .new_write(stream);
+
+    let header = from_client::StreamHeader::Transform;
+    let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
+    framed.send(header_bytes.into()).await?;
+
+    let meta = from_client::TransformMeta { placeholder: true };
+    let meta_bytes = bincode::encode_to_vec(&meta, bincode::config::standard())?;
+    framed.send(meta_bytes.into()).await?;
+
+    guard.insert(connect_url.to_string(), framed);
+
+    Ok(())
+}
+
 pub fn publish_transform_data(
     time: Res<Time>,
     host_connections: Res<HostConnections>,
+    transform_streams: Res<HostTransformStreams>,
     local_players: Query<&PlayerEntities, With<LocalPlayer>>,
     avatars: Query<&AvatarBones>,
     bone_transforms: Query<&Transform, With<BoneName>>,
@@ -142,6 +185,10 @@ pub fn publish_transform_data(
 
     let now = time.elapsed();
 
+    // Group spaces by host to send transforms once per host.
+    let mut hosts_to_publish: HashMap<String, (TransformPublishState, TrackingUpdate)> =
+        HashMap::new();
+
     for (_, connect_info, mut interval, mut state) in spaces.iter_mut() {
         if now - interval.last_tick < interval.tickrate {
             continue;
@@ -159,7 +206,17 @@ pub fn publish_transform_data(
         };
 
         let connect_url = connect_info.connect_url.to_string();
+
+        // Only publish once per host, using the first space's state.
+        hosts_to_publish
+            .entry(connect_url)
+            .or_insert_with(|| (state.clone(), update));
+    }
+
+    // Publish transforms to each unique host.
+    for (connect_url, (_, update)) in hosts_to_publish {
         let connections_arc = host_connections.0.clone();
+        let streams_arc = transform_streams.0.clone();
 
         let pool = TaskPool::get_thread_executor();
         pool.spawn(async move {
@@ -170,40 +227,32 @@ pub fn publish_transform_data(
             let connection = host.connection.clone();
             drop(guard);
 
-            if let Err(e) = send_transform_update(&connection, update).await {
+            if let Err(e) =
+                get_or_create_transform_stream(&streams_arc, &connect_url, &connection).await
+            {
+                error!("Failed to create transform stream: {e:?}");
+                return;
+            }
+
+            let mut streams_guard = streams_arc.lock().await;
+            let Some(framed) = streams_guard.get_mut(&connect_url) else {
+                return;
+            };
+
+            let update_bytes =
+                match bincode::serde::encode_to_vec(&update, bincode::config::standard()) {
+                    Ok(bytes) => bytes,
+                    Err(e) => {
+                        error!("Failed to encode transform update: {e:?}");
+                        return;
+                    }
+                };
+
+            if let Err(e) = framed.send(update_bytes.into()).await {
                 error!("Failed to send transform update: {e:?}");
+                streams_guard.remove(&connect_url);
             }
         })
         .detach();
     }
-}
-
-async fn send_transform_update(
-    connection: &wtransport::Connection,
-    update: TrackingUpdate,
-) -> anyhow::Result<()> {
-    use unavi_server_service::from_client;
-
-    let stream = connection.open_uni().await?.await?;
-
-    let mut framed = LengthDelimitedCodec::builder()
-        .little_endian()
-        .length_field_length(TRANSFORM_LENGTH_FIELD_LENGTH)
-        .max_frame_length(TRANSFORM_MAX_FRAME_LENGTH)
-        .new_write(stream);
-
-    let header = from_client::StreamHeader::Transform;
-    let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
-    framed.send(header_bytes.into()).await?;
-
-    let meta = from_client::TransformMeta { placeholder: true };
-    let meta_bytes = bincode::encode_to_vec(&meta, bincode::config::standard())?;
-    framed.send(meta_bytes.into()).await?;
-
-    let update_bytes = bincode::serde::encode_to_vec(&update, bincode::config::standard())?;
-    framed.send(update_bytes.into()).await?;
-
-    framed.into_inner().finish().await?;
-
-    Ok(())
 }

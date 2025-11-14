@@ -56,6 +56,7 @@ pub fn handle_space_connect(
     let connections = connections.0.clone();
     let initiated = initiated.clone();
     let sessions = sessions.0.clone();
+    let transform_tx = space.transform_tx.clone();
 
     let pool = TaskPool::get_thread_executor();
     pool.spawn(async move {
@@ -80,14 +81,18 @@ pub fn handle_space_connect(
                             Ok(host) => {
                                 // Recieve and handle incoming streams.
                                 let con = host.connection.clone();
+                                let transform_tx = transform_tx.clone();
                                 tokio::spawn(async move {
                                     loop {
                                         let Ok(stream) = con.accept_uni().await else {
                                             break;
                                         };
 
+                                        let transform_tx = transform_tx.clone();
                                         tokio::spawn(async move {
-                                            if let Err(e) = super::stream::recv_stream(stream).await
+                                            if let Err(e) =
+                                                super::stream::recv_stream(stream, transform_tx)
+                                                    .await
                                             {
                                                 error!("Error handling stream: {e:?}");
                                             };

@@ -10,7 +10,10 @@ use xdid::core::did_url::DidUrl;
 use crate::{
     async_commands::ASYNC_COMMAND_QUEUE,
     auth::LocalActor,
-    space::{connect_info::ConnectInfo, streams::transform::RecievedTransform},
+    space::{
+        connect_info::ConnectInfo,
+        streams::{publish::HostTransformStreams, transform::RecievedTransform},
+    },
 };
 
 pub mod connect;
@@ -25,6 +28,7 @@ impl Plugin for SpacePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<connect::HostConnections>()
             .init_resource::<connect::SpaceSessions>()
+            .init_resource::<HostTransformStreams>()
             .add_observer(handle_space_add)
             .add_observer(insert_connect_info)
             .add_observer(connect::handle_space_connect)

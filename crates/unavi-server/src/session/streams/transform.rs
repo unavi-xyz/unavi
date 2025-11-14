@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use futures::StreamExt;
 use tarpc::tokio_util::codec::LengthDelimitedCodec;
-use tracing::info;
 use unavi_server_service::{
     TRANSFORM_LENGTH_FIELD_LENGTH, TRANSFORM_MAX_FRAME_LENGTH, TrackingPFrame, TrackingUpdate,
     from_client::TransformMeta,

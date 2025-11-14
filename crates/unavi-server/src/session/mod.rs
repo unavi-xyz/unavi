@@ -13,7 +13,10 @@ use tarpc::{
     server::{BaseChannel, Channel},
     tokio_util::codec::{Framed, LengthDelimitedCodec},
 };
-use tokio::{io::AsyncReadExt, sync::{RwLock, watch}};
+use tokio::{
+    io::AsyncReadExt,
+    sync::{RwLock, watch},
+};
 use tokio_serde::formats::Bincode;
 use tracing::{error, info, warn};
 use unavi_server_service::{
@@ -31,6 +34,7 @@ use crate::{DIRS, session::control::ControlServer};
 
 mod control;
 mod init_space_host;
+mod pull_transform;
 mod transform;
 mod voice;
 
@@ -53,10 +57,10 @@ struct ServerContext {
     actor: Actor,
     players: Arc<RwLock<HashMap<PlayerId, Player>>>,
     spaces: Arc<RwLock<HashMap<SpaceId, Space>>>,
+    player_tickrates: Arc<RwLock<HashMap<PlayerId, HashMap<PlayerId, Duration>>>>,
 }
 
 struct Player {
-    connection: Connection,
     spaces: HashSet<String>,
     iframe_tx: watch::Sender<(usize, TrackingIFrame)>,
     pframe_tx: watch::Sender<TrackingPFrame>,
@@ -110,6 +114,7 @@ impl SessionSpawner {
                 actor,
                 players: Default::default(),
                 spaces: Default::default(),
+                player_tickrates: Default::default(),
             },
             domain: opts.domain,
             player_id_count: Default::default(),
@@ -141,13 +146,22 @@ impl SessionSpawner {
             players.insert(
                 player_id,
                 Player {
-                    connection: con.clone(),
                     spaces: Default::default(),
                     iframe_tx,
                     pframe_tx,
                 },
             );
         }
+
+        tokio::spawn({
+            let ctx = self.ctx.clone();
+            let con = con.clone();
+            async move {
+                if let Err(e) = pull_transform::handle_pull_transforms(ctx, player_id, con).await {
+                    error!("Error in pull transforms: {e:?}");
+                }
+            }
+        });
 
         let counts = StreamCounts::default();
 

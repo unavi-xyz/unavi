@@ -13,6 +13,8 @@ pub trait ControlService {
     async fn spaces() -> Vec<String>;
 
     async fn players() -> Vec<Player>;
+
+    async fn set_player_tickrate(player_id: u64, tickrate_ms: u64) -> RpcResult<()>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -26,25 +28,25 @@ pub enum TrackingUpdate {
     PFrame(TrackingPFrame),
 }
 
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct TrackingIFrame {
     pub pos: [f32; 3],
     pub joints: Vec<JointIFrame>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct TrackingPFrame {
     pub pos: [i16; 3],
     pub joints: Vec<JointPFrame>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JointIFrame {
     pub id: u8,
     pub rot: [f32; 4],
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JointPFrame {
     pub id: BoneName,
     pub rot: [i16; 4],

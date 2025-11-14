@@ -36,7 +36,7 @@ pub async fn recv_transform_stream(
     while let Some(frame) = framed.next().await {
         let bytes = frame?;
 
-        let (update, _) = bincode::serde::decode_from_slice::<TrackingUpdate, _>(
+        let (_update, _) = bincode::serde::decode_from_slice::<TrackingUpdate, _>(
             &bytes,
             bincode::config::standard(),
         )?;

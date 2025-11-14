@@ -58,7 +58,6 @@ pub async fn handle_transform_stream(
 
         drop(players);
 
-        // Rate limit transform updates to prevent malicious clients from flooding.
         sleep(Duration::from_millis(TICKRATE.as_millis() as u64 / 4)).await;
     }
 

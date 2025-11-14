@@ -4,14 +4,14 @@ use std::{
 };
 
 use futures::SinkExt;
-use tarpc::tokio_util::codec::LengthDelimitedCodec;
-use tokio::{io::AsyncWriteExt, sync::watch, time::interval};
+use tarpc::tokio_util::codec::{FramedWrite, LengthDelimitedCodec};
+use tokio::{io::AsyncWriteExt, time::interval};
 use tracing::{error, warn};
 use unavi_server_service::{
     TRANSFORM_LENGTH_FIELD_LENGTH, TRANSFORM_MAX_FRAME_LENGTH, TrackingIFrame, TrackingPFrame,
     TrackingUpdate, from_server,
 };
-use wtransport::Connection;
+use wtransport::{Connection, SendStream};
 
 use crate::session::{PlayerId, ServerContext, TICKRATE};
 
@@ -20,15 +20,12 @@ pub async fn handle_pull_transforms(
     player_id: PlayerId,
     connection: Connection,
 ) -> anyhow::Result<()> {
-    let mut subscriptions: HashMap<
-        PlayerId,
-        (
-            watch::Receiver<(usize, TrackingIFrame)>,
-            watch::Receiver<TrackingPFrame>,
-        ),
-    > = HashMap::new();
-    let mut last_send_times: HashMap<PlayerId, Instant> = HashMap::new();
-    let mut pending_updates: HashSet<PlayerId> = HashSet::new();
+    let mut subscriptions = HashMap::new();
+    let mut last_send_times = HashMap::new();
+    let mut pending_updates = HashSet::new();
+    let mut player_streams = HashMap::new();
+    let mut players_in_shared_spaces = HashSet::new();
+    let mut ready_updates = Vec::new();
     let mut check_interval = interval(TICKRATE / 2);
 
     loop {
@@ -38,12 +35,10 @@ pub async fn handle_pull_transforms(
         let Some(player) = players_guard.get(&player_id) else {
             return Ok(());
         };
-        let player_spaces = player.spaces.clone();
-        drop(players_guard);
 
         let spaces_guard = ctx.spaces.read().await;
-        let mut players_in_shared_spaces = HashSet::new();
-        for space_id in &player_spaces {
+        players_in_shared_spaces.clear();
+        for space_id in &player.spaces {
             if let Some(space) = spaces_guard.get(space_id) {
                 for &other_player_id in &space.players {
                     if other_player_id != player_id {
@@ -54,7 +49,6 @@ pub async fn handle_pull_transforms(
         }
         drop(spaces_guard);
 
-        let players_guard = ctx.players.read().await;
         for &other_player_id in &players_in_shared_spaces {
             if !subscriptions.contains_key(&other_player_id)
                 && let Some(other_player) = players_guard.get(&other_player_id)
@@ -66,12 +60,15 @@ pub async fn handle_pull_transforms(
         }
         drop(players_guard);
 
-        subscriptions
-            .retain(|&other_player_id, _| players_in_shared_spaces.contains(&other_player_id));
-        last_send_times
-            .retain(|&other_player_id, _| players_in_shared_spaces.contains(&other_player_id));
-        pending_updates
-            .retain(|&other_player_id| players_in_shared_spaces.contains(&other_player_id));
+        subscriptions.retain(|&other_player_id, _| {
+            let keep = players_in_shared_spaces.contains(&other_player_id);
+            if !keep {
+                last_send_times.remove(&other_player_id);
+                pending_updates.remove(&other_player_id);
+                player_streams.remove(&other_player_id);
+            }
+            keep
+        });
 
         for (&other_player_id, (iframe_rx, pframe_rx)) in &mut subscriptions {
             let has_iframe_update = iframe_rx.has_changed().unwrap_or(false);
@@ -82,16 +79,29 @@ pub async fn handle_pull_transforms(
             }
 
             if can_send_now(&ctx, player_id, other_player_id, &last_send_times).await {
-                let _ = iframe_rx.borrow_and_update();
-                let _ = pframe_rx.borrow_and_update();
+                let iframe = if has_iframe_update {
+                    Some(iframe_rx.borrow_and_update().clone())
+                } else {
+                    None
+                };
 
-                let iframe = iframe_rx.borrow().clone();
-                let pframe = pframe_rx.borrow().clone();
+                let pframe = if has_iframe_update || has_pframe_update {
+                    Some(pframe_rx.borrow_and_update().clone())
+                } else {
+                    None
+                };
 
-                if let Err(e) =
-                    send_transform_update(&connection, other_player_id, iframe.1, pframe).await
+                if let Err(e) = send_updates_to_player(
+                    &mut player_streams,
+                    &connection,
+                    other_player_id,
+                    iframe,
+                    pframe,
+                )
+                .await
                 {
                     error!("Failed to send transform update: {e}");
+                    player_streams.remove(&other_player_id);
                     continue;
                 }
 
@@ -102,25 +112,36 @@ pub async fn handle_pull_transforms(
             }
         }
 
-        let mut ready_updates = Vec::new();
+        ready_updates.clear();
         for &other_player_id in &pending_updates {
             if can_send_now(&ctx, player_id, other_player_id, &last_send_times).await {
                 ready_updates.push(other_player_id);
             }
         }
 
-        for other_player_id in ready_updates {
+        for &other_player_id in &ready_updates {
             if let Some((iframe_rx, pframe_rx)) = subscriptions.get_mut(&other_player_id) {
-                let _ = iframe_rx.borrow_and_update();
-                let _ = pframe_rx.borrow_and_update();
+                let has_iframe_update = iframe_rx.has_changed().unwrap_or(false);
 
-                let iframe = iframe_rx.borrow().clone();
-                let pframe = pframe_rx.borrow().clone();
+                let iframe = if has_iframe_update {
+                    Some(iframe_rx.borrow_and_update().clone())
+                } else {
+                    None
+                };
 
-                if let Err(e) =
-                    send_transform_update(&connection, other_player_id, iframe.1, pframe).await
+                let pframe = Some(pframe_rx.borrow_and_update().clone());
+
+                if let Err(e) = send_updates_to_player(
+                    &mut player_streams,
+                    &connection,
+                    other_player_id,
+                    iframe,
+                    pframe,
+                )
+                .await
                 {
                     warn!("Failed to send pending transform update: {e}");
+                    player_streams.remove(&other_player_id);
                     continue;
                 }
 
@@ -152,37 +173,58 @@ async fn can_send_now(
     }
 }
 
-async fn send_transform_update(
+async fn get_or_create_stream<'a>(
+    player_streams: &'a mut HashMap<PlayerId, FramedWrite<SendStream, LengthDelimitedCodec>>,
     connection: &Connection,
     player_id: PlayerId,
-    iframe: TrackingIFrame,
-    pframe: TrackingPFrame,
+) -> anyhow::Result<&'a mut FramedWrite<SendStream, LengthDelimitedCodec>> {
+    if let std::collections::hash_map::Entry::Vacant(e) = player_streams.entry(player_id) {
+        let mut stream = connection.open_uni().await?.await?;
+
+        let header = from_server::StreamHeader::Transform;
+        let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
+        stream.write_u16(header_bytes.len() as u16).await?;
+        stream.write_all(&header_bytes).await?;
+
+        let meta = from_server::TransformMeta { player: player_id };
+        let meta_bytes = bincode::encode_to_vec(&meta, bincode::config::standard())?;
+        stream.write_u16(meta_bytes.len() as u16).await?;
+        stream.write_all(&meta_bytes).await?;
+
+        let framed = LengthDelimitedCodec::builder()
+            .little_endian()
+            .length_field_length(TRANSFORM_LENGTH_FIELD_LENGTH)
+            .max_frame_length(TRANSFORM_MAX_FRAME_LENGTH)
+            .new_write(stream);
+
+        e.insert(framed);
+    }
+
+    Ok(player_streams.get_mut(&player_id).unwrap())
+}
+
+async fn send_updates_to_player(
+    player_streams: &mut HashMap<PlayerId, FramedWrite<SendStream, LengthDelimitedCodec>>,
+    connection: &Connection,
+    other_player_id: PlayerId,
+    iframe: Option<TrackingIFrame>,
+    pframe: Option<TrackingPFrame>,
 ) -> anyhow::Result<()> {
-    let mut stream = connection.open_uni().await?.await?;
+    let framed = get_or_create_stream(player_streams, connection, other_player_id).await?;
 
-    let header = from_server::StreamHeader::Transform;
-    let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
-    stream.write_u16(header_bytes.len() as u16).await?;
-    stream.write_all(&header_bytes).await?;
+    if let Some(iframe) = iframe {
+        let iframe_update = TrackingUpdate::IFrame(iframe);
+        let iframe_bytes =
+            bincode::serde::encode_to_vec(&iframe_update, bincode::config::standard())?;
+        framed.send(iframe_bytes.into()).await?;
+    }
 
-    let meta = from_server::TransformMeta { player: player_id };
-    let meta_bytes = bincode::encode_to_vec(&meta, bincode::config::standard())?;
-    stream.write_u16(meta_bytes.len() as u16).await?;
-    stream.write_all(&meta_bytes).await?;
-
-    let mut framed = LengthDelimitedCodec::builder()
-        .little_endian()
-        .length_field_length(TRANSFORM_LENGTH_FIELD_LENGTH)
-        .max_frame_length(TRANSFORM_MAX_FRAME_LENGTH)
-        .new_write(stream);
-
-    let iframe_update = TrackingUpdate::IFrame(iframe);
-    let iframe_bytes = bincode::serde::encode_to_vec(&iframe_update, bincode::config::standard())?;
-    framed.send(iframe_bytes.into()).await?;
-
-    let pframe_update = TrackingUpdate::PFrame(pframe);
-    let pframe_bytes = bincode::serde::encode_to_vec(&pframe_update, bincode::config::standard())?;
-    framed.send(pframe_bytes.into()).await?;
+    if let Some(pframe) = pframe {
+        let pframe_update = TrackingUpdate::PFrame(pframe);
+        let pframe_bytes =
+            bincode::serde::encode_to_vec(&pframe_update, bincode::config::standard())?;
+        framed.send(pframe_bytes.into()).await?;
+    }
 
     Ok(())
 }

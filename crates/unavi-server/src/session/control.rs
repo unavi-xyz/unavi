@@ -63,13 +63,15 @@ impl ControlService for ControlServer {
             if player.spaces.len() > MAX_SPACES_PER_PLAYER {
                 return Err("joined too many spaces".to_string());
             }
-            player.spaces.insert(id.clone());
-        }
 
-        {
             let mut spaces = self.ctx.spaces.write().await;
-            let entry = spaces.entry(id).or_default();
-            entry.players.insert(self.player_id);
+            let space = spaces.entry(id.clone()).or_default();
+            if space.players.len() >= space.max_players {
+                return Err("space is full".to_string());
+            }
+
+            player.spaces.insert(id);
+            space.players.insert(self.player_id);
         }
 
         Ok(())
@@ -97,8 +99,8 @@ impl ControlService for ControlServer {
         Ok(())
     }
     async fn spaces(self, _: tarpc::context::Context) -> Vec<String> {
-        let mut players = self.ctx.players.write().await;
-        let Some(player) = players.get_mut(&self.player_id) else {
+        let players = self.ctx.players.read().await;
+        let Some(player) = players.get(&self.player_id) else {
             return Vec::new();
         };
         player.spaces.iter().cloned().collect()

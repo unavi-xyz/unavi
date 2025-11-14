@@ -30,8 +30,6 @@ pub async fn handle_transform_stream(
         .max_frame_length(TRANSFORM_MAX_FRAME_LENGTH)
         .new_read(stream);
 
-    let mut iframe_count = 0;
-
     while let Some(frame) = framed.next().await {
         let bytes = frame?;
 
@@ -47,8 +45,7 @@ pub async fn handle_transform_stream(
 
         match update {
             TrackingUpdate::IFrame(iframe) => {
-                iframe_count += 1;
-                let _ = player.iframe_tx.send((iframe_count, iframe));
+                let _ = player.iframe_tx.send(iframe);
                 let _ = player.pframe_tx.send(TrackingPFrame::default());
             }
             TrackingUpdate::PFrame(pframe) => {

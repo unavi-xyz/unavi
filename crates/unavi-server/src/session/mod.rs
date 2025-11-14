@@ -22,9 +22,7 @@ use tracing::{error, info, warn};
 use unavi_server_service::{
     ControlService, TrackingIFrame, TrackingPFrame, from_client::StreamHeader,
 };
-use wtransport::{
-    Connection, RecvStream, endpoint::IncomingSession, error::ConnectionError, stream::BiStream,
-};
+use wtransport::{RecvStream, endpoint::IncomingSession, error::ConnectionError, stream::BiStream};
 use xdid::{
     core::{did::Did, did_url::DidUrl},
     methods::{key::p256::P256KeyPair, web::reqwest::Url},
@@ -41,6 +39,7 @@ mod voice;
 pub const KEY_FRAGMENT: &str = "owner";
 
 const TICKRATE: Duration = Duration::from_millis(50);
+const DEFAULT_MAX_PLAYERS_PER_SPACE: usize = 32;
 
 type PlayerId = u64;
 type SpaceId = String;
@@ -62,13 +61,22 @@ struct ServerContext {
 
 struct Player {
     spaces: HashSet<String>,
-    iframe_tx: watch::Sender<(usize, TrackingIFrame)>,
+    iframe_tx: watch::Sender<TrackingIFrame>,
     pframe_tx: watch::Sender<TrackingPFrame>,
 }
 
-#[derive(Default)]
 struct Space {
     players: HashSet<PlayerId>,
+    max_players: usize,
+}
+
+impl Default for Space {
+    fn default() -> Self {
+        Self {
+            players: HashSet::new(),
+            max_players: DEFAULT_MAX_PLAYERS_PER_SPACE,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -139,7 +147,7 @@ impl SessionSpawner {
         }));
 
         {
-            let (iframe_tx, _iframe_rx) = watch::channel((0, Default::default()));
+            let (iframe_tx, _iframe_rx) = watch::channel(Default::default());
             let (pframe_tx, _pframe_rx) = watch::channel(Default::default());
 
             let mut players = self.ctx.players.write().await;

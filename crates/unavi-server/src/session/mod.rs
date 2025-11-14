@@ -195,12 +195,39 @@ impl SessionSpawner {
                         }
                     }
 
-                    let mut players = self.ctx.players.write().await;
-                    players.remove(&player_id);
+                    self.cleanup_player(player_id).await;
 
                     break Ok(());
                 }
             }
+        }
+    }
+
+    async fn cleanup_player(&self, player_id: PlayerId) {
+        let spaces_to_leave: Vec<SpaceId> = {
+            let mut players = self.ctx.players.write().await;
+            if let Some(player) = players.remove(&player_id) {
+                player.spaces.into_iter().collect()
+            } else {
+                Vec::new()
+            }
+        };
+
+        let mut spaces = self.ctx.spaces.write().await;
+        for space_id in spaces_to_leave {
+            if let Some(space) = spaces.get_mut(&space_id) {
+                space.players.remove(&player_id);
+                if space.players.is_empty() {
+                    spaces.remove(&space_id);
+                }
+            }
+        }
+        drop(spaces);
+
+        let mut player_tickrates = self.ctx.player_tickrates.write().await;
+        player_tickrates.remove(&player_id);
+        for rates in player_tickrates.values_mut() {
+            rates.remove(&player_id);
         }
     }
 }

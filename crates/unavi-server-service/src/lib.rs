@@ -53,7 +53,7 @@ pub struct JointPFrame {
 }
 
 pub const TRANSFORM_LENGTH_FIELD_LENGTH: usize = 2;
-pub const TRANSFORM_MAX_FRAME_LENGTH: usize = 512;
+pub const TRANSFORM_MAX_FRAME_LENGTH: usize = 4 * 1024;
 
 pub mod from_client {
     use bincode::{Decode, Encode};
@@ -65,7 +65,10 @@ pub mod from_client {
     }
 
     #[derive(Encode, Decode, Debug)]
-    pub struct TransformMeta {}
+    pub struct TransformMeta {
+        /// Placeholder value, has no purpose.
+        pub placeholder: bool,
+    }
 }
 
 pub mod from_server {

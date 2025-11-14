@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use futures::StreamExt;
 use tarpc::tokio_util::codec::LengthDelimitedCodec;
-use tokio::{io::AsyncReadExt, time::sleep};
+use tracing::info;
 use unavi_server_service::{
     TRANSFORM_LENGTH_FIELD_LENGTH, TRANSFORM_MAX_FRAME_LENGTH, TrackingPFrame, TrackingUpdate,
     from_client::TransformMeta,
@@ -14,27 +14,24 @@ use crate::session::{ServerContext, TICKRATE};
 pub async fn handle_transform_stream(
     ctx: ServerContext,
     player_id: u64,
-    mut stream: RecvStream,
+    stream: RecvStream,
 ) -> anyhow::Result<()> {
-    let meta_len = stream.read_u16().await? as usize;
-
-    let mut meta_buf = vec![0; meta_len];
-    stream.read_exact(&mut meta_buf).await?;
-
-    let (_meta, _) =
-        bincode::decode_from_slice::<TransformMeta, _>(&meta_buf, bincode::config::standard())?;
-
     let mut framed = LengthDelimitedCodec::builder()
         .little_endian()
         .length_field_length(TRANSFORM_LENGTH_FIELD_LENGTH)
         .max_frame_length(TRANSFORM_MAX_FRAME_LENGTH)
         .new_read(stream);
 
-    while let Some(frame) = framed.next().await {
-        let bytes = frame?;
+    let Some(meta_bytes) = framed.next().await else {
+        return Ok(());
+    };
 
+    let (_meta, _) =
+        bincode::decode_from_slice::<TransformMeta, _>(&meta_bytes?, bincode::config::standard())?;
+
+    while let Some(bytes) = framed.next().await {
         let (update, _) = bincode::serde::decode_from_slice::<TrackingUpdate, _>(
-            &bytes,
+            &bytes?,
             bincode::config::standard(),
         )?;
 
@@ -55,7 +52,7 @@ pub async fn handle_transform_stream(
 
         drop(players);
 
-        sleep(Duration::from_millis(TICKRATE.as_millis() as u64 / 4)).await;
+        tokio::time::sleep(Duration::from_millis(TICKRATE.as_millis() as u64 / 4)).await;
     }
 
     Ok(())

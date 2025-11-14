@@ -1,11 +1,11 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{HashMap, HashSet, hash_map::Entry},
     time::Instant,
 };
 
 use futures::SinkExt;
 use tarpc::tokio_util::codec::{FramedWrite, LengthDelimitedCodec};
-use tokio::{io::AsyncWriteExt, time::interval};
+use tokio::time::interval;
 use tracing::{error, warn};
 use unavi_server_service::{
     TRANSFORM_LENGTH_FIELD_LENGTH, TRANSFORM_MAX_FRAME_LENGTH, TrackingIFrame, TrackingPFrame,
@@ -178,24 +178,22 @@ async fn get_or_create_stream<'a>(
     connection: &Connection,
     player_id: PlayerId,
 ) -> anyhow::Result<&'a mut FramedWrite<SendStream, LengthDelimitedCodec>> {
-    if let std::collections::hash_map::Entry::Vacant(e) = player_streams.entry(player_id) {
-        let mut stream = connection.open_uni().await?.await?;
+    if let Entry::Vacant(e) = player_streams.entry(player_id) {
+        let stream = connection.open_uni().await?.await?;
 
-        let header = from_server::StreamHeader::Transform;
-        let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
-        stream.write_u16(header_bytes.len() as u16).await?;
-        stream.write_all(&header_bytes).await?;
-
-        let meta = from_server::TransformMeta { player: player_id };
-        let meta_bytes = bincode::encode_to_vec(&meta, bincode::config::standard())?;
-        stream.write_u16(meta_bytes.len() as u16).await?;
-        stream.write_all(&meta_bytes).await?;
-
-        let framed = LengthDelimitedCodec::builder()
+        let mut framed = LengthDelimitedCodec::builder()
             .little_endian()
             .length_field_length(TRANSFORM_LENGTH_FIELD_LENGTH)
             .max_frame_length(TRANSFORM_MAX_FRAME_LENGTH)
             .new_write(stream);
+
+        let header = from_server::StreamHeader::Transform;
+        let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
+        framed.send(header_bytes.into()).await?;
+
+        let meta = from_server::TransformMeta { player: player_id };
+        let meta_bytes = bincode::encode_to_vec(&meta, bincode::config::standard())?;
+        framed.send(meta_bytes.into()).await?;
 
         e.insert(framed);
     }

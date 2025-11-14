@@ -1,9 +1,16 @@
+use std::sync::{
+    Arc, Mutex,
+    mpsc::{Receiver, Sender},
+};
+
 use bevy::{ecs::world::CommandQueue, prelude::*, tasks::TaskPool};
 use unavi_player::{LocalPlayer, PlayerSpawner};
 use xdid::core::did_url::DidUrl;
 
 use crate::{
-    async_commands::ASYNC_COMMAND_QUEUE, auth::LocalActor, space::connect_info::ConnectInfo,
+    async_commands::ASYNC_COMMAND_QUEUE,
+    auth::LocalActor,
+    space::{connect_info::ConnectInfo, stream::transform::RecievedTransform},
 };
 
 pub mod connect;
@@ -26,6 +33,7 @@ impl Plugin for SpacePlugin {
                 FixedUpdate,
                 (
                     stream::publish::publish_transform_data,
+                    stream::transform::apply_player_transforms,
                     tickrate::set_space_tickrates,
                 ),
             );
@@ -37,11 +45,18 @@ impl Plugin for SpacePlugin {
 #[derive(Component)]
 pub struct Space {
     pub url: DidUrl,
+    transform_tx: Sender<RecievedTransform>,
+    transform_rx: Arc<Mutex<Receiver<RecievedTransform>>>,
 }
 
 impl Space {
     pub fn new(url: DidUrl) -> Self {
-        Self { url }
+        let (transform_tx, transform_rx) = std::sync::mpsc::channel();
+        Self {
+            url,
+            transform_tx,
+            transform_rx: Arc::new(Mutex::new(transform_rx)),
+        }
     }
 }
 

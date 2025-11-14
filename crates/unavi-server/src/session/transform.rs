@@ -1,11 +1,12 @@
+use std::time::Duration;
+
 use futures::StreamExt;
 use tarpc::tokio_util::codec::LengthDelimitedCodec;
-use tokio::{
-    io::AsyncReadExt,
-    time::{MissedTickBehavior, interval},
+use tokio::{io::AsyncReadExt, time::sleep};
+use unavi_server_service::{
+    TRANSFORM_LENGTH_FIELD_LENGTH, TRANSFORM_MAX_FRAME_LENGTH, TrackingPFrame, TrackingUpdate,
+    from_client::TransformMeta,
 };
-use tracing::{info, warn};
-use unavi_server_service::{TrackingPFrame, TrackingUpdate, from_client::TransformMeta};
 use wtransport::RecvStream;
 
 use crate::session::{ServerContext, TICKRATE};
@@ -20,19 +21,16 @@ pub async fn handle_transform_stream(
     let mut meta_buf = vec![0; meta_len];
     stream.read_exact(&mut meta_buf).await?;
 
-    let (meta, _) =
+    let (_meta, _) =
         bincode::decode_from_slice::<TransformMeta, _>(&meta_buf, bincode::config::standard())?;
-
-    info!("Got transform stream: {meta:?}");
 
     let mut framed = LengthDelimitedCodec::builder()
         .little_endian()
-        .length_field_length(2)
-        .max_frame_length(512)
+        .length_field_length(TRANSFORM_LENGTH_FIELD_LENGTH)
+        .max_frame_length(TRANSFORM_MAX_FRAME_LENGTH)
         .new_read(stream);
 
-    let mut interval = interval(TICKRATE);
-    interval.set_missed_tick_behavior(MissedTickBehavior::Delay);
+    let mut iframe_count = 0;
 
     while let Some(frame) = framed.next().await {
         let bytes = frame?;
@@ -42,81 +40,26 @@ pub async fn handle_transform_stream(
             bincode::config::standard(),
         )?;
 
+        let players = ctx.players.read().await;
+        let Some(player) = players.get(&player_id) else {
+            return Ok(());
+        };
+
         match update {
-            TrackingUpdate::IFrame(_) => {
-                // I-frame data is pushed.
-                // TODO: make pull
-                // Send to all space players.
-                let players = ctx.players.read().await;
-                let Some(player) = players.get(&player_id) else {
-                    return Ok(());
-                };
-
-                let spaces = ctx.spaces.read().await;
-
-                for space_id in player.spaces.iter() {
-                    let Some(space) = spaces.get(space_id) else {
-                        warn!("space not found");
-                        continue;
-                    };
-
-                    for other_player_id in space.players.iter() {
-                        if *other_player_id == player_id {
-                            continue;
-                        };
-                        let Some(other_player) = players.get(other_player_id) else {
-                            continue;
-                        };
-
-                        let other_con = other_player.connection.clone();
-                        let bytes = bytes.clone();
-
-                        tokio::spawn(async move {
-                            match other_con.open_uni().await {
-                                Ok(opening) => {
-                                    let mut other_out = opening.await?;
-
-                                    let out_meta =
-                                        unavi_server_service::from_server::TransformMeta {
-                                            player: player_id,
-                                        };
-                                    let out_meta_vec = bincode::encode_to_vec(
-                                        out_meta,
-                                        bincode::config::standard(),
-                                    )?;
-
-                                    other_out.write_all(&out_meta_vec).await?;
-                                    other_out.write_all(&bytes).await?;
-                                }
-                                Err(e) => {
-                                    warn!("Failed to open i-frame stream: {e:?}");
-                                }
-                            }
-
-                            Ok::<_, anyhow::Error>(())
-                        });
-                    }
-                }
-
-                // Reset p-frame.
-                let mut players = ctx.players.write().await;
-                let Some(player) = players.get_mut(&player_id) else {
-                    return Ok(());
-                };
-                player.latest_pframe = TrackingPFrame::default();
+            TrackingUpdate::IFrame(iframe) => {
+                iframe_count += 1;
+                let _ = player.iframe_tx.send((iframe_count, iframe));
+                let _ = player.pframe_tx.send(TrackingPFrame::default());
             }
-            TrackingUpdate::PFrame(msg) => {
-                // P-frame data is pulled.
-                // Save in player data.
-                let mut players = ctx.players.write().await;
-                let Some(player) = players.get_mut(&player_id) else {
-                    return Ok(());
-                };
-                player.latest_pframe = msg;
+            TrackingUpdate::PFrame(pframe) => {
+                let _ = player.pframe_tx.send(pframe);
             }
         }
 
-        interval.tick().await;
+        drop(players);
+
+        // Rate limit transform updates to prevent malicious clients from flooding.
+        sleep(Duration::from_millis(TICKRATE.as_millis() as u64 / 4)).await;
     }
 
     Ok(())

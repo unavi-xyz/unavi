@@ -26,7 +26,7 @@ pub enum TrackingUpdate {
     PFrame(TrackingPFrame),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct TrackingIFrame {
     pub pos: [f32; 3],
     pub joints: Vec<JointIFrame>,
@@ -49,6 +49,9 @@ pub struct JointPFrame {
     pub id: BoneName,
     pub rot: [i16; 4],
 }
+
+pub const TRANSFORM_LENGTH_FIELD_LENGTH: usize = 2;
+pub const TRANSFORM_MAX_FRAME_LENGTH: usize = 512;
 
 pub mod from_client {
     use bincode::{Decode, Encode};

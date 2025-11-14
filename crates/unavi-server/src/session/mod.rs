@@ -2,7 +2,7 @@ use std::{
     collections::{HashMap, HashSet},
     sync::{
         Arc,
-        atomic::{AtomicU64, Ordering},
+        atomic::{AtomicU64, AtomicUsize, Ordering},
     },
     time::Duration,
 };
@@ -13,10 +13,12 @@ use tarpc::{
     server::{BaseChannel, Channel},
     tokio_util::codec::{Framed, LengthDelimitedCodec},
 };
-use tokio::{io::AsyncReadExt, sync::RwLock};
+use tokio::{io::AsyncReadExt, sync::{RwLock, watch}};
 use tokio_serde::formats::Bincode;
 use tracing::{error, info, warn};
-use unavi_server_service::{ControlService, TrackingPFrame, from_client::StreamHeader};
+use unavi_server_service::{
+    ControlService, TrackingIFrame, TrackingPFrame, from_client::StreamHeader,
+};
 use wtransport::{
     Connection, RecvStream, endpoint::IncomingSession, error::ConnectionError, stream::BiStream,
 };
@@ -56,7 +58,8 @@ struct ServerContext {
 struct Player {
     connection: Connection,
     spaces: HashSet<String>,
-    latest_pframe: TrackingPFrame,
+    iframe_tx: watch::Sender<(usize, TrackingIFrame)>,
+    pframe_tx: watch::Sender<TrackingPFrame>,
 }
 
 #[derive(Default)]
@@ -131,24 +134,31 @@ impl SessionSpawner {
         }));
 
         {
+            let (iframe_tx, _iframe_rx) = watch::channel((0, Default::default()));
+            let (pframe_tx, _pframe_rx) = watch::channel(Default::default());
+
             let mut players = self.ctx.players.write().await;
             players.insert(
                 player_id,
                 Player {
                     connection: con.clone(),
                     spaces: Default::default(),
-                    latest_pframe: Default::default(),
+                    iframe_tx,
+                    pframe_tx,
                 },
             );
         }
+
+        let counts = StreamCounts::default();
 
         loop {
             match con.accept_uni().await {
                 Ok(stream) => {
                     let ctx = self.ctx.clone();
+                    let counts = counts.clone();
 
                     tokio::spawn(async move {
-                        if let Err(e) = handle_stream(ctx, player_id, stream).await {
+                        if let Err(e) = handle_stream(ctx, counts, player_id, stream).await {
                             error!("Error handling stream: {e:?}");
                         }
                     });
@@ -173,8 +183,15 @@ impl SessionSpawner {
     }
 }
 
+#[derive(Default, Clone)]
+struct StreamCounts {
+    transform: Arc<AtomicUsize>,
+    voice: Arc<AtomicUsize>,
+}
+
 async fn handle_stream(
     ctx: ServerContext,
+    counts: StreamCounts,
     player_id: u64,
     mut stream: RecvStream,
 ) -> anyhow::Result<()> {
@@ -187,10 +204,26 @@ async fn handle_stream(
 
     match header {
         StreamHeader::Transform => {
-            transform::handle_transform_stream(ctx, player_id, stream).await?;
+            let count = counts.transform.fetch_add(1, Ordering::SeqCst);
+
+            if count == 0 {
+                let res = transform::handle_transform_stream(ctx, player_id, stream).await;
+                counts.transform.fetch_sub(1, Ordering::SeqCst);
+                res?;
+            } else {
+                counts.transform.fetch_sub(1, Ordering::SeqCst);
+            }
         }
         StreamHeader::Voice => {
-            voice::handle_voice_stream(stream).await?;
+            let count = counts.voice.fetch_add(1, Ordering::SeqCst);
+
+            if count == 0 {
+                let res = voice::handle_voice_stream(stream).await;
+                counts.voice.fetch_sub(1, Ordering::SeqCst);
+                res?;
+            } else {
+                counts.voice.fetch_sub(1, Ordering::SeqCst);
+            }
         }
     }
 

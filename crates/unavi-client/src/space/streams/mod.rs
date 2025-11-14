@@ -15,8 +15,7 @@ pub async fn recv_stream(
     mut stream: RecvStream,
     transform_tx: Sender<RecievedTransform>,
 ) -> anyhow::Result<()> {
-    let header_len = stream.read_u16().await? as usize;
-
+    let header_len = stream.read_u16_le().await? as usize;
     let mut header_buf = vec![0; header_len];
     stream.read_exact(&mut header_buf).await?;
 

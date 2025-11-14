@@ -10,9 +10,10 @@ use unavi_server_service::{
     TrackingIFrame, TrackingPFrame, TrackingUpdate,
 };
 
-use crate::space::Space;
+use crate::space::{Space, connect::HostConnections, connect_info::ConnectInfo};
 
-const IFRAME_INTERVAL: u32 = 30;
+// 1 tick = 20hz (default server value)
+const IFRAME_INTERVAL_TICKS: u32 = 30;
 
 /// The interval at which data should be published to the space's server.
 #[derive(Component)]
@@ -23,7 +24,7 @@ pub struct PublishInterval {
 
 #[derive(Component, Default)]
 pub struct TransformPublishState {
-    frame_count: u32,
+    tick_count: u32,
     last_hips_pos: [f32; 3],
 }
 
@@ -52,8 +53,8 @@ fn record_transforms(
     bone_transforms: &Query<&Transform, With<BoneName>>,
     global_transforms: &Query<&GlobalTransform>,
 ) -> Option<TrackingUpdate> {
-    let is_iframe = state.frame_count.is_multiple_of(IFRAME_INTERVAL);
-    state.frame_count += 1;
+    let is_iframe = state.tick_count.is_multiple_of(IFRAME_INTERVAL_TICKS);
+    state.tick_count += 1;
 
     let hips_ent = *avatar_bones.get(&BoneName::Hips)?;
     let hips_global = global_transforms.get(hips_ent).ok()?;
@@ -119,19 +120,19 @@ fn record_transforms(
 
 pub fn publish_transform_data(
     time: Res<Time>,
-    host_connections: Res<crate::space::connect::HostConnections>,
-    players: Query<&PlayerEntities, With<LocalPlayer>>,
+    host_connections: Res<HostConnections>,
+    local_players: Query<&PlayerEntities, With<LocalPlayer>>,
     avatars: Query<&AvatarBones>,
     bone_transforms: Query<&Transform, With<BoneName>>,
     global_transforms: Query<&GlobalTransform>,
     mut spaces: Query<(
         &Space,
-        &crate::space::connect_info::ConnectInfo,
+        &ConnectInfo,
         &mut PublishInterval,
         &mut TransformPublishState,
     )>,
 ) {
-    let Ok(player_ents) = players.single() else {
+    let Ok(player_ents) = local_players.single() else {
         return;
     };
 
@@ -181,20 +182,9 @@ async fn send_transform_update(
     connection: &wtransport::Connection,
     update: TrackingUpdate,
 ) -> anyhow::Result<()> {
-    use tokio::io::AsyncWriteExt;
     use unavi_server_service::from_client;
 
-    let mut stream = connection.open_uni().await?.await?;
-
-    let header = from_client::StreamHeader::Transform;
-    let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
-    stream.write_u16(header_bytes.len() as u16).await?;
-    stream.write_all(&header_bytes).await?;
-
-    let meta = from_client::TransformMeta {};
-    let meta_bytes = bincode::encode_to_vec(&meta, bincode::config::standard())?;
-    stream.write_u16(meta_bytes.len() as u16).await?;
-    stream.write_all(&meta_bytes).await?;
+    let stream = connection.open_uni().await?.await?;
 
     let mut framed = LengthDelimitedCodec::builder()
         .little_endian()
@@ -202,8 +192,18 @@ async fn send_transform_update(
         .max_frame_length(TRANSFORM_MAX_FRAME_LENGTH)
         .new_write(stream);
 
+    let header = from_client::StreamHeader::Transform;
+    let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
+    framed.send(header_bytes.into()).await?;
+
+    let meta = from_client::TransformMeta { placeholder: true };
+    let meta_bytes = bincode::encode_to_vec(&meta, bincode::config::standard())?;
+    framed.send(meta_bytes.into()).await?;
+
     let update_bytes = bincode::serde::encode_to_vec(&update, bincode::config::standard())?;
     framed.send(update_bytes.into()).await?;
+
+    framed.into_inner().finish().await?;
 
     Ok(())
 }

@@ -91,8 +91,11 @@ impl ControlService for ControlServer {
 
         {
             let mut spaces = self.ctx.spaces.write().await;
-            if let Some(entry) = spaces.get_mut(&id) {
-                entry.players.remove(&self.player_id);
+            if let Some(space) = spaces.get_mut(&id) {
+                space.players.remove(&self.player_id);
+                if space.players.is_empty() {
+                    spaces.remove(&id);
+                }
             }
         }
 

@@ -42,7 +42,7 @@ pub struct TrackingPFrame {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JointIFrame {
-    pub id: u8,
+    pub id: BoneName,
     pub rot: [f32; 4],
 }
 

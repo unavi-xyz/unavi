@@ -9,7 +9,10 @@ use std::{
 use bevy::prelude::*;
 use xdid::core::did_url::DidUrl;
 
-use crate::space::{Space, stream::publish::PublishInterval};
+use crate::space::{
+    Space,
+    streams::publish::{PublishInterval, TransformPublishState},
+};
 
 pub struct SetTickrate {
     pub space_url: DidUrl,
@@ -32,10 +35,13 @@ pub fn set_space_tickrates(spaces: Query<(Entity, &Space)>, mut commands: Comman
                 continue;
             }
 
-            commands.entity(entity).insert(PublishInterval {
-                last_tick: Duration::default(),
-                tickrate: msg.tickrate,
-            });
+            commands.entity(entity).insert((
+                PublishInterval {
+                    last_tick: Duration::default(),
+                    tickrate: msg.tickrate,
+                },
+                TransformPublishState::default(),
+            ));
             break;
         }
     }

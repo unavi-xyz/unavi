@@ -3,6 +3,7 @@ use std::sync::mpsc::Sender;
 use bevy::{prelude::*, tasks::futures_lite::StreamExt};
 use tarpc::tokio_util::codec::LengthDelimitedCodec;
 use tokio::io::AsyncReadExt;
+use unavi_player::PlayerAvatar;
 use unavi_server_service::{
     TRANSFORM_LENGTH_FIELD_LENGTH, TRANSFORM_MAX_FRAME_LENGTH, TrackingUpdate,
     from_server::TransformMeta,
@@ -12,7 +13,8 @@ use wtransport::RecvStream;
 use crate::space::Space;
 
 pub struct RecievedTransform {
-    player: u64,
+    player_id: u64,
+    update: TrackingUpdate,
 }
 
 pub async fn recv_transform_stream(
@@ -36,27 +38,30 @@ pub async fn recv_transform_stream(
     while let Some(frame) = framed.next().await {
         let bytes = frame?;
 
-        let (_update, _) = bincode::serde::decode_from_slice::<TrackingUpdate, _>(
+        let (update, _) = bincode::serde::decode_from_slice::<TrackingUpdate, _>(
             &bytes,
             bincode::config::standard(),
         )?;
 
         transform_tx.send(RecievedTransform {
-            player: meta.player,
+            player_id: meta.player,
+            update,
         })?;
     }
 
     Ok(())
 }
 
-pub fn apply_player_transforms(spaces: Query<&Space>) {
+pub fn apply_player_transforms(spaces: Query<&Space>, players: Query<&PlayerAvatar>) {
     for space in spaces.iter() {
         let Ok(rx) = space.transform_rx.lock() else {
             continue;
         };
 
         while let Ok(_update) = rx.try_recv() {
-            //
+            for _player in players.iter() {
+                //
+            }
         }
     }
 }

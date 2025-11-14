@@ -11305,6 +11305,7 @@ dependencies = [
  "directories",
  "dwn",
  "embed-resource",
+ "futures 0.3.31",
  "image",
  "log",
  "reqwest",

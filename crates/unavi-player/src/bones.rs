@@ -1,14 +1,13 @@
+use std::collections::HashMap;
+
 use bevy::prelude::*;
 use bevy_vrm::BoneName;
 
 use crate::tracking::{TrackedHead, TrackedPose};
 
 /// Maps tracked poses to VRM avatar bones.
-#[derive(Component, Default)]
-pub struct AvatarBones {
-    /// VRM head bone entity.
-    pub head: Option<Entity>,
-}
+#[derive(Component, Default, Deref, DerefMut)]
+pub struct AvatarBones(pub HashMap<BoneName, Entity>);
 
 /// Marker to track which avatars have had bones populated.
 #[derive(Component)]
@@ -25,22 +24,20 @@ pub(crate) fn populate_avatar_bones(
     parents: Query<&ChildOf>,
 ) {
     for (avatar_ent, _) in avatars.iter() {
-        let mut avatar_bones = AvatarBones::default();
+        let mut avatar_bones = HashMap::new();
 
         for (bone_ent, bone_name) in bones.iter() {
             if !is_child(bone_ent, avatar_ent, &parents) {
                 continue;
             }
 
-            if bone_name == &BoneName::Head {
-                avatar_bones.head = Some(bone_ent);
-            }
+            avatar_bones.insert(*bone_name, bone_ent);
         }
 
-        if avatar_bones.head.is_some() {
+        if avatar_bones.contains_key(&BoneName::Head) {
             commands
                 .entity(avatar_ent)
-                .insert((avatar_bones, AvatarBonesPopulated));
+                .insert((AvatarBones(avatar_bones), AvatarBonesPopulated));
         }
     }
 }
@@ -61,7 +58,7 @@ pub(crate) fn apply_head_tracking(
             continue;
         };
 
-        let Some(head_bone) = avatar_bones.head else {
+        let Some(&head_bone) = avatar_bones.get(&BoneName::Head) else {
             continue;
         };
 

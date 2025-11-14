@@ -21,6 +21,7 @@ bevy_vrm.workspace = true
 bincode.workspace = true
 directories.workspace = true
 dwn.workspace = true
+futures.workspace = true
 image = { features = ["png"], workspace = true }
 log = { features = [
   "max_level_debug",

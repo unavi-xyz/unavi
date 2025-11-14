@@ -14,6 +14,7 @@ mod input;
 mod spawner;
 pub mod tracking;
 
+pub use bones::AvatarBones;
 pub use config::{PlayerConfig, WorldScale};
 pub use spawner::PlayerSpawner;
 pub use tracking::{TrackedHand, TrackedHead, TrackedPose, TrackingSource};

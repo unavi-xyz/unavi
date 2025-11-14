@@ -2,7 +2,7 @@ use std::{
     collections::{HashMap, HashSet},
     sync::{
         Arc,
-        atomic::{AtomicU64, AtomicUsize, Ordering},
+        atomic::{AtomicU64, Ordering},
     },
     time::Duration,
 };
@@ -13,16 +13,11 @@ use tarpc::{
     server::{BaseChannel, Channel},
     tokio_util::codec::{Framed, LengthDelimitedCodec},
 };
-use tokio::{
-    io::AsyncReadExt,
-    sync::{RwLock, watch},
-};
+use tokio::sync::{RwLock, watch};
 use tokio_serde::formats::Bincode;
 use tracing::{error, info, warn};
-use unavi_server_service::{
-    ControlService, TrackingIFrame, TrackingPFrame, from_client::StreamHeader,
-};
-use wtransport::{RecvStream, endpoint::IncomingSession, error::ConnectionError, stream::BiStream};
+use unavi_server_service::{ControlService, TrackingIFrame, TrackingPFrame};
+use wtransport::{endpoint::IncomingSession, error::ConnectionError, stream::BiStream};
 use xdid::{
     core::{did::Did, did_url::DidUrl},
     methods::{key::p256::P256KeyPair, web::reqwest::Url},
@@ -33,8 +28,7 @@ use crate::{DIRS, session::control::ControlServer};
 mod control;
 mod init_space_host;
 mod pull_transform;
-mod transform;
-mod voice;
+mod streams;
 
 pub const KEY_FRAGMENT: &str = "owner";
 
@@ -171,7 +165,7 @@ impl SessionSpawner {
             }
         });
 
-        let counts = StreamCounts::default();
+        let counts = streams::StreamCounts::default();
 
         loop {
             match con.accept_uni().await {
@@ -180,7 +174,8 @@ impl SessionSpawner {
                     let counts = counts.clone();
 
                     tokio::spawn(async move {
-                        if let Err(e) = handle_stream(ctx, counts, player_id, stream).await {
+                        if let Err(e) = streams::handle_stream(ctx, counts, player_id, stream).await
+                        {
                             error!("Error handling stream: {e:?}");
                         }
                     });
@@ -230,51 +225,4 @@ impl SessionSpawner {
             rates.remove(&player_id);
         }
     }
-}
-
-#[derive(Default, Clone)]
-struct StreamCounts {
-    transform: Arc<AtomicUsize>,
-    voice: Arc<AtomicUsize>,
-}
-
-async fn handle_stream(
-    ctx: ServerContext,
-    counts: StreamCounts,
-    player_id: u64,
-    mut stream: RecvStream,
-) -> anyhow::Result<()> {
-    let header_len = stream.read_u16().await? as usize;
-
-    let mut header_buf = vec![0; header_len];
-    stream.read_exact(&mut header_buf).await?;
-
-    let (header, _) = bincode::decode_from_slice(&header_buf, bincode::config::standard())?;
-
-    match header {
-        StreamHeader::Transform => {
-            let count = counts.transform.fetch_add(1, Ordering::SeqCst);
-
-            if count == 0 {
-                let res = transform::handle_transform_stream(ctx, player_id, stream).await;
-                counts.transform.fetch_sub(1, Ordering::SeqCst);
-                res?;
-            } else {
-                counts.transform.fetch_sub(1, Ordering::SeqCst);
-            }
-        }
-        StreamHeader::Voice => {
-            let count = counts.voice.fetch_add(1, Ordering::SeqCst);
-
-            if count == 0 {
-                let res = voice::handle_voice_stream(stream).await;
-                counts.voice.fetch_sub(1, Ordering::SeqCst);
-                res?;
-            } else {
-                counts.voice.fetch_sub(1, Ordering::SeqCst);
-            }
-        }
-    }
-
-    Ok(())
 }

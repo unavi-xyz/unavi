@@ -10,13 +10,13 @@ use xdid::core::did_url::DidUrl;
 use crate::{
     async_commands::ASYNC_COMMAND_QUEUE,
     auth::LocalActor,
-    space::{connect_info::ConnectInfo, stream::transform::RecievedTransform},
+    space::{connect_info::ConnectInfo, streams::transform::RecievedTransform},
 };
 
 pub mod connect;
 mod connect_info;
 mod record_ref_url;
-mod stream;
+mod streams;
 mod tickrate;
 
 pub struct SpacePlugin;
@@ -32,8 +32,8 @@ impl Plugin for SpacePlugin {
             .add_systems(
                 FixedUpdate,
                 (
-                    stream::publish::publish_transform_data,
-                    stream::transform::apply_player_transforms,
+                    streams::publish::publish_transform_data,
+                    streams::transform::apply_player_transforms,
                     tickrate::set_space_tickrates,
                 ),
             );

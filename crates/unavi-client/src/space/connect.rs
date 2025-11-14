@@ -33,7 +33,7 @@ pub struct HostConnection {
 }
 
 #[derive(Resource, Default)]
-pub struct HostConnections(Arc<RwLock<HashMap<String, HostConnection>>>);
+pub struct HostConnections(pub Arc<RwLock<HashMap<String, HostConnection>>>);
 
 #[derive(Resource, Default)]
 pub struct SpaceSessions(Arc<RwLock<HashMap<String, AbortHandle>>>);
@@ -91,7 +91,7 @@ pub fn handle_space_connect(
                                         let transform_tx = transform_tx.clone();
                                         tokio::spawn(async move {
                                             if let Err(e) =
-                                                super::stream::recv_stream(stream, transform_tx)
+                                                super::streams::recv_stream(stream, transform_tx)
                                                     .await
                                             {
                                                 error!("Error handling stream: {e:?}");

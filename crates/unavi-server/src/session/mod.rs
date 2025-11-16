@@ -54,6 +54,19 @@ pub struct ServerContext {
     spaces: Arc<RwLock<HashMap<SpaceId, Space>>>,
 }
 
+impl ServerContext {
+    /// Send player count update for a space.
+    async fn update_space_player_count(&self, space_id: String, count: usize) {
+        let _ = self
+            .msg_tx
+            .send(InternalMessage::SetPlayerCount {
+                record_id: space_id,
+                count,
+            })
+            .await;
+    }
+}
+
 struct Player {
     spaces: HashSet<String>,
     iframe_tx: watch::Sender<TrackingIFrame>,
@@ -215,9 +228,17 @@ impl SessionSpawner {
         for space_id in spaces_to_leave {
             if let Some(space) = spaces.get_mut(&space_id) {
                 space.players.remove(&player_id);
-                if space.players.is_empty() {
+                let count = space.players.len();
+                if count == 0 {
                     spaces.remove(&space_id);
                 }
+                drop(spaces);
+
+                self.ctx
+                    .update_space_player_count(space_id.clone(), count)
+                    .await;
+
+                spaces = self.ctx.spaces.write().await;
             }
         }
         drop(spaces);

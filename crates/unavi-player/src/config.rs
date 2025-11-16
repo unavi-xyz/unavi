@@ -39,6 +39,15 @@ pub const DEFAULT_WALK_SPEED: f32 = 4.0;
 pub const PLAYER_RADIUS: f32 = 0.5;
 pub const FLOAT_HEIGHT_OFFSET: f32 = 0.01;
 
+/// Remote player configuration (VRM dimensions only).
+#[derive(Component, Clone, Debug, Default)]
+pub struct RemotePlayerConfig {
+    /// VRM avatar's actual height in meters (measured from bones).
+    pub vrm_height: Option<f32>,
+    /// VRM avatar's shoulder width in meters (for capsule radius).
+    pub vrm_radius: Option<f32>,
+}
+
 /// World scale factor resource.
 /// Multiply world entities by this to make the player perceive correct scale.
 /// Scale = real_height / vrm_height

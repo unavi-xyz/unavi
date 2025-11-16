@@ -16,7 +16,7 @@ use crate::space::{Space, connect::HostConnections, connect_info::ConnectInfo};
 
 use super::{PFRAME_ROTATION_SCALE, PFRAME_TRANSLATION_SCALE};
 
-const IFRAME_INTERVAL: Duration = Duration::from_secs(10);
+const IFRAME_INTERVAL: Duration = Duration::from_secs(5);
 
 type FramedTransformWriter = FramedWrite<SendStream, LengthDelimitedCodec>;
 
@@ -35,6 +35,7 @@ pub struct PublishInterval {
 pub struct TransformPublishState {
     last_iframe_time: Duration,
     last_hips_pos: [f32; 3],
+    last_hips_rot: [f32; 4],
 }
 
 impl Default for TransformPublishState {
@@ -42,6 +43,7 @@ impl Default for TransformPublishState {
         Self {
             last_iframe_time: Duration::ZERO,
             last_hips_pos: [0.0, 0.0, 0.0],
+            last_hips_rot: [0.0, 0.0, 0.0, 1.0],
         }
     }
 }
@@ -74,7 +76,7 @@ fn record_transforms(
 
     let hips_ent = *avatar_bones.get(&BoneName::Hips)?;
     let hips_global = global_transforms.get(hips_ent).ok()?;
-    let hips_pos = hips_global.translation();
+    let (_, hips_rot, hips_pos) = hips_global.to_scale_rotation_translation();
 
     if is_iframe {
         let mut joints = Vec::new();
@@ -97,10 +99,12 @@ fn record_transforms(
 
         let iframe = TrackingIFrame {
             translation: [hips_pos.x, hips_pos.y, hips_pos.z],
+            rotation: [hips_rot.x, hips_rot.y, hips_rot.z, hips_rot.w],
             joints,
         };
 
         state.last_hips_pos = iframe.translation;
+        state.last_hips_rot = iframe.rotation;
         state.last_iframe_time = current_time;
 
         Some(TrackingUpdate::IFrame(iframe))
@@ -128,6 +132,7 @@ fn record_transforms(
 
         let pframe = TrackingPFrame {
             translation: quantize_translation(delta_pos),
+            rotation: quantize_rotation(hips_rot),
             joints,
         };
 

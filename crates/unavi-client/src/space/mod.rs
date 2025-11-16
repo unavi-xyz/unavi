@@ -37,6 +37,7 @@ impl Plugin for SpacePlugin {
             .add_systems(
                 FixedUpdate,
                 (
+                    streams::control::apply_controls,
                     streams::publish::publish_transform_data,
                     streams::transform::apply_player_transforms,
                     tickrate::set_space_tickrates,
@@ -57,6 +58,13 @@ pub struct HostTransformChannel {
     #[allow(dead_code)]
     pub tx: Sender<RecievedTransform>,
     pub rx: Arc<Mutex<Receiver<RecievedTransform>>>,
+}
+
+#[derive(Component)]
+pub struct HostControlChannel {
+    #[allow(dead_code)]
+    pub tx: Sender<unavi_server_service::from_server::ControlMessage>,
+    pub rx: Arc<Mutex<Receiver<unavi_server_service::from_server::ControlMessage>>>,
 }
 
 #[derive(Component, Default)]

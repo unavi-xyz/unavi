@@ -9,6 +9,7 @@ use wtransport::RecvStream;
 
 use crate::session::ServerContext;
 
+pub mod control;
 pub mod transform;
 mod voice;
 

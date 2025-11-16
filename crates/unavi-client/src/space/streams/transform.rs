@@ -1,4 +1,4 @@
-use std::sync::mpsc::Sender;
+use std::{collections::HashMap, sync::mpsc::Sender};
 
 use bevy::{prelude::*, tasks::futures_lite::StreamExt};
 use bevy_vrm::BoneName;
@@ -63,36 +63,51 @@ pub fn apply_player_transforms(
         &AvatarBones,
     )>,
     mut bone_transforms: Query<&mut Transform, With<BoneName>>,
+    mut pending_spawns: Local<HashMap<(Entity, u64), Entity>>,
 ) {
+    // Clean up pending spawns once they become visible in queries.
+    pending_spawns.retain(|_, entity| {
+        !remote_players.iter().any(|(e, ..)| e == *entity)
+    });
+
     for (host_entity, _, channel) in hosts.iter() {
         let Ok(rx) = channel.rx.lock() else {
             continue;
         };
 
         while let Ok(received) = rx.try_recv() {
-            // Find existing remote player or spawn new one.
-            let mut found = false;
-            let mut player_entity = None;
-
-            for (_, remote, player_host, _, _) in remote_players.iter() {
-                if remote.player_id == received.player_id && player_host.0 == host_entity {
-                    found = true;
-                    break;
-                }
-            }
+            // Find existing remote player (in query or pending spawns).
+            let existing_entity = remote_players
+                .iter()
+                .find(|(_, remote, player_host, ..)| {
+                    remote.player_id == received.player_id && player_host.0 == host_entity
+                })
+                .map(|(e, ..)| e)
+                .or_else(|| pending_spawns.get(&(host_entity, received.player_id)).copied());
 
             // Spawn remote avatar if not found.
-            if !found {
+            if existing_entity.is_none() {
                 let avatar = AvatarSpawner::default().spawn(&mut commands, &asset_server);
+
+                // Store initial state with first IFrame if applicable.
+                let initial_state = match &received.update {
+                    TrackingUpdate::IFrame(iframe) => RemotePlayerState {
+                        last_iframe: Some(iframe.clone()),
+                    },
+                    TrackingUpdate::PFrame(_) => RemotePlayerState::default(),
+                };
+
                 commands.entity(avatar).insert((
                     RemotePlayer {
                         player_id: received.player_id,
                     },
                     PlayerHost(host_entity),
-                    RemotePlayerState::default(),
+                    initial_state,
                     RemotePlayerConfig::default(),
                 ));
-                player_entity = Some(avatar);
+
+                // Track pending spawn to prevent duplicates.
+                pending_spawns.insert((host_entity, received.player_id), avatar);
             }
 
             // Apply transform update.
@@ -107,11 +122,6 @@ pub fn apply_player_transforms(
                             state.last_iframe = Some(iframe.clone());
                             break;
                         }
-                    }
-
-                    // If just spawned, apply to new entity.
-                    if let Some(_entity) = player_entity {
-                        // Will be applied next frame after AvatarBones populates.
                     }
                 }
                 TrackingUpdate::PFrame(pframe) => {

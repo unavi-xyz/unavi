@@ -1,10 +1,12 @@
 use std::{path::PathBuf, sync::LazyLock};
 
-use bevy::prelude::*;
+use bevy::{
+    asset::io::web::WebAssetPlugin, prelude::*,
+};
 use directories::ProjectDirs;
 use dwn::{Dwn, stores::NativeDbStore};
 
-pub mod asset_download;
+pub mod assets;
 mod async_commands;
 mod auth;
 mod icon;
@@ -37,8 +39,13 @@ pub struct UnaviPlugin;
 
 impl Plugin for UnaviPlugin {
     fn build(&self, app: &mut App) {
+        assets::copy_assets_to_dirs().expect("failed to copy assets");
+
         DefaultPlugins
             .build()
+            .set(WebAssetPlugin {
+                silence_startup_warning: true,
+            })
             .set(AssetPlugin {
                 file_path: assets_dir().to_string_lossy().to_string(),
                 ..default()

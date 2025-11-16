@@ -21,7 +21,8 @@ use crate::{
     tracking::{TrackedHead, TrackedPose, TrackingSource},
 };
 
-const DEFAULT_VRM: &str = "models/default.vrm";
+const DEFAULT_AVATAR: &str =
+    "https://unavi.nyc3.cdn.digitaloceanspaces.com/assets/models/default.vrm";
 
 /// Builder for spawning a player entity.
 #[derive(Default)]
@@ -95,7 +96,11 @@ impl PlayerSpawner {
             .add_child(camera)
             .id();
 
-        let vrm_path = self.vrm_asset.as_deref().unwrap_or(DEFAULT_VRM).to_string();
+        let vrm_path = self
+            .vrm_asset
+            .as_deref()
+            .unwrap_or(DEFAULT_AVATAR)
+            .to_string();
         let vrm_handle = asset_server.load(vrm_path);
         let animations = default_character_animations(asset_server);
 

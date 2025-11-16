@@ -5,16 +5,17 @@ use crate::animation::AnimationName;
 
 use super::load::{AvatarAnimation, AvatarAnimationClips};
 
-const ASSET: &str = "models/animations.glb";
+const DEFAULT_ANIMATIONS: &str =
+    "https://unavi.nyc3.cdn.digitaloceanspaces.com/assets/models/animations.glb";
 
 pub fn default_character_animations(asset_server: &AssetServer) -> AvatarAnimationClips {
     let mut map = HashMap::default();
 
-    let gltf = asset_server.load(ASSET);
+    let gltf = asset_server.load(DEFAULT_ANIMATIONS);
 
     let load_animation = |i: usize| -> AvatarAnimation {
         let animation = asset_server.load_with_settings::<RawGltfAnimation, GltfLoaderSettings>(
-            format!("{ASSET}#RawAnimation{i}"),
+            format!("{DEFAULT_ANIMATIONS}#RawAnimation{i}"),
             |settings| {
                 settings.expose_raw_animation_curves = true;
             },

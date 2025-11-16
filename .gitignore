@@ -5,9 +5,9 @@ CLAUDE.md
 # Needed for release workflow, to avoid "uncommitted changes" errors.
 artifacts/
 
-# Client assets
-crates/unavi-client/assets/models
+# Bevy assets
 crates/unavi-client/assets/wasm
+.web-asset-cache/
 
 # Nix
 result

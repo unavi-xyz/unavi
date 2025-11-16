@@ -142,5 +142,4 @@ space, and the fate of the individual**.
 > The true form of the Internet already exists.\
 > We need only to let it express itself.
 
-UNAVI is the first gesture toward that expression. The Wired is not an escape
-from reality — it is reality, revealed in its authentic form.
+UNAVI is the first gesture toward that expression.

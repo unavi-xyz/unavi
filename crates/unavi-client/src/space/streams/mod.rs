@@ -11,6 +11,9 @@ pub mod publish;
 pub mod transform;
 mod voice;
 
+pub const PFRAME_ROTATION_SCALE: f32 = i16::MAX as f32;
+pub const PFRAME_TRANSLATION_SCALE: f32 = 1000.0;
+
 pub async fn recv_stream(
     mut stream: RecvStream,
     transform_tx: Sender<RecievedTransform>,

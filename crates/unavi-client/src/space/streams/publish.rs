@@ -14,8 +14,9 @@ use wtransport::SendStream;
 
 use crate::space::{Space, connect::HostConnections, connect_info::ConnectInfo};
 
-// 1 tick = 20hz (default server value)
-const IFRAME_INTERVAL_TICKS: u32 = 30;
+use super::{PFRAME_ROTATION_SCALE, PFRAME_TRANSLATION_SCALE};
+
+const IFRAME_INTERVAL: Duration = Duration::from_secs(10);
 
 type FramedTransformWriter = FramedWrite<SendStream, LengthDelimitedCodec>;
 
@@ -30,39 +31,46 @@ pub struct PublishInterval {
     pub tickrate: Duration,
 }
 
-#[derive(Component, Default, Clone)]
+#[derive(Component, Clone)]
 pub struct TransformPublishState {
-    tick_count: u32,
+    last_iframe_time: Duration,
     last_hips_pos: [f32; 3],
 }
 
+impl Default for TransformPublishState {
+    fn default() -> Self {
+        Self {
+            last_iframe_time: Duration::ZERO,
+            last_hips_pos: [0.0, 0.0, 0.0],
+        }
+    }
+}
+
 fn quantize_rotation(rot: Quat) -> [i16; 4] {
-    const SCALE: f32 = i16::MAX as f32;
     [
-        (rot.x * SCALE) as i16,
-        (rot.y * SCALE) as i16,
-        (rot.z * SCALE) as i16,
-        (rot.w * SCALE) as i16,
+        (rot.x * PFRAME_ROTATION_SCALE) as i16,
+        (rot.y * PFRAME_ROTATION_SCALE) as i16,
+        (rot.z * PFRAME_ROTATION_SCALE) as i16,
+        (rot.w * PFRAME_ROTATION_SCALE) as i16,
     ]
 }
 
-fn quantize_position_delta(delta: Vec3) -> [i16; 3] {
-    const SCALE: f32 = 1000.0;
+fn quantize_translation(delta: Vec3) -> [i16; 3] {
     [
-        (delta.x * SCALE).clamp(i16::MIN as f32, i16::MAX as f32) as i16,
-        (delta.y * SCALE).clamp(i16::MIN as f32, i16::MAX as f32) as i16,
-        (delta.z * SCALE).clamp(i16::MIN as f32, i16::MAX as f32) as i16,
+        (delta.x * PFRAME_TRANSLATION_SCALE).clamp(i16::MIN as f32, i16::MAX as f32) as i16,
+        (delta.y * PFRAME_TRANSLATION_SCALE).clamp(i16::MIN as f32, i16::MAX as f32) as i16,
+        (delta.z * PFRAME_TRANSLATION_SCALE).clamp(i16::MIN as f32, i16::MAX as f32) as i16,
     ]
 }
 
 fn record_transforms(
     state: &mut TransformPublishState,
+    current_time: Duration,
     avatar_bones: &AvatarBones,
     bone_transforms: &Query<&Transform, With<BoneName>>,
     global_transforms: &Query<&GlobalTransform>,
 ) -> Option<TrackingUpdate> {
-    let is_iframe = state.tick_count.is_multiple_of(IFRAME_INTERVAL_TICKS);
-    state.tick_count += 1;
+    let is_iframe = current_time - state.last_iframe_time >= IFRAME_INTERVAL;
 
     let hips_ent = *avatar_bones.get(&BoneName::Hips)?;
     let hips_global = global_transforms.get(hips_ent).ok()?;
@@ -78,7 +86,7 @@ fn record_transforms(
 
             joints.push(JointIFrame {
                 id: *bone_name,
-                rot: [
+                rotation: [
                     transform.rotation.x,
                     transform.rotation.y,
                     transform.rotation.z,
@@ -88,11 +96,12 @@ fn record_transforms(
         }
 
         let iframe = TrackingIFrame {
-            pos: [hips_pos.x, hips_pos.y, hips_pos.z],
+            translation: [hips_pos.x, hips_pos.y, hips_pos.z],
             joints,
         };
 
-        state.last_hips_pos = iframe.pos;
+        state.last_hips_pos = iframe.translation;
+        state.last_iframe_time = current_time;
 
         Some(TrackingUpdate::IFrame(iframe))
     } else {
@@ -109,16 +118,16 @@ fn record_transforms(
                 continue;
             };
 
-            let rot = quantize_rotation(transform.rotation);
+            let rotation = quantize_rotation(transform.rotation);
 
             joints.push(JointPFrame {
                 id: *bone_name,
-                rot,
+                rotation,
             });
         }
 
         let pframe = TrackingPFrame {
-            pos: quantize_position_delta(delta_pos),
+            translation: quantize_translation(delta_pos),
             joints,
         };
 
@@ -198,6 +207,7 @@ pub fn publish_transform_data(
 
         let Some(update) = record_transforms(
             &mut state,
+            now,
             avatar_bones,
             &bone_transforms,
             &global_transforms,

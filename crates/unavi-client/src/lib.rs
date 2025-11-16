@@ -34,7 +34,9 @@ pub fn db_path() -> PathBuf {
     DIRS.data_local_dir().join("data.db")
 }
 
-pub struct UnaviPlugin;
+pub struct UnaviPlugin {
+    pub in_memory: bool,
+}
 
 impl Plugin for UnaviPlugin {
     fn build(&self, app: &mut App) {
@@ -60,10 +62,13 @@ impl Plugin for UnaviPlugin {
             })
             .finish(app);
 
-        let store = {
+        let store = if self.in_memory {
+            NativeDbStore::new_in_memory()
+        } else {
             let path = db_path();
-            NativeDbStore::new(path).expect("access native db")
-        };
+            NativeDbStore::new(path)
+        }
+        .expect("instantiate native db");
         let dwn = Dwn::from(store);
 
         app.add_plugins((

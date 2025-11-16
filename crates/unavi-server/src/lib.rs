@@ -89,11 +89,7 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
 
     // Internal message handler.
     tokio::spawn(async move {
-        loop {
-            if let Err(e) = internal_msg::internal_message_handler(&mut msg_rx).await {
-                error!("Error handling internal message: {e:?}");
-            }
-        }
+        internal_msg::internal_message_handler(&mut msg_rx).await;
     });
 
     // WebTransport handler.
@@ -111,9 +107,14 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
                 }
             };
 
-            let _ = msg_tx
+            if let Err(e) = msg_tx
                 .send(InternalMessage::SetActor(spawner.ctx.actor.clone()))
-                .await;
+                .await
+            {
+                error!("Failed to set actor: {e:?}");
+                tokio::time::sleep(SPACE_RETRY_DELAY).await;
+                continue;
+            };
 
             if let Err(e) = spawner.init_space_host(cert_hash.to_string()).await {
                 error!("Failed to init space host: {e:?}");

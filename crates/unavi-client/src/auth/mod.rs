@@ -110,37 +110,44 @@ async fn find_populated_space(actor: &Actor) -> anyhow::Result<Option<DidUrl>> {
     // TODO: Fetch from space host
     let host_dwn = Url::parse(REMOTE_DWN_URL)?;
 
-    let spaces = actor
+    let infos = actor
         .query()
         .protocol(SPACE_HOST_PROTOCOL.to_string())
-        .protocol_path("space".to_string())
+        .protocol_path("space/server-info".to_string())
+        .target(&space_host)
         .send(&host_dwn)
         .await?;
 
-    for space in spaces {
-        let Some(info) = actor
-            .query()
-            .protocol(SPACE_HOST_PROTOCOL.to_string())
-            .protocol_path("space".to_string())
-            .parent_id(space.entry().record_id.clone())
-            .send(&host_dwn)
-            .await?
-            .into_iter()
-            .next()
-        else {
+    info!("Found {} hosted spaces", infos.len());
+
+    for record in infos {
+        let Some(space_id) = record.entry().context_id.as_deref() else {
             continue;
         };
 
-        let Some(data) = info.data() else {
-            continue;
-        };
+        let info = match record.data() {
+            Some(data) => serde_json::from_slice::<ServerInfo>(data)?,
+            None => {
+                let Some(full_record) = actor
+                    .read(record.entry().record_id.clone())
+                    .target(&space_host)
+                    .send(&host_dwn)
+                    .await?
+                else {
+                    continue;
+                };
 
-        let info = serde_json::from_slice::<ServerInfo>(data)?;
+                let Some(data) = full_record.data() else {
+                    continue;
+                };
+
+                serde_json::from_slice::<ServerInfo>(data)?
+            }
+        };
 
         if info.num_players == 0 {
             continue;
         }
-
         info!(
             "Found populated space with {}/{} players",
             info.num_players, info.max_players
@@ -149,7 +156,7 @@ async fn find_populated_space(actor: &Actor) -> anyhow::Result<Option<DidUrl>> {
             continue;
         }
 
-        let space_url = new_record_ref_url(space_host, &space.entry().record_id);
+        let space_url = new_record_ref_url(space_host, space_id);
         return Ok(Some(space_url));
     }
 

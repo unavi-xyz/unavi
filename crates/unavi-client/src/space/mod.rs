@@ -16,6 +16,8 @@ use crate::{
     },
 };
 
+use unavi_server_service::TrackingIFrame;
+
 pub mod connect;
 mod connect_info;
 mod record_ref_url;
@@ -44,23 +46,50 @@ impl Plugin for SpacePlugin {
     }
 }
 
+/// Host server connection entity.
+#[derive(Component)]
+#[require(HostPlayers)]
+pub struct Host {
+    pub connect_url: String,
+}
+
+#[derive(Component)]
+pub struct HostTransformChannel {
+    #[allow(dead_code)]
+    pub tx: Sender<RecievedTransform>,
+    pub rx: Arc<Mutex<Receiver<RecievedTransform>>>,
+}
+
+#[derive(Component, Default)]
+#[relationship_target(relationship = PlayerHost)]
+pub struct HostPlayers(Vec<Entity>);
+
+/// Remote player entity.
+#[derive(Component)]
+pub struct RemotePlayer {
+    pub player_id: u64,
+}
+
+#[derive(Component)]
+#[relationship(relationship_target = HostPlayers)]
+pub struct PlayerHost(Entity);
+
+/// Tracks the last I-frame for a remote player to apply P-frame deltas.
+#[derive(Component, Default)]
+pub struct RemotePlayerState {
+    pub last_iframe: Option<TrackingIFrame>,
+}
+
 /// Declarative space definition.
 /// Upon add, the space will be fetched and joined.
 #[derive(Component)]
 pub struct Space {
     pub url: DidUrl,
-    transform_tx: Sender<RecievedTransform>,
-    transform_rx: Arc<Mutex<Receiver<RecievedTransform>>>,
 }
 
 impl Space {
     pub fn new(url: DidUrl) -> Self {
-        let (transform_tx, transform_rx) = std::sync::mpsc::channel();
-        Self {
-            url,
-            transform_tx,
-            transform_rx: Arc::new(Mutex::new(transform_rx)),
-        }
+        Self { url }
     }
 }
 

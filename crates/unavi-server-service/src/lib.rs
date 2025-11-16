@@ -30,26 +30,26 @@ pub enum TrackingUpdate {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct TrackingIFrame {
-    pub pos: [f32; 3],
+    pub translation: [f32; 3],
     pub joints: Vec<JointIFrame>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct TrackingPFrame {
-    pub pos: [i16; 3],
+    pub translation: [i16; 3],
     pub joints: Vec<JointPFrame>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JointIFrame {
     pub id: BoneName,
-    pub rot: [f32; 4],
+    pub rotation: [f32; 4],
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JointPFrame {
     pub id: BoneName,
-    pub rot: [i16; 4],
+    pub rotation: [i16; 4],
 }
 
 pub const TRANSFORM_LENGTH_FIELD_LENGTH: usize = 2;

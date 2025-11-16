@@ -9,7 +9,7 @@ use bevy::{
     color::palettes::tailwind::{
         BLUE_400, EMERALD_400, ORANGE_400, PURPLE_400, RED_400, YELLOW_400,
     },
-    light::{CascadeShadowConfigBuilder, SunDisk, light_consts::lux},
+    light::{CascadeShadowConfigBuilder,  light_consts::lux},
     mesh::VertexAttributeValues,
     pbr::{Atmosphere, AtmosphereSettings},
     post_process::{auto_exposure::AutoExposure, bloom::Bloom},
@@ -209,7 +209,6 @@ fn setup_scene(
             shadows_enabled: true,
             ..Default::default()
         },
-        SunDisk::EARTH,
         Transform::from_xyz(1.0, 0.4, 0.1).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 

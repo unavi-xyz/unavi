@@ -1,10 +1,11 @@
 use std::{
     collections::{HashMap, HashSet},
-    sync::Arc,
+    sync::mpsc::Sender,
+    sync::{Arc, Mutex},
     time::Duration,
 };
 
-use bevy::{log::tracing::Instrument, prelude::*, tasks::TaskPool};
+use bevy::{ecs::world::CommandQueue, log::tracing::Instrument, prelude::*, tasks::TaskPool};
 use tarpc::{
     client::Config,
     tokio_serde::formats::Bincode,
@@ -17,12 +18,15 @@ use wtransport::{
 };
 use xdid::core::did_url::DidUrl;
 
-use crate::space::{
-    Space,
-    connect_info::ConnectInfo,
-    record_ref_url::parse_record_ref_url,
-    streams::publish::HostTransformStreams,
-    tickrate::{SetTickrate, TICKRATE_QUEUE},
+use crate::{
+    async_commands::ASYNC_COMMAND_QUEUE,
+    space::{
+        Host, HostPlayers, HostTransformChannel, Space,
+        connect_info::ConnectInfo,
+        record_ref_url::parse_record_ref_url,
+        streams::publish::HostTransformStreams,
+        tickrate::{SetTickrate, TICKRATE_QUEUE},
+    },
 };
 
 const MAX_IDLE_TIMEOUT: Duration = Duration::from_mins(2);
@@ -42,6 +46,7 @@ const MAX_TICKRATE: u64 = 1_000;
 pub struct HostConnection {
     pub connection: Connection,
     pub control: ControlServiceClient,
+    pub transform_tx: Sender<crate::space::streams::transform::RecievedTransform>,
 }
 
 #[derive(Resource, Default)]
@@ -68,7 +73,6 @@ pub fn handle_space_connect(
     let connections = connections.0.clone();
     let initiated = initiated.clone();
     let sessions = sessions.0.clone();
-    let transform_tx = space.transform_tx.clone();
 
     let pool = TaskPool::get_thread_executor();
     pool.spawn(async move {
@@ -93,7 +97,7 @@ pub fn handle_space_connect(
                             Ok(host) => {
                                 // Recieve and handle incoming streams.
                                 let con = host.connection.clone();
-                                let transform_tx = transform_tx.clone();
+                                let transform_tx = host.transform_tx.clone();
                                 tokio::spawn(async move {
                                     loop {
                                         let Ok(stream) = con.accept_uni().await else {
@@ -188,9 +192,30 @@ async fn connect_to_host(
 
     let control = control_service.spawn();
 
+    // Spawn Host entity.
+    let (transform_tx, transform_rx) = std::sync::mpsc::channel();
+    let connect_url_clone = connect_url.to_string();
+
+    let transform_tx_clone = transform_tx.clone();
+    let mut queue = CommandQueue::default();
+    queue.push(move |world: &mut World| {
+        world.spawn((
+            Host {
+                connect_url: connect_url_clone,
+            },
+            HostTransformChannel {
+                tx: transform_tx_clone,
+                rx: Arc::new(Mutex::new(transform_rx)),
+            },
+        ));
+    });
+
+    ASYNC_COMMAND_QUEUE.0.send(queue)?;
+
     Ok(HostConnection {
         connection,
         control,
+        transform_tx,
     })
 }
 
@@ -267,6 +292,38 @@ pub fn handle_space_disconnect(
 
                 if let Some(connection) = connections.write().await.remove(&connect_url) {
                     connection.connection.close(VarInt::from_u32(200), &[]);
+
+                    // Despawn Host entity and all remote players.
+                    let connect_url_clone = connect_url.clone();
+                    let mut queue = CommandQueue::default();
+                    queue.push(move |world: &mut World| {
+                        // Find Host entity by connect_url.
+                        let mut host_entity = None;
+                        let mut query = world.query::<(Entity, &Host)>();
+                        for (entity, host) in query.iter(world) {
+                            if host.connect_url == connect_url_clone {
+                                host_entity = Some(entity);
+                                break;
+                            }
+                        }
+
+                        if let Some(host_ent) = host_entity {
+                            // Get all remote players.
+                            if let Some(host_players) = world.get::<HostPlayers>(host_ent) {
+                                let players = host_players.0.clone();
+                                for player in players {
+                                    world.despawn(player);
+                                }
+                            }
+
+                            // Despawn host.
+                            world.despawn(host_ent);
+                        }
+                    });
+
+                    if let Err(e) = ASYNC_COMMAND_QUEUE.0.send(queue) {
+                        error!("Failed to send cleanup commands: {e:?}");
+                    }
                 }
             }
         });

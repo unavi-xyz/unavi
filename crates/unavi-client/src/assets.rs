@@ -3,9 +3,9 @@ use std::path::{Path, PathBuf};
 use anyhow::Context;
 use bevy::log::info;
 
-use crate::{assets_dir, models_dir};
+use crate::assets_dir;
 
-/// Copy bundled assets from the relative asset directory to DIRS location.
+/// Copy bundled assets from the relative asset directory to state location.
 /// In dev: copies from CARGO_MANIFEST_DIR/assets
 /// In release: copies from exe_dir/assets
 pub fn copy_assets_to_dirs() -> anyhow::Result<()> {
@@ -61,39 +61,6 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn ensure_downloaded_assets() -> anyhow::Result<()> {
-    let models = models_dir();
-    std::fs::create_dir_all(&models).context("create models directory")?;
-
-    let files = ["default.vrm", "animations.glb"];
-
-    let missing_files: Vec<_> = files
-        .iter()
-        .filter(|filename| !models.join(filename).exists())
-        .copied()
-        .collect();
-
-    if missing_files.is_empty() {
-        return Ok(());
-    }
-
-    std::thread::scope(|s| {
-        let handles: Vec<_> = missing_files
-            .iter()
-            .map(|filename| {
-                let path = models.join(filename);
-                s.spawn(move || download_asset(filename, &path))
-            })
-            .collect();
-
-        for handle in handles {
-            handle.join().unwrap()?;
-        }
-
-        Ok(())
-    })
-}
-
 fn get_relative_assets_dir() -> anyhow::Result<PathBuf> {
     // Development: use cargo manifest dir if available
     if let Ok(manifest_dir) = std::env::var("CARGO_MANIFEST_DIR") {
@@ -107,26 +74,4 @@ fn get_relative_assets_dir() -> anyhow::Result<PathBuf> {
         .ok_or(anyhow::anyhow!("exe has no parent directory"))?;
 
     Ok(exe_dir.join("assets"))
-}
-
-fn download_asset(filename: &str, dest_path: &PathBuf) -> anyhow::Result<()> {
-    info!("Downloading {filename}...");
-
-    let url = format!("{}{}", unavi_constants::MODELS_URL, filename);
-    let client = reqwest::blocking::Client::new();
-
-    let response = client
-        .get(&url)
-        .send()
-        .context("failed to download asset")?;
-
-    if !response.status().is_success() {
-        anyhow::bail!("download failed with status: {}", response.status());
-    }
-
-    let bytes = response.bytes().context("failed to read response bytes")?;
-    std::fs::write(dest_path, bytes).context("failed to write asset file")?;
-
-    info!("Downloaded {filename}");
-    Ok(())
 }

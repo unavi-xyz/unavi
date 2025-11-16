@@ -7,6 +7,7 @@ use bevy_vrm::VrmPlugins;
 use unavi_input::CursorGrabState;
 
 mod animation;
+pub mod avatar_spawner;
 mod bones;
 pub mod config;
 mod eye_offset;
@@ -14,9 +15,10 @@ mod input;
 mod spawner;
 pub mod tracking;
 
+pub use avatar_spawner::AvatarSpawner;
 pub use bones::AvatarBones;
 pub use config::{PlayerConfig, WorldScale};
-pub use spawner::PlayerSpawner;
+pub use spawner::LocalPlayerSpawner;
 pub use tracking::{TrackedHand, TrackedHead, TrackedPose, TrackingSource};
 
 /// Main player plugin.

@@ -10,5 +10,5 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-constcat         = "0.6.1"
-semver.workspace = true
+constcat.workspace = true
+semver.workspace   = true

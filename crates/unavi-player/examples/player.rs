@@ -19,7 +19,7 @@ use bevy::{
 use bevy_rich_text3d::{Text3d, Text3dPlugin, Text3dStyling, TextAtlas};
 use bevy_vrm::first_person::{FirstPersonFlag, RENDER_LAYERS};
 use unavi_input::InputPlugin;
-use unavi_player::{PlayerPlugin, PlayerSpawner};
+use unavi_player::{LocalPlayerSpawner, PlayerPlugin};
 
 fn main() {
     App::new()
@@ -175,7 +175,7 @@ fn setup_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    PlayerSpawner::default().spawn(&mut commands, &asset_server);
+    LocalPlayerSpawner::default().spawn(&mut commands, &asset_server);
 
     commands.spawn((
         SkyCamera,

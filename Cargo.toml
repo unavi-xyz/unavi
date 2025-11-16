@@ -25,6 +25,7 @@ bevy_async_task    = "0.9.0"
 bevy_gltf_kun      = { git = "https://github.com/unavi-xyz/gltf_kun" }
 bevy_vrm           = { git = "https://github.com/unavi-xyz/bevy_vrm" }
 bincode            = "2.0.1"
+constcat           = "0.6.1"
 directories        = "6.0.0"
 dwn                = { git = "https://github.com/unavi-xyz/dwn" }
 dwn-server         = { git = "https://github.com/unavi-xyz/dwn" }

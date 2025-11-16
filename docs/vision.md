@@ -5,137 +5,157 @@ strategic direction of **UNAVI** and **The Wired**.
 
 ## What is UNAVI?
 
-**UNAVI** is an open-source spatial browser — a gateway to a new,
-three-dimensional [hypermedia](https://en.wikipedia.org/wiki/Hypermedia).
+**UNAVI** is an open-source spatial browser — a gateway to three-dimensional
+[hypermedia](https://en.wikipedia.org/wiki/Hypermedia). It is built primarily
+in [Rust](https://www.rust-lang.org/) using the [Bevy](https://bevy.org/)
+engine, and serves as a reference implementation of **The Wired protocol**.
 
-Built primarily in [Rust](https://www.rust-lang.org/) using the
-[Bevy](https://bevy.org/) engine, UNAVI serves as a reference implementation
-of **The Wired protocol** — a framework for decentralized, interoperable
-**spaces**.
+A **space** in UNAVI is a 3D hyperdocument. It can contain objects, portals, and
+behaviors, all expressed through open formats and standard scripting APIs.
+Spaces can be created, viewed, and hosted by anyone.
 
-A **space** is a 3D hyperdocument: a composable unit of hyperspace that can be
-viewed, linked, and hosted by anyone. Spaces can contain objects, portals, and
-behaviors, all expressed through open formats and scripting APIs.
-
-UNAVI is not a walled garden. It is a foundation for an open, composable
-ecosystem — where every space, identity, and creation connects through shared
-standards.
+UNAVI is not a walled garden. It provides the foundation for an open,
+interoperable ecosystem where identities, spaces, and objects operate under
+shared standards rather than centralized control.
 
 ## What is The Wired?
 
 **The Wired** is the spatial hypermedia layer of the Internet — an open
-protocol for representing and linking shared 3D information environments. It
-defines how agents, spaces, and data interoperate across servers and clients
-without central control.
+protocol for representing and linking shared 3D environments. It defines how
+spaces, agents, and data interoperate across servers and clients.
 
-But more than a specification, The Wired is a **philosophy**: that information
-technology should reflect the natural order of human experience.
+The Wired is also a **philosophy**: information systems should reflect the
+natural order of the human experience. Traditional digital interfaces flatten
+information into screens and feeds, but humans evolved as
+[spatial beings](https://en.wikipedia.org/wiki/Spatial_cognition). And as
+[feng shui](https://en.wikipedia.org/wiki/Feng_shui) teaches, form and life are
+inseparable.
 
-Current digital systems abstract information away from the human — flattening
-it into screens and feeds. But humans cannot be separated from space and remain
-whole. Like [feng shui](https://en.wikipedia.org/wiki/Feng_shui) teaches, form
-and life are inseparable: meaning arises from the environments we inhabit.
+The Wired restores spatial structure to digital information.
 
-The Wired reimagines information as **spatial** — something we move through,
-inhabit, and shape with others. It restores form to the formless, reuniting
-human and world.
+### Spatial Continuity
+
+A defining aspect of The Wired is **seamless spatial continuity**. Spaces are
+independent hyperdocuments, but they can be linked together through portals
+without interruption of presence or state. Moving between spaces does not
+require reloading, respawning, or resetting context; the transition is treated
+as a continuation of the same session.
+
+This design allows The Wired to function more like a network of physical
+environments than a collection of separate applications. Users can navigate
+across different hosts and servers while maintaining the same identity,
+objects, and interaction model.
 
 ### Creation and Autopoiesis
 
 At the heart of The Wired is a computation layer powered by
-[WebAssembly](https://webassembly.org/). The goal is a kind of
-[autopoiesis](https://en.wikipedia.org/wiki/Autopoiesis) — systems capable of
-maintaining and regenerating their own structure. Much of UNAVI itself is built
-within this WebAssembly layer.
+[WebAssembly](https://webassembly.org/). The goal is to enable
+[autopoiesis](https://en.wikipedia.org/wiki/Autopoiesis) — spaces and objects
+that maintain their own structure and behavior through their internal logic.
 
-Space in The Wired is seamless: transitions occur naturally through portals,
-preserving continuity and presence. Each space is a sovereign hyperdocument,
-addressed by decentralized identifiers, stored on personal servers, and linked
-through hypermedia controls.
+This is a practical requirement for interoperability and decentralization.
+Components should behave consistently regardless of where they are hosted,
+linked, or instantiated.
 
-Agents traverse these spaces, carrying objects and behaviors between them.
-Object logic is defined at the object level — independent of any single space —
-allowing behavior to persist across contexts.
+A space in The Wired is a self-contained hyperdocument. Its rules,
+structures, and behaviors live inside the space itself, and do not depend on a
+central authority or external runtime. Likewise, objects carry their own
+logic and state, allowing them to function predictably across different
+environments.
 
-Through this model, The Wired forms an **ecology of computation**: agents and
-spaces co-create experiences in a network of dynamic feedback. Every addition,
-modification, or interaction propagates through the system, contributing to its
-emergent form.
+Autopoiesis does not mean isolation. Objects still **react to and communicate
+with their environment** — they simply do so through explicit interfaces rather
+than implicit assumptions.
+
+Examples:
+
+- **Object-defined behavior**:
+  A lamp, tool, or interactive item behaves identically across spaces because
+  its logic is defined in the object itself.
+
+- **Self-managing spaces**:
+  A workspace restores its layout or ambient settings on entry because these
+  rules are embedded in the space itself.
+
+- **Consistent mobility**:
+  Items carried between spaces retain their state — charge, configuration,
+  stored data — because nothing about them is tied to a specific scene.
+
+- **Local interaction**:
+  Objects can communicate with their surroundings (e.g., signals, sensors,
+  event hooks) while still maintaining their own core behavior.
+
+Autopoiesis allows The Wired to operate as a coherent, interoperable system:
+every space and object is a self-describing unit that behaves consistently
+across hosts while still supporting dynamic interaction within its environment.
 
 ## The Vision
 
-UNAVI exists to **manifest The Wired** — to give visible, inhabitable form to
-the hidden network that already connects us.
+UNAVI exists to give form to The Wired — to make spatial hypermedia usable,
+open, and accessible. For decades, the web has been a network of text and
+images. It is expressive, but fundamentally two-dimensional. People, however,
+perceive and understand information through spatial relationships. Presence,
+distance, orientation, and shared environments all influence how we think and
+communicate.
 
-For decades, the web has been a network of text and images: flat, abstract, and
-detached from our natural sense of being in space. Yet humans evolved as
-[spatial beings](https://en.wikipedia.org/wiki/Spatial_cognition) — our
-cognition, emotion, and social instincts are grounded in presence, proximity,
-and embodiment.
+UNAVI’s goal is to reintroduce these spatial qualities into digital life. This
+is not about simulation or escapism. It is about creating interfaces that align
+with how people actually understand the world.
 
-UNAVI’s vision is to restore this dimension to digital life: to create the
-conditions for **real presence** in information space. This is not about
-simulation or escapism — it is about *integration*.
-
-The Wired continues the Internet into a more expressive, human form — one that
-recognizes that **information itself must live in space**, alongside us.
-
-Our goal is to open the floodgates of this new medium — to invite exploration,
-discovery, and new cultural forms that can only exist once space itself becomes
-the grammar of information.
-
-### The Uniform Substrate
-
-The Wired treats 3D space as a **universal grammar for information** — the same
-way that HTML once unified documents, or URIs unified addressing. Each space
-is a node in hyperspace, and each portal a hyperlink. The spatial medium is
-therefore not a simulation layer, but the structural language through which all
-digital phenomena can become visible, navigable, and alive.
+When information lives in space, it becomes clearer, more navigable, and more
+concrete. The Wired extends the Internet into a more natural, expressive form.
 
 ## Principles
 
 The Wired, expressed through UNAVI, should be:
 
-- **Open** — Built on transparent, community-owned standards anyone can extend.
-- **Interoperable** — Spaces, identities, and assets move freely across hosts
-  and clients.
-- **User-sovereign** — Users own their identities and data, and may host or
-  delegate storage as they choose.
-- **Generative** — Environments are alive, adaptive, and capable of internal
-  growth.
-- **Human-centered** — Designed to enhance presence, understanding, and
-  communion between human and world.
+- **Open** — Based on transparent, community-driven standards.
+
+- **Interoperable** — Objects, identities, and spaces move freely across hosts.
+
+- **User-sovereign** — Users own their data and decide where it is stored.
+
+- **Generative** — Systems should support internal growth and adaptation.
+
+- **Human-centered** — Interfaces should reinforce presence, clarity, and
+  meaningful interaction.
 
 ## Philosophical Roots
 
-UNAVI’s conceptual lineage draws from traditions exploring **technology,
-space, and the fate of the individual**.
+UNAVI draws from several traditions that examine technology, space, and
+individual agency:
 
 - **[Cybernetics](https://en.wikipedia.org/wiki/Cybernetics)** — the study of
   feedback and self-regulating systems.
+
 - **[Phenomenology](<https://en.wikipedia.org/wiki/Phenomenology_(philosophy)>)**
   — particularly the work of
   [Martin Heidegger](https://en.wikipedia.org/wiki/Martin_Heidegger), whose
   notion of *Being-in-the-world* grounds existence in spatial relation. UNAVI
   takes this seriously: virtual space is not decoration but an existential
   medium.
+
 - **[Christian humanism](https://en.wikipedia.org/wiki/Christian_humanism)** —
-  emphasizes the inherent dignity, worth, and potential of the individual as a
-  bearer of the divine image. This aligns with UNAVI’s vision: reclaiming the
-  individual against the flattening tendencies of the modern technosphere.
+  emphasizes the inherent dignity, worth, and potential of the individual.
+  This aligns with UNAVI’s vision: reclaiming the individual against the
+  flattening tendencies of the modern technosphere.
+
 - **[Serial Experiments Lain](https://en.wikipedia.org/wiki/Serial_Experiments_Lain)**
-  — a prophetic artistic vision of The Wired as a psychic network and mirror of
-  consciousness. UNAVI treats Lain not as fiction but as myth: an intuition of
-  what the Internet could become (and has become) when interior life and
-  technology converge.
+  — a prophetic artistic vision of The Wired as a shared psychological and
+  informational space.
+
 - **[Nick Land](https://en.wikipedia.org/wiki/Nick_Land)** and accelerationist
-  philosophy — recognizing that technological systems possess autonomous
-  tendencies of self-organization and escape. UNAVI accepts this as fact but
-  redirects our efforts toward the renewal of human form within the storm,
-  rather than accepting its dissolution.
+  philosophy — recognizes that technological systems possess autonomous
+  tendencies of self-organization and escape. UNAVI acknowledges these dynamics
+  and directs them toward constructive aims; The Wired is designed to support
+  growth, adaptation, and complexity while maintaining human agency and
+  recognizable form.
+
 - **[Hypermedia Systems](https://hypermedia.systems/)** — A modern exploration
   of the Web as a hypermedia system, not an app platform. Advocates for a
-  return to the original Web architecture. UNAVI applies this philosophy to 3D.
+  return to the original Web architecture. UNAVI extends this model into 3D.
+  This approach keeps The Wired aligned with the principles that made the
+  original web scalable, interoperable, and open.
 
 ## The Wired Manifesto
 

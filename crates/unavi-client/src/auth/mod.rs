@@ -1,14 +1,23 @@
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc, time::Duration};
 
-use bevy::{prelude::*, tasks::TaskPool};
+use bevy::{ecs::world::CommandQueue, prelude::*, tasks::TaskPool};
 use dwn::{Actor, document_key::DocumentKey};
-use unavi_constants::REMOTE_DWN_URL;
-use xdid::methods::{
-    key::{DidKeyPair, PublicKey},
-    web::reqwest::Url,
+use unavi_constants::{
+    REMOTE_DWN_URL, SPACE_HOST_DID, protocols::SPACE_HOST_PROTOCOL, schemas::ServerInfo,
+};
+use xdid::{
+    core::{did::Did, did_url::DidUrl},
+    methods::{
+        key::{DidKeyPair, PublicKey},
+        web::reqwest::Url,
+    },
 };
 
-use crate::LocalDwn;
+use crate::{
+    LocalDwn,
+    async_commands::ASYNC_COMMAND_QUEUE,
+    space::{Space, record_ref_url::new_record_ref_url},
+};
 
 mod home_space;
 mod key_pair;
@@ -62,8 +71,15 @@ pub fn handle_login(_: On<LoginEvent>, mut local_actor: ResMut<LocalActor>, dwn:
                 error!("Failed to sync with remote DWN: {e:?}");
             }
 
-            if let Err(e) = home_space::join_home_space(actor).await {
-                error!("Failed to join home space: {e:?}");
+            loop {
+                match join_a_space(&actor).await {
+                    Ok(()) => break,
+                    Err(e) => {
+                        error!("Failed to join a space: {e:?}");
+                        tokio::time::sleep(Duration::from_secs(5)).await;
+                        continue;
+                    }
+                }
             }
         });
 
@@ -72,4 +88,70 @@ pub fn handle_login(_: On<LoginEvent>, mut local_actor: ResMut<LocalActor>, dwn:
         }
     })
     .detach();
+}
+
+async fn join_a_space(actor: &Actor) -> anyhow::Result<()> {
+    if let Some(space_url) = find_populated_space(actor).await? {
+        let mut commands = CommandQueue::default();
+        commands.push(bevy::ecs::system::command::spawn_batch([Space::new(
+            space_url,
+        )]));
+        ASYNC_COMMAND_QUEUE.0.send(commands)?;
+    } else {
+        home_space::join_home_space(actor).await?;
+    }
+
+    Ok(())
+}
+
+async fn find_populated_space(actor: &Actor) -> anyhow::Result<Option<DidUrl>> {
+    let space_host = Did::from_str(SPACE_HOST_DID)?;
+
+    // TODO: Fetch from space host
+    let host_dwn = Url::parse(REMOTE_DWN_URL)?;
+
+    let spaces = actor
+        .query()
+        .protocol(SPACE_HOST_PROTOCOL.to_string())
+        .protocol_path("space".to_string())
+        .send(&host_dwn)
+        .await?;
+
+    for space in spaces {
+        let Some(info) = actor
+            .query()
+            .protocol(SPACE_HOST_PROTOCOL.to_string())
+            .protocol_path("space".to_string())
+            .parent_id(space.entry().record_id.clone())
+            .send(&host_dwn)
+            .await?
+            .into_iter()
+            .next()
+        else {
+            continue;
+        };
+
+        let Some(data) = info.data() else {
+            continue;
+        };
+
+        let info = serde_json::from_slice::<ServerInfo>(data)?;
+
+        if info.num_players == 0 {
+            continue;
+        }
+
+        info!(
+            "Found populated space with {}/{} players",
+            info.num_players, info.max_players
+        );
+        if info.num_players >= info.max_players {
+            continue;
+        }
+
+        let space_url = new_record_ref_url(space_host, &space.entry().record_id);
+        return Ok(Some(space_url));
+    }
+
+    Ok(None)
 }

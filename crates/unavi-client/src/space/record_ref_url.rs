@@ -1,4 +1,13 @@
-use xdid::core::did_url::DidUrl;
+use xdid::core::{did::Did, did_url::DidUrl};
+
+pub fn new_record_ref_url(did: Did, record_id: &str) -> DidUrl {
+    DidUrl {
+        did,
+        query: Some(format!("service=dwn&relativeRef=/records/{record_id}")),
+        fragment: None,
+        path_abempty: None,
+    }
+}
 
 /// Parse a record reference URL to extract the DID and record ID.
 ///

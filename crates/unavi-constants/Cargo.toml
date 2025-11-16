@@ -12,3 +12,4 @@ workspace = true
 [dependencies]
 constcat.workspace = true
 semver.workspace   = true
+serde.workspace    = true

@@ -43,51 +43,26 @@ as a continuation of the same session.
 
 This design allows The Wired to function more like a network of physical
 environments than a collection of separate applications. Users can navigate
-across different hosts and servers while maintaining the same identity,
-objects, and interaction model.
+across different servers while maintaining the same identity, objects, and
+interaction model.
 
 ### Creation and Autopoiesis
 
 At the heart of The Wired is a computation layer powered by
-[WebAssembly](https://webassembly.org/). The goal is to enable
-[autopoiesis](https://en.wikipedia.org/wiki/Autopoiesis) — spaces and objects
-that maintain their own structure and behavior through their internal logic.
+[WebAssembly](https://webassembly.org/). Its goal is
+[autopoiesis](https://en.wikipedia.org/wiki/Autopoiesis): systems that define
+and maintain their own behavior through internal logic.
 
-This is a practical requirement for interoperability and decentralization.
-Components should behave consistently regardless of where they are hosted,
-linked, or instantiated.
+A space is a self-contained hyperdocument. Its layout, rules, and behaviors live
+inside the space itself. Objects also embed their own logic and state, allowing
+them to operate predictably in any environment.
 
-A space in The Wired is a self-contained hyperdocument. Its rules,
-structures, and behaviors live inside the space itself, and do not depend on a
-central authority or external runtime. Likewise, objects carry their own
-logic and state, allowing them to function predictably across different
-environments.
+Autopoiesis does not imply isolation. Objects can still **react to and
+communicate with their surroundings** through explicit interfaces. A lamp keeps
+its lighting logic but may respond to ambient brightness or signals from nearby
+devices.
 
-Autopoiesis does not mean isolation. Objects still **react to and communicate
-with their environment** — they simply do so through explicit interfaces rather
-than implicit assumptions.
-
-Examples:
-
-- **Object-defined behavior**:
-  A lamp, tool, or interactive item behaves identically across spaces because
-  its logic is defined in the object itself.
-
-- **Self-managing spaces**:
-  A workspace restores its layout or ambient settings on entry because these
-  rules are embedded in the space itself.
-
-- **Consistent mobility**:
-  Items carried between spaces retain their state — charge, configuration,
-  stored data — because nothing about them is tied to a specific scene.
-
-- **Local interaction**:
-  Objects can communicate with their surroundings (e.g., signals, sensors,
-  event hooks) while still maintaining their own core behavior.
-
-Autopoiesis allows The Wired to operate as a coherent, interoperable system:
-every space and object is a self-describing unit that behaves consistently
-across hosts while still supporting dynamic interaction within its environment.
+Autopoiesis gives The Wired a consistent, interoperable foundation.
 
 ## The Vision
 
@@ -99,7 +74,7 @@ distance, orientation, and shared environments all influence how we think and
 communicate.
 
 UNAVI’s goal is to reintroduce these spatial qualities into digital life. This
-is not about simulation or escapism. It is about creating interfaces that align
+is not about simulation or escapism; it is about creating interfaces that align
 with how people actually understand the world.
 
 When information lives in space, it becomes clearer, more navigable, and more
@@ -147,19 +122,17 @@ individual agency:
 - **[Nick Land](https://en.wikipedia.org/wiki/Nick_Land)** and accelerationist
   philosophy — recognizes that technological systems possess autonomous
   tendencies of self-organization and escape. UNAVI acknowledges these dynamics
-  and directs them toward constructive aims; The Wired is designed to support
+  and directs them toward constructive aims: The Wired is designed to support
   growth, adaptation, and complexity while maintaining human agency and
   recognizable form.
 
 - **[Hypermedia Systems](https://hypermedia.systems/)** — A modern exploration
   of the Web as a hypermedia system, not an app platform. Advocates for a
   return to the original Web architecture. UNAVI extends this model into 3D.
-  This approach keeps The Wired aligned with the principles that made the
-  original web scalable, interoperable, and open.
 
 ## The Wired Manifesto
 
 > The true form of the Internet already exists.\
 > We need only to let it express itself.
 
-UNAVI is the first gesture toward that expression.
+UNAVI is the first step toward making that form visible and inhabitable.

@@ -54,7 +54,7 @@ Spaces may be composed via designated AABB slots for child spaces to be inserted
 This can be done statically or dynamically at runtime.
 
 Parent spaces can query into the child spaces for cross-space interactions
-(e.g., querying entities or mutating data). This only applies to entities the
+(e.g. querying entities or mutating data). This only applies to entities the
 child explicitly marks as public.
 
 ### Portals (Linking)

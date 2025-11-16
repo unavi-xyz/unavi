@@ -1,14 +1,13 @@
 use std::{path::PathBuf, sync::LazyLock};
 
-use bevy::{
-    asset::io::web::WebAssetPlugin, prelude::*,
-};
+use bevy::{asset::io::web::WebAssetPlugin, prelude::*, window::WindowTheme};
 use directories::ProjectDirs;
 use dwn::{Dwn, stores::NativeDbStore};
 
 pub mod assets;
 mod async_commands;
 mod auth;
+mod fade;
 mod icon;
 mod scene;
 mod space;
@@ -54,6 +53,7 @@ impl Plugin for UnaviPlugin {
                 primary_window: Some(Window {
                     name: Some("unavi".to_string()),
                     title: "UNAVI".to_string(),
+                    window_theme: Some(WindowTheme::Dark),
                     ..default()
                 }),
                 ..default()
@@ -68,11 +68,13 @@ impl Plugin for UnaviPlugin {
 
         app.add_plugins((
             avian3d::PhysicsPlugins::default(),
+            fade::FadePlugin,
             unavi_input::InputPlugin,
             unavi_player::PlayerPlugin,
             unavi_script::ScriptPlugin,
             space::SpacePlugin,
         ))
+        .insert_resource(ClearColor(Color::BLACK))
         .insert_resource(LocalDwn(dwn))
         .init_resource::<auth::LocalActor>()
         .add_observer(auth::handle_login)

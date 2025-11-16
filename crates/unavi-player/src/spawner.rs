@@ -30,6 +30,7 @@ pub struct PlayerSpawner {
     pub config: Option<PlayerConfig>,
     pub tracking_source: Option<TrackingSource>,
     pub vrm_asset: Option<String>,
+    pub camera_active: Option<bool>,
 }
 
 impl PlayerSpawner {
@@ -52,6 +53,11 @@ impl PlayerSpawner {
         self
     }
 
+    pub fn with_camera_active(mut self, active: bool) -> Self {
+        self.camera_active = Some(active);
+        self
+    }
+
     pub fn spawn(&self, commands: &mut Commands, asset_server: &AssetServer) -> Entity {
         let config = self.config.clone().unwrap_or_default();
         let tracking_source = self.tracking_source.unwrap_or_default();
@@ -59,7 +65,10 @@ impl PlayerSpawner {
         let camera = commands
             .spawn((
                 PlayerCamera,
-                Camera::default(),
+                Camera {
+                    is_active: self.camera_active.unwrap_or(true),
+                    ..default()
+                },
                 Hdr,
                 Atmosphere::EARTH,
                 AtmosphereSettings::default(),

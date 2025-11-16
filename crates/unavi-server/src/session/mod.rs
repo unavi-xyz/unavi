@@ -23,7 +23,7 @@ use xdid::{
     methods::{key::p256::P256KeyPair, web::reqwest::Url},
 };
 
-use crate::{DIRS, session::control::ControlServer};
+use crate::{DIRS, InternalMessage, session::control::ControlServer};
 
 mod control;
 mod init_space_host;
@@ -33,24 +33,25 @@ mod streams;
 pub const KEY_FRAGMENT: &str = "owner";
 
 const TICKRATE: Duration = Duration::from_millis(50);
-const DEFAULT_MAX_PLAYERS_PER_SPACE: usize = 32;
+pub const DEFAULT_MAX_PLAYERS_PER_SPACE: usize = 32;
 
 type PlayerId = u64;
 type SpaceId = String;
 
 #[derive(Clone)]
 pub struct SessionSpawner {
-    ctx: ServerContext,
+    pub ctx: ServerContext,
     player_id_count: Arc<AtomicU64>,
     pub domain: String,
 }
 
 #[derive(Clone)]
-struct ServerContext {
-    actor: Actor,
+pub struct ServerContext {
+    pub actor: Actor,
+    msg_tx: tokio::sync::mpsc::Sender<InternalMessage>,
+    player_tickrates: Arc<RwLock<HashMap<PlayerId, HashMap<PlayerId, Duration>>>>,
     players: Arc<RwLock<HashMap<PlayerId, Player>>>,
     spaces: Arc<RwLock<HashMap<SpaceId, Space>>>,
-    player_tickrates: Arc<RwLock<HashMap<PlayerId, HashMap<PlayerId, Duration>>>>,
 }
 
 struct Player {
@@ -78,6 +79,7 @@ pub struct SpawnerOptions {
     pub did: Did,
     pub domain: String,
     pub in_memory: bool,
+    pub msg_tx: tokio::sync::mpsc::Sender<InternalMessage>,
     pub remote: Url,
     pub vc: P256KeyPair,
 }
@@ -114,9 +116,10 @@ impl SessionSpawner {
         Ok(Self {
             ctx: ServerContext {
                 actor,
+                msg_tx: opts.msg_tx,
+                player_tickrates: Default::default(),
                 players: Default::default(),
                 spaces: Default::default(),
-                player_tickrates: Default::default(),
             },
             domain: opts.domain,
             player_id_count: Default::default(),

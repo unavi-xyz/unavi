@@ -17,4 +17,4 @@ pub const SPACE_HOST_DID: &str = match option_env!("SPACE_DID") {
     None => "did:web:localhost%3A5000",
 };
 
-pub const MODELS_URL: &str = "https://unavi.nyc3.cdn.digitaloceanspaces.com/assets/models/";
+pub const CDN_ASSETS_URL: &str = "https://unavi.nyc3.cdn.digitaloceanspaces.com/assets";

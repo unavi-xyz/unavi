@@ -3,7 +3,7 @@ use std::sync::mpsc::Sender;
 use bevy::{prelude::*, tasks::futures_lite::StreamExt};
 use bevy_vrm::BoneName;
 use tarpc::tokio_util::codec::LengthDelimitedCodec;
-use unavi_player::{AvatarBones, PlayerSpawner};
+use unavi_player::{AvatarBones, AvatarSpawner};
 use unavi_server_service::{
     TRANSFORM_LENGTH_FIELD_LENGTH, TRANSFORM_MAX_FRAME_LENGTH, TrackingUpdate,
     from_server::TransformMeta,
@@ -80,17 +80,17 @@ pub fn apply_player_transforms(
                 }
             }
 
-            // Spawn remote player if not found.
+            // Spawn remote avatar if not found.
             if !found {
-                let spawned = PlayerSpawner::default().spawn(&mut commands, &asset_server);
-                commands.entity(spawned).insert((
+                let avatar = AvatarSpawner::default().spawn(&mut commands, &asset_server);
+                commands.entity(avatar).insert((
                     RemotePlayer {
                         player_id: received.player_id,
                     },
                     PlayerHost(host_entity),
                     RemotePlayerState::default(),
                 ));
-                player_entity = Some(spawned);
+                player_entity = Some(avatar);
             }
 
             // Apply transform update.

@@ -6,7 +6,7 @@ use bevy::{
     prelude::*,
 };
 use bevy_vrm::mtoon::MtoonSun;
-use unavi_player::PlayerSpawner;
+use unavi_player::LocalPlayerSpawner;
 
 pub fn spawn_lights(mut commands: Commands, mut ambient: ResMut<AmbientLight>) {
     ambient.brightness = lux::OVERCAST_DAY;
@@ -34,7 +34,7 @@ pub fn spawn_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    PlayerSpawner::default().spawn(&mut commands, &asset_server);
+    LocalPlayerSpawner::default().spawn(&mut commands, &asset_server);
 
     let ground_texture = asset_server.load("images/dev-white.png");
 

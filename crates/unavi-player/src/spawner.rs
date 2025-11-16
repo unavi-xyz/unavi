@@ -8,32 +8,25 @@ use bevy::{
 };
 use bevy_tnua::prelude::TnuaController;
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
-use bevy_vrm::{
-    VrmBundle, VrmInstance,
-    first_person::{FirstPersonFlag, RENDER_LAYERS},
-};
+use bevy_vrm::first_person::{FirstPersonFlag, RENDER_LAYERS};
 
 use crate::{
-    LocalPlayer, PlayerAvatar, PlayerCamera, PlayerEntities, PlayerRig,
+    LocalPlayer, PlayerCamera, PlayerEntities, PlayerRig,
     animation::{defaults::default_character_animations, velocity::AverageVelocity},
-    bones::AvatarBones,
+    avatar_spawner::AvatarSpawner,
     config::{PLAYER_RADIUS, PlayerConfig},
     tracking::{TrackedHead, TrackedPose, TrackingSource},
 };
 
-const DEFAULT_AVATAR: &str =
-    "https://unavi.nyc3.cdn.digitaloceanspaces.com/assets/models/default.vrm";
-
-/// Builder for spawning a player entity.
+/// Builder for spawning a local player entity.
 #[derive(Default)]
-pub struct PlayerSpawner {
+pub struct LocalPlayerSpawner {
     pub config: Option<PlayerConfig>,
     pub tracking_source: Option<TrackingSource>,
     pub vrm_asset: Option<String>,
-    pub camera_active: Option<bool>,
 }
 
-impl PlayerSpawner {
+impl LocalPlayerSpawner {
     pub fn new() -> Self {
         Self::default()
     }
@@ -53,11 +46,6 @@ impl PlayerSpawner {
         self
     }
 
-    pub fn with_camera_active(mut self, active: bool) -> Self {
-        self.camera_active = Some(active);
-        self
-    }
-
     pub fn spawn(&self, commands: &mut Commands, asset_server: &AssetServer) -> Entity {
         let config = self.config.clone().unwrap_or_default();
         let tracking_source = self.tracking_source.unwrap_or_default();
@@ -65,10 +53,7 @@ impl PlayerSpawner {
         let camera = commands
             .spawn((
                 PlayerCamera,
-                Camera {
-                    is_active: self.camera_active.unwrap_or(true),
-                    ..default()
-                },
+                Camera::default(),
                 Hdr,
                 Atmosphere::EARTH,
                 AtmosphereSettings::default(),
@@ -105,30 +90,26 @@ impl PlayerSpawner {
             .add_child(camera)
             .id();
 
-        let vrm_path = self
-            .vrm_asset
-            .as_deref()
-            .unwrap_or(DEFAULT_AVATAR)
-            .to_string();
-        let vrm_handle = asset_server.load(vrm_path);
-        let animations = default_character_animations(asset_server);
+        // Spawn avatar using AvatarSpawner.
+        let avatar = AvatarSpawner {
+            vrm_asset: self.vrm_asset.clone(),
+        }
+        .spawn(commands, asset_server);
 
-        let avatar = commands
-            .spawn((
-                PlayerAvatar,
-                AvatarBones::default(),
-                AverageVelocity {
-                    target: Some(player_rig),
-                    ..Default::default()
-                },
-                VrmBundle {
-                    vrm: VrmInstance(vrm_handle),
-                    ..Default::default()
-                },
-                Transform::from_xyz(0.0, -config.real_height / 2.0, 0.0),
-                animations,
-            ))
-            .id();
+        // Add local-player-specific components.
+        let animations = default_character_animations(asset_server);
+        commands.entity(avatar).insert((
+            AverageVelocity {
+                target: Some(player_rig),
+                ..Default::default()
+            },
+            animations,
+        ));
+
+        // Position avatar relative to rig.
+        commands
+            .entity(avatar)
+            .insert(Transform::from_xyz(0.0, -config.real_height / 2.0, 0.0));
 
         commands
             .entity(player_rig)

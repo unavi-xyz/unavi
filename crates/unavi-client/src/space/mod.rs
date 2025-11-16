@@ -42,7 +42,8 @@ impl Plugin for SpacePlugin {
                     streams::transform::apply_player_transforms,
                     tickrate::set_space_tickrates,
                 ),
-            );
+            )
+            .add_systems(Last, connect::cleanup_connections_on_exit);
     }
 }
 

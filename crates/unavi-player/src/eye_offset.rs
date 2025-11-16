@@ -18,11 +18,7 @@ pub(crate) fn setup_vrm_eye_offset(
     mut scene_assets: ResMut<Assets<Scene>>,
     avatars: Query<
         (Entity, &VrmScene, &ChildOf),
-        (
-            With<PlayerAvatar>,
-            Without<crate::config::RemotePlayerConfig>,
-            Without<EyeOffsetProcessed>,
-        ),
+        (With<PlayerAvatar>, Without<EyeOffsetProcessed>),
     >,
     rigs: Query<&ChildOf, With<PlayerRig>>,
     mut local_players: Query<(&mut PlayerConfig, &PlayerEntities)>,

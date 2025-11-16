@@ -55,8 +55,7 @@ pub async fn join_home_space(actor: &Actor) -> anyhow::Result<()> {
         break;
     }
 
-    let space_host =
-        Did::from_str(SPACE_HOST_DID).map_err(|_| anyhow::anyhow!("failed to parse space host"))?;
+    let space_host = Did::from_str(SPACE_HOST_DID)?;
 
     let space_url = match space_url {
         Some(c) => c,
@@ -65,7 +64,7 @@ pub async fn join_home_space(actor: &Actor) -> anyhow::Result<()> {
                 "name": format!("{}'s Home", actor.did),
             });
 
-            // TODO: Fetch from did document
+            // TODO: Fetch from space host
             let host_dwn = actor.remote.clone().unwrap();
 
             let space_id = actor

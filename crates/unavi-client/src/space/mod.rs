@@ -4,7 +4,6 @@ use std::sync::{
 };
 
 use bevy::{ecs::world::CommandQueue, prelude::*, tasks::TaskPool};
-use unavi_player::{LocalPlayer, PlayerSpawner};
 use xdid::core::did_url::DidUrl;
 
 use crate::{
@@ -95,11 +94,8 @@ impl Space {
 
 pub fn handle_space_add(
     event: On<Add, Space>,
-    asset_server: Res<AssetServer>,
     actor: Res<LocalActor>,
     spaces: Query<&Space>,
-    local_players: Query<Entity, With<LocalPlayer>>,
-    mut commands: Commands,
 ) -> Result {
     let pool = TaskPool::get_thread_executor();
 
@@ -147,10 +143,6 @@ pub fn handle_space_add(
         }
     })
     .detach();
-
-    if local_players.is_empty() {
-        PlayerSpawner::default().spawn(&mut commands, &asset_server);
-    }
 
     Ok(())
 }

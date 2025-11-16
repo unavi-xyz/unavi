@@ -5,7 +5,9 @@ use std::{
     time::Duration,
 };
 
-use bevy::{ecs::world::CommandQueue, log::tracing::Instrument, prelude::*, tasks::TaskPool};
+use bevy::{
+    app::AppExit, ecs::world::CommandQueue, log::tracing::Instrument, prelude::*, tasks::TaskPool,
+};
 use tarpc::{
     client::Config,
     tokio_serde::formats::Bincode,
@@ -29,7 +31,7 @@ use crate::{
     },
 };
 
-const MAX_IDLE_TIMEOUT: Duration = Duration::from_mins(2);
+const MAX_IDLE_TIMEOUT: Duration = Duration::from_secs(60);
 const KEEP_ALIVE_INTERVAL: Duration = Duration::from_secs(15);
 
 const INITIAL_RETRY_DELAY: Duration = Duration::from_secs(1);
@@ -348,4 +350,31 @@ pub fn handle_space_disconnect(
     .detach();
 
     Ok(())
+}
+
+pub fn cleanup_connections_on_exit(
+    mut exit: EventReader<AppExit>,
+    connections: Res<HostConnections>,
+) {
+    if exit.read().next().is_none() {
+        return;
+    }
+
+    info!("Closing all connections on app exit");
+
+    let connections = connections.0.clone();
+
+    // Block on async cleanup during shutdown.
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("build tokio runtime");
+
+    rt.block_on(async move {
+        let connections_guard = connections.write().await;
+        for (url, host) in connections_guard.iter() {
+            info!("Closing connection to {url}");
+            host.connection.close(VarInt::from_u32(200), b"shutdown");
+        }
+    });
 }

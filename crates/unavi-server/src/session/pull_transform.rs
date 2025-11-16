@@ -33,6 +33,7 @@ pub async fn handle_pull_transforms(
 
         let players_guard = ctx.players.read().await;
         let Some(player) = players_guard.get(&player_id) else {
+            // Exit once the player is disconnected.
             return Ok(());
         };
 

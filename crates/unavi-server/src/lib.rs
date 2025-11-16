@@ -29,7 +29,7 @@ use crate::{
 const MAX_IDLE_TIMEOUT: Duration = Duration::from_mins(2);
 const KEEP_ALIVE_INTERVAL: Duration = Duration::from_secs(15);
 
-const INITIAL_RETRY_DELAY: Duration = Duration::from_secs(1);
+const INITIAL_WEB_TRANSPORT_DELAY: Duration = Duration::from_secs(2);
 const SPACE_RETRY_DELAY: Duration = Duration::from_secs(30);
 
 mod internal_msg;
@@ -95,7 +95,7 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     // WebTransport handler.
     tokio::spawn(async move {
         // Wait for did:web route to come online.
-        tokio::time::sleep(INITIAL_RETRY_DELAY).await;
+        tokio::time::sleep(INITIAL_WEB_TRANSPORT_DELAY).await;
 
         loop {
             let spawner = match SessionSpawner::new(spawner_opts.clone()).await {

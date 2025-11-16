@@ -194,14 +194,16 @@ impl SessionSpawner {
             }
         });
 
-        let counts = streams::StreamCounts::default();
+        // Handle streams.
+        tokio::spawn({
+            let con = con.clone();
+            let counts = streams::StreamCounts::default();
+            let ctx = self.ctx.clone();
 
-        loop {
-            match con.accept_uni().await {
-                Ok(stream) => {
-                    let ctx = self.ctx.clone();
+            async move {
+                while let Ok(stream) = con.accept_uni().await {
                     let counts = counts.clone();
-
+                    let ctx = ctx.clone();
                     tokio::spawn(async move {
                         if let Err(e) = streams::handle_stream(ctx, counts, player_id, stream).await
                         {
@@ -209,22 +211,14 @@ impl SessionSpawner {
                         }
                     });
                 }
-                Err(e) => {
-                    match e {
-                        ConnectionError::LocallyClosed | ConnectionError::TimedOut => {
-                            info!("Session connection ended: {e}");
-                        }
-                        e => {
-                            warn!("Session connection ended: {e}");
-                        }
-                    }
-
-                    self.cleanup_player(player_id).await;
-
-                    break Ok(());
-                }
             }
-        }
+        });
+
+        let err = con.closed().await;
+        info!("Connection closed: {err}");
+        self.cleanup_player(player_id).await;
+
+        Ok(())
     }
 
     async fn cleanup_player(&self, player_id: PlayerId) {

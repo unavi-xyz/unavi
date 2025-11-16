@@ -102,17 +102,19 @@ fn record_transforms(
                 })
                 .unwrap_or(true);
 
-            if should_include {
-                joints.push(JointIFrame {
-                    id: *bone_name,
-                    rotation: [
-                        transform.rotation.x,
-                        transform.rotation.y,
-                        transform.rotation.z,
-                        transform.rotation.w,
-                    ],
-                });
+            if !should_include {
+                continue;
             }
+
+            joints.push(JointIFrame {
+                id: *bone_name,
+                rotation: [
+                    transform.rotation.x,
+                    transform.rotation.y,
+                    transform.rotation.z,
+                    transform.rotation.w,
+                ],
+            });
 
             state
                 .last_joint_rotations

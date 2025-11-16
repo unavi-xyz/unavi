@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::mpsc::Sender};
 use bevy::{prelude::*, tasks::futures_lite::StreamExt};
 use bevy_vrm::BoneName;
 use tarpc::tokio_util::codec::LengthDelimitedCodec;
-use unavi_player::{AvatarBones, AvatarSpawner, RemotePlayerConfig};
+use unavi_player::{AvatarBones, AvatarSpawner};
 use unavi_server_service::{
     TRANSFORM_LENGTH_FIELD_LENGTH, TRANSFORM_MAX_FRAME_LENGTH, TrackingUpdate,
     from_server::TransformMeta,
@@ -106,7 +106,6 @@ pub fn apply_player_transforms(
                     },
                     PlayerHost(host_entity),
                     initial_state,
-                    RemotePlayerConfig::default(),
                 ));
 
                 // Track pending spawn to prevent duplicates.

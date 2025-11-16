@@ -19,6 +19,7 @@ pub async fn handle_control_stream(
     let mut framed = LengthDelimitedCodec::builder()
         .little_endian()
         .length_field_length(2)
+        .max_frame_length(512)
         .new_write(stream);
 
     // Send stream header.
@@ -27,13 +28,14 @@ pub async fn handle_control_stream(
     framed.send(header_bytes.into()).await?;
 
     let mut space_subscriptions: HashMap<SpaceId, Receiver<ControlMessage>> = HashMap::new();
-    let mut check_interval = interval(TICKRATE / 2);
+    let mut check_interval = interval(TICKRATE);
 
     loop {
         check_interval.tick().await;
 
         let players_guard = ctx.players.read().await;
         let Some(player) = players_guard.get(&player_id) else {
+            // Exit once the player is disconnected.
             return Ok(());
         };
 

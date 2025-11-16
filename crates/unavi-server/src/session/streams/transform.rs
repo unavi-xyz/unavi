@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use futures::StreamExt;
 use tarpc::tokio_util::codec::LengthDelimitedCodec;
 use unavi_server_service::{
@@ -8,7 +6,7 @@ use unavi_server_service::{
 };
 use wtransport::RecvStream;
 
-use crate::session::{ServerContext, TICKRATE};
+use crate::session::ServerContext;
 
 pub async fn handle_transform_stream(
     ctx: ServerContext,
@@ -48,10 +46,6 @@ pub async fn handle_transform_stream(
                 let _ = player.pframe_tx.send(pframe);
             }
         }
-
-        drop(players);
-
-        tokio::time::sleep(Duration::from_millis(TICKRATE.as_millis() as u64 / 4)).await;
     }
 
     Ok(())

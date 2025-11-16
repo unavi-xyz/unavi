@@ -56,6 +56,9 @@ pub async fn handle_pull_transforms(
                 let iframe_rx = other_player.iframe_tx.subscribe();
                 let pframe_rx = other_player.pframe_tx.subscribe();
                 subscriptions.insert(other_player_id, (iframe_rx, pframe_rx));
+
+                // Force initial IFrame send for newly subscribed player.
+                pending_updates.insert(other_player_id);
             }
         }
         drop(players_guard);

@@ -14,7 +14,7 @@ use wtransport::SendStream;
 
 use crate::space::{Space, connect::HostConnections, connect_info::ConnectInfo};
 
-use super::{PFRAME_ROTATION_SCALE, PFRAME_TRANSLATION_SCALE};
+use super::{JOINT_ROTATION_EPSILON, PFRAME_ROTATION_SCALE, PFRAME_TRANSLATION_SCALE};
 
 const IFRAME_INTERVAL: Duration = Duration::from_secs(5);
 
@@ -36,6 +36,7 @@ pub struct TransformPublishState {
     last_iframe_time: Duration,
     last_hips_pos: [f32; 3],
     last_hips_rot: [f32; 4],
+    last_joint_rotations: HashMap<BoneName, Quat>,
 }
 
 impl Default for TransformPublishState {
@@ -44,6 +45,7 @@ impl Default for TransformPublishState {
             last_iframe_time: Duration::ZERO,
             last_hips_pos: [0.0, 0.0, 0.0],
             last_hips_rot: [0.0, 0.0, 0.0, 1.0],
+            last_joint_rotations: HashMap::new(),
         }
     }
 }
@@ -63,6 +65,11 @@ fn quantize_translation(delta: Vec3) -> [i16; 3] {
         (delta.y * PFRAME_TRANSLATION_SCALE).clamp(i16::MIN as f32, i16::MAX as f32) as i16,
         (delta.z * PFRAME_TRANSLATION_SCALE).clamp(i16::MIN as f32, i16::MAX as f32) as i16,
     ]
+}
+
+fn rotation_changed(current: Quat, last: Quat, epsilon: f32) -> bool {
+    let dot = current.dot(last).abs();
+    dot < (1.0 - epsilon)
 }
 
 fn record_transforms(
@@ -86,15 +93,30 @@ fn record_transforms(
                 continue;
             };
 
-            joints.push(JointIFrame {
-                id: *bone_name,
-                rotation: [
-                    transform.rotation.x,
-                    transform.rotation.y,
-                    transform.rotation.z,
-                    transform.rotation.w,
-                ],
-            });
+            // Only include joint if rotation changed from last published value.
+            let should_include = state
+                .last_joint_rotations
+                .get(bone_name)
+                .map(|&last_rot| {
+                    rotation_changed(transform.rotation, last_rot, JOINT_ROTATION_EPSILON)
+                })
+                .unwrap_or(true);
+
+            if should_include {
+                joints.push(JointIFrame {
+                    id: *bone_name,
+                    rotation: [
+                        transform.rotation.x,
+                        transform.rotation.y,
+                        transform.rotation.z,
+                        transform.rotation.w,
+                    ],
+                });
+            }
+
+            state
+                .last_joint_rotations
+                .insert(*bone_name, transform.rotation);
         }
 
         let iframe = TrackingIFrame {
@@ -122,12 +144,29 @@ fn record_transforms(
                 continue;
             };
 
+            // Only include joint if rotation changed from last published value.
+            let should_include = state
+                .last_joint_rotations
+                .get(bone_name)
+                .map(|&last_rot| {
+                    rotation_changed(transform.rotation, last_rot, JOINT_ROTATION_EPSILON)
+                })
+                .unwrap_or(true);
+
+            if !should_include {
+                continue;
+            }
+
             let rotation = quantize_rotation(transform.rotation);
 
             joints.push(JointPFrame {
                 id: *bone_name,
                 rotation,
             });
+
+            state
+                .last_joint_rotations
+                .insert(*bone_name, transform.rotation);
         }
 
         let pframe = TrackingPFrame {

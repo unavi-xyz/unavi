@@ -31,12 +31,14 @@ pub enum TrackingUpdate {
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct TrackingIFrame {
     pub translation: [f32; 3],
+    pub rotation: [f32; 4],
     pub joints: Vec<JointIFrame>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct TrackingPFrame {
     pub translation: [i16; 3],
+    pub rotation: [i16; 4],
     pub joints: Vec<JointPFrame>,
 }
 

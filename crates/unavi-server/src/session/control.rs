@@ -118,14 +118,10 @@ impl ControlService for ControlServer {
                         spaces.remove(&id);
                     }
 
-                    let _ = self
-                        .ctx
-                        .msg_tx
-                        .send(InternalMessage::SetPlayerCount {
-                            record_id: id,
-                            count,
-                        })
-                        .await;
+                    drop(spaces);
+                    drop(players);
+
+                    self.ctx.update_space_player_count(id, count).await;
                 }
             }
         }

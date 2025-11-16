@@ -17,7 +17,7 @@ pub mod tracking;
 
 pub use avatar_spawner::AvatarSpawner;
 pub use bones::AvatarBones;
-pub use config::{PlayerConfig, WorldScale};
+pub use config::{PlayerConfig, RemotePlayerConfig, WorldScale};
 pub use spawner::LocalPlayerSpawner;
 pub use tracking::{TrackedHand, TrackedHead, TrackedPose, TrackingSource};
 

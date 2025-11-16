@@ -3,7 +3,7 @@ use std::sync::mpsc::Sender;
 use bevy::{prelude::*, tasks::futures_lite::StreamExt};
 use bevy_vrm::BoneName;
 use tarpc::tokio_util::codec::LengthDelimitedCodec;
-use unavi_player::{AvatarBones, AvatarSpawner};
+use unavi_player::{AvatarBones, AvatarSpawner, RemotePlayerConfig};
 use unavi_server_service::{
     TRANSFORM_LENGTH_FIELD_LENGTH, TRANSFORM_MAX_FRAME_LENGTH, TrackingUpdate,
     from_server::TransformMeta,
@@ -56,6 +56,7 @@ pub fn apply_player_transforms(
     asset_server: Res<AssetServer>,
     hosts: Query<(Entity, &Host, &HostTransformChannel)>,
     mut remote_players: Query<(
+        Entity,
         &RemotePlayer,
         &PlayerHost,
         &mut RemotePlayerState,
@@ -73,7 +74,7 @@ pub fn apply_player_transforms(
             let mut found = false;
             let mut player_entity = None;
 
-            for (remote, player_host, _, _) in remote_players.iter() {
+            for (_, remote, player_host, _, _) in remote_players.iter() {
                 if remote.player_id == received.player_id && player_host.0 == host_entity {
                     found = true;
                     break;
@@ -89,6 +90,7 @@ pub fn apply_player_transforms(
                     },
                     PlayerHost(host_entity),
                     RemotePlayerState::default(),
+                    RemotePlayerConfig::default(),
                 ));
                 player_entity = Some(avatar);
             }
@@ -97,7 +99,8 @@ pub fn apply_player_transforms(
             match received.update {
                 TrackingUpdate::IFrame(iframe) => {
                     // Find the player to update.
-                    for (remote, player_host, mut state, avatar_bones) in remote_players.iter_mut()
+                    for (_, remote, player_host, mut state, avatar_bones) in
+                        remote_players.iter_mut()
                     {
                         if remote.player_id == received.player_id && player_host.0 == host_entity {
                             apply_iframe(&iframe, avatar_bones, &mut bone_transforms);
@@ -112,7 +115,7 @@ pub fn apply_player_transforms(
                     }
                 }
                 TrackingUpdate::PFrame(pframe) => {
-                    for (remote, player_host, state, avatar_bones) in remote_players.iter() {
+                    for (_, remote, player_host, state, avatar_bones) in remote_players.iter() {
                         if remote.player_id == received.player_id && player_host.0 == host_entity {
                             if let Some(last_iframe) = &state.last_iframe {
                                 apply_pframe(
@@ -136,20 +139,25 @@ fn apply_iframe(
     avatar_bones: &AvatarBones,
     bone_transforms: &mut Query<&mut Transform, With<BoneName>>,
 ) {
-    // Apply bone rotations.
+    // Apply hip position and rotation directly to hip bone.
+    if let Some(&hips_entity) = avatar_bones.get(&BoneName::Hips)
+        && let Ok(mut transform) = bone_transforms.get_mut(hips_entity)
+    {
+        transform.translation = Vec3::from_array(iframe.translation);
+        transform.rotation = Quat::from_array(iframe.rotation);
+    }
+
+    // Apply bone rotations to all other joints.
     for joint in &iframe.joints {
+        if joint.id == BoneName::Hips {
+            continue;
+        }
+
         if let Some(&bone_entity) = avatar_bones.get(&joint.id)
             && let Ok(mut transform) = bone_transforms.get_mut(bone_entity)
         {
             transform.rotation = Quat::from_array(joint.rotation);
         }
-    }
-
-    // Hip position is handled by the hips bone's global transform.
-    if let Some(&hips_entity) = avatar_bones.get(&BoneName::Hips)
-        && let Ok(mut transform) = bone_transforms.get_mut(hips_entity)
-    {
-        transform.translation = Vec3::from_array(iframe.translation);
     }
 }
 
@@ -159,8 +167,32 @@ fn apply_pframe(
     avatar_bones: &AvatarBones,
     bone_transforms: &mut Query<&mut Transform, With<BoneName>>,
 ) {
-    // Apply bone rotations (dequantize).
+    // Apply hip position and rotation directly to hip bone.
+    if let Some(&hips_entity) = avatar_bones.get(&BoneName::Hips)
+        && let Ok(mut transform) = bone_transforms.get_mut(hips_entity)
+    {
+        let delta = Vec3::new(
+            pframe.translation[0] as f32 / PFRAME_TRANSLATION_SCALE,
+            pframe.translation[1] as f32 / PFRAME_TRANSLATION_SCALE,
+            pframe.translation[2] as f32 / PFRAME_TRANSLATION_SCALE,
+        );
+        let last_translation = Vec3::from_array(last_iframe.translation);
+        transform.translation = last_translation + delta;
+
+        transform.rotation = Quat::from_array([
+            pframe.rotation[0] as f32 / PFRAME_ROTATION_SCALE,
+            pframe.rotation[1] as f32 / PFRAME_ROTATION_SCALE,
+            pframe.rotation[2] as f32 / PFRAME_ROTATION_SCALE,
+            pframe.rotation[3] as f32 / PFRAME_ROTATION_SCALE,
+        ]);
+    }
+
+    // Apply bone rotations (dequantize) to all other joints.
     for joint in &pframe.joints {
+        if joint.id == BoneName::Hips {
+            continue;
+        }
+
         if let Some(&bone_entity) = avatar_bones.get(&joint.id)
             && let Ok(mut transform) = bone_transforms.get_mut(bone_entity)
         {
@@ -171,19 +203,5 @@ fn apply_pframe(
                 joint.rotation[3] as f32 / PFRAME_ROTATION_SCALE,
             ]);
         }
-    }
-
-    // Apply translation delta to hips.
-    if let Some(&hips_entity) = avatar_bones.get(&BoneName::Hips)
-        && let Ok(mut transform) = bone_transforms.get_mut(hips_entity)
-    {
-        let delta = Vec3::new(
-            pframe.translation[0] as f32 / PFRAME_TRANSLATION_SCALE,
-            pframe.translation[1] as f32 / PFRAME_TRANSLATION_SCALE,
-            pframe.translation[2] as f32 / PFRAME_TRANSLATION_SCALE,
-        );
-        // Reconstruct translation from last iframe + delta.
-        let last_translation = Vec3::from_array(last_iframe.translation);
-        transform.translation = last_translation + delta;
     }
 }

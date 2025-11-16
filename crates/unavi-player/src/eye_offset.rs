@@ -18,10 +18,14 @@ pub(crate) fn setup_vrm_eye_offset(
     mut scene_assets: ResMut<Assets<Scene>>,
     avatars: Query<
         (Entity, &VrmScene, &ChildOf),
-        (With<PlayerAvatar>, Without<EyeOffsetProcessed>),
+        (
+            With<PlayerAvatar>,
+            Without<crate::config::RemotePlayerConfig>,
+            Without<EyeOffsetProcessed>,
+        ),
     >,
     rigs: Query<&ChildOf, With<PlayerRig>>,
-    mut players: Query<(&mut PlayerConfig, &PlayerEntities)>,
+    mut local_players: Query<(&mut PlayerConfig, &PlayerEntities)>,
     mut transforms: Query<&mut Transform>,
     mut colliders: Query<&mut Collider, With<PlayerRig>>,
     mut sensor_shapes: Query<&mut TnuaAvian3dSensorShape, With<PlayerRig>>,
@@ -36,12 +40,8 @@ pub(crate) fn setup_vrm_eye_offset(
             continue;
         };
         let player_entity = rig_parent.parent();
-        let rig_entity = avatar_parent.parent();
 
-        let Ok((mut config, entities)) = players.get_mut(player_entity) else {
-            continue;
-        };
-
+        // Gather bone data from VRM.
         let mut bones = scene.world.query::<(Entity, &BoneName, &GlobalTransform)>();
         let mut left_eye = None;
         let mut right_eye = None;
@@ -63,6 +63,10 @@ pub(crate) fn setup_vrm_eye_offset(
                 _ => {}
             }
         }
+
+        let Ok((mut config, entities)) = local_players.get_mut(player_entity) else {
+            continue;
+        };
 
         let eye_y = if let Some((_, left_pos)) = left_eye
             && let Some((_, right_pos)) = right_eye
@@ -108,6 +112,7 @@ pub(crate) fn setup_vrm_eye_offset(
             warn!("Failed to get tracked head transform");
         }
 
+        let rig_entity = avatar_parent.parent();
         let capsule_height = vrm_height - 2.0 * vrm_radius;
         let total_height = vrm_height;
 

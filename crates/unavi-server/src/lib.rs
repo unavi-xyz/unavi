@@ -21,7 +21,10 @@ use xdid::{
     },
 };
 
-use crate::session::{KEY_FRAGMENT, SessionSpawner, SpawnerOptions};
+use crate::{
+    internal_msg::InternalMessage,
+    session::{KEY_FRAGMENT, SessionSpawner, SpawnerOptions},
+};
 
 const MAX_IDLE_TIMEOUT: Duration = Duration::from_mins(2);
 const KEEP_ALIVE_INTERVAL: Duration = Duration::from_secs(15);
@@ -29,6 +32,7 @@ const KEEP_ALIVE_INTERVAL: Duration = Duration::from_secs(15);
 const INITIAL_RETRY_DELAY: Duration = Duration::from_secs(1);
 const SPACE_RETRY_DELAY: Duration = Duration::from_secs(30);
 
+mod internal_msg;
 mod key_pair;
 mod session;
 
@@ -72,14 +76,27 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
 
     let vc = key_pair::get_or_create_key(opts.in_memory)?;
 
+    let (msg_tx, mut msg_rx) = tokio::sync::mpsc::channel(16);
+
     let spawner_opts = SpawnerOptions {
         did: did.clone(),
         domain,
         in_memory: opts.in_memory,
+        msg_tx: msg_tx.clone(),
         remote: opts.remote_dwn,
         vc: vc.clone(),
     };
 
+    // Internal message handler.
+    tokio::spawn(async move {
+        loop {
+            if let Err(e) = internal_msg::internal_message_handler(&mut msg_rx).await {
+                error!("Error handling internal message: {e:?}");
+            }
+        }
+    });
+
+    // WebTransport handler.
     tokio::spawn(async move {
         // Wait for did:web route to come online.
         tokio::time::sleep(INITIAL_RETRY_DELAY).await;
@@ -93,6 +110,10 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
                     continue;
                 }
             };
+
+            let _ = msg_tx
+                .send(InternalMessage::SetActor(spawner.ctx.actor.clone()))
+                .await;
 
             if let Err(e) = spawner.init_space_host(cert_hash.to_string()).await {
                 error!("Failed to init space host: {e:?}");

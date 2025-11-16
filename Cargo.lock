@@ -3986,7 +3986,7 @@ dependencies = [
  "libc",
  "option-ext",
  "redox_users 0.5.2",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -4118,7 +4118,7 @@ checksum = "92773504d58c093f6de2459af4af33faa518c13451eb8f2b5698ed3d36e7c813"
 [[package]]
 name = "dwn"
 version = "0.5.0"
-source = "git+https://github.com/unavi-xyz/dwn#26f28007b1e254ee0205c347e34d5719599a6f01"
+source = "git+https://github.com/unavi-xyz/dwn#1b0583160eec445bdcd3c91959a055e63d48772f"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -4138,7 +4138,7 @@ dependencies = [
 [[package]]
 name = "dwn-core"
 version = "0.5.0"
-source = "git+https://github.com/unavi-xyz/dwn#26f28007b1e254ee0205c347e34d5719599a6f01"
+source = "git+https://github.com/unavi-xyz/dwn#1b0583160eec445bdcd3c91959a055e63d48772f"
 dependencies = [
  "base64 0.22.1",
  "ipld-core",
@@ -4159,7 +4159,7 @@ dependencies = [
 [[package]]
 name = "dwn-native-db"
 version = "0.5.0"
-source = "git+https://github.com/unavi-xyz/dwn#26f28007b1e254ee0205c347e34d5719599a6f01"
+source = "git+https://github.com/unavi-xyz/dwn#1b0583160eec445bdcd3c91959a055e63d48772f"
 dependencies = [
  "dwn-core",
  "native_db",
@@ -4174,7 +4174,7 @@ dependencies = [
 [[package]]
 name = "dwn-server"
 version = "0.5.0"
-source = "git+https://github.com/unavi-xyz/dwn#26f28007b1e254ee0205c347e34d5719599a6f01"
+source = "git+https://github.com/unavi-xyz/dwn#1b0583160eec445bdcd3c91959a055e63d48772f"
 dependencies = [
  "anyhow",
  "axum",
@@ -4449,7 +4449,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -5877,7 +5877,7 @@ dependencies = [
  "libc",
  "percent-encoding",
  "pin-project-lite",
- "socket2 0.6.1",
+ "socket2 0.5.10",
  "system-configuration",
  "tokio",
  "tower-service",
@@ -5897,7 +5897,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.62.2",
+ "windows-core 0.58.0",
 ]
 
 [[package]]
@@ -7330,7 +7330,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -7462,7 +7462,7 @@ version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff32365de1b6743cb203b710788263c44a03de03802daf96092f2da4fe6ba4d7"
 dependencies = [
- "proc-macro-crate 3.4.0",
+ "proc-macro-crate 1.3.1",
  "proc-macro2",
  "quote",
  "syn 2.0.110",
@@ -8739,7 +8739,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash 2.1.1",
  "rustls",
- "socket2 0.6.1",
+ "socket2 0.5.10",
  "thiserror 2.0.17",
  "tokio",
  "tracing",
@@ -8776,9 +8776,9 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.6.1",
+ "socket2 0.5.10",
  "tracing",
- "windows-sys 0.60.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -9445,7 +9445,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.11.0",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -10632,7 +10632,7 @@ dependencies = [
  "getrandom 0.3.4",
  "once_cell",
  "rustix 1.1.2",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -11416,6 +11416,7 @@ dependencies = [
  "hyper",
  "p256",
  "rustls",
+ "serde",
  "serde_json",
  "tarpc",
  "time",
@@ -12672,7 +12673,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -13697,7 +13698,7 @@ checksum = "bec9e4a500ca8864c5b47b8b482a73d62e4237670e5b5f1d6b9e3cae50f28f2b"
 [[package]]
 name = "xdid"
 version = "0.5.0"
-source = "git+https://github.com/unavi-xyz/dwn#26f28007b1e254ee0205c347e34d5719599a6f01"
+source = "git+https://github.com/unavi-xyz/dwn#1b0583160eec445bdcd3c91959a055e63d48772f"
 dependencies = [
  "thiserror 2.0.17",
  "xdid-core",
@@ -13708,7 +13709,7 @@ dependencies = [
 [[package]]
 name = "xdid-core"
 version = "0.5.0"
-source = "git+https://github.com/unavi-xyz/dwn#26f28007b1e254ee0205c347e34d5719599a6f01"
+source = "git+https://github.com/unavi-xyz/dwn#1b0583160eec445bdcd3c91959a055e63d48772f"
 dependencies = [
  "anyhow",
  "jose-jwk",
@@ -13720,7 +13721,7 @@ dependencies = [
 [[package]]
 name = "xdid-method-key"
 version = "0.5.0"
-source = "git+https://github.com/unavi-xyz/dwn#26f28007b1e254ee0205c347e34d5719599a6f01"
+source = "git+https://github.com/unavi-xyz/dwn#1b0583160eec445bdcd3c91959a055e63d48772f"
 dependencies = [
  "anyhow",
  "jose-jwk",
@@ -13737,7 +13738,7 @@ dependencies = [
 [[package]]
 name = "xdid-method-web"
 version = "0.5.0"
-source = "git+https://github.com/unavi-xyz/dwn#26f28007b1e254ee0205c347e34d5719599a6f01"
+source = "git+https://github.com/unavi-xyz/dwn#1b0583160eec445bdcd3c91959a055e63d48772f"
 dependencies = [
  "reqwest",
  "xdid-core",

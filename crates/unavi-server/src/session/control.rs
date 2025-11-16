@@ -3,7 +3,10 @@ use tracing::debug;
 use unavi_constants::protocols::SPACE_HOST_PROTOCOL;
 use unavi_server_service::{ControlService, Player, RpcResult};
 
-use crate::session::{ServerContext, TICKRATE};
+use crate::{
+    internal_msg::InternalMessage,
+    session::{ServerContext, TICKRATE},
+};
 
 #[derive(Clone)]
 pub struct ControlServer {
@@ -70,8 +73,24 @@ impl ControlService for ControlServer {
                 return Err("space is full".to_string());
             }
 
-            player.spaces.insert(id);
-            space.players.insert(self.player_id);
+            player.spaces.insert(id.clone());
+            let count_changed = space.players.insert(self.player_id);
+
+            if count_changed {
+                let count = space.players.len();
+
+                drop(players);
+                drop(spaces);
+
+                let _ = self
+                    .ctx
+                    .msg_tx
+                    .send(InternalMessage::SetPlayerCount {
+                        record_id: id,
+                        count,
+                    })
+                    .await;
+            }
         }
 
         Ok(())
@@ -86,15 +105,27 @@ impl ControlService for ControlServer {
             let Some(player) = players.get_mut(&self.player_id) else {
                 return Ok(());
             };
-            player.spaces.remove(&id);
-        }
 
-        {
             let mut spaces = self.ctx.spaces.write().await;
+            player.spaces.remove(&id);
+
             if let Some(space) = spaces.get_mut(&id) {
-                space.players.remove(&self.player_id);
-                if space.players.is_empty() {
-                    spaces.remove(&id);
+                let count_changed = space.players.remove(&self.player_id);
+
+                if count_changed {
+                    let count = space.players.len();
+                    if count == 0 {
+                        spaces.remove(&id);
+                    }
+
+                    let _ = self
+                        .ctx
+                        .msg_tx
+                        .send(InternalMessage::SetPlayerCount {
+                            record_id: id,
+                            count,
+                        })
+                        .await;
                 }
             }
         }

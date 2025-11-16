@@ -19,7 +19,7 @@ tag-name       = "v{{version}}"
 
 [workspace.dependencies]
 anyhow             = "1.0.100"
-avian3d            = "0.4"
+avian3d            = "0.4.1"
 bevy               = "0.17.2"
 bevy_async_task    = "0.9.0"
 bevy_gltf_kun      = { git = "https://github.com/unavi-xyz/gltf_kun" }
@@ -29,7 +29,7 @@ constcat           = "0.6.1"
 directories        = "6.0.0"
 dwn                = { git = "https://github.com/unavi-xyz/dwn" }
 dwn-server         = { git = "https://github.com/unavi-xyz/dwn" }
-embed-resource     = "3.0"
+embed-resource     = "3.0.6"
 futures            = "0.3.31"
 gltf_kun           = { git = "https://github.com/unavi-xyz/gltf_kun" }
 image              = { default-features = false, version = "0.25.8" }

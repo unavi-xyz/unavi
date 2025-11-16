@@ -14,9 +14,12 @@ use unavi_constants::{
 };
 use xdid::core::{did::Did, did_url::DidUrl};
 
-use crate::{async_commands::ASYNC_COMMAND_QUEUE, space::Space};
+use crate::{
+    async_commands::ASYNC_COMMAND_QUEUE,
+    space::{Space, record_ref_url::new_record_ref_url},
+};
 
-pub async fn join_home_space(actor: Actor) -> anyhow::Result<()> {
+pub async fn join_home_space(actor: &Actor) -> anyhow::Result<()> {
     let home_definition = serde_json::from_slice(HOME_SPACE_DEFINITION)?;
     actor
         .configure_protocol(WP_VERSION, home_definition)
@@ -80,12 +83,7 @@ pub async fn join_home_space(actor: Actor) -> anyhow::Result<()> {
                 .await
                 .context("write space")?;
 
-            let space_url = DidUrl {
-                did: space_host,
-                query: Some(format!("service=dwn&relativeRef=/records/{space_id}")),
-                fragment: None,
-                path_abempty: None,
-            };
+            let space_url = new_record_ref_url(space_host, &space_id);
 
             actor
                 .write()

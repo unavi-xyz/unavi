@@ -11333,6 +11333,7 @@ version = "0.0.11"
 dependencies = [
  "constcat",
  "semver",
+ "serde",
 ]
 
 [[package]]
@@ -11416,7 +11417,6 @@ dependencies = [
  "hyper",
  "p256",
  "rustls",
- "serde",
  "serde_json",
  "tarpc",
  "time",

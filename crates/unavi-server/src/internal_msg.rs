@@ -5,9 +5,8 @@ use dwn::{
     Actor,
     core::message::{descriptor::Descriptor, mime::APPLICATION_JSON},
 };
-use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::Receiver;
-use unavi_constants::{WP_VERSION, protocols::SPACE_HOST_PROTOCOL};
+use unavi_constants::{WP_VERSION, protocols::SPACE_HOST_PROTOCOL, schemas::ServerInfo};
 
 use crate::session::DEFAULT_MAX_PLAYERS_PER_SPACE;
 
@@ -93,11 +92,4 @@ pub async fn internal_message_handler(
     }
 
     Ok(())
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct ServerInfo {
-    max_players: usize,
-    num_players: usize,
 }

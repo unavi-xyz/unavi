@@ -19,7 +19,7 @@ use unavi_server_service::TrackingIFrame;
 
 pub mod connect;
 mod connect_info;
-mod record_ref_url;
+pub mod record_ref_url;
 mod streams;
 mod tickrate;
 

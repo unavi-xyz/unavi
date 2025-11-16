@@ -2,7 +2,7 @@ use std::num::NonZero;
 
 use avian3d::{
     PhysicsPlugins,
-    prelude::{Collider, PhysicsDebugPlugin, RigidBody},
+    prelude::{Collider, RigidBody},
 };
 use bevy::{
     camera::{Exposure, visibility::RenderLayers},
@@ -29,7 +29,7 @@ fn main() {
                 ..Default::default()
             }),
             PhysicsPlugins::default(),
-            PhysicsDebugPlugin,
+            // PhysicsDebugPlugin,
             InputPlugin,
             PlayerPlugin,
             Text3dPlugin {
@@ -284,7 +284,7 @@ fn setup_scene(
         Color::from(ORANGE_400),
     );
 
-    // Small steps (easy)
+    // Small steps
     spawner.steps(
         Vec3::new(-12.0, 0.0, 2.0),
         3.0,
@@ -304,7 +304,7 @@ fn setup_scene(
         Color::from(EMERALD_400),
     );
 
-    // Large steps (challenging)
+    // Large steps
     spawner.steps(
         Vec3::new(0.0, 0.0, 2.0),
         3.0,

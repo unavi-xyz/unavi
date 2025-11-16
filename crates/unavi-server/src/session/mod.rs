@@ -76,13 +76,16 @@ struct Player {
 struct Space {
     players: HashSet<PlayerId>,
     max_players: usize,
+    control_tx: tokio::sync::broadcast::Sender<unavi_server_service::from_server::ControlMessage>,
 }
 
 impl Default for Space {
     fn default() -> Self {
+        let (control_tx, _) = tokio::sync::broadcast::channel(100);
         Self {
             players: HashSet::new(),
             max_players: DEFAULT_MAX_PLAYERS_PER_SPACE,
+            control_tx,
         }
     }
 }
@@ -181,6 +184,16 @@ impl SessionSpawner {
             }
         });
 
+        tokio::spawn({
+            let ctx = self.ctx.clone();
+            let con = con.clone();
+            async move {
+                if let Err(e) = streams::control::handle_control_stream(ctx, player_id, con).await {
+                    error!("Error in control stream: {e:?}");
+                }
+            }
+        });
+
         let counts = streams::StreamCounts::default();
 
         loop {
@@ -228,6 +241,12 @@ impl SessionSpawner {
         for space_id in spaces_to_leave {
             if let Some(space) = spaces.get_mut(&space_id) {
                 space.players.remove(&player_id);
+
+                // Broadcast PlayerLeft to all remaining players in this space.
+                let _ = space.control_tx.send(
+                    unavi_server_service::from_server::ControlMessage::PlayerLeft { player_id },
+                );
+
                 let count = space.players.len();
                 if count == 0 {
                     spaces.remove(&space_id);

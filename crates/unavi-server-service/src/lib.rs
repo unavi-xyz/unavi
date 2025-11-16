@@ -80,6 +80,7 @@ pub mod from_server {
     pub enum StreamHeader {
         Transform,
         Voice,
+        Control,
     }
 
     #[derive(Encode, Decode, Debug)]
@@ -90,5 +91,10 @@ pub mod from_server {
     #[derive(Encode, Decode, Debug)]
     pub struct VoiceMeta {
         pub player: u64,
+    }
+
+    #[derive(Encode, Decode, Debug, Clone)]
+    pub enum ControlMessage {
+        PlayerLeft { player_id: u64 },
     }
 }

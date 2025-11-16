@@ -7,6 +7,7 @@ use wtransport::RecvStream;
 
 use crate::space::RecievedTransform;
 
+pub mod control;
 pub mod publish;
 pub mod transform;
 mod voice;
@@ -19,6 +20,7 @@ pub const JOINT_ROTATION_EPSILON: f32 = 1.0 / PFRAME_ROTATION_SCALE;
 pub async fn recv_stream(
     mut stream: RecvStream,
     transform_tx: Sender<RecievedTransform>,
+    control_tx: Sender<unavi_server_service::from_server::ControlMessage>,
 ) -> anyhow::Result<()> {
     let header_len = stream.read_u16_le().await? as usize;
     let mut header_buf = vec![0; header_len];
@@ -32,6 +34,9 @@ pub async fn recv_stream(
         }
         StreamHeader::Voice => {
             voice::recv_voice_stream(stream).await?;
+        }
+        StreamHeader::Control => {
+            control::recv_control_stream(stream, control_tx).await?;
         }
     }
 

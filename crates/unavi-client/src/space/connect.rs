@@ -21,7 +21,7 @@ use xdid::core::did_url::DidUrl;
 use crate::{
     async_commands::ASYNC_COMMAND_QUEUE,
     space::{
-        Host, HostPlayers, HostTransformChannel, Space,
+        Host, HostControlChannel, HostPlayers, HostTransformChannel, Space,
         connect_info::ConnectInfo,
         record_ref_url::parse_record_ref_url,
         streams::publish::HostTransformStreams,
@@ -47,6 +47,7 @@ pub struct HostConnection {
     pub connection: Connection,
     pub control: ControlServiceClient,
     pub transform_tx: Sender<crate::space::streams::transform::RecievedTransform>,
+    pub control_tx: Sender<unavi_server_service::from_server::ControlMessage>,
 }
 
 #[derive(Resource, Default)]
@@ -98,6 +99,7 @@ pub fn handle_space_connect(
                                 // Recieve and handle incoming streams.
                                 let con = host.connection.clone();
                                 let transform_tx = host.transform_tx.clone();
+                                let control_tx = host.control_tx.clone();
                                 tokio::spawn(async move {
                                     loop {
                                         let Ok(stream) = con.accept_uni().await else {
@@ -105,10 +107,14 @@ pub fn handle_space_connect(
                                         };
 
                                         let transform_tx = transform_tx.clone();
+                                        let control_tx = control_tx.clone();
                                         tokio::spawn(async move {
-                                            if let Err(e) =
-                                                super::streams::recv_stream(stream, transform_tx)
-                                                    .await
+                                            if let Err(e) = super::streams::recv_stream(
+                                                stream,
+                                                transform_tx,
+                                                control_tx,
+                                            )
+                                            .await
                                             {
                                                 error!("Error handling stream: {e:?}");
                                             };
@@ -194,9 +200,11 @@ async fn connect_to_host(
 
     // Spawn Host entity.
     let (transform_tx, transform_rx) = std::sync::mpsc::channel();
+    let (control_tx, control_rx) = std::sync::mpsc::channel();
     let connect_url_clone = connect_url.to_string();
 
     let transform_tx_clone = transform_tx.clone();
+    let control_tx_clone = control_tx.clone();
     let mut queue = CommandQueue::default();
     queue.push(move |world: &mut World| {
         world.spawn((
@@ -207,6 +215,10 @@ async fn connect_to_host(
                 tx: transform_tx_clone,
                 rx: Arc::new(Mutex::new(transform_rx)),
             },
+            HostControlChannel {
+                tx: control_tx_clone,
+                rx: Arc::new(Mutex::new(control_rx)),
+            },
         ));
     });
 
@@ -216,6 +228,7 @@ async fn connect_to_host(
         connection,
         control,
         transform_tx,
+        control_tx,
     })
 }
 

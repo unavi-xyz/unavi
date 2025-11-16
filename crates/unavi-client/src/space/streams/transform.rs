@@ -66,9 +66,7 @@ pub fn apply_player_transforms(
     mut pending_spawns: Local<HashMap<(Entity, u64), Entity>>,
 ) {
     // Clean up pending spawns once they become visible in queries.
-    pending_spawns.retain(|_, entity| {
-        !remote_players.iter().any(|(e, ..)| e == *entity)
-    });
+    pending_spawns.retain(|_, entity| !remote_players.iter().any(|(e, ..)| e == *entity));
 
     for (host_entity, _, channel) in hosts.iter() {
         let Ok(rx) = channel.rx.lock() else {
@@ -83,10 +81,15 @@ pub fn apply_player_transforms(
                     remote.player_id == received.player_id && player_host.0 == host_entity
                 })
                 .map(|(e, ..)| e)
-                .or_else(|| pending_spawns.get(&(host_entity, received.player_id)).copied());
+                .or_else(|| {
+                    pending_spawns
+                        .get(&(host_entity, received.player_id))
+                        .copied()
+                });
 
             // Spawn remote avatar if not found.
             if existing_entity.is_none() {
+                info!("Spawning remote player: {}", received.player_id);
                 let avatar = AvatarSpawner::default().spawn(&mut commands, &asset_server);
 
                 // Store initial state with first IFrame if applicable.

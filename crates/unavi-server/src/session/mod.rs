@@ -15,9 +15,11 @@ use tarpc::{
 };
 use tokio::sync::{RwLock, watch};
 use tokio_serde::formats::Bincode;
-use tracing::{error, info, warn};
-use unavi_server_service::{ControlService, TrackingIFrame, TrackingPFrame};
-use wtransport::{endpoint::IncomingSession, error::ConnectionError, stream::BiStream};
+use tracing::{error, info};
+use unavi_server_service::{
+    ControlService, TrackingIFrame, TrackingPFrame, from_server::ControlMessage,
+};
+use wtransport::{endpoint::IncomingSession, stream::BiStream};
 use xdid::{
     core::{did::Did, did_url::DidUrl},
     methods::{key::p256::P256KeyPair, web::reqwest::Url},
@@ -76,7 +78,7 @@ struct Player {
 struct Space {
     players: HashSet<PlayerId>,
     max_players: usize,
-    control_tx: tokio::sync::broadcast::Sender<unavi_server_service::from_server::ControlMessage>,
+    control_tx: tokio::sync::broadcast::Sender<ControlMessage>,
 }
 
 impl Default for Space {
@@ -237,9 +239,9 @@ impl SessionSpawner {
                 space.players.remove(&player_id);
 
                 // Broadcast PlayerLeft to all remaining players in this space.
-                let _ = space.control_tx.send(
-                    unavi_server_service::from_server::ControlMessage::PlayerLeft { player_id },
-                );
+                let _ = space
+                    .control_tx
+                    .send(ControlMessage::PlayerLeft { player_id });
 
                 let count = space.players.len();
                 if count == 0 {

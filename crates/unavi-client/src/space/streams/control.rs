@@ -1,4 +1,4 @@
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::SyncSender;
 
 use bevy::prelude::*;
 use futures::StreamExt;
@@ -10,7 +10,7 @@ use crate::space::{Host, HostControlChannel, PlayerHost, RemotePlayer};
 
 pub async fn recv_control_stream(
     stream: RecvStream,
-    control_tx: Sender<ControlMessage>,
+    control_tx: SyncSender<ControlMessage>,
 ) -> anyhow::Result<()> {
     let mut framed = LengthDelimitedCodec::builder()
         .little_endian()
@@ -21,7 +21,9 @@ pub async fn recv_control_stream(
         let (msg, _) =
             bincode::decode_from_slice::<ControlMessage, _>(&bytes?, bincode::config::standard())?;
 
-        control_tx.send(msg)?;
+        if let Err(e) = control_tx.try_send(msg) {
+            warn!("Dropped control message: {:?}", e);
+        }
     }
 
     Ok(())
@@ -37,7 +39,14 @@ pub fn apply_controls(
             continue;
         };
 
+        // Drain all pending messages.
+        let mut messages = Vec::new();
         while let Ok(msg) = rx.try_recv() {
+            messages.push(msg);
+        }
+
+        // Process all messages in order.
+        for msg in messages {
             match msg {
                 ControlMessage::PlayerLeft { player_id } => {
                     info!("Player {player_id}@{host_entity} left");

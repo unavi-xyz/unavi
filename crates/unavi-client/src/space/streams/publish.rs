@@ -38,6 +38,7 @@ pub struct PublishInterval {
 #[derive(Component, Clone, Default)]
 pub struct TransformPublishState {
     last_iframe_time: Duration,
+    current_iframe_id: u8,
 
     iframe_hips_pos: Vec3,
     iframe_hips_rot: Quat,
@@ -87,6 +88,8 @@ fn record_transforms(
     let (_, hips_rot, hips_pos) = hips_global.to_scale_rotation_translation();
 
     if is_iframe {
+        state.current_iframe_id = state.current_iframe_id.wrapping_add(1);
+
         let mut joints = Vec::new();
 
         for (bone_name, &bone_ent) in avatar_bones.iter() {
@@ -118,6 +121,7 @@ fn record_transforms(
         }
 
         let iframe = TrackingIFrame {
+            iframe_id: state.current_iframe_id,
             translation: hips_pos.to_array(),
             rotation: hips_rot.to_array(),
             joints,
@@ -166,6 +170,7 @@ fn record_transforms(
         }
 
         let pframe = TrackingPFrame {
+            iframe_id: state.current_iframe_id,
             translation: quantize_translation(delta_hips_pos),
             rotation: quantize_rotation(delta_hips_rot),
             joints,

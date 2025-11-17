@@ -22,11 +22,11 @@ pub struct FinalTransform {
     pub joint_rotations: HashMap<BoneName, Quat>,
 }
 
-
 pub struct PlayerTransformState {
     pub tx: watch::Sender<FinalTransform>,
     pub rx: watch::Receiver<FinalTransform>,
     pub last_iframe: Option<TrackingIFrame>,
+    pub current_iframe_id: u8,
 }
 pub type TransformChannels = Arc<RwLock<HashMap<u64, PlayerTransformState>>>;
 
@@ -64,6 +64,7 @@ pub async fn recv_iframe_stream(
             drop(channels);
             let mut channels = player_channels.write().await;
             if let Some(state) = channels.get_mut(&player_id) {
+                state.current_iframe_id = iframe.iframe_id;
                 state.last_iframe = Some(iframe);
             }
         } else {
@@ -73,9 +74,10 @@ pub async fn recv_iframe_stream(
             channels.insert(
                 player_id,
                 PlayerTransformState {
-                    tx,
+                    current_iframe_id: iframe.iframe_id,
+                    last_iframe: Some(iframe.clone()),
                     rx,
-                    last_iframe: Some(iframe),
+                    tx,
                 },
             );
         }
@@ -111,7 +113,11 @@ pub async fn recv_pframe_stream(
 
         let channels = player_channels.read().await;
         if let Some(state) = channels.get(&player_id) {
-            if let Some(ref last_iframe) = state.last_iframe {
+            if pframe.iframe_id != state.current_iframe_id {
+                return Ok(());
+            }
+
+            if let Some(last_iframe) = &state.last_iframe {
                 let final_transform = compute_final_transform_from_pframe(&pframe, last_iframe);
                 let _ = state.tx.send(final_transform);
             }

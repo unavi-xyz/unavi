@@ -177,9 +177,8 @@ pub fn apply_player_transforms(
             let Ok(true) = rx.has_changed() else {
                 continue;
             };
-            rx.mark_unchanged();
 
-            let final_transform = rx.borrow().clone();
+            let final_transform = rx.borrow_and_update();
 
             let existing_entity = remote_players
                 .iter()

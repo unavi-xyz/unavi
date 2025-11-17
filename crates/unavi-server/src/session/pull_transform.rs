@@ -6,7 +6,7 @@ use std::{
 use futures::SinkExt;
 use tarpc::tokio_util::codec::{FramedWrite, LengthDelimitedCodec};
 use tokio::time::interval;
-use tracing::{error, warn};
+use tracing::error;
 use unavi_server_service::{
     TRANSFORM_LENGTH_FIELD_LENGTH, TRANSFORM_MAX_FRAME_LENGTH, TrackingIFrame, TrackingPFrame,
     TrackingUpdate, from_server,
@@ -20,13 +20,11 @@ pub async fn handle_pull_transforms(
     player_id: PlayerId,
     connection: Connection,
 ) -> anyhow::Result<()> {
-    let mut subscriptions = HashMap::new();
+    let mut check_interval = interval(TICKRATE / 2);
     let mut last_send_times = HashMap::new();
-    let mut pending_updates = HashSet::new();
     let mut player_streams = HashMap::new();
     let mut players_in_shared_spaces = HashSet::new();
-    let mut ready_updates = Vec::new();
-    let mut check_interval = interval(TICKRATE / 2);
+    let mut subscriptions = HashMap::new();
 
     loop {
         check_interval.tick().await;
@@ -57,9 +55,6 @@ pub async fn handle_pull_transforms(
                 let iframe_rx = other_player.iframe_tx.subscribe();
                 let pframe_rx = other_player.pframe_tx.subscribe();
                 subscriptions.insert(other_player_id, (iframe_rx, pframe_rx));
-
-                // Force initial IFrame send for newly subscribed player.
-                pending_updates.insert(other_player_id);
             }
         }
         drop(players_guard);
@@ -68,7 +63,6 @@ pub async fn handle_pull_transforms(
             let keep = players_in_shared_spaces.contains(&other_player_id);
             if !keep {
                 last_send_times.remove(&other_player_id);
-                pending_updates.remove(&other_player_id);
                 player_streams.remove(&other_player_id);
             }
             keep
@@ -82,81 +76,42 @@ pub async fn handle_pull_transforms(
                 continue;
             }
 
-            if can_send_now(&ctx, player_id, other_player_id, &last_send_times).await {
-                let iframe = if has_iframe_update {
-                    Some(iframe_rx.borrow_and_update().clone())
-                } else {
-                    None
-                };
+            if !tickrate_ready(&ctx, player_id, other_player_id, &last_send_times).await {
+                continue;
+            }
 
-                let pframe = if has_iframe_update || has_pframe_update {
-                    Some(pframe_rx.borrow_and_update().clone())
-                } else {
-                    None
-                };
-
-                if let Err(e) = send_updates_to_player(
-                    &mut player_streams,
-                    &connection,
-                    other_player_id,
-                    iframe,
-                    pframe,
-                )
-                .await
-                {
-                    error!("Failed to send transform update: {e}");
-                    player_streams.remove(&other_player_id);
-                    continue;
-                }
-
-                last_send_times.insert(other_player_id, Instant::now());
-                pending_updates.remove(&other_player_id);
+            let iframe = if has_iframe_update {
+                Some(iframe_rx.borrow_and_update().clone())
             } else {
-                pending_updates.insert(other_player_id);
+                None
+            };
+
+            let pframe = if has_pframe_update {
+                Some(pframe_rx.borrow_and_update().clone())
+            } else {
+                None
+            };
+
+            if let Err(e) = send_updates_to_player(
+                &mut player_streams,
+                &connection,
+                other_player_id,
+                iframe,
+                pframe,
+            )
+            .await
+            {
+                error!("Failed to send transform update: {e}");
+                player_streams.remove(&other_player_id);
+                continue;
             }
-        }
 
-        ready_updates.clear();
-        for &other_player_id in &pending_updates {
-            if can_send_now(&ctx, player_id, other_player_id, &last_send_times).await {
-                ready_updates.push(other_player_id);
-            }
-        }
-
-        for &other_player_id in &ready_updates {
-            if let Some((iframe_rx, pframe_rx)) = subscriptions.get_mut(&other_player_id) {
-                let has_iframe_update = iframe_rx.has_changed().unwrap_or(false);
-
-                let iframe = if has_iframe_update {
-                    Some(iframe_rx.borrow_and_update().clone())
-                } else {
-                    None
-                };
-
-                let pframe = Some(pframe_rx.borrow_and_update().clone());
-
-                if let Err(e) = send_updates_to_player(
-                    &mut player_streams,
-                    &connection,
-                    other_player_id,
-                    iframe,
-                    pframe,
-                )
-                .await
-                {
-                    warn!("Failed to send pending transform update: {e}");
-                    player_streams.remove(&other_player_id);
-                    continue;
-                }
-
-                last_send_times.insert(other_player_id, Instant::now());
-                pending_updates.remove(&other_player_id);
-            }
+            last_send_times.insert(other_player_id, Instant::now());
         }
     }
 }
 
-async fn can_send_now(
+async fn tickrate_ready(
     ctx: &ServerContext,
     observer_id: PlayerId,
     observed_id: PlayerId,
@@ -168,7 +123,6 @@ async fn can_send_now(
         .and_then(|map| map.get(&observed_id))
         .copied()
         .unwrap_or(TICKRATE);
-    drop(tickrates);
 
     if let Some(&last_send) = last_send_times.get(&observed_id) {
         last_send.elapsed() >= min_interval

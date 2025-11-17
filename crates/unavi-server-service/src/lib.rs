@@ -28,18 +28,38 @@ pub enum TrackingUpdate {
     PFrame(TrackingPFrame),
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TrackingIFrame {
     pub translation: [f32; 3],
     pub rotation: [f32; 4],
     pub joints: Vec<JointIFrame>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+impl Default for TrackingIFrame {
+    fn default() -> Self {
+        Self {
+            translation: Default::default(),
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            joints: Default::default(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TrackingPFrame {
     pub translation: [i16; 3],
     pub rotation: [i16; 4],
     pub joints: Vec<JointPFrame>,
+}
+
+impl Default for TrackingPFrame {
+    fn default() -> Self {
+        Self {
+            translation: Default::default(),
+            rotation: [0, 0, 0, i16::MAX],
+            joints: Default::default(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

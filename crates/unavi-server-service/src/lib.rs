@@ -82,14 +82,9 @@ pub mod from_client {
 
     #[derive(Encode, Decode)]
     pub enum StreamHeader {
-        Transform,
+        TransformIFrame,
+        TransformPFrame,
         Voice,
-    }
-
-    #[derive(Encode, Decode, Debug)]
-    pub struct TransformMeta {
-        /// Placeholder value, has no purpose.
-        pub placeholder: bool,
     }
 }
 
@@ -98,7 +93,8 @@ pub mod from_server {
 
     #[derive(Encode, Decode)]
     pub enum StreamHeader {
-        Transform,
+        TransformIFrame,
+        TransformPFrame,
         Voice,
         Control,
     }

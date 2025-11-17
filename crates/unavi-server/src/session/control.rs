@@ -1,5 +1,5 @@
 use dwn::core::message::descriptor::Descriptor;
-use tracing::debug;
+use tracing::info;
 use unavi_constants::protocols::SPACE_HOST_PROTOCOL;
 use unavi_server_service::{ControlService, Player, RpcResult};
 
@@ -33,7 +33,7 @@ impl ControlService for ControlServer {
         }
 
         // Validate space exists in DWN.
-        debug!("Validating space {id}");
+        info!("Validating space {id}");
 
         let found = self
             .ctx
@@ -45,7 +45,7 @@ impl ControlService for ControlServer {
             .ok_or_else(|| "space not found".to_string())?;
 
         let Descriptor::RecordsWrite(found_write) = &found.entry().descriptor else {
-            debug!("Space not a write record");
+            info!("Space not a write record");
             return Err("space not found".to_string());
         };
 
@@ -53,7 +53,7 @@ impl ControlService for ControlServer {
             || found_write.protocol.as_deref() != Some(SPACE_HOST_PROTOCOL)
             || found_write.protocol_path.as_deref() != Some("space")
         {
-            debug!("Invalid space write record");
+            info!("Invalid space write record");
             return Err("space not found".to_string());
         }
 

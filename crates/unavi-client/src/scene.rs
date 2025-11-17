@@ -12,7 +12,10 @@ pub fn spawn_lights(mut commands: Commands, mut ambient: ResMut<AmbientLight>) {
     ambient.brightness = lux::OVERCAST_DAY;
     commands.spawn((
         CascadeShadowConfigBuilder {
+            first_cascade_far_bound: 5.0,
             maximum_distance: SIZE * 1.2,
+            minimum_distance: 0.1,
+            num_cascades: 3,
             ..Default::default()
         }
         .build(),

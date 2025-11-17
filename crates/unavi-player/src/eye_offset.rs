@@ -102,13 +102,9 @@ pub(crate) fn setup_vrm_eye_offset(
             config.real_height, vrm_height, world_scale.0
         );
         commands.insert_resource(world_scale);
+        // TODO: Apply world scale
 
-        // Position avatar so VRM feet align with rig bottom.
-        // Rig is at Y = real_height/2 with collider of height real_height.
-        // Rig bottom is at Y = 0 in world space.
-        // VRM feet (lowest_y) should be at rig bottom (Y = 0 in rig space).
-        // Avatar entity is child of rig, so we position relative to rig.
-        let avatar_y_in_rig = -lowest_y;
+        let avatar_y_in_rig = -vrm_height / 2.0 - lowest_y / 2.0;
 
         if let Ok(mut avatar_transform) = transforms.get_mut(avatar_ent) {
             avatar_transform.translation.y = avatar_y_in_rig;
@@ -116,9 +112,7 @@ pub(crate) fn setup_vrm_eye_offset(
             warn!("Failed to get avatar transform for {:?}", avatar_ent);
         }
 
-        // Position tracked head so it matches VRM eye height.
-        // TrackedHead is also a child of rig, positioned in rig-local space.
-        let head_y_in_rig = avatar_y_in_rig + eye_y;
+        let head_y_in_rig = avatar_y_in_rig + eye_y - lowest_y / 2.0;
 
         if let Ok(mut head_pose) = tracked_poses.get_mut(entities.tracked_head) {
             head_pose.translation.y = head_y_in_rig;
@@ -150,10 +144,10 @@ pub(crate) fn setup_vrm_eye_offset(
 
         commands
             .entity(avatar_ent)
-            .insert(EyeOffsetProcessed)
             .trigger(|entity| SetupFirstPerson {
                 entity,
                 render_layers: None,
-            });
+            })
+            .insert(EyeOffsetProcessed);
     }
 }

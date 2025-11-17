@@ -209,12 +209,12 @@ fn compute_final_transform_from_pframe(
 }
 
 pub fn apply_player_transforms(
-    mut commands: Commands,
     asset_server: Res<AssetServer>,
     hosts: Query<(Entity, &Host, &HostTransformChannels)>,
-    remote_players: Query<(Entity, &RemotePlayer, &PlayerHost, &AvatarBones)>,
-    mut bone_transforms: Query<&mut Transform, With<BoneName>>,
+    mut commands: Commands,
     mut pending_spawns: Local<HashMap<(Entity, u64), Entity>>,
+    mut transforms: Query<&mut Transform>,
+    remote_players: Query<(Entity, &RemotePlayer, &PlayerHost, &AvatarBones)>,
 ) {
     pending_spawns.retain(|_, entity| !remote_players.iter().any(|(e, ..)| e == *entity));
 
@@ -250,25 +250,32 @@ pub fn apply_player_transforms(
                 continue;
             }
 
-            for (_, remote, player_host, avatar_bones) in remote_players.iter() {
-                if remote.player_id == player_id && player_host.0 == host_entity {
-                    if let Some(&hips_entity) = avatar_bones.get(&BoneName::Hips)
-                        && let Ok(mut transform) = bone_transforms.get_mut(hips_entity)
-                    {
-                        transform.translation = final_transform.hips_translation;
-                        transform.rotation = final_transform.hips_rotation;
-                    }
-
-                    for (bone_id, rotation) in &final_transform.joint_rotations {
-                        if let Some(&bone_entity) = avatar_bones.get(bone_id)
-                            && let Ok(mut transform) = bone_transforms.get_mut(bone_entity)
-                        {
-                            transform.rotation = *rotation;
-                        }
-                    }
-
-                    break;
+            for (player_entity, remote, player_host, avatar_bones) in remote_players.iter() {
+                if remote.player_id != player_id || player_host.0 != host_entity {
+                    continue;
                 }
+
+                if let Ok(mut transform) = transforms.get_mut(player_entity) {
+                    transform.translation = final_transform.hips_translation;
+                    transform.rotation = final_transform.hips_rotation;
+                }
+
+                if let Some(&hips_entity) = avatar_bones.get(&BoneName::Hips)
+                    && let Ok(mut transform) = transforms.get_mut(hips_entity)
+                {
+                    transform.translation = Vec3::default();
+                    transform.rotation = Quat::default();
+                }
+
+                for (bone_id, rotation) in &final_transform.joint_rotations {
+                    if let Some(&bone_entity) = avatar_bones.get(bone_id)
+                        && let Ok(mut transform) = transforms.get_mut(bone_entity)
+                    {
+                        transform.rotation = *rotation;
+                    }
+                }
+
+                break;
             }
         }
     }

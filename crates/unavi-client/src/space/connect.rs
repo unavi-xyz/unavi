@@ -1,7 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
-    sync::mpsc::SyncSender,
-    sync::{Arc, Mutex},
+    sync::{Arc, mpsc::SyncSender},
     time::Duration,
 };
 
@@ -23,10 +22,10 @@ use xdid::core::did_url::DidUrl;
 use crate::{
     async_commands::ASYNC_COMMAND_QUEUE,
     space::{
-        Host, HostControlChannel, HostPlayers, HostTransformChannel, Space,
+        Host, HostControlChannel, HostPlayers, HostTransformChannels, Space,
         connect_info::ConnectInfo,
         record_ref_url::parse_record_ref_url,
-        streams::{publish::HostTransformStreams, transform::RecievedTransform},
+        streams::{publish::HostTransformStreams, transform::TransformChannels},
         tickrate::{SetTickrate, TICKRATE_QUEUE},
     },
 };
@@ -42,13 +41,11 @@ const SPACE_CONNECT_RETRY_DELAY: Duration = Duration::from_secs(30);
 const MIN_TICKRATE: u64 = 25;
 const MAX_TICKRATE: u64 = 1_000;
 
-/// Connection to a host server.
-/// Used as transport for one or more spaces.
 #[derive(Clone)]
 pub struct HostConnection {
     pub connection: Connection,
     pub control: ControlServiceClient,
-    pub transform_tx: SyncSender<RecievedTransform>,
+    pub transform_channels: TransformChannels,
     pub control_tx: SyncSender<ControlMessage>,
 }
 
@@ -98,9 +95,8 @@ pub fn handle_space_connect(
                     } else {
                         match connect_to_host(info.clone()).await {
                             Ok(host) => {
-                                // Recieve and handle incoming streams.
                                 let con = host.connection.clone();
-                                let transform_tx = host.transform_tx.clone();
+                                let transform_channels = host.transform_channels.clone();
                                 let control_tx = host.control_tx.clone();
                                 tokio::spawn(async move {
                                     loop {
@@ -108,12 +104,12 @@ pub fn handle_space_connect(
                                             break;
                                         };
 
-                                        let transform_tx = transform_tx.clone();
+                                        let transform_channels = transform_channels.clone();
                                         let control_tx = control_tx.clone();
                                         tokio::spawn(async move {
                                             if let Err(e) = super::streams::recv_stream(
                                                 stream,
-                                                transform_tx,
+                                                transform_channels,
                                                 control_tx,
                                             )
                                             .await
@@ -200,26 +196,24 @@ async fn connect_to_host(
 
     let control = control_service.spawn();
 
-    // Spawn Host entity.
-    let (transform_tx, transform_rx) = std::sync::mpsc::sync_channel(16);
     let (control_tx, control_rx) = std::sync::mpsc::sync_channel(16);
     let connect_url_clone = connect_url.to_string();
+    let transform_channels = Arc::new(RwLock::new(HashMap::new()));
 
-    let transform_tx_clone = transform_tx.clone();
     let control_tx_clone = control_tx.clone();
+    let transform_channels_clone = transform_channels.clone();
     let mut queue = CommandQueue::default();
     queue.push(move |world: &mut World| {
         world.spawn((
             Host {
                 connect_url: connect_url_clone,
             },
-            HostTransformChannel {
-                tx: transform_tx_clone,
-                rx: Arc::new(Mutex::new(transform_rx)),
+            HostTransformChannels {
+                players: transform_channels_clone,
             },
             HostControlChannel {
                 tx: control_tx_clone,
-                rx: Arc::new(Mutex::new(control_rx)),
+                rx: Arc::new(std::sync::Mutex::new(control_rx)),
             },
         ));
     });
@@ -229,7 +223,7 @@ async fn connect_to_host(
     Ok(HostConnection {
         connection,
         control,
-        transform_tx,
+        transform_channels,
         control_tx,
     })
 }

@@ -6,14 +6,17 @@ use std::sync::{
 use bevy::{ecs::world::CommandQueue, prelude::*, tasks::TaskPool};
 use xdid::core::did_url::DidUrl;
 
-use unavi_server_service::{TrackingIFrame, from_server::ControlMessage};
+use unavi_server_service::from_server::ControlMessage;
 
 use crate::{
     async_commands::ASYNC_COMMAND_QUEUE,
     auth::LocalActor,
     space::{
         connect_info::ConnectInfo,
-        streams::{publish::HostTransformStreams, transform::RecievedTransform},
+        streams::{
+            publish::HostTransformStreams,
+            transform::{FinalTransform, TransformChannels},
+        },
     },
 };
 
@@ -55,10 +58,8 @@ pub struct Host {
 }
 
 #[derive(Component)]
-pub struct HostTransformChannel {
-    #[allow(dead_code)]
-    pub tx: SyncSender<RecievedTransform>,
-    pub rx: Arc<Mutex<Receiver<RecievedTransform>>>,
+pub struct HostTransformChannels {
+    pub players: TransformChannels,
 }
 
 #[derive(Component)]
@@ -81,12 +82,6 @@ pub struct RemotePlayer {
 #[derive(Component)]
 #[relationship(relationship_target = HostPlayers)]
 pub struct PlayerHost(Entity);
-
-/// Tracks the last I-frame for a remote player to apply P-frame deltas.
-#[derive(Component, Default)]
-pub struct RemotePlayerState {
-    pub last_iframe: Option<TrackingIFrame>,
-}
 
 /// Declarative space definition.
 /// Upon add, the space will be fetched and joined.

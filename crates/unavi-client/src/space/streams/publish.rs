@@ -122,7 +122,7 @@ fn record_transforms(
         Some(TrackingUpdate::IFrame(iframe))
     } else {
         let delta_hips_pos = hips_pos - state.iframe_hips_pos;
-        let delta_hips_rot = hips_rot * state.iframe_hips_rot.inverse();
+        let delta_hips_rot = (hips_rot * state.iframe_hips_rot.inverse()).normalize();
 
         let mut joints = Vec::new();
 
@@ -134,7 +134,7 @@ fn record_transforms(
             let Some(delta_rot) = state
                 .iframe_joint_rot
                 .get(bone_name)
-                .map(|&base_rot| transform.rotation * base_rot.inverse())
+                .map(|&base_rot| (transform.rotation * base_rot.inverse()).normalize())
             else {
                 // No previous joint rotation.
                 // Wait for next i-frame.

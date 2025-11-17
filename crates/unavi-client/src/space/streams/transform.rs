@@ -213,13 +213,13 @@ fn apply_pframe(
     if let Some(&hips_entity) = avatar_bones.get(&BoneName::Hips)
         && let Ok(mut transform) = bone_transforms.get_mut(hips_entity)
     {
-        let delta = Vec3::new(
+        let delta_pos = Vec3::new(
             pframe.translation[0] as f32 / PFRAME_TRANSLATION_SCALE,
             pframe.translation[1] as f32 / PFRAME_TRANSLATION_SCALE,
             pframe.translation[2] as f32 / PFRAME_TRANSLATION_SCALE,
         );
-        let last_translation = Vec3::from_array(last_iframe.translation);
-        transform.translation = last_translation + delta;
+        let last_pos = Vec3::from_array(last_iframe.translation);
+        transform.translation = last_pos + delta_pos;
 
         transform.rotation = Quat::from_array([
             pframe.rotation[0] as f32 / PFRAME_ROTATION_SCALE,

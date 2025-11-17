@@ -39,7 +39,19 @@ pub async fn handle_transform_stream(
 
         match update {
             TrackingUpdate::IFrame(iframe) => {
-                let _ = player.iframe_tx.send(iframe);
+                player.iframe_tx.send_modify(|prev| {
+                    prev.translation = iframe.translation;
+                    prev.rotation = iframe.rotation;
+
+                    for joint in iframe.joints {
+                        if let Some(found) = prev.joints.iter_mut().find(|j| j.id == joint.id) {
+                            found.rotation = joint.rotation;
+                        } else {
+                            prev.joints.push(joint);
+                        }
+                    }
+                });
+
                 let _ = player.pframe_tx.send(TrackingPFrame::default());
             }
             TrackingUpdate::PFrame(pframe) => {

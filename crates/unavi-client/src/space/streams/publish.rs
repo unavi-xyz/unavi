@@ -35,11 +35,11 @@ pub struct PublishInterval {
 pub struct TransformPublishState {
     last_iframe_time: Duration,
 
-    prev_hips_pos: Vec3,
-    prev_hips_rot: Quat,
+    iframe_hips_pos: Vec3,
+    iframe_hips_rot: Quat,
 
     iframe_joint_rot: HashMap<BoneName, Quat>,
-    pframe_joint_rot: HashMap<BoneName, Quat>,
+    prev_joint_rot: HashMap<BoneName, Quat>,
 }
 
 fn quantize_rotation(rot: Quat) -> [i16; 4] {
@@ -85,7 +85,7 @@ fn record_transforms(
                 continue;
             };
 
-            // Only include joint if rotation changed from last published value.
+            // Only include joint if rotation changed from last i-frame value.
             let should_include = state
                 .iframe_joint_rot
                 .get(bone_name)
@@ -100,34 +100,29 @@ fn record_transforms(
 
             joints.push(JointIFrame {
                 id: *bone_name,
-                rotation: [
-                    transform.rotation.x,
-                    transform.rotation.y,
-                    transform.rotation.z,
-                    transform.rotation.w,
-                ],
+                rotation: transform.rotation.to_array(),
             });
 
             state
                 .iframe_joint_rot
                 .insert(*bone_name, transform.rotation);
+            state.prev_joint_rot.insert(*bone_name, Quat::default());
         }
 
         let iframe = TrackingIFrame {
-            translation: [hips_pos.x, hips_pos.y, hips_pos.z],
-            rotation: [hips_rot.x, hips_rot.y, hips_rot.z, hips_rot.w],
+            translation: hips_pos.to_array(),
+            rotation: hips_rot.to_array(),
             joints,
         };
 
         state.last_iframe_time = current_time;
-
-        state.prev_hips_pos = Vec3::from_array(iframe.translation);
-        state.prev_hips_rot = Quat::from_array(iframe.rotation);
+        state.iframe_hips_pos = hips_pos;
+        state.iframe_hips_rot = hips_rot;
 
         Some(TrackingUpdate::IFrame(iframe))
     } else {
-        let delta_pos = hips_pos - state.prev_hips_pos;
-        let delta_rot = hips_rot * state.prev_hips_rot.inverse();
+        let delta_hips_pos = hips_pos - state.iframe_hips_pos;
+        let delta_hips_rot = hips_rot * state.iframe_hips_rot.inverse();
 
         let mut joints = Vec::new();
 
@@ -136,34 +131,38 @@ fn record_transforms(
                 continue;
             };
 
-            // Only include joint if rotation changed from last published value.
-            let should_include = state
+            let Some(delta_rot) = state
                 .iframe_joint_rot
                 .get(bone_name)
-                .map(|&last_rot| {
-                    rotation_changed(transform.rotation, last_rot, JOINT_ROTATION_EPSILON)
-                })
+                .map(|&base_rot| transform.rotation * base_rot.inverse())
+            else {
+                // No previous joint rotation.
+                // Wait for next i-frame.
+                continue;
+            };
+
+            // Only include joint if rotation changed from last published value.
+            let should_include = state
+                .prev_joint_rot
+                .get(bone_name)
+                .map(|&prev_rot| rotation_changed(delta_rot, prev_rot, JOINT_ROTATION_EPSILON))
                 .unwrap_or(true);
 
             if !should_include {
                 continue;
             }
 
-            let rotation = quantize_rotation(transform.rotation);
-
             joints.push(JointPFrame {
                 id: *bone_name,
-                rotation,
+                rotation: quantize_rotation(delta_rot),
             });
 
-            state
-                .iframe_joint_rot
-                .insert(*bone_name, transform.rotation);
+            state.prev_joint_rot.insert(*bone_name, delta_rot);
         }
 
         let pframe = TrackingPFrame {
-            translation: quantize_translation(delta_pos),
-            rotation: quantize_rotation(delta_rot),
+            translation: quantize_translation(delta_hips_pos),
+            rotation: quantize_rotation(delta_hips_rot),
             joints,
         };
 

@@ -8,7 +8,7 @@ use tokio::sync::Mutex;
 use unavi_player::{AvatarBones, LocalPlayer, PlayerEntities};
 use unavi_server_service::{
     JointIFrame, JointPFrame, TRANSFORM_LENGTH_FIELD_LENGTH, TRANSFORM_MAX_FRAME_LENGTH,
-    TrackingIFrame, TrackingPFrame, TrackingUpdate,
+    TrackingIFrame, TrackingPFrame,
 };
 use wtransport::SendStream;
 
@@ -20,9 +20,13 @@ const IFRAME_INTERVAL: Duration = Duration::from_secs(5);
 
 type FramedTransformWriter = FramedWrite<SendStream, LengthDelimitedCodec>;
 
-/// Cached transform streams, one per host connection.
+pub struct HostStreams {
+    pub iframe_stream: FramedTransformWriter,
+    pub pframe_stream: Option<SendStream>,
+}
+
 #[derive(Resource, Default, Clone)]
-pub struct HostTransformStreams(pub Arc<Mutex<HashMap<String, FramedTransformWriter>>>);
+pub struct HostTransformStreams(pub Arc<Mutex<HashMap<String, HostStreams>>>);
 
 /// The interval at which data should be published to the space's server.
 #[derive(Component)]
@@ -40,6 +44,11 @@ pub struct TransformPublishState {
 
     iframe_joint_rot: HashMap<BoneName, Quat>,
     prev_joint_rot: HashMap<BoneName, Quat>,
+}
+
+enum TransformResult {
+    IFrame(TrackingIFrame),
+    PFrame(TrackingPFrame),
 }
 
 fn quantize_rotation(rot: Quat) -> [i16; 4] {
@@ -70,7 +79,7 @@ fn record_transforms(
     avatar_bones: &AvatarBones,
     bone_transforms: &Query<&Transform, With<BoneName>>,
     global_transforms: &Query<&GlobalTransform>,
-) -> Option<TrackingUpdate> {
+) -> Option<TransformResult> {
     let is_iframe = current_time - state.last_iframe_time >= IFRAME_INTERVAL;
 
     let hips_ent = *avatar_bones.get(&BoneName::Hips)?;
@@ -85,7 +94,6 @@ fn record_transforms(
                 continue;
             };
 
-            // Only include joint if rotation changed from last i-frame value.
             let should_include = state
                 .iframe_joint_rot
                 .get(bone_name)
@@ -119,7 +127,7 @@ fn record_transforms(
         state.iframe_hips_pos = hips_pos;
         state.iframe_hips_rot = hips_rot;
 
-        Some(TrackingUpdate::IFrame(iframe))
+        Some(TransformResult::IFrame(iframe))
     } else {
         let delta_hips_pos = hips_pos - state.iframe_hips_pos;
         let delta_hips_rot = (hips_rot * state.iframe_hips_rot.inverse()).normalize();
@@ -136,12 +144,9 @@ fn record_transforms(
                 .get(bone_name)
                 .map(|&base_rot| (transform.rotation * base_rot.inverse()).normalize())
             else {
-                // No previous joint rotation.
-                // Wait for next i-frame.
                 continue;
             };
 
-            // Only include joint if rotation changed from last published value.
             let should_include = state
                 .prev_joint_rot
                 .get(bone_name)
@@ -166,12 +171,12 @@ fn record_transforms(
             joints,
         };
 
-        Some(TrackingUpdate::PFrame(pframe))
+        Some(TransformResult::PFrame(pframe))
     }
 }
 
-async fn get_or_create_transform_stream(
-    streams: &Arc<Mutex<HashMap<String, FramedTransformWriter>>>,
+async fn get_or_create_iframe_stream(
+    streams: &Arc<Mutex<HashMap<String, HostStreams>>>,
     connect_url: &str,
     connection: &wtransport::Connection,
 ) -> anyhow::Result<()> {
@@ -191,15 +196,78 @@ async fn get_or_create_transform_stream(
         .max_frame_length(TRANSFORM_MAX_FRAME_LENGTH)
         .new_write(stream);
 
-    let header = from_client::StreamHeader::Transform;
+    let header = from_client::StreamHeader::TransformIFrame;
     let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
     framed.send(header_bytes.into()).await?;
 
-    let meta = from_client::TransformMeta { placeholder: true };
-    let meta_bytes = bincode::encode_to_vec(&meta, bincode::config::standard())?;
-    framed.send(meta_bytes.into()).await?;
+    guard.insert(
+        connect_url.to_string(),
+        HostStreams {
+            iframe_stream: framed,
+            pframe_stream: None,
+        },
+    );
 
-    guard.insert(connect_url.to_string(), framed);
+    Ok(())
+}
+
+async fn send_iframe(
+    streams: &Arc<Mutex<HashMap<String, HostStreams>>>,
+    connect_url: &str,
+    iframe: &TrackingIFrame,
+) -> anyhow::Result<()> {
+    let mut guard = streams.lock().await;
+    let Some(host_streams) = guard.get_mut(connect_url) else {
+        anyhow::bail!("No iframe stream for {}", connect_url);
+    };
+
+    let iframe_bytes = bincode::serde::encode_to_vec(iframe, bincode::config::standard())?;
+    host_streams.iframe_stream.send(iframe_bytes.into()).await?;
+
+    Ok(())
+}
+
+async fn send_pframe(
+    streams: &Arc<Mutex<HashMap<String, HostStreams>>>,
+    connect_url: &str,
+    connection: &wtransport::Connection,
+    pframe: &TrackingPFrame,
+) -> anyhow::Result<()> {
+    use unavi_server_service::from_client;
+
+    let mut guard = streams.lock().await;
+    let Some(host_streams) = guard.get_mut(connect_url) else {
+        anyhow::bail!("No stream state for {}", connect_url);
+    };
+
+    if let Some(mut old_stream) = host_streams.pframe_stream.take() {
+        let _ = old_stream.reset(0u32.into());
+    }
+
+    drop(guard);
+
+    let stream = connection.open_uni().await?.await?;
+    stream.set_priority(1);
+
+    let mut framed = LengthDelimitedCodec::builder()
+        .little_endian()
+        .length_field_length(TRANSFORM_LENGTH_FIELD_LENGTH)
+        .max_frame_length(TRANSFORM_MAX_FRAME_LENGTH)
+        .new_write(stream);
+
+    let header = from_client::StreamHeader::TransformPFrame;
+    let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
+    framed.send(header_bytes.into()).await?;
+
+    let pframe_bytes = bincode::serde::encode_to_vec(pframe, bincode::config::standard())?;
+    framed.send(pframe_bytes.into()).await?;
+
+    let send_stream = framed.into_inner();
+
+    let mut guard = streams.lock().await;
+    if let Some(host_streams) = guard.get_mut(connect_url) {
+        host_streams.pframe_stream = Some(send_stream);
+    }
 
     Ok(())
 }
@@ -229,8 +297,7 @@ pub fn publish_transform_data(
 
     let now = time.elapsed();
 
-    // Group spaces by host to send transforms once per host.
-    let mut hosts_to_publish: HashMap<String, (TransformPublishState, TrackingUpdate)> =
+    let mut hosts_to_publish: HashMap<String, (TransformPublishState, TransformResult)> =
         HashMap::new();
 
     for (_, connect_info, mut interval, mut state) in spaces.iter_mut() {
@@ -252,13 +319,11 @@ pub fn publish_transform_data(
 
         let connect_url = connect_info.connect_url.to_string();
 
-        // Only publish once per host, using the first space's state.
         hosts_to_publish
             .entry(connect_url)
             .or_insert_with(|| (state.clone(), update));
     }
 
-    // Publish transforms to each unique host.
     for (connect_url, (_, update)) in hosts_to_publish {
         let connections_arc = host_connections.0.clone();
         let streams_arc = transform_streams.0.clone();
@@ -273,29 +338,24 @@ pub fn publish_transform_data(
             drop(guard);
 
             if let Err(e) =
-                get_or_create_transform_stream(&streams_arc, &connect_url, &connection).await
+                get_or_create_iframe_stream(&streams_arc, &connect_url, &connection).await
             {
-                error!("Failed to create transform stream: {e:?}");
+                error!("Failed to create iframe stream: {e:?}");
                 return;
             }
 
-            let mut streams_guard = streams_arc.lock().await;
-            let Some(framed) = streams_guard.get_mut(&connect_url) else {
-                return;
+            let result = match update {
+                TransformResult::IFrame(ref iframe) => {
+                    send_iframe(&streams_arc, &connect_url, iframe).await
+                }
+                TransformResult::PFrame(ref pframe) => {
+                    send_pframe(&streams_arc, &connect_url, &connection, pframe).await
+                }
             };
 
-            let update_bytes =
-                match bincode::serde::encode_to_vec(&update, bincode::config::standard()) {
-                    Ok(bytes) => bytes,
-                    Err(e) => {
-                        error!("Failed to encode transform update: {e:?}");
-                        return;
-                    }
-                };
-
-            if let Err(e) = framed.send(update_bytes.into()).await {
+            if let Err(e) = result {
                 error!("Failed to send transform update: {e:?}");
-                streams_guard.remove(&connect_url);
+                streams_arc.lock().await.remove(&connect_url);
             }
         })
         .detach();

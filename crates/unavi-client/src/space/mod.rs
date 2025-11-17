@@ -13,10 +13,7 @@ use crate::{
     auth::LocalActor,
     space::{
         connect_info::ConnectInfo,
-        streams::{
-            publish::HostTransformStreams,
-            transform::{FinalTransform, TransformChannels},
-        },
+        streams::{publish::HostTransformStreams, transform::TransformChannels},
     },
 };
 

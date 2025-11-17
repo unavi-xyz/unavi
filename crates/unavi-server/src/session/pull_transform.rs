@@ -9,11 +9,16 @@ use tokio::time::interval;
 use tracing::error;
 use unavi_server_service::{
     TRANSFORM_LENGTH_FIELD_LENGTH, TRANSFORM_MAX_FRAME_LENGTH, TrackingIFrame, TrackingPFrame,
-    TrackingUpdate, from_server,
+    from_server,
 };
 use wtransport::{Connection, SendStream};
 
 use crate::session::{PlayerId, ServerContext, TICKRATE};
+
+struct PlayerStreams {
+    iframe_stream: FramedWrite<SendStream, LengthDelimitedCodec>,
+    pframe_stream: Option<SendStream>,
+}
 
 pub async fn handle_pull_transforms(
     ctx: ServerContext,
@@ -131,11 +136,11 @@ async fn tickrate_ready(
     }
 }
 
-async fn get_or_create_stream<'a>(
-    player_streams: &'a mut HashMap<PlayerId, FramedWrite<SendStream, LengthDelimitedCodec>>,
+async fn get_or_create_iframe_stream<'a>(
+    player_streams: &'a mut HashMap<PlayerId, PlayerStreams>,
     connection: &Connection,
     player_id: PlayerId,
-) -> anyhow::Result<&'a mut FramedWrite<SendStream, LengthDelimitedCodec>> {
+) -> anyhow::Result<&'a mut PlayerStreams> {
     if let Entry::Vacant(e) = player_streams.entry(player_id) {
         let stream = connection.open_uni().await?.await?;
 
@@ -145,7 +150,7 @@ async fn get_or_create_stream<'a>(
             .max_frame_length(TRANSFORM_MAX_FRAME_LENGTH)
             .new_write(stream);
 
-        let header = from_server::StreamHeader::Transform;
+        let header = from_server::StreamHeader::TransformIFrame;
         let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
         framed.send(header_bytes.into()).await?;
 
@@ -153,33 +158,58 @@ async fn get_or_create_stream<'a>(
         let meta_bytes = bincode::encode_to_vec(&meta, bincode::config::standard())?;
         framed.send(meta_bytes.into()).await?;
 
-        e.insert(framed);
+        e.insert(PlayerStreams {
+            iframe_stream: framed,
+            pframe_stream: None,
+        });
     }
 
     Ok(player_streams.get_mut(&player_id).unwrap())
 }
 
 async fn send_updates_to_player(
-    player_streams: &mut HashMap<PlayerId, FramedWrite<SendStream, LengthDelimitedCodec>>,
+    player_streams: &mut HashMap<PlayerId, PlayerStreams>,
     connection: &Connection,
     other_player_id: PlayerId,
     iframe: Option<TrackingIFrame>,
     pframe: Option<TrackingPFrame>,
 ) -> anyhow::Result<()> {
-    let framed = get_or_create_stream(player_streams, connection, other_player_id).await?;
+    let streams = get_or_create_iframe_stream(player_streams, connection, other_player_id).await?;
 
     if let Some(iframe) = iframe {
-        let iframe_update = TrackingUpdate::IFrame(iframe);
-        let iframe_bytes =
-            bincode::serde::encode_to_vec(&iframe_update, bincode::config::standard())?;
-        framed.send(iframe_bytes.into()).await?;
+        let iframe_bytes = bincode::serde::encode_to_vec(&iframe, bincode::config::standard())?;
+        streams.iframe_stream.send(iframe_bytes.into()).await?;
     }
 
     if let Some(pframe) = pframe {
-        let pframe_update = TrackingUpdate::PFrame(pframe);
-        let pframe_bytes =
-            bincode::serde::encode_to_vec(&pframe_update, bincode::config::standard())?;
+        if let Some(mut old_stream) = streams.pframe_stream.take() {
+            let _ = old_stream.reset(0u32.into());
+        }
+
+        let stream = connection.open_uni().await?.await?;
+        stream.set_priority(10);
+
+        let mut framed = LengthDelimitedCodec::builder()
+            .little_endian()
+            .length_field_length(TRANSFORM_LENGTH_FIELD_LENGTH)
+            .max_frame_length(TRANSFORM_MAX_FRAME_LENGTH)
+            .new_write(stream);
+
+        let header = from_server::StreamHeader::TransformPFrame;
+        let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
+        framed.send(header_bytes.into()).await?;
+
+        let meta = from_server::TransformMeta {
+            player: other_player_id,
+        };
+        let meta_bytes = bincode::encode_to_vec(&meta, bincode::config::standard())?;
+        framed.send(meta_bytes.into()).await?;
+
+        let pframe_bytes = bincode::serde::encode_to_vec(&pframe, bincode::config::standard())?;
         framed.send(pframe_bytes.into()).await?;
+
+        let send_stream = framed.into_inner();
+        streams.pframe_stream = Some(send_stream);
     }
 
     Ok(())

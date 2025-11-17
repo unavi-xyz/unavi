@@ -7,7 +7,7 @@ use tokio::sync::{RwLock, watch};
 use unavi_player::{AvatarBones, AvatarSpawner};
 use unavi_server_service::{
     TRANSFORM_LENGTH_FIELD_LENGTH, TRANSFORM_MAX_FRAME_LENGTH, TrackingIFrame, TrackingPFrame,
-    TrackingUpdate, from_server::TransformMeta,
+    from_server::TransformMeta,
 };
 use wtransport::RecvStream;
 
@@ -22,19 +22,15 @@ pub struct FinalTransform {
     pub joint_rotations: HashMap<BoneName, Quat>,
 }
 
-pub type TransformChannels = Arc<
-    RwLock<
-        HashMap<
-            u64,
-            (
-                watch::Sender<FinalTransform>,
-                watch::Receiver<FinalTransform>,
-            ),
-        >,
-    >,
->;
 
-pub async fn recv_transform_stream(
+pub struct PlayerTransformState {
+    pub tx: watch::Sender<FinalTransform>,
+    pub rx: watch::Receiver<FinalTransform>,
+    pub last_iframe: Option<TrackingIFrame>,
+}
+pub type TransformChannels = Arc<RwLock<HashMap<u64, PlayerTransformState>>>;
+
+pub async fn recv_iframe_stream(
     stream: RecvStream,
     player_channels: TransformChannels,
 ) -> anyhow::Result<()> {
@@ -52,42 +48,73 @@ pub async fn recv_transform_stream(
         bincode::decode_from_slice::<TransformMeta, _>(&meta_bytes?, bincode::config::standard())?;
 
     let player_id = meta.player;
-    let mut last_iframe: Option<TrackingIFrame> = None;
 
     while let Some(bytes) = framed.next().await {
-        let (update, _) = bincode::serde::decode_from_slice::<TrackingUpdate, _>(
+        let (iframe, _) = bincode::serde::decode_from_slice::<TrackingIFrame, _>(
             &bytes?,
             bincode::config::standard(),
         )?;
 
-        let final_transform = match &update {
-            TrackingUpdate::IFrame(iframe) => {
-                last_iframe = Some(iframe.clone());
-                compute_final_transform_from_iframe(iframe)
-            }
-            TrackingUpdate::PFrame(pframe) => {
-                if let Some(iframe) = &last_iframe {
-                    compute_final_transform_from_pframe(pframe, iframe)
-                } else {
-                    continue;
-                }
-            }
-        };
-
-        if final_transform.hips_rotation.x.is_nan() {
-            info!("NaN: {final_transform:?} <- {update:?}");
-        }
-        // info!("{player_id}: rot={:?}", final_transform.hips_rotation);
+        let final_transform = compute_final_transform_from_iframe(&iframe);
 
         let channels = player_channels.read().await;
 
-        if let Some((tx, _)) = channels.get(&player_id) {
-            let _ = tx.send(final_transform);
+        if let Some(state) = channels.get(&player_id) {
+            let _ = state.tx.send(final_transform);
+            drop(channels);
+            let mut channels = player_channels.write().await;
+            if let Some(state) = channels.get_mut(&player_id) {
+                state.last_iframe = Some(iframe);
+            }
         } else {
             drop(channels);
             let mut channels = player_channels.write().await;
             let (tx, rx) = watch::channel(final_transform.clone());
-            channels.insert(player_id, (tx, rx));
+            channels.insert(
+                player_id,
+                PlayerTransformState {
+                    tx,
+                    rx,
+                    last_iframe: Some(iframe),
+                },
+            );
+        }
+    }
+
+    Ok(())
+}
+
+pub async fn recv_pframe_stream(
+    stream: RecvStream,
+    player_channels: TransformChannels,
+) -> anyhow::Result<()> {
+    let mut framed = LengthDelimitedCodec::builder()
+        .little_endian()
+        .length_field_length(TRANSFORM_LENGTH_FIELD_LENGTH)
+        .max_frame_length(TRANSFORM_MAX_FRAME_LENGTH)
+        .new_read(stream);
+
+    let Some(meta_bytes) = framed.next().await else {
+        return Ok(());
+    };
+
+    let (meta, _) =
+        bincode::decode_from_slice::<TransformMeta, _>(&meta_bytes?, bincode::config::standard())?;
+
+    let player_id = meta.player;
+
+    if let Some(bytes) = framed.next().await {
+        let (pframe, _) = bincode::serde::decode_from_slice::<TrackingPFrame, _>(
+            &bytes?,
+            bincode::config::standard(),
+        )?;
+
+        let channels = player_channels.read().await;
+        if let Some(state) = channels.get(&player_id) {
+            if let Some(ref last_iframe) = state.last_iframe {
+                let final_transform = compute_final_transform_from_pframe(&pframe, last_iframe);
+                let _ = state.tx.send(final_transform);
+            }
         }
     }
 
@@ -173,12 +200,12 @@ pub fn apply_player_transforms(
             continue;
         };
 
-        for (&player_id, (_, rx)) in channels.iter_mut() {
-            let Ok(true) = rx.has_changed() else {
+        for (&player_id, state) in channels.iter_mut() {
+            let Ok(true) = state.rx.has_changed() else {
                 continue;
             };
 
-            let final_transform = rx.borrow_and_update();
+            let final_transform = state.rx.borrow_and_update();
 
             let existing_entity = remote_players
                 .iter()

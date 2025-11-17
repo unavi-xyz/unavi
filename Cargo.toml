@@ -20,7 +20,7 @@ tag-name       = "v{{version}}"
 [workspace.dependencies]
 anyhow             = "1.0.100"
 avian3d            = "0.4.1"
-bevy               = "0.17.2"
+bevy               = "0.17.3"
 bevy_async_task    = "0.9.0"
 bevy_gltf_kun      = { git = "https://github.com/unavi-xyz/gltf_kun" }
 bevy_vrm           = { git = "https://github.com/unavi-xyz/bevy_vrm" }

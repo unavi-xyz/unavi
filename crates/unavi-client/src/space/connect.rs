@@ -1,6 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
-    sync::mpsc::Sender,
+    sync::mpsc::SyncSender,
     sync::{Arc, Mutex},
     time::Duration,
 };
@@ -14,7 +14,7 @@ use tarpc::{
     tokio_util::codec::{Framed, LengthDelimitedCodec},
 };
 use tokio::{sync::RwLock, task::AbortHandle};
-use unavi_server_service::ControlServiceClient;
+use unavi_server_service::{ControlServiceClient, from_server::ControlMessage};
 use wtransport::{
     ClientConfig, Connection, Endpoint, VarInt, error::ConnectionError, stream::BiStream,
 };
@@ -26,7 +26,7 @@ use crate::{
         Host, HostControlChannel, HostPlayers, HostTransformChannel, Space,
         connect_info::ConnectInfo,
         record_ref_url::parse_record_ref_url,
-        streams::publish::HostTransformStreams,
+        streams::{publish::HostTransformStreams, transform::RecievedTransform},
         tickrate::{SetTickrate, TICKRATE_QUEUE},
     },
 };
@@ -48,8 +48,8 @@ const MAX_TICKRATE: u64 = 1_000;
 pub struct HostConnection {
     pub connection: Connection,
     pub control: ControlServiceClient,
-    pub transform_tx: Sender<crate::space::streams::transform::RecievedTransform>,
-    pub control_tx: Sender<unavi_server_service::from_server::ControlMessage>,
+    pub transform_tx: SyncSender<RecievedTransform>,
+    pub control_tx: SyncSender<ControlMessage>,
 }
 
 #[derive(Resource, Default)]
@@ -201,8 +201,8 @@ async fn connect_to_host(
     let control = control_service.spawn();
 
     // Spawn Host entity.
-    let (transform_tx, transform_rx) = std::sync::mpsc::channel();
-    let (control_tx, control_rx) = std::sync::mpsc::channel();
+    let (transform_tx, transform_rx) = std::sync::mpsc::sync_channel(16);
+    let (control_tx, control_rx) = std::sync::mpsc::sync_channel(16);
     let connect_url_clone = connect_url.to_string();
 
     let transform_tx_clone = transform_tx.clone();
@@ -353,7 +353,7 @@ pub fn handle_space_disconnect(
 }
 
 pub fn cleanup_connections_on_exit(
-    mut exit: EventReader<AppExit>,
+    mut exit: MessageReader<AppExit>,
     connections: Res<HostConnections>,
 ) {
     if exit.read().next().is_none() {

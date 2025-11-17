@@ -22,7 +22,7 @@ pub struct Player {
     pub did: Did,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum TrackingUpdate {
     IFrame(TrackingIFrame),
     PFrame(TrackingPFrame),

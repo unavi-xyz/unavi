@@ -1,10 +1,12 @@
 use std::sync::{
     Arc, Mutex,
-    mpsc::{Receiver, Sender},
+    mpsc::{Receiver, SyncSender},
 };
 
 use bevy::{ecs::world::CommandQueue, prelude::*, tasks::TaskPool};
 use xdid::core::did_url::DidUrl;
+
+use unavi_server_service::{TrackingIFrame, from_server::ControlMessage};
 
 use crate::{
     async_commands::ASYNC_COMMAND_QUEUE,
@@ -14,8 +16,6 @@ use crate::{
         streams::{publish::HostTransformStreams, transform::RecievedTransform},
     },
 };
-
-use unavi_server_service::TrackingIFrame;
 
 pub mod connect;
 mod connect_info;
@@ -57,15 +57,15 @@ pub struct Host {
 #[derive(Component)]
 pub struct HostTransformChannel {
     #[allow(dead_code)]
-    pub tx: Sender<RecievedTransform>,
+    pub tx: SyncSender<RecievedTransform>,
     pub rx: Arc<Mutex<Receiver<RecievedTransform>>>,
 }
 
 #[derive(Component)]
 pub struct HostControlChannel {
     #[allow(dead_code)]
-    pub tx: Sender<unavi_server_service::from_server::ControlMessage>,
-    pub rx: Arc<Mutex<Receiver<unavi_server_service::from_server::ControlMessage>>>,
+    pub tx: SyncSender<ControlMessage>,
+    pub rx: Arc<Mutex<Receiver<ControlMessage>>>,
 }
 
 #[derive(Component, Default)]

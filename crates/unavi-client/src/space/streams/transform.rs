@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::mpsc::Sender};
+use std::{collections::HashMap, sync::mpsc::SyncSender};
 
 use bevy::{prelude::*, tasks::futures_lite::StreamExt};
 use bevy_vrm::BoneName;
@@ -14,6 +14,7 @@ use crate::space::{Host, HostTransformChannel, PlayerHost, RemotePlayer, RemoteP
 
 use super::{PFRAME_ROTATION_SCALE, PFRAME_TRANSLATION_SCALE};
 
+#[derive(Clone)]
 pub struct RecievedTransform {
     player_id: u64,
     update: TrackingUpdate,
@@ -21,7 +22,7 @@ pub struct RecievedTransform {
 
 pub async fn recv_transform_stream(
     stream: RecvStream,
-    transform_tx: Sender<RecievedTransform>,
+    transform_tx: SyncSender<RecievedTransform>,
 ) -> anyhow::Result<()> {
     let mut framed = LengthDelimitedCodec::builder()
         .little_endian()
@@ -42,10 +43,15 @@ pub async fn recv_transform_stream(
             bincode::config::standard(),
         )?;
 
-        transform_tx.send(RecievedTransform {
+        if let Err(e) = transform_tx.try_send(RecievedTransform {
             player_id: meta.player,
             update,
-        })?;
+        }) {
+            debug!(
+                "Dropped transform update for player {}: {:?}",
+                meta.player, e
+            );
+        }
     }
 
     Ok(())
@@ -73,7 +79,31 @@ pub fn apply_player_transforms(
             continue;
         };
 
+        // Drain all pending messages, keeping only latest per player.
+        let mut latest_updates: HashMap<u64, RecievedTransform> = HashMap::new();
+
         while let Ok(received) = rx.try_recv() {
+            latest_updates
+                .entry(received.player_id)
+                .and_modify(|existing| {
+                    // If new message is IFrame, always replace.
+                    // If new message is PFrame and existing is PFrame, replace.
+                    // If new message is PFrame and existing is IFrame, keep IFrame.
+                    match (&existing.update, &received.update) {
+                        (_, TrackingUpdate::IFrame(_)) => *existing = received.clone(),
+                        (TrackingUpdate::PFrame(_), TrackingUpdate::PFrame(_)) => {
+                            *existing = received.clone()
+                        }
+                        (TrackingUpdate::IFrame(_), TrackingUpdate::PFrame(_)) => {
+                            // Keep the IFrame, discard the PFrame.
+                        }
+                    }
+                })
+                .or_insert(received);
+        }
+
+        // Process only the latest updates.
+        for (_, received) in latest_updates {
             // Find existing remote player (in query or pending spawns).
             let existing_entity = remote_players
                 .iter()

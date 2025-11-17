@@ -30,6 +30,7 @@ pub async fn handle_iframe_stream(
         };
 
         player.iframe_tx.send_modify(|prev| {
+            prev.iframe_id = iframe.iframe_id;
             prev.translation = iframe.translation;
             prev.rotation = iframe.rotation;
 
@@ -41,8 +42,6 @@ pub async fn handle_iframe_stream(
                 }
             }
         });
-
-        let _ = player.pframe_tx.send(TrackingPFrame::default());
     }
 
     Ok(())

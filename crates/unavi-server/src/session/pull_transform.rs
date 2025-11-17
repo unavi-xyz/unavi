@@ -6,7 +6,7 @@ use std::{
 use futures::SinkExt;
 use tarpc::tokio_util::codec::{FramedWrite, LengthDelimitedCodec};
 use tokio::time::interval;
-use tracing::error;
+use tracing::{error, info, warn};
 use unavi_server_service::{
     TRANSFORM_LENGTH_FIELD_LENGTH, TRANSFORM_MAX_FRAME_LENGTH, TrackingIFrame, TrackingPFrame,
     from_server,
@@ -92,7 +92,12 @@ pub async fn handle_pull_transforms(
             };
 
             let pframe = if has_pframe_update {
-                Some(pframe_rx.borrow_and_update().clone())
+                let pframe_update = pframe_rx.borrow_and_update();
+                if pframe_update.iframe_id == iframe_rx.borrow().iframe_id {
+                    Some(pframe_update.clone())
+                } else {
+                    None
+                }
             } else {
                 None
             };

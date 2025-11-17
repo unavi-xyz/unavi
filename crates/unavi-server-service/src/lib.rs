@@ -30,6 +30,7 @@ pub enum TrackingUpdate {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TrackingIFrame {
+    pub iframe_id: u8,
     pub translation: [f32; 3],
     pub rotation: [f32; 4],
     pub joints: Vec<JointIFrame>,
@@ -38,6 +39,7 @@ pub struct TrackingIFrame {
 impl Default for TrackingIFrame {
     fn default() -> Self {
         Self {
+            iframe_id: 0,
             translation: Default::default(),
             rotation: [0.0, 0.0, 0.0, 1.0],
             joints: Default::default(),
@@ -47,6 +49,7 @@ impl Default for TrackingIFrame {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TrackingPFrame {
+    pub iframe_id: u8,
     pub translation: [i16; 3],
     pub rotation: [i16; 4],
     pub joints: Vec<JointPFrame>,
@@ -55,6 +58,7 @@ pub struct TrackingPFrame {
 impl Default for TrackingPFrame {
     fn default() -> Self {
         Self {
+            iframe_id: 0,
             translation: Default::default(),
             rotation: [0, 0, 0, i16::MAX],
             joints: Default::default(),

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use bevy::prelude::*;
-use bevy_vrm::BoneName;
+use bevy_vrm::{BoneName, VrmInstance};
 
 use crate::tracking::{TrackedHead, TrackedPose};
 
@@ -16,10 +16,7 @@ pub(crate) struct AvatarBonesPopulated;
 /// Finds and stores VRM bone entities for avatars with loaded scenes.
 pub(crate) fn populate_avatar_bones(
     mut commands: Commands,
-    avatars: Query<
-        (Entity, &AvatarBones),
-        (With<bevy_vrm::VrmScene>, Without<AvatarBonesPopulated>),
-    >,
+    avatars: Query<(Entity, &AvatarBones), (With<VrmInstance>, Without<AvatarBonesPopulated>)>,
     bones: Query<(Entity, &BoneName)>,
     parents: Query<&ChildOf>,
 ) {

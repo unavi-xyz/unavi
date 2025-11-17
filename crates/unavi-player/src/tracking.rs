@@ -45,12 +45,12 @@ impl TrackedPose {
 
 /// Marker component for the tracked head entity.
 #[derive(Component, Default)]
-#[require(TrackedPose, Transform, GlobalTransform, Visibility)]
+#[require(TrackedPose, Transform)]
 pub struct TrackedHead;
 
 /// Marker component for tracked hands (future use).
 #[derive(Component, Default)]
-#[require(TrackedPose, Transform, GlobalTransform, Visibility)]
+#[require(TrackedPose, Transform)]
 pub struct TrackedHand {
     pub is_left: bool,
 }

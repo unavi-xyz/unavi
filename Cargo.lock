@@ -1756,8 +1756,8 @@ dependencies = [
 
 [[package]]
 name = "bevy_shader_mtoon"
-version = "0.1.0"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#ccac456b36636d9dba2b226d5535e02a19bce8eb"
+version = "0.2.0"
+source = "git+https://github.com/unavi-xyz/bevy_vrm#1e69ffa42afe8c9292733916aaae3ce8266bf2ce"
 dependencies = [
  "bevy",
  "bevy_mod_outline",
@@ -2012,8 +2012,8 @@ dependencies = [
 
 [[package]]
 name = "bevy_vrm"
-version = "0.1.0"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#ccac456b36636d9dba2b226d5535e02a19bce8eb"
+version = "0.2.0"
+source = "git+https://github.com/unavi-xyz/bevy_vrm#1e69ffa42afe8c9292733916aaae3ce8266bf2ce"
 dependencies = [
  "bevy",
  "bevy_gltf_kun",
@@ -3384,7 +3384,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d162beedaa69905488a8da94f5ac3edb4dd4788b732fadb7bd120b2625c1976"
 dependencies = [
  "data-encoding",
- "syn 2.0.110",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -5440,8 +5440,8 @@ dependencies = [
 
 [[package]]
 name = "gltf_kun_vrm"
-version = "0.1.0"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#ccac456b36636d9dba2b226d5535e02a19bce8eb"
+version = "0.2.0"
+source = "git+https://github.com/unavi-xyz/bevy_vrm#1e69ffa42afe8c9292733916aaae3ce8266bf2ce"
 dependencies = [
  "gltf_kun",
  "serde",
@@ -5897,7 +5897,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.61.2",
+ "windows-core 0.62.2",
 ]
 
 [[package]]
@@ -9885,8 +9885,8 @@ dependencies = [
 
 [[package]]
 name = "serde_vrm"
-version = "0.1.0"
-source = "git+https://github.com/unavi-xyz/bevy_vrm#ccac456b36636d9dba2b226d5535e02a19bce8eb"
+version = "0.2.0"
+source = "git+https://github.com/unavi-xyz/bevy_vrm#1e69ffa42afe8c9292733916aaae3ce8266bf2ce"
 dependencies = [
  "bevy",
  "serde",

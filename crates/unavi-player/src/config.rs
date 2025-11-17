@@ -40,8 +40,20 @@ pub const PLAYER_RADIUS: f32 = 0.5;
 pub const FLOAT_HEIGHT_OFFSET: f32 = 0.01;
 
 /// World scale factor resource.
-/// Multiply world entities by this to make the player perceive correct scale.
-/// Scale = real_height / vrm_height
+///
+/// This scales world objects (NOT the avatar) to match player perception.
+///
+/// # Formula
+/// `WorldScale = real_height / vrm_height`
+///
+/// # Behavior
+/// - If VRM is **taller** than real_height → scale < 1.0 → world shrinks → player feels taller
+/// - If VRM is **shorter** than real_height → scale > 1.0 → world grows → player feels shorter
+/// - If VRM matches real_height → scale = 1.0 → no adjustment needed
+///
+/// # Example
+/// - real_height = 1.7m, vrm_height = 2.0m → scale = 0.85
+/// - World objects at 0.85x size make tall avatar feel appropriate
 #[derive(Resource, Default)]
 pub struct WorldScale(pub f32);
 

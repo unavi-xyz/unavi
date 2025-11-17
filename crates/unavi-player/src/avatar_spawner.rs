@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_vrm::{VrmBundle, VrmInstance};
+use bevy_vrm::VrmInstance;
 use constcat::concat;
 
 use crate::{PlayerAvatar, bones::AvatarBones};
@@ -36,10 +36,7 @@ impl AvatarSpawner {
             .spawn((
                 PlayerAvatar,
                 AvatarBones::default(),
-                VrmBundle {
-                    vrm: VrmInstance(vrm_handle),
-                    ..Default::default()
-                },
+                VrmInstance(vrm_handle),
                 Transform::default(),
             ))
             .id()

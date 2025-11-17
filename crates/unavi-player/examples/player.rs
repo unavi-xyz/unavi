@@ -17,7 +17,7 @@ use bevy::{
     render::view::Hdr,
 };
 use bevy_rich_text3d::{Text3d, Text3dPlugin, Text3dStyling, TextAtlas};
-use bevy_vrm::first_person::{FirstPersonFlag, RENDER_LAYERS};
+use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
 use unavi_input::InputPlugin;
 use unavi_player::{LocalPlayerSpawner, PlayerPlugin};
 
@@ -195,7 +195,7 @@ fn setup_scene(
         Exposure::SUNLIGHT,
         Bloom::OLD_SCHOOL,
         Msaa::default(),
-        RenderLayers::layer(0).union(&RENDER_LAYERS[&FirstPersonFlag::ThirdPersonOnly]),
+        RenderLayers::layer(0).union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::ThirdPersonOnly]),
     ));
 
     commands.spawn((

@@ -189,18 +189,18 @@ fn apply_iframe(
         transform.rotation = Quat::from_array(iframe.rotation);
     }
 
-    // // Apply bone rotations to all other joints.
-    // for joint in &iframe.joints {
-    //     if joint.id == BoneName::Hips {
-    //         continue;
-    //     }
-    //
-    //     if let Some(&bone_entity) = avatar_bones.get(&joint.id)
-    //         && let Ok(mut transform) = bone_transforms.get_mut(bone_entity)
-    //     {
-    //         transform.rotation = Quat::from_array(joint.rotation);
-    //     }
-    // }
+    // Apply bone rotations to all other joints.
+    for joint in &iframe.joints {
+        if joint.id == BoneName::Hips {
+            continue;
+        }
+
+        if let Some(&bone_entity) = avatar_bones.get(&joint.id)
+            && let Ok(mut transform) = bone_transforms.get_mut(bone_entity)
+        {
+            transform.rotation = Quat::from_array(joint.rotation);
+        }
+    }
 }
 
 fn apply_pframe(
@@ -227,21 +227,22 @@ fn apply_pframe(
         ]) * Quat::from_array(last_iframe.rotation);
     }
 
-    // // Apply bone rotations (dequantize) to all other joints.
-    // for joint in &pframe.joints {
-    //     if joint.id == BoneName::Hips {
-    //         continue;
-    //     }
-    //
-    //     if let Some(&bone_entity) = avatar_bones.get(&joint.id)
-    //         && let Ok(mut transform) = bone_transforms.get_mut(bone_entity)
-    //     {
-    //         transform.rotation = Quat::from_array([
-    //             joint.rotation[0] as f32 / PFRAME_ROTATION_SCALE,
-    //             joint.rotation[1] as f32 / PFRAME_ROTATION_SCALE,
-    //             joint.rotation[2] as f32 / PFRAME_ROTATION_SCALE,
-    //             joint.rotation[3] as f32 / PFRAME_ROTATION_SCALE,
-    //         ]);
-    //     }
-    // }
+    // Apply bone rotations to all other joints.
+    for joint in &pframe.joints {
+        if joint.id == BoneName::Hips {
+            continue;
+        }
+
+        if let Some(&bone_entity) = avatar_bones.get(&joint.id)
+            && let Ok(mut transform) = bone_transforms.get_mut(bone_entity)
+            && let Some(iframe_joint) = last_iframe.joints.iter().find(|j| j.id == joint.id)
+        {
+            transform.rotation = Quat::from_array([
+                joint.rotation[0] as f32 / PFRAME_ROTATION_SCALE,
+                joint.rotation[1] as f32 / PFRAME_ROTATION_SCALE,
+                joint.rotation[2] as f32 / PFRAME_ROTATION_SCALE,
+                joint.rotation[3] as f32 / PFRAME_ROTATION_SCALE,
+            ]) * Quat::from_array(iframe_joint.rotation);
+        }
+    }
 }

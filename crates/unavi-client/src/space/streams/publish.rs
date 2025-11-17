@@ -31,23 +31,15 @@ pub struct PublishInterval {
     pub tickrate: Duration,
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Default)]
 pub struct TransformPublishState {
     last_iframe_time: Duration,
-    last_hips_pos: [f32; 3],
-    last_hips_rot: [f32; 4],
-    last_joint_rotations: HashMap<BoneName, Quat>,
-}
 
-impl Default for TransformPublishState {
-    fn default() -> Self {
-        Self {
-            last_iframe_time: Duration::ZERO,
-            last_hips_pos: [0.0, 0.0, 0.0],
-            last_hips_rot: [0.0, 0.0, 0.0, 1.0],
-            last_joint_rotations: HashMap::new(),
-        }
-    }
+    prev_hips_pos: Vec3,
+    prev_hips_rot: Quat,
+
+    iframe_joint_rot: HashMap<BoneName, Quat>,
+    pframe_joint_rot: HashMap<BoneName, Quat>,
 }
 
 fn quantize_rotation(rot: Quat) -> [i16; 4] {
@@ -95,7 +87,7 @@ fn record_transforms(
 
             // Only include joint if rotation changed from last published value.
             let should_include = state
-                .last_joint_rotations
+                .iframe_joint_rot
                 .get(bone_name)
                 .map(|&last_rot| {
                     rotation_changed(transform.rotation, last_rot, JOINT_ROTATION_EPSILON)
@@ -117,7 +109,7 @@ fn record_transforms(
             });
 
             state
-                .last_joint_rotations
+                .iframe_joint_rot
                 .insert(*bone_name, transform.rotation);
         }
 
@@ -127,17 +119,15 @@ fn record_transforms(
             joints,
         };
 
-        state.last_hips_pos = iframe.translation;
-        state.last_hips_rot = iframe.rotation;
         state.last_iframe_time = current_time;
+
+        state.prev_hips_pos = Vec3::from_array(iframe.translation);
+        state.prev_hips_rot = Quat::from_array(iframe.rotation);
 
         Some(TrackingUpdate::IFrame(iframe))
     } else {
-        let delta_pos = Vec3::new(
-            hips_pos.x - state.last_hips_pos[0],
-            hips_pos.y - state.last_hips_pos[1],
-            hips_pos.z - state.last_hips_pos[2],
-        );
+        let delta_pos = hips_pos - state.prev_hips_pos;
+        let delta_rot = hips_rot * state.prev_hips_rot.inverse();
 
         let mut joints = Vec::new();
 
@@ -148,7 +138,7 @@ fn record_transforms(
 
             // Only include joint if rotation changed from last published value.
             let should_include = state
-                .last_joint_rotations
+                .iframe_joint_rot
                 .get(bone_name)
                 .map(|&last_rot| {
                     rotation_changed(transform.rotation, last_rot, JOINT_ROTATION_EPSILON)
@@ -167,13 +157,13 @@ fn record_transforms(
             });
 
             state
-                .last_joint_rotations
+                .iframe_joint_rot
                 .insert(*bone_name, transform.rotation);
         }
 
         let pframe = TrackingPFrame {
             translation: quantize_translation(delta_pos),
-            rotation: quantize_rotation(hips_rot),
+            rotation: quantize_rotation(delta_rot),
             joints,
         };
 

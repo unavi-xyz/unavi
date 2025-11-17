@@ -6,7 +6,7 @@ use std::{
 use futures::SinkExt;
 use tarpc::tokio_util::codec::{FramedWrite, LengthDelimitedCodec};
 use tokio::time::interval;
-use tracing::{error, info, warn};
+use tracing::error;
 use unavi_server_service::{
     TRANSFORM_LENGTH_FIELD_LENGTH, TRANSFORM_MAX_FRAME_LENGTH, TrackingIFrame, TrackingPFrame,
     from_server,

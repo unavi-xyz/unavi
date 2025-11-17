@@ -9,7 +9,7 @@ use unavi_server_service::{
     TRANSFORM_LENGTH_FIELD_LENGTH, TRANSFORM_MAX_FRAME_LENGTH, TrackingIFrame, TrackingPFrame,
     from_server::TransformMeta,
 };
-use wtransport::RecvStream;
+use wtransport::{RecvStream, StreamId};
 
 use crate::space::{Host, HostTransformChannels, PlayerHost, RemotePlayer};
 
@@ -27,6 +27,7 @@ pub struct PlayerTransformState {
     pub rx: watch::Receiver<FinalTransform>,
     pub last_iframe: Option<TrackingIFrame>,
     pub current_iframe_id: u8,
+    pub last_pframe_stream_id: Option<StreamId>,
 }
 pub type TransformChannels = Arc<RwLock<HashMap<u64, PlayerTransformState>>>;
 
@@ -66,6 +67,7 @@ pub async fn recv_iframe_stream(
             if let Some(state) = channels.get_mut(&player_id) {
                 state.current_iframe_id = iframe.iframe_id;
                 state.last_iframe = Some(iframe);
+                state.last_pframe_stream_id = None;
             }
         } else {
             drop(channels);
@@ -76,6 +78,7 @@ pub async fn recv_iframe_stream(
                 PlayerTransformState {
                     current_iframe_id: iframe.iframe_id,
                     last_iframe: Some(iframe.clone()),
+                    last_pframe_stream_id: None,
                     rx,
                     tx,
                 },
@@ -90,6 +93,8 @@ pub async fn recv_pframe_stream(
     stream: RecvStream,
     player_channels: TransformChannels,
 ) -> anyhow::Result<()> {
+    let stream_id = stream.id();
+
     let mut framed = LengthDelimitedCodec::builder()
         .little_endian()
         .length_field_length(TRANSFORM_LENGTH_FIELD_LENGTH)
@@ -117,9 +122,21 @@ pub async fn recv_pframe_stream(
                 return Ok(());
             }
 
+            if let Some(last_stream_id) = state.last_pframe_stream_id
+                && stream_id < last_stream_id
+            {
+                return Ok(());
+            }
+
             if let Some(last_iframe) = &state.last_iframe {
                 let final_transform = compute_final_transform_from_pframe(&pframe, last_iframe);
                 let _ = state.tx.send(final_transform);
+            }
+
+            drop(channels);
+            let mut channels = player_channels.write().await;
+            if let Some(state) = channels.get_mut(&player_id) {
+                state.last_pframe_stream_id = Some(stream_id);
             }
         }
     }

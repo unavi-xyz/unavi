@@ -15,6 +15,7 @@ pub async fn recv_control_stream(
     let mut framed = LengthDelimitedCodec::builder()
         .little_endian()
         .length_field_length(2)
+        .max_frame_length(512)
         .new_read(stream);
 
     while let Some(bytes) = framed.next().await {

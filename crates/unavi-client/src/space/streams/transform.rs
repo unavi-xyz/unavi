@@ -36,7 +36,7 @@ pub type TransformChannels = Arc<SccHashMap<u64, PlayerTransformState>>;
 pub async fn recv_iframe_stream(
     stream: RecvStream,
     player_channels: TransformChannels,
-    #[cfg(feature = "devtools-network")] _connect_url: String,
+    #[cfg(feature = "devtools-network")] connect_url: String,
 ) -> anyhow::Result<()> {
     let mut framed = LengthDelimitedCodec::builder()
         .little_endian()
@@ -68,11 +68,11 @@ pub async fn recv_iframe_stream(
             use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
 
             let _ = NETWORK_EVENTS.0.send(NetworkEvent::Download {
-                host: _connect_url.clone(),
+                host: connect_url.clone(),
                 bytes: byte_count,
             });
             let _ = NETWORK_EVENTS.0.send(NetworkEvent::ValidTick {
-                host: _connect_url.clone(),
+                host: connect_url.clone(),
             });
         }
 
@@ -113,7 +113,7 @@ pub async fn recv_iframe_stream(
 pub async fn recv_pframe_stream(
     stream: RecvStream,
     player_channels: TransformChannels,
-    #[cfg(feature = "devtools-network")] _connect_url: String,
+    #[cfg(feature = "devtools-network")] connect_url: String,
 ) -> anyhow::Result<()> {
     let stream_id = stream.id();
 
@@ -150,7 +150,7 @@ pub async fn recv_pframe_stream(
                         use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
 
                         let _ = NETWORK_EVENTS.0.send(NetworkEvent::DroppedFrame {
-                            host: _connect_url.clone(),
+                            host: connect_url.clone(),
                         });
                     }
                     return Err(());
@@ -164,7 +164,7 @@ pub async fn recv_pframe_stream(
                         use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
 
                         let _ = NETWORK_EVENTS.0.send(NetworkEvent::DroppedFrame {
-                            host: _connect_url.clone(),
+                            host: connect_url.clone(),
                         });
                     }
                     return Err(());
@@ -175,11 +175,11 @@ pub async fn recv_pframe_stream(
                     use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
 
                     let _ = NETWORK_EVENTS.0.send(NetworkEvent::Download {
-                        host: _connect_url.clone(),
+                        host: connect_url.clone(),
                         bytes: byte_count,
                     });
                     let _ = NETWORK_EVENTS.0.send(NetworkEvent::ValidTick {
-                        host: _connect_url.clone(),
+                        host: connect_url.clone(),
                     });
                 }
 

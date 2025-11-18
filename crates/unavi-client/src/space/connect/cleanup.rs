@@ -106,8 +106,15 @@ pub fn cleanup_connections_on_exit(
         }
 
         // Close all connections.
+        let rt = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+
         connections.0.iter_sync(|_, c| {
+            info!("closing connection: {}", c.connection.stable_id());
             c.connection.close(VarInt::from_u32(0), b"shutdown");
+            rt.block_on(c.connection.closed()); // Wait for connection to close.
             false
         });
     }

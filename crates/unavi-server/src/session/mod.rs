@@ -160,10 +160,6 @@ impl SessionSpawner {
         let player_id = self.player_id_count.fetch_add(1, Ordering::AcqRel);
         let server = ControlServer::new(self.ctx.clone(), player_id);
 
-        tokio::spawn(channel.execute(server.serve()).for_each(|res| async move {
-            tokio::spawn(res);
-        }));
-
         let (iframe_tx, _iframe_rx) = watch::channel(Default::default());
         let (pframe_tx, _pframe_rx) = watch::channel(Default::default());
 
@@ -180,47 +176,64 @@ impl SessionSpawner {
             )
             .await;
 
-        tokio::spawn({
-            let ctx = self.ctx.clone();
-            let con = con.clone();
-            async move {
-                if let Err(e) = pull_transform::handle_pull_transforms(ctx, player_id, con).await {
-                    error!("Error in pull transforms: {e:?}");
+        let tasks = [
+            tokio::spawn(channel.execute(server.serve()).for_each(|res| async move {
+                tokio::spawn(res);
+            }))
+            .abort_handle(),
+            tokio::spawn({
+                let ctx = self.ctx.clone();
+                let con = con.clone();
+                async move {
+                    if let Err(e) =
+                        pull_transform::handle_pull_transforms(ctx, player_id, con).await
+                    {
+                        error!("Error in pull transforms: {e:?}");
+                    }
                 }
-            }
-        });
-
-        tokio::spawn({
-            let ctx = self.ctx.clone();
-            let con = con.clone();
-            async move {
-                if let Err(e) = streams::control::handle_control_stream(ctx, player_id, con).await {
-                    error!("Error in control stream: {e:?}");
+            })
+            .abort_handle(),
+            tokio::spawn({
+                let ctx = self.ctx.clone();
+                let con = con.clone();
+                async move {
+                    if let Err(e) =
+                        streams::control::handle_control_stream(ctx, player_id, con).await
+                    {
+                        error!("Error in control stream: {e:?}");
+                    }
                 }
-            }
-        });
+            })
+            .abort_handle(),
+            tokio::spawn({
+                let con = con.clone();
+                let counts = streams::StreamCounts::default();
+                let ctx = self.ctx.clone();
 
-        tokio::spawn({
-            let con = con.clone();
-            let counts = streams::StreamCounts::default();
-            let ctx = self.ctx.clone();
-
-            async move {
-                while let Ok(stream) = con.accept_uni().await {
-                    let counts = counts.clone();
-                    let ctx = ctx.clone();
-                    tokio::spawn(async move {
-                        if let Err(e) = streams::recv_stream(ctx, counts, player_id, stream).await {
-                            error!("Error handling stream: {e:?}");
-                        }
-                    });
+                async move {
+                    while let Ok(stream) = con.accept_uni().await {
+                        let counts = counts.clone();
+                        let ctx = ctx.clone();
+                        tokio::spawn(async move {
+                            if let Err(e) =
+                                streams::recv_stream(ctx, counts, player_id, stream).await
+                            {
+                                error!("Error handling stream: {e:?}");
+                            }
+                        });
+                    }
                 }
-            }
-        });
+            })
+            .abort_handle(),
+        ];
 
         let err = con.closed().await;
         info!("Connection closed: {err}");
         self.cleanup_player(player_id).await;
+
+        for t in tasks {
+            t.abort();
+        }
 
         Ok(())
     }

@@ -193,17 +193,17 @@ async fn get_or_create_iframe_stream<'a>(
     player_id: PlayerId,
 ) -> anyhow::Result<&'a mut PlayerStreams> {
     if let Entry::Vacant(e) = player_streams.entry(player_id) {
-        let stream = connection.open_uni().await?.await?;
+        let mut stream = connection.open_uni().await?.await?;
+
+        let header = from_server::StreamHeader::TransformIFrame;
+        let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
+        stream.write_all(&header_bytes).await?;
 
         let mut framed = LengthDelimitedCodec::builder()
             .little_endian()
             .length_field_length(TRANSFORM_LENGTH_FIELD_LENGTH)
             .max_frame_length(TRANSFORM_MAX_FRAME_LENGTH)
             .new_write(stream);
-
-        let header = from_server::StreamHeader::TransformIFrame;
-        let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
-        framed.send(header_bytes.into()).await?;
 
         let meta = from_server::TransformMeta { player: player_id };
         let meta_bytes = bincode::encode_to_vec(&meta, bincode::config::standard())?;
@@ -237,18 +237,18 @@ async fn send_updates_to_player(
             let _ = old_stream.reset(0u32.into());
         }
 
-        let stream = connection.open_uni().await?.await?;
+        let mut stream = connection.open_uni().await?.await?;
         stream.set_priority(10);
+
+        let header = from_server::StreamHeader::TransformPFrame;
+        let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
+        stream.write_all(&header_bytes).await?;
 
         let mut framed = LengthDelimitedCodec::builder()
             .little_endian()
             .length_field_length(TRANSFORM_LENGTH_FIELD_LENGTH)
             .max_frame_length(TRANSFORM_MAX_FRAME_LENGTH)
             .new_write(stream);
-
-        let header = from_server::StreamHeader::TransformPFrame;
-        let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
-        framed.send(header_bytes.into()).await?;
 
         let meta = from_server::TransformMeta {
             player: other_player_id,

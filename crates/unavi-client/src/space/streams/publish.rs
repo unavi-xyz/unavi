@@ -201,17 +201,17 @@ async fn get_or_create_iframe_stream(
         return Ok(());
     }
 
-    let stream = connection.open_uni().await?.await?;
+    let mut stream = connection.open_uni().await?.await?;
 
-    let mut framed = LengthDelimitedCodec::builder()
+    let header = from_client::StreamHeader::TransformIFrame;
+    let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
+    stream.write_all(&header_bytes).await?;
+
+    let framed = LengthDelimitedCodec::builder()
         .little_endian()
         .length_field_length(TRANSFORM_LENGTH_FIELD_LENGTH)
         .max_frame_length(TRANSFORM_MAX_FRAME_LENGTH)
         .new_write(stream);
-
-    let header = from_client::StreamHeader::TransformIFrame;
-    let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
-    framed.send(header_bytes.into()).await?;
 
     let _ = streams
         .insert_async(
@@ -275,18 +275,18 @@ async fn send_pframe(
         let _ = stream.reset(0u32.into());
     }
 
-    let stream = connection.open_uni().await?.await?;
+    let mut stream = connection.open_uni().await?.await?;
     stream.set_priority(1);
+
+    let header = from_client::StreamHeader::TransformPFrame;
+    let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
+    stream.write_all(&header_bytes).await?;
 
     let mut framed = LengthDelimitedCodec::builder()
         .little_endian()
         .length_field_length(TRANSFORM_LENGTH_FIELD_LENGTH)
         .max_frame_length(TRANSFORM_MAX_FRAME_LENGTH)
         .new_write(stream);
-
-    let header = from_client::StreamHeader::TransformPFrame;
-    let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
-    framed.send(header_bytes.into()).await?;
 
     let pframe_bytes = bincode::serde::encode_to_vec(pframe, bincode::config::standard())?;
     #[cfg(feature = "devtools-network")]

@@ -14,18 +14,18 @@ pub async fn handle_control_stream(
     player_id: PlayerId,
     connection: Connection,
 ) -> anyhow::Result<()> {
-    let stream = connection.open_uni().await?.await?;
+    let mut stream = connection.open_uni().await?.await?;
+
+    // Send stream header.
+    let header = StreamHeader::Control;
+    let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
+    stream.write_all(&header_bytes).await?;
 
     let mut framed = LengthDelimitedCodec::builder()
         .little_endian()
         .length_field_length(2)
         .max_frame_length(512)
         .new_write(stream);
-
-    // Send stream header.
-    let header = StreamHeader::Control;
-    let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
-    framed.send(header_bytes.into()).await?;
 
     let mut space_subscriptions: HashMap<SpaceId, Receiver<ControlMessage>> = HashMap::new();
     let mut check_interval = interval(TICKRATE);

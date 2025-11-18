@@ -215,6 +215,7 @@
                       rustup
                       sops
                       terraform
+                      tokio-console
                     ])
                     ++ packages;
 

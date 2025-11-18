@@ -7,7 +7,7 @@ use wtransport::RecvStream;
 
 use crate::session::ServerContext;
 
-pub async fn handle_iframe_stream(
+pub async fn recv_iframe_stream(
     ctx: ServerContext,
     player_id: u64,
     stream: RecvStream,
@@ -24,34 +24,34 @@ pub async fn handle_iframe_stream(
             bincode::config::standard(),
         )?;
 
-        let found = ctx
+        let tx = ctx
             .players
-            .read_async(&player_id, |_, player| {
-                player.iframe_tx.send_modify(|prev| {
-                    prev.iframe_id = iframe.iframe_id;
-                    prev.translation = iframe.translation;
-                    prev.rotation = iframe.rotation;
-
-                    for joint in iframe.joints {
-                        if let Some(found) = prev.joints.iter_mut().find(|j| j.id == joint.id) {
-                            found.rotation = joint.rotation;
-                        } else {
-                            prev.joints.push(joint);
-                        }
-                    }
-                });
-            })
+            .read_async(&player_id, |_, player| player.iframe_tx.clone())
             .await;
 
-        if found.is_none() {
+        let Some(tx) = tx else {
             return Ok(());
-        }
+        };
+
+        tx.send_modify(|prev| {
+            prev.iframe_id = iframe.iframe_id;
+            prev.translation = iframe.translation;
+            prev.rotation = iframe.rotation;
+
+            for joint in iframe.joints {
+                if let Some(found) = prev.joints.iter_mut().find(|j| j.id == joint.id) {
+                    found.rotation = joint.rotation;
+                } else {
+                    prev.joints.push(joint);
+                }
+            }
+        });
     }
 
     Ok(())
 }
 
-pub async fn handle_pframe_stream(
+pub async fn recv_pframe_stream(
     ctx: ServerContext,
     player_id: u64,
     stream: RecvStream,
@@ -68,16 +68,16 @@ pub async fn handle_pframe_stream(
             bincode::config::standard(),
         )?;
 
-        let found = ctx
+        let tx = ctx
             .players
-            .read_async(&player_id, |_, player| {
-                let _ = player.pframe_tx.send(pframe);
-            })
+            .read_async(&player_id, |_, player| player.pframe_tx.clone())
             .await;
 
-        if found.is_none() {
+        let Some(tx) = tx else {
             return Ok(());
-        }
+        };
+
+        let _ = tx.send(pframe);
     }
 
     Ok(())

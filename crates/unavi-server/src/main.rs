@@ -1,12 +1,18 @@
 use clap::Parser;
 use dwn_server::DwnServerOptions;
 use tracing::{Level, error};
+use tracing_subscriber::{
+    fmt::writer::MakeWriterExt, layer::SubscriberExt, util::SubscriberInitExt,
+};
 use unavi_server::ServerOptions;
 use xdid::methods::web::reqwest::Url;
 
 #[derive(Parser, Debug)]
 #[command(version)]
 struct Args {
+    /// Enable debug logging.
+    #[arg(long, default_value_t = false)]
+    debug: bool,
     /// Run a DWN server alongside the UNAVI server.
     #[arg(long, default_value_t = true)]
     dwn: bool,
@@ -20,7 +26,20 @@ struct Args {
 async fn main() {
     let args = Args::parse();
 
-    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
+    let registry = tracing_subscriber::registry();
+
+    let level = if args.debug {
+        Level::DEBUG
+    } else {
+        Level::INFO
+    };
+    let registry =
+        registry.with(tracing_subscriber::fmt::layer().map_writer(|w| w.with_max_level(level)));
+
+    #[cfg(feature = "devtools-console")]
+    let registry = registry.with(console_subscriber::spawn());
+
+    registry.init();
 
     if args.dwn {
         tokio::spawn(async move {

@@ -1,5 +1,6 @@
 use std::sync::mpsc::SyncSender;
 
+use log::info;
 use unavi_server_service::from_server::{ControlMessage, StreamHeader};
 use wtransport::RecvStream;
 
@@ -21,6 +22,7 @@ pub async fn recv_stream(
     control_tx: SyncSender<ControlMessage>,
     #[cfg(feature = "devtools-network")] connect_url: String,
 ) -> anyhow::Result<()> {
+    info!("Incoming stream: {}", stream.id());
     let mut header_buf = [0u8; 1];
     stream.read_exact(&mut header_buf).await?;
 

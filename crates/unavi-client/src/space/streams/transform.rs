@@ -279,7 +279,7 @@ pub fn apply_player_transforms(
     pending_spawns.retain(|_, entity| !remote_players.iter().any(|(e, ..)| e == *entity));
 
     for (host_entity, _, channel) in hosts.iter() {
-        let _ = channel.players.iter_sync(|player_id, state| {
+        channel.players.iter_sync(|player_id, state| {
             let Ok(true) = state.rx.has_changed() else {
                 return false;
             };

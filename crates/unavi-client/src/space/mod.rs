@@ -27,13 +27,19 @@ pub struct SpacePlugin;
 
 impl Plugin for SpacePlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<connect::HostConnections>()
-            .init_resource::<connect::SpaceSessions>()
+        app.init_resource::<connect::lifecycle::HostConnections>()
+            .init_resource::<connect::lifecycle::ConnectionInitiated>()
             .init_resource::<HostTransformStreams>()
             .add_observer(handle_space_add)
             .add_observer(insert_connect_info)
-            .add_observer(connect::handle_space_connect)
-            .add_observer(connect::handle_space_disconnect)
+            .add_observer(connect::cleanup::handle_space_disconnect)
+            .add_systems(
+                Update,
+                (
+                    connect::lifecycle::drive_connection_lifecycle,
+                    connect::lifecycle::check_connection_health,
+                ),
+            )
             .add_systems(
                 FixedUpdate,
                 (
@@ -43,7 +49,7 @@ impl Plugin for SpacePlugin {
                     tickrate::set_space_tickrates,
                 ),
             )
-            .add_systems(Last, connect::cleanup_connections_on_exit);
+            .add_systems(Last, connect::cleanup::cleanup_connections_on_exit);
     }
 }
 

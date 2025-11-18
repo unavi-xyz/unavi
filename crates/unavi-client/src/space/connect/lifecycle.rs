@@ -215,8 +215,10 @@ async fn handle_connect_success(
             let transform_channels = host.transform_channels.clone();
             let connect_url_clone = connect_url.clone();
 
-            let (control_tx_ecs, control_rx) = std::sync::mpsc::sync_channel(16);
             let mut queue = CommandQueue::default();
+            let tx = host.control_tx.clone();
+            let rx = host.control_rx.clone();
+
             queue.push(move |world: &mut World| {
                 world.spawn((
                     Host {
@@ -225,10 +227,7 @@ async fn handle_connect_success(
                     HostTransformChannels {
                         players: transform_channels,
                     },
-                    HostControlChannel {
-                        tx: control_tx_ecs,
-                        rx: Arc::new(std::sync::Mutex::new(control_rx)),
-                    },
+                    HostControlChannel { tx, rx },
                 ));
 
                 // Update space entity state.

@@ -27,6 +27,7 @@ bevy_vrm           = { git = "https://github.com/unavi-xyz/bevy_vrm" }
 bincode            = "2.0.1"
 clap               = { features = ["derive"], version = "4.5.51" }
 constcat           = "0.6.1"
+dashmap            = "6.1.0"
 directories        = "6.0.0"
 dwn                = { git = "https://github.com/unavi-xyz/dwn" }
 dwn-server         = { git = "https://github.com/unavi-xyz/dwn" }

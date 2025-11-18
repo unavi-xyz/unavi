@@ -2,8 +2,9 @@ use std::{collections::HashMap, sync::Arc};
 
 use bevy::{prelude::*, tasks::futures_lite::StreamExt};
 use bevy_vrm::BoneName;
+use dashmap::DashMap;
 use tarpc::tokio_util::codec::LengthDelimitedCodec;
-use tokio::sync::{RwLock, watch};
+use tokio::sync::watch;
 use unavi_player::{AvatarBones, AvatarSpawner};
 use unavi_server_service::{
     TRANSFORM_LENGTH_FIELD_LENGTH, TRANSFORM_MAX_FRAME_LENGTH, TrackingIFrame, TrackingPFrame,
@@ -29,7 +30,7 @@ pub struct PlayerTransformState {
     pub current_iframe_id: u8,
     pub last_pframe_stream_id: Option<StreamId>,
 }
-pub type TransformChannels = Arc<RwLock<HashMap<u64, PlayerTransformState>>>;
+pub type TransformChannels = Arc<DashMap<u64, PlayerTransformState>>;
 
 pub async fn recv_iframe_stream(
     stream: RecvStream,
@@ -76,22 +77,14 @@ pub async fn recv_iframe_stream(
 
         let final_transform = compute_final_transform_from_iframe(&iframe);
 
-        let channels = player_channels.read().await;
-
-        if let Some(state) = channels.get(&player_id) {
+        if let Some(mut state) = player_channels.get_mut(&player_id) {
             let _ = state.tx.send(final_transform);
-            drop(channels);
-            let mut channels = player_channels.write().await;
-            if let Some(state) = channels.get_mut(&player_id) {
-                state.current_iframe_id = iframe.iframe_id;
-                state.last_iframe = Some(iframe);
-                state.last_pframe_stream_id = None;
-            }
+            state.current_iframe_id = iframe.iframe_id;
+            state.last_iframe = Some(iframe);
+            state.last_pframe_stream_id = None;
         } else {
-            drop(channels);
-            let mut channels = player_channels.write().await;
             let (tx, rx) = watch::channel(final_transform.clone());
-            channels.insert(
+            player_channels.insert(
                 player_id,
                 PlayerTransformState {
                     current_iframe_id: iframe.iframe_id,
@@ -139,8 +132,7 @@ pub async fn recv_pframe_stream(
             bincode::config::standard(),
         )?;
 
-        let channels = player_channels.read().await;
-        if let Some(state) = channels.get(&player_id) {
+        if let Some(mut state) = player_channels.get_mut(&player_id) {
             if pframe.iframe_id != state.current_iframe_id {
                 #[cfg(feature = "devtools-network")]
                 {
@@ -185,11 +177,7 @@ pub async fn recv_pframe_stream(
                 let _ = state.tx.send(final_transform);
             }
 
-            drop(channels);
-            let mut channels = player_channels.write().await;
-            if let Some(state) = channels.get_mut(&player_id) {
-                state.last_pframe_stream_id = Some(stream_id);
-            }
+            state.last_pframe_stream_id = Some(stream_id);
         }
     }
 
@@ -271,16 +259,13 @@ pub fn apply_player_transforms(
     pending_spawns.retain(|_, entity| !remote_players.iter().any(|(e, ..)| e == *entity));
 
     for (host_entity, _, channel) in hosts.iter() {
-        let Ok(mut channels) = channel.players.try_write() else {
-            continue;
-        };
-
-        for (&player_id, state) in channels.iter_mut() {
+        for entry in channel.players.iter() {
+            let (&player_id, state) = entry.pair();
             let Ok(true) = state.rx.has_changed() else {
                 continue;
             };
 
-            let final_transform = state.rx.borrow_and_update();
+            let final_transform = state.rx.borrow().clone();
 
             let existing_entity = remote_players
                 .iter()

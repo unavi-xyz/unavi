@@ -9,12 +9,16 @@ version.workspace    = true
 [lints]
 workspace = true
 
+[features]
+devtools-console = ["dep:console-subscriber", "tokio/tracing"]
+
 [dependencies]
 anyhow.workspace = true
 axum = "0.8.6"
 axum-server = { features = ["tls-rustls-no-provider"], version = "0.7.2" }
 bincode.workspace = true
 clap.workspace = true
+console-subscriber = { optional = true, version = "0.5.0" }
 directories.workspace = true
 dwn.workspace = true
 dwn-server.workspace = true

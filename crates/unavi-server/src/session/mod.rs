@@ -35,7 +35,7 @@ mod streams;
 
 pub const KEY_FRAGMENT: &str = "owner";
 
-const TICKRATE: Duration = Duration::from_millis(50);
+const TICKRATE: Duration = Duration::from_millis(70);
 pub const DEFAULT_MAX_PLAYERS_PER_SPACE: usize = 32;
 
 type PlayerId = u64;
@@ -52,7 +52,7 @@ pub struct SessionSpawner {
 pub struct ServerContext {
     pub actor: Actor,
     msg_tx: tokio::sync::mpsc::Sender<InternalMessage>,
-    player_tickrates: Arc<SccHashMap<PlayerId, SccHashMap<PlayerId, Duration>>>,
+    player_tickrates: Arc<SccHashMap<PlayerId, Arc<SccHashMap<PlayerId, Duration>>>>,
     players: Arc<SccHashMap<PlayerId, Player>>,
     spaces: Arc<SccHashMap<SpaceId, Space>>,
 }
@@ -164,23 +164,21 @@ impl SessionSpawner {
             tokio::spawn(res);
         }));
 
-        {
-            let (iframe_tx, _iframe_rx) = watch::channel(Default::default());
-            let (pframe_tx, _pframe_rx) = watch::channel(Default::default());
+        let (iframe_tx, _iframe_rx) = watch::channel(Default::default());
+        let (pframe_tx, _pframe_rx) = watch::channel(Default::default());
 
-            let _ = self
-                .ctx
-                .players
-                .insert_async(
-                    player_id,
-                    Player {
-                        spaces: Default::default(),
-                        iframe_tx,
-                        pframe_tx,
-                    },
-                )
-                .await;
-        }
+        let _ = self
+            .ctx
+            .players
+            .insert_async(
+                player_id,
+                Player {
+                    spaces: Default::default(),
+                    iframe_tx,
+                    pframe_tx,
+                },
+            )
+            .await;
 
         tokio::spawn({
             let ctx = self.ctx.clone();
@@ -202,7 +200,6 @@ impl SessionSpawner {
             }
         });
 
-        // Handle streams.
         tokio::spawn({
             let con = con.clone();
             let counts = streams::StreamCounts::default();
@@ -213,8 +210,7 @@ impl SessionSpawner {
                     let counts = counts.clone();
                     let ctx = ctx.clone();
                     tokio::spawn(async move {
-                        if let Err(e) = streams::handle_stream(ctx, counts, player_id, stream).await
-                        {
+                        if let Err(e) = streams::recv_stream(ctx, counts, player_id, stream).await {
                             error!("Error handling stream: {e:?}");
                         }
                     });
@@ -239,21 +235,25 @@ impl SessionSpawner {
         };
 
         for space_id in spaces_to_leave {
+            let control_tx = self
+                .ctx
+                .spaces
+                .read_async(&space_id, |_, space| space.control_tx.clone())
+                .await;
+
             let updated = self
                 .ctx
                 .spaces
                 .update_async(&space_id, |_, space| {
                     space.players.remove(&player_id);
-
-                    // Broadcast PlayerLeft to all remaining players in this space.
-                    let _ = space
-                        .control_tx
-                        .send(ControlMessage::PlayerLeft { player_id });
-
                     let count = space.players.len();
                     (count == 0, count)
                 })
                 .await;
+
+            if let Some(tx) = control_tx {
+                let _ = tx.send(ControlMessage::PlayerLeft { player_id });
+            }
 
             if let Some((should_remove, count)) = updated {
                 if should_remove {
@@ -277,13 +277,15 @@ impl SessionSpawner {
         });
 
         for key in keys {
-            let _ = self
+            let rates = self
                 .ctx
                 .player_tickrates
-                .update_async(&key, |_, rates| {
-                    let _ = rates.remove_sync(&player_id);
-                })
+                .read_async(&key, |_, rates| rates.clone())
                 .await;
+
+            if let Some(rates) = rates {
+                let _ = rates.remove_async(&player_id).await;
+            }
         }
     }
 }

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use dwn::core::message::descriptor::Descriptor;
 use tracing::info;
 use unavi_constants::protocols::SPACE_HOST_PROTOCOL;
@@ -202,18 +204,18 @@ impl ControlService for ControlServer {
             .player_tickrates
             .entry_async(self.player_id)
             .await
-            .or_insert_with(SccHashMap::new);
+            .or_insert_with(|| Arc::new(SccHashMap::new()));
 
         // Now insert the tickrate.
-        let updated = self
+        let rates = self
             .ctx
             .player_tickrates
-            .update_async(&self.player_id, |_, rates| {
-                let _ = rates.insert_sync(player_id, tickrate);
-            })
+            .read_async(&self.player_id, |_, rates| rates.clone())
             .await;
 
-        if updated.is_none() {
+        if let Some(rates) = rates {
+            let _ = rates.insert_async(player_id, tickrate).await;
+        } else {
             return Err("player not found".to_string());
         }
 

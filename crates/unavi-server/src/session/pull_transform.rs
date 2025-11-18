@@ -3,7 +3,7 @@ use std::{
     time::Instant,
 };
 
-use futures::{FutureExt, SinkExt};
+use futures::SinkExt;
 use smallvec::SmallVec;
 use tarpc::tokio_util::codec::{FramedWrite, LengthDelimitedCodec};
 use tokio::time::interval;
@@ -166,19 +166,21 @@ async fn tickrate_ready(
     last_send_times: &HashMap<PlayerId, Instant>,
 ) -> bool {
     // Get the tickrate for this observer-observed pair, if it exists.
-    // We need to avoid nested futures that borrow, so we collect synchronously.
-    let min_interval = ctx
+    let rates_map = ctx
         .player_tickrates
         .get_async(&observer_id)
         .await
-        .and_then(|rates_entry| {
-            let rates = rates_entry.get();
-            rates
-                .get_async(&observed_id)
-                .now_or_never()?
-                .map(|entry| *entry.get())
-        })
-        .unwrap_or(TICKRATE);
+        .map(|entry| entry.get().clone());
+
+    let min_interval = if let Some(rates) = rates_map {
+        rates
+            .get_async(&observed_id)
+            .await
+            .map(|entry| *entry.get())
+            .unwrap_or(TICKRATE)
+    } else {
+        TICKRATE
+    };
 
     if let Some(&last_send) = last_send_times.get(&observed_id) {
         last_send.elapsed() >= min_interval
@@ -238,7 +240,7 @@ async fn send_updates_to_player(
         }
 
         let mut stream = connection.open_uni().await?.await?;
-        stream.set_priority(10);
+        stream.set_priority(1);
 
         let header = from_server::StreamHeader::TransformPFrame;
         let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;

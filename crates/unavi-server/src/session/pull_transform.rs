@@ -53,16 +53,42 @@ pub async fn handle_pull_transforms(
         }
         drop(spaces_guard);
 
+        // Collect new subscriptions and their initial iframes.
+        let mut new_subscriptions = Vec::new();
         for &other_player_id in &players_in_shared_spaces {
             if !subscriptions.contains_key(&other_player_id)
                 && let Some(other_player) = players_guard.get(&other_player_id)
             {
                 let iframe_rx = other_player.iframe_tx.subscribe();
                 let pframe_rx = other_player.pframe_tx.subscribe();
-                subscriptions.insert(other_player_id, (iframe_rx, pframe_rx));
+                let initial_iframe = iframe_rx.borrow().clone();
+                
+                new_subscriptions.push((other_player_id, iframe_rx, pframe_rx, initial_iframe));
             }
         }
         drop(players_guard);
+
+        // Send initial iframes for new subscriptions.
+        for (other_player_id, iframe_rx, pframe_rx, initial_iframe) in new_subscriptions {
+            subscriptions.insert(other_player_id, (iframe_rx, pframe_rx));
+            
+            if let Err(e) = send_updates_to_player(
+                &mut player_streams,
+                &connection,
+                other_player_id,
+                Some(initial_iframe),
+                None,
+            )
+            .await
+            {
+                error!("Failed to send initial iframe: {e}");
+                player_streams.remove(&other_player_id);
+                subscriptions.remove(&other_player_id);
+                continue;
+            }
+            
+            last_send_times.insert(other_player_id, Instant::now());
+        }
 
         subscriptions.retain(|&other_player_id, _| {
             let keep = players_in_shared_spaces.contains(&other_player_id);

@@ -8,7 +8,10 @@ use unavi_constants::{WP_VERSION, protocols::SPACE_HOST_PROTOCOL};
 use wtransport::tls::Sha256Digest;
 use xdid::{core::did::Did, methods::web::reqwest::Url};
 
+use crate::space::connect::state::{ConnectionAttempt, ConnectionState, ConnectionTasks};
+
 #[derive(Component, Clone)]
+#[require(ConnectionState, ConnectionAttempt, ConnectionTasks)]
 pub struct ConnectInfo {
     pub connect_url: Url,
     pub cert_hash: Sha256Digest,

@@ -13,7 +13,7 @@ use unavi_server_service::{
 };
 use wtransport::SendStream;
 
-use crate::space::{Space, connect::HostConnections, connect_info::ConnectInfo};
+use crate::space::{Space, connect::lifecycle::HostConnections, connect_info::ConnectInfo};
 
 use super::{JOINT_ROTATION_EPSILON, PFRAME_ROTATION_SCALE, PFRAME_TRANSLATION_SCALE};
 
@@ -202,6 +202,7 @@ async fn get_or_create_iframe_stream(
     }
 
     let mut stream = connection.open_uni().await?.await?;
+    stream.set_priority(2); // Higher than p-frame streams.
 
     let header = from_client::StreamHeader::TransformIFrame;
     let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
@@ -291,6 +292,7 @@ async fn send_pframe(
     let pframe_bytes = bincode::serde::encode_to_vec(pframe, bincode::config::standard())?;
     #[cfg(feature = "devtools-network")]
     let byte_count = pframe_bytes.len();
+
     framed.send(pframe_bytes.into()).await?;
 
     let send_stream = framed.into_inner();

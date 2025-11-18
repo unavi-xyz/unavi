@@ -21,6 +21,7 @@ pub async fn recv_stream(
     mut stream: RecvStream,
     transform_channels: TransformChannels,
     control_tx: SyncSender<ControlMessage>,
+    #[cfg(feature = "devtools-network")] connect_url: String,
 ) -> anyhow::Result<()> {
     let header_len = stream.read_u16_le().await? as usize;
     let mut header_buf = vec![0; header_len];
@@ -30,10 +31,22 @@ pub async fn recv_stream(
 
     match header {
         StreamHeader::TransformIFrame => {
-            transform::recv_iframe_stream(stream, transform_channels).await?;
+            transform::recv_iframe_stream(
+                stream,
+                transform_channels,
+                #[cfg(feature = "devtools-network")]
+                connect_url,
+            )
+            .await?;
         }
         StreamHeader::TransformPFrame => {
-            transform::recv_pframe_stream(stream, transform_channels).await?;
+            transform::recv_pframe_stream(
+                stream,
+                transform_channels,
+                #[cfg(feature = "devtools-network")]
+                connect_url,
+            )
+            .await?;
         }
         StreamHeader::Voice => {
             voice::recv_voice_stream(stream).await?;

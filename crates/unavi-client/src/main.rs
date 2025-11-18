@@ -9,6 +9,11 @@ struct Args {
     /// Run the local DWN in-memory instead of writing to disk.
     #[arg(long, default_value_t = false)]
     in_memory: bool,
+
+    /// Enable debug network monitoring (shows bandwidth, tickrate, etc.).
+    #[cfg(feature = "devtools-network")]
+    #[arg(long, default_value_t = false)]
+    debug_network: bool,
 }
 
 fn main() {
@@ -17,6 +22,8 @@ fn main() {
     App::new()
         .add_plugins(unavi_client::UnaviPlugin {
             in_memory: args.in_memory,
+            #[cfg(feature = "devtools-network")]
+            debug_network: args.debug_network,
         })
         .run();
 }

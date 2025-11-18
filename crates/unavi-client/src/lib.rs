@@ -7,6 +7,8 @@ use dwn::{Dwn, stores::NativeDbStore};
 pub mod assets;
 mod async_commands;
 mod auth;
+#[cfg(feature = "devtools-network")]
+mod devtools;
 mod fade;
 mod icon;
 mod scene;
@@ -36,6 +38,8 @@ pub fn db_path() -> PathBuf {
 
 pub struct UnaviPlugin {
     pub in_memory: bool,
+    #[cfg(feature = "devtools-network")]
+    pub debug_network: bool,
 }
 
 impl Plugin for UnaviPlugin {
@@ -78,21 +82,29 @@ impl Plugin for UnaviPlugin {
             unavi_player::PlayerPlugin,
             unavi_script::ScriptPlugin,
             space::SpacePlugin,
-        ))
-        .insert_resource(ClearColor(Color::BLACK))
-        .insert_resource(LocalDwn(dwn))
-        .init_resource::<auth::LocalActor>()
-        .add_observer(auth::handle_login)
-        .add_systems(
-            Startup,
-            (
-                auth::trigger_login,
-                icon::set_window_icon,
-                scene::spawn_lights,
-                scene::spawn_scene,
-            ),
-        )
-        .add_systems(FixedUpdate, async_commands::apply_async_commands);
+        ));
+
+        #[cfg(feature = "devtools-network")]
+        {
+            if self.debug_network {
+                app.add_plugins(devtools::DevToolsPlugin { enabled: true });
+            }
+        }
+
+        app.insert_resource(ClearColor(Color::BLACK))
+            .insert_resource(LocalDwn(dwn))
+            .init_resource::<auth::LocalActor>()
+            .add_observer(auth::handle_login)
+            .add_systems(
+                Startup,
+                (
+                    auth::trigger_login,
+                    icon::set_window_icon,
+                    scene::spawn_lights,
+                    scene::spawn_scene,
+                ),
+            )
+            .add_systems(FixedUpdate, async_commands::apply_async_commands);
     }
 }
 

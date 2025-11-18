@@ -7,6 +7,11 @@ publish              = false
 repository.workspace = true
 version.workspace    = true
 
+[features]
+default          = []
+devtools         = ["devtools-network"]
+devtools-network = ["bevy/experimental_bevy_feathers"]
+
 [lints]
 workspace = true
 

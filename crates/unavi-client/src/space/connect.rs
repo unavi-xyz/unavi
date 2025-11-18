@@ -98,6 +98,8 @@ pub fn handle_space_connect(
                                 let con = host.connection.clone();
                                 let transform_channels = host.transform_channels.clone();
                                 let control_tx = host.control_tx.clone();
+                                #[cfg(feature = "devtools-network")]
+                                let debug_connect_url = connect_url.clone();
                                 tokio::spawn(async move {
                                     loop {
                                         let Ok(stream) = con.accept_uni().await else {
@@ -106,11 +108,15 @@ pub fn handle_space_connect(
 
                                         let transform_channels = transform_channels.clone();
                                         let control_tx = control_tx.clone();
+                                        #[cfg(feature = "devtools-network")]
+                                        let debug_connect_url = debug_connect_url.clone();
                                         tokio::spawn(async move {
                                             if let Err(e) = super::streams::recv_stream(
                                                 stream,
                                                 transform_channels,
                                                 control_tx,
+                                                #[cfg(feature = "devtools-network")]
+                                                debug_connect_url,
                                             )
                                             .await
                                             {

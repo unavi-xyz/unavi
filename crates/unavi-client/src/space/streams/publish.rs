@@ -227,7 +227,20 @@ async fn send_iframe(
     };
 
     let iframe_bytes = bincode::serde::encode_to_vec(iframe, bincode::config::standard())?;
+    #[cfg(feature = "devtools-network")]
+    let byte_count = iframe_bytes.len();
     host_streams.iframe_stream.send(iframe_bytes.into()).await?;
+
+    #[cfg(feature = "devtools-network")]
+    {
+        use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
+
+        let _ = NETWORK_EVENTS.0.send(NetworkEvent::Upload {
+            host: connect_url.to_string(),
+            bytes: byte_count,
+            is_iframe: true,
+        });
+    }
 
     Ok(())
 }
@@ -265,6 +278,8 @@ async fn send_pframe(
     framed.send(header_bytes.into()).await?;
 
     let pframe_bytes = bincode::serde::encode_to_vec(pframe, bincode::config::standard())?;
+    #[cfg(feature = "devtools-network")]
+    let byte_count = pframe_bytes.len();
     framed.send(pframe_bytes.into()).await?;
 
     let send_stream = framed.into_inner();
@@ -272,6 +287,17 @@ async fn send_pframe(
     let mut guard = streams.lock().await;
     if let Some(host_streams) = guard.get_mut(connect_url) {
         host_streams.pframe_stream = Some(send_stream);
+    }
+
+    #[cfg(feature = "devtools-network")]
+    {
+        use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
+
+        let _ = NETWORK_EVENTS.0.send(NetworkEvent::Upload {
+            host: connect_url.to_string(),
+            bytes: byte_count,
+            is_iframe: false,
+        });
     }
 
     Ok(())

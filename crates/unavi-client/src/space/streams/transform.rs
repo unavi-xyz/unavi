@@ -34,6 +34,7 @@ pub type TransformChannels = Arc<RwLock<HashMap<u64, PlayerTransformState>>>;
 pub async fn recv_iframe_stream(
     stream: RecvStream,
     player_channels: TransformChannels,
+    #[cfg(feature = "devtools-network")] _connect_url: String,
 ) -> anyhow::Result<()> {
     let mut framed = LengthDelimitedCodec::builder()
         .little_endian()
@@ -51,10 +52,27 @@ pub async fn recv_iframe_stream(
     let player_id = meta.player;
 
     while let Some(bytes) = framed.next().await {
+        let bytes_ref = bytes?;
+        #[cfg(feature = "devtools-network")]
+        let byte_count = bytes_ref.len();
+
         let (iframe, _) = bincode::serde::decode_from_slice::<TrackingIFrame, _>(
-            &bytes?,
+            &bytes_ref,
             bincode::config::standard(),
         )?;
+
+        #[cfg(feature = "devtools-network")]
+        {
+            use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
+
+            let _ = NETWORK_EVENTS.0.send(NetworkEvent::Download {
+                host: _connect_url.clone(),
+                bytes: byte_count,
+            });
+            let _ = NETWORK_EVENTS.0.send(NetworkEvent::ValidTick {
+                host: _connect_url.clone(),
+            });
+        }
 
         let final_transform = compute_final_transform_from_iframe(&iframe);
 
@@ -92,6 +110,7 @@ pub async fn recv_iframe_stream(
 pub async fn recv_pframe_stream(
     stream: RecvStream,
     player_channels: TransformChannels,
+    #[cfg(feature = "devtools-network")] _connect_url: String,
 ) -> anyhow::Result<()> {
     let stream_id = stream.id();
 
@@ -111,21 +130,54 @@ pub async fn recv_pframe_stream(
     let player_id = meta.player;
 
     if let Some(bytes) = framed.next().await {
+        let bytes_ref = bytes?;
+        #[cfg(feature = "devtools-network")]
+        let byte_count = bytes_ref.len();
+
         let (pframe, _) = bincode::serde::decode_from_slice::<TrackingPFrame, _>(
-            &bytes?,
+            &bytes_ref,
             bincode::config::standard(),
         )?;
 
         let channels = player_channels.read().await;
         if let Some(state) = channels.get(&player_id) {
             if pframe.iframe_id != state.current_iframe_id {
+                #[cfg(feature = "devtools-network")]
+                {
+                    use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
+
+                    let _ = NETWORK_EVENTS.0.send(NetworkEvent::DroppedFrame {
+                        host: _connect_url.clone(),
+                    });
+                }
                 return Ok(());
             }
 
             if let Some(last_stream_id) = state.last_pframe_stream_id
                 && stream_id < last_stream_id
             {
+                #[cfg(feature = "devtools-network")]
+                {
+                    use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
+
+                    let _ = NETWORK_EVENTS.0.send(NetworkEvent::DroppedFrame {
+                        host: _connect_url.clone(),
+                    });
+                }
                 return Ok(());
+            }
+
+            #[cfg(feature = "devtools-network")]
+            {
+                use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
+
+                let _ = NETWORK_EVENTS.0.send(NetworkEvent::Download {
+                    host: _connect_url.clone(),
+                    bytes: byte_count,
+                });
+                let _ = NETWORK_EVENTS.0.send(NetworkEvent::ValidTick {
+                    host: _connect_url.clone(),
+                });
             }
 
             if let Some(last_iframe) = &state.last_iframe {

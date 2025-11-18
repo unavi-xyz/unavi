@@ -1,0 +1,249 @@
+//! Network statistics tracking for debug monitoring.
+
+use bevy::prelude::*;
+use std::collections::{HashMap, VecDeque};
+use std::time::{Duration, Instant};
+
+use super::events::{NETWORK_EVENTS, NetworkEvent};
+
+const BANDWIDTH_WINDOW_SIZE: usize = 60; // 1 second at 60 FPS.
+const TICKRATE_WINDOW_SIZE: usize = 120; // 2 seconds at 60 FPS.
+
+#[derive(Debug, Clone)]
+pub struct HostNetworkStats {
+    // Bandwidth tracking.
+    pub upload_bytes_per_sec: f32,
+    pub download_bytes_per_sec: f32,
+    pub iframe_upload_ratio: f32,
+    pub pframe_upload_ratio: f32,
+
+    // Tickrate tracking.
+    pub effective_tickrate: f32,
+
+    // Frame tracking.
+    pub total_frames_received: u64,
+    pub dropped_frames: u64,
+
+    // Connection quality.
+    pub quality_score: ConnectionQuality,
+    pub estimated_latency_ms: f32,
+
+    // Internal tracking.
+    pub(crate) upload_samples: VecDeque<(Instant, usize)>,
+    pub(crate) download_samples: VecDeque<(Instant, usize)>,
+    pub(crate) iframe_bytes: usize,
+    pub(crate) pframe_bytes: usize,
+    pub(crate) tick_samples: VecDeque<Instant>,
+    pub(crate) last_update: Instant,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConnectionQuality {
+    Excellent,
+    Good,
+    Fair,
+    Poor,
+}
+
+impl Default for HostNetworkStats {
+    fn default() -> Self {
+        Self {
+            upload_bytes_per_sec: 0.0,
+            download_bytes_per_sec: 0.0,
+            iframe_upload_ratio: 0.0,
+            pframe_upload_ratio: 0.0,
+            effective_tickrate: 0.0,
+            total_frames_received: 0,
+            dropped_frames: 0,
+            quality_score: ConnectionQuality::Excellent,
+            estimated_latency_ms: 0.0,
+            upload_samples: VecDeque::with_capacity(BANDWIDTH_WINDOW_SIZE),
+            download_samples: VecDeque::with_capacity(BANDWIDTH_WINDOW_SIZE),
+            iframe_bytes: 0,
+            pframe_bytes: 0,
+            tick_samples: VecDeque::with_capacity(TICKRATE_WINDOW_SIZE),
+            last_update: Instant::now(),
+        }
+    }
+}
+
+impl HostNetworkStats {
+    pub fn record_upload(&mut self, bytes: usize, is_iframe: bool) {
+        let now = Instant::now();
+        self.upload_samples.push_back((now, bytes));
+
+        if is_iframe {
+            self.iframe_bytes += bytes;
+        } else {
+            self.pframe_bytes += bytes;
+        }
+
+        // Keep only recent samples.
+        while self.upload_samples.len() > BANDWIDTH_WINDOW_SIZE {
+            self.upload_samples.pop_front();
+        }
+    }
+
+    pub fn record_download(&mut self, bytes: usize) {
+        let now = Instant::now();
+        self.download_samples.push_back((now, bytes));
+
+        // Keep only recent samples.
+        while self.download_samples.len() > BANDWIDTH_WINDOW_SIZE {
+            self.download_samples.pop_front();
+        }
+    }
+
+    pub fn record_tick(&mut self) {
+        let now = Instant::now();
+        self.tick_samples.push_back(now);
+        self.total_frames_received += 1;
+
+        // Keep only recent samples.
+        while self.tick_samples.len() > TICKRATE_WINDOW_SIZE {
+            self.tick_samples.pop_front();
+        }
+    }
+
+    pub fn record_dropped_frame(&mut self) {
+        self.dropped_frames += 1;
+    }
+}
+
+#[derive(Resource, Default)]
+pub struct NetworkStats {
+    pub hosts: HashMap<String, HostNetworkStats>,
+}
+
+impl NetworkStats {
+    pub fn get_or_create_host(&mut self, connect_url: &str) -> &mut HostNetworkStats {
+        self.hosts.entry(connect_url.to_string()).or_default()
+    }
+}
+
+pub fn collect_network_events(mut stats: ResMut<NetworkStats>) {
+    let Ok(mut rx) = NETWORK_EVENTS.1.lock() else {
+        return;
+    };
+
+    while let Ok(event) = rx.try_recv() {
+        match event {
+            NetworkEvent::Download { host, bytes } => {
+                stats.get_or_create_host(&host).record_download(bytes);
+            }
+            NetworkEvent::Upload {
+                host,
+                bytes,
+                is_iframe,
+            } => {
+                stats
+                    .get_or_create_host(&host)
+                    .record_upload(bytes, is_iframe);
+            }
+            NetworkEvent::ValidTick { host } => {
+                stats.get_or_create_host(&host).record_tick();
+            }
+            NetworkEvent::DroppedFrame { host } => {
+                stats.get_or_create_host(&host).record_dropped_frame();
+            }
+        }
+    }
+}
+
+pub fn update_bandwidth_stats(mut stats: ResMut<NetworkStats>) {
+    let now = Instant::now();
+    let window = Duration::from_secs(1);
+
+    for host_stats in stats.hosts.values_mut() {
+        // Calculate upload bandwidth.
+        let cutoff = now - window;
+        host_stats
+            .upload_samples
+            .retain(|(timestamp, _)| *timestamp > cutoff);
+
+        let total_upload: usize = host_stats
+            .upload_samples
+            .iter()
+            .map(|(_, bytes)| bytes)
+            .sum();
+        host_stats.upload_bytes_per_sec = total_upload as f32;
+
+        // Calculate upload ratios.
+        let total_tracked = host_stats.iframe_bytes + host_stats.pframe_bytes;
+        if total_tracked > 0 {
+            host_stats.iframe_upload_ratio = host_stats.iframe_bytes as f32 / total_tracked as f32;
+            host_stats.pframe_upload_ratio = host_stats.pframe_bytes as f32 / total_tracked as f32;
+        }
+
+        // Calculate download bandwidth.
+        host_stats
+            .download_samples
+            .retain(|(timestamp, _)| *timestamp > cutoff);
+
+        let total_download: usize = host_stats
+            .download_samples
+            .iter()
+            .map(|(_, bytes)| bytes)
+            .sum();
+        host_stats.download_bytes_per_sec = total_download as f32;
+
+        host_stats.last_update = now;
+    }
+}
+
+pub fn update_tickrate_stats(mut stats: ResMut<NetworkStats>) {
+    let now = Instant::now();
+    let window = Duration::from_secs(1);
+
+    for host_stats in stats.hosts.values_mut() {
+        let cutoff = now - window;
+        host_stats
+            .tick_samples
+            .retain(|timestamp| *timestamp > cutoff);
+
+        let tick_count = host_stats.tick_samples.len();
+        host_stats.effective_tickrate = tick_count as f32;
+
+        // Estimate latency from tickrate variance (simple heuristic).
+        if tick_count > 2 {
+            let mut intervals = Vec::new();
+            for i in 1..host_stats.tick_samples.len() {
+                let interval = host_stats.tick_samples[i]
+                    .duration_since(host_stats.tick_samples[i - 1])
+                    .as_millis() as f32;
+                intervals.push(interval);
+            }
+
+            if !intervals.is_empty() {
+                let avg_interval = intervals.iter().sum::<f32>() / intervals.len() as f32;
+                let variance: f32 = intervals
+                    .iter()
+                    .map(|i| (i - avg_interval).powi(2))
+                    .sum::<f32>()
+                    / intervals.len() as f32;
+                host_stats.estimated_latency_ms = avg_interval + variance.sqrt();
+            }
+        }
+    }
+}
+
+pub fn detect_dropped_frames(mut stats: ResMut<NetworkStats>) {
+    for host_stats in stats.hosts.values_mut() {
+        // Calculate connection quality based on dropped frames and tickrate.
+        let drop_rate = if host_stats.total_frames_received > 0 {
+            host_stats.dropped_frames as f32 / host_stats.total_frames_received as f32
+        } else {
+            0.0
+        };
+
+        host_stats.quality_score = if drop_rate < 0.01 && host_stats.effective_tickrate > 50.0 {
+            ConnectionQuality::Excellent
+        } else if drop_rate < 0.05 && host_stats.effective_tickrate > 30.0 {
+            ConnectionQuality::Good
+        } else if drop_rate < 0.15 {
+            ConnectionQuality::Fair
+        } else {
+            ConnectionQuality::Poor
+        };
+    }
+}

@@ -14,6 +14,7 @@ use crate::space::{
     streams::publish::{PublishInterval, TransformPublishState},
 };
 
+#[derive(Debug)]
 pub struct SetTickrate {
     pub space_url: DidUrl,
     pub tickrate: Duration,

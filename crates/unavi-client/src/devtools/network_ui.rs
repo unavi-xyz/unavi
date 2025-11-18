@@ -30,7 +30,6 @@ pub fn spawn_devtools_overlay(mut commands: Commands) {
             BorderRadius::all(Val::Px(8.0)),
         ))
         .with_children(|parent| {
-            // Title.
             parent.spawn((
                 Text::new("Network Debug"),
                 TextFont {

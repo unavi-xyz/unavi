@@ -58,30 +58,48 @@ impl ControlService for ControlServer {
         }
 
         // Add player to space.
-        {
-            let mut players = self.ctx.players.write().await;
-            let Some(player) = players.get_mut(&self.player_id) else {
-                return Ok(());
-            };
-            if player.spaces.len() > MAX_SPACES_PER_PLAYER {
-                return Err("joined too many spaces".to_string());
-            }
+        let result = self
+            .ctx
+            .players
+            .update_async(&self.player_id, |_, player| {
+                if player.spaces.len() > MAX_SPACES_PER_PLAYER {
+                    return Err("joined too many spaces".to_string());
+                }
+                player.spaces.insert(id.clone());
+                Ok(())
+            })
+            .await;
 
-            let mut spaces = self.ctx.spaces.write().await;
-            let space = spaces.entry(id.clone()).or_default();
-            if space.players.len() >= space.max_players {
-                return Err("space is full".to_string());
-            }
+        if let Some(Err(e)) = result {
+            return Err(e);
+        }
+        if result.is_none() {
+            return Ok(());
+        }
 
-            player.spaces.insert(id.clone());
-            let count_changed = space.players.insert(self.player_id);
+        // Ensure space exists.
+        let _ = self
+            .ctx
+            .spaces
+            .entry_async(id.clone())
+            .await
+            .or_insert_with(Default::default);
 
-            if count_changed {
-                let count = space.players.len();
+        // Try to add player to space.
+        let count_result = self
+            .ctx
+            .spaces
+            .update_async(&id, |_, space| {
+                if space.players.len() >= space.max_players {
+                    return Err("space is full".to_string());
+                }
+                let changed = space.players.insert(self.player_id);
+                Ok((changed, space.players.len()))
+            })
+            .await;
 
-                drop(players);
-                drop(spaces);
-
+        match count_result {
+            Some(Ok((true, count))) => {
                 let _ = self
                     .ctx
                     .msg_tx
@@ -91,6 +109,18 @@ impl ControlService for ControlServer {
                     })
                     .await;
             }
+            Some(Err(e)) => {
+                // Rollback player spaces change.
+                let _ = self
+                    .ctx
+                    .players
+                    .update_async(&self.player_id, |_, player| {
+                        player.spaces.remove(&id);
+                    })
+                    .await;
+                return Err(e);
+            }
+            _ => {}
         }
 
         Ok(())
@@ -100,40 +130,48 @@ impl ControlService for ControlServer {
             return Err("id too long".to_string());
         }
 
-        {
-            let mut players = self.ctx.players.write().await;
-            let Some(player) = players.get_mut(&self.player_id) else {
-                return Ok(());
-            };
+        let player_removed = self
+            .ctx
+            .players
+            .update_async(&self.player_id, |_, player| player.spaces.remove(&id))
+            .await;
 
-            let mut spaces = self.ctx.spaces.write().await;
-            player.spaces.remove(&id);
+        if player_removed.is_none() {
+            return Ok(());
+        }
 
-            if let Some(space) = spaces.get_mut(&id) {
+        let count_result = self
+            .ctx
+            .spaces
+            .update_async(&id, |_, space| {
                 let count_changed = space.players.remove(&self.player_id);
-
                 if count_changed {
                     let count = space.players.len();
-                    if count == 0 {
-                        spaces.remove(&id);
-                    }
-
-                    drop(spaces);
-                    drop(players);
-
-                    self.ctx.update_space_player_count(id, count).await;
+                    (true, count == 0, count)
+                } else {
+                    (false, false, 0)
                 }
+            })
+            .await;
+
+        if let Some((true, should_remove, count)) = count_result {
+            if should_remove {
+                let _ = self.ctx.spaces.remove_async(&id).await;
             }
+
+            self.ctx.update_space_player_count(id, count).await;
         }
 
         Ok(())
     }
     async fn spaces(self, _: tarpc::context::Context) -> Vec<String> {
-        let players = self.ctx.players.read().await;
-        let Some(player) = players.get(&self.player_id) else {
-            return Vec::new();
-        };
-        player.spaces.iter().cloned().collect()
+        self.ctx
+            .players
+            .read_async(&self.player_id, |_, player| {
+                player.spaces.iter().cloned().collect()
+            })
+            .await
+            .unwrap_or_default()
     }
 
     async fn players(self, _: tarpc::context::Context) -> Vec<Player> {
@@ -146,6 +184,8 @@ impl ControlService for ControlServer {
         player_id: u64,
         tickrate_ms: u64,
     ) -> RpcResult<()> {
+        use scc::HashMap as SccHashMap;
+
         // Validate tickrate is at least the server minimum.
         if tickrate_ms < TICKRATE.as_millis() as u64 {
             return Err(format!(
@@ -156,11 +196,26 @@ impl ControlService for ControlServer {
 
         let tickrate = std::time::Duration::from_millis(tickrate_ms);
 
-        let mut player_tickrates = self.ctx.player_tickrates.write().await;
-        player_tickrates
-            .entry(self.player_id)
-            .or_default()
-            .insert(player_id, tickrate);
+        // Ensure the map exists for this player.
+        let _ = self
+            .ctx
+            .player_tickrates
+            .entry_async(self.player_id)
+            .await
+            .or_insert_with(SccHashMap::new);
+
+        // Now insert the tickrate.
+        let updated = self
+            .ctx
+            .player_tickrates
+            .update_async(&self.player_id, |_, rates| {
+                let _ = rates.insert_sync(player_id, tickrate);
+            })
+            .await;
+
+        if updated.is_none() {
+            return Err("player not found".to_string());
+        }
 
         Ok(())
     }

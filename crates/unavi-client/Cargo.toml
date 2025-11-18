@@ -28,7 +28,6 @@ bevy = { default-features = true, features = [
 bevy_vrm.workspace = true
 bincode.workspace = true
 clap.workspace = true
-dashmap.workspace = true
 directories.workspace = true
 dwn.workspace = true
 futures.workspace = true
@@ -41,6 +40,7 @@ reqwest = { default-features = false, features = [
   "blocking",
   "rustls-tls",
 ], version = "0.12.24" }
+scc.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tarpc = { features = ["serde-transport"], workspace = true }

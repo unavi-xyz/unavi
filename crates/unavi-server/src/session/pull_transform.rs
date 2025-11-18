@@ -3,7 +3,7 @@ use std::{
     time::Instant,
 };
 
-use futures::SinkExt;
+use futures::{FutureExt, SinkExt};
 use tarpc::tokio_util::codec::{FramedWrite, LengthDelimitedCodec};
 use tokio::time::interval;
 use tracing::error;
@@ -34,44 +34,54 @@ pub async fn handle_pull_transforms(
     loop {
         check_interval.tick().await;
 
-        let players_guard = ctx.players.read().await;
-        let Some(player) = players_guard.get(&player_id) else {
+        let player_spaces = ctx
+            .players
+            .read_async(&player_id, |_, player| player.spaces.clone())
+            .await;
+
+        let Some(player_spaces) = player_spaces else {
             // Exit once the player is disconnected.
             return Ok(());
         };
 
-        let spaces_guard = ctx.spaces.read().await;
         players_in_shared_spaces.clear();
-        for space_id in &player.spaces {
-            if let Some(space) = spaces_guard.get(space_id) {
-                for &other_player_id in &space.players {
-                    if other_player_id != player_id {
-                        players_in_shared_spaces.insert(other_player_id);
+        for space_id in &player_spaces {
+            let _ = ctx
+                .spaces
+                .read_async(space_id, |_, space| {
+                    for &other_player_id in &space.players {
+                        if other_player_id != player_id {
+                            players_in_shared_spaces.insert(other_player_id);
+                        }
                     }
-                }
-            }
+                })
+                .await;
         }
-        drop(spaces_guard);
 
         // Collect new subscriptions and their initial iframes.
         let mut new_subscriptions = Vec::new();
         for &other_player_id in &players_in_shared_spaces {
-            if !subscriptions.contains_key(&other_player_id)
-                && let Some(other_player) = players_guard.get(&other_player_id)
-            {
-                let iframe_rx = other_player.iframe_tx.subscribe();
-                let pframe_rx = other_player.pframe_tx.subscribe();
-                let initial_iframe = iframe_rx.borrow().clone();
-                
-                new_subscriptions.push((other_player_id, iframe_rx, pframe_rx, initial_iframe));
+            if !subscriptions.contains_key(&other_player_id) {
+                let player_state = ctx
+                    .players
+                    .read_async(&other_player_id, |_, other_player| {
+                        let iframe_rx = other_player.iframe_tx.subscribe();
+                        let pframe_rx = other_player.pframe_tx.subscribe();
+                        let initial_iframe = iframe_rx.borrow().clone();
+                        (iframe_rx, pframe_rx, initial_iframe)
+                    })
+                    .await;
+
+                if let Some((iframe_rx, pframe_rx, initial_iframe)) = player_state {
+                    new_subscriptions.push((other_player_id, iframe_rx, pframe_rx, initial_iframe));
+                }
             }
         }
-        drop(players_guard);
 
         // Send initial iframes for new subscriptions.
         for (other_player_id, iframe_rx, pframe_rx, initial_iframe) in new_subscriptions {
             subscriptions.insert(other_player_id, (iframe_rx, pframe_rx));
-            
+
             if let Err(e) = send_updates_to_player(
                 &mut player_streams,
                 &connection,
@@ -86,7 +96,7 @@ pub async fn handle_pull_transforms(
                 subscriptions.remove(&other_player_id);
                 continue;
             }
-            
+
             last_send_times.insert(other_player_id, Instant::now());
         }
 
@@ -153,11 +163,19 @@ async fn tickrate_ready(
     observed_id: PlayerId,
     last_send_times: &HashMap<PlayerId, Instant>,
 ) -> bool {
-    let tickrates = ctx.player_tickrates.read().await;
-    let min_interval = tickrates
-        .get(&observer_id)
-        .and_then(|map| map.get(&observed_id))
-        .copied()
+    // Get the tickrate for this observer-observed pair, if it exists.
+    // We need to avoid nested futures that borrow, so we collect synchronously.
+    let min_interval = ctx
+        .player_tickrates
+        .get_async(&observer_id)
+        .await
+        .and_then(|rates_entry| {
+            let rates = rates_entry.get();
+            rates
+                .get_async(&observed_id)
+                .now_or_never()?
+                .map(|entry| *entry.get())
+        })
         .unwrap_or(TICKRATE);
 
     if let Some(&last_send) = last_send_times.get(&observed_id) {

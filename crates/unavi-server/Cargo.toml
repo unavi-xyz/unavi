@@ -11,7 +11,6 @@ workspace = true
 
 [dependencies]
 anyhow.workspace = true
-arrayvec.workspace = true
 axum = "0.8.6"
 axum-server = { features = ["tls-rustls-no-provider"], version = "0.7.2" }
 bincode.workspace = true

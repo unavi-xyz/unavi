@@ -11373,7 +11373,6 @@ name = "unavi-client"
 version = "0.0.11"
 dependencies = [
  "anyhow",
- "arrayvec",
  "avian3d",
  "bevy",
  "bevy_vrm",
@@ -11483,7 +11482,6 @@ name = "unavi-server"
 version = "0.0.11"
 dependencies = [
  "anyhow",
- "arrayvec",
  "axum",
  "axum-server",
  "bincode 2.0.1",

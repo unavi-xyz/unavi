@@ -4,6 +4,7 @@ use bevy::{prelude::*, tasks::TaskPool};
 use bevy_vrm::BoneName;
 use futures::SinkExt;
 use scc::HashMap as SccHashMap;
+use smallvec::SmallVec;
 use tarpc::tokio_util::codec::{FramedWrite, LengthDelimitedCodec};
 use unavi_player::{AvatarBones, LocalPlayer, PlayerEntities};
 use unavi_server_service::{
@@ -99,7 +100,7 @@ fn record_transforms(
     if is_iframe {
         state.current_iframe_id = state.current_iframe_id.wrapping_add(1);
 
-        let mut joints = Vec::new();
+        let mut joints = SmallVec::new();
 
         for (bone_name, &bone_ent) in avatar_bones.iter() {
             let Ok(transform) = bone_transforms.get(bone_ent) else {
@@ -145,7 +146,7 @@ fn record_transforms(
         let delta_hips_pos = hips_pos - state.iframe_hips_pos;
         let delta_hips_rot = (hips_rot * state.iframe_hips_rot.inverse()).normalize();
 
-        let mut joints = Vec::new();
+        let mut joints = SmallVec::new();
 
         for (bone_name, &bone_ent) in avatar_bones.iter() {
             let Ok(transform) = bone_transforms.get(bone_ent) else {

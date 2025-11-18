@@ -20,6 +20,7 @@ embed-resource.workspace = true
 
 [dependencies]
 anyhow.workspace = true
+arrayvec.workspace = true
 avian3d.workspace = true
 bevy = { default-features = true, features = [
   "https",
@@ -43,6 +44,7 @@ reqwest = { default-features = false, features = [
 scc.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+smallvec.workspace = true
 tarpc = { features = ["serde-transport"], workspace = true }
 tokio = { features = ["rt", "rt-multi-thread"], workspace = true }
 tokio-serde = { features = ["bincode"], workspace = true }

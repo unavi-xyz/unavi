@@ -1,5 +1,6 @@
 use std::sync::mpsc::SyncSender;
 
+use arrayvec::ArrayVec;
 use bevy::prelude::*;
 use tokio::io::AsyncReadExt;
 use unavi_server_service::from_server::{ControlMessage, StreamHeader};
@@ -24,7 +25,10 @@ pub async fn recv_stream(
     #[cfg(feature = "devtools-network")] connect_url: String,
 ) -> anyhow::Result<()> {
     let header_len = stream.read_u16_le().await? as usize;
-    let mut header_buf = vec![0; header_len];
+    let mut header_buf = ArrayVec::<u8, 256>::new();
+    header_buf
+        .try_extend_from_slice(&vec![0; header_len])
+        .map_err(|_| anyhow::anyhow!("Header too large"))?;
     stream.read_exact(&mut header_buf).await?;
 
     let (header, _) = bincode::decode_from_slice(&header_buf, bincode::config::standard())?;

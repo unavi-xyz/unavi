@@ -7,6 +7,7 @@ use std::{
 use bevy::{
     app::AppExit, ecs::world::CommandQueue, log::tracing::Instrument, prelude::*, tasks::TaskPool,
 };
+use dashmap::DashMap;
 use tarpc::{
     client::Config,
     tokio_serde::formats::Bincode,
@@ -204,7 +205,7 @@ async fn connect_to_host(
 
     let (control_tx, control_rx) = std::sync::mpsc::sync_channel(16);
     let connect_url_clone = connect_url.to_string();
-    let transform_channels = Arc::new(RwLock::new(HashMap::new()));
+    let transform_channels = Arc::new(DashMap::new());
 
     let control_tx_clone = control_tx.clone();
     let transform_channels_clone = transform_channels.clone();
@@ -303,7 +304,7 @@ pub fn handle_space_disconnect(
 
             // Disconnect from host, if no other spaces using the connection.
             if other_spaces_found == 0 {
-                streams.lock().await.remove(&connect_url);
+                streams.remove(&connect_url);
 
                 if let Some(connection) = connections.write().await.remove(&connect_url) {
                     connection.connection.close(VarInt::from_u32(200), &[]);

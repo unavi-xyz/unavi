@@ -11373,6 +11373,7 @@ name = "unavi-client"
 version = "0.0.11"
 dependencies = [
  "anyhow",
+ "arrayvec",
  "avian3d",
  "bevy",
  "bevy_vrm",
@@ -11388,6 +11389,7 @@ dependencies = [
  "scc",
  "serde",
  "serde_json",
+ "smallvec",
  "tarpc",
  "tokio",
  "tokio-serde",
@@ -11481,6 +11483,7 @@ name = "unavi-server"
 version = "0.0.11"
 dependencies = [
  "anyhow",
+ "arrayvec",
  "axum",
  "axum-server",
  "bincode 2.0.1",
@@ -11494,6 +11497,7 @@ dependencies = [
  "rustls",
  "scc",
  "serde_json",
+ "smallvec",
  "tarpc",
  "time",
  "tokio",
@@ -11515,6 +11519,7 @@ dependencies = [
  "bincode 2.0.1",
  "serde",
  "serde_vrm",
+ "smallvec",
  "tarpc",
  "xdid",
 ]

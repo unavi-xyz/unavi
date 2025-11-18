@@ -4,6 +4,7 @@ use std::{
 };
 
 use futures::{FutureExt, SinkExt};
+use smallvec::SmallVec;
 use tarpc::tokio_util::codec::{FramedWrite, LengthDelimitedCodec};
 use tokio::time::interval;
 use tracing::error;
@@ -59,7 +60,8 @@ pub async fn handle_pull_transforms(
         }
 
         // Collect new subscriptions and their initial iframes.
-        let mut new_subscriptions = Vec::new();
+        let mut new_subscriptions: SmallVec<[(PlayerId, _, _, TrackingIFrame); 4]> =
+            SmallVec::new();
         for &other_player_id in &players_in_shared_spaces {
             if !subscriptions.contains_key(&other_player_id) {
                 let player_state = ctx

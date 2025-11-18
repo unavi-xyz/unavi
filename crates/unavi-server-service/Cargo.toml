@@ -13,5 +13,6 @@ workspace = true
 bincode.workspace   = true
 serde.workspace     = true
 serde_vrm.workspace = true
+smallvec            = { features = ["serde"], workspace = true }
 tarpc.workspace     = true
 xdid.workspace      = true

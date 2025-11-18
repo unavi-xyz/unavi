@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_vrm::vrm0::BoneName;
+use smallvec::SmallVec;
 use xdid::core::did::Did;
 
 pub type RpcResult<T> = Result<T, String>;
@@ -33,7 +34,7 @@ pub struct TrackingIFrame {
     pub iframe_id: u8,
     pub translation: [f32; 3],
     pub rotation: [f32; 4],
-    pub joints: Vec<JointIFrame>,
+    pub joints: SmallVec<[JointIFrame; 8]>,
 }
 
 impl Default for TrackingIFrame {
@@ -42,7 +43,7 @@ impl Default for TrackingIFrame {
             iframe_id: 0,
             translation: Default::default(),
             rotation: [0.0, 0.0, 0.0, 1.0],
-            joints: Default::default(),
+            joints: SmallVec::new(),
         }
     }
 }
@@ -52,7 +53,7 @@ pub struct TrackingPFrame {
     pub iframe_id: u8,
     pub translation: [i16; 3],
     pub rotation: [i16; 4],
-    pub joints: Vec<JointPFrame>,
+    pub joints: SmallVec<[JointPFrame; 8]>,
 }
 
 impl Default for TrackingPFrame {
@@ -61,7 +62,7 @@ impl Default for TrackingPFrame {
             iframe_id: 0,
             translation: Default::default(),
             rotation: [0, 0, 0, i16::MAX],
-            joints: Default::default(),
+            joints: SmallVec::new(),
         }
     }
 }

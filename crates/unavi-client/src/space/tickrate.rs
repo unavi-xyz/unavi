@@ -25,7 +25,11 @@ pub static TICKRATE_QUEUE: LazyLock<(Sender<SetTickrate>, Arc<Mutex<Receiver<Set
         (tx, Arc::new(Mutex::new(rx)))
     });
 
-pub fn set_space_tickrates(spaces: Query<(Entity, &Space)>, mut commands: Commands) {
+pub fn set_space_tickrates(
+    time: Res<Time>,
+    spaces: Query<(Entity, &Space)>,
+    mut commands: Commands,
+) {
     let Ok(rx) = TICKRATE_QUEUE.1.try_lock() else {
         return;
     };
@@ -37,7 +41,7 @@ pub fn set_space_tickrates(spaces: Query<(Entity, &Space)>, mut commands: Comman
 
             commands.entity(entity).insert((
                 PublishInterval {
-                    last_tick: Duration::default(),
+                    last_tick: time.elapsed(),
                     tickrate: msg.tickrate,
                 },
                 TransformPublishState::default(),

@@ -281,6 +281,7 @@ async fn send_pframe(
 
     let header = from_client::StreamHeader::TransformPFrame;
     let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
+    info!("sending pframe header: {}", stream.id());
     stream.write_all(&header_bytes).await?;
 
     let mut framed = LengthDelimitedCodec::builder()

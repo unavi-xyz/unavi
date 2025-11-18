@@ -2,8 +2,8 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use bevy::{prelude::*, tasks::TaskPool};
 use bevy_vrm::BoneName;
-use dashmap::DashMap;
 use futures::SinkExt;
+use scc::HashMap as SccHashMap;
 use tarpc::tokio_util::codec::{FramedWrite, LengthDelimitedCodec};
 use unavi_player::{AvatarBones, LocalPlayer, PlayerEntities};
 use unavi_server_service::{
@@ -18,15 +18,24 @@ use super::{JOINT_ROTATION_EPSILON, PFRAME_ROTATION_SCALE, PFRAME_TRANSLATION_SC
 
 const IFRAME_INTERVAL: Duration = Duration::from_secs(5);
 
+use tokio::sync::Mutex as TokioMutex;
+
 type FramedTransformWriter = FramedWrite<SendStream, LengthDelimitedCodec>;
 
+#[derive(Clone)]
 pub struct HostStreams {
-    pub iframe_stream: FramedTransformWriter,
-    pub pframe_stream: Option<SendStream>,
+    pub iframe_stream: Arc<TokioMutex<FramedTransformWriter>>,
+    pub pframe_stream: Option<Arc<TokioMutex<SendStream>>>,
 }
 
-#[derive(Resource, Default, Clone)]
-pub struct HostTransformStreams(pub Arc<DashMap<String, HostStreams>>);
+#[derive(Resource)]
+pub struct HostTransformStreams(pub Arc<SccHashMap<String, HostStreams>>);
+
+impl Default for HostTransformStreams {
+    fn default() -> Self {
+        Self(Arc::new(SccHashMap::new()))
+    }
+}
 
 /// The interval at which data should be published to the space's server.
 #[derive(Component)]
@@ -181,13 +190,13 @@ fn record_transforms(
 }
 
 async fn get_or_create_iframe_stream(
-    streams: &Arc<DashMap<String, HostStreams>>,
+    streams: &Arc<SccHashMap<String, HostStreams>>,
     connect_url: &str,
     connection: &wtransport::Connection,
 ) -> anyhow::Result<()> {
     use unavi_server_service::from_client;
 
-    if streams.contains_key(connect_url) {
+    if streams.contains_async(connect_url).await {
         return Ok(());
     }
 
@@ -203,30 +212,34 @@ async fn get_or_create_iframe_stream(
     let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
     framed.send(header_bytes.into()).await?;
 
-    streams.insert(
-        connect_url.to_string(),
-        HostStreams {
-            iframe_stream: framed,
-            pframe_stream: None,
-        },
-    );
+    let _ = streams
+        .insert_async(
+            connect_url.to_string(),
+            HostStreams {
+                iframe_stream: Arc::new(TokioMutex::new(framed)),
+                pframe_stream: None,
+            },
+        )
+        .await;
 
     Ok(())
 }
 
 async fn send_iframe(
-    streams: &Arc<DashMap<String, HostStreams>>,
+    streams: &Arc<SccHashMap<String, HostStreams>>,
     connect_url: &str,
     iframe: &TrackingIFrame,
 ) -> anyhow::Result<()> {
-    let mut entry = streams
-        .get_mut(connect_url)
-        .ok_or_else(|| anyhow::anyhow!("No iframe stream for {}", connect_url))?;
-
     let iframe_bytes = bincode::serde::encode_to_vec(iframe, bincode::config::standard())?;
     #[cfg(feature = "devtools-network")]
     let byte_count = iframe_bytes.len();
-    entry.iframe_stream.send(iframe_bytes.into()).await?;
+
+    let iframe_stream = streams
+        .read_async(connect_url, |_, entry| entry.iframe_stream.clone())
+        .await
+        .ok_or_else(|| anyhow::anyhow!("No iframe stream for {}", connect_url))?;
+
+    iframe_stream.lock().await.send(iframe_bytes.into()).await?;
 
     #[cfg(feature = "devtools-network")]
     {
@@ -243,19 +256,21 @@ async fn send_iframe(
 }
 
 async fn send_pframe(
-    streams: &Arc<DashMap<String, HostStreams>>,
+    streams: &Arc<SccHashMap<String, HostStreams>>,
     connect_url: &str,
     connection: &wtransport::Connection,
     pframe: &TrackingPFrame,
 ) -> anyhow::Result<()> {
     use unavi_server_service::from_client;
 
-    // Take the old stream and reset it, then drop the guard.
+    // Take the old stream and reset it.
     let old_stream = streams
-        .get_mut(connect_url)
-        .and_then(|mut entry| entry.pframe_stream.take());
+        .update_async(connect_url, |_, entry| entry.pframe_stream.take())
+        .await
+        .flatten();
 
-    if let Some(mut stream) = old_stream {
+    if let Some(stream_mutex) = old_stream {
+        let mut stream = stream_mutex.lock().await;
         let _ = stream.reset(0u32.into());
     }
 
@@ -279,9 +294,11 @@ async fn send_pframe(
 
     let send_stream = framed.into_inner();
 
-    if let Some(mut entry) = streams.get_mut(connect_url) {
-        entry.pframe_stream = Some(send_stream);
-    }
+    let _ = streams
+        .update_async(connect_url, |_, entry| {
+            entry.pframe_stream = Some(Arc::new(TokioMutex::new(send_stream)));
+        })
+        .await;
 
     #[cfg(feature = "devtools-network")]
     {
@@ -350,20 +367,22 @@ pub fn publish_transform_data(
     }
 
     for (connect_url, (_, update)) in hosts_to_publish {
-        let connections_arc = host_connections.0.clone();
-        let streams_arc = transform_streams.0.clone();
+        let connections = host_connections.0.clone();
+        let streams_map = transform_streams.0.clone();
 
         let pool = TaskPool::get_thread_executor();
         pool.spawn(async move {
-            let guard = connections_arc.read().await;
-            let Some(host) = guard.get(&connect_url) else {
+            let connection = connections
+                .read_async(&connect_url, |_, host| host.connection.clone())
+                .await;
+
+            let Some(connection) = connection else {
+                warn!("connection not found");
                 return;
             };
-            let connection = host.connection.clone();
-            drop(guard);
 
             if let Err(e) =
-                get_or_create_iframe_stream(&streams_arc, &connect_url, &connection).await
+                get_or_create_iframe_stream(&streams_map, &connect_url, &connection).await
             {
                 error!("Failed to create iframe stream: {e:?}");
                 return;
@@ -371,16 +390,16 @@ pub fn publish_transform_data(
 
             let result = match &update {
                 TransformResult::IFrame(iframe) => {
-                    send_iframe(&streams_arc, &connect_url, iframe).await
+                    send_iframe(&streams_map, &connect_url, iframe).await
                 }
                 TransformResult::PFrame(pframe) => {
-                    send_pframe(&streams_arc, &connect_url, &connection, pframe).await
+                    send_pframe(&streams_map, &connect_url, &connection, pframe).await
                 }
             };
 
             if let Err(e) = result {
                 error!("Failed to send transform update: {e:?}");
-                streams_arc.remove(&connect_url);
+                let _ = streams_map.remove_async(&connect_url).await;
             }
         })
         .detach();

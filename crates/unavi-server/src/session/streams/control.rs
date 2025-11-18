@@ -33,29 +33,32 @@ pub async fn handle_control_stream(
     loop {
         check_interval.tick().await;
 
-        let players_guard = ctx.players.read().await;
-        let Some(player) = players_guard.get(&player_id) else {
+        let player_spaces = ctx
+            .players
+            .read_async(&player_id, |_, player| player.spaces.clone())
+            .await;
+
+        let Some(player_spaces) = player_spaces else {
             // Exit once the player is disconnected.
             return Ok(());
         };
 
-        let spaces_guard = ctx.spaces.read().await;
-
         // Subscribe to control broadcasts for all spaces player is in.
-        for space_id in &player.spaces {
-            if !space_subscriptions.contains_key(space_id)
-                && let Some(space) = spaces_guard.get(space_id)
-            {
-                let rx = space.control_tx.subscribe();
-                space_subscriptions.insert(space_id.clone(), rx);
+        for space_id in &player_spaces {
+            if !space_subscriptions.contains_key(space_id) {
+                let rx = ctx
+                    .spaces
+                    .read_async(space_id, |_, space| space.control_tx.subscribe())
+                    .await;
+
+                if let Some(rx) = rx {
+                    space_subscriptions.insert(space_id.clone(), rx);
+                }
             }
         }
 
         // Clean up subscriptions for spaces player left.
-        space_subscriptions.retain(|space_id, _| player.spaces.contains(space_id));
-
-        drop(players_guard);
-        drop(spaces_guard);
+        space_subscriptions.retain(|space_id, _| player_spaces.contains(space_id));
 
         // Process any pending control messages from all subscriptions.
         for rx in space_subscriptions.values_mut() {

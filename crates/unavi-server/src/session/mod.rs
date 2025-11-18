@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     sync::{
         Arc,
         atomic::{AtomicU64, Ordering},
@@ -9,11 +9,12 @@ use std::{
 
 use dwn::{Actor, Dwn, document_key::DocumentKey, stores::NativeDbStore};
 use futures::StreamExt;
+use scc::HashMap as SccHashMap;
 use tarpc::{
     server::{BaseChannel, Channel},
     tokio_util::codec::{Framed, LengthDelimitedCodec},
 };
-use tokio::sync::{RwLock, watch};
+use tokio::sync::watch;
 use tokio_serde::formats::Bincode;
 use tracing::{error, info};
 use unavi_server_service::{
@@ -51,9 +52,9 @@ pub struct SessionSpawner {
 pub struct ServerContext {
     pub actor: Actor,
     msg_tx: tokio::sync::mpsc::Sender<InternalMessage>,
-    player_tickrates: Arc<RwLock<HashMap<PlayerId, HashMap<PlayerId, Duration>>>>,
-    players: Arc<RwLock<HashMap<PlayerId, Player>>>,
-    spaces: Arc<RwLock<HashMap<SpaceId, Space>>>,
+    player_tickrates: Arc<SccHashMap<PlayerId, SccHashMap<PlayerId, Duration>>>,
+    players: Arc<SccHashMap<PlayerId, Player>>,
+    spaces: Arc<SccHashMap<SpaceId, Space>>,
 }
 
 impl ServerContext {
@@ -69,12 +70,14 @@ impl ServerContext {
     }
 }
 
+#[derive(Clone)]
 struct Player {
     spaces: HashSet<String>,
     iframe_tx: watch::Sender<TrackingIFrame>,
     pframe_tx: watch::Sender<TrackingPFrame>,
 }
 
+#[derive(Clone)]
 struct Space {
     players: HashSet<PlayerId>,
     max_players: usize,
@@ -135,9 +138,9 @@ impl SessionSpawner {
             ctx: ServerContext {
                 actor,
                 msg_tx: opts.msg_tx,
-                player_tickrates: Default::default(),
-                players: Default::default(),
-                spaces: Default::default(),
+                player_tickrates: Arc::new(SccHashMap::new()),
+                players: Arc::new(SccHashMap::new()),
+                spaces: Arc::new(SccHashMap::new()),
             },
             domain: opts.domain,
             player_id_count: Default::default(),
@@ -165,15 +168,18 @@ impl SessionSpawner {
             let (iframe_tx, _iframe_rx) = watch::channel(Default::default());
             let (pframe_tx, _pframe_rx) = watch::channel(Default::default());
 
-            let mut players = self.ctx.players.write().await;
-            players.insert(
-                player_id,
-                Player {
-                    spaces: Default::default(),
-                    iframe_tx,
-                    pframe_tx,
-                },
-            );
+            let _ = self
+                .ctx
+                .players
+                .insert_async(
+                    player_id,
+                    Player {
+                        spaces: Default::default(),
+                        iframe_tx,
+                        pframe_tx,
+                    },
+                )
+                .await;
         }
 
         tokio::spawn({
@@ -225,43 +231,59 @@ impl SessionSpawner {
 
     async fn cleanup_player(&self, player_id: PlayerId) {
         let spaces_to_leave: Vec<SpaceId> = {
-            let mut players = self.ctx.players.write().await;
-            if let Some(player) = players.remove(&player_id) {
+            if let Some((_, player)) = self.ctx.players.remove_async(&player_id).await {
                 player.spaces.into_iter().collect()
             } else {
                 Vec::new()
             }
         };
 
-        let mut spaces = self.ctx.spaces.write().await;
         for space_id in spaces_to_leave {
-            if let Some(space) = spaces.get_mut(&space_id) {
-                space.players.remove(&player_id);
+            let updated = self
+                .ctx
+                .spaces
+                .update_async(&space_id, |_, space| {
+                    space.players.remove(&player_id);
 
-                // Broadcast PlayerLeft to all remaining players in this space.
-                let _ = space
-                    .control_tx
-                    .send(ControlMessage::PlayerLeft { player_id });
+                    // Broadcast PlayerLeft to all remaining players in this space.
+                    let _ = space
+                        .control_tx
+                        .send(ControlMessage::PlayerLeft { player_id });
 
-                let count = space.players.len();
-                if count == 0 {
-                    spaces.remove(&space_id);
+                    let count = space.players.len();
+                    (count == 0, count)
+                })
+                .await;
+
+            if let Some((should_remove, count)) = updated {
+                if should_remove {
+                    let _ = self.ctx.spaces.remove_async(&space_id).await;
                 }
-                drop(spaces);
 
                 self.ctx
                     .update_space_player_count(space_id.clone(), count)
                     .await;
-
-                spaces = self.ctx.spaces.write().await;
             }
         }
-        drop(spaces);
 
-        let mut player_tickrates = self.ctx.player_tickrates.write().await;
-        player_tickrates.remove(&player_id);
-        for rates in player_tickrates.values_mut() {
-            rates.remove(&player_id);
+        let _ = self.ctx.player_tickrates.remove_async(&player_id).await;
+
+        // Remove this player from all other players' tickrate maps.
+        // Collect keys first using any() which allows us to iterate.
+        let mut keys = Vec::new();
+        let _ = self.ctx.player_tickrates.iter_sync(|k, _| {
+            keys.push(*k);
+            false // Never early-exit
+        });
+
+        for key in keys {
+            let _ = self
+                .ctx
+                .player_tickrates
+                .update_async(&key, |_, rates| {
+                    let _ = rates.remove_sync(&player_id);
+                })
+                .await;
         }
     }
 }

@@ -1,5 +1,4 @@
 use std::{
-    collections::{HashMap, HashSet},
     sync::{Arc, mpsc::SyncSender},
     time::Duration,
 };
@@ -7,13 +6,13 @@ use std::{
 use bevy::{
     app::AppExit, ecs::world::CommandQueue, log::tracing::Instrument, prelude::*, tasks::TaskPool,
 };
-use dashmap::DashMap;
+use scc::{HashMap as SccHashMap, HashSet as SccHashSet};
 use tarpc::{
     client::Config,
     tokio_serde::formats::Bincode,
     tokio_util::codec::{Framed, LengthDelimitedCodec},
 };
-use tokio::{sync::RwLock, task::AbortHandle};
+use tokio::task::AbortHandle;
 use unavi_server_service::{ControlServiceClient, from_server::ControlMessage};
 use wtransport::{
     ClientConfig, Connection, Endpoint, VarInt, error::ConnectionError, stream::BiStream,
@@ -50,18 +49,30 @@ pub struct HostConnection {
     pub control_tx: SyncSender<ControlMessage>,
 }
 
-#[derive(Resource, Default)]
-pub struct HostConnections(pub Arc<RwLock<HashMap<String, HostConnection>>>);
+#[derive(Resource, Clone)]
+pub struct HostConnections(pub Arc<SccHashMap<String, HostConnection>>);
 
-#[derive(Resource, Default)]
-pub struct SpaceSessions(Arc<RwLock<HashMap<String, AbortHandle>>>);
+impl Default for HostConnections {
+    fn default() -> Self {
+        Self(Arc::new(SccHashMap::new()))
+    }
+}
+
+#[derive(Resource, Clone)]
+pub struct SpaceSessions(Arc<SccHashMap<String, AbortHandle>>);
+
+impl Default for SpaceSessions {
+    fn default() -> Self {
+        Self(Arc::new(SccHashMap::new()))
+    }
+}
 
 pub fn handle_space_connect(
     event: On<Add, ConnectInfo>,
     spaces: Query<(&Space, &ConnectInfo)>,
     connections: Res<HostConnections>,
     sessions: Res<SpaceSessions>,
-    initiated: Local<Arc<RwLock<HashSet<String>>>>,
+    initiated: Local<SccHashSet<String>>,
 ) -> Result {
     let Ok((space, info)) = spaces.get(event.entity) else {
         Err(anyhow::anyhow!("space not found"))?
@@ -87,15 +98,22 @@ pub fn handle_space_connect(
 
         let task = rt.spawn(
             async move {
+                info!("spawned connection task");
+
                 loop {
-                    let host = if let Some(host) = connections.read().await.get(&connect_url) {
-                        host.clone()
-                    } else if initiated.read().await.contains(&connect_url) {
+                    let host = if let Some(host_conn) = connections
+                        .read_async(&connect_url, |_, host| host.clone())
+                        .await
+                    {
+                        host_conn
+                    } else if initiated.contains_async(&connect_url).await {
                         tokio::time::sleep(INITIAL_RETRY_DELAY).await;
                         continue;
                     } else {
+                        let _ = initiated.insert_async(connect_url.clone()).await;
                         match connect_to_host(info.clone()).await {
                             Ok(host) => {
+                                info!("connected");
                                 let con = host.connection.clone();
                                 let transform_channels = host.transform_channels.clone();
                                 let control_tx = host.control_tx.clone();
@@ -128,10 +146,10 @@ pub fn handle_space_connect(
                                 });
 
                                 // Save the connection for re-use by other spaces.
-                                let mut initiated = initiated.write().await;
-                                let mut connections = connections.write().await;
-                                initiated.remove(&connect_url);
-                                connections.insert(connect_url.clone(), host.clone());
+                                let _ = initiated.remove_async(&connect_url).await;
+                                let _ = connections
+                                    .insert_async(connect_url.clone(), host.clone())
+                                    .await;
 
                                 host
                             }
@@ -164,7 +182,7 @@ pub fn handle_space_connect(
         );
 
         let session_handle = task.abort_handle();
-        sessions.write().await.insert(space_url_str, session_handle);
+        let _ = sessions.insert_async(space_url_str, session_handle).await;
 
         if let Err(e) = task.await {
             error!("Task join error: {e:?}");
@@ -205,7 +223,7 @@ async fn connect_to_host(
 
     let (control_tx, control_rx) = std::sync::mpsc::sync_channel(16);
     let connect_url_clone = connect_url.to_string();
-    let transform_channels = Arc::new(DashMap::new());
+    let transform_channels = Arc::new(SccHashMap::new());
 
     let control_tx_clone = control_tx.clone();
     let transform_channels_clone = transform_channels.clone();
@@ -220,7 +238,7 @@ async fn connect_to_host(
             },
             HostControlChannel {
                 tx: control_tx_clone,
-                rx: Arc::new(std::sync::Mutex::new(control_rx)),
+                rx: std::sync::Arc::new(std::sync::Mutex::new(control_rx)),
             },
         ));
     });
@@ -286,7 +304,7 @@ pub fn handle_space_disconnect(
     let connect_url = info.connect_url.to_string();
     let connections = connections.0.clone();
     let sessions = sessions.0.clone();
-    let streams = transform_streams.0.clone();
+    let streams_map = transform_streams.0.clone();
     let space_url = space.url.to_string();
 
     let pool = TaskPool::get_thread_executor();
@@ -298,15 +316,15 @@ pub fn handle_space_disconnect(
 
         let task = rt.spawn(async move {
             // End space session.
-            if let Some(handle) = sessions.write().await.remove(&space_url) {
+            if let Some((_, handle)) = sessions.remove_async(&space_url).await {
                 handle.abort();
             }
 
             // Disconnect from host, if no other spaces using the connection.
             if other_spaces_found == 0 {
-                streams.remove(&connect_url);
+                let _ = streams_map.remove_async(&connect_url).await;
 
-                if let Some(connection) = connections.write().await.remove(&connect_url) {
+                if let Some((_, connection)) = connections.remove_async(&connect_url).await {
                     connection.connection.close(VarInt::from_u32(200), &[]);
 
                     // Despawn Host entity and all remote players.
@@ -365,17 +383,9 @@ pub fn cleanup_connections_on_exit(
 
     let connections = connections.0.clone();
 
-    // Block on async cleanup during shutdown.
-    let rt = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .expect("build tokio runtime");
-
-    rt.block_on(async move {
-        let connections_guard = connections.write().await;
-        for (url, host) in connections_guard.iter() {
-            info!("Closing connection to {url}");
-            host.connection.close(VarInt::from_u32(200), b"shutdown");
-        }
+    let _ = connections.iter_sync(|url, host| {
+        info!("Closing connection to {url}");
+        host.connection.close(VarInt::from_u32(200), b"shutdown");
+        false // Never early-exit
     });
 }

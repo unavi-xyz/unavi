@@ -24,24 +24,28 @@ pub async fn handle_iframe_stream(
             bincode::config::standard(),
         )?;
 
-        let players = ctx.players.read().await;
-        let Some(player) = players.get(&player_id) else {
+        let found = ctx
+            .players
+            .read_async(&player_id, |_, player| {
+                player.iframe_tx.send_modify(|prev| {
+                    prev.iframe_id = iframe.iframe_id;
+                    prev.translation = iframe.translation;
+                    prev.rotation = iframe.rotation;
+
+                    for joint in iframe.joints {
+                        if let Some(found) = prev.joints.iter_mut().find(|j| j.id == joint.id) {
+                            found.rotation = joint.rotation;
+                        } else {
+                            prev.joints.push(joint);
+                        }
+                    }
+                });
+            })
+            .await;
+
+        if found.is_none() {
             return Ok(());
-        };
-
-        player.iframe_tx.send_modify(|prev| {
-            prev.iframe_id = iframe.iframe_id;
-            prev.translation = iframe.translation;
-            prev.rotation = iframe.rotation;
-
-            for joint in iframe.joints {
-                if let Some(found) = prev.joints.iter_mut().find(|j| j.id == joint.id) {
-                    found.rotation = joint.rotation;
-                } else {
-                    prev.joints.push(joint);
-                }
-            }
-        });
+        }
     }
 
     Ok(())
@@ -64,12 +68,16 @@ pub async fn handle_pframe_stream(
             bincode::config::standard(),
         )?;
 
-        let players = ctx.players.read().await;
-        let Some(player) = players.get(&player_id) else {
-            return Ok(());
-        };
+        let found = ctx
+            .players
+            .read_async(&player_id, |_, player| {
+                let _ = player.pframe_tx.send(pframe);
+            })
+            .await;
 
-        let _ = player.pframe_tx.send(pframe);
+        if found.is_none() {
+            return Ok(());
+        }
     }
 
     Ok(())

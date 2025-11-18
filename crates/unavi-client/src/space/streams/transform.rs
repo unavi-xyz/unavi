@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use bevy::{prelude::*, tasks::futures_lite::StreamExt};
 use bevy_vrm::BoneName;
-use dashmap::DashMap;
+use scc::HashMap as SccHashMap;
 use tarpc::tokio_util::codec::LengthDelimitedCodec;
 use tokio::sync::watch;
 use unavi_player::{AvatarBones, AvatarSpawner};
@@ -23,6 +23,7 @@ pub struct FinalTransform {
     pub joint_rotations: HashMap<BoneName, Quat>,
 }
 
+#[derive(Clone)]
 pub struct PlayerTransformState {
     pub tx: watch::Sender<FinalTransform>,
     pub rx: watch::Receiver<FinalTransform>,
@@ -30,7 +31,7 @@ pub struct PlayerTransformState {
     pub current_iframe_id: u8,
     pub last_pframe_stream_id: Option<StreamId>,
 }
-pub type TransformChannels = Arc<DashMap<u64, PlayerTransformState>>;
+pub type TransformChannels = Arc<SccHashMap<u64, PlayerTransformState>>;
 
 pub async fn recv_iframe_stream(
     stream: RecvStream,
@@ -77,23 +78,32 @@ pub async fn recv_iframe_stream(
 
         let final_transform = compute_final_transform_from_iframe(&iframe);
 
-        if let Some(mut state) = player_channels.get_mut(&player_id) {
-            let _ = state.tx.send(final_transform);
-            state.current_iframe_id = iframe.iframe_id;
-            state.last_iframe = Some(iframe);
-            state.last_pframe_stream_id = None;
-        } else {
+        // Try to update existing state.
+        let updated = player_channels
+            .update_async(&player_id, |_, state| {
+                let _ = state.tx.send(final_transform.clone());
+                state.current_iframe_id = iframe.iframe_id;
+                state.last_iframe = Some(iframe.clone());
+                state.last_pframe_stream_id = None;
+            })
+            .await
+            .is_some();
+
+        if !updated {
+            // Insert new state.
             let (tx, rx) = watch::channel(final_transform.clone());
-            player_channels.insert(
-                player_id,
-                PlayerTransformState {
-                    current_iframe_id: iframe.iframe_id,
-                    last_iframe: Some(iframe.clone()),
-                    last_pframe_stream_id: None,
-                    rx,
-                    tx,
-                },
-            );
+            let _ = player_channels
+                .insert_async(
+                    player_id,
+                    PlayerTransformState {
+                        current_iframe_id: iframe.iframe_id,
+                        last_iframe: Some(iframe.clone()),
+                        last_pframe_stream_id: None,
+                        rx,
+                        tx,
+                    },
+                )
+                .await;
         }
     }
 
@@ -132,53 +142,63 @@ pub async fn recv_pframe_stream(
             bincode::config::standard(),
         )?;
 
-        if let Some(mut state) = player_channels.get_mut(&player_id) {
-            if pframe.iframe_id != state.current_iframe_id {
+        player_channels
+            .read_async(&player_id, |_, state| {
+                if pframe.iframe_id != state.current_iframe_id {
+                    #[cfg(feature = "devtools-network")]
+                    {
+                        use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
+
+                        let _ = NETWORK_EVENTS.0.send(NetworkEvent::DroppedFrame {
+                            host: _connect_url.clone(),
+                        });
+                    }
+                    return Err(());
+                }
+
+                if let Some(last_stream_id) = state.last_pframe_stream_id
+                    && stream_id < last_stream_id
+                {
+                    #[cfg(feature = "devtools-network")]
+                    {
+                        use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
+
+                        let _ = NETWORK_EVENTS.0.send(NetworkEvent::DroppedFrame {
+                            host: _connect_url.clone(),
+                        });
+                    }
+                    return Err(());
+                }
+
                 #[cfg(feature = "devtools-network")]
                 {
                     use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
 
-                    let _ = NETWORK_EVENTS.0.send(NetworkEvent::DroppedFrame {
+                    let _ = NETWORK_EVENTS.0.send(NetworkEvent::Download {
+                        host: _connect_url.clone(),
+                        bytes: byte_count,
+                    });
+                    let _ = NETWORK_EVENTS.0.send(NetworkEvent::ValidTick {
                         host: _connect_url.clone(),
                     });
                 }
-                return Ok(());
-            }
 
-            if let Some(last_stream_id) = state.last_pframe_stream_id
-                && stream_id < last_stream_id
-            {
-                #[cfg(feature = "devtools-network")]
-                {
-                    use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
-
-                    let _ = NETWORK_EVENTS.0.send(NetworkEvent::DroppedFrame {
-                        host: _connect_url.clone(),
-                    });
+                if let Some(last_iframe) = &state.last_iframe {
+                    let final_transform = compute_final_transform_from_pframe(&pframe, last_iframe);
+                    let _ = state.tx.send(final_transform);
                 }
-                return Ok(());
-            }
 
-            #[cfg(feature = "devtools-network")]
-            {
-                use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
+                Ok(())
+            })
+            .await
+            .ok_or_else(|| anyhow::anyhow!("Player not found"))?
+            .map_err(|_| anyhow::anyhow!("Frame dropped"))?;
 
-                let _ = NETWORK_EVENTS.0.send(NetworkEvent::Download {
-                    host: _connect_url.clone(),
-                    bytes: byte_count,
-                });
-                let _ = NETWORK_EVENTS.0.send(NetworkEvent::ValidTick {
-                    host: _connect_url.clone(),
-                });
-            }
-
-            if let Some(last_iframe) = &state.last_iframe {
-                let final_transform = compute_final_transform_from_pframe(&pframe, last_iframe);
-                let _ = state.tx.send(final_transform);
-            }
-
-            state.last_pframe_stream_id = Some(stream_id);
-        }
+        let _ = player_channels
+            .update_async(&player_id, |_, state| {
+                state.last_pframe_stream_id = Some(stream_id);
+            })
+            .await;
     }
 
     Ok(())
@@ -259,10 +279,9 @@ pub fn apply_player_transforms(
     pending_spawns.retain(|_, entity| !remote_players.iter().any(|(e, ..)| e == *entity));
 
     for (host_entity, _, channel) in hosts.iter() {
-        for entry in channel.players.iter() {
-            let (&player_id, state) = entry.pair();
+        let _ = channel.players.iter_sync(|player_id, state| {
             let Ok(true) = state.rx.has_changed() else {
-                continue;
+                return false;
             };
 
             let final_transform = state.rx.borrow().clone();
@@ -270,25 +289,28 @@ pub fn apply_player_transforms(
             let existing_entity = remote_players
                 .iter()
                 .find(|(_, remote, player_host, _)| {
-                    remote.player_id == player_id && player_host.0 == host_entity
+                    remote.player_id == *player_id && player_host.0 == host_entity
                 })
                 .map(|(e, ..)| e)
-                .or_else(|| pending_spawns.get(&(host_entity, player_id)).copied());
+                .or_else(|| pending_spawns.get(&(host_entity, *player_id)).copied());
 
             if existing_entity.is_none() {
                 info!("Spawning remote player: {}", player_id);
                 let avatar = AvatarSpawner::default().spawn(&mut commands, &asset_server);
 
-                commands
-                    .entity(avatar)
-                    .insert((RemotePlayer { player_id }, PlayerHost(host_entity)));
+                commands.entity(avatar).insert((
+                    RemotePlayer {
+                        player_id: *player_id,
+                    },
+                    PlayerHost(host_entity),
+                ));
 
-                pending_spawns.insert((host_entity, player_id), avatar);
-                continue;
+                pending_spawns.insert((host_entity, *player_id), avatar);
+                return false;
             }
 
             for (player_entity, remote, player_host, avatar_bones) in remote_players.iter() {
-                if remote.player_id != player_id || player_host.0 != host_entity {
+                if remote.player_id != *player_id || player_host.0 != host_entity {
                     continue;
                 }
 
@@ -314,6 +336,8 @@ pub fn apply_player_transforms(
 
                 break;
             }
-        }
+
+            false // Never early-exit
+        });
     }
 }

@@ -3,7 +3,6 @@ use std::sync::mpsc::SyncSender;
 use unavi_server_service::from_server::{ControlMessage, StreamHeader};
 use wtransport::RecvStream;
 
-pub mod accept;
 pub mod control;
 pub mod publish;
 pub mod transform;

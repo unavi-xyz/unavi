@@ -10,7 +10,7 @@ version.workspace    = true
 [features]
 default          = []
 devtools         = ["devtools-network"]
-devtools-network = ["bevy/experimental_bevy_feathers"]
+devtools-network = []
 
 [lints]
 workspace = true
@@ -30,6 +30,7 @@ bincode.workspace = true
 clap.workspace = true
 directories.workspace = true
 dwn.workspace = true
+flume = "0.11.1"
 futures.workspace = true
 image = { features = ["png"], workspace = true }
 log = { features = [

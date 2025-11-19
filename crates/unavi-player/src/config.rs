@@ -34,14 +34,14 @@ impl Default for PlayerConfig {
 pub const DEFAULT_HEIGHT: f32 = 1.7;
 
 pub const DEFAULT_JUMP_STRENGTH: f32 = 1.0;
-pub const DEFAULT_WALK_SPEED: f32 = 4.0;
+pub const DEFAULT_WALK_SPEED: f32 = 5.0;
 
 pub const PLAYER_RADIUS: f32 = 0.5;
 pub const FLOAT_HEIGHT_OFFSET: f32 = 0.01;
 
 /// World scale factor resource.
 ///
-/// This scales world objects (NOT the avatar) to match player perception.
+/// This scales world objects to match player perception.
 ///
 /// # Formula
 /// `WorldScale = real_height / vrm_height`

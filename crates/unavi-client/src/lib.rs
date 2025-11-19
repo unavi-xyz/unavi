@@ -46,26 +46,6 @@ impl Plugin for UnaviPlugin {
     fn build(&self, app: &mut App) {
         assets::copy_assets_to_dirs().expect("failed to copy assets");
 
-        DefaultPlugins
-            .build()
-            .set(WebAssetPlugin {
-                silence_startup_warning: true,
-            })
-            .set(AssetPlugin {
-                file_path: assets_dir().to_string_lossy().to_string(),
-                ..default()
-            })
-            .set(WindowPlugin {
-                primary_window: Some(Window {
-                    name: Some("unavi".to_string()),
-                    title: "UNAVI".to_string(),
-                    window_theme: Some(WindowTheme::Dark),
-                    ..default()
-                }),
-                ..default()
-            })
-            .finish(app);
-
         let store = if self.in_memory {
             NativeDbStore::new_in_memory()
         } else {
@@ -76,6 +56,23 @@ impl Plugin for UnaviPlugin {
         let dwn = Dwn::from(store);
 
         app.add_plugins((
+            DefaultPlugins
+                .set(WebAssetPlugin {
+                    silence_startup_warning: true,
+                })
+                .set(AssetPlugin {
+                    file_path: assets_dir().to_string_lossy().to_string(),
+                    ..default()
+                })
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        name: Some("unavi".to_string()),
+                        title: "UNAVI".to_string(),
+                        window_theme: Some(WindowTheme::Dark),
+                        ..default()
+                    }),
+                    ..default()
+                }),
             avian3d::PhysicsPlugins::default(),
             fade::FadePlugin,
             unavi_input::InputPlugin,

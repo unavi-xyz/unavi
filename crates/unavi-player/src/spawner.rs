@@ -77,7 +77,7 @@ impl LocalPlayerSpawner {
                 TnuaController::default(),
                 TnuaAvian3dSensorShape(Collider::cylinder(PLAYER_RADIUS - 0.01, 0.0)),
                 LockedAxes::ROTATION_LOCKED,
-                Transform::from_xyz(0.0, config.real_height / 2.0, 0.0),
+                Transform::from_xyz(0.0, config.real_height / 2.0 + 1.0, 0.0),
             ))
             .id();
 

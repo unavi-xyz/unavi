@@ -5,7 +5,8 @@ use super::lifecycle::HostConnections;
 use crate::{
     async_commands::ASYNC_COMMAND_QUEUE,
     space::{
-        Host, HostPlayers, Space, connect_info::ConnectInfo, streams::publish::HostTransformStreams,
+        Host, HostPlayers, Space, connect_info::ConnectInfo,
+        networking::streams::publish::HostTransformStreams,
     },
 };
 

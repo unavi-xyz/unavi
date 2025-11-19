@@ -25,7 +25,6 @@ pub async fn recv_stream(
     player_id: u64,
     mut stream: RecvStream,
 ) -> anyhow::Result<()> {
-    info!("Incoming stream {player_id}:{}", stream.id());
     let mut header_buf = [0u8; 1];
     stream.read_exact(&mut header_buf).await?;
     let (header, _) = bincode::decode_from_slice(&header_buf, bincode::config::standard())?;

@@ -11,7 +11,7 @@ use xdid::core::did_url::DidUrl;
 
 use crate::space::{
     Space,
-    streams::publish::{PublishInterval, TransformPublishState},
+    networking::streams::publish::{PublishInterval, TransformPublishState},
 };
 
 #[derive(Debug)]

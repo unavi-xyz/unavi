@@ -11,39 +11,22 @@ use unavi_server_service::from_server::ControlMessage;
 use crate::{
     async_commands::ASYNC_COMMAND_QUEUE,
     auth::LocalActor,
-    space::{
-        connect_info::ConnectInfo,
-        streams::{publish::HostTransformStreams, transform::TransformChannels},
-    },
+    space::{connect_info::ConnectInfo, networking::TransformChannels},
 };
 
-pub mod connect;
 mod connect_info;
+pub mod networking;
 pub mod record_ref_url;
-mod streams;
 mod tickrate;
 
 pub struct SpacePlugin;
 
 impl Plugin for SpacePlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<connect::lifecycle::HostConnections>()
-            .init_resource::<connect::lifecycle::ConnectionInitiated>()
-            .init_resource::<HostTransformStreams>()
+        app.add_plugins(networking::NetworkingPlugin)
             .add_observer(handle_space_add)
             .add_observer(insert_connect_info)
-            .add_observer(connect::cleanup::handle_space_disconnect)
-            .add_systems(
-                FixedUpdate,
-                (
-                    connect::lifecycle::drive_connection_lifecycle,
-                    streams::control::apply_controls,
-                    streams::publish::publish_transform_data,
-                    streams::transform::apply_player_transforms,
-                    tickrate::set_space_tickrates,
-                ),
-            )
-            .add_systems(Last, connect::cleanup::cleanup_connections_on_exit);
+            .add_systems(FixedUpdate, tickrate::set_space_tickrates);
     }
 }
 

@@ -1,8 +1,6 @@
 use bevy::log::*;
 
-use crate::space::streams::recv_stream;
-
-use super::host::HostConnection;
+use super::{super::connection::host::HostConnection, recv_stream};
 
 /// Spawns a task to accept incoming streams from the server.
 pub fn spawn_stream_accept_task(

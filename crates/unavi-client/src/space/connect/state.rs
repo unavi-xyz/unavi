@@ -1,7 +1,6 @@
 use std::time::{Duration, Instant};
 
 use bevy::prelude::*;
-use tokio::task::AbortHandle;
 
 /// Connection state for a space.
 #[derive(Component, Default, Debug, Clone, Copy, PartialEq, Eq)]
@@ -59,20 +58,3 @@ impl Default for ConnectionAttempt {
     }
 }
 
-/// Manages background task handles for cleanup.
-#[derive(Component, Default)]
-pub struct ConnectionTasks {
-    pub session_handle: Option<AbortHandle>,
-    pub stream_accept_handle: Option<AbortHandle>,
-}
-
-impl ConnectionTasks {
-    pub fn abort_all(&mut self) {
-        if let Some(handle) = self.session_handle.take() {
-            handle.abort();
-        }
-        if let Some(handle) = self.stream_accept_handle.take() {
-            handle.abort();
-        }
-    }
-}

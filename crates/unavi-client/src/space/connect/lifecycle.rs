@@ -7,7 +7,7 @@ use wtransport::error::ConnectionError;
 use super::{
     host::{HostConnection, connect_to_host},
     session::join_space_session,
-    state::{ConnectionAttempt, ConnectionState, ConnectionTasks},
+    state::{ConnectionAttempt, ConnectionState},
     streams::spawn_stream_accept_task,
 };
 use crate::{
@@ -47,13 +47,11 @@ pub fn drive_connection_lifecycle(
         &ConnectInfo,
         &mut ConnectionState,
         &mut ConnectionAttempt,
-        &mut ConnectionTasks,
     )>,
 ) {
-    for (entity, space, info, mut state, attempt, mut tasks) in spaces.iter_mut() {
+    for (entity, space, info, mut state, attempt) in spaces.iter_mut() {
         match *state {
             ConnectionState::Disconnected => {
-                // Ready to connect.
                 if attempt.is_ready() {
                     info!("Initiating connection to {}", info.connect_url);
                     *state = ConnectionState::Connecting { attempt: 0 };
@@ -67,17 +65,11 @@ pub fn drive_connection_lifecycle(
                     );
                 }
             }
-            ConnectionState::Connecting { .. } => {
-                // Task is running, state will be updated by task completion.
-            }
-            ConnectionState::Connected => {
-                // Monitor connection health in separate system.
-            }
+            ConnectionState::Connecting { .. } => {}
+            ConnectionState::Connected => {}
             ConnectionState::Reconnecting { .. } => {
-                // Wait for backoff timer.
                 if attempt.is_ready() {
                     info!("Retrying connection to {}", info.connect_url);
-                    tasks.abort_all();
                     *state = ConnectionState::Connecting {
                         attempt: match *state {
                             ConnectionState::Reconnecting { attempt } => attempt + 1,
@@ -96,7 +88,6 @@ pub fn drive_connection_lifecycle(
             }
             ConnectionState::Failed { permanent } => {
                 if permanent {
-                    // Permanent failure, remove connection info to stop retries.
                     commands.entity(entity).remove::<ConnectInfo>();
                 }
             }
@@ -137,44 +128,49 @@ fn spawn_connect_task(
             .expect("build tokio runtime");
 
         let task = rt.spawn(async move {
-            let result = async {
-                // Check if connection already exists.
+            let result: anyhow::Result<(HostConnection, bool)> = async {
                 if let Some(host) = connections
                     .read_async(&connect_url, |_, host| host.clone())
                     .await
                 {
-                    return Ok(host);
+                    return Ok((host, false));
                 }
 
-                // Check if another task is initiating this connection.
                 if initiated.contains_async(&connect_url).await {
-                    return Err(anyhow::anyhow!("Connection initiation in progress"));
+                    return Err(anyhow::anyhow!("connection initiation in progress"));
                 }
 
-                // Mark as initiated.
                 let _ = initiated.insert_async(connect_url.clone()).await;
-
-                // Attempt connection.
                 let result = connect_to_host(info).await;
-
-                // Clear initiated flag.
                 let _ = initiated.remove_async(&connect_url).await;
 
-                result
+                result.map(|host| (host, true))
             }
             .await;
 
             match result {
-                Ok(host) => {
+                Ok((host, is_new_connection)) => {
                     handle_connect_success(
                         entity,
-                        host,
+                        host.clone(),
                         space_id,
                         space_url,
-                        connect_url,
-                        connections,
+                        connect_url.clone(),
+                        connections.clone(),
+                        is_new_connection,
                     )
                     .await;
+
+                    // Keep runtime alive by monitoring connection closure.
+                    if is_new_connection {
+                        match host.connection.closed().await {
+                            ConnectionError::LocallyClosed => {}
+                            e => {
+                                warn!("Connection closed: {e:?}");
+                                let _ = connections.remove_async(&connect_url).await;
+                            }
+                        }
+                    }
                 }
                 Err(e) => {
                     handle_connect_failure(entity, e).await;
@@ -196,49 +192,51 @@ async fn handle_connect_success(
     space_url: xdid::core::did_url::DidUrl,
     connect_url: String,
     connections: Arc<SccHashMap<String, HostConnection>>,
+    is_new_connection: bool,
 ) {
     info!("Connected to {connect_url}");
 
-    // Spawn stream accept task.
-    let stream_handle = spawn_stream_accept_task(
-        host.clone(),
-        #[cfg(feature = "devtools-network")]
-        connect_url.clone(),
-    );
+    // Per-connection setup.
+    if is_new_connection {
+        let transform_channels = host.transform_channels.clone();
+        let tx = host.control_tx.clone();
+        let rx = host.control_rx.clone();
+        let connect_url_clone = connect_url.clone();
 
-    // Join space session.
+        let mut queue = CommandQueue::default();
+        queue.push(move |world: &mut World| {
+            world.spawn((
+                Host {
+                    connect_url: connect_url_clone,
+                },
+                HostTransformChannels {
+                    players: transform_channels,
+                },
+                HostControlChannel { tx, rx },
+            ));
+        });
+
+        if let Err(e) = ASYNC_COMMAND_QUEUE.0.send(queue) {
+            error!("failed to spawn host entity: {e:?}");
+        }
+
+        spawn_stream_accept_task(
+            host.clone(),
+            #[cfg(feature = "devtools-network")]
+            connect_url.clone(),
+        );
+
+        let _ = connections.insert_async(connect_url, host.clone()).await;
+    }
+
     let session_result = join_space_session(&host, space_id, space_url).await;
 
     match session_result {
         Ok(()) => {
-            // Spawn Host entity.
-            let transform_channels = host.transform_channels.clone();
-            let connect_url_clone = connect_url.clone();
-
             let mut queue = CommandQueue::default();
-            let tx = host.control_tx.clone();
-            let rx = host.control_rx.clone();
-
             queue.push(move |world: &mut World| {
-                world.spawn((
-                    Host {
-                        connect_url: connect_url_clone,
-                    },
-                    HostTransformChannels {
-                        players: transform_channels,
-                    },
-                    HostControlChannel { tx, rx },
-                ));
-
-                // Update space entity state.
                 if let Ok(mut entity_mut) = world.get_entity_mut(entity) {
-                    entity_mut.insert((
-                        ConnectionState::Connected,
-                        ConnectionTasks {
-                            session_handle: None,
-                            stream_accept_handle: Some(stream_handle),
-                        },
-                    ));
+                    entity_mut.insert(ConnectionState::Connected);
                     if let Some(mut attempt) = entity_mut.get_mut::<ConnectionAttempt>() {
                         attempt.reset();
                     }
@@ -246,11 +244,8 @@ async fn handle_connect_success(
             });
 
             if let Err(e) = ASYNC_COMMAND_QUEUE.0.send(queue) {
-                error!("Failed to send commands: {e:?}");
+                error!("failed to update space state: {e:?}");
             }
-
-            // Save connection for reuse.
-            let _ = connections.insert_async(connect_url, host).await;
         }
         Err(e) => {
             warn!("Failed to join space: {e:?}");
@@ -281,42 +276,6 @@ async fn handle_connect_failure(entity: Entity, error: anyhow::Error) {
     });
 
     if let Err(e) = ASYNC_COMMAND_QUEUE.0.send(queue) {
-        error!("Failed to send commands: {e:?}");
-    }
-}
-
-/// Monitors connected spaces for connection closure.
-pub fn check_connection_health(
-    connections: Res<HostConnections>,
-    spaces: Query<(&ConnectInfo, &ConnectionState)>,
-) {
-    let pool = TaskPool::get_thread_executor();
-
-    for (info, state) in spaces.iter() {
-        if !matches!(state, ConnectionState::Connected) {
-            continue;
-        }
-
-        let connect_url = info.connect_url.to_string();
-        let connections = connections.0.clone();
-
-        pool.spawn(async move {
-            if let Some(host) = connections
-                .read_async(&connect_url, |_, host| host.clone())
-                .await
-            {
-                match host.connection.closed().await {
-                    ConnectionError::LocallyClosed => {
-                        // Intentional disconnect, don't reconnect.
-                    }
-                    e => {
-                        warn!("Connection closed: {e:?}");
-                        // Remove connection to trigger reconnect.
-                        let _ = connections.remove_async(&connect_url).await;
-                    }
-                }
-            }
-        })
-        .detach();
+        error!("failed to update connection state: {e:?}");
     }
 }

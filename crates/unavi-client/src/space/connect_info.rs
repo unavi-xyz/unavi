@@ -10,7 +10,7 @@ use xdid::{core::did::Did, methods::web::reqwest::Url};
 
 use crate::space::networking::connection::state::{ConnectionAttempt, ConnectionState};
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 #[require(ConnectionState, ConnectionAttempt)]
 pub struct ConnectInfo {
     pub connect_url: Url,

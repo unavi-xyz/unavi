@@ -34,15 +34,9 @@ impl Plugin for SpacePlugin {
             .add_observer(insert_connect_info)
             .add_observer(connect::cleanup::handle_space_disconnect)
             .add_systems(
-                Update,
-                (
-                    connect::lifecycle::drive_connection_lifecycle,
-                    connect::lifecycle::check_connection_health,
-                ),
-            )
-            .add_systems(
                 FixedUpdate,
                 (
+                    connect::lifecycle::drive_connection_lifecycle,
                     streams::control::apply_controls,
                     streams::publish::publish_transform_data,
                     streams::transform::apply_player_transforms,

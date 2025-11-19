@@ -1,4 +1,9 @@
-use std::num::NonZero;
+use std::{
+    collections::{HashMap, HashSet},
+    f32::consts::PI,
+    num::NonZero,
+    ops::RangeBounds,
+};
 
 use avian3d::{
     PhysicsPlugins,
@@ -24,10 +29,19 @@ use unavi_player::{LocalPlayerSpawner, PlayerPlugin};
 fn main() {
     App::new()
         .add_plugins((
-            DefaultPlugins.set(AssetPlugin {
-                file_path: "../unavi-client/assets".to_string(),
-                ..Default::default()
-            }),
+            DefaultPlugins
+                .set(AssetPlugin {
+                    file_path: "../unavi-client/assets".to_string(),
+                    ..Default::default()
+                })
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        name: Some("unavi".to_string()),
+                        title: "UNAVI".to_string(),
+                        ..default()
+                    }),
+                    ..default()
+                }),
             PhysicsPlugins::default(),
             // PhysicsDebugPlugin,
             InputPlugin,
@@ -70,12 +84,21 @@ fn handle_input(
     }
 }
 
-const SIZE: f32 = 64.0;
-
 struct SceneSpawner<'w, 's, 'a> {
     commands: &'a mut Commands<'w, 's>,
     meshes: &'a mut Assets<Mesh>,
     materials: &'a mut Assets<StandardMaterial>,
+    dev_texture: Handle<Image>,
+    material_cache: HashMap<u32, Handle<StandardMaterial>>,
+}
+
+#[derive(Default, Clone)]
+struct BoxConfig {
+    position: Vec3,
+    rotation: Quat,
+    size: Vec3,
+    color: Color,
+    physics: bool,
 }
 
 impl<'w, 's, 'a> SceneSpawner<'w, 's, 'a> {
@@ -103,6 +126,75 @@ impl<'w, 's, 'a> SceneSpawner<'w, 's, 'a> {
             MeshMaterial3d(mat),
             transform,
         ));
+    }
+
+    fn get_or_create_material(&mut self, color: Color) -> Handle<StandardMaterial> {
+        let color_key = color.to_linear().as_u32();
+
+        if let Some(handle) = self.material_cache.get(&color_key) {
+            return handle.clone();
+        }
+
+        let handle = self.materials.add(StandardMaterial {
+            base_color: color,
+            base_color_texture: Some(self.dev_texture.clone()),
+            perceptual_roughness: 0.9,
+            ..Default::default()
+        });
+        self.material_cache.insert(color_key, handle.clone());
+        handle
+    }
+
+    fn spawn_box(&mut self, config: BoxConfig) {
+        let mut box_mesh = Cuboid::from_size(config.size).mesh().build();
+
+        // Scale UVs based on box size, per face.
+        if let Some(VertexAttributeValues::Float32x2(uvs)) =
+            box_mesh.attribute_mut(Mesh::ATTRIBUTE_UV_0)
+        {
+            const TEXTURE_SCALE: f32 = 4.0;
+
+            for (i, uv) in uvs.iter_mut().enumerate() {
+                let face = i / 4; // 6 faces, 4 vertices each.
+                match face {
+                    0 | 1 => {
+                        // Front / Back
+                        uv[0] *= config.size.x / TEXTURE_SCALE;
+                        uv[1] *= config.size.y / TEXTURE_SCALE;
+                    }
+                    2 | 3 => {
+                        // Left / Right
+                        uv[0] *= config.size.y / TEXTURE_SCALE;
+                        uv[1] *= config.size.z / TEXTURE_SCALE;
+                    }
+                    4 | 5 => {
+                        // Top / Bottom
+                        uv[0] *= config.size.x / TEXTURE_SCALE;
+                        uv[1] *= config.size.z / TEXTURE_SCALE;
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        let material = self.get_or_create_material(config.color);
+
+        let mut entity = self.commands.spawn((
+            Mesh3d(self.meshes.add(box_mesh)),
+            MeshMaterial3d(material),
+            Transform {
+                translation: config.position,
+                rotation: config.rotation,
+                ..Default::default()
+            },
+        ));
+
+        if config.physics {
+            entity.insert((
+                Collider::cuboid(config.size.x, config.size.y, config.size.z),
+                RigidBody::Static,
+            ));
+        }
     }
 
     fn slope(&mut self, position: Vec3, width: f32, height: f32, depth: f32, color: Color) {
@@ -143,17 +235,16 @@ impl<'w, 's, 'a> SceneSpawner<'w, 's, 'a> {
         color: Color,
     ) {
         for i in 0..count {
-            let step_mesh = self.meshes.add(Cuboid::new(width, height, depth));
             let y = height * (i as f32 + 0.5);
             let z = depth * i as f32;
 
-            self.commands.spawn((
-                Collider::cuboid(width, height, depth),
-                Mesh3d(step_mesh),
-                MeshMaterial3d(self.materials.add(color)),
-                RigidBody::Static,
-                Transform::from_translation(start_position + Vec3::new(0.0, y, z)),
-            ));
+            self.spawn_box(BoxConfig {
+                position: start_position + Vec3::new(0.0, y, z),
+                size: Vec3::new(width, height, depth),
+                color,
+                physics: true,
+                ..Default::default()
+            });
         }
 
         let total_height = height * count as f32;
@@ -200,7 +291,9 @@ fn setup_scene(
 
     commands.spawn((
         CascadeShadowConfigBuilder {
-            maximum_distance: SIZE * 1.2,
+            maximum_distance: TILE_SIZE * 2.0,
+            first_cascade_far_bound: TILE_SIZE / 4.0,
+            minimum_distance: 0.05,
             ..Default::default()
         }
         .build(),
@@ -209,108 +302,189 @@ fn setup_scene(
             shadows_enabled: true,
             ..Default::default()
         },
-        Transform::from_xyz(1.0, 0.4, 0.1).looking_at(Vec3::ZERO, Vec3::Y),
+        Transform::from_xyz(1.2, 2.0, 0.5).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 
-    let ground_texture = asset_server.load("images/dev-white.png");
-
-    let mut ground_mesh = Plane3d::default().mesh().size(SIZE, SIZE).build();
-    match ground_mesh.attribute_mut(Mesh::ATTRIBUTE_UV_0).unwrap() {
-        VertexAttributeValues::Float32x2(uvs) => {
-            const TEXTURE_SCALE: f32 = 4.0;
-
-            let uv_scale = SIZE / TEXTURE_SCALE;
-
-            for uv in uvs {
-                uv[0] *= uv_scale;
-                uv[1] *= uv_scale;
-            }
-        }
-        _ => panic!(),
-    }
-
-    commands.spawn((
-        Collider::half_space(Vec3::Y),
-        Mesh3d(meshes.add(ground_mesh)),
-        MeshMaterial3d(materials.add(StandardMaterial {
-            base_color_texture: Some(ground_texture),
-            perceptual_roughness: 0.8,
-            ..Default::default()
-        })),
-        RigidBody::Static,
-    ));
+    let dev_texture = asset_server.load("images/dev-white.png");
 
     let mut spawner = SceneSpawner {
         commands: &mut commands,
         meshes: &mut meshes,
         materials: &mut materials,
+        dev_texture,
+        material_cache: HashMap::new(),
     };
 
-    let depth = 6.0;
+    // let depth = 6.0;
+    //
+    // // 15° slope
+    // spawner.slope(
+    //     Vec3::new(-12.0, 0.0, -10.0),
+    //     4.0,
+    //     depth * 15f32.to_radians().tan(),
+    //     depth,
+    //     Color::from(BLUE_400),
+    // );
+    //
+    // // 30° slope
+    // spawner.slope(
+    //     Vec3::new(-6.0, 0.0, -10.0),
+    //     4.0,
+    //     depth * 30f32.to_radians().tan(),
+    //     depth,
+    //     Color::from(PURPLE_400),
+    // );
+    //
+    // // 45° slope
+    // spawner.slope(
+    //     Vec3::new(0.0, 0.0, -10.0),
+    //     4.0,
+    //     depth * 45f32.to_radians().tan(),
+    //     depth,
+    //     Color::from(RED_400),
+    // );
+    //
+    // // 60° slope
+    // spawner.slope(
+    //     Vec3::new(6.0, 0.0, -10.0),
+    //     4.0,
+    //     depth * 60f32.to_radians().tan(),
+    //     depth,
+    //     Color::from(ORANGE_400),
+    // );
+    //
+    // // Small steps
+    // spawner.steps(
+    //     Vec3::new(-12.0, 0.0, 2.0),
+    //     3.0,
+    //     0.2,
+    //     0.5,
+    //     10,
+    //     Color::from(YELLOW_400),
+    // );
+    //
+    // // Medium steps
+    // spawner.steps(
+    //     Vec3::new(-6.0, 0.0, 2.0),
+    //     3.0,
+    //     0.35,
+    //     0.6,
+    //     8,
+    //     Color::from(EMERALD_400),
+    // );
+    //
+    // // Large steps
+    // spawner.steps(
+    //     Vec3::new(0.0, 0.0, 2.0),
+    //     3.0,
+    //     0.5,
+    //     0.8,
+    //     6,
+    //     Color::from(BLUE_400),
+    // );
 
-    // 15° slope
-    spawner.slope(
-        Vec3::new(-12.0, 0.0, -10.0),
-        4.0,
-        depth * 15f32.to_radians().tan(),
-        depth,
-        Color::from(BLUE_400),
-    );
+    spawn_terrain(&mut spawner, false);
+    // spawn_terrain(&mut spawner, true);
+}
 
-    // 30° slope
-    spawner.slope(
-        Vec3::new(-6.0, 0.0, -10.0),
-        4.0,
-        depth * 30f32.to_radians().tan(),
-        depth,
-        Color::from(PURPLE_400),
-    );
+const TILE_SIZE: f32 = 32.0;
+const N_ROWS: isize = 12;
+const N_CENTER: isize = 4;
 
-    // 45° slope
-    spawner.slope(
-        Vec3::new(0.0, 0.0, -10.0),
-        4.0,
-        depth * 45f32.to_radians().tan(),
-        depth,
-        Color::from(RED_400),
-    );
+const PHYSICS_CUTOFF: isize = 4;
+const TILE_SCALE_RATE: isize = 4;
+const TILE_SCALE_OFFSET: isize = 1; // Adjust for center
+const BASE_ROW_STEP: isize = 2;
 
-    // 60° slope
-    spawner.slope(
-        Vec3::new(6.0, 0.0, -10.0),
-        4.0,
-        depth * 60f32.to_radians().tan(),
-        depth,
-        Color::from(ORANGE_400),
-    );
+const ROUNDING_FACTOR: isize = 1;
+const ROW_ACCELERATION: f32 = 0.6;
 
-    // Small steps
-    spawner.steps(
-        Vec3::new(-12.0, 0.0, 2.0),
-        3.0,
-        0.2,
-        0.5,
-        10,
-        Color::from(YELLOW_400),
-    );
+const INVERSE_Y: f32 = 512.0;
 
-    // Medium steps
-    spawner.steps(
-        Vec3::new(-6.0, 0.0, 2.0),
-        3.0,
-        0.35,
-        0.6,
-        8,
-        Color::from(EMERALD_400),
-    );
+fn spawn_terrain(spawner: &mut SceneSpawner, inverse: bool) {
+    let y = if inverse { INVERSE_Y } else { 0.0 };
 
-    // Large steps
-    spawner.steps(
-        Vec3::new(0.0, 0.0, 2.0),
-        3.0,
-        0.5,
-        0.8,
-        6,
-        Color::from(BLUE_400),
-    );
+    // Ground
+    let mut center_radius = (TILE_SIZE / 2.0) * N_CENTER as f32;
+
+    spawner.spawn_box(BoxConfig {
+        position: Vec3::new(0.0, y - 0.5, 0.0),
+        size: Vec3::new(center_radius * 2.0, 1.0, center_radius * 2.0),
+        color: Color::WHITE,
+        physics: !inverse,
+        ..Default::default()
+    });
+
+    // Rings
+    let mut min_height = 0.0;
+
+    for row in 1..=N_ROWS {
+        let tile_scale_pow = (row - TILE_SCALE_OFFSET).max(0) / TILE_SCALE_RATE;
+        let tile_scale = 2i32.pow(tile_scale_pow as u32).min(1024);
+        info!("row {row}: tile scale: {tile_scale}");
+        let tile_size = tile_scale as f32 * TILE_SIZE;
+
+        let row_step = tile_scale_pow + BASE_ROW_STEP;
+        let row_inc = row_step as f32 * (row as f32).powf(ROW_ACCELERATION);
+        min_height += row_inc;
+        let max_height = min_height + row_inc;
+
+        spawn_ring(
+            spawner,
+            RingConfig {
+                center_radius,
+                physics: !inverse && row <= PHYSICS_CUTOFF,
+                tile_size,
+                min_height,
+                max_height,
+                inverse,
+            },
+        );
+
+        center_radius += tile_size; // Add a tile to each side
+    }
+}
+
+struct RingConfig {
+    center_radius: f32,
+    physics: bool,
+    tile_size: f32,
+    min_height: f32,
+    max_height: f32,
+    inverse: bool,
+}
+
+fn spawn_ring(spawner: &mut SceneSpawner, config: RingConfig) {
+    let length = (config.center_radius * 2.0 / config.tile_size) + 2.0;
+    info!("ring length: {length}");
+    let length = length.ceil() as isize;
+
+    for x in 0..length {
+        for z in 0..length {
+            if x != 0 && x != length - 1 && z != 0 && z != length - 1 {
+                // Center region
+                continue;
+            }
+
+            let mut height = rand::random_range(config.min_height..=config.max_height).round();
+            height -= height % ROUNDING_FACTOR as f32;
+
+            let x = (x as f32 * config.tile_size) - config.center_radius - config.tile_size / 2.0;
+            let z = (z as f32 * config.tile_size) - config.center_radius - config.tile_size / 2.0;
+
+            let y = if config.inverse {
+                INVERSE_Y - height / 2.0
+            } else {
+                height / 2.0
+            };
+
+            spawner.spawn_box(BoxConfig {
+                position: Vec3::new(x, y, z),
+                size: Vec3::new(config.tile_size, height, config.tile_size),
+                color: Color::WHITE,
+                physics: config.physics,
+                ..Default::default()
+            });
+        }
+    }
 }

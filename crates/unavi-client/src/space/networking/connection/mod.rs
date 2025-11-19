@@ -3,4 +3,3 @@ pub mod host;
 pub mod lifecycle;
 pub mod session;
 pub mod state;
-pub mod streams;

@@ -8,7 +8,7 @@ use unavi_constants::{WP_VERSION, protocols::SPACE_HOST_PROTOCOL};
 use wtransport::tls::Sha256Digest;
 use xdid::{core::did::Did, methods::web::reqwest::Url};
 
-use crate::space::connect::state::{ConnectionAttempt, ConnectionState};
+use crate::space::networking::connection::state::{ConnectionAttempt, ConnectionState};
 
 #[derive(Component, Clone)]
 #[require(ConnectionState, ConnectionAttempt)]

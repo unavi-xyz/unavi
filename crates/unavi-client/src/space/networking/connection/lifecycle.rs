@@ -8,8 +8,8 @@ use super::{
     host::{HostConnection, connect_to_host},
     session::join_space_session,
     state::{ConnectionAttempt, ConnectionState},
-    streams::spawn_stream_accept_task,
 };
+use crate::space::networking::streams::accept::spawn_stream_accept_task;
 use crate::{
     async_commands::ASYNC_COMMAND_QUEUE,
     space::{

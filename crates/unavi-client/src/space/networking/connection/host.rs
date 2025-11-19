@@ -13,7 +13,7 @@ use unavi_server_service::{ControlServiceClient, from_server::ControlMessage};
 use wtransport::{ClientConfig, Connection, Endpoint, stream::BiStream, tls::Sha256Digest};
 use xdid::methods::web::reqwest::Url;
 
-use crate::space::{connect_info::ConnectInfo, streams::transform::TransformChannels};
+use crate::space::{connect_info::ConnectInfo, networking::streams::TransformChannels};
 
 const MAX_IDLE_TIMEOUT: Duration = Duration::from_secs(60);
 const KEEP_ALIVE_INTERVAL: Duration = Duration::from_secs(15);

@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 use bevy::{prelude::*, tasks::TaskPool};
 use bevy_vrm::BoneName;
 use futures::SinkExt;
-use scc::HashMap as SccHashMap;
+use scc::{HashMap as SccHashMap, HashSet as SccHashSet};
 use smallvec::SmallVec;
 use tarpc::tokio_util::codec::{FramedWrite, LengthDelimitedCodec};
 use unavi_player::{AvatarBones, LocalPlayer, PlayerEntities};
@@ -13,7 +13,7 @@ use unavi_server_service::{
 };
 use wtransport::SendStream;
 
-use crate::space::{Space, connect::lifecycle::HostConnections, connect_info::ConnectInfo};
+use crate::space::{Space, connect_info::ConnectInfo, networking::connection::lifecycle::HostConnections};
 
 use super::{JOINT_ROTATION_EPSILON, PFRAME_ROTATION_SCALE, PFRAME_TRANSLATION_SCALE};
 
@@ -35,6 +35,15 @@ pub struct HostTransformStreams(pub Arc<SccHashMap<String, HostStreams>>);
 impl Default for HostTransformStreams {
     fn default() -> Self {
         Self(Arc::new(SccHashMap::new()))
+    }
+}
+
+#[derive(Resource, Clone)]
+pub struct HostPublishState(pub Arc<SccHashSet<String>>);
+
+impl Default for HostPublishState {
+    fn default() -> Self {
+        Self(Arc::new(SccHashSet::new()))
     }
 }
 
@@ -281,7 +290,6 @@ async fn send_pframe(
 
     let header = from_client::StreamHeader::TransformPFrame;
     let header_bytes = bincode::encode_to_vec(&header, bincode::config::standard())?;
-    info!("sending pframe header: {}", stream.id());
     stream.write_all(&header_bytes).await?;
 
     let mut framed = LengthDelimitedCodec::builder()
@@ -322,6 +330,7 @@ pub fn publish_transform_data(
     time: Res<Time>,
     host_connections: Res<HostConnections>,
     transform_streams: Res<HostTransformStreams>,
+    publish_state: Res<HostPublishState>,
     local_players: Query<&PlayerEntities, With<LocalPlayer>>,
     avatars: Query<&AvatarBones>,
     bone_transforms: Query<&Transform, With<BoneName>>,
@@ -373,22 +382,33 @@ pub fn publish_transform_data(
     for (connect_url, (_, update)) in hosts_to_publish {
         let connections = host_connections.0.clone();
         let streams_map = transform_streams.0.clone();
+        let pending = publish_state.0.clone();
 
         let pool = TaskPool::get_thread_executor();
         pool.spawn(async move {
+            // Validate connection exists before starting.
             let connection = connections
                 .read_async(&connect_url, |_, host| host.connection.clone())
                 .await;
 
             let Some(connection) = connection else {
-                warn!("connection not found");
                 return;
             };
+
+            // Check if publish already pending for this host.
+            if pending.contains_async(&connect_url).await {
+                return;
+            }
+
+            // Mark publish as pending.
+            let _ = pending.insert_async(connect_url.clone()).await;
 
             if let Err(e) =
                 get_or_create_iframe_stream(&streams_map, &connect_url, &connection).await
             {
-                error!("Failed to create iframe stream: {e:?}");
+                error!("failed to create iframe stream: {e:?}");
+                let _ = streams_map.remove_async(&connect_url).await;
+                let _ = pending.remove_async(&connect_url).await;
                 return;
             }
 
@@ -402,9 +422,11 @@ pub fn publish_transform_data(
             };
 
             if let Err(e) = result {
-                error!("Failed to send transform update: {e:?}");
+                error!("failed to send transform update: {e:?}");
                 let _ = streams_map.remove_async(&connect_url).await;
             }
+
+            let _ = pending.remove_async(&connect_url).await;
         })
         .detach();
     }

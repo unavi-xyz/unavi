@@ -10,7 +10,7 @@ use unavi_server_service::{ControlServiceClient, from_server::ControlMessage};
 use wtransport::{ClientConfig, Connection, Endpoint, stream::BiStream, tls::Sha256Digest};
 use xdid::methods::web::reqwest::Url;
 
-use crate::space::{connect_info::ConnectInfo, networking::streams::TransformChannels};
+use crate::space::networking::{streams::TransformChannels, thread::ConnectInfo};
 
 const MAX_IDLE_TIMEOUT: Duration = Duration::from_secs(60);
 const KEEP_ALIVE_INTERVAL: Duration = Duration::from_secs(15);
@@ -25,7 +25,7 @@ pub struct HostConnection {
 }
 
 /// Connects to a host server and sets up the control RPC channel.
-pub async fn connect_to_host(
+pub(in crate::space::networking) async fn connect_to_host(
     ConnectInfo {
         connect_url,
         cert_hash,

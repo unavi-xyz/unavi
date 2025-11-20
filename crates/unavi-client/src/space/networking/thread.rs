@@ -1,34 +1,53 @@
 use std::{
     collections::HashMap,
+    str::FromStr,
     sync::Arc,
     thread::{self, JoinHandle},
 };
 
+use anyhow::Context;
 use bevy::{ecs::entity::Entity, log::*, prelude::Resource};
+use dwn::Actor;
 use scc::HashMap as SccHashMap;
-use xdid::core::did_url::DidUrl;
-
-use crate::space::connect_info::ConnectInfo;
+use serde::Deserialize;
+use unavi_constants::{WP_VERSION, protocols::SPACE_HOST_PROTOCOL};
+use wtransport::tls::Sha256Digest;
+use xdid::{
+    core::{did::Did, did_url::DidUrl},
+    methods::web::reqwest::Url,
+};
 
 use super::{
     connection::host::{HostConnection, connect_to_host},
     streams::publish::{HostStreams, TransformResult},
 };
 
+#[derive(Clone, Debug)]
+pub(super) struct ConnectInfo {
+    pub connect_url: Url,
+    pub cert_hash: Sha256Digest,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ParsedConnectInfo {
+    url: String,
+    cert_hash: String,
+}
+
 /// Commands sent from Bevy systems to the networking thread.
-#[derive(Debug)]
 pub enum NetworkCommand {
-    Connect {
+    SetActor {
+        actor: Actor,
+    },
+    JoinSpace {
         entity: Entity,
-        info: ConnectInfo,
-        space_id: String,
         space_url: DidUrl,
     },
-    Disconnect {
-        connect_url: String,
+    LeaveSpace {
+        entity: Entity,
     },
     PublishTransform {
-        connect_url: String,
         update: TransformResult,
     },
     Shutdown,
@@ -88,18 +107,22 @@ impl NetworkingThread {
 
 /// State tracked by the networking thread.
 struct ThreadState {
+    /// DWN actor for fetching connect info.
+    actor: Option<Actor>,
     /// Active connections by connect_url.
     connections: HashMap<String, ActiveConnection>,
     /// Connection initiation in progress (to prevent duplicates).
     initiating: HashMap<String, Vec<Entity>>,
     /// Transform streams by connect_url.
     streams: Arc<SccHashMap<String, HostStreams>>,
+    /// Mapping from space entity to connect_url.
+    entity_to_url: HashMap<Entity, String>,
 }
 
 struct ActiveConnection {
     host: HostConnection,
     /// Entities (spaces) using this connection.
-    users: Vec<Entity>,
+    space_entities: Vec<Entity>,
 }
 
 /// Main loop running on the networking thread.
@@ -108,29 +131,26 @@ async fn thread_loop(
     event_tx: flume::Sender<NetworkEvent>,
 ) -> anyhow::Result<()> {
     let mut state = ThreadState {
+        actor: None,
         connections: HashMap::new(),
         initiating: HashMap::new(),
         streams: Arc::new(SccHashMap::new()),
+        entity_to_url: HashMap::new(),
     };
 
     loop {
         match command_rx.recv_async().await? {
-            NetworkCommand::Connect {
-                entity,
-                info,
-                space_id,
-                space_url,
-            } => {
-                handle_connect(&mut state, &event_tx, entity, info, space_id, space_url).await;
+            NetworkCommand::SetActor { actor } => {
+                state.actor = Some(actor);
             }
-            NetworkCommand::Disconnect { connect_url } => {
-                handle_disconnect(&mut state, &event_tx, &connect_url).await;
+            NetworkCommand::JoinSpace { entity, space_url } => {
+                handle_join_space(&mut state, &event_tx, entity, space_url).await;
             }
-            NetworkCommand::PublishTransform {
-                connect_url,
-                update,
-            } => {
-                handle_publish(&state, &connect_url, update).await;
+            NetworkCommand::LeaveSpace { entity } => {
+                handle_leave_space(&mut state, &event_tx, entity).await;
+            }
+            NetworkCommand::PublishTransform { update } => {
+                handle_publish(&state, update).await;
             }
             NetworkCommand::Shutdown => {
                 info!("Networking thread shutting down");
@@ -142,19 +162,111 @@ async fn thread_loop(
     Ok(())
 }
 
-async fn handle_connect(
+async fn fetch_connect_info(
+    actor: &Actor,
+    host_did: &Did,
+    host_dwn: &Url,
+) -> anyhow::Result<Option<ConnectInfo>> {
+    let found_urls = actor
+        .query()
+        .protocol(SPACE_HOST_PROTOCOL.to_string())
+        .protocol_version(WP_VERSION)
+        .protocol_path("connect-url".to_string())
+        .target(host_did)
+        .send(host_dwn)
+        .await
+        .context("query connect url")?;
+
+    for found in found_urls {
+        let record_id = found.entry().record_id.clone();
+
+        let data = match found.into_data() {
+            Some(d) => d,
+            None => {
+                let Some(read) = actor
+                    .read(record_id)
+                    .target(host_did)
+                    .send(host_dwn)
+                    .await?
+                else {
+                    warn!("connect url record not found");
+                    continue;
+                };
+                let Some(data) = read.into_data() else {
+                    warn!("connect url data not found");
+                    continue;
+                };
+                data
+            }
+        };
+
+        let parsed: ParsedConnectInfo = serde_json::from_slice(&data)?;
+
+        let connect_url = Url::parse(&parsed.url)?;
+        let cert_hash = Sha256Digest::from_str(&parsed.cert_hash)?;
+
+        return Ok(Some(ConnectInfo {
+            connect_url,
+            cert_hash,
+        }));
+    }
+
+    Ok(None)
+}
+
+async fn handle_join_space(
     state: &mut ThreadState,
     event_tx: &flume::Sender<NetworkEvent>,
     entity: Entity,
-    info: ConnectInfo,
-    space_id: String,
     space_url: DidUrl,
 ) {
+    use crate::space::record_ref_url::parse_record_ref_url;
+
+    // Parse space ID from URL.
+    let space_id = match parse_record_ref_url(&space_url) {
+        Ok(id) => id.to_string(),
+        Err(e) => {
+            error!("Failed to parse space URL {space_url}: {e:?}");
+            let _ = event_tx.send(NetworkEvent::ConnectionFailed { entity, attempt: 0 });
+            return;
+        }
+    };
+
+    // Get actor.
+    let Some(actor) = &state.actor else {
+        warn!("Actor not set, cannot join space");
+        let _ = event_tx.send(NetworkEvent::ConnectionFailed { entity, attempt: 0 });
+        return;
+    };
+
+    // Fetch connect info from DWN.
+    let host_did = &space_url.did;
+    let Some(host_dwn) = actor.remote.clone() else {
+        error!("No remote DWN configured");
+        let _ = event_tx.send(NetworkEvent::ConnectionFailed { entity, attempt: 0 });
+        return;
+    };
+
+    let info = match fetch_connect_info(actor, host_did, &host_dwn).await {
+        Ok(Some(info)) => info,
+        Ok(None) => {
+            warn!("Connect info not found for space {space_url}");
+            let _ = event_tx.send(NetworkEvent::ConnectionFailed { entity, attempt: 0 });
+            return;
+        }
+        Err(e) => {
+            error!("Failed to fetch connect info: {e:?}");
+            let _ = event_tx.send(NetworkEvent::ConnectionFailed { entity, attempt: 0 });
+            return;
+        }
+    };
+
     let connect_url = info.connect_url.to_string();
 
     // Check if connection already exists.
     if let Some(active) = state.connections.get_mut(&connect_url) {
-        active.users.push(entity);
+        active.space_entities.push(entity);
+        state.entity_to_url.insert(entity, connect_url.clone());
         let _ = event_tx.send(NetworkEvent::Connected {
             entity,
             host: active.host.clone(),
@@ -177,7 +289,7 @@ async fn handle_connect(
             info!("Connected to {connect_url}");
 
             // Join space session.
-            if let Err(e) = join_space(&host, space_id, space_url).await {
+            if let Err(e) = join_space(&host, space_id, space_url.clone()).await {
                 warn!("Failed to join space: {e:?}");
                 let _ = event_tx.send(NetworkEvent::ConnectionFailed { entity, attempt: 0 });
                 state.initiating.remove(&connect_url);
@@ -188,14 +300,17 @@ async fn handle_connect(
             spawn_stream_accept(&host, connect_url.clone());
 
             // Add to active connections.
-            let mut users = state.initiating.remove(&connect_url).unwrap_or_default();
-            users.push(entity);
+            let space_entities = state.initiating.remove(&connect_url).unwrap_or_default();
+
+            for &ent in &space_entities {
+                state.entity_to_url.insert(ent, connect_url.clone());
+            }
 
             state.connections.insert(
                 connect_url.clone(),
                 ActiveConnection {
                     host: host.clone(),
-                    users,
+                    space_entities,
                 },
             );
 
@@ -214,51 +329,68 @@ async fn handle_connect(
     }
 }
 
-async fn handle_disconnect(
+async fn handle_leave_space(
     state: &mut ThreadState,
     event_tx: &flume::Sender<NetworkEvent>,
-    connect_url: &str,
+    entity: Entity,
 ) {
-    if let Some(active) = state.connections.remove(connect_url) {
-        info!("Disconnecting from {connect_url}");
-        active
-            .host
-            .connection
-            .close(wtransport::VarInt::from_u32(200), &[]);
-        let _ = state.streams.remove_async(connect_url).await;
-        let _ = event_tx.send(NetworkEvent::ConnectionClosed {
-            connect_url: connect_url.to_string(),
-        });
+    // Remove entity->url mapping.
+    let Some(connect_url) = state.entity_to_url.remove(&entity) else {
+        return;
+    };
+
+    // Remove entity from connection's space list.
+    let should_disconnect = if let Some(active) = state.connections.get_mut(&connect_url) {
+        active.space_entities.retain(|&e| e != entity);
+        active.space_entities.is_empty()
+    } else {
+        false
+    };
+
+    // Disconnect if no more spaces using this connection.
+    if should_disconnect {
+        if let Some(active) = state.connections.remove(&connect_url) {
+            info!("Disconnecting from {connect_url} (no more spaces)");
+            active
+                .host
+                .connection
+                .close(wtransport::VarInt::from_u32(200), &[]);
+            let _ = state.streams.remove_async(&connect_url).await;
+            let _ = event_tx.send(NetworkEvent::ConnectionClosed {
+                connect_url: connect_url.clone(),
+            });
+        }
     }
 }
 
-async fn handle_publish(state: &ThreadState, connect_url: &str, update: TransformResult) {
-    let Some(active) = state.connections.get(connect_url) else {
-        return;
-    };
-
+async fn handle_publish(state: &ThreadState, update: TransformResult) {
     use super::streams::publish::{get_or_create_iframe_stream, send_iframe, send_pframe};
 
-    // Ensure iframe stream exists.
-    if let Err(e) =
-        get_or_create_iframe_stream(&state.streams, connect_url, &active.host.connection).await
-    {
-        error!("failed to create iframe stream: {e:?}");
-        let _ = state.streams.remove_async(connect_url).await;
-        return;
-    }
-
-    // Send the transform update.
-    let result = match &update {
-        TransformResult::IFrame(iframe) => send_iframe(&state.streams, connect_url, iframe).await,
-        TransformResult::PFrame(pframe) => {
-            send_pframe(&state.streams, connect_url, &active.host.connection, pframe).await
+    // Broadcast to all active connections.
+    for (connect_url, active) in &state.connections {
+        // Ensure iframe stream exists.
+        if let Err(e) =
+            get_or_create_iframe_stream(&state.streams, connect_url, &active.host.connection).await
+        {
+            error!("failed to create iframe stream for {connect_url}: {e:?}");
+            let _ = state.streams.remove_async(connect_url).await;
+            continue;
         }
-    };
 
-    if let Err(e) = result {
-        error!("failed to send transform update: {e:?}");
-        let _ = state.streams.remove_async(connect_url).await;
+        // Send the transform update.
+        let result = match &update {
+            TransformResult::IFrame(iframe) => {
+                send_iframe(&state.streams, connect_url, iframe).await
+            }
+            TransformResult::PFrame(pframe) => {
+                send_pframe(&state.streams, connect_url, &active.host.connection, pframe).await
+            }
+        };
+
+        if let Err(e) = result {
+            error!("failed to send transform update to {connect_url}: {e:?}");
+            let _ = state.streams.remove_async(connect_url).await;
+        }
     }
 }
 

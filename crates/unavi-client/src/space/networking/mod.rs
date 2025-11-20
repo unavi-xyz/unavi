@@ -17,7 +17,7 @@ impl Plugin for NetworkingPlugin {
         let networking_thread = NetworkingThread::spawn();
 
         app.insert_resource(networking_thread)
-            .add_observer(connection::cleanup::handle_space_disconnect)
+            .add_observer(connection::cleanup::handle_space_despawn)
             .add_systems(
                 FixedUpdate,
                 (

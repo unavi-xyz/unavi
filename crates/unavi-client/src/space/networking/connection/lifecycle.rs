@@ -1,7 +1,10 @@
 use bevy::{log::*, prelude::*};
 
 use super::state::{ConnectionAttempt, ConnectionState};
-use crate::space::{Space, networking::NetworkingThread};
+use crate::space::{
+    Space,
+    networking::{NetworkCommand, NetworkingThread},
+};
 
 /// Drives the connection state machine for all spaces.
 pub fn drive_connection_lifecycle(
@@ -47,7 +50,7 @@ fn send_join_command(
     space: &Space,
     commands: &mut Commands,
 ) {
-    let command = super::super::NetworkCommand::JoinSpace {
+    let command = NetworkCommand::JoinSpace {
         entity,
         space_url: space.url.clone(),
     };

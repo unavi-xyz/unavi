@@ -85,7 +85,7 @@ pub const TRANSFORM_MAX_FRAME_LENGTH: usize = 4 * 1024;
 pub mod from_client {
     use bincode::{Decode, Encode};
 
-    #[derive(Encode, Decode)]
+    #[derive(Encode, Decode, Debug)]
     pub enum StreamHeader {
         TransformIFrame,
         TransformPFrame,
@@ -96,7 +96,7 @@ pub mod from_client {
 pub mod from_server {
     use bincode::{Decode, Encode};
 
-    #[derive(Encode, Decode)]
+    #[derive(Encode, Decode, Debug)]
     pub enum StreamHeader {
         TransformIFrame,
         TransformPFrame,

@@ -3,10 +3,7 @@ use xdid::core::did_url::DidUrl;
 
 use unavi_server_service::from_server::ControlMessage;
 
-use crate::{
-    auth::LocalActor,
-    space::networking::TransformChannels,
-};
+use crate::{auth::LocalActor, space::networking::TransformChannels};
 
 pub mod networking;
 pub mod record_ref_url;
@@ -34,9 +31,7 @@ fn send_actor_to_networking_thread(
         return;
     };
 
-    let command = networking::NetworkCommand::SetActor {
-        actor: actor_val,
-    };
+    let command = networking::NetworkCommand::SetActor { actor: actor_val };
 
     if let Err(e) = networking.command_tx.send(command) {
         error!("Failed to send SetActor command: {e:?}");

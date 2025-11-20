@@ -1,6 +1,11 @@
 use bevy::{animation::ActiveAnimation, platform::collections::HashMap, prelude::*};
+use bevy_tnua::prelude::TnuaController;
 
-use crate::{PlayerAvatar, PlayerRig, animation::velocity::AverageVelocity};
+use crate::{
+    PlayerAvatar, PlayerRig,
+    animation::velocity::AverageVelocity,
+    config::{DEFAULT_SPRINT_SPEED, DEFAULT_WALK_SPEED},
+};
 
 use super::{AnimationName, AvatarAnimationNodes};
 
@@ -11,13 +16,119 @@ pub struct AnimationWeights(pub HashMap<AnimationName, f32>);
 #[derive(Component, Clone, Default, Deref, DerefMut)]
 pub struct TargetAnimationWeights(pub HashMap<AnimationName, f32>);
 
+// Animation blending constants.
 const ALPHA_FACTOR: f32 = 100.0;
 const VELOCITY_FACTOR: f32 = 2.0;
 const WEIGHT_THRESHOLD: f32 = 0.02;
 
+// Locomotion blend thresholds (in velocity units after VELOCITY_FACTOR).
+const WALK_START: f32 = 0.5;
+const WALK_END: f32 = DEFAULT_WALK_SPEED * 1.5;
+const SPRINT_START: f32 = DEFAULT_WALK_SPEED * 2.0;
+const SPRINT_END: f32 = DEFAULT_SPRINT_SPEED * 2.0;
+
+// Falling detection (stub for now).
+const FALLING_VELOCITY_THRESHOLD: f32 = 5.0;
+
+/// Analyzed motion state from velocity.
+#[derive(Debug, Clone, Copy, Default)]
+struct MotionState {
+    /// Signed forward velocity (positive = forward, negative = backward).
+    forward_speed: f32,
+    /// Signed strafe velocity (positive = left, negative = right).
+    strafe_speed: f32,
+    /// Vertical velocity (for falling detection).
+    vertical_speed: f32,
+    /// Whether player is grounded (stub for now, always true).
+    is_grounded: bool,
+}
+
+/// Calculated animation weights for locomotion.
+#[derive(Debug, Clone, Copy, Default)]
+struct LocomotionWeights {
+    idle: f32,
+    walk: f32,
+    walk_left: f32,
+    walk_right: f32,
+    sprint: f32,
+    falling: f32,
+}
+
+/// Analyzes velocity and transform to produce motion state.
+fn analyze_motion(velocity: Vec3, transform: &Transform) -> MotionState {
+    let dir_forward = transform.rotation.mul_vec3(Vec3::NEG_Z);
+    let dir_left = transform.rotation.mul_vec3(Vec3::NEG_X);
+
+    let vel_forward = velocity.dot(dir_forward) * VELOCITY_FACTOR;
+    let vel_left = velocity.dot(dir_left) * VELOCITY_FACTOR;
+    let vel_vertical = velocity.y;
+
+    MotionState {
+        forward_speed: vel_forward,
+        strafe_speed: vel_left,
+        vertical_speed: vel_vertical,
+        is_grounded: true,
+    }
+}
+
+/// Smooth interpolation helper (inverse lerp clamped to 0-1).
+fn inverse_lerp(a: f32, b: f32, v: f32) -> f32 {
+    ((v - a) / (b - a)).clamp(0.0, 1.0)
+}
+
+/// Calculates locomotion animation weights from motion state.
+fn calculate_locomotion_weights(motion: &MotionState) -> LocomotionWeights {
+    let mut weights = LocomotionWeights::default();
+
+    // Early return for falling (overrides locomotion when not grounded).
+    if !motion.is_grounded {
+        weights.falling = (motion.vertical_speed.abs() / FALLING_VELOCITY_THRESHOLD).min(1.0);
+        return weights;
+    }
+
+    // Strafe animations (left/right walking).
+    weights.walk_left = motion.strafe_speed.max(0.0);
+    weights.walk_right = motion.strafe_speed.min(0.0).abs();
+
+    let forward_abs = motion.forward_speed.abs();
+    let strafe_abs = motion.strafe_speed.abs();
+
+    // Base forward movement weight (before separating walk/sprint).
+    let mut forward_weight = forward_abs - strafe_abs;
+    forward_weight = forward_weight.max(0.0);
+
+    // Blend between walk and sprint based on speed.
+    if forward_abs < WALK_START {
+        // Below walk threshold: idle.
+        weights.idle = 1.0;
+    } else if forward_abs < WALK_END {
+        // Walk range: blend from 0 to full walk.
+        let walk_blend = inverse_lerp(WALK_START, WALK_END, forward_abs);
+        weights.walk = forward_weight * walk_blend;
+        weights.idle = 1.0 - walk_blend;
+    } else if forward_abs < SPRINT_START {
+        // Full walk.
+        weights.walk = forward_weight;
+    } else if forward_abs < SPRINT_END {
+        // Transition from walk to sprint.
+        let sprint_blend = inverse_lerp(SPRINT_START, SPRINT_END, forward_abs);
+        weights.walk = forward_weight * (1.0 - sprint_blend);
+        weights.sprint = forward_weight * sprint_blend;
+    } else {
+        // Full sprint.
+        weights.sprint = forward_weight;
+    }
+
+    // Reduce idle by strafe movement.
+    weights.idle -= strafe_abs;
+    weights.idle = weights.idle.max(0.0);
+
+    weights
+}
+
 pub(crate) fn play_avatar_animations(
     time: Res<Time>,
-    rigs: Query<&Transform, With<PlayerRig>>,
+    rigs: Query<(&Transform, &TnuaController), With<PlayerRig>>,
     avatars: Query<(&AvatarAnimationNodes, &AverageVelocity), With<PlayerAvatar>>,
     mut animation_players: Query<(
         &mut AnimationWeights,
@@ -37,7 +148,11 @@ pub(crate) fn play_avatar_animations(
             continue;
         };
 
-        let Ok(transform) = rigs.get(rig_entity) else {
+        let Ok((transform, controller)) = rigs.get(rig_entity) else {
+            continue;
+        };
+
+        let Ok(airborn) = controller.is_airborne() else {
             continue;
         };
 
@@ -49,73 +164,42 @@ pub(crate) fn play_avatar_animations(
             }
         }
 
-        let dir_forward = transform.rotation.mul_vec3(Vec3 {
-            x: 0.0,
-            y: 0.0,
-            z: -1.0,
-        });
-        let dir_left = transform.rotation.mul_vec3(Vec3 {
-            x: -1.0,
-            y: 0.0,
-            z: 0.0,
-        });
+        // Analyze motion from velocity and transform.
+        let mut motion = analyze_motion(avg.velocity, transform);
+        motion.is_grounded = !airborn;
 
-        let vel_forward = avg.velocity * dir_forward;
-        let vel_left = avg.velocity * dir_left;
+        // Calculate locomotion weights from motion state.
+        let loco_weights = calculate_locomotion_weights(&motion);
 
-        let forward = vel_forward.element_sum() * VELOCITY_FACTOR;
-        let left = vel_left.element_sum() * VELOCITY_FACTOR;
-
-        // Left walk.
-        let mut l_walk_weight = left.max(0.0);
-
+        // Apply locomotion animations.
         apply_weight(
             AnimationName::WalkLeft,
-            &mut l_walk_weight,
+            &mut loco_weights.walk_left.clone(),
             alpha,
             &mut player,
             nodes,
             &mut weights,
         );
-
-        // Right walk.
-        let mut r_walk_weight = left.min(0.0).abs();
 
         apply_weight(
             AnimationName::WalkRight,
-            &mut r_walk_weight,
+            &mut loco_weights.walk_right.clone(),
             alpha,
             &mut player,
             nodes,
             &mut weights,
         );
-
-        // Sprint vs Walk based on velocity magnitude.
-        const SPRINT_THRESHOLD: f32 = 10.0;
-        let forward_speed = forward.abs();
-        let is_sprinting = forward_speed > SPRINT_THRESHOLD;
-
-        let mut walk_weight = if is_sprinting { 0.0 } else { forward_speed };
-        let mut sprint_weight = if is_sprinting { forward_speed } else { 0.0 };
-
-        walk_weight -= left.abs();
-        walk_weight -= l_walk_weight;
-        walk_weight -= r_walk_weight;
-
-        sprint_weight -= left.abs();
-        sprint_weight -= l_walk_weight;
-        sprint_weight -= r_walk_weight;
 
         let walk = apply_weight(
             AnimationName::Walk,
-            &mut walk_weight,
+            &mut loco_weights.walk.clone(),
             alpha,
             &mut player,
             nodes,
             &mut weights,
         );
 
-        if forward.is_sign_positive() {
+        if motion.forward_speed.is_sign_positive() {
             walk.set_speed(1.0);
         } else {
             walk.set_speed(-1.0);
@@ -123,25 +207,35 @@ pub(crate) fn play_avatar_animations(
 
         let sprint = apply_weight(
             AnimationName::Sprint,
-            &mut sprint_weight,
+            &mut loco_weights.sprint.clone(),
             alpha,
             &mut player,
             nodes,
             &mut weights,
         );
 
-        if forward.is_sign_positive() {
+        if motion.forward_speed.is_sign_positive() {
             sprint.set_speed(1.0);
         } else {
             sprint.set_speed(-1.0);
         }
 
-        // Other.
-        let mut idle_weight = 1.0;
+        // Falling animation (stub).
+        apply_weight(
+            AnimationName::Falling,
+            &mut loco_weights.falling.clone(),
+            alpha,
+            &mut player,
+            nodes,
+            &mut weights,
+        );
+
+        // Custom animations (_Other).
+        let mut other_weight = 0.0;
 
         for (weight, value) in weights.clone().iter() {
             if matches!(weight, AnimationName::_Other(_)) {
-                idle_weight -= value;
+                other_weight += value;
 
                 let mut target_weight = *targets.get(weight).unwrap_or(&0.0);
 
@@ -157,11 +251,9 @@ pub(crate) fn play_avatar_animations(
             }
         }
 
-        // Idle.
-        idle_weight -= l_walk_weight;
-        idle_weight -= r_walk_weight;
-        idle_weight -= walk_weight;
-        idle_weight -= sprint_weight;
+        // Idle: use calculated weight from locomotion system.
+        let mut idle_weight = loco_weights.idle - other_weight;
+        idle_weight = idle_weight.max(0.0);
 
         apply_weight(
             AnimationName::Idle,

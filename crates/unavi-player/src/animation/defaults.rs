@@ -30,6 +30,7 @@ pub fn default_character_animations(asset_server: &AssetServer) -> AvatarAnimati
     map.insert(AnimationName::Idle, load_animation(1));
     map.insert(AnimationName::WalkLeft, load_animation(2));
     map.insert(AnimationName::WalkRight, load_animation(3));
+    map.insert(AnimationName::Sprint, load_animation(4));
     map.insert(AnimationName::Walk, load_animation(5));
 
     AvatarAnimationClips(map)

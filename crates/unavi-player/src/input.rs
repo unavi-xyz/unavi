@@ -45,8 +45,6 @@ pub(crate) fn apply_head_input(
     }
 }
 
-const CAYOTE_TIME: f32 = 0.1;
-
 /// Applies movement input to the physics controller (all modes).
 pub(crate) fn apply_body_input(
     players: Query<(&crate::PlayerEntities, &PlayerConfig)>,
@@ -96,7 +94,7 @@ pub(crate) fn apply_body_input(
         controller.basis(TnuaBuiltinWalk {
             desired_velocity: *target * speed,
             float_height: height / 2.0 + radius + FLOAT_HEIGHT_OFFSET,
-            coyote_time: CAYOTE_TIME,
+            max_slope: 55f32.to_radians(),
             ..Default::default()
         });
 

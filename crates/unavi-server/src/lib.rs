@@ -76,7 +76,7 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
 
     let vc = key_pair::get_or_create_key(opts.in_memory)?;
 
-    let (msg_tx, mut msg_rx) = tokio::sync::mpsc::channel(16);
+    let (msg_tx, msg_rx) = flume::bounded(16);
 
     let spawner_opts = SpawnerOptions {
         did: did.clone(),
@@ -89,7 +89,7 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
 
     // Internal message handler.
     tokio::spawn(async move {
-        internal_msg::internal_message_handler(&mut msg_rx).await;
+        internal_msg::internal_message_handler(msg_rx).await;
     });
 
     // WebTransport handler.
@@ -108,7 +108,7 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
             };
 
             if let Err(e) = msg_tx
-                .send(InternalMessage::SetActor(spawner.ctx.actor.clone()))
+                .send_async(InternalMessage::SetActor(spawner.ctx.actor.clone()))
                 .await
             {
                 error!("Failed to set actor: {e:?}");

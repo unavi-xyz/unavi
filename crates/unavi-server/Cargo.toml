@@ -22,6 +22,7 @@ console-subscriber = { optional = true, version = "0.5.0" }
 directories.workspace = true
 dwn.workspace = true
 dwn-server.workspace = true
+flume.workspace = true
 futures.workspace = true
 hyper = "=1.7" # https://github.com/programatik29/axum-server/issues/170
 p256 = "0.13.2"

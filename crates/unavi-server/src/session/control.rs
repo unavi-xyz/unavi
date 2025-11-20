@@ -105,7 +105,7 @@ impl ControlService for ControlServer {
                 let _ = self
                     .ctx
                     .msg_tx
-                    .send(InternalMessage::SetPlayerCount {
+                    .send_async(InternalMessage::SetPlayerCount {
                         record_id: id,
                         count,
                     })

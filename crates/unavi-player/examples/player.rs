@@ -6,7 +6,7 @@ use avian3d::{
 };
 use bevy::{
     camera::{Exposure, visibility::RenderLayers},
-    color::palettes::tailwind::{BLUE_400, ORANGE_400, PURPLE_400, RED_400, YELLOW_400},
+    color::palettes::tailwind::{BLUE_400, ORANGE_400, PURPLE_400, YELLOW_400},
     light::{CascadeShadowConfigBuilder, NotShadowCaster, light_consts::lux},
     mesh::VertexAttributeValues,
     pbr::{Atmosphere, AtmosphereSettings},

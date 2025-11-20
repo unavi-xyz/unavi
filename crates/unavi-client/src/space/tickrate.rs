@@ -1,10 +1,4 @@
-use std::{
-    sync::{
-        Arc, LazyLock, Mutex,
-        mpsc::{Receiver, Sender},
-    },
-    time::Duration,
-};
+use std::{sync::LazyLock, time::Duration};
 
 use bevy::prelude::*;
 use xdid::core::did_url::DidUrl;
@@ -20,22 +14,16 @@ pub struct SetTickrate {
     pub tickrate: Duration,
 }
 
-pub static TICKRATE_QUEUE: LazyLock<(Sender<SetTickrate>, Arc<Mutex<Receiver<SetTickrate>>>)> =
-    LazyLock::new(|| {
-        let (tx, rx) = std::sync::mpsc::channel();
-        (tx, Arc::new(Mutex::new(rx)))
-    });
+pub static TICKRATE_QUEUE: LazyLock<(flume::Sender<SetTickrate>, flume::Receiver<SetTickrate>)> =
+    LazyLock::new(flume::unbounded);
 
 pub fn set_space_tickrates(
     time: Res<Time>,
     spaces: Query<(Entity, &Space)>,
     mut commands: Commands,
 ) {
-    let Ok(rx) = TICKRATE_QUEUE.1.try_lock() else {
-        return;
-    };
-    while let Ok(msg) = rx.try_recv() {
-        for (entity, space) in spaces {
+    while let Ok(msg) = TICKRATE_QUEUE.1.try_recv() {
+        for (entity, space) in spaces.iter() {
             if space.url != msg.space_url {
                 continue;
             }

@@ -1,7 +1,4 @@
-use std::{
-    sync::{Arc, Mutex},
-    time::Duration,
-};
+use std::time::Duration;
 
 use scc::HashMap as SccHashMap;
 use tarpc::{
@@ -23,8 +20,8 @@ pub struct HostConnection {
     pub connection: Connection,
     pub control: ControlServiceClient,
     pub transform_channels: TransformChannels,
-    pub control_tx: std::sync::mpsc::SyncSender<ControlMessage>,
-    pub control_rx: Arc<Mutex<std::sync::mpsc::Receiver<ControlMessage>>>,
+    pub control_tx: flume::Sender<ControlMessage>,
+    pub control_rx: flume::Receiver<ControlMessage>,
 }
 
 /// Connects to a host server and sets up the control RPC channel.
@@ -36,15 +33,15 @@ pub async fn connect_to_host(
 ) -> anyhow::Result<HostConnection> {
     let connection = create_connection(connect_url.clone(), cert_hash).await?;
     let control = create_control_client(&connection).await?;
-    let (control_tx, control_rx) = std::sync::mpsc::sync_channel(64);
-    let transform_channels = Arc::new(SccHashMap::new());
+    let (control_tx, control_rx) = flume::bounded(64);
+    let transform_channels = std::sync::Arc::new(SccHashMap::new());
 
     Ok(HostConnection {
         connection,
         control,
         transform_channels,
         control_tx,
-        control_rx: Arc::new(Mutex::new(control_rx)),
+        control_rx,
     })
 }
 

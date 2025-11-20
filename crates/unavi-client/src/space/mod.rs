@@ -1,8 +1,3 @@
-use std::sync::{
-    Arc, Mutex,
-    mpsc::{Receiver, SyncSender},
-};
-
 use bevy::{ecs::world::CommandQueue, prelude::*, tasks::TaskPool};
 use xdid::core::did_url::DidUrl;
 
@@ -45,8 +40,8 @@ pub struct HostTransformChannels {
 #[derive(Component)]
 pub struct HostControlChannel {
     #[allow(dead_code)]
-    pub tx: SyncSender<ControlMessage>,
-    pub rx: Arc<Mutex<Receiver<ControlMessage>>>,
+    pub tx: flume::Sender<ControlMessage>,
+    pub rx: flume::Receiver<ControlMessage>,
 }
 
 #[derive(Component, Default)]

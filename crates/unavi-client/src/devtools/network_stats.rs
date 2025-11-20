@@ -122,11 +122,7 @@ impl NetworkStats {
 }
 
 pub fn collect_network_events(mut stats: ResMut<NetworkStats>) {
-    let Ok(mut rx) = NETWORK_EVENTS.1.lock() else {
-        return;
-    };
-
-    while let Ok(event) = rx.try_recv() {
+    while let Ok(event) = NETWORK_EVENTS.1.try_recv() {
         match event {
             NetworkEvent::Download { host, bytes } => {
                 stats.get_or_create_host(&host).record_download(bytes);

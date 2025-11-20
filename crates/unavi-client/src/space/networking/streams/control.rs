@@ -1,5 +1,3 @@
-use std::sync::mpsc::SyncSender;
-
 use bevy::prelude::*;
 use futures::StreamExt;
 use tarpc::tokio_util::codec::LengthDelimitedCodec;
@@ -10,7 +8,7 @@ use crate::space::{Host, HostControlChannel, PlayerHost, RemotePlayer};
 
 pub async fn recv_control_stream(
     stream: RecvStream,
-    control_tx: SyncSender<ControlMessage>,
+    control_tx: flume::Sender<ControlMessage>,
 ) -> anyhow::Result<()> {
     let mut framed = LengthDelimitedCodec::builder()
         .little_endian()
@@ -36,13 +34,9 @@ pub fn apply_controls(
     remote_players: Query<(Entity, &RemotePlayer, &PlayerHost)>,
 ) {
     for (host_entity, _, channel) in hosts.iter() {
-        let Ok(rx) = channel.rx.lock() else {
-            continue;
-        };
-
         // Drain all pending messages.
         let mut messages = Vec::new();
-        while let Ok(msg) = rx.try_recv() {
+        while let Ok(msg) = channel.rx.try_recv() {
             messages.push(msg);
         }
 

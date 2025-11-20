@@ -1,5 +1,3 @@
-use std::sync::mpsc::SyncSender;
-
 use unavi_server_service::from_server::{ControlMessage, StreamHeader};
 use wtransport::RecvStream;
 
@@ -18,7 +16,7 @@ pub const JOINT_ROTATION_EPSILON: f32 = 1.0 / PFRAME_ROTATION_SCALE;
 pub async fn recv_stream(
     mut stream: RecvStream,
     transform_channels: TransformChannels,
-    control_tx: SyncSender<ControlMessage>,
+    control_tx: flume::Sender<ControlMessage>,
     #[cfg(feature = "devtools-network")] connect_url: String,
 ) -> anyhow::Result<()> {
     let mut header_buf = [0u8; 1];

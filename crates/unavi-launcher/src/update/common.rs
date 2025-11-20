@@ -20,14 +20,28 @@ pub fn is_beta() -> bool {
 /// Returns true if update is needed, false if already up to date.
 pub fn needs_update(current: &Version, latest: &Version, current_is_beta: bool) -> bool {
     let want_beta = is_beta();
+    let latest_is_beta = latest.pre.as_str().contains("beta");
 
-    // If channels don't match, always update.
-    if current_is_beta != want_beta {
-        return true;
+    // If we're on the same version, no update needed regardless of channel.
+    if current == latest {
+        return false;
     }
 
-    // Channels match, check version.
-    current < latest
+    // If latest version matches our desired channel, update if it's newer.
+    if latest_is_beta == want_beta {
+        return current < latest;
+    }
+
+    // Latest doesn't match our channel. If we want beta but latest is stable,
+    // only update if we're on an older stable version.
+    // If we want stable but latest is beta, don't update.
+    if want_beta && !latest_is_beta {
+        // Want beta, but latest is stable. Update if our version is older.
+        return current < latest;
+    }
+
+    // Want stable, but latest is beta. Don't update.
+    false
 }
 
 #[derive(Debug, Clone, Copy)]

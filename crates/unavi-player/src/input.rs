@@ -2,7 +2,7 @@ use std::f32::consts::FRAC_PI_2;
 
 use bevy::prelude::*;
 use bevy_tnua::prelude::{TnuaBuiltinJump, TnuaBuiltinWalk, TnuaController};
-use unavi_input::{JumpAction, LookAction, MoveAction, schminput::prelude::*};
+use unavi_input::{JumpAction, LookAction, MoveAction, SprintAction, schminput::prelude::*};
 
 use crate::{
     PlayerRig,
@@ -52,6 +52,7 @@ pub(crate) fn apply_body_input(
     players: Query<(&crate::PlayerEntities, &PlayerConfig)>,
     jump_action: Query<&BoolActionValue, With<JumpAction>>,
     move_action: Query<&Vec2ActionValue, With<MoveAction>>,
+    sprint_action: Query<&BoolActionValue, With<SprintAction>>,
     rigs: Query<&Transform, With<PlayerRig>>,
     mut controllers: Query<&mut TnuaController, With<PlayerRig>>,
     mut target: Local<Vec3>,
@@ -79,10 +80,21 @@ pub(crate) fn apply_body_input(
             *target = target.lerp(dir, S);
         }
 
+        let is_sprinting = sprint_action
+            .single()
+            .map(|action| action.any)
+            .unwrap_or(false);
+
+        let speed = if is_sprinting {
+            config.sprint_speed
+        } else {
+            config.walk_speed
+        };
+
         let radius = config.vrm_radius.unwrap_or(PLAYER_RADIUS);
         let height = config.vrm_height.unwrap_or(config.real_height);
         controller.basis(TnuaBuiltinWalk {
-            desired_velocity: *target * config.walk_speed,
+            desired_velocity: *target * speed,
             float_height: height / 2.0 + radius + FLOAT_HEIGHT_OFFSET,
             coyote_time: CAYOTE_TIME,
             ..Default::default()

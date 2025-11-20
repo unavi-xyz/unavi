@@ -19,6 +19,7 @@ pub enum AnimationName {
     Walk,
     WalkLeft,
     WalkRight,
+    Sprint,
     _Other(&'static str),
 }
 

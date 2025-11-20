@@ -17,7 +17,6 @@ const WEIGHT_THRESHOLD: f32 = 0.02;
 
 pub(crate) fn play_avatar_animations(
     time: Res<Time>,
-    _players: Query<&crate::PlayerEntities>,
     rigs: Query<&Transform, With<PlayerRig>>,
     avatars: Query<(&AvatarAnimationNodes, &AverageVelocity), With<PlayerAvatar>>,
     mut animation_players: Query<(
@@ -91,12 +90,21 @@ pub(crate) fn play_avatar_animations(
             &mut weights,
         );
 
-        // Walk.
-        let mut walk_weight = forward.abs();
+        // Sprint vs Walk based on velocity magnitude.
+        const SPRINT_THRESHOLD: f32 = 10.0;
+        let forward_speed = forward.abs();
+        let is_sprinting = forward_speed > SPRINT_THRESHOLD;
+
+        let mut walk_weight = if is_sprinting { 0.0 } else { forward_speed };
+        let mut sprint_weight = if is_sprinting { forward_speed } else { 0.0 };
 
         walk_weight -= left.abs();
         walk_weight -= l_walk_weight;
         walk_weight -= r_walk_weight;
+
+        sprint_weight -= left.abs();
+        sprint_weight -= l_walk_weight;
+        sprint_weight -= r_walk_weight;
 
         let walk = apply_weight(
             AnimationName::Walk,
@@ -111,6 +119,21 @@ pub(crate) fn play_avatar_animations(
             walk.set_speed(1.0);
         } else {
             walk.set_speed(-1.0);
+        }
+
+        let sprint = apply_weight(
+            AnimationName::Sprint,
+            &mut sprint_weight,
+            alpha,
+            &mut player,
+            nodes,
+            &mut weights,
+        );
+
+        if forward.is_sign_positive() {
+            sprint.set_speed(1.0);
+        } else {
+            sprint.set_speed(-1.0);
         }
 
         // Other.
@@ -138,6 +161,7 @@ pub(crate) fn play_avatar_animations(
         idle_weight -= l_walk_weight;
         idle_weight -= r_walk_weight;
         idle_weight -= walk_weight;
+        idle_weight -= sprint_weight;
 
         apply_weight(
             AnimationName::Idle,

@@ -51,6 +51,9 @@ pub struct LookAction;
 #[derive(Component, Clone, Copy)]
 pub struct JumpAction;
 
+#[derive(Component, Clone, Copy)]
+pub struct SprintAction;
+
 fn setup_actions(mut cmds: Commands) {
     let set = cmds.spawn(ActionSet::new("core", "core", 0)).id();
     cmds.spawn((
@@ -84,6 +87,13 @@ fn setup_actions(mut cmds: Commands) {
         KeyboardBindings::new().bind(KeyboardBinding::new(KeyCode::Space)),
         BoolActionValue::new(),
         JumpAction,
+    ));
+    cmds.spawn((
+        Action::new("sprint", "Sprint", set),
+        GamepadBindings::new().bind(GamepadBinding::new(GamepadBindingSource::LeftTrigger)),
+        KeyboardBindings::new().bind(KeyboardBinding::new(KeyCode::ShiftLeft)),
+        BoolActionValue::new(),
+        SprintAction,
     ));
 }
 

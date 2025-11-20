@@ -5,8 +5,10 @@ use bevy::prelude::*;
 pub struct PlayerConfig {
     /// Jump strength multiplier.
     pub jump_strength: f32,
-    /// User's perceived height in meters (what they should feel like in first-person).
+    /// User's real height, headset to ground.
     pub real_height: f32,
+    /// Sprint speed in meters per second.
+    pub sprint_speed: f32,
     /// Walking speed in meters per second.
     pub walk_speed: f32,
     /// VRM avatar's actual height in meters (measured from bones).
@@ -20,6 +22,7 @@ impl Default for PlayerConfig {
         Self {
             jump_strength: DEFAULT_JUMP_STRENGTH,
             real_height: DEFAULT_HEIGHT,
+            sprint_speed: DEFAULT_SPRINT_SPEED,
             walk_speed: DEFAULT_WALK_SPEED,
             vrm_height: None,
             vrm_radius: None,
@@ -34,6 +37,7 @@ impl Default for PlayerConfig {
 pub const DEFAULT_HEIGHT: f32 = 1.7;
 
 pub const DEFAULT_JUMP_STRENGTH: f32 = 1.0;
+pub const DEFAULT_SPRINT_SPEED: f32 = 7.5;
 pub const DEFAULT_WALK_SPEED: f32 = 5.0;
 
 pub const PLAYER_RADIUS: f32 = 0.5;

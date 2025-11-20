@@ -13,7 +13,7 @@ use unavi_server_service::{
 };
 use wtransport::SendStream;
 
-use crate::space::{Space, connect_info::ConnectInfo};
+use crate::space::Space;
 
 use super::{JOINT_ROTATION_EPSILON, PFRAME_ROTATION_SCALE, PFRAME_TRANSLATION_SCALE};
 
@@ -30,7 +30,7 @@ pub struct HostStreams {
 }
 
 /// The interval at which data should be published to the space's server.
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct PublishInterval {
     pub last_tick: Duration,
     pub tickrate: Duration,
@@ -316,12 +316,7 @@ pub fn publish_transform_data(
     avatars: Query<&AvatarBones>,
     bone_transforms: Query<&Transform, With<BoneName>>,
     global_transforms: Query<&GlobalTransform>,
-    mut spaces: Query<(
-        &Space,
-        &ConnectInfo,
-        &mut PublishInterval,
-        &mut TransformPublishState,
-    )>,
+    mut spaces: Query<(&Space, &mut PublishInterval, &mut TransformPublishState)>,
 ) {
     let Ok(player_ents) = local_players.single() else {
         return;
@@ -333,38 +328,59 @@ pub fn publish_transform_data(
 
     let now = time.elapsed();
 
-    let mut hosts_to_publish: HashMap<String, TransformResult> = HashMap::new();
+    // Find the fastest tickrate among all spaces.
+    let mut min_tickrate = None;
+    let mut last_tick = None;
 
-    for (_, connect_info, mut interval, mut state) in spaces.iter_mut() {
-        if now - interval.last_tick < interval.tickrate {
-            continue;
+    for (_, interval, _) in spaces.iter() {
+        match min_tickrate {
+            None => {
+                min_tickrate = Some(interval.tickrate);
+                last_tick = Some(interval.last_tick);
+            }
+            Some(current_min) if interval.tickrate < current_min => {
+                min_tickrate = Some(interval.tickrate);
+                last_tick = Some(interval.last_tick);
+            }
+            _ => {}
         }
-
-        interval.last_tick = now;
-
-        let Some(update) = record_transforms(
-            &mut state,
-            now,
-            avatar_bones,
-            &bone_transforms,
-            &global_transforms,
-        ) else {
-            continue;
-        };
-
-        let connect_url = connect_info.connect_url.to_string();
-
-        hosts_to_publish.entry(connect_url).or_insert(update);
     }
 
-    for (connect_url, update) in hosts_to_publish {
-        let command = super::super::NetworkCommand::PublishTransform {
-            connect_url,
-            update,
-        };
+    // Check if we should publish this tick.
+    let (tickrate, last) = match (min_tickrate, last_tick) {
+        (Some(tr), Some(lt)) => (tr, lt),
+        _ => return,
+    };
 
-        if let Err(e) = networking.command_tx.send(command) {
-            error!("Failed to send publish command: {e:?}");
-        }
+    if now - last < tickrate {
+        return;
+    }
+
+    // Update all intervals.
+    for (_, mut interval, _) in spaces.iter_mut() {
+        interval.last_tick = now;
+    }
+
+    // Record transform from any space (they all share the same state).
+    let mut state = match spaces.iter_mut().next() {
+        Some((_, _, state)) => state,
+        None => return,
+    };
+
+    let Some(update) = record_transforms(
+        &mut state,
+        now,
+        avatar_bones,
+        &bone_transforms,
+        &global_transforms,
+    ) else {
+        return;
+    };
+
+    // Send single command to broadcast to all connections.
+    let command = super::super::NetworkCommand::PublishTransform { update };
+
+    if let Err(e) = networking.command_tx.send(command) {
+        error!("Failed to send publish command: {e:?}");
     }
 }

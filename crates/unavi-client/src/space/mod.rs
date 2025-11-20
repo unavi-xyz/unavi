@@ -1,15 +1,13 @@
-use bevy::{ecs::world::CommandQueue, prelude::*, tasks::TaskPool};
+use bevy::prelude::*;
 use xdid::core::did_url::DidUrl;
 
 use unavi_server_service::from_server::ControlMessage;
 
 use crate::{
-    async_commands::ASYNC_COMMAND_QUEUE,
     auth::LocalActor,
-    space::{connect_info::ConnectInfo, networking::TransformChannels},
+    space::networking::TransformChannels,
 };
 
-mod connect_info;
 pub mod networking;
 pub mod record_ref_url;
 mod tickrate;
@@ -19,9 +17,29 @@ pub struct SpacePlugin;
 impl Plugin for SpacePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(networking::NetworkingPlugin)
-            .add_observer(handle_space_add)
-            .add_observer(insert_connect_info)
+            .add_systems(Update, send_actor_to_networking_thread)
             .add_systems(FixedUpdate, tickrate::set_space_tickrates);
+    }
+}
+
+fn send_actor_to_networking_thread(
+    actor: Res<LocalActor>,
+    networking: Res<networking::NetworkingThread>,
+) {
+    if !actor.is_changed() {
+        return;
+    }
+
+    let Some(actor_val) = actor.0.clone() else {
+        return;
+    };
+
+    let command = networking::NetworkCommand::SetActor {
+        actor: actor_val,
+    };
+
+    if let Err(e) = networking.command_tx.send(command) {
+        error!("Failed to send SetActor command: {e:?}");
     }
 }
 
@@ -59,8 +77,14 @@ pub struct RemotePlayer {
 pub struct PlayerHost(Entity);
 
 /// Declarative space definition.
-/// Upon add, the space will be fetched and joined.
+/// Upon add, connection state components are inserted and the join process begins.
 #[derive(Component)]
+#[require(
+    networking::connection::state::ConnectionState,
+    networking::connection::state::ConnectionAttempt,
+    networking::streams::publish::PublishInterval,
+    networking::streams::publish::TransformPublishState
+)]
 pub struct Space {
     pub url: DidUrl,
 }
@@ -69,69 +93,4 @@ impl Space {
     pub fn new(url: DidUrl) -> Self {
         Self { url }
     }
-}
-
-pub fn handle_space_add(
-    event: On<Add, Space>,
-    actor: Res<LocalActor>,
-    spaces: Query<&Space>,
-) -> Result {
-    let pool = TaskPool::get_thread_executor();
-
-    let Some(actor) = actor.0.clone() else {
-        Err(anyhow::anyhow!("actor not found"))?
-    };
-
-    let entity = event.entity;
-
-    let Ok(space) = spaces.get(entity) else {
-        Err(anyhow::anyhow!("space not found"))?
-    };
-
-    let host_did = space.url.did.clone();
-
-    pool.spawn(async move {
-        let rt = tokio::runtime::Builder::new_multi_thread()
-            .enable_all()
-            .build()
-            .expect("build tokio runtime");
-
-        let task = rt.spawn(async move {
-            // TODO: Fetch from host DID document
-            let host_dwn = actor.remote.clone().unwrap();
-
-            match connect_info::fetch_connect_info(&actor, &host_did, &host_dwn).await? {
-                Some(info) => {
-                    let mut commands = CommandQueue::default();
-                    commands.push(bevy::ecs::system::command::trigger(ConnectInfoFetched {
-                        space: entity,
-                        info,
-                    }));
-                    ASYNC_COMMAND_QUEUE.0.send(commands)?;
-                }
-                None => {
-                    warn!("Connect info not found for space {entity}, unable to join")
-                }
-            }
-
-            Ok::<_, anyhow::Error>(())
-        });
-
-        if let Err(e) = task.await {
-            error!("Task join error: {e:?}");
-        }
-    })
-    .detach();
-
-    Ok(())
-}
-
-#[derive(Event)]
-pub struct ConnectInfoFetched {
-    space: Entity,
-    info: ConnectInfo,
-}
-
-pub fn insert_connect_info(event: On<ConnectInfoFetched>, mut commands: Commands) {
-    commands.entity(event.space).insert(event.info.clone());
 }

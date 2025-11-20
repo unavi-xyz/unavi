@@ -15,7 +15,7 @@ embed-resource.workspace = true
 
 [dependencies]
 anyhow.workspace = true
-dioxus = { features = ["desktop", "router"], version = "0.7.1" }
+dioxus = { features = ["desktop", "router"], version = "0.6.3" }
 directories.workspace = true
 futures.workspace = true
 image = { features = ["png"], workspace = true }

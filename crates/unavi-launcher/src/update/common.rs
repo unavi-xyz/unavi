@@ -12,14 +12,14 @@ use serde::Deserialize;
 pub const REPO_OWNER: &str = "unavi-xyz";
 pub const REPO_NAME: &str = "unavi";
 
-pub fn use_beta() -> bool {
+pub fn is_beta() -> bool {
     crate::CONFIG.get().update_channel.is_beta()
 }
 
 /// Check if an update is needed, considering both version and channel.
 /// Returns true if update is needed, false if already up to date.
 pub fn needs_update(current: &Version, latest: &Version, current_is_beta: bool) -> bool {
-    let want_beta = use_beta();
+    let want_beta = is_beta();
 
     // If channels don't match, always update.
     if current_is_beta != want_beta {

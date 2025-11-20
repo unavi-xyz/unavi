@@ -8,7 +8,7 @@ use super::{
     UpdateStatus,
     common::{
         ArchiveKind, decompress_xz, download_with_progress, extract_archive, fetch_github_releases,
-        get_platform_target, is_network_error, needs_update, use_beta,
+        get_platform_target, is_beta, is_network_error, needs_update,
     },
 };
 
@@ -43,7 +43,7 @@ where
     let latest_release = releases
         .into_iter()
         .find(|r| {
-            if use_beta() {
+            if is_beta() {
                 true
             } else {
                 !r.tag_name.contains("beta")

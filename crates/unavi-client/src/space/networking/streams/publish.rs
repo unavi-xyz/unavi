@@ -13,7 +13,10 @@ use unavi_server_service::{
 };
 use wtransport::SendStream;
 
-use crate::space::Space;
+use crate::space::{
+    Space,
+    networking::{NetworkCommand, NetworkingThread},
+};
 
 use super::{JOINT_ROTATION_EPSILON, PFRAME_ROTATION_SCALE, PFRAME_TRANSLATION_SCALE};
 
@@ -311,7 +314,7 @@ pub async fn send_pframe(
 
 pub fn publish_transform_data(
     time: Res<Time>,
-    networking: Res<super::super::NetworkingThread>,
+    networking: Res<NetworkingThread>,
     local_players: Query<&PlayerEntities, With<LocalPlayer>>,
     avatars: Query<&AvatarBones>,
     bone_transforms: Query<&Transform, With<BoneName>>,
@@ -378,7 +381,7 @@ pub fn publish_transform_data(
     };
 
     // Send single command to broadcast to all connections.
-    let command = super::super::NetworkCommand::PublishTransform { update };
+    let command = NetworkCommand::PublishTransform { update };
 
     if let Err(e) = networking.command_tx.send(command) {
         error!("Failed to send publish command: {e:?}");

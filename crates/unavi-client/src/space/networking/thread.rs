@@ -3,6 +3,7 @@ use std::{
     str::FromStr,
     sync::Arc,
     thread::{self, JoinHandle},
+    time::Duration,
 };
 
 use anyhow::Context;
@@ -37,19 +38,10 @@ struct ParsedConnectInfo {
 
 /// Commands sent from Bevy systems to the networking thread.
 pub enum NetworkCommand {
-    SetActor {
-        actor: Actor,
-    },
-    JoinSpace {
-        entity: Entity,
-        space_url: DidUrl,
-    },
-    LeaveSpace {
-        entity: Entity,
-    },
-    PublishTransform {
-        update: TransformResult,
-    },
+    SetActor { actor: Actor },
+    JoinSpace { entity: Entity, space_url: DidUrl },
+    LeaveSpace { entity: Entity },
+    PublishTransform { update: TransformResult },
     Shutdown,
 }
 
@@ -153,7 +145,25 @@ async fn thread_loop(
                 handle_publish(&state, update).await;
             }
             NetworkCommand::Shutdown => {
-                info!("Networking thread shutting down");
+                info!(
+                    "Networking thread shutting down - closing {} connections",
+                    state.connections.len()
+                );
+
+                // Close all active connections gracefully.
+                for (connect_url, active) in state.connections.drain() {
+                    info!("Closing connection to {connect_url}");
+                    active
+                        .host
+                        .connection
+                        .close(wtransport::VarInt::from_u32(200), b"shutdown");
+                }
+
+                info!("Shutdown complete");
+
+                // Wait for connections to finish.
+                tokio::time::sleep(Duration::from_secs(1)).await;
+
                 break;
             }
         }
@@ -348,18 +358,16 @@ async fn handle_leave_space(
     };
 
     // Disconnect if no more spaces using this connection.
-    if should_disconnect {
-        if let Some(active) = state.connections.remove(&connect_url) {
-            info!("Disconnecting from {connect_url} (no more spaces)");
-            active
-                .host
-                .connection
-                .close(wtransport::VarInt::from_u32(200), &[]);
-            let _ = state.streams.remove_async(&connect_url).await;
-            let _ = event_tx.send(NetworkEvent::ConnectionClosed {
-                connect_url: connect_url.clone(),
-            });
-        }
+    if should_disconnect && let Some(active) = state.connections.remove(&connect_url) {
+        info!("Disconnecting from {connect_url} (no more spaces)");
+        active
+            .host
+            .connection
+            .close(wtransport::VarInt::from_u32(200), &[]);
+        let _ = state.streams.remove_async(&connect_url).await;
+        let _ = event_tx.send(NetworkEvent::ConnectionClosed {
+            connect_url: connect_url.clone(),
+        });
     }
 }
 

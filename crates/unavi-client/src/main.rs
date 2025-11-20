@@ -1,5 +1,7 @@
 #![windows_subsystem = "windows"]
 
+use std::time::Duration;
+
 use bevy::prelude::*;
 use clap::Parser;
 
@@ -26,4 +28,9 @@ fn main() {
             debug_network: args.debug_network,
         })
         .run();
+
+    // Give time for other threads to finish.
+    std::thread::sleep(Duration::from_secs(1));
+
+    info!("Graceful exit");
 }

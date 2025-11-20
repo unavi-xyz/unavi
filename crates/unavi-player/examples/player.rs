@@ -329,35 +329,22 @@ fn setup_scene(
         );
     }
 
-    // // Small steps
-    // spawner.steps(
-    //     Vec3::new(-12.0, 0.0, 2.0),
-    //     3.0,
-    //     0.2,
-    //     0.5,
-    //     10,
-    //     Color::from(YELLOW_400),
-    // );
-    //
-    // // Medium steps
-    // spawner.steps(
-    //     Vec3::new(-6.0, 0.0, 2.0),
-    //     3.0,
-    //     0.35,
-    //     0.6,
-    //     8,
-    //     Color::from(EMERALD_400),
-    // );
-    //
-    // // Large steps
-    // spawner.steps(
-    //     Vec3::new(0.0, 0.0, 2.0),
-    //     3.0,
-    //     0.5,
-    //     0.8,
-    //     6,
-    //     Color::from(BLUE_400),
-    // );
+    for (i, step_size) in [0.05, 0.1, 0.2, 0.3].into_iter().enumerate() {
+        let width = 4.0;
+        let count = 10;
+
+        let mut position = Vec3::new(0.0, 0.0, 16.0);
+        position.x -= i as f32 * width;
+
+        spawner.steps(
+            position,
+            width,
+            step_size,
+            0.5,
+            count,
+            Color::from(YELLOW_400),
+        );
+    }
 
     spawn_terrain(&mut spawner, false);
     // spawn_terrain(&mut spawner, true);

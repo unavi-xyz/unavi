@@ -31,6 +31,7 @@ directories        = "6.0.0"
 dwn                = { git = "https://github.com/unavi-xyz/dwn" }
 dwn-server         = { git = "https://github.com/unavi-xyz/dwn" }
 embed-resource     = "3.0.6"
+flume              = "0.11.0"
 futures            = "0.3.31"
 gltf_kun           = { git = "https://github.com/unavi-xyz/gltf_kun" }
 image              = { default-features = false, version = "0.25.8" }

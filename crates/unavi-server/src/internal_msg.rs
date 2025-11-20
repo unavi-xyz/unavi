@@ -5,7 +5,6 @@ use dwn::{
     Actor,
     core::message::{descriptor::Descriptor, mime::APPLICATION_JSON},
 };
-use tokio::sync::mpsc::Receiver;
 use tracing::{error, info};
 use unavi_constants::{WP_VERSION, protocols::SPACE_HOST_PROTOCOL, schemas::ServerInfo};
 
@@ -16,10 +15,10 @@ pub enum InternalMessage {
     SetPlayerCount { record_id: String, count: usize },
 }
 
-pub async fn internal_message_handler(msg_rx: &mut Receiver<InternalMessage>) {
+pub async fn internal_message_handler(msg_rx: flume::Receiver<InternalMessage>) {
     let mut handler = InternalMessageHandler::default();
 
-    while let Some(msg) = msg_rx.recv().await {
+    while let Ok(msg) = msg_rx.recv_async().await {
         match msg {
             InternalMessage::SetActor(a) => {
                 handler.actor = Some(a);

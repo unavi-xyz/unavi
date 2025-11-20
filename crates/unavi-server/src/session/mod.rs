@@ -51,7 +51,7 @@ pub struct SessionSpawner {
 #[derive(Clone)]
 pub struct ServerContext {
     pub actor: Actor,
-    msg_tx: tokio::sync::mpsc::Sender<InternalMessage>,
+    msg_tx: flume::Sender<InternalMessage>,
     player_tickrates: Arc<SccHashMap<PlayerId, Arc<SccHashMap<PlayerId, Duration>>>>,
     players: Arc<SccHashMap<PlayerId, Player>>,
     spaces: Arc<SccHashMap<SpaceId, Space>>,
@@ -62,7 +62,7 @@ impl ServerContext {
     async fn update_space_player_count(&self, space_id: String, count: usize) {
         let _ = self
             .msg_tx
-            .send(InternalMessage::SetPlayerCount {
+            .send_async(InternalMessage::SetPlayerCount {
                 record_id: space_id,
                 count,
             })
@@ -100,7 +100,7 @@ pub struct SpawnerOptions {
     pub did: Did,
     pub domain: String,
     pub in_memory: bool,
-    pub msg_tx: tokio::sync::mpsc::Sender<InternalMessage>,
+    pub msg_tx: flume::Sender<InternalMessage>,
     pub remote: Url,
     pub vc: P256KeyPair,
 }

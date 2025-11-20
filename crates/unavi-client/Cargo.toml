@@ -30,7 +30,7 @@ bincode.workspace = true
 clap.workspace = true
 directories.workspace = true
 dwn.workspace = true
-flume = "0.11.1"
+flume.workspace = true
 futures.workspace = true
 image = { features = ["png"], workspace = true }
 log = { features = [

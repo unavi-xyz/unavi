@@ -1,7 +1,6 @@
 //! Network monitoring events.
 
-use std::sync::{LazyLock, Mutex};
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel};
+use std::sync::LazyLock;
 
 /// Network monitoring event types.
 pub enum NetworkEvent {
@@ -23,10 +22,5 @@ pub enum NetworkEvent {
 }
 
 /// Global channel for network monitoring events.
-pub static NETWORK_EVENTS: LazyLock<(
-    UnboundedSender<NetworkEvent>,
-    Mutex<UnboundedReceiver<NetworkEvent>>,
-)> = LazyLock::new(|| {
-    let (tx, rx) = unbounded_channel();
-    (tx, Mutex::new(rx))
-});
+pub static NETWORK_EVENTS: LazyLock<(flume::Sender<NetworkEvent>, flume::Receiver<NetworkEvent>)> =
+    LazyLock::new(flume::unbounded);

@@ -11624,6 +11624,7 @@ dependencies = [
  "directories",
  "dwn",
  "dwn-server",
+ "flume",
  "futures 0.3.31",
  "hyper",
  "p256",

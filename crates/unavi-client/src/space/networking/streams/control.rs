@@ -4,7 +4,7 @@ use tarpc::tokio_util::codec::LengthDelimitedCodec;
 use unavi_server_service::from_server::ControlMessage;
 use wtransport::RecvStream;
 
-use crate::space::{Host, HostControlChannel, PlayerHost, RemotePlayer};
+use crate::space::{Host, HostControlChannel, HostTransformChannels, PlayerHost, RemotePlayer};
 
 pub async fn recv_control_stream(
     stream: RecvStream,
@@ -30,10 +30,10 @@ pub async fn recv_control_stream(
 
 pub fn apply_controls(
     mut commands: Commands,
-    hosts: Query<(Entity, &Host, &HostControlChannel)>,
+    hosts: Query<(Entity, &Host, &HostControlChannel, &HostTransformChannels)>,
     remote_players: Query<(Entity, &RemotePlayer, &PlayerHost)>,
 ) {
-    for (host_entity, _, channel) in hosts.iter() {
+    for (host_entity, _, channel, transform_channels) in hosts.iter() {
         // Drain all pending messages.
         let mut messages = Vec::new();
         while let Ok(msg) = channel.rx.try_recv() {
@@ -45,6 +45,9 @@ pub fn apply_controls(
             match msg {
                 ControlMessage::PlayerLeft { player_id } => {
                     info!("Player {player_id}@{host_entity} left");
+
+                    // Remove from transform channels to prevent re-spawn.
+                    let _ = transform_channels.players.remove_sync(&player_id);
 
                     for (entity, player, player_host) in remote_players.iter() {
                         if player_host.0 == host_entity && player.player_id == player_id {

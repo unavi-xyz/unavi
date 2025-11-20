@@ -50,7 +50,7 @@ pub(crate) fn setup_vrm_eye_offset(
                 continue;
             };
 
-            let y = bone_transform.translation().y;
+            let y = bone_transform.translation().y - 0.02; // Adjustment for feet mesh
             lowest_y = lowest_y.min(y);
 
             match bone_name {
@@ -112,7 +112,7 @@ pub(crate) fn setup_vrm_eye_offset(
             warn!("Failed to get avatar transform for {:?}", avatar_ent);
         }
 
-        let head_y_in_rig = avatar_y_in_rig + eye_y - lowest_y / 2.0;
+        let head_y_in_rig = avatar_y_in_rig + eye_y - lowest_y;
 
         if let Ok(mut head_pose) = tracked_poses.get_mut(entities.tracked_head) {
             head_pose.translation.y = head_y_in_rig;

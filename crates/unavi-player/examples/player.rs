@@ -1,9 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    f32::consts::PI,
-    num::NonZero,
-    ops::RangeBounds,
-};
+use std::{collections::HashMap, num::NonZero};
 
 use avian3d::{
     PhysicsPlugins,
@@ -11,10 +6,8 @@ use avian3d::{
 };
 use bevy::{
     camera::{Exposure, visibility::RenderLayers},
-    color::palettes::tailwind::{
-        BLUE_400, EMERALD_400, ORANGE_400, PURPLE_400, RED_400, YELLOW_400,
-    },
-    light::{CascadeShadowConfigBuilder, light_consts::lux},
+    color::palettes::tailwind::{BLUE_400, ORANGE_400, PURPLE_400, RED_400, YELLOW_400},
+    light::{CascadeShadowConfigBuilder, NotShadowCaster, light_consts::lux},
     mesh::VertexAttributeValues,
     pbr::{Atmosphere, AtmosphereSettings},
     post_process::{auto_exposure::AutoExposure, bloom::Bloom},
@@ -58,12 +51,44 @@ fn main() {
             ..default()
         })
         .add_systems(Startup, setup_scene)
-        .add_systems(Update, handle_input)
+        .add_systems(Update, (handle_input, update_platforms))
         .run();
 }
 
 #[derive(Component)]
 struct SkyCamera;
+
+#[derive(Component)]
+struct HorizontalPlatform {
+    speed: f32,
+    range: f32,
+    start_x: f32,
+}
+
+#[derive(Component)]
+struct VerticalPlatform {
+    speed: f32,
+    range: f32,
+    start_y: f32,
+}
+
+fn update_platforms(
+    time: Res<Time>,
+    mut horizontal: Query<(&HorizontalPlatform, &mut Transform), Without<VerticalPlatform>>,
+    mut vertical: Query<(&VerticalPlatform, &mut Transform), Without<HorizontalPlatform>>,
+) {
+    let elapsed = time.elapsed_secs();
+
+    for (platform, mut transform) in horizontal.iter_mut() {
+        let offset = (elapsed * platform.speed).sin() * platform.range;
+        transform.translation.x = platform.start_x + offset;
+    }
+
+    for (platform, mut transform) in vertical.iter_mut() {
+        let offset = (elapsed * platform.speed).sin() * platform.range;
+        transform.translation.y = platform.start_y + offset;
+    }
+}
 
 fn handle_input(
     keyboard: Res<ButtonInput<KeyCode>>,
@@ -98,7 +123,7 @@ struct BoxConfig {
     rotation: Quat,
     size: Vec3,
     color: Color,
-    physics: bool,
+    rigidbody: Option<RigidBody>,
 }
 
 impl<'w, 's, 'a> SceneSpawner<'w, 's, 'a> {
@@ -124,6 +149,7 @@ impl<'w, 's, 'a> SceneSpawner<'w, 's, 'a> {
             },
             Mesh3d::default(),
             MeshMaterial3d(mat),
+            NotShadowCaster,
             transform,
         ));
     }
@@ -189,10 +215,10 @@ impl<'w, 's, 'a> SceneSpawner<'w, 's, 'a> {
             },
         ));
 
-        if config.physics {
+        if let Some(rigidbody) = config.rigidbody {
             entity.insert((
                 Collider::cuboid(config.size.x, config.size.y, config.size.z),
-                RigidBody::Static,
+                rigidbody,
             ));
         }
     }
@@ -212,7 +238,7 @@ impl<'w, 's, 'a> SceneSpawner<'w, 's, 'a> {
             rotation,
             size: Vec3::new(width, 0.2, hypotenuse),
             color,
-            physics: true,
+            rigidbody: Some(RigidBody::Static),
         });
 
         let angle_deg = angle.to_degrees();
@@ -240,7 +266,7 @@ impl<'w, 's, 'a> SceneSpawner<'w, 's, 'a> {
                 position: start_position + Vec3::new(0.0, y, z),
                 size: Vec3::new(width, height, depth),
                 color,
-                physics: true,
+                rigidbody: Some(RigidBody::Static),
                 ..Default::default()
             });
         }
@@ -313,6 +339,11 @@ fn setup_scene(
         material_cache: HashMap::new(),
     };
 
+    // Terrain
+    spawn_terrain(&mut spawner, false);
+    // spawn_terrain(&mut spawner, true);
+
+    // Slopes
     for (i, angle) in [15f32, 30.0, 45.0, 60.0].into_iter().enumerate() {
         let width = 4.0;
         let depth = 6.0;
@@ -329,6 +360,7 @@ fn setup_scene(
         );
     }
 
+    // Steps
     for (i, step_size) in [0.05, 0.1, 0.2, 0.3].into_iter().enumerate() {
         let width = 4.0;
         let count = 10;
@@ -346,15 +378,77 @@ fn setup_scene(
         );
     }
 
-    spawn_terrain(&mut spawner, false);
-    // spawn_terrain(&mut spawner, true);
+    // Horizontal moving platform
+    let h_platform_pos = Vec3::new(-16.0, 2.0, 0.0);
+    let h_platform_size = Vec3::new(4.0, 0.5, 4.0);
+    let h_material = spawner.get_or_create_material(Color::from(PURPLE_400));
+    let h_mesh = spawner.meshes.add(Cuboid::from_size(h_platform_size));
+
+    spawner.commands.spawn((
+        HorizontalPlatform {
+            speed: 1.0,
+            range: 5.0,
+            start_x: h_platform_pos.x,
+        },
+        RigidBody::Kinematic,
+        Collider::cuboid(h_platform_size.x, h_platform_size.y, h_platform_size.z),
+        Mesh3d(h_mesh),
+        MeshMaterial3d(h_material),
+        Transform::from_translation(h_platform_pos),
+    ));
+
+    // Vertical moving platform
+    let range = 8.0;
+    let thick = 0.5;
+    let v_platform_pos = Vec3::new(-16.0, range - thick / 2.0 + 0.01, 4.0);
+    let v_platform_size = Vec3::new(4.0, thick, 4.0);
+    let v_material = spawner.get_or_create_material(Color::from(ORANGE_400));
+    let v_mesh = spawner.meshes.add(Cuboid::from_size(v_platform_size));
+
+    spawner.commands.spawn((
+        VerticalPlatform {
+            speed: 0.5,
+            range,
+            start_y: v_platform_pos.y,
+        },
+        RigidBody::Kinematic,
+        Collider::cuboid(v_platform_size.x, v_platform_size.y, v_platform_size.z),
+        Mesh3d(v_mesh),
+        MeshMaterial3d(v_material),
+        Transform::from_translation(v_platform_pos),
+    ));
+
+    // Dynamic pyramid (disabled because lag)
+    // let pyramid_position = Vec3::new(16.0, 4.0, 0.0);
+    // let pyramid_height = 3;
+    // let cube_size = 0.5;
+    //
+    // for layer in 0..pyramid_height {
+    //     let boxes_per_side = pyramid_height - layer;
+    //     let layer_y = layer as f32 * cube_size;
+    //
+    //     for x in 0..boxes_per_side {
+    //         for z in 0..boxes_per_side {
+    //             let offset_x = (x as f32 - (boxes_per_side - 1) as f32 / 2.0) * cube_size;
+    //             let offset_z = (z as f32 - (boxes_per_side - 1) as f32 / 2.0) * cube_size;
+    //
+    //             spawner.spawn_box(BoxConfig {
+    //                 position: pyramid_position + Vec3::new(offset_x, layer_y, offset_z),
+    //                 rotation: Quat::IDENTITY,
+    //                 size: Vec3::splat(cube_size),
+    //                 color: Color::from(RED_400),
+    //                 rigidbody: Some(RigidBody::Dynamic),
+    //             });
+    //         }
+    //     }
+    // }
 }
 
 const TILE_SIZE: f32 = 32.0;
 const N_ROWS: isize = 12;
 const N_CENTER: isize = 4;
 
-const PHYSICS_CUTOFF: isize = 4;
+const PHYSICS_CUTOFF: isize = 2;
 const TILE_SCALE_RATE: isize = 4;
 const TILE_SCALE_OFFSET: isize = 1; // Adjust for center
 const BASE_ROW_STEP: isize = 2;
@@ -374,7 +468,11 @@ fn spawn_terrain(spawner: &mut SceneSpawner, inverse: bool) {
         position: Vec3::new(0.0, y - 0.5, 0.0),
         size: Vec3::new(center_radius * 2.0, 1.0, center_radius * 2.0),
         color: Color::WHITE,
-        physics: !inverse,
+        rigidbody: if inverse {
+            None
+        } else {
+            Some(RigidBody::Static)
+        },
         ..Default::default()
     });
 
@@ -445,7 +543,11 @@ fn spawn_ring(spawner: &mut SceneSpawner, config: RingConfig) {
                 position: Vec3::new(x, y, z),
                 size: Vec3::new(config.tile_size, height, config.tile_size),
                 color: Color::WHITE,
-                physics: config.physics,
+                rigidbody: if config.physics {
+                    Some(RigidBody::Static)
+                } else {
+                    None
+                },
                 ..Default::default()
             });
         }

@@ -2,7 +2,7 @@ use anyhow::Result;
 use bevy::winit::WINIT_WINDOWS;
 use winit::window::Icon;
 
-const ICON_BYTES: &[u8] = include_bytes!("../../assets/images/unavi-rounded.png");
+const ICON_BYTES: &[u8] = include_bytes!("../assets/images/unavi-rounded.png");
 
 pub fn set_window_icon() {
     if let Ok(icon) = try_get_icon() {

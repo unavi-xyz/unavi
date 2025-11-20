@@ -201,21 +201,19 @@ impl<'w, 's, 'a> SceneSpawner<'w, 's, 'a> {
         let angle = (height / depth).atan();
         let hypotenuse = (height.powi(2) + depth.powi(2)).sqrt();
 
-        let slope_mesh = self.meshes.add(Cuboid::new(width, 0.2, hypotenuse));
         let rotation = Quat::from_rotation_y(std::f32::consts::PI) * Quat::from_rotation_x(-angle);
 
-        // Position the slope so it touches the ground at the start and reaches height at the end
+        // Position the slope so it touches the ground at the start and reaches height at the end.
         let offset_y = hypotenuse / 2.0 * angle.sin() - 0.1;
         let offset_z = -hypotenuse / 2.0 * angle.cos();
 
-        self.commands.spawn((
-            Collider::cuboid(width, 0.2, hypotenuse),
-            Mesh3d(slope_mesh),
-            MeshMaterial3d(self.materials.add(color)),
-            RigidBody::Static,
-            Transform::from_translation(position + Vec3::new(0.0, offset_y, offset_z))
-                .with_rotation(rotation),
-        ));
+        self.spawn_box(BoxConfig {
+            position: position + Vec3::new(0.0, offset_y, offset_z),
+            rotation,
+            size: Vec3::new(width, 0.2, hypotenuse),
+            color,
+            physics: true,
+        });
 
         let angle_deg = angle.to_degrees();
         let text = format!("{:.0}°", angle_deg);
@@ -315,44 +313,22 @@ fn setup_scene(
         material_cache: HashMap::new(),
     };
 
-    // let depth = 6.0;
-    //
-    // // 15° slope
-    // spawner.slope(
-    //     Vec3::new(-12.0, 0.0, -10.0),
-    //     4.0,
-    //     depth * 15f32.to_radians().tan(),
-    //     depth,
-    //     Color::from(BLUE_400),
-    // );
-    //
-    // // 30° slope
-    // spawner.slope(
-    //     Vec3::new(-6.0, 0.0, -10.0),
-    //     4.0,
-    //     depth * 30f32.to_radians().tan(),
-    //     depth,
-    //     Color::from(PURPLE_400),
-    // );
-    //
-    // // 45° slope
-    // spawner.slope(
-    //     Vec3::new(0.0, 0.0, -10.0),
-    //     4.0,
-    //     depth * 45f32.to_radians().tan(),
-    //     depth,
-    //     Color::from(RED_400),
-    // );
-    //
-    // // 60° slope
-    // spawner.slope(
-    //     Vec3::new(6.0, 0.0, -10.0),
-    //     4.0,
-    //     depth * 60f32.to_radians().tan(),
-    //     depth,
-    //     Color::from(ORANGE_400),
-    // );
-    //
+    for (i, angle) in [15f32, 30.0, 45.0, 60.0].into_iter().enumerate() {
+        let width = 4.0;
+        let depth = 6.0;
+
+        let mut position = Vec3::new(0.0, 0.0, -16.0);
+        position.x -= i as f32 * width;
+
+        spawner.slope(
+            position,
+            width,
+            depth * angle.to_radians().tan(),
+            depth,
+            Color::from(BLUE_400),
+        );
+    }
+
     // // Small steps
     // spawner.steps(
     //     Vec3::new(-12.0, 0.0, 2.0),

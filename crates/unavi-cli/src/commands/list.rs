@@ -42,7 +42,7 @@ pub async fn list_spaces(actor: &Actor) -> Result<()> {
         };
 
         let value = serde_json::from_slice::<Value>(data)?;
-        info!("{id}: {value:#?}");
+        info!("{id}: {}", serde_json::to_string_pretty(&value)?);
     }
 
     Ok(())

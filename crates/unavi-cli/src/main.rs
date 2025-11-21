@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
@@ -18,6 +20,13 @@ enum Commands {
     List,
     /// Create a new space
     Create,
+    /// Edit an existing space with JSON data from a file
+    Edit {
+        /// ID of the space to edit
+        id: String,
+        /// Path to JSON file containing space data
+        data_path: PathBuf,
+    },
     /// Remove a space by ID
     Remove {
         /// ID of the space to remove
@@ -41,6 +50,9 @@ async fn main() -> Result<()> {
     match args.command {
         Commands::List => commands::list::list_spaces(&actor).await?,
         Commands::Create => commands::create::create_space(&actor).await?,
+        Commands::Edit { id, data_path } => {
+            commands::edit::edit_space(&actor, id, data_path).await?
+        }
         Commands::Remove { id } => commands::remove::remove_space(&actor, id).await?,
     }
 

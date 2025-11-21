@@ -11612,6 +11612,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-cli"
+version = "0.0.13"
+dependencies = [
+ "anyhow",
+ "clap",
+ "directories",
+ "dwn",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "unavi-constants",
+ "xdid",
+ "zeroize",
+]
+
+[[package]]
 name = "unavi-client"
 version = "0.0.13"
 dependencies = [

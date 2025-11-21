@@ -12,9 +12,24 @@ use unavi_server_service::{
 };
 use wtransport::{RecvStream, StreamId};
 
-use crate::space::{Host, HostTransformChannels, PlayerHost, RemotePlayer};
+use crate::space::{
+    Host, HostTransformChannels, PlayerHost, RemotePlayer,
+    networking::streams::publish::PublishInterval,
+};
 
 use super::{PFRAME_ROTATION_SCALE, PFRAME_TRANSLATION_SCALE};
+
+#[derive(Component)]
+pub struct RemotePlayerTickrate {
+    pub tickrate_ms: u64,
+}
+
+#[derive(Component)]
+pub struct NetworkTransformSmoothing {
+    pub target_translation: Vec3,
+    pub target_rotation: Quat,
+    pub target_joint_rotations: HashMap<BoneName, Quat>,
+}
 
 #[derive(Clone, Debug)]
 pub struct FinalTransform {
@@ -271,14 +286,21 @@ fn compute_final_transform_from_pframe(
 pub fn apply_player_transforms(
     asset_server: Res<AssetServer>,
     hosts: Query<(Entity, &Host, &HostTransformChannels)>,
+    spaces: Query<&PublishInterval>,
     mut commands: Commands,
     mut pending_spawns: Local<HashMap<(Entity, u64), Entity>>,
-    mut transforms: Query<&mut Transform>,
     remote_players: Query<(Entity, &RemotePlayer, &PlayerHost, &AvatarBones)>,
+    mut smoothing_query: Query<&mut NetworkTransformSmoothing>,
 ) {
     pending_spawns.retain(|_, entity| !remote_players.iter().any(|(e, ..)| e == *entity));
 
     for (host_entity, _, channel) in hosts.iter() {
+        let server_tickrate_ms = spaces
+            .iter()
+            .map(|interval| interval.tickrate.as_millis() as u64)
+            .next()
+            .unwrap_or(50);
+
         channel.players.iter_sync(|player_id, state| {
             let Ok(true) = state.rx.has_changed() else {
                 return false;
@@ -303,35 +325,38 @@ pub fn apply_player_transforms(
                         player_id: *player_id,
                     },
                     PlayerHost(host_entity),
+                    RemotePlayerTickrate {
+                        tickrate_ms: server_tickrate_ms,
+                    },
+                    NetworkTransformSmoothing {
+                        target_translation: final_transform.hips_translation,
+                        target_rotation: final_transform.hips_rotation,
+                        target_joint_rotations: final_transform.joint_rotations.clone(),
+                    },
                 ));
 
                 pending_spawns.insert((host_entity, *player_id), avatar);
                 return false;
             }
 
-            for (player_entity, remote, player_host, avatar_bones) in remote_players.iter() {
+            for (player_entity, remote, player_host, _) in remote_players.iter() {
                 if remote.player_id != *player_id || player_host.0 != host_entity {
                     continue;
                 }
 
-                if let Ok(mut transform) = transforms.get_mut(player_entity) {
-                    transform.translation = final_transform.hips_translation;
-                    transform.rotation = final_transform.hips_rotation;
-                }
-
-                if let Some(&hips_entity) = avatar_bones.get(&BoneName::Hips)
-                    && let Ok(mut transform) = transforms.get_mut(hips_entity)
-                {
-                    transform.translation = Vec3::default();
-                    transform.rotation = Quat::default();
-                }
-
-                for (bone_id, rotation) in &final_transform.joint_rotations {
-                    if let Some(&bone_entity) = avatar_bones.get(bone_id)
-                        && let Ok(mut transform) = transforms.get_mut(bone_entity)
-                    {
-                        transform.rotation = *rotation;
-                    }
+                // Update smoothing targets or add component if missing.
+                if let Ok(mut smoothing) = smoothing_query.get_mut(player_entity) {
+                    smoothing.target_translation = final_transform.hips_translation;
+                    smoothing.target_rotation = final_transform.hips_rotation;
+                    smoothing.target_joint_rotations = final_transform.joint_rotations.clone();
+                } else {
+                    commands
+                        .entity(player_entity)
+                        .insert(NetworkTransformSmoothing {
+                            target_translation: final_transform.hips_translation,
+                            target_rotation: final_transform.hips_rotation,
+                            target_joint_rotations: final_transform.joint_rotations.clone(),
+                        });
                 }
 
                 break;
@@ -339,5 +364,51 @@ pub fn apply_player_transforms(
 
             false // Never early-exit
         });
+    }
+}
+
+const SMOOTHING_FACTOR: f32 = 0.75;
+
+pub fn smooth_network_transforms(
+    time: Res<Time>,
+    mut remote_players: Query<(
+        Entity,
+        &RemotePlayerTickrate,
+        &mut NetworkTransformSmoothing,
+        &AvatarBones,
+    )>,
+    mut transforms: Query<&mut Transform>,
+) {
+    let delta = time.delta_secs();
+
+    for (player_entity, tickrate, smoothing, avatar_bones) in remote_players.iter_mut() {
+        // Calculate adaptive smoothing speed based on tickrate.
+        // Higher tickrate = faster smoothing (more responsive).
+        let tickrate_hz = 1000.0 / tickrate.tickrate_ms as f32;
+        let smooth_speed = tickrate_hz * SMOOTHING_FACTOR;
+        let t = (delta * smooth_speed).min(1.0);
+
+        // Smooth root transform.
+        if let Ok(mut transform) = transforms.get_mut(player_entity) {
+            transform.translation = transform.translation.lerp(smoothing.target_translation, t);
+            transform.rotation = transform.rotation.slerp(smoothing.target_rotation, t);
+        }
+
+        // Keep hips at origin.
+        if let Some(&hips_entity) = avatar_bones.get(&BoneName::Hips)
+            && let Ok(mut transform) = transforms.get_mut(hips_entity)
+        {
+            transform.translation = Vec3::default();
+            transform.rotation = Quat::default();
+        }
+
+        // Smooth joint rotations.
+        for (bone_id, target_rotation) in &smoothing.target_joint_rotations {
+            if let Some(&bone_entity) = avatar_bones.get(bone_id)
+                && let Ok(mut transform) = transforms.get_mut(bone_entity)
+            {
+                transform.rotation = transform.rotation.slerp(*target_rotation, t);
+            }
+        }
     }
 }

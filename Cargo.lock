@@ -11619,6 +11619,7 @@ dependencies = [
  "clap",
  "directories",
  "dwn",
+ "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",

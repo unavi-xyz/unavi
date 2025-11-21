@@ -18,7 +18,7 @@ pub fn is_beta() -> bool {
 
 /// Check if an update is needed, considering both version and channel.
 /// Returns true if update is needed, false if already up to date.
-pub fn needs_update(current: &Version, latest: &Version, current_is_beta: bool) -> bool {
+pub fn needs_update(current: &Version, latest: &Version) -> bool {
     let want_beta = is_beta();
     let latest_is_beta = latest.pre.as_str().contains("beta");
 

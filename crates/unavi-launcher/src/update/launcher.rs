@@ -60,9 +60,7 @@ where
             .unwrap_or(&latest_release.tag_name),
     )?;
 
-    let current_is_beta = current_version.pre.as_str().contains("beta");
-
-    if !needs_update(&current_version, &latest_version, current_is_beta) {
+    if !needs_update(&current_version, &latest_version) {
         info!("Up to date");
         on_status(UpdateStatus::UpToDate);
         return Ok(());

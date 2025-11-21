@@ -131,14 +131,12 @@ where
     let installed_version = get_installed_version();
     info!("Installed client version: {installed_version:?}");
 
-    if let Some(ref current) = installed_version {
-        let installed_is_beta = current.pre.as_str().contains("beta");
-
-        if !needs_update(current, &latest_version, installed_is_beta) {
-            info!("Client is up to date");
-            on_status(UpdateStatus::UpToDate);
-            return Ok(());
-        }
+    if let Some(current) = &installed_version
+        && !needs_update(current, &latest_version)
+    {
+        info!("Client is up to date");
+        on_status(UpdateStatus::UpToDate);
+        return Ok(());
     }
 
     info!("Updating client to {latest_version}");

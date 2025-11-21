@@ -1,0 +1,22 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-cli"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace      = true
+clap.workspace        = true
+directories.workspace = true
+dwn.workspace         = true
+tokio                 = { features = ["macros", "rt", "rt-multi-thread"], workspace = true }
+tracing.workspace     = true
+tracing-subscriber    = { features = ["env-filter"], workspace = true }
+unavi-constants.path  = "../unavi-constants"
+xdid.workspace        = true
+zeroize.workspace     = true

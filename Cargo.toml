@@ -61,11 +61,19 @@ gltf_kun      = { git = "https://github.com/unavi-xyz/gltf_kun" }
 xdid          = { git = "https://github.com/unavi-xyz/dwn" }
 
 [profile.release]
-lto = "thin"
+codegen-units = 1
+lto           = true
+panic         = "abort"
 
 [profile.release-wasm]
 inherits  = "release"
 opt-level = "s"
+
+[profile.dev]
+codegen-backend = "cranelift"
+
+[profile.dev.package."*"]
+codegen-backend = "llvm"
 
 [profile.wasm-dev]
 inherits  = "dev"

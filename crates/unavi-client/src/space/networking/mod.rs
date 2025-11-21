@@ -28,6 +28,7 @@ impl Plugin for NetworkingPlugin {
                     streams::transform::apply_player_transforms,
                 ),
             )
+            .add_systems(Update, streams::transform::smooth_network_transforms)
             .add_systems(Last, connection::cleanup::cleanup_connections_on_exit);
     }
 }

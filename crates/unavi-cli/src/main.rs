@@ -40,8 +40,8 @@ async fn main() -> Result<()> {
 
     match args.command {
         Commands::List => commands::list::list_spaces(&actor).await?,
-        Commands::Create  => commands::create::create_space(&actor).await?,
-        Commands::Remove { id } => commands::remove::remove_space(&actor, &id).await?,
+        Commands::Create => commands::create::create_space(&actor).await?,
+        Commands::Remove { id } => commands::remove::remove_space(&actor, id).await?,
     }
 
     Ok(())

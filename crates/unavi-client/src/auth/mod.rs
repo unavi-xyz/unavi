@@ -72,7 +72,9 @@ pub fn handle_login(_: On<LoginEvent>, mut local_actor: ResMut<LocalActor>, dwn:
             }
 
             loop {
-                match join_a_space(&actor).await {
+                // For now, join a random space (or create one if none exist).
+                // Eventually we will only join the user's home world on start.
+                match join_or_create_space(&actor).await {
                     Ok(()) => break,
                     Err(e) => {
                         error!("Failed to join a space: {e:?}");
@@ -90,8 +92,8 @@ pub fn handle_login(_: On<LoginEvent>, mut local_actor: ResMut<LocalActor>, dwn:
     .detach();
 }
 
-async fn join_a_space(actor: &Actor) -> anyhow::Result<()> {
-    if let Some(space_url) = find_populated_space(actor).await? {
+async fn join_or_create_space(actor: &Actor) -> anyhow::Result<()> {
+    if let Some(space_url) = find_public_space(actor).await? {
         let mut commands = CommandQueue::default();
         commands.push(bevy::ecs::system::command::spawn_batch([Space::new(
             space_url,
@@ -104,7 +106,7 @@ async fn join_a_space(actor: &Actor) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn find_populated_space(actor: &Actor) -> anyhow::Result<Option<DidUrl>> {
+async fn find_public_space(actor: &Actor) -> anyhow::Result<Option<DidUrl>> {
     let space_host = Did::from_str(SPACE_HOST_DID)?;
 
     // TODO: Fetch from space host
@@ -145,11 +147,8 @@ async fn find_populated_space(actor: &Actor) -> anyhow::Result<Option<DidUrl>> {
             }
         };
 
-        if info.num_players == 0 {
-            continue;
-        }
         info!(
-            "Found populated space with {}/{} players",
+            "Found space with {}/{} players",
             info.num_players, info.max_players
         );
         if info.num_players >= info.max_players {

@@ -367,7 +367,7 @@ pub fn apply_player_transforms(
     }
 }
 
-const SMOOTHING_FACTOR: f32 = 0.75;
+const SMOOTHING_FACTOR: f32 = 0.8;
 
 pub fn smooth_network_transforms(
     time: Res<Time>,

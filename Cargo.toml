@@ -12,6 +12,7 @@ version    = "0.0.13"
 cast_possible_truncation = "allow"
 cast_precision_loss      = "allow"
 cast_sign_loss           = "allow"
+nursery                  = { level = "warn", priority = -1 }
 pedantic                 = { level = "warn", priority = -1 }
 unwrap_used              = "deny"
 
@@ -19,6 +20,9 @@ unwrap_used              = "deny"
 needless_pass_by_value = "allow"
 too_many_arguments     = "allow"
 type_complexity        = "allow"
+
+# wit-bindgen generated code
+collection_is_never_read = "allow"
 
 [workspace.metadata.release]
 publish        = false
@@ -56,7 +60,7 @@ tokio-serde        = "0.9.0"
 tracing            = "0.1.41"
 tracing-subscriber = "0.3.20"
 tracing-test       = { features = ["no-env-filter"], version = "0.2.5" }
-wit-bindgen        = "0.47.0"
+wit-bindgen        = "0.48.1"
 wtransport         = "0.6.1"
 xdid               = { git = "https://github.com/unavi-xyz/dwn" }
 zeroize            = "1.8.2"
@@ -73,6 +77,7 @@ xdid          = { git = "https://github.com/unavi-xyz/dwn" }
 codegen-units = 1
 lto           = true
 panic         = "abort"
+strip         = true
 
 [profile.release-wasm]
 inherits  = "release"

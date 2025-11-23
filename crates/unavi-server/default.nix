@@ -46,7 +46,6 @@ _: {
           postInstall = ''
             mv $out/bin/* $out
             rm -r $out/bin
-            strip $out/${pname}
             cp LICENSE $out
           '';
         }

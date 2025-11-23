@@ -44,7 +44,7 @@ pub async fn recv_stream(
             .await?;
         }
         StreamHeader::Voice => {
-            voice::recv_voice_stream(stream).await?;
+            voice::recv_voice_stream(stream)?;
         }
         StreamHeader::Control => {
             control::recv_control_stream(stream, control_tx).await?;

@@ -71,7 +71,7 @@ pub(crate) fn setup_vrm_eye_offset(
         let eye_y = if let Some((_, left_pos)) = left_eye
             && let Some((_, right_pos)) = right_eye
         {
-            (left_pos.y + right_pos.y) / 2.0
+            f32::midpoint(left_pos.y, right_pos.y)
         } else if let Some((_, head_pos)) = head {
             head_pos.y + 0.08
         } else {

@@ -48,31 +48,96 @@ pub struct ServerOptions {
     pub port: u16,
 }
 
-pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
-    let port = opts.port;
-
+fn create_did(port: u16) -> (Did, String) {
     let domain = std::env::var("DOMAIN").unwrap_or_else(|_| format!("localhost:{port}"));
-    let domain_encoded = domain.replace(":", "%3A");
+    let domain_encoded = domain.replace(':', "%3A");
     let did = Did {
         method_name: MethodName("web".to_string()),
         method_id: MethodId(domain_encoded),
     };
-    info!("Running server as {did}");
+    (did, domain)
+}
 
+fn create_server_identity(domain: &str) -> anyhow::Result<(Identity, String)> {
     let identity = Identity::self_signed_builder()
-        .subject_alt_names([domain.clone()])
+        .subject_alt_names([domain])
         .from_now_utc()
         .validity_days(14)
         .build()?;
-    let cert_hash = identity.certificate_chain().as_slice()[0].hash();
+    let cert_hash = identity.certificate_chain().as_slice()[0]
+        .hash()
+        .to_string();
+    Ok((identity, cert_hash))
+}
 
+fn create_server_config(
+    identity: Identity,
+    port: u16,
+) -> anyhow::Result<Endpoint<wtransport::endpoint::endpoint_side::Server>> {
     let cfg = ServerConfig::builder()
         .with_bind_default(port)
         .with_identity(identity)
         .max_idle_timeout(Some(MAX_IDLE_TIMEOUT))?
         .keep_alive_interval(Some(KEEP_ALIVE_INTERVAL))
         .build();
-    let endpoint = Endpoint::server(cfg).context("create wtranspart endpoint")?;
+    Endpoint::server(cfg).context("create wtransport endpoint")
+}
+
+fn create_did_document_route(did: Did, vc: &impl DidKeyPair) -> Router {
+    let vc_public = vc.public().to_jwk();
+    Router::new().route(
+        "/.well-known/did.json",
+        axum::routing::get(move || async move {
+            let doc = Document {
+                id: did.clone(),
+                also_known_as: None,
+                assertion_method: Some(vec![VerificationMethod::RelativeUrl(RelativeDidUrl {
+                    path: RelativeDidUrlPath::Empty,
+                    query: None,
+                    fragment: Some(KEY_FRAGMENT.to_string()),
+                })]),
+                authentication: Some(vec![VerificationMethod::RelativeUrl(RelativeDidUrl {
+                    path: RelativeDidUrlPath::Empty,
+                    query: None,
+                    fragment: Some(KEY_FRAGMENT.to_string()),
+                })]),
+                capability_delegation: None,
+                capability_invocation: None,
+                controller: None,
+                key_agreement: None,
+                service: None,
+                verification_method: Some(vec![VerificationMethodMap {
+                    id: DidUrl {
+                        did: did.clone(),
+                        fragment: Some(KEY_FRAGMENT.to_string()),
+                        query: None,
+                        path_abempty: None,
+                    },
+                    controller: did.clone(),
+                    typ: "JsonWebKey2020".to_string(),
+                    public_key_multibase: None,
+                    public_key_jwk: Some(vc_public.clone()),
+                }]),
+            };
+
+            Json(doc)
+        }),
+    )
+}
+
+/// Run the UNAVI server.
+///
+/// # Errors
+///
+/// Returns an error if server initialization or startup fails.
+pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
+    let port = opts.port;
+
+    let (did, domain) = create_did(port);
+    info!("Running server as {did}");
+
+    let (identity, cert_hash) = create_server_identity(&domain)?;
+    let endpoint = create_server_config(identity, port)?;
 
     let vc = key_pair::get_or_create_key(opts.in_memory)?;
 
@@ -114,13 +179,13 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
                 error!("Failed to set actor: {e:?}");
                 tokio::time::sleep(SPACE_RETRY_DELAY).await;
                 continue;
-            };
+            }
 
-            if let Err(e) = spawner.init_space_host(cert_hash.to_string()).await {
+            if let Err(e) = spawner.init_space_host(cert_hash.clone()).await {
                 error!("Failed to init space host: {e:?}");
                 tokio::time::sleep(SPACE_RETRY_DELAY).await;
                 continue;
-            };
+            }
 
             info!("WebTransport listening on port {port}");
             loop {
@@ -136,44 +201,7 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
         }
     });
 
-    let app = Router::new().route(
-        "/.well-known/did.json",
-        axum::routing::get(|| async move {
-            let doc = Document {
-                id: did.clone(),
-                also_known_as: None,
-                assertion_method: Some(vec![VerificationMethod::RelativeUrl(RelativeDidUrl {
-                    path: RelativeDidUrlPath::Empty,
-                    query: None,
-                    fragment: Some(KEY_FRAGMENT.to_string()),
-                })]),
-                authentication: Some(vec![VerificationMethod::RelativeUrl(RelativeDidUrl {
-                    path: RelativeDidUrlPath::Empty,
-                    query: None,
-                    fragment: Some(KEY_FRAGMENT.to_string()),
-                })]),
-                capability_delegation: None,
-                capability_invocation: None,
-                controller: None,
-                key_agreement: None,
-                service: None,
-                verification_method: Some(vec![VerificationMethodMap {
-                    id: DidUrl {
-                        did: did.clone(),
-                        fragment: Some(KEY_FRAGMENT.to_string()),
-                        query: None,
-                        path_abempty: None,
-                    },
-                    controller: did,
-                    typ: "JsonWebKey2020".to_string(),
-                    public_key_multibase: None,
-                    public_key_jwk: Some(vc.public().to_jwk()),
-                }]),
-            };
-
-            Json(doc)
-        }),
-    );
+    let app = create_did_document_route(did, &vc);
 
     info!("HTTP listening on port {port}");
 

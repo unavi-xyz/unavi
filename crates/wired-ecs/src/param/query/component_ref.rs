@@ -6,13 +6,13 @@ pub trait AsComponentRef<T> {
     type CRef<'a>
     where
         Self: 'a;
-    fn as_component_ref<'a>(&'a self) -> Self::CRef<'a>;
+    fn as_component_ref(&self) -> Self::CRef<'_>;
 }
 pub trait AsComponentMut<T> {
     type CMut<'a>
     where
         Self: 'a;
-    fn as_component_mut<'a>(&'a mut self) -> Self::CMut<'a>;
+    fn as_component_mut(&mut self) -> Self::CMut<'_>;
 }
 
 impl<T> AsComponentRef<&T> for T
@@ -23,7 +23,7 @@ where
         = &'a T
     where
         Self: 'a;
-    fn as_component_ref<'a>(&'a self) -> Self::CRef<'a> {
+    fn as_component_ref(&self) -> Self::CRef<'_> {
         self
     }
 }
@@ -35,7 +35,7 @@ where
         = &'a T
     where
         Self: 'a;
-    fn as_component_mut<'a>(&'a mut self) -> Self::CMut<'a> {
+    fn as_component_mut(&mut self) -> Self::CMut<'_> {
         self
     }
 }
@@ -47,7 +47,7 @@ where
         = &'a mut T
     where
         Self: 'a;
-    fn as_component_mut<'a>(&'a mut self) -> Self::CMut<'a> {
+    fn as_component_mut(&mut self) -> Self::CMut<'_> {
         self
     }
 }
@@ -60,7 +60,7 @@ where
         = T
     where
         Self: 'a;
-    fn as_component_ref<'a>(&'a self) -> Self::CRef<'a> {
+    fn as_component_ref(&self) -> Self::CRef<'_> {
         *self
     }
 }
@@ -72,7 +72,7 @@ where
         = T
     where
         Self: 'a;
-    fn as_component_mut<'a>(&'a mut self) -> Self::CMut<'a> {
+    fn as_component_mut(&mut self) -> Self::CMut<'_> {
         *self
     }
 }

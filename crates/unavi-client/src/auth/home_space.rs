@@ -38,17 +38,16 @@ pub async fn join_home_space(actor: &Actor) -> anyhow::Result<()> {
 
     for home in found_homes {
         let home_id = home.entry().record_id.clone();
-        let data = match home.into_data() {
-            Some(d) => d,
-            None => {
-                let Some(read) = actor.read(home_id).process().await? else {
-                    continue;
-                };
-                let Some(data) = read.into_data() else {
-                    continue;
-                };
-                data
-            }
+        let data = if let Some(d) = home.into_data() {
+            d
+        } else {
+            let Some(read) = actor.read(home_id).process().await? else {
+                continue;
+            };
+            let Some(data) = read.into_data() else {
+                continue;
+            };
+            data
         };
 
         space_url = Some(DidUrl::from_str(&String::from_utf8(data)?)?);
@@ -57,47 +56,46 @@ pub async fn join_home_space(actor: &Actor) -> anyhow::Result<()> {
 
     let space_host = Did::from_str(SPACE_HOST_DID)?;
 
-    let space_url = match space_url {
-        Some(c) => c,
-        None => {
-            let data = json!({
-                "name": format!("{}'s Home", actor.did),
-            });
+    let space_url = if let Some(c) = space_url {
+        c
+    } else {
+        let data = json!({
+            "name": format!("{}'s Home", actor.did),
+        });
 
-            // TODO: Fetch from space host
-            let host_dwn = actor.remote.clone().unwrap();
+        // TODO: Fetch from space host
+        let host_dwn = actor.remote.clone().expect("value expected");
 
-            let space_id = actor
-                .write()
-                .protocol(
-                    SPACE_HOST_PROTOCOL.to_string(),
-                    WP_VERSION,
-                    "space".to_string(),
-                )
-                .schema(SPACE_SCHEMA.to_string())
-                .data(APPLICATION_JSON, data.to_string().into_bytes())
-                .published(true)
-                .target(&space_host)
-                .send(&host_dwn)
-                .await
-                .context("write space")?;
+        let space_id = actor
+            .write()
+            .protocol(
+                SPACE_HOST_PROTOCOL.to_string(),
+                WP_VERSION,
+                "space".to_string(),
+            )
+            .schema(SPACE_SCHEMA.to_string())
+            .data(APPLICATION_JSON, data.to_string().into_bytes())
+            .published(true)
+            .target(&space_host)
+            .send(&host_dwn)
+            .await
+            .context("write space")?;
 
-            let space_url = new_record_ref_url(space_host, &space_id);
+        let space_url = new_record_ref_url(space_host, &space_id);
 
-            actor
-                .write()
-                .protocol(
-                    HOME_SPACE_PROTOCOL.to_string(),
-                    WP_VERSION,
-                    "home".to_string(),
-                )
-                .data(TEXT_PLAIN, space_url.to_string().into_bytes())
-                .process()
-                .await
-                .context("write home")?;
+        actor
+            .write()
+            .protocol(
+                HOME_SPACE_PROTOCOL.to_string(),
+                WP_VERSION,
+                "home".to_string(),
+            )
+            .data(TEXT_PLAIN, space_url.to_string().into_bytes())
+            .process()
+            .await
+            .context("write home")?;
 
-            space_url
-        }
+        space_url
     };
 
     let mut commands = CommandQueue::default();

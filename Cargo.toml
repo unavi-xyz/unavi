@@ -9,8 +9,16 @@ repository = "https://github.com/unavi-xyz/unavi"
 version    = "0.0.13"
 
 [workspace.lints.clippy]
-too_many_arguments = "allow"
-type_complexity    = "allow"
+cast_possible_truncation = "allow"
+cast_precision_loss      = "allow"
+cast_sign_loss           = "allow"
+pedantic                 = { level = "warn", priority = -1 }
+unwrap_used              = "deny"
+
+# Bevy-specific patterns
+needless_pass_by_value = "allow"
+too_many_arguments     = "allow"
+type_complexity        = "allow"
 
 [workspace.metadata.release]
 publish        = false
@@ -35,6 +43,7 @@ flume              = "0.11.0"
 futures            = "0.3.31"
 gltf_kun           = { git = "https://github.com/unavi-xyz/gltf_kun" }
 image              = { default-features = false, version = "0.25.8" }
+parking_lot        = "0.12.5"
 scc                = "3.4.2"
 semver             = "1.0.27"
 serde              = "1.0.228"
@@ -67,7 +76,7 @@ panic         = "abort"
 
 [profile.release-wasm]
 inherits  = "release"
-opt-level = "s"
+opt-level = "z"
 
 [profile.dev]
 codegen-backend = "cranelift"

@@ -74,7 +74,9 @@ where
             a.name.contains("unavi-launcher")
                 && a.name.contains(simple_target.release_str())
                 && match simple_target {
-                    super::common::SimpleTarget::Windows => a.name.ends_with(".msi"),
+                    super::common::SimpleTarget::Windows => std::path::Path::new(&a.name)
+                        .extension()
+                        .is_some_and(|ext| ext.eq_ignore_ascii_case("msi")),
                     _ => true,
                 }
         })

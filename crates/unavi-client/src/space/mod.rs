@@ -3,7 +3,17 @@ use xdid::core::did_url::DidUrl;
 
 use unavi_server_service::from_server::ControlMessage;
 
-use crate::{auth::LocalActor, space::networking::TransformChannels};
+use crate::{
+    auth::LocalActor,
+    space::networking::{
+        connection::state::{ConnectionAttempt, ConnectionState},
+        streams::{
+            TransformChannels,
+            publish::{PublishInterval, TransformPublishState},
+        },
+        thread::{NetworkCommand, NetworkingThread},
+    },
+};
 
 pub mod networking;
 pub mod record_ref_url;
@@ -19,10 +29,7 @@ impl Plugin for SpacePlugin {
     }
 }
 
-fn send_actor_to_networking_thread(
-    actor: Res<LocalActor>,
-    networking: Res<networking::NetworkingThread>,
-) {
+fn send_actor_to_networking_thread(actor: Res<LocalActor>, networking: Res<NetworkingThread>) {
     if !actor.is_changed() {
         return;
     }
@@ -31,7 +38,7 @@ fn send_actor_to_networking_thread(
         return;
     };
 
-    let command = networking::NetworkCommand::SetActor { actor: actor_val };
+    let command = NetworkCommand::SetActor { actor: actor_val };
 
     if let Err(e) = networking.command_tx.send(command) {
         error!("Failed to send SetActor command: {e:?}");
@@ -52,8 +59,7 @@ pub struct HostTransformChannels {
 
 #[derive(Component)]
 pub struct HostControlChannel {
-    #[allow(dead_code)]
-    pub tx: flume::Sender<ControlMessage>,
+    pub _tx: flume::Sender<ControlMessage>,
     pub rx: flume::Receiver<ControlMessage>,
 }
 
@@ -75,10 +81,10 @@ pub struct PlayerHost(Entity);
 /// Upon add, connection state components are inserted and the join process begins.
 #[derive(Component)]
 #[require(
-    networking::connection::state::ConnectionState,
-    networking::connection::state::ConnectionAttempt,
-    networking::streams::publish::PublishInterval,
-    networking::streams::publish::TransformPublishState
+    ConnectionState,
+    ConnectionAttempt,
+    PublishInterval,
+    TransformPublishState
 )]
 pub struct Space {
     pub url: DidUrl,

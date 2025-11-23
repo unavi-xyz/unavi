@@ -216,7 +216,7 @@ fn clean_old_versions(current: &Version, keep_count: usize) -> anyhow::Result<()
     let clients_dir = DIRS.data_local_dir().join("clients");
 
     let mut versions: Vec<Version> = std::fs::read_dir(&clients_dir)?
-        .filter_map(|entry| entry.ok())
+        .filter_map(std::result::Result::ok)
         .filter_map(|entry| {
             let name = entry.file_name();
             let name_str = name.to_string_lossy();

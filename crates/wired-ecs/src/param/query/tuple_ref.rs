@@ -4,13 +4,13 @@ pub trait AsTupleRef<T> {
     type TRef<'a>
     where
         Self: 'a;
-    fn as_tuple_ref<'a>(&'a self) -> Self::TRef<'a>;
+    fn as_tuple_ref(&self) -> Self::TRef<'_>;
 }
 pub trait AsTupleMut<T> {
     type TMut<'a>
     where
         Self: 'a;
-    fn as_tuple_mut<'a>(&'a mut self) -> Self::TMut<'a>;
+    fn as_tuple_mut(&mut self) -> Self::TMut<'_>;
 }
 
 impl<A, ARef> AsTupleRef<ARef> for A
@@ -22,7 +22,7 @@ where
     where
         Self: 'a;
 
-    fn as_tuple_ref<'a>(&'a self) -> Self::TRef<'a> {
+    fn as_tuple_ref(&self) -> Self::TRef<'_> {
         self.as_component_ref()
     }
 }
@@ -35,7 +35,7 @@ where
     where
         Self: 'a;
 
-    fn as_tuple_mut<'a>(&'a mut self) -> Self::TMut<'a> {
+    fn as_tuple_mut(&mut self) -> Self::TMut<'_> {
         self.as_component_mut()
     }
 }
@@ -49,7 +49,7 @@ where
     where
         Self: 'a;
 
-    fn as_tuple_ref<'a>(&'a self) -> Self::TRef<'a> {
+    fn as_tuple_ref(&self) -> Self::TRef<'_> {
         (self.0.as_component_ref(),)
     }
 }
@@ -62,7 +62,7 @@ where
     where
         Self: 'a;
 
-    fn as_tuple_mut<'a>(&'a mut self) -> Self::TMut<'a> {
+    fn as_tuple_mut(&mut self) -> Self::TMut<'_> {
         (self.0.as_component_mut(),)
     }
 }
@@ -77,7 +77,7 @@ where
     where
         Self: 'a;
 
-    fn as_tuple_ref<'a>(&'a self) -> Self::TRef<'a> {
+    fn as_tuple_ref(&self) -> Self::TRef<'_> {
         (self.0.as_component_ref(), self.1.as_component_ref())
     }
 }
@@ -91,7 +91,7 @@ where
     where
         Self: 'a;
 
-    fn as_tuple_mut<'a>(&'a mut self) -> Self::TMut<'a> {
+    fn as_tuple_mut(&mut self) -> Self::TMut<'_> {
         (self.0.as_component_mut(), self.1.as_component_mut())
     }
 }

@@ -7,7 +7,11 @@ use std::{
 };
 
 use anyhow::Context;
-use bevy::{ecs::entity::Entity, log::*, prelude::Resource};
+use bevy::{
+    ecs::entity::Entity,
+    log::{error, info, warn},
+    prelude::Resource,
+};
 use dwn::Actor;
 use scc::HashMap as SccHashMap;
 use serde::Deserialize;
@@ -101,13 +105,13 @@ impl NetworkingThread {
 struct ThreadState {
     /// DWN actor for fetching connect info.
     actor: Option<Actor>,
-    /// Active connections by connect_url.
+    /// Active connections by `connect_url`.
     connections: HashMap<String, ActiveConnection>,
     /// Connection initiation in progress (to prevent duplicates).
     initiating: HashMap<String, Vec<Entity>>,
-    /// Transform streams by connect_url.
+    /// Transform streams by `connect_url`.
     streams: Arc<SccHashMap<String, HostStreams>>,
-    /// Mapping from space entity to connect_url.
+    /// Mapping from space entity to `connect_url`.
     entity_to_url: HashMap<Entity, String>,
 }
 
@@ -190,24 +194,23 @@ async fn fetch_connect_info(
     for found in found_urls {
         let record_id = found.entry().record_id.clone();
 
-        let data = match found.into_data() {
-            Some(d) => d,
-            None => {
-                let Some(read) = actor
-                    .read(record_id)
-                    .target(host_did)
-                    .send(host_dwn)
-                    .await?
-                else {
-                    warn!("connect url record not found");
-                    continue;
-                };
-                let Some(data) = read.into_data() else {
-                    warn!("connect url data not found");
-                    continue;
-                };
-                data
-            }
+        let data = if let Some(d) = found.into_data() {
+            d
+        } else {
+            let Some(read) = actor
+                .read(record_id)
+                .target(host_did)
+                .send(host_dwn)
+                .await?
+            else {
+                warn!("connect url record not found");
+                continue;
+            };
+            let Some(data) = read.into_data() else {
+                warn!("connect url data not found");
+                continue;
+            };
+            data
         };
 
         let parsed: ParsedConnectInfo = serde_json::from_slice(&data)?;
@@ -307,7 +310,11 @@ async fn handle_join_space(
             }
 
             // Spawn stream accept task.
-            spawn_stream_accept(&host, connect_url.clone());
+            spawn_stream_accept(
+                &host,
+                #[cfg(feature = "devtools-network")]
+                connect_url.clone(),
+            );
 
             // Add to active connections.
             let space_entities = state.initiating.remove(&connect_url).unwrap_or_default();
@@ -434,7 +441,10 @@ async fn join_space(
     Ok(())
 }
 
-fn spawn_stream_accept(host: &HostConnection, #[allow(unused_variables)] connect_url: String) {
+fn spawn_stream_accept(
+    host: &HostConnection,
+    #[cfg(feature = "devtools-network")] connect_url: String,
+) {
     let connection = host.connection.clone();
     let transform_channels = host.transform_channels.clone();
     let control_tx = host.control_tx.clone();
@@ -460,7 +470,7 @@ fn spawn_stream_accept(host: &HostConnection, #[allow(unused_variables)] connect
                 .await
                 {
                     error!("error handling stream: {e:?}");
-                };
+                }
             });
         }
     });

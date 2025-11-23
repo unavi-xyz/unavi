@@ -15,7 +15,7 @@ use wtransport::SendStream;
 
 use crate::space::{
     Space,
-    networking::{NetworkCommand, NetworkingThread},
+    networking::{NetworkingThread, thread::NetworkCommand},
 };
 
 use super::{JOINT_ROTATION_EPSILON, PFRAME_ROTATION_SCALE, PFRAME_TRANSLATION_SCALE};
@@ -68,9 +68,9 @@ fn quantize_rotation(rot: Quat) -> [i16; 4] {
 
 fn quantize_translation(delta: Vec3) -> [i16; 3] {
     [
-        (delta.x * PFRAME_TRANSLATION_SCALE).clamp(i16::MIN as f32, i16::MAX as f32) as i16,
-        (delta.y * PFRAME_TRANSLATION_SCALE).clamp(i16::MIN as f32, i16::MAX as f32) as i16,
-        (delta.z * PFRAME_TRANSLATION_SCALE).clamp(i16::MIN as f32, i16::MAX as f32) as i16,
+        (delta.x * PFRAME_TRANSLATION_SCALE).clamp(f32::from(i16::MIN), f32::from(i16::MAX)) as i16,
+        (delta.y * PFRAME_TRANSLATION_SCALE).clamp(f32::from(i16::MIN), f32::from(i16::MAX)) as i16,
+        (delta.z * PFRAME_TRANSLATION_SCALE).clamp(f32::from(i16::MIN), f32::from(i16::MAX)) as i16,
     ]
 }
 
@@ -86,7 +86,10 @@ fn record_transforms(
     bone_transforms: &Query<&Transform, With<BoneName>>,
     global_transforms: &Query<&GlobalTransform>,
 ) -> Option<TransformResult> {
-    let is_iframe = current_time - state.last_iframe_time >= IFRAME_INTERVAL;
+    let is_iframe = current_time
+        .checked_sub(state.last_iframe_time)
+        .expect("value expected")
+        >= IFRAME_INTERVAL;
 
     let hips_ent = *avatar_bones.get(&BoneName::Hips)?;
     let hips_global = global_transforms.get(hips_ent).ok()?;
@@ -105,10 +108,9 @@ fn record_transforms(
             let should_include = state
                 .iframe_joint_rot
                 .get(bone_name)
-                .map(|&last_rot| {
+                .is_none_or(|&last_rot| {
                     rotation_changed(transform.rotation, last_rot, JOINT_ROTATION_EPSILON)
-                })
-                .unwrap_or(true);
+                });
 
             if !should_include {
                 continue;
@@ -156,11 +158,9 @@ fn record_transforms(
                 continue;
             };
 
-            let should_include = state
-                .prev_joint_rot
-                .get(bone_name)
-                .map(|&prev_rot| rotation_changed(delta_rot, prev_rot, JOINT_ROTATION_EPSILON))
-                .unwrap_or(true);
+            let should_include = state.prev_joint_rot.get(bone_name).is_none_or(|&prev_rot| {
+                rotation_changed(delta_rot, prev_rot, JOINT_ROTATION_EPSILON)
+            });
 
             if !should_include {
                 continue;
@@ -234,7 +234,7 @@ pub async fn send_iframe(
     let iframe_stream = streams
         .read_async(connect_url, |_, entry| entry.iframe_stream.clone())
         .await
-        .ok_or_else(|| anyhow::anyhow!("No iframe stream for {}", connect_url))?;
+        .ok_or_else(|| anyhow::anyhow!("No iframe stream for {connect_url}"))?;
 
     iframe_stream.lock().await.send(iframe_bytes.into()).await?;
 
@@ -350,24 +350,22 @@ pub fn publish_transform_data(
     }
 
     // Check if we should publish this tick.
-    let (tickrate, last) = match (min_tickrate, last_tick) {
-        (Some(tr), Some(lt)) => (tr, lt),
-        _ => return,
+    let (Some(tickrate), Some(last)) = (min_tickrate, last_tick) else {
+        return;
     };
 
-    if now - last < tickrate {
+    if now.checked_sub(last).expect("value expected") < tickrate {
         return;
     }
 
     // Update all intervals.
-    for (_, mut interval, _) in spaces.iter_mut() {
+    for (_, mut interval, _) in &mut spaces {
         interval.last_tick = now;
     }
 
     // Record transform from any space (they all share the same state).
-    let mut state = match spaces.iter_mut().next() {
-        Some((_, _, state)) => state,
-        None => return,
+    let Some((_, _, mut state)) = spaces.iter_mut().next() else {
+        return;
     };
 
     let Some(update) = record_transforms(

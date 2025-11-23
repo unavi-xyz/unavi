@@ -26,10 +26,10 @@ pub fn Settings() -> Element {
     };
 
     let handle_back = move |_| {
-        if current_beta != initial_beta {
-            nav.push(Route::SelfUpdate);
-        } else {
+        if current_beta == initial_beta {
             nav.push(Route::Home);
+        } else {
+            nav.push(Route::SelfUpdate);
         }
     };
 

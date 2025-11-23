@@ -4,11 +4,7 @@ pub mod connection;
 pub mod streams;
 pub mod thread;
 
-pub use streams::TransformChannels;
-pub use thread::{NetworkEvent, NetworkingThread};
-
-#[allow(unused_imports)]
-pub use thread::NetworkCommand;
+use thread::{NetworkEvent, NetworkingThread};
 
 pub struct NetworkingPlugin;
 
@@ -72,7 +68,7 @@ fn handle_network_events(
                         players: host.transform_channels.clone(),
                     },
                     HostControlChannel {
-                        tx: host.control_tx.clone(),
+                        _tx: host.control_tx.clone(),
                         rx: host.control_rx.clone(),
                     },
                 ));
@@ -100,7 +96,7 @@ fn handle_network_events(
                     if host.connect_url == connect_url {
                         // Cleanup any remote players associated with this host.
                         if let Some(players) = host_players {
-                            for player in players.0.iter() {
+                            for player in &players.0 {
                                 commands.entity(*player).despawn();
                             }
                         }

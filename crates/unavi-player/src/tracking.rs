@@ -20,6 +20,7 @@ pub struct TrackedPose {
 }
 
 impl TrackedPose {
+    #[must_use]
     pub fn new(translation: Vec3, rotation: Quat) -> Self {
         Self {
             rotation,
@@ -27,6 +28,7 @@ impl TrackedPose {
         }
     }
 
+    #[must_use]
     pub fn from_transform(transform: &Transform) -> Self {
         Self {
             rotation: transform.rotation,
@@ -34,6 +36,7 @@ impl TrackedPose {
         }
     }
 
+    #[must_use]
     pub fn to_transform(&self) -> Transform {
         Transform {
             rotation: self.rotation,
@@ -55,11 +58,11 @@ pub struct TrackedHand {
     pub is_left: bool,
 }
 
-/// Syncs [TrackedPose] to [Transform] for all tracked entities.
+/// Syncs [`TrackedPose`] to [Transform] for all tracked entities.
 pub(crate) fn sync_tracked_pose_to_transform(
     mut tracked: Query<(&TrackedPose, &mut Transform), Changed<TrackedPose>>,
 ) {
-    for (pose, mut transform) in tracked.iter_mut() {
+    for (pose, mut transform) in &mut tracked {
         transform.rotation = pose.rotation;
         transform.translation = pose.translation;
     }

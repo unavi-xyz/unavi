@@ -33,17 +33,21 @@ where
     T: ComponentGroup,
     U: Constraint,
 {
+    #[must_use]
     pub fn len(&self) -> usize {
         self.items.len()
     }
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.items.is_empty()
     }
     pub fn iter(&self) -> impl Iterator<Item = <T::Owned as AsTupleRef<T::Ref>>::TRef<'_>> {
-        self.items.iter().map(|x| x.as_tuple_ref())
+        self.items.iter().map(tuple_ref::AsTupleRef::as_tuple_ref)
     }
     pub fn iter_mut(&mut self) -> impl Iterator<Item = <T::Owned as AsTupleMut<T::Mut>>::TMut<'_>> {
-        self.items.iter_mut().map(|x| x.as_tuple_mut())
+        self.items
+            .iter_mut()
+            .map(tuple_ref::AsTupleMut::as_tuple_mut)
     }
 }
 
@@ -69,7 +73,7 @@ where
         _: &mut std::slice::IterMut<ParamState>,
         data: &mut std::vec::IntoIter<ParamData>,
     ) -> Self {
-        let ParamData::Query(data) = data.next().unwrap();
+        let ParamData::Query(data) = data.next().expect("missing param data");
         let items = data.clone().into_iter().map(T::from_data).collect();
         Self {
             items,

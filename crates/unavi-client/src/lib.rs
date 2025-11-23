@@ -24,10 +24,12 @@ pub fn assets_dir() -> PathBuf {
     DIRS.data_local_dir().join("assets")
 }
 
+#[must_use]
 pub fn models_dir() -> PathBuf {
     assets_dir().join("models")
 }
 
+#[must_use]
 pub fn images_dir() -> PathBuf {
     assets_dir().join("images")
 }
@@ -77,6 +79,7 @@ impl Plugin for UnaviPlugin {
             fade::FadePlugin,
             unavi_input::InputPlugin,
             unavi_player::PlayerPlugin,
+            unavi_portal::PortalPlugin,
             unavi_script::ScriptPlugin,
             space::SpacePlugin,
         ));

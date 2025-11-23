@@ -28,7 +28,7 @@ pub mod prelude {
     };
 }
 
-/// Wrapper around [wit_bindgen::generate!], with useful defaults.
+/// Wrapper around [`wit_bindgen::generate`!], with useful defaults.
 #[macro_export]
 macro_rules! generate_bindgen {
     ( $( $extra:tt )* ) => {

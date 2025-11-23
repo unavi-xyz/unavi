@@ -1,0 +1,17 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-portal"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace = true
+bevy.workspace   = true
+
+[dev-dependencies]
+bevy_panorbit_camera = "0.33.0"

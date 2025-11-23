@@ -27,6 +27,12 @@ impl Param for Commands {
 }
 
 impl Commands {
+    /// Spawn a new entity.
+    ///
+    /// # Panics
+    ///
+    /// Panics if entity spawning fails.
+    #[must_use]
     pub fn spawn(&self) -> Entity {
         Entity(host_api::spawn().expect("spawn"))
     }
@@ -36,14 +42,26 @@ impl Commands {
 pub struct Entity(EntityId);
 
 impl Entity {
+    #[must_use]
     pub fn id(&self) -> u64 {
         self.0
     }
 
+    /// Insert a component on this entity.
+    ///
+    /// # Panics
+    ///
+    /// Panics if component insertion fails.
     pub fn insert<T: Component>(&self, data: T) {
         let c_id = T::register();
         host_api::insert_component(self.0, c_id, &data.to_bytes()).expect("insert component");
     }
+
+    /// Remove a component from this entity.
+    ///
+    /// # Panics
+    ///
+    /// Panics if component removal fails.
     pub fn remove<T: Component>(&self) {
         let c_id = T::register();
         host_api::remove_component(self.0, c_id).expect("remove component");

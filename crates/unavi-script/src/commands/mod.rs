@@ -1,5 +1,3 @@
-use std::ops::DerefMut;
-
 use bevy::{
     ecs::component::{ComponentDescriptor, ComponentId},
     prelude::*,
@@ -77,6 +75,106 @@ const BATCH_SIZE: usize = 32;
 #[derive(Component)]
 pub struct OpaqueComponent(pub Vec<u8>);
 
+/// Finds a script entity by wasm ID.
+fn find_script_entity(world: &mut World, script_ent: Entity, entity_id: u64) -> Option<Entity> {
+    world
+        .query::<(Entity, &VOwner, &VEntity)>()
+        .iter(world)
+        .find_map(|(e, e_owner, v_ent)| {
+            if e_owner.0 == script_ent && v_ent.wasm_id == entity_id {
+                Some(e)
+            } else {
+                None
+            }
+        })
+}
+
+/// Finds a component's Bevy ID by wasm ID.
+fn find_script_component(
+    world: &mut World,
+    script_ent: Entity,
+    component_id: u32,
+) -> Option<ComponentId> {
+    world
+        .query::<(&VOwner, &VComponent)>()
+        .iter(world)
+        .find_map(|(c_owner, v_comp)| {
+            if c_owner.0 == script_ent && v_comp.wasm_id == component_id {
+                Some(v_comp.bevy_id)
+            } else {
+                None
+            }
+        })
+}
+
+/// Handles the `WriteComponent` command.
+fn handle_write_component(
+    world: &mut World,
+    script_ent: Entity,
+    entity_id: u64,
+    component_id: u32,
+    data: Vec<u8>,
+    insert: bool,
+) {
+    let Some(e) = find_script_entity(world, script_ent, entity_id) else {
+        error!("Entity {entity_id} not found");
+        return;
+    };
+
+    let Some(bevy_id) = find_script_component(world, script_ent, component_id) else {
+        error!("Component {component_id} not found");
+        return;
+    };
+
+    let mut ent = world.entity_mut(e);
+    let has_component = ent.contains_id(bevy_id);
+
+    if has_component {
+        let c_ptr = match ent.get_mut_by_id(bevy_id) {
+            Ok(c) => c,
+            Err(e) => {
+                error!("Entity component {component_id} not found: {e}");
+                return;
+            }
+        };
+
+        let mut c_ptr = unsafe { c_ptr.with_type::<OpaqueComponent>() };
+        let c = &mut *c_ptr;
+        c.0 = data;
+    } else {
+        if !insert {
+            return;
+        }
+
+        OwningPtr::make(OpaqueComponent(data), |ptr| {
+            // SAFETY: Component id has been taken from the same world.
+            unsafe {
+                ent.insert_by_id(bevy_id, ptr);
+            }
+        });
+    }
+}
+
+/// Handles the `RemoveComponent` command.
+fn handle_remove_component(
+    world: &mut World,
+    script_ent: Entity,
+    entity_id: u64,
+    component_id: u32,
+) {
+    let Some(e) = find_script_entity(world, script_ent, entity_id) else {
+        error!("RemoveComponent: entity {entity_id} not found");
+        return;
+    };
+
+    let Some(bevy_id) = find_script_component(world, script_ent, component_id) else {
+        error!("RemoveComponent: component {component_id} not found");
+        return;
+    };
+
+    world.entity_mut(e).remove_by_id(bevy_id);
+}
+
 pub fn apply_wasm_commands(
     mut commands: Commands,
     mut script_commands: Query<(Entity, &mut ScriptCommands), With<InitializedScript>>,
@@ -85,7 +183,7 @@ pub fn apply_wasm_commands(
     // info!("apply_wasm_commands");
 
     loop {
-        for (ent, mut recv_commands) in script_commands.iter_mut() {
+        for (ent, mut recv_commands) in &mut script_commands {
             loop {
                 if queue.len() >= BATCH_SIZE {
                     break;
@@ -127,7 +225,7 @@ pub fn apply_wasm_commands(
                     commands.queue(move |world: &mut World| {
                         if let Err(e) = system::build_system(world, script_ent, id, system) {
                             error!("Error building system {id}: {e:?}");
-                        };
+                        }
                     });
                 }
                 WasmCommand::OrderSystems { a, order, b } => {
@@ -156,22 +254,11 @@ pub fn apply_wasm_commands(
                 }
                 WasmCommand::Despawn { id } => {
                     commands.queue(move |world: &mut World| {
-                        let Some(e) = world
-                            .query::<(Entity, &VOwner, &VEntity)>()
-                            .iter(world)
-                            .find_map(|(e, e_owner, v_ent)| {
-                                if e_owner.0 == script_ent && v_ent.wasm_id == id {
-                                    Some(e)
-                                } else {
-                                    None
-                                }
-                            })
-                        else {
+                        if let Some(e) = find_script_entity(world, script_ent, id) {
+                            world.despawn(e);
+                        } else {
                             error!("entity {id} not found");
-                            return;
-                        };
-
-                        world.despawn(e);
+                        }
                     });
                 }
                 WasmCommand::WriteComponent {
@@ -181,65 +268,14 @@ pub fn apply_wasm_commands(
                     insert,
                 } => {
                     commands.queue(move |world: &mut World| {
-                        let Some(e) = world
-                            .query::<(Entity, &VOwner, &VEntity)>()
-                            .iter(world)
-                            .find_map(|(e, e_owner, v_ent)| {
-                                if e_owner.0 == script_ent && v_ent.wasm_id == entity_id {
-                                    Some(e)
-                                } else {
-                                    None
-                                }
-                            })
-                        else {
-                            error!("Entity {entity_id} not found");
-                            return;
-                        };
-
-                        let Some(bevy_id) = world
-                            .query::<(&VOwner, &VComponent)>()
-                            .iter(world)
-                            .find_map(|(c_owner, v_comp)| {
-                                if c_owner.0 == script_ent && v_comp.wasm_id == component_id {
-                                    Some(v_comp.bevy_id)
-                                } else {
-                                    None
-                                }
-                            })
-                        else {
-                            error!("Component {component_id} not found");
-                            return;
-                        };
-
-                        let mut ent = world.entity_mut(e);
-                        let has_component = ent.contains_id(bevy_id);
-
-                        if has_component {
-                            let c_ptr = match ent.get_mut_by_id(bevy_id) {
-                                Ok(c) => c,
-                                Err(e) => {
-                                    error!("Entity component {component_id} not found: {e}");
-                                    return;
-                                }
-                            };
-
-                            let mut c_ptr = unsafe { c_ptr.with_type::<OpaqueComponent>() };
-
-                            let c = c_ptr.deref_mut();
-                            c.0 = data;
-                        } else {
-                            if !insert {
-                                return;
-                            }
-
-                            OwningPtr::make(OpaqueComponent(data), |ptr| {
-                                // SAFETY:
-                                // - Component id has been taken from the same world
-                                unsafe {
-                                    ent.insert_by_id(bevy_id, ptr);
-                                }
-                            });
-                        }
+                        handle_write_component(
+                            world,
+                            script_ent,
+                            entity_id,
+                            component_id,
+                            data,
+                            insert,
+                        );
                     });
                 }
                 WasmCommand::RemoveComponent {
@@ -247,37 +283,7 @@ pub fn apply_wasm_commands(
                     component_id,
                 } => {
                     commands.queue(move |world: &mut World| {
-                        let Some(e) = world
-                            .query::<(Entity, &VOwner, &VEntity)>()
-                            .iter(world)
-                            .find_map(|(e, e_owner, v_ent)| {
-                                if e_owner.0 == script_ent && v_ent.wasm_id == entity_id {
-                                    Some(e)
-                                } else {
-                                    None
-                                }
-                            })
-                        else {
-                            error!("RemoveComponent: entity {entity_id} not found");
-                            return;
-                        };
-
-                        let Some(bevy_id) = world
-                            .query::<(&VOwner, &VComponent)>()
-                            .iter(world)
-                            .find_map(|(c_owner, v_comp)| {
-                                if c_owner.0 == script_ent && v_comp.wasm_id == component_id {
-                                    Some(v_comp.bevy_id)
-                                } else {
-                                    None
-                                }
-                            })
-                        else {
-                            error!("RemoveComponent: component {component_id} not found");
-                            return;
-                        };
-
-                        world.entity_mut(e).remove_by_id(bevy_id);
+                        handle_remove_component(world, script_ent, entity_id, component_id);
                     });
                 }
             }

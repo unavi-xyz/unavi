@@ -51,17 +51,18 @@ pub const FLOAT_HEIGHT_OFFSET: f32 = 0.01;
 /// `WorldScale = real_height / vrm_height`
 ///
 /// # Behavior
-/// - If VRM is **taller** than real_height → scale < 1.0 → world shrinks → player feels taller
-/// - If VRM is **shorter** than real_height → scale > 1.0 → world grows → player feels shorter
-/// - If VRM matches real_height → scale = 1.0 → no adjustment needed
+/// - If VRM is **taller** than `real_height` → scale < 1.0 → world shrinks → player feels taller
+/// - If VRM is **shorter** than `real_height` → scale > 1.0 → world grows → player feels shorter
+/// - If VRM matches `real_height` → scale = 1.0 → no adjustment needed
 ///
 /// # Example
-/// - real_height = 1.7m, vrm_height = 2.0m → scale = 0.85
+/// - `real_height` = 1.7m, `vrm_height` = 2.0m → scale = 0.85
 /// - World objects at 0.85x size make tall avatar feel appropriate
 #[derive(Resource, Default)]
 pub struct WorldScale(pub f32);
 
 impl WorldScale {
+    #[must_use]
     pub fn new(real_height: f32, vrm_height: f32) -> Self {
         Self(real_height / vrm_height)
     }

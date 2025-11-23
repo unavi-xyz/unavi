@@ -71,19 +71,16 @@ pub fn load_scripts(
             continue;
         };
 
-        let wasm = match wasm_assets.get(&handle.0) {
-            Some(a) => a,
-            None => continue,
+        let Some(wasm) = wasm_assets.get(&handle.0) else {
+            continue;
         };
 
-        let name = name
-            .map(|n| n.to_string())
-            .unwrap_or_else(|| "unknown".to_string());
+        let name = name.map_or_else(|| "unknown".to_string(), std::string::ToString::to_string);
         info!("Instantiating script {name}");
 
         let (stdout, stdout_stream) = ScriptStdout::new();
         let (stderr, stderr_stream) = ScriptStderr::new();
-        let wasi = WasiCtxBuilder::new()
+        let wasi_ctx = WasiCtxBuilder::new()
             .stdout(stdout_stream)
             .stderr(stderr_stream)
             .build();
@@ -94,7 +91,7 @@ pub fn load_scripts(
             write_recv,
         } = RuntimeData::spawn();
 
-        let state = StoreState::new(wasi, rt);
+        let state = StoreState::new(wasi_ctx, rt);
 
         let mut store = Store::new(&engine.0, state);
         store.epoch_deadline_async_yield_and_update(1);

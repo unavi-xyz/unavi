@@ -37,18 +37,15 @@ pub(crate) fn load_animation_nodes(
 
         let mut failed = false;
 
-        for (name, animation) in animations.0.iter() {
+        for (name, animation) in &animations.0 {
             let Some(raw_animation) = raw_animations.get(animation.animation.id()) else {
                 failed = true;
                 break;
             };
 
-            let gltf = match gltfs.get(&animation.gltf) {
-                Some(c) => c,
-                None => {
-                    failed = true;
-                    break;
-                }
+            let Some(gltf) = gltfs.get(&animation.gltf) else {
+                failed = true;
+                break;
             };
 
             info!("Loading avatar animation: {name:?}");
@@ -56,7 +53,8 @@ pub(crate) fn load_animation_nodes(
             let mut clip = AnimationClip::default();
 
             for channel in &raw_animation.channels {
-                let Some(mixamo_name) = channel.target_path.last().map(|x| x.as_str()) else {
+                let Some(mixamo_name) = channel.target_path.last().map(bevy::prelude::Name::as_str)
+                else {
                     continue;
                 };
 
@@ -75,96 +73,60 @@ pub(crate) fn load_animation_nodes(
                 // Retarget the animation.
                 let vrm_target = VRM_ANIMATION_TARGETS[bone_name];
 
-                match &channel.data {
-                    RawChannelData::Translation { .. } => {
+                // TODO: fix translation animations - scale out of mixamo size to avatar size?
+                if let RawChannelData::Rotation { timestamps, values } = &channel.data {
+                    // Get Mixamo rest pose.
+                    let Some(mixamo_node_handle) = gltf.named_nodes.get(mixamo_name) else {
+                        warn!("No animation gltf node for {mixamo_name}");
                         continue;
-                        // TODO: fix translation animations
-                        //       - scale out of mixamo size to avatar size?
-                        //
-                        // let samples = timestamps
-                        //     .clone()
-                        //     .into_iter()
-                        //     .zip(values.clone().into_iter())
-                        //     .map(|(t, mut item)| {
-                        //         item.x /= 100.0;
-                        //         item.y /= 100.0;
-                        //         item.z /= 100.0;
-                        //
-                        //         // TODO: Only if VRM 0
-                        //         item.x = -item.x;
-                        //
-                        //         (t, item)
-                        //     });
-                        //
-                        // let curve = match UnevenSampleAutoCurve::new(samples) {
-                        //     Ok(c) => c,
-                        //     Err(e) => {
-                        //         warn!("Failed to retarget {:?}: {e:?}", channel.target_path);
-                        //         continue;
-                        //     }
-                        // };
-                        //
-                        // let property = animated_field!(Transform::translation);
-                        // let curve = AnimatableCurve::new(property, curve);
-                        //
-                        // clip.add_curve_to_target(vrm_target, curve);
-                    }
-                    RawChannelData::Rotation { timestamps, values } => {
-                        // Get Mixamo rest pose.
-                        let mixamo_node_handle = match gltf.named_nodes.get(mixamo_name) {
-                            Some(n) => n,
-                            None => {
-                                warn!("No animation gltf node for {mixamo_name}");
-                                continue;
-                            }
-                        };
-                        let mixamo_node = nodes.get(mixamo_node_handle).unwrap();
+                    };
+                    let mixamo_node = nodes
+                        .get(mixamo_node_handle)
+                        .expect("mixamo node not found");
 
-                        let mut mixamo_parents = Vec::with_capacity(channel.target_path.len());
-                        create_parent_chain(
-                            gltf,
-                            &nodes,
-                            &mut mixamo_parents,
-                            &mixamo_node_handle.id(),
-                        );
+                    let mut mixamo_parents = Vec::with_capacity(channel.target_path.len());
+                    create_parent_chain(
+                        gltf,
+                        &nodes,
+                        &mut mixamo_parents,
+                        &mixamo_node_handle.id(),
+                    );
 
-                        let mixamo_rest = mixamo_parents
-                            .iter()
-                            .rev()
-                            .fold(Quat::IDENTITY, |rot, n| rot * n.transform.rotation);
+                    let mixamo_rest = mixamo_parents
+                        .iter()
+                        .rev()
+                        .fold(Quat::IDENTITY, |rot, n| rot * n.transform.rotation);
 
-                        // Retarget rotations from Mixamo-space to Bevy-space.
-                        let samples = timestamps
-                            .clone()
-                            .into_iter()
-                            .zip(values.clone().into_iter())
-                            .map(|(t, item)| {
-                                let mut item = mixamo_rest.mul_quat(item).mul_quat(
-                                    (mixamo_rest * mixamo_node.transform.rotation).inverse(),
-                                );
+                    // Retarget rotations from Mixamo-space to Bevy-space.
+                    let samples = timestamps
+                        .clone()
+                        .into_iter()
+                        .zip(values.clone().into_iter())
+                        .map(|(t, item)| {
+                            let mut item = mixamo_rest
+                                .mul_quat(item)
+                                .mul_quat((mixamo_rest * mixamo_node.transform.rotation).inverse());
 
-                                // TODO: Only if VRM 0
-                                item.y = -item.y;
-                                item.w = -item.w;
-                                let item = item.normalize();
+                            // TODO: Only if VRM 0
+                            item.y = -item.y;
+                            item.w = -item.w;
+                            let item = item.normalize();
 
-                                (t, item)
-                            });
+                            (t, item)
+                        });
 
-                        let curve = match UnevenSampleAutoCurve::new(samples) {
-                            Ok(c) => c,
-                            Err(e) => {
-                                warn!("Failed to retarget {:?}: {e:?}", channel.target_path);
-                                continue;
-                            }
-                        };
+                    let curve = match UnevenSampleAutoCurve::new(samples) {
+                        Ok(c) => c,
+                        Err(e) => {
+                            warn!("Failed to retarget {:?}: {e:?}", channel.target_path);
+                            continue;
+                        }
+                    };
 
-                        let property = animated_field!(Transform::rotation);
-                        let curve = AnimatableCurve::new(property, curve);
+                    let property = animated_field!(Transform::rotation);
+                    let curve = AnimatableCurve::new(property, curve);
 
-                        clip.add_curve_to_target(vrm_target, curve);
-                    }
-                    _ => {}
+                    clip.add_curve_to_target(vrm_target, curve);
                 }
             }
 
@@ -194,7 +156,7 @@ fn create_parent_chain(
     parents: &mut Vec<GltfNode>,
     target: &AssetId<GltfNode>,
 ) {
-    for handle in gltf.nodes.iter() {
+    for handle in &gltf.nodes {
         let Some(node) = nodes.get(handle) else {
             continue;
         };
@@ -203,6 +165,6 @@ fn create_parent_chain(
             parents.push(node.clone());
             create_parent_chain(gltf, nodes, parents, &handle.id());
             break;
-        };
+        }
     }
 }

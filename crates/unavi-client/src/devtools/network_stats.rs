@@ -152,7 +152,7 @@ pub fn update_bandwidth_stats(mut stats: ResMut<NetworkStats>) {
 
     for host_stats in stats.hosts.values_mut() {
         // Calculate upload bandwidth.
-        let cutoff = now - window;
+        let cutoff = now.checked_sub(window).expect("value expected");
         host_stats
             .upload_samples
             .retain(|(timestamp, _)| *timestamp > cutoff);
@@ -192,7 +192,7 @@ pub fn update_tickrate_stats(mut stats: ResMut<NetworkStats>) {
     let window = Duration::from_secs(1);
 
     for host_stats in stats.hosts.values_mut() {
-        let cutoff = now - window;
+        let cutoff = now.checked_sub(window).expect("value expected");
         host_stats
             .tick_samples
             .retain(|timestamp| *timestamp > cutoff);

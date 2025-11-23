@@ -34,7 +34,7 @@ pub(crate) fn is_desktop_mode(players: Query<&TrackingSource>) -> bool {
 #[derive(Component)]
 pub(crate) struct AnimationPlayerInitialized;
 
-/// Initializes animation components when AnimationPlayer is added.
+/// Initializes animation components when `AnimationPlayer` is added.
 pub(crate) fn init_animation_players(
     mut commands: Commands,
     animation_players: Query<

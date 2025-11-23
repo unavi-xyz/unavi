@@ -25,10 +25,10 @@ pub struct RemotePlayerTickrate {
 }
 
 #[derive(Component)]
-pub struct NetworkTransformSmoothing {
-    pub target_translation: Vec3,
-    pub target_rotation: Quat,
-    pub target_joint_rotations: HashMap<BoneName, Quat>,
+pub struct PlayerSmoothingTargets {
+    pub hips_translation: Vec3,
+    pub hips_rotation: Quat,
+    pub joint_rotations: HashMap<BoneName, Quat>,
 }
 
 #[derive(Clone, Debug)]
@@ -207,7 +207,7 @@ pub async fn recv_pframe_stream(
             })
             .await
             .ok_or_else(|| anyhow::anyhow!("Player not found"))?
-            .map_err(|_| anyhow::anyhow!("Frame dropped"))?;
+            .map_err(|()| anyhow::anyhow!("Frame dropped"))?;
 
         let _ = player_channels
             .update_async(&player_id, |_, state| {
@@ -242,16 +242,16 @@ fn compute_final_transform_from_pframe(
     last_iframe: &TrackingIFrame,
 ) -> FinalTransform {
     let hips_translation = Vec3::from_array([
-        pframe.translation[0] as f32 / PFRAME_TRANSLATION_SCALE + last_iframe.translation[0],
-        pframe.translation[1] as f32 / PFRAME_TRANSLATION_SCALE + last_iframe.translation[1],
-        pframe.translation[2] as f32 / PFRAME_TRANSLATION_SCALE + last_iframe.translation[2],
+        f32::from(pframe.translation[0]) / PFRAME_TRANSLATION_SCALE + last_iframe.translation[0],
+        f32::from(pframe.translation[1]) / PFRAME_TRANSLATION_SCALE + last_iframe.translation[1],
+        f32::from(pframe.translation[2]) / PFRAME_TRANSLATION_SCALE + last_iframe.translation[2],
     ]);
 
     let hips_rotation = (Quat::from_array([
-        pframe.rotation[0] as f32 / PFRAME_ROTATION_SCALE,
-        pframe.rotation[1] as f32 / PFRAME_ROTATION_SCALE,
-        pframe.rotation[2] as f32 / PFRAME_ROTATION_SCALE,
-        pframe.rotation[3] as f32 / PFRAME_ROTATION_SCALE,
+        f32::from(pframe.rotation[0]) / PFRAME_ROTATION_SCALE,
+        f32::from(pframe.rotation[1]) / PFRAME_ROTATION_SCALE,
+        f32::from(pframe.rotation[2]) / PFRAME_ROTATION_SCALE,
+        f32::from(pframe.rotation[3]) / PFRAME_ROTATION_SCALE,
     ]) * Quat::from_array(last_iframe.rotation))
     .normalize();
 
@@ -266,10 +266,10 @@ fn compute_final_transform_from_pframe(
             joint_rotations.insert(
                 joint.id,
                 (Quat::from_array([
-                    joint.rotation[0] as f32 / PFRAME_ROTATION_SCALE,
-                    joint.rotation[1] as f32 / PFRAME_ROTATION_SCALE,
-                    joint.rotation[2] as f32 / PFRAME_ROTATION_SCALE,
-                    joint.rotation[3] as f32 / PFRAME_ROTATION_SCALE,
+                    f32::from(joint.rotation[0]) / PFRAME_ROTATION_SCALE,
+                    f32::from(joint.rotation[1]) / PFRAME_ROTATION_SCALE,
+                    f32::from(joint.rotation[2]) / PFRAME_ROTATION_SCALE,
+                    f32::from(joint.rotation[3]) / PFRAME_ROTATION_SCALE,
                 ]) * Quat::from_array(iframe_joint.rotation))
                 .normalize(),
             );
@@ -290,7 +290,7 @@ pub fn apply_player_transforms(
     mut commands: Commands,
     mut pending_spawns: Local<HashMap<(Entity, u64), Entity>>,
     remote_players: Query<(Entity, &RemotePlayer, &PlayerHost, &AvatarBones)>,
-    mut smoothing_query: Query<&mut NetworkTransformSmoothing>,
+    mut smoothing_query: Query<&mut PlayerSmoothingTargets>,
 ) {
     pending_spawns.retain(|_, entity| !remote_players.iter().any(|(e, ..)| e == *entity));
 
@@ -328,10 +328,10 @@ pub fn apply_player_transforms(
                     RemotePlayerTickrate {
                         tickrate_ms: server_tickrate_ms,
                     },
-                    NetworkTransformSmoothing {
-                        target_translation: final_transform.hips_translation,
-                        target_rotation: final_transform.hips_rotation,
-                        target_joint_rotations: final_transform.joint_rotations.clone(),
+                    PlayerSmoothingTargets {
+                        hips_translation: final_transform.hips_translation,
+                        hips_rotation: final_transform.hips_rotation,
+                        joint_rotations: final_transform.joint_rotations.clone(),
                     },
                 ));
 
@@ -346,16 +346,18 @@ pub fn apply_player_transforms(
 
                 // Update smoothing targets or add component if missing.
                 if let Ok(mut smoothing) = smoothing_query.get_mut(player_entity) {
-                    smoothing.target_translation = final_transform.hips_translation;
-                    smoothing.target_rotation = final_transform.hips_rotation;
-                    smoothing.target_joint_rotations = final_transform.joint_rotations.clone();
+                    smoothing.hips_translation = final_transform.hips_translation;
+                    smoothing.hips_rotation = final_transform.hips_rotation;
+                    smoothing
+                        .joint_rotations
+                        .clone_from(&final_transform.joint_rotations);
                 } else {
                     commands
                         .entity(player_entity)
-                        .insert(NetworkTransformSmoothing {
-                            target_translation: final_transform.hips_translation,
-                            target_rotation: final_transform.hips_rotation,
-                            target_joint_rotations: final_transform.joint_rotations.clone(),
+                        .insert(PlayerSmoothingTargets {
+                            hips_translation: final_transform.hips_translation,
+                            hips_rotation: final_transform.hips_rotation,
+                            joint_rotations: final_transform.joint_rotations.clone(),
                         });
                 }
 
@@ -374,14 +376,14 @@ pub fn smooth_network_transforms(
     mut remote_players: Query<(
         Entity,
         &RemotePlayerTickrate,
-        &mut NetworkTransformSmoothing,
+        &mut PlayerSmoothingTargets,
         &AvatarBones,
     )>,
     mut transforms: Query<&mut Transform>,
 ) {
     let delta = time.delta_secs();
 
-    for (player_entity, tickrate, smoothing, avatar_bones) in remote_players.iter_mut() {
+    for (player_entity, tickrate, smoothing, avatar_bones) in &mut remote_players {
         // Calculate adaptive smoothing speed based on tickrate.
         // Higher tickrate = faster smoothing (more responsive).
         let tickrate_hz = 1000.0 / tickrate.tickrate_ms as f32;
@@ -390,8 +392,8 @@ pub fn smooth_network_transforms(
 
         // Smooth root transform.
         if let Ok(mut transform) = transforms.get_mut(player_entity) {
-            transform.translation = transform.translation.lerp(smoothing.target_translation, t);
-            transform.rotation = transform.rotation.slerp(smoothing.target_rotation, t);
+            transform.translation = transform.translation.lerp(smoothing.hips_translation, t);
+            transform.rotation = transform.rotation.slerp(smoothing.hips_rotation, t);
         }
 
         // Keep hips at origin.
@@ -403,7 +405,7 @@ pub fn smooth_network_transforms(
         }
 
         // Smooth joint rotations.
-        for (bone_id, target_rotation) in &smoothing.target_joint_rotations {
+        for (bone_id, target_rotation) in &smoothing.joint_rotations {
             if let Some(&bone_entity) = avatar_bones.get(bone_id)
                 && let Ok(mut transform) = transforms.get_mut(bone_entity)
             {

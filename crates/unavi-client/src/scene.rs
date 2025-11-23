@@ -42,7 +42,10 @@ pub fn spawn_scene(
     let ground_texture = asset_server.load("images/dev-white.png");
 
     let mut ground_mesh = Plane3d::default().mesh().size(SIZE, SIZE).build();
-    match ground_mesh.attribute_mut(Mesh::ATTRIBUTE_UV_0).unwrap() {
+    match ground_mesh
+        .attribute_mut(Mesh::ATTRIBUTE_UV_0)
+        .expect("value expected")
+    {
         VertexAttributeValues::Float32x2(uvs) => {
             const TEXTURE_SCALE: f32 = 4.0;
             const UV_SCALE: f32 = SIZE / TEXTURE_SCALE;

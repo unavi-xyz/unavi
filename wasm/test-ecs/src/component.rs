@@ -61,7 +61,7 @@ fn test_heap_types(items: Query<&MyHeap>) {
 
     let mut iter = items.iter();
 
-    let a = iter.next().unwrap();
+    let a = iter.next().expect("test value expected");
     assert_eq!(a.s, S);
     assert_eq!(a.v, get_v());
 }
@@ -71,7 +71,7 @@ fn test_large_data(items: Query<&MyLarge>) {
 
     let mut iter = items.iter();
 
-    let a = iter.next().unwrap();
+    let a = iter.next().expect("test value expected");
     assert_eq!(a.v.len(), N_LARGE);
     assert_eq!(a.v[0], 0);
     assert_eq!(a.v[N_LARGE - 1], N_LARGE - 1);

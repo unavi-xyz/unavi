@@ -36,7 +36,10 @@ impl<'t, T: Component> QueriedComponent for &'t T {
 
     fn register() -> Option<u32> {
         let id = T::register();
-        COMPONENT_IDS.lock().unwrap().insert(T::key(), id);
+        COMPONENT_IDS
+            .lock()
+            .expect("component ids mutex poisoned")
+            .insert(T::key(), id);
         Some(id)
     }
     fn mutability() -> Option<bool> {
@@ -47,7 +50,7 @@ impl<'t, T: Component> QueriedComponent for &'t T {
         _: u64,
         bytes: &mut std::vec::IntoIter<Vec<u8>>,
     ) -> OwnedComponent<Self::Owned, Self::Ref, Self::Mut> {
-        let owned = T::from_bytes(bytes.next().unwrap());
+        let owned = T::from_bytes(bytes.next().expect("missing component bytes"));
         OwnedComponent::new(owned)
     }
 }
@@ -59,7 +62,10 @@ impl<'t, T: Component> QueriedComponent for &'t mut T {
 
     fn register() -> Option<u32> {
         let id = T::register();
-        COMPONENT_IDS.lock().unwrap().insert(T::key(), id);
+        COMPONENT_IDS
+            .lock()
+            .expect("component ids mutex poisoned")
+            .insert(T::key(), id);
         Some(id)
     }
     fn mutability() -> Option<bool> {
@@ -70,12 +76,12 @@ impl<'t, T: Component> QueriedComponent for &'t mut T {
         entity: u64,
         bytes: &mut std::vec::IntoIter<Vec<u8>>,
     ) -> OwnedComponent<Self::Owned, Self::Ref, Self::Mut> {
-        let owned = T::from_bytes(bytes.next().unwrap());
+        let owned = T::from_bytes(bytes.next().expect("missing component bytes"));
         let mut c = OwnedComponent::new(owned);
 
         let component = *COMPONENT_IDS
             .lock()
-            .unwrap()
+            .expect("component ids mutex poisoned")
             .get(&T::key())
             .expect("component not registered");
         c.on_drop(OnDrop::WriteComponent { entity, component });

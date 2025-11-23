@@ -35,6 +35,11 @@ pub struct App {
 }
 
 impl App {
+    /// Insert a resource into the ECS world.
+    ///
+    /// # Panics
+    ///
+    /// Panics if entity spawning or component insertion fails.
     pub fn insert_resource<T>(&mut self, value: T) -> &mut Self
     where
         T: Component,
@@ -65,6 +70,11 @@ impl App {
         self
     }
 
+    /// Order two systems relative to each other.
+    ///
+    /// # Panics
+    ///
+    /// Panics if either system has not been registered.
     #[allow(unused_variables)]
     pub fn order_systems<A, B>(&mut self, a: A, order: SystemOrder, b: B) -> &mut Self
     where

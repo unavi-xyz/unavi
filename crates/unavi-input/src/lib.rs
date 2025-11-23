@@ -19,7 +19,11 @@ impl Plugin for InputPlugin {
             file_name: "input.toml",
         };
 
-        if config_path.path_buf().unwrap().exists() {
+        if config_path
+            .path_buf()
+            .expect("failed to get config path")
+            .exists()
+        {
             info!("Loading input config on startup");
             app.add_systems(Startup, load_config);
         } else {
@@ -110,7 +114,7 @@ pub fn cursor_grab(
     mut next_state: ResMut<NextState<CursorGrabState>>,
     mut windows: Query<&mut CursorOptions, With<PrimaryWindow>>,
 ) {
-    for mut cursor in windows.iter_mut() {
+    for mut cursor in &mut windows {
         if mouse.just_pressed(MouseButton::Left) {
             cursor.visible = false;
             cursor.grab_mode = CursorGrabMode::Locked;

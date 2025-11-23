@@ -46,14 +46,14 @@ pub fn ClientUpdate() -> Element {
     });
 
     let status_text = match update_status.read().as_ref() {
-        Some(UpdateStatus::Checking) => "checking for updates...",
+        Some(UpdateStatus::Checking) | None => "checking for updates...",
         Some(UpdateStatus::Downloading { version, progress }) => {
             return rsx! {
                 div { class: "status",
                     span { class: "loading" }
                     {
                         if let Some(p) = progress {
-                            format!("downloading v{version} ({:.0}%)", p)
+                            format!("downloading v{version} ({p:.0}%)")
                         } else {
                             format!("downloading v{version}...")
                         }
@@ -80,7 +80,6 @@ pub fn ClientUpdate() -> Element {
                 }
             };
         }
-        None => "checking for updates...",
     };
 
     rsx! {

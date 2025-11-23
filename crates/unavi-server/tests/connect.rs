@@ -10,12 +10,12 @@ use xdid::methods::web::reqwest::Url;
 #[tokio::test]
 #[traced_test]
 async fn test_connect_wtransport() {
-    let socket = UdpSocket::bind("127.0.0.1:0").unwrap();
-    let dwn_addr = socket.local_addr().unwrap();
+    let socket = UdpSocket::bind("127.0.0.1:0").expect("test value expected");
+    let dwn_addr = socket.local_addr().expect("test value expected");
     let dwn_port = dwn_addr.port();
     drop(socket);
 
-    let remote_dwn = Url::parse(&format!("http://{dwn_addr}")).unwrap();
+    let remote_dwn = Url::parse(&format!("http://{dwn_addr}")).expect("test value expected");
 
     tokio::spawn(async move {
         dwn_server::run_server(DwnServerOptions {
@@ -23,11 +23,11 @@ async fn test_connect_wtransport() {
             port: dwn_port,
         })
         .await
-        .unwrap()
+        .expect("test value expected");
     });
 
-    let socket = UdpSocket::bind("127.0.0.1:0").unwrap();
-    let addr = socket.local_addr().unwrap();
+    let socket = UdpSocket::bind("127.0.0.1:0").expect("test value expected");
+    let addr = socket.local_addr().expect("test value expected");
     let port = addr.port();
     drop(socket);
 
@@ -38,7 +38,7 @@ async fn test_connect_wtransport() {
             remote_dwn,
         })
         .await
-        .unwrap();
+        .expect("test value expected");
     });
 
     tokio::time::sleep(Duration::from_secs(2)).await;
@@ -47,11 +47,11 @@ async fn test_connect_wtransport() {
         .with_bind_default()
         .with_no_cert_validation()
         .max_idle_timeout(Some(Duration::from_secs(3)))
-        .unwrap()
+        .expect("test value expected")
         .build();
-    let endpoint = Endpoint::client(cfg).unwrap();
+    let endpoint = Endpoint::client(cfg).expect("test value expected");
 
     let url = format!("https://localhost:{port}");
     info!("connecting to {url}");
-    let _conn = endpoint.connect(url).await.unwrap();
+    let _conn = endpoint.connect(url).await.expect("test value expected");
 }

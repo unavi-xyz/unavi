@@ -126,6 +126,86 @@ fn calculate_locomotion_weights(motion: &MotionState) -> LocomotionWeights {
     weights
 }
 
+fn initialize_missing_animations(
+    player: &mut AnimationPlayer,
+    weights: &mut AnimationWeights,
+    nodes: &AvatarAnimationNodes,
+) {
+    for (name, node) in &nodes.0 {
+        if player.animation(*node).is_none() {
+            let animation = player.play(*node).repeat();
+            animation.set_weight(0.0);
+            weights.insert(name.clone(), 0.0);
+        }
+    }
+}
+
+fn apply_locomotion_animations(
+    loco_weights: &LocomotionWeights,
+    alpha: f32,
+    player: &mut AnimationPlayer,
+    nodes: &AvatarAnimationNodes,
+    weights: &mut AnimationWeights,
+    motion: &MotionState,
+) {
+    apply_weight(
+        AnimationName::WalkLeft,
+        &mut loco_weights.walk_left.clone(),
+        alpha,
+        player,
+        nodes,
+        weights,
+    );
+
+    apply_weight(
+        AnimationName::WalkRight,
+        &mut loco_weights.walk_right.clone(),
+        alpha,
+        player,
+        nodes,
+        weights,
+    );
+
+    let walk = apply_weight(
+        AnimationName::Walk,
+        &mut loco_weights.walk.clone(),
+        alpha,
+        player,
+        nodes,
+        weights,
+    );
+
+    if motion.forward_speed.is_sign_positive() {
+        walk.set_speed(1.0);
+    } else {
+        walk.set_speed(-1.0);
+    }
+
+    let sprint = apply_weight(
+        AnimationName::Sprint,
+        &mut loco_weights.sprint.clone(),
+        alpha,
+        player,
+        nodes,
+        weights,
+    );
+
+    if motion.forward_speed.is_sign_positive() {
+        sprint.set_speed(1.0);
+    } else {
+        sprint.set_speed(-1.0);
+    }
+
+    apply_weight(
+        AnimationName::Falling,
+        &mut loco_weights.falling.clone(),
+        alpha,
+        player,
+        nodes,
+        weights,
+    );
+}
+
 pub(crate) fn play_avatar_animations(
     time: Res<Time>,
     rigs: Query<(&Transform, &TnuaController), With<PlayerRig>>,
@@ -139,7 +219,7 @@ pub(crate) fn play_avatar_animations(
 ) {
     let alpha = (time.delta_secs() * ALPHA_FACTOR).min(0.9);
 
-    for (mut weights, targets, mut player, parent) in animation_players.iter_mut() {
+    for (mut weights, targets, mut player, parent) in &mut animation_players {
         let Ok((nodes, avg)) = avatars.get(parent.parent()) else {
             continue;
         };
@@ -156,78 +236,20 @@ pub(crate) fn play_avatar_animations(
             continue;
         };
 
-        for (name, node) in nodes.0.iter() {
-            if player.animation(*node).is_none() {
-                let animation = player.play(*node).repeat();
-                animation.set_weight(0.0);
-                weights.insert(name.clone(), 0.0);
-            }
-        }
+        initialize_missing_animations(&mut player, &mut weights, nodes);
 
-        // Analyze motion from velocity and transform.
         let mut motion = analyze_motion(avg.velocity, transform);
         motion.is_grounded = !airborn;
 
-        // Calculate locomotion weights from motion state.
         let loco_weights = calculate_locomotion_weights(&motion);
 
-        // Apply locomotion animations.
-        apply_weight(
-            AnimationName::WalkLeft,
-            &mut loco_weights.walk_left.clone(),
+        apply_locomotion_animations(
+            &loco_weights,
             alpha,
             &mut player,
             nodes,
             &mut weights,
-        );
-
-        apply_weight(
-            AnimationName::WalkRight,
-            &mut loco_weights.walk_right.clone(),
-            alpha,
-            &mut player,
-            nodes,
-            &mut weights,
-        );
-
-        let walk = apply_weight(
-            AnimationName::Walk,
-            &mut loco_weights.walk.clone(),
-            alpha,
-            &mut player,
-            nodes,
-            &mut weights,
-        );
-
-        if motion.forward_speed.is_sign_positive() {
-            walk.set_speed(1.0);
-        } else {
-            walk.set_speed(-1.0);
-        }
-
-        let sprint = apply_weight(
-            AnimationName::Sprint,
-            &mut loco_weights.sprint.clone(),
-            alpha,
-            &mut player,
-            nodes,
-            &mut weights,
-        );
-
-        if motion.forward_speed.is_sign_positive() {
-            sprint.set_speed(1.0);
-        } else {
-            sprint.set_speed(-1.0);
-        }
-
-        // Falling animation (stub).
-        apply_weight(
-            AnimationName::Falling,
-            &mut loco_weights.falling.clone(),
-            alpha,
-            &mut player,
-            nodes,
-            &mut weights,
+            &motion,
         );
 
         // Custom animations (_Other).
@@ -283,7 +305,9 @@ fn apply_weight<'a>(
 
     *weight = weight.min(1.0);
 
-    let animation = player.animation_mut(nodes.0[&name]).unwrap();
+    let animation = player
+        .animation_mut(nodes.0[&name])
+        .expect("animation not found");
     animation.set_weight(*weight);
     weights.insert(name, *weight);
 

@@ -58,7 +58,7 @@ pub enum SimpleTarget {
 }
 
 impl SimpleTarget {
-    pub fn release_str(&self) -> &'static str {
+    pub fn release_str(self) -> &'static str {
         match self {
             Self::Apple => "macos",
             Self::Linux => "linux",
@@ -89,10 +89,7 @@ pub struct GitHubAsset {
 }
 
 pub async fn fetch_github_releases() -> anyhow::Result<Vec<GitHubRelease>> {
-    let url = format!(
-        "https://api.github.com/repos/{}/{}/releases",
-        REPO_OWNER, REPO_NAME
-    );
+    let url = format!("https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/releases");
 
     let client = reqwest::Client::new();
     let response = client

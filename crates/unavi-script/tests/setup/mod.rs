@@ -1,7 +1,10 @@
 use std::time::Duration;
 
 use bevy::{log::LogPlugin, prelude::*};
+use tracing_subscriber::Layer;
 use unavi_script::{LoadScriptAsset, ScriptPlugin};
+
+use crate::setup::logs::LOGS;
 
 pub mod logs;
 
@@ -17,7 +20,7 @@ pub fn setup_test_app(package: &'static str) -> App {
             ..Default::default()
         },
         LogPlugin {
-            custom_layer: logs::custom_layer,
+            custom_layer: |_| Some(LOGS.clone().boxed()),
             ..Default::default()
         },
         ScriptPlugin,

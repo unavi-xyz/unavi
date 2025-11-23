@@ -79,12 +79,12 @@ fn update_platforms(
 ) {
     let elapsed = time.elapsed_secs();
 
-    for (platform, mut transform) in horizontal.iter_mut() {
+    for (platform, mut transform) in &mut horizontal {
         let offset = (elapsed * platform.speed).sin() * platform.range;
         transform.translation.x = platform.start_x + offset;
     }
 
-    for (platform, mut transform) in vertical.iter_mut() {
+    for (platform, mut transform) in &mut vertical {
         let offset = (elapsed * platform.speed).sin() * platform.range;
         transform.translation.y = platform.start_y + offset;
     }
@@ -96,8 +96,8 @@ fn handle_input(
     mut sky_cam: Query<&mut Camera, With<SkyCamera>>,
 ) {
     if keyboard.just_pressed(KeyCode::KeyP) {
-        let mut pc = player_cam.iter_mut().next().unwrap();
-        let mut sc = sky_cam.iter_mut().next().unwrap();
+        let mut pc = player_cam.iter_mut().next().expect("value expected");
+        let mut sc = sky_cam.iter_mut().next().expect("value expected");
 
         if pc.is_active {
             pc.is_active = false;
@@ -126,7 +126,7 @@ struct BoxConfig {
     rigidbody: Option<RigidBody>,
 }
 
-impl<'w, 's, 'a> SceneSpawner<'w, 's, 'a> {
+impl SceneSpawner<'_, '_, '_> {
     fn text(&mut self, text: &str, transform: Transform) {
         let mat = self.materials.add(StandardMaterial {
             base_color_texture: Some(TextAtlas::DEFAULT_IMAGE.clone()),
@@ -137,7 +137,7 @@ impl<'w, 's, 'a> SceneSpawner<'w, 's, 'a> {
         });
 
         self.commands.spawn((
-            Text3d::parse_raw(text).unwrap(),
+            Text3d::parse_raw(text).expect("value expected"),
             Text3dStyling {
                 font: "monospace".into(),
                 layer_offset: 0.001,
@@ -242,7 +242,7 @@ impl<'w, 's, 'a> SceneSpawner<'w, 's, 'a> {
         });
 
         let angle_deg = angle.to_degrees();
-        let text = format!("{:.0}°", angle_deg);
+        let text = format!("{angle_deg:.0}°");
         self.text(
             &text,
             Transform::from_translation(position + Vec3::new(0.0, height + 0.8, -depth / 2.0)),
@@ -273,7 +273,7 @@ impl<'w, 's, 'a> SceneSpawner<'w, 's, 'a> {
 
         let total_height = height * count as f32;
         let total_depth = depth * count as f32;
-        let text = format!("{:.2}m", height);
+        let text = format!("{height:.2}m");
         self.text(
             &text,
             Transform::from_translation(
@@ -284,6 +284,7 @@ impl<'w, 's, 'a> SceneSpawner<'w, 's, 'a> {
     }
 }
 
+#[allow(clippy::too_many_lines)]
 fn setup_scene(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
@@ -445,15 +446,15 @@ fn setup_scene(
 }
 
 const TILE_SIZE: f32 = 32.0;
-const N_ROWS: isize = 12;
-const N_CENTER: isize = 4;
+const N_ROWS: usize = 12;
+const N_CENTER: usize = 4;
 
-const PHYSICS_CUTOFF: isize = 2;
-const TILE_SCALE_RATE: isize = 4;
-const TILE_SCALE_OFFSET: isize = 1; // Adjust for center
-const BASE_ROW_STEP: isize = 2;
+const PHYSICS_CUTOFF: usize = 2;
+const TILE_SCALE_RATE: usize = 4;
+const TILE_SCALE_OFFSET: usize = 1; // Adjust for center
+const BASE_ROW_STEP: usize = 2;
 
-const ROUNDING_FACTOR: isize = 1;
+const ROUNDING_FACTOR: usize = 1;
 const ROW_ACCELERATION: f32 = 0.6;
 
 const INVERSE_Y: f32 = 512.0;

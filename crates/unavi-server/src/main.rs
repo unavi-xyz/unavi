@@ -63,7 +63,7 @@ async fn main() {
     if let Err(e) = unavi_server::run_server(ServerOptions {
         in_memory: false,
         port: args.port,
-        remote_dwn: Url::parse(&remote).unwrap(),
+        remote_dwn: Url::parse(&remote).expect("value expected"),
     })
     .await
     {

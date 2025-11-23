@@ -32,7 +32,7 @@ pub fn calc_average_velocity(
 ) {
     let delta_t = time.delta_secs();
 
-    for (entity, mut avg) in velocities.iter_mut() {
+    for (entity, mut avg) in &mut velocities {
         let target = avg.target.unwrap_or(entity);
 
         let transform = transforms

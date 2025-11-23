@@ -100,7 +100,7 @@ impl InternalMessageHandler {
             }
         } else {
             self.cached_info_ids.insert(record_id, info_id);
-        };
+        }
 
         Ok(())
     }

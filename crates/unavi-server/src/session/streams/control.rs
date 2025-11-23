@@ -68,14 +68,14 @@ pub async fn handle_control_stream(
                         let msg_bytes = bincode::encode_to_vec(&msg, bincode::config::standard())?;
                         framed.send(msg_bytes.into()).await?;
                     }
-                    Err(tokio::sync::broadcast::error::TryRecvError::Empty) => {
+                    Err(
+                        tokio::sync::broadcast::error::TryRecvError::Empty
+                        | tokio::sync::broadcast::error::TryRecvError::Closed,
+                    ) => {
                         break;
                     }
                     Err(tokio::sync::broadcast::error::TryRecvError::Lagged(n)) => {
                         error!("Control stream lagged by {n} messages");
-                        break;
-                    }
-                    Err(tokio::sync::broadcast::error::TryRecvError::Closed) => {
                         break;
                     }
                 }

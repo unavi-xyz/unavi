@@ -31,9 +31,7 @@ pub fn begin_init_scripts(
     for (entity, loaded, rt, name) in to_init {
         let ctx = rt.ctx.clone();
         let guest = loaded.0.clone();
-        let name = name
-            .map(|n| n.to_string())
-            .unwrap_or_else(|| "unknown".to_string());
+        let name = name.map_or_else(|| "unknown".to_string(), std::string::ToString::to_string);
 
         let pool = AsyncComputeTaskPool::get();
 
@@ -69,15 +67,20 @@ pub fn end_init_scripts(
     time: Res<Time>,
     mut initializing: Query<(Entity, &mut InitializingScript)>,
 ) {
-    for (entity, mut init) in initializing.iter_mut() {
-        if time.elapsed() - init.started > MAX_INIT_DURATION {
+    for (entity, mut init) in &mut initializing {
+        if time
+            .elapsed()
+            .checked_sub(init.started)
+            .expect("time overflow")
+            > MAX_INIT_DURATION
+        {
             warn!("Script init took too long");
             commands.entity(entity).remove::<InitializingScript>();
             continue;
         }
 
         match block_on(poll_once(&mut init.task)) {
-            Some(Ok(_)) => {
+            Some(Ok(())) => {
                 commands
                     .entity(entity)
                     .remove::<InitializingScript>()
@@ -87,7 +90,7 @@ pub fn end_init_scripts(
                 error!("Script init error: {e:?}");
                 commands.entity(entity).remove::<InitializingScript>();
             }
-            None => continue,
+            None => {}
         }
     }
 }

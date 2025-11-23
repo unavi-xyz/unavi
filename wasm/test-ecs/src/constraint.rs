@@ -7,14 +7,14 @@ pub fn add(app: &mut App) {
 
 #[derive(Decode, Encode, Component, Clone)]
 struct CompX {
-    value: f64,
+    value: u32,
 }
 
 #[derive(Decode, Encode, Component, Clone)]
 struct CompY;
 
-const X1: f64 = 1.0;
-const X2: f64 = 2.0;
+const X1: u32 = 1;
+const X2: u32 = 2;
 
 fn startup(commands: Commands) {
     let _ = commands.spawn();
@@ -36,13 +36,13 @@ fn test_with_without(
 
     {
         let mut iter = items_with.iter();
-        let a = iter.next().unwrap();
+        let a = iter.next().expect("test value expected");
         assert_eq!(a.value, X1);
     }
 
     {
         let mut iter = items_without.iter();
-        let b = iter.next().unwrap();
+        let b = iter.next().expect("test value expected");
         assert_eq!(b.value, X2);
     }
 }

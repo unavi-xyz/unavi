@@ -79,7 +79,6 @@ pub fn handle_login(_: On<LoginEvent>, mut local_actor: ResMut<LocalActor>, dwn:
                     Err(e) => {
                         error!("Failed to join a space: {e:?}");
                         tokio::time::sleep(Duration::from_secs(5)).await;
-                        continue;
                     }
                 }
             }
@@ -127,24 +126,23 @@ async fn find_public_space(actor: &Actor) -> anyhow::Result<Option<DidUrl>> {
             continue;
         };
 
-        let info = match record.data() {
-            Some(data) => serde_json::from_slice::<ServerInfo>(data)?,
-            None => {
-                let Some(full_record) = actor
-                    .read(record.entry().record_id.clone())
-                    .target(&space_host)
-                    .send(&host_dwn)
-                    .await?
-                else {
-                    continue;
-                };
+        let info = if let Some(data) = record.data() {
+            serde_json::from_slice::<ServerInfo>(data)?
+        } else {
+            let Some(full_record) = actor
+                .read(record.entry().record_id.clone())
+                .target(&space_host)
+                .send(&host_dwn)
+                .await?
+            else {
+                continue;
+            };
 
-                let Some(data) = full_record.data() else {
-                    continue;
-                };
+            let Some(data) = full_record.data() else {
+                continue;
+            };
 
-                serde_json::from_slice::<ServerInfo>(data)?
-            }
+            serde_json::from_slice::<ServerInfo>(data)?
         };
 
         info!(

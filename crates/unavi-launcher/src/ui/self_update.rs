@@ -48,7 +48,7 @@ pub fn SelfUpdate() -> Element {
                     span { class: "loading" }
                     {
                         if let Some(p) = progress {
-                            format!("downloading launcher v{version} ({:.0}%)", p)
+                            format!("downloading launcher v{version} ({p:.0}%)")
                         } else {
                             format!("downloading launcher v{version}...")
                         }

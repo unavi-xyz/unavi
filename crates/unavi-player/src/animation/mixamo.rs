@@ -62,8 +62,8 @@ macro_rules! leg {
     };
 }
 
-/// Wrapper around [TargetChain].
-/// Allows us to re-use code for both [MIXAMO_ANIMATION_TARGETS] and [MIXAMO_BONE_NAMES].
+/// Wrapper around [`TargetChain`].
+/// Allows us to re-use code for both [`MIXAMO_ANIMATION_TARGETS`] and [`MIXAMO_BONE_NAMES`].
 #[derive(Clone)]
 struct ChainWrapper<'a> {
     chain: TargetChain,
@@ -75,8 +75,8 @@ impl<'a> ChainWrapper<'a> {
     fn new(chain: TargetChain) -> Self {
         Self {
             chain,
-            names: Default::default(),
-            targets: Default::default(),
+            names: Rc::default(),
+            targets: Rc::default(),
         }
     }
 
@@ -157,7 +157,7 @@ mod tests {
     //     app.init_asset::<Scene>();
     //     app.init_asset::<SkinnedMeshInverseBindposes>();
     //
-    //     let asset_server = app.world().get_resource::<AssetServer>().unwrap();
+    //     let asset_server = app.world().get_resource::<AssetServer>().expect("value expected");
     //     let _ = asset_server.load::<AnimationClip>("character-animations.glb#Animation0");
     //
     //     app.add_systems(

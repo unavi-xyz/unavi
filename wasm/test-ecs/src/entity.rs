@@ -25,7 +25,7 @@ fn startup(commands: Commands) {
 fn test_entity(ents: Query<Entity, With<EntMarker>>) {
     assert_eq!(ents.len(), 1);
 
-    let a = ents.iter().next().unwrap();
+    let a = ents.iter().next().expect("test value expected");
     let id = ID.load(Ordering::Acquire);
     assert_ne!(id, 0);
     assert_eq!(id, a.id());

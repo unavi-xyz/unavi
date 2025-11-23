@@ -18,7 +18,7 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
     };
 
     // Add a bound `T: Component` to every type T.
-    let generics = add_trait_bounds(crate_ident.clone(), input.generics);
+    let generics = add_trait_bounds(&crate_ident, input.generics);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let expanded = quote! {
@@ -45,7 +45,7 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-fn add_trait_bounds(crate_ident: proc_macro2::TokenStream, mut generics: Generics) -> Generics {
+fn add_trait_bounds(crate_ident: &proc_macro2::TokenStream, mut generics: Generics) -> Generics {
     for component in &mut generics.params {
         if let GenericParam::Type(ref mut type_component) = *component {
             type_component

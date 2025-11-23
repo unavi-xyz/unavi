@@ -19,6 +19,9 @@ pub(crate) fn apply_head_input(
     mut target: Local<Vec2>,
     time: Res<Time>,
 ) {
+    const PITCH_BOUND: f32 = FRAC_PI_2 - 1E-3;
+    const S: f32 = 0.4;
+
     let Ok(action) = look_action.single() else {
         return;
     };
@@ -26,11 +29,7 @@ pub(crate) fn apply_head_input(
     let delta = time.delta_secs();
     let sensitivity = 0.1;
     *target += action.any * delta * sensitivity;
-
-    const PITCH_BOUND: f32 = FRAC_PI_2 - 1E-3;
     target.y = target.y.clamp(-PITCH_BOUND, PITCH_BOUND);
-
-    const S: f32 = 0.4;
 
     for entities in players.iter() {
         if let Ok(mut rig_transform) = rigs.get_mut(entities.rig) {
@@ -65,6 +64,8 @@ pub(crate) fn apply_body_input(
         };
 
         if let Ok(action) = move_action.single() {
+            const S: f32 = 0.2;
+
             let input = action.normalize_or_zero();
 
             let dir_f = rig_transform.rotation.mul_vec3(Vec3::NEG_Z);
@@ -74,7 +75,6 @@ pub(crate) fn apply_body_input(
             dir += dir_f * input.y;
             dir += dir_l * input.x;
 
-            const S: f32 = 0.2;
             *target = target.lerp(dir, S);
         }
 

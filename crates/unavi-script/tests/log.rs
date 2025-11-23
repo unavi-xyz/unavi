@@ -27,7 +27,7 @@ fn script_log() {
 fn n_startup_logs() -> usize {
     LOGS.logs
         .lock()
-        .unwrap()
+        .expect("test value expected")
         .iter()
         .filter(|line| line.contains("test:log") && line.contains("hello from startup"))
         .count()
@@ -36,7 +36,7 @@ fn n_startup_logs() -> usize {
 fn has_update_log() -> bool {
     LOGS.logs
         .lock()
-        .unwrap()
+        .expect("test value expected")
         .iter()
         .any(|line| line.contains("test:log") && line.contains("hello from update"))
 }

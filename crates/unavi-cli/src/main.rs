@@ -51,7 +51,7 @@ async fn main() -> Result<()> {
         Commands::List => commands::list::list_spaces(&actor).await?,
         Commands::Create => commands::create::create_space(&actor).await?,
         Commands::Edit { id, data_path } => {
-            commands::edit::edit_space(&actor, id, data_path).await?
+            commands::edit::edit_space(&actor, id, data_path).await?;
         }
         Commands::Remove { id } => commands::remove::remove_space(&actor, id).await?,
     }

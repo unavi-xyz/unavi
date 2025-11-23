@@ -49,7 +49,7 @@ pub async fn recv_stream(
             let count = counts.voice.fetch_add(1, Ordering::SeqCst);
 
             if count == 0 {
-                let res = voice::recv_voice_stream(stream).await;
+                let res = voice::recv_voice_stream(stream);
                 counts.voice.fetch_sub(1, Ordering::SeqCst);
                 res?;
             } else {

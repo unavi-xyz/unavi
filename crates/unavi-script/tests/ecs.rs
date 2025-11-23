@@ -33,7 +33,7 @@ fn script_ecs() {
 
     // Validate system order
     {
-        let logs = LOGS.logs.lock().unwrap();
+        let logs = LOGS.logs.lock().expect("logs mutex poisoned");
 
         let update_order = logs
             .iter()
@@ -41,7 +41,7 @@ fn script_ecs() {
                 if line.to_lowercase().contains("update_") {
                     let num = line.split('_').collect::<Vec<_>>()[1]
                         .parse::<usize>()
-                        .unwrap();
+                        .expect("test parse failed");
                     Some(num)
                 } else {
                     None

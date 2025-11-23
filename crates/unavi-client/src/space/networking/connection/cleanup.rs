@@ -1,11 +1,15 @@
-use bevy::{app::AppExit, log::*, prelude::*};
+use bevy::{
+    app::AppExit,
+    log::{error, info},
+    prelude::*,
+};
 
 use crate::space::{
     Space,
-    networking::{NetworkCommand, NetworkingThread},
+    networking::{NetworkingThread, thread::NetworkCommand},
 };
 
-pub fn handle_space_despawn(event: On<Remove, Space>, networking: Res<NetworkingThread>) -> Result {
+pub fn handle_space_despawn(event: On<Remove, Space>, networking: Res<NetworkingThread>) {
     let entity = event.entity;
 
     let command = NetworkCommand::LeaveSpace { entity };
@@ -13,8 +17,6 @@ pub fn handle_space_despawn(event: On<Remove, Space>, networking: Res<Networking
     if let Err(e) = networking.command_tx.send(command) {
         error!("Failed to send leave space command: {e:?}");
     }
-
-    Ok(())
 }
 
 pub fn cleanup_connections_on_exit(

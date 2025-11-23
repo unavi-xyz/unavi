@@ -13,10 +13,12 @@ pub struct AvatarSpawner {
 }
 
 impl AvatarSpawner {
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
+    #[must_use]
     pub fn with_vrm(mut self, vrm_asset: impl Into<String>) -> Self {
         self.vrm_asset = Some(vrm_asset.into());
         self

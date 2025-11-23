@@ -76,6 +76,7 @@ impl wired::ecs::host_api::Host for WiredEcsData {
             Ok(id)
         }
     }
+
     async fn register_system(&mut self, system: System) -> Result<SystemId, String> {
         let id = self.systems.len() as u32;
 

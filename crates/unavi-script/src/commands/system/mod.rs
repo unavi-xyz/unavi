@@ -149,13 +149,13 @@ impl Default for ScriptCycle {
 pub fn tick_script_cycle(
     mut scripts: Query<(&VSystemDependencies, &mut ScriptCycles), With<InitializedScript>>,
 ) {
-    for (vsystem_deps, mut cycles) in scripts.iter_mut() {
+    for (vsystem_deps, mut cycles) in &mut scripts {
         for s in SCHEDULES {
             let cycle = cycles.0.entry(*s).or_default();
 
             if let Some(mut t) = cycle.task.as_mut() {
                 match block_on(poll_once(&mut t)) {
-                    Some(_) => {
+                    Some(()) => {
                         cycle.i += 1;
                         cycle.task = None;
                     }
@@ -167,7 +167,7 @@ pub fn tick_script_cycle(
                 continue;
             }
 
-            let deps = vsystem_deps.0.get(s).unwrap();
+            let deps = vsystem_deps.0.get(s).expect("system deps not found");
             let waiters = deps.complete.values().cloned().collect::<Vec<_>>();
             if waiters.is_empty() {
                 continue;
@@ -183,23 +183,23 @@ pub fn tick_script_cycle(
 
 /// Starts script execution once all vsystems are ready.
 pub fn start_script_cycle(
-    mut scripts: Query<&VSystemDependencies, With<InitializedScript>>,
+    scripts: Query<&VSystemDependencies, With<InitializedScript>>,
     mut tasks: Local<HashMap<WSchedule, Option<Task<()>>>>,
 ) {
-    for vsystem_deps in scripts.iter_mut() {
+    for vsystem_deps in scripts {
         for s in SCHEDULES {
             let task = tasks.entry(*s).or_default();
 
             if let Some(mut t) = task.as_mut() {
                 match block_on(poll_once(&mut t)) {
-                    Some(_) => {
+                    Some(()) => {
                         *task = None;
                     }
                     None => continue,
                 }
             }
 
-            let deps = vsystem_deps.0.get(s).unwrap();
+            let deps = vsystem_deps.0.get(s).expect("system deps not found");
 
             let waiters = deps.ready.values().cloned().collect::<Vec<_>>();
             if waiters.is_empty() {
@@ -217,6 +217,98 @@ pub fn start_script_cycle(
     }
 }
 
+#[derive(Default)]
+struct UpstreamDeps {
+    ids: Vec<u32>,
+    waiters: Arc<Vec<Arc<Notify>>>,
+}
+
+/// Sets up system dependencies with ready and complete notifiers.
+fn setup_system_dependencies(
+    world: &mut World,
+    entity: Entity,
+    id: u32,
+    schedule: WSchedule,
+    ready: Arc<Notify>,
+    complete: Arc<Notify>,
+) -> anyhow::Result<()> {
+    if let Some(mut vsystem_deps) = world.get_mut::<VSystemDependencies>(entity) {
+        let schedule_deps = vsystem_deps
+            .0
+            .get_mut(&schedule)
+            .expect("schedule deps not found");
+        schedule_deps.ready.insert(id, ready);
+        schedule_deps.complete.insert(id, complete);
+        Ok(())
+    } else {
+        bail!("VSystemDependencies not found on script entity")
+    }
+}
+
+/// Finds or registers the `VEntity` component ID.
+fn get_or_register_vent_id(world: &mut World) -> ComponentId {
+    if let Some(vent_id) = world.component_id::<VEntity>() {
+        vent_id
+    } else {
+        world.register_component::<VEntity>()
+    }
+}
+
+/// Finds a component ID by wasm ID for a given entity.
+fn find_component_id(world: &mut World, entity: Entity, wasm_id: u32) -> Option<ComponentId> {
+    let mut vcomp_query = world.query::<(&VOwner, &VComponent)>();
+    vcomp_query.iter(world).find_map(|(owner, vcomp)| {
+        if owner.0 == entity && vcomp.wasm_id == wasm_id {
+            Some(vcomp.bevy_id)
+        } else {
+            None
+        }
+    })
+}
+
+fn build_query_component_ids(
+    world: &mut World,
+    entity: Entity,
+    component_ids: &[u32],
+) -> anyhow::Result<Vec<ComponentId>> {
+    component_ids
+        .iter()
+        .map(|&wasm_id| {
+            find_component_id(world, entity, wasm_id)
+                .ok_or_else(|| anyhow::anyhow!("Virtual component not found"))
+        })
+        .collect()
+}
+
+fn build_query_constraints(
+    world: &mut World,
+    entity: Entity,
+    constraints: &[Constraint],
+) -> anyhow::Result<(Vec<ComponentId>, Vec<ComponentId>)> {
+    let mut with = Vec::new();
+    let mut without = Vec::new();
+
+    for &constraint in constraints {
+        match constraint {
+            Constraint::WithComponent(wasm_id) => {
+                let Some(found) = find_component_id(world, entity, wasm_id) else {
+                    bail!("Query::with virtual component not found");
+                };
+                with.push(found);
+            }
+            Constraint::WithoutComponent(wasm_id) => {
+                let Some(found) = find_component_id(world, entity, wasm_id) else {
+                    bail!("Query::without virtual component not found");
+                };
+                without.push(found);
+            }
+        }
+    }
+
+    Ok((with, without))
+}
+
+#[allow(clippy::too_many_lines)]
 pub fn build_system(
     world: &mut World,
     entity: Entity,
@@ -226,85 +318,31 @@ pub fn build_system(
     let ready = Arc::new(Notify::default());
     let complete = Arc::new(Notify::default());
 
-    if let Some(mut vsystem_deps) = world.get_mut::<VSystemDependencies>(entity) {
-        let schedule_deps = vsystem_deps.0.get_mut(&schedule).unwrap();
-        schedule_deps.ready.insert(id, ready.clone());
-        schedule_deps.complete.insert(id, complete.clone());
-    } else {
-        bail!("VSystemDependencies not found on script entity")
-    }
+    setup_system_dependencies(world, entity, id, schedule, ready.clone(), complete.clone())?;
 
-    let vent_id = if let Some(vent_id) = world.component_id::<VEntity>() {
-        vent_id
-    } else {
-        world.register_component::<VEntity>()
-    };
+    let vent_id = get_or_register_vent_id(world);
 
+    // Build query builders from parameters.
     let mut queries = Vec::new();
-
     for param in &params {
-        match param {
-            Param::Query(q) => {
-                let mut vcomp_query = world.query::<(&VOwner, &VComponent)>();
+        let Param::Query(q) = param;
+        let components = build_query_component_ids(world, entity, &q.components)?;
+        let (with, without) = build_query_constraints(world, entity, &q.constraints)?;
 
-                let mut find_component = |wasm_id: u32| -> Option<ComponentId> {
-                    vcomp_query.iter(world).find_map(|(owner, vcomp)| {
-                        if owner.0 == entity && vcomp.wasm_id == wasm_id {
-                            Some(vcomp.bevy_id)
-                        } else {
-                            None
-                        }
-                    })
-                };
-
-                let mut components = Vec::new();
-                let mut with = Vec::new();
-                let mut without = Vec::new();
-
-                for wasm_id in q.components.iter().copied() {
-                    let Some(found) = find_component(wasm_id) else {
-                        bail!("Query::components virtual component not found");
-                    };
-
-                    components.push(found);
-                }
-
-                for constraint in q.constraints.iter().copied() {
-                    match constraint {
-                        Constraint::WithComponent(wasm_id) => {
-                            let Some(found) = find_component(wasm_id) else {
-                                bail!("Query::with virtual component not found");
-                            };
-
-                            with.push(found);
-                        }
-                        Constraint::WithoutComponent(wasm_id) => {
-                            let Some(found) = find_component(wasm_id) else {
-                                bail!("Query::without virtual component not found");
-                            };
-
-                            without.push(found);
-                        }
-                    }
-                }
-
-                let builder = QueryParamBuilder::new_box(|builder| {
-                    builder.ref_id(vent_id);
-
-                    for id in components {
-                        builder.ref_id(id);
-                    }
-                    for id in with {
-                        builder.with_id(id);
-                    }
-                    for id in without {
-                        builder.without_id(id);
-                    }
-                });
-
-                queries.push(builder);
+        let builder = QueryParamBuilder::new_box(move |builder| {
+            builder.ref_id(vent_id);
+            for &id in &components {
+                builder.ref_id(id);
             }
-        }
+            for &id in &with {
+                builder.with_id(id);
+            }
+            for &id in &without {
+                builder.without_id(id);
+            }
+        });
+
+        queries.push(builder);
     }
 
     let f_input = (queries,).build_state(world).build_system(
@@ -334,7 +372,7 @@ pub fn build_system(
                                     continue;
                                 }
 
-                                let ptr = ent.get_by_id(id).unwrap();
+                                let ptr = ent.get_by_id(id).expect("component not found");
                                 let data = unsafe { ptr.deref::<OpaqueComponent>() };
 
                                 components.push(data.0.clone());
@@ -356,12 +394,6 @@ pub fn build_system(
         },
     );
 
-    #[derive(Default)]
-    struct UpstreamDeps {
-        ids: Vec<u32>,
-        waiters: Arc<Vec<Arc<Notify>>>,
-    }
-
     let params = Arc::new(params);
 
     let f = move |mut input: In<Vec<ParamData>>,
@@ -380,7 +412,7 @@ pub fn build_system(
                   mut prev_i: Local<usize>| {
         if let Some(mut task) = executing.as_mut() {
             match block_on(poll_once(&mut task)) {
-                Some(Ok(_)) => {
+                Some(Ok(())) => {
                     *executing = None;
                 }
                 Some(Err(e)) => {
@@ -400,7 +432,7 @@ pub fn build_system(
             return;
         };
 
-        let cycle = cycles.0.get(&schedule).unwrap();
+        let cycle = cycles.0.get(&schedule).expect("cycle not found");
         if cycle.i == *prev_i {
             // Previous cycle not yet complete.
             return;
@@ -419,7 +451,10 @@ pub fn build_system(
             return;
         }
 
-        let schedule_deps = vsystem_deps.0.get(&schedule).unwrap();
+        let schedule_deps = vsystem_deps
+            .0
+            .get(&schedule)
+            .expect("schedule deps not found");
 
         if let Some(deps) = schedule_deps.dependencies.get(&id)
             && *deps != *upstream.ids
@@ -431,13 +466,11 @@ pub fn build_system(
                 }
             }
 
-            upstream.ids = deps.clone();
+            upstream.ids.clone_from(deps);
             upstream.waiters = Arc::new(waiters);
         }
 
-        let name = name
-            .map(|n| n.to_string())
-            .unwrap_or_else(|| "unknown".to_string());
+        let name = name.map_or_else(|| "unknown".to_string(), std::string::ToString::to_string);
 
         let complete = complete.clone();
         let ctx = rt.ctx.clone();
@@ -531,9 +564,11 @@ pub fn build_system(
     };
 
     if schedule == WSchedule::Startup {
-        let mut startup = world.get_mut::<StartupSystems>(entity).unwrap();
+        let mut startup = world
+            .get_mut::<StartupSystems>(entity)
+            .expect("startup systems not found");
         startup.complete.insert(id, false);
-    };
+    }
 
     let s_func = move |_: &mut World, s: &mut Schedule| {
         let sys = f_input.pipe(f);
@@ -543,7 +578,7 @@ pub fn build_system(
     match schedule {
         WSchedule::Render => world.schedule_scope(Update, s_func),
         WSchedule::Update | WSchedule::Startup => world.schedule_scope(FixedUpdate, s_func),
-    };
+    }
 
     Ok(())
 }

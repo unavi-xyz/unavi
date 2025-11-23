@@ -1,9 +1,7 @@
-use std::{
-    fs,
-    sync::{Arc, Mutex},
-};
+use std::{fs, sync::Arc};
 
 use anyhow::Context;
+use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
@@ -16,6 +14,7 @@ pub enum UpdateChannel {
 }
 
 impl UpdateChannel {
+    #[must_use]
     pub fn is_beta(self) -> bool {
         matches!(self, Self::Beta)
     }
@@ -60,6 +59,11 @@ impl Config {
         }
     }
 
+    /// Save the configuration to disk.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if serialization fails or the file cannot be written.
     pub fn save(&self) -> anyhow::Result<()> {
         let path = Self::config_path();
         let contents = toml::to_string_pretty(self).context("serialize config")?;
@@ -74,21 +78,29 @@ pub struct ConfigStore {
 }
 
 impl ConfigStore {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             config: Arc::new(Mutex::new(Config::load())),
         }
     }
 
+    /// Get a copy of the current configuration.
+    #[must_use]
     pub fn get(&self) -> Config {
-        self.config.lock().unwrap().clone()
+        self.config.lock().clone()
     }
 
+    /// Update the configuration using the provided function and save to disk.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if saving the configuration fails.
     pub fn update<F>(&self, f: F) -> anyhow::Result<()>
     where
         F: FnOnce(&mut Config),
     {
-        let mut config = self.config.lock().unwrap();
+        let mut config = self.config.lock();
         f(&mut config);
         config.save()?;
         Ok(())

@@ -5,19 +5,19 @@
 //! The player system maintains a separation between the player's real-world height
 //! and their VRM avatar's visual height:
 //!
-//! - **real_height**: Player's capsule height from head to floor (default 1.7m, or VR headset height)
+//! - **`real_height`**: Player's capsule height from head to floor (default 1.7m, or VR headset height)
 //!   - This is the player's physics collider size
 //!   - Camera is positioned based on this height
 //!   - Never changes based on avatar
 //!
-//! - **vrm_height**: VRM model's height measured from eye bones
+//! - **`vrm_height`**: VRM model's height measured from eye bones
 //!   - Calculated when VRM loads by measuring bone positions
-//!   - May be larger or smaller than real_height
+//!   - May be larger or smaller than `real_height`
 //!
-//! - **WorldScale**: Scales the entire world to match player perception
+//! - **`WorldScale`**: Scales the entire world to match player perception
 //!   - Formula: `real_height / vrm_height`
-//!   - If VRM is taller than real_height → world shrinks → player feels taller
-//!   - If VRM is shorter than real_height → world grows → player feels shorter
+//!   - If VRM is taller than `real_height` → world shrinks → player feels taller
+//!   - If VRM is shorter than `real_height` → world grows → player feels shorter
 //!   - Applied to world objects, NOT the avatar itself
 //!
 //! The VRM avatar is positioned (not scaled) so that:

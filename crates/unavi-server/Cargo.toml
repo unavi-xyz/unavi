@@ -13,39 +13,34 @@ workspace = true
 devtools-console = ["dep:console-subscriber", "tokio/tracing"]
 
 [dependencies]
-anyhow.workspace = true
-axum = "0.8.6"
-axum-server = { features = ["tls-rustls-no-provider"], version = "0.7.2" }
-bincode.workspace = true
-clap.workspace = true
-console-subscriber = { optional = true, version = "0.5.0" }
-directories.workspace = true
-dwn.workspace = true
-dwn-server.workspace = true
-flume.workspace = true
-futures.workspace = true
-hyper = "=1.7" # https://github.com/programatik29/axum-server/issues/170
-p256 = "0.13.2"
-rustls = { default-features = false, features = [
-  "logging",
-  "ring",
-  "std",
-  "tls12",
-], version = "0.23.35" }
-scc.workspace = true
-serde_json.workspace = true
-smallvec.workspace = true
-tarpc = { features = ["serde-transport"], workspace = true }
-time = "0.3.44"
-tokio = { features = ["full"], workspace = true }
-tokio-serde = { features = ["bincode"], workspace = true }
-tracing.workspace = true
+anyhow.workspace             = true
+axum                         = "0.8.6"
+axum-server                  = { features = ["tls-rustls-no-provider"], version = "0.7.2" }
+bincode.workspace            = true
+clap.workspace               = true
+console-subscriber           = { optional = true, version = "0.5.0" }
+directories.workspace        = true
+dwn.workspace                = true
+dwn-server.workspace         = true
+flume.workspace              = true
+futures.workspace            = true
+hyper                        = "=1.7"                                                                                            # https://github.com/programatik29/axum-server/issues/170
+p256                         = "0.13.2"
+rustls                       = { default-features = false, features = ["logging", "ring", "std", "tls12"], version = "0.23.35" }
+scc.workspace                = true
+serde_json.workspace         = true
+smallvec.workspace           = true
+tarpc                        = { features = ["serde-transport"], workspace = true }
+time                         = "0.3.44"
+tokio                        = { features = ["full"], workspace = true }
+tokio-serde                  = { features = ["bincode"], workspace = true }
+tracing.workspace            = true
 tracing-subscriber.workspace = true
-unavi-constants.path = "../unavi-constants"
-unavi-server-service.path = "../unavi-server-service"
-wtransport.workspace = true
-xdid.workspace = true
-zeroize.workspace = true
+unavi-constants.path         = "../unavi-constants"
+unavi-server-service.path    = "../unavi-server-service"
+wtransport.workspace         = true
+xdid.workspace               = true
+zeroize.workspace            = true
 
 [dev-dependencies]
 tracing-test.workspace = true

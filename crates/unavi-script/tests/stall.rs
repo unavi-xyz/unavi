@@ -16,7 +16,7 @@ fn script_stall() {
     assert_eq!(
         LOGS.logs
             .lock()
-            .unwrap()
+            .expect("test value expected")
             .iter()
             .filter(|line| line.contains("test:stall") && line.contains("hello from startup"))
             .count(),
@@ -32,7 +32,7 @@ fn script_stall() {
         !LOGS
             .logs
             .lock()
-            .unwrap()
+            .expect("test value expected")
             .iter()
             .any(|line| line.contains("test:stall") && line.contains("hello from update"))
     );

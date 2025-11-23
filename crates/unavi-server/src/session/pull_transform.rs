@@ -21,6 +21,165 @@ struct PlayerStreams {
     pframe_stream: Option<SendStream>,
 }
 
+/// Collects all players in shared spaces with the given player.
+async fn collect_shared_space_players(
+    ctx: &ServerContext,
+    player_id: PlayerId,
+    player_spaces: &HashSet<String>,
+    players_in_shared_spaces: &mut HashSet<PlayerId>,
+) {
+    players_in_shared_spaces.clear();
+    for space_id in player_spaces {
+        let _ = ctx
+            .spaces
+            .read_async(space_id, |_, space| {
+                for &other_player_id in &space.players {
+                    if other_player_id != player_id {
+                        players_in_shared_spaces.insert(other_player_id);
+                    }
+                }
+            })
+            .await;
+    }
+}
+
+/// Processes new player subscriptions and sends initial iframes.
+async fn process_new_subscriptions(
+    ctx: &ServerContext,
+    players_in_shared_spaces: &HashSet<PlayerId>,
+    subscriptions: &mut HashMap<
+        PlayerId,
+        (
+            tokio::sync::watch::Receiver<TrackingIFrame>,
+            tokio::sync::watch::Receiver<TrackingPFrame>,
+        ),
+    >,
+    player_streams: &mut HashMap<PlayerId, PlayerStreams>,
+    last_send_times: &mut HashMap<PlayerId, Instant>,
+    connection: &Connection,
+) {
+    let mut new_subscriptions: SmallVec<[(PlayerId, _, _, TrackingIFrame); 4]> = SmallVec::new();
+
+    for &other_player_id in players_in_shared_spaces {
+        if !subscriptions.contains_key(&other_player_id) {
+            let player_state = ctx
+                .players
+                .read_async(&other_player_id, |_, other_player| {
+                    let iframe_rx = other_player.iframe_tx.subscribe();
+                    let pframe_rx = other_player.pframe_tx.subscribe();
+                    let initial_iframe = iframe_rx.borrow().clone();
+                    (iframe_rx, pframe_rx, initial_iframe)
+                })
+                .await;
+
+            if let Some((iframe_rx, pframe_rx, initial_iframe)) = player_state {
+                new_subscriptions.push((other_player_id, iframe_rx, pframe_rx, initial_iframe));
+            }
+        }
+    }
+
+    for (other_player_id, iframe_rx, pframe_rx, initial_iframe) in new_subscriptions {
+        subscriptions.insert(other_player_id, (iframe_rx, pframe_rx));
+
+        if let Err(e) = send_updates_to_player(
+            player_streams,
+            connection,
+            other_player_id,
+            Some(initial_iframe),
+            None,
+        )
+        .await
+        {
+            error!("Failed to send initial iframe: {e}");
+            player_streams.remove(&other_player_id);
+            subscriptions.remove(&other_player_id);
+            continue;
+        }
+
+        last_send_times.insert(other_player_id, Instant::now());
+    }
+}
+
+/// Cleans up subscriptions for players no longer in shared spaces.
+fn cleanup_stale_subscriptions(
+    players_in_shared_spaces: &HashSet<PlayerId>,
+    subscriptions: &mut HashMap<
+        PlayerId,
+        (
+            tokio::sync::watch::Receiver<TrackingIFrame>,
+            tokio::sync::watch::Receiver<TrackingPFrame>,
+        ),
+    >,
+    last_send_times: &mut HashMap<PlayerId, Instant>,
+    player_streams: &mut HashMap<PlayerId, PlayerStreams>,
+) {
+    subscriptions.retain(|&other_player_id, _| {
+        let keep = players_in_shared_spaces.contains(&other_player_id);
+        if !keep {
+            last_send_times.remove(&other_player_id);
+            player_streams.remove(&other_player_id);
+        }
+        keep
+    });
+}
+
+/// Sends transform updates to all subscribed players.
+async fn send_transform_updates(
+    ctx: &ServerContext,
+    player_id: PlayerId,
+    subscriptions: &mut HashMap<
+        PlayerId,
+        (
+            tokio::sync::watch::Receiver<TrackingIFrame>,
+            tokio::sync::watch::Receiver<TrackingPFrame>,
+        ),
+    >,
+    player_streams: &mut HashMap<PlayerId, PlayerStreams>,
+    last_send_times: &mut HashMap<PlayerId, Instant>,
+    connection: &Connection,
+) {
+    for (&other_player_id, (iframe_rx, pframe_rx)) in subscriptions {
+        let iframe_changed = iframe_rx.has_changed().unwrap_or(false);
+        let pframe_changed = pframe_rx.has_changed().unwrap_or(false);
+
+        if !iframe_changed && !pframe_changed {
+            continue;
+        }
+
+        if !tickrate_ready(ctx, player_id, other_player_id, last_send_times).await {
+            continue;
+        }
+
+        let iframe = if iframe_changed {
+            Some(iframe_rx.borrow_and_update().clone())
+        } else {
+            None
+        };
+
+        let pframe = if pframe_changed {
+            let pframe_update = pframe_rx.borrow_and_update();
+            if pframe_update.iframe_id == iframe_rx.borrow().iframe_id {
+                Some(pframe_update.clone())
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        if let Err(e) =
+            send_updates_to_player(player_streams, connection, other_player_id, iframe, pframe)
+                .await
+        {
+            error!("Failed to send transform update: {e}");
+            player_streams.remove(&other_player_id);
+            continue;
+        }
+
+        last_send_times.insert(other_player_id, Instant::now());
+    }
+}
+
 pub async fn handle_pull_transforms(
     ctx: ServerContext,
     player_id: PlayerId,
@@ -45,144 +204,66 @@ pub async fn handle_pull_transforms(
             return Ok(());
         };
 
-        players_in_shared_spaces.clear();
-        for space_id in &player_spaces {
-            let _ = ctx
-                .spaces
-                .read_async(space_id, |_, space| {
-                    for &other_player_id in &space.players {
-                        if other_player_id != player_id {
-                            players_in_shared_spaces.insert(other_player_id);
-                        }
-                    }
-                })
-                .await;
-        }
+        collect_shared_space_players(
+            &ctx,
+            player_id,
+            &player_spaces,
+            &mut players_in_shared_spaces,
+        )
+        .await;
 
-        // Collect new subscriptions and their initial iframes.
-        let mut new_subscriptions: SmallVec<[(PlayerId, _, _, TrackingIFrame); 4]> =
-            SmallVec::new();
-        for &other_player_id in &players_in_shared_spaces {
-            if !subscriptions.contains_key(&other_player_id) {
-                let player_state = ctx
-                    .players
-                    .read_async(&other_player_id, |_, other_player| {
-                        let iframe_rx = other_player.iframe_tx.subscribe();
-                        let pframe_rx = other_player.pframe_tx.subscribe();
-                        let initial_iframe = iframe_rx.borrow().clone();
-                        (iframe_rx, pframe_rx, initial_iframe)
-                    })
-                    .await;
+        process_new_subscriptions(
+            &ctx,
+            &players_in_shared_spaces,
+            &mut subscriptions,
+            &mut player_streams,
+            &mut last_send_times,
+            &connection,
+        )
+        .await;
 
-                if let Some((iframe_rx, pframe_rx, initial_iframe)) = player_state {
-                    new_subscriptions.push((other_player_id, iframe_rx, pframe_rx, initial_iframe));
-                }
-            }
-        }
+        cleanup_stale_subscriptions(
+            &players_in_shared_spaces,
+            &mut subscriptions,
+            &mut last_send_times,
+            &mut player_streams,
+        );
 
-        // Send initial iframes for new subscriptions.
-        for (other_player_id, iframe_rx, pframe_rx, initial_iframe) in new_subscriptions {
-            subscriptions.insert(other_player_id, (iframe_rx, pframe_rx));
-
-            if let Err(e) = send_updates_to_player(
-                &mut player_streams,
-                &connection,
-                other_player_id,
-                Some(initial_iframe),
-                None,
-            )
-            .await
-            {
-                error!("Failed to send initial iframe: {e}");
-                player_streams.remove(&other_player_id);
-                subscriptions.remove(&other_player_id);
-                continue;
-            }
-
-            last_send_times.insert(other_player_id, Instant::now());
-        }
-
-        subscriptions.retain(|&other_player_id, _| {
-            let keep = players_in_shared_spaces.contains(&other_player_id);
-            if !keep {
-                last_send_times.remove(&other_player_id);
-                player_streams.remove(&other_player_id);
-            }
-            keep
-        });
-
-        for (&other_player_id, (iframe_rx, pframe_rx)) in &mut subscriptions {
-            let has_iframe_update = iframe_rx.has_changed().unwrap_or(false);
-            let has_pframe_update = pframe_rx.has_changed().unwrap_or(false);
-
-            if !has_iframe_update && !has_pframe_update {
-                continue;
-            }
-
-            if !tickrate_ready(&ctx, player_id, other_player_id, &last_send_times).await {
-                continue;
-            }
-
-            let iframe = if has_iframe_update {
-                Some(iframe_rx.borrow_and_update().clone())
-            } else {
-                None
-            };
-
-            let pframe = if has_pframe_update {
-                let pframe_update = pframe_rx.borrow_and_update();
-                if pframe_update.iframe_id == iframe_rx.borrow().iframe_id {
-                    Some(pframe_update.clone())
-                } else {
-                    None
-                }
-            } else {
-                None
-            };
-
-            if let Err(e) = send_updates_to_player(
-                &mut player_streams,
-                &connection,
-                other_player_id,
-                iframe,
-                pframe,
-            )
-            .await
-            {
-                error!("Failed to send transform update: {e}");
-                player_streams.remove(&other_player_id);
-                continue;
-            }
-
-            last_send_times.insert(other_player_id, Instant::now());
-        }
+        send_transform_updates(
+            &ctx,
+            player_id,
+            &mut subscriptions,
+            &mut player_streams,
+            &mut last_send_times,
+            &connection,
+        )
+        .await;
     }
 }
 
 async fn tickrate_ready(
     ctx: &ServerContext,
-    observer_id: PlayerId,
-    observed_id: PlayerId,
+    viewer_id: PlayerId,
+    target_id: PlayerId,
     last_send_times: &HashMap<PlayerId, Instant>,
 ) -> bool {
-    // Get the tickrate for this observer-observed pair, if it exists.
+    // Get the tickrate for this viewer-target pair, if it exists.
     let rates_map = ctx
         .player_tickrates
-        .get_async(&observer_id)
+        .get_async(&viewer_id)
         .await
         .map(|entry| entry.get().clone());
 
     let min_interval = if let Some(rates) = rates_map {
         rates
-            .get_async(&observed_id)
+            .get_async(&target_id)
             .await
-            .map(|entry| *entry.get())
-            .unwrap_or(TICKRATE)
+            .map_or(TICKRATE, |entry| *entry.get())
     } else {
         TICKRATE
     };
 
-    if let Some(&last_send) = last_send_times.get(&observed_id) {
+    if let Some(&last_send) = last_send_times.get(&target_id) {
         last_send.elapsed() >= min_interval
     } else {
         true
@@ -217,7 +298,9 @@ async fn get_or_create_iframe_stream<'a>(
         });
     }
 
-    Ok(player_streams.get_mut(&player_id).unwrap())
+    Ok(player_streams
+        .get_mut(&player_id)
+        .expect("player stream not found"))
 }
 
 async fn send_updates_to_player(

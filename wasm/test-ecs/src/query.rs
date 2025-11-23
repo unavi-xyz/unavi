@@ -57,11 +57,11 @@ fn test_mut_query(mut points: Query<&mut MyPoint>) {
     {
         let mut iter = points.iter();
 
-        let a = iter.next().unwrap();
+        let a = iter.next().expect("test value expected");
         assert_eq!(a.x, x1);
         assert_eq!(a.y, y1);
 
-        let b = iter.next().unwrap();
+        let b = iter.next().expect("test value expected");
         assert_eq!(b.x, x2);
         assert_eq!(b.y, y2);
     }
@@ -69,13 +69,13 @@ fn test_mut_query(mut points: Query<&mut MyPoint>) {
     {
         let mut iter_mut = points.iter_mut();
 
-        let a = iter_mut.next().unwrap();
+        let a = iter_mut.next().expect("test value expected");
         assert_eq!(a.x, x1);
         assert_eq!(a.y, y1);
         a.x += 1;
         a.y += 1;
 
-        let b = iter_mut.next().unwrap();
+        let b = iter_mut.next().expect("test value expected");
         assert_eq!(b.x, x2);
         assert_eq!(b.y, y2);
         b.x += 1;
@@ -83,7 +83,7 @@ fn test_mut_query(mut points: Query<&mut MyPoint>) {
     }
 }
 
-/// Test that the mutated [MyPoint] data is seen in future systems.
+/// Test that the mutated [`MyPoint`] data is seen in future systems.
 fn test_mutation(points: Query<&MyPoint>) {
     assert_eq!(points.len(), 2);
 
@@ -95,11 +95,11 @@ fn test_mutation(points: Query<&MyPoint>) {
 
     let mut iter = points.iter();
 
-    let a = iter.next().unwrap();
+    let a = iter.next().expect("test value expected");
     assert_eq!(a.x, x1);
     assert_eq!(a.y, y1);
 
-    let b = iter.next().unwrap();
+    let b = iter.next().expect("test value expected");
     assert_eq!(b.x, x2);
     assert_eq!(b.y, y2);
 }

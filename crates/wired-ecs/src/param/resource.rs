@@ -67,8 +67,8 @@ where
         _: &mut std::slice::IterMut<ParamState>,
         data: &mut std::vec::IntoIter<ParamData>,
     ) -> Self {
-        let ParamData::Query(q) = data.next().unwrap();
-        let owned = <&T>::from_data(q.into_iter().next().unwrap());
+        let ParamData::Query(q) = data.next().expect("missing param data");
+        let owned = <&T>::from_data(q.into_iter().next().expect("missing query data"));
         Self { owned }
     }
 }
@@ -92,8 +92,8 @@ where
         _: &mut std::slice::IterMut<ParamState>,
         data: &mut std::vec::IntoIter<ParamData>,
     ) -> Self {
-        let ParamData::Query(q) = data.next().unwrap();
-        let owned = <&mut T>::from_data(q.into_iter().next().unwrap());
+        let ParamData::Query(q) = data.next().expect("missing param data");
+        let owned = <&mut T>::from_data(q.into_iter().next().expect("missing query data"));
         Self { owned }
     }
 }

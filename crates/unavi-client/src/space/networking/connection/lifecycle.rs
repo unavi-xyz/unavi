@@ -1,9 +1,12 @@
-use bevy::{log::*, prelude::*};
+use bevy::{
+    log::{error, info},
+    prelude::*,
+};
 
 use super::state::{ConnectionAttempt, ConnectionState};
 use crate::space::{
     Space,
-    networking::{NetworkCommand, NetworkingThread},
+    networking::{NetworkingThread, thread::NetworkCommand},
 };
 
 /// Drives the connection state machine for all spaces.
@@ -12,7 +15,7 @@ pub fn drive_connection_lifecycle(
     networking: Res<NetworkingThread>,
     mut spaces: Query<(Entity, &Space, &mut ConnectionState, &mut ConnectionAttempt)>,
 ) {
-    for (entity, space, mut state, attempt) in spaces.iter_mut() {
+    for (entity, space, mut state, attempt) in &mut spaces {
         match *state {
             ConnectionState::Disconnected => {
                 if attempt.is_ready() {
@@ -21,8 +24,7 @@ pub fn drive_connection_lifecycle(
                     send_join_command(&networking, entity, space, &mut commands);
                 }
             }
-            ConnectionState::Connecting { .. } => {}
-            ConnectionState::Connected => {}
+            ConnectionState::Connecting { .. } | ConnectionState::Connected => {}
             ConnectionState::Reconnecting { .. } => {
                 if attempt.is_ready() {
                     info!("Retrying join to space {}", space.url);

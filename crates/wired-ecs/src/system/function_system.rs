@@ -22,8 +22,8 @@ where
 {
     type In = ();
 
-    fn run(&self, _: Self::In) {
-        (self.f)()
+    fn run(&self, (): Self::In) {
+        (self.f)();
     }
 }
 
@@ -34,7 +34,7 @@ where
     type In = (A,);
 
     fn run(&self, data: Self::In) {
-        (self.f)(data.0)
+        (self.f)(data.0);
     }
 }
 
@@ -45,7 +45,7 @@ where
     type In = (A, B);
 
     fn run(&self, data: Self::In) {
-        (self.f)(data.0, data.1)
+        (self.f)(data.0, data.1);
     }
 }
 
@@ -56,6 +56,6 @@ where
     type In = (A, B, C);
 
     fn run(&self, data: Self::In) {
-        (self.f)(data.0, data.1, data.2)
+        (self.f)(data.0, data.1, data.2);
     }
 }

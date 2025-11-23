@@ -143,7 +143,7 @@ impl SessionSpawner {
                 spaces: Arc::new(SccHashMap::new()),
             },
             domain: opts.domain,
-            player_id_count: Default::default(),
+            player_id_count: Arc::default(),
         })
     }
 
@@ -160,8 +160,8 @@ impl SessionSpawner {
         let player_id = self.player_id_count.fetch_add(1, Ordering::AcqRel);
         let server = ControlServer::new(self.ctx.clone(), player_id);
 
-        let (iframe_tx, _iframe_rx) = watch::channel(Default::default());
-        let (pframe_tx, _pframe_rx) = watch::channel(Default::default());
+        let (iframe_tx, _iframe_rx) = watch::channel(TrackingIFrame::default());
+        let (pframe_tx, _pframe_rx) = watch::channel(TrackingPFrame::default());
 
         let _ = self
             .ctx
@@ -169,7 +169,7 @@ impl SessionSpawner {
             .insert_async(
                 player_id,
                 Player {
-                    spaces: Default::default(),
+                    spaces: HashSet::default(),
                     iframe_tx,
                     pframe_tx,
                 },

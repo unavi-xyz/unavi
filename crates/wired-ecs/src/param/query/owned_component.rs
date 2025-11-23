@@ -24,11 +24,11 @@ where
     }
 }
 
-pub struct OwnedComponent<T, R, M>
+pub struct OwnedComponent<O, R, M>
 where
-    T: HostWriteable,
+    O: HostWriteable,
 {
-    owned: T,
+    owned: O,
     on_drop: Option<OnDrop>,
     _r: PhantomData<R>,
     _m: PhantomData<M>,
@@ -91,7 +91,7 @@ where
         = T
     where
         Self: 'a;
-    fn as_component_ref<'a>(&'a self) -> Self::CRef<'a> {
+    fn as_component_ref(&self) -> Self::CRef<'_> {
         self.owned
     }
 }
@@ -103,7 +103,7 @@ where
         = T
     where
         Self: 'a;
-    fn as_component_mut<'a>(&'a mut self) -> Self::CMut<'a> {
+    fn as_component_mut(&mut self) -> Self::CMut<'_> {
         self.owned
     }
 }
@@ -116,7 +116,7 @@ where
         = &'a T
     where
         Self: 'a;
-    fn as_component_ref<'a>(&'a self) -> Self::CRef<'a> {
+    fn as_component_ref(&self) -> Self::CRef<'_> {
         &self.owned
     }
 }
@@ -128,7 +128,7 @@ where
         = &'a T
     where
         Self: 'a;
-    fn as_component_ref<'a>(&'a self) -> Self::CRef<'a> {
+    fn as_component_ref(&self) -> Self::CRef<'_> {
         &self.owned
     }
 }
@@ -140,7 +140,7 @@ where
         = &'a mut T
     where
         Self: 'a;
-    fn as_component_mut<'a>(&'a mut self) -> Self::CMut<'a> {
+    fn as_component_mut(&mut self) -> Self::CMut<'_> {
         &mut self.owned
     }
 }
@@ -152,7 +152,7 @@ where
         = &'a T
     where
         Self: 'a;
-    fn as_component_mut<'a>(&'a mut self) -> Self::CMut<'a> {
+    fn as_component_mut(&mut self) -> Self::CMut<'_> {
         &self.owned
     }
 }
@@ -164,7 +164,7 @@ where
         = &'a mut T
     where
         Self: 'a;
-    fn as_component_mut<'a>(&'a mut self) -> Self::CMut<'a> {
+    fn as_component_mut(&mut self) -> Self::CMut<'_> {
         &mut self.owned
     }
 }

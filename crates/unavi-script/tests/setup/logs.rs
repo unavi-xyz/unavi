@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, LazyLock, Mutex},
 };
 
-use bevy::{log::BoxedLayer, prelude::*};
+use bevy::prelude::*;
 use tracing::{
     Event, Subscriber,
     span::{Attributes, Id},
@@ -17,10 +17,6 @@ use tracing_subscriber::{
 };
 
 pub static LOGS: LazyLock<VecStorageLayer> = LazyLock::new(VecStorageLayer::default);
-
-pub fn custom_layer(_: &mut App) -> Option<BoxedLayer> {
-    Some(LOGS.clone().boxed())
-}
 
 #[derive(Default)]
 struct SpanFields(String);
@@ -63,7 +59,7 @@ where
                 let fields = span
                     .extensions()
                     .get::<SpanFields>()
-                    .map(|f| f.to_string())
+                    .map(std::string::ToString::to_string)
                     .unwrap_or_default();
 
                 if fields.is_empty() {
@@ -90,7 +86,7 @@ where
 pub fn count_logs_with(value: &str) -> usize {
     LOGS.logs
         .lock()
-        .unwrap()
+        .expect("logs mutex poisoned")
         .iter()
         .filter(|line| line.to_lowercase().contains(value))
         .count()
@@ -100,7 +96,7 @@ pub fn count_logs_with(value: &str) -> usize {
 pub fn has_log(value: &str) -> bool {
     LOGS.logs
         .lock()
-        .unwrap()
+        .expect("logs mutex poisoned")
         .iter()
         .any(|line| line.to_lowercase().contains(value))
 }

@@ -3,6 +3,7 @@ mod component;
 pub mod param;
 mod system;
 
+#[allow(clippy::collection_is_never_read)]
 mod bindings {
     wit_bindgen::generate!({
         world: "guest",

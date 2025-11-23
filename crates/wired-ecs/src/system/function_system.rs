@@ -8,7 +8,7 @@ pub struct FunctionSystem<F, In> {
 }
 
 impl<F, In> FunctionSystem<F, In> {
-    pub fn new(f: F) -> Self {
+    pub const fn new(f: F) -> Self {
         Self {
             f,
             _in: PhantomData,

@@ -33,13 +33,13 @@ impl LocalPlayerSpawner {
     }
 
     #[must_use]
-    pub fn with_config(mut self, config: PlayerConfig) -> Self {
+    pub const fn with_config(mut self, config: PlayerConfig) -> Self {
         self.config = Some(config);
         self
     }
 
     #[must_use]
-    pub fn with_tracking_source(mut self, source: TrackingSource) -> Self {
+    pub const fn with_tracking_source(mut self, source: TrackingSource) -> Self {
         self.tracking_source = Some(source);
         self
     }

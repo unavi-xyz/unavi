@@ -76,7 +76,7 @@ fn get_relative_assets_dir() -> anyhow::Result<PathBuf> {
     let exe = std::env::current_exe().context("get current exe")?;
     let exe_dir = exe
         .parent()
-        .ok_or(anyhow::anyhow!("exe has no parent directory"))?;
+        .ok_or_else(|| anyhow::anyhow!("exe has no parent directory"))?;
 
     Ok(exe_dir.join("assets"))
 }

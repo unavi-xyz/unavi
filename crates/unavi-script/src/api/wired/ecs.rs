@@ -11,7 +11,7 @@ use crate::commands::WasmCommand;
 wasmtime::component::bindgen!({
     world: "host",
     path: "../../protocol/wit/wired-ecs",
-    additional_derives: [Hash, PartialEq],
+    additional_derives: [Hash, PartialEq, Eq],
     imports: {
         default: async,
     },

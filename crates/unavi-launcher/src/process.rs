@@ -58,6 +58,7 @@ impl ProcessTracker {
             child.kill()?;
             *guard = None;
         }
+        drop(guard);
         Ok(())
     }
 }

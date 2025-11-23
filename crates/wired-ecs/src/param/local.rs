@@ -49,7 +49,7 @@ where
         _: &mut std::vec::IntoIter<ParamData>,
     ) -> Self {
         let p_state = state.next().expect("param state not found");
-        Local {
+        Self {
             raw: (&mut p_state.raw).into(),
             _t: PhantomData,
         }

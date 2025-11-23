@@ -331,7 +331,7 @@ pub fn apply_player_transforms(
                     PlayerSmoothingTargets {
                         hips_translation: final_transform.hips_translation,
                         hips_rotation: final_transform.hips_rotation,
-                        joint_rotations: final_transform.joint_rotations.clone(),
+                        joint_rotations: final_transform.joint_rotations,
                     },
                 ));
 
@@ -357,7 +357,7 @@ pub fn apply_player_transforms(
                         .insert(PlayerSmoothingTargets {
                             hips_translation: final_transform.hips_translation,
                             hips_rotation: final_transform.hips_rotation,
-                            joint_rotations: final_transform.joint_rotations.clone(),
+                            joint_rotations: final_transform.joint_rotations,
                         });
                 }
 

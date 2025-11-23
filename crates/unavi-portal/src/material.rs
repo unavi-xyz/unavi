@@ -21,7 +21,7 @@ pub struct PortalMaterialKey {
 
 impl From<&PortalMaterial> for PortalMaterialKey {
     fn from(material: &PortalMaterial) -> Self {
-        PortalMaterialKey {
+        Self {
             cull_mode: material.cull_mode,
         }
     }

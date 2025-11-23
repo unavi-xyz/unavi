@@ -10,10 +10,10 @@ use crate::{
 
 /// Marker to track which avatars have been processed for eye offset.
 #[derive(Component)]
-pub(crate) struct EyeOffsetProcessed;
+pub struct EyeOffsetProcessed;
 
 /// Sets up eye offset and tracked head position based on VRM model bones.
-pub(crate) fn setup_vrm_eye_offset(
+pub fn setup_vrm_eye_offset(
     mut commands: Commands,
     scene_spawner: Res<SceneSpawner>,
     avatars: Query<
@@ -121,7 +121,7 @@ pub(crate) fn setup_vrm_eye_offset(
         }
 
         let rig_entity = avatar_parent.parent();
-        let capsule_height = vrm_height - 2.0 * vrm_radius;
+        let capsule_height = 2.0f32.mul_add(-vrm_radius, vrm_height);
         let total_height = vrm_height;
 
         if let Ok(mut collider) = colliders.get_mut(rig_entity) {

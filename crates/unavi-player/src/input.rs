@@ -11,7 +11,7 @@ use crate::{
 };
 
 /// Applies mouse/keyboard input to the tracked head pose (desktop mode).
-pub(crate) fn apply_head_input(
+pub fn apply_head_input(
     look_action: Query<&Vec2ActionValue, With<LookAction>>,
     players: Query<&crate::PlayerEntities>,
     mut rigs: Query<&mut Transform, With<PlayerRig>>,
@@ -45,7 +45,7 @@ pub(crate) fn apply_head_input(
 }
 
 /// Applies movement input to the physics controller (all modes).
-pub(crate) fn apply_body_input(
+pub fn apply_body_input(
     players: Query<(&crate::PlayerEntities, &PlayerConfig)>,
     jump_action: Query<&BoolActionValue, With<JumpAction>>,
     move_action: Query<&Vec2ActionValue, With<MoveAction>>,

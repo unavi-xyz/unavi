@@ -24,7 +24,7 @@ pub enum AnimationName {
 }
 
 /// Run condition: animations only run in desktop mode.
-pub(crate) fn is_desktop_mode(players: Query<&TrackingSource>) -> bool {
+pub fn is_desktop_mode(players: Query<&TrackingSource>) -> bool {
     players
         .iter()
         .any(|source| *source == TrackingSource::Desktop)
@@ -32,10 +32,10 @@ pub(crate) fn is_desktop_mode(players: Query<&TrackingSource>) -> bool {
 
 /// Marker to track which animation players have been initialized.
 #[derive(Component)]
-pub(crate) struct AnimationPlayerInitialized;
+pub struct AnimationPlayerInitialized;
 
 /// Initializes animation components when `AnimationPlayer` is added.
-pub(crate) fn init_animation_players(
+pub fn init_animation_players(
     mut commands: Commands,
     animation_players: Query<
         (Entity, &ChildOf),

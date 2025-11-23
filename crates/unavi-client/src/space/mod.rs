@@ -91,7 +91,7 @@ pub struct Space {
 }
 
 impl Space {
-    pub fn new(url: DidUrl) -> Self {
+    pub const fn new(url: DidUrl) -> Self {
         Self { url }
     }
 }

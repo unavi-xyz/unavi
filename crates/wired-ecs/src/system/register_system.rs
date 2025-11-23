@@ -173,7 +173,7 @@ impl<F, In> RegisterSystem for FunctionSystem<F, In>
 where
     F: 'static,
     In: ParamGroup + 'static,
-    FunctionSystem<F, In>: System<In = In>,
+    Self: System<In = In>,
 {
     fn register_system(self, state: &mut AppState, schedule: Schedule) -> (SystemId, SystemCache) {
         let metas = In::meta();
@@ -203,10 +203,7 @@ where
             validate_query_exclusivity(i, q1, c_mut_1, cons_1, &params, &metas);
         }
 
-        let id = match register_system(&WSystem {
-            schedule,
-            params: params.clone(),
-        }) {
+        let id = match register_system(&WSystem { schedule, params }) {
             Ok(id) => id,
             Err(e) => panic!("Failed to register system: {e}"),
         };

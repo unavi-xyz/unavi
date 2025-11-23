@@ -66,15 +66,10 @@ pub fn Home() -> Element {
         div { class: "version",
             div { "launcher v{VERSION}" }
             {
-                if let Some(client_ver) = client::installed_client_version() {
-                    rsx! {
-                        div { "client v{client_ver}" }
-                    }
-                } else {
-                    rsx! {
-                        div { "client not found" }
-                    }
-                }
+                client::installed_client_version().map_or_else(
+                    || rsx! { div { "client not found" } },
+                    |client_ver| rsx! { div { "client v{client_ver}" } }
+                )
             }
         }
     }

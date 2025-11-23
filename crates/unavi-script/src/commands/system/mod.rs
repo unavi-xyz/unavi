@@ -247,11 +247,9 @@ fn setup_system_dependencies(
 
 /// Finds or registers the `VEntity` component ID.
 fn get_or_register_vent_id(world: &mut World) -> ComponentId {
-    if let Some(vent_id) = world.component_id::<VEntity>() {
-        vent_id
-    } else {
-        world.register_component::<VEntity>()
-    }
+    world
+        .component_id::<VEntity>()
+        .unwrap_or_else(|| world.register_component::<VEntity>())
 }
 
 /// Finds a component ID by wasm ID for a given entity.
@@ -547,6 +545,7 @@ pub fn build_system(
                     .with_context(|| format!("exec {id}"));
 
                 ctx.flush_logs().await;
+                drop(ctx);
 
                 if schedule == WSchedule::Startup {
                     startup_complete.send(id)?;

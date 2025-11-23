@@ -47,11 +47,10 @@ pub fn SelfUpdate() -> Element {
                 div { class: "status",
                     span { class: "loading" }
                     {
-                        if let Some(p) = progress {
-                            format!("downloading launcher v{version} ({p:.0}%)")
-                        } else {
-                            format!("downloading launcher v{version}...")
-                        }
+                        progress.map_or_else(
+                            || format!("downloading launcher v{version}..."),
+                            |p| format!("downloading launcher v{version} ({p:.0}%)")
+                        )
                     }
                 }
             };

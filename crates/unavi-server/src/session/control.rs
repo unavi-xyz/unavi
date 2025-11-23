@@ -17,7 +17,7 @@ pub struct ControlServer {
 }
 
 impl ControlServer {
-    pub fn new(ctx: ServerContext, player_id: u64) -> Self {
+    pub const fn new(ctx: ServerContext, player_id: u64) -> Self {
         Self { ctx, player_id }
     }
 }

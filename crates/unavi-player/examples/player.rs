@@ -225,12 +225,12 @@ impl SceneSpawner<'_, '_, '_> {
 
     fn slope(&mut self, position: Vec3, width: f32, height: f32, depth: f32, color: Color) {
         let angle = (height / depth).atan();
-        let hypotenuse = (height.powi(2) + depth.powi(2)).sqrt();
+        let hypotenuse = height.hypot(depth);
 
         let rotation = Quat::from_rotation_y(std::f32::consts::PI) * Quat::from_rotation_x(-angle);
 
         // Position the slope so it touches the ground at the start and reaches height at the end.
-        let offset_y = hypotenuse / 2.0 * angle.sin() - 0.1;
+        let offset_y = (hypotenuse / 2.0).mul_add(angle.sin(), -0.1);
         let offset_z = -hypotenuse / 2.0 * angle.cos();
 
         self.spawn_box(BoxConfig {
@@ -531,8 +531,8 @@ fn spawn_ring(spawner: &mut SceneSpawner, config: RingConfig) {
             let mut height = rand::random_range(config.min_height..=config.max_height).round();
             height -= height % ROUNDING_FACTOR as f32;
 
-            let x = (x as f32 * config.tile_size) - config.center_radius - config.tile_size / 2.0;
-            let z = (z as f32 * config.tile_size) - config.center_radius - config.tile_size / 2.0;
+            let x = (x as f32).mul_add(config.tile_size, -config.center_radius) - config.tile_size / 2.0;
+            let z = (z as f32).mul_add(config.tile_size, -config.center_radius) - config.tile_size / 2.0;
 
             let y = if config.inverse {
                 INVERSE_Y - height / 2.0

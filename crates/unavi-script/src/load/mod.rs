@@ -18,8 +18,8 @@ use crate::{
     },
 };
 
-pub(crate) mod log;
-pub(crate) mod state;
+pub mod log;
+pub mod state;
 
 pub mod bindings {
     wasmtime::component::bindgen!({
@@ -112,6 +112,7 @@ pub fn load_scripts(
             let res = instantiate_component(ent, component, &mut ctx)
                 .await
                 .with_context(|| name)?;
+            drop(ctx);
             Ok(res)
         });
     }

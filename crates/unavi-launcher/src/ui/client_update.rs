@@ -52,11 +52,10 @@ pub fn ClientUpdate() -> Element {
                 div { class: "status",
                     span { class: "loading" }
                     {
-                        if let Some(p) = progress {
-                            format!("downloading v{version} ({p:.0}%)")
-                        } else {
-                            format!("downloading v{version}...")
-                        }
+                        progress.map_or_else(
+                            || format!("downloading v{version}..."),
+                            |p| format!("downloading v{version} ({p:.0}%)")
+                        )
                     }
                 }
             };

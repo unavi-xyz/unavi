@@ -12,7 +12,7 @@ use crate::{
     load::{LoadedScript, ScriptCommands, bindings::wired::ecs::types::System as WSystem},
 };
 
-pub(crate) mod system;
+pub mod system;
 
 #[derive(Debug)]
 pub enum WasmCommand {

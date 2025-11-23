@@ -31,7 +31,7 @@ impl RuntimeData {
         let (write_send, write_recv) = tokio::sync::broadcast::channel(MAX_WRITE);
 
         RuntimeDataResult {
-            rt: RuntimeData {
+            rt: Self {
                 wired_ecs: WiredEcsData {
                     commands: commands_send,
                     write: write_send,
@@ -56,7 +56,7 @@ impl WasiView for StoreState {
 }
 
 impl StoreState {
-    pub fn new(wasi: WasiCtx, rt: RuntimeData) -> StoreState {
+    pub fn new(wasi: WasiCtx, rt: RuntimeData) -> Self {
         Self {
             wasi,
             resource_table: ResourceTable::default(),

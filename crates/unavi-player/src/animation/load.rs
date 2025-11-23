@@ -22,7 +22,7 @@ pub struct AvatarAnimation {
 #[derive(Component, Clone)]
 pub struct AvatarAnimationNodes(pub HashMap<AnimationName, AnimationNodeIndex>);
 
-pub(crate) fn load_animation_nodes(
+pub fn load_animation_nodes(
     gltfs: Res<Assets<GltfKun>>,
     mut clips: ResMut<Assets<AnimationClip>>,
     mut commands: Commands,

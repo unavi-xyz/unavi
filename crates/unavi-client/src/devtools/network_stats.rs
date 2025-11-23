@@ -105,7 +105,7 @@ impl HostNetworkStats {
         }
     }
 
-    pub fn record_dropped_frame(&mut self) {
+    pub const fn record_dropped_frame(&mut self) {
         self.dropped_frames += 1;
     }
 }

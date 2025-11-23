@@ -15,7 +15,7 @@ pub enum UpdateChannel {
 
 impl UpdateChannel {
     #[must_use]
-    pub fn is_beta(self) -> bool {
+    pub const fn is_beta(self) -> bool {
         matches!(self, Self::Beta)
     }
 }
@@ -103,6 +103,7 @@ impl ConfigStore {
         let mut config = self.config.lock();
         f(&mut config);
         config.save()?;
+        drop(config);
         Ok(())
     }
 }

@@ -51,6 +51,7 @@ pub fn begin_init_scripts(
             ctx.flush_logs().await;
 
             ctx.script = Some(script?);
+            drop(ctx);
 
             Ok(())
         });

@@ -21,8 +21,8 @@ pub trait ComponentGroup {
 impl<A> ComponentGroup for A
 where
     A: QueriedComponent,
-    OwnedComponent<A::Owned, A::Ref, A::Mut>: AsComponentRef<A::Ref> + AsComponentMut<A::Mut>,
-    OwnedComponent<A::Owned, A::Ref, A::Mut>: AsTupleRef<A::Ref> + AsTupleMut<A::Mut>,
+    OwnedComponent<A::Owned, A::Ref, A::Mut>:
+        AsComponentRef<A::Ref> + AsComponentMut<A::Mut> + AsTupleRef<A::Ref> + AsTupleMut<A::Mut>,
 {
     type Owned = OwnedComponent<A::Owned, A::Ref, A::Mut>;
     type Ref = A::Ref;

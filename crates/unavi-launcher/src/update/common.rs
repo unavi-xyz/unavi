@@ -58,7 +58,7 @@ pub enum SimpleTarget {
 }
 
 impl SimpleTarget {
-    pub fn release_str(self) -> &'static str {
+    pub const fn release_str(self) -> &'static str {
         match self {
             Self::Apple => "macos",
             Self::Linux => "linux",

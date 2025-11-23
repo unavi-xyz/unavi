@@ -22,7 +22,7 @@ impl Param for Commands {
         _: &mut std::slice::IterMut<ParamState>,
         _: &mut std::vec::IntoIter<ParamData>,
     ) -> Self {
-        Commands
+        Self
     }
 }
 
@@ -43,7 +43,7 @@ pub struct Entity(EntityId);
 
 impl Entity {
     #[must_use]
-    pub fn id(&self) -> u64 {
+    pub const fn id(&self) -> u64 {
         self.0
     }
 
@@ -88,6 +88,6 @@ impl QueriedComponent for Entity {
         entity: u64,
         _: &mut std::vec::IntoIter<Vec<u8>>,
     ) -> OwnedComponent<Self::Owned, Self::Ref, Self::Mut> {
-        OwnedComponent::new(Entity(entity))
+        OwnedComponent::new(Self(entity))
     }
 }

@@ -38,8 +38,8 @@ impl<T, R, M> OwnedComponent<T, R, M>
 where
     T: HostWriteable,
 {
-    pub fn new(owned: T) -> Self {
-        OwnedComponent {
+    pub const fn new(owned: T) -> Self {
+        Self {
             owned,
             on_drop: None,
             _r: PhantomData,
@@ -47,7 +47,7 @@ where
         }
     }
 
-    pub fn on_drop(&mut self, value: OnDrop) {
+    pub const fn on_drop(&mut self, value: OnDrop) {
         self.on_drop = Some(value);
     }
 }

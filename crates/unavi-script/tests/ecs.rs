@@ -33,21 +33,22 @@ fn script_ecs() {
 
     // Validate system order
     {
-        let logs = LOGS.logs.lock().expect("logs mutex poisoned");
-
-        let update_order = logs
-            .iter()
-            .filter_map(|line| {
-                if line.to_lowercase().contains("update_") {
-                    let num = line.split('_').collect::<Vec<_>>()[1]
-                        .parse::<usize>()
-                        .expect("test parse failed");
-                    Some(num)
-                } else {
-                    None
-                }
-            })
-            .take(N_UPDATE_SYSTEMS);
+        let update_order: Vec<_> = {
+            let logs = LOGS.logs.lock().expect("logs mutex poisoned");
+            logs.iter()
+                .filter_map(|line| {
+                    if line.to_lowercase().contains("update_") {
+                        let num = line.split('_').collect::<Vec<_>>()[1]
+                            .parse::<usize>()
+                            .expect("test parse failed");
+                        Some(num)
+                    } else {
+                        None
+                    }
+                })
+                .take(N_UPDATE_SYSTEMS)
+                .collect()
+        };
 
         let mut i = 1;
         println!("Update order: {update_order:?}");

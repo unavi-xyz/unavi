@@ -10,7 +10,7 @@ const PAGE_STYLES: Asset = asset!("/assets/pages.css");
 
 const LOGO: Asset = asset!("/assets/unavi-clear.png");
 
-#[derive(Debug, Clone, Routable, PartialEq)]
+#[derive(Debug, Clone, Routable, PartialEq, Eq)]
 pub enum Route {
     #[layout(Title)]
     #[route("/")]

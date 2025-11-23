@@ -48,8 +48,14 @@ pub fn calc_average_velocity(
         let velocity = (transform.translation - avg.prev_translation) / delta_t;
         avg.prev_translation.clone_from(&transform.translation);
 
-        avg.velocity.x = avg.alpha * velocity.x + (1.0 - avg.alpha) * avg.velocity.x;
-        avg.velocity.y = avg.alpha * velocity.y + (1.0 - avg.alpha) * avg.velocity.y;
-        avg.velocity.z = avg.alpha * velocity.z + (1.0 - avg.alpha) * avg.velocity.z;
+        avg.velocity.x = avg
+            .alpha
+            .mul_add(velocity.x, (1.0 - avg.alpha) * avg.velocity.x);
+        avg.velocity.y = avg
+            .alpha
+            .mul_add(velocity.y, (1.0 - avg.alpha) * avg.velocity.y);
+        avg.velocity.z = avg
+            .alpha
+            .mul_add(velocity.z, (1.0 - avg.alpha) * avg.velocity.z);
     }
 }

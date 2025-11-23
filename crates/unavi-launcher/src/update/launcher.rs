@@ -49,7 +49,7 @@ where
                 !r.tag_name.contains("beta")
             }
         })
-        .ok_or(anyhow::anyhow!("no valid release found"))?;
+        .ok_or_else(|| anyhow::anyhow!("no valid release found"))?;
 
     info!("Latest release: {latest_release:#?}");
 
@@ -80,7 +80,7 @@ where
                     _ => true,
                 }
         })
-        .ok_or(anyhow::anyhow!("launcher asset not found in release"))?;
+        .ok_or_else(|| anyhow::anyhow!("launcher asset not found in release"))?;
     info!("Latest asset: {asset:#?}");
 
     on_status(UpdateStatus::Downloading {
@@ -107,7 +107,7 @@ where
                 asset
                     .name
                     .strip_suffix(".xz")
-                    .ok_or(anyhow::anyhow!("invalid asset name (.xz not found)"))?,
+                    .ok_or_else(|| anyhow::anyhow!("invalid asset name (.xz not found)"))?,
             );
 
             decompress_xz(&tmp_archive_path, &tmp_tar_path)?;
@@ -158,7 +158,7 @@ fn install_msi_update(msi_path: &Path) -> anyhow::Result<()> {
 fn replace_launcher(path: &Path, archive_kind: ArchiveKind) -> anyhow::Result<()> {
     let out_path = path
         .parent()
-        .ok_or(anyhow::anyhow!("extract path has no parent"))?
+        .ok_or_else(|| anyhow::anyhow!("extract path has no parent"))?
         .join("out");
 
     extract_archive(path, archive_kind, &out_path)?;

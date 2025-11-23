@@ -67,7 +67,7 @@ pub fn launch_client() -> anyhow::Result<()> {
     // Fall back to sibling executable
     let exe_path = std::env::current_exe()?
         .parent()
-        .ok_or(anyhow::anyhow!("failed to get executable directory"))?
+        .ok_or_else(|| anyhow::anyhow!("failed to get executable directory"))?
         .join(if cfg!(windows) {
             "unavi-client.exe"
         } else {
@@ -118,7 +118,7 @@ where
                 !r.tag_name.contains("beta")
             }
         })
-        .ok_or(anyhow::anyhow!("no valid release found"))?;
+        .ok_or_else(|| anyhow::anyhow!("no valid release found"))?;
 
     let latest_version = Version::parse(
         latest_release
@@ -144,7 +144,7 @@ where
         .assets
         .into_iter()
         .find(|a| a.name.contains("unavi-client") && a.name.contains(simple_target.release_str()))
-        .ok_or(anyhow::anyhow!("client asset not found in release"))?;
+        .ok_or_else(|| anyhow::anyhow!("client asset not found in release"))?;
 
     on_status(UpdateStatus::Downloading {
         version: latest_version.to_string(),
@@ -178,7 +178,7 @@ where
                 asset
                     .name
                     .strip_suffix(".xz")
-                    .ok_or(anyhow::anyhow!("invalid asset name (.xz not found)"))?,
+                    .ok_or_else(|| anyhow::anyhow!("invalid asset name (.xz not found)"))?,
             );
 
             decompress_xz(&tmp_archive_path, &tmp_tar_path)?;

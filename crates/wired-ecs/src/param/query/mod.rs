@@ -11,12 +11,12 @@ use crate::{
 
 use super::{Param, ParamMeta};
 
-pub(crate) mod component;
-pub(crate) mod component_group;
-pub(crate) mod component_ref;
+pub mod component;
+pub mod component_group;
+pub mod component_ref;
 pub mod constraint;
-pub(crate) mod owned_component;
-pub(crate) mod tuple_ref;
+pub mod owned_component;
+pub mod tuple_ref;
 
 pub struct Query<T, U = ()>
 where
@@ -34,11 +34,11 @@ where
     U: Constraint,
 {
     #[must_use]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.items.len()
     }
     #[must_use]
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.items.is_empty()
     }
     pub fn iter(&self) -> impl Iterator<Item = <T::Owned as AsTupleRef<T::Ref>>::TRef<'_>> {
@@ -74,7 +74,7 @@ where
         data: &mut std::vec::IntoIter<ParamData>,
     ) -> Self {
         let ParamData::Query(data) = data.next().expect("missing param data");
-        let items = data.clone().into_iter().map(T::from_data).collect();
+        let items = data.into_iter().map(T::from_data).collect();
         Self {
             items,
             _t: PhantomData,

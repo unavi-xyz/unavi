@@ -206,7 +206,7 @@ fn apply_locomotion_animations(
     );
 }
 
-pub(crate) fn play_avatar_animations(
+pub fn play_avatar_animations(
     time: Res<Time>,
     rigs: Query<(&Transform, &TnuaController), With<PlayerRig>>,
     avatars: Query<(&AvatarAnimationNodes, &AverageVelocity), With<PlayerAvatar>>,
@@ -297,7 +297,7 @@ fn apply_weight<'a>(
     weights: &mut AnimationWeights,
 ) -> &'a mut ActiveAnimation {
     let prev = &weights[&name];
-    *weight = *weight * (1.0 - alpha) + prev * alpha;
+    *weight = (*weight).mul_add(1.0 - alpha, prev * alpha);
 
     if *weight < WEIGHT_THRESHOLD {
         *weight = 0.0;

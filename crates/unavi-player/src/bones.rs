@@ -11,10 +11,10 @@ pub struct AvatarBones(pub HashMap<BoneName, Entity>);
 
 /// Marker to track which avatars have had bones populated.
 #[derive(Component)]
-pub(crate) struct AvatarBonesPopulated;
+pub struct AvatarBonesPopulated;
 
 /// Finds and stores VRM bone entities for avatars with loaded scenes.
-pub(crate) fn populate_avatar_bones(
+pub fn populate_avatar_bones(
     mut commands: Commands,
     avatars: Query<(Entity, &AvatarBones), (With<VrmInstance>, Without<AvatarBonesPopulated>)>,
     bones: Query<(Entity, &BoneName)>,
@@ -40,7 +40,7 @@ pub(crate) fn populate_avatar_bones(
 }
 
 /// Applies tracked head pose to the avatar's head bone.
-pub(crate) fn apply_head_tracking(
+pub fn apply_head_tracking(
     players: Query<&crate::PlayerEntities>,
     tracked_heads: Query<&TrackedPose, With<TrackedHead>>,
     avatars: Query<&AvatarBones>,

@@ -20,7 +20,7 @@ pub enum ParamMeta {
     },
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum ConcreteConstraint {
     With { component: u32 },
     Without { component: u32 },

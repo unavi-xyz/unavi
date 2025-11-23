@@ -21,7 +21,7 @@ pub struct TrackedPose {
 
 impl TrackedPose {
     #[must_use]
-    pub fn new(translation: Vec3, rotation: Quat) -> Self {
+    pub const fn new(translation: Vec3, rotation: Quat) -> Self {
         Self {
             rotation,
             translation,
@@ -29,7 +29,7 @@ impl TrackedPose {
     }
 
     #[must_use]
-    pub fn from_transform(transform: &Transform) -> Self {
+    pub const fn from_transform(transform: &Transform) -> Self {
         Self {
             rotation: transform.rotation,
             translation: transform.translation,

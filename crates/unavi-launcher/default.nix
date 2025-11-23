@@ -87,7 +87,6 @@ _: {
           '';
 
           postInstall = ''
-            strip $out/bin/${pname}
             cp LICENSE $out
           '';
         }

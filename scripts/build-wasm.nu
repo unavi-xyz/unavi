@@ -36,7 +36,7 @@ let time = timeit {
 
     $logs += $"  | optimizing\n"
     let b_info = ls $src_path | first
-    wasm-opt -O4 -ffm $src_path -o $dst_path
+    wasm-opt -O4 --enable-bulk-memory-opt -ffm $src_path -o $dst_path
 
     $logs += $"  | converting to component\n"
     # https://github.com/bytecodealliance/wasmtime/tree/main/crates/wasi-preview1-component-adapter

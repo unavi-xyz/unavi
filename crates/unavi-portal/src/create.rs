@@ -11,7 +11,7 @@ use bevy::{
     window::{PrimaryWindow, WindowRef},
 };
 
-use crate::{PortalCamera, PortalDestination, material::PortalMaterial};
+use crate::{Portal, PortalCamera, PortalDestination, TrackedCamera, material::PortalMaterial};
 
 pub struct CreatePortal {
     pub destination: Option<Entity>,
@@ -125,7 +125,7 @@ impl EntityCommand for CreatePortal {
 
             let portal_ent = world
                 .entity_mut(id)
-                .insert((MeshMaterial3d(material_handle), Mesh3d(mesh_handle)))
+                .insert((Portal, MeshMaterial3d(material_handle), Mesh3d(mesh_handle)))
                 .id();
 
             let camera_3d = world
@@ -135,18 +135,16 @@ impl EntityCommand for CreatePortal {
 
             let portal_camera_ent = world
                 .spawn((
-                    PortalCamera {
-                        tracking: tracked_camera_ent,
-                    },
+                    PortalCamera { portal: portal_ent },
+                    TrackedCamera(tracked_camera_ent),
                     Camera {
+                        order: -1,
                         target: RenderTarget::Image(image_handle.into()),
                         ..default()
                     },
                     camera_3d,
                 ))
                 .id();
-
-            world.entity_mut(portal_ent).add_child(portal_camera_ent);
 
             if let Some(value) = world.get::<ColorGrading>(tracked_camera_ent).cloned() {
                 world.entity_mut(portal_camera_ent).insert(value);

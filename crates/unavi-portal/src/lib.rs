@@ -1,4 +1,4 @@
-use bevy::{asset::load_internal_asset, prelude::*};
+use bevy::{asset::load_internal_asset, camera::visibility::VisibilitySystems, prelude::*};
 
 use crate::material::{PORTAL_SHADER_HANDLE, PortalMaterial};
 
@@ -6,6 +6,7 @@ pub struct PortalPlugin;
 
 pub mod create;
 mod material;
+mod tracking;
 
 impl Plugin for PortalPlugin {
     fn build(&self, app: &mut App) {
@@ -16,9 +17,22 @@ impl Plugin for PortalPlugin {
             Shader::from_wgsl
         );
 
-        app.add_plugins(MaterialPlugin::<PortalMaterial>::default());
+        app.add_plugins(MaterialPlugin::<PortalMaterial>::default())
+            .add_systems(
+                PostUpdate,
+                tracking::update_portal_cameras
+                    .after(TransformSystems::Propagate)
+                    .before(VisibilitySystems::UpdateFrusta),
+            );
     }
 }
+#[derive(Component, Default)]
+#[relationship_target(relationship = PortalDestination)]
+pub struct IncomingPortals(Vec<Entity>);
+
+#[derive(Component)]
+#[relationship(relationship_target = IncomingPortals)]
+pub struct PortalDestination(Entity);
 
 #[derive(Component, Default)]
 #[relationship_target(relationship = PortalCamera)]
@@ -31,10 +45,6 @@ pub struct PortalCamera {
     /// Main camera for the portal camera to be transformed to match.
     tracking: Entity,
 }
-
-/// The destination that the portal will be connected to.
-#[derive(Component)]
-pub struct PortalDestination(Entity);
 
 /// Marker component for entities that can teleport through portals.
 #[derive(Component)]

@@ -32,6 +32,7 @@ impl Default for CreatePortal {
 }
 
 impl EntityCommand for CreatePortal {
+    #[allow(clippy::too_many_lines)]
     fn apply(self, mut entity: EntityWorldMut) {
         if let Some(dest) = self.destination {
             entity.insert(PortalDestination(dest));
@@ -122,9 +123,10 @@ impl EntityCommand for CreatePortal {
                 .build();
             let mesh_handle = world.resource_mut::<Assets<Mesh>>().add(mesh);
 
-            world
+            let portal_ent = world
                 .entity_mut(id)
-                .insert((MeshMaterial3d(material_handle), Mesh3d(mesh_handle)));
+                .insert((MeshMaterial3d(material_handle), Mesh3d(mesh_handle)))
+                .id();
 
             let camera_3d = world
                 .get::<Camera3d>(tracked_camera_ent)
@@ -144,8 +146,7 @@ impl EntityCommand for CreatePortal {
                 ))
                 .id();
 
-            // TODO: Parent portal camera, or add some form of tracking for cleanup on portal
-            // despawn
+            world.entity_mut(portal_ent).add_child(portal_camera_ent);
 
             if let Some(value) = world.get::<ColorGrading>(tracked_camera_ent).cloned() {
                 world.entity_mut(portal_camera_ent).insert(value);

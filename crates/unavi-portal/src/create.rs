@@ -1,0 +1,137 @@
+use bevy::{
+    camera::RenderTarget,
+    prelude::*,
+    render::render_resource::{
+        Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
+    },
+    window::{PrimaryWindow, WindowRef},
+};
+
+use crate::{PortalCamera, PortalDestination, material::PortalMaterial};
+
+pub struct CreatePortal {
+    pub destination: Option<Entity>,
+    pub tracked_camera: Option<Entity>,
+    pub height: f32,
+    pub width: f32,
+}
+
+impl Default for CreatePortal {
+    fn default() -> Self {
+        Self {
+            destination: None,
+            tracked_camera: None,
+            height: 1.0,
+            width: 1.0,
+        }
+    }
+}
+
+impl EntityCommand for CreatePortal {
+    fn apply(self, mut entity: EntityWorldMut) {
+        if let Some(dest) = self.destination {
+            entity.insert(PortalDestination(dest));
+        }
+
+        let id = entity.id();
+
+        entity.world_scope(|world| {
+            let tracked_camera_ent = self.tracked_camera.unwrap_or_else(|| {
+                world
+                    .query_filtered::<Entity, With<Camera3d>>()
+                    .iter(world)
+                    .next()
+                    .expect("no camera found")
+            });
+
+            let primary_window_size = world
+                .query_filtered::<&Window, With<PrimaryWindow>>()
+                .single(world)
+                .ok()
+                .map(Window::physical_size);
+
+            let camera = world
+                .get::<Camera>(tracked_camera_ent)
+                .expect("camera component not found");
+
+            let viewport_size = camera
+                .viewport
+                .as_ref()
+                .map_or_else(
+                    || match &camera.target {
+                        RenderTarget::Image(image) => world
+                            .resource::<Assets<Image>>()
+                            .get(image.handle.id())
+                            .map(Image::size),
+                        RenderTarget::None { size } => Some(*size),
+                        RenderTarget::TextureView(view) => world
+                            .resource::<ManualTextureViews>()
+                            .get(view)
+                            .map(|v| v.size),
+                        RenderTarget::Window(window) => match window {
+                            WindowRef::Primary => primary_window_size,
+                            WindowRef::Entity(window_ent) => {
+                                world.get::<Window>(*window_ent).map(Window::physical_size)
+                            }
+                        },
+                    },
+                    |v| Some(v.physical_size),
+                )
+                .unwrap_or_else(|| UVec2::splat(128));
+
+            info!("Creating portal of size: {viewport_size}");
+
+            let size = Extent3d {
+                width: viewport_size.x,
+                height: viewport_size.y,
+                ..default()
+            };
+
+            let mut image = Image {
+                texture_descriptor: TextureDescriptor {
+                    dimension: TextureDimension::D2,
+                    format: TextureFormat::Rgba8UnormSrgb,
+                    label: Some("PortalImage"),
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    size,
+                    usage: TextureUsages::COPY_DST
+                        | TextureUsages::RENDER_ATTACHMENT
+                        | TextureUsages::TEXTURE_BINDING,
+                    view_formats: &[],
+                },
+                ..default()
+            };
+            image.resize(size);
+            let image_handle = world.resource_mut::<Assets<Image>>().add(image);
+
+            let material = PortalMaterial {
+                texture: Some(image_handle.clone()),
+                cull_mode: None,
+            };
+            let material_handle = world.resource_mut::<Assets<PortalMaterial>>().add(material);
+
+            let mesh = Plane3d::default()
+                .mesh()
+                .normal(Dir3::Z)
+                .size(self.width, self.height)
+                .build();
+            let mesh_handle = world.resource_mut::<Assets<Mesh>>().add(mesh);
+
+            world
+                .entity_mut(id)
+                .insert((MeshMaterial3d(material_handle), Mesh3d(mesh_handle)));
+
+            world.spawn((
+                PortalCamera {
+                    tracking: tracked_camera_ent,
+                },
+                Camera {
+                    target: RenderTarget::Image(image_handle.into()),
+                    ..default()
+                },
+                Camera3d::default(),
+            ));
+        });
+    }
+}

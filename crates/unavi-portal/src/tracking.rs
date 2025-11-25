@@ -160,12 +160,12 @@ pub fn update_portal_camera_frustums(
             projection.far(),
         );
 
-        let half_space_normal = destination_transform.forward().to_vec3a();
+        let half_space_normal = -destination_transform.forward().to_vec3a();
 
-        let dot = destination_transform
+        let near_half_space_distance = -destination_transform
             .translation_vec3a()
-            .dot(half_space_normal.normalize());
-        let near_half_space_distance = -dot - 1e-4;
+            .dot(half_space_normal.normalize())
+            - 1e-4;
 
         new_frustum.half_spaces[4] =
             HalfSpace::new(half_space_normal.extend(near_half_space_distance));

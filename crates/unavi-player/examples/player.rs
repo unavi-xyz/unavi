@@ -531,8 +531,10 @@ fn spawn_ring(spawner: &mut SceneSpawner, config: RingConfig) {
             let mut height = rand::random_range(config.min_height..=config.max_height).round();
             height -= height % ROUNDING_FACTOR as f32;
 
-            let x = (x as f32).mul_add(config.tile_size, -config.center_radius) - config.tile_size / 2.0;
-            let z = (z as f32).mul_add(config.tile_size, -config.center_radius) - config.tile_size / 2.0;
+            let x = (x as f32).mul_add(config.tile_size, -config.center_radius)
+                - config.tile_size / 2.0;
+            let z = (z as f32).mul_add(config.tile_size, -config.center_radius)
+                - config.tile_size / 2.0;
 
             let y = if config.inverse {
                 INVERSE_Y - height / 2.0

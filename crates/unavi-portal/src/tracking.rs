@@ -1,9 +1,102 @@
+use std::f32::consts::PI;
+
 use bevy::{
-    camera::primitives::{Frustum, HalfSpace},
+    camera::{
+        RenderTarget,
+        primitives::{Frustum, HalfSpace},
+    },
+    math::Affine3A,
     prelude::*,
+    render::render_resource::Extent3d,
+    window::{PrimaryWindow, WindowRef},
 };
 
-use crate::{IncomingPortals, PortalCamera, PortalDestination, TrackedCamera};
+use crate::{
+    IncomingPortals, Portal, PortalCamera, PortalDestination, TrackedCamera,
+    material::PortalMaterial,
+};
+
+/// Resize portal image sizes when the tracked camera changes.
+pub fn update_portal_image_sizes(
+    mut portal_cameras: Query<(&PortalCamera, &TrackedCamera, &mut Projection)>,
+    portals: Query<&MeshMaterial3d<PortalMaterial>, With<Portal>>,
+    cameras: Query<&Camera, Without<PortalCamera>>,
+    mut images: ResMut<Assets<Image>>,
+    mut portal_materials: ResMut<Assets<PortalMaterial>>,
+    manual_texture_views: Res<ManualTextureViews>,
+    windows: Query<&Window, Without<PrimaryWindow>>,
+    primary_window: Query<&Window, With<PrimaryWindow>>,
+) {
+    for (portal_camera, tracked_camera, mut projection) in &mut portal_cameras {
+        let Ok(camera) = cameras.get(tracked_camera.0) else {
+            continue;
+        };
+
+        let viewport_size = camera
+            .viewport
+            .as_ref()
+            .map_or_else(
+                || match &camera.target {
+                    RenderTarget::Image(image) => images.get(image.handle.id()).map(Image::size),
+                    RenderTarget::None { size } => Some(*size),
+                    RenderTarget::TextureView(view) => {
+                        manual_texture_views.get(view).map(|v| v.size)
+                    }
+                    RenderTarget::Window(window) => match window {
+                        WindowRef::Primary => {
+                            primary_window.single().ok().map(Window::physical_size)
+                        }
+                        WindowRef::Entity(window_ent) => {
+                            windows.get(*window_ent).ok().map(Window::physical_size)
+                        }
+                    },
+                },
+                |v| Some(v.physical_size),
+            )
+            .unwrap_or_else(|| UVec2::splat(128));
+
+        let Ok(mesh_material) = portals.get(portal_camera.portal) else {
+            continue;
+        };
+
+        let Some(portal_material) = portal_materials.get(mesh_material.0.id()) else {
+            continue;
+        };
+
+        let Some(texture_handle) = &portal_material.texture else {
+            continue;
+        };
+
+        let Some(image) = images.get(texture_handle.id()) else {
+            continue;
+        };
+
+        let image_size = image.size();
+
+        if viewport_size == image_size {
+            continue;
+        }
+
+        let size = Extent3d {
+            width: viewport_size.x,
+            height: viewport_size.y,
+            ..default()
+        };
+
+        let Some(image) = images.get_mut(texture_handle.id()) else {
+            continue;
+        };
+
+        info!(?size, "Resizing portal image");
+        image.texture_descriptor.size = size;
+        image.resize(size);
+
+        // Force material to update.
+        let _ = portal_materials.get_mut(mesh_material.0.id());
+
+        projection.set_changed();
+    }
+}
 
 /// Transform portal camera to match tracked camera.
 pub fn update_portal_camera_transforms(
@@ -33,6 +126,7 @@ pub fn update_portal_camera_transforms(
 
         let new_transform = GlobalTransform::from(
             destination_transform.affine()
+                * Affine3A::from_rotation_translation(Quat::from_rotation_y(PI), Vec3::ZERO)
                 * portal_transform.affine().inverse()
                 * camera_transform.affine(),
         );

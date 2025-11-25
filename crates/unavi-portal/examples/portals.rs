@@ -29,11 +29,14 @@ fn main() {
         .run();
 }
 
+#[allow(clippy::too_many_lines)]
 fn setup_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    let portal_distance = 6.0;
+
     let portal_width = 2.0;
     let portal_height = 3.0;
 
@@ -41,17 +44,25 @@ fn setup_scene(
     let tracked_camera = commands
         .spawn((
             Camera3d::default(),
-            Transform::from_xyz(0.0, 2.0, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
-            PanOrbitCamera::default(),
+            Transform::from_xyz(
+                portal_distance / 3.0,
+                portal_height * 0.8,
+                portal_distance / 2.0,
+            )
+            .looking_at(Vec3::ZERO, Vec3::Y),
+            PanOrbitCamera {
+                focus: Vec3::new(-portal_distance, portal_height / 3.0, 0.0),
+                ..default()
+            },
             PortalTraveler,
         ))
         .id();
 
     // Spawn linked portal pair.
-    let portal_left_transform = Transform::from_xyz(-6.0, portal_height / 2.0, 0.0)
-        .with_rotation(Quat::from_rotation_y(-FRAC_PI_2));
-    let portal_right_transform = Transform::from_xyz(6.0, portal_height / 2.0, 0.0)
+    let portal_left_transform = Transform::from_xyz(-portal_distance, portal_height / 2.0, 0.0)
         .with_rotation(Quat::from_rotation_y(FRAC_PI_2));
+    let portal_right_transform = Transform::from_xyz(portal_distance, portal_height / 2.0, 0.0)
+        .with_rotation(Quat::from_rotation_y(-FRAC_PI_2));
 
     let id_left = commands.spawn(portal_left_transform).id();
     let id_right = commands.spawn(portal_right_transform).id();

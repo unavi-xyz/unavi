@@ -45,12 +45,6 @@ pub fn needs_update(current: &Version, latest: &Version) -> bool {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum ArchiveKind {
-    Tar,
-    Zip,
-}
-
-#[derive(Debug, Clone, Copy)]
 pub enum SimpleTarget {
     Apple,
     Linux,
@@ -129,28 +123,12 @@ pub fn decompress_xz(xz_path: &std::path::Path, tar_path: &std::path::Path) -> a
     Ok(())
 }
 
-pub fn extract_archive(
-    archive_path: &Path,
-    archive_kind: ArchiveKind,
-    dest: &Path,
-) -> anyhow::Result<()> {
-    match archive_kind {
-        ArchiveKind::Tar => {
-            let tar_file = fs::File::open(archive_path).context("failed to open tar file")?;
-            let mut archive = tar::Archive::new(tar_file);
-            archive
-                .unpack(dest)
-                .context("failed to extract tar archive")?;
-        }
-        ArchiveKind::Zip => {
-            let zip_file = fs::File::open(archive_path).context("failed to open zip file")?;
-            let mut archive =
-                zip::ZipArchive::new(zip_file).context("failed to read zip archive")?;
-            archive
-                .extract(dest)
-                .context("failed to extract zip archive")?;
-        }
-    }
+pub fn extract_archive(archive_path: &Path, dest: &Path) -> anyhow::Result<()> {
+    let tar_file = fs::File::open(archive_path).context("failed to open tar file")?;
+    let mut archive = tar::Archive::new(tar_file);
+    archive
+        .unpack(dest)
+        .context("failed to extract tar archive")?;
     Ok(())
 }
 

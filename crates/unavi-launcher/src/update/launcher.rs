@@ -7,7 +7,7 @@ use tracing::info;
 use super::{
     UpdateStatus,
     common::{
-        ArchiveKind, decompress_xz, download_with_progress, extract_archive, fetch_github_releases,
+        decompress_xz, download_with_progress, extract_archive, fetch_github_releases,
         get_platform_target, is_beta, is_network_error, needs_update,
     },
 };
@@ -113,7 +113,7 @@ where
             decompress_xz(&tmp_archive_path, &tmp_tar_path)?;
             info!("Uncompressed archive: {}", tmp_tar_path.to_string_lossy());
 
-            replace_launcher(&tmp_tar_path, ArchiveKind::Tar)?;
+            replace_launcher(&tmp_tar_path)?;
         }
         super::common::SimpleTarget::Windows => {
             install_msi_update(&tmp_archive_path)?;
@@ -155,13 +155,13 @@ fn install_msi_update(msi_path: &Path) -> anyhow::Result<()> {
     std::process::exit(0);
 }
 
-fn replace_launcher(path: &Path, archive_kind: ArchiveKind) -> anyhow::Result<()> {
+fn replace_launcher(path: &Path) -> anyhow::Result<()> {
     let out_path = path
         .parent()
         .ok_or_else(|| anyhow::anyhow!("extract path has no parent"))?
         .join("out");
 
-    extract_archive(path, archive_kind, &out_path)?;
+    extract_archive(path, &out_path)?;
 
     for item in std::fs::read_dir(&out_path)? {
         let item = item?;

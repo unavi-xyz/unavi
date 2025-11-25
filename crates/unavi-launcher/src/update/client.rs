@@ -7,7 +7,7 @@ use tracing::info;
 use super::{
     UpdateStatus,
     common::{
-        ArchiveKind, decompress_xz, download_with_progress, extract_archive, fetch_github_releases,
+        decompress_xz, download_with_progress, extract_archive, fetch_github_releases,
         get_platform_target, is_beta, is_network_error, needs_update,
     },
 };
@@ -172,23 +172,16 @@ where
     let extract_path = client_dir(&latest_version);
     std::fs::create_dir_all(&extract_path)?;
 
-    match simple_target {
-        super::common::SimpleTarget::Apple | super::common::SimpleTarget::Linux => {
-            let tmp_tar_path = tmp_dir.path().join(
-                asset
-                    .name
-                    .strip_suffix(".xz")
-                    .ok_or_else(|| anyhow::anyhow!("invalid asset name (.xz not found)"))?,
-            );
+    let tmp_tar_path = tmp_dir.path().join(
+        asset
+            .name
+            .strip_suffix(".xz")
+            .ok_or_else(|| anyhow::anyhow!("invalid asset name (.xz not found)"))?,
+    );
 
-            decompress_xz(&tmp_archive_path, &tmp_tar_path)?;
-            info!("Extracting to: {}", extract_path.display());
-            extract_archive(&tmp_tar_path, ArchiveKind::Tar, &extract_path)?;
-        }
-        super::common::SimpleTarget::Windows => {
-            extract_archive(&tmp_archive_path, ArchiveKind::Zip, &extract_path)?;
-        }
-    }
+    decompress_xz(&tmp_archive_path, &tmp_tar_path)?;
+    info!("Extracting to: {}", extract_path.display());
+    extract_archive(&tmp_tar_path, &extract_path)?;
 
     // Set executable permissions on unix
     #[cfg(unix)]

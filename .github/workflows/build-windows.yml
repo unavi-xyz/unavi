@@ -155,14 +155,17 @@ jobs:
           Write-Host "Using certificate: $certPath"
           Write-Host "Using signtool: $signtool"
           & $signtool sign /f $certPath /p "$env:CERTIFICATE_PASSWORD" /tr http://timestamp.digicert.com /td sha256 /fd sha256 result/*.exe
-      - name: Create zip
+      - name: Create tar.xz
         if: ${{ matrix.package != 'unavi-launcher' }}
-        run: Compress-Archive -Path result/* -DestinationPath ${{ matrix.package }}-x86_64-windows.zip
+        shell: bash
+        run: |
+          cd result
+          tar -cJf ../${{ matrix.package }}-x86_64-windows.tar.xz .
       - uses: actions/upload-artifact@v5
         if: ${{ matrix.package != 'unavi-launcher' }}
         with:
           name: build-${{ matrix.package }}-x86_64-windows
-          path: ${{ matrix.package }}-x86_64-windows.zip
+          path: ${{ matrix.package }}-x86_64-windows.tar.xz
           retention-days: 1
       - name: Create msi
         if: ${{ matrix.package == 'unavi-launcher' }}

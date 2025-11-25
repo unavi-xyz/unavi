@@ -30,6 +30,7 @@
             lib.any file.hasExt [
               "json"
               "md"
+              "wgsl"
               "wit"
             ]
           ) root)

@@ -21,7 +21,11 @@ impl Plugin for PortalPlugin {
             .add_systems(
                 PostUpdate,
                 (
-                    tracking::update_portal_camera_transforms
+                    (
+                        tracking::update_portal_image_sizes,
+                        tracking::update_portal_camera_transforms,
+                    )
+                        .chain()
                         .after(TransformSystems::Propagate)
                         .before(VisibilitySystems::UpdateFrusta),
                     tracking::update_portal_camera_frustums.after(VisibilitySystems::UpdateFrusta),

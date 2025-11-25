@@ -9,6 +9,7 @@ pub struct DevToolsOverlay;
 
 #[derive(Component)]
 pub struct NetworkStatsText {
+    #[allow(dead_code)]
     pub host_url: String,
 }
 

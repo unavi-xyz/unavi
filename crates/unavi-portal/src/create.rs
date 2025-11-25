@@ -84,8 +84,6 @@ impl EntityCommand for CreatePortal {
                 )
                 .unwrap_or_else(|| UVec2::splat(128));
 
-            info!("Creating portal of size: {viewport_size}");
-
             let size = Extent3d {
                 width: viewport_size.x,
                 height: viewport_size.y,

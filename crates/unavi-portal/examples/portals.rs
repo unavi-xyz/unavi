@@ -38,33 +38,35 @@ fn setup_scene(
     let portal_height = 3.0;
 
     // Spawn camera with panorbit controls and portal traveler.
-    commands.spawn((
-        Camera3d::default(),
-        Transform::from_xyz(0.0, 2.0, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
-        PanOrbitCamera::default(),
-        PortalTraveler,
-    ));
+    let tracked_camera = commands
+        .spawn((
+            Camera3d::default(),
+            Transform::from_xyz(0.0, 2.0, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
+            PanOrbitCamera::default(),
+            PortalTraveler,
+        ))
+        .id();
 
     // Spawn linked portal pair.
     let portal_left_transform = Transform::from_xyz(-6.0, portal_height / 2.0, 0.0)
-        .with_rotation(Quat::from_rotation_y(FRAC_PI_2));
-    let portal_right_transform = Transform::from_xyz(6.0, portal_height / 2.0, 0.0)
         .with_rotation(Quat::from_rotation_y(-FRAC_PI_2));
+    let portal_right_transform = Transform::from_xyz(6.0, portal_height / 2.0, 0.0)
+        .with_rotation(Quat::from_rotation_y(FRAC_PI_2));
 
     let id_left = commands.spawn(portal_left_transform).id();
     let id_right = commands.spawn(portal_right_transform).id();
 
     commands.entity(id_left).queue(CreatePortal {
         destination: Some(id_right),
+        tracked_camera: Some(tracked_camera),
         height: portal_height,
         width: portal_width,
-        ..Default::default()
     });
     commands.entity(id_right).queue(CreatePortal {
         destination: Some(id_left),
+        tracked_camera: Some(tracked_camera),
         height: portal_height,
         width: portal_width,
-        ..Default::default()
     });
 
     // Ground plane.

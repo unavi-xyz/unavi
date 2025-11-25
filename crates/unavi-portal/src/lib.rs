@@ -20,12 +20,19 @@ impl Plugin for PortalPlugin {
         app.add_plugins(MaterialPlugin::<PortalMaterial>::default())
             .add_systems(
                 PostUpdate,
-                tracking::update_portal_cameras
-                    .after(TransformSystems::Propagate)
-                    .before(VisibilitySystems::UpdateFrusta),
+                (
+                    tracking::update_portal_camera_transforms
+                        .after(TransformSystems::Propagate)
+                        .before(VisibilitySystems::UpdateFrusta),
+                    tracking::update_portal_camera_frustums.after(VisibilitySystems::UpdateFrusta),
+                ),
             );
     }
 }
+
+#[derive(Component)]
+pub struct Portal;
+
 #[derive(Component, Default)]
 #[relationship_target(relationship = PortalDestination)]
 pub struct IncomingPortals(Vec<Entity>);
@@ -42,9 +49,11 @@ pub struct PortalCameras(Vec<Entity>);
 #[relationship(relationship_target = PortalCameras)]
 #[require(Transform)]
 pub struct PortalCamera {
-    /// Main camera for the portal camera to be transformed to match.
-    tracking: Entity,
+    portal: Entity,
 }
+
+#[derive(Component)]
+pub struct TrackedCamera(Entity);
 
 /// Marker component for entities that can teleport through portals.
 #[derive(Component)]

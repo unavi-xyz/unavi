@@ -1,8 +1,12 @@
 use bevy::{
-    camera::RenderTarget,
+    camera::{Exposure, RenderTarget},
+    core_pipeline::tonemapping::{DebandDither, Tonemapping},
     prelude::*,
-    render::render_resource::{
-        Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
+    render::{
+        render_resource::{
+            Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
+        },
+        view::ColorGrading,
     },
     window::{PrimaryWindow, WindowRef},
 };
@@ -122,16 +126,42 @@ impl EntityCommand for CreatePortal {
                 .entity_mut(id)
                 .insert((MeshMaterial3d(material_handle), Mesh3d(mesh_handle)));
 
-            world.spawn((
-                PortalCamera {
-                    tracking: tracked_camera_ent,
-                },
-                Camera {
-                    target: RenderTarget::Image(image_handle.into()),
-                    ..default()
-                },
-                Camera3d::default(),
-            ));
+            let camera_3d = world
+                .get::<Camera3d>(tracked_camera_ent)
+                .cloned()
+                .unwrap_or_default();
+
+            let portal_camera_ent = world
+                .spawn((
+                    PortalCamera {
+                        tracking: tracked_camera_ent,
+                    },
+                    Camera {
+                        target: RenderTarget::Image(image_handle.into()),
+                        ..default()
+                    },
+                    camera_3d,
+                ))
+                .id();
+
+            // TODO: Parent portal camera, or add some form of tracking for cleanup on portal
+            // despawn
+
+            if let Some(value) = world.get::<ColorGrading>(tracked_camera_ent).cloned() {
+                world.entity_mut(portal_camera_ent).insert(value);
+            }
+            if let Some(value) = world.get::<DebandDither>(tracked_camera_ent).copied() {
+                world.entity_mut(portal_camera_ent).insert(value);
+            }
+            if let Some(value) = world.get::<Exposure>(tracked_camera_ent).copied() {
+                world.entity_mut(portal_camera_ent).insert(value);
+            }
+            if let Some(value) = world.get::<Projection>(tracked_camera_ent).cloned() {
+                world.entity_mut(portal_camera_ent).insert(value);
+            }
+            if let Some(value) = world.get::<Tonemapping>(tracked_camera_ent).copied() {
+                world.entity_mut(portal_camera_ent).insert(value);
+            }
         });
     }
 }

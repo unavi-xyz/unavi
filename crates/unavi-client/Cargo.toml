@@ -9,7 +9,8 @@ version.workspace    = true
 
 [features]
 default          = []
-devtools         = ["devtools-network"]
+devtools         = ["devtools-bevy", "devtools-network"]
+devtools-bevy    = ["bevy/bevy_dev_tools"]
 devtools-network = []
 
 [lints]

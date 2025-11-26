@@ -12,7 +12,9 @@ use bevy::{
 };
 use unavi_constants::PORTAL_RENDER_LAYER;
 
-use crate::{Portal, PortalCamera, PortalDestination, TrackedCamera, material::PortalMaterial};
+use crate::{
+    Portal, PortalBounds, PortalCamera, PortalDestination, TrackedCamera, material::PortalMaterial,
+};
 
 pub struct CreatePortal {
     pub destination: Option<Entity>,
@@ -115,9 +117,11 @@ impl EntityCommand for CreatePortal {
             };
             let material_handle = world.resource_mut::<Assets<PortalMaterial>>().add(material);
 
+            let normal = Dir3::Z;
+
             let mesh = Plane3d::default()
                 .mesh()
-                .normal(Dir3::Z)
+                .normal(normal)
                 .size(self.width, self.height)
                 .build();
             let mesh_handle = world.resource_mut::<Assets<Mesh>>().add(mesh);
@@ -126,6 +130,11 @@ impl EntityCommand for CreatePortal {
                 .entity_mut(id)
                 .insert((
                     Portal,
+                    PortalBounds {
+                        width: self.width,
+                        height: self.height,
+                        normal,
+                    },
                     RenderLayers::layer(PORTAL_RENDER_LAYER),
                     MeshMaterial3d(material_handle),
                     Mesh3d(mesh_handle),

@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use bevy::{asset::load_internal_asset, camera::visibility::VisibilitySystems, prelude::*};
 
 use crate::material::{PORTAL_SHADER_HANDLE, PortalMaterial};
@@ -6,6 +8,7 @@ pub struct PortalPlugin;
 
 pub mod create;
 mod material;
+mod teleport;
 mod tracking;
 
 impl Plugin for PortalPlugin {
@@ -18,6 +21,7 @@ impl Plugin for PortalPlugin {
         );
 
         app.add_plugins(MaterialPlugin::<PortalMaterial>::default())
+            .add_systems(Update, teleport::handle_traveler_teleport)
             .add_systems(
                 PostUpdate,
                 (
@@ -36,6 +40,14 @@ impl Plugin for PortalPlugin {
 
 #[derive(Component)]
 pub struct Portal;
+
+/// Collision bounds for portal travel.
+#[derive(Component)]
+pub struct PortalBounds {
+    normal: Dir3,
+    width: f32,
+    height: f32,
+}
 
 #[derive(Component, Default)]
 #[relationship_target(relationship = PortalDestination)]
@@ -61,4 +73,23 @@ pub struct TrackedCamera(Entity);
 
 /// Marker component for entities that can teleport through portals.
 #[derive(Component)]
+#[require(TravelCooldown, PrevTranslation)]
 pub struct PortalTraveler;
+
+#[derive(Component)]
+pub struct TravelCooldown {
+    last_travel: Option<Duration>,
+    duration: Duration,
+}
+
+impl Default for TravelCooldown {
+    fn default() -> Self {
+        Self {
+            last_travel: None,
+            duration: Duration::from_millis(50),
+        }
+    }
+}
+
+#[derive(Component, Default)]
+pub struct PrevTranslation(Vec3);

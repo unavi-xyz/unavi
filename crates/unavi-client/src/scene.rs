@@ -27,7 +27,7 @@ pub fn spawn_lights(mut commands: Commands, mut ambient: ResMut<AmbientLight>) {
             shadows_enabled: true,
             ..Default::default()
         },
-        Transform::from_xyz(1.0, 0.4, 0.1).looking_at(Vec3::ZERO, Vec3::Y),
+        Transform::from_xyz(0.4, 1.0, 0.1).looking_at(Vec3::ZERO, Vec3::Y),
         MtoonSun,
     ));
 }
@@ -102,12 +102,14 @@ pub fn spawn_scene(
         tracked_camera: Some(player.camera),
         height: portal_height,
         width: portal_width,
+        ..default()
     });
     commands.entity(id_right).queue(CreatePortal {
         destination: Some(id_left),
         tracked_camera: Some(player.camera),
         height: portal_height,
         width: portal_width,
+        ..default()
     });
 
     spawn_portal_frame(

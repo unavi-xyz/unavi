@@ -21,7 +21,7 @@ impl Plugin for PortalPlugin {
         );
 
         app.add_plugins(MaterialPlugin::<PortalMaterial>::default())
-            .add_systems(Update, teleport::handle_traveler_teleport)
+            .add_systems(FixedUpdate, teleport::handle_traveler_teleport)
             .add_systems(
                 PostUpdate,
                 (
@@ -44,9 +44,9 @@ pub struct Portal;
 /// Collision bounds for portal travel.
 #[derive(Component)]
 pub struct PortalBounds {
-    normal: Dir3,
-    width: f32,
+    depth: f32,
     height: f32,
+    width: f32,
 }
 
 #[derive(Component, Default)]
@@ -73,7 +73,7 @@ pub struct TrackedCamera(Entity);
 
 /// Marker component for entities that can teleport through portals.
 #[derive(Component)]
-#[require(TravelCooldown, PrevTranslation)]
+#[require(TravelCooldown, PrevTranslation, PortalBoxState)]
 pub struct PortalTraveler;
 
 #[derive(Component)]
@@ -93,3 +93,8 @@ impl Default for TravelCooldown {
 
 #[derive(Component, Default)]
 pub struct PrevTranslation(Vec3);
+
+#[derive(Component, Default)]
+pub struct PortalBoxState {
+    current_box: Option<Entity>,
+}

@@ -75,12 +75,14 @@ fn setup_scene(
         tracked_camera: Some(tracked_camera),
         height: portal_height,
         width: portal_width,
+        ..Default::default()
     });
     commands.entity(id_right).queue(CreatePortal {
         destination: Some(id_left),
         tracked_camera: Some(tracked_camera),
         height: portal_height,
         width: portal_width,
+        ..Default::default()
     });
 
     // Ground plane.

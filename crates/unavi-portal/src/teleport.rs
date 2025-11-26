@@ -3,50 +3,38 @@ use std::f32::consts::PI;
 use bevy::{math::Affine3A, prelude::*};
 
 use crate::{
-    Portal, PortalBounds, PortalDestination, PortalTraveler, PrevTranslation, TravelCooldown,
+    Portal, PortalBounds, PortalBoxState, PortalDestination, PortalTraveler, PrevTranslation,
+    TravelCooldown,
 };
 
-const EPSILON: f32 = 1e-6;
+/// Check if a point is inside the portal's 3D box bounds.
+fn is_inside_portal_box(
+    point: Vec3,
+    portal_transform: &GlobalTransform,
+    bounds: &PortalBounds,
+) -> bool {
+    let portal_affine = portal_transform.affine();
+    let local_point = portal_affine.inverse().transform_point3(point);
 
-/// Check if a line segment crosses through a portal's bounded plane.
-fn check_portal_crossing(
+    let half_width = bounds.width / 2.0;
+    let half_height = bounds.height / 2.0;
+    let half_depth = bounds.depth / 2.0;
+
+    local_point.x.abs() <= half_width
+        && local_point.y.abs() <= half_height
+        && local_point.z.abs() <= half_depth
+}
+
+/// Check if movement represents entering the portal box from outside.
+fn check_box_entry(
     prev_pos: Vec3,
     curr_pos: Vec3,
     portal_transform: &GlobalTransform,
     bounds: &PortalBounds,
-) -> Option<Vec3> {
-    let plane_point = portal_transform.translation();
-    let plane_normal = portal_transform.rotation() * *bounds.normal;
-    let line_dir = curr_pos - prev_pos;
-
-    let denom = line_dir.dot(plane_normal);
-    if denom.abs() < EPSILON {
-        return None;
-    }
-
-    let t = (plane_point - prev_pos).dot(plane_normal) / denom;
-    if !(0.0..=1.0).contains(&t) {
-        return None;
-    }
-
-    let prev_dist = (prev_pos - plane_point).dot(plane_normal);
-    let curr_dist = (curr_pos - plane_point).dot(plane_normal);
-    if prev_dist.signum() == curr_dist.signum() {
-        return None;
-    }
-
-    let intersection = prev_pos + t * line_dir;
-    let portal_affine = portal_transform.affine();
-    let local_point = portal_affine.inverse().transform_point3(intersection);
-
-    let half_width = bounds.width / 2.0;
-    let half_height = bounds.height / 2.0;
-
-    if local_point.x.abs() <= half_width && local_point.y.abs() <= half_height {
-        Some(intersection)
-    } else {
-        None
-    }
+) -> bool {
+    let was_outside = !is_inside_portal_box(prev_pos, portal_transform, bounds);
+    let is_inside = is_inside_portal_box(curr_pos, portal_transform, bounds);
+    was_outside && is_inside
 }
 
 pub fn handle_traveler_teleport(
@@ -57,6 +45,7 @@ pub fn handle_traveler_teleport(
             &mut Transform,
             &mut GlobalTransform,
             &mut PrevTranslation,
+            &mut PortalBoxState,
         ),
         (With<PortalTraveler>, Without<Portal>),
     >,
@@ -65,7 +54,9 @@ pub fn handle_traveler_teleport(
 ) {
     let elapsed = time.elapsed();
 
-    for (mut cooldown, mut transform, mut global_transform, mut prev) in &mut travelers {
+    for (mut cooldown, mut transform, mut global_transform, mut prev, mut box_state) in
+        &mut travelers
+    {
         let prev_translation = prev.0;
         let curr_translation = global_transform.translation();
 
@@ -82,12 +73,27 @@ pub fn handle_traveler_teleport(
             cooldown.last_travel = None;
         }
 
+        let mut currently_inside_any = false;
+        for (portal_transform, bounds, _) in &portals {
+            if is_inside_portal_box(curr_translation, portal_transform, bounds) {
+                currently_inside_any = true;
+                break;
+            }
+        }
+
+        if !currently_inside_any {
+            box_state.current_box = None;
+        }
+
+        if box_state.current_box.is_some() {
+            prev.0 = curr_translation;
+            continue;
+        }
+
         for (portal_transform, bounds, destination) in &portals {
-            let Some(_intersection) =
-                check_portal_crossing(prev_translation, curr_translation, portal_transform, bounds)
-            else {
+            if !check_box_entry(prev_translation, curr_translation, portal_transform, bounds) {
                 continue;
-            };
+            }
 
             let Ok(destination_transform) = destination_portals.get(destination.0) else {
                 continue;
@@ -100,16 +106,11 @@ pub fn handle_traveler_teleport(
                     * global_transform.affine(),
             );
 
-            info!(
-                "Detected portal crossing, teleporting: {:?} -> {:?}",
-                global_transform.translation(),
-                new_transform.translation()
-            );
-
             *global_transform = new_transform;
             *transform = new_transform.into();
             prev.0 = new_transform.translation();
 
+            box_state.current_box = Some(destination.0);
             cooldown.last_travel = Some(elapsed);
             break;
         }

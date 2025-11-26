@@ -1,11 +1,6 @@
 [graph]
 all-features = true
-targets = [
-  "wasm32-unknown-unknown",
-  "x86_64-apple-darwin",
-  "x86_64-pc-windows-msvc",
-  "x86_64-unknown-linux-gnu",
-]
+targets      = ["wasm32-unknown-unknown", "x86_64-apple-darwin", "x86_64-pc-windows-msvc", "x86_64-unknown-linux-gnu"]
 
 [licenses]
 allow = [
@@ -31,6 +26,7 @@ version = 2
 ignore = [
   "RUSTSEC-2023-0071", # rsa sidechannel
   "RUSTSEC-2024-0370", # proc-macro-error no longer maintained
+  "RUSTSEC-2024-0384", # instant unmaintained
   "RUSTSEC-2024-0429", # glib unsoundness
   "RUSTSEC-2024-0436", # paste unmaintained
 
@@ -38,8 +34,10 @@ ignore = [
   "RUSTSEC-2024-0411",
   "RUSTSEC-2024-0412",
   "RUSTSEC-2024-0413",
+  "RUSTSEC-2024-0414",
   "RUSTSEC-2024-0415",
   "RUSTSEC-2024-0416",
+  "RUSTSEC-2024-0417",
   "RUSTSEC-2024-0418",
   "RUSTSEC-2024-0419",
   "RUSTSEC-2024-0420",
@@ -47,10 +45,7 @@ ignore = [
 version = 2
 
 [bans]
-deny = [
-  { deny-multiple-versions = true, name = "bevy" },
-  { deny-multiple-versions = true, name = "tokio" },
-]
+deny              = [{ deny-multiple-versions = true, name = "bevy" }, { deny-multiple-versions = true, name = "tokio" }]
 multiple-versions = "warn"
 
 [sources]

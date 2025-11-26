@@ -21,6 +21,7 @@ pub struct CreatePortal {
     pub tracked_camera: Option<Entity>,
     pub height: f32,
     pub width: f32,
+    pub depth: f32,
 }
 
 impl Default for CreatePortal {
@@ -30,6 +31,7 @@ impl Default for CreatePortal {
             tracked_camera: None,
             height: 1.0,
             width: 1.0,
+            depth: 0.4,
         }
     }
 }
@@ -117,11 +119,9 @@ impl EntityCommand for CreatePortal {
             };
             let material_handle = world.resource_mut::<Assets<PortalMaterial>>().add(material);
 
-            let normal = Dir3::Z;
-
             let mesh = Plane3d::default()
                 .mesh()
-                .normal(normal)
+                .normal(Dir3::Z)
                 .size(self.width, self.height)
                 .build();
             let mesh_handle = world.resource_mut::<Assets<Mesh>>().add(mesh);
@@ -131,9 +131,9 @@ impl EntityCommand for CreatePortal {
                 .insert((
                     Portal,
                     PortalBounds {
-                        width: self.width,
+                        depth: self.depth,
                         height: self.height,
-                        normal,
+                        width: self.width,
                     },
                     RenderLayers::layer(PORTAL_RENDER_LAYER),
                     MeshMaterial3d(material_handle),

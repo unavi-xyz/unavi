@@ -11625,6 +11625,7 @@ dependencies = [
  "anyhow",
  "bevy",
  "bevy_panorbit_camera",
+ "unavi-constants",
 ]
 
 [[package]]

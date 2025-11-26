@@ -1,5 +1,5 @@
 use bevy::{
-    camera::{Exposure, RenderTarget},
+    camera::{Exposure, RenderTarget, visibility::RenderLayers},
     core_pipeline::tonemapping::{DebandDither, Tonemapping},
     prelude::*,
     render::{
@@ -10,6 +10,7 @@ use bevy::{
     },
     window::{PrimaryWindow, WindowRef},
 };
+use unavi_constants::PORTAL_RENDER_LAYER;
 
 use crate::{Portal, PortalCamera, PortalDestination, TrackedCamera, material::PortalMaterial};
 
@@ -123,7 +124,12 @@ impl EntityCommand for CreatePortal {
 
             let portal_ent = world
                 .entity_mut(id)
-                .insert((Portal, MeshMaterial3d(material_handle), Mesh3d(mesh_handle)))
+                .insert((
+                    Portal,
+                    RenderLayers::layer(PORTAL_RENDER_LAYER),
+                    MeshMaterial3d(material_handle),
+                    Mesh3d(mesh_handle),
+                ))
                 .id();
 
             let camera_3d = world

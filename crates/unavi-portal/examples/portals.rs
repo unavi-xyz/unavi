@@ -1,11 +1,13 @@
 use std::f32::consts::FRAC_PI_2;
 
 use bevy::{
+    camera::visibility::RenderLayers,
     color::palettes::tailwind::{BLUE_500, ORANGE_500},
     light::light_consts::lux,
     prelude::*,
 };
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
+use unavi_constants::PORTAL_RENDER_LAYER;
 use unavi_portal::{PortalPlugin, PortalTraveler, create::CreatePortal};
 
 fn main() {
@@ -54,6 +56,7 @@ fn setup_scene(
                 focus: Vec3::new(-portal_distance, portal_height / 3.0, 0.0),
                 ..default()
             },
+            RenderLayers::from_layers(&[0, PORTAL_RENDER_LAYER]),
             PortalTraveler,
         ))
         .id();

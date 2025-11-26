@@ -76,8 +76,8 @@ xdid          = { git = "https://github.com/unavi-xyz/dwn" }
 [profile.release]
 codegen-units = 1
 lto           = true
-panic         = "abort"
-strip         = true
+# panic         = "abort"
+# strip         = true
 
 [profile.release-wasm]
 inherits  = "release"

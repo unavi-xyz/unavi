@@ -34,8 +34,8 @@ fn main() {
 #[allow(clippy::too_many_lines)]
 fn setup_scene(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let portal_distance = 6.0;
 

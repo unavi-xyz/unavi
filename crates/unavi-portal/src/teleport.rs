@@ -7,6 +7,14 @@ use crate::{
     TravelCooldown,
 };
 
+const MIN_SPAWN_DISTANCE: f32 = 0.03;
+
+#[derive(Debug, Clone, Copy)]
+enum PortalEntrySide {
+    Front,
+    Back,
+}
+
 /// Check if a point is inside the portal's 3D box bounds.
 fn is_inside_portal_box(
     point: Vec3,
@@ -25,16 +33,64 @@ fn is_inside_portal_box(
         && local_point.z.abs() <= half_depth
 }
 
-/// Check if movement represents entering the portal box from outside.
-fn check_box_entry(
+const EPSILON: f32 = 1e-4;
+
+/// Check if the line segment from `prev_pos` to `curr_pos` intersects the portal box.
+/// Uses ray-box intersection to handle fast movement that might pass through entirely.
+fn check_box_entry_with_side(
     prev_pos: Vec3,
     curr_pos: Vec3,
     portal_transform: &GlobalTransform,
     bounds: &PortalBounds,
-) -> bool {
-    let was_outside = !is_inside_portal_box(prev_pos, portal_transform, bounds);
-    let is_inside = is_inside_portal_box(curr_pos, portal_transform, bounds);
-    was_outside && is_inside
+) -> Option<PortalEntrySide> {
+    let portal_affine = portal_transform.affine();
+    let prev_local = portal_affine.inverse().transform_point3(prev_pos);
+    let curr_local = portal_affine.inverse().transform_point3(curr_pos);
+
+    let half_width = bounds.width / 2.0;
+    let half_height = bounds.height / 2.0;
+    let half_depth = bounds.depth / 2.0;
+
+    let ray_dir = curr_local - prev_local;
+    let ray_length = ray_dir.length();
+
+    if ray_length < 1e-6 {
+        return None;
+    }
+
+    let ray_dir_norm = ray_dir / ray_length;
+
+    let inv_dir = Vec3::new(
+        1.0 / ray_dir_norm.x,
+        1.0 / ray_dir_norm.y,
+        1.0 / ray_dir_norm.z,
+    );
+
+    let t1 = (-half_width - prev_local.x) * inv_dir.x;
+    let t2 = (half_width - prev_local.x) * inv_dir.x;
+    let t3 = (-half_height - prev_local.y) * inv_dir.y;
+    let t4 = (half_height - prev_local.y) * inv_dir.y;
+    let t5 = (-half_depth - prev_local.z) * inv_dir.z;
+    let t6 = (half_depth - prev_local.z) * inv_dir.z;
+
+    let tmin = t1.min(t2).max(t3.min(t4)).max(t5.min(t6));
+    let tmax = t1.max(t2).min(t3.max(t4)).min(t5.max(t6));
+
+    if tmax < 0.0 || tmin > tmax || tmin > ray_length {
+        return None;
+    }
+
+    let entry_t = tmin.max(0.0);
+
+    if (entry_t - t5).abs() < EPSILON {
+        Some(PortalEntrySide::Front)
+    } else if (entry_t - t6).abs() < EPSILON {
+        Some(PortalEntrySide::Back)
+    } else if prev_local.z < 0.0 {
+        Some(PortalEntrySide::Front)
+    } else {
+        Some(PortalEntrySide::Back)
+    }
 }
 
 pub fn handle_traveler_teleport(
@@ -91,9 +147,14 @@ pub fn handle_traveler_teleport(
         }
 
         for (portal_transform, bounds, destination) in &portals {
-            if !check_box_entry(prev_translation, curr_translation, portal_transform, bounds) {
+            let Some(entry_side) = check_box_entry_with_side(
+                prev_translation,
+                curr_translation,
+                portal_transform,
+                bounds,
+            ) else {
                 continue;
-            }
+            };
 
             let Ok(destination_transform) = destination_portals.get(destination.0) else {
                 continue;
@@ -104,16 +165,18 @@ pub fn handle_traveler_teleport(
                 Affine3A::from_rotation_translation(Quat::from_rotation_y(PI), Vec3::ZERO)
                     * portal_local;
 
-            let mut translation = rotated.translation;
-            translation.z = -translation.z;
+            let max_spawn = bounds.depth / 2.0;
+            let min_spawn = MIN_SPAWN_DISTANCE.min(max_spawn);
 
-            let rotation = Quat::from_mat3(&Mat3::from_cols(
-                rotated.matrix3.x_axis.into(),
-                rotated.matrix3.y_axis.into(),
-                rotated.matrix3.z_axis.into(),
-            ));
+            let spawn_z = match entry_side {
+                PortalEntrySide::Front => -rotated.translation.z.abs().clamp(min_spawn, max_spawn),
+                PortalEntrySide::Back => rotated.translation.z.abs().clamp(min_spawn, max_spawn),
+            };
 
-            let corrected = Affine3A::from_rotation_translation(rotation, translation.to_vec3());
+            let translation = Vec3::new(rotated.translation.x, rotated.translation.y, spawn_z);
+            let rotation = Quat::from_mat3(&rotated.matrix3.into());
+
+            let corrected = Affine3A::from_rotation_translation(rotation, translation);
 
             let new_transform = GlobalTransform::from(destination_transform.affine() * corrected);
 

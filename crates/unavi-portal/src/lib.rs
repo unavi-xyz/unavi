@@ -21,7 +21,6 @@ impl Plugin for PortalPlugin {
         );
 
         app.add_plugins(MaterialPlugin::<PortalMaterial>::default())
-            .add_systems(Update, teleport::handle_traveler_teleport)
             .add_systems(
                 PostUpdate,
                 (
@@ -32,6 +31,7 @@ impl Plugin for PortalPlugin {
                         .chain()
                         .after(TransformSystems::Propagate)
                         .before(VisibilitySystems::UpdateFrusta),
+                    teleport::handle_traveler_teleport,
                     tracking::update_portal_camera_frustums.after(VisibilitySystems::UpdateFrusta),
                 ),
             );
@@ -86,7 +86,7 @@ impl Default for TravelCooldown {
     fn default() -> Self {
         Self {
             last_travel: None,
-            duration: Duration::from_millis(50),
+            duration: Duration::from_millis(100),
         }
     }
 }

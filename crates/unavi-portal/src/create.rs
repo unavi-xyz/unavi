@@ -2,7 +2,7 @@ use bevy::{
     camera::{Exposure, RenderTarget, visibility::RenderLayers},
     core_pipeline::tonemapping::{DebandDither, Tonemapping},
     pbr::{Atmosphere, AtmosphereSettings},
-    post_process::bloom::Bloom,
+    post_process::{bloom::Bloom, dof::DepthOfField},
     prelude::*,
     render::{
         render_resource::{
@@ -34,7 +34,7 @@ impl Default for CreatePortal {
             tracked_camera: None,
             height: 1.0,
             width: 1.0,
-            depth: 0.1,
+            depth: 0.15,
         }
     }
 }
@@ -175,6 +175,9 @@ impl EntityCommand for CreatePortal {
                 world.entity_mut(portal_camera_ent).insert(value);
             }
             if let Some(value) = world.get::<DebandDither>(tracked_camera_ent).copied() {
+                world.entity_mut(portal_camera_ent).insert(value);
+            }
+            if let Some(value) = world.get::<DepthOfField>(tracked_camera_ent).copied() {
                 world.entity_mut(portal_camera_ent).insert(value);
             }
             if let Some(value) = world.get::<Exposure>(tracked_camera_ent).copied() {

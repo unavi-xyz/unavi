@@ -99,12 +99,23 @@ pub fn handle_traveler_teleport(
                 continue;
             };
 
-            let new_transform = GlobalTransform::from(
-                destination_transform.affine()
-                    * Affine3A::from_rotation_translation(Quat::from_rotation_y(PI), Vec3::ZERO)
-                    * portal_transform.affine().inverse()
-                    * global_transform.affine(),
-            );
+            let portal_local = portal_transform.affine().inverse() * global_transform.affine();
+            let rotated =
+                Affine3A::from_rotation_translation(Quat::from_rotation_y(PI), Vec3::ZERO)
+                    * portal_local;
+
+            let mut translation = rotated.translation;
+            translation.z = -translation.z;
+
+            let rotation = Quat::from_mat3(&Mat3::from_cols(
+                rotated.matrix3.x_axis.into(),
+                rotated.matrix3.y_axis.into(),
+                rotated.matrix3.z_axis.into(),
+            ));
+
+            let corrected = Affine3A::from_rotation_translation(rotation, translation.to_vec3());
+
+            let new_transform = GlobalTransform::from(destination_transform.affine() * corrected);
 
             *global_transform = new_transform;
             *transform = new_transform.into();

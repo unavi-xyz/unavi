@@ -66,6 +66,10 @@ impl LocalPlayerSpawner {
             .spawn((
                 PlayerCamera,
                 Camera::default(),
+                Projection::Perspective(PerspectiveProjection {
+                    near: 0.01,
+                    ..default()
+                }),
                 Hdr,
                 Atmosphere::EARTH,
                 AtmosphereSettings::default(),

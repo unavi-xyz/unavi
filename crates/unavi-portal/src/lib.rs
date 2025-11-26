@@ -21,7 +21,7 @@ impl Plugin for PortalPlugin {
         );
 
         app.add_plugins(MaterialPlugin::<PortalMaterial>::default())
-            .add_systems(FixedUpdate, teleport::handle_traveler_teleport)
+            .add_systems(Update, teleport::handle_traveler_teleport)
             .add_systems(
                 PostUpdate,
                 (

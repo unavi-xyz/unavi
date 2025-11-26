@@ -9,6 +9,7 @@ use bevy::{
 use bevy_tnua::prelude::TnuaController;
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
 use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
+use unavi_constants::PORTAL_RENDER_LAYER;
 
 use crate::{
     LocalPlayer, PlayerCamera, PlayerEntities, PlayerRig,
@@ -68,7 +69,7 @@ impl LocalPlayerSpawner {
                 Exposure::SUNLIGHT,
                 Bloom::OLD_SCHOOL,
                 Transform::default().looking_at(Vec3::NEG_Z, Vec3::Y),
-                RenderLayers::layer(0)
+                RenderLayers::from_layers(&[0, PORTAL_RENDER_LAYER])
                     .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::FirstPersonOnly]),
             ))
             .id();

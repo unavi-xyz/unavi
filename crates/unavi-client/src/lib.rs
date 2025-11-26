@@ -40,6 +40,8 @@ pub fn db_path() -> PathBuf {
 
 pub struct UnaviPlugin {
     pub in_memory: bool,
+    #[cfg(feature = "devtools-bevy")]
+    pub debug_fps: bool,
     #[cfg(feature = "devtools-network")]
     pub debug_network: bool,
 }
@@ -83,6 +85,13 @@ impl Plugin for UnaviPlugin {
             unavi_script::ScriptPlugin,
             space::SpacePlugin,
         ));
+
+        #[cfg(feature = "devtools-bevy")]
+        {
+            if self.debug_fps {
+                app.add_plugins(bevy::dev_tools::fps_overlay::FpsOverlayPlugin::default());
+            }
+        }
 
         #[cfg(feature = "devtools-network")]
         {

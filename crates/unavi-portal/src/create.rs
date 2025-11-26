@@ -1,15 +1,18 @@
 use bevy::{
     camera::{Exposure, RenderTarget, visibility::RenderLayers},
     core_pipeline::tonemapping::{DebandDither, Tonemapping},
+    pbr::{Atmosphere, AtmosphereSettings},
+    post_process::bloom::Bloom,
     prelude::*,
     render::{
         render_resource::{
             Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
         },
-        view::ColorGrading,
+        view::{ColorGrading, Hdr},
     },
     window::{PrimaryWindow, WindowRef},
 };
+use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
 use unavi_constants::PORTAL_RENDER_LAYER;
 
 use crate::{
@@ -31,7 +34,7 @@ impl Default for CreatePortal {
             tracked_camera: None,
             height: 1.0,
             width: 1.0,
-            depth: 0.05,
+            depth: 0.1,
         }
     }
 }
@@ -159,6 +162,15 @@ impl EntityCommand for CreatePortal {
                 ))
                 .id();
 
+            if let Some(value) = world.get::<Atmosphere>(tracked_camera_ent).cloned() {
+                world.entity_mut(portal_camera_ent).insert(value);
+            }
+            if let Some(value) = world.get::<AtmosphereSettings>(tracked_camera_ent).cloned() {
+                world.entity_mut(portal_camera_ent).insert(value);
+            }
+            if let Some(value) = world.get::<Bloom>(tracked_camera_ent).cloned() {
+                world.entity_mut(portal_camera_ent).insert(value);
+            }
             if let Some(value) = world.get::<ColorGrading>(tracked_camera_ent).cloned() {
                 world.entity_mut(portal_camera_ent).insert(value);
             }
@@ -168,8 +180,17 @@ impl EntityCommand for CreatePortal {
             if let Some(value) = world.get::<Exposure>(tracked_camera_ent).copied() {
                 world.entity_mut(portal_camera_ent).insert(value);
             }
+            if let Some(value) = world.get::<Hdr>(tracked_camera_ent).copied() {
+                world.entity_mut(portal_camera_ent).insert(value);
+            }
             if let Some(value) = world.get::<Projection>(tracked_camera_ent).cloned() {
                 world.entity_mut(portal_camera_ent).insert(value);
+            }
+            if let Some(value) = world.get::<RenderLayers>(tracked_camera_ent).cloned() {
+                let new_value = value
+                    .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::Both])
+                    .without(PORTAL_RENDER_LAYER);
+                world.entity_mut(portal_camera_ent).insert(new_value);
             }
             if let Some(value) = world.get::<Tonemapping>(tracked_camera_ent).copied() {
                 world.entity_mut(portal_camera_ent).insert(value);

@@ -186,6 +186,7 @@
                   packages =
                     (with pkgs; [
                       age
+                      bacon
                       cargo-deny
                       cargo-edit
                       cargo-machete
@@ -193,7 +194,6 @@
                       cargo-release
                       cargo-watch
                       cargo-workspaces
-                      bacon
                       deploy-rs.packages.${system}.default
                       doctl
                       rustup

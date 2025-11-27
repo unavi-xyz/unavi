@@ -87,6 +87,7 @@ opt-level = "z"
 codegen-backend = "cranelift"
 
 [profile.dev.package."*"]
+opt-level = 3
 codegen-backend = "llvm"
 
 [profile.wasm-dev]

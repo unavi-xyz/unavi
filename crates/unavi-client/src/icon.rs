@@ -4,9 +4,14 @@ use winit::window::Icon;
 
 const ICON_BYTES: &[u8] = include_bytes!("../assets/images/unavi-rounded.png");
 
-pub fn set_window_icon() {
+/// Worlld param forces system to run on main thread, which is needed for WINIT_WINDOWS static.
+pub fn set_window_icon(_world: &mut World) {
     match try_get_icon() {
         Ok(icon) => WINIT_WINDOWS.with_borrow(|windows| {
+            if windows.windows.is_empty() {
+                warn!("No windows found to set icon");
+                return;
+            }
             for window in windows.windows.values() {
                 window.set_window_icon(Some(icon.clone()));
             }

@@ -24,6 +24,7 @@ pub enum AnimationName {
 }
 
 /// Run condition: animations only run in desktop mode.
+#[must_use]
 pub fn is_desktop_mode(players: Query<&TrackingSource>) -> bool {
     players
         .iter()

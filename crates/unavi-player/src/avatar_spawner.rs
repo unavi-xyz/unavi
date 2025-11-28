@@ -1,10 +1,9 @@
 use bevy::prelude::*;
 use bevy_vrm::VrmInstance;
-use constcat::concat;
 
 use crate::{PlayerAvatar, bones::AvatarBones};
 
-const DEFAULT_AVATAR_URL: &str = concat!(unavi_constants::CDN_ASSETS_URL, "/models/default.vrm");
+pub const DEFAULT_AVATAR_URL: &str = "models/default.vrm";
 
 /// Builder for spawning a visual avatar entity.
 #[derive(Default)]

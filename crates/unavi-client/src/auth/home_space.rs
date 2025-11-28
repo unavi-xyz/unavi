@@ -8,8 +8,8 @@ use dwn::{
 };
 use unavi_constants::{SPACE_HOST_DID, WP_VERSION};
 use wired_protocol::{
-    HOME_SPACE_DEFINITION, HOME_SPACE_PROTOCOL, HOST_PROTOCOL, HOSTED_SPACE_SCHEMA,
-    SPACE_DEFINITION, SPACE_PROTOCOL,
+    HOME_SPACE_DEFINITION, HOME_SPACE_PROTOCOL, HOST_PROTOCOL, HOSTED_SPACE_SCHEMA, HostedSpace,
+    SPACE_DEFINITION, SPACE_PROTOCOL, SPACE_SCHEMA,
 };
 use xdid::core::{did::Did, did_url::DidUrl};
 
@@ -81,6 +81,7 @@ pub async fn join_home_space(actor: &Actor) -> anyhow::Result<()> {
         let space_id = actor
             .write()
             .protocol(SPACE_PROTOCOL.to_string(), WP_VERSION, "space".to_string())
+            .schema(SPACE_SCHEMA.to_string())
             .data(APPLICATION_JSON, data)
             .process()
             .await
@@ -152,7 +153,13 @@ pub async fn join_home_space(actor: &Actor) -> anyhow::Result<()> {
             .write()
             .protocol(HOST_PROTOCOL.to_string(), WP_VERSION, "space".to_string())
             .schema(HOSTED_SPACE_SCHEMA.to_string())
-            .data(APPLICATION_JSON, space_url.to_string().into_bytes())
+            .data(
+                APPLICATION_JSON,
+                serde_json::to_vec(&HostedSpace {
+                    url: space_url.to_string(),
+                    max_players: None,
+                })?,
+            )
             .published(true)
             .target(&space_host)
             .send(&host_dwn)

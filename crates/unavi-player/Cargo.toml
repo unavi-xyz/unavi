@@ -20,6 +20,7 @@ constcat.workspace      = true
 paste                   = "1.0.15"
 unavi-constants.path    = "../unavi-constants"
 unavi-input.path        = "../unavi-input"
+unavi-portal.path       = "../unavi-portal"
 
 [dev-dependencies]
 bevy_rich_text3d = "0.5.1"

@@ -10,8 +10,10 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace = true
-bevy.workspace   = true
+anyhow.workspace     = true
+bevy.workspace       = true
+bevy_vrm.workspace   = true
+unavi-constants.path = "../unavi-constants"
 
 [dev-dependencies]
 bevy_panorbit_camera = "0.33.0"

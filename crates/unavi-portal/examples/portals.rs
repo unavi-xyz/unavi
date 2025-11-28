@@ -1,11 +1,13 @@
 use std::f32::consts::FRAC_PI_2;
 
 use bevy::{
+    camera::visibility::RenderLayers,
     color::palettes::tailwind::{BLUE_500, ORANGE_500},
     light::light_consts::lux,
     prelude::*,
 };
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
+use unavi_constants::PORTAL_RENDER_LAYER;
 use unavi_portal::{PortalPlugin, PortalTraveler, create::CreatePortal};
 
 fn main() {
@@ -32,8 +34,8 @@ fn main() {
 #[allow(clippy::too_many_lines)]
 fn setup_scene(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let portal_distance = 6.0;
 
@@ -54,6 +56,7 @@ fn setup_scene(
                 focus: Vec3::new(-portal_distance, portal_height / 3.0, 0.0),
                 ..default()
             },
+            RenderLayers::from_layers(&[0, PORTAL_RENDER_LAYER]),
             PortalTraveler,
         ))
         .id();
@@ -72,12 +75,14 @@ fn setup_scene(
         tracked_camera: Some(tracked_camera),
         height: portal_height,
         width: portal_width,
+        ..Default::default()
     });
     commands.entity(id_right).queue(CreatePortal {
         destination: Some(id_left),
         tracked_camera: Some(tracked_camera),
         height: portal_height,
         width: portal_width,
+        ..Default::default()
     });
 
     // Ground plane.

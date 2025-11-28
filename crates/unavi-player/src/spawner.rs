@@ -9,6 +9,8 @@ use bevy::{
 use bevy_tnua::prelude::TnuaController;
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
 use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
+use unavi_constants::PORTAL_RENDER_LAYER;
+use unavi_portal::PortalTraveler;
 
 use crate::{
     LocalPlayer, PlayerCamera, PlayerEntities, PlayerRig,
@@ -24,6 +26,12 @@ pub struct LocalPlayerSpawner {
     pub config: Option<PlayerConfig>,
     pub tracking_source: Option<TrackingSource>,
     pub vrm_asset: Option<String>,
+}
+
+pub struct SpawnedPlayer {
+    pub body: Entity,
+    pub camera: Entity,
+    pub root: Entity,
 }
 
 impl LocalPlayerSpawner {
@@ -50,7 +58,7 @@ impl LocalPlayerSpawner {
         self
     }
 
-    pub fn spawn(&self, commands: &mut Commands, asset_server: &AssetServer) -> Entity {
+    pub fn spawn(&self, commands: &mut Commands, asset_server: &AssetServer) -> SpawnedPlayer {
         let config = self.config.clone().unwrap_or_default();
         let tracking_source = self.tracking_source.unwrap_or_default();
 
@@ -58,6 +66,10 @@ impl LocalPlayerSpawner {
             .spawn((
                 PlayerCamera,
                 Camera::default(),
+                Projection::Perspective(PerspectiveProjection {
+                    near: 0.01,
+                    ..default()
+                }),
                 Hdr,
                 Atmosphere::EARTH,
                 AtmosphereSettings::default(),
@@ -68,12 +80,12 @@ impl LocalPlayerSpawner {
                 Exposure::SUNLIGHT,
                 Bloom::OLD_SCHOOL,
                 Transform::default().looking_at(Vec3::NEG_Z, Vec3::Y),
-                RenderLayers::layer(0)
+                RenderLayers::from_layers(&[0, PORTAL_RENDER_LAYER])
                     .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::FirstPersonOnly]),
             ))
             .id();
 
-        let player_rig = commands
+        let body = commands
             .spawn((
                 PlayerRig,
                 RigidBody::Dynamic,
@@ -82,6 +94,7 @@ impl LocalPlayerSpawner {
                 TnuaAvian3dSensorShape(Collider::cylinder(PLAYER_RADIUS - 0.01, 0.0)),
                 LockedAxes::ROTATION_LOCKED,
                 Transform::from_xyz(0.0, config.real_height / 2.0 + 1.0, 0.0),
+                PortalTraveler,
             ))
             .id();
 
@@ -105,7 +118,7 @@ impl LocalPlayerSpawner {
         let animations = default_character_animations(asset_server);
         commands.entity(avatar).insert((
             AverageVelocity {
-                target: Some(player_rig),
+                target: Some(body),
                 ..Default::default()
             },
             animations,
@@ -116,24 +129,24 @@ impl LocalPlayerSpawner {
             .entity(avatar)
             .insert(Transform::from_xyz(0.0, -config.real_height / 2.0, 0.0));
 
-        commands
-            .entity(player_rig)
-            .add_children(&[avatar, tracked_head]);
+        commands.entity(body).add_children(&[avatar, tracked_head]);
 
-        commands
+        let root = commands
             .spawn((
                 LocalPlayer,
                 PlayerEntities {
                     avatar,
                     camera,
-                    rig: player_rig,
+                    rig: body,
                     tracked_head,
                 },
                 config,
                 tracking_source,
                 Transform::default(),
             ))
-            .add_child(player_rig)
-            .id()
+            .add_child(body)
+            .id();
+
+        SpawnedPlayer { body, camera, root }
     }
 }

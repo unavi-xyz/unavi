@@ -7,7 +7,6 @@ artifacts/
 
 # Bevy assets
 crates/unavi-client/assets/wasm
-.web-asset-cache/
 
 # Nix
 result

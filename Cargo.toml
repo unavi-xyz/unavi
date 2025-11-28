@@ -6,7 +6,7 @@ resolver = "2"
 edition    = "2024"
 license    = "MPL-2.0"
 repository = "https://github.com/unavi-xyz/unavi"
-version    = "0.0.15-beta.1"
+version    = "0.0.15-beta.2"
 
 [workspace.lints.clippy]
 cast_possible_truncation = "allow"
@@ -88,6 +88,7 @@ codegen-backend = "cranelift"
 
 [profile.dev.package."*"]
 codegen-backend = "llvm"
+opt-level       = 3
 
 [profile.wasm-dev]
 inherits  = "dev"

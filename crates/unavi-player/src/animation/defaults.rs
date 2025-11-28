@@ -1,13 +1,13 @@
 use bevy::{platform::collections::HashMap, prelude::*};
 use bevy_gltf_kun::import::gltf::{animation::RawGltfAnimation, loader::GltfLoaderSettings};
-use constcat::concat;
 
 use crate::animation::AnimationName;
 
 use super::load::{AvatarAnimation, AvatarAnimationClips};
 
-const DEFAULT_ANIMATIONS: &str = concat!(unavi_constants::CDN_ASSETS_URL, "/models/animations.glb");
+pub const DEFAULT_ANIMATIONS: &str = "models/animations.glb";
 
+#[must_use]
 pub fn default_character_animations(asset_server: &AssetServer) -> AvatarAnimationClips {
     let mut map = HashMap::default();
 

@@ -1,23 +1,30 @@
 use bevy::{
-    camera::{Exposure, RenderTarget},
+    camera::{Exposure, RenderTarget, visibility::RenderLayers},
     core_pipeline::tonemapping::{DebandDither, Tonemapping},
+    pbr::{Atmosphere, AtmosphereSettings},
+    post_process::{bloom::Bloom, dof::DepthOfField},
     prelude::*,
     render::{
         render_resource::{
             Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
         },
-        view::ColorGrading,
+        view::{ColorGrading, Hdr},
     },
     window::{PrimaryWindow, WindowRef},
 };
+use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
+use unavi_constants::PORTAL_RENDER_LAYER;
 
-use crate::{Portal, PortalCamera, PortalDestination, TrackedCamera, material::PortalMaterial};
+use crate::{
+    Portal, PortalBounds, PortalCamera, PortalDestination, TrackedCamera, material::PortalMaterial,
+};
 
 pub struct CreatePortal {
     pub destination: Option<Entity>,
     pub tracked_camera: Option<Entity>,
     pub height: f32,
     pub width: f32,
+    pub depth: f32,
 }
 
 impl Default for CreatePortal {
@@ -27,6 +34,7 @@ impl Default for CreatePortal {
             tracked_camera: None,
             height: 1.0,
             width: 1.0,
+            depth: 0.15,
         }
     }
 }
@@ -123,7 +131,17 @@ impl EntityCommand for CreatePortal {
 
             let portal_ent = world
                 .entity_mut(id)
-                .insert((Portal, MeshMaterial3d(material_handle), Mesh3d(mesh_handle)))
+                .insert((
+                    Portal,
+                    PortalBounds {
+                        depth: self.depth,
+                        height: self.height,
+                        width: self.width,
+                    },
+                    RenderLayers::layer(PORTAL_RENDER_LAYER),
+                    MeshMaterial3d(material_handle),
+                    Mesh3d(mesh_handle),
+                ))
                 .id();
 
             let camera_3d = world
@@ -144,17 +162,38 @@ impl EntityCommand for CreatePortal {
                 ))
                 .id();
 
+            if let Some(value) = world.get::<Atmosphere>(tracked_camera_ent).cloned() {
+                world.entity_mut(portal_camera_ent).insert(value);
+            }
+            if let Some(value) = world.get::<AtmosphereSettings>(tracked_camera_ent).cloned() {
+                world.entity_mut(portal_camera_ent).insert(value);
+            }
+            if let Some(value) = world.get::<Bloom>(tracked_camera_ent).cloned() {
+                world.entity_mut(portal_camera_ent).insert(value);
+            }
             if let Some(value) = world.get::<ColorGrading>(tracked_camera_ent).cloned() {
                 world.entity_mut(portal_camera_ent).insert(value);
             }
             if let Some(value) = world.get::<DebandDither>(tracked_camera_ent).copied() {
                 world.entity_mut(portal_camera_ent).insert(value);
             }
+            if let Some(value) = world.get::<DepthOfField>(tracked_camera_ent).copied() {
+                world.entity_mut(portal_camera_ent).insert(value);
+            }
             if let Some(value) = world.get::<Exposure>(tracked_camera_ent).copied() {
+                world.entity_mut(portal_camera_ent).insert(value);
+            }
+            if let Some(value) = world.get::<Hdr>(tracked_camera_ent).copied() {
                 world.entity_mut(portal_camera_ent).insert(value);
             }
             if let Some(value) = world.get::<Projection>(tracked_camera_ent).cloned() {
                 world.entity_mut(portal_camera_ent).insert(value);
+            }
+            if let Some(value) = world.get::<RenderLayers>(tracked_camera_ent).cloned() {
+                let new_value = value
+                    .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::Both])
+                    .without(PORTAL_RENDER_LAYER);
+                world.entity_mut(portal_camera_ent).insert(new_value);
             }
             if let Some(value) = world.get::<Tonemapping>(tracked_camera_ent).copied() {
                 world.entity_mut(portal_camera_ent).insert(value);

@@ -18,3 +18,5 @@ pub const SPACE_HOST_DID: &str = match option_env!("SPACE_DID") {
 };
 
 pub const CDN_ASSETS_URL: &str = "https://unavi.nyc3.cdn.digitaloceanspaces.com/assets";
+
+pub const PORTAL_RENDER_LAYER: usize = 5;

@@ -40,13 +40,16 @@ pub fn db_path() -> PathBuf {
 
 pub struct UnaviPlugin {
     pub in_memory: bool,
+    #[cfg(feature = "devtools-bevy")]
+    pub debug_fps: bool,
     #[cfg(feature = "devtools-network")]
     pub debug_network: bool,
 }
 
 impl Plugin for UnaviPlugin {
     fn build(&self, app: &mut App) {
-        assets::copy_assets_to_dirs().expect("failed to copy assets");
+        assets::copy::copy_assets_to_dirs().expect("failed to copy assets");
+        assets::download::download_web_assets().expect("failed to download web assets");
 
         let store = if self.in_memory {
             NativeDbStore::new_in_memory()
@@ -83,6 +86,13 @@ impl Plugin for UnaviPlugin {
             unavi_script::ScriptPlugin,
             space::SpacePlugin,
         ));
+
+        #[cfg(feature = "devtools-bevy")]
+        {
+            if self.debug_fps {
+                app.add_plugins(bevy::dev_tools::fps_overlay::FpsOverlayPlugin::default());
+            }
+        }
 
         #[cfg(feature = "devtools-network")]
         {

@@ -12,6 +12,11 @@ struct Args {
     #[arg(long, default_value_t = false)]
     in_memory: bool,
 
+    /// Enable FPS counter.
+    #[cfg(feature = "devtools-bevy")]
+    #[arg(long, default_value_t = false)]
+    debug_fps: bool,
+
     /// Enable debug network monitoring (shows bandwidth, tickrate, etc.).
     #[cfg(feature = "devtools-network")]
     #[arg(long, default_value_t = false)]
@@ -24,13 +29,15 @@ fn main() {
     App::new()
         .add_plugins(unavi_client::UnaviPlugin {
             in_memory: args.in_memory,
+            #[cfg(feature = "devtools-bevy")]
+            debug_fps: args.debug_fps,
             #[cfg(feature = "devtools-network")]
             debug_network: args.debug_network,
         })
         .run();
 
     // Give time for other threads to finish.
-    std::thread::sleep(Duration::from_secs(1));
+    std::thread::sleep(Duration::from_millis(500));
 
     info!("Graceful exit");
 }

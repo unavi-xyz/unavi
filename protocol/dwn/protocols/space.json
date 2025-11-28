@@ -1,0 +1,83 @@
+{
+  "protocol": "https://wired-protocol.org/v0/protocols/space.json",
+  "published": true,
+  "types": {
+    "host": {
+      "dataFormat": [
+        "text/plain"
+      ]
+    },
+    "model": {
+      "dataFormat": [
+        "model/gltf-binary"
+      ]
+    },
+    "space": {
+      "schema": "https://wired-protocol.org/v0/schemas/space.json",
+      "dataFormat": [
+        "application/json"
+      ]
+    }
+  },
+  "structure": {
+    "space": {
+      "$actions": [
+        {
+          "who": "recipient",
+          "can": [
+            "create",
+            "delete",
+            "update"
+          ]
+        },
+        {
+          "who": "anyone",
+          "can": [
+            "query",
+            "read"
+          ]
+        }
+      ],
+      "host": {
+        "$actions": [
+          {
+            "who": "author",
+            "of": "space",
+            "can": [
+              "create",
+              "update",
+              "delete"
+            ]
+          },
+          {
+            "who": "anyone",
+            "can": [
+              "query",
+              "read"
+            ]
+          }
+        ]
+      },
+      "model": {
+        "$actions": [
+          {
+            "who": "author",
+            "of": "space",
+            "can": [
+              "create",
+              "update",
+              "delete"
+            ]
+          },
+          {
+            "who": "anyone",
+            "can": [
+              "query",
+              "read"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

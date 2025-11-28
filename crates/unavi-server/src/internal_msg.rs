@@ -6,7 +6,8 @@ use dwn::{
     core::message::{descriptor::Descriptor, mime::APPLICATION_JSON},
 };
 use tracing::{error, info};
-use unavi_constants::{WP_VERSION, protocols::SPACE_HOST_PROTOCOL, schemas::ServerInfo};
+use unavi_constants::WP_VERSION;
+use wired_protocol::{HOST_PROTOCOL, HostedSpaceMeta};
 
 use crate::session::DEFAULT_MAX_PLAYERS_PER_SPACE;
 
@@ -50,7 +51,7 @@ impl InternalMessageHandler {
         let Descriptor::RecordsWrite(found_write) = &found.entry().descriptor else {
             bail!("player count record not RecordsWrite")
         };
-        if found_write.protocol.as_deref() != Some(SPACE_HOST_PROTOCOL)
+        if found_write.protocol.as_deref() != Some(HOST_PROTOCOL)
             || found_write.protocol_path.as_deref() != Some("space")
         {
             bail!("player count record not a space")
@@ -58,7 +59,7 @@ impl InternalMessageHandler {
 
         let found_info = actor
             .query()
-            .protocol(SPACE_HOST_PROTOCOL.to_string())
+            .protocol(HOST_PROTOCOL.to_string())
             .protocol_path("space/server-info".to_string())
             .parent_id(record_id.clone())
             .process()
@@ -76,16 +77,16 @@ impl InternalMessageHandler {
 
         let info_id = builder
             .protocol(
-                SPACE_HOST_PROTOCOL.to_string(),
+                HOST_PROTOCOL.to_string(),
                 WP_VERSION,
-                "space/server-info".to_string(),
+                "space/meta".to_string(),
             )
             .context_id(record_id.clone())
             .data(
                 APPLICATION_JSON,
-                serde_json::to_vec(&ServerInfo {
-                    max_players: DEFAULT_MAX_PLAYERS_PER_SPACE,
-                    num_players: count,
+                serde_json::to_vec(&HostedSpaceMeta {
+                    max_players: Some(DEFAULT_MAX_PLAYERS_PER_SPACE as u64),
+                    num_players: Some(count as u64),
                 })?,
             )
             .process()

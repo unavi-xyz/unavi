@@ -1,17 +1,14 @@
 use dwn::core::message::mime::APPLICATION_JSON;
-use serde_json::json;
 use tracing::info;
-use unavi_constants::{
-    WP_VERSION,
-    protocols::{SPACE_HOST_DEFINITION, SPACE_HOST_PROTOCOL},
-};
+use unavi_constants::WP_VERSION;
+use wired_protocol::{HOST_DEFINITION, HOST_PROTOCOL, Server};
 use xdid::methods::web::reqwest::Url;
 
 use crate::session::SessionSpawner;
 
 impl SessionSpawner {
     pub async fn init_space_host(&self, cert_hash: String) -> anyhow::Result<()> {
-        let host_def = serde_json::from_slice(SPACE_HOST_DEFINITION)?;
+        let host_def = serde_json::from_slice(HOST_DEFINITION)?;
 
         self.ctx
             .actor
@@ -25,15 +22,15 @@ impl SessionSpawner {
             "https"
         };
         let connect_url = Url::parse(&format!("{http}://{}", self.domain))?;
-        info!("Publishing connect URL: {connect_url}");
+        info!("Publishing server URL: {connect_url}");
 
         let prev_connect_url = self
             .ctx
             .actor
             .query()
-            .protocol(SPACE_HOST_PROTOCOL.to_string())
+            .protocol(HOST_PROTOCOL.to_string())
             .protocol_version(WP_VERSION)
-            .protocol_path("connect-url".to_string())
+            .protocol_path("server".to_string())
             .process()
             .await?;
 
@@ -42,21 +39,17 @@ impl SessionSpawner {
             .next()
             .map(|v| v.entry().record_id.clone());
 
-        let data = json!({
-            "url": connect_url,
-            "certHash": cert_hash
-        });
+        let data = serde_json::to_vec(&Server {
+            url: connect_url.to_string(),
+            cert_hash,
+        })?;
 
         let mut builder = self
             .ctx
             .actor
             .write()
-            .protocol(
-                SPACE_HOST_PROTOCOL.to_string(),
-                WP_VERSION,
-                "connect-url".to_string(),
-            )
-            .data(APPLICATION_JSON, data.to_string().into_bytes())
+            .protocol(HOST_PROTOCOL.to_string(), WP_VERSION, "server".to_string())
+            .data(APPLICATION_JSON, data)
             // .sign(true) TODO sign + verify in client
             .published(true);
 

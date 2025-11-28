@@ -48,6 +48,7 @@ unavi-portal.path         = "../unavi-portal"
 unavi-script.path         = "../unavi-script"
 unavi-server-service.path = "../unavi-server-service"
 winit                     = { default-features = false, version = "0.30.12" }
+wired-protocol.path       = "../wired-protocol"
 wtransport.workspace      = true
 xdid.workspace            = true
 zeroize.workspace         = true

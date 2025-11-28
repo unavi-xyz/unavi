@@ -1,10 +1,6 @@
 use semver::Version;
 
-pub mod protocols;
-pub mod schemas;
-
-const WP_PREFIX: &str = "https://wired-protocol.org/v0/";
-
+/// Wired Protocol version number.
 pub const WP_VERSION: Version = Version::new(0, 1, 0);
 
 pub const REMOTE_DWN_URL: &str = match option_env!("DWN_URL") {

@@ -1,0 +1,16 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "wired-protocol"
+repository.workspace = true
+version.workspace    = true
+
+[dependencies]
+serde = { features = ["derive"], workspace = true }
+
+[build-dependencies]
+prettyplease = "0.2.37"
+schemars     = "0.8.22"
+serde_json   = { workspace = true }
+syn          = "2.0.111"
+typify       = "0.5.0"

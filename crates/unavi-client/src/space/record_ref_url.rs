@@ -9,7 +9,7 @@ pub fn new_record_ref_url(did: Did, record_id: &str) -> DidUrl {
     }
 }
 
-/// Parse a record reference URL to extract the DID and record ID.
+/// Parse a record reference URL to extract the record ID.
 ///
 /// Expected format: `{did}?service=dwn&relativeRef=/records/{record-id}`
 pub fn parse_record_ref_url(did_url: &DidUrl) -> anyhow::Result<&str> {

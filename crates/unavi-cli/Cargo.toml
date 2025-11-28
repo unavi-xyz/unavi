@@ -19,5 +19,6 @@ tokio                 = { features = ["macros", "rt", "rt-multi-thread"], worksp
 tracing.workspace     = true
 tracing-subscriber    = { features = ["env-filter"], workspace = true }
 unavi-constants.path  = "../unavi-constants"
+wired-protocol.path   = "../wired-protocol"
 xdid.workspace        = true
 zeroize.workspace     = true

@@ -10,6 +10,4 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-constcat.workspace = true
-semver.workspace   = true
-serde.workspace    = true
+semver.workspace = true

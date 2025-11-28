@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use dwn::core::message::descriptor::Descriptor;
 use tracing::info;
-use unavi_constants::protocols::SPACE_HOST_PROTOCOL;
 use unavi_server_service::{ControlService, Player, RpcResult};
+use wired_protocol::HOST_PROTOCOL;
 
 use crate::{
     internal_msg::InternalMessage,
@@ -52,7 +52,7 @@ impl ControlService for ControlServer {
         };
 
         if found_write.published != Some(true)
-            || found_write.protocol.as_deref() != Some(SPACE_HOST_PROTOCOL)
+            || found_write.protocol.as_deref() != Some(HOST_PROTOCOL)
             || found_write.protocol_path.as_deref() != Some("space")
         {
             info!("Invalid space write record");

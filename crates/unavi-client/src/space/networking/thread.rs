@@ -15,7 +15,8 @@ use bevy::{
 use dwn::Actor;
 use scc::HashMap as SccHashMap;
 use serde::Deserialize;
-use unavi_constants::{WP_VERSION, protocols::SPACE_HOST_PROTOCOL};
+use unavi_constants::WP_VERSION;
+use wired_protocol::HOST_PROTOCOL;
 use wtransport::tls::Sha256Digest;
 use xdid::{
     core::{did::Did, did_url::DidUrl},
@@ -183,9 +184,9 @@ async fn fetch_connect_info(
 ) -> anyhow::Result<Option<ConnectInfo>> {
     let found_urls = actor
         .query()
-        .protocol(SPACE_HOST_PROTOCOL.to_string())
+        .protocol(HOST_PROTOCOL.to_string())
         .protocol_version(WP_VERSION)
-        .protocol_path("connect-url".to_string())
+        .protocol_path("server".to_string())
         .target(host_did)
         .send(host_dwn)
         .await

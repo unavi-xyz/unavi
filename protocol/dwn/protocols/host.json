@@ -1,28 +1,28 @@
 {
-  "protocol": "https://wired-protocol.org/v0/protocols/space-host.json",
+  "protocol": "https://wired-protocol.org/v0/protocols/host.json",
   "published": true,
   "types": {
-    "connect-url": {
-      "schema": "https://wired-protocol.org/v0/schemas/connect-url.json",
+    "server": {
+      "schema": "https://wired-protocol.org/v0/schemas/server.json",
       "dataFormat": [
         "application/json"
       ]
     },
     "space": {
-      "schema": "https://wired-protocol.org/v0/schemas/space.json",
+      "schema": "https://wired-protocol.org/v0/schemas/hosted-space.json",
       "dataFormat": [
         "application/json"
       ]
     },
-    "server-info": {
-      "schema": "https://wired-protocol.org/v0/schemas/server-info.json",
+    "meta": {
+      "schema": "https://wired-protocol.org/v0/schemas/hosted-space-meta.json",
       "dataFormat": [
         "application/json"
       ]
     }
   },
   "structure": {
-    "connect-url": {
+    "server": {
       "$actions": [
         {
           "who": "anyone",
@@ -54,6 +54,7 @@
         {
           "who": "author",
           "can": [
+            "delete",
             "update"
           ]
         },
@@ -64,7 +65,7 @@
           ]
         }
       ],
-      "server-info": {
+      "meta": {
         "$actions": [
           {
             "who": "anyone",

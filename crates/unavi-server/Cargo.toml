@@ -38,6 +38,7 @@ tracing.workspace            = true
 tracing-subscriber.workspace = true
 unavi-constants.path         = "../unavi-constants"
 unavi-server-service.path    = "../unavi-server-service"
+wired-protocol.path          = "../wired-protocol"
 wtransport.workspace         = true
 xdid.workspace               = true
 zeroize.workspace            = true

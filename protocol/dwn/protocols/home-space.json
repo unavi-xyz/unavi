@@ -15,6 +15,7 @@
           "who": "recipient",
           "can": [
             "create",
+            "delete",
             "query",
             "read",
             "update"

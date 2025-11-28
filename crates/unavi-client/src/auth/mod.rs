@@ -2,9 +2,8 @@ use std::{str::FromStr, sync::Arc, time::Duration};
 
 use bevy::{ecs::world::CommandQueue, prelude::*, tasks::TaskPool};
 use dwn::{Actor, document_key::DocumentKey};
-use unavi_constants::{
-    REMOTE_DWN_URL, SPACE_HOST_DID, protocols::SPACE_HOST_PROTOCOL, schemas::ServerInfo,
-};
+use unavi_constants::{REMOTE_DWN_URL, SPACE_HOST_DID};
+use wired_protocol::{HOST_PROTOCOL, HostedSpaceMeta};
 use xdid::{
     core::{did::Did, did_url::DidUrl},
     methods::{
@@ -113,8 +112,8 @@ async fn find_public_space(actor: &Actor) -> anyhow::Result<Option<DidUrl>> {
 
     let infos = actor
         .query()
-        .protocol(SPACE_HOST_PROTOCOL.to_string())
-        .protocol_path("space/server-info".to_string())
+        .protocol(HOST_PROTOCOL.to_string())
+        .protocol_path("space/meta".to_string())
         .target(&space_host)
         .send(&host_dwn)
         .await?;
@@ -127,7 +126,7 @@ async fn find_public_space(actor: &Actor) -> anyhow::Result<Option<DidUrl>> {
         };
 
         let info = if let Some(data) = record.data() {
-            serde_json::from_slice::<ServerInfo>(data)?
+            serde_json::from_slice::<HostedSpaceMeta>(data)?
         } else {
             let Some(full_record) = actor
                 .read(record.entry().record_id.clone())
@@ -142,12 +141,13 @@ async fn find_public_space(actor: &Actor) -> anyhow::Result<Option<DidUrl>> {
                 continue;
             };
 
-            serde_json::from_slice::<ServerInfo>(data)?
+            serde_json::from_slice::<HostedSpaceMeta>(data)?
         };
 
         info!(
             "Found space with {}/{} players",
-            info.num_players, info.max_players
+            info.num_players.unwrap_or_default(),
+            info.max_players.unwrap_or_default()
         );
         if info.num_players >= info.max_players {
             continue;

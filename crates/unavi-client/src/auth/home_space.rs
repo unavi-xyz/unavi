@@ -8,7 +8,8 @@ use dwn::{
 };
 use unavi_constants::{SPACE_HOST_DID, WP_VERSION};
 use wired_protocol::{
-    HOME_SPACE_DEFINITION, HOME_SPACE_PROTOCOL, HOST_PROTOCOL, HOSTED_SPACE_SCHEMA, SPACE_PROTOCOL,
+    HOME_SPACE_DEFINITION, HOME_SPACE_PROTOCOL, HOST_PROTOCOL, HOSTED_SPACE_SCHEMA,
+    SPACE_DEFINITION, SPACE_PROTOCOL,
 };
 use xdid::core::{did::Did, did_url::DidUrl};
 
@@ -22,6 +23,14 @@ use crate::{
 
 #[allow(clippy::too_many_lines)]
 pub async fn join_home_space(actor: &Actor) -> anyhow::Result<()> {
+    // Init space protocol.
+    let space_definition = serde_json::from_slice(SPACE_DEFINITION)?;
+
+    actor
+        .configure_protocol(WP_VERSION, space_definition)
+        .process()
+        .await?;
+
     // Init home protocol.
     let home_definition = serde_json::from_slice(HOME_SPACE_DEFINITION)?;
 
@@ -37,7 +46,8 @@ pub async fn join_home_space(actor: &Actor) -> anyhow::Result<()> {
         .protocol_version(WP_VERSION)
         .protocol_path("home".to_string())
         .process()
-        .await?;
+        .await
+        .context("query homes")?;
 
     let mut space_url = None;
 
@@ -108,7 +118,8 @@ pub async fn join_home_space(actor: &Actor) -> anyhow::Result<()> {
         .protocol_path("space/host".to_string())
         .parent_id(space_id.to_string())
         .process()
-        .await?;
+        .await
+        .context("query hosted spaces")?;
 
     let mut hosted_url = None;
 

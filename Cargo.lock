@@ -13821,7 +13821,7 @@ dependencies = [
 
 [[package]]
 name = "wired-protocol"
-version = "0.0.15-beta.1"
+version = "0.0.15-beta.2"
 dependencies = [
  "prettyplease",
  "schemars 0.8.22",

@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::Context;
-use bevy::log::info;
 
 use crate::assets_dir;
 
@@ -17,7 +16,7 @@ pub fn copy_assets_to_dirs() -> anyhow::Result<()> {
     let source_dir = get_relative_assets_dir()?;
 
     if !source_dir.exists() {
-        info!("source asset directory not found, skipping copy");
+        println!("source asset directory not found, skipping copy");
         return Ok(());
     }
 

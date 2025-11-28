@@ -48,7 +48,8 @@ pub struct UnaviPlugin {
 
 impl Plugin for UnaviPlugin {
     fn build(&self, app: &mut App) {
-        assets::copy_assets_to_dirs().expect("failed to copy assets");
+        assets::copy::copy_assets_to_dirs().expect("failed to copy assets");
+        assets::download::download_web_assets().expect("failed to download web assets");
 
         let store = if self.in_memory {
             NativeDbStore::new_in_memory()

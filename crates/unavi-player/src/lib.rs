@@ -30,7 +30,7 @@ use bevy_tnua_avian3d::TnuaAvian3dPlugin;
 use bevy_vrm::VrmPlugins;
 use unavi_input::CursorGrabState;
 
-mod animation;
+pub mod animation;
 pub mod avatar_spawner;
 mod bones;
 pub mod config;

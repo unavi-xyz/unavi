@@ -22,6 +22,11 @@ pub struct AvatarAnimation {
 #[derive(Component, Clone)]
 pub struct AvatarAnimationNodes(pub HashMap<AnimationName, AnimationNodeIndex>);
 
+/// Loads avatar animation nodes from GLTF assets and creates animation graphs.
+///
+/// # Panics
+///
+/// Panics if a mixamo node handle exists in the GLTF but the corresponding node asset is not found.
 pub fn load_animation_nodes(
     gltfs: Res<Assets<GltfKun>>,
     mut clips: ResMut<Assets<AnimationClip>>,

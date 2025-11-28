@@ -11558,6 +11558,7 @@ dependencies = [
  "bevy_vrm",
  "bincode 2.0.1",
  "clap",
+ "constcat",
  "directories",
  "dwn",
  "embed-resource",

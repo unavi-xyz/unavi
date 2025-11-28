@@ -4,7 +4,7 @@ use winit::window::Icon;
 
 const ICON_BYTES: &[u8] = include_bytes!("../assets/images/unavi-rounded.png");
 
-/// Worlld param forces system to run on main thread, which is needed for WINIT_WINDOWS static.
+/// Worlld param forces system to run on main thread, which is needed for `WINIT_WINDOWS` static.
 pub fn set_window_icon(_world: &mut World) {
     match try_get_icon() {
         Ok(icon) => WINIT_WINDOWS.with_borrow(|windows| {

@@ -25,6 +25,11 @@ impl Default for AverageVelocity {
     }
 }
 
+/// Calculates average velocity for entities with `AverageVelocity` component.
+///
+/// # Panics
+///
+/// Panics if the velocity target entity does not have a `Transform` component.
 pub fn calc_average_velocity(
     mut velocities: Query<(Entity, &mut AverageVelocity)>,
     time: Res<Time>,

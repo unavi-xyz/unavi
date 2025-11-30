@@ -21,6 +21,11 @@ struct Args {
     #[cfg(feature = "devtools-network")]
     #[arg(long, default_value_t = false)]
     debug_network: bool,
+
+    /// Enable physics debug gizmos.
+    #[cfg(feature = "devtools-bevy")]
+    #[arg(long, default_value_t = false)]
+    debug_physics: bool,
 }
 
 fn main() {
@@ -33,6 +38,8 @@ fn main() {
             debug_fps: args.debug_fps,
             #[cfg(feature = "devtools-network")]
             debug_network: args.debug_network,
+            #[cfg(feature = "devtools-bevy")]
+            debug_physics: args.debug_physics,
         })
         .run();
 

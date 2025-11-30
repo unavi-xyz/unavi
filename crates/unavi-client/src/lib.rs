@@ -44,6 +44,8 @@ pub struct UnaviPlugin {
     pub debug_fps: bool,
     #[cfg(feature = "devtools-network")]
     pub debug_network: bool,
+    #[cfg(feature = "devtools-bevy")]
+    pub debug_physics: bool,
 }
 
 impl Plugin for UnaviPlugin {
@@ -91,6 +93,9 @@ impl Plugin for UnaviPlugin {
         {
             if self.debug_fps {
                 app.add_plugins(bevy::dev_tools::fps_overlay::FpsOverlayPlugin::default());
+            }
+            if self.debug_physics {
+                app.add_plugins(avian3d::debug_render::PhysicsDebugPlugin);
             }
         }
 

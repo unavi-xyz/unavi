@@ -4,7 +4,6 @@ use avian3d::prelude::*;
 use bevy::{
     color::palettes::tailwind::{BLUE_400, BLUE_500, ORANGE_500},
     light::{CascadeShadowConfigBuilder, light_consts::lux},
-    mesh::VertexAttributeValues,
     prelude::*,
 };
 use bevy_vrm::mtoon::MtoonSun;
@@ -42,33 +41,14 @@ pub fn spawn_scene(
 ) {
     let player = LocalPlayerSpawner::default().spawn(&mut commands, &asset_server);
 
-    let ground_texture = asset_server.load("images/dev-white.png");
-
-    let mut ground_mesh = Plane3d::default().mesh().size(SIZE, SIZE).build();
-    match ground_mesh
-        .attribute_mut(Mesh::ATTRIBUTE_UV_0)
-        .expect("value expected")
-    {
-        VertexAttributeValues::Float32x2(uvs) => {
-            const TEXTURE_SCALE: f32 = 4.0;
-            const UV_SCALE: f32 = SIZE / TEXTURE_SCALE;
-            for uv in uvs {
-                uv[0] *= UV_SCALE;
-                uv[1] *= UV_SCALE;
-            }
-        }
-        _ => unreachable!(),
-    }
+    commands.spawn(SceneRoot(
+        asset_server.load(GltfAssetLabel::Scene(0).from_asset("models/demo.glb")),
+    ));
 
     commands.spawn((
         Collider::half_space(Vec3::Y),
-        Mesh3d(meshes.add(ground_mesh)),
-        MeshMaterial3d(materials.add(StandardMaterial {
-            base_color_texture: Some(ground_texture),
-            perceptual_roughness: 0.8,
-            ..Default::default()
-        })),
         RigidBody::Static,
+        Transform::from_xyz(0.0, 0.0, 0.0),
     ));
 
     let x = 4.0;

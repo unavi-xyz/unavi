@@ -1,8 +1,8 @@
 use std::path::Path;
 
 use anyhow::Context;
-use constcat::concat;
-use unavi_player::{animation::defaults::DEFAULT_ANIMATIONS, avatar_spawner::DEFAULT_AVATAR_URL};
+use unavi_constants::CDN_ASSETS_URL;
+use unavi_player::{animation::defaults::DEFAULT_ANIMATIONS, avatar_spawner::DEFAULT_AVATAR};
 
 use crate::assets_dir;
 
@@ -14,15 +14,9 @@ use crate::assets_dir;
 pub fn download_web_assets() -> anyhow::Result<()> {
     std::fs::create_dir_all(assets_dir()).context("create assets directory")?;
 
-    let vrm_url = concat!(unavi_constants::CDN_ASSETS_URL, "/", DEFAULT_AVATAR_URL);
-    let animations_url = concat!(unavi_constants::CDN_ASSETS_URL, "/", DEFAULT_ANIMATIONS);
+    let assets = [DEFAULT_AVATAR, DEFAULT_ANIMATIONS, "models/demo.glb"];
 
-    let assets = [
-        (vrm_url, DEFAULT_AVATAR_URL),
-        (animations_url, DEFAULT_ANIMATIONS),
-    ];
-
-    for (url, asset_path) in assets {
+    for asset_path in assets {
         let dest_path = assets_dir().join(asset_path);
         if dest_path.exists() {
             continue;
@@ -36,7 +30,9 @@ pub fn download_web_assets() -> anyhow::Result<()> {
 
         println!("downloading asset: {asset_path}");
 
-        match download_file(url, &dest_path) {
+        let url = format!("{CDN_ASSETS_URL}/{asset_path}");
+
+        match download_file(&url, &dest_path) {
             Ok(()) => println!("downloaded asset: {asset_path}"),
             Err(e) => {
                 eprintln!("failed to download {asset_path}: {e:?}");

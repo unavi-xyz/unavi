@@ -3,7 +3,7 @@ use bevy_vrm::VrmInstance;
 
 use crate::{PlayerAvatar, bones::AvatarBones};
 
-pub const DEFAULT_AVATAR_URL: &str = "models/default.vrm";
+pub const DEFAULT_AVATAR: &str = "models/default.vrm";
 
 /// Builder for spawning a visual avatar entity.
 #[derive(Default)]
@@ -29,7 +29,7 @@ impl AvatarSpawner {
         let vrm_path = self
             .vrm_asset
             .as_deref()
-            .unwrap_or(DEFAULT_AVATAR_URL)
+            .unwrap_or(DEFAULT_AVATAR)
             .to_string();
         let vrm_handle = asset_server.load(vrm_path);
 

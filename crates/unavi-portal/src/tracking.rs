@@ -2,7 +2,7 @@ use std::f32::consts::PI;
 
 use bevy::{
     camera::{
-        CustomProjection, RenderTarget,
+        RenderTarget,
         primitives::{Frustum, HalfSpace},
     },
     math::Affine3A,
@@ -124,12 +124,21 @@ pub fn update_portal_camera_transforms(
             continue;
         };
 
-        let new_transform = GlobalTransform::from(
-            destination_transform.affine()
-                * Affine3A::from_rotation_translation(Quat::from_rotation_y(PI), Vec3::ZERO)
-                * portal_transform.affine().inverse()
-                * camera_transform.affine(),
-        );
+        // Mirror camera view through portal.
+        let portal_to_camera = portal_transform.affine().inverse() * camera_transform.affine();
+        let flipped = Affine3A::from_rotation_translation(Quat::from_rotation_y(PI), Vec3::ZERO)
+            * portal_to_camera;
+        let new_position = Vec3::from((destination_transform.affine() * flipped).translation);
+
+        let camera_rot = camera_transform.rotation();
+        let portal_rot = portal_transform.rotation();
+        let dest_rot = destination_transform.rotation();
+        let new_rotation = dest_rot * Quat::from_rotation_y(PI) * portal_rot.inverse() * camera_rot;
+
+        let new_transform = GlobalTransform::from(Affine3A::from_rotation_translation(
+            new_rotation,
+            new_position,
+        ));
 
         transform.clone_from(&new_transform.compute_transform());
         global_transform.clone_from(&new_transform);
@@ -178,7 +187,8 @@ pub fn update_portal_camera_frustums(
         // Culling frustum.
         *frustum = new_frustum;
 
-        // Projection matrix.
+        // Projection matrix near plane.
+        // TODO: Proper Lengyel oblique clipping
         if let Projection::Perspective(pp) = projection.as_mut() {
             pp.near = destination_transform
                 .translation_vec3a()

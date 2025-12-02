@@ -1,13 +1,11 @@
-use std::f32::consts::PI;
-
-use bevy::{math::Affine3A, prelude::*};
+use bevy::prelude::*;
 
 use crate::{
     Portal, PortalBounds, PortalBoxState, PortalDestination, PortalTraveler, PrevTranslation,
     TravelCooldown,
 };
 
-const MIN_SPAWN_DISTANCE: f32 = 0.03;
+const MIN_SPAWN_DISTANCE: f32 = 0.4;
 
 #[derive(Debug, Clone, Copy)]
 enum PortalEntrySide {
@@ -93,10 +91,18 @@ fn check_box_entry_with_side(
     }
 }
 
-pub fn handle_traveler_teleport(
+#[derive(EntityEvent)]
+pub struct PortalTeleport {
+    pub entity: Entity,
+    pub delta_rotation: Quat,
+}
+
+pub(crate) fn handle_traveler_teleport(
+    mut commands: Commands,
     time: Res<Time>,
     mut travelers: Query<
         (
+            Entity,
             &mut TravelCooldown,
             &mut Transform,
             &mut GlobalTransform,
@@ -110,11 +116,18 @@ pub fn handle_traveler_teleport(
 ) {
     let elapsed = time.elapsed();
 
-    for (mut cooldown, mut transform, mut global_transform, mut prev, mut box_state) in
+    for (entity, mut cooldown, mut transform, traveler_transform, mut prev, mut box_state) in
         &mut travelers
     {
+        let curr_translation = traveler_transform.translation();
+
+        // Initialize prev on first frame to avoid false teleport from (0,0,0).
+        if prev.0 == Vec3::ZERO {
+            prev.0 = curr_translation;
+            continue;
+        }
+
         let prev_translation = prev.0;
-        let curr_translation = global_transform.translation();
 
         if let Some(last_travel) = &cooldown.last_travel {
             if elapsed
@@ -146,49 +159,56 @@ pub fn handle_traveler_teleport(
             continue;
         }
 
-        for (portal_transform, bounds, destination) in &portals {
+        for (source_transform, bounds, destination) in &portals {
             let Some(entry_side) = check_box_entry_with_side(
                 prev_translation,
                 curr_translation,
-                portal_transform,
+                source_transform,
                 bounds,
             ) else {
                 continue;
             };
 
-            let Ok(destination_transform) = destination_portals.get(destination.0) else {
+            let Ok(dest_transform) = destination_portals.get(destination.0) else {
                 continue;
             };
 
-            let portal_local = portal_transform.affine().inverse() * global_transform.affine();
-            let rotated =
-                Affine3A::from_rotation_translation(Quat::from_rotation_y(PI), Vec3::ZERO)
-                    * portal_local;
-
-            let max_spawn = bounds.depth / 2.0;
-            let min_spawn = MIN_SPAWN_DISTANCE.min(max_spawn);
-
-            let spawn_z = match entry_side {
-                PortalEntrySide::Front => -rotated.translation.z.abs().clamp(min_spawn, max_spawn),
-                PortalEntrySide::Back => rotated.translation.z.abs().clamp(min_spawn, max_spawn),
+            // Apply offset away from portal to avoid spam teleports.
+            let out_dir = match entry_side {
+                PortalEntrySide::Front => dest_transform.forward(),
+                PortalEntrySide::Back => dest_transform.back(),
             };
 
-            let translation = Vec3::new(rotated.translation.x, rotated.translation.y, spawn_z);
-            let rotation = Quat::from_mat3(&rotated.matrix3.into());
+            let offset = out_dir * MIN_SPAWN_DISTANCE;
 
-            let corrected = Affine3A::from_rotation_translation(rotation, translation);
+            let flip_rot = Quat::from_rotation_y(std::f32::consts::PI);
+            let flip_matrix = Mat4::from_quat(flip_rot);
+            let new_traveler_transform = dest_transform.to_matrix()
+                * flip_matrix
+                * source_transform.to_matrix().inverse()
+                * traveler_transform.to_matrix();
 
-            let new_transform = GlobalTransform::from(destination_transform.affine() * corrected);
+            let (_, rotation, translation) = new_traveler_transform.to_scale_rotation_translation();
 
-            *global_transform = new_transform;
-            *transform = new_transform.into();
-            prev.0 = new_transform.translation();
+            transform.translation = translation + offset;
+            transform.rotation = rotation;
+
+            prev.0 = translation + offset;
 
             box_state.current_box = Some(destination.0);
             cooldown.last_travel = Some(elapsed);
+
+            let portal_delta = dest_transform.rotation() * source_transform.rotation().inverse();
+            let delta_rotation = portal_delta * flip_rot;
+
+            commands.entity(entity).trigger(|entity| PortalTeleport {
+                entity,
+                delta_rotation,
+            });
+
             break;
         }
 
-        prev.0 = global_transform.translation();
+        prev.0 = traveler_transform.translation();
     }
 }

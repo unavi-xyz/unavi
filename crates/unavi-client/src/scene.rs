@@ -1,4 +1,4 @@
-use std::f32::consts::{FRAC_PI_2, FRAC_PI_3};
+use std::f32::consts::{FRAC_PI_2, FRAC_PI_4};
 
 use avian3d::prelude::*;
 use bevy::{
@@ -38,12 +38,8 @@ pub fn spawn_scene(
 ) {
     let player = LocalPlayerSpawner::default().spawn(&mut commands, &asset_server);
 
-    // commands
-    //     .entity(player.external_root)
-    //     .insert(Transform::from_rotation(Quat::from_rotation_y(-FRAC_PI_2)));
-
-    let portal_width = 2.0;
-    let portal_height = 3.0;
+    let portal_width = 1.8;
+    let portal_height = 2.6;
 
     let portal_a = space_a(
         &asset_server,
@@ -96,7 +92,7 @@ fn space_a(
         Transform::from_xyz(0.0, 0.0, 0.0),
     ));
 
-    let portal_transform = Transform::from_xyz(2.0, portal_height / 2.0, -15.765);
+    let portal_transform = Transform::from_xyz(1.95, portal_height / 2.0, -15.765);
 
     spawn_portal_frame(
         commands,
@@ -133,7 +129,8 @@ fn space_b(
         Transform::from_xyz(space_offset, 0.0, 0.0),
     ));
 
-    let portal_transform = Transform::from_xyz(space_offset - 2.0, portal_height / 2.0, -4.5);
+    let portal_transform = Transform::from_xyz(space_offset - 2.0, portal_height / 2.0, -4.5)
+        .with_rotation(Quat::from_rotation_y(FRAC_PI_4));
 
     spawn_portal_frame(
         commands,

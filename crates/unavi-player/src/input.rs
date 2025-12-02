@@ -3,20 +3,49 @@ use std::f32::consts::FRAC_PI_2;
 use bevy::prelude::*;
 use bevy_tnua::prelude::{TnuaBuiltinJump, TnuaBuiltinWalk, TnuaController};
 use unavi_input::{JumpAction, LookAction, MoveAction, SprintAction, schminput::prelude::*};
+use unavi_portal::teleport::PortalTeleport;
 
 use crate::{
-    PlayerRig,
+    PlayerEntities, PlayerRig,
     config::{FLOAT_HEIGHT_OFFSET, PLAYER_RADIUS, PlayerConfig},
     tracking::{TrackedHead, TrackedPose},
 };
 
+#[derive(Resource, Default, Deref, DerefMut)]
+pub struct TargetHeadInput(Vec2);
+
+pub fn handle_player_teleport(
+    event: On<PortalTeleport>,
+    mut target_head: ResMut<TargetHeadInput>,
+    players: Query<Entity, With<PlayerRig>>,
+) {
+    // Only apply to players.
+    if players.get(event.entity).is_err() {
+        return;
+    }
+
+    // Update target head input.
+    let (mut yaw, pitch, _) = event.delta_rotation.to_euler(EulerRot::YXZ);
+
+    if yaw.is_sign_negative() {
+        yaw -= FRAC_PI_2;
+    } else {
+        yaw += FRAC_PI_2;
+    }
+
+    target_head.0.x += yaw;
+    target_head.0.y += pitch;
+
+    // TODO: Update target body movement / velocity.
+}
+
 /// Applies mouse/keyboard input to the tracked head pose (desktop mode).
 pub fn apply_head_input(
     look_action: Query<&Vec2ActionValue, With<LookAction>>,
-    players: Query<&crate::PlayerEntities>,
+    players: Query<&PlayerEntities>,
     mut rigs: Query<&mut Transform, With<PlayerRig>>,
     mut tracked_heads: Query<&mut TrackedPose, With<TrackedHead>>,
-    mut target: Local<Vec2>,
+    mut target: ResMut<TargetHeadInput>,
     time: Res<Time>,
 ) {
     const PITCH_BOUND: f32 = FRAC_PI_2 - 1E-3;
@@ -28,7 +57,7 @@ pub fn apply_head_input(
 
     let delta = time.delta_secs();
     let sensitivity = 0.1;
-    *target += action.any * delta * sensitivity;
+    target.0 += action.any * delta * sensitivity;
     target.y = target.y.clamp(-PITCH_BOUND, PITCH_BOUND);
 
     for entities in players.iter() {
@@ -46,7 +75,7 @@ pub fn apply_head_input(
 
 /// Applies movement input to the physics controller (all modes).
 pub fn apply_body_input(
-    players: Query<(&crate::PlayerEntities, &PlayerConfig)>,
+    players: Query<(&PlayerEntities, &PlayerConfig)>,
     jump_action: Query<&BoolActionValue, With<JumpAction>>,
     move_action: Query<&Vec2ActionValue, With<MoveAction>>,
     sprint_action: Query<&BoolActionValue, With<SprintAction>>,

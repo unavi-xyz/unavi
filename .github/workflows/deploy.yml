@@ -38,7 +38,7 @@ jobs:
           remove-dotnet: true
           remove-haskell: true
           remove-large-packages: true
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref || github.ref }}
       - uses: DeterminateSystems/determinate-nix-action@v3

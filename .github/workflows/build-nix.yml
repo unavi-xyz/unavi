@@ -50,7 +50,7 @@ jobs:
         with:
           remove-android: true
           remove-cached-tools: true
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref || github.ref }}
       - uses: DeterminateSystems/determinate-nix-action@v3

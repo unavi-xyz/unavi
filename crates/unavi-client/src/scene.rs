@@ -1,8 +1,7 @@
-use std::f32::consts::FRAC_PI_2;
+use std::f32::consts::{FRAC_PI_2, FRAC_PI_3};
 
 use avian3d::prelude::*;
 use bevy::{
-    color::palettes::tailwind::{BLUE_400, BLUE_500, ORANGE_500},
     light::{CascadeShadowConfigBuilder, light_consts::lux},
     prelude::*,
 };
@@ -15,7 +14,7 @@ pub fn spawn_lights(mut commands: Commands, mut ambient: ResMut<AmbientLight>) {
     commands.spawn((
         CascadeShadowConfigBuilder {
             first_cascade_far_bound: 5.0,
-            maximum_distance: SIZE * 1.2,
+            maximum_distance: 50.0,
             minimum_distance: 0.1,
             num_cascades: 3,
             ..Default::default()
@@ -26,12 +25,10 @@ pub fn spawn_lights(mut commands: Commands, mut ambient: ResMut<AmbientLight>) {
             shadows_enabled: true,
             ..Default::default()
         },
-        Transform::from_xyz(0.4, 1.0, 0.1).looking_at(Vec3::ZERO, Vec3::Y),
+        Transform::from_xyz(-0.9, 10.0, 3.8).looking_at(Vec3::ZERO, Vec3::Y),
         MtoonSun,
     ));
 }
-
-const SIZE: f32 = 128.0;
 
 pub fn spawn_scene(
     asset_server: Res<AssetServer>,
@@ -41,6 +38,54 @@ pub fn spawn_scene(
 ) {
     let player = LocalPlayerSpawner::default().spawn(&mut commands, &asset_server);
 
+    // commands
+    //     .entity(player.external_root)
+    //     .insert(Transform::from_rotation(Quat::from_rotation_y(-FRAC_PI_2)));
+
+    let portal_width = 2.0;
+    let portal_height = 3.0;
+
+    let portal_a = space_a(
+        &asset_server,
+        &mut commands,
+        &mut materials,
+        &mut meshes,
+        portal_width,
+        portal_height,
+    );
+    let portal_b = space_b(
+        &asset_server,
+        &mut commands,
+        &mut materials,
+        &mut meshes,
+        portal_width,
+        portal_height,
+    );
+
+    commands.entity(portal_a).queue(CreatePortal {
+        destination: Some(portal_b),
+        tracked_camera: Some(player.camera),
+        height: portal_height,
+        width: portal_width,
+        ..default()
+    });
+    commands.entity(portal_b).queue(CreatePortal {
+        destination: Some(portal_a),
+        tracked_camera: Some(player.camera),
+        height: portal_height,
+        width: portal_width,
+        ..default()
+    });
+}
+
+fn space_a(
+    asset_server: &Res<AssetServer>,
+    commands: &mut Commands,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    portal_width: f32,
+    portal_height: f32,
+) -> Entity {
     commands.spawn(SceneRoot(
         asset_server.load(GltfAssetLabel::Scene(0).from_asset("models/demo.glb")),
     ));
@@ -51,65 +96,56 @@ pub fn spawn_scene(
         Transform::from_xyz(0.0, 0.0, 0.0),
     ));
 
-    let x = 4.0;
-    let y = 4.0;
-    let z = 8.0;
+    let portal_transform = Transform::from_xyz(2.0, portal_height / 2.0, -15.765);
+
+    spawn_portal_frame(
+        commands,
+        meshes,
+        materials,
+        portal_transform,
+        portal_width,
+        portal_height,
+        Color::BLACK,
+    );
+
+    commands.spawn(portal_transform).id()
+}
+
+fn space_b(
+    asset_server: &Res<AssetServer>,
+    commands: &mut Commands,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    portal_width: f32,
+    portal_height: f32,
+) -> Entity {
+    let space_offset = 1000.0;
 
     commands.spawn((
-        Collider::cuboid(x, y, z),
-        Mesh3d(meshes.add(Cuboid::new(x, y, z))),
-        MeshMaterial3d(materials.add(Color::from(BLUE_400))),
-        RigidBody::Static,
-        Transform::from_xyz(-x * 2.0, y / 2.0, -z * 2.0),
+        SceneRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset("models/mc-room.glb"))),
+        Transform::from_xyz(space_offset, 0.0, 0.0)
+            .with_rotation(Quat::from_rotation_y(-FRAC_PI_2)),
     ));
 
-    // Portals
-    let portal_distance = 6.0;
+    commands.spawn((
+        Collider::half_space(Vec3::Y),
+        RigidBody::Static,
+        Transform::from_xyz(space_offset, 0.0, 0.0),
+    ));
 
-    let portal_width = 2.0;
-    let portal_height = 3.0;
-
-    let portal_left_transform = Transform::from_xyz(-portal_distance, portal_height / 2.0, 0.0)
-        .with_rotation(Quat::from_rotation_y(FRAC_PI_2));
-    let portal_right_transform = Transform::from_xyz(portal_distance, portal_height / 2.0, 0.0)
-        .with_rotation(Quat::from_rotation_y(-FRAC_PI_2));
-
-    let id_left = commands.spawn(portal_left_transform).id();
-    let id_right = commands.spawn(portal_right_transform).id();
-
-    commands.entity(id_left).queue(CreatePortal {
-        destination: Some(id_right),
-        tracked_camera: Some(player.camera),
-        height: portal_height,
-        width: portal_width,
-        ..default()
-    });
-    commands.entity(id_right).queue(CreatePortal {
-        destination: Some(id_left),
-        tracked_camera: Some(player.camera),
-        height: portal_height,
-        width: portal_width,
-        ..default()
-    });
+    let portal_transform = Transform::from_xyz(space_offset - 2.0, portal_height / 2.0, -4.5);
 
     spawn_portal_frame(
-        &mut commands,
-        &mut meshes,
-        &mut materials,
-        portal_left_transform,
+        commands,
+        meshes,
+        materials,
+        portal_transform,
         portal_width,
         portal_height,
-        Color::Srgba(BLUE_500),
+        Color::BLACK,
     );
-    spawn_portal_frame(
-        &mut commands,
-        &mut meshes,
-        &mut materials,
-        portal_right_transform,
-        portal_width,
-        portal_height,
-        Color::Srgba(ORANGE_500),
-    );
+
+    commands.spawn(portal_transform).id()
 }
 
 fn spawn_portal_frame(
@@ -122,11 +158,12 @@ fn spawn_portal_frame(
     color: Color,
 ) {
     let thickness = 0.1;
-    let depth = 0.05;
+    let depth = 0.1;
 
     let frame_material = materials.add(StandardMaterial {
         base_color: color,
-        emissive: color.into(),
+        perceptual_roughness: 0.9,
+        metallic: 0.8,
         ..default()
     });
 

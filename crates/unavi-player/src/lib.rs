@@ -86,7 +86,7 @@ impl Plugin for PlayerPlugin {
 pub struct PlayerEntities {
     pub avatar: Entity,
     pub camera: Entity,
-    pub rig: Entity,
+    pub body: Entity,
     pub tracked_head: Entity,
 }
 

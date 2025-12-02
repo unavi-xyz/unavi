@@ -1,6 +1,8 @@
 use std::{path::PathBuf, sync::LazyLock};
 
-use bevy::{asset::io::web::WebAssetPlugin, prelude::*, window::WindowTheme};
+use bevy::{
+    asset::io::web::WebAssetPlugin, light::light_consts::lux, prelude::*, window::WindowTheme,
+};
 use directories::ProjectDirs;
 use dwn::{Dwn, stores::NativeDbStore};
 
@@ -87,7 +89,11 @@ impl Plugin for UnaviPlugin {
             unavi_portal::PortalPlugin,
             unavi_script::ScriptPlugin,
             space::SpacePlugin,
-        ));
+        ))
+        .insert_resource(AmbientLight {
+            brightness: lux::OVERCAST_DAY,
+            ..default()
+        });
 
         #[cfg(feature = "devtools-bevy")]
         {

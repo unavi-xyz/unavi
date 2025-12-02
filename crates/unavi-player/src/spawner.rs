@@ -74,7 +74,7 @@ impl LocalPlayerSpawner {
                 Atmosphere::EARTH,
                 AtmosphereSettings::default(),
                 AutoExposure {
-                    range: -3.0..=6.0,
+                    range: -4.0..=4.0,
                     ..Default::default()
                 },
                 Exposure::SUNLIGHT,
@@ -138,12 +138,13 @@ impl LocalPlayerSpawner {
                 PlayerEntities {
                     avatar,
                     camera,
-                    rig: body,
+                    body,
                     tracked_head,
                 },
                 config,
                 tracking_source,
                 Transform::default(),
+                Visibility::default(),
             ))
             .add_child(body)
             .id();

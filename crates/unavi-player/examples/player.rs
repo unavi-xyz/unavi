@@ -46,10 +46,6 @@ fn main() {
                 ..default()
             },
         ))
-        .insert_resource(AmbientLight {
-            brightness: lux::OVERCAST_DAY,
-            ..default()
-        })
         .add_systems(Startup, setup_scene)
         .add_systems(Update, (handle_input, update_platforms))
         .run();

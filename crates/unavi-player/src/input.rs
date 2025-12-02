@@ -32,7 +32,7 @@ pub fn apply_head_input(
     target.y = target.y.clamp(-PITCH_BOUND, PITCH_BOUND);
 
     for entities in players.iter() {
-        if let Ok(mut rig_transform) = rigs.get_mut(entities.rig) {
+        if let Ok(mut rig_transform) = rigs.get_mut(entities.body) {
             let yaw = Quat::from_rotation_y(-target.x);
             rig_transform.rotation = rig_transform.rotation.lerp(yaw, S);
         }
@@ -55,11 +55,11 @@ pub fn apply_body_input(
     mut target: Local<Vec3>,
 ) {
     for (entities, config) in players.iter() {
-        let Ok(rig_transform) = rigs.get(entities.rig) else {
+        let Ok(rig_transform) = rigs.get(entities.body) else {
             continue;
         };
 
-        let Ok(mut controller) = controllers.get_mut(entities.rig) else {
+        let Ok(mut controller) = controllers.get_mut(entities.body) else {
             continue;
         };
 

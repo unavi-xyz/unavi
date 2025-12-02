@@ -2,7 +2,7 @@ use std::f32::consts::PI;
 
 use bevy::{
     camera::{
-        RenderTarget,
+        CustomProjection, RenderTarget,
         primitives::{Frustum, HalfSpace},
     },
     math::Affine3A,
@@ -138,11 +138,16 @@ pub fn update_portal_camera_transforms(
 
 /// Set portal camera near frustum to portal back.
 pub fn update_portal_camera_frustums(
-    mut portal_cameras: Query<(&PortalCamera, &mut Frustum, &Projection, &GlobalTransform)>,
+    mut portal_cameras: Query<(
+        &PortalCamera,
+        &mut Frustum,
+        &mut Projection,
+        &GlobalTransform,
+    )>,
     portals: Query<&PortalDestination>,
     destinations: Query<&GlobalTransform, (With<IncomingPortals>, Without<PortalCamera>)>,
 ) {
-    for (portal_camera, mut frustum, projection, transform) in &mut portal_cameras {
+    for (portal_camera, mut frustum, mut projection, transform) in &mut portal_cameras {
         let Ok(destination) = portals.get(portal_camera.portal) else {
             continue;
         };
@@ -170,6 +175,14 @@ pub fn update_portal_camera_frustums(
         new_frustum.half_spaces[4] =
             HalfSpace::new(half_space_normal.extend(near_half_space_distance));
 
+        // Culling frustum.
         *frustum = new_frustum;
+
+        // Projection matrix.
+        if let Projection::Perspective(pp) = projection.as_mut() {
+            pp.near = destination_transform
+                .translation_vec3a()
+                .distance(transform.translation_vec3a());
+        }
     }
 }

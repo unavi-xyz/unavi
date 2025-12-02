@@ -160,7 +160,7 @@ pub fn update_portal_camera_frustums(
             projection.far(),
         );
 
-        let half_space_normal = -destination_transform.forward().to_vec3a();
+        let half_space_normal = transform.forward().to_vec3a();
 
         let near_half_space_distance = -destination_transform
             .translation_vec3a()

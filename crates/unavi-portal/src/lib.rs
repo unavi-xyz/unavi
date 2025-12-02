@@ -8,7 +8,7 @@ pub struct PortalPlugin;
 
 pub mod create;
 mod material;
-mod teleport;
+pub mod teleport;
 mod tracking;
 
 impl Plugin for PortalPlugin {

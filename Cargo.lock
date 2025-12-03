@@ -11661,6 +11661,7 @@ dependencies = [
  "anyhow",
  "avian3d",
  "bevy",
+ "bevy_rich_text3d",
  "bevy_vrm",
  "bincode 2.0.1",
  "clap",

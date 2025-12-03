@@ -3,6 +3,7 @@ use std::{path::PathBuf, sync::LazyLock};
 use bevy::{
     asset::io::web::WebAssetPlugin, light::light_consts::lux, prelude::*, window::WindowTheme,
 };
+use bevy_rich_text3d::Text3dPlugin;
 use directories::ProjectDirs;
 use dwn::{Dwn, stores::NativeDbStore};
 
@@ -83,6 +84,12 @@ impl Plugin for UnaviPlugin {
                     ..default()
                 }),
             avian3d::PhysicsPlugins::default(),
+            Text3dPlugin {
+                asynchronous_load: true,
+                load_system_fonts: true,
+                sync_scale_factor_with_main_window: true,
+                ..default()
+            },
             fade::FadePlugin,
             unavi_input::InputPlugin,
             unavi_player::PlayerPlugin,

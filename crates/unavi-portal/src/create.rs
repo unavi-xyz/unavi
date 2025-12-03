@@ -34,7 +34,7 @@ impl Default for CreatePortal {
             tracked_camera: None,
             height: 1.0,
             width: 1.0,
-            depth: 0.15,
+            depth: 0.01,
         }
     }
 }

@@ -1,34 +1,13 @@
 use bevy::prelude::*;
 
 use crate::{
-    Portal, PortalBounds, PortalBoxState, PortalDestination, PortalTraveler, PrevTranslation,
-    TravelCooldown,
+    Portal, PortalBounds, PortalDestination, PortalTraveler, PrevTranslation, TravelCooldown,
 };
-
-const MIN_SPAWN_DISTANCE: f32 = 0.4;
 
 #[derive(Debug, Clone, Copy)]
 enum PortalEntrySide {
     Front,
     Back,
-}
-
-/// Check if a point is inside the portal's 3D box bounds.
-fn is_inside_portal_box(
-    point: Vec3,
-    portal_transform: &GlobalTransform,
-    bounds: &PortalBounds,
-) -> bool {
-    let portal_affine = portal_transform.affine();
-    let local_point = portal_affine.inverse().transform_point3(point);
-
-    let half_width = bounds.width / 2.0;
-    let half_height = bounds.height / 2.0;
-    let half_depth = bounds.depth / 2.0;
-
-    local_point.x.abs() <= half_width
-        && local_point.y.abs() <= half_height
-        && local_point.z.abs() <= half_depth
 }
 
 const EPSILON: f32 = 1e-4;
@@ -97,6 +76,8 @@ pub struct PortalTeleport {
     pub delta_rotation: Quat,
 }
 
+const EXTRA_SPAWN_OFFSET: f32 = 0.005;
+
 pub(crate) fn handle_traveler_teleport(
     mut commands: Commands,
     time: Res<Time>,
@@ -107,7 +88,6 @@ pub(crate) fn handle_traveler_teleport(
             &mut Transform,
             &mut GlobalTransform,
             &mut PrevTranslation,
-            &mut PortalBoxState,
         ),
         (With<PortalTraveler>, Without<Portal>),
     >,
@@ -116,9 +96,7 @@ pub(crate) fn handle_traveler_teleport(
 ) {
     let elapsed = time.elapsed();
 
-    for (entity, mut cooldown, mut transform, traveler_transform, mut prev, mut box_state) in
-        &mut travelers
-    {
+    for (entity, mut cooldown, mut transform, traveler_transform, mut prev) in &mut travelers {
         let curr_translation = traveler_transform.translation();
 
         // Initialize prev on first frame to avoid false teleport from (0,0,0).
@@ -142,23 +120,6 @@ pub(crate) fn handle_traveler_teleport(
             cooldown.last_travel = None;
         }
 
-        let mut currently_inside_any = false;
-        for (portal_transform, bounds, _) in &portals {
-            if is_inside_portal_box(curr_translation, portal_transform, bounds) {
-                currently_inside_any = true;
-                break;
-            }
-        }
-
-        if !currently_inside_any {
-            box_state.current_box = None;
-        }
-
-        if box_state.current_box.is_some() {
-            prev.0 = curr_translation;
-            continue;
-        }
-
         for (source_transform, bounds, destination) in &portals {
             let Some(entry_side) = check_box_entry_with_side(
                 prev_translation,
@@ -179,7 +140,9 @@ pub(crate) fn handle_traveler_teleport(
                 PortalEntrySide::Back => dest_transform.back(),
             };
 
-            let offset = out_dir * MIN_SPAWN_DISTANCE;
+            let bounds_d = bounds.depth / 2.0;
+            let min_spawn = bounds_d + EXTRA_SPAWN_OFFSET;
+            let offset = out_dir * min_spawn;
 
             let flip_rot = Quat::from_rotation_y(std::f32::consts::PI);
             let flip_matrix = Mat4::from_quat(flip_rot);
@@ -193,9 +156,7 @@ pub(crate) fn handle_traveler_teleport(
             transform.translation = translation + offset;
             transform.rotation = rotation;
 
-            prev.0 = translation + offset;
-
-            box_state.current_box = Some(destination.0);
+            prev.0 = transform.translation;
             cooldown.last_travel = Some(elapsed);
 
             let portal_delta = dest_transform.rotation() * source_transform.rotation().inverse();

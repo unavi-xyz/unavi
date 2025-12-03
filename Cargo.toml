@@ -35,6 +35,7 @@ avian3d            = "0.4.1"
 bevy               = "0.17.3"
 bevy_async_task    = "0.9.0"
 bevy_gltf_kun      = { git = "https://github.com/unavi-xyz/gltf_kun" }
+bevy_rich_text3d   = "0.5.1"
 bevy_vrm           = { git = "https://github.com/unavi-xyz/bevy_vrm" }
 bincode            = "2.0.1"
 clap               = { features = ["derive"], version = "4.5.51" }

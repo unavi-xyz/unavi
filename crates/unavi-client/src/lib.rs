@@ -4,6 +4,7 @@ use bevy::{
     asset::io::web::WebAssetPlugin, light::light_consts::lux, prelude::*, window::WindowTheme,
 };
 use bevy_rich_text3d::Text3dPlugin;
+use bitflags::bitflags;
 use directories::ProjectDirs;
 use dwn::{Dwn, stores::NativeDbStore};
 
@@ -41,14 +42,25 @@ pub fn db_path() -> PathBuf {
     DIRS.data_local_dir().join("data.db")
 }
 
+#[derive(Clone, Copy, Debug, Default)]
+pub enum Storage {
+    #[default]
+    Disk,
+    InMemory,
+}
+
+bitflags! {
+    #[derive(Clone, Copy, Debug, Default)]
+    pub struct DebugFlags: u8 {
+        const FPS     = 0b0001;
+        const NETWORK = 0b0010;
+        const PHYSICS = 0b0100;
+    }
+}
+
 pub struct UnaviPlugin {
-    pub in_memory: bool,
-    #[cfg(feature = "devtools-bevy")]
-    pub debug_fps: bool,
-    #[cfg(feature = "devtools-network")]
-    pub debug_network: bool,
-    #[cfg(feature = "devtools-bevy")]
-    pub debug_physics: bool,
+    pub storage: Storage,
+    pub debug: DebugFlags,
 }
 
 impl Plugin for UnaviPlugin {
@@ -56,11 +68,12 @@ impl Plugin for UnaviPlugin {
         assets::copy::copy_assets_to_dirs().expect("failed to copy assets");
         assets::download::download_web_assets().expect("failed to download web assets");
 
-        let store = if self.in_memory {
-            NativeDbStore::new_in_memory()
-        } else {
-            let path = db_path();
-            NativeDbStore::new(path)
+        let store = match self.storage {
+            Storage::InMemory => NativeDbStore::new_in_memory(),
+            Storage::Disk => {
+                let path = db_path();
+                NativeDbStore::new(path)
+            }
         }
         .expect("instantiate native db");
         let dwn = Dwn::from(store);
@@ -104,17 +117,17 @@ impl Plugin for UnaviPlugin {
 
         #[cfg(feature = "devtools-bevy")]
         {
-            if self.debug_fps {
+            if self.debug.contains(DebugFlags::FPS) {
                 app.add_plugins(bevy::dev_tools::fps_overlay::FpsOverlayPlugin::default());
             }
-            if self.debug_physics {
+            if self.debug.contains(DebugFlags::PHYSICS) {
                 app.add_plugins(avian3d::debug_render::PhysicsDebugPlugin);
             }
         }
 
         #[cfg(feature = "devtools-network")]
         {
-            if self.debug_network {
+            if self.debug.contains(DebugFlags::NETWORK) {
                 app.add_plugins(devtools::DevToolsPlugin { enabled: true });
             }
         }

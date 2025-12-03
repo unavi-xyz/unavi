@@ -22,7 +22,7 @@ embed-resource.workspace = true
 [dependencies]
 anyhow.workspace           = true
 avian3d.workspace          = true
-bevy                       = { default-features = true, features = ["https"], workspace = true }
+bevy                       = { default-features = true, features = ["https", "jpeg"], workspace = true }
 bevy_av1                   = "0.3.0"
 bevy_rich_text3d.workspace = true
 bevy_seedling              = { features = ["wav"], workspace = true }

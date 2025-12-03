@@ -11664,6 +11664,7 @@ dependencies = [
  "bevy_rich_text3d",
  "bevy_vrm",
  "bincode 2.0.1",
+ "bitflags 2.10.0",
  "clap",
  "constcat",
  "directories",

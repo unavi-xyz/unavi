@@ -4,9 +4,11 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 use clap::Parser;
+use unavi_client::{DebugFlags, Storage};
 
 #[derive(Parser, Debug)]
 #[command(version)]
+#[allow(clippy::struct_excessive_bools)]
 struct Args {
     /// Run the local DWN in-memory instead of writing to disk.
     #[arg(long, default_value_t = false)]
@@ -31,15 +33,33 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
+    #[allow(unused_mut)]
+    let mut debug = DebugFlags::empty();
+
+    #[cfg(feature = "devtools-bevy")]
+    {
+        if args.debug_fps {
+            debug |= DebugFlags::FPS;
+        }
+        if args.debug_physics {
+            debug |= DebugFlags::PHYSICS;
+        }
+    }
+    #[cfg(feature = "devtools-network")]
+    {
+        if args.debug_network {
+            debug |= DebugFlags::NETWORK;
+        }
+    }
+
     App::new()
         .add_plugins(unavi_client::UnaviPlugin {
-            in_memory: args.in_memory,
-            #[cfg(feature = "devtools-bevy")]
-            debug_fps: args.debug_fps,
-            #[cfg(feature = "devtools-network")]
-            debug_network: args.debug_network,
-            #[cfg(feature = "devtools-bevy")]
-            debug_physics: args.debug_physics,
+            storage: if args.in_memory {
+                Storage::InMemory
+            } else {
+                Storage::Disk
+            },
+            debug,
         })
         .run();
 

@@ -1,5 +1,6 @@
 use std::f32::consts::FRAC_PI_2;
 
+use avian3d::prelude::LinearVelocity;
 use bevy::prelude::*;
 use bevy_tnua::prelude::{TnuaBuiltinJump, TnuaBuiltinWalk, TnuaController};
 use unavi_input::{JumpAction, LookAction, MoveAction, SprintAction, schminput::prelude::*};
@@ -12,17 +13,21 @@ use crate::{
 };
 
 #[derive(Resource, Default, Deref, DerefMut)]
+pub struct TargetBodyInput(Vec3);
+
+#[derive(Resource, Default, Deref, DerefMut)]
 pub struct TargetHeadInput(Vec2);
 
 pub fn handle_player_teleport(
     event: On<PortalTeleport>,
+    mut target_body: ResMut<TargetBodyInput>,
     mut target_head: ResMut<TargetHeadInput>,
-    players: Query<Entity, With<PlayerRig>>,
+    mut players: Query<&mut LinearVelocity, With<PlayerRig>>,
 ) {
     // Only apply to players.
-    if players.get(event.entity).is_err() {
+    let Ok(mut velocity) = players.get_mut(event.entity) else {
         return;
-    }
+    };
 
     // Update target head input.
     let (mut yaw, pitch, _) = event.delta_rotation.to_euler(EulerRot::YXZ);
@@ -36,7 +41,9 @@ pub fn handle_player_teleport(
     target_head.0.x += yaw;
     target_head.0.y += pitch;
 
-    // TODO: Update target body movement / velocity.
+    // Update target body input and velocity.
+    target_body.0 = target_body.rotate_y(-yaw);
+    velocity.0 = velocity.rotate_y(-yaw);
 }
 
 /// Applies mouse/keyboard input to the tracked head pose (desktop mode).
@@ -81,7 +88,7 @@ pub fn apply_body_input(
     sprint_action: Query<&BoolActionValue, With<SprintAction>>,
     rigs: Query<&Transform, With<PlayerRig>>,
     mut controllers: Query<&mut TnuaController, With<PlayerRig>>,
-    mut target: Local<Vec3>,
+    mut target: ResMut<TargetBodyInput>,
 ) {
     for (entities, config) in players.iter() {
         let Ok(rig_transform) = rigs.get(entities.body) else {
@@ -104,7 +111,7 @@ pub fn apply_body_input(
             dir += dir_f * input.y;
             dir += dir_l * input.x;
 
-            *target = target.lerp(dir, S);
+            target.0 = target.lerp(dir, S);
         }
 
         let is_sprinting = sprint_action
@@ -121,7 +128,7 @@ pub fn apply_body_input(
         let radius = config.vrm_radius.unwrap_or(PLAYER_RADIUS);
         let height = config.vrm_height.unwrap_or(config.real_height);
         controller.basis(TnuaBuiltinWalk {
-            desired_velocity: *target * speed,
+            desired_velocity: target.0 * speed,
             float_height: height / 2.0 + radius + FLOAT_HEIGHT_OFFSET,
             max_slope: 55f32.to_radians(),
             ..Default::default()

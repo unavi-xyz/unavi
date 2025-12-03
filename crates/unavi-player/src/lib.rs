@@ -57,6 +57,7 @@ impl Plugin for PlayerPlugin {
             VrmPlugins,
         ))
         .init_state::<CursorGrabState>()
+        .init_resource::<input::TargetBodyInput>()
         .init_resource::<input::TargetHeadInput>()
         .add_observer(input::handle_player_teleport)
         .add_systems(

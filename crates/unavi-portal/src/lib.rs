@@ -73,7 +73,7 @@ pub struct TrackedCamera(Entity);
 
 /// Marker component for entities that can teleport through portals.
 #[derive(Component)]
-#[require(TravelCooldown, PrevTranslation, PortalBoxState)]
+#[require(TravelCooldown, PrevTranslation)]
 pub struct PortalTraveler;
 
 #[derive(Component)]
@@ -93,8 +93,3 @@ impl Default for TravelCooldown {
 
 #[derive(Component, Default)]
 pub struct PrevTranslation(Vec3);
-
-#[derive(Component, Default)]
-pub struct PortalBoxState {
-    current_box: Option<Entity>,
-}

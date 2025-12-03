@@ -67,7 +67,7 @@ impl LocalPlayerSpawner {
                 PlayerCamera,
                 Camera::default(),
                 Projection::Perspective(PerspectiveProjection {
-                    near: 0.01,
+                    near: 0.001,
                     ..default()
                 }),
                 Hdr,

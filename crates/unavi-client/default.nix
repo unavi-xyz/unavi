@@ -68,6 +68,7 @@
           with pkgs;
           [
             alsa-lib
+            dav1d
             libxkbcommon
             udev
             vulkan-loader

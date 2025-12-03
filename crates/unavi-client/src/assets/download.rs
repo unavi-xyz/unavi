@@ -17,8 +17,10 @@ pub fn download_web_assets() -> anyhow::Result<()> {
     let assets = [
         DEFAULT_AVATAR,
         DEFAULT_ANIMATIONS,
-        "models/demo.glb",
-        "models/mc-room.glb",
+        "model/demo.glb",
+        "model/mc-room.glb",
+        "audio/piplup.wav",
+        "video/piplup.ivf",
     ];
 
     for asset_path in assets {
@@ -37,11 +39,8 @@ pub fn download_web_assets() -> anyhow::Result<()> {
 
         let url = format!("{CDN_ASSETS_URL}/{asset_path}");
 
-        match download_file(&url, &dest_path) {
-            Ok(()) => println!("downloaded asset: {asset_path}"),
-            Err(e) => {
-                eprintln!("failed to download {asset_path}: {e:?}");
-            }
+        if let Err(e) = download_file(&url, &dest_path) {
+            eprintln!("failed to download {asset_path}: {e:?}");
         }
     }
 

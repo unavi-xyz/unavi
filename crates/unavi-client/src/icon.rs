@@ -2,7 +2,7 @@ use anyhow::Result;
 use bevy::{prelude::*, winit::WINIT_WINDOWS};
 use winit::window::Icon;
 
-const ICON_BYTES: &[u8] = include_bytes!("../assets/images/unavi-rounded.png");
+const ICON_BYTES: &[u8] = include_bytes!("../assets/image/unavi-rounded.png");
 
 /// Worlld param forces system to run on main thread, which is needed for `WINIT_WINDOWS` static.
 pub fn set_window_icon(_world: &mut World) {

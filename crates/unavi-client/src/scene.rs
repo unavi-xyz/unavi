@@ -6,7 +6,9 @@ use bevy::{
     prelude::*,
     render::alpha::AlphaMode,
 };
+use bevy_av1::{PlaybackMode, VideoPlayer, VideoSink, VideoTargetAssets};
 use bevy_rich_text3d::{Text3d, Text3dStyling, TextAlign, TextAnchor, TextAtlas, Weight};
+use bevy_seedling::{prelude::SpatialBasicNode, sample::SamplePlayer, sample_effects};
 use bevy_vrm::mtoon::MtoonSun;
 use unavi_player::LocalPlayerSpawner;
 use unavi_portal::create::CreatePortal;
@@ -43,6 +45,12 @@ pub fn spawn_scene(
 ) {
     let player = LocalPlayerSpawner::default().spawn(&mut commands, &asset_server);
 
+    commands.spawn((
+        Collider::half_space(Vec3::Y),
+        RigidBody::Static,
+        Transform::from_xyz(0.0, 0.0, 0.0),
+    ));
+
     let portal_a = space_a(&asset_server, &mut commands, &mut materials, &mut meshes);
     let portal_b = space_b(&asset_server, &mut commands, &mut materials, &mut meshes);
 
@@ -69,14 +77,42 @@ fn space_a(
     meshes: &mut ResMut<Assets<Mesh>>,
 ) -> Entity {
     commands.spawn(SceneRoot(
-        asset_server.load(GltfAssetLabel::Scene(0).from_asset("models/demo.glb")),
+        asset_server.load(GltfAssetLabel::Scene(0).from_asset("model/demo.glb")),
     ));
 
-    commands.spawn((
-        Collider::half_space(Vec3::Y),
-        RigidBody::Static,
-        Transform::from_xyz(0.0, 0.0, 0.0),
-    ));
+    commands
+        .spawn((
+            Transform::from_xyz(19.8, 5.0, -6.0).with_rotation(Quat::from_rotation_y(-FRAC_PI_2)),
+            Mesh3d(meshes.add(Plane3d::new(Vec3::Z, Vec2::splat(2.2)))),
+            MeshMaterial3d(materials.add(StandardMaterial::default())),
+            VideoPlayer::new(asset_server.load("video/piplup.ivf"), PlaybackMode::Loop),
+            SamplePlayer::new(asset_server.load("audio/piplup.wav")).looping(),
+            sample_effects![SpatialBasicNode::default()],
+        ))
+        .observe(
+            |add: On<Add, VideoSink>,
+             mut sinks: Query<(
+                &VideoSink,
+                &MeshMaterial3d<StandardMaterial>,
+                &mut Transform,
+            )>,
+             mut materials: ResMut<Assets<StandardMaterial>>,
+             mut video_targets: ResMut<VideoTargetAssets<StandardMaterial>>| {
+                let entity = add.entity;
+                if let Ok((sink, mesh_material, mut transform)) = sinks.get_mut(entity)
+                    && let Some(material) = materials.get_mut(&mesh_material.0)
+                {
+                    video_targets.add_target(sink, &mesh_material.0);
+                    material.base_color_texture = Some(sink.image().clone());
+                    let aspect = sink.width() as f32 / sink.height() as f32;
+                    if aspect > 1.0 {
+                        transform.scale = Vec3::new(aspect, 1.0, 1.0);
+                    } else {
+                        transform.scale = Vec3::new(1.0, aspect, 1.0);
+                    }
+                }
+            },
+        );
 
     let portal_transform = Transform::from_xyz(1.95, PORTAL_HEIGHT / 2.0, -15.765);
 
@@ -111,15 +147,9 @@ fn space_b(
     let space_offset = 1000.0;
 
     commands.spawn((
-        SceneRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset("models/mc-room.glb"))),
+        SceneRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset("model/mc-room.glb"))),
         Transform::from_xyz(space_offset, 0.0, 0.0)
             .with_rotation(Quat::from_rotation_y(-FRAC_PI_2)),
-    ));
-
-    commands.spawn((
-        Collider::half_space(Vec3::Y),
-        RigidBody::Static,
-        Transform::from_xyz(space_offset, 0.0, 0.0),
     ));
 
     let portal_transform = Transform::from_xyz(space_offset - 2.0, PORTAL_HEIGHT / 2.0, -4.5)

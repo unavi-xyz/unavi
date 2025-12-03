@@ -6,7 +6,9 @@ CLAUDE.md
 artifacts/
 
 # Bevy assets
-crates/unavi-client/assets/models
+crates/unavi-client/assets/audio
+crates/unavi-client/assets/model
+crates/unavi-client/assets/video
 crates/unavi-client/assets/wasm
 
 # Nix

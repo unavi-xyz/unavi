@@ -5,7 +5,7 @@ use crate::animation::AnimationName;
 
 use super::load::{AvatarAnimation, AvatarAnimationClips};
 
-pub const DEFAULT_ANIMATIONS: &str = "models/animations.glb";
+pub const DEFAULT_ANIMATIONS: &str = "model/animations.glb";
 
 #[must_use]
 pub fn default_character_animations(asset_server: &AssetServer) -> AvatarAnimationClips {

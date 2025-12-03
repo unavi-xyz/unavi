@@ -3,6 +3,7 @@ use std::{path::PathBuf, sync::LazyLock};
 use bevy::{
     asset::io::web::WebAssetPlugin, light::light_consts::lux, prelude::*, window::WindowTheme,
 };
+use bevy_av1::VideoTargetApp;
 use bevy_rich_text3d::Text3dPlugin;
 use bitflags::bitflags;
 use directories::ProjectDirs;
@@ -30,12 +31,12 @@ pub fn assets_dir() -> PathBuf {
 
 #[must_use]
 pub fn models_dir() -> PathBuf {
-    assets_dir().join("models")
+    assets_dir().join("model")
 }
 
 #[must_use]
 pub fn images_dir() -> PathBuf {
-    assets_dir().join("images")
+    assets_dir().join("image")
 }
 
 pub fn db_path() -> PathBuf {
@@ -97,6 +98,8 @@ impl Plugin for UnaviPlugin {
                     ..default()
                 }),
             avian3d::PhysicsPlugins::default(),
+            bevy_av1::VideoPlugin,
+            bevy_seedling::SeedlingPlugin::default(),
             Text3dPlugin {
                 asynchronous_load: true,
                 load_system_fonts: true,
@@ -110,6 +113,7 @@ impl Plugin for UnaviPlugin {
             unavi_script::ScriptPlugin,
             space::SpacePlugin,
         ))
+        .init_video_target_asset::<StandardMaterial>()
         .insert_resource(AmbientLight {
             brightness: lux::OVERCAST_DAY,
             ..default()

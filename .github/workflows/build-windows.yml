@@ -58,10 +58,12 @@ jobs:
           rm -rf crates/unavi-client/assets/wasm/example
       - uses: crazy-max/ghaction-chocolatey@v3
         with:
-          args: install wixtoolset
+          args: install pkgconfiglite wixtoolset
       - uses: dtolnay/rust-toolchain@nightly
         with:
           targets: x86_64-pc-windows-msvc
+      - name: Install dav1d
+        run: vcpkg install dav1d:x64-windows
       - run: cargo install cargo-wix
       - run: cargo install cargo-binstall
       - run: cargo binstall dioxus-cli --version 0.6.3 --locked --no-confirm
@@ -74,6 +76,8 @@ jobs:
           echo "WORLD_DID=did:web:$WORLD_DOMAIN" >> "$GITHUB_ENV"
       - name: Build package
         shell: bash
+        env:
+          PKG_CONFIG_PATH: C:\vcpkg\installed\x64-windows\lib\pkgconfig
         run: |
           if [ "${{ matrix.package }}" == "unavi-launcher" ]; then
             dx build -p ${{ matrix.package }} --release

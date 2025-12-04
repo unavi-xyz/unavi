@@ -127,7 +127,7 @@ fn generate_constants(protocol_dir: &PathBuf, out_dir: &Path) {
                     .unwrap()
                     .to_str()
                     .unwrap()
-                    .to_string();
+                    .replace('\\', "/");
 
                 protocol_urls.push((name.clone(), url.to_string()));
                 protocol_defs.push((name, relative_path));

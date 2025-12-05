@@ -63,7 +63,7 @@ jobs:
         with:
           targets: x86_64-pc-windows-msvc
       - name: Install dav1d
-        run: vcpkg install dav1d:x64-windows
+        run: vcpkg install dav1d:x64-windows-static
       - run: cargo install cargo-wix
       - run: cargo install cargo-binstall
       - run: cargo binstall dioxus-cli --version 0.6.3 --locked --no-confirm
@@ -77,13 +77,24 @@ jobs:
       - name: Build package
         shell: bash
         env:
-          PKG_CONFIG_PATH: C:\vcpkg\installed\x64-windows\lib\pkgconfig
+          PKG_CONFIG_PATH: C:\vcpkg\installed\x64-windows-static\lib\pkgconfig
+          PKG_CONFIG_ALL_STATIC: 1
+          RUSTFLAGS: -C target-feature=+crt-static
         run: |
           if [ "${{ matrix.package }}" == "unavi-launcher" ]; then
             dx build -p ${{ matrix.package }} --release
           else
             cargo build -p ${{ matrix.package }} --release
           fi
+      - name: Verify no DLL dependencies
+        if: ${{ matrix.package == 'unavi-client' }}
+        shell: powershell
+        run: |
+          Write-Host "=== Checking DLL dependencies ==="
+          $dumpbin = (Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\dumpbin.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
+          if ($dumpbin) {
+            & $dumpbin /dependents target\release\unavi-client.exe
+          }
       - name: Debug dx build output
         if: ${{ matrix.package == 'unavi-launcher' }}
         shell: bash

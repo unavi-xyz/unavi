@@ -14313,6 +14313,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "wired-data-store"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "wired-ecs"
 version = "0.0.16"
 dependencies = [

@@ -6,17 +6,17 @@ storage, and conflict-free synchronization.
 
 ## Architecture
 
-### [Social](./social/)
+### Social
 
 [**DID**](./social/did.md) - Decentralized identity for users and spaces.
 Cryptographic keys, service endpoints, no central authority.
 
-### [Data](./data/)
+### Data
 
 [**WDS**](./data/wds.md) - Wired Data Store. Personal data servers (local or
 remote) storing records and blobs. User-operated, peer-to-peer sync.
 
-### [Spatial](./spatial/)
+### Spatial
 
 [**HSD**](./spatial/hsd.md) - HyperSpace Documents. Spatial hypermedia format,
 analogous to HTML. Defines 3D geometry, entities, blob references.

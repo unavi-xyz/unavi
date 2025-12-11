@@ -8,7 +8,7 @@ mod identity;
 
 #[derive(Parser, Debug)]
 #[command(version)]
-#[command(about = "UNAVI CLI - Manage spaces in your DWN", long_about = None)]
+#[command(about = "Wired CLI - Manage spaces in your DWN", long_about = None)]
 struct Args {
     #[command(subcommand)]
     command: Commands,

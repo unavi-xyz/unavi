@@ -12145,24 +12145,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "unavi-cli"
-version = "0.0.16"
-dependencies = [
- "anyhow",
- "clap",
- "directories",
- "dwn",
- "serde_json",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "unavi-constants",
- "wired-protocol",
- "xdid",
- "zeroize",
-]
-
-[[package]]
 name = "unavi-client"
 version = "0.0.16"
 dependencies = [
@@ -14310,6 +14292,24 @@ checksum = "3f3fd376f71958b862e7afb20cfe5a22830e1963462f3a17f49d82a6c1d1f42d"
 dependencies = [
  "bitflags 2.10.0",
  "windows-sys 0.59.0",
+]
+
+[[package]]
+name = "wired-cli"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "clap",
+ "directories",
+ "dwn",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "unavi-constants",
+ "wired-protocol",
+ "xdid",
+ "zeroize",
 ]
 
 [[package]]

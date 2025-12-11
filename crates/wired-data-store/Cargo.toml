@@ -1,0 +1,15 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "wired-data-store"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace  = true
+tokio.workspace   = true
+tracing.workspace = true

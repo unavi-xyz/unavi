@@ -22,11 +22,9 @@ CREATE TABLE blobs (
 CREATE INDEX idx_blobs_owner ON blobs(owner_did);
 
 CREATE TABLE pins (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
     record_id TEXT NOT NULL REFERENCES records(id) ON DELETE CASCADE,
     created INTEGER NOT NULL,
-    owner_did TEXT NOT NULL
+    expires INTEGER,
+    owner_did TEXT NOT NULL,
+    PRIMARY KEY (owner_did, record_id)
 );
-
-CREATE INDEX idx_pins_owner ON pins(owner_did);
-CREATE UNIQUE INDEX idx_pins_unique ON pins(owner_did, record_id);

@@ -15163,6 +15163,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "tracing",
+ "xdid",
 ]
 
 [[package]]

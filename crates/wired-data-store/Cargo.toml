@@ -23,6 +23,7 @@ smol_str          = "0.3.4"
 sqlx              = { features = ["runtime-tokio", "sqlite"], version = "0.8.6" }
 tokio.workspace   = true
 tracing.workspace = true
+xdid.workspace    = true
 
 [dev-dependencies]
 tempfile.workspace = true

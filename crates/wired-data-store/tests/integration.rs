@@ -1,4 +1,7 @@
+use std::str::FromStr;
+
 use wired_data_store::{BlobId, DataStore, Genesis, RecordId};
+use xdid::core::did::Did;
 
 const DID_ALICE: &str = "did:example:alice";
 const DID_BOB: &str = "did:example:bob";
@@ -21,7 +24,8 @@ const BLOB_NONEXISTENT: &[u8] = b"nonexistent data";
 
 async fn create_test_store(owner_did: &str) -> (DataStore, tempfile::TempDir) {
     let dir = tempfile::tempdir().expect("create temp dir");
-    let store = DataStore::new(dir.path().to_path_buf(), owner_did)
+    let did = Did::from_str(owner_did).expect("parse DID");
+    let store = DataStore::new(dir.path().to_path_buf(), did)
         .await
         .expect("create data store");
     (store, dir)
@@ -31,7 +35,7 @@ async fn create_test_store(owner_did: &str) -> (DataStore, tempfile::TempDir) {
 async fn test_create_and_get_record() {
     let (store, _dir) = create_test_store(DID_ALICE).await;
 
-    let genesis = Genesis::new(DID_ALICE, SCHEMA_TEST);
+    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_TEST);
     let id = store.create_record(genesis).await.expect("create record");
 
     let record = store
@@ -41,7 +45,7 @@ async fn test_create_and_get_record() {
         .expect("record exists");
 
     assert_eq!(record.id, id);
-    assert_eq!(record.genesis.creator.as_str(), DID_ALICE);
+    assert_eq!(record.genesis.creator.to_string(), DID_ALICE);
     assert_eq!(record.genesis.schema.as_str(), SCHEMA_TEST);
 }
 
@@ -49,7 +53,10 @@ async fn test_create_and_get_record() {
 async fn test_record_preserves_nonce() {
     let (store, _dir) = create_test_store(DID_BOB).await;
 
-    let genesis = Genesis::new(DID_BOB, SCHEMA_NONCE_TEST);
+    let genesis = Genesis::new(
+        Did::from_str(DID_BOB).expect("parse DID"),
+        SCHEMA_NONCE_TEST,
+    );
     let original_nonce = genesis.nonce;
     let id = store.create_record(genesis).await.expect("create record");
 
@@ -66,7 +73,7 @@ async fn test_record_preserves_nonce() {
 async fn test_get_nonexistent_record() {
     let (store, _dir) = create_test_store(DID_NOBODY).await;
 
-    let genesis = Genesis::new(DID_NOBODY, SCHEMA_FAKE);
+    let genesis = Genesis::new(Did::from_str(DID_NOBODY).expect("parse DID"), SCHEMA_FAKE);
     let fake_id = RecordId(genesis.cid());
 
     let result = store.get_record(&fake_id).await.expect("query succeeds");
@@ -77,7 +84,10 @@ async fn test_get_nonexistent_record() {
 async fn test_delete_record() {
     let (store, _dir) = create_test_store(DID_CHARLIE).await;
 
-    let genesis = Genesis::new(DID_CHARLIE, SCHEMA_DELETE_TEST);
+    let genesis = Genesis::new(
+        Did::from_str(DID_CHARLIE).expect("parse DID"),
+        SCHEMA_DELETE_TEST,
+    );
     let id = store.create_record(genesis).await.expect("create record");
 
     assert!(store.get_record(&id).await.expect("get record").is_some());
@@ -122,7 +132,7 @@ async fn test_get_nonexistent_blob() {
 async fn test_pin_and_unpin_record() {
     let (store, _dir) = create_test_store(DID_DAVE).await;
 
-    let genesis = Genesis::new(DID_DAVE, SCHEMA_PIN_TEST);
+    let genesis = Genesis::new(Did::from_str(DID_DAVE).expect("parse DID"), SCHEMA_PIN_TEST);
     let record_id = store.create_record(genesis).await.expect("create record");
 
     let pin_id = store.pin_record(&record_id).await.expect("pin record");
@@ -134,8 +144,8 @@ async fn test_pin_and_unpin_record() {
 async fn test_multiple_records() {
     let (store, _dir) = create_test_store(DID_EVE).await;
 
-    let genesis1 = Genesis::new(DID_EVE, SCHEMA_A);
-    let genesis2 = Genesis::new(DID_FRANK, SCHEMA_B);
+    let genesis1 = Genesis::new(Did::from_str(DID_EVE).expect("parse DID"), SCHEMA_A);
+    let genesis2 = Genesis::new(Did::from_str(DID_FRANK).expect("parse DID"), SCHEMA_B);
 
     let id1 = store
         .create_record(genesis1)
@@ -160,22 +170,28 @@ async fn test_multiple_records() {
         .expect("get record 2")
         .expect("record 2 exists");
 
-    assert_eq!(record1.genesis.creator.as_str(), DID_EVE);
-    assert_eq!(record2.genesis.creator.as_str(), DID_FRANK);
+    assert_eq!(record1.genesis.creator.to_string(), DID_EVE);
+    assert_eq!(record2.genesis.creator.to_string(), DID_FRANK);
 }
 
 #[tokio::test]
 async fn test_did_isolation() {
     let dir = tempfile::tempdir().expect("create temp dir");
 
-    let store1 = DataStore::new(dir.path().to_path_buf(), DID_ALICE)
-        .await
-        .expect("create store 1");
-    let store2 = DataStore::new(dir.path().to_path_buf(), DID_BOB)
-        .await
-        .expect("create store 2");
+    let store1 = DataStore::new(
+        dir.path().to_path_buf(),
+        Did::from_str(DID_ALICE).expect("parse DID"),
+    )
+    .await
+    .expect("create store 1");
+    let store2 = DataStore::new(
+        dir.path().to_path_buf(),
+        Did::from_str(DID_BOB).expect("parse DID"),
+    )
+    .await
+    .expect("create store 2");
 
-    let genesis = Genesis::new(DID_ALICE, SCHEMA_TEST);
+    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_TEST);
     let id = store1
         .create_record(genesis)
         .await
@@ -195,12 +211,18 @@ async fn test_did_isolation() {
 async fn test_shared_blob_deduplication() {
     let dir = tempfile::tempdir().expect("create temp dir");
 
-    let store1 = DataStore::new(dir.path().to_path_buf(), DID_ALICE)
-        .await
-        .expect("create store 1");
-    let store2 = DataStore::new(dir.path().to_path_buf(), DID_BOB)
-        .await
-        .expect("create store 2");
+    let store1 = DataStore::new(
+        dir.path().to_path_buf(),
+        Did::from_str(DID_ALICE).expect("parse DID"),
+    )
+    .await
+    .expect("create store 1");
+    let store2 = DataStore::new(
+        dir.path().to_path_buf(),
+        Did::from_str(DID_BOB).expect("parse DID"),
+    )
+    .await
+    .expect("create store 2");
 
     let id1 = store1
         .store_blob(BLOB_HELLO)

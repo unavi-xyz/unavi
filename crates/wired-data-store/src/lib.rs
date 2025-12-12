@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
-use smol_str::SmolStr;
+use sha2::{Digest, Sha256};
+use xdid::core::did::Did;
 
 mod blob;
 mod db;
@@ -17,12 +18,11 @@ use db::Database;
 pub struct DataStore {
     db: Database,
     data_dir: PathBuf,
-    owner_did: SmolStr,
+    owner_did: Did,
 }
 
-fn hash_did(did: &str) -> String {
-    use sha2::{Digest, Sha256};
-    let hash = Sha256::digest(did.as_bytes());
+fn hash_did(did: &Did) -> String {
+    let hash = Sha256::digest(did.to_string().as_bytes());
     format!("{hash:x}")[..16].to_string()
 }
 
@@ -32,9 +32,7 @@ impl DataStore {
     /// # Errors
     ///
     /// Returns error if directories cannot be created or database cannot be initialized.
-    pub async fn new(data_dir: PathBuf, owner_did: impl Into<SmolStr>) -> Result<Self> {
-        let owner_did = owner_did.into();
-
+    pub async fn new(data_dir: PathBuf, owner_did: Did) -> Result<Self> {
         // Create DID-specific subdirectory.
         let did_hash = hash_did(&owner_did);
         let user_dir = data_dir.join(did_hash);
@@ -57,7 +55,7 @@ impl DataStore {
 
     /// Returns the DID that owns this data store.
     #[must_use]
-    pub fn owner_did(&self) -> &str {
+    pub const fn owner_did(&self) -> &Did {
         &self.owner_did
     }
 
@@ -98,12 +96,12 @@ impl DataStore {
             "INSERT INTO records (id, creator, schema, created, nonce, size, owner_did) VALUES (?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(record.id.as_str())
-        .bind(record.genesis.creator.as_str())
+        .bind(record.genesis.creator.to_string())
         .bind(record.genesis.schema.as_str())
         .bind(record.genesis.created.cast_signed())
         .bind(record.genesis.nonce.as_slice())
         .bind(size)
-        .bind(self.owner_did.as_str())
+        .bind(self.owner_did.to_string())
         .execute(self.db.pool())
         .await
         .context("insert record into database")?;
@@ -130,7 +128,7 @@ impl DataStore {
             "SELECT creator, created, nonce, schema FROM records WHERE id = ? AND owner_did = ?",
         )
         .bind(id.as_str())
-        .bind(self.owner_did.as_str())
+        .bind(self.owner_did.to_string())
         .fetch_optional(self.db.pool())
         .await
         .context("query record from database")?;
@@ -144,8 +142,12 @@ impl DataStore {
             .try_into()
             .map_err(|_| anyhow::anyhow!("invalid nonce length in database"))?;
 
+        let creator = creator
+            .parse()
+            .map_err(|e| anyhow::anyhow!("invalid DID: {e}"))?;
+
         let genesis = Genesis {
-            creator: creator.into(),
+            creator,
             created: created as u64,
             nonce,
             schema: schema.into(),
@@ -171,7 +173,7 @@ impl DataStore {
 
         sqlx::query("DELETE FROM records WHERE id = ? AND owner_did = ?")
             .bind(id.as_str())
-            .bind(self.owner_did.as_str())
+            .bind(self.owner_did.to_string())
             .execute(self.db.pool())
             .await
             .context("delete record from database")?;
@@ -222,7 +224,7 @@ impl DataStore {
         .bind(id.as_str())
         .bind(size)
         .bind(now)
-        .bind(self.owner_did.as_str())
+        .bind(self.owner_did.to_string())
         .execute(self.db.pool())
         .await
         .context("insert blob into database")?;
@@ -274,7 +276,7 @@ impl DataStore {
             sqlx::query("INSERT INTO pins (record_id, created, owner_did) VALUES (?, ?, ?)")
                 .bind(id.as_str())
                 .bind(now)
-                .bind(self.owner_did.as_str())
+                .bind(self.owner_did.to_string())
                 .execute(self.db.pool())
                 .await
                 .context("insert pin into database")?;
@@ -290,7 +292,7 @@ impl DataStore {
     pub async fn unpin_record(&self, pin_id: &PinId) -> Result<()> {
         sqlx::query("DELETE FROM pins WHERE id = ? AND owner_did = ?")
             .bind(pin_id.0.cast_signed())
-            .bind(self.owner_did.as_str())
+            .bind(self.owner_did.to_string())
             .execute(self.db.pool())
             .await
             .context("delete pin from database")?;

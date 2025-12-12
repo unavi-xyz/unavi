@@ -3,6 +3,7 @@ use loro::LoroDoc;
 use multihash::Multihash;
 use sha2::{Digest, Sha256};
 use smol_str::SmolStr;
+use xdid::core::did::Did;
 
 /// CID of the genesis block, uniquely identifies a record.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -19,7 +20,7 @@ impl RecordId {
 #[derive(Clone, Debug)]
 pub struct Genesis {
     /// DID of the creator.
-    pub creator: SmolStr,
+    pub creator: Did,
     /// Unix timestamp (milliseconds).
     pub created: u64,
     /// Random nonce for uniqueness.
@@ -34,12 +35,12 @@ impl Genesis {
     /// # Panics
     ///
     /// Panics if random number generator fails or system time is before UNIX epoch.
-    pub fn new(creator: impl Into<SmolStr>, schema: impl Into<SmolStr>) -> Self {
+    pub fn new(creator: Did, schema: impl Into<SmolStr>) -> Self {
         let mut nonce = [0u8; 16];
         getrandom::fill(&mut nonce).expect("random nonce");
 
         Self {
-            creator: creator.into(),
+            creator,
             created: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .expect("system time")
@@ -65,7 +66,7 @@ impl Genesis {
     fn to_bytes(&self) -> Vec<u8> {
         // Deterministic serialization.
         let mut buf = Vec::new();
-        buf.extend_from_slice(self.creator.as_bytes());
+        buf.extend_from_slice(self.creator.to_string().as_bytes());
         buf.extend_from_slice(&self.created.to_be_bytes());
         buf.extend_from_slice(&self.nonce);
         buf.extend_from_slice(self.schema.as_bytes());

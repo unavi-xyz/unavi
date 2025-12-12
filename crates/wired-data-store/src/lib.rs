@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
+use smol_str::SmolStr;
 
 mod blob;
 mod db;
@@ -16,6 +17,13 @@ use db::Database;
 pub struct DataStore {
     db: Database,
     data_dir: PathBuf,
+    owner_did: SmolStr,
+}
+
+fn hash_did(did: &str) -> String {
+    use sha2::{Digest, Sha256};
+    let hash = Sha256::digest(did.as_bytes());
+    format!("{hash:x}")[..16].to_string()
 }
 
 impl DataStore {
@@ -24,15 +32,38 @@ impl DataStore {
     /// # Errors
     ///
     /// Returns error if directories cannot be created or database cannot be initialized.
-    pub async fn new(data_dir: PathBuf) -> Result<Self> {
-        std::fs::create_dir_all(&data_dir).context("create data directory")?;
-        std::fs::create_dir_all(data_dir.join("blobs")).context("create blobs directory")?;
-        std::fs::create_dir_all(data_dir.join("records")).context("create records directory")?;
+    pub async fn new(data_dir: PathBuf, owner_did: impl Into<SmolStr>) -> Result<Self> {
+        let owner_did = owner_did.into();
 
-        let db_path = data_dir.join("index.db");
+        // Create DID-specific subdirectory.
+        let did_hash = hash_did(&owner_did);
+        let user_dir = data_dir.join(did_hash);
+
+        std::fs::create_dir_all(&user_dir).context("create user directory")?;
+        std::fs::create_dir_all(user_dir.join("records")).context("create records directory")?;
+
+        // Shared blobs directory at root level.
+        std::fs::create_dir_all(data_dir.join("blobs")).context("create blobs directory")?;
+
+        let db_path = user_dir.join("index.db");
         let db = Database::new(&db_path).await?;
 
-        Ok(Self { db, data_dir })
+        Ok(Self {
+            db,
+            data_dir,
+            owner_did,
+        })
+    }
+
+    /// Returns the DID that owns this data store.
+    #[must_use]
+    pub fn owner_did(&self) -> &str {
+        &self.owner_did
+    }
+
+    fn user_dir(&self) -> PathBuf {
+        let did_hash = hash_did(&self.owner_did);
+        self.data_dir.join(did_hash)
     }
 
     fn blobs_dir(&self) -> PathBuf {
@@ -40,7 +71,7 @@ impl DataStore {
     }
 
     fn records_dir(&self) -> PathBuf {
-        self.data_dir.join("records")
+        self.user_dir().join("records")
     }
 
     // Records.
@@ -64,7 +95,7 @@ impl DataStore {
         // Index in database.
         let size = i64::try_from(snapshot.len()).context("snapshot size exceeds i64::MAX")?;
         sqlx::query(
-            "INSERT INTO records (id, creator, schema, created, nonce, size) VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO records (id, creator, schema, created, nonce, size, owner_did) VALUES (?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(record.id.as_str())
         .bind(record.genesis.creator.as_str())
@@ -72,6 +103,7 @@ impl DataStore {
         .bind(record.genesis.created.cast_signed())
         .bind(record.genesis.nonce.as_slice())
         .bind(size)
+        .bind(self.owner_did.as_str())
         .execute(self.db.pool())
         .await
         .context("insert record into database")?;
@@ -94,12 +126,14 @@ impl DataStore {
         let snapshot = std::fs::read(&path).context("read record file")?;
 
         // Query genesis data from database.
-        let row: Option<(String, i64, Vec<u8>, String)> =
-            sqlx::query_as("SELECT creator, created, nonce, schema FROM records WHERE id = ?")
-                .bind(id.as_str())
-                .fetch_optional(self.db.pool())
-                .await
-                .context("query record from database")?;
+        let row: Option<(String, i64, Vec<u8>, String)> = sqlx::query_as(
+            "SELECT creator, created, nonce, schema FROM records WHERE id = ? AND owner_did = ?",
+        )
+        .bind(id.as_str())
+        .bind(self.owner_did.as_str())
+        .fetch_optional(self.db.pool())
+        .await
+        .context("query record from database")?;
 
         let Some((creator, created, nonce, schema)) = row else {
             return Ok(None);
@@ -135,8 +169,9 @@ impl DataStore {
             std::fs::remove_file(&path).context("delete record file")?;
         }
 
-        sqlx::query("DELETE FROM records WHERE id = ?")
+        sqlx::query("DELETE FROM records WHERE id = ? AND owner_did = ?")
             .bind(id.as_str())
+            .bind(self.owner_did.as_str())
             .execute(self.db.pool())
             .await
             .context("delete record from database")?;
@@ -181,13 +216,16 @@ impl DataStore {
             .as_secs()
             .cast_signed();
 
-        sqlx::query("INSERT OR IGNORE INTO blobs (id, size, created) VALUES (?, ?, ?)")
-            .bind(id.as_str())
-            .bind(size)
-            .bind(now)
-            .execute(self.db.pool())
-            .await
-            .context("insert blob into database")?;
+        sqlx::query(
+            "INSERT OR IGNORE INTO blobs (id, size, created, owner_did) VALUES (?, ?, ?, ?)",
+        )
+        .bind(id.as_str())
+        .bind(size)
+        .bind(now)
+        .bind(self.owner_did.as_str())
+        .execute(self.db.pool())
+        .await
+        .context("insert blob into database")?;
 
         Ok(id)
     }
@@ -232,12 +270,14 @@ impl DataStore {
             .as_secs()
             .cast_signed();
 
-        let result = sqlx::query("INSERT INTO pins (record_id, created) VALUES (?, ?)")
-            .bind(id.as_str())
-            .bind(now)
-            .execute(self.db.pool())
-            .await
-            .context("insert pin into database")?;
+        let result =
+            sqlx::query("INSERT INTO pins (record_id, created, owner_did) VALUES (?, ?, ?)")
+                .bind(id.as_str())
+                .bind(now)
+                .bind(self.owner_did.as_str())
+                .execute(self.db.pool())
+                .await
+                .context("insert pin into database")?;
 
         Ok(PinId(result.last_insert_rowid() as u64))
     }
@@ -248,8 +288,9 @@ impl DataStore {
     ///
     /// Returns error if pin cannot be deleted from database.
     pub async fn unpin_record(&self, pin_id: &PinId) -> Result<()> {
-        sqlx::query("DELETE FROM pins WHERE id = ?")
+        sqlx::query("DELETE FROM pins WHERE id = ? AND owner_did = ?")
             .bind(pin_id.0.cast_signed())
+            .bind(self.owner_did.as_str())
             .execute(self.db.pool())
             .await
             .context("delete pin from database")?;

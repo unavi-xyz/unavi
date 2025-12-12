@@ -92,16 +92,23 @@ impl DataStore {
 
         // Index in database.
         let size = i64::try_from(snapshot.len()).context("snapshot size exceeds i64::MAX")?;
-        sqlx::query(
+        let id = record.id.as_str();
+        let creator = record.genesis.creator.to_string();
+        let schema = record.genesis.schema.as_str();
+        let created = record.genesis.created.cast_signed();
+        let nonce = record.genesis.nonce.as_slice();
+        let owner_did = self.owner_did.to_string();
+
+        sqlx::query!(
             "INSERT INTO records (id, creator, schema, created, nonce, size, owner_did) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            id,
+            creator,
+            schema,
+            created,
+            nonce,
+            size,
+            owner_did
         )
-        .bind(record.id.as_str())
-        .bind(record.genesis.creator.to_string())
-        .bind(record.genesis.schema.as_str())
-        .bind(record.genesis.created.cast_signed())
-        .bind(record.genesis.nonce.as_slice())
-        .bind(size)
-        .bind(self.owner_did.to_string())
         .execute(self.db.pool())
         .await
         .context("insert record into database")?;
@@ -124,33 +131,38 @@ impl DataStore {
         let snapshot = std::fs::read(&path).context("read record file")?;
 
         // Query genesis data from database.
-        let row: Option<(String, i64, Vec<u8>, String)> = sqlx::query_as(
+        let record_id = id.as_str();
+        let owner_did = self.owner_did.to_string();
+
+        let row = sqlx::query!(
             "SELECT creator, created, nonce, schema FROM records WHERE id = ? AND owner_did = ?",
+            record_id,
+            owner_did
         )
-        .bind(id.as_str())
-        .bind(self.owner_did.to_string())
         .fetch_optional(self.db.pool())
         .await
         .context("query record from database")?;
 
-        let Some((creator, created, nonce, schema)) = row else {
+        let Some(row) = row else {
             return Ok(None);
         };
 
         // Reconstruct genesis.
-        let nonce: [u8; 16] = nonce
+        let nonce: [u8; 16] = row
+            .nonce
             .try_into()
             .map_err(|_| anyhow::anyhow!("invalid nonce length in database"))?;
 
-        let creator = creator
+        let creator = row
+            .creator
             .parse()
             .map_err(|e| anyhow::anyhow!("invalid DID: {e}"))?;
 
         let genesis = Genesis {
             creator,
-            created: created as u64,
+            created: row.created as u64,
             nonce,
-            schema: schema.into(),
+            schema: row.schema.into(),
         };
 
         let mut record = Record::new(genesis);
@@ -171,12 +183,17 @@ impl DataStore {
             std::fs::remove_file(&path).context("delete record file")?;
         }
 
-        sqlx::query("DELETE FROM records WHERE id = ? AND owner_did = ?")
-            .bind(id.as_str())
-            .bind(self.owner_did.to_string())
-            .execute(self.db.pool())
-            .await
-            .context("delete record from database")?;
+        let record_id = id.as_str();
+        let owner_did = self.owner_did.to_string();
+
+        sqlx::query!(
+            "DELETE FROM records WHERE id = ? AND owner_did = ?",
+            record_id,
+            owner_did
+        )
+        .execute(self.db.pool())
+        .await
+        .context("delete record from database")?;
 
         Ok(())
     }
@@ -218,13 +235,16 @@ impl DataStore {
             .as_secs()
             .cast_signed();
 
-        sqlx::query(
+        let blob_id = id.as_str();
+        let owner_did = self.owner_did.to_string();
+
+        sqlx::query!(
             "INSERT OR IGNORE INTO blobs (id, size, created, owner_did) VALUES (?, ?, ?, ?)",
+            blob_id,
+            size,
+            now,
+            owner_did
         )
-        .bind(id.as_str())
-        .bind(size)
-        .bind(now)
-        .bind(self.owner_did.to_string())
         .execute(self.db.pool())
         .await
         .context("insert blob into database")?;
@@ -272,14 +292,18 @@ impl DataStore {
             .as_secs()
             .cast_signed();
 
-        let result =
-            sqlx::query("INSERT INTO pins (record_id, created, owner_did) VALUES (?, ?, ?)")
-                .bind(id.as_str())
-                .bind(now)
-                .bind(self.owner_did.to_string())
-                .execute(self.db.pool())
-                .await
-                .context("insert pin into database")?;
+        let record_id = id.as_str();
+        let owner_did = self.owner_did.to_string();
+
+        let result = sqlx::query!(
+            "INSERT INTO pins (record_id, created, owner_did) VALUES (?, ?, ?)",
+            record_id,
+            now,
+            owner_did
+        )
+        .execute(self.db.pool())
+        .await
+        .context("insert pin into database")?;
 
         Ok(PinId(result.last_insert_rowid() as u64))
     }
@@ -290,12 +314,17 @@ impl DataStore {
     ///
     /// Returns error if pin cannot be deleted from database.
     pub async fn unpin_record(&self, pin_id: &PinId) -> Result<()> {
-        sqlx::query("DELETE FROM pins WHERE id = ? AND owner_did = ?")
-            .bind(pin_id.0.cast_signed())
-            .bind(self.owner_did.to_string())
-            .execute(self.db.pool())
-            .await
-            .context("delete pin from database")?;
+        let id = pin_id.0.cast_signed();
+        let owner_did = self.owner_did.to_string();
+
+        sqlx::query!(
+            "DELETE FROM pins WHERE id = ? AND owner_did = ?",
+            id,
+            owner_did
+        )
+        .execute(self.db.pool())
+        .await
+        .context("delete pin from database")?;
 
         Ok(())
     }

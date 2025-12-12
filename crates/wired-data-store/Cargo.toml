@@ -6,9 +6,6 @@ publish              = false
 repository.workspace = true
 version.workspace    = true
 
-[package.metadata.sqlx]
-offline = true
-
 [lints]
 workspace = true
 

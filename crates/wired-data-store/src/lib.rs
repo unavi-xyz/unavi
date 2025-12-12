@@ -64,12 +64,13 @@ impl DataStore {
         // Index in database.
         let size = i64::try_from(snapshot.len()).context("snapshot size exceeds i64::MAX")?;
         sqlx::query(
-            "INSERT INTO records (id, creator, schema, created, size) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO records (id, creator, schema, created, nonce, size) VALUES (?, ?, ?, ?, ?, ?)",
         )
         .bind(record.id.as_str())
         .bind(record.genesis.creator.as_str())
         .bind(record.genesis.schema.as_str())
         .bind(record.genesis.created.cast_signed())
+        .bind(record.genesis.nonce.as_slice())
         .bind(size)
         .execute(self.db.pool())
         .await
@@ -93,22 +94,26 @@ impl DataStore {
         let snapshot = std::fs::read(&path).context("read record file")?;
 
         // Query genesis data from database.
-        let row: Option<(String, i64, String)> =
-            sqlx::query_as("SELECT creator, created, schema FROM records WHERE id = ?")
+        let row: Option<(String, i64, Vec<u8>, String)> =
+            sqlx::query_as("SELECT creator, created, nonce, schema FROM records WHERE id = ?")
                 .bind(id.as_str())
                 .fetch_optional(self.db.pool())
                 .await
                 .context("query record from database")?;
 
-        let Some((creator, created, schema)) = row else {
+        let Some((creator, created, nonce, schema)) = row else {
             return Ok(None);
         };
 
-        // Reconstruct genesis. Nonce is not stored, use zeroes.
+        // Reconstruct genesis.
+        let nonce: [u8; 16] = nonce
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("invalid nonce length in database"))?;
+
         let genesis = Genesis {
             creator: creator.into(),
             created: created as u64,
-            nonce: [0u8; 16],
+            nonce,
             schema: schema.into(),
         };
 

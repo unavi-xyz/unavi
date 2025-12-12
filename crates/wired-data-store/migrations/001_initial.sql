@@ -3,6 +3,7 @@ CREATE TABLE records (
     creator TEXT NOT NULL,
     schema TEXT NOT NULL,
     created INTEGER NOT NULL,
+    nonce BLOB NOT NULL,
     size INTEGER NOT NULL
 );
 

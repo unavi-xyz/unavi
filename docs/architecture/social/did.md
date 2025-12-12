@@ -59,7 +59,7 @@ No passwords or central identity providers.
 DIDs identify:
 
 - **Users**: Self-sovereign identity
-- **Spaces**: Referenced by DID URLs
 - **Servers**: Host instances with server DID
+- **Spaces**: Referenced by DID URLs
 
 All operations signed with DID keys. Fully decentralized authentication.

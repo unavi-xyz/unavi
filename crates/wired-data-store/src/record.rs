@@ -21,7 +21,7 @@ impl RecordId {
 pub struct Genesis {
     /// DID of the creator.
     pub creator: Did,
-    /// Unix timestamp (milliseconds).
+    /// Unix timestamp (seconds).
     pub created: u64,
     /// Random nonce for uniqueness.
     pub nonce: [u8; 16],
@@ -44,7 +44,7 @@ impl Genesis {
             created: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .expect("system time")
-                .as_millis() as u64,
+                .as_secs(),
             nonce,
             schema: schema.into(),
         }

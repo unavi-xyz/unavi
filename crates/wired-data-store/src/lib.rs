@@ -10,7 +10,7 @@ mod pin;
 mod record;
 
 pub use blob::{Blob, BlobId};
-pub use pin::{Pin, PinId};
+pub use pin::Pin;
 pub use record::{Genesis, Record, RecordId};
 
 use db::Database;
@@ -33,14 +33,12 @@ impl DataStore {
     ///
     /// Returns error if directories cannot be created or database cannot be initialized.
     pub async fn new(data_dir: PathBuf, owner_did: Did) -> Result<Self> {
-        // Create DID-specific subdirectory.
         let did_hash = hash_did(&owner_did);
         let user_dir = data_dir.join(did_hash);
 
         std::fs::create_dir_all(&user_dir).context("create user directory")?;
         std::fs::create_dir_all(user_dir.join("records")).context("create records directory")?;
 
-        // Shared blobs directory at root level.
         std::fs::create_dir_all(data_dir.join("blobs")).context("create blobs directory")?;
 
         let db_path = user_dir.join("index.db");
@@ -83,14 +81,12 @@ impl DataStore {
         let record = Record::new(genesis);
         let snapshot = record.export_snapshot()?;
 
-        // Store on filesystem.
         let path = self.record_path(&record.id);
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).context("create record shard directory")?;
         }
         std::fs::write(&path, &snapshot).context("write record file")?;
 
-        // Index in database.
         let size = i64::try_from(snapshot.len()).context("snapshot size exceeds i64::MAX")?;
         let id = record.id.as_str();
         let creator = record.genesis.creator.to_string();
@@ -130,7 +126,6 @@ impl DataStore {
 
         let snapshot = std::fs::read(&path).context("read record file")?;
 
-        // Query genesis data from database.
         let record_id = id.as_str();
         let owner_did = self.owner_did.to_string();
 
@@ -147,7 +142,6 @@ impl DataStore {
             return Ok(None);
         };
 
-        // Reconstruct genesis.
         let nonce: [u8; 16] = row
             .nonce
             .try_into()
@@ -220,14 +214,12 @@ impl DataStore {
     pub async fn store_blob(&self, data: &[u8]) -> Result<BlobId> {
         let id = BlobId::from_bytes(data);
 
-        // Store on filesystem.
         let path = self.blob_path(&id);
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).context("create blob shard directory")?;
         }
         std::fs::write(&path, data).context("write blob file")?;
 
-        // Index in database.
         let size = i64::try_from(data.len()).context("blob size exceeds i64::MAX")?;
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -252,11 +244,11 @@ impl DataStore {
         Ok(id)
     }
 
-    /// Retrieves a blob by its ID.
+    /// Retrieves a blob by its content-addressed ID.
     ///
     /// # Errors
     ///
-    /// Returns error if blob cannot be read from filesystem.
+    /// Returns error if blob file cannot be read.
     pub fn get_blob(&self, id: &BlobId) -> Result<Option<Vec<u8>>> {
         let path = self.blob_path(id);
 
@@ -276,7 +268,7 @@ impl DataStore {
 
     // Pins.
 
-    /// Pins a record by its ID.
+    /// Pins a record by its ID with optional TTL.
     ///
     /// # Errors
     ///
@@ -285,41 +277,43 @@ impl DataStore {
     /// # Panics
     ///
     /// Panics if system time is before UNIX epoch.
-    pub async fn pin_record(&self, id: &RecordId) -> Result<PinId> {
+    pub async fn pin_record(&self, id: &RecordId, ttl: Option<u64>) -> Result<()> {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time")
             .as_secs()
             .cast_signed();
 
+        let expires = ttl.map(|secs| now + secs.cast_signed());
         let record_id = id.as_str();
         let owner_did = self.owner_did.to_string();
 
-        let result = sqlx::query!(
-            "INSERT INTO pins (record_id, created, owner_did) VALUES (?, ?, ?)",
+        sqlx::query!(
+            "INSERT OR REPLACE INTO pins (record_id, created, expires, owner_did) VALUES (?, ?, ?, ?)",
             record_id,
             now,
+            expires,
             owner_did
         )
         .execute(self.db.pool())
         .await
         .context("insert pin into database")?;
 
-        Ok(PinId(result.last_insert_rowid() as u64))
+        Ok(())
     }
 
-    /// Unpins a record by its pin ID.
+    /// Unpins a record by its ID.
     ///
     /// # Errors
     ///
     /// Returns error if pin cannot be deleted from database.
-    pub async fn unpin_record(&self, pin_id: &PinId) -> Result<()> {
-        let id = pin_id.0.cast_signed();
+    pub async fn unpin_record(&self, id: &RecordId) -> Result<()> {
+        let record_id = id.as_str();
         let owner_did = self.owner_did.to_string();
 
         sqlx::query!(
-            "DELETE FROM pins WHERE id = ? AND owner_did = ?",
-            id,
+            "DELETE FROM pins WHERE record_id = ? AND owner_did = ?",
+            record_id,
             owner_did
         )
         .execute(self.db.pool())

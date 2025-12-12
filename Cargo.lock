@@ -15160,6 +15160,7 @@ dependencies = [
  "sha2",
  "smol_str 0.3.4",
  "sqlx",
+ "tempfile",
  "tokio",
  "tracing",
 ]

@@ -109,7 +109,7 @@
           }:
           {
             _module.args.pkgs = import inputs.nixpkgs {
-              inherit system;
+              system = "x86_64-linux";
               config.allowUnfree = true;
               overlays = [
                 inputs.fenix.overlays.default

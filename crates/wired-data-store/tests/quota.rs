@@ -3,7 +3,7 @@ mod common;
 use std::str::FromStr;
 
 use common::{BLOB_HELLO, DID_ALICE, DID_BOB, SCHEMA_TEST, create_test_store};
-use wired_data_store::{DataStore, Genesis, DEFAULT_QUOTA_BYTES};
+use wired_data_store::{DEFAULT_QUOTA_BYTES, DataStore, Genesis};
 use xdid::core::did::Did;
 
 #[tokio::test]
@@ -28,7 +28,10 @@ async fn test_record_creation_consumes_quota() {
     store.create_record(genesis).await.expect("create record");
 
     let after = store.get_storage_quota().await.expect("get quota");
-    assert!(after.bytes_used > 0, "quota should increase after record creation");
+    assert!(
+        after.bytes_used > 0,
+        "quota should increase after record creation"
+    );
 }
 
 #[tokio::test]
@@ -52,10 +55,16 @@ async fn test_blob_upload_consumes_quota() {
 async fn test_same_blob_uploaded_twice_charges_once() {
     let (store, _dir) = create_test_store(DID_ALICE).await;
 
-    store.store_blob(BLOB_HELLO).await.expect("store blob first time");
+    store
+        .store_blob(BLOB_HELLO)
+        .await
+        .expect("store blob first time");
     let after_first = store.get_storage_quota().await.expect("get quota");
 
-    store.store_blob(BLOB_HELLO).await.expect("store blob second time");
+    store
+        .store_blob(BLOB_HELLO)
+        .await
+        .expect("store blob second time");
     let after_second = store.get_storage_quota().await.expect("get quota");
 
     assert_eq!(
@@ -77,7 +86,10 @@ async fn test_record_deletion_releases_quota() {
     store.delete_record(&id).await.expect("delete record");
 
     let after_delete = store.get_storage_quota().await.expect("get quota");
-    assert_eq!(after_delete.bytes_used, 0, "quota should be released after deletion");
+    assert_eq!(
+        after_delete.bytes_used, 0,
+        "quota should be released after deletion"
+    );
 }
 
 #[tokio::test]
@@ -103,7 +115,10 @@ async fn test_custom_quota_setting() {
     let (store, _dir) = create_test_store(DID_ALICE).await;
 
     let custom_quota = 1024 * 1024; // 1 MB
-    store.set_storage_quota(custom_quota).await.expect("set quota");
+    store
+        .set_storage_quota(custom_quota)
+        .await
+        .expect("set quota");
 
     let quota = store.get_storage_quota().await.expect("get quota");
     assert_eq!(quota.quota_bytes, custom_quota);
@@ -123,7 +138,10 @@ async fn test_gc_releases_blob_quota() {
         .expect("link blob");
 
     // Pin the record, then delete it (which orphans the blob).
-    store.pin_record(&record_id, Some(1)).await.expect("pin record");
+    store
+        .pin_record(&record_id, Some(1))
+        .await
+        .expect("pin record");
 
     let before_gc = store.get_storage_quota().await.expect("get quota");
     assert!(before_gc.bytes_used > 0);
@@ -155,7 +173,10 @@ async fn test_quota_isolation_between_users() {
     .expect("create bob store");
 
     // Alice uploads a blob.
-    alice.store_blob(BLOB_HELLO).await.expect("alice stores blob");
+    alice
+        .store_blob(BLOB_HELLO)
+        .await
+        .expect("alice stores blob");
 
     let alice_quota = alice.get_storage_quota().await.expect("alice quota");
     let bob_quota = bob.get_storage_quota().await.expect("bob quota");

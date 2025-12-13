@@ -14,7 +14,7 @@ mod record;
 pub use blob::{Blob, BlobId};
 pub use gc::GarbageCollectStats;
 pub use pin::Pin;
-pub use quota::{QuotaExceeded, UserQuota, DEFAULT_QUOTA_BYTES};
+pub use quota::{DEFAULT_QUOTA_BYTES, QuotaExceeded, UserQuota};
 pub use record::{Genesis, Record, RecordId};
 
 use db::Database;
@@ -86,27 +86,24 @@ impl DataStore {
     pub async fn create_record(&self, genesis: Genesis) -> Result<RecordId> {
         let record = Record::new(genesis);
         let snapshot = record.export_snapshot()?;
-
         let size = i64::try_from(snapshot.len()).context("snapshot size exceeds i64::MAX")?;
         let owner_did = self.owner_did.to_string();
 
-        // Reserve quota before writing.
-        quota::reserve_bytes(self.db.pool(), &owner_did, size)
-            .await
-            .map_err(|e| anyhow::anyhow!(e))?;
-
+        // Write file first (content-addressed, idempotent).
         let path = self.record_path(&record.id);
-        if let Some(parent) = path.parent()
-            && let Err(e) = std::fs::create_dir_all(parent)
-        {
-            // Rollback quota on failure.
-            let _ = quota::release_bytes(self.db.pool(), &owner_did, size).await;
-            return Err(e).context("create record shard directory");
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).context("create record shard directory")?;
         }
-        if let Err(e) = std::fs::write(&path, &snapshot) {
-            // Rollback quota on failure.
-            let _ = quota::release_bytes(self.db.pool(), &owner_did, size).await;
-            return Err(e).context("write record file");
+        std::fs::write(&path, &snapshot).context("write record file")?;
+
+        // Transaction: ensure quota exists, reserve quota, insert record.
+        let mut tx = self.db.pool().begin().await.context("begin transaction")?;
+
+        quota::ensure_quota_exists(&mut *tx, &owner_did).await?;
+
+        if let Err(e) = quota::reserve_bytes(&mut *tx, &owner_did, size).await {
+            let _ = std::fs::remove_file(&path);
+            return Err(anyhow::anyhow!(e));
         }
 
         let id = record.id.as_str();
@@ -125,14 +122,15 @@ impl DataStore {
             size,
             owner_did
         )
-        .execute(self.db.pool())
+        .execute(&mut *tx)
         .await
         {
-            // Rollback quota and file on failure.
-            let _ = quota::release_bytes(self.db.pool(), &owner_did, size).await;
+            // Transaction will rollback on drop, just clean up the file.
             let _ = std::fs::remove_file(&path);
             return Err(e).context("insert record into database");
         }
+
+        tx.commit().await.context("commit transaction")?;
 
         Ok(record.id)
     }
@@ -201,23 +199,28 @@ impl DataStore {
     pub async fn delete_record(&self, id: &RecordId) -> Result<()> {
         let record_id = id.as_str();
         let owner_did = self.owner_did.to_string();
+        let path = self.record_path(id);
+
+        // Transaction: query, decrement refs, delete record, release quota.
+        let mut tx = self.db.pool().begin().await.context("begin transaction")?;
 
         // Get record size before deletion.
-        let size: Option<i64> =
-            sqlx::query_scalar("SELECT size FROM records WHERE id = ? AND owner_did = ?")
-                .bind(&record_id)
-                .bind(&owner_did)
-                .fetch_optional(self.db.pool())
-                .await
-                .context("query record size")?;
+        let size: Option<i64> = sqlx::query_scalar!(
+            "SELECT size FROM records WHERE id = ? AND owner_did = ?",
+            record_id,
+            owner_did
+        )
+        .fetch_optional(&mut *tx)
+        .await
+        .context("query record size")?;
 
         // Get all blobs linked to this record.
-        let linked_blobs: Vec<String> = sqlx::query_scalar(
+        let linked_blobs: Vec<String> = sqlx::query_scalar!(
             "SELECT blob_id FROM record_blobs WHERE record_id = ? AND owner_did = ?",
+            record_id,
+            owner_did
         )
-        .bind(&record_id)
-        .bind(&owner_did)
-        .fetch_all(self.db.pool())
+        .fetch_all(&mut *tx)
         .await
         .context("query linked blobs")?;
 
@@ -228,15 +231,9 @@ impl DataStore {
                 blob_id,
                 owner_did
             )
-            .execute(self.db.pool())
+            .execute(&mut *tx)
             .await
             .context("decrement user_blob ref_count")?;
-        }
-
-        // Delete record file.
-        let path = self.record_path(id);
-        if path.exists() {
-            std::fs::remove_file(&path).context("delete record file")?;
         }
 
         // Delete record (CASCADE will delete record_blobs entries).
@@ -245,13 +242,20 @@ impl DataStore {
             record_id,
             owner_did
         )
-        .execute(self.db.pool())
+        .execute(&mut *tx)
         .await
         .context("delete record from database")?;
 
-        // Release quota after successful deletion.
+        // Release quota.
         if let Some(size) = size {
-            quota::release_bytes(self.db.pool(), &owner_did, size).await?;
+            quota::release_bytes(&mut *tx, &owner_did, size).await?;
+        }
+
+        tx.commit().await.context("commit transaction")?;
+
+        // Delete file after successful commit.
+        if path.exists() {
+            std::fs::remove_file(&path).context("delete record file")?;
         }
 
         Ok(())
@@ -295,18 +299,27 @@ impl DataStore {
             .as_secs()
             .cast_signed();
 
+        // Transaction: all DB operations for blob storage.
+        let mut tx = self.db.pool().begin().await.context("begin transaction")?;
+
         // Check if physical blob exists.
-        let blob_exists: bool =
-            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM blobs WHERE id = ?)")
-                .bind(&blob_id_str)
-                .fetch_one(self.db.pool())
-                .await
-                .context("check blob exists")?;
+        let blob_exists = sqlx::query_scalar!(
+            "SELECT EXISTS(SELECT 1 FROM blobs WHERE id = ?)",
+            blob_id_str
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .context("check blob exists")?
+            != 0;
+
+        // Track whether we wrote a new file (for cleanup on error).
+        let mut wrote_new_file = false;
+        let path = self.blob_path(&id);
 
         if blob_exists {
             // Verify CID matches (data integrity check).
-            let stored_data = std::fs::read(self.blob_path(&id))
-                .context("read existing blob for verification")?;
+            let stored_data =
+                std::fs::read(&path).context("read existing blob for verification")?;
             let stored_id = BlobId::from_bytes(&stored_data);
             if stored_id != id {
                 return Err(anyhow::anyhow!("blob CID mismatch"));
@@ -317,44 +330,53 @@ impl DataStore {
                 "UPDATE blobs SET ref_count = ref_count + 1 WHERE id = ?",
                 blob_id_str
             )
-            .execute(self.db.pool())
+            .execute(&mut *tx)
             .await
             .context("increment blob ref_count")?;
         } else {
-            // Write file to disk.
-            let path = self.blob_path(&id);
+            // Write file to disk first.
             if let Some(parent) = path.parent() {
                 std::fs::create_dir_all(parent).context("create blob shard directory")?;
             }
             std::fs::write(&path, data).context("write blob file")?;
+            wrote_new_file = true;
 
             // Create blob entry with ref_count = 1.
-            sqlx::query!(
+            if let Err(e) = sqlx::query!(
                 "INSERT INTO blobs (id, size, created, ref_count) VALUES (?, ?, ?, 1)",
                 blob_id_str,
                 size,
                 now
             )
-            .execute(self.db.pool())
+            .execute(&mut *tx)
             .await
-            .context("insert blob into database")?;
+            {
+                let _ = std::fs::remove_file(&path);
+                return Err(e).context("insert blob into database");
+            }
         }
 
         // Check if user_blob exists.
-        let user_blob_exists: bool = sqlx::query_scalar(
+        let user_blob_exists = sqlx::query_scalar!(
             "SELECT EXISTS(SELECT 1 FROM user_blobs WHERE blob_id = ? AND owner_did = ?)",
+            blob_id_str,
+            owner_did
         )
-        .bind(&blob_id_str)
-        .bind(&owner_did)
-        .fetch_one(self.db.pool())
+        .fetch_one(&mut *tx)
         .await
-        .context("check user_blob exists")?;
+        .context("check user_blob exists")?
+            != 0;
 
         if !user_blob_exists {
-            // Reserve quota before creating user_blob (only charge when user claims the blob).
-            quota::reserve_bytes(self.db.pool(), &owner_did, size)
-                .await
-                .map_err(|e| anyhow::anyhow!(e))?;
+            // Ensure quota record exists and reserve quota.
+            quota::ensure_quota_exists(&mut *tx, &owner_did).await?;
+
+            if let Err(e) = quota::reserve_bytes(&mut *tx, &owner_did, size).await {
+                if wrote_new_file {
+                    let _ = std::fs::remove_file(&path);
+                }
+                return Err(anyhow::anyhow!(e));
+            }
 
             // Create user_blob entry.
             if let Err(e) = sqlx::query!(
@@ -363,17 +385,17 @@ impl DataStore {
                 owner_did,
                 now
             )
-            .execute(self.db.pool())
+            .execute(&mut *tx)
             .await
             {
-                // Rollback quota on failure.
-                let _ = quota::release_bytes(self.db.pool(), &owner_did, size).await;
+                if wrote_new_file {
+                    let _ = std::fs::remove_file(&path);
+                }
                 return Err(e).context("insert user_blob into database");
             }
         }
 
-        // Note: Don't increment user_blob ref_count here - that happens in link_blob_to_record.
-        // TODO: This should be a transaction
+        tx.commit().await.context("commit transaction")?;
 
         Ok(id)
     }
@@ -404,15 +426,19 @@ impl DataStore {
         let blob_id_str = blob_id.as_str();
         let owner_did = self.owner_did.to_string();
 
+        // Transaction: check exists, insert link, increment ref_count.
+        let mut tx = self.db.pool().begin().await.context("begin transaction")?;
+
         // Verify user_blob exists (user must have uploaded this blob).
-        let exists: bool = sqlx::query_scalar(
+        let exists = sqlx::query_scalar!(
             "SELECT EXISTS(SELECT 1 FROM user_blobs WHERE blob_id = ? AND owner_did = ?)",
+            blob_id_str,
+            owner_did
         )
-        .bind(&blob_id_str)
-        .bind(&owner_did)
-        .fetch_one(self.db.pool())
+        .fetch_one(&mut *tx)
         .await
-        .context("check user_blob exists")?;
+        .context("check user_blob exists")?
+            != 0;
 
         if !exists {
             return Err(anyhow::anyhow!(
@@ -427,7 +453,7 @@ impl DataStore {
             blob_id_str,
             owner_did
         )
-        .execute(self.db.pool())
+        .execute(&mut *tx)
         .await
         .context("insert record_blob link")?;
 
@@ -437,9 +463,11 @@ impl DataStore {
             blob_id_str,
             owner_did
         )
-        .execute(self.db.pool())
+        .execute(&mut *tx)
         .await
         .context("increment user_blob ref_count")?;
+
+        tx.commit().await.context("commit transaction")?;
 
         Ok(())
     }

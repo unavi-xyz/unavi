@@ -37,10 +37,7 @@ async fn test_unicode_schema() {
     let (store, _dir) = create_test_store(DID_ALICE).await;
 
     let unicode_schema = "スキーマ-схема-架構";
-    let genesis = Genesis::new(
-        Did::from_str(DID_ALICE).expect("parse DID"),
-        unicode_schema,
-    );
+    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), unicode_schema);
     let id = store.create_record(genesis).await.expect("create record");
 
     let record = store

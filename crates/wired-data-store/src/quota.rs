@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use sqlx::{Pool, Sqlite};
+use sqlx::Sqlite;
 
 use crate::DataStore;
 
@@ -30,7 +30,10 @@ impl UserQuota {
 }
 
 /// Ensures a quota record exists for the user, creating one with defaults if not.
-pub async fn ensure_quota_exists(pool: &Pool<Sqlite>, owner_did: &str) -> Result<()> {
+pub async fn ensure_quota_exists<'e, E>(executor: E, owner_did: &str) -> Result<()>
+where
+    E: sqlx::Executor<'e, Database = Sqlite>,
+{
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .expect("system time")
@@ -45,7 +48,7 @@ pub async fn ensure_quota_exists(pool: &Pool<Sqlite>, owner_did: &str) -> Result
         now,
         now
     )
-    .execute(pool)
+    .execute(executor)
     .await
     .context("ensure quota exists")?;
 
@@ -55,24 +58,21 @@ pub async fn ensure_quota_exists(pool: &Pool<Sqlite>, owner_did: &str) -> Result
 /// Atomically reserves bytes against the user's quota.
 ///
 /// Returns `QuotaExceeded` if adding `bytes` would exceed the quota.
-pub async fn reserve_bytes(
-    pool: &Pool<Sqlite>,
+///
+/// Note: This function consumes the executor. For transactions, pass `&mut *tx`.
+pub async fn reserve_bytes<'e, E>(
+    executor: E,
     owner_did: &str,
     bytes: i64,
-) -> Result<(), QuotaExceeded> {
+) -> Result<(), QuotaExceeded>
+where
+    E: sqlx::Executor<'e, Database = Sqlite>,
+{
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .expect("system time")
         .as_secs()
         .cast_signed();
-
-    // Ensure quota record exists.
-    ensure_quota_exists(pool, owner_did)
-        .await
-        .map_err(|_| QuotaExceeded {
-            used: 0,
-            limit: DEFAULT_QUOTA_BYTES,
-        })?;
 
     // Atomic check-and-update.
     let result = sqlx::query!(
@@ -84,7 +84,7 @@ pub async fn reserve_bytes(
         owner_did,
         bytes
     )
-    .execute(pool)
+    .execute(executor)
     .await
     .map_err(|_| QuotaExceeded {
         used: 0,
@@ -92,21 +92,10 @@ pub async fn reserve_bytes(
     })?;
 
     if result.rows_affected() == 0 {
-        // Query current state to return accurate error.
-        let quota: (i64, i64) = sqlx::query_as(
-            "SELECT bytes_used, quota_bytes FROM user_quotas WHERE owner_did = ?",
-        )
-        .bind(owner_did)
-        .fetch_one(pool)
-        .await
-        .map_err(|_| QuotaExceeded {
+        // Quota exceeded (or user doesn't exist).
+        return Err(QuotaExceeded {
             used: 0,
             limit: DEFAULT_QUOTA_BYTES,
-        })?;
-
-        return Err(QuotaExceeded {
-            used: quota.0,
-            limit: quota.1,
         });
     }
 
@@ -116,7 +105,10 @@ pub async fn reserve_bytes(
 /// Releases bytes from the user's quota.
 ///
 /// Uses `MAX(0, bytes_used - amount)` to prevent negative values.
-pub async fn release_bytes(pool: &Pool<Sqlite>, owner_did: &str, bytes: i64) -> Result<()> {
+pub async fn release_bytes<'e, E>(executor: E, owner_did: &str, bytes: i64) -> Result<()>
+where
+    E: sqlx::Executor<'e, Database = Sqlite>,
+{
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .expect("system time")
@@ -131,7 +123,7 @@ pub async fn release_bytes(pool: &Pool<Sqlite>, owner_did: &str, bytes: i64) -> 
         now,
         owner_did
     )
-    .execute(pool)
+    .execute(executor)
     .await
     .context("release quota bytes")?;
 
@@ -149,18 +141,18 @@ impl DataStore {
 
         ensure_quota_exists(self.db.pool(), &owner_did).await?;
 
-        let row: (i64, i64) = sqlx::query_as(
+        let row = sqlx::query!(
             "SELECT bytes_used, quota_bytes FROM user_quotas WHERE owner_did = ?",
+            owner_did
         )
-        .bind(&owner_did)
         .fetch_one(self.db.pool())
         .await
         .context("query user quota")?;
 
         Ok(UserQuota {
             owner_did,
-            bytes_used: row.0,
-            quota_bytes: row.1,
+            bytes_used: row.bytes_used,
+            quota_bytes: row.quota_bytes,
         })
     }
 

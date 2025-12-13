@@ -8,17 +8,19 @@ mod blob;
 mod db;
 mod gc;
 mod pin;
+mod quota;
 mod record;
 
 pub use blob::{Blob, BlobId};
 pub use gc::GarbageCollectStats;
 pub use pin::Pin;
+pub use quota::{QuotaExceeded, UserQuota, DEFAULT_QUOTA_BYTES};
 pub use record::{Genesis, Record, RecordId};
 
 use db::Database;
 
-/// Maximum blob size: 100 MB.
-pub const MAX_BLOB_SIZE: usize = 100 * 1024 * 1024;
+/// Maximum blob size: 512 MB.
+pub const MAX_BLOB_SIZE: usize = 512 * 1024 * 1024;
 
 pub struct DataStore {
     db: Database,
@@ -79,26 +81,41 @@ impl DataStore {
     ///
     /// # Errors
     ///
-    /// Returns error if record cannot be stored on filesystem or indexed in database.
+    /// Returns error if record cannot be stored on filesystem or indexed in database,
+    /// or if the user's storage quota would be exceeded.
     pub async fn create_record(&self, genesis: Genesis) -> Result<RecordId> {
         let record = Record::new(genesis);
         let snapshot = record.export_snapshot()?;
 
-        let path = self.record_path(&record.id);
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent).context("create record shard directory")?;
-        }
-        std::fs::write(&path, &snapshot).context("write record file")?;
-
         let size = i64::try_from(snapshot.len()).context("snapshot size exceeds i64::MAX")?;
+        let owner_did = self.owner_did.to_string();
+
+        // Reserve quota before writing.
+        quota::reserve_bytes(self.db.pool(), &owner_did, size)
+            .await
+            .map_err(|e| anyhow::anyhow!(e))?;
+
+        let path = self.record_path(&record.id);
+        if let Some(parent) = path.parent()
+            && let Err(e) = std::fs::create_dir_all(parent)
+        {
+            // Rollback quota on failure.
+            let _ = quota::release_bytes(self.db.pool(), &owner_did, size).await;
+            return Err(e).context("create record shard directory");
+        }
+        if let Err(e) = std::fs::write(&path, &snapshot) {
+            // Rollback quota on failure.
+            let _ = quota::release_bytes(self.db.pool(), &owner_did, size).await;
+            return Err(e).context("write record file");
+        }
+
         let id = record.id.as_str();
         let creator = record.genesis.creator.to_string();
         let schema = record.genesis.schema.as_str();
         let created = record.genesis.created.cast_signed();
         let nonce = record.genesis.nonce.as_slice();
-        let owner_did = self.owner_did.to_string();
 
-        sqlx::query!(
+        if let Err(e) = sqlx::query!(
             "INSERT INTO records (id, creator, schema, created, nonce, size, owner_did) VALUES (?, ?, ?, ?, ?, ?, ?)",
             id,
             creator,
@@ -110,7 +127,12 @@ impl DataStore {
         )
         .execute(self.db.pool())
         .await
-        .context("insert record into database")?;
+        {
+            // Rollback quota and file on failure.
+            let _ = quota::release_bytes(self.db.pool(), &owner_did, size).await;
+            let _ = std::fs::remove_file(&path);
+            return Err(e).context("insert record into database");
+        }
 
         Ok(record.id)
     }
@@ -180,6 +202,15 @@ impl DataStore {
         let record_id = id.as_str();
         let owner_did = self.owner_did.to_string();
 
+        // Get record size before deletion.
+        let size: Option<i64> =
+            sqlx::query_scalar("SELECT size FROM records WHERE id = ? AND owner_did = ?")
+                .bind(&record_id)
+                .bind(&owner_did)
+                .fetch_optional(self.db.pool())
+                .await
+                .context("query record size")?;
+
         // Get all blobs linked to this record.
         let linked_blobs: Vec<String> = sqlx::query_scalar(
             "SELECT blob_id FROM record_blobs WHERE record_id = ? AND owner_did = ?",
@@ -217,6 +248,11 @@ impl DataStore {
         .execute(self.db.pool())
         .await
         .context("delete record from database")?;
+
+        // Release quota after successful deletion.
+        if let Some(size) = size {
+            quota::release_bytes(self.db.pool(), &owner_did, size).await?;
+        }
 
         Ok(())
     }
@@ -315,8 +351,13 @@ impl DataStore {
         .context("check user_blob exists")?;
 
         if !user_blob_exists {
+            // Reserve quota before creating user_blob (only charge when user claims the blob).
+            quota::reserve_bytes(self.db.pool(), &owner_did, size)
+                .await
+                .map_err(|e| anyhow::anyhow!(e))?;
+
             // Create user_blob entry.
-            sqlx::query!(
+            if let Err(e) = sqlx::query!(
                 "INSERT INTO user_blobs (blob_id, owner_did, ref_count, created) VALUES (?, ?, 0, ?)",
                 blob_id_str,
                 owner_did,
@@ -324,9 +365,15 @@ impl DataStore {
             )
             .execute(self.db.pool())
             .await
-            .context("insert user_blob into database")?;
+            {
+                // Rollback quota on failure.
+                let _ = quota::release_bytes(self.db.pool(), &owner_did, size).await;
+                return Err(e).context("insert user_blob into database");
+            }
         }
+
         // Note: Don't increment user_blob ref_count here - that happens in link_blob_to_record.
+        // TODO: This should be a transaction
 
         Ok(id)
     }

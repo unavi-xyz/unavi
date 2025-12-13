@@ -49,3 +49,12 @@ CREATE TABLE pins (
     owner_did TEXT NOT NULL,
     PRIMARY KEY (owner_did, record_id)
 );
+
+-- Per-user storage tracking and quotas.
+CREATE TABLE user_quotas (
+    owner_did TEXT PRIMARY KEY,
+    bytes_used INTEGER NOT NULL DEFAULT 0,
+    quota_bytes INTEGER NOT NULL,
+    created INTEGER NOT NULL,
+    updated INTEGER NOT NULL
+);

@@ -138,18 +138,27 @@ pub async fn remove_unpinned_record(
     .await
     .context("delete record from database")?;
 
+    // Release quota for removed record.
+    crate::quota::release_bytes(pool, owner_did, size).await?;
+
     Ok(Some(size as u64))
 }
 
 /// Removes orphaned `user_blobs` (`ref_count` = 0) and decrements blob `ref_counts`.
+/// Also releases quota for each removed `user_blob`.
 pub async fn remove_orphaned_user_blobs(pool: &Pool<Sqlite>) -> Result<()> {
-    let orphaned_user_blobs: Vec<(String, String)> =
-        sqlx::query_as("SELECT blob_id, owner_did FROM user_blobs WHERE ref_count = 0")
-            .fetch_all(pool)
-            .await
-            .context("query orphaned user_blobs")?;
+    // Query orphaned user_blobs with their sizes.
+    let orphaned_user_blobs: Vec<(String, String, i64)> = sqlx::query_as(
+        "SELECT ub.blob_id, ub.owner_did, b.size
+         FROM user_blobs ub
+         JOIN blobs b ON ub.blob_id = b.id
+         WHERE ub.ref_count = 0",
+    )
+    .fetch_all(pool)
+    .await
+    .context("query orphaned user_blobs")?;
 
-    for (blob_id, owner_did) in &orphaned_user_blobs {
+    for (blob_id, owner_did, size) in &orphaned_user_blobs {
         sqlx::query!(
             "DELETE FROM user_blobs WHERE blob_id = ? AND owner_did = ?",
             blob_id,
@@ -166,6 +175,9 @@ pub async fn remove_orphaned_user_blobs(pool: &Pool<Sqlite>) -> Result<()> {
         .execute(pool)
         .await
         .context("decrement blob ref_count")?;
+
+        // Release quota for removed user_blob.
+        crate::quota::release_bytes(pool, owner_did, *size).await?;
     }
 
     Ok(())

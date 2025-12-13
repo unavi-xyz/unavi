@@ -14,9 +14,10 @@ impl BlobId {
     /// Panics if SHA-256 digest cannot be wrapped in multihash (should never happen).
     #[must_use]
     pub fn from_bytes(data: &[u8]) -> Self {
+        // 0x12 = sha2-256, 0x55 = raw codec.
         let digest = Sha256::digest(data);
-        let hash = Multihash::<64>::wrap(0x12, &digest).expect("sha256 multihash"); // 0x12 = sha2-256
-        let cid = Cid::new_v1(0x55, hash); // 0x55 = raw codec
+        let hash = Multihash::<64>::wrap(0x12, &digest).expect("sha256 multihash");
+        let cid = Cid::new_v1(0x55, hash);
         Self(cid)
     }
 

@@ -17,6 +17,9 @@ pub use record::{Genesis, Record, RecordId};
 
 use db::Database;
 
+/// Maximum blob size: 100 MB.
+pub const MAX_BLOB_SIZE: usize = 100 * 1024 * 1024;
+
 pub struct DataStore {
     db: Database,
     data_dir: PathBuf,
@@ -152,9 +155,12 @@ impl DataStore {
             .parse()
             .map_err(|e| anyhow::anyhow!("invalid DID: {e}"))?;
 
+        let created = u64::try_from(row.created)
+            .map_err(|_| anyhow::anyhow!("invalid timestamp in database"))?;
+
         let genesis = Genesis {
             creator,
-            created: row.created as u64,
+            created,
             nonce,
             schema: row.schema.into(),
         };
@@ -235,6 +241,14 @@ impl DataStore {
     ///
     /// Panics if system time is before UNIX epoch.
     pub async fn store_blob(&self, data: &[u8]) -> Result<BlobId> {
+        if data.len() > MAX_BLOB_SIZE {
+            return Err(anyhow::anyhow!(
+                "blob size {} exceeds maximum {}",
+                data.len(),
+                MAX_BLOB_SIZE
+            ));
+        }
+
         let id = BlobId::from_bytes(data);
         let blob_id_str = id.as_str();
         let owner_did = self.owner_did.to_string();
@@ -407,7 +421,10 @@ impl DataStore {
             .as_secs()
             .cast_signed();
 
-        let expires = ttl.map(|secs| now + secs.cast_signed());
+        let expires = ttl.map(|secs| {
+            let secs_i64 = i64::try_from(secs).unwrap_or(i64::MAX);
+            now.saturating_add(secs_i64)
+        });
         let record_id = id.as_str();
         let owner_did = self.owner_did.to_string();
 

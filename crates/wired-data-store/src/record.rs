@@ -57,10 +57,11 @@ impl Genesis {
     /// Panics if SHA-256 digest cannot be wrapped in multihash (should never happen).
     #[must_use]
     pub fn cid(&self) -> Cid {
+        // 0x12 = sha2-256, 0x55 = raw codec.
         let bytes = self.to_bytes();
         let digest = Sha256::digest(&bytes);
-        let hash = Multihash::<64>::wrap(0x12, &digest).expect("sha256 multihash"); // 0x12 = sha2-256
-        Cid::new_v1(0x55, hash) // 0x55 = raw codec
+        let hash = Multihash::<64>::wrap(0x12, &digest).expect("sha256 multihash");
+        Cid::new_v1(0x55, hash)
     }
 
     fn to_bytes(&self) -> Vec<u8> {

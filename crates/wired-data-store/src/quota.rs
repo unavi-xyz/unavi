@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use sqlx::Sqlite;
 
-use crate::DataStore;
+use crate::DataStoreView;
 
 /// Default quota: 5 GB.
 pub const DEFAULT_QUOTA_BYTES: i64 = 5 * 1024 * 1024 * 1024;
@@ -130,7 +130,7 @@ where
     Ok(())
 }
 
-impl DataStore {
+impl DataStoreView {
     /// Returns the current storage quota information for the owner.
     ///
     /// # Errors

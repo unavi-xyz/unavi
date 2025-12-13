@@ -6,6 +6,7 @@ use sqlx::{Pool, Sqlite};
 
 const MIGRATIONS: &[&str] = &[include_str!("../migrations/001_initial.sql")];
 
+#[derive(Clone)]
 pub struct Database {
     pool: Pool<Sqlite>,
 }

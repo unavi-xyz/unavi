@@ -123,7 +123,8 @@ async fn test_custom_quota_setting() {
 
 #[tokio::test]
 async fn test_gc_releases_blob_quota() {
-    let (view, _dir) = create_test_view(DID_ALICE).await;
+    let (store, _dir) = create_test_store().await;
+    let view = store.view_for_user(Did::from_str(DID_ALICE).expect("parse DID"));
 
     // Create a record and link a blob to it.
     let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_TEST);
@@ -143,7 +144,7 @@ async fn test_gc_releases_blob_quota() {
 
     // Wait for pin to expire and run GC.
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-    view.garbage_collect().await.expect("gc");
+    store.garbage_collect().await.expect("gc");
 
     let after_gc = view.get_storage_quota().await.expect("get quota");
     assert_eq!(after_gc.bytes_used, 0, "quota should be released after GC");

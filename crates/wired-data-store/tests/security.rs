@@ -86,13 +86,14 @@ async fn test_cross_user_pin_isolation() {
         .expect("bob unpin attempt");
 
     // Alice's pin should still exist - GC should not remove the record.
-    let stats = view_alice.garbage_collect().await.expect("run GC");
+    let stats = store.garbage_collect().await.expect("run GC");
     assert_eq!(stats.records_removed, 0, "alice's pinned record preserved");
 }
 
 #[tokio::test]
 async fn test_ttl_overflow_saturates() {
-    let (view, _dir) = create_test_view(DID_ALICE).await;
+    let (store, _dir) = create_test_store().await;
+    let view = store.view_for_user(Did::from_str(DID_ALICE).expect("parse DID"));
 
     let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_TEST);
     let record_id = view.create_record(genesis).await.expect("create record");
@@ -103,7 +104,7 @@ async fn test_ttl_overflow_saturates() {
         .expect("pin with max TTL should not panic");
 
     // Record should still be pinned (expires far in future).
-    let stats = view.garbage_collect().await.expect("run GC");
+    let stats = store.garbage_collect().await.expect("run GC");
     assert_eq!(stats.pins_removed, 0, "max TTL pin should not expire");
     assert_eq!(stats.records_removed, 0);
 }

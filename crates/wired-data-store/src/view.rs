@@ -4,10 +4,7 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use xdid::core::did::Did;
 
-use crate::{
-    BlobId, GarbageCollectStats, Genesis, MAX_BLOB_SIZE, Record, RecordId, db::Database, gc,
-    hash_did, quota,
-};
+use crate::{BlobId, Genesis, MAX_BLOB_SIZE, Record, RecordId, db::Database, hash_did, quota};
 
 /// Per-user view over shared data store infrastructure.
 ///
@@ -502,60 +499,5 @@ impl DataStoreView {
         .context("delete pin from database")?;
 
         Ok(())
-    }
-
-    /// Runs garbage collection to remove expired pins, orphaned records, and orphaned blobs.
-    ///
-    /// # Errors
-    ///
-    /// Returns error if GC operations fail.
-    ///
-    /// # Panics
-    ///
-    /// Panics if system time is before UNIX epoch.
-    pub async fn garbage_collect(&self) -> Result<GarbageCollectStats> {
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .expect("system time")
-            .as_secs()
-            .cast_signed();
-
-        let mut stats = GarbageCollectStats {
-            pins_removed: 0,
-            records_removed: 0,
-            blobs_removed: 0,
-            bytes_freed: 0,
-        };
-
-        // Step 1: Remove expired pins.
-        let (expired_pins, pins_removed) = gc::remove_expired_pins(self.db.pool(), now).await?;
-        stats.pins_removed = pins_removed;
-
-        // Step 2: Remove unpinned records.
-        for (record_id, owner_did) in expired_pins {
-            if !gc::has_remaining_pins(self.db.pool(), &record_id, &owner_did).await?
-                && let Some(size) = gc::remove_unpinned_record(
-                    self.db.pool(),
-                    &self.data_dir,
-                    &record_id,
-                    &owner_did,
-                )
-                .await?
-            {
-                stats.records_removed += 1;
-                stats.bytes_freed += size;
-            }
-        }
-
-        // Step 3: Remove orphaned user_blobs.
-        gc::remove_orphaned_user_blobs(self.db.pool()).await?;
-
-        // Step 4: Remove orphaned blobs.
-        let (blobs_removed, bytes_freed) =
-            gc::remove_orphaned_blobs(self.db.pool(), &self.blobs_dir()).await?;
-        stats.blobs_removed = blobs_removed;
-        stats.bytes_freed += bytes_freed;
-
-        Ok(stats)
     }
 }

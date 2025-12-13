@@ -2,7 +2,7 @@ mod common;
 
 use std::str::FromStr;
 
-use common::{DID_ALICE, create_test_view};
+use common::{DID_ALICE, create_test_store, create_test_view};
 use wired_data_store::Genesis;
 use xdid::core::did::Did;
 
@@ -94,7 +94,8 @@ async fn test_duplicate_blob_storage() {
 
 #[tokio::test]
 async fn test_pin_then_unpin_then_gc() {
-    let (view, _dir) = create_test_view(DID_ALICE).await;
+    let (store, _dir) = create_test_store().await;
+    let view = store.view_for_user(Did::from_str(DID_ALICE).expect("parse DID"));
 
     let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), "test");
     let id = view.create_record(genesis).await.expect("create");
@@ -105,7 +106,7 @@ async fn test_pin_then_unpin_then_gc() {
     // Record is unpinned, but since it was explicitly created, GC behavior
     // depends on whether there are expired pins. With no pin expiry,
     // remove_expired_pins won't flag it for deletion.
-    let stats = view.garbage_collect().await.expect("gc");
+    let stats = store.garbage_collect().await.expect("gc");
 
     // No expired pins to trigger deletion.
     assert_eq!(stats.pins_removed, 0);

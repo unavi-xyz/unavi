@@ -179,7 +179,7 @@ async fn test_blob_shared_on_disk_but_separate_ownership() {
         .expect("bob pins permanently");
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
-    view_alice.garbage_collect().await.expect("run GC");
+    store.garbage_collect().await.expect("run GC");
 
     assert!(
         view_bob.get_blob(&blob_id_bob).expect("get blob").is_some(),

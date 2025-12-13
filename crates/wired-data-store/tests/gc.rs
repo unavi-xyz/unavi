@@ -3,15 +3,15 @@ mod common;
 use std::str::FromStr;
 
 use common::{
-    BLOB_HELLO, DID_ALICE, DID_BOB, DID_CHARLIE, SCHEMA_A, SCHEMA_B, SCHEMA_TEST,
-    create_test_store, create_test_view,
+    BLOB_HELLO, DID_ALICE, DID_BOB, DID_CHARLIE, SCHEMA_A, SCHEMA_B, SCHEMA_TEST, create_test_store,
 };
 use wired_data_store::Genesis;
 use xdid::core::did::Did;
 
 #[tokio::test]
 async fn test_gc_removes_expired_pins() {
-    let (view, _dir) = create_test_view(DID_ALICE).await;
+    let (store, _dir) = create_test_store().await;
+    let view = store.view_for_user(Did::from_str(DID_ALICE).expect("parse DID"));
 
     let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_TEST);
     let record_id = view.create_record(genesis).await.expect("create record");
@@ -22,7 +22,7 @@ async fn test_gc_removes_expired_pins() {
 
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
-    let stats = view.garbage_collect().await.expect("run GC");
+    let stats = store.garbage_collect().await.expect("run GC");
 
     assert_eq!(stats.pins_removed, 1, "should remove 1 expired pin");
     assert_eq!(stats.records_removed, 1, "should remove unpinned record");
@@ -30,7 +30,8 @@ async fn test_gc_removes_expired_pins() {
 
 #[tokio::test]
 async fn test_gc_keeps_records_with_valid_pins() {
-    let (view, _dir) = create_test_view(DID_BOB).await;
+    let (store, _dir) = create_test_store().await;
+    let view = store.view_for_user(Did::from_str(DID_BOB).expect("parse DID"));
 
     let genesis = Genesis::new(Did::from_str(DID_BOB).expect("parse DID"), SCHEMA_TEST);
     let record_id = view.create_record(genesis).await.expect("create record");
@@ -39,7 +40,7 @@ async fn test_gc_keeps_records_with_valid_pins() {
         .await
         .expect("pin with future expiry");
 
-    let stats = view.garbage_collect().await.expect("run GC");
+    let stats = store.garbage_collect().await.expect("run GC");
 
     assert_eq!(stats.pins_removed, 0, "should not remove valid pins");
     assert_eq!(stats.records_removed, 0, "should not remove pinned records");
@@ -74,7 +75,7 @@ async fn test_gc_multiple_pins_deletes_when_all_expire() {
 
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
-    let stats = view1.garbage_collect().await.expect("run GC");
+    let stats = store.garbage_collect().await.expect("run GC");
 
     assert_eq!(stats.pins_removed, 2, "should remove both expired pins");
     assert_eq!(
@@ -85,7 +86,8 @@ async fn test_gc_multiple_pins_deletes_when_all_expire() {
 
 #[tokio::test]
 async fn test_gc_null_expiry_never_removed() {
-    let (view, _dir) = create_test_view(DID_CHARLIE).await;
+    let (store, _dir) = create_test_store().await;
+    let view = store.view_for_user(Did::from_str(DID_CHARLIE).expect("parse DID"));
 
     let genesis = Genesis::new(Did::from_str(DID_CHARLIE).expect("parse DID"), SCHEMA_TEST);
     let record_id = view.create_record(genesis).await.expect("create record");
@@ -94,7 +96,7 @@ async fn test_gc_null_expiry_never_removed() {
         .await
         .expect("pin without expiry");
 
-    let stats = view.garbage_collect().await.expect("run GC");
+    let stats = store.garbage_collect().await.expect("run GC");
 
     assert_eq!(stats.pins_removed, 0, "should not remove NULL expiry pins");
     assert_eq!(stats.records_removed, 0, "should not remove records");
@@ -110,7 +112,8 @@ async fn test_gc_null_expiry_never_removed() {
 
 #[tokio::test]
 async fn test_gc_removes_orphaned_blobs() {
-    let (view, dir) = create_test_view(DID_ALICE).await;
+    let (store, dir) = create_test_store().await;
+    let view = store.view_for_user(Did::from_str(DID_ALICE).expect("parse DID"));
 
     let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_TEST);
     let record_id = view.create_record(genesis).await.expect("create record");
@@ -124,7 +127,7 @@ async fn test_gc_removes_orphaned_blobs() {
         .expect("pin record");
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
-    let stats = view.garbage_collect().await.expect("run GC");
+    let stats = store.garbage_collect().await.expect("run GC");
 
     assert_eq!(stats.records_removed, 1);
     assert_eq!(stats.blobs_removed, 1);
@@ -139,7 +142,8 @@ async fn test_gc_removes_orphaned_blobs() {
 
 #[tokio::test]
 async fn test_gc_keeps_blob_with_multiple_record_refs() {
-    let (view, _dir) = create_test_view(DID_ALICE).await;
+    let (store, _dir) = create_test_store().await;
+    let view = store.view_for_user(Did::from_str(DID_ALICE).expect("parse DID"));
 
     let genesis1 = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_A);
     let genesis2 = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_B);
@@ -162,7 +166,7 @@ async fn test_gc_keeps_blob_with_multiple_record_refs() {
         .expect("pin record2 permanently");
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
-    let stats = view.garbage_collect().await.expect("run GC");
+    let stats = store.garbage_collect().await.expect("run GC");
 
     assert_eq!(stats.records_removed, 1);
     assert_eq!(

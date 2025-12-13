@@ -2,7 +2,7 @@
 
 use std::str::FromStr;
 
-use wired_data_store::DataStore;
+use wired_data_store::{DataStore, DataStoreView};
 use xdid::core::did::Did;
 
 pub const DID_ALICE: &str = "did:example:alice";
@@ -24,11 +24,20 @@ pub const SCHEMA_FAKE: &str = "fake";
 pub const BLOB_HELLO: &[u8] = b"hello, world!";
 pub const BLOB_NONEXISTENT: &[u8] = b"nonexistent data";
 
-pub async fn create_test_store(owner_did: &str) -> (DataStore, tempfile::TempDir) {
+pub async fn create_test_view(owner_did: &str) -> (DataStoreView, tempfile::TempDir) {
     let dir = tempfile::tempdir().expect("create temp dir");
-    let did = Did::from_str(owner_did).expect("parse DID");
-    let store = DataStore::new(dir.path().to_path_buf(), did)
+    let store = DataStore::new(dir.path().to_path_buf())
         .await
-        .expect("create data store");
+        .expect("create store");
+    let did = Did::from_str(owner_did).expect("parse DID");
+    let view = store.view_for_user(did);
+    (view, dir)
+}
+
+pub async fn create_test_store() -> (DataStore, tempfile::TempDir) {
+    let dir = tempfile::tempdir().expect("create temp dir");
+    let store = DataStore::new(dir.path().to_path_buf())
+        .await
+        .expect("create store");
     (store, dir)
 }

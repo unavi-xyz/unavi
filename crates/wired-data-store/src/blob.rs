@@ -2,6 +2,9 @@ use cid::Cid;
 use multihash::Multihash;
 use sha2::{Digest, Sha256};
 
+/// Maximum blob size: 512 MB.
+pub const MAX_BLOB_SIZE: usize = 512 * 1024 * 1024;
+
 /// CID identifying a blob (content hash).
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct BlobId(pub Cid);

@@ -14,7 +14,7 @@ async fn test_blob_size_limit_enforced() {
     let result = store.store_blob(&oversized).await;
 
     assert!(result.is_err());
-    let err = result.unwrap_err().to_string();
+    let err = result.expect_err("oversized blob should fail").to_string();
     assert!(err.contains("exceeds maximum"), "error: {err}");
 }
 

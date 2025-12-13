@@ -157,6 +157,11 @@
               };
               oxipng.enable = true;
               rustfmt.enable = true;
+              sqlfluff-lint.enable = true;
+              sqlfluff = {
+                enable = true;
+                dialect = "sqlite";
+              };
               statix.enable = true;
               taplo.enable = true;
               terraform.enable = true;

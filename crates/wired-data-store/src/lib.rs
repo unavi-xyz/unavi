@@ -6,10 +6,12 @@ use xdid::core::did::Did;
 
 mod blob;
 mod db;
+mod gc;
 mod pin;
 mod record;
 
 pub use blob::{Blob, BlobId};
+pub use gc::GarbageCollectStats;
 pub use pin::Pin;
 pub use record::{Genesis, Record, RecordId};
 
@@ -21,7 +23,7 @@ pub struct DataStore {
     owner_did: Did,
 }
 
-fn hash_did(did: &Did) -> String {
+pub(crate) fn hash_did(did: &Did) -> String {
     let hash = Sha256::digest(did.to_string().as_bytes());
     format!("{hash:x}")[..16].to_string()
 }
@@ -34,14 +36,12 @@ impl DataStore {
     /// Returns error if directories cannot be created or database cannot be initialized.
     pub async fn new(data_dir: PathBuf, owner_did: Did) -> Result<Self> {
         let did_hash = hash_did(&owner_did);
-        let user_dir = data_dir.join(did_hash);
+        let user_dir = data_dir.join("records").join(did_hash);
 
-        std::fs::create_dir_all(&user_dir).context("create user directory")?;
-        std::fs::create_dir_all(user_dir.join("records")).context("create records directory")?;
-
+        std::fs::create_dir_all(&user_dir).context("create user records directory")?;
         std::fs::create_dir_all(data_dir.join("blobs")).context("create blobs directory")?;
 
-        let db_path = user_dir.join("index.db");
+        let db_path = data_dir.join("index.db");
         let db = Database::new(&db_path).await?;
 
         Ok(Self {
@@ -59,7 +59,7 @@ impl DataStore {
 
     fn user_dir(&self) -> PathBuf {
         let did_hash = hash_did(&self.owner_did);
-        self.data_dir.join(did_hash)
+        self.data_dir.join("records").join(did_hash)
     }
 
     fn blobs_dir(&self) -> PathBuf {
@@ -67,7 +67,7 @@ impl DataStore {
     }
 
     fn records_dir(&self) -> PathBuf {
-        self.user_dir().join("records")
+        self.user_dir()
     }
 
     // Records.
@@ -171,15 +171,38 @@ impl DataStore {
     ///
     /// Returns error if record cannot be deleted from filesystem or database.
     pub async fn delete_record(&self, id: &RecordId) -> Result<()> {
-        let path = self.record_path(id);
+        let record_id = id.as_str();
+        let owner_did = self.owner_did.to_string();
 
+        // Get all blobs linked to this record.
+        let linked_blobs: Vec<String> = sqlx::query_scalar(
+            "SELECT blob_id FROM record_blobs WHERE record_id = ? AND owner_did = ?",
+        )
+        .bind(&record_id)
+        .bind(&owner_did)
+        .fetch_all(self.db.pool())
+        .await
+        .context("query linked blobs")?;
+
+        // Decrement user_blob ref_counts.
+        for blob_id in &linked_blobs {
+            sqlx::query!(
+                "UPDATE user_blobs SET ref_count = ref_count - 1 WHERE blob_id = ? AND owner_did = ?",
+                blob_id,
+                owner_did
+            )
+            .execute(self.db.pool())
+            .await
+            .context("decrement user_blob ref_count")?;
+        }
+
+        // Delete record file.
+        let path = self.record_path(id);
         if path.exists() {
             std::fs::remove_file(&path).context("delete record file")?;
         }
 
-        let record_id = id.as_str();
-        let owner_did = self.owner_did.to_string();
-
+        // Delete record (CASCADE will delete record_blobs entries).
         sqlx::query!(
             "DELETE FROM records WHERE id = ? AND owner_did = ?",
             record_id,
@@ -213,13 +236,8 @@ impl DataStore {
     /// Panics if system time is before UNIX epoch.
     pub async fn store_blob(&self, data: &[u8]) -> Result<BlobId> {
         let id = BlobId::from_bytes(data);
-
-        let path = self.blob_path(&id);
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent).context("create blob shard directory")?;
-        }
-        std::fs::write(&path, data).context("write blob file")?;
-
+        let blob_id_str = id.as_str();
+        let owner_did = self.owner_did.to_string();
         let size = i64::try_from(data.len()).context("blob size exceeds i64::MAX")?;
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -227,19 +245,74 @@ impl DataStore {
             .as_secs()
             .cast_signed();
 
-        let blob_id = id.as_str();
-        let owner_did = self.owner_did.to_string();
+        // Check if physical blob exists.
+        let blob_exists: bool =
+            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM blobs WHERE id = ?)")
+                .bind(&blob_id_str)
+                .fetch_one(self.db.pool())
+                .await
+                .context("check blob exists")?;
 
-        sqlx::query!(
-            "INSERT OR IGNORE INTO blobs (id, size, created, owner_did) VALUES (?, ?, ?, ?)",
-            blob_id,
-            size,
-            now,
-            owner_did
+        if blob_exists {
+            // Verify CID matches (data integrity check).
+            let stored_data = std::fs::read(self.blob_path(&id))
+                .context("read existing blob for verification")?;
+            let stored_id = BlobId::from_bytes(&stored_data);
+            if stored_id != id {
+                return Err(anyhow::anyhow!("blob CID mismatch"));
+            }
+
+            // Increment blob ref_count.
+            sqlx::query!(
+                "UPDATE blobs SET ref_count = ref_count + 1 WHERE id = ?",
+                blob_id_str
+            )
+            .execute(self.db.pool())
+            .await
+            .context("increment blob ref_count")?;
+        } else {
+            // Write file to disk.
+            let path = self.blob_path(&id);
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent).context("create blob shard directory")?;
+            }
+            std::fs::write(&path, data).context("write blob file")?;
+
+            // Create blob entry with ref_count = 1.
+            sqlx::query!(
+                "INSERT INTO blobs (id, size, created, ref_count) VALUES (?, ?, ?, 1)",
+                blob_id_str,
+                size,
+                now
+            )
+            .execute(self.db.pool())
+            .await
+            .context("insert blob into database")?;
+        }
+
+        // Check if user_blob exists.
+        let user_blob_exists: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM user_blobs WHERE blob_id = ? AND owner_did = ?)",
         )
-        .execute(self.db.pool())
+        .bind(&blob_id_str)
+        .bind(&owner_did)
+        .fetch_one(self.db.pool())
         .await
-        .context("insert blob into database")?;
+        .context("check user_blob exists")?;
+
+        if !user_blob_exists {
+            // Create user_blob entry.
+            sqlx::query!(
+                "INSERT INTO user_blobs (blob_id, owner_did, ref_count, created) VALUES (?, ?, 0, ?)",
+                blob_id_str,
+                owner_did,
+                now
+            )
+            .execute(self.db.pool())
+            .await
+            .context("insert user_blob into database")?;
+        }
+        // Note: Don't increment user_blob ref_count here - that happens in link_blob_to_record.
 
         Ok(id)
     }
@@ -258,6 +331,56 @@ impl DataStore {
 
         let data = std::fs::read(&path).context("read blob file")?;
         Ok(Some(data))
+    }
+
+    /// Links a blob to a record, incrementing the `user_blob` `ref_count`.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if user hasn't uploaded this blob (no `user_blob` entry exists).
+    pub async fn link_blob_to_record(&self, record_id: &RecordId, blob_id: &BlobId) -> Result<()> {
+        let record_id_str = record_id.as_str();
+        let blob_id_str = blob_id.as_str();
+        let owner_did = self.owner_did.to_string();
+
+        // Verify user_blob exists (user must have uploaded this blob).
+        let exists: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM user_blobs WHERE blob_id = ? AND owner_did = ?)",
+        )
+        .bind(&blob_id_str)
+        .bind(&owner_did)
+        .fetch_one(self.db.pool())
+        .await
+        .context("check user_blob exists")?;
+
+        if !exists {
+            return Err(anyhow::anyhow!(
+                "blob not found for this user - must upload first"
+            ));
+        }
+
+        // Insert record_blob link (ignore if already exists).
+        sqlx::query!(
+            "INSERT OR IGNORE INTO record_blobs (record_id, blob_id, owner_did) VALUES (?, ?, ?)",
+            record_id_str,
+            blob_id_str,
+            owner_did
+        )
+        .execute(self.db.pool())
+        .await
+        .context("insert record_blob link")?;
+
+        // Increment user_blob ref_count.
+        sqlx::query!(
+            "UPDATE user_blobs SET ref_count = ref_count + 1 WHERE blob_id = ? AND owner_did = ?",
+            blob_id_str,
+            owner_did
+        )
+        .execute(self.db.pool())
+        .await
+        .context("increment user_blob ref_count")?;
+
+        Ok(())
     }
 
     fn blob_path(&self, id: &BlobId) -> PathBuf {
@@ -321,5 +444,60 @@ impl DataStore {
         .context("delete pin from database")?;
 
         Ok(())
+    }
+
+    /// Runs garbage collection to remove expired pins, orphaned records, and orphaned blobs.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if GC operations fail.
+    ///
+    /// # Panics
+    ///
+    /// Panics if system time is before UNIX epoch.
+    pub async fn garbage_collect(&self) -> Result<GarbageCollectStats> {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("system time")
+            .as_secs()
+            .cast_signed();
+
+        let mut stats = GarbageCollectStats {
+            pins_removed: 0,
+            records_removed: 0,
+            blobs_removed: 0,
+            bytes_freed: 0,
+        };
+
+        // Step 1: Remove expired pins.
+        let (expired_pins, pins_removed) = gc::remove_expired_pins(self.db.pool(), now).await?;
+        stats.pins_removed = pins_removed;
+
+        // Step 2: Remove unpinned records.
+        for (record_id, owner_did) in expired_pins {
+            if !gc::has_remaining_pins(self.db.pool(), &record_id, &owner_did).await?
+                && let Some(size) = gc::remove_unpinned_record(
+                    self.db.pool(),
+                    &self.data_dir,
+                    &record_id,
+                    &owner_did,
+                )
+                .await?
+            {
+                stats.records_removed += 1;
+                stats.bytes_freed += size;
+            }
+        }
+
+        // Step 3: Remove orphaned user_blobs.
+        gc::remove_orphaned_user_blobs(self.db.pool()).await?;
+
+        // Step 4: Remove orphaned blobs.
+        let (blobs_removed, bytes_freed) =
+            gc::remove_orphaned_blobs(self.db.pool(), &self.blobs_dir()).await?;
+        stats.blobs_removed = blobs_removed;
+        stats.bytes_freed += bytes_freed;
+
+        Ok(stats)
     }
 }

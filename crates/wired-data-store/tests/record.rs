@@ -4,8 +4,7 @@ use std::str::FromStr;
 
 use common::{
     DID_ALICE, DID_BOB, DID_CHARLIE, DID_EVE, DID_FRANK, DID_NOBODY, SCHEMA_A, SCHEMA_B,
-    SCHEMA_DELETE_TEST, SCHEMA_FAKE, SCHEMA_NONCE_TEST, SCHEMA_TEST, create_test_store,
-    create_test_view,
+    SCHEMA_TEST, create_test_store, create_test_view,
 };
 use wired_data_store::{Genesis, RecordId};
 use xdid::core::did::Did;
@@ -14,7 +13,8 @@ use xdid::core::did::Did;
 async fn test_create_and_get_record() {
     let (view, _dir) = create_test_view(DID_ALICE).await;
 
-    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_TEST);
+    let genesis =
+        Genesis::new(Did::from_str(DID_ALICE).expect("parse DID")).with_schema(SCHEMA_TEST);
     let id = view.create_record(genesis).await.expect("create record");
 
     let record = view
@@ -25,17 +25,17 @@ async fn test_create_and_get_record() {
 
     assert_eq!(record.id, id);
     assert_eq!(record.genesis.creator.to_string(), DID_ALICE);
-    assert_eq!(record.genesis.schema.as_str(), SCHEMA_TEST);
+    assert_eq!(
+        record.genesis.schema.as_ref().map(|s| s.as_str()),
+        Some(SCHEMA_TEST)
+    );
 }
 
 #[tokio::test]
 async fn test_record_preserves_nonce() {
     let (view, _dir) = create_test_view(DID_BOB).await;
 
-    let genesis = Genesis::new(
-        Did::from_str(DID_BOB).expect("parse DID"),
-        SCHEMA_NONCE_TEST,
-    );
+    let genesis = Genesis::new(Did::from_str(DID_BOB).expect("parse DID"));
     let original_nonce = genesis.nonce;
     let id = view.create_record(genesis).await.expect("create record");
 
@@ -52,7 +52,7 @@ async fn test_record_preserves_nonce() {
 async fn test_get_nonexistent_record() {
     let (view, _dir) = create_test_view(DID_NOBODY).await;
 
-    let genesis = Genesis::new(Did::from_str(DID_NOBODY).expect("parse DID"), SCHEMA_FAKE);
+    let genesis = Genesis::new(Did::from_str(DID_NOBODY).expect("parse DID"));
     let fake_id = RecordId(genesis.cid());
 
     let result = view.get_record(&fake_id).await.expect("query succeeds");
@@ -63,10 +63,7 @@ async fn test_get_nonexistent_record() {
 async fn test_delete_record() {
     let (view, _dir) = create_test_view(DID_CHARLIE).await;
 
-    let genesis = Genesis::new(
-        Did::from_str(DID_CHARLIE).expect("parse DID"),
-        SCHEMA_DELETE_TEST,
-    );
+    let genesis = Genesis::new(Did::from_str(DID_CHARLIE).expect("parse DID"));
     let id = view.create_record(genesis).await.expect("create record");
 
     assert!(view.get_record(&id).await.expect("get record").is_some());
@@ -80,8 +77,8 @@ async fn test_delete_record() {
 async fn test_multiple_records() {
     let (view, _dir) = create_test_view(DID_EVE).await;
 
-    let genesis1 = Genesis::new(Did::from_str(DID_EVE).expect("parse DID"), SCHEMA_A);
-    let genesis2 = Genesis::new(Did::from_str(DID_FRANK).expect("parse DID"), SCHEMA_B);
+    let genesis1 = Genesis::new(Did::from_str(DID_EVE).expect("parse DID")).with_schema(SCHEMA_A);
+    let genesis2 = Genesis::new(Did::from_str(DID_FRANK).expect("parse DID")).with_schema(SCHEMA_B);
 
     let id1 = view.create_record(genesis1).await.expect("create record 1");
     let id2 = view.create_record(genesis2).await.expect("create record 2");
@@ -111,7 +108,8 @@ async fn test_did_isolation() {
     let view1 = store.view_for_user(Did::from_str(DID_ALICE).expect("parse DID"));
     let view2 = store.view_for_user(Did::from_str(DID_BOB).expect("parse DID"));
 
-    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_TEST);
+    let genesis =
+        Genesis::new(Did::from_str(DID_ALICE).expect("parse DID")).with_schema(SCHEMA_TEST);
     let id = view1
         .create_record(genesis)
         .await

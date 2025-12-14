@@ -14,9 +14,6 @@ pub const DID_FRANK: &str = "did:example:frank";
 pub const DID_NOBODY: &str = "did:example:nobody";
 
 pub const SCHEMA_TEST: &str = "test-schema";
-pub const SCHEMA_NONCE_TEST: &str = "nonce-test";
-pub const SCHEMA_DELETE_TEST: &str = "delete-test";
-pub const SCHEMA_PIN_TEST: &str = "pin-test";
 pub const SCHEMA_A: &str = "schema-a";
 pub const SCHEMA_B: &str = "schema-b";
 pub const SCHEMA_FAKE: &str = "fake";

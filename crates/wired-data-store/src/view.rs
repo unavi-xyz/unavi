@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
+use smol_str::SmolStr;
 use xdid::core::did::Did;
 
 use crate::{BlobId, Genesis, MAX_BLOB_SIZE, Record, RecordId, db::Database, hash_did, quota};
@@ -70,7 +71,11 @@ impl DataStoreView {
 
         let id = record.id.as_str();
         let creator = record.genesis.creator.to_string();
-        let schema = record.genesis.schema.as_str();
+        let schema = record
+            .genesis
+            .schema
+            .as_ref()
+            .map(smol_str::SmolStr::as_str);
         let created = record.genesis.created.cast_signed();
         let nonce = record.genesis.nonce.as_slice();
 
@@ -144,7 +149,7 @@ impl DataStoreView {
             creator,
             created,
             nonce,
-            schema: row.schema.into(),
+            schema: row.schema.map(SmolStr::from),
         };
 
         let mut record = Record::new(genesis);

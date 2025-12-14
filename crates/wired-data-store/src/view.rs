@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use xdid::core::did::Did;
@@ -13,7 +12,7 @@ use crate::{BlobId, Genesis, MAX_BLOB_SIZE, Record, RecordId, db::Database, hash
 /// (reuse across requests).
 #[derive(Clone)]
 pub struct DataStoreView {
-    pub(crate) db: Arc<Database>,
+    pub(crate) db: Database,
     pub(crate) data_dir: PathBuf,
     pub(crate) owner_did: Did,
 }

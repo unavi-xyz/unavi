@@ -1,9 +1,11 @@
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use flume::{Receiver, Sender};
+use iroh::{Endpoint, EndpointId, SecretKey};
 use xdid::core::did::Did;
 
-use crate::{DataStoreView, GarbageCollectStats, db::Database, gc, hash_did};
+use crate::{DataStoreView, GarbageCollectStats, db::Database, gc, hash_did, sync::SyncEvent};
 
 /// Data store owning shared infrastructure.
 ///
@@ -13,6 +15,9 @@ use crate::{DataStoreView, GarbageCollectStats, db::Database, gc, hash_did};
 pub struct DataStore {
     db: Database,
     data_dir: PathBuf,
+    iroh: Endpoint,
+    sync_tx: Sender<SyncEvent>,
+    sync_rx: Receiver<SyncEvent>,
 }
 
 impl DataStore {
@@ -24,14 +29,76 @@ impl DataStore {
     /// # Errors
     ///
     /// Returns error if directories cannot be created or database cannot be initialized.
-    pub async fn new(data_dir: PathBuf) -> Result<Self> {
+    pub async fn new(data_dir: PathBuf) -> anyhow::Result<Self> {
         std::fs::create_dir_all(data_dir.join("blobs")).context("create blobs directory")?;
         std::fs::create_dir_all(data_dir.join("records")).context("create records directory")?;
 
         let db_path = data_dir.join("index.db");
         let db = Database::new(&db_path).await?;
 
-        Ok(Self { db, data_dir })
+        // Initialize iroh endpoint.
+        let iroh = Self::init_iroh(&db, &data_dir).await?;
+
+        // Create sync event channel.
+        let (sync_tx, sync_rx) = flume::unbounded();
+
+        Ok(Self {
+            db,
+            data_dir,
+            iroh,
+            sync_tx,
+            sync_rx,
+        })
+    }
+
+    async fn init_iroh(db: &Database, _data_dir: &Path) -> anyhow::Result<Endpoint> {
+        // Load or create secret key.
+        let secret_key = Self::load_or_create_secret_key(db).await?;
+
+        // Create iroh endpoint.
+        let endpoint = Endpoint::builder()
+            .secret_key(secret_key)
+            .bind()
+            .await
+            .context("bind iroh endpoint")?;
+
+        Ok(endpoint)
+    }
+
+    async fn load_or_create_secret_key(db: &Database) -> anyhow::Result<SecretKey> {
+        // Query existing key.
+        let existing: Option<Vec<u8>> =
+            sqlx::query_scalar!("SELECT secret_key FROM iroh_config WHERE id = 1")
+                .fetch_optional(db.pool())
+                .await
+                .context("query iroh secret key")?;
+
+        if let Some(bytes) = existing {
+            let arr: [u8; 32] = bytes
+                .try_into()
+                .map_err(|_| anyhow::anyhow!("invalid secret key length"))?;
+            return Ok(SecretKey::from_bytes(&arr));
+        }
+
+        // Generate new key and persist.
+        let secret_key = SecretKey::generate(&mut rand::rng());
+        let bytes = secret_key.to_bytes().to_vec();
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("system time")
+            .as_secs()
+            .cast_signed();
+
+        sqlx::query!(
+            "INSERT INTO iroh_config (id, secret_key, created) VALUES (1, ?, ?)",
+            bytes,
+            now
+        )
+        .execute(db.pool())
+        .await
+        .context("insert iroh secret key")?;
+
+        Ok(secret_key)
     }
 
     /// Create a lightweight per-user `DataStoreView`.
@@ -50,6 +117,7 @@ impl DataStore {
             db: self.db.clone(),
             data_dir: self.data_dir.clone(),
             owner_did,
+            sync_tx: self.sync_tx.clone(),
         }
     }
 
@@ -68,6 +136,27 @@ impl DataStore {
         &self.data_dir
     }
 
+    /// Access to the iroh endpoint for peer connections.
+    #[must_use]
+    pub const fn iroh(&self) -> &Endpoint {
+        &self.iroh
+    }
+
+    /// This node's iroh `EndpointId`.
+    #[must_use]
+    pub fn endpoint_id(&self) -> EndpointId {
+        self.iroh.id()
+    }
+
+    /// Subscribe to sync events.
+    ///
+    /// Returns a cloneable receiver for sync events emitted by record operations.
+    /// Use this to implement sync protocol handlers.
+    #[must_use]
+    pub fn sync_events(&self) -> Receiver<SyncEvent> {
+        self.sync_rx.clone()
+    }
+
     /// Runs garbage collection across all users to remove expired pins, orphaned records, and orphaned blobs.
     ///
     /// This is a server-level operation that should be run periodically.
@@ -79,7 +168,7 @@ impl DataStore {
     /// # Panics
     ///
     /// Panics if system time is before UNIX epoch.
-    pub async fn garbage_collect(&self) -> Result<GarbageCollectStats> {
+    pub async fn garbage_collect(&self) -> anyhow::Result<GarbageCollectStats> {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time")
@@ -93,11 +182,11 @@ impl DataStore {
             bytes_freed: 0,
         };
 
-        // Step 1: Remove expired pins (across all users).
+        // Remove expired pins.
         let (expired_pins, pins_removed) = gc::remove_expired_pins(self.db.pool(), now).await?;
         stats.pins_removed = pins_removed;
 
-        // Step 2: Remove unpinned records (across all users).
+        // Remove unpinned records.
         for (record_id, owner_did) in expired_pins {
             if !gc::has_remaining_pins(self.db.pool(), &record_id, &owner_did).await?
                 && let Some(size) = gc::remove_unpinned_record(
@@ -113,10 +202,10 @@ impl DataStore {
             }
         }
 
-        // Step 3: Remove orphaned user_blobs (across all users).
+        // Remove orphaned user_blobs.
         gc::remove_orphaned_user_blobs(self.db.pool()).await?;
 
-        // Step 4: Remove orphaned blobs (shared across all users).
+        // Remove orphaned blobs.
         let blobs_dir = self.data_dir.join("blobs");
         let (blobs_removed, bytes_freed) =
             gc::remove_orphaned_blobs(self.db.pool(), &blobs_dir).await?;

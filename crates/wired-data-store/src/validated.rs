@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow, bail};
+use anyhow::{anyhow, bail};
 use xdid::resolver::DidResolver;
 
 use crate::{DataStoreView, SignedUpdate, crypto};
@@ -15,7 +15,7 @@ impl ValidatedView {
     /// # Errors
     ///
     /// Returns an error if the resolver fails to initialize.
-    pub fn new(inner: DataStoreView) -> Result<Self> {
+    pub fn new(inner: DataStoreView) -> anyhow::Result<Self> {
         let resolver = DidResolver::new()?;
         Ok(Self { inner, resolver })
     }
@@ -25,7 +25,7 @@ impl ValidatedView {
     /// # Errors
     ///
     /// Returns an error if the update could not be validated or applied.
-    pub async fn apply_update(&self, update: &SignedUpdate) -> Result<()> {
+    pub async fn apply_update(&self, update: &SignedUpdate) -> anyhow::Result<()> {
         // Resolve author's DID document.
         let document = self.resolver.resolve(&update.author).await?;
 
@@ -62,7 +62,9 @@ impl ValidatedView {
         }
 
         // Apply ops to Loro doc.
-        self.inner.apply_ops(&update.record_id, &update.ops).await
+        self.inner.apply_ops(&update.record_id, &update.ops).await?;
+
+        Ok(())
     }
 
     /// Get the inner view for read operations.

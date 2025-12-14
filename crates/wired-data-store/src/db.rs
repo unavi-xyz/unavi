@@ -4,7 +4,10 @@ use anyhow::{Context, Result};
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::{Pool, Sqlite};
 
-const MIGRATIONS: &[&str] = &[include_str!("../migrations/001_initial.sql")];
+const MIGRATIONS: &[&str] = &[
+    include_str!("../migrations/001_initial.sql"),
+    include_str!("../migrations/002_sync_peers.sql"),
+];
 
 #[derive(Clone)]
 pub struct Database {

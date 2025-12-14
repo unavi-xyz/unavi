@@ -1,5 +1,4 @@
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use xdid::core::did::Did;
@@ -8,25 +7,11 @@ use crate::{DataStoreView, GarbageCollectStats, db::Database, gc, hash_did};
 
 /// Data store owning shared infrastructure.
 ///
-/// Create once per server instance. Owns the `SQLite` database and
+/// Create once per server instance. Owns the database and
 /// data directory, which are shared across all users. Use `view_for_user()` to
 /// create lightweight per-user `DataStoreView` instances.
-///
-/// # Future: Iroh Integration
-///
-/// The Iroh P2P layer will be added to this struct as `Arc<IrohNode>`.
-/// Iroh responsibilities:
-/// - P2P node management (single node per server)
-/// - Blob transfer using iroh-blobs (content-addressed)
-/// - Record syncing protocol (user-agnostic transport)
-/// - Network connectivity
-///
-/// Integration pattern:
-/// - `DataStore` owns `IrohNode` (user-agnostic)
-/// - Database enforces `owner_did` isolation (user-specific)
-/// - Blobs are content-addressed (naturally shared)
 pub struct DataStore {
-    db: Arc<Database>,
+    db: Database,
     data_dir: PathBuf,
 }
 
@@ -44,7 +29,7 @@ impl DataStore {
         std::fs::create_dir_all(data_dir.join("records")).context("create records directory")?;
 
         let db_path = data_dir.join("index.db");
-        let db = Arc::new(Database::new(&db_path).await?);
+        let db = Database::new(&db_path).await?;
 
         Ok(Self { db, data_dir })
     }
@@ -62,7 +47,7 @@ impl DataStore {
         let _ = std::fs::create_dir_all(&user_dir);
 
         DataStoreView {
-            db: Arc::clone(&self.db),
+            db: self.db.clone(),
             data_dir: self.data_dir.clone(),
             owner_did,
         }
@@ -73,7 +58,7 @@ impl DataStore {
     /// Use this for operations that span multiple users, such as global
     /// garbage collection or statistics.
     #[must_use]
-    pub const fn database(&self) -> &Arc<Database> {
+    pub const fn database(&self) -> &Database {
         &self.db
     }
 
@@ -141,19 +126,3 @@ impl DataStore {
         Ok(stats)
     }
 }
-
-// TODO: Future Iroh integration methods:
-//
-// pub async fn sync_user_records(&self, owner_did: &Did) -> Result<()>
-//   - Fetch records via P2P for a specific user
-//   - Write to DB with owner_did isolation
-//   - User-agnostic at transport level
-//   - User-specific at data level
-//
-// pub async fn provide_blob(&self, blob_id: &BlobId) -> Result<()>
-//   - Announce blob availability to the network
-//   - Uses iroh-blobs for content-addressed transfer
-//
-// pub async fn subscribe_to_updates(&self) -> Result<UpdateStream>
-//   - Real-time record syncing
-//   - Multiplexed across all users

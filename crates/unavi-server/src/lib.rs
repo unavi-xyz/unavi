@@ -52,7 +52,7 @@ fn create_did(port: u16) -> (Did, String) {
     let domain = std::env::var("DOMAIN").unwrap_or_else(|_| format!("localhost:{port}"));
     let domain_encoded = domain.replace(':', "%3A");
     let did = Did {
-        method_name: MethodName("web".to_string()),
+        method_name: MethodName("web".into()),
         method_id: MethodId(domain_encoded),
     };
     (did, domain)
@@ -94,12 +94,12 @@ fn create_did_document_route(did: Did, vc: &impl DidKeyPair) -> Router {
                 assertion_method: Some(vec![VerificationMethod::RelativeUrl(RelativeDidUrl {
                     path: RelativeDidUrlPath::Empty,
                     query: None,
-                    fragment: Some(KEY_FRAGMENT.to_string()),
+                    fragment: Some(KEY_FRAGMENT.into()),
                 })]),
                 authentication: Some(vec![VerificationMethod::RelativeUrl(RelativeDidUrl {
                     path: RelativeDidUrlPath::Empty,
                     query: None,
-                    fragment: Some(KEY_FRAGMENT.to_string()),
+                    fragment: Some(KEY_FRAGMENT.into()),
                 })]),
                 capability_delegation: None,
                 capability_invocation: None,
@@ -109,12 +109,12 @@ fn create_did_document_route(did: Did, vc: &impl DidKeyPair) -> Router {
                 verification_method: Some(vec![VerificationMethodMap {
                     id: DidUrl {
                         did: did.clone(),
-                        fragment: Some(KEY_FRAGMENT.to_string()),
+                        fragment: Some(KEY_FRAGMENT.into()),
                         query: None,
                         path_abempty: None,
                     },
                     controller: did.clone(),
-                    typ: "JsonWebKey2020".to_string(),
+                    typ: "JsonWebKey2020".into(),
                     public_key_multibase: None,
                     public_key_jwk: Some(vc_public.clone()),
                 }]),

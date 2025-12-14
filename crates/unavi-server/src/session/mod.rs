@@ -124,7 +124,7 @@ impl SessionSpawner {
         key.url = DidUrl {
             did: opts.did,
             query: None,
-            fragment: Some(KEY_FRAGMENT.to_string()),
+            fragment: Some(KEY_FRAGMENT.into()),
             path_abempty: None,
         };
 

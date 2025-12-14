@@ -4358,7 +4358,7 @@ dependencies = [
  "libc",
  "option-ext",
  "redox_users 0.5.2",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -4496,7 +4496,7 @@ checksum = "92773504d58c093f6de2459af4af33faa518c13451eb8f2b5698ed3d36e7c813"
 [[package]]
 name = "dwn"
 version = "0.5.0"
-source = "git+https://github.com/unavi-xyz/dwn#50979a6bb33ba52bdf4b81a180aad874da940174"
+source = "git+https://github.com/kayhhh/dwn#f0d6cc946aeda0bcb1f983c6d4e6ed1d1d439efc"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -4516,7 +4516,7 @@ dependencies = [
 [[package]]
 name = "dwn-core"
 version = "0.5.0"
-source = "git+https://github.com/unavi-xyz/dwn#50979a6bb33ba52bdf4b81a180aad874da940174"
+source = "git+https://github.com/kayhhh/dwn#f0d6cc946aeda0bcb1f983c6d4e6ed1d1d439efc"
 dependencies = [
  "base64 0.22.1",
  "ipld-core",
@@ -4537,7 +4537,7 @@ dependencies = [
 [[package]]
 name = "dwn-native-db"
 version = "0.5.0"
-source = "git+https://github.com/unavi-xyz/dwn#50979a6bb33ba52bdf4b81a180aad874da940174"
+source = "git+https://github.com/kayhhh/dwn#f0d6cc946aeda0bcb1f983c6d4e6ed1d1d439efc"
 dependencies = [
  "dwn-core",
  "native_db",
@@ -4552,7 +4552,7 @@ dependencies = [
 [[package]]
 name = "dwn-server"
 version = "0.5.0"
-source = "git+https://github.com/unavi-xyz/dwn#50979a6bb33ba52bdf4b81a180aad874da940174"
+source = "git+https://github.com/kayhhh/dwn#f0d6cc946aeda0bcb1f983c6d4e6ed1d1d439efc"
 dependencies = [
  "anyhow",
  "axum",
@@ -4872,7 +4872,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -6614,7 +6614,7 @@ dependencies = [
  "libc",
  "percent-encoding",
  "pin-project-lite",
- "socket2 0.6.1",
+ "socket2 0.5.10",
  "system-configuration",
  "tokio",
  "tower-service",
@@ -6634,7 +6634,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.62.2",
+ "windows-core 0.58.0",
 ]
 
 [[package]]
@@ -8276,7 +8276,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -8408,7 +8408,7 @@ version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff32365de1b6743cb203b710788263c44a03de03802daf96092f2da4fe6ba4d7"
 dependencies = [
- "proc-macro-crate 3.4.0",
+ "proc-macro-crate 1.3.1",
  "proc-macro2",
  "quote",
  "syn 2.0.111",
@@ -9750,7 +9750,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash 2.1.1",
  "rustls",
- "socket2 0.6.1",
+ "socket2 0.5.10",
  "thiserror 2.0.17",
  "tokio",
  "tracing",
@@ -9787,9 +9787,9 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.6.1",
+ "socket2 0.5.10",
  "tracing",
- "windows-sys 0.60.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -10530,7 +10530,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.11.0",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -12149,7 +12149,7 @@ dependencies = [
  "getrandom 0.3.4",
  "once_cell",
  "rustix 1.1.2",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -14402,7 +14402,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -15155,9 +15155,13 @@ dependencies = [
  "anyhow",
  "cid",
  "getrandom 0.3.4",
+ "jose-jwk",
  "loro",
  "multihash",
+ "p256",
+ "ring",
  "sha2",
+ "signature",
  "smol_str 0.3.4",
  "sqlx",
  "tempfile",
@@ -15488,9 +15492,11 @@ dependencies = [
 
 [[package]]
 name = "xdid"
-version = "0.5.0"
-source = "git+https://github.com/unavi-xyz/dwn#50979a6bb33ba52bdf4b81a180aad874da940174"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c504a2a4b5496d0601b6c853de72ae60c9da44405f4b246a0189a786573a572"
 dependencies = [
+ "smallvec",
  "thiserror 2.0.17",
  "xdid-core",
  "xdid-method-key",
@@ -15499,20 +15505,23 @@ dependencies = [
 
 [[package]]
 name = "xdid-core"
-version = "0.5.0"
-source = "git+https://github.com/unavi-xyz/dwn#50979a6bb33ba52bdf4b81a180aad874da940174"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf8375a81bde62a7c611f5d35616c195cbd35efaa87fbbbfc8e61ec50365b010"
 dependencies = [
  "anyhow",
  "jose-jwk",
  "serde",
  "serde_with",
+ "smol_str 0.3.4",
  "thiserror 2.0.17",
 ]
 
 [[package]]
 name = "xdid-method-key"
-version = "0.5.0"
-source = "git+https://github.com/unavi-xyz/dwn#50979a6bb33ba52bdf4b81a180aad874da940174"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "41a32a505cf168a3011b6f5d8eea84a191ee62ce44c51a7f40dd86d63f2626dc"
 dependencies = [
  "anyhow",
  "jose-jwk",
@@ -15521,15 +15530,18 @@ dependencies = [
  "p384",
  "ring",
  "serde_json",
+ "smallvec",
  "thiserror 2.0.17",
  "unsigned-varint",
  "xdid-core",
+ "zeroize",
 ]
 
 [[package]]
 name = "xdid-method-web"
-version = "0.5.0"
-source = "git+https://github.com/unavi-xyz/dwn#50979a6bb33ba52bdf4b81a180aad874da940174"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c8b7c53a94e690b225a793eed5239f064bd2396b4d1c8fb7b699f1853ab4fa08"
 dependencies = [
  "reqwest",
  "xdid-core",

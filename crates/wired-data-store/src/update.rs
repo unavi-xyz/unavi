@@ -1,0 +1,43 @@
+use smol_str::SmolStr;
+use xdid::core::did::Did;
+
+use crate::RecordId;
+
+/// Signed batch of Loro operations.
+#[derive(Clone, Debug)]
+pub struct SignedUpdate {
+    /// Target record CID.
+    pub record_id: RecordId,
+    /// Loro-encoded updates (`ExportMode::updates`).
+    pub ops: Vec<u8>,
+    /// Version vector this update builds on (from Loro).
+    pub from_version: Vec<u8>,
+    /// Author's DID.
+    pub author: Did,
+    /// Signature over canonical encoding.
+    pub signature: Signature,
+}
+
+impl SignedUpdate {
+    /// Canonical bytes for signing/verification.
+    #[must_use]
+    pub fn signable_bytes(&self) -> Vec<u8> {
+        let mut buf = Vec::new();
+        buf.extend(self.record_id.as_str().as_bytes());
+        buf.extend(&(self.ops.len() as u32).to_be_bytes());
+        buf.extend(&self.ops);
+        buf.extend(&(self.from_version.len() as u32).to_be_bytes());
+        buf.extend(&self.from_version);
+        buf.extend(self.author.to_string().as_bytes());
+        buf
+    }
+}
+
+/// Cryptographic signature.
+#[derive(Clone, Debug)]
+pub struct Signature {
+    /// Algorithm identifier (e.g., "ES256" for P-256).
+    pub alg: SmolStr,
+    /// Raw signature bytes (64 bytes for P-256).
+    pub bytes: Vec<u8>,
+}

@@ -3,7 +3,7 @@ use xdid::core::{did::Did, did_url::DidUrl};
 pub fn new_record_ref_url(did: Did, record_id: &str) -> DidUrl {
     DidUrl {
         did,
-        query: Some(format!("service=dwn&relativeRef=/records/{record_id}")),
+        query: Some(format!("service=dwn&relativeRef=/records/{record_id}").into()),
         fragment: None,
         path_abempty: None,
     }

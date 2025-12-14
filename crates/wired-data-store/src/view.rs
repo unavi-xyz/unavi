@@ -223,6 +223,74 @@ impl DataStoreView {
         Ok(())
     }
 
+    /// Apply Loro operations to an existing record.
+    ///
+    /// Internal/trusted method - caller must verify authorization.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if record cannot be loaded, ops cannot be imported,
+    /// or quota would be exceeded.
+    pub(crate) async fn apply_ops(&self, record_id: &RecordId, ops: &[u8]) -> Result<()> {
+        let mut record = self
+            .get_record(record_id)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("record not found"))?;
+
+        // Get old size.
+        let id = record_id.as_str();
+        let owner_did = self.owner_did.to_string();
+
+        let old_size: i64 = sqlx::query_scalar!(
+            "SELECT size FROM records WHERE id = ? AND owner_did = ?",
+            id,
+            owner_did
+        )
+        .fetch_one(self.db.pool())
+        .await
+        .context("query record size")?;
+
+        // Import ops into Loro doc.
+        record.doc_mut().import(ops)?;
+
+        let snapshot = record.export_snapshot()?;
+        let new_size = i64::try_from(snapshot.len()).context("snapshot size exceeds i64::MAX")?;
+
+        // Update size and quota atomically.
+        let size_delta = new_size - old_size;
+
+        let mut tx = self.db.pool().begin().await.context("begin transaction")?;
+
+        // Adjust quota based on size delta.
+        // If size_delta == 0, no quota adjustment needed.
+        if size_delta > 0 {
+            // Reserve additional bytes.
+            quota::reserve_bytes(&mut *tx, &owner_did, size_delta).await?;
+        } else if size_delta < 0 {
+            // Release freed bytes.
+            quota::release_bytes(&mut *tx, &owner_did, -size_delta).await?;
+        }
+
+        // Write new snapshot to file.
+        let path = self.record_path(record_id);
+        std::fs::write(&path, &snapshot).context("write updated record file")?;
+
+        // Update record size.
+        sqlx::query!(
+            "UPDATE records SET size = ? WHERE id = ? AND owner_did = ?",
+            new_size,
+            id,
+            owner_did
+        )
+        .execute(&mut *tx)
+        .await
+        .context("update record size")?;
+
+        tx.commit().await.context("commit transaction")?;
+
+        Ok(())
+    }
+
     fn record_path(&self, id: &RecordId) -> PathBuf {
         let cid_str = id.as_str();
         let prefix = &cid_str[..2.min(cid_str.len())];

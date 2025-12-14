@@ -42,8 +42,8 @@ bincode            = "2.0.1"
 clap               = { features = ["derive"], version = "4.5.51" }
 constcat           = "0.6.1"
 directories        = "6.0.0"
-dwn                = { git = "https://github.com/unavi-xyz/dwn" }
-dwn-server         = { git = "https://github.com/unavi-xyz/dwn" }
+dwn                = { git = "https://github.com/kayhhh/dwn" }
+dwn-server         = { git = "https://github.com/kayhhh/dwn" }
 embed-resource     = "3.0.6"
 flume              = "0.11.0"
 futures            = "0.3.31"
@@ -65,16 +65,15 @@ tracing-subscriber = "0.3.20"
 tracing-test       = { features = ["no-env-filter"], version = "0.2.5" }
 wit-bindgen        = "0.48.1"
 wtransport         = "0.6.1"
-xdid               = { git = "https://github.com/unavi-xyz/dwn" }
+xdid               = "0.6.0"
 zeroize            = "1.8.2"
 
 [patch.crates-io]
 bevy_gltf_kun = { git = "https://github.com/unavi-xyz/gltf_kun" }
 bevy_vrm      = { git = "https://github.com/unavi-xyz/bevy_vrm" }
-dwn           = { git = "https://github.com/unavi-xyz/dwn" }
-dwn-server    = { git = "https://github.com/unavi-xyz/dwn" }
+dwn           = { git = "https://github.com/kayhhh/dwn" }
+dwn-server    = { git = "https://github.com/kayhhh/dwn" }
 gltf_kun      = { git = "https://github.com/unavi-xyz/gltf_kun" }
-xdid          = { git = "https://github.com/unavi-xyz/dwn" }
 
 [profile.release]
 codegen-units = 1

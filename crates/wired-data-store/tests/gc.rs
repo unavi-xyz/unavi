@@ -2,9 +2,7 @@ mod common;
 
 use std::str::FromStr;
 
-use common::{
-    BLOB_HELLO, DID_ALICE, DID_BOB, DID_CHARLIE, SCHEMA_A, SCHEMA_B, SCHEMA_TEST, create_test_store,
-};
+use common::{BLOB_HELLO, DID_ALICE, DID_BOB, DID_CHARLIE, create_test_store};
 use wired_data_store::Genesis;
 use xdid::core::did::Did;
 
@@ -13,7 +11,7 @@ async fn test_gc_removes_expired_pins() {
     let (store, _dir) = create_test_store().await;
     let view = store.view_for_user(Did::from_str(DID_ALICE).expect("parse DID"));
 
-    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_TEST);
+    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let record_id = view.create_record(genesis).await.expect("create record");
 
     view.pin_record(&record_id, Some(1))
@@ -33,7 +31,7 @@ async fn test_gc_keeps_records_with_valid_pins() {
     let (store, _dir) = create_test_store().await;
     let view = store.view_for_user(Did::from_str(DID_BOB).expect("parse DID"));
 
-    let genesis = Genesis::new(Did::from_str(DID_BOB).expect("parse DID"), SCHEMA_TEST);
+    let genesis = Genesis::new(Did::from_str(DID_BOB).expect("parse DID"));
     let record_id = view.create_record(genesis).await.expect("create record");
 
     view.pin_record(&record_id, Some(3600))
@@ -61,7 +59,7 @@ async fn test_gc_multiple_pins_deletes_when_all_expire() {
     let view1 = store.view_for_user(Did::from_str(DID_ALICE).expect("parse DID"));
     let view2 = store.view_for_user(Did::from_str(DID_BOB).expect("parse DID"));
 
-    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_TEST);
+    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let record_id = view1.create_record(genesis).await.expect("create record");
 
     view1
@@ -89,7 +87,7 @@ async fn test_gc_null_expiry_never_removed() {
     let (store, _dir) = create_test_store().await;
     let view = store.view_for_user(Did::from_str(DID_CHARLIE).expect("parse DID"));
 
-    let genesis = Genesis::new(Did::from_str(DID_CHARLIE).expect("parse DID"), SCHEMA_TEST);
+    let genesis = Genesis::new(Did::from_str(DID_CHARLIE).expect("parse DID"));
     let record_id = view.create_record(genesis).await.expect("create record");
 
     view.pin_record(&record_id, None)
@@ -115,7 +113,7 @@ async fn test_gc_removes_orphaned_blobs() {
     let (store, dir) = create_test_store().await;
     let view = store.view_for_user(Did::from_str(DID_ALICE).expect("parse DID"));
 
-    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_TEST);
+    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let record_id = view.create_record(genesis).await.expect("create record");
     let blob_id = view.store_blob(BLOB_HELLO).await.expect("store blob");
     view.link_blob_to_record(&record_id, &blob_id)
@@ -145,8 +143,8 @@ async fn test_gc_keeps_blob_with_multiple_record_refs() {
     let (store, _dir) = create_test_store().await;
     let view = store.view_for_user(Did::from_str(DID_ALICE).expect("parse DID"));
 
-    let genesis1 = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_A);
-    let genesis2 = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_B);
+    let genesis1 = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
+    let genesis2 = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let record1 = view.create_record(genesis1).await.expect("create record 1");
     let record2 = view.create_record(genesis2).await.expect("create record 2");
 

@@ -26,7 +26,7 @@ pub struct Genesis {
     /// Random nonce for uniqueness.
     pub nonce: [u8; 16],
     /// Schema identifier.
-    pub schema: SmolStr,
+    pub schema: Option<SmolStr>,
 }
 
 impl Genesis {
@@ -35,7 +35,8 @@ impl Genesis {
     /// # Panics
     ///
     /// Panics if random number generator fails or system time is before UNIX epoch.
-    pub fn new(creator: Did, schema: impl Into<SmolStr>) -> Self {
+    #[must_use]
+    pub fn new(creator: Did) -> Self {
         let mut nonce = [0u8; 16];
         getrandom::fill(&mut nonce).expect("random nonce");
 
@@ -46,8 +47,15 @@ impl Genesis {
                 .expect("system time")
                 .as_secs(),
             nonce,
-            schema: schema.into(),
+            schema: None,
         }
+    }
+
+    /// Sets the schema for this genesis block.
+    #[must_use]
+    pub fn with_schema(mut self, schema: impl Into<SmolStr>) -> Self {
+        self.schema = Some(schema.into());
+        self
     }
 
     /// Computes the CID of this genesis block.
@@ -70,7 +78,9 @@ impl Genesis {
         buf.extend_from_slice(self.creator.to_string().as_bytes());
         buf.extend_from_slice(&self.created.to_be_bytes());
         buf.extend_from_slice(&self.nonce);
-        buf.extend_from_slice(self.schema.as_bytes());
+        if let Some(schema) = &self.schema {
+            buf.extend_from_slice(schema.as_bytes());
+        }
         buf
     }
 }

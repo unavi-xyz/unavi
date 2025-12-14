@@ -21,7 +21,7 @@ async fn test_empty_blob() {
 async fn test_empty_schema() {
     let (view, _dir) = create_test_view(DID_ALICE).await;
 
-    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), "");
+    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID")).with_schema("");
     let id = view.create_record(genesis).await.expect("create record");
 
     let record = view
@@ -29,7 +29,7 @@ async fn test_empty_schema() {
         .await
         .expect("get record")
         .expect("exists");
-    assert!(record.genesis.schema.is_empty());
+    assert_eq!(record.genesis.schema.as_ref().map(|s| s.as_str()), Some(""));
 }
 
 #[tokio::test]
@@ -37,7 +37,8 @@ async fn test_unicode_schema() {
     let (view, _dir) = create_test_view(DID_ALICE).await;
 
     let unicode_schema = "スキーマ-схема-架構";
-    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), unicode_schema);
+    let genesis =
+        Genesis::new(Did::from_str(DID_ALICE).expect("parse DID")).with_schema(unicode_schema);
     let id = view.create_record(genesis).await.expect("create record");
 
     let record = view
@@ -45,7 +46,10 @@ async fn test_unicode_schema() {
         .await
         .expect("get record")
         .expect("exists");
-    assert_eq!(record.genesis.schema.as_str(), unicode_schema);
+    assert_eq!(
+        record.genesis.schema.as_ref().map(|s| s.as_str()),
+        Some(unicode_schema)
+    );
 }
 
 #[tokio::test]
@@ -53,7 +57,8 @@ async fn test_very_long_schema() {
     let (view, _dir) = create_test_view(DID_ALICE).await;
 
     let long_schema = "x".repeat(10_000);
-    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), &long_schema);
+    let genesis =
+        Genesis::new(Did::from_str(DID_ALICE).expect("parse DID")).with_schema(&long_schema);
     let id = view.create_record(genesis).await.expect("create record");
 
     let record = view
@@ -61,7 +66,10 @@ async fn test_very_long_schema() {
         .await
         .expect("get record")
         .expect("exists");
-    assert_eq!(record.genesis.schema.as_str(), long_schema);
+    assert_eq!(
+        record.genesis.schema.as_ref().map(|s| s.as_str()),
+        Some(long_schema.as_str())
+    );
 }
 
 #[tokio::test]
@@ -97,7 +105,7 @@ async fn test_pin_then_unpin_then_gc() {
     let (store, _dir) = create_test_store().await;
     let view = store.view_for_user(Did::from_str(DID_ALICE).expect("parse DID"));
 
-    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), "test");
+    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let id = view.create_record(genesis).await.expect("create");
 
     view.pin_record(&id, None).await.expect("pin");

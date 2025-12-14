@@ -3,8 +3,7 @@ mod common;
 use std::str::FromStr;
 
 use common::{
-    BLOB_HELLO, BLOB_NONEXISTENT, DID_ALICE, DID_BOB, SCHEMA_TEST, create_test_store,
-    create_test_view,
+    BLOB_HELLO, BLOB_NONEXISTENT, DID_ALICE, DID_BOB, create_test_store, create_test_view,
 };
 use wired_data_store::{BlobId, Genesis};
 use xdid::core::did::Did;
@@ -82,7 +81,7 @@ async fn test_shared_blob_deduplication() {
 async fn test_link_blob_to_record() {
     let (view, _dir) = create_test_view(DID_ALICE).await;
 
-    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_TEST);
+    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let record_id = view.create_record(genesis).await.expect("create record");
     let blob_id = view.store_blob(BLOB_HELLO).await.expect("store blob");
 
@@ -97,7 +96,7 @@ async fn test_link_blob_to_record() {
 async fn test_link_blob_fails_without_upload() {
     let (view, _dir) = create_test_view(DID_ALICE).await;
 
-    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_TEST);
+    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let record_id = view.create_record(genesis).await.expect("create record");
 
     let fake_blob_id = BlobId::from_bytes(b"never uploaded");
@@ -118,7 +117,7 @@ async fn test_cross_user_blob_isolation() {
         .await
         .expect("alice stores blob");
 
-    let genesis = Genesis::new(Did::from_str(DID_BOB).expect("parse DID"), SCHEMA_TEST);
+    let genesis = Genesis::new(Did::from_str(DID_BOB).expect("parse DID"));
     let record_id = view_bob
         .create_record(genesis)
         .await
@@ -149,8 +148,8 @@ async fn test_blob_shared_on_disk_but_separate_ownership() {
 
     assert_eq!(blob_id_alice, blob_id_bob, "same content = same CID");
 
-    let genesis_a = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_TEST);
-    let genesis_b = Genesis::new(Did::from_str(DID_BOB).expect("parse DID"), SCHEMA_TEST);
+    let genesis_a = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
+    let genesis_b = Genesis::new(Did::from_str(DID_BOB).expect("parse DID"));
     let record_a = view_alice
         .create_record(genesis_a)
         .await

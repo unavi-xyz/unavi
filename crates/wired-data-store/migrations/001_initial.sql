@@ -1,7 +1,7 @@
 CREATE TABLE records (
     id TEXT PRIMARY KEY,
     creator TEXT NOT NULL,
-    schema TEXT NOT NULL,
+    schema TEXT,
     created INTEGER NOT NULL,
     nonce BLOB NOT NULL,
     size INTEGER NOT NULL,

@@ -2,7 +2,7 @@ mod common;
 
 use std::str::FromStr;
 
-use common::{DID_ALICE, DID_BOB, SCHEMA_TEST, create_test_store, create_test_view};
+use common::{DID_ALICE, DID_BOB, create_test_store, create_test_view};
 use wired_data_store::{Genesis, MAX_BLOB_SIZE};
 use xdid::core::did::Did;
 
@@ -35,7 +35,7 @@ async fn test_cross_user_record_access_denied() {
     let view_alice = store.view_for_user(Did::from_str(DID_ALICE).expect("parse DID"));
     let view_bob = store.view_for_user(Did::from_str(DID_BOB).expect("parse DID"));
 
-    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_TEST);
+    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let record_id = view_alice
         .create_record(genesis)
         .await
@@ -67,7 +67,7 @@ async fn test_cross_user_pin_isolation() {
     let view_alice = store.view_for_user(Did::from_str(DID_ALICE).expect("parse DID"));
     let view_bob = store.view_for_user(Did::from_str(DID_BOB).expect("parse DID"));
 
-    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_TEST);
+    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let record_id = view_alice
         .create_record(genesis)
         .await
@@ -95,7 +95,7 @@ async fn test_ttl_overflow_saturates() {
     let (store, _dir) = create_test_store().await;
     let view = store.view_for_user(Did::from_str(DID_ALICE).expect("parse DID"));
 
-    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_TEST);
+    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let record_id = view.create_record(genesis).await.expect("create record");
 
     // Pin with maximum possible TTL - should not overflow.

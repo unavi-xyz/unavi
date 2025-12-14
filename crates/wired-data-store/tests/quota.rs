@@ -2,7 +2,7 @@ mod common;
 
 use std::str::FromStr;
 
-use common::{BLOB_HELLO, DID_ALICE, DID_BOB, SCHEMA_TEST, create_test_store, create_test_view};
+use common::{BLOB_HELLO, DID_ALICE, DID_BOB, create_test_store, create_test_view};
 use wired_data_store::{DEFAULT_QUOTA_BYTES, Genesis};
 use xdid::core::did::Did;
 
@@ -24,7 +24,7 @@ async fn test_record_creation_consumes_quota() {
     let initial = view.get_storage_quota().await.expect("get quota");
     assert_eq!(initial.bytes_used, 0);
 
-    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_TEST);
+    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     view.create_record(genesis).await.expect("create record");
 
     let after = view.get_storage_quota().await.expect("get quota");
@@ -75,7 +75,7 @@ async fn test_same_blob_uploaded_twice_charges_once() {
 async fn test_record_deletion_releases_quota() {
     let (view, _dir) = create_test_view(DID_ALICE).await;
 
-    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_TEST);
+    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let id = view.create_record(genesis).await.expect("create record");
 
     let after_create = view.get_storage_quota().await.expect("get quota");
@@ -97,7 +97,7 @@ async fn test_quota_exceeded_returns_error() {
     // Set a tiny quota.
     view.set_storage_quota(10).await.expect("set quota");
 
-    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_TEST);
+    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let result = view.create_record(genesis).await;
 
     assert!(result.is_err(), "should fail when quota exceeded");
@@ -127,7 +127,7 @@ async fn test_gc_releases_blob_quota() {
     let view = store.view_for_user(Did::from_str(DID_ALICE).expect("parse DID"));
 
     // Create a record and link a blob to it.
-    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"), SCHEMA_TEST);
+    let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let record_id = view.create_record(genesis).await.expect("create record");
     let blob_id = view.store_blob(BLOB_HELLO).await.expect("store blob");
     view.link_blob_to_record(&record_id, &blob_id)

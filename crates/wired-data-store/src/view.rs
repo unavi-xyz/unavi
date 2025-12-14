@@ -1,10 +1,16 @@
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
+use flume::Sender;
 use smol_str::SmolStr;
 use xdid::core::did::Did;
 
-use crate::{BlobId, Genesis, MAX_BLOB_SIZE, Record, RecordId, db::Database, hash_did, quota};
+use crate::{
+    BlobId, Genesis, MAX_BLOB_SIZE, Record, RecordId,
+    db::Database,
+    hash_did, quota,
+    sync::{SyncEvent, SyncEventType, SyncPeer},
+};
 
 /// Per-user view over shared data store infrastructure.
 ///
@@ -16,6 +22,7 @@ pub struct DataStoreView {
     pub(crate) db: Database,
     pub(crate) data_dir: PathBuf,
     pub(crate) owner_did: Did,
+    pub(crate) sync_tx: Sender<SyncEvent>,
 }
 
 impl DataStoreView {
@@ -98,6 +105,13 @@ impl DataStoreView {
         }
 
         tx.commit().await.context("commit transaction")?;
+
+        // Emit sync event.
+        let _ = self.sync_tx.try_send(SyncEvent {
+            record_id: record.id.clone(),
+            owner_did: self.owner_did.clone(),
+            event_type: SyncEventType::Created,
+        });
 
         Ok(record.id)
     }
@@ -224,6 +238,13 @@ impl DataStoreView {
         if path.exists() {
             std::fs::remove_file(&path).context("delete record file")?;
         }
+
+        // Emit sync event.
+        let _ = self.sync_tx.try_send(SyncEvent {
+            record_id: id.clone(),
+            owner_did: self.owner_did.clone(),
+            event_type: SyncEventType::Deleted,
+        });
 
         Ok(())
     }
@@ -569,6 +590,147 @@ impl DataStoreView {
         .execute(self.db.pool())
         .await
         .context("delete pin from database")?;
+
+        Ok(())
+    }
+
+    /// Adds a sync peer to a pinned record.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if database update fails.
+    ///
+    /// # Panics
+    ///
+    /// Panics if system time is before UNIX epoch.
+    pub async fn add_sync_peer(&self, record_id: &RecordId, peer: &SyncPeer) -> Result<()> {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("system time")
+            .as_secs()
+            .cast_signed();
+
+        let record_id_str = record_id.as_str();
+        let owner_did = self.owner_did.to_string();
+        let endpoint_id_bytes = peer.as_bytes().as_slice();
+
+        sqlx::query!(
+            "INSERT OR IGNORE INTO sync_peers (record_id, owner_did, endpoint_id, created)
+             VALUES (?, ?, ?, ?)",
+            record_id_str,
+            owner_did,
+            endpoint_id_bytes,
+            now
+        )
+        .execute(self.db.pool())
+        .await
+        .context("insert sync peer")?;
+
+        Ok(())
+    }
+
+    /// Removes a sync peer from a record.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if database delete fails.
+    pub async fn remove_sync_peer(&self, record_id: &RecordId, peer: &SyncPeer) -> Result<()> {
+        let record_id_str = record_id.as_str();
+        let owner_did = self.owner_did.to_string();
+        let endpoint_id_bytes = peer.as_bytes().as_slice();
+
+        sqlx::query!(
+            "DELETE FROM sync_peers
+             WHERE record_id = ? AND owner_did = ? AND endpoint_id = ?",
+            record_id_str,
+            owner_did,
+            endpoint_id_bytes
+        )
+        .execute(self.db.pool())
+        .await
+        .context("delete sync peer")?;
+
+        Ok(())
+    }
+
+    /// Lists all sync peers for a record.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if database query fails.
+    pub async fn list_sync_peers(&self, record_id: &RecordId) -> Result<Vec<SyncPeer>> {
+        let record_id_str = record_id.as_str();
+        let owner_did = self.owner_did.to_string();
+
+        let rows: Vec<Vec<u8>> = sqlx::query_scalar!(
+            "SELECT endpoint_id FROM sync_peers
+             WHERE record_id = ? AND owner_did = ?
+             ORDER BY created",
+            record_id_str,
+            owner_did
+        )
+        .fetch_all(self.db.pool())
+        .await
+        .context("query sync peers")?;
+
+        rows.into_iter()
+            .map(|bytes| {
+                let arr: [u8; 32] = bytes
+                    .try_into()
+                    .map_err(|_| anyhow::anyhow!("endpoint_id must be exactly 32 bytes"))?;
+                SyncPeer::from_bytes(&arr)
+            })
+            .collect()
+    }
+
+    /// Replaces entire sync peer list for a record.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if database transaction fails.
+    ///
+    /// # Panics
+    ///
+    /// Panics if system time is before UNIX epoch.
+    pub async fn set_sync_peers(&self, record_id: &RecordId, peers: &[SyncPeer]) -> Result<()> {
+        let record_id_str = record_id.as_str();
+        let owner_did = self.owner_did.to_string();
+
+        let mut tx = self.db.pool().begin().await.context("begin transaction")?;
+
+        // Clear existing peers.
+        sqlx::query!(
+            "DELETE FROM sync_peers WHERE record_id = ? AND owner_did = ?",
+            record_id_str,
+            owner_did
+        )
+        .execute(&mut *tx)
+        .await
+        .context("delete existing sync peers")?;
+
+        // Insert new peers.
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("system time")
+            .as_secs()
+            .cast_signed();
+
+        for peer in peers {
+            let endpoint_id_bytes = peer.as_bytes().as_slice();
+            sqlx::query!(
+                "INSERT INTO sync_peers (record_id, owner_did, endpoint_id, created)
+                 VALUES (?, ?, ?, ?)",
+                record_id_str,
+                owner_did,
+                endpoint_id_bytes,
+                now
+            )
+            .execute(&mut *tx)
+            .await
+            .context("insert sync peer")?;
+        }
+
+        tx.commit().await.context("commit transaction")?;
 
         Ok(())
     }

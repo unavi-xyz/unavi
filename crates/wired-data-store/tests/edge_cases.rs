@@ -29,7 +29,14 @@ async fn test_empty_schema() {
         .await
         .expect("get record")
         .expect("exists");
-    assert_eq!(record.genesis.schema.as_ref().map(|s| s.as_str()), Some(""));
+    assert_eq!(
+        record
+            .genesis
+            .schema
+            .as_ref()
+            .map(smol_str::SmolStr::as_str),
+        Some("")
+    );
 }
 
 #[tokio::test]
@@ -47,7 +54,11 @@ async fn test_unicode_schema() {
         .expect("get record")
         .expect("exists");
     assert_eq!(
-        record.genesis.schema.as_ref().map(|s| s.as_str()),
+        record
+            .genesis
+            .schema
+            .as_ref()
+            .map(smol_str::SmolStr::as_str),
         Some(unicode_schema)
     );
 }
@@ -67,7 +78,11 @@ async fn test_very_long_schema() {
         .expect("get record")
         .expect("exists");
     assert_eq!(
-        record.genesis.schema.as_ref().map(|s| s.as_str()),
+        record
+            .genesis
+            .schema
+            .as_ref()
+            .map(smol_str::SmolStr::as_str),
         Some(long_schema.as_str())
     );
 }

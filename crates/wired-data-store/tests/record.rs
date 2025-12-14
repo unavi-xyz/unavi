@@ -26,7 +26,11 @@ async fn test_create_and_get_record() {
     assert_eq!(record.id, id);
     assert_eq!(record.genesis.creator.to_string(), DID_ALICE);
     assert_eq!(
-        record.genesis.schema.as_ref().map(|s| s.as_str()),
+        record
+            .genesis
+            .schema
+            .as_ref()
+            .map(smol_str::SmolStr::as_str),
         Some(SCHEMA_TEST)
     );
 }

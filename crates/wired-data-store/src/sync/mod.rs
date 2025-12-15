@@ -1,7 +1,16 @@
+mod connection;
+mod handler;
+mod messages;
+mod protocol;
+
 use iroh::EndpointId;
 use xdid::core::did::Did;
 
 use crate::RecordId;
+
+pub use connection::ConnectionPool;
+pub use messages::{SignatureWire, SyncMessage, SyncStatus};
+pub use protocol::{ALPN, WiredSyncProtocol};
 
 /// Event emitted when a record changes and needs sync.
 #[derive(Clone, Debug)]
@@ -22,31 +31,31 @@ pub enum SyncEventType {
     Deleted,
 }
 
-/// Represents a sync peer identified by iroh `EndpointId`.
+/// Represents a sync peer identified by iroh [`EndpointId`].
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct SyncPeer {
     pub endpoint_id: EndpointId,
 }
 
 impl SyncPeer {
-    /// Creates a new sync peer from an iroh `EndpointId`.
+    /// Creates a new sync peer from an iroh [`EndpointId`].
     #[must_use]
     pub const fn new(endpoint_id: EndpointId) -> Self {
         Self { endpoint_id }
     }
 
-    /// Parses a sync peer from 32-byte `EndpointId`.
+    /// Parses a sync peer from 32-byte [`EndpointId`].
     ///
     /// # Errors
     ///
-    /// Returns error if bytes are not exactly 32 bytes.
+    /// Returns error if bytes are not a valid Ed25519 public key.
     pub fn from_bytes(bytes: &[u8; 32]) -> anyhow::Result<Self> {
         Ok(Self {
             endpoint_id: EndpointId::from_bytes(bytes)?,
         })
     }
 
-    /// Returns the `EndpointId` as 32 bytes.
+    /// Returns the [`EndpointId`] as 32 bytes.
     #[must_use]
     pub fn as_bytes(&self) -> &[u8; 32] {
         self.endpoint_id.as_bytes()

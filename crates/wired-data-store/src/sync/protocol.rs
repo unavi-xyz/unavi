@@ -1,12 +1,11 @@
-use std::fmt::Debug;
-use std::future::Future;
-use std::sync::Arc;
+use std::{fmt::Debug, future::Future, sync::Arc};
 
-use iroh::endpoint::Connection;
-use iroh::protocol::{AcceptError, ProtocolHandler};
+use iroh::{
+    endpoint::Connection,
+    protocol::{AcceptError, ProtocolHandler},
+};
 
-use super::connection::ConnectionPool;
-use super::handler::handle_stream;
+use super::{connection::ConnectionPool, session::SyncSession};
 use crate::db::Database;
 
 /// ALPN protocol identifier for wired-sync.
@@ -61,8 +60,10 @@ impl ProtocolHandler for WiredSyncProtocol {
                 let peer_conn = peer_conn.clone();
 
                 tokio::spawn(async move {
-                    if let Err(e) = handle_stream(db, peer_conn, stream).await {
-                        tracing::warn!("stream error: {e}");
+                    let (send, recv) = stream;
+                    let session = SyncSession::new(db, peer_conn, send, recv);
+                    if let Err(e) = session.run().await {
+                        tracing::warn!("sync session error: {e}");
                     }
                 });
             }

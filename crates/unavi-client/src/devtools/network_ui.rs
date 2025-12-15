@@ -64,8 +64,12 @@ pub fn update_network_stats_text(
     for (host_url, host_stats) in &stats.hosts {
         let upload_kb = host_stats.upload_bytes_per_sec / 1024.0;
         let download_kb = host_stats.download_bytes_per_sec / 1024.0;
+
+        #[allow(clippy::cast_sign_loss)]
         let iframe_pct = (host_stats.iframe_upload_ratio * 100.0) as u32;
+        #[allow(clippy::cast_sign_loss)]
         let pframe_pct = (host_stats.pframe_upload_ratio * 100.0) as u32;
+
         let drop_pct = if host_stats.total_frames_received > 0 {
             (host_stats.dropped_frames as f32 / host_stats.total_frames_received as f32) * 100.0
         } else {

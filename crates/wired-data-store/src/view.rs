@@ -734,4 +734,86 @@ impl DataStoreView {
 
         Ok(())
     }
+
+    // =========================================================================
+    // Signing Key Management
+    // =========================================================================
+
+    /// Sets the signing key for this user.
+    ///
+    /// The signing key is used to sign updates on behalf of the user when
+    /// syncing with peers.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if database update fails.
+    ///
+    /// # Panics
+    ///
+    /// Panics if system time is before UNIX epoch.
+    pub async fn set_signing_key(&self, secret_key: &[u8], algorithm: &str) -> Result<()> {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("system time")
+            .as_secs()
+            .cast_signed();
+
+        let owner_did = self.owner_did.to_string();
+
+        sqlx::query!(
+            "INSERT INTO user_signing_keys (owner_did, secret_key, algorithm, created)
+             VALUES (?, ?, ?, ?)
+             ON CONFLICT (owner_did) DO UPDATE SET
+                secret_key = excluded.secret_key,
+                algorithm = excluded.algorithm,
+                created = excluded.created",
+            owner_did,
+            secret_key,
+            algorithm,
+            now
+        )
+        .execute(self.db.pool())
+        .await
+        .context("upsert signing key")?;
+
+        Ok(())
+    }
+
+    /// Gets the signing key for this user.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if database query fails.
+    pub async fn get_signing_key(&self) -> Result<Option<(Vec<u8>, String)>> {
+        let owner_did = self.owner_did.to_string();
+
+        let row = sqlx::query!(
+            "SELECT secret_key, algorithm FROM user_signing_keys WHERE owner_did = ?",
+            owner_did
+        )
+        .fetch_optional(self.db.pool())
+        .await
+        .context("query signing key")?;
+
+        Ok(row.map(|r| (r.secret_key, r.algorithm)))
+    }
+
+    /// Removes the signing key for this user.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if database delete fails.
+    pub async fn remove_signing_key(&self) -> Result<()> {
+        let owner_did = self.owner_did.to_string();
+
+        sqlx::query!(
+            "DELETE FROM user_signing_keys WHERE owner_did = ?",
+            owner_did
+        )
+        .execute(self.db.pool())
+        .await
+        .context("delete signing key")?;
+
+        Ok(())
+    }
 }

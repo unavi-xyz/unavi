@@ -1,11 +1,15 @@
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use anyhow::Context;
 use flume::{Receiver, Sender};
+use iroh::protocol::Router;
 use iroh::{Endpoint, EndpointId, SecretKey};
 use xdid::core::did::Did;
 
-use crate::{DataStoreView, GarbageCollectStats, db::Database, gc, hash_did, sync::SyncEvent};
+use crate::db::Database;
+use crate::sync::{ALPN, ConnectionPool, SyncEvent, WiredSyncProtocol};
+use crate::{DataStoreView, GarbageCollectStats, gc, hash_did};
 
 /// Data store owning shared infrastructure.
 ///
@@ -13,11 +17,13 @@ use crate::{DataStoreView, GarbageCollectStats, db::Database, gc, hash_did, sync
 /// data directory, which are shared across all users. Use `view_for_user()` to
 /// create lightweight per-user `DataStoreView` instances.
 pub struct DataStore {
-    db: Database,
+    _router: Router,
+    connection_pool: Arc<ConnectionPool>,
     data_dir: PathBuf,
+    db: Database,
     iroh: Endpoint,
-    sync_tx: Sender<SyncEvent>,
     sync_rx: Receiver<SyncEvent>,
+    sync_tx: Sender<SyncEvent>,
 }
 
 impl DataStore {
@@ -39,15 +45,26 @@ impl DataStore {
         // Initialize iroh endpoint.
         let iroh = Self::init_iroh(&db, &data_dir).await?;
 
+        // Create connection pool.
+        let connection_pool = Arc::new(ConnectionPool::new());
+
+        // Create sync protocol handler.
+        let protocol = WiredSyncProtocol::new(db.clone(), connection_pool.clone());
+
+        // Create router and register sync protocol.
+        let router = Router::builder(iroh.clone()).accept(ALPN, protocol).spawn();
+
         // Create sync event channel.
         let (sync_tx, sync_rx) = flume::unbounded();
 
         Ok(Self {
-            db,
+            _router: router,
+            connection_pool,
             data_dir,
+            db,
             iroh,
-            sync_tx,
             sync_rx,
+            sync_tx,
         })
     }
 
@@ -142,10 +159,16 @@ impl DataStore {
         &self.iroh
     }
 
-    /// This node's iroh `EndpointId`.
+    /// This node's iroh [`EndpointId`].
     #[must_use]
     pub fn endpoint_id(&self) -> EndpointId {
         self.iroh.id()
+    }
+
+    /// Access to the connection pool for sync operations.
+    #[must_use]
+    pub const fn connection_pool(&self) -> &Arc<ConnectionPool> {
+        &self.connection_pool
     }
 
     /// Subscribe to sync events.

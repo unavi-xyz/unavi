@@ -297,7 +297,7 @@ pub fn apply_player_transforms(
     for (host_entity, _, channel) in hosts.iter() {
         let server_tickrate_ms = spaces
             .iter()
-            .map(|interval| interval.tickrate.as_millis() as u64)
+            .map(|interval| u64::try_from(interval.tickrate.as_millis()).unwrap_or(u64::MAX))
             .next()
             .unwrap_or(50);
 

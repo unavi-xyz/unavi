@@ -65,9 +65,9 @@ pub fn update_network_stats_text(
         let upload_kb = host_stats.upload_bytes_per_sec / 1024.0;
         let download_kb = host_stats.download_bytes_per_sec / 1024.0;
 
-        #[allow(clippy::cast_sign_loss)]
+        #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
         let iframe_pct = (host_stats.iframe_upload_ratio * 100.0) as u32;
-        #[allow(clippy::cast_sign_loss)]
+        #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
         let pframe_pct = (host_stats.pframe_upload_ratio * 100.0) as u32;
 
         let drop_pct = if host_stats.total_frames_received > 0 {

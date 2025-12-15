@@ -57,6 +57,7 @@ pub enum TransformResult {
     PFrame(TrackingPFrame),
 }
 
+#[allow(clippy::cast_possible_truncation)]
 fn quantize_rotation(rot: Quat) -> [i16; 4] {
     [
         (rot.x * PFRAME_ROTATION_SCALE) as i16,
@@ -66,6 +67,7 @@ fn quantize_rotation(rot: Quat) -> [i16; 4] {
     ]
 }
 
+#[allow(clippy::cast_possible_truncation)]
 fn quantize_translation(delta: Vec3) -> [i16; 3] {
     [
         (delta.x * PFRAME_TRANSLATION_SCALE).clamp(f32::from(i16::MIN), f32::from(i16::MAX)) as i16,

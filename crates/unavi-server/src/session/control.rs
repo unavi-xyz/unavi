@@ -27,7 +27,7 @@ const MAX_SPACE_ID_LEN: usize = 128;
 
 impl ControlService for ControlServer {
     async fn tickrate_ms(self, _: tarpc::context::Context) -> u64 {
-        TICKRATE.as_millis() as u64
+        u64::try_from(TICKRATE.as_millis()).unwrap_or(u64::MAX)
     }
     async fn join_space(self, _: tarpc::context::Context, id: String) -> RpcResult<()> {
         if id.len() > MAX_SPACE_ID_LEN {
@@ -189,7 +189,8 @@ impl ControlService for ControlServer {
         use scc::HashMap as SccHashMap;
 
         // Validate tickrate is at least the server minimum.
-        if tickrate_ms < TICKRATE.as_millis() as u64 {
+        let min_tickrate = u64::try_from(TICKRATE.as_millis()).unwrap_or(u64::MAX);
+        if tickrate_ms < min_tickrate {
             return Err(format!(
                 "tickrate must be at least {} ms",
                 TICKRATE.as_millis()

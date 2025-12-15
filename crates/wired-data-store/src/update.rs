@@ -20,13 +20,25 @@ pub struct SignedUpdate {
 
 impl SignedUpdate {
     /// Canonical bytes for signing/verification.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `ops` or `from_version` length exceeds `u32::MAX`.
     #[must_use]
     pub fn signable_bytes(&self) -> Vec<u8> {
         let mut buf = Vec::new();
         buf.extend(self.record_id.as_str().as_bytes());
-        buf.extend(&(self.ops.len() as u32).to_be_bytes());
+        buf.extend(
+            &u32::try_from(self.ops.len())
+                .expect("ops length exceeds u32::MAX")
+                .to_be_bytes(),
+        );
         buf.extend(&self.ops);
-        buf.extend(&(self.from_version.len() as u32).to_be_bytes());
+        buf.extend(
+            &u32::try_from(self.from_version.len())
+                .expect("version length exceeds u32::MAX")
+                .to_be_bytes(),
+        );
         buf.extend(&self.from_version);
         buf.extend(self.author.to_string().as_bytes());
         buf

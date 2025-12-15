@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use bevy::prelude::*;
 
 pub mod connection;
@@ -65,7 +67,7 @@ fn handle_network_events(
                         connect_url: connect_url.clone(),
                     },
                     HostTransformChannels {
-                        players: host.transform_channels.clone(),
+                        players: Arc::clone(&host.transform_channels),
                     },
                     HostControlChannel {
                         _tx: host.control_tx.clone(),

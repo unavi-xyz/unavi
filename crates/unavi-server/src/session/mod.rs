@@ -129,7 +129,7 @@ impl SessionSpawner {
         };
 
         let key = Arc::new(key);
-        actor.sign_key = Some(key.clone());
+        actor.sign_key = Some(Arc::clone(&key));
         actor.auth_key = Some(key);
 
         actor.sync().await?;
@@ -293,7 +293,7 @@ impl SessionSpawner {
             let rates = self
                 .ctx
                 .player_tickrates
-                .read_async(&key, |_, rates| rates.clone())
+                .read_async(&key, |_, rates| Arc::clone(rates))
                 .await;
 
             if let Some(rates) = rates {

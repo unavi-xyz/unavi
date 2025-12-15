@@ -210,7 +210,7 @@ impl ControlService for ControlServer {
         let rates = self
             .ctx
             .player_tickrates
-            .read_async(&self.player_id, |_, rates| rates.clone())
+            .read_async(&self.player_id, |_, rates| Arc::clone(rates))
             .await;
 
         if let Some(rates) = rates {

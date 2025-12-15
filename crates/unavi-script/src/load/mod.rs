@@ -99,7 +99,7 @@ pub fn load_scripts(
         let component = wasmtime::component::Component::from_binary(&engine.0, &wasm.0);
 
         let rt = ScriptRuntime::new(store, stdout, stderr);
-        let ctx = rt.ctx.clone();
+        let ctx = Arc::clone(&rt.ctx);
         commands.entity(ent).insert((
             LoadingScript,
             rt,

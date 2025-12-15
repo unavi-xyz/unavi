@@ -49,7 +49,7 @@ impl DataStore {
         let connection_pool = Arc::new(ConnectionPool::new());
 
         // Create sync protocol handler.
-        let protocol = WiredSyncProtocol::new(db.clone(), connection_pool.clone());
+        let protocol = WiredSyncProtocol::new(db.clone(), Arc::clone(&connection_pool));
 
         // Create router and register sync protocol.
         let router = Router::builder(iroh.clone()).accept(ALPN, protocol).spawn();

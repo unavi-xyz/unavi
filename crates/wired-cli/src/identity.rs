@@ -51,7 +51,7 @@ pub async fn init_actor() -> anyhow::Result<Actor> {
     let mut actor = Actor::new(did, dwn);
 
     let key = Arc::<DocumentKey>::new(pair.into());
-    actor.sign_key = Some(key.clone());
+    actor.sign_key = Some(Arc::clone(&key));
     actor.auth_key = Some(key);
 
     let remote_url = Url::parse(REMOTE_DWN_URL).context("failed to parse remote url")?;

@@ -1,5 +1,6 @@
 use std::{
     collections::{HashMap, HashSet, hash_map::Entry},
+    sync::Arc,
     time::Instant,
 };
 
@@ -252,7 +253,7 @@ async fn tickrate_ready(
         .player_tickrates
         .get_async(&viewer_id)
         .await
-        .map(|entry| entry.get().clone());
+        .map(|entry| Arc::clone(entry.get()));
 
     let min_interval = if let Some(rates) = rates_map {
         rates

@@ -232,7 +232,7 @@ pub async fn send_iframe(
     let byte_count = iframe_bytes.len();
 
     let iframe_stream = streams
-        .read_async(connect_url, |_, entry| entry.iframe_stream.clone())
+        .read_async(connect_url, |_, entry| Arc::clone(&entry.iframe_stream))
         .await
         .ok_or_else(|| anyhow::anyhow!("No iframe stream for {connect_url}"))?;
 

@@ -38,7 +38,7 @@ impl ProtocolHandler for WiredSyncProtocol {
         connection: Connection,
     ) -> impl Future<Output = Result<(), AcceptError>> + Send {
         let db = self.db.clone();
-        let pool = self.pool.clone();
+        let pool = Arc::clone(&self.pool);
 
         async move {
             let peer_id = connection.remote_id();
@@ -57,7 +57,7 @@ impl ProtocolHandler for WiredSyncProtocol {
                 };
 
                 let db = db.clone();
-                let peer_conn = peer_conn.clone();
+                let peer_conn = Arc::clone(&peer_conn);
 
                 tokio::spawn(async move {
                     let (send, recv) = stream;

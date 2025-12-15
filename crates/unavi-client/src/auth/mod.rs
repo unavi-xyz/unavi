@@ -47,7 +47,7 @@ pub fn handle_login(_: On<LoginEvent>, mut local_actor: ResMut<LocalActor>, dwn:
     let mut actor = Actor::new(did, dwn.0.clone());
 
     let key = Arc::<DocumentKey>::new(pair.into());
-    actor.sign_key = Some(key.clone());
+    actor.sign_key = Some(Arc::clone(&key));
     actor.auth_key = Some(key);
 
     let remote_url = Url::parse(REMOTE_DWN_URL).expect("parse remote url");

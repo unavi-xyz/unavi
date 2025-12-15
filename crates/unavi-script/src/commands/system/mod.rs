@@ -206,7 +206,7 @@ pub fn start_script_cycle(
                 continue;
             }
 
-            let start = deps.start.clone();
+            let start = Arc::clone(&deps.start);
 
             let pool = AsyncComputeTaskPool::get();
             *task = Some(pool.spawn(async move {
@@ -316,7 +316,14 @@ pub fn build_system(
     let ready = Arc::new(Notify::default());
     let complete = Arc::new(Notify::default());
 
-    setup_system_dependencies(world, entity, id, schedule, ready.clone(), complete.clone())?;
+    setup_system_dependencies(
+        world,
+        entity,
+        id,
+        schedule,
+        Arc::clone(&ready),
+        Arc::clone(&complete),
+    )?;
 
     let vent_id = get_or_register_vent_id(world);
 
@@ -460,7 +467,7 @@ pub fn build_system(
             let mut waiters = Vec::new();
             for d in deps {
                 if let Some(notify) = schedule_deps.complete.get(d) {
-                    waiters.push(notify.clone());
+                    waiters.push(Arc::clone(notify));
                 }
             }
 
@@ -470,16 +477,16 @@ pub fn build_system(
 
         let name = name.map_or_else(|| "unknown".to_string(), std::string::ToString::to_string);
 
-        let complete = complete.clone();
-        let ctx = rt.ctx.clone();
+        let complete = Arc::clone(&complete);
+        let ctx = Arc::clone(&rt.ctx);
         let elapsed = time.elapsed();
-        let guest = loaded.0.clone();
+        let guest = Arc::clone(&loaded.0);
         let mut write_recv = write_recv.0.resubscribe();
-        let params = params.clone();
-        let ready = ready.clone();
-        let start = schedule_deps.start.clone();
+        let params = Arc::clone(&params);
+        let ready = Arc::clone(&ready);
+        let start = Arc::clone(&schedule_deps.start);
         let startup_complete = startup.complete_send.clone();
-        let waiters = upstream.waiters.clone();
+        let waiters = Arc::clone(&upstream.waiters);
 
         let pool = AsyncComputeTaskPool::get();
         let task = pool.spawn(

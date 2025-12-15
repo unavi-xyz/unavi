@@ -1,6 +1,6 @@
 use std::{collections::HashSet, sync::Arc};
 
-use iroh::{endpoint::Connection, Endpoint, EndpointAddr, EndpointId};
+use iroh::{Endpoint, EndpointAddr, EndpointId, endpoint::Connection};
 use parking_lot::RwLock;
 use scc::HashMap as SccHashMap;
 
@@ -86,7 +86,7 @@ impl ConnectionPool {
         let peer_conn = Arc::new(PeerConnection::new(connection));
         let _ = self
             .connections
-            .insert_async(peer_id, peer_conn.clone())
+            .insert_async(peer_id, Arc::clone(&peer_conn))
             .await;
 
         Ok(peer_conn)
@@ -114,7 +114,7 @@ impl ConnectionPool {
         let peer_conn = Arc::new(PeerConnection::new(connection));
         let _ = self
             .connections
-            .insert_async(peer_id, peer_conn.clone())
+            .insert_async(peer_id, Arc::clone(&peer_conn))
             .await;
 
         peer_conn

@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use anyhow::Context;
 use bevy::{
@@ -29,8 +29,8 @@ pub fn begin_init_scripts(
     >,
 ) {
     for (entity, loaded, rt, name) in to_init {
-        let ctx = rt.ctx.clone();
-        let guest = loaded.0.clone();
+        let ctx = Arc::clone(&rt.ctx);
+        let guest = Arc::clone(&loaded.0);
         let name = name.map_or_else(|| "unknown".to_string(), std::string::ToString::to_string);
 
         let pool = AsyncComputeTaskPool::get();

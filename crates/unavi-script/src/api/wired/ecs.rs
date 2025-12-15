@@ -55,7 +55,7 @@ const MAX_SYSTEM_PARAMS: usize = 16;
 impl wired::ecs::host_api::Host for WiredEcsData {
     async fn register_component(&mut self, component: Component) -> Result<ComponentId, String> {
         if let Some(id) = self.components.iter().position(|c| *c == component) {
-            Ok(id as u32)
+            Ok(u32::try_from(id).expect("component id exceeds u32::MAX"))
         } else {
             if component.key.len() > MAX_KEY_LEN {
                 return Err("Component key too long".to_string());
@@ -64,7 +64,8 @@ impl wired::ecs::host_api::Host for WiredEcsData {
                 return Err("Max component count reached".to_string());
             }
 
-            let id = self.components.len() as u32;
+            let id =
+                u32::try_from(self.components.len()).expect("component count exceeds u32::MAX");
 
             self.commands
                 .send(WasmCommand::RegisterComponent { id })
@@ -78,7 +79,7 @@ impl wired::ecs::host_api::Host for WiredEcsData {
     }
 
     async fn register_system(&mut self, system: System) -> Result<SystemId, String> {
-        let id = self.systems.len() as u32;
+        let id = u32::try_from(self.systems.len()).expect("system count exceeds u32::MAX");
 
         if self.systems.len() >= MAX_SYSTEMS {
             return Err("Max system count reached".to_string());

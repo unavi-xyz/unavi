@@ -478,7 +478,9 @@ fn spawn_terrain(spawner: &mut SceneSpawner, inverse: bool) {
 
     for row in 1..=N_ROWS {
         let tile_scale_pow = (row - TILE_SCALE_OFFSET).max(0) / TILE_SCALE_RATE;
-        let tile_scale = 2i32.pow(tile_scale_pow as u32).min(1024);
+        let tile_scale = 2i32
+            .pow(u32::try_from(tile_scale_pow).expect("too many tiles"))
+            .min(1024);
         info!("row {row}: tile scale: {tile_scale}");
         let tile_size = tile_scale as f32 * TILE_SIZE;
 
@@ -515,6 +517,7 @@ struct RingConfig {
 fn spawn_ring(spawner: &mut SceneSpawner, config: RingConfig) {
     let length = (config.center_radius * 2.0 / config.tile_size) + 2.0;
     info!("ring length: {length}");
+    #[allow(clippy::cast_possible_truncation)]
     let length = length.ceil() as isize;
 
     for x in 0..length {

@@ -36,6 +36,8 @@ pub fn run_launcher() {
 
     let width = 380;
     let phi = 1.61803;
+
+    #[allow(clippy::cast_possible_truncation)]
     let size = LogicalSize::new(width, (width as f32 * phi).round() as i32);
 
     dioxus::LaunchBuilder::new()

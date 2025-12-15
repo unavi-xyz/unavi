@@ -11,7 +11,6 @@ version    = "0.0.16"
 [workspace.lints.clippy]
 cast_possible_truncation = "allow"
 cast_precision_loss      = "allow"
-cast_sign_loss           = "allow"
 clone_on_ref_ptr         = "warn"
 nursery                  = { level = "warn", priority = -1 }
 pedantic                 = { level = "warn", priority = -1 }

@@ -8,6 +8,11 @@ pub mod thread;
 
 use thread::{NetworkEvent, NetworkingThread};
 
+use crate::space::{
+    Host, HostControlChannel, HostPlayers, HostTransformChannels,
+    networking::connection::state::{ConnectionAttempt, ConnectionState},
+};
+
 pub struct NetworkingPlugin;
 
 impl Plugin for NetworkingPlugin {
@@ -34,16 +39,9 @@ impl Plugin for NetworkingPlugin {
 fn handle_network_events(
     networking: Res<NetworkingThread>,
     mut commands: Commands,
-    mut spaces: Query<&mut connection::state::ConnectionAttempt>,
-    hosts: Query<(
-        Entity,
-        &crate::space::Host,
-        Option<&crate::space::HostPlayers>,
-    )>,
+    mut spaces: Query<&mut ConnectionAttempt>,
+    hosts: Query<(Entity, &Host, Option<&HostPlayers>)>,
 ) {
-    use crate::space::{Host, HostControlChannel, HostTransformChannels};
-    use connection::state::ConnectionState;
-
     while let Ok(event) = networking.event_rx.try_recv() {
         match event {
             NetworkEvent::Connected {

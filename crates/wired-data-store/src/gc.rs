@@ -152,7 +152,7 @@ pub async fn remove_unpinned_record(
         std::fs::remove_file(&path).context("delete record file")?;
     }
 
-    Ok(Some(size as u64))
+    Ok(Some(size.cast_unsigned()))
 }
 
 /// Removes orphaned `user_blobs` (`ref_count` = 0) and decrements blob `ref_counts`.
@@ -239,7 +239,7 @@ pub async fn remove_orphaned_blobs(pool: &Pool<Sqlite>, blobs_dir: &Path) -> Res
 
         paths_to_delete.push(path);
         blobs_removed += 1;
-        bytes_freed += *size as u64;
+        bytes_freed += size.cast_unsigned();
     }
 
     tx.commit().await.context("commit transaction")?;

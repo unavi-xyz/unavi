@@ -1,12 +1,15 @@
-mod connection;
-mod handler;
-mod messages;
-mod protocol;
-
 use iroh::EndpointId;
 use xdid::core::did::Did;
 
 use crate::RecordId;
+
+mod connection;
+mod messages;
+mod protocol;
+mod request;
+mod session;
+mod update;
+mod wire;
 
 pub use connection::ConnectionPool;
 pub use messages::{SignatureWire, SyncMessage, SyncStatus};

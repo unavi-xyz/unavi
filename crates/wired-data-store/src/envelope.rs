@@ -12,6 +12,8 @@ pub struct Envelope {
     pub ops: Vec<u8>,
     /// Version vector this update builds on (from Loro).
     pub from_version: Vec<u8>,
+    /// Version vector after applying ops.
+    pub to_version: Vec<u8>,
     /// Author's DID.
     pub author: Did,
     /// Signature over canonical encoding.
@@ -23,7 +25,7 @@ impl Envelope {
     ///
     /// # Panics
     ///
-    /// Panics if `ops` or `from_version` length exceeds `u32::MAX`.
+    /// Panics if `ops`, `from_version`, or `to_version` length exceeds `u32::MAX`.
     #[must_use]
     pub fn signable_bytes(&self) -> Vec<u8> {
         let mut buf = Vec::new();
@@ -36,10 +38,16 @@ impl Envelope {
         buf.extend(&self.ops);
         buf.extend(
             &u32::try_from(self.from_version.len())
-                .expect("version length exceeds u32::MAX")
+                .expect("from_version length exceeds u32::MAX")
                 .to_be_bytes(),
         );
         buf.extend(&self.from_version);
+        buf.extend(
+            &u32::try_from(self.to_version.len())
+                .expect("to_version length exceeds u32::MAX")
+                .to_be_bytes(),
+        );
+        buf.extend(&self.to_version);
         buf.extend(self.author.to_string().as_bytes());
         buf
     }

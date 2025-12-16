@@ -14070,6 +14070,7 @@ dependencies = [
  "unavi-script",
  "unavi-server-service",
  "winit",
+ "wired-data-store",
  "wired-protocol",
  "wtransport",
  "xdid",

@@ -1,7 +1,7 @@
 use anyhow::{anyhow, bail};
 use xdid::resolver::DidResolver;
 
-use crate::{DataStoreView, SignedUpdate, crypto};
+use crate::{DataStoreView, Envelope, crypto};
 
 /// Wrapper providing signature verification for `DataStoreView`.
 pub struct ValidatedView {
@@ -25,9 +25,9 @@ impl ValidatedView {
     /// # Errors
     ///
     /// Returns an error if the update could not be validated or applied.
-    pub async fn apply_update(&self, update: &SignedUpdate) -> anyhow::Result<()> {
+    pub async fn apply_update(&self, envelope: &Envelope) -> anyhow::Result<()> {
         // Resolve author's DID document.
-        let document = self.resolver.resolve(&update.author).await?;
+        let document = self.resolver.resolve(&envelope.author).await?;
 
         // Extract JWK from verification method.
         let verification_method = document
@@ -46,23 +46,26 @@ impl ValidatedView {
             .ok_or_else(|| anyhow!("no public key"))?;
 
         // Verify signature.
-        if !crypto::verify_jwk_signature(jwk, &update.signature.bytes, &update.signable_bytes()) {
+        if !crypto::verify_jwk_signature(jwk, &envelope.signature.bytes, &envelope.signable_bytes())
+        {
             bail!("invalid signature");
         }
 
         // Check authorization.
         let record = self
             .inner
-            .get_record(&update.record_id)
+            .get_record(&envelope.record_id)
             .await?
             .ok_or_else(|| anyhow!("record not found"))?;
 
-        if record.genesis.creator != update.author {
+        if record.genesis.creator != envelope.author {
             return Err(anyhow!("unauthorized: only creator can update"));
         }
 
         // Apply ops to Loro doc.
-        self.inner.apply_ops(&update.record_id, &update.ops).await?;
+        self.inner
+            .apply_ops(&envelope.record_id, &envelope.ops)
+            .await?;
 
         Ok(())
     }

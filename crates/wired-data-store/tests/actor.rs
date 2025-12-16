@@ -85,3 +85,133 @@ async fn test_actor_noop_update() {
 
     assert!(result.is_ok(), "noop update should succeed: {:?}", result);
 }
+
+#[tokio::test]
+async fn test_actor_create_snapshot() {
+    let (actor, _dir) = create_actor().await;
+
+    // Create a record.
+    let record_id = actor
+        .create_record(Some("test-schema"))
+        .await
+        .expect("create record");
+
+    // Make some updates.
+    actor
+        .update_record(&record_id, |doc| {
+            let map = doc.get_map("test");
+            map.insert("key1", "value1")?;
+            Ok(())
+        })
+        .await
+        .expect("update 1");
+
+    actor
+        .update_record(&record_id, |doc| {
+            let map = doc.get_map("test");
+            map.insert("key2", "value2")?;
+            Ok(())
+        })
+        .await
+        .expect("update 2");
+
+    // Create a snapshot.
+    let snapshot = actor.create_snapshot(&record_id).await;
+    assert!(snapshot.is_ok(), "should create snapshot: {:?}", snapshot);
+
+    let snapshot = snapshot.expect("snapshot");
+    assert_eq!(snapshot.snapshot_num, 1);
+    assert_eq!(snapshot.record_id, record_id);
+    assert!(!snapshot.loro_snapshot.is_empty());
+    assert!(!snapshot.signature.bytes.is_empty());
+}
+
+#[tokio::test]
+async fn test_multiple_snapshots() {
+    let (actor, _dir) = create_actor().await;
+
+    // Create a record.
+    let record_id = actor
+        .create_record(Some("test-schema"))
+        .await
+        .expect("create record");
+
+    // Create first snapshot.
+    actor
+        .update_record(&record_id, |doc| {
+            let map = doc.get_map("test");
+            map.insert("key1", "value1")?;
+            Ok(())
+        })
+        .await
+        .expect("update");
+    let snap1 = actor.create_snapshot(&record_id).await.expect("snapshot 1");
+    assert_eq!(snap1.snapshot_num, 1);
+
+    // Create second snapshot.
+    actor
+        .update_record(&record_id, |doc| {
+            let map = doc.get_map("test");
+            map.insert("key2", "value2")?;
+            Ok(())
+        })
+        .await
+        .expect("update");
+    let snap2 = actor.create_snapshot(&record_id).await.expect("snapshot 2");
+    assert_eq!(snap2.snapshot_num, 2);
+
+    // Create third snapshot (this should trigger GC of snap1).
+    actor
+        .update_record(&record_id, |doc| {
+            let map = doc.get_map("test");
+            map.insert("key3", "value3")?;
+            Ok(())
+        })
+        .await
+        .expect("update");
+    let snap3 = actor.create_snapshot(&record_id).await.expect("snapshot 3");
+    assert_eq!(snap3.snapshot_num, 3);
+}
+
+#[tokio::test]
+async fn test_snapshot_preserves_data() {
+    let (actor, _dir) = create_actor().await;
+
+    // Create a record.
+    let record_id = actor
+        .create_record(Some("test-schema"))
+        .await
+        .expect("create record");
+
+    // Make updates.
+    actor
+        .update_record(&record_id, |doc| {
+            let map = doc.get_map("data");
+            map.insert("name", "Test Record")?;
+            map.insert("count", 42)?;
+            Ok(())
+        })
+        .await
+        .expect("update");
+
+    // Create a snapshot.
+    let snapshot = actor.create_snapshot(&record_id).await.expect("snapshot");
+
+    // Verify snapshot contains the data.
+    assert!(!snapshot.loro_snapshot.is_empty());
+    assert!(!snapshot.genesis_bytes.is_empty());
+    assert!(!snapshot.version.is_empty());
+
+    // Verify record still has the data after snapshot.
+    let record = actor
+        .view()
+        .inner()
+        .get_record(&record_id)
+        .await
+        .expect("get record")
+        .expect("record exists");
+
+    let map = record.doc().get_map("data");
+    assert!(map.get("name").is_some());
+    assert!(map.get("count").is_some());
+}

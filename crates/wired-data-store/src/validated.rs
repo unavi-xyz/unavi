@@ -1,7 +1,7 @@
 use anyhow::{anyhow, bail};
 use xdid::resolver::DidResolver;
 
-use crate::{DataStoreView, Envelope, crypto};
+use crate::{DataStoreView, Envelope, SNAPSHOT_BYTES_THRESHOLD, SNAPSHOT_OPS_THRESHOLD, crypto};
 
 /// Wrapper providing signature verification for `DataStoreView`.
 pub struct ValidatedView {
@@ -62,10 +62,37 @@ impl ValidatedView {
             return Err(anyhow!("unauthorized: only creator can update"));
         }
 
+        // Store the envelope for sync traceability.
+        // Op ranges are computed from version vector diffs (empty for now, will be
+        // computed when sync is implemented).
+        let op_ranges: Vec<(u64, u64, u64)> = Vec::new();
+        self.inner.store_envelope(envelope, &op_ranges).await?;
+
         // Apply ops to Loro doc.
         self.inner
             .apply_ops(&envelope.record_id, &envelope.ops)
             .await?;
+
+        // Check if we should trigger a snapshot.
+        let (ops_count, bytes_count, _snapshot_num) = self
+            .inner
+            .get_snapshot_counters(&envelope.record_id)
+            .await?;
+
+        let ops_threshold = i64::try_from(SNAPSHOT_OPS_THRESHOLD).unwrap_or(i64::MAX);
+        let bytes_threshold = i64::try_from(SNAPSHOT_BYTES_THRESHOLD).unwrap_or(i64::MAX);
+
+        if ops_count >= ops_threshold || bytes_count >= bytes_threshold {
+            // Snapshot creation requires signing capability, which ValidatedView
+            // doesn't have. Signal that a snapshot is needed via return value or
+            // callback (for now, just log/note it - Actor will handle this).
+            tracing::debug!(
+                record_id = %envelope.record_id.as_str(),
+                ops_count,
+                bytes_count,
+                "snapshot threshold reached"
+            );
+        }
 
         Ok(())
     }

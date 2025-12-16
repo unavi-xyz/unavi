@@ -7,7 +7,7 @@ use xdid::{
 };
 
 use crate::{
-    Genesis, RecordId, ValidatedView,
+    Genesis, RecordId, SignedSnapshot, ValidatedView,
     envelope::{Envelope, Signature},
 };
 
@@ -97,6 +97,9 @@ impl Actor {
         // Apply user modifications.
         f(record.doc_mut())?;
 
+        // Capture version after modifications.
+        let to_version = record.doc().oplog_vv();
+
         // Export delta updates since the captured version.
         let ops = record
             .doc()
@@ -108,14 +111,79 @@ impl Actor {
             return Ok(());
         }
 
-        // Serialize version vector for envelope.
+        // Serialize version vectors for envelope.
         let from_version_bytes = from_version.encode();
+        let to_version_bytes = to_version.encode();
 
         // Create and sign envelope.
-        let envelope = self.sign_envelope(record_id.clone(), ops, from_version_bytes)?;
+        let envelope =
+            self.sign_envelope(record_id.clone(), ops, from_version_bytes, to_version_bytes)?;
 
         // Apply via validated view (verifies signature).
         self.view.apply_update(&envelope).await
+    }
+
+    /// Creates a signed snapshot of the record's current state.
+    ///
+    /// Snapshots consolidate Loro operations into a single exportable state,
+    /// enabling efficient sync by providing a known-good base.
+    ///
+    /// After creating a snapshot, old envelopes are garbage collected using
+    /// lagged deletion (keeping snapshot N-1 and its envelopes).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the record cannot be loaded, snapshot cannot be
+    /// created, or storage fails.
+    pub async fn create_snapshot(&self, record_id: &RecordId) -> Result<SignedSnapshot> {
+        // Load current record state.
+        let record = self
+            .view
+            .inner()
+            .get_record(record_id)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("record not found"))?;
+
+        // Get current snapshot number and increment.
+        let (_ops_count, _bytes_count, current_num) =
+            self.view.inner().get_snapshot_counters(record_id).await?;
+        let snapshot_num = u64::try_from(current_num + 1).context("snapshot_num overflow")?;
+
+        // Export Loro snapshot.
+        let loro_snapshot = record
+            .doc()
+            .export(loro::ExportMode::Snapshot)
+            .context("export loro snapshot")?;
+
+        // Capture current version.
+        let version = record.doc().oplog_vv().encode();
+
+        // Serialize genesis (simple format: creator DID + created timestamp + nonce + schema).
+        let genesis_bytes = serialize_genesis(&record.genesis);
+
+        // Build and sign snapshot.
+        let snapshot = self.sign_snapshot(
+            record_id.clone(),
+            snapshot_num,
+            version,
+            genesis_bytes,
+            loro_snapshot,
+        )?;
+
+        // Store snapshot (also resets counters).
+        self.view.inner().store_snapshot(&snapshot).await?;
+
+        // GC old envelopes using lagged deletion.
+        let deleted = self.view.inner().gc_old_envelopes(record_id).await?;
+        if deleted > 0 {
+            tracing::debug!(
+                record_id = %record_id.as_str(),
+                deleted,
+                "garbage collected old envelopes"
+            );
+        }
+
+        Ok(snapshot)
     }
 
     /// Signs an envelope for the given record and operations.
@@ -124,12 +192,14 @@ impl Actor {
         record_id: RecordId,
         ops: Vec<u8>,
         from_version: Vec<u8>,
+        to_version: Vec<u8>,
     ) -> Result<Envelope> {
         // Build unsigned envelope for signable bytes.
         let mut envelope = Envelope {
             record_id,
             ops,
             from_version,
+            to_version,
             author: self.did.clone(),
             signature: Signature {
                 alg: SmolStr::new(ALG_ES256),
@@ -144,4 +214,61 @@ impl Actor {
         envelope.signature.bytes = signature_bytes;
         Ok(envelope)
     }
+
+    /// Signs a snapshot for the given record.
+    fn sign_snapshot(
+        &self,
+        record_id: RecordId,
+        snapshot_num: u64,
+        version: Vec<u8>,
+        genesis_bytes: Vec<u8>,
+        loro_snapshot: Vec<u8>,
+    ) -> Result<SignedSnapshot> {
+        // Build unsigned snapshot for signable bytes.
+        let mut snapshot = SignedSnapshot {
+            record_id,
+            snapshot_num,
+            version,
+            genesis_bytes,
+            loro_snapshot,
+            signature: Signature {
+                alg: SmolStr::new(ALG_ES256),
+                bytes: Vec::new(),
+            },
+        };
+
+        // Sign canonical bytes.
+        let signable = snapshot.signable_bytes();
+        let signature_bytes = self.signing_key.sign(&signable).context("sign snapshot")?;
+
+        snapshot.signature.bytes = signature_bytes;
+        Ok(snapshot)
+    }
+}
+
+/// Serializes a Genesis block into a canonical byte format.
+///
+/// Format: creator DID (length-prefixed) + created (u64 BE) + nonce (16 bytes) + schema (length-prefixed, 0 if None).
+fn serialize_genesis(genesis: &Genesis) -> Vec<u8> {
+    let mut buf = Vec::new();
+    let creator_bytes = genesis.creator.to_string();
+    buf.extend(
+        &u32::try_from(creator_bytes.len())
+            .expect("creator length exceeds u32::MAX")
+            .to_be_bytes(),
+    );
+    buf.extend(creator_bytes.as_bytes());
+    buf.extend(&genesis.created.to_be_bytes());
+    buf.extend(&genesis.nonce);
+    if let Some(ref schema) = genesis.schema {
+        buf.extend(
+            &u32::try_from(schema.len())
+                .expect("schema length exceeds u32::MAX")
+                .to_be_bytes(),
+        );
+        buf.extend(schema.as_bytes());
+    } else {
+        buf.extend(&0u32.to_be_bytes());
+    }
+    buf
 }

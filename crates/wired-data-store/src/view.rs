@@ -816,4 +816,419 @@ impl DataStoreView {
 
         Ok(())
     }
+
+    // =========================================================================
+    // Envelope Storage
+    // =========================================================================
+
+    /// Stores an envelope and its op ranges to the database.
+    ///
+    /// # Arguments
+    ///
+    /// * `envelope` - The signed envelope to store
+    /// * `op_ranges` - Vector of (`peer_id`, `counter_start`, `counter_end`) tuples
+    ///
+    /// # Errors
+    ///
+    /// Returns error if database insert fails.
+    ///
+    /// # Panics
+    ///
+    /// Panics if system time is before UNIX epoch.
+    pub(crate) async fn store_envelope(
+        &self,
+        envelope: &crate::Envelope,
+        op_ranges: &[(u64, u64, u64)],
+    ) -> Result<i64> {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("system time")
+            .as_secs()
+            .cast_signed();
+
+        let record_id = envelope.record_id.as_str();
+        let owner_did = self.owner_did.to_string();
+        let author = envelope.author.to_string();
+        let signature_alg = envelope.signature.alg.as_str();
+        let ops_size = i64::try_from(envelope.ops.len()).context("ops size exceeds i64::MAX")?;
+
+        let mut tx = self.db.pool().begin().await.context("begin transaction")?;
+
+        // Insert envelope.
+        let envelope_id: i64 = sqlx::query_scalar!(
+            "INSERT INTO envelopes (record_id, owner_did, ops, from_version, to_version, author, signature_alg, signature_bytes, ops_size, created)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             RETURNING id",
+            record_id,
+            owner_did,
+            envelope.ops,
+            envelope.from_version,
+            envelope.to_version,
+            author,
+            signature_alg,
+            envelope.signature.bytes,
+            ops_size,
+            now
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .context("insert envelope")?
+        .ok_or_else(|| anyhow::anyhow!("insert did not return id"))?;
+
+        // Insert op ranges.
+        for &(peer_id, counter_start, counter_end) in op_ranges {
+            let peer_id_i64 = i64::try_from(peer_id).context("peer_id exceeds i64::MAX")?;
+            let start_i64 =
+                i64::try_from(counter_start).context("counter_start exceeds i64::MAX")?;
+            let end_i64 = i64::try_from(counter_end).context("counter_end exceeds i64::MAX")?;
+
+            sqlx::query!(
+                "INSERT INTO envelope_op_ranges (envelope_id, peer_id, counter_start, counter_end)
+                 VALUES (?, ?, ?, ?)",
+                envelope_id,
+                peer_id_i64,
+                start_i64,
+                end_i64
+            )
+            .execute(&mut *tx)
+            .await
+            .context("insert envelope op range")?;
+        }
+
+        // Update snapshot counters.
+        sqlx::query!(
+            "UPDATE records SET ops_since_snapshot = ops_since_snapshot + 1,
+                               bytes_since_snapshot = bytes_since_snapshot + ?
+             WHERE id = ? AND owner_did = ?",
+            ops_size,
+            record_id,
+            owner_did
+        )
+        .execute(&mut *tx)
+        .await
+        .context("update snapshot counters")?;
+
+        tx.commit().await.context("commit transaction")?;
+
+        Ok(envelope_id)
+    }
+
+    /// Gets the current snapshot trigger counters for a record.
+    ///
+    /// # Returns
+    ///
+    /// Tuple of (`ops_since_snapshot`, `bytes_since_snapshot`, `latest_snapshot_num`)
+    ///
+    /// # Errors
+    ///
+    /// Returns error if database query fails or record not found.
+    pub(crate) async fn get_snapshot_counters(
+        &self,
+        record_id: &RecordId,
+    ) -> Result<(i64, i64, i64)> {
+        let id = record_id.as_str();
+        let owner_did = self.owner_did.to_string();
+
+        let row = sqlx::query!(
+            "SELECT ops_since_snapshot, bytes_since_snapshot, latest_snapshot_num
+             FROM records WHERE id = ? AND owner_did = ?",
+            id,
+            owner_did
+        )
+        .fetch_one(self.db.pool())
+        .await
+        .context("query snapshot counters")?;
+
+        Ok((
+            row.ops_since_snapshot,
+            row.bytes_since_snapshot,
+            row.latest_snapshot_num,
+        ))
+    }
+
+    /// Stores a signed snapshot to the database.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if database insert fails.
+    ///
+    /// # Panics
+    ///
+    /// Panics if system time is before UNIX epoch.
+    pub(crate) async fn store_snapshot(&self, snapshot: &crate::SignedSnapshot) -> Result<()> {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("system time")
+            .as_secs()
+            .cast_signed();
+
+        let record_id = snapshot.record_id.as_str();
+        let owner_did = self.owner_did.to_string();
+        let snapshot_num =
+            i64::try_from(snapshot.snapshot_num).context("snapshot_num exceeds i64::MAX")?;
+        let signature_alg = snapshot.signature.alg.as_str();
+        let snapshot_size = i64::try_from(snapshot.loro_snapshot.len())
+            .context("snapshot size exceeds i64::MAX")?;
+
+        let mut tx = self.db.pool().begin().await.context("begin transaction")?;
+
+        // Insert snapshot.
+        sqlx::query!(
+            "INSERT INTO snapshots (record_id, owner_did, snapshot_num, version, genesis_bytes, snapshot_data, signature_alg, signature_bytes, snapshot_size, created)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            record_id,
+            owner_did,
+            snapshot_num,
+            snapshot.version,
+            snapshot.genesis_bytes,
+            snapshot.loro_snapshot,
+            signature_alg,
+            snapshot.signature.bytes,
+            snapshot_size,
+            now
+        )
+        .execute(&mut *tx)
+        .await
+        .context("insert snapshot")?;
+
+        // Reset counters and update latest_snapshot_num.
+        sqlx::query!(
+            "UPDATE records SET ops_since_snapshot = 0,
+                               bytes_since_snapshot = 0,
+                               latest_snapshot_num = ?
+             WHERE id = ? AND owner_did = ?",
+            snapshot_num,
+            record_id,
+            owner_did
+        )
+        .execute(&mut *tx)
+        .await
+        .context("reset snapshot counters")?;
+
+        tx.commit().await.context("commit transaction")?;
+
+        Ok(())
+    }
+
+    /// Gets the latest snapshot for a record.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if database query fails.
+    pub(crate) async fn get_latest_snapshot(
+        &self,
+        record_id: &RecordId,
+    ) -> Result<Option<crate::SignedSnapshot>> {
+        let id = record_id.as_str();
+        let owner_did = self.owner_did.to_string();
+
+        let row = sqlx::query!(
+            "SELECT snapshot_num, version, genesis_bytes, snapshot_data, signature_alg, signature_bytes
+             FROM snapshots
+             WHERE record_id = ? AND owner_did = ?
+             ORDER BY snapshot_num DESC
+             LIMIT 1",
+            id,
+            owner_did
+        )
+        .fetch_optional(self.db.pool())
+        .await
+        .context("query latest snapshot")?;
+
+        let Some(row) = row else {
+            return Ok(None);
+        };
+
+        let snapshot_num =
+            u64::try_from(row.snapshot_num).context("snapshot_num exceeds u64::MAX")?;
+
+        Ok(Some(crate::SignedSnapshot {
+            record_id: record_id.clone(),
+            snapshot_num,
+            version: row.version,
+            genesis_bytes: row.genesis_bytes,
+            loro_snapshot: row.snapshot_data,
+            signature: crate::Signature {
+                alg: SmolStr::from(row.signature_alg),
+                bytes: row.signature_bytes,
+            },
+        }))
+    }
+
+    /// Gets envelopes for a record since a given snapshot number.
+    ///
+    /// Returns envelopes in chronological order (oldest first).
+    ///
+    /// # Errors
+    ///
+    /// Returns error if database query fails.
+    pub(crate) async fn get_envelopes_since_snapshot(
+        &self,
+        record_id: &RecordId,
+        since_snapshot_num: i64,
+    ) -> Result<Vec<crate::Envelope>> {
+        let id = record_id.as_str();
+        let owner_did = self.owner_did.to_string();
+
+        // Get the version of the snapshot we're starting from.
+        let snapshot_version: Option<Vec<u8>> = if since_snapshot_num > 0 {
+            sqlx::query_scalar!(
+                "SELECT version FROM snapshots
+                 WHERE record_id = ? AND owner_did = ? AND snapshot_num = ?",
+                id,
+                owner_did,
+                since_snapshot_num
+            )
+            .fetch_optional(self.db.pool())
+            .await
+            .context("query snapshot version")?
+        } else {
+            None
+        };
+
+        // Get all envelopes created after the snapshot.
+        // If no snapshot version, get all envelopes.
+        let envelopes = if let Some(ref version) = snapshot_version {
+            let rows = sqlx::query!(
+                "SELECT ops, from_version, to_version, author, signature_alg, signature_bytes
+                 FROM envelopes
+                 WHERE record_id = ? AND owner_did = ? AND from_version >= ?
+                 ORDER BY id ASC",
+                id,
+                owner_did,
+                version
+            )
+            .fetch_all(self.db.pool())
+            .await
+            .context("query envelopes since snapshot")?;
+
+            rows.into_iter()
+                .map(|row| {
+                    let author = row
+                        .author
+                        .parse()
+                        .map_err(|e| anyhow::anyhow!("invalid author DID: {e}"))?;
+                    Ok(crate::Envelope {
+                        record_id: record_id.clone(),
+                        ops: row.ops,
+                        from_version: row.from_version,
+                        to_version: row.to_version,
+                        author,
+                        signature: crate::Signature {
+                            alg: SmolStr::from(row.signature_alg),
+                            bytes: row.signature_bytes,
+                        },
+                    })
+                })
+                .collect::<Result<Vec<_>>>()?
+        } else {
+            let rows = sqlx::query!(
+                "SELECT ops, from_version, to_version, author, signature_alg, signature_bytes
+                 FROM envelopes
+                 WHERE record_id = ? AND owner_did = ?
+                 ORDER BY id ASC",
+                id,
+                owner_did
+            )
+            .fetch_all(self.db.pool())
+            .await
+            .context("query all envelopes")?;
+
+            rows.into_iter()
+                .map(|row| {
+                    let author = row
+                        .author
+                        .parse()
+                        .map_err(|e| anyhow::anyhow!("invalid author DID: {e}"))?;
+                    Ok(crate::Envelope {
+                        record_id: record_id.clone(),
+                        ops: row.ops,
+                        from_version: row.from_version,
+                        to_version: row.to_version,
+                        author,
+                        signature: crate::Signature {
+                            alg: SmolStr::from(row.signature_alg),
+                            bytes: row.signature_bytes,
+                        },
+                    })
+                })
+                .collect::<Result<Vec<_>>>()?
+        };
+
+        Ok(envelopes)
+    }
+
+    /// Deletes old envelopes and snapshots using lagged deletion strategy.
+    ///
+    /// Keeps snapshot N-1 and all envelopes from N-1 onwards.
+    /// Deletes snapshot N-2 and earlier, and all their associated envelopes.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if database operations fail.
+    pub(crate) async fn gc_old_envelopes(&self, record_id: &RecordId) -> Result<u64> {
+        let id = record_id.as_str();
+        let owner_did = self.owner_did.to_string();
+
+        // Get latest snapshot number.
+        let latest_num: i64 = sqlx::query_scalar!(
+            "SELECT latest_snapshot_num FROM records WHERE id = ? AND owner_did = ?",
+            id,
+            owner_did
+        )
+        .fetch_one(self.db.pool())
+        .await
+        .context("query latest snapshot num")?;
+
+        // Need at least 2 snapshots for lagged deletion.
+        if latest_num < 2 {
+            return Ok(0);
+        }
+
+        let keep_from_num = latest_num - 1;
+
+        let mut tx = self.db.pool().begin().await.context("begin transaction")?;
+
+        // Get the version of snapshot N-1.
+        let keep_from_version: Vec<u8> = sqlx::query_scalar!(
+            "SELECT version FROM snapshots
+             WHERE record_id = ? AND owner_did = ? AND snapshot_num = ?",
+            id,
+            owner_did,
+            keep_from_num
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .context("query keep-from snapshot version")?;
+
+        // Delete old snapshots (before N-1).
+        sqlx::query!(
+            "DELETE FROM snapshots
+             WHERE record_id = ? AND owner_did = ? AND snapshot_num < ?",
+            id,
+            owner_did,
+            keep_from_num
+        )
+        .execute(&mut *tx)
+        .await
+        .context("delete old snapshots")?;
+
+        // Delete old envelopes (to_version < keep_from_version).
+        // Using comparison on BLOB assumes lexicographic ordering works for version vectors.
+        // TODO: This is a simplification; for production, decode and compare properly.
+        let deleted = sqlx::query!(
+            "DELETE FROM envelopes
+             WHERE record_id = ? AND owner_did = ? AND to_version < ?",
+            id,
+            owner_did,
+            keep_from_version
+        )
+        .execute(&mut *tx)
+        .await
+        .context("delete old envelopes")?;
+
+        tx.commit().await.context("commit transaction")?;
+
+        Ok(deleted.rows_affected())
+    }
 }

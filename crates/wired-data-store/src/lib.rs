@@ -9,6 +9,7 @@ mod envelope;
 mod gc;
 mod quota;
 mod record;
+mod snapshot;
 mod store;
 mod sync;
 mod validated;
@@ -20,6 +21,7 @@ pub use envelope::{Envelope, Signature};
 pub use gc::GarbageCollectStats;
 pub use quota::{DEFAULT_QUOTA_BYTES, QuotaExceeded, UserQuota};
 pub use record::{Genesis, Pin, Record, RecordId};
+pub use snapshot::{SNAPSHOT_BYTES_THRESHOLD, SNAPSHOT_OPS_THRESHOLD, SignedSnapshot};
 pub use store::DataStore;
 pub use sync::{
     ALPN, ConnectionPool, SignatureWire, SyncEvent, SyncEventType, SyncMessage, SyncPeer,

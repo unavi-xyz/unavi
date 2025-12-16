@@ -5,7 +5,7 @@ use crate::RecordId;
 
 /// Signed batch of Loro operations.
 #[derive(Clone, Debug)]
-pub struct SignedUpdate {
+pub struct Envelope {
     /// Target record CID.
     pub record_id: RecordId,
     /// Loro-encoded updates (`ExportMode::updates`).
@@ -18,7 +18,7 @@ pub struct SignedUpdate {
     pub signature: Signature,
 }
 
-impl SignedUpdate {
+impl Envelope {
     /// Canonical bytes for signing/verification.
     ///
     /// # Panics

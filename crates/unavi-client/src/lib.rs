@@ -7,15 +7,14 @@ use bevy_av1::VideoTargetApp;
 use bevy_rich_text3d::Text3dPlugin;
 use bitflags::bitflags;
 use directories::ProjectDirs;
-use dwn::{Dwn, stores::NativeDbStore};
 
 pub mod assets;
 mod async_commands;
-mod auth;
 #[cfg(feature = "devtools-network")]
 mod devtools;
 mod fade;
 mod icon;
+mod networking;
 mod scene;
 mod space;
 
@@ -60,7 +59,6 @@ bitflags! {
 }
 
 pub struct UnaviPlugin {
-    pub storage: Storage,
     pub debug: DebugFlags,
 }
 
@@ -68,16 +66,6 @@ impl Plugin for UnaviPlugin {
     fn build(&self, app: &mut App) {
         assets::copy::copy_assets_to_dirs().expect("failed to copy assets");
         assets::download::download_web_assets().expect("failed to download web assets");
-
-        let store = match self.storage {
-            Storage::InMemory => NativeDbStore::new_in_memory(),
-            Storage::Disk => {
-                let path = db_path();
-                NativeDbStore::new(path)
-            }
-        }
-        .expect("instantiate native db");
-        let dwn = Dwn::from(store);
 
         app.add_plugins((
             DefaultPlugins
@@ -111,6 +99,7 @@ impl Plugin for UnaviPlugin {
             unavi_player::PlayerPlugin,
             unavi_portal::PortalPlugin,
             unavi_script::ScriptPlugin,
+            networking::NetworkingPlugin,
             space::SpacePlugin,
         ))
         .init_video_target_asset::<StandardMaterial>()
@@ -137,13 +126,9 @@ impl Plugin for UnaviPlugin {
         }
 
         app.insert_resource(ClearColor(Color::BLACK))
-            .insert_resource(LocalDwn(dwn))
-            .init_resource::<auth::LocalActor>()
-            .add_observer(auth::handle_login)
             .add_systems(
                 Startup,
                 (
-                    auth::trigger_login,
                     icon::set_window_icon,
                     scene::spawn_lights,
                     scene::spawn_scene,
@@ -152,6 +137,3 @@ impl Plugin for UnaviPlugin {
             .add_systems(FixedUpdate, async_commands::apply_async_commands);
     }
 }
-
-#[derive(Resource)]
-struct LocalDwn(pub Dwn);

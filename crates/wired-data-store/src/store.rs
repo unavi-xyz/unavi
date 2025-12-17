@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use flume::{Receiver, Sender};
-use iroh::protocol::Router;
+use iroh::protocol::{Router, RouterBuilder};
 use iroh::{Endpoint, EndpointId, SecretKey};
 use xdid::core::did::Did;
 
@@ -17,25 +17,34 @@ use crate::{DataStoreView, GarbageCollectStats, gc, hash_did};
 /// data directory, which are shared across all users. Use `view_for_user()` to
 /// create lightweight per-user `DataStoreView` instances.
 pub struct DataStore {
-    _router: Router,
     connection_pool: Arc<ConnectionPool>,
     data_dir: PathBuf,
     db: Database,
-    iroh: Endpoint,
+    endpoint: Endpoint,
+    router: Router,
     sync_rx: Receiver<SyncEvent>,
     sync_tx: Sender<SyncEvent>,
 }
 
 impl DataStore {
-    /// Initialize the data store with shared infrastructure.
-    ///
-    /// Creates the database, blobs directory, and records directory.
-    /// This should be called once during server startup.
+    /// Initialize the data store with the default `iroh` [Router].
     ///
     /// # Errors
     ///
     /// Returns error if directories cannot be created or database cannot be initialized.
     pub async fn new(data_dir: PathBuf) -> anyhow::Result<Self> {
+        Self::new_with_router(data_dir, |_, r| r).await
+    }
+
+    /// Initialize the data store with a callback for building the `iroh` [Router].
+    ///
+    /// # Errors
+    ///
+    /// Returns error if directories cannot be created or database cannot be initialized.
+    pub async fn new_with_router(
+        data_dir: PathBuf,
+        f: impl FnOnce(&Endpoint, RouterBuilder) -> RouterBuilder,
+    ) -> anyhow::Result<Self> {
         std::fs::create_dir_all(data_dir.join("blobs")).context("create blobs directory")?;
         std::fs::create_dir_all(data_dir.join("records")).context("create records directory")?;
 
@@ -43,7 +52,7 @@ impl DataStore {
         let db = Database::new(&db_path).await?;
 
         // Initialize iroh endpoint.
-        let iroh = Self::init_iroh(&db, &data_dir).await?;
+        let endpoint = Self::init_iroh(&db, &data_dir).await?;
 
         // Create connection pool.
         let connection_pool = Arc::new(ConnectionPool::new());
@@ -52,17 +61,19 @@ impl DataStore {
         let protocol = WiredSyncProtocol::new(db.clone(), Arc::clone(&connection_pool));
 
         // Create router and register sync protocol.
-        let router = Router::builder(iroh.clone()).accept(ALPN, protocol).spawn();
+        let router_builder = Router::builder(endpoint.clone()).accept(ALPN, protocol);
+        let router_builder = f(&endpoint, router_builder);
+        let router = router_builder.spawn();
 
         // Create sync event channel.
         let (sync_tx, sync_rx) = flume::unbounded();
 
         Ok(Self {
-            _router: router,
             connection_pool,
             data_dir,
             db,
-            iroh,
+            endpoint,
+            router,
             sync_rx,
             sync_tx,
         })
@@ -73,11 +84,15 @@ impl DataStore {
         let secret_key = Self::load_or_create_secret_key(db).await?;
 
         // Create iroh endpoint.
-        let endpoint = Endpoint::builder()
-            .secret_key(secret_key)
-            .bind()
-            .await
-            .context("bind iroh endpoint")?;
+        let mut builder = Endpoint::builder().secret_key(secret_key);
+
+        #[cfg(feature = "discovery-local-network")]
+        {
+            let mdns = iroh::discovery::mdns::MdnsDiscovery::builder();
+            builder = builder.discovery(mdns);
+        }
+
+        let endpoint = builder.bind().await.context("bind iroh endpoint")?;
 
         Ok(endpoint)
     }
@@ -153,16 +168,21 @@ impl DataStore {
         &self.data_dir
     }
 
+    #[must_use]
+    pub const fn router(&self) -> &Router {
+        &self.router
+    }
+
     /// Access to the iroh endpoint for peer connections.
     #[must_use]
-    pub const fn iroh(&self) -> &Endpoint {
-        &self.iroh
+    pub const fn endpoint(&self) -> &Endpoint {
+        &self.endpoint
     }
 
     /// This node's iroh [`EndpointId`].
     #[must_use]
     pub fn endpoint_id(&self) -> EndpointId {
-        self.iroh.id()
+        self.endpoint.id()
     }
 
     /// Access to the connection pool for sync operations.

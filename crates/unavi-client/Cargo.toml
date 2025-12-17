@@ -8,10 +8,11 @@ repository.workspace = true
 version.workspace    = true
 
 [features]
-default          = []
-devtools         = ["devtools-bevy", "devtools-network"]
-devtools-bevy    = ["bevy/bevy_dev_tools"]
-devtools-network = []
+default                 = ["discovery-local-network"]
+devtools                = ["devtools-bevy", "devtools-network"]
+devtools-bevy           = ["bevy/bevy_dev_tools"]
+devtools-network        = []
+discovery-local-network = ["wired-data-store/discovery-local-network"]
 
 [lints]
 workspace = true
@@ -36,13 +37,18 @@ dwn.workspace              = true
 flume.workspace            = true
 futures.workspace          = true
 image                      = { features = ["png"], workspace = true }
+iroh.workspace             = true
+iroh-gossip                = "0.95.0"
+iroh-tickets = "0.2.0"
 log                        = { features = ["max_level_debug", "release_max_level_info"], version = "*" }
+postcard.workspace         = true
 reqwest                    = { default-features = false, features = ["blocking", "rustls-tls"], version = "0.12.24" }
 scc.workspace              = true
 serde.workspace            = true
 serde_json.workspace       = true
 smallvec.workspace         = true
 tarpc                      = { features = ["serde-transport"], workspace = true }
+time                       = "0.3.44"
 tokio                      = { features = ["rt", "rt-multi-thread"], workspace = true }
 tokio-serde                = { features = ["bincode"], workspace = true }
 unavi-constants.path       = "../unavi-constants"

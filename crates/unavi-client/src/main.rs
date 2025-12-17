@@ -4,16 +4,12 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 use clap::Parser;
-use unavi_client::{DebugFlags, Storage};
+use unavi_client::DebugFlags;
 
 #[derive(Parser, Debug)]
 #[command(version)]
 #[allow(clippy::struct_excessive_bools)]
 struct Args {
-    /// Run the local DWN in-memory instead of writing to disk.
-    #[arg(long, default_value_t = false)]
-    in_memory: bool,
-
     /// Enable FPS counter.
     #[cfg(feature = "devtools-bevy")]
     #[arg(long, default_value_t = false)]
@@ -53,14 +49,7 @@ fn main() {
     }
 
     App::new()
-        .add_plugins(unavi_client::UnaviPlugin {
-            storage: if args.in_memory {
-                Storage::InMemory
-            } else {
-                Storage::Disk
-            },
-            debug,
-        })
+        .add_plugins(unavi_client::UnaviPlugin { debug })
         .run();
 
     // Give time for other threads to finish.

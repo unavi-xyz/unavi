@@ -1,12 +1,13 @@
 use cid::Cid;
 use loro::LoroDoc;
 use multihash::Multihash;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use smol_str::SmolStr;
 use xdid::core::did::Did;
 
 /// CID of the genesis block, uniquely identifies a record.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct RecordId(pub Cid);
 
 impl RecordId {

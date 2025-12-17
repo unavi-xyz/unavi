@@ -30,7 +30,7 @@ pub use sync::{
 pub use validated::ValidatedView;
 pub use view::DataStoreView;
 
-pub(crate) fn hash_did(did: &Did) -> String {
+fn hash_did(did: &Did) -> String {
     let hash = Sha256::digest(did.to_string().as_bytes());
     format!("{hash:x}")[..16].to_string()
 }

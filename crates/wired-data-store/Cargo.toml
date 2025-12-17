@@ -9,6 +9,10 @@ version.workspace    = true
 [lints]
 workspace = true
 
+[features]
+default                 = []
+discovery-local-network = ["iroh/discovery-local-network"]
+
 [dependencies]
 anyhow.workspace      = true
 bincode               = { features = ["derive"], version = "2" }
@@ -16,7 +20,7 @@ cid                   = "0.11.1"
 flume.workspace       = true
 futures.workspace     = true
 getrandom             = "0.3.4"
-iroh                  = "0.95.1"
+iroh.workspace        = true
 jose-jwk              = "0.1.2"
 loro                  = "1.10.3"
 multihash             = "0.19.3"
@@ -25,6 +29,7 @@ parking_lot.workspace = true
 rand.workspace        = true
 ring                  = "0.17.14"
 scc.workspace         = true
+serde.workspace       = true
 sha2                  = "0.10.9"
 signature             = "2.2.0"
 smol_str              = "0.3.4"

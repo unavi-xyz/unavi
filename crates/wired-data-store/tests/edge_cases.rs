@@ -25,7 +25,7 @@ async fn test_empty_schema() {
     let id = view.create_record(genesis).await.expect("create record");
 
     let record = view
-        .get_record(&id)
+        .get_record(id)
         .await
         .expect("get record")
         .expect("exists");
@@ -49,7 +49,7 @@ async fn test_unicode_schema() {
     let id = view.create_record(genesis).await.expect("create record");
 
     let record = view
-        .get_record(&id)
+        .get_record(id)
         .await
         .expect("get record")
         .expect("exists");
@@ -73,7 +73,7 @@ async fn test_very_long_schema() {
     let id = view.create_record(genesis).await.expect("create record");
 
     let record = view
-        .get_record(&id)
+        .get_record(id)
         .await
         .expect("get record")
         .expect("exists");
@@ -123,8 +123,8 @@ async fn test_pin_then_unpin_then_gc() {
     let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let id = view.create_record(genesis).await.expect("create");
 
-    view.pin_record(&id, None).await.expect("pin");
-    view.unpin_record(&id).await.expect("unpin");
+    view.pin_record(id, None).await.expect("pin");
+    view.unpin_record(id).await.expect("unpin");
 
     // Record is unpinned, but since it was explicitly created, GC behavior
     // depends on whether there are expired pins. With no pin expiry,

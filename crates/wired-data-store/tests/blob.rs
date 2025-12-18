@@ -85,7 +85,7 @@ async fn test_link_blob_to_record() {
     let record_id = view.create_record(genesis).await.expect("create record");
     let blob_id = view.store_blob(BLOB_HELLO).await.expect("store blob");
 
-    view.link_blob_to_record(&record_id, &blob_id)
+    view.link_blob_to_record(record_id, &blob_id)
         .await
         .expect("link blob to record");
 
@@ -100,7 +100,7 @@ async fn test_link_blob_fails_without_upload() {
     let record_id = view.create_record(genesis).await.expect("create record");
 
     let fake_blob_id = BlobId::from_bytes(b"never uploaded");
-    let result = view.link_blob_to_record(&record_id, &fake_blob_id).await;
+    let result = view.link_blob_to_record(record_id, &fake_blob_id).await;
 
     assert!(result.is_err());
 }
@@ -123,7 +123,7 @@ async fn test_cross_user_blob_isolation() {
         .await
         .expect("bob creates record");
 
-    let result = view_bob.link_blob_to_record(&record_id, &blob_id).await;
+    let result = view_bob.link_blob_to_record(record_id, &blob_id).await;
     assert!(
         result.is_err(),
         "bob shouldn't be able to link alice's blob"
@@ -160,20 +160,20 @@ async fn test_blob_shared_on_disk_but_separate_ownership() {
         .expect("bob creates record");
 
     view_alice
-        .link_blob_to_record(&record_a, &blob_id_alice)
+        .link_blob_to_record(record_a, &blob_id_alice)
         .await
         .expect("alice links blob");
     view_bob
-        .link_blob_to_record(&record_b, &blob_id_bob)
+        .link_blob_to_record(record_b, &blob_id_bob)
         .await
         .expect("bob links blob");
 
     view_alice
-        .pin_record(&record_a, Some(1))
+        .pin_record(record_a, Some(1))
         .await
         .expect("alice pins with expiry");
     view_bob
-        .pin_record(&record_b, None)
+        .pin_record(record_b, None)
         .await
         .expect("bob pins permanently");
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;

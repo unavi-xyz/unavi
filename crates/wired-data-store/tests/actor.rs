@@ -1,11 +1,12 @@
 mod common;
 
-use wired_data_store::{Actor, DataStore, ValidatedView};
+use wired_data_store::{Actor, DataStore, DataStoreBuilder, ValidatedView};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
 async fn create_actor() -> (Actor, tempfile::TempDir) {
     let dir = tempfile::tempdir().expect("create temp dir");
-    let store = DataStore::new(dir.path().to_path_buf())
+    let store = DataStoreBuilder::new(dir.path().to_path_buf())
+        .build()
         .await
         .expect("create store");
 
@@ -29,7 +30,7 @@ async fn test_actor_create_record() {
     let record_id = record_id.expect("record id");
 
     // Verify record exists.
-    let record = actor.view().inner().get_record(&record_id).await;
+    let record = actor.view().inner().get_record(record_id).await;
     assert!(record.is_ok());
     let record = record.expect("get record").expect("record should exist");
     assert_eq!(record.genesis.creator, *actor.did());
@@ -47,7 +48,7 @@ async fn test_actor_update_record() {
 
     // Update the record.
     let result = actor
-        .update_record(&record_id, |doc| {
+        .update_record(record_id, |doc| {
             let map = doc.get_map("test");
             map.insert("key", "value")?;
             Ok(())
@@ -60,7 +61,7 @@ async fn test_actor_update_record() {
     let record = actor
         .view()
         .inner()
-        .get_record(&record_id)
+        .get_record(record_id)
         .await
         .expect("get record")
         .expect("record should exist");
@@ -81,7 +82,7 @@ async fn test_actor_noop_update() {
         .expect("create record");
 
     // Update with no changes should succeed (no-op).
-    let result = actor.update_record(&record_id, |_doc| Ok(())).await;
+    let result = actor.update_record(record_id, |_doc| Ok(())).await;
 
     assert!(result.is_ok(), "noop update should succeed: {:?}", result);
 }
@@ -98,7 +99,7 @@ async fn test_actor_create_snapshot() {
 
     // Make some updates.
     actor
-        .update_record(&record_id, |doc| {
+        .update_record(record_id, |doc| {
             let map = doc.get_map("test");
             map.insert("key1", "value1")?;
             Ok(())
@@ -107,7 +108,7 @@ async fn test_actor_create_snapshot() {
         .expect("update 1");
 
     actor
-        .update_record(&record_id, |doc| {
+        .update_record(record_id, |doc| {
             let map = doc.get_map("test");
             map.insert("key2", "value2")?;
             Ok(())
@@ -116,7 +117,7 @@ async fn test_actor_create_snapshot() {
         .expect("update 2");
 
     // Create a snapshot.
-    let snapshot = actor.create_snapshot(&record_id).await;
+    let snapshot = actor.create_snapshot(record_id).await;
     assert!(snapshot.is_ok(), "should create snapshot: {:?}", snapshot);
 
     let snapshot = snapshot.expect("snapshot");
@@ -138,38 +139,38 @@ async fn test_multiple_snapshots() {
 
     // Create first snapshot.
     actor
-        .update_record(&record_id, |doc| {
+        .update_record(record_id, |doc| {
             let map = doc.get_map("test");
             map.insert("key1", "value1")?;
             Ok(())
         })
         .await
         .expect("update");
-    let snap1 = actor.create_snapshot(&record_id).await.expect("snapshot 1");
+    let snap1 = actor.create_snapshot(record_id).await.expect("snapshot 1");
     assert_eq!(snap1.snapshot_num, 1);
 
     // Create second snapshot.
     actor
-        .update_record(&record_id, |doc| {
+        .update_record(record_id, |doc| {
             let map = doc.get_map("test");
             map.insert("key2", "value2")?;
             Ok(())
         })
         .await
         .expect("update");
-    let snap2 = actor.create_snapshot(&record_id).await.expect("snapshot 2");
+    let snap2 = actor.create_snapshot(record_id).await.expect("snapshot 2");
     assert_eq!(snap2.snapshot_num, 2);
 
     // Create third snapshot (this should trigger GC of snap1).
     actor
-        .update_record(&record_id, |doc| {
+        .update_record(record_id, |doc| {
             let map = doc.get_map("test");
             map.insert("key3", "value3")?;
             Ok(())
         })
         .await
         .expect("update");
-    let snap3 = actor.create_snapshot(&record_id).await.expect("snapshot 3");
+    let snap3 = actor.create_snapshot(record_id).await.expect("snapshot 3");
     assert_eq!(snap3.snapshot_num, 3);
 }
 
@@ -185,7 +186,7 @@ async fn test_snapshot_preserves_data() {
 
     // Make updates.
     actor
-        .update_record(&record_id, |doc| {
+        .update_record(record_id, |doc| {
             let map = doc.get_map("data");
             map.insert("name", "Test Record")?;
             map.insert("count", 42)?;
@@ -195,7 +196,7 @@ async fn test_snapshot_preserves_data() {
         .expect("update");
 
     // Create a snapshot.
-    let snapshot = actor.create_snapshot(&record_id).await.expect("snapshot");
+    let snapshot = actor.create_snapshot(record_id).await.expect("snapshot");
 
     // Verify snapshot contains the data.
     assert!(!snapshot.loro_snapshot.is_empty());
@@ -206,7 +207,7 @@ async fn test_snapshot_preserves_data() {
     let record = actor
         .view()
         .inner()
-        .get_record(&record_id)
+        .get_record(record_id)
         .await
         .expect("get record")
         .expect("record exists");

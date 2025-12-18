@@ -19,23 +19,23 @@ async fn test_add_and_list_sync_peers() {
 
     let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let record_id = view.create_record(genesis).await.expect("create record");
-    view.pin_record(&record_id, None).await.expect("pin record");
+    view.pin_record(record_id, None).await.expect("pin record");
 
     let peer1 = SyncPeer::new(make_test_endpoint_id(1));
     let peer2 = SyncPeer::new(make_test_endpoint_id(2));
 
-    view.add_sync_peer(&record_id, &peer1)
+    view.add_sync_peer(record_id, &peer1)
         .await
         .expect("add peer1");
-    view.add_sync_peer(&record_id, &peer2)
+    view.add_sync_peer(record_id, &peer2)
         .await
         .expect("add peer2");
 
-    let peers = view.list_sync_peers(&record_id).await.expect("list peers");
+    let sync_peers = view.list_sync_peers(record_id).await.expect("list peers");
 
-    assert_eq!(peers.len(), 2, "should have 2 peers");
-    assert!(peers.contains(&peer1), "should contain peer1");
-    assert!(peers.contains(&peer2), "should contain peer2");
+    assert_eq!(sync_peers.len(), 2, "should have 2 peers");
+    assert!(sync_peers.contains(&peer1), "should contain peer1");
+    assert!(sync_peers.contains(&peer2), "should contain peer2");
 }
 
 #[tokio::test]
@@ -44,18 +44,18 @@ async fn test_remove_sync_peer() {
 
     let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let record_id = view.create_record(genesis).await.expect("create record");
-    view.pin_record(&record_id, None).await.expect("pin record");
+    view.pin_record(record_id, None).await.expect("pin record");
 
     let peer = SyncPeer::new(make_test_endpoint_id(1));
 
-    view.add_sync_peer(&record_id, &peer)
+    view.add_sync_peer(record_id, &peer)
         .await
         .expect("add peer");
-    view.remove_sync_peer(&record_id, &peer)
+    view.remove_sync_peer(record_id, &peer)
         .await
         .expect("remove peer");
 
-    let peers = view.list_sync_peers(&record_id).await.expect("list peers");
+    let peers = view.list_sync_peers(record_id).await.expect("list peers");
 
     assert_eq!(peers.len(), 0, "should have no peers after removal");
 }
@@ -66,17 +66,17 @@ async fn test_sync_peers_cascade_delete_on_unpin() {
 
     let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let record_id = view.create_record(genesis).await.expect("create record");
-    view.pin_record(&record_id, None).await.expect("pin record");
+    view.pin_record(record_id, None).await.expect("pin record");
 
     let peer = SyncPeer::new(make_test_endpoint_id(1));
 
-    view.add_sync_peer(&record_id, &peer)
+    view.add_sync_peer(record_id, &peer)
         .await
         .expect("add peer");
 
-    view.unpin_record(&record_id).await.expect("unpin record");
+    view.unpin_record(record_id).await.expect("unpin record");
 
-    let result = view.list_sync_peers(&record_id).await;
+    let result = view.list_sync_peers(record_id).await;
     assert!(
         result.as_ref().map_or(true, std::vec::Vec::is_empty),
         "sync peers should be cleaned up when pin removed"
@@ -90,12 +90,12 @@ async fn test_sync_peers_cascade_delete_on_gc() {
 
     let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let record_id = view.create_record(genesis).await.expect("create record");
-    view.pin_record(&record_id, Some(1))
+    view.pin_record(record_id, Some(1))
         .await
         .expect("pin record with 1 second expiry");
 
     let peer = SyncPeer::new(make_test_endpoint_id(1));
-    view.add_sync_peer(&record_id, &peer)
+    view.add_sync_peer(record_id, &peer)
         .await
         .expect("add peer");
 
@@ -113,30 +113,30 @@ async fn test_set_sync_peers_atomic() {
 
     let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let record_id = view.create_record(genesis).await.expect("create record");
-    view.pin_record(&record_id, None).await.expect("pin record");
+    view.pin_record(record_id, None).await.expect("pin record");
 
     let peer1 = SyncPeer::new(make_test_endpoint_id(1));
     let peer2 = SyncPeer::new(make_test_endpoint_id(2));
     let peer3 = SyncPeer::new(make_test_endpoint_id(3));
 
-    view.add_sync_peer(&record_id, &peer1)
+    view.add_sync_peer(record_id, &peer1)
         .await
         .expect("add peer1");
-    view.add_sync_peer(&record_id, &peer2)
+    view.add_sync_peer(record_id, &peer2)
         .await
         .expect("add peer2");
 
     let new_peers = vec![peer2.clone(), peer3.clone()];
-    view.set_sync_peers(&record_id, &new_peers)
+    view.set_sync_peers(record_id, &new_peers)
         .await
         .expect("set peers atomically");
 
-    let peers = view.list_sync_peers(&record_id).await.expect("list peers");
+    let sync_peers = view.list_sync_peers(record_id).await.expect("list peers");
 
-    assert_eq!(peers.len(), 2, "should have exactly 2 peers");
-    assert!(!peers.contains(&peer1), "should not contain peer1");
-    assert!(peers.contains(&peer2), "should contain peer2");
-    assert!(peers.contains(&peer3), "should contain peer3");
+    assert_eq!(sync_peers.len(), 2, "should have exactly 2 peers");
+    assert!(!sync_peers.contains(&peer1), "should not contain peer1");
+    assert!(sync_peers.contains(&peer2), "should contain peer2");
+    assert!(sync_peers.contains(&peer3), "should contain peer3");
 }
 
 #[tokio::test]
@@ -145,18 +145,18 @@ async fn test_set_sync_peers_empty() {
 
     let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let record_id = view.create_record(genesis).await.expect("create record");
-    view.pin_record(&record_id, None).await.expect("pin record");
+    view.pin_record(record_id, None).await.expect("pin record");
 
     let peer = SyncPeer::new(make_test_endpoint_id(1));
-    view.add_sync_peer(&record_id, &peer)
+    view.add_sync_peer(record_id, &peer)
         .await
         .expect("add peer");
 
-    view.set_sync_peers(&record_id, &[])
+    view.set_sync_peers(record_id, &[])
         .await
         .expect("clear peers");
 
-    let peers = view.list_sync_peers(&record_id).await.expect("list peers");
+    let peers = view.list_sync_peers(record_id).await.expect("list peers");
 
     assert_eq!(peers.len(), 0, "should have no peers");
 }
@@ -210,7 +210,7 @@ async fn test_sync_event_on_delete() {
 
     sync_rx.try_recv().expect("drain create event");
 
-    view.delete_record(&record_id).await.expect("delete record");
+    view.delete_record(record_id).await.expect("delete record");
 
     let event = sync_rx
         .try_recv()
@@ -244,11 +244,11 @@ async fn test_multiple_users_sync_same_record() {
         .expect("create record");
 
     view_alice
-        .pin_record(&record_id, None)
+        .pin_record(record_id, None)
         .await
         .expect("alice pins");
     view_bob
-        .pin_record(&record_id, None)
+        .pin_record(record_id, None)
         .await
         .expect("bob pins");
 
@@ -256,20 +256,20 @@ async fn test_multiple_users_sync_same_record() {
     let peer_bob = SyncPeer::new(make_test_endpoint_id(2));
 
     view_alice
-        .add_sync_peer(&record_id, &peer_alice)
+        .add_sync_peer(record_id, &peer_alice)
         .await
         .expect("alice adds peer");
     view_bob
-        .add_sync_peer(&record_id, &peer_bob)
+        .add_sync_peer(record_id, &peer_bob)
         .await
         .expect("bob adds peer");
 
     let alice_peers = view_alice
-        .list_sync_peers(&record_id)
+        .list_sync_peers(record_id)
         .await
         .expect("list alice peers");
     let bob_peers = view_bob
-        .list_sync_peers(&record_id)
+        .list_sync_peers(record_id)
         .await
         .expect("list bob peers");
 

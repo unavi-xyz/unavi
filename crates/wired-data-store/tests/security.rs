@@ -42,18 +42,18 @@ async fn test_cross_user_record_access_denied() {
         .expect("alice creates record");
 
     // Bob should not see Alice's record.
-    let result = view_bob.get_record(&record_id).await.expect("query");
+    let result = view_bob.get_record(record_id).await.expect("query");
     assert!(result.is_none(), "bob should not see alice's record");
 
     // Bob should not be able to delete Alice's record.
     view_bob
-        .delete_record(&record_id)
+        .delete_record(record_id)
         .await
         .expect("delete attempt");
 
     // Alice's record should still exist.
     let record = view_alice
-        .get_record(&record_id)
+        .get_record(record_id)
         .await
         .expect("query")
         .expect("record exists");
@@ -75,13 +75,13 @@ async fn test_cross_user_pin_isolation() {
 
     // Alice pins her record.
     view_alice
-        .pin_record(&record_id, None)
+        .pin_record(record_id, None)
         .await
         .expect("alice pins");
 
     // Bob unpins (his own pin, which doesn't exist).
     view_bob
-        .unpin_record(&record_id)
+        .unpin_record(record_id)
         .await
         .expect("bob unpin attempt");
 
@@ -99,7 +99,7 @@ async fn test_ttl_overflow_saturates() {
     let record_id = view.create_record(genesis).await.expect("create record");
 
     // Pin with maximum possible TTL - should not overflow.
-    view.pin_record(&record_id, Some(u64::MAX))
+    view.pin_record(record_id, Some(u64::MAX))
         .await
         .expect("pin with max TTL should not panic");
 

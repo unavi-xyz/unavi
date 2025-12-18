@@ -2,7 +2,7 @@
 
 use std::str::FromStr;
 
-use wired_data_store::{DataStore, DataStoreView};
+use wired_data_store::{DataStore, DataStoreBuilder, DataStoreView};
 use xdid::core::did::Did;
 
 pub const DID_ALICE: &str = "did:example:alice";
@@ -23,7 +23,8 @@ pub const BLOB_NONEXISTENT: &[u8] = b"nonexistent data";
 
 pub async fn create_test_view(owner_did: &str) -> (DataStoreView, tempfile::TempDir) {
     let dir = tempfile::tempdir().expect("create temp dir");
-    let store = DataStore::new(dir.path().to_path_buf())
+    let store = DataStoreBuilder::new(dir.path().to_path_buf())
+        .build()
         .await
         .expect("create store");
     let did = Did::from_str(owner_did).expect("parse DID");
@@ -33,7 +34,8 @@ pub async fn create_test_view(owner_did: &str) -> (DataStoreView, tempfile::Temp
 
 pub async fn create_test_store() -> (DataStore, tempfile::TempDir) {
     let dir = tempfile::tempdir().expect("create temp dir");
-    let store = DataStore::new(dir.path().to_path_buf())
+    let store = DataStoreBuilder::new(dir.path().to_path_buf())
+        .build()
         .await
         .expect("create store");
     (store, dir)

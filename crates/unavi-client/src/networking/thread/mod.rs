@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use iroh::Endpoint;
 use iroh_gossip::Gossip;
 use iroh_tickets::endpoint::EndpointTicket;
-use wired_data_store::{Actor, DataStore, RecordId, ValidatedView};
+use wired_data_store::{Actor, DataStoreBuilder, RecordId, ValidatedView};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
 use crate::DIRS;
@@ -86,12 +86,17 @@ async fn thread_loop(
     // This is a dumb pattern but whatever.
     let (gtx, grx) = tokio::sync::oneshot::channel();
 
-    let store = DataStore::new_with_router(data_dir, move |endpoint, r| {
-        let gossip = Gossip::builder().spawn(endpoint.clone());
-        gtx.send(gossip.clone())
-            .expect("send gossip out of closure");
-        r.accept(iroh_gossip::ALPN, gossip)
-    })
+    let store = DataStoreBuilder {
+        data_dir,
+        save_endpoint_key: false,
+        with_router: Some(Box::new(move |endpoint, r| {
+            let gossip = Gossip::builder().spawn(endpoint.clone());
+            gtx.send(gossip.clone())
+                .expect("send gossip out of closure");
+            r.accept(iroh_gossip::ALPN, gossip)
+        })),
+    }
+    .build()
     .await?;
 
     let gossip = grx.await?;

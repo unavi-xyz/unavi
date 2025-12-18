@@ -81,7 +81,7 @@ async fn test_record_deletion_releases_quota() {
     let after_create = view.get_storage_quota().await.expect("get quota");
     assert!(after_create.bytes_used > 0);
 
-    view.delete_record(&id).await.expect("delete record");
+    view.delete_record(id).await.expect("delete record");
 
     let after_delete = view.get_storage_quota().await.expect("get quota");
     assert_eq!(
@@ -130,12 +130,12 @@ async fn test_gc_releases_blob_quota() {
     let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let record_id = view.create_record(genesis).await.expect("create record");
     let blob_id = view.store_blob(BLOB_HELLO).await.expect("store blob");
-    view.link_blob_to_record(&record_id, &blob_id)
+    view.link_blob_to_record(record_id, &blob_id)
         .await
         .expect("link blob");
 
     // Pin the record, then delete it (which orphans the blob).
-    view.pin_record(&record_id, Some(1))
+    view.pin_record(record_id, Some(1))
         .await
         .expect("pin record");
 

@@ -94,7 +94,7 @@ pub async fn handle_join(
 
                 info!("Got gossip presence: {:?}", presence.peer);
             }
-            _ => {}
+            Event::Lagged => {}
         }
     }
 

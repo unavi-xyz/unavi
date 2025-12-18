@@ -79,6 +79,7 @@ async fn init_iroh(db: &Database, ephemeral: bool) -> anyhow::Result<Endpoint> {
     let secret_key = load_or_create_secret_key(db, ephemeral).await?;
 
     // Create iroh endpoint.
+    #[allow(unused_mut)]
     let mut builder = Endpoint::builder().secret_key(secret_key);
 
     #[cfg(feature = "discovery-local-network")]

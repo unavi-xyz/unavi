@@ -8,14 +8,9 @@ mod event;
 mod lifecycle;
 pub mod thread;
 
+#[derive(Default)]
 pub struct NetworkingPlugin {
-    peers: Vec<EndpointTicket>,
-}
-
-impl NetworkingPlugin {
-    pub const fn new(peers: Vec<EndpointTicket>) -> Self {
-        Self { peers }
-    }
+    pub peers: Vec<EndpointTicket>,
 }
 
 impl Plugin for NetworkingPlugin {

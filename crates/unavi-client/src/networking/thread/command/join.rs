@@ -51,7 +51,7 @@ pub async fn handle_join(
 
     // TODO: Where to bootstrap from?
     let bootstrap = peers.into_iter().map(|p| p.endpoint_addr().id).collect();
-    info!("gossip bootstrap: {bootstrap:#?}");
+    info!("Bootstrap: {bootstrap:#?}");
     let mut topic = state.gossip.subscribe_and_join(topic_id, bootstrap).await?;
 
     let peer = PeerLocation {

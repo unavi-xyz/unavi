@@ -3,14 +3,20 @@
 use std::{str::FromStr, time::Duration};
 
 use bevy::prelude::*;
+use cid::Cid;
 use clap::Parser;
 use iroh_tickets::endpoint::EndpointTicket;
 use unavi_client::DebugFlags;
+use wired_data_store::RecordId;
 
 #[derive(Parser, Debug)]
 #[command(version)]
 #[allow(clippy::struct_excessive_bools)]
 struct Args {
+    /// Space to join.
+    #[arg(long)]
+    join: Option<String>,
+
     /// Ticket of a peer to connect to.
     #[arg(long)]
     peer: Option<Vec<String>>,
@@ -53,6 +59,15 @@ fn main() {
         }
     }
 
+    let join = match args.join.as_ref().map(|t| Cid::from_str(t)) {
+        Some(Ok(t)) => Some(RecordId(t)),
+        Some(Err(e)) => {
+            println!("Invalid space id: {e:?}");
+            return;
+        }
+        None => None,
+    };
+
     let peers = args.peer.unwrap_or_default();
 
     let Ok(peers) = peers
@@ -65,7 +80,11 @@ fn main() {
     };
 
     App::new()
-        .add_plugins(unavi_client::UnaviPlugin { debug, peers })
+        .add_plugins(unavi_client::UnaviPlugin {
+            debug,
+            initial_space: join,
+            peers,
+        })
         .run();
 
     // Give time for other threads to finish.

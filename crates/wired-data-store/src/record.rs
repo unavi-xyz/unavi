@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use cid::Cid;
 use loro::LoroDoc;
 use multihash::Multihash;
@@ -9,6 +11,12 @@ use xdid::core::did::Did;
 /// CID of the genesis block, uniquely identifies a record.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct RecordId(pub Cid);
+
+impl Display for RecordId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{}", self.0))
+    }
+}
 
 impl RecordId {
     #[must_use]

@@ -6,10 +6,10 @@ pub fn recv_network_event(nt: Res<NetworkingThread>) {
     while let Ok(event) = nt.event_rx.try_recv() {
         match event {
             NetworkEvent::Connected { id, .. } => {
-                info!("connected to {}", id.0);
+                info!("connected to {id}");
             }
             NetworkEvent::ConnectionClosed { id, message } => {
-                info!("connection {} closed: {message}", id.0);
+                info!("connection {id} closed: {message}");
             }
             NetworkEvent::SetActor(_) => {
                 unreachable!("should only be called once on init")

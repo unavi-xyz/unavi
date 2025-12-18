@@ -42,7 +42,7 @@ async fn join_home_space_inner(
         })
         .await?;
 
-    info!("Joining home space: {}", id.0);
+    info!("Joining home space: {id}");
     command_tx.send_async(NetworkCommand::Join(id)).await?;
 
     Ok(())

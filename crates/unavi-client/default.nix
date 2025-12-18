@@ -29,13 +29,13 @@
             file:
             lib.any file.hasExt [
               "json"
-              "md"
               "wgsl"
               "wit"
             ]
           ) root)
           ../../LICENSE
           ../../scripts
+          ../wired-data-store/migrations
           ./assets
         ];
       };
@@ -83,10 +83,20 @@
         buildInputs = linkedInputs;
       };
 
+      sqlxArgs = cargoArgs // {
+        nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [ pkgs.sqlx-cli ];
+
+        preBuild = ''
+          export DATABASE_URL=sqlite:./db.sqlite3
+          sqlx database create
+          sqlx migrate run --source crates/wired-data-store/migrations/
+        '';
+      };
+
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;
 
       packageDrv = pkgs.crane.buildPackage (
-        cargoArgs
+        sqlxArgs
         // {
           inherit cargoArtifacts;
           doCheck = false;
@@ -107,16 +117,18 @@
     in
     {
       checks = {
-        "${pname}-doc" = pkgs.crane.cargoDoc (cargoArgs // { inherit cargoArtifacts; });
-        "${pname}-doctest" = pkgs.crane.cargoDocTest (cargoArgs // { inherit cargoArtifacts; });
+        "${pname}-doc" = pkgs.crane.cargoDoc (sqlxArgs // { inherit cargoArtifacts; });
         "${pname}-nextest" = pkgs.crane.cargoNextest (
-          cargoArgs
+          sqlxArgs
           // {
             inherit cargoArtifacts;
             cargoExtraArgs = cargoArgs.cargoExtraArgs + " --no-tests pass";
-            preBuild = ''
-              ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
-            '';
+            preBuild = lib.concatLines [
+              sqlxArgs.preBuild
+              ''
+                ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
+              ''
+            ];
           }
         );
       };

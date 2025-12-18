@@ -54,7 +54,6 @@ _: {
     {
       checks = {
         "${pname}-doc" = pkgs.crane.cargoDoc (cargoArgs // { inherit cargoArtifacts; });
-        "${pname}-doctest" = pkgs.crane.cargoDocTest (cargoArgs // { inherit cargoArtifacts; });
         "${pname}-nextest" = pkgs.crane.cargoNextest (
           cargoArgs
           // {

@@ -7,7 +7,7 @@ use smol_str::SmolStr;
 use xdid::core::did::Did;
 
 /// CID of the genesis block, uniquely identifies a record.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct RecordId(pub Cid);
 
 impl RecordId {

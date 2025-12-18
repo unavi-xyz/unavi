@@ -32,7 +32,7 @@ pub struct NetworkingThread {
 const CHANNEL_LEN: usize = 32;
 
 impl NetworkingThread {
-    pub fn spawn() -> Self {
+    pub fn spawn(peers: Vec<EndpointTicket>) -> Self {
         let (command_tx, command_rx) = flume::bounded(CHANNEL_LEN);
         let (event_tx, event_rx) = flume::bounded(CHANNEL_LEN);
 
@@ -44,11 +44,9 @@ impl NetworkingThread {
                 .expect("build tokio runtime");
 
             rt.block_on(async move {
-                loop {
-                    if let Err(e) = thread_loop(&command_rx, &event_tx).await {
-                        error!("Networking thread error: {e:?}");
-                        tokio::time::sleep(Duration::from_secs(5)).await;
-                    }
+                while let Err(e) = thread_loop(&command_rx, &event_tx, &peers).await {
+                    error!("Networking thread error: {e:?}");
+                    tokio::time::sleep(Duration::from_secs(5)).await;
                 }
             });
         });
@@ -71,6 +69,7 @@ struct ThreadState {
 async fn thread_loop(
     command_rx: &flume::Receiver<NetworkCommand>,
     event_tx: &flume::Sender<NetworkEvent>,
+    peers: &[EndpointTicket],
 ) -> anyhow::Result<()> {
     // TODO: save / load keypair from disk
     let keypair = P256KeyPair::generate();
@@ -104,6 +103,10 @@ async fn thread_loop(
         .send_async(NetworkEvent::SetActor(Arc::clone(&actor)))
         .await?;
 
+    for addr in store.endpoint().addr().ip_addrs() {
+        info!("Endpoint listening on port {}", addr.port());
+    }
+
     let ticket = EndpointTicket::new(store.endpoint().addr());
     info!("Share this ticket to connect to others: {ticket}");
 
@@ -117,7 +120,12 @@ async fn thread_loop(
         match command_rx.recv_async().await? {
             NetworkCommand::Join(id) => {
                 let state = state.clone();
-                tokio::spawn(async move { command::join::handle_join(state, id).await });
+                let peers = peers.to_vec();
+                tokio::spawn(async move {
+                    if let Err(e) = command::join::handle_join(state, id, peers).await {
+                        error!("Error joining {}: {e:?}", id.0);
+                    }
+                });
             }
             NetworkCommand::Leave(_id) => {
                 // TODO
@@ -131,6 +139,8 @@ async fn thread_loop(
             }
         }
     }
+
+    info!("Graceful exit");
 
     Ok(())
 }

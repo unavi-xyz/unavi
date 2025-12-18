@@ -7,6 +7,7 @@ use bevy_av1::VideoTargetApp;
 use bevy_rich_text3d::Text3dPlugin;
 use bitflags::bitflags;
 use directories::ProjectDirs;
+use iroh_tickets::endpoint::EndpointTicket;
 
 pub mod assets;
 mod async_commands;
@@ -42,13 +43,6 @@ pub fn db_path() -> PathBuf {
     DIRS.data_local_dir().join("data.db")
 }
 
-#[derive(Clone, Copy, Debug, Default)]
-pub enum Storage {
-    #[default]
-    Disk,
-    InMemory,
-}
-
 bitflags! {
     #[derive(Clone, Copy, Debug, Default)]
     pub struct DebugFlags: u8 {
@@ -60,6 +54,7 @@ bitflags! {
 
 pub struct UnaviPlugin {
     pub debug: DebugFlags,
+    pub peers: Vec<EndpointTicket>,
 }
 
 impl Plugin for UnaviPlugin {
@@ -99,7 +94,7 @@ impl Plugin for UnaviPlugin {
             unavi_player::PlayerPlugin,
             unavi_portal::PortalPlugin,
             unavi_script::ScriptPlugin,
-            networking::NetworkingPlugin,
+            networking::NetworkingPlugin::new(self.peers.clone()),
             space::SpacePlugin,
         ))
         .init_video_target_asset::<StandardMaterial>()

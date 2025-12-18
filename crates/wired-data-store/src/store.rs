@@ -13,7 +13,7 @@ use crate::{DataStoreView, GarbageCollectStats, gc, hash_did};
 
 pub struct DataStoreBuilder {
     pub data_dir: PathBuf,
-    pub save_endpoint_key: bool,
+    pub ephemeral: bool,
     pub with_router: Option<Box<dyn Send + FnOnce(&Endpoint, RouterBuilder) -> RouterBuilder>>,
 }
 
@@ -22,7 +22,7 @@ impl DataStoreBuilder {
     pub fn new(data_dir: PathBuf) -> Self {
         Self {
             data_dir,
-            save_endpoint_key: true,
+            ephemeral: true,
             with_router: None,
         }
     }
@@ -40,7 +40,7 @@ impl DataStoreBuilder {
         let db = Database::new(&db_path).await?;
 
         // Initialize iroh endpoint.
-        let endpoint = init_iroh(&db, &data_dir).await?;
+        let endpoint = init_iroh(&db, self.ephemeral).await?;
 
         // Create connection pool.
         let connection_pool = Arc::new(ConnectionPool::new());
@@ -74,9 +74,9 @@ impl DataStoreBuilder {
     }
 }
 
-async fn init_iroh(db: &Database, _data_dir: &Path) -> anyhow::Result<Endpoint> {
+async fn init_iroh(db: &Database, ephemeral: bool) -> anyhow::Result<Endpoint> {
     // Load or create secret key.
-    let secret_key = load_or_create_secret_key(db).await?;
+    let secret_key = load_or_create_secret_key(db, ephemeral).await?;
 
     // Create iroh endpoint.
     let mut builder = Endpoint::builder().secret_key(secret_key);
@@ -92,19 +92,21 @@ async fn init_iroh(db: &Database, _data_dir: &Path) -> anyhow::Result<Endpoint> 
     Ok(endpoint)
 }
 
-async fn load_or_create_secret_key(db: &Database) -> anyhow::Result<SecretKey> {
-    // Query existing key.
-    let existing: Option<Vec<u8>> =
-        sqlx::query_scalar!("SELECT secret_key FROM iroh_config WHERE id = 1")
-            .fetch_optional(db.pool())
-            .await
-            .context("query iroh secret key")?;
+async fn load_or_create_secret_key(db: &Database, ephemeral: bool) -> anyhow::Result<SecretKey> {
+    if !ephemeral {
+        // Query existing key.
+        let existing: Option<Vec<u8>> =
+            sqlx::query_scalar!("SELECT secret_key FROM iroh_config WHERE id = 1")
+                .fetch_optional(db.pool())
+                .await
+                .context("query iroh secret key")?;
 
-    if let Some(bytes) = existing {
-        let arr: [u8; 32] = bytes
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("invalid secret key length"))?;
-        return Ok(SecretKey::from_bytes(&arr));
+        if let Some(bytes) = existing {
+            let arr: [u8; 32] = bytes
+                .try_into()
+                .map_err(|_| anyhow::anyhow!("invalid secret key length"))?;
+            return Ok(SecretKey::from_bytes(&arr));
+        }
     }
 
     // Generate new key and persist.
@@ -116,14 +118,16 @@ async fn load_or_create_secret_key(db: &Database) -> anyhow::Result<SecretKey> {
         .as_secs()
         .cast_signed();
 
-    sqlx::query!(
-        "INSERT INTO iroh_config (id, secret_key, created) VALUES (1, ?, ?)",
-        bytes,
-        now
-    )
-    .execute(db.pool())
-    .await
-    .context("insert iroh secret key")?;
+    if !ephemeral {
+        sqlx::query!(
+            "INSERT INTO iroh_config (id, secret_key, created) VALUES (1, ?, ?)",
+            bytes,
+            now
+        )
+        .execute(db.pool())
+        .await
+        .context("insert iroh secret key")?;
+    }
 
     Ok(secret_key)
 }

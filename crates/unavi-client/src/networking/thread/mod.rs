@@ -88,7 +88,7 @@ async fn thread_loop(
 
     let store = DataStoreBuilder {
         data_dir,
-        save_endpoint_key: false,
+        ephemeral: true,
         with_router: Some(Box::new(move |endpoint, r| {
             let gossip = Gossip::builder().spawn(endpoint.clone());
             gtx.send(gossip.clone())
@@ -109,7 +109,11 @@ async fn thread_loop(
         .await?;
 
     for addr in store.endpoint().addr().ip_addrs() {
-        info!("Endpoint listening on port {}", addr.port());
+        info!(
+            "Endpoint {} listening on port {}",
+            store.endpoint().id(),
+            addr.port()
+        );
     }
 
     let ticket = EndpointTicket::new(store.endpoint().addr());

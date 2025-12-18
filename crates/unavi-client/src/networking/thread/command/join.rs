@@ -19,14 +19,16 @@ struct Presence {
     signature: Signature,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct PeerLocation {
     space: RecordId,
     endpoint: EndpointId,
     expires: i64,
 }
 
-const PEER_BUF_SIZE: usize = core::mem::size_of::<PeerLocation>() * 2;
+/// Estimated postcard buffer size.
+/// Must be at least as large as the serialized format.
+const PEER_BUF_SIZE: usize = core::mem::size_of::<PeerLocation>();
 
 const PRESENCE_TTL: Duration = Duration::from_mins(1);
 
@@ -49,35 +51,51 @@ pub async fn handle_join(
 
     let topic_id = TopicId::from_bytes(id_bytes);
 
-    // TODO: Where to bootstrap from?
+    // TODO: Bootstrap from UNAVI hosted WDS endpoint
     let bootstrap = peers.into_iter().map(|p| p.endpoint_addr().id).collect();
     info!("Bootstrap: {bootstrap:#?}");
     let mut topic = state.gossip.subscribe_and_join(topic_id, bootstrap).await?;
 
-    let peer = PeerLocation {
-        space: id,
-        endpoint: state.endpoint.id(),
-        expires: (OffsetDateTime::now_utc() + PRESENCE_TTL).unix_timestamp(),
+    let local_presence_bytes = {
+        let peer = PeerLocation {
+            space: id,
+            endpoint: state.endpoint.id(),
+            expires: (OffsetDateTime::now_utc() + PRESENCE_TTL).unix_timestamp(),
+        };
+        let peer_bytes = postcard::to_vec::<_, PEER_BUF_SIZE>(&peer)?;
+        let signature = state.endpoint.secret_key().sign(peer_bytes.as_slice());
+        let local_presence = Presence { peer, signature };
+        postcard::to_allocvec(&local_presence)?
     };
 
-    let peer_bytes = postcard::to_vec::<_, PEER_BUF_SIZE>(&peer)?;
-    info!("peer serialized len: {}", peer_bytes.len());
-    let signature = state.endpoint.secret_key().sign(peer_bytes.as_slice());
-
-    let presence = Presence { peer, signature };
-    let presence_bytes = postcard::to_allocvec(&presence)?;
-    info!("presence serialized len: {}", presence_bytes.len());
-
-    topic.broadcast(presence_bytes.into()).await?;
+    topic.broadcast(local_presence_bytes.clone().into()).await?;
 
     // TODO: rebroadcast presence on an interval
 
     while let Some(event) = topic.next().await {
-        let Event::Received(message) = event? else {
-            continue;
-        };
+        match event? {
+            Event::NeighborUp(id) => {
+                info!("Neighbor up: {id}");
+                topic.broadcast(local_presence_bytes.clone().into()).await?;
+            }
+            Event::NeighborDown(id) => {
+                info!("Neighbor down: {id}");
+            }
+            Event::Received(message) => {
+                if message.content.len() > PEER_BUF_SIZE {
+                    continue;
+                }
 
-        info!("incoming gossip: {message:?}");
+                let content = message.content.to_vec();
+                let Ok(presence) = postcard::from_bytes::<Presence>(&content) else {
+                    // Not a presence message.
+                    continue;
+                };
+
+                info!("Got gossip presence: {:?}", presence.peer);
+            }
+            _ => {}
+        }
     }
 
     Ok(())

@@ -108,7 +108,7 @@ impl DataStoreView {
 
         // Emit sync event.
         let _ = self.sync_tx.try_send(SyncEvent {
-            record_id: record.id.clone(),
+            record_id: record.id,
             owner_did: self.owner_did.clone(),
             event_type: SyncEventType::Created,
         });
@@ -241,7 +241,7 @@ impl DataStoreView {
 
         // Emit sync event.
         let _ = self.sync_tx.try_send(SyncEvent {
-            record_id: id.clone(),
+            record_id: id,
             owner_did: self.owner_did.clone(),
             event_type: SyncEventType::Deleted,
         });
@@ -1109,7 +1109,7 @@ impl DataStoreView {
                         .parse()
                         .map_err(|e| anyhow::anyhow!("invalid author DID: {e}"))?;
                     Ok(crate::Envelope {
-                        record_id: record_id.clone(),
+                        record_id,
                         ops: row.ops,
                         from_version: row.from_version,
                         to_version: row.to_version,

@@ -123,7 +123,7 @@ async fn thread_loop(
                 let peers = peers.to_vec();
                 tokio::spawn(async move {
                     if let Err(e) = command::join::handle_join(state, id, peers).await {
-                        error!("Error joining {}: {e:?}", id.0);
+                        error!("Error joining {id}: {e:?}");
                     }
                 });
             }

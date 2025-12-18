@@ -16,7 +16,7 @@ discovery-local-network = ["iroh/discovery-local-network"]
 [dependencies]
 anyhow.workspace      = true
 bincode               = { features = ["derive"], version = "2" }
-cid                   = "0.11.1"
+cid.workspace         = true
 flume.workspace       = true
 futures.workspace     = true
 getrandom             = "0.3.4"

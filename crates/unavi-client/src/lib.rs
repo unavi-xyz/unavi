@@ -8,6 +8,7 @@ use bevy_rich_text3d::Text3dPlugin;
 use bitflags::bitflags;
 use directories::ProjectDirs;
 use iroh_tickets::endpoint::EndpointTicket;
+use wired_data_store::RecordId;
 
 pub mod assets;
 mod async_commands;
@@ -54,6 +55,7 @@ bitflags! {
 
 pub struct UnaviPlugin {
     pub debug: DebugFlags,
+    pub initial_space: Option<RecordId>,
     pub peers: Vec<EndpointTicket>,
 }
 
@@ -94,8 +96,12 @@ impl Plugin for UnaviPlugin {
             unavi_player::PlayerPlugin,
             unavi_portal::PortalPlugin,
             unavi_script::ScriptPlugin,
-            networking::NetworkingPlugin::new(self.peers.clone()),
-            space::SpacePlugin,
+            networking::NetworkingPlugin {
+                peers: self.peers.clone(),
+            },
+            space::SpacePlugin {
+                initial_space: self.initial_space,
+            },
         ))
         .init_video_target_asset::<StandardMaterial>()
         .insert_resource(AmbientLight {

@@ -38,6 +38,7 @@ bevy_rich_text3d   = "0.5.1"
 bevy_seedling      = { default-features = false, version = "0.6.1" }
 bevy_vrm           = { git = "https://github.com/unavi-xyz/bevy_vrm" }
 bincode            = "2.0.1"
+cid                = "0.11.1"
 clap               = { features = ["derive"], version = "4.5.51" }
 constcat           = "0.6.1"
 directories        = "6.0.0"

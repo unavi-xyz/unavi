@@ -60,7 +60,7 @@ impl DataStoreView {
         let owner_did = self.owner_did.to_string();
 
         // Write file first (content-addressed, idempotent).
-        let path = self.record_path(&record.id);
+        let path = self.record_path(record.id);
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).context("create record shard directory")?;
         }
@@ -121,7 +121,7 @@ impl DataStoreView {
     /// # Errors
     ///
     /// Returns error if record cannot be read from filesystem or database.
-    pub async fn get_record(&self, id: &RecordId) -> Result<Option<Record>> {
+    pub async fn get_record(&self, id: RecordId) -> Result<Option<Record>> {
         let path = self.record_path(id);
 
         if !path.exists() {
@@ -177,7 +177,7 @@ impl DataStoreView {
     /// # Errors
     ///
     /// Returns error if record cannot be deleted from filesystem or database.
-    pub async fn delete_record(&self, id: &RecordId) -> Result<()> {
+    pub async fn delete_record(&self, id: RecordId) -> Result<()> {
         let record_id = id.as_str();
         let owner_did = self.owner_did.to_string();
         let path = self.record_path(id);
@@ -257,7 +257,7 @@ impl DataStoreView {
     ///
     /// Returns error if record cannot be loaded, ops cannot be imported,
     /// or quota would be exceeded.
-    pub(crate) async fn apply_ops(&self, record_id: &RecordId, ops: &[u8]) -> Result<()> {
+    pub(crate) async fn apply_ops(&self, record_id: RecordId, ops: &[u8]) -> Result<()> {
         let mut record = self
             .get_record(record_id)
             .await?
@@ -317,7 +317,7 @@ impl DataStoreView {
         Ok(())
     }
 
-    fn record_path(&self, id: &RecordId) -> PathBuf {
+    fn record_path(&self, id: RecordId) -> PathBuf {
         let cid_str = id.as_str();
         let prefix = &cid_str[..2.min(cid_str.len())];
         self.records_dir()
@@ -477,7 +477,7 @@ impl DataStoreView {
     /// # Errors
     ///
     /// Returns error if user hasn't uploaded this blob (no `user_blob` entry exists).
-    pub async fn link_blob_to_record(&self, record_id: &RecordId, blob_id: &BlobId) -> Result<()> {
+    pub async fn link_blob_to_record(&self, record_id: RecordId, blob_id: &BlobId) -> Result<()> {
         let record_id_str = record_id.as_str();
         let blob_id_str = blob_id.as_str();
         let owner_did = self.owner_did.to_string();
@@ -545,7 +545,7 @@ impl DataStoreView {
     /// # Panics
     ///
     /// Panics if system time is before UNIX epoch.
-    pub async fn pin_record(&self, id: &RecordId, ttl: Option<u64>) -> Result<()> {
+    pub async fn pin_record(&self, id: RecordId, ttl: Option<u64>) -> Result<()> {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time")
@@ -578,7 +578,7 @@ impl DataStoreView {
     /// # Errors
     ///
     /// Returns error if pin cannot be deleted from database.
-    pub async fn unpin_record(&self, id: &RecordId) -> Result<()> {
+    pub async fn unpin_record(&self, id: RecordId) -> Result<()> {
         let record_id = id.as_str();
         let owner_did = self.owner_did.to_string();
 
@@ -603,7 +603,7 @@ impl DataStoreView {
     /// # Panics
     ///
     /// Panics if system time is before UNIX epoch.
-    pub async fn add_sync_peer(&self, record_id: &RecordId, peer: &SyncPeer) -> Result<()> {
+    pub async fn add_sync_peer(&self, record_id: RecordId, peer: &SyncPeer) -> Result<()> {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time")
@@ -634,7 +634,7 @@ impl DataStoreView {
     /// # Errors
     ///
     /// Returns error if database delete fails.
-    pub async fn remove_sync_peer(&self, record_id: &RecordId, peer: &SyncPeer) -> Result<()> {
+    pub async fn remove_sync_peer(&self, record_id: RecordId, peer: &SyncPeer) -> Result<()> {
         let record_id_str = record_id.as_str();
         let owner_did = self.owner_did.to_string();
         let endpoint_id_bytes = peer.as_bytes().as_slice();
@@ -658,7 +658,7 @@ impl DataStoreView {
     /// # Errors
     ///
     /// Returns error if database query fails.
-    pub async fn list_sync_peers(&self, record_id: &RecordId) -> Result<Vec<SyncPeer>> {
+    pub async fn list_sync_peers(&self, record_id: RecordId) -> Result<Vec<SyncPeer>> {
         let record_id_str = record_id.as_str();
         let owner_did = self.owner_did.to_string();
 
@@ -692,7 +692,7 @@ impl DataStoreView {
     /// # Panics
     ///
     /// Panics if system time is before UNIX epoch.
-    pub async fn set_sync_peers(&self, record_id: &RecordId, peers: &[SyncPeer]) -> Result<()> {
+    pub async fn set_sync_peers(&self, record_id: RecordId, peers: &[SyncPeer]) -> Result<()> {
         let record_id_str = record_id.as_str();
         let owner_did = self.owner_did.to_string();
 
@@ -924,7 +924,7 @@ impl DataStoreView {
     /// Returns error if database query fails or record not found.
     pub(crate) async fn get_snapshot_counters(
         &self,
-        record_id: &RecordId,
+        record_id: RecordId,
     ) -> Result<(i64, i64, i64)> {
         let id = record_id.as_str();
         let owner_did = self.owner_did.to_string();
@@ -1017,7 +1017,7 @@ impl DataStoreView {
     /// Returns error if database query fails.
     pub(crate) async fn get_latest_snapshot(
         &self,
-        record_id: &RecordId,
+        record_id: RecordId,
     ) -> Result<Option<crate::SignedSnapshot>> {
         let id = record_id.as_str();
         let owner_did = self.owner_did.to_string();
@@ -1043,7 +1043,7 @@ impl DataStoreView {
             u64::try_from(row.snapshot_num).context("snapshot_num exceeds u64::MAX")?;
 
         Ok(Some(crate::SignedSnapshot {
-            record_id: record_id.clone(),
+            record_id,
             snapshot_num,
             version: row.version,
             genesis_bytes: row.genesis_bytes,
@@ -1064,7 +1064,7 @@ impl DataStoreView {
     /// Returns error if database query fails.
     pub(crate) async fn get_envelopes_since_snapshot(
         &self,
-        record_id: &RecordId,
+        record_id: RecordId,
         since_snapshot_num: i64,
     ) -> Result<Vec<crate::Envelope>> {
         let id = record_id.as_str();
@@ -1141,7 +1141,7 @@ impl DataStoreView {
                         .parse()
                         .map_err(|e| anyhow::anyhow!("invalid author DID: {e}"))?;
                     Ok(crate::Envelope {
-                        record_id: record_id.clone(),
+                        record_id,
                         ops: row.ops,
                         from_version: row.from_version,
                         to_version: row.to_version,
@@ -1166,7 +1166,7 @@ impl DataStoreView {
     /// # Errors
     ///
     /// Returns error if database operations fail.
-    pub(crate) async fn gc_old_envelopes(&self, record_id: &RecordId) -> Result<u64> {
+    pub(crate) async fn gc_old_envelopes(&self, record_id: RecordId) -> Result<u64> {
         let id = record_id.as_str();
         let owner_did = self.owner_did.to_string();
 
@@ -1215,7 +1215,7 @@ impl DataStoreView {
 
         // Delete old envelopes (to_version < keep_from_version).
         // Using comparison on BLOB assumes lexicographic ordering works for version vectors.
-        // TODO: This is a simplification; for production, decode and compare properly.
+        // This is a simplification; for production, decode and compare properly.
         let deleted = sqlx::query!(
             "DELETE FROM envelopes
              WHERE record_id = ? AND owner_did = ? AND to_version < ?",

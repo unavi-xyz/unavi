@@ -11,6 +11,123 @@ use crate::db::Database;
 use crate::sync::{ALPN, ConnectionPool, SyncEvent, WiredSyncProtocol};
 use crate::{DataStoreView, GarbageCollectStats, gc, hash_did};
 
+pub struct DataStoreBuilder {
+    pub data_dir: PathBuf,
+    pub save_endpoint_key: bool,
+    pub with_router: Option<Box<dyn Send + FnOnce(&Endpoint, RouterBuilder) -> RouterBuilder>>,
+}
+
+impl DataStoreBuilder {
+    #[must_use]
+    pub fn new(data_dir: PathBuf) -> Self {
+        Self {
+            data_dir,
+            save_endpoint_key: true,
+            with_router: None,
+        }
+    }
+
+    /// # Errors
+    ///
+    /// Returns error if directories cannot be created or database cannot be initialized.
+    pub async fn build(self) -> anyhow::Result<DataStore> {
+        let data_dir = self.data_dir;
+
+        std::fs::create_dir_all(data_dir.join("blobs")).context("create blobs directory")?;
+        std::fs::create_dir_all(data_dir.join("records")).context("create records directory")?;
+
+        let db_path = data_dir.join("index.db");
+        let db = Database::new(&db_path).await?;
+
+        // Initialize iroh endpoint.
+        let endpoint = init_iroh(&db, &data_dir).await?;
+
+        // Create connection pool.
+        let connection_pool = Arc::new(ConnectionPool::new());
+
+        // Create sync protocol handler.
+        let protocol = WiredSyncProtocol::new(db.clone(), Arc::clone(&connection_pool));
+
+        // Create router and register sync protocol.
+        let router_builder = Router::builder(endpoint.clone()).accept(ALPN, protocol);
+
+        let router_builder = if let Some(f) = self.with_router {
+            f(&endpoint, router_builder)
+        } else {
+            router_builder
+        };
+
+        let router = router_builder.spawn();
+
+        // Create sync event channel.
+        let (sync_tx, sync_rx) = flume::unbounded();
+
+        Ok(DataStore {
+            connection_pool,
+            data_dir,
+            db,
+            endpoint,
+            router,
+            sync_rx,
+            sync_tx,
+        })
+    }
+}
+
+async fn init_iroh(db: &Database, _data_dir: &Path) -> anyhow::Result<Endpoint> {
+    // Load or create secret key.
+    let secret_key = load_or_create_secret_key(db).await?;
+
+    // Create iroh endpoint.
+    let mut builder = Endpoint::builder().secret_key(secret_key);
+
+    #[cfg(feature = "discovery-local-network")]
+    {
+        let mdns = iroh::discovery::mdns::MdnsDiscovery::builder();
+        builder = builder.discovery(mdns);
+    }
+
+    let endpoint = builder.bind().await.context("bind iroh endpoint")?;
+
+    Ok(endpoint)
+}
+
+async fn load_or_create_secret_key(db: &Database) -> anyhow::Result<SecretKey> {
+    // Query existing key.
+    let existing: Option<Vec<u8>> =
+        sqlx::query_scalar!("SELECT secret_key FROM iroh_config WHERE id = 1")
+            .fetch_optional(db.pool())
+            .await
+            .context("query iroh secret key")?;
+
+    if let Some(bytes) = existing {
+        let arr: [u8; 32] = bytes
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("invalid secret key length"))?;
+        return Ok(SecretKey::from_bytes(&arr));
+    }
+
+    // Generate new key and persist.
+    let secret_key = SecretKey::generate(&mut rand::rng());
+    let bytes = secret_key.to_bytes().to_vec();
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("system time")
+        .as_secs()
+        .cast_signed();
+
+    sqlx::query!(
+        "INSERT INTO iroh_config (id, secret_key, created) VALUES (1, ?, ?)",
+        bytes,
+        now
+    )
+    .execute(db.pool())
+    .await
+    .context("insert iroh secret key")?;
+
+    Ok(secret_key)
+}
+
 /// Data store owning shared infrastructure.
 ///
 /// Create once per server instance. Owns the database and
@@ -27,112 +144,6 @@ pub struct DataStore {
 }
 
 impl DataStore {
-    /// Initialize the data store with the default `iroh` [Router].
-    ///
-    /// # Errors
-    ///
-    /// Returns error if directories cannot be created or database cannot be initialized.
-    pub async fn new(data_dir: PathBuf) -> anyhow::Result<Self> {
-        Self::new_with_router(data_dir, |_, r| r).await
-    }
-
-    /// Initialize the data store with a callback for building the `iroh` [Router].
-    ///
-    /// # Errors
-    ///
-    /// Returns error if directories cannot be created or database cannot be initialized.
-    pub async fn new_with_router(
-        data_dir: PathBuf,
-        f: impl FnOnce(&Endpoint, RouterBuilder) -> RouterBuilder,
-    ) -> anyhow::Result<Self> {
-        std::fs::create_dir_all(data_dir.join("blobs")).context("create blobs directory")?;
-        std::fs::create_dir_all(data_dir.join("records")).context("create records directory")?;
-
-        let db_path = data_dir.join("index.db");
-        let db = Database::new(&db_path).await?;
-
-        // Initialize iroh endpoint.
-        let endpoint = Self::init_iroh(&db, &data_dir).await?;
-
-        // Create connection pool.
-        let connection_pool = Arc::new(ConnectionPool::new());
-
-        // Create sync protocol handler.
-        let protocol = WiredSyncProtocol::new(db.clone(), Arc::clone(&connection_pool));
-
-        // Create router and register sync protocol.
-        let router_builder = Router::builder(endpoint.clone()).accept(ALPN, protocol);
-        let router_builder = f(&endpoint, router_builder);
-        let router = router_builder.spawn();
-
-        // Create sync event channel.
-        let (sync_tx, sync_rx) = flume::unbounded();
-
-        Ok(Self {
-            connection_pool,
-            data_dir,
-            db,
-            endpoint,
-            router,
-            sync_rx,
-            sync_tx,
-        })
-    }
-
-    async fn init_iroh(db: &Database, _data_dir: &Path) -> anyhow::Result<Endpoint> {
-        // Load or create secret key.
-        let secret_key = Self::load_or_create_secret_key(db).await?;
-
-        // Create iroh endpoint.
-        let mut builder = Endpoint::builder().secret_key(secret_key);
-
-        #[cfg(feature = "discovery-local-network")]
-        {
-            let mdns = iroh::discovery::mdns::MdnsDiscovery::builder();
-            builder = builder.discovery(mdns);
-        }
-
-        let endpoint = builder.bind().await.context("bind iroh endpoint")?;
-
-        Ok(endpoint)
-    }
-
-    async fn load_or_create_secret_key(db: &Database) -> anyhow::Result<SecretKey> {
-        // Query existing key.
-        let existing: Option<Vec<u8>> =
-            sqlx::query_scalar!("SELECT secret_key FROM iroh_config WHERE id = 1")
-                .fetch_optional(db.pool())
-                .await
-                .context("query iroh secret key")?;
-
-        if let Some(bytes) = existing {
-            let arr: [u8; 32] = bytes
-                .try_into()
-                .map_err(|_| anyhow::anyhow!("invalid secret key length"))?;
-            return Ok(SecretKey::from_bytes(&arr));
-        }
-
-        // Generate new key and persist.
-        let secret_key = SecretKey::generate(&mut rand::rng());
-        let bytes = secret_key.to_bytes().to_vec();
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .expect("system time")
-            .as_secs()
-            .cast_signed();
-
-        sqlx::query!(
-            "INSERT INTO iroh_config (id, secret_key, created) VALUES (1, ?, ?)",
-            bytes,
-            now
-        )
-        .execute(db.pool())
-        .await
-        .context("insert iroh secret key")?;
-
-        Ok(secret_key)
-    }
-
     /// Create a lightweight per-user `DataStoreView`.
     ///
     /// Intended for per-user session (reuse across requests). The returned

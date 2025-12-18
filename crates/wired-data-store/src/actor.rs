@@ -79,7 +79,7 @@ impl Actor {
     ///     Ok(())
     /// }).await?;
     /// ```
-    pub async fn update_record<F>(&self, record_id: &RecordId, f: F) -> Result<()>
+    pub async fn update_record<F>(&self, record_id: RecordId, f: F) -> Result<()>
     where
         F: FnOnce(&mut LoroDoc) -> Result<()>,
     {
@@ -135,7 +135,7 @@ impl Actor {
     ///
     /// Returns an error if the record cannot be loaded, snapshot cannot be
     /// created, or storage fails.
-    pub async fn create_snapshot(&self, record_id: &RecordId) -> Result<SignedSnapshot> {
+    pub async fn create_snapshot(&self, record_id: RecordId) -> Result<SignedSnapshot> {
         // Load current record state.
         let record = self
             .view

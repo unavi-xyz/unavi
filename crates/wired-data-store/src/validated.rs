@@ -54,7 +54,7 @@ impl ValidatedView {
         // Check authorization.
         let record = self
             .inner
-            .get_record(&envelope.record_id)
+            .get_record(envelope.record_id)
             .await?
             .ok_or_else(|| anyhow!("record not found"))?;
 
@@ -70,14 +70,12 @@ impl ValidatedView {
 
         // Apply ops to Loro doc.
         self.inner
-            .apply_ops(&envelope.record_id, &envelope.ops)
+            .apply_ops(envelope.record_id, &envelope.ops)
             .await?;
 
         // Check if we should trigger a snapshot.
-        let (ops_count, bytes_count, _snapshot_num) = self
-            .inner
-            .get_snapshot_counters(&envelope.record_id)
-            .await?;
+        let (ops_count, bytes_count, _snapshot_num) =
+            self.inner.get_snapshot_counters(envelope.record_id).await?;
 
         let ops_threshold = i64::try_from(SNAPSHOT_OPS_THRESHOLD).unwrap_or(i64::MAX);
         let bytes_threshold = i64::try_from(SNAPSHOT_BYTES_THRESHOLD).unwrap_or(i64::MAX);

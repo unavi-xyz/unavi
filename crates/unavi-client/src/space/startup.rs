@@ -35,7 +35,7 @@ async fn join_home_space_inner(
     let id = actor.create_record(None).await?;
 
     actor
-        .update_record(&id, |r| {
+        .update_record(id, |r| {
             let map = r.get_map("space");
             map.insert("name", format!("{did}'s Space"))?;
             Ok(())

@@ -14,7 +14,7 @@ async fn test_gc_removes_expired_pins() {
     let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let record_id = view.create_record(genesis).await.expect("create record");
 
-    view.pin_record(&record_id, Some(1))
+    view.pin_record(record_id, Some(1))
         .await
         .expect("pin with 1 second expiry");
 
@@ -34,7 +34,7 @@ async fn test_gc_keeps_records_with_valid_pins() {
     let genesis = Genesis::new(Did::from_str(DID_BOB).expect("parse DID"));
     let record_id = view.create_record(genesis).await.expect("create record");
 
-    view.pin_record(&record_id, Some(3600))
+    view.pin_record(record_id, Some(3600))
         .await
         .expect("pin with future expiry");
 
@@ -44,7 +44,7 @@ async fn test_gc_keeps_records_with_valid_pins() {
     assert_eq!(stats.records_removed, 0, "should not remove pinned records");
 
     assert!(
-        view.get_record(&record_id)
+        view.get_record(record_id)
             .await
             .expect("query record")
             .is_some(),
@@ -63,11 +63,11 @@ async fn test_gc_multiple_pins_deletes_when_all_expire() {
     let record_id = view1.create_record(genesis).await.expect("create record");
 
     view1
-        .pin_record(&record_id, Some(1))
+        .pin_record(record_id, Some(1))
         .await
         .expect("alice pins with 1 second expiry");
     view2
-        .pin_record(&record_id, Some(1))
+        .pin_record(record_id, Some(1))
         .await
         .expect("bob pins with 1 second expiry");
 
@@ -90,7 +90,7 @@ async fn test_gc_null_expiry_never_removed() {
     let genesis = Genesis::new(Did::from_str(DID_CHARLIE).expect("parse DID"));
     let record_id = view.create_record(genesis).await.expect("create record");
 
-    view.pin_record(&record_id, None)
+    view.pin_record(record_id, None)
         .await
         .expect("pin without expiry");
 
@@ -100,7 +100,7 @@ async fn test_gc_null_expiry_never_removed() {
     assert_eq!(stats.records_removed, 0, "should not remove records");
 
     assert!(
-        view.get_record(&record_id)
+        view.get_record(record_id)
             .await
             .expect("query record")
             .is_some(),
@@ -116,11 +116,11 @@ async fn test_gc_removes_orphaned_blobs() {
     let genesis = Genesis::new(Did::from_str(DID_ALICE).expect("parse DID"));
     let record_id = view.create_record(genesis).await.expect("create record");
     let blob_id = view.store_blob(BLOB_HELLO).await.expect("store blob");
-    view.link_blob_to_record(&record_id, &blob_id)
+    view.link_blob_to_record(record_id, &blob_id)
         .await
         .expect("link blob");
 
-    view.pin_record(&record_id, Some(1))
+    view.pin_record(record_id, Some(1))
         .await
         .expect("pin record");
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
@@ -149,17 +149,17 @@ async fn test_gc_keeps_blob_with_multiple_record_refs() {
     let record2 = view.create_record(genesis2).await.expect("create record 2");
 
     let blob_id = view.store_blob(BLOB_HELLO).await.expect("store blob");
-    view.link_blob_to_record(&record1, &blob_id)
+    view.link_blob_to_record(record1, &blob_id)
         .await
         .expect("link to record1");
-    view.link_blob_to_record(&record2, &blob_id)
+    view.link_blob_to_record(record2, &blob_id)
         .await
         .expect("link to record2");
 
-    view.pin_record(&record1, Some(1))
+    view.pin_record(record1, Some(1))
         .await
         .expect("pin record1 with expiry");
-    view.pin_record(&record2, None)
+    view.pin_record(record2, None)
         .await
         .expect("pin record2 permanently");
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;

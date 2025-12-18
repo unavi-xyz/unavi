@@ -18,7 +18,7 @@ async fn test_create_and_get_record() {
     let id = view.create_record(genesis).await.expect("create record");
 
     let record = view
-        .get_record(&id)
+        .get_record(id)
         .await
         .expect("get record")
         .expect("record exists");
@@ -44,7 +44,7 @@ async fn test_record_preserves_nonce() {
     let id = view.create_record(genesis).await.expect("create record");
 
     let record = view
-        .get_record(&id)
+        .get_record(id)
         .await
         .expect("get record")
         .expect("record exists");
@@ -59,7 +59,7 @@ async fn test_get_nonexistent_record() {
     let genesis = Genesis::new(Did::from_str(DID_NOBODY).expect("parse DID"));
     let fake_id = RecordId(genesis.cid());
 
-    let result = view.get_record(&fake_id).await.expect("query succeeds");
+    let result = view.get_record(fake_id).await.expect("query succeeds");
     assert!(result.is_none());
 }
 
@@ -70,11 +70,11 @@ async fn test_delete_record() {
     let genesis = Genesis::new(Did::from_str(DID_CHARLIE).expect("parse DID"));
     let id = view.create_record(genesis).await.expect("create record");
 
-    assert!(view.get_record(&id).await.expect("get record").is_some());
+    assert!(view.get_record(id).await.expect("get record").is_some());
 
-    view.delete_record(&id).await.expect("delete record");
+    view.delete_record(id).await.expect("delete record");
 
-    assert!(view.get_record(&id).await.expect("get record").is_none());
+    assert!(view.get_record(id).await.expect("get record").is_none());
 }
 
 #[tokio::test]
@@ -90,13 +90,13 @@ async fn test_multiple_records() {
     assert_ne!(id1, id2);
 
     let record1 = view
-        .get_record(&id1)
+        .get_record(id1)
         .await
         .expect("get record 1")
         .expect("record 1 exists");
 
     let record2 = view
-        .get_record(&id2)
+        .get_record(id2)
         .await
         .expect("get record 2")
         .expect("record 2 exists");
@@ -121,7 +121,7 @@ async fn test_did_isolation() {
 
     assert!(
         view2
-            .get_record(&id)
+            .get_record(id)
             .await
             .expect("query succeeds")
             .is_none(),

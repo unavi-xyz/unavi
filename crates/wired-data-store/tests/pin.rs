@@ -13,9 +13,9 @@ async fn test_pin_and_unpin_record() {
     let genesis = Genesis::new(Did::from_str(DID_DAVE).expect("parse DID"));
     let record_id = view.create_record(genesis).await.expect("create record");
 
-    view.pin_record(&record_id, None).await.expect("pin record");
+    view.pin_record(record_id, None).await.expect("pin record");
 
-    view.unpin_record(&record_id).await.expect("unpin record");
+    view.unpin_record(record_id).await.expect("unpin record");
 }
 
 #[tokio::test]
@@ -25,9 +25,9 @@ async fn test_pin_with_ttl() {
     let genesis = Genesis::new(Did::from_str(DID_DAVE).expect("parse DID"));
     let record_id = view.create_record(genesis).await.expect("create record");
 
-    view.pin_record(&record_id, Some(3600))
+    view.pin_record(record_id, Some(3600))
         .await
         .expect("pin record with TTL");
 
-    view.unpin_record(&record_id).await.expect("unpin record");
+    view.unpin_record(record_id).await.expect("unpin record");
 }

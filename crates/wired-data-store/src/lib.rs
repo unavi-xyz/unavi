@@ -22,7 +22,7 @@ pub use gc::GarbageCollectStats;
 pub use quota::{DEFAULT_QUOTA_BYTES, QuotaExceeded, UserQuota};
 pub use record::{Genesis, Pin, Record, RecordId};
 pub use snapshot::{SNAPSHOT_BYTES_THRESHOLD, SNAPSHOT_OPS_THRESHOLD, SignedSnapshot};
-pub use store::DataStore;
+pub use store::{DataStore, DataStoreBuilder};
 pub use sync::{
     ALPN, ConnectionPool, SignatureWire, SyncEvent, SyncEventType, SyncMessage, SyncPeer,
     SyncStatus, WiredSyncProtocol,

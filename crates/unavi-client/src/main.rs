@@ -1,15 +1,20 @@
 // #![windows_subsystem = "windows"]
 
-use std::time::Duration;
+use std::{str::FromStr, time::Duration};
 
 use bevy::prelude::*;
 use clap::Parser;
+use iroh_tickets::endpoint::EndpointTicket;
 use unavi_client::DebugFlags;
 
 #[derive(Parser, Debug)]
 #[command(version)]
 #[allow(clippy::struct_excessive_bools)]
 struct Args {
+    /// Ticket of a peer to connect to.
+    #[arg(long)]
+    peer: Option<Vec<String>>,
+
     /// Enable FPS counter.
     #[cfg(feature = "devtools-bevy")]
     #[arg(long, default_value_t = false)]
@@ -48,12 +53,23 @@ fn main() {
         }
     }
 
+    let peers = args.peer.unwrap_or_default();
+
+    let Ok(peers) = peers
+        .iter()
+        .map(|t| EndpointTicket::from_str(t))
+        .collect::<Result<Vec<_>, _>>()
+    else {
+        println!("Invalid peer ticket: {peers:?}");
+        return;
+    };
+
     App::new()
-        .add_plugins(unavi_client::UnaviPlugin { debug })
+        .add_plugins(unavi_client::UnaviPlugin { debug, peers })
         .run();
 
     // Give time for other threads to finish.
-    std::thread::sleep(Duration::from_millis(500));
+    std::thread::sleep(Duration::from_millis(200));
 
     info!("Graceful exit");
 }

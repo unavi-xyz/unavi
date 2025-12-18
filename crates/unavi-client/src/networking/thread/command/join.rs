@@ -3,6 +3,7 @@ use std::time::Duration;
 use futures::StreamExt;
 use iroh::{EndpointId, Signature};
 use iroh_gossip::{TopicId, api::Event};
+use iroh_tickets::endpoint::EndpointTicket;
 use log::info;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
@@ -29,20 +30,28 @@ const PEER_BUF_SIZE: usize = core::mem::size_of::<PeerLocation>() * 2;
 
 const PRESENCE_TTL: Duration = Duration::from_mins(1);
 
-pub async fn handle_join(state: ThreadState, id: RecordId) -> anyhow::Result<()> {
+pub async fn handle_join(
+    state: ThreadState,
+    id: RecordId,
+    peers: Vec<EndpointTicket>,
+) -> anyhow::Result<()> {
     // TODO: Read record
     //       If SFU server specified connect to it, otherwise p2p gossip
 
     // Gossip for p2p connections.
     let id_bytes =
         id.0.to_bytes()
+            .into_iter()
+            .take(32)
+            .collect::<Vec<_>>()
             .try_into()
             .map_err(|_| anyhow::anyhow!("invalid CID"))?;
 
     let topic_id = TopicId::from_bytes(id_bytes);
 
     // TODO: Where to bootstrap from?
-    let bootstrap = Vec::new();
+    let bootstrap = peers.into_iter().map(|p| p.endpoint_addr().id).collect();
+    info!("gossip bootstrap: {bootstrap:#?}");
     let mut topic = state.gossip.subscribe_and_join(topic_id, bootstrap).await?;
 
     let peer = PeerLocation {

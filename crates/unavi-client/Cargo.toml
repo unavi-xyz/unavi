@@ -39,7 +39,7 @@ futures.workspace          = true
 image                      = { features = ["png"], workspace = true }
 iroh.workspace             = true
 iroh-gossip                = "0.95.0"
-iroh-tickets = "0.2.0"
+iroh-tickets               = "0.2.0"
 log                        = { features = ["max_level_debug", "release_max_level_info"], version = "*" }
 postcard.workspace         = true
 reqwest                    = { default-features = false, features = ["blocking", "rustls-tls"], version = "0.12.24" }

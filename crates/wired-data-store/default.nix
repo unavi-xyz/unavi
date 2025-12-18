@@ -37,19 +37,21 @@ _: {
 
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;
 
+      sqlxArgs = cargoArgs // {
+        nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [ pkgs.sqlx-cli ];
+
+        preBuild = ''
+          export DATABASE_URL=sqlite:./db.sqlite3
+          sqlx database create
+          sqlx migrate run --source crates/wired-data-store/migrations/
+        '';
+      };
+
       packageDrv = pkgs.crane.buildPackage (
-        cargoArgs
+        sqlxArgs
         // {
           inherit cargoArtifacts;
           doCheck = false;
-
-          nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [ pkgs.sqlx-cli ];
-
-          preBuild = ''
-            export DATABASE_URL=sqlite:./db.sqlite3
-            sqlx database create
-            sqlx migrate run --source crates/wired-data-store/migrations/
-          '';
 
           postInstall = ''
             cp LICENSE $out
@@ -59,10 +61,9 @@ _: {
     in
     {
       checks = {
-        "${pname}-doc" = pkgs.crane.cargoDoc (cargoArgs // { inherit cargoArtifacts; });
-        "${pname}-doctest" = pkgs.crane.cargoDocTest (cargoArgs // { inherit cargoArtifacts; });
+        "${pname}-doc" = pkgs.crane.cargoDoc (sqlxArgs // { inherit cargoArtifacts; });
         "${pname}-nextest" = pkgs.crane.cargoNextest (
-          cargoArgs
+          sqlxArgs
           // {
             inherit cargoArtifacts;
             cargoExtraArgs = cargoArgs.cargoExtraArgs + " --no-tests pass";

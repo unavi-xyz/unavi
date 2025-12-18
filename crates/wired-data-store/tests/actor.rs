@@ -1,6 +1,6 @@
 mod common;
 
-use wired_data_store::{Actor, DataStore, DataStoreBuilder, ValidatedView};
+use wired_data_store::{Actor, DataStoreBuilder, ValidatedView};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
 async fn create_actor() -> (Actor, tempfile::TempDir) {

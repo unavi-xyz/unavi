@@ -116,8 +116,7 @@ impl Actor {
         let to_version_bytes = to_version.encode();
 
         // Create and sign envelope.
-        let envelope =
-            self.sign_envelope(record_id.clone(), ops, from_version_bytes, to_version_bytes)?;
+        let envelope = self.sign_envelope(record_id, ops, from_version_bytes, to_version_bytes)?;
 
         // Apply via validated view (verifies signature).
         self.view.apply_update(&envelope).await
@@ -163,7 +162,7 @@ impl Actor {
 
         // Build and sign snapshot.
         let snapshot = self.sign_snapshot(
-            record_id.clone(),
+            record_id,
             snapshot_num,
             version,
             genesis_bytes,

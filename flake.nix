@@ -49,6 +49,7 @@
           ./crates/unavi-client
           ./crates/unavi-launcher
           ./crates/unavi-server
+          ./crates/wired-data-store
         ];
 
         flake =

@@ -24,6 +24,7 @@ futures.workspace            = true
 getrandom                    = "0.3.4"
 iroh.workspace               = true
 iroh-gossip.workspace        = true
+iroh-tickets.workspace       = true
 jose-jwk                     = "0.1.2"
 loro                         = "1.10.3"
 multihash                    = "0.19.3"

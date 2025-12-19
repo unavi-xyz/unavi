@@ -16423,6 +16423,7 @@ dependencies = [
  "getrandom 0.3.4",
  "iroh",
  "iroh-gossip",
+ "iroh-tickets",
  "jose-jwk",
  "loro",
  "multihash",

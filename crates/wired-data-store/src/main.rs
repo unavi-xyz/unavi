@@ -2,6 +2,7 @@ use std::sync::LazyLock;
 
 use clap::Parser;
 use directories::ProjectDirs;
+use iroh_tickets::endpoint::EndpointTicket;
 use tracing::{Level, info};
 use wired_data_store::DataStoreBuilder;
 
@@ -58,7 +59,8 @@ async fn main() -> anyhow::Result<()> {
     .build()
     .await?;
 
-    info!("Endpoint ID: {}", store.endpoint().id());
+    let ticket = EndpointTicket::new(store.endpoint().addr());
+    info!("Endpoint ticket: {ticket}");
 
     info!("Endpoint listening at:");
     for addr in store.endpoint().addr().ip_addrs() {

@@ -8,8 +8,8 @@ use iroh::{
 use super::{connection::ConnectionPool, session::SyncSession};
 use crate::db::Database;
 
-/// ALPN protocol identifier for wired-sync.
-pub const ALPN: &[u8] = b"wired-sync/0";
+/// ALPN protocol identifier.
+pub const ALPN: &[u8] = b"wds/sync/0";
 
 /// Sync protocol handler for incoming connections.
 #[derive(Clone)]

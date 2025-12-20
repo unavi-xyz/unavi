@@ -1,9 +1,8 @@
 use std::time::Duration;
 
 use futures::StreamExt;
-use iroh::{EndpointId, Signature};
+use iroh::{EndpointId, PublicKey, Signature};
 use iroh_gossip::{TopicId, api::Event};
-use iroh_tickets::endpoint::EndpointTicket;
 use log::info;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
@@ -26,35 +25,23 @@ struct PeerLocation {
     expires: i64,
 }
 
-/// Estimated postcard buffer size.
-/// Must be at least as large as the serialized format.
 const PEER_BUF_SIZE: usize = core::mem::size_of::<PeerLocation>();
-
 const PRESENCE_TTL: Duration = Duration::from_mins(1);
 
 pub async fn handle_join(
     state: ThreadState,
     id: RecordId,
-    peers: Vec<EndpointTicket>,
+    bootstrap: Vec<PublicKey>,
 ) -> anyhow::Result<()> {
     // TODO: Read record
     //       If SFU server specified connect to it, otherwise p2p gossip
 
     // Gossip for p2p connections.
-    let id_bytes =
-        id.0.to_bytes()
-            .into_iter()
-            .take(32)
-            .collect::<Vec<_>>()
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("invalid CID"))?;
+    let id_hash = blake3::hash(&id.0.to_bytes());
+    let topic_id = TopicId::from_bytes(*id_hash.as_bytes());
 
-    let topic_id = TopicId::from_bytes(id_bytes);
-
-    // TODO: Bootstrap from UNAVI hosted WDS endpoint
-    let bootstrap = peers.into_iter().map(|p| p.endpoint_addr().id).collect();
-    info!("Bootstrap: {bootstrap:#?}");
     let mut topic = state.gossip.subscribe_and_join(topic_id, bootstrap).await?;
+    info!("Joined topic: {topic_id}");
 
     let local_presence_bytes = {
         let peer = PeerLocation {

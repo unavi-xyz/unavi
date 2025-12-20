@@ -13,7 +13,11 @@ async fn test_empty_blob() {
     let empty: &[u8] = b"";
     let blob_id = view.store_blob(empty).await.expect("store empty blob");
 
-    let retrieved = view.get_blob(&blob_id).expect("get blob").expect("exists");
+    let retrieved = view
+        .get_blob(&blob_id)
+        .await
+        .expect("get blob")
+        .expect("exists");
     assert!(retrieved.is_empty());
 }
 
@@ -95,7 +99,11 @@ async fn test_binary_blob_content() {
     let binary_data: Vec<u8> = (0u8..=255).collect();
     let blob_id = view.store_blob(&binary_data).await.expect("store blob");
 
-    let retrieved = view.get_blob(&blob_id).expect("get blob").expect("exists");
+    let retrieved = view
+        .get_blob(&blob_id)
+        .await
+        .expect("get blob")
+        .expect("exists");
     assert_eq!(retrieved, binary_data);
 }
 
@@ -107,11 +115,15 @@ async fn test_duplicate_blob_storage() {
     let id1 = view.store_blob(data).await.expect("store first");
     let id2 = view.store_blob(data).await.expect("store second");
 
-    // Should return same CID (content-addressed).
+    // Should return same id.
     assert_eq!(id1, id2);
 
     // Should still be retrievable.
-    let retrieved = view.get_blob(&id1).expect("get blob").expect("exists");
+    let retrieved = view
+        .get_blob(&id1)
+        .await
+        .expect("get blob")
+        .expect("exists");
     assert_eq!(&retrieved, data);
 }
 

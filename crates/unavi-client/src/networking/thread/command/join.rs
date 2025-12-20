@@ -37,7 +37,7 @@ pub async fn handle_join(
     //       If SFU server specified connect to it, otherwise p2p gossip
 
     // Gossip for p2p connections.
-    let id_hash = blake3::hash(&id.0.to_bytes());
+    let id_hash = id.hash();
     let topic_id = TopicId::from_bytes(*id_hash.as_bytes());
 
     let mut topic = state.gossip.subscribe_and_join(topic_id, bootstrap).await?;

@@ -7,7 +7,7 @@ use crate::{RecordId, envelope::Signature};
 /// build upon without replaying all historical operations.
 #[derive(Clone, Debug)]
 pub struct SignedSnapshot {
-    /// Target record CID.
+    /// Target record ID.
     pub record_id: RecordId,
     /// Monotonically increasing snapshot number for this record.
     pub snapshot_num: u64,

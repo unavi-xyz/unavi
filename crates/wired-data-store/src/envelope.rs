@@ -6,7 +6,7 @@ use crate::RecordId;
 /// Signed batch of Loro operations.
 #[derive(Clone, Debug)]
 pub struct Envelope {
-    /// Target record CID.
+    /// Target record ID.
     pub record_id: RecordId,
     /// Loro-encoded updates (`ExportMode::updates`).
     pub ops: Vec<u8>,

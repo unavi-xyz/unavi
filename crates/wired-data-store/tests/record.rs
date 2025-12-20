@@ -57,7 +57,7 @@ async fn test_get_nonexistent_record() {
     let (view, _dir) = create_test_view(DID_NOBODY).await;
 
     let genesis = Genesis::new(Did::from_str(DID_NOBODY).expect("parse DID"));
-    let fake_id = RecordId(genesis.cid());
+    let fake_id = RecordId(genesis.hash());
 
     let result = view.get_record(fake_id).await.expect("query succeeds");
     assert!(result.is_none());

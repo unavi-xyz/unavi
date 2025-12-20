@@ -3,7 +3,7 @@
 use std::{str::FromStr, time::Duration};
 
 use bevy::prelude::*;
-use cid::Cid;
+use blake3::Hash;
 use clap::Parser;
 use iroh_tickets::endpoint::EndpointTicket;
 use unavi_client::DebugFlags;
@@ -59,8 +59,8 @@ fn main() {
         }
     }
 
-    let join = match args.join.as_ref().map(|t| Cid::from_str(t)) {
-        Some(Ok(t)) => Some(RecordId(t)),
+    let join = match args.join.as_ref().map(|t| Hash::from_str(t)) {
+        Some(Ok(t)) => Some(RecordId(t.into())),
         Some(Err(e)) => {
             println!("Invalid space id: {e:?}");
             return;

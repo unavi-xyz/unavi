@@ -5,6 +5,8 @@ use anyhow::Context;
 use flume::{Receiver, Sender};
 use iroh::protocol::{Router, RouterBuilder};
 use iroh::{Endpoint, EndpointId, SecretKey};
+use iroh_blobs::BlobsProtocol;
+use iroh_blobs::store::fs::FsStore;
 use xdid::core::did::Did;
 
 use crate::db::Database;
@@ -33,7 +35,6 @@ impl DataStoreBuilder {
     pub async fn build(self) -> anyhow::Result<DataStore> {
         let data_dir = self.data_dir;
 
-        std::fs::create_dir_all(data_dir.join("blobs")).context("create blobs directory")?;
         std::fs::create_dir_all(data_dir.join("records")).context("create records directory")?;
 
         let db_path = data_dir.join("index.db");
@@ -48,8 +49,17 @@ impl DataStoreBuilder {
         // Create sync protocol handler.
         let protocol = WiredSyncProtocol::new(db.clone(), Arc::clone(&connection_pool));
 
-        // Create router and register sync protocol.
-        let router_builder = Router::builder(endpoint.clone()).accept(ALPN, protocol);
+        // Initialize blob storage (FsStore handles its own directory structure).
+        let blob_path = data_dir.join("blobs");
+        let blob_store = FsStore::load(&blob_path).await.context("load blob store")?;
+
+        // Create blob protocol for peer-to-peer blob transfer.
+        let blobs = BlobsProtocol::new(&blob_store, None);
+
+        // Create router and register protocols.
+        let router_builder = Router::builder(endpoint.clone())
+            .accept(ALPN, protocol)
+            .accept(iroh_blobs::protocol::ALPN, blobs);
 
         let router_builder = if let Some(f) = self.with_router {
             f(&endpoint, router_builder)
@@ -63,6 +73,7 @@ impl DataStoreBuilder {
         let (sync_tx, sync_rx) = flume::unbounded();
 
         Ok(DataStore {
+            blob_store,
             connection_pool,
             data_dir,
             db,
@@ -139,6 +150,7 @@ async fn load_or_create_secret_key(db: &Database, ephemeral: bool) -> anyhow::Re
 /// data directory, which are shared across all users. Use `view_for_user()` to
 /// create lightweight per-user `DataStoreView` instances.
 pub struct DataStore {
+    blob_store: FsStore,
     connection_pool: Arc<ConnectionPool>,
     data_dir: PathBuf,
     db: Database,
@@ -162,11 +174,18 @@ impl DataStore {
         let _ = std::fs::create_dir_all(&user_dir);
 
         DataStoreView {
+            blob_store: self.blob_store.clone(),
             db: self.db.clone(),
             data_dir: self.data_dir.clone(),
             owner_did,
             sync_tx: self.sync_tx.clone(),
         }
+    }
+
+    /// Access to the blob store for direct blob operations.
+    #[must_use]
+    pub const fn blob_store(&self) -> &FsStore {
+        &self.blob_store
     }
 
     /// Access to the shared database for server-level operations.
@@ -216,9 +235,10 @@ impl DataStore {
         self.sync_rx.clone()
     }
 
-    /// Runs garbage collection across all users to remove expired pins, orphaned records, and orphaned blobs.
+    /// Runs garbage collection across all users to remove expired pins, orphaned records, and orphaned `user_blobs`.
     ///
     /// This is a server-level operation that should be run periodically.
+    /// Physical blob cleanup is handled by `FsStore` internally.
     ///
     /// # Errors
     ///
@@ -261,15 +281,11 @@ impl DataStore {
             }
         }
 
-        // Remove orphaned user_blobs.
+        // Remove orphaned user_blobs (ownership tracking).
         gc::remove_orphaned_user_blobs(self.db.pool()).await?;
 
-        // Remove orphaned blobs.
-        let blobs_dir = self.data_dir.join("blobs");
-        let (blobs_removed, bytes_freed) =
-            gc::remove_orphaned_blobs(self.db.pool(), &blobs_dir).await?;
-        stats.blobs_removed = blobs_removed;
-        stats.bytes_freed += bytes_freed;
+        // Note: Physical blob cleanup is handled by FsStore.
+        // FsStore manages its own garbage collection for unreferenced blobs.
 
         Ok(stats)
     }

@@ -1,27 +1,42 @@
 use std::fmt::Display;
+use std::str::FromStr;
 
-use cid::Cid;
+use iroh_blobs::Hash;
 use loro::LoroDoc;
-use multihash::Multihash;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use smol_str::SmolStr;
 use xdid::core::did::Did;
 
-/// CID of the genesis block, uniquely identifies a record.
+/// Blake3 hash of the genesis block, uniquely identifies a record.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct RecordId(pub Cid);
+pub struct RecordId(pub Hash);
 
 impl Display for RecordId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{}", self.0))
+        write!(f, "{}", self.0.to_hex())
     }
 }
 
 impl RecordId {
+    /// Returns the hex string representation.
     #[must_use]
     pub fn as_str(&self) -> String {
-        self.0.to_string()
+        self.0.to_hex()
+    }
+
+    /// Returns the underlying iroh Hash.
+    #[must_use]
+    pub const fn hash(&self) -> &Hash {
+        &self.0
+    }
+}
+
+impl FromStr for RecordId {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let hash = Hash::from_str(s)?;
+        Ok(Self(hash))
     }
 }
 
@@ -67,18 +82,10 @@ impl Genesis {
         self
     }
 
-    /// Computes the CID of this genesis block.
-    ///
-    /// # Panics
-    ///
-    /// Panics if SHA-256 digest cannot be wrapped in multihash (should never happen).
+    /// Computes the blake3 hash of this genesis block.
     #[must_use]
-    pub fn cid(&self) -> Cid {
-        // 0x12 = sha2-256, 0x55 = raw codec.
-        let bytes = self.to_bytes();
-        let digest = Sha256::digest(&bytes);
-        let hash = Multihash::<64>::wrap(0x12, &digest).expect("sha256 multihash");
-        Cid::new_v1(0x55, hash)
+    pub fn hash(&self) -> Hash {
+        Hash::new(self.to_bytes())
     }
 
     fn to_bytes(&self) -> Vec<u8> {
@@ -105,7 +112,7 @@ impl Record {
     /// Creates a new record with the given genesis data.
     #[must_use]
     pub fn new(genesis: Genesis) -> Self {
-        let id = RecordId(genesis.cid());
+        let id = RecordId(genesis.hash());
         let doc = LoroDoc::new();
 
         Self { id, genesis, doc }

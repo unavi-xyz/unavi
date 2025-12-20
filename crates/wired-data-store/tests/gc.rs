@@ -171,5 +171,5 @@ async fn test_gc_keeps_blob_with_multiple_record_refs() {
         stats.blobs_removed, 0,
         "blob should remain - still referenced by record2"
     );
-    assert!(view.get_blob(&blob_id).expect("get blob").is_some());
+    assert!(view.get_blob(&blob_id).await.expect("get blob").is_some());
 }

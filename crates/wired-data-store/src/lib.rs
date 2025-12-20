@@ -1,4 +1,4 @@
-use sha2::{Digest, Sha256};
+use iroh_blobs::Hash;
 use xdid::core::did::Did;
 
 mod actor;
@@ -30,7 +30,8 @@ pub use sync::{
 pub use validated::ValidatedView;
 pub use view::DataStoreView;
 
+/// Hashes a DID to a short string for directory naming.
 fn hash_did(did: &Did) -> String {
-    let hash = Sha256::digest(did.to_string().as_bytes());
-    format!("{hash:x}")[..16].to_string()
+    let hash = Hash::new(did.to_string().as_bytes());
+    hash.to_hex()[..16].to_string()
 }

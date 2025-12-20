@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 use flume::Sender;
+use iroh_blobs::store::fs::FsStore;
 use smol_str::SmolStr;
 use xdid::core::did::Did;
 
@@ -19,6 +20,7 @@ use crate::{
 /// (reuse across requests).
 #[derive(Clone)]
 pub struct DataStoreView {
+    pub(crate) blob_store: FsStore,
     pub(crate) db: Database,
     pub(crate) data_dir: PathBuf,
     pub(crate) owner_did: Did,
@@ -35,10 +37,6 @@ impl DataStoreView {
     fn user_dir(&self) -> PathBuf {
         let did_hash = hash_did(&self.owner_did);
         self.data_dir.join("records").join(did_hash)
-    }
-
-    fn blobs_dir(&self) -> PathBuf {
-        self.data_dir.join("blobs")
     }
 
     fn records_dir(&self) -> PathBuf {
@@ -318,20 +316,23 @@ impl DataStoreView {
     }
 
     fn record_path(&self, id: RecordId) -> PathBuf {
-        let cid_str = id.as_str();
-        let prefix = &cid_str[..2.min(cid_str.len())];
+        let id_str = id.as_str();
+        let prefix = &id_str[..2.min(id_str.len())];
         self.records_dir()
             .join(prefix)
-            .join(format!("{cid_str}.loro"))
+            .join(format!("{id_str}.loro"))
     }
 
     // Blobs.
 
     /// Stores a blob and returns its content-addressed ID.
     ///
+    /// Uses `FsStore` for physical storage (handles deduplication internally).
+    /// Tracks per-user ownership in database for quota management.
+    ///
     /// # Errors
     ///
-    /// Returns error if blob cannot be stored on filesystem or indexed in database.
+    /// Returns error if blob cannot be stored or quota is exceeded.
     ///
     /// # Panics
     ///
@@ -355,62 +356,14 @@ impl DataStoreView {
             .as_secs()
             .cast_signed();
 
-        // Transaction: all DB operations for blob storage.
+        // Store in FsStore (handles deduplication internally).
+        self.blob_store
+            .add_slice(data)
+            .await
+            .context("store blob in FsStore")?;
+
+        // Track ownership in database.
         let mut tx = self.db.pool().begin().await.context("begin transaction")?;
-
-        // Check if physical blob exists.
-        let blob_exists = sqlx::query_scalar!(
-            "SELECT EXISTS(SELECT 1 FROM blobs WHERE id = ?)",
-            blob_id_str
-        )
-        .fetch_one(&mut *tx)
-        .await
-        .context("check blob exists")?
-            != 0;
-
-        // Track whether we wrote a new file (for cleanup on error).
-        let mut wrote_new_file = false;
-        let path = self.blob_path(&id);
-
-        if blob_exists {
-            // Verify CID matches (data integrity check).
-            let stored_data =
-                std::fs::read(&path).context("read existing blob for verification")?;
-            let stored_id = BlobId::from_bytes(&stored_data);
-            if stored_id != id {
-                return Err(anyhow::anyhow!("blob CID mismatch"));
-            }
-
-            // Increment blob ref_count.
-            sqlx::query!(
-                "UPDATE blobs SET ref_count = ref_count + 1 WHERE id = ?",
-                blob_id_str
-            )
-            .execute(&mut *tx)
-            .await
-            .context("increment blob ref_count")?;
-        } else {
-            // Write file to disk first.
-            if let Some(parent) = path.parent() {
-                std::fs::create_dir_all(parent).context("create blob shard directory")?;
-            }
-            std::fs::write(&path, data).context("write blob file")?;
-            wrote_new_file = true;
-
-            // Create blob entry with ref_count = 1.
-            if let Err(e) = sqlx::query!(
-                "INSERT INTO blobs (id, size, created, ref_count) VALUES (?, ?, ?, 1)",
-                blob_id_str,
-                size,
-                now
-            )
-            .execute(&mut *tx)
-            .await
-            {
-                let _ = std::fs::remove_file(&path);
-                return Err(e).context("insert blob into database");
-            }
-        }
 
         // Check if user_blob exists.
         let user_blob_exists = sqlx::query_scalar!(
@@ -426,16 +379,10 @@ impl DataStoreView {
         if !user_blob_exists {
             // Ensure quota record exists and reserve quota.
             quota::ensure_quota_exists(&mut *tx, &owner_did).await?;
-
-            if let Err(e) = quota::reserve_bytes(&mut *tx, &owner_did, size).await {
-                if wrote_new_file {
-                    let _ = std::fs::remove_file(&path);
-                }
-                return Err(anyhow::anyhow!(e));
-            }
+            quota::reserve_bytes(&mut *tx, &owner_did, size).await?;
 
             // Create user_blob entry.
-            if let Err(e) = sqlx::query!(
+            sqlx::query!(
                 "INSERT INTO user_blobs (blob_id, owner_did, ref_count, created) VALUES (?, ?, 0, ?)",
                 blob_id_str,
                 owner_did,
@@ -443,12 +390,7 @@ impl DataStoreView {
             )
             .execute(&mut *tx)
             .await
-            {
-                if wrote_new_file {
-                    let _ = std::fs::remove_file(&path);
-                }
-                return Err(e).context("insert user_blob into database");
-            }
+            .context("insert user_blob into database")?;
         }
 
         tx.commit().await.context("commit transaction")?;
@@ -460,16 +402,20 @@ impl DataStoreView {
     ///
     /// # Errors
     ///
-    /// Returns error if blob file cannot be read.
-    pub fn get_blob(&self, id: &BlobId) -> Result<Option<Vec<u8>>> {
-        let path = self.blob_path(id);
-
-        if !path.exists() {
-            return Ok(None);
+    /// Returns error if blob cannot be read.
+    pub async fn get_blob(&self, id: &BlobId) -> Result<Option<Vec<u8>>> {
+        match self.blob_store.get_bytes(*id.hash()).await {
+            Ok(bytes) => Ok(Some(bytes.to_vec())),
+            Err(e) => {
+                // Check if it's a "not found" error.
+                let err_str = e.to_string();
+                if err_str.contains("not found") || err_str.contains("NotFound") {
+                    Ok(None)
+                } else {
+                    Err(e).context("read blob from FsStore")
+                }
+            }
         }
-
-        let data = std::fs::read(&path).context("read blob file")?;
-        Ok(Some(data))
     }
 
     /// Links a blob to a record, incrementing the `user_blob` `ref_count`.
@@ -526,12 +472,6 @@ impl DataStoreView {
         tx.commit().await.context("commit transaction")?;
 
         Ok(())
-    }
-
-    fn blob_path(&self, id: &BlobId) -> PathBuf {
-        let cid_str = id.as_str();
-        let prefix = &cid_str[..2.min(cid_str.len())];
-        self.blobs_dir().join(prefix).join(&cid_str)
     }
 
     // Pins.

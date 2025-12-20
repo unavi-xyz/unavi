@@ -1,7 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
 use bevy::prelude::*;
-use futures::StreamExt;
 use iroh::Endpoint;
 use iroh_gossip::Gossip;
 use iroh_tickets::endpoint::EndpointTicket;

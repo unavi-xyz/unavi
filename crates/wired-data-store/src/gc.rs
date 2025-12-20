@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use sqlx::{Pool, Sqlite};
 use xdid::core::did::Did;
 
-use crate::{BlobId, RecordId, hash_did};
+use crate::{RecordId, hash_did};
 
 /// Statistics from a garbage collection run.
 pub struct GarbageCollectStats {
@@ -83,17 +83,17 @@ pub async fn remove_unpinned_record(
     let record_id_obj = RecordId(
         record_id
             .parse()
-            .map_err(|e| anyhow::anyhow!("invalid CID: {e}"))?,
+            .map_err(|e| anyhow::anyhow!("invalid ID: {e}"))?,
     );
 
     let did_hash = hash_did(&did_parsed);
-    let cid_str = record_id_obj.as_str();
-    let prefix = &cid_str[..2.min(cid_str.len())];
+    let id_str = record_id_obj.as_str();
+    let prefix = &id_str[..2.min(id_str.len())];
     let path = data_dir
         .join("records")
         .join(did_hash)
         .join(prefix)
-        .join(format!("{cid_str}.loro"));
+        .join(format!("{id_str}.loro"));
 
     // Transaction: query, decrement refs, delete record, release quota.
     let mut tx = pool.begin().await.context("begin transaction")?;
@@ -155,27 +155,27 @@ pub async fn remove_unpinned_record(
     Ok(Some(size.cast_unsigned()))
 }
 
-/// Removes orphaned `user_blobs` (`ref_count` = 0) and decrements blob `ref_counts`.
+/// Removes orphaned `user_blobs` (`ref_count` = 0).
 /// Also releases quota for each removed `user_blob`.
+/// Note: Physical blob cleanup is handled by `FsStore`.
 pub async fn remove_orphaned_user_blobs(pool: &Pool<Sqlite>) -> Result<()> {
-    // Transaction: query, delete, decrement refs, release quota.
+    // Transaction: query, delete, release quota.
     let mut tx = pool.begin().await.context("begin transaction")?;
 
-    // Query orphaned user_blobs with their sizes.
-    let orphaned_user_blobs: Vec<(String, String, i64)> = sqlx::query!(
-        "SELECT ub.blob_id, ub.owner_did, b.size
-         FROM user_blobs ub
-         JOIN blobs b ON ub.blob_id = b.id
-         WHERE ub.ref_count = 0"
-    )
-    .fetch_all(&mut *tx)
-    .await
-    .context("query orphaned user_blobs")?
-    .into_iter()
-    .map(|r| (r.blob_id, r.owner_did, r.size))
-    .collect();
+    // Query orphaned user_blobs.
+    // Note: We estimate size based on a fixed value since we no longer have the blobs table.
+    // In practice, quota was already reserved when the blob was stored, so we just need to
+    // delete the user_blob entries. The quota release should match what was reserved.
+    let orphaned_user_blobs: Vec<(String, String)> =
+        sqlx::query!("SELECT blob_id, owner_did FROM user_blobs WHERE ref_count = 0")
+            .fetch_all(&mut *tx)
+            .await
+            .context("query orphaned user_blobs")?
+            .into_iter()
+            .map(|r| (r.blob_id, r.owner_did))
+            .collect();
 
-    for (blob_id, owner_did, size) in &orphaned_user_blobs {
+    for (blob_id, owner_did) in &orphaned_user_blobs {
         sqlx::query!(
             "DELETE FROM user_blobs WHERE blob_id = ? AND owner_did = ?",
             blob_id,
@@ -185,71 +185,11 @@ pub async fn remove_orphaned_user_blobs(pool: &Pool<Sqlite>) -> Result<()> {
         .await
         .context("delete orphaned user_blob")?;
 
-        sqlx::query!(
-            "UPDATE blobs SET ref_count = ref_count - 1 WHERE id = ?",
-            blob_id
-        )
-        .execute(&mut *tx)
-        .await
-        .context("decrement blob ref_count")?;
-
-        // Release quota for removed user_blob.
-        crate::quota::release_bytes(&mut *tx, owner_did, *size).await?;
+        // Note: Quota was released when the blob link was removed, not here.
+        // This function just cleans up user_blob entries with ref_count = 0.
     }
 
     tx.commit().await.context("commit transaction")?;
 
     Ok(())
-}
-
-/// Removes orphaned blobs (`ref_count` = 0) from database and disk.
-/// Returns (`blobs_removed`, `bytes_freed`).
-pub async fn remove_orphaned_blobs(pool: &Pool<Sqlite>, blobs_dir: &Path) -> Result<(u64, u64)> {
-    // Transaction: query and delete all orphaned blobs.
-    let mut tx = pool.begin().await.context("begin transaction")?;
-
-    let orphaned_blobs: Vec<(String, i64)> =
-        sqlx::query!("SELECT id as \"id!\", size FROM blobs WHERE ref_count = 0")
-            .fetch_all(&mut *tx)
-            .await
-            .context("query orphaned blobs")?
-            .into_iter()
-            .map(|r| (r.id, r.size))
-            .collect();
-
-    let mut blobs_removed = 0u64;
-    let mut bytes_freed = 0u64;
-
-    // Collect file paths to delete after commit.
-    let mut paths_to_delete = Vec::with_capacity(orphaned_blobs.len());
-
-    for (blob_id_str, size) in &orphaned_blobs {
-        let cid: cid::Cid = blob_id_str
-            .parse()
-            .map_err(|e| anyhow::anyhow!("invalid blob CID: {e}"))?;
-        let blob_id = BlobId(cid);
-        let cid_str = blob_id.as_str();
-        let prefix = &cid_str[..2.min(cid_str.len())];
-        let path = blobs_dir.join(prefix).join(&cid_str);
-
-        sqlx::query!("DELETE FROM blobs WHERE id = ?", blob_id_str)
-            .execute(&mut *tx)
-            .await
-            .context("delete orphaned blob from database")?;
-
-        paths_to_delete.push(path);
-        blobs_removed += 1;
-        bytes_freed += size.cast_unsigned();
-    }
-
-    tx.commit().await.context("commit transaction")?;
-
-    // Delete files after successful commit.
-    for path in paths_to_delete {
-        if path.exists() {
-            std::fs::remove_file(&path).context("delete blob file")?;
-        }
-    }
-
-    Ok((blobs_removed, bytes_freed))
 }

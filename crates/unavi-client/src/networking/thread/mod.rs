@@ -1,6 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
 use bevy::prelude::*;
+use futures::StreamExt;
 use iroh::Endpoint;
 use iroh_gossip::Gossip;
 use iroh_tickets::endpoint::EndpointTicket;
@@ -10,6 +11,7 @@ use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 use crate::DIRS;
 
 mod command;
+mod discovery;
 
 pub enum NetworkCommand {
     Join(RecordId),
@@ -109,11 +111,7 @@ async fn thread_loop(
         .await?;
 
     for addr in store.endpoint().addr().ip_addrs() {
-        info!(
-            "Endpoint {} listening on port {}",
-            store.endpoint().id(),
-            addr.port()
-        );
+        info!("Endpoint listening on port {}", addr.port());
     }
 
     let ticket = EndpointTicket::new(store.endpoint().addr());
@@ -125,13 +123,40 @@ async fn thread_loop(
         gossip,
     };
 
+    // TODO: Bootstrap from UNAVI hosted WDS endpoint
+    let bootstrap = peers
+        .iter()
+        .map(|p| p.endpoint_addr().id)
+        .collect::<Vec<_>>();
+    info!("Bootstrap: {bootstrap:#?}");
+
+    let (beacon_tx, mut beacon_rx) = tokio::sync::mpsc::channel(8);
+
+    tokio::spawn({
+        let bootstrap = bootstrap.clone();
+        let state = state.clone();
+
+        async move {
+            while let Err(e) =
+                discovery::handle_space_discovery(bootstrap.clone(), state.clone(), &mut beacon_rx)
+                    .await
+            {
+                error!("Error handling space discovery: {e:?}");
+                tokio::time::sleep(Duration::from_secs(5)).await;
+            }
+        }
+    });
+
     loop {
         match command_rx.recv_async().await? {
             NetworkCommand::Join(id) => {
                 let state = state.clone();
-                let peers = peers.to_vec();
+                let bootstrap = bootstrap.clone();
+
+                beacon_tx.send(id).await?;
+
                 tokio::spawn(async move {
-                    if let Err(e) = command::join::handle_join(state, id, peers).await {
+                    if let Err(e) = command::join::handle_join(state, id, bootstrap).await {
                         error!("Error joining {id}: {e:?}");
                     }
                 });

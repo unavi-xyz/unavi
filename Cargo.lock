@@ -14172,6 +14172,7 @@ dependencies = [
  "bevy_vrm",
  "bincode 2.0.1",
  "bitflags 2.10.0",
+ "blake3",
  "cid",
  "clap",
  "constcat",

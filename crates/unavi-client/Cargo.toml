@@ -30,6 +30,7 @@ bevy_seedling              = { features = ["wav"], workspace = true }
 bevy_vrm.workspace         = true
 bincode.workspace          = true
 bitflags                   = "2.10.0"
+blake3                     = "1.8.2"
 cid.workspace              = true
 clap.workspace             = true
 constcat.workspace         = true

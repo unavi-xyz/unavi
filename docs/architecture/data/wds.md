@@ -17,7 +17,7 @@ Runs local (client-embedded) or remote (server-hosted).
 ```
 WDS
 ├── Records (Loro CRDT documents)
-└── Blobs (immutable binary, CID-addressed)
+└── Blobs (immutable binary, Hash-addressed)
 ```
 
 ## Pinning

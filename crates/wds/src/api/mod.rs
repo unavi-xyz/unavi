@@ -1,22 +1,35 @@
 //! [`irpc`] WDS API, for use both locally or as an `iroh` protocol.
 
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    },
+    time::Duration,
+};
 
-use irpc::{Client, WithChannels, channel::oneshot, rpc_requests};
+use bytes::Bytes;
+use futures::{StreamExt, TryStreamExt};
+use irpc::{
+    Client, WithChannels,
+    channel::{mpsc, oneshot},
+    rpc_requests,
+};
 use irpc_iroh::IrohProtocol;
 use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
+use time::OffsetDateTime;
 use tracing::error;
 
 use crate::ConnectionState;
 
 pub const ALPN: &[u8] = b"wds/api";
 
-pub fn protocol(connection: Arc<ConnectionState>) -> IrohProtocol<ApiService> {
+pub fn protocol(conn: Arc<ConnectionState>) -> IrohProtocol<ApiService> {
     let (tx, mut rx) = irpc::channel::mpsc::channel(8);
 
     tokio::task::spawn(async move {
-        while let Err(e) = handle_requests(&connection, &mut rx).await {
+        while let Err(e) = handle_requests(&conn, &mut rx).await {
             error!("Error handling request: {e:?}");
         }
     });
@@ -33,6 +46,9 @@ pub enum ApiService {
     #[rpc(tx=oneshot::Sender<Result<blake3::Hash, SmolStr>>)]
     #[wrap(CreateRecord)]
     CreateRecord,
+    #[rpc(rx=mpsc::Receiver<Bytes>,tx=oneshot::Sender<Result<(), SmolStr>>)]
+    #[wrap(UploadBlob)]
+    UploadBlob { hash: blake3::Hash },
     #[rpc(tx=oneshot::Sender<Result<(), SmolStr>>)]
     #[wrap(PinBlob)]
     PinBlob { id: blake3::Hash, expires: u64 },
@@ -42,14 +58,14 @@ pub enum ApiService {
 }
 
 async fn handle_requests(
-    connection: &Arc<ConnectionState>,
+    conn: &Arc<ConnectionState>,
     rx: &mut irpc::channel::mpsc::Receiver<ApiMessage>,
 ) -> anyhow::Result<()> {
     while let Some(msg) = rx.recv().await? {
-        let connection = Arc::clone(connection);
+        let conn = Arc::clone(conn);
 
         tokio::spawn(async move {
-            if let Err(e) = handle_message(connection, msg).await {
+            if let Err(e) = handle_message(conn, msg).await {
                 error!("Error handling message: {e:?}");
             }
         });
@@ -59,8 +75,8 @@ async fn handle_requests(
 }
 
 macro_rules! authenticate {
-    ($connection:tt,$tx:tt) => {
-        match $connection.authentication.get() {
+    ($conn:tt,$tx:tt) => {
+        match $conn.authentication.get() {
             Some(did) => did,
             None => {
                 $tx.send(Err("unauthenticated".into())).await?;
@@ -70,18 +86,56 @@ macro_rules! authenticate {
     };
 }
 
-async fn handle_message(connection: Arc<ConnectionState>, msg: ApiMessage) -> anyhow::Result<()> {
+const BLOB_TTL: Duration = Duration::from_hours(1);
+
+async fn handle_message(conn: Arc<ConnectionState>, msg: ApiMessage) -> anyhow::Result<()> {
     match msg {
         ApiMessage::CreateRecord(WithChannels { tx, .. }) => {
-            let did = authenticate!(connection, tx);
+            let _did = authenticate!(conn, tx);
+            todo!()
+        }
+        ApiMessage::UploadBlob(WithChannels { inner, tx, rx, .. }) => {
+            let did = authenticate!(conn, tx);
 
-            tokio::time::sleep(Duration::from_secs(1)).await;
+            let total_bytes = Arc::new(AtomicUsize::default());
+
+            let stream = {
+                let total_bytes = Arc::clone(&total_bytes);
+                rx.into_stream()
+                    .map(move |res| {
+                        if let Ok(b) = &res {
+                            total_bytes.fetch_add(b.len(), Ordering::Release);
+                        }
+                        res
+                    })
+                    .map_err(|_| std::io::ErrorKind::Other.into())
+            };
+
+            let expires = (OffsetDateTime::now_utc() + BLOB_TTL).unix_timestamp();
+            let tag_name = format!("{did}_{expires}");
+            let res = conn
+                .blob_store
+                .add_stream(stream)
+                .await
+                .with_named_tag(&tag_name)
+                .await?;
+
+            if res.hash.as_bytes() != inner.hash.as_bytes() {
+                conn.blob_store.tags().delete(&tag_name).await?;
+                tx.send(Err("stored hash does not equal specified hash".into()))
+                    .await?;
+                return Ok(());
+            }
+
+            let _blob_len = total_bytes.load(Ordering::Acquire);
         }
-        ApiMessage::PinBlob(WithChannels { inner, tx, .. }) => {
-            let did = authenticate!(connection, tx);
+        ApiMessage::PinBlob(WithChannels { inner: _, tx, .. }) => {
+            let _did = authenticate!(conn, tx);
+            todo!()
         }
-        ApiMessage::PinRecord(WithChannels { inner, tx, .. }) => {
-            let did = authenticate!(connection, tx);
+        ApiMessage::PinRecord(WithChannels { inner: _, tx, .. }) => {
+            let _did = authenticate!(conn, tx);
+            todo!()
         }
     }
 

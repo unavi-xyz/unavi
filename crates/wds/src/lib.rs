@@ -15,12 +15,13 @@ mod blob;
 /// Wired data store.
 pub struct DataStore {
     router: Router,
-    blob_store: FsStore,
 }
 
-#[derive(Default)]
 struct ConnectionState {
+    /// The authenticated DID of the connection, if one existis.
+    /// Set by the `wds/auth` protocol.
     authentication: OnceCell<Did>,
+    blob_store: FsStore,
 }
 
 impl DataStore {
@@ -36,11 +37,14 @@ impl DataStore {
         tokio::fs::create_dir_all(&blob_path).await?;
         tokio::fs::create_dir_all(&record_path).await?;
 
-        let blob_db_path = blob_path.join("index.db");
+        let blob_db_path = blob_path.join("blobs.db");
         let blob_store = FsStore::load_with_opts(blob_db_path, Options::new(&blob_path)).await?;
         let blob_protocol = BlobsProtocol::new(&blob_store, None);
 
-        let state = Arc::new(ConnectionState::default());
+        let state = Arc::new(ConnectionState {
+            authentication: OnceCell::default(),
+            blob_store,
+        });
 
         let router = Router::builder(endpoint)
             .accept(iroh_blobs::ALPN, blob_protocol)
@@ -48,7 +52,7 @@ impl DataStore {
             .accept(auth::ALPN, auth::protocol(state))
             .spawn();
 
-        Ok(Self { router, blob_store })
+        Ok(Self { router })
     }
 
     /// # Errors

@@ -16,8 +16,8 @@ discovery-local-network = ["iroh/discovery-local-network"]
 [dependencies]
 anyhow.workspace             = true
 bincode                      = { features = ["derive"], version = "2" }
-blake3 = { version = "1.8.2", features = ["serde"] }
-bytes = "1.11.0"
+blake3                       = { features = ["serde"], version = "1.8.2" }
+bytes                        = "1.11.0"
 clap.workspace               = true
 directories.workspace        = true
 flume.workspace              = true
@@ -42,6 +42,7 @@ signature                    = "2.2.0"
 smol_str                     = "0.3.4"
 sqlx                         = { features = ["runtime-tokio", "sqlite"], version = "0.8.6" }
 thiserror                    = "2.0.17"
+time                         = "0.3.44"
 tokio.workspace              = true
 tracing.workspace            = true
 tracing-subscriber.workspace = true

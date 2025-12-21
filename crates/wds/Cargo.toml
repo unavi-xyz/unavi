@@ -16,6 +16,7 @@ discovery-local-network = ["iroh/discovery-local-network"]
 [dependencies]
 anyhow.workspace             = true
 bincode                      = { features = ["derive"], version = "2" }
+blake3 = { version = "1.8.2", features = ["serde"] }
 clap.workspace               = true
 directories.workspace        = true
 flume.workspace              = true

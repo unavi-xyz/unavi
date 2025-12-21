@@ -710,7 +710,7 @@ dependencies = [
  "bevy_math",
  "bevy_transform_interpolation",
  "bitflags 2.10.0",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "disqualified",
  "glam_matrix_extras",
  "itertools 0.13.0",
@@ -1014,7 +1014,7 @@ dependencies = [
  "bevy_transform",
  "bevy_utils",
  "blake3",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "downcast-rs 2.0.2",
  "either",
  "petgraph",
@@ -1105,7 +1105,7 @@ dependencies = [
  "blake3",
  "blocking",
  "crossbeam-channel",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "disqualified",
  "downcast-rs 2.0.2",
  "either",
@@ -1205,7 +1205,7 @@ dependencies = [
  "bevy_transform",
  "bevy_utils",
  "bevy_window",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "downcast-rs 2.0.2",
  "serde",
  "smallvec",
@@ -1222,7 +1222,7 @@ dependencies = [
  "bevy_math",
  "bevy_reflect",
  "bytemuck",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "encase",
  "serde",
  "thiserror 2.0.17",
@@ -1329,7 +1329,7 @@ dependencies = [
  "bitflags 2.10.0",
  "bumpalo",
  "concurrent-queue",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "fixedbitset",
  "indexmap 2.12.0",
  "log",
@@ -1519,7 +1519,7 @@ dependencies = [
  "bevy_math",
  "bevy_platform",
  "bevy_reflect",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "log",
  "smol_str 0.2.2",
  "thiserror 2.0.17",
@@ -1655,7 +1655,7 @@ checksum = "5fa74ae5d968749cc073da991757d3c7e3504ac6dbaac5f8c2a54b9d19b0b7ed"
 dependencies = [
  "approx",
  "bevy_reflect",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "glam 0.30.9",
  "itertools 0.14.0",
  "libm",
@@ -1685,7 +1685,7 @@ dependencies = [
  "bevy_transform",
  "bitflags 2.10.0",
  "bytemuck",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "hexasphere",
  "thiserror 2.0.17",
  "tracing",
@@ -1747,7 +1747,7 @@ dependencies = [
  "bevy_utils",
  "bitflags 2.10.0",
  "bytemuck",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "fixedbitset",
  "nonmax",
  "offset-allocator",
@@ -1849,7 +1849,7 @@ dependencies = [
  "bevy_ptr",
  "bevy_reflect_derive",
  "bevy_utils",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "disqualified",
  "downcast-rs 2.0.2",
  "erased-serde",
@@ -1909,7 +1909,7 @@ dependencies = [
  "bevy_window",
  "bitflags 2.10.0",
  "bytemuck",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "downcast-rs 2.0.2",
  "encase",
  "fixedbitset",
@@ -1970,7 +1970,7 @@ dependencies = [
  "bevy_reflect",
  "bevy_transform",
  "bevy_utils",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "serde",
  "thiserror 2.0.17",
  "uuid",
@@ -2088,7 +2088,7 @@ dependencies = [
  "bevy_utils",
  "bitflags 2.10.0",
  "bytemuck",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "fixedbitset",
  "nonmax",
  "tracing",
@@ -2134,7 +2134,7 @@ dependencies = [
  "bevy_platform",
  "concurrent-queue",
  "crossbeam-queue",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "futures-lite",
  "heapless 0.8.0",
  "pin-project",
@@ -2194,7 +2194,7 @@ dependencies = [
  "bevy_reflect",
  "bevy_tasks",
  "bevy_utils",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "serde",
  "thiserror 2.0.17",
 ]
@@ -2233,7 +2233,7 @@ dependencies = [
  "bevy_transform",
  "bevy_utils",
  "bevy_window",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "smallvec",
  "taffy",
  "thiserror 2.0.17",
@@ -2268,7 +2268,7 @@ dependencies = [
  "bevy_ui",
  "bevy_utils",
  "bytemuck",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "tracing",
 ]
 
@@ -3321,6 +3321,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "convert_case"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "633458d4ef8c78b72454de2d54fd6ab2e60f9e02be22f3c6104cdc8a4e0fceb9"
+dependencies = [
+ "unicode-segmentation",
+]
+
+[[package]]
 name = "cordyceps"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4118,11 +4127,11 @@ dependencies = [
 
 [[package]]
 name = "derive_more"
-version = "2.0.1"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "093242cf7570c207c83073cf82f79706fe7b8317e98620a47d5be7c3d8497678"
+checksum = "10b768e943bed7bf2cab53df09f4bc34bfd217cdb57d971e769874c9a6710618"
 dependencies = [
- "derive_more-impl 2.0.1",
+ "derive_more-impl 2.1.0",
 ]
 
 [[package]]
@@ -4139,12 +4148,14 @@ dependencies = [
 
 [[package]]
 name = "derive_more-impl"
-version = "2.0.1"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bda628edc44c4bb645fbe0f758797143e4e07926f7ebf4e9bdfbd3d2ce621df3"
+checksum = "6d286bfdaf75e988b4a78e013ecd79c581e06399ab53fbacd2d916c2f904f30b"
 dependencies = [
+ "convert_case 0.10.0",
  "proc-macro2",
  "quote",
+ "rustc_version",
  "syn 2.0.111",
  "unicode-xid",
 ]
@@ -7520,7 +7531,7 @@ dependencies = [
  "cfg_aliases",
  "crypto_box",
  "data-encoding",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "ed25519-dalek",
  "futures-util",
  "getrandom 0.3.4",
@@ -7572,7 +7583,7 @@ checksum = "25a8c5fb1cc65589f0d7ab44269a76f615a8c4458356952c9b0ef1c93ea45ff8"
 dependencies = [
  "curve25519-dalek",
  "data-encoding",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "ed25519-dalek",
  "n0-error",
  "rand_core 0.9.3",
@@ -7595,7 +7606,7 @@ dependencies = [
  "cfg_aliases",
  "chrono",
  "data-encoding",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "futures-lite",
  "genawaiter",
  "hex",
@@ -7633,7 +7644,7 @@ dependencies = [
  "blake3",
  "bytes 1.10.1",
  "data-encoding",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "ed25519-dalek",
  "futures-concurrency",
  "futures-lite",
@@ -7759,7 +7770,7 @@ dependencies = [
  "bytes 1.10.1",
  "cfg_aliases",
  "data-encoding",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "getrandom 0.3.4",
  "hickory-resolver",
  "http",
@@ -7803,7 +7814,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a322053cacddeca222f0999ce3cf6aa45c64ae5ad8c8911eac9b66008ffbaa5"
 dependencies = [
  "data-encoding",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "iroh-base",
  "n0-error",
  "postcard",
@@ -8964,7 +8975,7 @@ version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "38acf13c1ddafc60eb7316d52213467f8ccb70b6f02b65e7d97f7799b1f50be4"
 dependencies = [
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "n0-error",
  "n0-future",
 ]
@@ -9258,7 +9269,7 @@ dependencies = [
  "atomic-waker",
  "bytes 1.10.1",
  "cfg_aliases",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "iroh-quinn-udp",
  "js-sys",
  "libc",
@@ -10588,7 +10599,7 @@ checksum = "7b575f975dcf03e258b0c7ab3f81497d7124f508884c37da66a7314aa2a8d467"
 dependencies = [
  "base64 0.22.1",
  "bytes 1.10.1",
- "derive_more 2.0.1",
+ "derive_more 2.1.0",
  "futures-lite",
  "futures-util",
  "hyper-util",
@@ -15632,6 +15643,7 @@ dependencies = [
  "loro",
  "p256",
  "parking_lot",
+ "postcard",
  "rand 0.9.2",
  "ring",
  "scc",

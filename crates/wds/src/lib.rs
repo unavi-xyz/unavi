@@ -8,6 +8,7 @@ use iroh_blobs::{
 use tokio::task::JoinError;
 
 mod api;
+mod auth;
 mod blob;
 
 /// Wired data store.
@@ -35,7 +36,8 @@ impl DataStore {
 
         let router = Router::builder(endpoint)
             .accept(iroh_blobs::ALPN, blob_protocol)
-            .accept(api::ALPN, api::new_protocol())
+            .accept(api::ALPN, api::protocol())
+            .accept(auth::ALPN, auth::protocol())
             .spawn();
 
         Ok(Self { router, blob_store })

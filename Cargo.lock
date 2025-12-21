@@ -7844,6 +7844,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "irpc-iroh"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d17b254105bdaf86bc63786a37f81ba40e84d861b870d7626b51e14ebbb2ba50"
+dependencies = [
+ "getrandom 0.3.4",
+ "iroh",
+ "iroh-base",
+ "irpc",
+ "n0-error",
+ "n0-future",
+ "postcard",
+ "serde",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "is_terminal_polyfill"
 version = "1.70.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -15591,6 +15609,42 @@ dependencies = [
  "dlib",
  "log",
  "pkg-config",
+]
+
+[[package]]
+name = "wds"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "bincode 2.0.1",
+ "clap",
+ "directories",
+ "flume",
+ "futures 0.3.31",
+ "getrandom 0.3.4",
+ "iroh",
+ "iroh-blobs",
+ "iroh-gossip",
+ "iroh-tickets",
+ "irpc",
+ "irpc-iroh",
+ "jose-jwk",
+ "loro",
+ "p256",
+ "parking_lot",
+ "rand 0.9.2",
+ "ring",
+ "scc",
+ "serde",
+ "signature 2.2.0",
+ "smol_str 0.3.4",
+ "sqlx",
+ "tempfile",
+ "thiserror 2.0.17",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "xdid",
 ]
 
 [[package]]

@@ -78,11 +78,16 @@ async fn handle_requests(
     Ok(())
 }
 
+const MAX_NONCES: usize = 16;
 const NONCE_TTL: Duration = Duration::from_mins(5);
 
 async fn handle_message(state: Arc<HandlerState>, msg: AuthMessage) -> anyhow::Result<()> {
     match msg {
         AuthMessage::RequestChallenge(WithChannels { inner, tx, .. }) => {
+            if state.nonces.len() > MAX_NONCES {
+                return Ok(());
+            }
+
             let mut nonce = Nonce::default();
             rand::rng().fill_bytes(&mut nonce);
 

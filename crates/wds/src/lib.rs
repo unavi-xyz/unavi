@@ -1,11 +1,12 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use iroh::{Endpoint, protocol::Router};
 use iroh_blobs::{
     BlobsProtocol,
     store::fs::{FsStore, options::Options},
 };
-use tokio::task::JoinError;
+use tokio::{sync::OnceCell, task::JoinError};
+use xdid::core::did::Did;
 
 mod api;
 mod auth;
@@ -15,6 +16,11 @@ mod blob;
 pub struct DataStore {
     router: Router,
     blob_store: FsStore,
+}
+
+#[derive(Default)]
+struct ConnectionState {
+    authentication: OnceCell<Did>,
 }
 
 impl DataStore {
@@ -34,10 +40,12 @@ impl DataStore {
         let blob_store = FsStore::load_with_opts(blob_db_path, Options::new(&blob_path)).await?;
         let blob_protocol = BlobsProtocol::new(&blob_store, None);
 
+        let state = Arc::new(ConnectionState::default());
+
         let router = Router::builder(endpoint)
             .accept(iroh_blobs::ALPN, blob_protocol)
-            .accept(api::ALPN, api::protocol())
-            .accept(auth::ALPN, auth::protocol())
+            .accept(api::ALPN, api::protocol(Arc::clone(&state)))
+            .accept(auth::ALPN, auth::protocol(state))
             .spawn();
 
         Ok(Self { router, blob_store })

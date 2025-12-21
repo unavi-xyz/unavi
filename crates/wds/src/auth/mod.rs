@@ -10,17 +10,17 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 use xdid::{core::did::Did, resolver::DidResolver};
 
-use crate::auth::jwk::verify_jwk_signature;
+use crate::{ConnectionState, auth::jwk::verify_jwk_signature};
 
 mod jwk;
 
 pub const ALPN: &[u8] = b"wds/auth";
 
-pub fn protocol() -> IrohProtocol<AuthService> {
+pub fn protocol(connection: Arc<ConnectionState>) -> IrohProtocol<AuthService> {
     let (tx, mut rx) = irpc::channel::mpsc::channel(2);
 
     tokio::task::spawn(async move {
-        while let Err(e) = handle_requests(&mut rx).await {
+        while let Err(e) = handle_requests(&connection, &mut rx).await {
             error!("Error handling request: {e:?}");
         }
     });
@@ -61,15 +61,17 @@ struct HandlerState {
 }
 
 async fn handle_requests(
+    connection: &Arc<ConnectionState>,
     rx: &mut irpc::channel::mpsc::Receiver<AuthMessage>,
 ) -> anyhow::Result<()> {
     let state = Arc::new(HandlerState::default());
 
     while let Some(msg) = rx.recv().await? {
+        let connection = Arc::clone(connection);
         let state = Arc::clone(&state);
 
         tokio::spawn(async move {
-            if let Err(e) = handle_message(state, msg).await {
+            if let Err(e) = handle_message(connection, state, msg).await {
                 error!("Error handling message: {e:?}");
             }
         });
@@ -81,7 +83,11 @@ async fn handle_requests(
 const MAX_NONCES: usize = 16;
 const NONCE_TTL: Duration = Duration::from_mins(5);
 
-async fn handle_message(state: Arc<HandlerState>, msg: AuthMessage) -> anyhow::Result<()> {
+async fn handle_message(
+    connection: Arc<ConnectionState>,
+    state: Arc<HandlerState>,
+    msg: AuthMessage,
+) -> anyhow::Result<()> {
     match msg {
         AuthMessage::RequestChallenge(WithChannels { inner, tx, .. }) => {
             if state.nonces.len() > MAX_NONCES {
@@ -157,7 +163,13 @@ async fn handle_message(state: Arc<HandlerState>, msg: AuthMessage) -> anyhow::R
                 return Ok(());
             }
 
-            // TODO mark connection as authenticated as DID
+            if connection.authentication.set(did).is_err() {
+                // Already authenticated.
+                tx.send(false).await?;
+                return Ok(());
+            }
+
+            tx.send(true).await?;
         }
     }
 

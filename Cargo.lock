@@ -2506,6 +2506,7 @@ dependencies = [
  "cc",
  "cfg-if",
  "constant_time_eq",
+ "serde",
 ]
 
 [[package]]
@@ -15628,6 +15629,7 @@ version = "0.0.16"
 dependencies = [
  "anyhow",
  "bincode 2.0.1",
+ "blake3",
  "clap",
  "directories",
  "flume",

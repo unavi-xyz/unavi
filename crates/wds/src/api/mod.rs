@@ -30,9 +30,15 @@ pub fn protocol(connection: Arc<ConnectionState>) -> IrohProtocol<ApiService> {
 #[rpc_requests(message = ApiMessage)]
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ApiService {
-    #[rpc(tx=oneshot::Sender<Result<String, SmolStr>>)]
+    #[rpc(tx=oneshot::Sender<Result<blake3::Hash, SmolStr>>)]
     #[wrap(CreateRecord)]
     CreateRecord,
+    #[rpc(tx=oneshot::Sender<Result<(), SmolStr>>)]
+    #[wrap(PinBlob)]
+    PinBlob { id: blake3::Hash, expires: u64 },
+    #[rpc(tx=oneshot::Sender<Result<(), SmolStr>>)]
+    #[wrap(PinRecord)]
+    PinRecord { id: blake3::Hash, expires: u64 },
 }
 
 async fn handle_requests(
@@ -52,15 +58,30 @@ async fn handle_requests(
     Ok(())
 }
 
+macro_rules! authenticate {
+    ($connection:tt,$tx:tt) => {
+        match $connection.authentication.get() {
+            Some(did) => did,
+            None => {
+                $tx.send(Err("unauthenticated".into())).await?;
+                return Ok(());
+            }
+        }
+    };
+}
+
 async fn handle_message(connection: Arc<ConnectionState>, msg: ApiMessage) -> anyhow::Result<()> {
     match msg {
         ApiMessage::CreateRecord(WithChannels { tx, .. }) => {
-            if connection.authentication.get().is_none() {
-                tx.send(Err("unauthenticated".into())).await?;
-                return Ok(());
-            }
+            let did = authenticate!(connection, tx);
 
             tokio::time::sleep(Duration::from_secs(1)).await;
+        }
+        ApiMessage::PinBlob(WithChannels { inner, tx, .. }) => {
+            let did = authenticate!(connection, tx);
+        }
+        ApiMessage::PinRecord(WithChannels { inner, tx, .. }) => {
+            let did = authenticate!(connection, tx);
         }
     }
 

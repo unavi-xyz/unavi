@@ -1,15 +1,16 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{path::Path, sync::Arc};
 
 use iroh::{Endpoint, protocol::Router};
 use iroh_blobs::{
     BlobsProtocol,
     store::fs::{FsStore, options::Options},
 };
+use irpc::Client;
 use tokio::{sync::OnceCell, task::JoinError};
 use xdid::core::did::Did;
 
 pub mod actor;
-mod api;
+pub mod api;
 mod auth;
 mod blob;
 mod db;
@@ -18,6 +19,7 @@ pub mod signed_bytes;
 
 /// Wired data store.
 pub struct DataStore {
+    api_client: Client<api::ApiService>,
     router: Router,
 }
 
@@ -34,7 +36,7 @@ impl DataStore {
     ///
     /// Errors if the iroh endpoint could not be constructed, or the file system
     /// store could not be initialized.
-    pub async fn new(path: PathBuf) -> anyhow::Result<Self> {
+    pub async fn new(path: &Path) -> anyhow::Result<Self> {
         let endpoint = Endpoint::builder().bind().await?;
 
         let blob_path = path.join("blob");
@@ -55,13 +57,21 @@ impl DataStore {
             db,
         });
 
+        let (api_client, api_protocol) = api::protocol(Arc::clone(&state));
+
         let router = Router::builder(endpoint)
             .accept(iroh_blobs::ALPN, blob_protocol)
-            .accept(api::ALPN, api::protocol(Arc::clone(&state)))
+            .accept(api::ALPN, api_protocol)
             .accept(auth::ALPN, auth::protocol(state))
             .spawn();
 
-        Ok(Self { router })
+        Ok(Self { api_client, router })
+    }
+
+    /// Local client for interacting with the data store.
+    #[must_use]
+    pub const fn client(&self) -> &Client<api::ApiService> {
+        &self.api_client
     }
 
     /// # Errors

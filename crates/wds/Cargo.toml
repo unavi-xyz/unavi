@@ -50,5 +50,6 @@ tracing-subscriber.workspace = true
 xdid.workspace               = true
 
 [dev-dependencies]
+rstest             = "0.26.1"
 tempfile.workspace = true
 tokio              = { features = ["macros", "rt-multi-thread"], workspace = true }

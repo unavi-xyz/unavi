@@ -31,6 +31,7 @@ irpc                         = "0.11.0"
 irpc-iroh                    = "0.11.0"
 jose-jwk                     = "0.1.2"
 loro                         = "1.10.3"
+n0-error                     = { features = ["anyhow"], version = "0.1.2" }
 p256                         = { features = ["ecdsa"], version = "0.13.2" }
 parking_lot.workspace        = true
 postcard.workspace           = true

@@ -15693,6 +15693,7 @@ dependencies = [
  "irpc-iroh",
  "jose-jwk",
  "loro",
+ "n0-error",
  "p256",
  "parking_lot",
  "postcard",

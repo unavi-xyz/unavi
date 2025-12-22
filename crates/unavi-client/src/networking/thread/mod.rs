@@ -69,8 +69,8 @@ struct ThreadState {
 }
 
 async fn thread_loop(
-    command_rx: &flume::Receiver<NetworkCommand>,
-    event_tx: &flume::Sender<NetworkEvent>,
+    _command_rx: &flume::Receiver<NetworkCommand>,
+    _event_tx: &flume::Sender<NetworkEvent>,
     peers: &[EndpointTicket],
 ) -> anyhow::Result<()> {
     // TODO: save / load keypair from disk
@@ -79,7 +79,7 @@ async fn thread_loop(
     let did = keypair.public().to_did();
     info!("Local identity: {did}");
 
-    let data_dir = {
+    let _data_dir = {
         let mut path = DIRS.data_local_dir().to_path_buf();
         path.push("wds");
         path

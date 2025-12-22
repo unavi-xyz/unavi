@@ -17,6 +17,7 @@ use irpc::{
 };
 use irpc_iroh::IrohProtocol;
 use loro::LoroDoc;
+use n0_error::Meta;
 use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
 use time::OffsetDateTime;
@@ -49,7 +50,10 @@ pub enum ApiService {
     CreateRecord,
     #[rpc(rx=mpsc::Receiver<Bytes>,tx=oneshot::Sender<Result<(), SmolStr>>)]
     #[wrap(UploadBlob)]
-    UploadBlob { hash: blake3::Hash },
+    UploadBlob {
+        hash: blake3::Hash,
+        byte_length: usize,
+    },
     #[rpc(tx=oneshot::Sender<Result<(), SmolStr>>)]
     #[wrap(PinBlob)]
     PinBlob { id: blake3::Hash, expires: u64 },
@@ -87,7 +91,7 @@ macro_rules! authenticate {
     };
 }
 
-const BLOB_TTL: Duration = Duration::from_hours(1);
+const DEFAULT_BLOB_TTL: Duration = Duration::from_hours(1);
 
 async fn handle_message(conn: Arc<ConnectionState>, msg: ApiMessage) -> anyhow::Result<()> {
     match msg {
@@ -102,40 +106,82 @@ async fn handle_message(conn: Arc<ConnectionState>, msg: ApiMessage) -> anyhow::
             let did = authenticate!(conn, tx);
 
             let total_bytes = Arc::new(AtomicUsize::default());
+            let target_len = inner.byte_length;
 
             let stream = {
                 let total_bytes = Arc::clone(&total_bytes);
                 rx.into_stream()
                     .map(move |res| {
                         if let Ok(b) = &res {
-                            total_bytes.fetch_add(b.len(), Ordering::Release);
-                            // TODO cancel if count goes over user byte limit
+                            let len = total_bytes.fetch_add(b.len(), Ordering::Release);
+                            if len > target_len {
+                                return Err(
+                                    irpc::channel::mpsc::RecvError::MaxMessageSizeExceeded {
+                                        meta: Meta::default(),
+                                    },
+                                );
+                            }
                         }
                         res
                     })
                     .map_err(|_| std::io::ErrorKind::Other.into())
             };
 
-            let expires = (OffsetDateTime::now_utc() + BLOB_TTL).unix_timestamp();
-            let tag_name = format!("{did}_{expires}");
-            let res = conn
-                .blob_store
-                .add_stream(stream)
-                .await
-                .with_named_tag(&tag_name)
-                .await?;
+            let temp_tag = conn.blob_store.add_stream(stream).await.temp_tag().await?;
 
-            if res.hash.as_bytes() != inner.hash.as_bytes() {
-                conn.blob_store.tags().delete(&tag_name).await?;
+            if temp_tag.hash().as_bytes() != inner.hash.as_bytes() {
                 tx.send(Err("stored hash does not equal specified hash".into()))
                     .await?;
                 return Ok(());
             }
 
-            let _blob_len = total_bytes.load(Ordering::Acquire);
+            let blob_len = total_bytes.load(Ordering::Acquire);
+            if blob_len != target_len {
+                tx.send(Err("invalid byte length".into())).await?;
+                return Ok(());
+            }
+
+            let blob_len = i64::try_from(blob_len)?;
 
             let db = conn.db.pool();
-            let tx = db.begin().await?;
+            let mut db_tx = db.begin().await?;
+
+            let did_str = did.to_string();
+
+            let update_res = sqlx::query!(
+                "UPDATE user_quotas
+                 SET bytes_used = bytes_used + ?
+                 WHERE owner = ? AND bytes_used + ? <= quota_bytes",
+                blob_len,
+                did_str,
+                blob_len
+            )
+            .execute(&mut *db_tx)
+            .await?;
+
+            if update_res.rows_affected() == 0 {
+                // Quota exceeded (or user doesn't exist).
+                tx.send(Err("quota exceeded".into())).await?;
+                return Ok(());
+            }
+
+            let expires = (OffsetDateTime::now_utc() + DEFAULT_BLOB_TTL).unix_timestamp();
+            let tag_name = format!("{did}_{expires}");
+
+            sqlx::query!(
+                "INSERT INTO blobs (tag, creator, size) VALUES (?, ?, ?)",
+                tag_name,
+                did_str,
+                blob_len
+            )
+            .execute(&mut *db_tx)
+            .await?;
+
+            db_tx.commit().await?;
+
+            // Only persist blob tag after tracking blob in DB.
+            // TODO We could end up with DB tracking but no blob tag if we crash or error.
+            conn.blob_store.tags().set(tag_name, temp_tag).await?;
         }
         ApiMessage::PinBlob(WithChannels { inner: _, tx, .. }) => {
             let _did = authenticate!(conn, tx);

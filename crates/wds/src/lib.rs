@@ -11,6 +11,7 @@ use xdid::core::did::Did;
 mod api;
 mod auth;
 mod blob;
+pub mod signed_bytes;
 
 /// Wired data store.
 pub struct DataStore {

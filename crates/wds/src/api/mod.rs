@@ -16,6 +16,7 @@ use irpc::{
     rpc_requests,
 };
 use irpc_iroh::IrohProtocol;
+use loro::LoroDoc;
 use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
 use time::OffsetDateTime;
@@ -92,6 +93,9 @@ async fn handle_message(conn: Arc<ConnectionState>, msg: ApiMessage) -> anyhow::
     match msg {
         ApiMessage::CreateRecord(WithChannels { tx, .. }) => {
             let _did = authenticate!(conn, tx);
+
+            let doc = LoroDoc::new();
+
             todo!()
         }
         ApiMessage::UploadBlob(WithChannels { inner, tx, rx, .. }) => {
@@ -105,6 +109,7 @@ async fn handle_message(conn: Arc<ConnectionState>, msg: ApiMessage) -> anyhow::
                     .map(move |res| {
                         if let Ok(b) = &res {
                             total_bytes.fetch_add(b.len(), Ordering::Release);
+                            // TODO cancel if count goes over user byte limit
                         }
                         res
                     })
@@ -128,6 +133,8 @@ async fn handle_message(conn: Arc<ConnectionState>, msg: ApiMessage) -> anyhow::
             }
 
             let _blob_len = total_bytes.load(Ordering::Acquire);
+
+            // TODO track user limits
         }
         ApiMessage::PinBlob(WithChannels { inner: _, tx, .. }) => {
             let _did = authenticate!(conn, tx);

@@ -11,6 +11,8 @@ use xdid::core::did::Did;
 mod api;
 mod auth;
 mod blob;
+mod db;
+mod quota;
 pub mod signed_bytes;
 
 /// Wired data store.
@@ -23,6 +25,7 @@ struct ConnectionState {
     /// Set by the `wds/auth` protocol.
     authentication: OnceCell<Did>,
     blob_store: FsStore,
+    db: db::Database,
 }
 
 impl DataStore {
@@ -42,9 +45,13 @@ impl DataStore {
         let blob_store = FsStore::load_with_opts(blob_db_path, Options::new(&blob_path)).await?;
         let blob_protocol = BlobsProtocol::new(&blob_store, None);
 
+        let db_path = path.join("index.db");
+        let db = db::Database::new(&db_path).await?;
+
         let state = Arc::new(ConnectionState {
             authentication: OnceCell::default(),
             blob_store,
+            db,
         });
 
         let router = Router::builder(endpoint)

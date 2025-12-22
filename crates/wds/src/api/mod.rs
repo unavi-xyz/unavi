@@ -94,7 +94,7 @@ async fn handle_message(conn: Arc<ConnectionState>, msg: ApiMessage) -> anyhow::
         ApiMessage::CreateRecord(WithChannels { tx, .. }) => {
             let _did = authenticate!(conn, tx);
 
-            let doc = LoroDoc::new();
+            let _doc = LoroDoc::new();
 
             todo!()
         }
@@ -134,7 +134,8 @@ async fn handle_message(conn: Arc<ConnectionState>, msg: ApiMessage) -> anyhow::
 
             let _blob_len = total_bytes.load(Ordering::Acquire);
 
-            // TODO track user limits
+            let db = conn.db.pool();
+            let tx = db.begin().await?;
         }
         ApiMessage::PinBlob(WithChannels { inner: _, tx, .. }) => {
             let _did = authenticate!(conn, tx);

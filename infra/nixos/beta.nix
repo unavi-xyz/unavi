@@ -5,7 +5,7 @@
     ./hardware.nix
     ./services/nginx.nix
     ./services/unavi-server.nix
-    ./services/wired-data-store.nix
+    ./services/wds.nix
   ];
 
   networking.hostName = "unavi-beta";
@@ -16,9 +16,9 @@
       enable = true;
       package = inputs.self.packages.${pkgs.system}.unavi-server;
     };
-    wired-data-store = {
+    wds = {
       enable = true;
-      package = inputs.self.packages.${pkgs.system}.wired-data-store;
+      package = inputs.self.packages.${pkgs.system}.wds;
     };
   };
 

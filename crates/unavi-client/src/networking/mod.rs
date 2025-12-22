@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use bevy::prelude::*;
 use iroh_tickets::endpoint::EndpointTicket;
-use wired_data_store::Actor;
+use wds::actor::Actor;
 
 mod event;
 mod lifecycle;

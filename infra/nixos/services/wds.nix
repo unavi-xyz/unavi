@@ -6,17 +6,17 @@ let
   cfg = config.services.unavi-server;
 in
 {
-  options.services.wired-data-store = {
+  options.services.wds = {
     enable = mkEnableOption "wired data store";
 
     package = mkOption {
       type = types.package;
-      description = "wired-data-store package to use";
+      description = "wds package to use";
     };
 
     dataDir = mkOption {
       type = types.str;
-      default = "/var/lib/wired-data-store";
+      default = "/var/lib/wds";
       description = "data directory for state";
     };
 
@@ -43,8 +43,8 @@ in
 
     users.groups.${cfg.group} = { };
 
-    systemd.services."wired-data-store" = {
-      description = "kired data store";
+    systemd.services."wds" = {
+      description = "wired data store";
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
 
@@ -64,7 +64,7 @@ in
       };
 
       script = ''
-        exec ${cfg.package}/wired-data-store --gossip
+        exec ${cfg.package}/wds --gossip
       '';
     };
   };

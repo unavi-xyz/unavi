@@ -14588,8 +14588,8 @@ dependencies = [
  "unavi-portal",
  "unavi-script",
  "unavi-server-service",
+ "wds",
  "winit",
- "wired-data-store",
  "wired-protocol",
  "wtransport",
  "xdid",
@@ -16824,40 +16824,6 @@ dependencies = [
  "wired-protocol",
  "xdid",
  "zeroize",
-]
-
-[[package]]
-name = "wired-data-store"
-version = "0.0.16"
-dependencies = [
- "anyhow",
- "bincode 2.0.1",
- "clap",
- "directories",
- "flume",
- "futures 0.3.31",
- "getrandom 0.3.4",
- "iroh",
- "iroh-blobs",
- "iroh-gossip",
- "iroh-tickets",
- "jose-jwk",
- "loro",
- "p256",
- "parking_lot",
- "rand 0.9.2",
- "ring",
- "scc",
- "serde",
- "signature 2.2.0",
- "smol_str 0.3.4",
- "sqlx",
- "tempfile",
- "thiserror 2.0.17",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "xdid",
 ]
 
 [[package]]

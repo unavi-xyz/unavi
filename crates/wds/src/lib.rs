@@ -7,7 +7,9 @@ use iroh_blobs::{
 };
 use irpc::Client;
 use tokio::{sync::OnceCell, task::JoinError};
-use xdid::core::did::Did;
+use xdid::{core::did::Did, methods::key::p256::P256KeyPair};
+
+use crate::actor::Actor;
 
 pub mod actor;
 pub mod api;
@@ -20,6 +22,7 @@ pub mod signed_bytes;
 /// Wired data store.
 pub struct DataStore {
     api_client: Client<api::ApiService>,
+    auth_client: Client<auth::AuthService>,
     router: Router,
 }
 
@@ -58,20 +61,29 @@ impl DataStore {
         });
 
         let (api_client, api_protocol) = api::protocol(Arc::clone(&state));
+        let (auth_client, auth_protocol) = auth::protocol(Arc::clone(&state));
 
         let router = Router::builder(endpoint)
             .accept(iroh_blobs::ALPN, blob_protocol)
             .accept(api::ALPN, api_protocol)
-            .accept(auth::ALPN, auth::protocol(state))
+            .accept(auth::ALPN, auth_protocol)
             .spawn();
 
-        Ok(Self { api_client, router })
+        Ok(Self {
+            api_client,
+            auth_client,
+            router,
+        })
     }
 
-    /// Local client for interacting with the data store.
     #[must_use]
-    pub const fn client(&self) -> &Client<api::ApiService> {
-        &self.api_client
+    pub fn actor(&self, did: Did, signing_key: P256KeyPair) -> Actor {
+        Actor::new(
+            did,
+            signing_key,
+            self.api_client.clone(),
+            self.auth_client.clone(),
+        )
     }
 
     /// # Errors

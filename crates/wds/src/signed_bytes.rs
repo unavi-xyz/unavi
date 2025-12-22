@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 
 use serde::{Deserialize, Serialize};
+use xdid::methods::key::Signer;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SignedBytes<T>
@@ -18,9 +19,11 @@ where
 {
     /// # Errors
     ///
-    /// Errors if the payload could not be serialized.
-    pub fn new(payload: &T, signature: Vec<u8>) -> postcard::Result<Self> {
+    /// Errors if the payload could not be serialized, or the bytes could not
+    /// be signed.
+    pub fn sign(payload: &T, key: &impl Signer) -> anyhow::Result<Self> {
         let payload_bytes = postcard::to_stdvec(payload)?;
+        let signature = key.sign(&payload_bytes)?;
 
         Ok(Self {
             payload_bytes,

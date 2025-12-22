@@ -15,4 +15,4 @@ target
 
 # Other
 .direnv
-store.db
+store.db*

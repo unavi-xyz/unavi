@@ -16,7 +16,7 @@ mod jwk;
 
 pub const ALPN: &[u8] = b"wds/auth";
 
-pub fn protocol(conn: Arc<ConnectionState>) -> IrohProtocol<AuthService> {
+pub fn protocol(conn: Arc<ConnectionState>) -> (Client<AuthService>, IrohProtocol<AuthService>) {
     let (tx, mut rx) = irpc::channel::mpsc::channel(2);
 
     tokio::task::spawn(async move {
@@ -28,7 +28,7 @@ pub fn protocol(conn: Arc<ConnectionState>) -> IrohProtocol<AuthService> {
     let client = Client::local(tx);
     let local_sender = client.as_local().expect("local client");
 
-    IrohProtocol::with_sender(local_sender)
+    (client, IrohProtocol::with_sender(local_sender))
 }
 
 type Nonce = [u8; 32];
@@ -46,8 +46,8 @@ pub enum AuthService {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Challenge {
-    did: Did,
-    nonce: Nonce,
+    pub did: Did,
+    pub nonce: Nonce,
 }
 
 #[derive(Default)]

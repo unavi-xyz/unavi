@@ -11,6 +11,7 @@ use futures::{StreamExt, TryStreamExt};
 use irpc::WithChannels;
 use n0_error::Meta;
 use time::OffsetDateTime;
+use tracing::debug;
 
 use crate::{
     ConnectionState,
@@ -48,8 +49,8 @@ pub async fn upload_blob(
     let stream = {
         let total_bytes = Arc::clone(&total_bytes);
         rx.into_stream()
-            .map(move |res| {
-                if let Ok(b) = &res {
+            .map(move |incoming| {
+                if let Ok(b) = &incoming {
                     let b_len = i64::try_from(b.len()).unwrap_or(i64::MAX);
                     let len = total_bytes.fetch_add(b_len, Ordering::Release);
                     if len > estimated_max_len {
@@ -58,13 +59,15 @@ pub async fn upload_blob(
                         });
                     }
                 }
-                res
+                incoming
             })
             .map_err(|_| std::io::ErrorKind::Other.into())
     };
 
     let temp_tag = conn.blob_store.add_stream(stream).await.temp_tag().await?;
     let blob_len = total_bytes.load(Ordering::Acquire);
+
+    debug!(?blob_len, "wrote blob to store");
 
     let mut db_tx = db.begin().await?;
 

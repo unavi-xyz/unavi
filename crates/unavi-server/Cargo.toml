@@ -44,5 +44,5 @@ xdid.workspace               = true
 zeroize.workspace            = true
 
 [dev-dependencies]
-tracing-test.workspace = true
-wtransport             = { features = ["dangerous-configuration"], workspace = true }
+tracing-test = { features = ["no-env-filter"], workspace = true }
+wtransport   = { features = ["dangerous-configuration"], workspace = true }

@@ -1,15 +1,8 @@
 //! [`irpc`] WDS API, for use both locally or as an `iroh` protocol.
 
-use std::{
-    sync::{
-        Arc,
-        atomic::{AtomicUsize, Ordering},
-    },
-    time::Duration,
-};
+use std::sync::Arc;
 
 use bytes::Bytes;
-use futures::{StreamExt, TryStreamExt};
 use irpc::{
     Client, WithChannels,
     channel::{mpsc, oneshot},
@@ -17,13 +10,13 @@ use irpc::{
 };
 use irpc_iroh::IrohProtocol;
 use loro::LoroDoc;
-use n0_error::Meta;
 use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
-use time::OffsetDateTime;
 use tracing::error;
 
-use crate::{ConnectionState, quota::ensure_quota_exists};
+use crate::ConnectionState;
+
+mod upload_blob;
 
 pub const ALPN: &[u8] = b"wds/api";
 
@@ -50,10 +43,7 @@ pub enum ApiService {
     CreateRecord,
     #[rpc(rx=mpsc::Receiver<Bytes>,tx=oneshot::Sender<Result<(), SmolStr>>)]
     #[wrap(UploadBlob)]
-    UploadBlob {
-        hash: blake3::Hash,
-        byte_length: usize,
-    },
+    UploadBlob { hash: blake3::Hash, byte_len: usize },
     #[rpc(tx=oneshot::Sender<Result<(), SmolStr>>)]
     #[wrap(PinBlob)]
     PinBlob { id: blake3::Hash, expires: u64 },
@@ -91,7 +81,7 @@ macro_rules! authenticate {
     };
 }
 
-const DEFAULT_BLOB_TTL: Duration = Duration::from_hours(1);
+pub(crate) use authenticate;
 
 async fn handle_message(conn: Arc<ConnectionState>, msg: ApiMessage) -> anyhow::Result<()> {
     match msg {
@@ -102,88 +92,8 @@ async fn handle_message(conn: Arc<ConnectionState>, msg: ApiMessage) -> anyhow::
 
             todo!()
         }
-        ApiMessage::UploadBlob(WithChannels { inner, tx, rx, .. }) => {
-            let did = authenticate!(conn, tx);
-            let did_str = did.to_string();
-
-            let db = conn.db.pool();
-            let mut db_tx = db.begin().await?;
-            ensure_quota_exists(&mut *db_tx, &did_str).await?;
-            db_tx.commit().await?;
-
-            let total_bytes = Arc::new(AtomicUsize::default());
-            let target_len = inner.byte_length;
-
-            let stream = {
-                let total_bytes = Arc::clone(&total_bytes);
-                rx.into_stream()
-                    .map(move |res| {
-                        if let Ok(b) = &res {
-                            let len = total_bytes.fetch_add(b.len(), Ordering::Release);
-                            if len > target_len {
-                                return Err(
-                                    irpc::channel::mpsc::RecvError::MaxMessageSizeExceeded {
-                                        meta: Meta::default(),
-                                    },
-                                );
-                            }
-                        }
-                        res
-                    })
-                    .map_err(|_| std::io::ErrorKind::Other.into())
-            };
-
-            let temp_tag = conn.blob_store.add_stream(stream).await.temp_tag().await?;
-
-            if temp_tag.hash().as_bytes() != inner.hash.as_bytes() {
-                tx.send(Err("stored hash does not equal specified hash".into()))
-                    .await?;
-                return Ok(());
-            }
-
-            let blob_len = total_bytes.load(Ordering::Acquire);
-            if blob_len != target_len {
-                tx.send(Err("invalid byte length".into())).await?;
-                return Ok(());
-            }
-            let blob_len = i64::try_from(blob_len)?;
-
-            let mut db_tx = db.begin().await?;
-
-            let update_res = sqlx::query!(
-                "UPDATE user_quotas
-                 SET bytes_used = bytes_used + ?
-                 WHERE owner = ? AND bytes_used + ? <= quota_bytes",
-                blob_len,
-                did_str,
-                blob_len
-            )
-            .execute(&mut *db_tx)
-            .await?;
-
-            if update_res.rows_affected() == 0 {
-                // Quota exceeded (or user doesn't exist).
-                tx.send(Err("quota exceeded".into())).await?;
-                return Ok(());
-            }
-
-            let expires = (OffsetDateTime::now_utc() + DEFAULT_BLOB_TTL).unix_timestamp();
-            let tag_name = format!("{did}_{expires}");
-
-            sqlx::query!(
-                "INSERT INTO blobs (tag, creator, size) VALUES (?, ?, ?)",
-                tag_name,
-                did_str,
-                blob_len
-            )
-            .execute(&mut *db_tx)
-            .await?;
-
-            db_tx.commit().await?;
-
-            // Only persist blob tag after tracking blob in DB.
-            // TODO We could end up with DB tracking but no blob tag if we crash or error.
-            conn.blob_store.tags().set(tag_name, temp_tag).await?;
+        ApiMessage::UploadBlob(channels) => {
+            upload_blob::upload_blob(conn, channels).await?;
         }
         ApiMessage::PinBlob(WithChannels { inner: _, tx, .. }) => {
             let _did = authenticate!(conn, tx);

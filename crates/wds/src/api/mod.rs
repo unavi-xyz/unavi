@@ -16,6 +16,8 @@ use tracing::error;
 
 use crate::ConnectionState;
 
+mod pin_blob;
+mod tag;
 mod upload_blob;
 
 pub const ALPN: &[u8] = b"wds/api";
@@ -46,10 +48,10 @@ pub enum ApiService {
     UploadBlob { hash: blake3::Hash, byte_len: usize },
     #[rpc(tx=oneshot::Sender<Result<(), SmolStr>>)]
     #[wrap(PinBlob)]
-    PinBlob { id: blake3::Hash, expires: u64 },
+    PinBlob { hash: blake3::Hash, expires: i64 },
     #[rpc(tx=oneshot::Sender<Result<(), SmolStr>>)]
     #[wrap(PinRecord)]
-    PinRecord { id: blake3::Hash, expires: u64 },
+    PinRecord { id: blake3::Hash, expires: i64 },
 }
 
 async fn handle_requests(
@@ -95,9 +97,8 @@ async fn handle_message(conn: Arc<ConnectionState>, msg: ApiMessage) -> anyhow::
         ApiMessage::UploadBlob(channels) => {
             upload_blob::upload_blob(conn, channels).await?;
         }
-        ApiMessage::PinBlob(WithChannels { inner: _, tx, .. }) => {
-            let _did = authenticate!(conn, tx);
-            todo!()
+        ApiMessage::PinBlob(channels) => {
+            pin_blob::pin_blob(conn, channels).await?;
         }
         ApiMessage::PinRecord(WithChannels { inner: _, tx, .. }) => {
             let _did = authenticate!(conn, tx);

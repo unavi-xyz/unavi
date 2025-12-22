@@ -13,7 +13,7 @@ use time::OffsetDateTime;
 
 use crate::{
     ConnectionState,
-    api::{ApiService, UploadBlob, authenticate},
+    api::{ApiService, UploadBlob, authenticate, tag::BlobTag},
     quota::ensure_quota_exists,
 };
 
@@ -69,8 +69,8 @@ pub async fn upload_blob(
 
     let update_res = sqlx::query!(
         "UPDATE user_quotas
-                 SET bytes_used = bytes_used + ?
-                 WHERE owner = ? AND bytes_used + ? <= quota_bytes",
+         SET bytes_used = bytes_used + ?
+         WHERE owner = ? AND bytes_used + ? <= quota_bytes",
         blob_len,
         did_str,
         blob_len
@@ -84,13 +84,15 @@ pub async fn upload_blob(
         return Ok(());
     }
 
+    let hash_str = temp_tag.hash().to_string();
+
     let expires = (OffsetDateTime::now_utc() + DEFAULT_BLOB_TTL).unix_timestamp();
-    let tag_name = format!("{did}_{expires}");
 
     sqlx::query!(
-        "INSERT INTO blobs (tag, creator, size) VALUES (?, ?, ?)",
-        tag_name,
+        "INSERT INTO blob_pins (hash, owner, expires, size) VALUES (?, ?, ?, ?)",
+        hash_str,
         did_str,
+        expires,
         blob_len
     )
     .execute(&mut *db_tx)
@@ -99,6 +101,9 @@ pub async fn upload_blob(
     db_tx.commit().await?;
 
     // Only persist blob tag after tracking blob in DB.
+    let blob_tag = BlobTag::new(did.clone(), temp_tag.hash().into());
+    let tag_name = blob_tag.to_string();
+
     conn.blob_store.tags().set(tag_name, temp_tag).await?;
 
     // TODO We could end up with DB tracking but no blob tag if we crash or error.

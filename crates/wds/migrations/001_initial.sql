@@ -10,18 +10,17 @@ CREATE TABLE records (
 CREATE INDEX idx_records_creator ON records (creator);
 CREATE INDEX idx_records_schema ON records (schema);
 
-CREATE TABLE blobs (
-    tag TEXT PRIMARY KEY,
-    creator TEXT NOT NULL,
-    size INTEGER NOT NULL
+CREATE TABLE blob_pins (
+    hash TEXT NOT NULL,
+    owner TEXT NOT NULL,
+    expires INTEGER,
+    size INTEGER NOT NULL,
+    PRIMARY KEY (owner, hash)
 );
 
-CREATE INDEX idx_blobs_creator ON blobs (creator);
-
-CREATE TABLE pins (
+CREATE TABLE record_pins (
     record_id TEXT NOT NULL REFERENCES records (id) ON DELETE CASCADE,
     owner TEXT NOT NULL,
-    created INTEGER NOT NULL,
     expires INTEGER,
     PRIMARY KEY (owner, record_id)
 );

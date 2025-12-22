@@ -1,12 +1,12 @@
 use std::time::Duration;
 
+use blake3::Hash;
 use futures::StreamExt;
 use iroh::{EndpointId, PublicKey, Signature};
 use iroh_gossip::{TopicId, api::Event};
 use log::info;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
-use wired_data_store::RecordId;
 
 use crate::networking::thread::ThreadState;
 
@@ -20,7 +20,7 @@ struct Presence {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct PeerLocation {
-    space: RecordId,
+    space: Hash,
     endpoint: EndpointId,
     expires: i64,
 }
@@ -30,15 +30,14 @@ const PRESENCE_TTL: Duration = Duration::from_mins(1);
 
 pub async fn handle_join(
     state: ThreadState,
-    id: RecordId,
+    id: Hash,
     bootstrap: Vec<PublicKey>,
 ) -> anyhow::Result<()> {
     // TODO: Read record
     //       If SFU server specified connect to it, otherwise p2p gossip
 
     // Gossip for p2p connections.
-    let id_hash = id.hash();
-    let topic_id = TopicId::from_bytes(*id_hash.as_bytes());
+    let topic_id = TopicId::from_bytes(*id.as_bytes());
 
     let mut topic = state.gossip.subscribe_and_join(topic_id, bootstrap).await?;
     info!("Joined topic: {topic_id}");

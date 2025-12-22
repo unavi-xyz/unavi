@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
-use wired_data_store::Actor;
 
 use crate::networking::{
     WdsActor,
@@ -20,30 +19,30 @@ pub fn join_home_space(actor: Res<WdsActor>, nt: Res<NetworkingThread>) {
             .expect("build tokio runtime");
 
         rt.block_on(async move {
-            if let Err(e) = join_home_space_inner(actor, command_tx).await {
-                error!("Failed to join home space: {e:?}");
-            }
+            // if let Err(e) = join_home_space_inner(actor, command_tx).await {
+            //     error!("Failed to join home space: {e:?}");
+            // }
         });
     });
 }
 
-async fn join_home_space_inner(
-    actor: Arc<Actor>,
-    command_tx: flume::Sender<NetworkCommand>,
-) -> anyhow::Result<()> {
-    let did = actor.did();
-    let id = actor.create_record(None).await?;
-
-    actor
-        .update_record(id, |r| {
-            let map = r.get_map("space");
-            map.insert("name", format!("{did}'s Space"))?;
-            Ok(())
-        })
-        .await?;
-
-    info!("Joining home space: {id}");
-    command_tx.send_async(NetworkCommand::Join(id)).await?;
-
-    Ok(())
-}
+// async fn join_home_space_inner(
+//     actor: Arc<Actor>,
+//     command_tx: flume::Sender<NetworkCommand>,
+// ) -> anyhow::Result<()> {
+//     let did = actor.did();
+//     let id = actor.create_record(None).await?;
+//
+//     actor
+//         .update_record(id, |r| {
+//             let map = r.get_map("space");
+//             map.insert("name", format!("{did}'s Space"))?;
+//             Ok(())
+//         })
+//         .await?;
+//
+//     info!("Joining home space: {id}");
+//     command_tx.send_async(NetworkCommand::Join(id)).await?;
+//
+//     Ok(())
+// }

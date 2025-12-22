@@ -6,9 +6,9 @@ use bevy::{
 use bevy_av1::VideoTargetApp;
 use bevy_rich_text3d::Text3dPlugin;
 use bitflags::bitflags;
+use blake3::Hash;
 use directories::ProjectDirs;
 use iroh_tickets::endpoint::EndpointTicket;
-use wired_data_store::RecordId;
 
 pub mod assets;
 mod async_commands;
@@ -55,7 +55,7 @@ bitflags! {
 
 pub struct UnaviPlugin {
     pub debug: DebugFlags,
-    pub initial_space: Option<RecordId>,
+    pub initial_space: Option<Hash>,
     pub peers: Vec<EndpointTicket>,
 }
 

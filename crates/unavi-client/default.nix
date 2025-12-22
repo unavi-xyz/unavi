@@ -35,7 +35,7 @@
           ) root)
           ../../LICENSE
           ../../scripts
-          ../wired-data-store/migrations
+          ../wds/migrations
           ./assets
         ];
       };
@@ -89,7 +89,7 @@
         preBuild = ''
           export DATABASE_URL=sqlite:./db.sqlite3
           sqlx database create
-          sqlx migrate run --source crates/wired-data-store/migrations/
+          sqlx migrate run --source crates/wds/migrations/
         '';
       };
 

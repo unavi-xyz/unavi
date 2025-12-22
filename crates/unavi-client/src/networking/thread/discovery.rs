@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use bevy::log::{error, info};
+use blake3::Hash;
 use futures::StreamExt;
 use iroh::{PublicKey, Signature};
 use iroh_gossip::{
@@ -8,7 +9,6 @@ use iroh_gossip::{
     api::{Event, GossipSender},
 };
 use serde::{Deserialize, Serialize};
-use wired_data_store::RecordId;
 
 use crate::networking::thread::ThreadState;
 
@@ -20,7 +20,7 @@ struct Beacon {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct BeaconContent {
-    space: RecordId,
+    space: Hash,
     peer: PublicKey,
 }
 
@@ -29,7 +29,7 @@ const BEACON_BUF_SIZE: usize = core::mem::size_of::<Beacon>();
 pub async fn handle_space_discovery(
     bootstrap: Vec<PublicKey>,
     state: ThreadState,
-    beacon_rx: &mut tokio::sync::mpsc::Receiver<RecordId>,
+    beacon_rx: &mut tokio::sync::mpsc::Receiver<Hash>,
 ) -> anyhow::Result<()> {
     let topic_hash = blake3::hash(b"wired-protocol/space");
     let topic_id = TopicId::from_bytes(*topic_hash.as_bytes());
@@ -67,7 +67,7 @@ pub async fn handle_space_discovery(
 
 async fn handle_beacon_publish(
     state: &ThreadState,
-    beacon_rx: &mut tokio::sync::mpsc::Receiver<RecordId>,
+    beacon_rx: &mut tokio::sync::mpsc::Receiver<Hash>,
     topic_tx: &GossipSender,
 ) -> anyhow::Result<()> {
     while let Some(space) = beacon_rx.recv().await {

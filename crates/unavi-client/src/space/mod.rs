@@ -1,12 +1,12 @@
 use bevy::prelude::*;
-use wired_data_store::RecordId;
+use blake3::Hash;
 
 use crate::networking::thread::{NetworkCommand, NetworkingThread};
 
 mod startup;
 
 pub struct SpacePlugin {
-    pub initial_space: Option<RecordId>,
+    pub initial_space: Option<Hash>,
 }
 
 impl Plugin for SpacePlugin {

@@ -7,7 +7,6 @@ use blake3::Hash;
 use clap::Parser;
 use iroh_tickets::endpoint::EndpointTicket;
 use unavi_client::DebugFlags;
-use wired_data_store::RecordId;
 
 #[derive(Parser, Debug)]
 #[command(version)]
@@ -60,7 +59,7 @@ fn main() {
     }
 
     let join = match args.join.as_ref().map(|t| Hash::from_str(t)) {
-        Some(Ok(t)) => Some(RecordId(t.into())),
+        Some(Ok(t)) => Some(t),
         Some(Err(e)) => {
             println!("Invalid space id: {e:?}");
             return;

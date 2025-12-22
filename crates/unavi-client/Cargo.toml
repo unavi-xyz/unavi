@@ -12,7 +12,7 @@ default                 = ["discovery-local-network"]
 devtools                = ["devtools-bevy", "devtools-network"]
 devtools-bevy           = ["bevy/bevy_dev_tools"]
 devtools-network        = []
-discovery-local-network = ["wired-data-store/discovery-local-network"]
+discovery-local-network = ["wds/discovery-local-network"]
 
 [lints]
 workspace = true
@@ -58,8 +58,8 @@ unavi-player.path          = "../unavi-player"
 unavi-portal.path          = "../unavi-portal"
 unavi-script.path          = "../unavi-script"
 unavi-server-service.path  = "../unavi-server-service"
+wds.path                   = "../wds"
 winit                      = { default-features = false, version = "0.30.12" }
-wired-data-store.path      = "../wired-data-store"
 wired-protocol.path        = "../wired-protocol"
 wtransport.workspace       = true
 xdid.workspace             = true

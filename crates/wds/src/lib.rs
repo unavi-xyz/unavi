@@ -8,6 +8,7 @@ use iroh_blobs::{
 use tokio::{sync::OnceCell, task::JoinError};
 use xdid::core::did::Did;
 
+pub mod actor;
 mod api;
 mod auth;
 mod blob;

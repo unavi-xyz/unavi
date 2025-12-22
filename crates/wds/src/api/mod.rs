@@ -2,6 +2,7 @@
 
 use std::sync::Arc;
 
+use blake3::Hash;
 use bytes::Bytes;
 use irpc::{
     Client, WithChannels,
@@ -22,7 +23,9 @@ mod upload_blob;
 
 pub const ALPN: &[u8] = b"wds/api";
 
-pub fn protocol(conn: Arc<ConnectionState>) -> IrohProtocol<ApiService> {
+pub(crate) fn protocol(
+    conn: Arc<ConnectionState>,
+) -> (Client<ApiService>, IrohProtocol<ApiService>) {
     let (tx, mut rx) = irpc::channel::mpsc::channel(8);
 
     tokio::task::spawn(async move {
@@ -34,24 +37,24 @@ pub fn protocol(conn: Arc<ConnectionState>) -> IrohProtocol<ApiService> {
     let client = Client::local(tx);
     let local_sender = client.as_local().expect("local client");
 
-    IrohProtocol::with_sender(local_sender)
+    (client, IrohProtocol::with_sender(local_sender))
 }
 
 #[rpc_requests(message = ApiMessage)]
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ApiService {
-    #[rpc(tx=oneshot::Sender<Result<blake3::Hash, SmolStr>>)]
+    #[rpc(tx=oneshot::Sender<Result<Hash, SmolStr>>)]
     #[wrap(CreateRecord)]
     CreateRecord,
-    #[rpc(rx=mpsc::Receiver<Bytes>,tx=oneshot::Sender<Result<(), SmolStr>>)]
+    #[rpc(rx=mpsc::Receiver<Bytes>,tx=oneshot::Sender<Result<Hash, SmolStr>>)]
     #[wrap(UploadBlob)]
-    UploadBlob { hash: blake3::Hash, byte_len: usize },
+    UploadBlob,
     #[rpc(tx=oneshot::Sender<Result<(), SmolStr>>)]
     #[wrap(PinBlob)]
-    PinBlob { hash: blake3::Hash, expires: i64 },
+    PinBlob { hash: Hash, expires: i64 },
     #[rpc(tx=oneshot::Sender<Result<(), SmolStr>>)]
     #[wrap(PinRecord)]
-    PinRecord { id: blake3::Hash, expires: i64 },
+    PinRecord { id: Hash, expires: i64 },
 }
 
 async fn handle_requests(

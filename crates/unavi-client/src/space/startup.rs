@@ -2,14 +2,11 @@ use std::sync::Arc;
 
 use bevy::prelude::*;
 
-use crate::networking::{
-    WdsActor,
-    thread::{NetworkCommand, NetworkingThread},
-};
+use crate::networking::{WdsActor, thread::NetworkingThread};
 
 pub fn join_home_space(actor: Res<WdsActor>, nt: Res<NetworkingThread>) {
-    let actor = Arc::clone(&actor);
-    let command_tx = nt.command_tx.clone();
+    let _actor = Arc::clone(&actor);
+    let _command_tx = nt.command_tx.clone();
 
     std::thread::spawn(|| {
         let rt = tokio::runtime::Builder::new_multi_thread()

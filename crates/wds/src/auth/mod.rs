@@ -1,6 +1,6 @@
 //! Challenge-response DID authentication.
 
-use std::{sync::Arc, time::Duration};
+use std::{fmt::Debug, sync::Arc, time::Duration};
 
 use anyhow::bail;
 use irpc::{Client, WithChannels, channel::oneshot, rpc_requests};
@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 use xdid::{core::did::Did, resolver::DidResolver};
 
-use crate::{ConnectionState, auth::jwk::verify_jwk_signature};
+use crate::{ConnectionState, auth::jwk::verify_jwk_signature, signed_bytes::SignedBytes};
 
 mod jwk;
 
@@ -41,19 +41,14 @@ pub enum AuthService {
     RequestChallenge(Did),
     #[rpc(tx=oneshot::Sender<bool>)]
     #[wrap(AnswerChallenge)]
-    AnswerChallenge {
-        payload: Payload,
-        signature: Vec<u8>,
-    },
+    AnswerChallenge(SignedBytes<Challenge>),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Payload {
+pub struct Challenge {
     did: Did,
     nonce: Nonce,
 }
-
-const PAYLOAD_SIZE: usize = size_of::<Payload>();
 
 #[derive(Default)]
 struct HandlerState {
@@ -110,9 +105,11 @@ async fn handle_message(
             tx.send(nonce).await?;
         }
         AuthMessage::AnswerChallenge(WithChannels { inner, tx, .. }) => {
+            let challenge = inner.0.payload()?;
+
             let Some(did) = state
                 .nonces
-                .read_async(&inner.payload.nonce, |_, d| d.clone())
+                .read_async(&challenge.nonce, |_, d| d.clone())
                 .await
             else {
                 // Invalid nonce.
@@ -120,13 +117,11 @@ async fn handle_message(
                 return Ok(());
             };
 
-            if did != inner.payload.did {
+            if did != challenge.did {
                 // Invalid DID.
                 tx.send(false).await?;
                 return Ok(());
             }
-
-            let payload_bytes = postcard::to_vec::<_, PAYLOAD_SIZE>(&inner.payload)?;
 
             // Resolve DID authentication keys.
             let resolver = DidResolver::new()?;
@@ -149,7 +144,8 @@ async fn handle_message(
                     continue;
                 };
 
-                let is_valid = verify_jwk_signature(jwk, &inner.signature, &payload_bytes);
+                let is_valid =
+                    verify_jwk_signature(jwk, inner.0.signature(), inner.0.payload_bytes());
 
                 if is_valid {
                     found_valid = true;

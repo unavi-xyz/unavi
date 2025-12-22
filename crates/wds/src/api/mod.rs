@@ -23,7 +23,7 @@ use smol_str::SmolStr;
 use time::OffsetDateTime;
 use tracing::error;
 
-use crate::ConnectionState;
+use crate::{ConnectionState, quota::ensure_quota_exists};
 
 pub const ALPN: &[u8] = b"wds/api";
 
@@ -104,6 +104,12 @@ async fn handle_message(conn: Arc<ConnectionState>, msg: ApiMessage) -> anyhow::
         }
         ApiMessage::UploadBlob(WithChannels { inner, tx, rx, .. }) => {
             let did = authenticate!(conn, tx);
+            let did_str = did.to_string();
+
+            let db = conn.db.pool();
+            let mut db_tx = db.begin().await?;
+            ensure_quota_exists(&mut *db_tx, &did_str).await?;
+            db_tx.commit().await?;
 
             let total_bytes = Arc::new(AtomicUsize::default());
             let target_len = inner.byte_length;
@@ -140,13 +146,9 @@ async fn handle_message(conn: Arc<ConnectionState>, msg: ApiMessage) -> anyhow::
                 tx.send(Err("invalid byte length".into())).await?;
                 return Ok(());
             }
-
             let blob_len = i64::try_from(blob_len)?;
 
-            let db = conn.db.pool();
             let mut db_tx = db.begin().await?;
-
-            let did_str = did.to_string();
 
             let update_res = sqlx::query!(
                 "UPDATE user_quotas

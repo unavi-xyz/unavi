@@ -19,12 +19,14 @@ mod db;
 mod gc;
 mod quota;
 pub mod signed_bytes;
+mod tag;
 
 /// Wired data store.
 pub struct DataStore {
     api_client: Client<api::ApiService>,
     auth_client: Client<auth::AuthService>,
     router: Router,
+    ctx: Arc<StoreContext>,
 }
 
 // TODO: Replace session token auth with iroh hooks
@@ -71,7 +73,7 @@ impl DataStore {
         });
 
         let (api_client, api_protocol) = api::protocol(Arc::clone(&ctx));
-        let (auth_client, auth_protocol) = auth::protocol(ctx);
+        let (auth_client, auth_protocol) = auth::protocol(Arc::clone(&ctx));
 
         let router = Router::builder(endpoint)
             .accept(iroh_blobs::ALPN, blob_protocol)
@@ -83,6 +85,7 @@ impl DataStore {
             api_client,
             auth_client,
             router,
+            ctx,
         })
     }
 

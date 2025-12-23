@@ -18,7 +18,6 @@ use tracing::error;
 use crate::{SessionToken, StoreContext};
 
 mod pin_blob;
-mod tag;
 mod upload_blob;
 
 pub const ALPN: &[u8] = b"wds/api";

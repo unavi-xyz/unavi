@@ -3,15 +3,11 @@ use std::{sync::Arc, time::Duration};
 use bevy::prelude::*;
 use blake3::Hash;
 use iroh::Endpoint;
-use iroh_gossip::Gossip;
 use iroh_tickets::endpoint::EndpointTicket;
 use wds::actor::Actor;
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
 use crate::DIRS;
-
-mod command;
-mod discovery;
 
 pub enum NetworkCommand {
     Join(Hash),
@@ -64,7 +60,6 @@ impl NetworkingThread {
 struct ThreadState {
     // actor: Arc<Actor>,
     endpoint: Endpoint,
-    gossip: Gossip,
     // connections: scc::HashMap<RecordId>
 }
 

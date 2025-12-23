@@ -14,7 +14,7 @@ use time::OffsetDateTime;
 use tracing::debug;
 
 use crate::{
-    ConnectionState,
+    StoreContext,
     api::{ApiService, UploadBlob, authenticate, tag::BlobTag},
     quota::ensure_quota_exists,
 };
@@ -22,13 +22,13 @@ use crate::{
 const DEFAULT_BLOB_TTL: Duration = Duration::from_hours(1);
 
 pub async fn upload_blob(
-    conn: Arc<ConnectionState>,
-    WithChannels { tx, rx, .. }: WithChannels<UploadBlob, ApiService>,
+    ctx: Arc<StoreContext>,
+    WithChannels { inner, tx, rx, .. }: WithChannels<UploadBlob, ApiService>,
 ) -> anyhow::Result<()> {
-    let did = authenticate!(conn, tx);
+    let did = authenticate!(ctx, inner, tx);
     let did_str = did.to_string();
 
-    let db = conn.db.pool();
+    let db = ctx.db.pool();
 
     ensure_quota_exists(db, &did_str).await?;
 
@@ -64,7 +64,7 @@ pub async fn upload_blob(
             .map_err(|_| std::io::ErrorKind::Other.into())
     };
 
-    let temp_tag = conn.blob_store.add_stream(stream).await.temp_tag().await?;
+    let temp_tag = ctx.blobs.add_stream(stream).await.temp_tag().await?;
     let blob_len = total_bytes.load(Ordering::Acquire);
 
     debug!(?blob_len, "wrote blob to store");
@@ -109,7 +109,7 @@ pub async fn upload_blob(
     let blob_tag = BlobTag::new(did.clone(), hash);
     let tag_name = blob_tag.to_string();
 
-    conn.blob_store.tags().set(tag_name, temp_tag).await?;
+    ctx.blobs.tags().set(tag_name, temp_tag).await?;
 
     // TODO We could end up with DB tracking but no blob tag if we crash or error.
 

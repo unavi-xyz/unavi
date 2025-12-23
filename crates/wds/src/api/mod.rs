@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
 use tracing::error;
 
-use crate::ConnectionState;
+use crate::{SessionToken, StoreContext};
 
 mod pin_blob;
 mod tag;
@@ -23,13 +23,11 @@ mod upload_blob;
 
 pub const ALPN: &[u8] = b"wds/api";
 
-pub(crate) fn protocol(
-    conn: Arc<ConnectionState>,
-) -> (Client<ApiService>, IrohProtocol<ApiService>) {
-    let (tx, mut rx) = irpc::channel::mpsc::channel(8);
+pub(crate) fn protocol(ctx: Arc<StoreContext>) -> (Client<ApiService>, IrohProtocol<ApiService>) {
+    let (tx, mut rx) = irpc::channel::mpsc::channel(32);
 
     tokio::task::spawn(async move {
-        while let Err(e) = handle_requests(&conn, &mut rx).await {
+        while let Err(e) = handle_requests(&ctx, &mut rx).await {
             error!("Error handling request: {e:?}");
         }
     });
@@ -45,27 +43,35 @@ pub(crate) fn protocol(
 pub enum ApiService {
     #[rpc(tx=oneshot::Sender<Result<Hash, SmolStr>>)]
     #[wrap(CreateRecord)]
-    CreateRecord,
+    CreateRecord { s: SessionToken },
     #[rpc(rx=mpsc::Receiver<Bytes>,tx=oneshot::Sender<Result<Hash, SmolStr>>)]
     #[wrap(UploadBlob)]
-    UploadBlob,
+    UploadBlob { s: SessionToken },
     #[rpc(tx=oneshot::Sender<Result<(), SmolStr>>)]
     #[wrap(PinBlob)]
-    PinBlob { hash: Hash, expires: i64 },
+    PinBlob {
+        s: SessionToken,
+        hash: Hash,
+        expires: i64,
+    },
     #[rpc(tx=oneshot::Sender<Result<(), SmolStr>>)]
     #[wrap(PinRecord)]
-    PinRecord { id: Hash, expires: i64 },
+    PinRecord {
+        s: SessionToken,
+        id: Hash,
+        expires: i64,
+    },
 }
 
 async fn handle_requests(
-    conn: &Arc<ConnectionState>,
+    ctx: &Arc<StoreContext>,
     rx: &mut irpc::channel::mpsc::Receiver<ApiMessage>,
 ) -> anyhow::Result<()> {
     while let Some(msg) = rx.recv().await? {
-        let conn = Arc::clone(conn);
+        let ctx = Arc::clone(ctx);
 
         tokio::spawn(async move {
-            if let Err(e) = handle_message(conn, msg).await {
+            if let Err(e) = handle_message(ctx, msg).await {
                 error!("Error handling message: {e:?}");
             }
         });
@@ -75,9 +81,9 @@ async fn handle_requests(
 }
 
 macro_rules! authenticate {
-    ($conn:tt,$tx:tt) => {
-        match $conn.authentication.get() {
-            Some(did) => did,
+    ($ctx:tt,$inner:tt,$tx:tt) => {
+        match $ctx.connections.get_async(&$inner.s).await {
+            Some(c) => c.did.clone(),
             None => {
                 $tx.send(Err("unauthenticated".into())).await?;
                 return Ok(());
@@ -88,23 +94,23 @@ macro_rules! authenticate {
 
 pub(crate) use authenticate;
 
-async fn handle_message(conn: Arc<ConnectionState>, msg: ApiMessage) -> anyhow::Result<()> {
+async fn handle_message(ctx: Arc<StoreContext>, msg: ApiMessage) -> anyhow::Result<()> {
     match msg {
-        ApiMessage::CreateRecord(WithChannels { tx, .. }) => {
-            let _did = authenticate!(conn, tx);
+        ApiMessage::CreateRecord(WithChannels { inner, tx, .. }) => {
+            let _did = authenticate!(ctx, inner, tx);
 
             let _doc = LoroDoc::new();
 
             todo!()
         }
         ApiMessage::UploadBlob(channels) => {
-            upload_blob::upload_blob(conn, channels).await?;
+            upload_blob::upload_blob(ctx, channels).await?;
         }
         ApiMessage::PinBlob(channels) => {
-            pin_blob::pin_blob(conn, channels).await?;
+            pin_blob::pin_blob(ctx, channels).await?;
         }
-        ApiMessage::PinRecord(WithChannels { inner: _, tx, .. }) => {
-            let _did = authenticate!(conn, tx);
+        ApiMessage::PinRecord(WithChannels { inner, tx, .. }) => {
+            let _did = authenticate!(ctx, inner, tx);
             todo!()
         }
     }

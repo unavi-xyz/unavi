@@ -35,4 +35,12 @@ impl BlobTag {
     pub const fn new(owner: Did, hash: Hash) -> Self {
         Self { owner, hash }
     }
+
+    pub const fn owner(&self) -> &Did {
+        &self.owner
+    }
+
+    pub const fn hash(&self) -> &Hash {
+        &self.hash
+    }
 }

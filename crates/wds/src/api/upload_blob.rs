@@ -15,8 +15,9 @@ use tracing::debug;
 
 use crate::{
     StoreContext,
-    api::{ApiService, UploadBlob, authenticate, tag::BlobTag},
+    api::{ApiService, UploadBlob, authenticate},
     quota::ensure_quota_exists,
+    tag::BlobTag,
 };
 
 const DEFAULT_BLOB_TTL: Duration = Duration::from_hours(1);

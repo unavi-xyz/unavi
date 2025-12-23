@@ -3,6 +3,7 @@
 use std::{fmt::Debug, sync::Arc, time::Duration};
 
 use anyhow::bail;
+use iroh::EndpointId;
 use irpc::{Client, WithChannels, channel::oneshot, rpc_requests};
 use irpc_iroh::IrohProtocol;
 use rand::RngCore;
@@ -10,17 +11,20 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 use xdid::{core::did::Did, resolver::DidResolver};
 
-use crate::{ConnectionState, auth::jwk::verify_jwk_signature, signed_bytes::SignedBytes};
+use crate::{
+    ConnectionState, SessionToken, StoreContext, auth::jwk::verify_jwk_signature,
+    signed_bytes::SignedBytes,
+};
 
 mod jwk;
 
 pub const ALPN: &[u8] = b"wds/auth";
 
-pub fn protocol(conn: Arc<ConnectionState>) -> (Client<AuthService>, IrohProtocol<AuthService>) {
-    let (tx, mut rx) = irpc::channel::mpsc::channel(2);
+pub fn protocol(ctx: Arc<StoreContext>) -> (Client<AuthService>, IrohProtocol<AuthService>) {
+    let (tx, mut rx) = irpc::channel::mpsc::channel(16);
 
     tokio::task::spawn(async move {
-        while let Err(e) = handle_requests(&conn, &mut rx).await {
+        while let Err(e) = handle_requests(&ctx, &mut rx).await {
             error!("Error handling request: {e:?}");
         }
     });
@@ -39,14 +43,19 @@ pub enum AuthService {
     #[rpc(tx=oneshot::Sender<Nonce>)]
     #[wrap(RequestChallenge)]
     RequestChallenge(Did),
-    #[rpc(tx=oneshot::Sender<bool>)]
+    #[rpc(tx=oneshot::Sender<Option<SessionToken>>)]
     #[wrap(AnswerChallenge)]
     AnswerChallenge(SignedBytes<Challenge>),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Challenge {
+    /// Key must verify they are authenticating as DID.
     pub did: Did,
+    /// Key must verify they are authenticating to us.
+    /// Prevents impersonation by forwarding signed challenge to another node.
+    pub host: EndpointId,
+    /// Key must sign our given nonce.
     pub nonce: Nonce,
 }
 
@@ -56,17 +65,17 @@ struct HandlerState {
 }
 
 async fn handle_requests(
-    conn: &Arc<ConnectionState>,
+    ctx: &Arc<StoreContext>,
     rx: &mut irpc::channel::mpsc::Receiver<AuthMessage>,
 ) -> anyhow::Result<()> {
     let state = Arc::new(HandlerState::default());
 
     while let Some(msg) = rx.recv().await? {
-        let conn = Arc::clone(conn);
+        let ctx = Arc::clone(ctx);
         let state = Arc::clone(&state);
 
         tokio::spawn(async move {
-            if let Err(e) = handle_message(conn, state, msg).await {
+            if let Err(e) = handle_message(ctx, state, msg).await {
                 error!("Error handling message: {e:?}");
             }
         });
@@ -79,7 +88,7 @@ const MAX_NONCES: usize = 16;
 const NONCE_TTL: Duration = Duration::from_mins(5);
 
 async fn handle_message(
-    conn: Arc<ConnectionState>,
+    ctx: Arc<StoreContext>,
     state: Arc<HandlerState>,
     msg: AuthMessage,
 ) -> anyhow::Result<()> {
@@ -107,19 +116,25 @@ async fn handle_message(
         AuthMessage::AnswerChallenge(WithChannels { inner, tx, .. }) => {
             let challenge = inner.0.payload()?;
 
+            if challenge.host != ctx.endpoint_id {
+                // Invalid host.
+                tx.send(None).await?;
+                return Ok(());
+            };
+
             let Some(did) = state
                 .nonces
                 .read_async(&challenge.nonce, |_, d| d.clone())
                 .await
             else {
                 // Invalid nonce.
-                tx.send(false).await?;
+                tx.send(None).await?;
                 return Ok(());
             };
 
             if did != challenge.did {
                 // Invalid DID.
-                tx.send(false).await?;
+                tx.send(None).await?;
                 return Ok(());
             }
 
@@ -128,7 +143,7 @@ async fn handle_message(
             let doc = resolver.resolve(&did).await?;
 
             let Some(auth_methods) = &doc.authentication else {
-                tx.send(false).await?;
+                tx.send(None).await?;
                 return Ok(());
             };
 
@@ -155,17 +170,24 @@ async fn handle_message(
 
             if !found_valid {
                 // Invalid signature.
-                tx.send(false).await?;
+                tx.send(None).await?;
                 return Ok(());
             }
 
-            if conn.authentication.set(did).is_err() {
-                // Already authenticated.
-                tx.send(false).await?;
-                return Ok(());
-            }
+            let mut token = SessionToken::default();
+            rand::rng().fill_bytes(&mut token);
 
-            tx.send(true).await?;
+            if ctx
+                .connections
+                .insert_async(token, ConnectionState { did })
+                .await
+                .is_err()
+            {
+                tx.send(None).await?;
+                return Ok(());
+            };
+
+            tx.send(Some(token)).await?;
         }
     }
 

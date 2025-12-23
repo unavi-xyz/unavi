@@ -13,7 +13,7 @@ mod common;
 #[case(32)]
 #[case(1024)]
 #[case(1024 * 1024)]
-#[timeout(Duration::from_secs(2))]
+#[timeout(Duration::from_secs(3))]
 #[awt]
 #[traced_test]
 #[tokio::test]

@@ -39,7 +39,6 @@ flume.workspace            = true
 futures.workspace          = true
 image                      = { features = ["png"], workspace = true }
 iroh.workspace             = true
-iroh-gossip.workspace      = true
 iroh-tickets.workspace     = true
 log                        = { features = ["max_level_debug", "release_max_level_info"], version = "*" }
 postcard.workspace         = true

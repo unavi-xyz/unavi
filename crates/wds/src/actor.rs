@@ -3,12 +3,14 @@ use std::sync::Arc;
 use anyhow::{Context, bail};
 use blake3::Hash;
 use bytes::Bytes;
+use iroh::EndpointId;
 use irpc::Client;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, OnceCell};
 use tracing::debug;
 use xdid::{core::did::Did, methods::key::p256::P256KeyPair};
 
 use crate::{
+    SessionToken,
     api::{ApiService, UploadBlob},
     auth::{AnswerChallenge, AuthService, Challenge, RequestChallenge},
     signed_bytes::SignedBytes,
@@ -18,9 +20,10 @@ use crate::{
 pub struct Actor {
     did: Did,
     signing_key: P256KeyPair,
+    host: EndpointId,
     api_client: Client<ApiService>,
     auth_client: Client<AuthService>,
-    authenticated: Arc<Mutex<bool>>,
+    session: Arc<Mutex<OnceCell<SessionToken>>>,
 }
 
 impl Actor {
@@ -28,15 +31,17 @@ impl Actor {
     pub fn new(
         did: Did,
         signing_key: P256KeyPair,
+        host: EndpointId,
         api_client: Client<ApiService>,
         auth_client: Client<AuthService>,
     ) -> Self {
         Self {
             did,
             signing_key,
+            host,
             api_client,
             auth_client,
-            authenticated: Arc::new(Mutex::new(false)),
+            session: Arc::new(Mutex::new(OnceCell::default())),
         }
     }
 
@@ -45,12 +50,12 @@ impl Actor {
         &self.did
     }
 
-    async fn ensure_authenticated(&self) -> anyhow::Result<()> {
-        let mut authed = self.authenticated.lock().await;
+    async fn get_session_token(&self) -> anyhow::Result<SessionToken> {
+        let session = self.session.lock().await;
 
         // If not authed, hold the lock while we authenticate.
-        if *authed {
-            return Ok(());
+        if let Some(s) = session.get().copied() {
+            return Ok(s);
         }
 
         debug!("authenticating");
@@ -63,27 +68,27 @@ impl Actor {
 
         let challenge = Challenge {
             did: self.did.clone(),
+            host: self.host,
             nonce,
         };
 
         let signed = SignedBytes::sign(&challenge, &self.signing_key).context("sign challenge")?;
 
-        let success = self
+        let Some(s) = self
             .auth_client
             .rpc(AnswerChallenge(signed))
             .await
-            .context("answer challenge rpc")?;
-
-        if !success {
+            .context("answer challenge rpc")?
+        else {
             bail!("failed to authenticate")
-        }
+        };
 
-        *authed = true;
-        drop(authed);
+        session.set(s)?;
+        drop(session);
 
         debug!("successfully authenticated");
 
-        Ok(())
+        Ok(s)
     }
 
     /// Uplods bytes as to the WDS as a blob.
@@ -94,11 +99,11 @@ impl Actor {
     /// Errors if the blob could not be uploaded, such as if the client disconnects
     /// or the storage quota is hit.
     pub async fn upload_blob(&self, bytes: Bytes) -> anyhow::Result<Hash> {
-        self.ensure_authenticated().await.context("auth")?;
+        let s = self.get_session_token().await.context("auth")?;
 
         let (tx, rx) = self
             .api_client
-            .client_streaming(UploadBlob, 4)
+            .client_streaming(UploadBlob { s }, 4)
             .await
             .context("init upload blob")?;
 

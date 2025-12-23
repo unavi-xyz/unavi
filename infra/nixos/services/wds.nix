@@ -64,7 +64,7 @@ in
       };
 
       script = ''
-        exec ${cfg.package}/wds --gossip
+        exec ${cfg.package}/wds
       '';
     };
   };

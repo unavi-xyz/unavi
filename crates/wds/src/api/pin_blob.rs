@@ -3,19 +3,19 @@ use std::sync::Arc;
 use irpc::WithChannels;
 
 use crate::{
-    ConnectionState,
+    StoreContext,
     api::{ApiService, PinBlob, authenticate},
     quota::ensure_quota_exists,
 };
 
 pub async fn pin_blob(
-    conn: Arc<ConnectionState>,
+    ctx: Arc<StoreContext>,
     WithChannels { inner, tx, .. }: WithChannels<PinBlob, ApiService>,
 ) -> anyhow::Result<()> {
-    let did = authenticate!(conn, tx);
+    let did = authenticate!(ctx, inner, tx);
     let did_str = did.to_string();
 
-    let db = conn.db.pool();
+    let db = ctx.db.pool();
     let mut db_tx = db.begin().await?;
     ensure_quota_exists(&mut *db_tx, &did_str).await?;
     db_tx.commit().await?;

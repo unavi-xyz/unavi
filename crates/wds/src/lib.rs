@@ -1,12 +1,12 @@
 use std::{path::Path, sync::Arc};
 
-use iroh::{Endpoint, protocol::Router};
+use iroh::{Endpoint, EndpointId, protocol::Router};
 use iroh_blobs::{
     BlobsProtocol,
     store::fs::{FsStore, options::Options},
 };
 use irpc::Client;
-use tokio::{sync::OnceCell, task::JoinError};
+use tokio::task::JoinError;
 use xdid::{core::did::Did, methods::key::p256::P256KeyPair};
 
 use crate::actor::Actor;
@@ -16,6 +16,7 @@ pub mod api;
 mod auth;
 mod blob;
 mod db;
+mod gc;
 mod quota;
 pub mod signed_bytes;
 
@@ -26,12 +27,20 @@ pub struct DataStore {
     router: Router,
 }
 
-struct ConnectionState {
-    /// The authenticated DID of the connection, if one existis.
-    /// Set by the `wds/auth` protocol.
-    authentication: OnceCell<Did>,
-    blob_store: FsStore,
+// TODO: Replace session token auth with iroh hooks
+type SessionToken = [u8; 32];
+
+struct StoreContext {
+    blobs: FsStore,
+    connections: scc::HashMap<SessionToken, ConnectionState>,
     db: db::Database,
+    endpoint_id: EndpointId,
+}
+
+struct ConnectionState {
+    /// The authenticated DID of the connection.
+    /// Set by the `wds/auth` protocol.
+    did: Did,
 }
 
 impl DataStore {
@@ -48,20 +57,21 @@ impl DataStore {
         tokio::fs::create_dir_all(&record_path).await?;
 
         let blob_db_path = blob_path.join("blobs.db");
-        let blob_store = FsStore::load_with_opts(blob_db_path, Options::new(&blob_path)).await?;
-        let blob_protocol = BlobsProtocol::new(&blob_store, None);
+        let blobs = FsStore::load_with_opts(blob_db_path, Options::new(&blob_path)).await?;
+        let blob_protocol = BlobsProtocol::new(&blobs, None);
 
         let db_path = path.join("index.db");
         let db = db::Database::new(&db_path).await?;
 
-        let state = Arc::new(ConnectionState {
-            authentication: OnceCell::default(),
-            blob_store,
+        let ctx = Arc::new(StoreContext {
+            blobs,
+            connections: scc::HashMap::default(),
             db,
+            endpoint_id: endpoint.id(),
         });
 
-        let (api_client, api_protocol) = api::protocol(Arc::clone(&state));
-        let (auth_client, auth_protocol) = auth::protocol(Arc::clone(&state));
+        let (api_client, api_protocol) = api::protocol(Arc::clone(&ctx));
+        let (auth_client, auth_protocol) = auth::protocol(ctx);
 
         let router = Router::builder(endpoint)
             .accept(iroh_blobs::ALPN, blob_protocol)
@@ -81,6 +91,7 @@ impl DataStore {
         Actor::new(
             did,
             signing_key,
+            self.router.endpoint().id(),
             self.api_client.clone(),
             self.auth_client.clone(),
         )

@@ -74,7 +74,7 @@ impl DataStore {
         tx.commit().await?;
 
         // Delete blob tag after DB commit.
-        // If this fails, gc_blob_store will clean it up later.
+        // If this fails, `gc_blob_store` will clean it up later.
         let owner_did = Did::from_str(owner)?;
         let hash_parsed = Hash::from_str(hash)?;
         let tag = BlobTag::new(owner_did, hash_parsed);

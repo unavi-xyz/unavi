@@ -9,8 +9,6 @@ use irpc::Client;
 use tokio::task::JoinError;
 use xdid::{core::did::Did, methods::key::p256::P256KeyPair};
 
-use crate::actor::Actor;
-
 pub mod actor;
 pub mod api;
 mod auth;
@@ -90,8 +88,8 @@ impl DataStore {
     }
 
     #[must_use]
-    pub fn actor(&self, did: Did, signing_key: P256KeyPair) -> Actor {
-        Actor::new(
+    pub fn actor(&self, did: Did, signing_key: P256KeyPair) -> actor::Actor {
+        actor::Actor::new(
             did,
             signing_key,
             self.router.endpoint().id(),

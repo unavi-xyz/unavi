@@ -1,20 +1,20 @@
 use std::sync::Arc;
 
-use anyhow::{Context, bail};
+use anyhow::Context;
 use blake3::Hash;
 use bytes::Bytes;
 use iroh::EndpointId;
 use irpc::Client;
 use tokio::sync::{Mutex, OnceCell};
-use tracing::debug;
 use xdid::{core::did::Did, methods::key::p256::P256KeyPair};
 
 use crate::{
     SessionToken,
     api::{ApiService, UploadBlob},
-    auth::{AnswerChallenge, AuthService, Challenge, RequestChallenge},
-    signed_bytes::SignedBytes,
+    auth::AuthService,
 };
+
+mod auth;
 
 #[derive(Clone)]
 pub struct Actor {
@@ -27,8 +27,7 @@ pub struct Actor {
 }
 
 impl Actor {
-    #[must_use]
-    pub fn new(
+    pub(crate) fn new(
         did: Did,
         signing_key: P256KeyPair,
         host: EndpointId,
@@ -50,47 +49,6 @@ impl Actor {
         &self.did
     }
 
-    async fn get_session_token(&self) -> anyhow::Result<SessionToken> {
-        let session = self.session.lock().await;
-
-        // If not authed, hold the lock while we authenticate.
-        if let Some(s) = session.get().copied() {
-            return Ok(s);
-        }
-
-        debug!("authenticating");
-
-        let nonce = self
-            .auth_client
-            .rpc(RequestChallenge(self.did.clone()))
-            .await
-            .context("request challenge")?;
-
-        let challenge = Challenge {
-            did: self.did.clone(),
-            host: self.host,
-            nonce,
-        };
-
-        let signed = SignedBytes::sign(&challenge, &self.signing_key).context("sign challenge")?;
-
-        let Some(s) = self
-            .auth_client
-            .rpc(AnswerChallenge(signed))
-            .await
-            .context("answer challenge rpc")?
-        else {
-            bail!("failed to authenticate")
-        };
-
-        session.set(s)?;
-        drop(session);
-
-        debug!("successfully authenticated");
-
-        Ok(s)
-    }
-
     /// Uplods bytes as to the WDS as a blob.
     /// Returns the blob hash.
     ///
@@ -99,7 +57,7 @@ impl Actor {
     /// Errors if the blob could not be uploaded, such as if the client disconnects
     /// or the storage quota is hit.
     pub async fn upload_blob(&self, bytes: Bytes) -> anyhow::Result<Hash> {
-        let s = self.get_session_token().await.context("auth")?;
+        let s = self.authenticate().await.context("auth")?;
 
         let (tx, rx) = self
             .api_client

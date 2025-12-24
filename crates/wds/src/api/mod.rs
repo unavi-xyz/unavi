@@ -10,13 +10,13 @@ use irpc::{
     rpc_requests,
 };
 use irpc_iroh::IrohProtocol;
-use loro::LoroDoc;
 use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
 use tracing::error;
 
 use crate::{SessionToken, StoreContext};
 
+mod create_record;
 mod pin_blob;
 mod upload_blob;
 
@@ -95,12 +95,8 @@ pub(crate) use authenticate;
 
 async fn handle_message(ctx: Arc<StoreContext>, msg: ApiMessage) -> anyhow::Result<()> {
     match msg {
-        ApiMessage::CreateRecord(WithChannels { inner, tx, .. }) => {
-            let _did = authenticate!(ctx, inner, tx);
-
-            let _doc = LoroDoc::new();
-
-            todo!()
+        ApiMessage::CreateRecord(channels) => {
+            create_record::create_record(ctx, channels).await?;
         }
         ApiMessage::UploadBlob(channels) => {
             upload_blob::upload_blob(ctx, channels).await?;

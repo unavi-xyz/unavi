@@ -16,7 +16,7 @@ use tracing::debug;
 use crate::{
     StoreContext,
     api::{ApiService, UploadBlob, authenticate},
-    quota::ensure_quota_exists,
+    quota::{QuotaExceeded, ensure_quota_exists, reserve_bytes},
     tag::BlobTag,
 };
 
@@ -72,19 +72,10 @@ pub async fn upload_blob(
 
     let mut db_tx = db.begin().await?;
 
-    let update_res = sqlx::query!(
-        "UPDATE user_quotas
-         SET bytes_used = bytes_used + ?
-         WHERE owner = ? AND bytes_used + ? <= quota_bytes",
-        blob_len,
-        did_str,
-        blob_len
-    )
-    .execute(&mut *db_tx)
-    .await?;
-
-    if update_res.rows_affected() == 0 {
-        // Quota exceeded (or user doesn't exist).
+    if matches!(
+        reserve_bytes(&mut *db_tx, &did_str, blob_len).await,
+        Err(QuotaExceeded)
+    ) {
         tx.send(Err("quota exceeded".into())).await?;
         return Ok(());
     }
@@ -111,8 +102,6 @@ pub async fn upload_blob(
     let tag_name = blob_tag.to_string();
 
     ctx.blobs.tags().set(tag_name, temp_tag).await?;
-
-    // TODO We could end up with DB tracking but no blob tag if we crash or error.
 
     tx.send(Ok(hash)).await?;
 

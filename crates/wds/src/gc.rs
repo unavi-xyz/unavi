@@ -5,7 +5,7 @@ use futures::StreamExt;
 use time::OffsetDateTime;
 use xdid::core::did::Did;
 
-use crate::{DataStore, tag::BlobTag};
+use crate::{DataStore, quota::release_bytes, tag::BlobTag};
 
 impl DataStore {
     /// Runs garbage collection on the data store.
@@ -63,13 +63,7 @@ impl DataStore {
         .execute(&mut *tx)
         .await?;
 
-        sqlx::query!(
-            "UPDATE user_quotas SET bytes_used = bytes_used - ? WHERE owner = ?",
-            size,
-            owner
-        )
-        .execute(&mut *tx)
-        .await?;
+        release_bytes(&mut *tx, owner, size).await?;
 
         tx.commit().await?;
 

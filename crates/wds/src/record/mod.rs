@@ -1,9 +1,12 @@
 use blake3::Hash;
+use loro::LoroDoc;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use xdid::core::did::Did;
 
+pub mod acl;
+pub mod envelope;
 mod schema;
 
 type RecordNonce = [u8; 16];
@@ -31,8 +34,26 @@ impl Record {
         }
     }
 
+    pub fn add_schema(&mut self, schema: Hash) {
+        self.schemas.push(schema);
+    }
+
     pub fn id(&self) -> postcard::Result<Hash> {
         let bytes = postcard::to_stdvec(self)?;
         Ok(blake3::hash(&bytes))
+    }
+
+    pub fn save(&self, doc: &LoroDoc) -> anyhow::Result<()> {
+        let map = doc.get_map("record");
+
+        map.insert("author", self.author.to_string())?;
+        map.insert("nonce", &self.nonce)?;
+
+        let schemas = self.schemas.iter().map(Hash::to_string).collect::<Vec<_>>();
+        map.insert("schemas", schemas)?;
+
+        map.insert("timestamp", self.timestamp)?;
+
+        Ok(())
     }
 }

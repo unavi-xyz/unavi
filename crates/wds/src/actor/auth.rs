@@ -5,7 +5,7 @@ use crate::{
     SessionToken,
     actor::Actor,
     auth::{AnswerChallenge, Challenge, RequestChallenge},
-    signed_bytes::SignedBytes,
+    signed_bytes::Signable,
 };
 
 impl Actor {
@@ -31,7 +31,9 @@ impl Actor {
             nonce,
         };
 
-        let signed = SignedBytes::sign(&challenge, &self.signing_key).context("sign challenge")?;
+        let signed = challenge
+            .sign(&self.signing_key)
+            .context("sign challenge")?;
 
         let Some(s) = self
             .auth_client

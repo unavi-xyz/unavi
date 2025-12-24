@@ -1,0 +1,20 @@
+(
+    id: "wired/acl",
+    version: 0,
+    container: "acl",
+    layout: Restricted(
+        actions: [
+            (
+                who: Path("manage"),
+                can: [
+                    Update,
+                ],
+            ),
+        ],
+        value: Map({
+            "manage": List(String),
+            "read": List(String),
+            "write": List(String),
+        }),
+    ),
+)

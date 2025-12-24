@@ -29,6 +29,7 @@
             file:
             lib.any file.hasExt [
               "json"
+              "ron"
               "wgsl"
               "wit"
             ]

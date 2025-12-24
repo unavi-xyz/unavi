@@ -5,12 +5,13 @@ use blake3::Hash;
 use bytes::Bytes;
 use iroh::EndpointId;
 use irpc::Client;
+use loro::LoroDoc;
 use tokio::sync::{Mutex, OnceCell};
 use xdid::{core::did::Did, methods::key::p256::P256KeyPair};
 
 use crate::{
     SessionToken,
-    api::{ApiService, UploadBlob},
+    api::{ApiService, CreateRecord, UploadBlob},
     auth::AuthService,
 };
 
@@ -47,6 +48,26 @@ impl Actor {
     #[must_use]
     pub const fn did(&self) -> &Did {
         &self.did
+    }
+
+    /// Creates a new record, returning the record ID.
+    ///
+    /// # Errors
+    ///  
+    /// Errors if the record could not be created, such as if the client disconnects
+    /// or the storage quota is hit.
+    pub async fn create_record(&self, schema: Option<String>) -> anyhow::Result<Hash> {
+        let s = self.authenticate().await.context("auth")?;
+
+        let doc = LoroDoc::new();
+
+        let id = self
+            .api_client
+            .rpc(CreateRecord { s, schema })
+            .await?
+            .map_err(|e| anyhow::anyhow!("creation failed: {e}"))?;
+
+        Ok(id)
     }
 
     /// Uplods bytes as to the WDS as a blob.

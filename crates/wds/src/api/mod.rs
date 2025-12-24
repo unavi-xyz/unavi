@@ -42,7 +42,10 @@ pub(crate) fn protocol(ctx: Arc<StoreContext>) -> (Client<ApiService>, IrohProto
 pub enum ApiService {
     #[rpc(tx=oneshot::Sender<Result<Hash, SmolStr>>)]
     #[wrap(CreateRecord)]
-    CreateRecord { s: SessionToken },
+    CreateRecord {
+        s: SessionToken,
+        schema: Option<String>,
+    },
     #[rpc(rx=mpsc::Receiver<Bytes>,tx=oneshot::Sender<Result<Hash, SmolStr>>)]
     #[wrap(UploadBlob)]
     UploadBlob { s: SessionToken },

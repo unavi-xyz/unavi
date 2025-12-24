@@ -26,13 +26,10 @@ jose-jwk           = "0.1.2"
 loro               = "1.10.3"
 n0-error           = { features = ["anyhow"], version = "0.1.2" }
 p256               = { features = ["ecdsa"], version = "0.13.2" }
-p2panda-auth       = "0.4.0"
-p2panda-core       = "0.4.0"
-p2panda-store      = { default-features = false, features = ["sqlite"], version = "0.4.0" }
-p2panda-stream     = "0.4.0"
 postcard.workspace = true
 rand.workspace     = true
 ring               = "0.17.14"
+ron                = "0.12.0"
 scc.workspace      = true
 serde.workspace    = true
 smol_str           = "0.3.4"

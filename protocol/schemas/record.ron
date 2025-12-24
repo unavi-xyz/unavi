@@ -1,0 +1,9 @@
+(
+    id: "wired/record",
+    version: 0,
+    container: "record",
+    layout: Map({
+        "id": String,
+        "schemas": List(String),
+    }),
+)

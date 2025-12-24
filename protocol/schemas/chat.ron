@@ -1,0 +1,18 @@
+(
+    id: "wired/chat",
+    version: 0,
+    container: "chat",
+    layout: Restricted(
+        actions: [
+            (
+                who: Path("acl:manage"),
+                can: [
+                    Update,
+                ],
+            ),
+        ],
+        value: Map({
+            "name": String,
+        }),
+    ),
+)

@@ -1,6 +1,5 @@
 use std::{path::Path, sync::Arc};
 
-use blake3::Hash;
 use iroh::{Endpoint, EndpointId, protocol::Router};
 use iroh_blobs::{
     BlobsProtocol,
@@ -13,10 +12,10 @@ use xdid::{core::did::Did, methods::key::p256::P256KeyPair};
 pub mod actor;
 pub mod api;
 mod auth;
-mod blob;
 mod db;
 mod gc;
 mod quota;
+mod record;
 pub mod signed_bytes;
 mod tag;
 
@@ -36,7 +35,6 @@ struct StoreContext {
     connections: scc::HashMap<SessionToken, ConnectionState>,
     db: db::Database,
     endpoint_id: EndpointId,
-    logs: p2panda_store::SqliteStore<Hash, ()>,
 }
 
 struct ConnectionState {
@@ -65,14 +63,11 @@ impl DataStore {
         let db_path = path.join("index.db");
         let db = db::Database::new(&db_path).await?;
 
-        let logs = p2panda_store::SqliteStore::new(db.pool().clone());
-
         let ctx = Arc::new(StoreContext {
             blobs,
             connections: scc::HashMap::default(),
             db,
             endpoint_id: endpoint.id(),
-            logs,
         });
 
         let (api_client, api_protocol) = api::protocol(Arc::clone(&ctx));

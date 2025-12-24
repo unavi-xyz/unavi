@@ -56,7 +56,7 @@ pub async fn create_record(
     let data = doc.export(ExportMode::all_updates())?;
     let size = i64::try_from(data.len())?;
 
-    let meta = RecordMeta::new(did, None);
+    let meta = RecordMeta::new(did, inner.schema);
     let record_id = meta.id()?;
 
     let db = ctx.db.pool();

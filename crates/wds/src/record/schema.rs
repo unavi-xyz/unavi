@@ -1,7 +1,23 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::LazyLock};
 
+use blake3::Hash;
 use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
+
+macro_rules! static_schema_id {
+    ($name:ident) => {
+        paste::paste! {
+            const [<SCHEMA_STR_$name:upper>]: &str = include_str!(concat!("../../../../protocol/schemas/", stringify!($name), ".ron"));
+            pub static [<SCHEMA_$name:upper>]: LazyLock<Hash> = LazyLock::new(|| {
+                let schema: Schema = ron::from_str([<SCHEMA_STR_$name:upper>]).expect("valid schema");
+                schema.id().expect("schema id")
+            });
+        }
+    };
+}
+
+static_schema_id!(acl);
+static_schema_id!(record);
 
 /// Schema defining how to process a Loro document.
 #[derive(Debug, Serialize, Deserialize)]
@@ -12,6 +28,13 @@ pub struct Schema {
     container: SmolStr,
     /// Allowed layout of the data.
     layout: Field,
+}
+
+impl Schema {
+    pub fn id(&self) -> postcard::Result<Hash> {
+        let bytes = postcard::to_stdvec(self)?;
+        Ok(blake3::hash(&bytes))
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

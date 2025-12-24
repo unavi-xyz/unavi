@@ -17,6 +17,7 @@ discovery-local-network = ["iroh/discovery-local-network"]
 anyhow.workspace   = true
 blake3             = { features = ["serde"], version = "1.8.2" }
 bytes              = "1.11.0"
+constcat.workspace = true
 futures.workspace  = true
 iroh.workspace     = true
 iroh-blobs         = "0.97.0"
@@ -26,6 +27,7 @@ jose-jwk           = "0.1.2"
 loro               = "1.10.3"
 n0-error           = { features = ["anyhow"], version = "0.1.2" }
 p256               = { features = ["ecdsa"], version = "0.13.2" }
+paste              = "1.0.15"
 postcard.workspace = true
 rand.workspace     = true
 ring               = "0.17.14"

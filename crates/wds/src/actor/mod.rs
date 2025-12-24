@@ -13,6 +13,7 @@ use crate::{
     SessionToken,
     api::{ApiService, CreateRecord, UploadBlob},
     auth::AuthService,
+    record::Record,
 };
 
 mod auth;
@@ -61,11 +62,14 @@ impl Actor {
 
         let doc = LoroDoc::new();
 
-        let id = self
-            .api_client
-            .rpc(CreateRecord { s, schema })
-            .await?
-            .map_err(|e| anyhow::anyhow!("creation failed: {e}"))?;
+        // let id = self
+        //     .api_client
+        //     .rpc(CreateRecord { s, schema })
+        //     .await?
+        //     .map_err(|e| anyhow::anyhow!("creation failed: {e}"))?;
+
+        let record = Record::new(self.did.clone());
+        let id = record.id()?;
 
         Ok(id)
     }

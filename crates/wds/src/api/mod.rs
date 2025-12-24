@@ -1,4 +1,4 @@
-//! [`irpc`] WDS API, for use both locally or as an `iroh` protocol.
+//! [`irpc`] WDS user API, for use both locally or as an `iroh` protocol.
 
 use std::sync::Arc;
 
@@ -16,7 +16,6 @@ use tracing::error;
 
 use crate::{SessionToken, StoreContext};
 
-mod create_record;
 mod pin_blob;
 mod upload_blob;
 
@@ -40,12 +39,6 @@ pub(crate) fn protocol(ctx: Arc<StoreContext>) -> (Client<ApiService>, IrohProto
 #[rpc_requests(message = ApiMessage)]
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ApiService {
-    #[rpc(tx=oneshot::Sender<Result<Hash, SmolStr>>)]
-    #[wrap(CreateRecord)]
-    CreateRecord {
-        s: SessionToken,
-        schema: Option<String>,
-    },
     #[rpc(rx=mpsc::Receiver<Bytes>,tx=oneshot::Sender<Result<Hash, SmolStr>>)]
     #[wrap(UploadBlob)]
     UploadBlob { s: SessionToken },
@@ -98,9 +91,6 @@ pub(crate) use authenticate;
 
 async fn handle_message(ctx: Arc<StoreContext>, msg: ApiMessage) -> anyhow::Result<()> {
     match msg {
-        ApiMessage::CreateRecord(channels) => {
-            create_record::create_record(ctx, channels).await?;
-        }
         ApiMessage::UploadBlob(channels) => {
             upload_blob::upload_blob(ctx, channels).await?;
         }

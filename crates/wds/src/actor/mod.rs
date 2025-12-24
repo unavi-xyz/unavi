@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use anyhow::Context;
 use blake3::Hash;
@@ -6,14 +6,16 @@ use bytes::Bytes;
 use iroh::EndpointId;
 use irpc::Client;
 use loro::LoroDoc;
+use time::OffsetDateTime;
 use tokio::sync::{Mutex, OnceCell};
 use xdid::{core::did::Did, methods::key::p256::P256KeyPair};
 
 use crate::{
     SessionToken,
-    api::{ApiService, CreateRecord, UploadBlob},
+    api::{ApiService, PinRecord, UploadBlob},
     auth::AuthService,
-    record::Record,
+    record::{Record, acl::Acl, envelope::Envelope},
+    signed_bytes::Signable,
 };
 
 mod auth;
@@ -27,6 +29,8 @@ pub struct Actor {
     auth_client: Client<AuthService>,
     session: Arc<Mutex<OnceCell<SessionToken>>>,
 }
+
+const DEFAULT_PIN_TTL: Duration = Duration::from_hours(1);
 
 impl Actor {
     pub(crate) fn new(
@@ -57,19 +61,37 @@ impl Actor {
     ///  
     /// Errors if the record could not be created, such as if the client disconnects
     /// or the storage quota is hit.
-    pub async fn create_record(&self, schema: Option<String>) -> anyhow::Result<Hash> {
+    pub async fn create_record(&self, schemas: Option<Vec<Hash>>) -> anyhow::Result<Hash> {
         let s = self.authenticate().await.context("auth")?;
 
         let doc = LoroDoc::new();
 
-        // let id = self
-        //     .api_client
-        //     .rpc(CreateRecord { s, schema })
-        //     .await?
-        //     .map_err(|e| anyhow::anyhow!("creation failed: {e}"))?;
+        let mut record = Record::new(self.did.clone());
 
-        let record = Record::new(self.did.clone());
+        for schema in schemas.unwrap_or_default() {
+            record.add_schema(schema);
+        }
+
+        record.save(&doc)?;
+
+        let mut acl = Acl::default();
+        acl.manager.push(self.did.clone());
+        acl.writer.push(self.did.clone());
+        acl.save(&doc)?;
+
+        let envelope = Envelope::all_updates(self.did.clone(), &doc)?;
+        let signed = envelope.sign(&self.signing_key)?;
+
         let id = record.id()?;
+
+        self.api_client
+            .rpc(PinRecord {
+                s,
+                id,
+                expires: (OffsetDateTime::now_utc() + DEFAULT_PIN_TTL).unix_timestamp(),
+            })
+            .await?
+            .map_err(|e| anyhow::anyhow!("record pin failed: {e}"))?;
 
         Ok(id)
     }

@@ -7,13 +7,15 @@ use iroh::EndpointId;
 use irpc::{Client, WithChannels, channel::oneshot, rpc_requests};
 use irpc_iroh::IrohProtocol;
 use rand::RngCore;
+use scc::HashCache;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 use xdid::{core::did::Did, resolver::DidResolver};
 
 use crate::{
-    ConnectionState, SessionToken, StoreContext, auth::jwk::verify_jwk_signature,
-    signed_bytes::SignedBytes,
+    ConnectionState, SessionToken, StoreContext,
+    auth::jwk::verify_jwk_signature,
+    signed_bytes::{Signable, SignedBytes},
 };
 
 mod jwk;
@@ -59,16 +61,19 @@ pub struct Challenge {
     pub nonce: Nonce,
 }
 
-#[derive(Default)]
+impl Signable for Challenge {}
+
 struct HandlerState {
-    nonces: scc::HashMap<Nonce, Did>,
+    nonces: scc::HashCache<Nonce, Did>,
 }
 
 async fn handle_requests(
     ctx: &Arc<StoreContext>,
     rx: &mut irpc::channel::mpsc::Receiver<AuthMessage>,
 ) -> anyhow::Result<()> {
-    let state = Arc::new(HandlerState::default());
+    let state = Arc::new(HandlerState {
+        nonces: HashCache::with_capacity(32, 2048),
+    });
 
     while let Some(msg) = rx.recv().await? {
         let ctx = Arc::clone(ctx);
@@ -84,8 +89,7 @@ async fn handle_requests(
     Ok(())
 }
 
-const MAX_NONCES: usize = 16;
-const NONCE_TTL: Duration = Duration::from_mins(5);
+const NONCE_TTL: Duration = Duration::from_mins(3);
 
 async fn handle_message(
     ctx: Arc<StoreContext>,
@@ -94,14 +98,10 @@ async fn handle_message(
 ) -> anyhow::Result<()> {
     match msg {
         AuthMessage::RequestChallenge(WithChannels { inner, tx, .. }) => {
-            if state.nonces.len() > MAX_NONCES {
-                return Ok(());
-            }
-
             let mut nonce = Nonce::default();
             rand::rng().fill_bytes(&mut nonce);
 
-            if let Err((_, did)) = state.nonces.insert_async(nonce, inner.0).await {
+            if let Err((_, did)) = state.nonces.put_async(nonce, inner.0).await {
                 bail!("Failed to generate nonce for {did}")
             }
 
@@ -120,7 +120,7 @@ async fn handle_message(
                 // Invalid host.
                 tx.send(None).await?;
                 return Ok(());
-            };
+            }
 
             let Some(did) = state
                 .nonces

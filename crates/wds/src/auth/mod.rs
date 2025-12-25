@@ -1,3 +1,5 @@
+//! ## Auth Protocol
+//!
 //! Challenge-response DID authentication.
 
 use std::{fmt::Debug, sync::Arc, time::Duration};
@@ -116,7 +118,7 @@ async fn handle_message(
         AuthMessage::AnswerChallenge(WithChannels { inner, tx, .. }) => {
             let challenge = inner.0.payload()?;
 
-            if challenge.host != ctx.endpoint_id {
+            if challenge.host != ctx.endpoint.id() {
                 // Invalid host.
                 tx.send(None).await?;
                 return Ok(());
@@ -185,7 +187,7 @@ async fn handle_message(
             {
                 tx.send(None).await?;
                 return Ok(());
-            };
+            }
 
             tx.send(Some(token)).await?;
         }

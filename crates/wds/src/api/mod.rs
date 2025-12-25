@@ -1,4 +1,6 @@
-//! [`irpc`] WDS user API, for use both locally or as an `iroh` protocol.
+//! ## API Protocol
+//!
+//! [`irpc`] user API, for use both locally or over the network.
 
 use std::sync::Arc;
 

@@ -80,7 +80,7 @@ impl Actor {
         acl.save(&doc)?;
 
         let envelope = Envelope::all_updates(self.did.clone(), &doc)?;
-        let signed = envelope.sign(&self.signing_key)?;
+        let _signed = envelope.sign(&self.signing_key)?;
 
         let id = record.id()?;
 
@@ -92,6 +92,8 @@ impl Actor {
             })
             .await?
             .map_err(|e| anyhow::anyhow!("record pin failed: {e}"))?;
+
+        // TODO: sync?
 
         Ok(id)
     }

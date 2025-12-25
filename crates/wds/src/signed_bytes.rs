@@ -28,6 +28,16 @@ where
         })
     }
 
+    /// Reconstructs a `SignedBytes` from stored components.
+    #[must_use]
+    pub const fn from_parts(payload_bytes: Vec<u8>, signature: Vec<u8>) -> Self {
+        Self {
+            payload_bytes,
+            signature,
+            _type: PhantomData,
+        }
+    }
+
     #[must_use]
     pub fn signature(&self) -> &[u8] {
         &self.signature

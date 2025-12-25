@@ -2,13 +2,24 @@ CREATE TABLE records (
     id TEXT PRIMARY KEY,
     creator TEXT NOT NULL,
     nonce BLOB NOT NULL,
-    schema TEXT,
     timestamp INTEGER NOT NULL,
+    vv BLOB NOT NULL,
     size INTEGER NOT NULL
 );
 
 CREATE INDEX idx_records_creator ON records (creator);
-CREATE INDEX idx_records_schema ON records (schema);
+
+CREATE TABLE envelopes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    record_id TEXT NOT NULL REFERENCES records (id) ON DELETE CASCADE,
+    author TEXT NOT NULL,
+    from_vv BLOB NOT NULL,
+    to_vv BLOB NOT NULL,
+    ops BLOB NOT NULL,
+    payload_bytes BLOB NOT NULL,
+    signature BLOB NOT NULL,
+    size INTEGER NOT NULL
+);
 
 CREATE TABLE blob_pins (
     hash TEXT NOT NULL,

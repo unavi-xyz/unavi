@@ -18,6 +18,7 @@ anyhow.workspace   = true
 blake3             = { features = ["serde"], version = "1.8.2" }
 bytes              = "1.11.0"
 constcat.workspace = true
+derive_more        = { features = ["debug"], version = "2.1.1" }
 futures.workspace  = true
 iroh.workspace     = true
 iroh-blobs         = "0.97.0"
@@ -38,6 +39,7 @@ smol_str           = "0.3.4"
 sqlx               = { features = ["runtime-tokio", "sqlite"], version = "0.8.6" }
 time               = "0.3.44"
 tokio.workspace    = true
+tokio-util         = { features = ["codec"], version = "0.7.17" }
 tracing.workspace  = true
 xdid.workspace     = true
 

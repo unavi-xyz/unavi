@@ -26,4 +26,20 @@ impl Envelope {
             ops,
         })
     }
+
+    pub const fn author(&self) -> &Did {
+        &self.author
+    }
+
+    pub const fn start_vv(&self) -> &VersionVector {
+        &self.from
+    }
+
+    pub const fn end_vv(&self) -> &VersionVector {
+        &self.to
+    }
+
+    pub fn ops(&self) -> &[u8] {
+        &self.ops
+    }
 }

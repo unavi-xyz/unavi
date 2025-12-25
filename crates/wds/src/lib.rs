@@ -1,6 +1,7 @@
 use std::{path::Path, sync::Arc};
 
-use iroh::{Endpoint, EndpointId, protocol::Router};
+use derive_more::Debug;
+use iroh::{Endpoint, protocol::Router};
 use iroh_blobs::{
     BlobsProtocol,
     store::fs::{FsStore, options::Options},
@@ -17,6 +18,7 @@ mod gc;
 mod quota;
 mod record;
 pub mod signed_bytes;
+mod sync;
 mod tag;
 
 /// Wired data store.
@@ -30,11 +32,15 @@ pub struct DataStore {
 // TODO: Replace session token auth with iroh hooks
 type SessionToken = [u8; 32];
 
+#[derive(Debug)]
 struct StoreContext {
     blobs: FsStore,
+    #[debug("HashMap({})", connections.len())]
     connections: scc::HashMap<SessionToken, ConnectionState>,
+    #[debug("Database")]
     db: db::Database,
-    endpoint_id: EndpointId,
+    #[debug("Endpoint")]
+    endpoint: Endpoint,
 }
 
 struct ConnectionState {
@@ -67,7 +73,7 @@ impl DataStore {
             blobs,
             connections: scc::HashMap::default(),
             db,
-            endpoint_id: endpoint.id(),
+            endpoint: endpoint.clone(),
         });
 
         let (api_client, api_protocol) = api::protocol(Arc::clone(&ctx));
@@ -77,6 +83,12 @@ impl DataStore {
             .accept(iroh_blobs::ALPN, blob_protocol)
             .accept(api::ALPN, api_protocol)
             .accept(auth::ALPN, auth_protocol)
+            .accept(
+                sync::ALPN,
+                sync::SyncProtocol {
+                    ctx: Arc::clone(&ctx),
+                },
+            )
             .spawn();
 
         Ok(Self {

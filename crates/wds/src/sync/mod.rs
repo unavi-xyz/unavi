@@ -18,7 +18,7 @@ use crate::{SessionToken, StoreContext, sync::combined_stream::CombinedStream};
 pub mod client;
 mod combined_stream;
 mod server;
-mod shared;
+pub mod shared;
 
 pub const ALPN: &[u8] = b"wds/sync";
 

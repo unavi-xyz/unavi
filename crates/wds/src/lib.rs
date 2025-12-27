@@ -16,9 +16,9 @@ mod auth;
 mod db;
 mod gc;
 mod quota;
-mod record;
+pub mod record;
 pub mod signed_bytes;
-mod sync;
+pub mod sync;
 mod tag;
 
 /// Wired data store.
@@ -115,5 +115,17 @@ impl DataStore {
     /// Errors if protocol tasks could not be joined.
     pub async fn shutdown(self) -> Result<(), JoinError> {
         self.router.shutdown().await
+    }
+
+    /// Returns the database pool. Primarily for testing.
+    #[must_use]
+    pub fn db(&self) -> &sqlx::Pool<sqlx::Sqlite> {
+        self.ctx.db.pool()
+    }
+
+    /// Returns the blob store. Primarily for testing.
+    #[must_use]
+    pub fn blobs(&self) -> &iroh_blobs::store::fs::FsStore {
+        &self.ctx.blobs
     }
 }

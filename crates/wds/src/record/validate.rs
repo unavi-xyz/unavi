@@ -16,7 +16,7 @@
 //!
 //! `Who::Path` references use dot notation to navigate the document:
 //! - `acl.manage` → resolves to the `manage` field in the `acl` container
-//! - `container.field.subfield` → nested field access
+//! - `container.field.subfied` → nested field access
 //!
 //! The resolved value should be a DID string or list of DID strings.
 //!

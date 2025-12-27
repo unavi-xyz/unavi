@@ -63,8 +63,8 @@ pub enum Field {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Action {
-    who: Who,
-    can: Vec<Can>,
+    pub who: Who,
+    pub can: Vec<Can>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

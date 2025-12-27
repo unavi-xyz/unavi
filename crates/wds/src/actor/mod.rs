@@ -75,8 +75,8 @@ impl Actor {
         record.save(&doc)?;
 
         let mut acl = Acl::default();
-        acl.manager.push(self.did.clone());
-        acl.writer.push(self.did.clone());
+        acl.manage.push(self.did.clone());
+        acl.write.push(self.did.clone());
         acl.save(&doc)?;
 
         let envelope = Envelope::all_updates(self.did.clone(), &doc)?;

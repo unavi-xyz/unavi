@@ -71,7 +71,7 @@ where
 
     if let SyncMsg::Envelopes(envelopes) = incoming {
         for env_bytes in envelopes {
-            super::shared::store_envelope(db, &id_str, &env_bytes).await?;
+            super::shared::store_envelope(db, &ctx.blobs, &id_str, &env_bytes).await?;
         }
     }
 

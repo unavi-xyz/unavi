@@ -47,7 +47,7 @@ pub async fn sync_to_remote(
     let received = if let SyncMsg::Envelopes(envelopes) = incoming {
         let count = envelopes.len();
         for env_bytes in &envelopes {
-            super::shared::store_envelope(db, &id_str, env_bytes).await?;
+            super::shared::store_envelope(db, &ctx.blobs, &id_str, env_bytes).await?;
         }
         count
     } else {

@@ -5,7 +5,7 @@
     layout: Restricted(
         actions: [
             (
-                who: Path("acl:write"),
+                who: Path("acl.write"),
                 can: [
                     Update,
                 ],

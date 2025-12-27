@@ -5,7 +5,7 @@
     layout: Restricted(
         actions: [
             (
-                who: Path("manage"),
+                who: Path("acl.manage"),
                 can: [
                     Update,
                 ],

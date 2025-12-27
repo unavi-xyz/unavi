@@ -37,6 +37,7 @@ scc.workspace      = true
 serde.workspace    = true
 smol_str           = "0.3.4"
 sqlx               = { features = ["runtime-tokio", "sqlite"], version = "0.8.6" }
+thiserror          = "2.0.17"
 time               = "0.3.44"
 tokio.workspace    = true
 tokio-util         = { features = ["codec"], version = "0.7.17" }

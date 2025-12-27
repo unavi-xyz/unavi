@@ -7,7 +7,8 @@ use xdid::core::did::Did;
 
 pub mod acl;
 pub mod envelope;
-mod schema;
+pub mod schema;
+pub mod validate;
 
 type RecordNonce = [u8; 16];
 

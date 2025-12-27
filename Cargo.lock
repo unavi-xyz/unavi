@@ -15704,6 +15704,7 @@ dependencies = [
  "smol_str 0.3.4",
  "sqlx",
  "tempfile",
+ "thiserror 2.0.17",
  "time",
  "tokio",
  "tokio-util",

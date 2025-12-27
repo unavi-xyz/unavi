@@ -1,19 +1,30 @@
 use anyhow::Context;
-use loro::VersionVector;
+use iroh_blobs::store::fs::FsStore;
+use loro::{LoroDoc, VersionVector};
 use sqlx::{Executor, Pool, Sqlite};
 
-use crate::{quota, record::envelope::Envelope, signed_bytes::SignedBytes};
+use crate::{
+    quota,
+    record::{envelope::Envelope, validate::validate_record},
+    signed_bytes::SignedBytes,
+};
 
-/// Stores an envelope with quota tracking. Uses a transaction.
+/// Stores an envelope with quota tracking and schema validation.
 pub async fn store_envelope(
     db: &Pool<Sqlite>,
+    blobs: &FsStore,
     record_id: &str,
     env_bytes: &[u8],
 ) -> anyhow::Result<()> {
     let signed: SignedBytes<Envelope> = postcard::from_bytes(env_bytes)?;
     let envelope = signed.payload()?;
     // TODO: Verify signature.
-    // TODO: Validate schema.
+
+    // Reconstruct document and validate schema.
+    let doc = reconstruct_doc(db, record_id, &envelope).await?;
+    validate_record(blobs, &doc)
+        .await
+        .map_err(|e| anyhow::anyhow!("schema validation failed: {e}"))?;
 
     let mut tx = db.begin().await?;
 
@@ -152,4 +163,24 @@ where
         Some(row) => Ok(VersionVector::decode(&row.vv)?),
         None => Ok(VersionVector::new()),
     }
+}
+
+/// Reconstructs a Loro document from stored envelopes plus a new envelope.
+async fn reconstruct_doc(
+    db: &Pool<Sqlite>,
+    record_id: &str,
+    new_envelope: &Envelope,
+) -> anyhow::Result<LoroDoc> {
+    let doc = LoroDoc::new();
+
+    let existing = fetch_all_envelopes(db, record_id).await?;
+    for env_bytes in existing {
+        let signed: SignedBytes<Envelope> = postcard::from_bytes(&env_bytes)?;
+        let env = signed.payload()?;
+        doc.import(env.ops())?;
+    }
+
+    doc.import(new_envelope.ops())?;
+
+    Ok(doc)
 }

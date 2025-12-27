@@ -20,7 +20,7 @@ static_schema_id!(acl);
 static_schema_id!(record);
 
 /// Schema defining how to process a Loro document.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Schema {
     id: SmolStr,
     version: u32,
@@ -35,9 +35,17 @@ impl Schema {
         let bytes = postcard::to_stdvec(self)?;
         Ok(blake3::hash(&bytes))
     }
+
+    pub fn container(&self) -> &str {
+        &self.container
+    }
+
+    pub const fn layout(&self) -> &Field {
+        &self.layout
+    }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Field {
     Restricted {
         actions: Vec<Action>,
@@ -53,19 +61,19 @@ pub enum Field {
     Binary,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Action {
     who: Who,
     can: Vec<Can>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Who {
     Anyone,
     Path(SmolStr),
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Can {
     Create,
     Delete,

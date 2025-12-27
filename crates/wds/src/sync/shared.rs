@@ -8,6 +8,7 @@ use crate::{
     auth::jwk::verify_jwk_signature,
     quota,
     record::{
+        Record,
         acl::Acl,
         envelope::Envelope,
         schema::{SCHEMA_ACL, SCHEMA_RECORD},
@@ -66,11 +67,15 @@ pub async fn store_envelope(
     doc.import(envelope.ops())?;
     let new_frontiers = doc.state_frontiers();
 
-    // Validate diff against schema restrictions.
-    // TODO include specified schemas
-    let schemas = [*SCHEMA_ACL, *SCHEMA_RECORD];
+    // Load record metadata from the Loro doc.
+    let record = Record::load(&doc)?;
 
-    for schema_id in schemas {
+    // Validate diff against schema restrictions.
+    // Built-in schemas plus user-specified schemas.
+    let mut schema_ids = vec![*SCHEMA_ACL, *SCHEMA_RECORD];
+    schema_ids.extend(record.schemas.iter().copied());
+
+    for schema_id in schema_ids {
         let schema = fetch_schema(blobs, &schema_id)
             .await
             .map_err(|e| anyhow::anyhow!("failed to fetch schema {schema_id}: {e}"))?;
@@ -132,12 +137,13 @@ pub async fn store_envelope(
         .rows_affected();
 
     if updated == 0 {
-        // TODO: Extract nonce/timestamp from Loro doc.
-        let timestamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs().cast_signed())
-            .unwrap_or(0);
-        let nonce: &[u8] = &[0u8; 16];
+        // Initialize a new record using metadata from the Loro doc.
+        ensure!(
+            record.id()?.to_string() == record_id,
+            "record ID does not match"
+        );
+
+        let nonce: &[u8] = &record.nonce;
 
         sqlx::query!(
             "INSERT INTO records (id, creator, nonce, timestamp, vv, size)
@@ -145,7 +151,7 @@ pub async fn store_envelope(
             record_id,
             author_str,
             nonce,
-            timestamp,
+            record.timestamp,
             new_vv,
             size
         )

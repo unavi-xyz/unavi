@@ -3,7 +3,7 @@ use futures::{SinkExt, StreamExt};
 use loro::VersionVector;
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
 
-use crate::{StoreContext, sync::SyncMsg};
+use crate::{StoreContext, record::acl::Acl, sync::SyncMsg};
 
 pub async fn handle_sync<S>(
     ctx: &StoreContext,
@@ -26,10 +26,12 @@ where
         anyhow::bail!("expected Begin message");
     };
 
-    // Authenticate.
-    if ctx.connections.get_async(&session).await.is_none() {
+    // Authenticate and get requester DID.
+    let Some(conn_state) = ctx.connections.get_async(&session).await else {
         return Ok(());
-    }
+    };
+    let requester_did = conn_state.get().did.clone();
+    drop(conn_state);
 
     let id_str = record_id.to_string();
     let db = ctx.db.pool();
@@ -53,6 +55,14 @@ where
         VersionVector::new()
     };
 
+    // Check read permission before sending data.
+    let doc = super::shared::reconstruct_current_doc(db, &id_str).await?;
+    let acl = Acl::load(&doc)?;
+    if !acl.can_read(&requester_did) {
+        // Silently deny - record "doesn't exist" for this user.
+        return Ok(());
+    }
+
     let remote_vv = VersionVector::decode(&remote_vv_bytes)?;
 
     // Send envelopes remote is missing.
@@ -64,6 +74,7 @@ where
         .await?;
 
     // Receive envelopes we're missing.
+    // Write permission is checked in store_envelope.
     let Some(bytes) = framed.next().await else {
         return Ok(());
     };

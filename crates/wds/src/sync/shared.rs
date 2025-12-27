@@ -5,7 +5,12 @@ use sqlx::{Executor, Pool, Sqlite};
 
 use crate::{
     quota,
-    record::{envelope::Envelope, validate::validate_record},
+    record::{
+        acl::Acl,
+        envelope::Envelope,
+        schema::{SCHEMA_ACL, SCHEMA_RECORD},
+        validate::{fetch_schema, validate_diff, validate_record},
+    },
     signed_bytes::SignedBytes,
 };
 
@@ -18,10 +23,47 @@ pub async fn store_envelope(
 ) -> anyhow::Result<()> {
     let signed: SignedBytes<Envelope> = postcard::from_bytes(env_bytes)?;
     let envelope = signed.payload()?;
+    let author = envelope.author();
     // TODO: Verify signature.
 
-    // Reconstruct document and validate schema.
-    let doc = reconstruct_doc(db, record_id, &envelope).await?;
+    // Get current document state (BEFORE applying envelope).
+    let doc = reconstruct_current_doc(db, record_id).await?;
+    let old_frontiers = doc.state_frontiers();
+    let is_first_envelope = old_frontiers.is_empty();
+
+    // Check record-level write ACL against OLD state (prevent privilege escalation).
+    if !is_first_envelope {
+        let acl = Acl::load(&doc)?;
+        if !acl.can_write(author) {
+            anyhow::bail!("access denied: write permission required");
+        }
+    }
+
+    // Apply new envelope to get new state.
+    doc.import(envelope.ops())?;
+    let new_frontiers = doc.state_frontiers();
+
+    // Validate diff against schema restrictions.
+    // TODO include specified schemas
+    let schemas = [*SCHEMA_ACL, *SCHEMA_RECORD];
+
+    for schema_id in schemas {
+        let schema = fetch_schema(blobs, &schema_id)
+            .await
+            .map_err(|e| anyhow::anyhow!("failed to fetch schema {schema_id}: {e}"))?;
+
+        validate_diff(
+            &doc,
+            &old_frontiers,
+            &new_frontiers,
+            &schema,
+            author,
+            is_first_envelope,
+        )
+        .map_err(|e| anyhow::anyhow!("Schema validation failed: {e}"))?;
+    }
+
+    // Schema type validation on final state.
     validate_record(blobs, &doc)
         .await
         .map_err(|e| anyhow::anyhow!("schema validation failed: {e}"))?;
@@ -165,11 +207,10 @@ where
     }
 }
 
-/// Reconstructs a Loro document from stored envelopes plus a new envelope.
-async fn reconstruct_doc(
+/// Reconstructs a Loro document from stored envelopes (current state).
+pub async fn reconstruct_current_doc(
     db: &Pool<Sqlite>,
     record_id: &str,
-    new_envelope: &Envelope,
 ) -> anyhow::Result<LoroDoc> {
     let doc = LoroDoc::new();
 
@@ -179,8 +220,6 @@ async fn reconstruct_doc(
         let env = signed.payload()?;
         doc.import(env.ops())?;
     }
-
-    doc.import(new_envelope.ops())?;
 
     Ok(doc)
 }

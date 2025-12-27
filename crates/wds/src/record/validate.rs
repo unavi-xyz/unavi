@@ -1,16 +1,42 @@
 //! Schema validation for Loro documents.
+//!
+//! # Validation Methodology
+//!
+//! Validation happens during envelope ingestion via [`validate_diff`], which
+//! performs a single pass over the document diff to check both:
+//!
+//! 1. **ACL restrictions**: Each changed field is checked against `Restricted`
+//!    wrappers in the schema. The `who` field specifies authorized DIDs via
+//!    path resolution (e.g., `acl.manage` resolves to the list of manager DIDs).
+//!
+//! 2. **Type validation**: New values are validated against the expected field
+//!    type from the schema (Bool, String, List, Map, etc.).
+//!
+//! ## Path Resolution
+//!
+//! `Who::Path` references use dot notation to navigate the document:
+//! - `acl.manage` → resolves to the `manage` field in the `acl` container
+//! - `container.field.subfield` → nested field access
+//!
+//! The resolved value should be a DID string or list of DID strings.
+//!
+//! ## First Envelope Handling
+//!
+//! The first envelope (creating the record) bypasses ACL checks since there's
+//! no prior state to authorize against. The creator implicitly has permission
+//! to set initial values including the ACL itself.
 
 use blake3::Hash;
 use iroh_blobs::store::fs::FsStore;
 use loro::{
-    Frontiers, LoroDoc, LoroValue,
+    Frontiers, LoroDoc, LoroValue, ValueOrContainer,
     event::{Diff, DiffBatch, ListDiffItem, MapDelta},
 };
 use smol_str::SmolStr;
 use thiserror::Error;
 use xdid::core::did::Did;
 
-use super::schema::{Action, Can, Field, SCHEMA_RECORD, Schema, Who};
+use super::schema::{Action, Can, Field, Schema, Who};
 
 /// Type of change detected in a diff.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -62,17 +88,18 @@ pub async fn fetch_schema(blobs: &FsStore, hash: &Hash) -> Result<Schema, Valida
     ron::de::from_bytes(&bytes).map_err(|_| ValidationError::ParseError)
 }
 
-/// Resolve a path like "acl:write" to a list of DID strings.
+/// Resolve a path like `acl.write` to a list of DID strings.
 ///
-/// Path format: "container:field" where field can be nested with dots.
+/// Path format: `container.field.subfield` using dot notation throughout.
 fn resolve_acl_path(doc: &LoroDoc, path: &str) -> Option<Vec<String>> {
-    let (container, field) = path.split_once(':')?;
+    let mut parts = path.split('.');
+    let container = parts.next()?;
     let map = doc.get_map(container);
     let value = map.get_deep_value();
 
     // Navigate through nested fields.
     let mut current = &value;
-    for part in field.split('.') {
+    for part in parts {
         let LoroValue::Map(m) = current else {
             return None;
         };
@@ -223,19 +250,6 @@ fn validate_value_inner(
     }
 }
 
-/// Validate a container in a [`LoroDoc`] against a [`Schema`].
-fn validate_container(doc: &LoroDoc, schema: &Schema) -> Result<(), ValidationError> {
-    let container = doc.get_map(schema.container());
-    let value = container.get_deep_value();
-    validate_value(&value, schema.layout(), schema.container())
-}
-
-/// Validate that a document contains a valid record structure.
-pub async fn validate_record(blobs: &FsStore, doc: &LoroDoc) -> Result<(), ValidationError> {
-    let schema = fetch_schema(blobs, &SCHEMA_RECORD).await?;
-    validate_container(doc, &schema)
-}
-
 /// Validate changes between two document states against schema restrictions.
 pub fn validate_diff(
     doc: &LoroDoc,
@@ -317,14 +331,23 @@ fn validate_map_diff(
     author: &Did,
     is_first_envelope: bool,
 ) -> Result<(), ValidationError> {
+    // Get the inner map fields, unwrapping any Restricted wrappers.
+    let inner = unwrap_restricted(field);
+    let map_fields = match inner {
+        Field::Map(fields) => Some(fields),
+        _ => None,
+    };
+
     for (key, new_value) in &map_delta.updated {
         let change_type = if new_value.is_some() {
-            ChangeType::Update // Could be Create, but we treat as Update for simplicity.
+            ChangeType::Update
         } else {
             ChangeType::Delete
         };
 
         let field_path = format!("{path}.{key}");
+
+        // Check ACL restrictions.
         validate_field_change(
             doc,
             field,
@@ -333,6 +356,14 @@ fn validate_map_diff(
             author,
             is_first_envelope,
         )?;
+
+        // Validate value type if there's a new value and we know the expected type.
+        if let (Some(value), Some(fields)) = (new_value, map_fields) {
+            let key_smol: SmolStr = key.to_string().into();
+            if let Some(expected_field) = fields.get(&key_smol) {
+                validate_value_or_container(value, expected_field, &field_path)?;
+            }
+        }
     }
     Ok(())
 }
@@ -346,14 +377,46 @@ fn validate_list_diff(
     author: &Did,
     is_first_envelope: bool,
 ) -> Result<(), ValidationError> {
-    for item in items {
-        let change_type = match item {
-            ListDiffItem::Insert { .. } => ChangeType::Create,
-            ListDiffItem::Delete { .. } => ChangeType::Delete,
-            ListDiffItem::Retain { .. } => continue,
-        };
+    // Get the inner list element type, unwrapping any Restricted wrappers.
+    let inner = unwrap_restricted(field);
+    let item_field = match inner {
+        Field::List(inner) => Some(inner.as_ref()),
+        _ => None,
+    };
 
-        validate_field_change(doc, field, path, change_type, author, is_first_envelope)?;
+    for item in items {
+        match item {
+            ListDiffItem::Insert { insert, .. } => {
+                // Check ACL restrictions.
+                validate_field_change(
+                    doc,
+                    field,
+                    path,
+                    ChangeType::Create,
+                    author,
+                    is_first_envelope,
+                )?;
+
+                // Validate each inserted value.
+                if let Some(expected) = item_field {
+                    for (i, value) in insert.iter().enumerate() {
+                        let elem_path = format!("{path}[{i}]");
+                        validate_value_or_container(value, expected, &elem_path)?;
+                    }
+                }
+            }
+            ListDiffItem::Delete { .. } => {
+                validate_field_change(
+                    doc,
+                    field,
+                    path,
+                    ChangeType::Delete,
+                    author,
+                    is_first_envelope,
+                )?;
+            }
+            ListDiffItem::Retain { .. } => {}
+        }
     }
     Ok(())
 }
@@ -449,6 +512,25 @@ const fn change_type_name(ct: ChangeType) -> &'static str {
         ChangeType::Update => "update",
         ChangeType::Delete => "delete",
     }
+}
+
+/// Unwrap Restricted wrappers to get the inner field type.
+fn unwrap_restricted(field: &Field) -> &Field {
+    match field {
+        Field::Restricted { value, .. } => unwrap_restricted(value),
+        other => other,
+    }
+}
+
+/// Validate a [`ValueOrContainer`] against a [`Field`] layout.
+fn validate_value_or_container(
+    value: &ValueOrContainer,
+    field: &Field,
+    path: &str,
+) -> Result<(), ValidationError> {
+    // Get the deep value, which converts containers to their full LoroValue.
+    let loro_value = value.get_deep_value();
+    validate_value(&loro_value, field, path)
 }
 
 #[cfg(test)]

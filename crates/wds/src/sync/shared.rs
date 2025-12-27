@@ -11,7 +11,7 @@ use crate::{
         acl::Acl,
         envelope::Envelope,
         schema::{SCHEMA_ACL, SCHEMA_RECORD},
-        validate::{fetch_schema, validate_diff, validate_record},
+        validate::{fetch_schema, validate_diff},
     },
     signed_bytes::SignedBytes,
 };
@@ -83,13 +83,8 @@ pub async fn store_envelope(
             author,
             is_first_envelope,
         )
-        .map_err(|e| anyhow::anyhow!("Schema validation failed: {e}"))?;
-    }
-
-    // Schema type validation on final state.
-    validate_record(blobs, &doc)
-        .await
         .map_err(|e| anyhow::anyhow!("schema validation failed: {e}"))?;
+    }
 
     let mut tx = db.begin().await?;
 

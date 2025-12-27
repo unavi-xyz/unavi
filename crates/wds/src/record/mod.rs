@@ -23,6 +23,7 @@ pub struct Record {
 }
 
 impl Record {
+    #[must_use]
     pub fn new(author: Did) -> Self {
         let mut nonce = RecordNonce::default();
         rand::rng().fill(&mut nonce);

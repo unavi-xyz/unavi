@@ -7,7 +7,9 @@ use smol_str::SmolStr;
 macro_rules! static_schema_id {
     ($name:ident) => {
         paste::paste! {
-            const [<SCHEMA_STR_$name:upper>]: &str = include_str!(concat!("../../../../protocol/schemas/", stringify!($name), ".ron"));
+            /// Raw schema string for the builtin schema.
+            pub const [<SCHEMA_STR_$name:upper>]: &str = include_str!(concat!("../../../../protocol/schemas/", stringify!($name), ".ron"));
+            /// Pre-computed hash of the builtin schema.
             pub static [<SCHEMA_$name:upper>]: LazyLock<Hash> = LazyLock::new(|| {
                 let schema: Schema = ron::from_str([<SCHEMA_STR_$name:upper>]).expect("valid schema");
                 schema.id().expect("schema id")
@@ -36,10 +38,12 @@ impl Schema {
         Ok(blake3::hash(&bytes))
     }
 
+    #[must_use]
     pub fn container(&self) -> &str {
         &self.container
     }
 
+    #[must_use]
     pub const fn layout(&self) -> &Field {
         &self.layout
     }

@@ -11,7 +11,7 @@ CREATE INDEX idx_records_creator ON records (creator);
 
 CREATE TABLE envelopes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    record_id TEXT NOT NULL REFERENCES records (id) ON DELETE CASCADE,
+    record_id TEXT NOT NULL,
     author TEXT NOT NULL,
     from_vv BLOB NOT NULL,
     to_vv BLOB NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE blob_pins (
 );
 
 CREATE TABLE record_pins (
-    record_id TEXT NOT NULL REFERENCES records (id) ON DELETE CASCADE,
+    record_id TEXT NOT NULL,
     owner TEXT NOT NULL,
     expires INTEGER,
     PRIMARY KEY (owner, record_id)

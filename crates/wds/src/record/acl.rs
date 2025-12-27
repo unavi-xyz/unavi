@@ -54,16 +54,19 @@ impl Acl {
     }
 
     /// Check if a DID has read permission (read, write, or manage).
+    #[must_use]
     pub fn can_read(&self, did: &Did) -> bool {
         self.read.contains(did) || self.can_write(did)
     }
 
     /// Check if a DID has write permission (write or manage).
+    #[must_use]
     pub fn can_write(&self, did: &Did) -> bool {
         self.write.contains(did) || self.can_manage(did)
     }
 
     /// Check if a DID has manage permission.
+    #[must_use]
     pub fn can_manage(&self, did: &Did) -> bool {
         self.manage.contains(did)
     }

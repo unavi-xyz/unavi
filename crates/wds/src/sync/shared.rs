@@ -1,9 +1,11 @@
-use anyhow::Context;
+use anyhow::{Context, ensure};
 use iroh_blobs::store::fs::FsStore;
 use loro::{LoroDoc, VersionVector};
 use sqlx::{Executor, Pool, Sqlite};
+use xdid::resolver::DidResolver;
 
 use crate::{
+    auth::jwk::verify_jwk_signature,
     quota,
     record::{
         acl::Acl,
@@ -24,7 +26,28 @@ pub async fn store_envelope(
     let signed: SignedBytes<Envelope> = postcard::from_bytes(env_bytes)?;
     let envelope = signed.payload()?;
     let author = envelope.author();
-    // TODO: Verify signature.
+
+    // Validate signature.
+    let resolver = DidResolver::new()?;
+    let author_doc = resolver.resolve(author).await?;
+    let mut is_valid_signature = false;
+
+    for method in author_doc.assertion_method.as_deref().unwrap_or_default() {
+        let Some(map) = author_doc.resolve_verification_method(method) else {
+            continue;
+        };
+
+        let Some(jwk) = &map.public_key_jwk else {
+            continue;
+        };
+
+        if verify_jwk_signature(jwk, signed.signature(), signed.payload_bytes()) {
+            is_valid_signature = true;
+            break;
+        }
+    }
+
+    ensure!(is_valid_signature, "invalid envelope signatrue");
 
     // Get current document state (BEFORE applying envelope).
     let doc = reconstruct_current_doc(db, record_id).await?;

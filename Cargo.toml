@@ -23,6 +23,9 @@ type_complexity        = "allow"
 # wit-bindgen generated code
 collection_is_never_read = "allow"
 
+# dioxus macro
+volatile_composites = "allow"
+
 [workspace.metadata.release]
 publish        = false
 shared-version = true

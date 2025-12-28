@@ -7,7 +7,7 @@ use std::sync::Arc;
 use blake3::Hash;
 use bytes::Bytes;
 use irpc::{
-    Client, WithChannels,
+    Client,
     channel::{mpsc, oneshot},
     rpc_requests,
 };
@@ -19,7 +19,9 @@ use tracing::error;
 use crate::{SessionToken, StoreContext};
 
 mod pin_blob;
+mod pin_record;
 mod upload_blob;
+mod upload_envelope;
 
 pub const ALPN: &[u8] = b"wds/api";
 
@@ -44,6 +46,9 @@ pub enum ApiService {
     #[rpc(rx=mpsc::Receiver<Bytes>,tx=oneshot::Sender<Result<Hash, SmolStr>>)]
     #[wrap(UploadBlob)]
     UploadBlob { s: SessionToken },
+    #[rpc(rx=mpsc::Receiver<Bytes>,tx=oneshot::Sender<Result<(), SmolStr>>)]
+    #[wrap(UploadEnvelope)]
+    UploadEnvelope { s: SessionToken, record_id: Hash },
     #[rpc(tx=oneshot::Sender<Result<(), SmolStr>>)]
     #[wrap(PinBlob)]
     PinBlob {
@@ -96,12 +101,14 @@ async fn handle_message(ctx: Arc<StoreContext>, msg: ApiMessage) -> anyhow::Resu
         ApiMessage::UploadBlob(channels) => {
             upload_blob::upload_blob(ctx, channels).await?;
         }
+        ApiMessage::UploadEnvelope(channels) => {
+            upload_envelope::upload_envelope(ctx, channels).await?;
+        }
         ApiMessage::PinBlob(channels) => {
             pin_blob::pin_blob(ctx, channels).await?;
         }
-        ApiMessage::PinRecord(WithChannels { inner, tx, .. }) => {
-            let _did = authenticate!(ctx, inner, tx);
-            todo!()
+        ApiMessage::PinRecord(channels) => {
+            pin_record::pin_record(ctx, channels).await?;
         }
     }
 

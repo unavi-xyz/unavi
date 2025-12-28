@@ -15,16 +15,19 @@ pub struct Envelope {
 impl Signable for Envelope {}
 
 impl Envelope {
-    pub fn all_updates(author: Did, doc: &LoroDoc) -> anyhow::Result<Self> {
-        let from = VersionVector::new();
+    pub fn updates(author: Did, doc: &LoroDoc, from: VersionVector) -> anyhow::Result<Self> {
         let to = doc.oplog_vv();
-        let ops = doc.export(ExportMode::all_updates())?;
+        let ops = doc.export(ExportMode::updates(&from))?;
         Ok(Self {
             author,
             from,
             to,
             ops,
         })
+    }
+
+    pub fn all_updates(author: Did, doc: &LoroDoc) -> anyhow::Result<Self> {
+        Self::updates(author, doc, VersionVector::new())
     }
 
     #[must_use]

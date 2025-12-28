@@ -85,7 +85,7 @@ pub async fn fetch_schema(blobs: &FsStore, hash: &Hash) -> Result<Schema, Valida
         .get_bytes(iroh_hash)
         .await
         .map_err(|_| ValidationError::SchemaNotFound(*hash))?;
-    ron::de::from_bytes(&bytes).map_err(|_| ValidationError::ParseError)
+    Schema::from_bytes(&bytes).map_err(|_| ValidationError::ParseError)
 }
 
 /// Resolve a path like `acl.write` to a list of DID strings.

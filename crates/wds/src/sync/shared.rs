@@ -166,7 +166,10 @@ pub async fn store_envelope(
 }
 
 /// Fetches all envelopes for a record.
-pub async fn fetch_all_envelopes<'e, E>(db: E, record_id: &str) -> anyhow::Result<Vec<Vec<u8>>>
+pub(super) async fn fetch_all_envelopes<'e, E>(
+    db: E,
+    record_id: &str,
+) -> anyhow::Result<Vec<Vec<u8>>>
 where
     E: Executor<'e, Database = Sqlite>,
 {
@@ -187,7 +190,7 @@ where
 }
 
 /// Fetches envelopes covering operations the remote is missing.
-pub async fn fetch_envelopes_for_diff<'e, E>(
+pub(super) async fn fetch_envelopes_for_diff<'e, E>(
     db: E,
     record_id: &str,
     local_vv: &VersionVector,
@@ -219,7 +222,7 @@ where
 }
 
 /// Gets the version vector for a record.
-pub async fn get_record_vv<'e, E>(db: E, record_id: &str) -> anyhow::Result<VersionVector>
+pub(super) async fn get_record_vv<'e, E>(db: E, record_id: &str) -> anyhow::Result<VersionVector>
 where
     E: Executor<'e, Database = Sqlite>,
 {
@@ -234,7 +237,7 @@ where
 }
 
 /// Reconstructs a Loro document from stored envelopes (current state).
-pub async fn reconstruct_current_doc(
+pub(super) async fn reconstruct_current_doc(
     db: &Pool<Sqlite>,
     record_id: &str,
 ) -> anyhow::Result<LoroDoc> {

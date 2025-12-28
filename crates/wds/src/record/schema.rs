@@ -33,8 +33,19 @@ pub struct Schema {
 }
 
 impl Schema {
+    /// Serialize to wire format (postcard).
+    pub fn to_bytes(&self) -> postcard::Result<Vec<u8>> {
+        postcard::to_stdvec(self)
+    }
+
+    /// Deserialize from wire format (postcard).
+    pub fn from_bytes(bytes: &[u8]) -> postcard::Result<Self> {
+        postcard::from_bytes(bytes)
+    }
+
+    /// Compute content-addressed ID (blake3 hash of wire bytes).
     pub fn id(&self) -> postcard::Result<Hash> {
-        let bytes = postcard::to_stdvec(self)?;
+        let bytes = self.to_bytes()?;
         Ok(blake3::hash(&bytes))
     }
 

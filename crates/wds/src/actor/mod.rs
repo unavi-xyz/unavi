@@ -61,7 +61,10 @@ impl Actor {
     ///
     /// Errors if the record could not be created, such as if the client disconnects
     /// or the storage quota is hit.
-    pub async fn create_record(&self, schemas: Option<Vec<Hash>>) -> anyhow::Result<Hash> {
+    pub async fn create_record(
+        &self,
+        schemas: Option<Vec<Hash>>,
+    ) -> anyhow::Result<(Hash, LoroDoc)> {
         let doc = LoroDoc::new();
 
         let mut record = Record::new(self.did.clone());
@@ -97,7 +100,7 @@ impl Actor {
         // Upload the initial envelope.
         self.upload_envelope(id, signed).await?;
 
-        Ok(id)
+        Ok((id, doc))
     }
 
     /// Uploads a signed envelope to a record.

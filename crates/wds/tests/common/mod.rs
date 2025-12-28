@@ -1,20 +1,15 @@
 #![allow(dead_code)]
 
 use blake3::Hash;
-use loro::LoroDoc;
 use rstest::fixture;
 use tempfile::{TempDir, tempdir};
 use wds::{
     DataStore,
     actor::Actor,
     record::{
-        Record,
         acl::Acl,
-        envelope::Envelope,
-        schema::{SCHEMA_ACL, SCHEMA_RECORD, SCHEMA_STR_ACL, SCHEMA_STR_RECORD, Schema},
+        schema::{SCHEMA_STR_ACL, SCHEMA_STR_RECORD, Schema},
     },
-    signed_bytes::{Signable, SignedBytes},
-    sync::shared::store_envelope,
 };
 use xdid::{
     core::did::Did,
@@ -23,85 +18,15 @@ use xdid::{
 
 pub struct DataStoreCtx {
     pub store: DataStore,
-    pub alice: TestActor,
-    pub bob: TestActor,
+    pub alice: Actor,
+    pub bob: Actor,
     _dir: TempDir,
 }
 
-/// Test actor with exposed signing key for direct envelope manipulation.
-pub struct TestActor {
-    pub did: Did,
-    pub signing_key: P256KeyPair,
-    pub actor: Actor,
-}
-
-impl TestActor {
-    /// Creates a new record with the given ACL and schemas.
-    /// Returns the record ID and the [`LoroDoc`].
-    pub async fn create_record(
-        &self,
-        store: &DataStore,
-        acl: Acl,
-        schemas: Vec<Hash>,
-    ) -> anyhow::Result<(Hash, LoroDoc)> {
-        let doc = LoroDoc::new();
-
-        let mut record = Record::new(self.did.clone());
-        for schema in schemas {
-            record.add_schema(schema);
-        }
-        record.save(&doc)?;
-
-        acl.save(&doc)?;
-
-        let envelope = Envelope::all_updates(self.did.clone(), &doc)?;
-        let signed = envelope.sign(&self.signing_key)?;
-        let env_bytes = postcard::to_stdvec(&signed)?;
-
-        let id = record.id()?;
-        let id_str = id.to_string();
-
-        // Pin the record first.
-        let did_str = self.did.to_string();
-        let expires = (time::OffsetDateTime::now_utc() + time::Duration::hours(1)).unix_timestamp();
-        sqlx::query!(
-            "INSERT INTO record_pins (record_id, owner, expires) VALUES (?, ?, ?)",
-            id_str,
-            did_str,
-            expires
-        )
-        .execute(store.db())
-        .await?;
-
-        // Store the envelope.
-        store_envelope(store.db(), store.blobs(), &id_str, &env_bytes).await?;
-
-        Ok((id, doc))
-    }
-
-    /// Builds and signs an envelope from a [`LoroDoc`].
-    pub fn build_envelope(&self, doc: &LoroDoc) -> anyhow::Result<SignedBytes<Envelope>> {
-        let envelope = Envelope::all_updates(self.did.clone(), doc)?;
-        envelope.sign(&self.signing_key)
-    }
-
-    /// Submits a signed envelope to a record.
-    pub async fn submit_envelope(
-        &self,
-        store: &DataStore,
-        record_id: &Hash,
-        signed: &SignedBytes<Envelope>,
-    ) -> anyhow::Result<()> {
-        let env_bytes = postcard::to_stdvec(signed)?;
-        let id_str = record_id.to_string();
-        store_envelope(store.db(), store.blobs(), &id_str, &env_bytes).await
-    }
-}
-
-async fn generate_test_actor(store: &DataStore) -> TestActor {
+async fn generate_actor(store: &DataStore) -> Actor {
     let key = P256KeyPair::generate();
     let did = key.public().to_did();
-    let actor = store.actor(did.clone(), key.clone());
+    let actor = store.actor(did.clone(), key);
 
     // Set up default quota for the actor.
     let did_str = did.to_string();
@@ -113,11 +38,7 @@ async fn generate_test_actor(store: &DataStore) -> TestActor {
     .await
     .expect("create quota");
 
-    TestActor {
-        did,
-        signing_key: key,
-        actor,
-    }
+    actor
 }
 
 #[fixture]
@@ -137,8 +58,8 @@ pub async fn ctx() -> DataStoreCtx {
             .expect("add schema");
     }
 
-    let alice = generate_test_actor(&store).await;
-    let bob = generate_test_actor(&store).await;
+    let alice = generate_actor(&store).await;
+    let bob = generate_actor(&store).await;
 
     DataStoreCtx {
         store,
@@ -155,12 +76,12 @@ pub fn builtin_schema_bytes() -> Vec<(Hash, Vec<u8>)> {
 
     vec![
         (
-            *SCHEMA_ACL,
-            postcard::to_stdvec(&acl_schema).expect("serialize acl schema"),
+            acl_schema.id().expect("get acl schema id"),
+            acl_schema.to_bytes().expect("serialize acl schema"),
         ),
         (
-            *SCHEMA_RECORD,
-            postcard::to_stdvec(&record_schema).expect("serialize record schema"),
+            record_schema.id().expect("get record schema id"),
+            record_schema.to_bytes().expect("serialize record schema"),
         ),
     ]
 }

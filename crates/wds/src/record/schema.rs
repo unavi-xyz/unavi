@@ -19,7 +19,10 @@ macro_rules! static_schema_id {
 }
 
 static_schema_id!(acl);
+static_schema_id!(beacon);
+static_schema_id!(home);
 static_schema_id!(record);
+static_schema_id!(space);
 
 /// Schema defining how to process a Loro document.
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -2,12 +2,12 @@ use std::{sync::Arc, time::Duration};
 
 use bevy::prelude::*;
 use blake3::Hash;
-use iroh::Endpoint;
-use iroh_tickets::endpoint::EndpointTicket;
-use wds::actor::Actor;
+use wds::{DataStore, actor::Actor};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
 use crate::DIRS;
+
+mod join;
 
 pub enum NetworkCommand {
     Join(Hash),
@@ -30,7 +30,7 @@ pub struct NetworkingThread {
 const CHANNEL_LEN: usize = 32;
 
 impl NetworkingThread {
-    pub fn spawn(peers: Vec<EndpointTicket>) -> Self {
+    pub fn spawn() -> Self {
         let (command_tx, command_rx) = flume::bounded(CHANNEL_LEN);
         let (event_tx, event_rx) = flume::bounded(CHANNEL_LEN);
 
@@ -42,7 +42,7 @@ impl NetworkingThread {
                 .expect("build tokio runtime");
 
             rt.block_on(async move {
-                while let Err(e) = thread_loop(&command_rx, &event_tx, &peers).await {
+                while let Err(e) = thread_loop(&command_rx, &event_tx).await {
                     error!("Networking thread error: {e:?}");
                     tokio::time::sleep(Duration::from_secs(5)).await;
                 }
@@ -57,117 +57,56 @@ impl NetworkingThread {
 }
 
 #[derive(Clone)]
-struct ThreadState {
-    // actor: Arc<Actor>,
-    endpoint: Endpoint,
-    // connections: scc::HashMap<RecordId>
+struct NetworkThreadState {
+    actor: Arc<Actor>,
 }
 
 async fn thread_loop(
-    _command_rx: &flume::Receiver<NetworkCommand>,
-    _event_tx: &flume::Sender<NetworkEvent>,
-    peers: &[EndpointTicket],
+    command_rx: &flume::Receiver<NetworkCommand>,
+    event_tx: &flume::Sender<NetworkEvent>,
 ) -> anyhow::Result<()> {
-    // TODO: save / load keypair from disk
-    let keypair = P256KeyPair::generate();
-
-    let did = keypair.public().to_did();
-    info!("Local identity: {did}");
-
-    let _data_dir = {
+    let store = {
         let mut path = DIRS.data_local_dir().to_path_buf();
         path.push("wds");
-        path
+        DataStore::new(&path).await?
     };
 
-    // This is a dumb pattern but whatever.
-    // let (gtx, grx) = tokio::sync::oneshot::channel();
-    //
-    // let store = DataStoreBuilder {
-    //     data_dir,
-    //     ephemeral: true,
-    //     with_router: Some(Box::new(move |endpoint, r| {
-    //         let gossip = Gossip::builder().spawn(endpoint.clone());
-    //         gtx.send(gossip.clone())
-    //             .expect("send gossip out of closure");
-    //         r.accept(iroh_gossip::ALPN, gossip)
-    //     })),
-    // }
-    // .build()
-    // .await?;
-    //
-    // let gossip = grx.await?;
-    //
-    // let view = ValidatedView::new(store.view_for_user(did.clone()))?;
-    // let actor = Arc::new(Actor::new(did, keypair, view));
+    // TODO: save / load keypair from disk
+    let signing_key = P256KeyPair::generate();
+    let did = signing_key.public().to_did();
+    info!("Local identity: {did}");
 
-    // event_tx
-    //     .send_async(NetworkEvent::SetActor(Arc::clone(&actor)))
-    //     .await?;
-    //
-    // for addr in store.endpoint().addr().ip_addrs() {
-    //     info!("Endpoint listening on port {}", addr.port());
-    // }
-    //
-    // let ticket = EndpointTicket::new(store.endpoint().addr());
-    // info!("Share this ticket to connect to others: {ticket}");
-    //
-    // let state = ThreadState {
-    //     actor,
-    //     endpoint: store.endpoint().clone(),
-    //     gossip,
-    // };
+    let actor = Arc::new(store.actor(did, signing_key));
 
-    // TODO: Bootstrap from UNAVI hosted WDS endpoint
-    let bootstrap = peers
-        .iter()
-        .map(|p| p.endpoint_addr().id)
-        .collect::<Vec<_>>();
-    info!("Bootstrap: {bootstrap:#?}");
+    event_tx
+        .send_async(NetworkEvent::SetActor(Arc::clone(&actor)))
+        .await?;
 
-    // let (beacon_tx, mut beacon_rx) = tokio::sync::mpsc::channel(8);
+    let state = NetworkThreadState { actor };
 
-    // tokio::spawn({
-    //     let bootstrap = bootstrap.clone();
-    //     let state = state.clone();
-    //
-    //     async move {
-    //         while let Err(e) =
-    //             discovery::handle_space_discovery(bootstrap.clone(), state.clone(), &mut beacon_rx)
-    //                 .await
-    //         {
-    //             error!("Error handling space discovery: {e:?}");
-    //             tokio::time::sleep(Duration::from_secs(5)).await;
-    //         }
-    //     }
-    // });
-    //
-    // loop {
-    //     match command_rx.recv_async().await? {
-    //         NetworkCommand::Join(id) => {
-    //             let state = state.clone();
-    //             let bootstrap = bootstrap.clone();
-    //
-    //             beacon_tx.send(id).await?;
-    //
-    //             tokio::spawn(async move {
-    //                 if let Err(e) = command::join::handle_join(state, id, bootstrap).await {
-    //                     error!("Error joining {id}: {e:?}");
-    //                 }
-    //             });
-    //         }
-    //         NetworkCommand::Leave(_id) => {
-    //             // TODO
-    //         }
-    //         NetworkCommand::Shutdown => {
-    //             if let Err(e) = store.router().shutdown().await {
-    //                 error!("Error shutting down router: {e}");
-    //             }
-    //
-    //             break;
-    //         }
-    //     }
-    // }
+    loop {
+        match command_rx.recv_async().await? {
+            NetworkCommand::Join(id) => {
+                let state = state.clone();
+
+                tokio::spawn(async move {
+                    if let Err(e) = join::handle_join(state, id).await {
+                        error!("Error joining {id}: {e:?}");
+                    }
+                });
+            }
+            NetworkCommand::Leave(_id) => {
+                todo!()
+            }
+            NetworkCommand::Shutdown => {
+                if let Err(e) = store.shutdown().await {
+                    error!("Error shutting down data store: {e}");
+                }
+
+                break;
+            }
+        }
+    }
 
     info!("Graceful exit");
 

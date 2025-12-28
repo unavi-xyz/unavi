@@ -23,7 +23,7 @@ parking_lot.workspace = true
 reqwest               = { default-features = false, features = ["json", "rustls-tls", "stream"], version = "0.12.28" }
 runas                 = "1.2.0"
 self-replace          = "1.5.0"
-semver.workspace      = true
+semver                = "1.0.27"
 serde.workspace       = true
 tar                   = "0.4"
 tempfile.workspace    = true

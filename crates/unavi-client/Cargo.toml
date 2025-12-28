@@ -34,15 +34,9 @@ clap.workspace             = true
 directories.workspace      = true
 flume.workspace            = true
 image                      = { features = ["png"], workspace = true }
-iroh.workspace             = true
-iroh-tickets.workspace     = true
 log                        = { features = ["max_level_debug", "release_max_level_info"], version = "*" }
 postcard.workspace         = true
 reqwest                    = { default-features = false, features = ["blocking", "rustls-tls"], version = "0.12.28" }
-scc.workspace              = true
-serde.workspace            = true
-serde_json.workspace       = true
-smallvec.workspace         = true
 time                       = "0.3.44"
 tokio                      = { features = ["rt", "rt-multi-thread"], workspace = true }
 unavi-constants.path       = "../unavi-constants"
@@ -52,6 +46,5 @@ unavi-portal.path          = "../unavi-portal"
 unavi-script.path          = "../unavi-script"
 wds.path                   = "../wds"
 winit                      = { default-features = false, version = "0.30.12" }
-wtransport.workspace       = true
 xdid.workspace             = true
 zeroize.workspace          = true

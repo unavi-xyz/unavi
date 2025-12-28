@@ -16,8 +16,8 @@ bevy_async_task.workspace = true
 futures.workspace         = true
 tokio.workspace           = true
 tracing.workspace         = true
-wasmtime                  = "38.0.4"
-wasmtime-wasi             = { default-features = false, version = "38.0.4" }
+wasmtime                  = "40.0.0"
+wasmtime-wasi             = { default-features = false, version = "40.0.0" }
 
 [dev-dependencies]
 tracing-subscriber.workspace = true

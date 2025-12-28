@@ -14,8 +14,8 @@ devtools-console = ["dep:console-subscriber", "tokio/tracing"]
 
 [dependencies]
 anyhow.workspace             = true
-axum                         = "0.8.6"
-axum-server                  = { features = ["tls-rustls-no-provider"], version = "0.7.2" }
+axum                         = "0.8.8"
+axum-server                  = { features = ["tls-rustls-no-provider"], version = "0.8.0" }
 clap.workspace               = true
 console-subscriber           = { optional = true, version = "0.5.0" }
 directories.workspace        = true

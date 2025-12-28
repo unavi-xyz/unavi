@@ -13,7 +13,7 @@ pub fn add(app: &mut App) {
         .add_system(Schedule::Update, test_res_mut);
 }
 
-#[derive(Decode, Encode, Component, Clone)]
+#[component]
 struct MyX {
     x: usize,
 }

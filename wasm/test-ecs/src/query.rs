@@ -15,7 +15,7 @@ pub fn add(app: &mut App) {
         .order_systems(test_mutation, SystemOrder::After, test_mut_query);
 }
 
-#[derive(Decode, Encode, Component, Clone)]
+#[component]
 struct MyPoint {
     x: usize,
     y: usize,
@@ -104,16 +104,16 @@ fn test_mutation(points: Query<&MyPoint>) {
     assert_eq!(b.y, y2);
 }
 
-#[derive(Decode, Encode, Component)]
+#[component]
 struct A;
 
-#[derive(Decode, Encode, Component)]
+#[component]
 struct B;
 
-#[derive(Decode, Encode, Component)]
+#[component]
 struct C;
 
-#[derive(Decode, Encode, Component)]
+#[component]
 struct D;
 
 fn test_query_0(points: Query<&A>) {

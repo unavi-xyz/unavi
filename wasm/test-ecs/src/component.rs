@@ -7,12 +7,13 @@ pub fn add(app: &mut App) {
         .add_system(Schedule::Update, test_large_data);
 }
 
-#[derive(Decode, Encode, Clone, Debug, PartialEq)]
+#[component]
+#[derive(Clone, Debug, PartialEq)]
 struct Point {
     x: usize,
 }
 
-#[derive(Decode, Encode, Component, Clone, Debug)]
+#[component]
 struct MyHeap {
     s: String,
     v: Vec<Point>,
@@ -24,7 +25,7 @@ fn get_v() -> Vec<Point> {
     vec![Point { x: 1 }, Point { x: 2 }, Point { x: 3 }]
 }
 
-#[derive(Decode, Encode, Component, Clone, Debug)]
+#[component]
 struct MyLarge {
     v: Vec<usize>,
 }

@@ -1,0 +1,11 @@
+(
+    id: "wired/beacon",
+    version: 0,
+    container: "beacon",
+    layout: Map({
+        "did": String,
+        "endpoint": Binary,
+        "expires": I64,
+        "space": String,
+    }),
+)

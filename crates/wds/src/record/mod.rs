@@ -10,7 +10,7 @@ use xdid::core::did::Did;
 pub mod acl;
 pub mod envelope;
 pub mod schema;
-pub mod validate;
+pub(crate) mod validate;
 
 type RecordNonce = [u8; 16];
 
@@ -42,11 +42,17 @@ impl Record {
         self.schemas.push(schema);
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if the record could not be serialized.
     pub fn id(&self) -> postcard::Result<Hash> {
         let bytes = postcard::to_stdvec(self)?;
         Ok(blake3::hash(&bytes))
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if the record could not be saved.
     pub fn save(&self, doc: &LoroDoc) -> anyhow::Result<()> {
         let map = doc.get_map("record");
 
@@ -62,6 +68,10 @@ impl Record {
     }
 
     /// Load record from a [`LoroDoc`]'s "record" container.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the record container is malformed.
     pub fn load(doc: &LoroDoc) -> anyhow::Result<Self> {
         let map = doc.get_map("record");
         let value = map.get_deep_value();
@@ -69,6 +79,10 @@ impl Record {
     }
 
     /// Load record from an already-extracted [`LoroValue`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value is malformed.
     pub fn load_from_value(value: &LoroValue) -> anyhow::Result<Self> {
         let LoroValue::Map(map) = value else {
             anyhow::bail!("record is not a map");

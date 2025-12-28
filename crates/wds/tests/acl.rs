@@ -15,7 +15,12 @@ mod common;
 #[tokio::test]
 async fn test_write_acl_allows_authorized(#[future] ctx: DataStoreCtx) {
     // Alice creates record.
-    let (record_id, doc) = ctx.alice.create_record(None).await.expect("create record");
+    let (record_id, doc) = ctx
+        .alice
+        .create_record()
+        .send()
+        .await
+        .expect("create record");
 
     // Alice adds Bob to write ACL.
     let from_vv = doc.oplog_vv();
@@ -47,7 +52,12 @@ async fn test_write_acl_allows_authorized(#[future] ctx: DataStoreCtx) {
 #[tokio::test]
 async fn test_read_only_cannot_write(#[future] ctx: DataStoreCtx) {
     // Alice creates record.
-    let (record_id, doc) = ctx.alice.create_record(None).await.expect("create record");
+    let (record_id, doc) = ctx
+        .alice
+        .create_record()
+        .send()
+        .await
+        .expect("create record");
 
     // Alice adds Bob only to read ACL.
     let from_vv = doc.oplog_vv();
@@ -83,7 +93,12 @@ async fn test_read_only_cannot_write(#[future] ctx: DataStoreCtx) {
 #[tokio::test]
 async fn test_acl_modification_requires_manage(#[future] ctx: DataStoreCtx) {
     // Alice creates record.
-    let (record_id, doc) = ctx.alice.create_record(None).await.expect("create record");
+    let (record_id, doc) = ctx
+        .alice
+        .create_record()
+        .send()
+        .await
+        .expect("create record");
 
     // Alice adds Bob to write (but not manage) ACL.
     let from_vv = doc.oplog_vv();
@@ -120,7 +135,12 @@ async fn test_acl_modification_requires_manage(#[future] ctx: DataStoreCtx) {
 #[tokio::test]
 async fn test_manager_can_modify_acl(#[future] ctx: DataStoreCtx) {
     // Alice creates record (she has manage).
-    let (record_id, doc) = ctx.alice.create_record(None).await.expect("create record");
+    let (record_id, doc) = ctx
+        .alice
+        .create_record()
+        .send()
+        .await
+        .expect("create record");
 
     // Alice adds Bob to write ACL.
     let from_vv = doc.oplog_vv();

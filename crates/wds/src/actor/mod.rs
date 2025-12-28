@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 use anyhow::Context;
 use blake3::Hash;
@@ -6,19 +6,19 @@ use bytes::Bytes;
 use iroh::EndpointId;
 use irpc::Client;
 use loro::{LoroDoc, VersionVector};
-use time::OffsetDateTime;
 use tokio::sync::{Mutex, OnceCell};
 use xdid::{core::did::Did, methods::key::p256::P256KeyPair};
 
 use crate::{
     SessionToken,
-    api::{ApiService, PinRecord, UploadBlob, UploadEnvelope},
+    api::{ApiService, UploadBlob, UploadEnvelope},
     auth::AuthService,
-    record::{Record, acl::Acl, envelope::Envelope},
+    record::envelope::Envelope,
     signed_bytes::{Signable, SignedBytes},
 };
 
 mod auth;
+mod record_builder;
 
 #[derive(Clone)]
 pub struct Actor {
@@ -29,8 +29,6 @@ pub struct Actor {
     auth_client: Client<AuthService>,
     session: Arc<Mutex<OnceCell<SessionToken>>>,
 }
-
-const DEFAULT_PIN_TTL: Duration = Duration::from_hours(1);
 
 impl Actor {
     pub(crate) fn new(
@@ -66,46 +64,9 @@ impl Actor {
     ///
     /// Errors if the record could not be created, such as if the client disconnects
     /// or the storage quota is hit.
-    pub async fn create_record(
-        &self,
-        schemas: Option<Vec<Hash>>,
-    ) -> anyhow::Result<(Hash, LoroDoc)> {
-        let doc = LoroDoc::new();
-
-        let mut record = Record::new(self.did.clone());
-
-        for schema in schemas.unwrap_or_default() {
-            record.add_schema(schema);
-        }
-
-        record.save(&doc)?;
-
-        let mut acl = Acl::default();
-        acl.manage.push(self.did.clone());
-        acl.write.push(self.did.clone());
-        acl.save(&doc)?;
-
-        let envelope = Envelope::all_updates(self.did.clone(), &doc)?;
-        let signed = envelope.sign(&self.signing_key)?;
-
-        let id = record.id()?;
-
-        // Pin record before uploading envelope.
-        let s = self.authenticate().await.context("auth")?;
-
-        self.api_client
-            .rpc(PinRecord {
-                s,
-                id,
-                expires: (OffsetDateTime::now_utc() + DEFAULT_PIN_TTL).unix_timestamp(),
-            })
-            .await?
-            .map_err(|e| anyhow::anyhow!("record pin failed: {e}"))?;
-
-        // Upload the initial envelope.
-        self.upload_envelope(id, signed).await?;
-
-        Ok((id, doc))
+    #[must_use]
+    pub fn create_record(&self) -> record_builder::RecordBuilder {
+        record_builder::RecordBuilder::new(self.clone())
     }
 
     /// Uploads a signed envelope to a record.

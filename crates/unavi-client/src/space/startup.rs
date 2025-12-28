@@ -34,8 +34,17 @@ async fn join_home_space_inner(
     actor: Arc<Actor>,
     command_tx: flume::Sender<NetworkCommand>,
 ) -> anyhow::Result<()> {
+    let did = actor.did();
+
     let (id, _) = actor
-        .create_record(Some(vec![*SCHEMA_HOME, *SCHEMA_SPACE]))
+        .create_record()
+        .with_schema(*SCHEMA_HOME, |_| Ok(()))?
+        .with_schema(*SCHEMA_SPACE, |doc| {
+            let map = doc.get_map("space");
+            map.insert("name", format!("{did}'s Home"))?;
+            Ok(())
+        })?
+        .send()
         .await?;
 
     info!("Created home space: {id}");

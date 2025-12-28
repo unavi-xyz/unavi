@@ -13,7 +13,12 @@ mod common;
 #[traced_test]
 #[tokio::test]
 async fn test_create_record(#[future] ctx: DataStoreCtx) {
-    let (record_id, _doc) = ctx.alice.create_record(None).await.expect("create record");
+    let (record_id, _doc) = ctx
+        .alice
+        .create_record()
+        .send()
+        .await
+        .expect("create record");
 
     // Verify record exists in database.
     let record_id_str = record_id.to_string();
@@ -31,7 +36,12 @@ async fn test_create_record(#[future] ctx: DataStoreCtx) {
 #[traced_test]
 #[tokio::test]
 async fn test_update_record(#[future] ctx: DataStoreCtx) {
-    let (record_id, doc) = ctx.alice.create_record(None).await.expect("create record");
+    let (record_id, doc) = ctx
+        .alice
+        .create_record()
+        .send()
+        .await
+        .expect("create record");
 
     let from_vv = doc.oplog_vv();
 
@@ -64,7 +74,12 @@ async fn test_update_record(#[future] ctx: DataStoreCtx) {
 #[traced_test]
 #[tokio::test]
 async fn test_multiple_updates(#[future] ctx: DataStoreCtx) {
-    let (record_id, doc) = ctx.alice.create_record(None).await.expect("create record");
+    let (record_id, doc) = ctx
+        .alice
+        .create_record()
+        .send()
+        .await
+        .expect("create record");
 
     // Apply 5 updates.
     for i in 0i64..5 {
@@ -108,7 +123,7 @@ async fn test_create_record_quota_exceeded(#[future] ctx: DataStoreCtx) {
     .await
     .expect("set quota");
 
-    let result = ctx.alice.create_record(None).await;
+    let result = ctx.alice.create_record().send().await;
 
     assert!(result.is_err());
     assert!(result.expect_err("invariant").to_string().contains("quota"));
@@ -121,7 +136,12 @@ async fn test_create_record_quota_exceeded(#[future] ctx: DataStoreCtx) {
 #[tokio::test]
 async fn test_update_record_unauthorized(#[future] ctx: DataStoreCtx) {
     // Alice creates a record.
-    let (record_id, doc) = ctx.alice.create_record(None).await.expect("create record");
+    let (record_id, doc) = ctx
+        .alice
+        .create_record()
+        .send()
+        .await
+        .expect("create record");
 
     let from_vv = doc.oplog_vv();
 

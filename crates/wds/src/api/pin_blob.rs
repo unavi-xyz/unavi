@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
 use irpc::WithChannels;
+use time::OffsetDateTime;
 
 use crate::{
     StoreContext,
-    api::{ApiService, PinBlob, authenticate},
+    api::{ApiService, MAX_PIN_DURATION, PinBlob, authenticate},
     quota::ensure_quota_exists,
 };
 
@@ -24,10 +25,14 @@ pub async fn pin_blob(
 
     let hash_str = inner.hash.to_string();
 
+    let expires = inner
+        .expires
+        .min((OffsetDateTime::now_utc() + MAX_PIN_DURATION).unix_timestamp());
+
     // Update existing blob pin, if it exists.
     let res = sqlx::query!(
         "UPDATE blob_pins SET expires = ? WHERE owner = ? AND hash = ?",
-        inner.expires,
+        expires,
         did_str,
         hash_str,
     )

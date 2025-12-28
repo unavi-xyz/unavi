@@ -2,7 +2,7 @@
 //!
 //! [`irpc`] user API, for use both locally or over the network.
 
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use blake3::Hash;
 use bytes::Bytes;
@@ -22,6 +22,8 @@ mod pin_blob;
 mod pin_record;
 mod upload_blob;
 mod upload_envelope;
+
+const MAX_PIN_DURATION: Duration = Duration::from_hours(24 * 90);
 
 pub const ALPN: &[u8] = b"wds/api";
 

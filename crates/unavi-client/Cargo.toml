@@ -28,15 +28,11 @@ bevy_av1                   = "0.3.0"
 bevy_rich_text3d.workspace = true
 bevy_seedling              = { features = ["wav"], workspace = true }
 bevy_vrm.workspace         = true
-bincode.workspace          = true
 bitflags                   = "2.10.0"
 blake3                     = "1.8.2"
 clap.workspace             = true
-constcat.workspace         = true
 directories.workspace      = true
-dwn.workspace              = true
 flume.workspace            = true
-futures.workspace          = true
 image                      = { features = ["png"], workspace = true }
 iroh.workspace             = true
 iroh-tickets.workspace     = true
@@ -47,19 +43,15 @@ scc.workspace              = true
 serde.workspace            = true
 serde_json.workspace       = true
 smallvec.workspace         = true
-tarpc                      = { features = ["serde-transport"], workspace = true }
 time                       = "0.3.44"
 tokio                      = { features = ["rt", "rt-multi-thread"], workspace = true }
-tokio-serde                = { features = ["bincode"], workspace = true }
 unavi-constants.path       = "../unavi-constants"
 unavi-input.path           = "../unavi-input"
 unavi-player.path          = "../unavi-player"
 unavi-portal.path          = "../unavi-portal"
 unavi-script.path          = "../unavi-script"
-unavi-server-service.path  = "../unavi-server-service"
 wds.path                   = "../wds"
 winit                      = { default-features = false, version = "0.30.12" }
-wired-protocol.path        = "../wired-protocol"
 wtransport.workspace       = true
 xdid.workspace             = true
 zeroize.workspace          = true

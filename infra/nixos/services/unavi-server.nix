@@ -33,12 +33,6 @@ in
       description = "port for unavi-server";
     };
 
-    dwnPort = mkOption {
-      type = types.port;
-      default = deployInfo.${cfg.channel}.services.dwn_server.port;
-      description = "port for dwn-server";
-    };
-
     dataDir = mkOption {
       type = types.str;
       default = "/var/lib/unavi-${cfg.channel}";
@@ -90,9 +84,7 @@ in
 
       script = ''
         exec ${cfg.package}/unavi-server \
-          --port ${toString cfg.port} \
-          --dwn \
-          --dwn-port ${toString cfg.dwnPort}
+          --port ${toString cfg.port}
       '';
     };
   };

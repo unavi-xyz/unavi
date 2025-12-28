@@ -17,7 +17,6 @@ discovery-local-network = ["iroh/discovery-local-network"]
 anyhow.workspace   = true
 blake3             = { features = ["serde"], version = "1.8.2" }
 bytes              = "1.11.0"
-constcat.workspace = true
 derive_more        = { features = ["debug"], version = "2.1.1" }
 futures.workspace  = true
 iroh.workspace     = true

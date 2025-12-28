@@ -5,7 +5,6 @@ use tracing_test::traced_test;
 use wds::{
     record::{Record, acl::Acl, envelope::Envelope},
     signed_bytes::{Signable, SignedBytes},
-    sync::shared::store_envelope,
 };
 
 use crate::common::{DataStoreCtx, ctx};
@@ -40,15 +39,8 @@ async fn test_invalid_signature_rejected(#[future] ctx: DataStoreCtx) {
     }
 
     let tampered = SignedBytes::<Envelope>::from_parts(signed.payload_bytes().to_vec(), sig);
-    let env_bytes = postcard::to_stdvec(&tampered).expect("serialize envelope");
 
-    let result = store_envelope(
-        ctx.store.db(),
-        ctx.store.blobs(),
-        &record_id.to_string(),
-        &env_bytes,
-    )
-    .await;
+    let result = ctx.alice.upload_envelope(record_id, tampered).await;
 
     assert!(result.is_err());
     assert!(
@@ -90,15 +82,7 @@ async fn test_wrong_author_signature_rejected(#[future] ctx: DataStoreCtx) {
         .sign(ctx.alice.signing_key())
         .expect("sign envelope");
 
-    let env_bytes = postcard::to_stdvec(&misattributed).expect("serialize envelope");
-
-    let result = store_envelope(
-        ctx.store.db(),
-        ctx.store.blobs(),
-        &record_id.to_string(),
-        &env_bytes,
-    )
-    .await;
+    let result = ctx.alice.upload_envelope(record_id, misattributed).await;
 
     assert!(result.is_err());
     assert!(
@@ -129,7 +113,6 @@ async fn test_record_id_mismatch_rejected(#[future] ctx: DataStoreCtx) {
     let signed = envelope
         .sign(ctx.alice.signing_key())
         .expect("sign envelope");
-    let env_bytes = postcard::to_stdvec(&signed).expect("serialize envelope");
 
     // Pin with a DIFFERENT (fake) record ID.
     let fake_id = blake3::hash(b"fake record id");
@@ -147,8 +130,8 @@ async fn test_record_id_mismatch_rejected(#[future] ctx: DataStoreCtx) {
     .await
     .expect("insert pin");
 
-    // Try to store with mismatched ID.
-    let result = store_envelope(ctx.store.db(), ctx.store.blobs(), &fake_id_str, &env_bytes).await;
+    // Try to upload with mismatched ID.
+    let result = ctx.alice.upload_envelope(fake_id, signed).await;
 
     assert!(result.is_err());
     assert!(
@@ -179,18 +162,11 @@ async fn test_unpinned_record_rejected(#[future] ctx: DataStoreCtx) {
     let signed = envelope
         .sign(ctx.alice.signing_key())
         .expect("sign envelope");
-    let env_bytes = postcard::to_stdvec(&signed).expect("serialize envelope");
 
     let record_id = record.id().expect("get record id");
 
-    // Try to store without pinning first.
-    let result = store_envelope(
-        ctx.store.db(),
-        ctx.store.blobs(),
-        &record_id.to_string(),
-        &env_bytes,
-    )
-    .await;
+    // Try to upload without pinning first.
+    let result = ctx.alice.upload_envelope(record_id, signed).await;
 
     assert!(result.is_err());
     assert!(

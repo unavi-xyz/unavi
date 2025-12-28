@@ -15,7 +15,7 @@ use tracing::warn;
 
 use crate::{SessionToken, StoreContext, sync::combined_stream::CombinedStream};
 
-pub mod client;
+mod client;
 mod combined_stream;
 mod server;
 pub mod shared;
@@ -35,7 +35,13 @@ pub enum SyncMsg {
 
 #[derive(Debug)]
 pub struct SyncProtocol {
-    pub ctx: Arc<StoreContext>,
+    pub(crate) ctx: Arc<StoreContext>,
+}
+
+impl SyncProtocol {
+    pub const fn new(ctx: Arc<StoreContext>) -> Self {
+        Self { ctx }
+    }
 }
 
 impl ProtocolHandler for SyncProtocol {

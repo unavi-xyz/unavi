@@ -18,7 +18,7 @@ mod gc;
 mod quota;
 pub mod record;
 pub mod signed_bytes;
-pub mod sync;
+mod sync;
 mod tag;
 
 /// Wired data store.
@@ -97,12 +97,7 @@ impl DataStore {
             .accept(iroh_blobs::ALPN, blob_protocol)
             .accept(api::ALPN, api_protocol)
             .accept(auth::ALPN, auth_protocol)
-            .accept(
-                sync::ALPN,
-                sync::SyncProtocol {
-                    ctx: Arc::clone(&ctx),
-                },
-            )
+            .accept(sync::ALPN, sync::SyncProtocol::new(Arc::clone(&ctx)))
             .spawn();
 
         Ok(Self {

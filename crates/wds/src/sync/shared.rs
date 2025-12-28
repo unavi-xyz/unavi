@@ -48,30 +48,31 @@ pub async fn store_envelope(
         }
     }
 
-    ensure!(is_valid_signature, "invalid envelope signatrue");
+    ensure!(is_valid_signature, "invalid envelope signature");
 
     // Get current document state (BEFORE applying envelope).
-    let doc = reconstruct_current_doc(db, record_id).await?;
-    let old_frontiers = doc.state_frontiers();
+    let old_doc = reconstruct_current_doc(db, record_id).await?;
+    let old_frontiers = old_doc.state_frontiers();
     let is_first_envelope = old_frontiers.is_empty();
 
     // Check record-level write ACL against OLD state (prevent privilege escalation).
     if !is_first_envelope {
-        let acl = Acl::load(&doc)?;
+        let acl = Acl::load(&old_doc)?;
         if !acl.can_write(author) {
             anyhow::bail!("access denied: write permission required");
         }
     }
 
-    // Apply new envelope to get new state.
-    doc.import(envelope.ops())?;
-    let new_frontiers = doc.state_frontiers();
+    // Apply new envelope to get new state for diff computation.
+    let new_doc = old_doc.fork();
+    new_doc.import(envelope.ops())?;
+    let new_frontiers = new_doc.state_frontiers();
 
-    // Load record metadata from the Loro doc.
-    let record = Record::load(&doc)?;
+    // Load record metadata from the new doc state.
+    let record = Record::load(&new_doc)?;
 
     // Validate diff against schema restrictions.
-    // Built-in schemas plus user-specified schemas.
+    // Authorization checks use OLD doc state to prevent privilege escalation.
     let mut schema_ids = vec![*SCHEMA_ACL, *SCHEMA_RECORD];
     schema_ids.extend(record.schemas.iter().copied());
 
@@ -81,7 +82,8 @@ pub async fn store_envelope(
             .map_err(|e| anyhow::anyhow!("failed to fetch schema {schema_id}: {e}"))?;
 
         validate_diff(
-            &doc,
+            &old_doc,
+            &new_doc,
             &old_frontiers,
             &new_frontiers,
             &schema,

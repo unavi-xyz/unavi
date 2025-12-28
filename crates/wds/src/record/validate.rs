@@ -251,19 +251,23 @@ fn validate_value_inner(
 }
 
 /// Validate changes between two document states against schema restrictions.
+///
+/// `auth_doc` is used for authorization checks (should be the OLD state).
+/// `diff_doc` is used for computing the diff (should have the new envelope applied).
 pub fn validate_diff(
-    doc: &LoroDoc,
+    old_doc: &LoroDoc,
+    new_doc: &LoroDoc,
     old_frontiers: &Frontiers,
     new_frontiers: &Frontiers,
     schema: &Schema,
     author: &Did,
     is_first_envelope: bool,
 ) -> Result<(), ValidationError> {
-    let diff_batch = doc
+    let diff_batch = new_doc
         .diff(old_frontiers, new_frontiers)
         .map_err(|_| ValidationError::ParseError)?;
 
-    validate_diff_batch(doc, &diff_batch, schema, author, is_first_envelope)
+    validate_diff_batch(old_doc, &diff_batch, schema, author, is_first_envelope)
 }
 
 /// Validate a [`DiffBatch`] against schema restrictions.

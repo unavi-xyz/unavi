@@ -55,6 +55,11 @@ impl Actor {
         &self.did
     }
 
+    #[must_use]
+    pub const fn signing_key(&self) -> &P256KeyPair {
+        &self.signing_key
+    }
+
     /// Creates a new record, returning the record ID.
     ///
     /// # Errors

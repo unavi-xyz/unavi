@@ -1,4 +1,4 @@
-use exports::wired::ecs::guest_api::{Guest, GuestScript};
+use bindings::exports::wired::ecs::guest_api::{Guest, GuestScript};
 use wired_ecs::prelude::*;
 
 wired_ecs::generate_bindgen!();
@@ -24,4 +24,4 @@ impl GuestScript for Script {
     }
 }
 
-export!(World);
+bindings::export!(World);

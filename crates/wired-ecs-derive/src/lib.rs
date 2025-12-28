@@ -3,6 +3,20 @@ use proc_macro_crate::{FoundCrate, crate_name};
 use quote::quote;
 use syn::{DeriveInput, GenericParam, Generics, parse_macro_input, parse_quote};
 
+/// Helper macro that adds useful derives:
+/// `#[derive(serde::Serialize, serde::Deserialize, Component)]`
+#[proc_macro_attribute]
+pub fn component(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(item as DeriveInput);
+
+    let expanded = quote! {
+        #[derive(serde::Serialize, serde::Deserialize, Component)]
+        #input
+    };
+
+    TokenStream::from(expanded)
+}
+
 #[proc_macro_derive(Component)]
 pub fn derive_component(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -33,11 +47,10 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
                 format!("{namespace}:{path}")
             }
             fn to_bytes(&self) -> Vec<u8> {
-                #crate_ident::bincode::encode_to_vec(&self, #crate_ident::bincode::config::standard()).unwrap()
+                ::postcard::to_stdvec(&self).unwrap()
             }
             fn from_bytes(bytes: Vec<u8>) -> Self {
-                let (val, _) = #crate_ident::bincode::decode_from_slice(&bytes, #crate_ident::bincode::config::standard()).unwrap();
-                val
+                ::postcard::from_bytes(&bytes).unwrap()
             }
         }
     };

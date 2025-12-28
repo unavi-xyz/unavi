@@ -44,7 +44,7 @@ async fn generate_actor(store: &DataStore) -> Actor {
 #[fixture]
 pub async fn ctx() -> DataStoreCtx {
     let dir = tempdir().expect("tempdir");
-    let store = DataStore::new(dir.path())
+    let store = DataStore::new_empty(dir.path())
         .await
         .expect("construct data store");
 

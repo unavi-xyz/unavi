@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
 use irpc::WithChannels;
+use time::OffsetDateTime;
 
 use crate::{
     StoreContext,
-    api::{ApiService, PinRecord, authenticate},
+    api::{ApiService, MAX_PIN_DURATION, PinRecord, authenticate},
     quota::{QuotaExceeded, ensure_quota_exists, reserve_bytes},
 };
 
@@ -17,6 +18,10 @@ pub async fn pin_record(
 
     let db = ctx.db.pool();
     let record_id = inner.id.to_string();
+
+    let expires = inner
+        .expires
+        .min((OffsetDateTime::now_utc() + MAX_PIN_DURATION).unix_timestamp());
 
     let mut db_tx = db.begin().await?;
 
@@ -36,7 +41,7 @@ pub async fn pin_record(
         // Already pinned - just update expiration.
         sqlx::query!(
             "UPDATE record_pins SET expires = ? WHERE owner = ? AND record_id = ?",
-            inner.expires,
+            expires,
             did_str,
             record_id
         )
@@ -65,7 +70,7 @@ pub async fn pin_record(
             "INSERT INTO record_pins (record_id, owner, expires) VALUES (?, ?, ?)",
             record_id,
             did_str,
-            inner.expires
+            expires
         )
         .execute(&mut *db_tx)
         .await?;

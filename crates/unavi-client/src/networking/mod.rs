@@ -1,21 +1,17 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
-use iroh_tickets::endpoint::EndpointTicket;
 use wds::actor::Actor;
 
 mod event;
 mod lifecycle;
 pub mod thread;
 
-#[derive(Default)]
-pub struct NetworkingPlugin {
-    pub peers: Vec<EndpointTicket>,
-}
+pub struct NetworkingPlugin;
 
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
-        let nt = thread::NetworkingThread::spawn(self.peers.clone());
+        let nt = thread::NetworkingThread::spawn();
 
         let thread::NetworkEvent::SetActor(actor) =
             nt.event_rx.recv().expect("recv first network event")

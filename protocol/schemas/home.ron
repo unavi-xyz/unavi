@@ -1,0 +1,6 @@
+(
+    id: "wired/home",
+    version: 0,
+    container: "home",
+    layout: Map({}),
+)

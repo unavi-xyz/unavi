@@ -5,7 +5,6 @@ use std::{str::FromStr, time::Duration};
 use bevy::prelude::*;
 use blake3::Hash;
 use clap::Parser;
-use iroh_tickets::endpoint::EndpointTicket;
 use unavi_client::DebugFlags;
 
 #[derive(Parser, Debug)]
@@ -15,10 +14,6 @@ struct Args {
     /// Space to join.
     #[arg(long)]
     join: Option<String>,
-
-    /// Ticket of a peer to connect to.
-    #[arg(long)]
-    peer: Option<Vec<String>>,
 
     /// Enable FPS counter.
     #[cfg(feature = "devtools-bevy")]
@@ -67,22 +62,10 @@ fn main() {
         None => None,
     };
 
-    let peers = args.peer.unwrap_or_default();
-
-    let Ok(peers) = peers
-        .iter()
-        .map(|t| EndpointTicket::from_str(t))
-        .collect::<Result<Vec<_>, _>>()
-    else {
-        println!("Invalid peer ticket: {peers:?}");
-        return;
-    };
-
     App::new()
         .add_plugins(unavi_client::UnaviPlugin {
             debug,
             initial_space: join,
-            peers,
         })
         .run();
 

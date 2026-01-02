@@ -21,18 +21,18 @@ impl Actor {
 
         let nonce = self
             .auth_client
-            .rpc(RequestChallenge(self.did.clone()))
+            .rpc(RequestChallenge(self.identity.did().clone()))
             .await
             .context("request challenge")?;
 
         let challenge = Challenge {
-            did: self.did.clone(),
+            did: self.identity.did().clone(),
             host: self.host,
             nonce,
         };
 
         let signed = challenge
-            .sign(&self.signing_key)
+            .sign(self.identity.signing_key())
             .context("sign challenge")?;
 
         let Some(s) = self

@@ -2,8 +2,10 @@ use std::time::Duration;
 
 use anyhow::Context;
 use blake3::Hash;
+use iroh::EndpointId;
 use loro::LoroDoc;
 use time::OffsetDateTime;
+use tracing::warn;
 
 use crate::{
     actor::Actor,
@@ -14,11 +16,21 @@ use crate::{
 
 const DEFAULT_PIN_TTL: Duration = Duration::from_hours(1);
 
+/// Result of creating a record.
+#[derive(Debug)]
+pub struct RecordResult {
+    pub id: Hash,
+    pub doc: LoroDoc,
+    /// Results of additional pin operations at other hosts.
+    pub additional_pins: Vec<(EndpointId, anyhow::Result<()>)>,
+}
+
 pub struct RecordBuilder {
     actor: Actor,
     doc: LoroDoc,
     schemas: Vec<Hash>,
     ttl: Duration,
+    additional_pins: Vec<Actor>,
 }
 
 impl RecordBuilder {
@@ -29,6 +41,7 @@ impl RecordBuilder {
             doc,
             schemas: Vec::new(),
             ttl: DEFAULT_PIN_TTL,
+            additional_pins: Vec::new(),
         }
     }
 
@@ -47,39 +60,52 @@ impl RecordBuilder {
         self
     }
 
-    pub async fn send(self) -> anyhow::Result<(Hash, LoroDoc)> {
-        let mut record = Record::new(self.actor.did.clone());
+    /// Also pin the record at another actor's host after creation.
+    pub fn with_pin_at(mut self, actor: &Actor) -> Self {
+        self.additional_pins.push(actor.clone());
+        self
+    }
+
+    pub async fn send(self) -> anyhow::Result<RecordResult> {
+        let did = self.actor.identity.did();
+
+        let mut record = Record::new(did.clone());
         for schema in self.schemas {
             record.add_schema(schema);
         }
         record.save(&self.doc)?;
 
         let mut acl = Acl::default();
-        acl.manage.push(self.actor.did.clone());
-        acl.write.push(self.actor.did.clone());
+        acl.manage.push(did.clone());
+        acl.write.push(did.clone());
         acl.save(&self.doc)?;
 
-        let envelope = Envelope::all_updates(self.actor.did.clone(), &self.doc)?;
-        let signed = envelope.sign(&self.actor.signing_key)?;
+        let envelope = Envelope::all_updates(did.clone(), &self.doc)?;
+        let signed = envelope.sign(self.actor.identity.signing_key())?;
 
         let id = record.id()?;
 
-        // Pin record.
-        let s = self.actor.authenticate().await.context("auth")?;
-
-        self.actor
-            .api_client
-            .rpc(PinRecord {
-                s,
-                id,
-                expires: (OffsetDateTime::now_utc() + self.ttl).unix_timestamp(),
-            })
-            .await?
-            .map_err(|e| anyhow::anyhow!("record pin failed: {e}"))?;
+        // Pin record locally.
+        self.actor.pin_record(id, self.ttl).await?;
 
         // Upload the initial envelope.
         self.actor.upload_envelope(id, signed).await?;
 
-        Ok((id, self.doc))
+        // Pin at additional hosts (best-effort).
+        let mut additional_results = Vec::with_capacity(self.additional_pins.len());
+        for remote_actor in self.additional_pins {
+            let host = *remote_actor.host();
+            let result = remote_actor.pin_record(id, self.ttl).await;
+            if let Err(e) = &result {
+                warn!(host = %host, error = %e, "failed to pin record at remote");
+            }
+            additional_results.push((host, result));
+        }
+
+        Ok(RecordResult {
+            id,
+            doc: self.doc,
+            additional_pins: additional_results,
+        })
     }
 }

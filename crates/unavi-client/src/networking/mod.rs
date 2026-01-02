@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use bevy::prelude::*;
 use wds::actor::Actor;
 
@@ -27,4 +25,4 @@ impl Plugin for NetworkingPlugin {
 }
 
 #[derive(Resource, Deref)]
-pub struct WdsActor(pub Arc<Actor>);
+pub struct WdsActor(pub Actor);

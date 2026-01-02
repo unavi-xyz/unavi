@@ -2,7 +2,7 @@ use std::{sync::Arc, time::Duration};
 
 use bevy::prelude::*;
 use blake3::Hash;
-use wds::{DataStore, actor::Actor};
+use wds::{DataStore, Identity, actor::Actor};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
 use crate::DIRS;
@@ -16,7 +16,7 @@ pub enum NetworkCommand {
 }
 
 pub enum NetworkEvent {
-    SetActor(Arc<Actor>),
+    SetActor(Actor),
     Connected { id: Hash, space: Entity },
     ConnectionClosed { id: Hash, message: String },
 }
@@ -58,7 +58,7 @@ impl NetworkingThread {
 
 #[derive(Clone)]
 struct NetworkThreadState {
-    actor: Arc<Actor>,
+    actor: Actor,
 }
 
 async fn thread_loop(
@@ -76,10 +76,11 @@ async fn thread_loop(
     let did = signing_key.public().to_did();
     info!("Local identity: {did}");
 
-    let actor = Arc::new(store.actor(did, signing_key));
+    let identity = Arc::new(Identity::new(did, signing_key));
+    let actor = store.local_actor(identity);
 
     event_tx
-        .send_async(NetworkEvent::SetActor(Arc::clone(&actor)))
+        .send_async(NetworkEvent::SetActor(actor.clone()))
         .await?;
 
     let state = NetworkThreadState { actor };

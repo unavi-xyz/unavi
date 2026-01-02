@@ -14,7 +14,7 @@ pub async fn handle_join(state: NetworkThreadState, id: Hash) -> anyhow::Result<
     // Connect to beacons.
 
     // Create our own beacon.
-    let (_beacon_id, _doc) = state
+    let _res = state
         .actor
         .create_record()
         .with_ttl(BEACON_TTL)

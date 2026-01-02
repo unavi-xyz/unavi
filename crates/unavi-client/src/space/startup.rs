@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use bevy::prelude::*;
 use wds::{
     actor::Actor,
@@ -12,7 +10,7 @@ use crate::networking::{
 };
 
 pub fn join_home_space(actor: Res<WdsActor>, nt: Res<NetworkingThread>) {
-    let actor = Arc::clone(&actor);
+    let actor = actor.clone();
     let command_tx = nt.command_tx.clone();
 
     std::thread::spawn(|| {
@@ -31,12 +29,12 @@ pub fn join_home_space(actor: Res<WdsActor>, nt: Res<NetworkingThread>) {
 }
 
 async fn join_home_space_inner(
-    actor: Arc<Actor>,
+    actor: Actor,
     command_tx: flume::Sender<NetworkCommand>,
 ) -> anyhow::Result<()> {
     let did = actor.did();
 
-    let (id, _) = actor
+    let res = actor
         .create_record()
         .with_schema(*SCHEMA_HOME, |_| Ok(()))?
         .with_schema(*SCHEMA_SPACE, |doc| {
@@ -47,8 +45,8 @@ async fn join_home_space_inner(
         .send()
         .await?;
 
-    info!("Created home space: {id}");
-    command_tx.send_async(NetworkCommand::Join(id)).await?;
+    info!("Created home space: {}", res.id);
+    command_tx.send_async(NetworkCommand::Join(res.id)).await?;
 
     Ok(())
 }

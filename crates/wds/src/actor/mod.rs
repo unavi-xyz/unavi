@@ -1,17 +1,18 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use anyhow::Context;
 use blake3::Hash;
 use bytes::Bytes;
-use iroh::EndpointId;
+use iroh::{Endpoint, EndpointId};
 use irpc::Client;
 use loro::{LoroDoc, VersionVector};
+use time::OffsetDateTime;
 use tokio::sync::{Mutex, OnceCell};
-use xdid::{core::did::Did, methods::key::p256::P256KeyPair};
+use xdid::core::did::Did;
 
 use crate::{
-    SessionToken,
-    api::{ApiService, UploadBlob, UploadEnvelope},
+    Identity, SessionToken,
+    api::{ApiService, PinBlob, PinRecord, UploadBlob, UploadEnvelope},
     auth::AuthService,
     record::envelope::Envelope,
     signed_bytes::{Signable, SignedBytes},
@@ -20,10 +21,16 @@ use crate::{
 mod auth;
 mod record_builder;
 
+pub use record_builder::RecordResult;
+
+/// Authenticated agent for WDS operations.
+///
+/// An actor targets a specific WDS host and performs authenticated operations.
+/// The same [`Identity`] can be shared across multiple actors targeting
+/// different hosts.
 #[derive(Clone)]
 pub struct Actor {
-    did: Did,
-    signing_key: P256KeyPair,
+    identity: Arc<Identity>,
     host: EndpointId,
     api_client: Client<ApiService>,
     auth_client: Client<AuthService>,
@@ -32,15 +39,13 @@ pub struct Actor {
 
 impl Actor {
     pub(crate) fn new(
-        did: Did,
-        signing_key: P256KeyPair,
+        identity: Arc<Identity>,
         host: EndpointId,
         api_client: Client<ApiService>,
         auth_client: Client<AuthService>,
     ) -> Self {
         Self {
-            did,
-            signing_key,
+            identity,
             host,
             api_client,
             auth_client,
@@ -49,13 +54,23 @@ impl Actor {
     }
 
     #[must_use]
-    pub const fn did(&self) -> &Did {
-        &self.did
+    pub fn did(&self) -> &Did {
+        self.identity.did()
     }
 
     #[must_use]
-    pub const fn signing_key(&self) -> &P256KeyPair {
-        &self.signing_key
+    pub const fn identity(&self) -> &Arc<Identity> {
+        &self.identity
+    }
+
+    #[must_use]
+    pub const fn host(&self) -> &EndpointId {
+        &self.host
+    }
+
+    #[must_use]
+    pub fn signing_key(&self) -> &xdid::methods::key::p256::P256KeyPair {
+        self.identity.signing_key()
     }
 
     /// Creates a new record, returning the record ID.
@@ -110,8 +125,8 @@ impl Actor {
         doc: &LoroDoc,
         from: VersionVector,
     ) -> anyhow::Result<()> {
-        let envelope = Envelope::updates(self.did.clone(), doc, from)?;
-        let signed = envelope.sign(&self.signing_key)?;
+        let envelope = Envelope::updates(self.identity.did().clone(), doc, from)?;
+        let signed = envelope.sign(self.identity.signing_key())?;
         self.upload_envelope(record_id, signed).await
     }
 
@@ -139,5 +154,39 @@ impl Actor {
             .map_err(|e| anyhow::anyhow!("upload failed: {e}"))?;
 
         Ok(hash)
+    }
+
+    /// Pins a record at this actor's host for the given duration.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the pin request fails.
+    pub async fn pin_record(&self, id: Hash, ttl: Duration) -> anyhow::Result<()> {
+        let s = self.authenticate().await.context("auth")?;
+        let expires = (OffsetDateTime::now_utc() + ttl).unix_timestamp();
+
+        self.api_client
+            .rpc(PinRecord { s, id, expires })
+            .await?
+            .map_err(|e| anyhow::anyhow!("pin record failed: {e}"))?;
+
+        Ok(())
+    }
+
+    /// Pins a blob at this actor's host for the given duration.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the pin request fails.
+    pub async fn pin_blob(&self, hash: Hash, ttl: Duration) -> anyhow::Result<()> {
+        let s = self.authenticate().await.context("auth")?;
+        let expires = (OffsetDateTime::now_utc() + ttl).unix_timestamp();
+
+        self.api_client
+            .rpc(PinBlob { s, hash, expires })
+            .await?
+            .map_err(|e| anyhow::anyhow!("pin blob failed: {e}"))?;
+
+        Ok(())
     }
 }

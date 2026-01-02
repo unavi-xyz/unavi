@@ -1,10 +1,12 @@
 #![allow(dead_code)]
 
+use std::sync::Arc;
+
 use blake3::Hash;
 use rstest::fixture;
 use tempfile::{TempDir, tempdir};
 use wds::{
-    DataStore,
+    DataStore, Identity,
     actor::Actor,
     record::{
         acl::Acl,
@@ -26,7 +28,8 @@ pub struct DataStoreCtx {
 async fn generate_actor(store: &DataStore) -> Actor {
     let key = P256KeyPair::generate();
     let did = key.public().to_did();
-    let actor = store.actor(did.clone(), key);
+    let identity = Arc::new(Identity::new(did.clone(), key));
+    let actor = store.local_actor(identity);
 
     // Set up default quota for the actor.
     let did_str = did.to_string();

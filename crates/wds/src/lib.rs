@@ -1,20 +1,23 @@
 use std::{path::Path, sync::Arc};
 
 use derive_more::Debug;
-use iroh::{Endpoint, endpoint::RelayMode, protocol::Router};
+use iroh::{Endpoint, EndpointId, endpoint::RelayMode, protocol::Router};
 use iroh_blobs::{
     BlobsProtocol,
     store::fs::{FsStore, options::Options},
 };
 use irpc::Client;
 use tokio::task::JoinError;
-use xdid::{core::did::Did, methods::key::p256::P256KeyPair};
+use xdid::core::did::Did;
+
+pub use identity::Identity;
 
 pub mod actor;
 pub mod api;
 mod auth;
 mod db;
 mod gc;
+pub mod identity;
 mod quota;
 pub mod record;
 pub mod signed_bytes;
@@ -108,15 +111,23 @@ impl DataStore {
         })
     }
 
+    /// Create an actor targeting the local WDS.
     #[must_use]
-    pub fn actor(&self, did: Did, signing_key: P256KeyPair) -> actor::Actor {
+    pub fn local_actor(&self, identity: Arc<Identity>) -> actor::Actor {
         actor::Actor::new(
-            did,
-            signing_key,
+            identity,
             self.router.endpoint().id(),
             self.api_client.clone(),
             self.auth_client.clone(),
         )
+    }
+
+    /// Create an actor targeting a remote WDS.
+    #[must_use]
+    pub fn remote_actor(&self, identity: Arc<Identity>, host: EndpointId) -> actor::Actor {
+        let api_client = irpc_iroh::client(self.router.endpoint().clone(), host, api::ALPN);
+        let auth_client = irpc_iroh::client(self.router.endpoint().clone(), host, auth::ALPN);
+        actor::Actor::new(identity, host, api_client, auth_client)
     }
 
     /// # Errors

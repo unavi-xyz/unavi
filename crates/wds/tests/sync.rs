@@ -18,12 +18,13 @@ mod common;
 #[tokio::test]
 async fn test_invalid_signature_rejected(#[future] ctx: DataStoreCtx) {
     // Alice creates record.
-    let (record_id, doc) = ctx
+    let result = ctx
         .alice
         .create_record()
         .send()
         .await
         .expect("create record");
+    let (record_id, doc) = (result.id, result.doc);
 
     // Create a valid envelope then tamper with it.
     let from_vv = doc.oplog_vv();
@@ -63,12 +64,13 @@ async fn test_invalid_signature_rejected(#[future] ctx: DataStoreCtx) {
 #[tokio::test]
 async fn test_wrong_author_signature_rejected(#[future] ctx: DataStoreCtx) {
     // Alice creates record with Bob as authorized writer.
-    let (record_id, doc) = ctx
+    let result = ctx
         .alice
         .create_record()
         .send()
         .await
         .expect("create record");
+    let (record_id, doc) = (result.id, result.doc);
 
     // Add Bob to write ACL.
     let from_vv = doc.oplog_vv();

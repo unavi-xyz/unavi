@@ -5,7 +5,7 @@ use blake3::Hash;
 use wds::{DataStore, Identity, actor::Actor};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
-use crate::DIRS;
+use crate::{DIRS, networking::WdsActors};
 
 mod join;
 
@@ -16,7 +16,7 @@ pub enum NetworkCommand {
 }
 
 pub enum NetworkEvent {
-    SetActor(Actor),
+    SetActors(WdsActors),
     Connected { id: Hash, space: Entity },
     ConnectionClosed { id: Hash, message: String },
 }
@@ -77,13 +77,19 @@ async fn thread_loop(
     info!("Local identity: {did}");
 
     let identity = Arc::new(Identity::new(did, signing_key));
-    let actor = store.local_actor(identity);
+    let local_actor = store.local_actor(Arc::clone(&identity));
+
+    let remote_host = None;
+    let remote_actor = remote_host.map(|h| store.remote_actor(identity, h));
 
     event_tx
-        .send_async(NetworkEvent::SetActor(actor.clone()))
+        .send_async(NetworkEvent::SetActors(WdsActors {
+            local: local_actor.clone(),
+            remote: remote_actor,
+        }))
         .await?;
 
-    let state = NetworkThreadState { actor };
+    let state = NetworkThreadState { actor: local_actor };
 
     loop {
         match command_rx.recv_async().await? {

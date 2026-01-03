@@ -1,15 +1,12 @@
 use std::time::Duration;
 
-use anyhow::Context;
 use blake3::Hash;
 use iroh::EndpointId;
 use loro::LoroDoc;
-use time::OffsetDateTime;
 use tracing::warn;
 
 use crate::{
-    actor::Actor,
-    api::PinRecord,
+    actor::{Actor, into_actor::IntoActor},
     record::{Record, acl::Acl, envelope::Envelope},
     signed_bytes::Signable,
 };
@@ -21,8 +18,7 @@ const DEFAULT_PIN_TTL: Duration = Duration::from_hours(1);
 pub struct RecordResult {
     pub id: Hash,
     pub doc: LoroDoc,
-    /// Results of additional pin operations at other hosts.
-    pub additional_pins: Vec<(EndpointId, anyhow::Result<()>)>,
+    pub sync_results: Vec<(EndpointId, anyhow::Result<()>)>,
 }
 
 pub struct RecordBuilder {
@@ -30,7 +26,7 @@ pub struct RecordBuilder {
     doc: LoroDoc,
     schemas: Vec<Hash>,
     ttl: Duration,
-    additional_pins: Vec<Actor>,
+    sync_targets: Vec<Actor>,
 }
 
 impl RecordBuilder {
@@ -41,11 +37,11 @@ impl RecordBuilder {
             doc,
             schemas: Vec::new(),
             ttl: DEFAULT_PIN_TTL,
-            additional_pins: Vec::new(),
+            sync_targets: Vec::new(),
         }
     }
 
-    pub fn with_schema(
+    pub fn add_schema(
         mut self,
         id: Hash,
         f: impl Fn(&mut LoroDoc) -> anyhow::Result<()>,
@@ -55,14 +51,15 @@ impl RecordBuilder {
         Ok(self)
     }
 
-    pub const fn with_ttl(mut self, ttl: Duration) -> Self {
+    pub const fn ttl(mut self, ttl: Duration) -> Self {
         self.ttl = ttl;
         self
     }
 
-    /// Also pin the record at another actor's host after creation.
-    pub fn with_pin_at(mut self, actor: &Actor) -> Self {
-        self.additional_pins.push(actor.clone());
+    pub fn sync_to(mut self, actor: impl IntoActor) -> Self {
+        if let Some(a) = actor.into_actor() {
+            self.sync_targets.push(a);
+        }
         self
     }
 
@@ -91,21 +88,23 @@ impl RecordBuilder {
         // Upload the initial envelope.
         self.actor.upload_envelope(id, signed).await?;
 
-        // Pin at additional hosts (best-effort).
-        let mut additional_results = Vec::with_capacity(self.additional_pins.len());
-        for remote_actor in self.additional_pins {
-            let host = *remote_actor.host();
-            let result = remote_actor.pin_record(id, self.ttl).await;
+        // Sync to additional actors (best-effort).
+        let mut sync_results = Vec::with_capacity(self.sync_targets.len());
+        for target in self.sync_targets {
+            let host = *target.host();
+            let result = target.pin_record(id, self.ttl).await;
             if let Err(e) = &result {
                 warn!(host = %host, error = %e, "failed to pin record at remote");
+            } else {
+                // TODO initiate sync
             }
-            additional_results.push((host, result));
+            sync_results.push((host, result));
         }
 
         Ok(RecordResult {
             id,
             doc: self.doc,
-            additional_pins: additional_results,
+            sync_results,
         })
     }
 }

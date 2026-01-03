@@ -11,7 +11,7 @@ pub fn recv_network_event(nt: Res<NetworkingThread>) {
             NetworkEvent::ConnectionClosed { id, message } => {
                 info!("connection {id} closed: {message}");
             }
-            NetworkEvent::SetActor(_) => {
+            NetworkEvent::SetActors(_) => {
                 unreachable!("should only be called once on init")
             }
         }

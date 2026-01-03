@@ -1,16 +1,13 @@
 use bevy::prelude::*;
-use wds::{
-    actor::Actor,
-    record::schema::{SCHEMA_HOME, SCHEMA_SPACE},
-};
+use wds::record::schema::{SCHEMA_HOME, SCHEMA_SPACE};
 
 use crate::networking::{
-    WdsActor,
+    WdsActors,
     thread::{NetworkCommand, NetworkingThread},
 };
 
-pub fn join_home_space(actor: Res<WdsActor>, nt: Res<NetworkingThread>) {
-    let actor = actor.clone();
+pub fn join_home_space(actors: Res<WdsActors>, nt: Res<NetworkingThread>) {
+    let actors = actors.clone();
     let command_tx = nt.command_tx.clone();
 
     std::thread::spawn(|| {
@@ -21,7 +18,7 @@ pub fn join_home_space(actor: Res<WdsActor>, nt: Res<NetworkingThread>) {
             .expect("build tokio runtime");
 
         rt.block_on(async move {
-            if let Err(e) = join_home_space_inner(actor, command_tx).await {
+            if let Err(e) = join_home_space_inner(actors, command_tx).await {
                 error!("Failed to join home space: {e:?}");
             }
         });
@@ -29,19 +26,21 @@ pub fn join_home_space(actor: Res<WdsActor>, nt: Res<NetworkingThread>) {
 }
 
 async fn join_home_space_inner(
-    actor: Actor,
+    actors: WdsActors,
     command_tx: flume::Sender<NetworkCommand>,
 ) -> anyhow::Result<()> {
-    let did = actor.did();
+    let did = actors.local.did();
 
-    let res = actor
+    let res = actors
+        .local
         .create_record()
-        .with_schema(*SCHEMA_HOME, |_| Ok(()))?
-        .with_schema(*SCHEMA_SPACE, |doc| {
+        .add_schema(*SCHEMA_HOME, |_| Ok(()))?
+        .add_schema(*SCHEMA_SPACE, |doc| {
             let map = doc.get_map("space");
             map.insert("name", format!("{did}'s Home"))?;
             Ok(())
         })?
+        .sync_to(actors.remote)
         .send()
         .await?;
 

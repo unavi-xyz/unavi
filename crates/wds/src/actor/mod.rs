@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration};
 use anyhow::Context;
 use blake3::Hash;
 use bytes::Bytes;
-use iroh::{Endpoint, EndpointId};
+use iroh::EndpointId;
 use irpc::Client;
 use loro::{LoroDoc, VersionVector};
 use time::OffsetDateTime;
@@ -19,6 +19,7 @@ use crate::{
 };
 
 mod auth;
+mod into_actor;
 mod record_builder;
 
 pub use record_builder::RecordResult;

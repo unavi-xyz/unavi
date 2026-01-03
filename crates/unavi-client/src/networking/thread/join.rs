@@ -17,8 +17,8 @@ pub async fn handle_join(state: NetworkThreadState, id: Hash) -> anyhow::Result<
     let _res = state
         .actor
         .create_record()
-        .with_ttl(BEACON_TTL)
-        .with_schema(*SCHEMA_BEACON, |doc| {
+        .ttl(BEACON_TTL)
+        .add_schema(*SCHEMA_BEACON, |doc| {
             let map = doc.get_map("beacon");
             map.insert("did", state.actor.did().to_string())?;
             // map.insert("endpoint", state.endpoint_id)?;

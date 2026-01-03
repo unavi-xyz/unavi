@@ -12,7 +12,7 @@ pub struct Identity {
 
 impl Identity {
     #[must_use]
-    pub fn new(did: Did, signing_key: P256KeyPair) -> Self {
+    pub const fn new(did: Did, signing_key: P256KeyPair) -> Self {
         Self { did, signing_key }
     }
 

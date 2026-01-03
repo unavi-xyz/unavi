@@ -111,6 +111,11 @@ impl DataStore {
         })
     }
 
+    #[must_use]
+    pub fn endpoint_id(&self) -> EndpointId {
+        self.ctx.endpoint.id()
+    }
+
     /// Create an actor targeting the local WDS.
     #[must_use]
     pub fn local_actor(&self, identity: Arc<Identity>) -> actor::Actor {

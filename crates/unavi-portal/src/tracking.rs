@@ -87,7 +87,7 @@ pub fn update_portal_image_sizes(
             continue;
         };
 
-        info!(?size, "Resizing portal image");
+        // info!(?size, "Resizing portal image");
         image.texture_descriptor.size = size;
         image.resize(size);
 

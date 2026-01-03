@@ -5,12 +5,14 @@ use std::{
 
 use axum::{Json, Router};
 use directories::ProjectDirs;
+use iroh::EndpointId;
 use tracing::info;
+use wds::DataStore;
 use xdid::{
     core::{
         did::{Did, MethodId, MethodName},
         did_url::{DidUrl, RelativeDidUrl, RelativeDidUrlPath},
-        document::{Document, VerificationMethod, VerificationMethodMap},
+        document::{Document, ServiceEndpoint, VerificationMethod, VerificationMethodMap},
     },
     methods::key::{DidKeyPair, PublicKey},
 };
@@ -28,6 +30,37 @@ pub struct ServerOptions {
     pub port: u16,
 }
 
+/// Run the UNAVI server.
+///
+/// # Errors
+///
+/// Returns an error if server initialization or startup fails.
+pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
+    let port = opts.port;
+
+    let (did, _domain) = create_did(port);
+    let vc = key_pair::get_or_create_key(opts.in_memory)?;
+    info!("Running server as {did}");
+
+    let store = {
+        let path = DIRS.data_local_dir().join("wds");
+        DataStore::new(&path).await?
+    };
+
+    let app = create_did_document_route(did, &vc, store.endpoint_id());
+
+    let addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, port));
+    info!("HTTP listening on port {port}");
+
+    axum_server::bind(addr)
+        .serve(app.into_make_service())
+        .await?;
+
+    store.shutdown().await?;
+
+    Ok(())
+}
+
 fn create_did(port: u16) -> (Did, String) {
     let domain = std::env::var("DOMAIN").unwrap_or_else(|_| format!("localhost:{port}"));
     let domain_encoded = domain.replace(':', "%3A");
@@ -38,10 +71,11 @@ fn create_did(port: u16) -> (Did, String) {
     (did, domain)
 }
 
-const KEY_FRAGMENT: &str = "owner";
+const KEY_FRAGMENT: &str = "key";
 
-fn create_did_document_route(did: Did, vc: &impl DidKeyPair) -> Router {
+fn create_did_document_route(did: Did, vc: &impl DidKeyPair, endpoint_id: EndpointId) -> Router {
     let vc_public = vc.public().to_jwk();
+
     Router::new().route(
         "/.well-known/did.json",
         axum::routing::get(move || async move {
@@ -62,7 +96,10 @@ fn create_did_document_route(did: Did, vc: &impl DidKeyPair) -> Router {
                 capability_invocation: None,
                 controller: None,
                 key_agreement: None,
-                service: None,
+                service: Some(vec![ServiceEndpoint {
+                    id: "wds".into(),
+                    typ: vec![endpoint_id.to_string()],
+                }]),
                 verification_method: Some(vec![VerificationMethodMap {
                     id: DidUrl {
                         did: did.clone(),
@@ -80,30 +117,4 @@ fn create_did_document_route(did: Did, vc: &impl DidKeyPair) -> Router {
             Json(doc)
         }),
     )
-}
-
-/// Run the UNAVI server.
-///
-/// # Errors
-///
-/// Returns an error if server initialization or startup fails.
-pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
-    let port = opts.port;
-
-    let (did, _domain) = create_did(port);
-    info!("Running server as {did}");
-
-    let vc = key_pair::get_or_create_key(opts.in_memory)?;
-
-    let app = create_did_document_route(did, &vc);
-
-    info!("HTTP listening on port {port}");
-
-    let addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, port));
-
-    axum_server::bind(addr)
-        .serve(app.into_make_service())
-        .await?;
-
-    Ok(())
 }

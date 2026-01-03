@@ -19,7 +19,7 @@ blake3.workspace   = true
 bytes              = "1.11.0"
 derive_more        = { features = ["debug"], version = "2.1.1" }
 futures.workspace  = true
-iroh               = { features = ["discovery-local-network"], version = "0.95.1" }
+iroh.workspace     = true
 iroh-blobs         = "0.97.0"
 irpc               = "0.11.0"
 irpc-iroh          = "0.11.0"

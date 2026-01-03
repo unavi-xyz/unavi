@@ -8,6 +8,7 @@ use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 use crate::{DIRS, networking::WdsActors};
 
 mod join;
+mod remote_wds;
 
 pub enum NetworkCommand {
     Join(Hash),
@@ -66,8 +67,7 @@ async fn thread_loop(
     event_tx: &flume::Sender<NetworkEvent>,
 ) -> anyhow::Result<()> {
     let store = {
-        let mut path = DIRS.data_local_dir().to_path_buf();
-        path.push("wds");
+        let path = DIRS.data_local_dir().join("wds");
         DataStore::new(&path).await?
     };
 
@@ -79,7 +79,7 @@ async fn thread_loop(
     let identity = Arc::new(Identity::new(did, signing_key));
     let local_actor = store.local_actor(Arc::clone(&identity));
 
-    let remote_host = None;
+    let remote_host = remote_wds::fetch_remote_host().await?;
     let remote_actor = remote_host.map(|h| store.remote_actor(identity, h));
 
     event_tx

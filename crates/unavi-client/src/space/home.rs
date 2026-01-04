@@ -34,8 +34,8 @@ async fn join_home_space_inner(
     let res = actors
         .local
         .create_record()
-        .add_schema(*SCHEMA_HOME, |_| Ok(()))?
-        .add_schema(*SCHEMA_SPACE, |doc| {
+        .add_schema(&*SCHEMA_HOME, |_| Ok(()))?
+        .add_schema(&*SCHEMA_SPACE, |doc| {
             let map = doc.get_map("space");
             map.insert("name", format!("{did}'s Home"))?;
             Ok(())

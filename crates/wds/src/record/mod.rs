@@ -28,7 +28,7 @@ impl Record {
         let mut nonce = RecordNonce::default();
         rand::rng().fill(&mut nonce);
 
-        let schemas = vec![*schema::SCHEMA_ACL, *schema::SCHEMA_RECORD];
+        let schemas = vec![schema::SCHEMA_ACL.hash, schema::SCHEMA_RECORD.hash];
 
         Self {
             author,

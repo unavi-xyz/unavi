@@ -1,28 +1,39 @@
 use std::{collections::BTreeMap, sync::LazyLock};
 
 use blake3::Hash;
+use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
 
-macro_rules! static_schema_id {
+/// A statically-defined schema with precomputed hash and bytes.
+pub struct StaticSchema {
+    pub hash: Hash,
+    pub bytes: Bytes,
+}
+
+macro_rules! static_schema {
     ($name:ident) => {
         paste::paste! {
-            /// Raw schema string for the builtin schema.
-            pub const [<SCHEMA_STR_$name:upper>]: &str = include_str!(concat!("../../../../protocol/schemas/", stringify!($name), ".ron"));
-            /// Pre-computed hash of the builtin schema.
-            pub static [<SCHEMA_$name:upper>]: LazyLock<Hash> = LazyLock::new(|| {
-                let schema: Schema = ron::from_str([<SCHEMA_STR_$name:upper>]).expect("valid schema");
-                schema.id().expect("schema id")
+            pub static [<SCHEMA_$name:upper>]: LazyLock<StaticSchema> = LazyLock::new(|| {
+                const RON_STR: &str = include_str!(
+                    concat!("../../../../protocol/schemas/", stringify!($name), ".ron")
+                );
+                let schema: Schema = ron::from_str(RON_STR).expect("valid schema");
+                let bytes = schema.to_bytes().expect("serialize schema");
+                StaticSchema {
+                    hash: blake3::hash(&bytes),
+                    bytes: Bytes::from(bytes),
+                }
             });
         }
     };
 }
 
-static_schema_id!(acl);
-static_schema_id!(beacon);
-static_schema_id!(home);
-static_schema_id!(record);
-static_schema_id!(space);
+static_schema!(acl);
+static_schema!(beacon);
+static_schema!(home);
+static_schema!(record);
+static_schema!(space);
 
 /// Schema defining how to process a Loro document.
 #[derive(Clone, Debug, Serialize, Deserialize)]

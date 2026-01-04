@@ -3,7 +3,7 @@ use blake3::Hash;
 
 use crate::networking::thread::{NetworkCommand, NetworkingThread};
 
-mod startup;
+mod home;
 
 pub struct SpacePlugin {
     pub initial_space: Option<Hash>,
@@ -19,7 +19,7 @@ impl Plugin for SpacePlugin {
                 }
             });
         } else {
-            app.add_systems(Startup, startup::join_home_space);
+            app.add_systems(Startup, home::join_home_space);
         }
     }
 }

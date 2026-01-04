@@ -3,7 +3,7 @@ use std::time::Duration;
 use rstest::rstest;
 use tracing_test::traced_test;
 
-use crate::common::{DataStoreCtx, ctx};
+use crate::common::{DataStoreCtx, assert_contains, ctx};
 
 mod common;
 
@@ -126,10 +126,14 @@ async fn test_create_record_quota_exceeded(#[future] ctx: DataStoreCtx) {
     .await
     .expect("set quota");
 
-    let result = ctx.alice.create_record().send().await;
+    let e = ctx
+        .alice
+        .create_record()
+        .send()
+        .await
+        .expect_err("should error");
 
-    assert!(result.is_err());
-    assert!(result.expect_err("invariant").to_string().contains("quota"));
+    assert_contains(e, "quota");
 }
 
 #[rstest]
@@ -154,13 +158,11 @@ async fn test_update_record_unauthorized(#[future] ctx: DataStoreCtx) {
     data.insert("key", "value").expect("insert");
 
     // Bob tries to update - should fail (not in write ACL).
-    let result = ctx.bob.update_record(record_id, &doc, from_vv).await;
+    let e = ctx
+        .bob
+        .update_record(record_id, &doc, from_vv)
+        .await
+        .expect_err("should error");
 
-    assert!(result.is_err());
-    assert!(
-        result
-            .expect_err("invariant")
-            .to_string()
-            .contains("denied")
-    );
+    assert_contains(e, "denied");
 }

@@ -18,8 +18,10 @@ use tracing::error;
 
 use crate::{SessionToken, StoreContext};
 
+mod blob_exists;
 mod pin_blob;
 mod pin_record;
+mod register_deps;
 mod upload_blob;
 mod upload_envelope;
 
@@ -64,6 +66,16 @@ pub enum ApiService {
         s: SessionToken,
         id: Hash,
         expires: i64,
+    },
+    #[rpc(tx=oneshot::Sender<Result<bool, SmolStr>>)]
+    #[wrap(BlobExists)]
+    BlobExists { s: SessionToken, hash: Hash },
+    #[rpc(tx=oneshot::Sender<Result<(), SmolStr>>)]
+    #[wrap(RegisterBlobDeps)]
+    RegisterBlobDeps {
+        s: SessionToken,
+        record_id: Hash,
+        deps: Vec<(Hash, SmolStr)>,
     },
 }
 
@@ -111,6 +123,12 @@ async fn handle_message(ctx: Arc<StoreContext>, msg: ApiMessage) -> anyhow::Resu
         }
         ApiMessage::PinRecord(channels) => {
             pin_record::pin_record(ctx, channels).await?;
+        }
+        ApiMessage::BlobExists(channels) => {
+            blob_exists::blob_exists(ctx, channels).await?;
+        }
+        ApiMessage::RegisterBlobDeps(channels) => {
+            register_deps::register_blob_deps(ctx, channels).await?;
         }
     }
 

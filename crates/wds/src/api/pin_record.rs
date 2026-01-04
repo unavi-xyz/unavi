@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use irpc::WithChannels;
+use sqlx::Sqlite;
 use time::OffsetDateTime;
 
 use crate::{
@@ -76,8 +77,74 @@ pub async fn pin_record(
         .await?;
     }
 
+    // Auto-pin blob dependencies with the same expiration.
+    let blob_deps: Vec<String> =
+        sqlx::query_scalar("SELECT blob_hash FROM record_blob_deps WHERE record_id = ?")
+            .bind(&record_id)
+            .fetch_all(&mut *db_tx)
+            .await?;
+
+    for blob_hash in blob_deps {
+        if let Err(e) = pin_or_extend_blob(&mut db_tx, &did_str, &blob_hash, expires).await {
+            // Log but don't fail - blob might have been deleted.
+            tracing::warn!(
+                blob = %blob_hash,
+                error = %e,
+                "failed to auto-pin blob dependency"
+            );
+        }
+    }
+
     db_tx.commit().await?;
 
     tx.send(Ok(())).await?;
+    Ok(())
+}
+
+/// Pins or extends a blob pin for the given owner.
+/// Creates a new pin if the user doesn't have one, extends if they do.
+async fn pin_or_extend_blob(
+    tx: &mut sqlx::Transaction<'_, Sqlite>,
+    owner: &str,
+    hash: &str,
+    expires: i64,
+) -> anyhow::Result<()> {
+    // Try to extend existing pin using MAX to never shorten.
+    let updated = sqlx::query!(
+        "UPDATE blob_pins SET expires = MAX(expires, ?)
+         WHERE owner = ? AND hash = ?",
+        expires,
+        owner,
+        hash
+    )
+    .execute(&mut **tx)
+    .await?
+    .rows_affected();
+
+    if updated == 0 {
+        // User doesn't have this blob pinned. Check if it exists in any pin.
+        let blob_info = sqlx::query!("SELECT size FROM blob_pins WHERE hash = ? LIMIT 1", hash)
+            .fetch_optional(&mut **tx)
+            .await?;
+
+        if let Some(info) = blob_info {
+            // Blob exists, create pin for this user and charge quota.
+            reserve_bytes(&mut **tx, owner, info.size)
+                .await
+                .map_err(|_| anyhow::anyhow!("quota exceeded for blob dependency"))?;
+
+            sqlx::query!(
+                "INSERT INTO blob_pins (hash, owner, expires, size) VALUES (?, ?, ?, ?)",
+                hash,
+                owner,
+                expires,
+                info.size
+            )
+            .execute(&mut **tx)
+            .await?;
+        }
+        // If blob doesn't exist at all, silently skip (it may have been GC'd).
+    }
+
     Ok(())
 }

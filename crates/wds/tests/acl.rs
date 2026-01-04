@@ -4,7 +4,7 @@ use rstest::rstest;
 use tracing_test::traced_test;
 use wds::record::acl::Acl;
 
-use crate::common::{DataStoreCtx, ctx};
+use crate::common::{DataStoreCtx, assert_contains, ctx};
 
 mod common;
 
@@ -78,14 +78,13 @@ async fn test_read_only_cannot_write(#[future] ctx: DataStoreCtx) {
     data.insert("key", "value").expect("insert");
 
     // Bob should fail - read permission doesn't grant write.
-    let result = ctx.bob.update_record(record_id, &doc, from_vv).await;
-    assert!(result.is_err());
-    assert!(
-        result
-            .expect_err("invariant")
-            .to_string()
-            .contains("denied")
-    );
+    let e = ctx
+        .bob
+        .update_record(record_id, &doc, from_vv)
+        .await
+        .expect_err("should error");
+
+    assert_contains(e, "denied");
 }
 
 #[rstest]
@@ -121,14 +120,13 @@ async fn test_acl_modification_requires_manage(#[future] ctx: DataStoreCtx) {
     acl.save(&doc).expect("save acl");
 
     // Should fail - write permission doesn't grant ACL modification.
-    let result = ctx.bob.update_record(record_id, &doc, from_vv).await;
-    assert!(result.is_err());
-    assert!(
-        result
-            .expect_err("invariant")
-            .to_string()
-            .contains("denied")
-    );
+    let e = ctx
+        .bob
+        .update_record(record_id, &doc, from_vv)
+        .await
+        .expect_err("should error");
+
+    assert_contains(e, "denied");
 }
 
 #[rstest]

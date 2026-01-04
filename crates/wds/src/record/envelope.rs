@@ -4,7 +4,7 @@ use xdid::core::did::Did;
 
 use crate::signed_bytes::Signable;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Envelope {
     author: Did,
     from: VersionVector,

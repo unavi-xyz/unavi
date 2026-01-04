@@ -48,7 +48,7 @@ async fn test_invalid_signature_rejected(#[future] ctx: DataStoreCtx) {
 
     let e = ctx
         .alice
-        .upload_envelope(record_id, tampered)
+        .upload_envelope(record_id, &tampered)
         .await
         .expect_err("should error");
 
@@ -94,7 +94,7 @@ async fn test_wrong_author_signature_rejected(#[future] ctx: DataStoreCtx) {
 
     let e = ctx
         .alice
-        .upload_envelope(record_id, misattributed)
+        .upload_envelope(record_id, &misattributed)
         .await
         .expect_err("should error");
 
@@ -141,7 +141,7 @@ async fn test_record_id_mismatch_rejected(#[future] ctx: DataStoreCtx) {
     // Try to upload with mismatched ID.
     let e = ctx
         .alice
-        .upload_envelope(fake_id, signed)
+        .upload_envelope(fake_id, &signed)
         .await
         .expect_err("should error");
 
@@ -174,7 +174,7 @@ async fn test_unpinned_record_rejected(#[future] ctx: DataStoreCtx) {
     // Try to upload without pinning first.
     let e = ctx
         .alice
-        .upload_envelope(record_id, signed)
+        .upload_envelope(record_id, &signed)
         .await
         .expect_err("should error");
 

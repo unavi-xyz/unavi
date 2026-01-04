@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use serde::{Deserialize, Serialize};
 use xdid::methods::key::Signer;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignedBytes<T>
 where
     for<'a> T: Serialize + Deserialize<'a>,

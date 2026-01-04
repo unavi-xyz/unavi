@@ -131,7 +131,7 @@ impl RecordBuilder {
             .context("register blob deps")?;
 
         // Upload the initial envelope.
-        self.actor.upload_envelope(id, signed).await?;
+        self.actor.upload_envelope(id, &signed).await?;
 
         // Sync to additional actors (best-effort).
         let mut sync_results = Vec::with_capacity(self.sync_targets.len());
@@ -146,11 +146,12 @@ impl RecordBuilder {
                 }
             }
 
-            let result = target.pin_record(id, self.ttl).await;
+            let mut result = target.pin_record(id, self.ttl).await;
+
             if let Err(e) = &result {
                 warn!(host = %host, error = %e, "failed to pin record at remote");
             } else {
-                // TODO: Initiate sync.
+                result = target.upload_envelope(id, &signed).await;
             }
             sync_results.push((host, result));
         }

@@ -96,7 +96,7 @@ impl Actor {
     pub async fn upload_envelope(
         &self,
         record_id: Hash,
-        envelope: SignedBytes<Envelope>,
+        envelope: &SignedBytes<Envelope>,
     ) -> anyhow::Result<()> {
         let s = self.authenticate().await.context("auth")?;
 
@@ -130,7 +130,7 @@ impl Actor {
     ) -> anyhow::Result<()> {
         let envelope = Envelope::updates(self.identity.did().clone(), doc, from)?;
         let signed = envelope.sign(self.identity.signing_key())?;
-        self.upload_envelope(record_id, signed).await
+        self.upload_envelope(record_id, &signed).await
     }
 
     /// Uploads bytes to the WDS as a blob.

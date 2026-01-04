@@ -19,6 +19,24 @@ CREATE TABLE record_blob_deps (
 CREATE INDEX idx_record_blob_deps_blob ON record_blob_deps (blob_hash);
 CREATE INDEX idx_record_blob_deps_record ON record_blob_deps (record_id);
 
+-- Schema index (immutable after record creation).
+CREATE TABLE record_schemas (
+    record_id TEXT NOT NULL,
+    schema_hash TEXT NOT NULL,
+    PRIMARY KEY (record_id, schema_hash)
+);
+
+CREATE INDEX idx_record_schemas_hash ON record_schemas (schema_hash);
+
+-- ACL read index (updated on ACL change).
+CREATE TABLE record_acl_read (
+    record_id TEXT NOT NULL,
+    did TEXT NOT NULL,
+    PRIMARY KEY (record_id, did)
+);
+
+CREATE INDEX idx_record_acl_read_did ON record_acl_read (did);
+
 CREATE TABLE envelopes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     record_id TEXT NOT NULL,

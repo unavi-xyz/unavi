@@ -59,7 +59,8 @@ impl NetworkingThread {
 
 #[derive(Clone)]
 struct NetworkThreadState {
-    actor: Actor,
+    local_actor: Actor,
+    remote_actor: Option<Actor>,
 }
 
 async fn thread_loop(
@@ -85,11 +86,14 @@ async fn thread_loop(
     event_tx
         .send_async(NetworkEvent::SetActors(WdsActors {
             local: local_actor.clone(),
-            remote: remote_actor,
+            remote: remote_actor.clone(),
         }))
         .await?;
 
-    let state = NetworkThreadState { actor: local_actor };
+    let state = NetworkThreadState {
+        local_actor,
+        remote_actor,
+    };
 
     loop {
         match command_rx.recv_async().await? {

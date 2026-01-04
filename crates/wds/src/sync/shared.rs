@@ -2,7 +2,7 @@ use anyhow::{Context, ensure};
 use iroh_blobs::store::fs::FsStore;
 use loro::{LoroDoc, VersionVector};
 use sqlx::{Executor, Pool, Sqlite};
-use xdid::resolver::DidResolver;
+use xdid::{core::did::Did, resolver::DidResolver};
 
 use crate::{
     auth::jwk::verify_jwk_signature,
@@ -17,6 +17,61 @@ use crate::{
     signed_bytes::SignedBytes,
 };
 
+/// Validates the signature of a signed envelope against the author's DID document.
+async fn validate_signature(author: &Did, signature: &[u8], payload: &[u8]) -> anyhow::Result<()> {
+    let resolver = DidResolver::new()?;
+    let author_doc = resolver.resolve(author).await?;
+
+    for method in author_doc.assertion_method.as_deref().unwrap_or_default() {
+        let Some(map) = author_doc.resolve_verification_method(method) else {
+            continue;
+        };
+        let Some(jwk) = &map.public_key_jwk else {
+            continue;
+        };
+        if verify_jwk_signature(jwk, signature, payload) {
+            return Ok(());
+        }
+    }
+
+    anyhow::bail!("invalid envelope signature")
+}
+
+/// Validates document changes against all applicable schemas.
+async fn validate_schemas(
+    blobs: &FsStore,
+    old_doc: &LoroDoc,
+    new_doc: &LoroDoc,
+    record: &Record,
+    author: &Did,
+    is_first_envelope: bool,
+) -> anyhow::Result<()> {
+    let old_frontiers = old_doc.state_frontiers();
+    let new_frontiers = new_doc.state_frontiers();
+
+    let mut schema_ids = vec![SCHEMA_ACL.hash, SCHEMA_RECORD.hash];
+    schema_ids.extend(record.schemas.iter().copied());
+
+    for schema_id in schema_ids {
+        let schema = fetch_schema(blobs, &schema_id)
+            .await
+            .map_err(|e| anyhow::anyhow!("failed to fetch schema {schema_id}: {e}"))?;
+
+        validate_diff(
+            old_doc,
+            new_doc,
+            &old_frontiers,
+            &new_frontiers,
+            &schema,
+            author,
+            is_first_envelope,
+        )
+        .map_err(|e| anyhow::anyhow!("schema validation failed: {e}"))?;
+    }
+
+    Ok(())
+}
+
 /// Stores an envelope with quota tracking and schema validation.
 pub async fn store_envelope(
     db: &Pool<Sqlite>,
@@ -28,27 +83,7 @@ pub async fn store_envelope(
     let envelope = signed.payload()?;
     let author = envelope.author();
 
-    // Validate signature.
-    let resolver = DidResolver::new()?;
-    let author_doc = resolver.resolve(author).await?;
-    let mut is_valid_signature = false;
-
-    for method in author_doc.assertion_method.as_deref().unwrap_or_default() {
-        let Some(map) = author_doc.resolve_verification_method(method) else {
-            continue;
-        };
-
-        let Some(jwk) = &map.public_key_jwk else {
-            continue;
-        };
-
-        if verify_jwk_signature(jwk, signed.signature(), signed.payload_bytes()) {
-            is_valid_signature = true;
-            break;
-        }
-    }
-
-    ensure!(is_valid_signature, "invalid envelope signature");
+    validate_signature(author, signed.signature(), signed.payload_bytes()).await?;
 
     // Get current document state (BEFORE applying envelope).
     let old_doc = reconstruct_current_doc(db, record_id).await?;
@@ -66,32 +101,20 @@ pub async fn store_envelope(
     // Apply new envelope to get new state for diff computation.
     let new_doc = old_doc.fork();
     new_doc.import(envelope.ops())?;
-    let new_frontiers = new_doc.state_frontiers();
 
     // Load record metadata from the new doc state.
     let record = Record::load(&new_doc)?;
 
     // Validate diff against schema restrictions.
-    // Authorization checks use OLD doc state to prevent privilege escalation.
-    let mut schema_ids = vec![SCHEMA_ACL.hash, SCHEMA_RECORD.hash];
-    schema_ids.extend(record.schemas.iter().copied());
-
-    for schema_id in schema_ids {
-        let schema = fetch_schema(blobs, &schema_id)
-            .await
-            .map_err(|e| anyhow::anyhow!("failed to fetch schema {schema_id}: {e}"))?;
-
-        validate_diff(
-            &old_doc,
-            &new_doc,
-            &old_frontiers,
-            &new_frontiers,
-            &schema,
-            author,
-            is_first_envelope,
-        )
-        .map_err(|e| anyhow::anyhow!("schema validation failed: {e}"))?;
-    }
+    validate_schemas(
+        blobs,
+        &old_doc,
+        &new_doc,
+        &record,
+        author,
+        is_first_envelope,
+    )
+    .await?;
 
     let mut tx = db.begin().await?;
 
@@ -159,7 +182,23 @@ pub async fn store_envelope(
         )
         .execute(&mut *tx)
         .await?;
+
+        // Index schemas (immutable after creation).
+        for schema_hash in &record.schemas {
+            let hash_str = schema_hash.to_string();
+            sqlx::query(
+                "INSERT OR IGNORE INTO record_schemas (record_id, schema_hash) VALUES (?, ?)",
+            )
+            .bind(record_id)
+            .bind(&hash_str)
+            .execute(&mut *tx)
+            .await?;
+        }
     }
+
+    // Update ACL read index from new doc state.
+    let new_acl = Acl::load(&new_doc)?;
+    update_acl_read_index(&mut tx, record_id, &new_acl).await?;
 
     tx.commit().await?;
     Ok(())
@@ -251,4 +290,34 @@ pub(super) async fn reconstruct_current_doc(
     }
 
     Ok(doc)
+}
+
+/// Updates the ACL read index for a record.
+async fn update_acl_read_index(
+    tx: &mut sqlx::Transaction<'_, Sqlite>,
+    record_id: &str,
+    acl: &Acl,
+) -> anyhow::Result<()> {
+    // Clear existing entries.
+    sqlx::query("DELETE FROM record_acl_read WHERE record_id = ?")
+        .bind(record_id)
+        .execute(&mut **tx)
+        .await?;
+
+    // Insert all DIDs with read access (manage, write, and read).
+    for did in acl
+        .manage
+        .iter()
+        .chain(acl.write.iter())
+        .chain(acl.read.iter())
+    {
+        let did_str = did.to_string();
+        sqlx::query("INSERT OR IGNORE INTO record_acl_read (record_id, did) VALUES (?, ?)")
+            .bind(record_id)
+            .bind(&did_str)
+            .execute(&mut **tx)
+            .await?;
+    }
+
+    Ok(())
 }

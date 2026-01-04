@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::{fmt::Debug, sync::Arc};
 
 use rstest::fixture;
@@ -9,7 +7,7 @@ use wds::{
     actor::Actor,
     record::{
         acl::Acl,
-        schema::{SCHEMA_ACL, SCHEMA_RECORD},
+        schema::{SCHEMA_ACL, SCHEMA_BEACON, SCHEMA_HOME, SCHEMA_RECORD},
     },
 };
 use xdid::{
@@ -50,8 +48,8 @@ pub async fn ctx() -> DataStoreCtx {
         .await
         .expect("construct data store");
 
-    // Upload basic schemas to the blob store.
-    for schema in [&SCHEMA_ACL, &SCHEMA_RECORD] {
+    // Upload schemas to the blob store.
+    for schema in [&SCHEMA_ACL, &SCHEMA_BEACON, &SCHEMA_HOME, &SCHEMA_RECORD] {
         store
             .blobs()
             .blobs()

@@ -21,6 +21,7 @@ use crate::{SessionToken, StoreContext};
 mod blob_exists;
 mod pin_blob;
 mod pin_record;
+mod query_records;
 mod register_deps;
 mod upload_blob;
 mod upload_envelope;
@@ -77,6 +78,13 @@ pub enum ApiService {
         record_id: Hash,
         deps: Vec<(Hash, SmolStr)>,
     },
+    #[rpc(tx=oneshot::Sender<Result<Vec<Hash>, SmolStr>>)]
+    #[wrap(QueryRecords)]
+    QueryRecords {
+        s: SessionToken,
+        creator: Option<String>,
+        schemas: Vec<Hash>,
+    },
 }
 
 async fn handle_requests(
@@ -129,6 +137,9 @@ async fn handle_message(ctx: Arc<StoreContext>, msg: ApiMessage) -> anyhow::Resu
         }
         ApiMessage::RegisterBlobDeps(channels) => {
             register_deps::register_blob_deps(ctx, channels).await?;
+        }
+        ApiMessage::QueryRecords(channels) => {
+            query_records::query_records(ctx, channels).await?;
         }
     }
 

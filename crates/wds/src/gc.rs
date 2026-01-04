@@ -52,9 +52,41 @@ impl DataStore {
         hash: &str,
         size: i64,
     ) -> anyhow::Result<()> {
+        let now = OffsetDateTime::now_utc().unix_timestamp();
+
         // Use transaction to ensure pin deletion and quota decrement are atomic.
         let mut tx = db.begin().await?;
 
+        // Check if any pinned record still depends on this blob.
+        // If so, extend the blob pin to match the longest-living dependent record.
+        let max_record_expires: Option<i64> = sqlx::query_scalar(
+            "SELECT MAX(p.expires) FROM record_blob_deps d
+             JOIN record_pins p ON d.record_id = p.record_id
+             WHERE d.blob_hash = ? AND p.owner = ?
+               AND (p.expires IS NULL OR p.expires > ?)",
+        )
+        .bind(hash)
+        .bind(owner)
+        .bind(now)
+        .fetch_one(&mut *tx)
+        .await?;
+
+        if let Some(new_expires) = max_record_expires {
+            // A pinned record still needs this blob - extend the pin.
+            sqlx::query!(
+                "UPDATE blob_pins SET expires = ? WHERE owner = ? AND hash = ?",
+                new_expires,
+                owner,
+                hash
+            )
+            .execute(&mut *tx)
+            .await?;
+
+            tx.commit().await?;
+            return Ok(());
+        }
+
+        // No pinned record needs this blob - safe to delete.
         sqlx::query!(
             "DELETE FROM blob_pins WHERE owner = ? AND hash = ?",
             owner,

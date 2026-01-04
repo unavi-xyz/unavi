@@ -1,8 +1,7 @@
 #![allow(dead_code)]
 
-use std::sync::Arc;
+use std::{fmt::Debug, sync::Arc};
 
-use blake3::Hash;
 use rstest::fixture;
 use tempfile::{TempDir, tempdir};
 use wds::{
@@ -10,7 +9,7 @@ use wds::{
     actor::Actor,
     record::{
         acl::Acl,
-        schema::{SCHEMA_STR_ACL, SCHEMA_STR_RECORD, Schema},
+        schema::{SCHEMA_ACL, SCHEMA_RECORD},
     },
 };
 use xdid::{
@@ -51,12 +50,12 @@ pub async fn ctx() -> DataStoreCtx {
         .await
         .expect("construct data store");
 
-    // Upload built-in schemas to the blob store.
-    for (_hash, bytes) in builtin_schema_bytes() {
+    // Upload basic schemas to the blob store.
+    for schema in [&SCHEMA_ACL, &SCHEMA_RECORD] {
         store
             .blobs()
             .blobs()
-            .add_slice(&bytes)
+            .add_slice(&schema.bytes)
             .await
             .expect("add schema");
     }
@@ -72,21 +71,9 @@ pub async fn ctx() -> DataStoreCtx {
     }
 }
 
-#[must_use]
-pub fn builtin_schema_bytes() -> Vec<(Hash, Vec<u8>)> {
-    let acl_schema: Schema = ron::from_str(SCHEMA_STR_ACL).expect("valid acl schema");
-    let record_schema: Schema = ron::from_str(SCHEMA_STR_RECORD).expect("valid record schema");
-
-    vec![
-        (
-            acl_schema.id().expect("get acl schema id"),
-            acl_schema.to_bytes().expect("serialize acl schema"),
-        ),
-        (
-            record_schema.id().expect("get record schema id"),
-            record_schema.to_bytes().expect("serialize record schema"),
-        ),
-    ]
+pub fn assert_contains(e: impl Debug, contains: &str) {
+    let e = format!("{e:?}");
+    assert!(e.contains(contains), "'{e}' does not contain '{contains}'");
 }
 
 /// Creates a default ACL with only the given DID having full access.

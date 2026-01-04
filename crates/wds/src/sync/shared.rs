@@ -73,7 +73,7 @@ pub async fn store_envelope(
 
     // Validate diff against schema restrictions.
     // Authorization checks use OLD doc state to prevent privilege escalation.
-    let mut schema_ids = vec![*SCHEMA_ACL, *SCHEMA_RECORD];
+    let mut schema_ids = vec![SCHEMA_ACL.hash, SCHEMA_RECORD.hash];
     schema_ids.extend(record.schemas.iter().copied());
 
     for schema_id in schema_ids {

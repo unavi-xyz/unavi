@@ -7,7 +7,7 @@ use wds::{
     signed_bytes::{Signable, SignedBytes},
 };
 
-use crate::common::{DataStoreCtx, ctx};
+use crate::common::{DataStoreCtx, assert_contains, ctx};
 
 mod common;
 
@@ -46,15 +46,13 @@ async fn test_invalid_signature_rejected(#[future] ctx: DataStoreCtx) {
 
     let tampered = SignedBytes::<Envelope>::from_parts(signed.payload_bytes().to_vec(), sig);
 
-    let result = ctx.alice.upload_envelope(record_id, tampered).await;
+    let e = ctx
+        .alice
+        .upload_envelope(record_id, tampered)
+        .await
+        .expect_err("should error");
 
-    assert!(result.is_err());
-    assert!(
-        result
-            .expect_err("invariant")
-            .to_string()
-            .contains("signature")
-    );
+    assert_contains(e, "signature");
 }
 
 #[rstest]
@@ -94,15 +92,13 @@ async fn test_wrong_author_signature_rejected(#[future] ctx: DataStoreCtx) {
         .sign(ctx.alice.signing_key())
         .expect("sign envelope");
 
-    let result = ctx.alice.upload_envelope(record_id, misattributed).await;
+    let e = ctx
+        .alice
+        .upload_envelope(record_id, misattributed)
+        .await
+        .expect_err("should error");
 
-    assert!(result.is_err());
-    assert!(
-        result
-            .expect_err("invariant")
-            .to_string()
-            .contains("signature")
-    );
+    assert_contains(e, "signature");
 }
 
 #[rstest]
@@ -143,15 +139,13 @@ async fn test_record_id_mismatch_rejected(#[future] ctx: DataStoreCtx) {
     .expect("insert pin");
 
     // Try to upload with mismatched ID.
-    let result = ctx.alice.upload_envelope(fake_id, signed).await;
+    let e = ctx
+        .alice
+        .upload_envelope(fake_id, signed)
+        .await
+        .expect_err("should error");
 
-    assert!(result.is_err());
-    assert!(
-        result
-            .expect_err("invariant")
-            .to_string()
-            .contains("record ID")
-    );
+    assert_contains(e, "record ID");
 }
 
 #[rstest]
@@ -178,13 +172,11 @@ async fn test_unpinned_record_rejected(#[future] ctx: DataStoreCtx) {
     let record_id = record.id().expect("get record id");
 
     // Try to upload without pinning first.
-    let result = ctx.alice.upload_envelope(record_id, signed).await;
+    let e = ctx
+        .alice
+        .upload_envelope(record_id, signed)
+        .await
+        .expect_err("should error");
 
-    assert!(result.is_err());
-    assert!(
-        result
-            .expect_err("invariant")
-            .to_string()
-            .contains("not pinned")
-    );
+    assert_contains(e, "not pinned");
 }

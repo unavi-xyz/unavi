@@ -9,6 +9,16 @@ CREATE TABLE records (
 
 CREATE INDEX idx_records_creator ON records (creator);
 
+CREATE TABLE record_blob_deps (
+    record_id TEXT NOT NULL,
+    blob_hash TEXT NOT NULL,
+    dep_type TEXT NOT NULL,
+    PRIMARY KEY (record_id, blob_hash)
+);
+
+CREATE INDEX idx_record_blob_deps_blob ON record_blob_deps (blob_hash);
+CREATE INDEX idx_record_blob_deps_record ON record_blob_deps (record_id);
+
 CREATE TABLE envelopes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     record_id TEXT NOT NULL,

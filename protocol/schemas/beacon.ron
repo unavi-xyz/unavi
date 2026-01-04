@@ -6,6 +6,6 @@
         "did": String,
         "endpoint": Binary,
         "expires": I64,
-        "space": String,
+        "space": Binary,
     }),
 )

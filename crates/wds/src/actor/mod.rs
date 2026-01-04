@@ -13,7 +13,8 @@ use xdid::core::did::Did;
 use crate::{
     Identity, SessionToken,
     api::{
-        ApiService, BlobExists, PinBlob, PinRecord, RegisterBlobDeps, UploadBlob, UploadEnvelope,
+        ApiService, BlobExists, PinBlob, PinRecord, QueryRecords, RegisterBlobDeps, UploadBlob,
+        UploadEnvelope,
     },
     auth::AuthService,
     record::envelope::Envelope,
@@ -231,5 +232,27 @@ impl Actor {
             .map_err(|e| anyhow::anyhow!("register blob deps failed: {e}"))?;
 
         Ok(())
+    }
+
+    /// Queries records matching the given filters.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the query request fails.
+    pub async fn query_records(
+        &self,
+        creator: Option<&Did>,
+        schemas: &[Hash],
+    ) -> anyhow::Result<Vec<Hash>> {
+        let s = self.authenticate().await.context("auth")?;
+
+        self.api_client
+            .rpc(QueryRecords {
+                s,
+                creator: creator.map(ToString::to_string),
+                schemas: schemas.to_vec(),
+            })
+            .await?
+            .map_err(|e| anyhow::anyhow!("query failed: {e}"))
     }
 }

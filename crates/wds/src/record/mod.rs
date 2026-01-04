@@ -16,7 +16,7 @@ type RecordNonce = [u8; 16];
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Record {
-    pub author: Did,
+    pub creator: Did,
     pub nonce: RecordNonce,
     pub schemas: Vec<Hash>,
     pub timestamp: i64,
@@ -24,14 +24,14 @@ pub struct Record {
 
 impl Record {
     #[must_use]
-    pub fn new(author: Did) -> Self {
+    pub fn new(creator: Did) -> Self {
         let mut nonce = RecordNonce::default();
         rand::rng().fill(&mut nonce);
 
         let schemas = vec![schema::SCHEMA_ACL.hash, schema::SCHEMA_RECORD.hash];
 
         Self {
-            author,
+            creator,
             nonce,
             schemas,
             timestamp: OffsetDateTime::now_utc().unix_timestamp(),
@@ -56,7 +56,7 @@ impl Record {
     pub fn save(&self, doc: &LoroDoc) -> anyhow::Result<()> {
         let map = doc.get_map("record");
 
-        map.insert("author", self.author.to_string())?;
+        map.insert("creator", self.creator.to_string())?;
         map.insert("nonce", &self.nonce)?;
 
         let schemas = self.schemas.iter().map(Hash::to_string).collect::<Vec<_>>();
@@ -88,8 +88,8 @@ impl Record {
             anyhow::bail!("record is not a map");
         };
 
-        let author = extract_string(map, "author")?;
-        let author = Did::from_str(&author)?;
+        let creator = extract_string(map, "creator")?;
+        let creator = Did::from_str(&creator)?;
 
         let nonce = extract_binary(map, "nonce")?;
         let nonce: RecordNonce = nonce
@@ -100,7 +100,7 @@ impl Record {
         let schemas = extract_hash_list(map, "schemas")?;
 
         Ok(Self {
-            author,
+            creator,
             nonce,
             schemas,
             timestamp,

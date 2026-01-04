@@ -3,7 +3,7 @@
     version: 0,
     container: "record",
     layout: Map({
-        "author": String,
+        "creator": String,
         "nonce": Binary,
         "schemas": List(String),
         "timestamp": I64,

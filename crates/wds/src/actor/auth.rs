@@ -1,12 +1,4 @@
-use anyhow::{Context, bail};
-use tracing::debug;
-
-use crate::{
-    SessionToken,
-    actor::Actor,
-    auth::{AnswerChallenge, Challenge, RequestChallenge},
-    signed_bytes::Signable,
-};
+use crate::{SessionToken, actor::Actor};
 
 impl Actor {
     pub(crate) async fn authenticate(&self) -> anyhow::Result<SessionToken> {
@@ -17,37 +9,16 @@ impl Actor {
             return Ok(s);
         }
 
-        debug!("authenticating");
-
-        let nonce = self
-            .auth_client
-            .rpc(RequestChallenge(self.identity.did().clone()))
-            .await
-            .context("request challenge")?;
-
-        let challenge = Challenge {
-            did: self.identity.did().clone(),
-            host: self.host,
-            nonce,
-        };
-
-        let signed = challenge
-            .sign(self.identity.signing_key())
-            .context("sign challenge")?;
-
-        let Some(s) = self
-            .auth_client
-            .rpc(AnswerChallenge(signed))
-            .await
-            .context("answer challenge rpc")?
-        else {
-            bail!("failed to authenticate")
-        };
+        let s = crate::auth::client::authenticate(
+            self.identity().did().clone(),
+            self.identity().signing_key(),
+            self.host,
+            &self.auth_client,
+        )
+        .await?;
 
         session.set(s)?;
         drop(session);
-
-        debug!("successfully authenticated");
 
         Ok(s)
     }

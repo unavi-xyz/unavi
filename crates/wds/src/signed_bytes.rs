@@ -68,3 +68,12 @@ where
         SignedBytes::sign(self, key)
     }
 }
+
+pub struct IrohSigner<'a>(pub &'a iroh::SecretKey);
+
+impl Signer for IrohSigner<'_> {
+    fn sign(&self, message: &[u8]) -> anyhow::Result<Vec<u8>> {
+        let sig = self.0.sign(message);
+        Ok(sig.to_bytes().to_vec())
+    }
+}

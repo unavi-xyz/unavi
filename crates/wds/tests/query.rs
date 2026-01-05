@@ -19,7 +19,7 @@ async fn test_query_own_records(#[future] ctx: DataStoreCtx) {
     let record_id = result.id;
 
     // Alice queries with no filters.
-    let results = ctx.alice.query_records(None, &[]).await.expect("query");
+    let results = ctx.alice.query().send().await.expect("query");
 
     assert!(results.contains(&record_id));
 }
@@ -37,7 +37,9 @@ async fn test_query_by_creator(#[future] ctx: DataStoreCtx) {
     // Alice queries for her own records.
     let results = ctx
         .alice
-        .query_records(Some(ctx.alice.did()), &[])
+        .query()
+        .creator(ctx.alice.did())
+        .send()
         .await
         .expect("query");
 
@@ -74,7 +76,9 @@ async fn test_query_by_schema(#[future] ctx: DataStoreCtx) {
     // Query for HOME schema.
     let results = ctx
         .alice
-        .query_records(None, &[SCHEMA_HOME.hash])
+        .query()
+        .schema(SCHEMA_HOME.hash)
+        .send()
         .await
         .expect("query");
 
@@ -92,7 +96,7 @@ async fn test_query_respects_acl(#[future] ctx: DataStoreCtx) {
     let result = ctx.alice.create_record().send().await.expect("create");
 
     // Bob queries - should get empty results.
-    let results = ctx.bob.query_records(None, &[]).await.expect("query");
+    let results = ctx.bob.query().send().await.expect("query");
 
     assert!(!results.contains(&result.id));
 }
@@ -119,7 +123,7 @@ async fn test_query_with_read_permission(#[future] ctx: DataStoreCtx) {
         .expect("update acl");
 
     // Bob queries - should now see Alice's record.
-    let results = ctx.bob.query_records(None, &[]).await.expect("query");
+    let results = ctx.bob.query().send().await.expect("query");
 
     assert!(results.contains(&record_id));
 }
@@ -134,7 +138,9 @@ async fn test_query_empty_results(#[future] ctx: DataStoreCtx) {
     let fake_hash = blake3::hash(b"fake schema");
     let results = ctx
         .alice
-        .query_records(None, &[fake_hash])
+        .query()
+        .schema(fake_hash)
+        .send()
         .await
         .expect("query");
 

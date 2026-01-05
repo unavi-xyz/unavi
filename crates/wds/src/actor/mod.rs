@@ -12,10 +12,7 @@ use xdid::core::did::Did;
 
 use crate::{
     Identity, SessionToken,
-    api::{
-        ApiService, BlobExists, PinBlob, PinRecord, QueryRecords, RegisterBlobDeps, UploadBlob,
-        UploadEnvelope,
-    },
+    api::{ApiService, BlobExists, PinBlob, PinRecord, RegisterBlobDeps, UploadBlob, UploadEnvelope},
     auth::AuthService,
     record::envelope::Envelope,
     signed_bytes::{Signable, SignedBytes},
@@ -23,6 +20,7 @@ use crate::{
 
 mod auth;
 mod into_actor;
+mod query_builder;
 mod record_builder;
 
 pub use record_builder::RecordResult;
@@ -86,6 +84,12 @@ impl Actor {
     #[must_use]
     pub fn create_record(&self) -> record_builder::RecordBuilder {
         record_builder::RecordBuilder::new(self.clone())
+    }
+
+    /// Creates a query builder for searching records.
+    #[must_use]
+    pub fn query(&self) -> query_builder::QueryBuilder {
+        query_builder::QueryBuilder::new(self.clone())
     }
 
     /// Uploads a signed envelope to a record.
@@ -232,27 +236,5 @@ impl Actor {
             .map_err(|e| anyhow::anyhow!("register blob deps failed: {e}"))?;
 
         Ok(())
-    }
-
-    /// Queries records matching the given filters.
-    ///
-    /// # Errors
-    ///
-    /// Errors if the query request fails.
-    pub async fn query_records(
-        &self,
-        creator: Option<&Did>,
-        schemas: &[Hash],
-    ) -> anyhow::Result<Vec<Hash>> {
-        let s = self.authenticate().await.context("auth")?;
-
-        self.api_client
-            .rpc(QueryRecords {
-                s,
-                creator: creator.map(ToString::to_string),
-                schemas: schemas.to_vec(),
-            })
-            .await?
-            .map_err(|e| anyhow::anyhow!("query failed: {e}"))
     }
 }

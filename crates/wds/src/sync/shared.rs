@@ -186,8 +186,19 @@ pub async fn store_envelope(
         // Index schemas (immutable after creation).
         for schema_hash in &record.schemas {
             let hash_str = schema_hash.to_string();
+
             sqlx::query(
                 "INSERT OR IGNORE INTO record_schemas (record_id, schema_hash) VALUES (?, ?)",
+            )
+            .bind(record_id)
+            .bind(&hash_str)
+            .execute(&mut *tx)
+            .await?;
+
+            // Register as blob dependency for auto-pinning.
+            sqlx::query(
+                "INSERT OR IGNORE INTO record_blob_deps (record_id, blob_hash, dep_type)
+                 VALUES (?, ?, 'schema')",
             )
             .bind(record_id)
             .bind(&hash_str)

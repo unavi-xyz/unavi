@@ -123,13 +123,6 @@ impl RecordBuilder {
         // Pin record locally.
         self.actor.pin_record(id, self.ttl).await?;
 
-        // Register blob dependencies.
-        let deps: Vec<_> = all_schemas.iter().map(|s| (s.hash, "schema")).collect();
-        self.actor
-            .register_blob_deps(id, deps)
-            .await
-            .context("register blob deps")?;
-
         // Upload the initial envelope.
         self.actor.upload_envelope(id, &signed).await?;
 

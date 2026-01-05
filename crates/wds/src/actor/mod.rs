@@ -11,9 +11,7 @@ use tokio::sync::{Mutex, OnceCell};
 
 use crate::{
     Identity, SessionToken,
-    api::{
-        ApiService, BlobExists, PinBlob, PinRecord, RegisterBlobDeps, UploadBlob, UploadEnvelope,
-    },
+    api::{ApiService, BlobExists, PinBlob, PinRecord, UploadBlob, UploadEnvelope},
     auth::AuthService,
     record::envelope::Envelope,
     signed_bytes::{Signable, SignedBytes},
@@ -204,28 +202,5 @@ impl Actor {
             .map_err(|e| anyhow::anyhow!("blob exists check failed: {e}"))?;
 
         Ok(exists)
-    }
-
-    /// Registers blob dependencies for a record.
-    ///
-    /// # Errors
-    ///
-    /// Errors if the request fails.
-    pub async fn register_blob_deps(
-        &self,
-        record_id: Hash,
-        deps: Vec<(Hash, &str)>,
-    ) -> anyhow::Result<()> {
-        let s = self.authenticate().await.context("auth")?;
-
-        let deps: Vec<(Hash, smol_str::SmolStr)> =
-            deps.into_iter().map(|(h, t)| (h, t.into())).collect();
-
-        self.api_client
-            .rpc(RegisterBlobDeps { s, record_id, deps })
-            .await?
-            .map_err(|e| anyhow::anyhow!("register blob deps failed: {e}"))?;
-
-        Ok(())
     }
 }

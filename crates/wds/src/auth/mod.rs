@@ -20,6 +20,7 @@ use crate::{
     signed_bytes::{Signable, SignedBytes},
 };
 
+pub mod client;
 pub mod jwk;
 
 pub const ALPN: &[u8] = b"wds/auth";

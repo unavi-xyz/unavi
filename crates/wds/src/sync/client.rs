@@ -4,12 +4,17 @@ use bytes::BytesMut;
 use futures::{SinkExt, StreamExt};
 use iroh::{EndpointAddr, endpoint::VarInt};
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
+use xdid::core::did::Did;
 
-use crate::{StoreContext, sync::combined_stream::CombinedStream};
+use crate::{
+    StoreContext, auth::AuthService, signed_bytes::IrohSigner,
+    sync::combined_stream::CombinedStream,
+};
 
-use super::{ALPN, SyncMsg};
+use super::SyncMsg;
 
 pub async fn sync_to_remote(
+    did: Did,
     ctx: &StoreContext,
     remote: EndpointAddr,
     record_id: Hash,
@@ -17,16 +22,27 @@ pub async fn sync_to_remote(
     let db = ctx.db.pool();
     let id_str = record_id.to_string();
 
-    let connection = ctx.endpoint.connect(remote, ALPN).await?;
+    // Authenticate.
+    let auth_client =
+        irpc_iroh::client::<AuthService>(ctx.endpoint.clone(), remote.clone(), crate::auth::ALPN);
+
+    let session = crate::auth::client::authenticate(
+        did,
+        &IrohSigner(ctx.endpoint.secret_key()),
+        remote.id,
+        &auth_client,
+    )
+    .await?;
+
+    // Sync.
+    let connection = ctx.endpoint.connect(remote, crate::sync::ALPN).await?;
     let (tx, rx) = connection.open_bi().await?;
     let mut framed = Framed::new(CombinedStream(tx, rx), LengthDelimitedCodec::new());
-
-    // TODO auth with wds/auth
 
     let local_vv = super::shared::get_record_vv(db, &id_str).await?;
 
     let begin = SyncMsg::Begin {
-        session: [0; 32],
+        session,
         record_id,
         vv: local_vv.encode(),
     };

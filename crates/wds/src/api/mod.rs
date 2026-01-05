@@ -82,9 +82,14 @@ pub enum ApiService {
     #[wrap(QueryRecords)]
     QueryRecords {
         s: SessionToken,
-        creator: Option<String>,
-        schemas: Vec<Hash>,
+        filter: QueryFilter,
     },
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct QueryFilter {
+    pub creator: Option<String>,
+    pub schemas: Vec<Hash>,
 }
 
 async fn handle_requests(

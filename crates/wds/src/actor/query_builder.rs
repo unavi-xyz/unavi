@@ -2,7 +2,10 @@ use anyhow::Context;
 use blake3::Hash;
 use xdid::core::did::Did;
 
-use crate::{actor::Actor, api::QueryRecords};
+use crate::{
+    actor::Actor,
+    api::{QueryFilter, QueryRecords},
+};
 
 pub struct QueryBuilder {
     actor: Actor,
@@ -39,8 +42,10 @@ impl QueryBuilder {
             .api_client
             .rpc(QueryRecords {
                 s,
-                creator: self.creator.map(|d| d.to_string()),
-                schemas: self.schemas,
+                filter: QueryFilter {
+                    creator: self.creator.map(|d| d.to_string()),
+                    schemas: self.schemas,
+                },
             })
             .await?
             .map_err(|e| anyhow::anyhow!("query failed: {e}"))

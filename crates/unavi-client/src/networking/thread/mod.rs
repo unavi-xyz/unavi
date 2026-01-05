@@ -10,12 +10,14 @@ use crate::{DIRS, networking::WdsActors};
 mod join;
 mod remote_wds;
 
+#[expect(unused)]
 pub enum NetworkCommand {
     Join(Hash),
     Leave(Hash),
     Shutdown,
 }
 
+#[expect(unused)]
 pub enum NetworkEvent {
     SetActors(WdsActors),
     Connected { id: Hash, space: Entity },

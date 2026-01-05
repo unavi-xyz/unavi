@@ -22,7 +22,6 @@ mod blob_exists;
 mod pin_blob;
 mod pin_record;
 mod query_records;
-mod register_deps;
 mod upload_blob;
 mod upload_envelope;
 
@@ -71,13 +70,6 @@ pub enum ApiService {
     #[rpc(tx=oneshot::Sender<Result<bool, SmolStr>>)]
     #[wrap(BlobExists)]
     BlobExists { s: SessionToken, hash: Hash },
-    #[rpc(tx=oneshot::Sender<Result<(), SmolStr>>)]
-    #[wrap(RegisterBlobDeps)]
-    RegisterBlobDeps {
-        s: SessionToken,
-        record_id: Hash,
-        deps: Vec<(Hash, SmolStr)>,
-    },
     #[rpc(tx=oneshot::Sender<Result<Vec<Hash>, SmolStr>>)]
     #[wrap(QueryRecords)]
     QueryRecords {
@@ -139,9 +131,6 @@ async fn handle_message(ctx: Arc<StoreContext>, msg: ApiMessage) -> anyhow::Resu
         }
         ApiMessage::BlobExists(channels) => {
             blob_exists::blob_exists(ctx, channels).await?;
-        }
-        ApiMessage::RegisterBlobDeps(channels) => {
-            register_deps::register_blob_deps(ctx, channels).await?;
         }
         ApiMessage::QueryRecords(channels) => {
             query_records::query_records(ctx, channels).await?;

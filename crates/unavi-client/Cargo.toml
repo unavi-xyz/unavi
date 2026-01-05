@@ -12,7 +12,7 @@ default                 = ["discovery-local-network"]
 devtools                = ["devtools-bevy", "devtools-network"]
 devtools-bevy           = ["bevy/bevy_dev_tools"]
 devtools-network        = []
-discovery-local-network = ["wds/discovery-local-network"]
+discovery-local-network = ["iroh/discovery-local-network"]
 
 [lints]
 workspace = true

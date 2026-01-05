@@ -2,6 +2,7 @@ use std::{sync::Arc, time::Duration};
 
 use bevy::prelude::*;
 use blake3::Hash;
+use iroh::Endpoint;
 use wds::{DataStore, Identity, actor::Actor};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
@@ -69,9 +70,11 @@ async fn thread_loop(
     command_rx: &flume::Receiver<NetworkCommand>,
     event_tx: &flume::Sender<NetworkEvent>,
 ) -> anyhow::Result<()> {
+    let endpoint = Endpoint::builder().bind().await?;
+
     let store = {
         let path = DIRS.data_local_dir().join("wds");
-        DataStore::new(&path).await?
+        DataStore::new(&path, endpoint).await?
     };
 
     // TODO: save / load keypair from disk

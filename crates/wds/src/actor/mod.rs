@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration};
 use anyhow::Context;
 use blake3::Hash;
 use bytes::Bytes;
-use iroh::EndpointId;
+use iroh::{EndpointAddr, EndpointId};
 use irpc::Client;
 use loro::{LoroDoc, VersionVector};
 use time::OffsetDateTime;
@@ -93,7 +93,7 @@ impl Actor {
     /// # Errors
     ///
     /// Errors if the sync request fails.
-    pub async fn sync(&self, record_id: Hash, remote: EndpointId) -> anyhow::Result<()> {
+    pub async fn sync(&self, record_id: Hash, remote: EndpointAddr) -> anyhow::Result<()> {
         let s = self.authenticate().await.context("auth")?;
 
         self.api_client

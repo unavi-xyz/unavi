@@ -1,6 +1,6 @@
 use anyhow::Context;
 use blake3::Hash;
-use iroh::EndpointId;
+use iroh::EndpointAddr;
 use loro::LoroDoc;
 
 use crate::api::ReadRecord;
@@ -11,7 +11,7 @@ use super::Actor;
 pub struct ReadBuilder {
     actor: Actor,
     record_id: Hash,
-    sync_sources: Vec<EndpointId>,
+    sync_sources: Vec<EndpointAddr>,
 }
 
 impl ReadBuilder {
@@ -25,7 +25,7 @@ impl ReadBuilder {
 
     /// Add a remote endpoint to sync from if record not found locally.
     #[must_use]
-    pub fn sync_from(mut self, endpoint: EndpointId) -> Self {
+    pub fn sync_from(mut self, endpoint: EndpointAddr) -> Self {
         self.sync_sources.push(endpoint);
         self
     }

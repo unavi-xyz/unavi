@@ -5,7 +5,7 @@ use std::{
 
 use axum::{Json, Router};
 use directories::ProjectDirs;
-use iroh::EndpointId;
+use iroh::{Endpoint, EndpointId};
 use tracing::info;
 use wds::DataStore;
 use xdid::{
@@ -42,9 +42,11 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     let vc = key_pair::get_or_create_key(opts.in_memory)?;
     info!("Running server as {did}");
 
+    let endpoint = Endpoint::builder().bind().await?;
+
     let store = {
         let path = DIRS.data_local_dir().join("wds");
-        DataStore::new(&path).await?
+        DataStore::new(&path, endpoint).await?
     };
 
     let app = create_did_document_route(did, &vc, store.endpoint_id());

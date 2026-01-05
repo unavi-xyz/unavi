@@ -9,10 +9,6 @@ version.workspace    = true
 [lints]
 workspace = true
 
-[features]
-default                 = []
-discovery-local-network = ["iroh/discovery-local-network"]
-
 [dependencies]
 anyhow.workspace   = true
 blake3.workspace   = true

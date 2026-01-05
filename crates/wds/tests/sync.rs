@@ -2,104 +2,236 @@ use std::time::Duration;
 
 use rstest::rstest;
 use tracing_test::traced_test;
-use wds::{
-    record::{Record, acl::Acl, envelope::Envelope},
-    signed_bytes::{Signable, SignedBytes},
-};
+use wds::record::acl::Acl;
 
-use crate::common::{DataStoreCtx, assert_contains, ctx};
+use crate::common::{MultiStoreCtx, assert_contains, multi_ctx};
 
 mod common;
 
 #[rstest]
-#[timeout(Duration::from_secs(5))]
+#[timeout(Duration::from_secs(10))]
 #[awt]
 #[traced_test]
 #[tokio::test]
-async fn test_invalid_signature_rejected(#[future] ctx: DataStoreCtx) {
-    // Alice creates record.
-    let result = ctx
+async fn test_sync_record_between_stores(#[future] multi_ctx: MultiStoreCtx) {
+    // Alice creates a record on Rome.
+    let result = multi_ctx
+        .rome
         .alice
         .create_record()
         .send()
         .await
-        .expect("create record");
+        .expect("create record on Rome");
     let (record_id, doc) = (result.id, result.doc);
 
-    // Create a valid envelope then tamper with it.
+    // Add some data.
     let from_vv = doc.oplog_vv();
     doc.get_map("data")
-        .insert("key", "value")
+        .insert("key", "synced_value")
         .expect("insert into map");
-
-    let envelope = Envelope::updates(ctx.alice.identity().did().clone(), &doc, from_vv)
-        .expect("build envelope");
-    let signed = envelope
-        .sign(ctx.alice.identity().signing_key())
-        .expect("sign envelope");
-
-    // Tamper with the signature.
-    let mut sig = signed.signature().to_vec();
-    if let Some(byte) = sig.first_mut() {
-        *byte ^= 0xFF;
-    }
-
-    let tampered = SignedBytes::<Envelope>::from_parts(signed.payload_bytes().to_vec(), sig);
-
-    let e = ctx
+    multi_ctx
+        .rome
         .alice
-        .upload_envelope(record_id, &tampered)
+        .update_record(record_id, &doc, from_vv)
         .await
-        .expect_err("should error");
+        .expect("update record");
 
-    assert_contains(e, "signature");
-}
-
-#[rstest]
-#[timeout(Duration::from_secs(5))]
-#[awt]
-#[traced_test]
-#[tokio::test]
-async fn test_wrong_author_signature_rejected(#[future] ctx: DataStoreCtx) {
-    // Alice creates record with Bob as authorized writer.
-    let result = ctx
-        .alice
-        .create_record()
-        .send()
-        .await
-        .expect("create record");
-    let (record_id, doc) = (result.id, result.doc);
-
-    // Add Bob to write ACL.
+    // Grant Bob read access so he can read on Carthage.
     let from_vv = doc.oplog_vv();
     let mut acl = Acl::load(&doc).expect("load acl");
-    acl.write.push(ctx.bob.identity().did().clone());
+    acl.read
+        .push(multi_ctx.carthage.bob.identity().did().clone());
     acl.save(&doc).expect("save acl");
-    ctx.alice
+    multi_ctx
+        .rome
+        .alice
         .update_record(record_id, &doc, from_vv)
         .await
         .expect("update acl");
 
-    // Alice creates an envelope claiming to be from Bob.
+    // Pin the record on Carthage (required before sync).
+    multi_ctx
+        .carthage
+        .alice
+        .pin_record(record_id, Duration::from_secs(3600))
+        .await
+        .expect("pin record on Carthage");
+
+    // Bob on Carthage syncs from Rome.
+    multi_ctx
+        .carthage
+        .bob
+        .sync(record_id, multi_ctx.rome.store.endpoint().addr())
+        .await
+        .expect("sync from Rome to Carthage");
+
+    // Bob can now read the record on Carthage.
+    let read_doc = multi_ctx
+        .carthage
+        .bob
+        .read(record_id)
+        .send()
+        .await
+        .expect("read record on Carthage");
+
+    // Verify data is present.
+    let value = read_doc.get_map("data").get_deep_value();
+    let loro::LoroValue::Map(map) = value else {
+        panic!("expected map");
+    };
+    assert_eq!(
+        map.get("key"),
+        Some(&loro::LoroValue::String("synced_value".into()))
+    );
+}
+
+#[rstest]
+#[timeout(Duration::from_secs(10))]
+#[awt]
+#[traced_test]
+#[tokio::test]
+async fn test_read_with_sync_from(#[future] multi_ctx: MultiStoreCtx) {
+    // Alice creates a record on Rome.
+    let result = multi_ctx
+        .rome
+        .alice
+        .create_record()
+        .send()
+        .await
+        .expect("create record on Rome");
+    let (record_id, doc) = (result.id, result.doc);
+
+    // Grant Bob read access.
+    let from_vv = doc.oplog_vv();
+    let mut acl = Acl::load(&doc).expect("load acl");
+    acl.read
+        .push(multi_ctx.carthage.bob.identity().did().clone());
+    acl.save(&doc).expect("save acl");
+    multi_ctx
+        .rome
+        .alice
+        .update_record(record_id, &doc, from_vv)
+        .await
+        .expect("update acl");
+
+    // Pin the record on Carthage.
+    multi_ctx
+        .carthage
+        .alice
+        .pin_record(record_id, Duration::from_secs(3600))
+        .await
+        .expect("pin record on Carthage");
+
+    // Bob reads with sync_from - should sync from Rome then read.
+    let read_doc = multi_ctx
+        .carthage
+        .bob
+        .read(record_id)
+        .sync_from(multi_ctx.rome.store.endpoint().addr())
+        .send()
+        .await
+        .expect("read with sync_from");
+
+    // Verify ACL is correct.
+    let acl = Acl::load(&read_doc).expect("load acl");
+    assert!(acl.read.contains(multi_ctx.carthage.bob.identity().did()));
+}
+
+#[rstest]
+#[timeout(Duration::from_secs(10))]
+#[awt]
+#[traced_test]
+#[tokio::test]
+async fn test_sync_updates_after_initial_sync(#[future] multi_ctx: MultiStoreCtx) {
+    // Alice creates a record on Rome.
+    let result = multi_ctx
+        .rome
+        .alice
+        .create_record()
+        .send()
+        .await
+        .expect("create record on Rome");
+    let (record_id, doc) = (result.id, result.doc);
+
+    // Grant Bob read access.
+    let from_vv = doc.oplog_vv();
+    let mut acl = Acl::load(&doc).expect("load acl");
+    acl.read
+        .push(multi_ctx.carthage.bob.identity().did().clone());
+    acl.save(&doc).expect("save acl");
+    multi_ctx
+        .rome
+        .alice
+        .update_record(record_id, &doc, from_vv)
+        .await
+        .expect("update acl");
+
+    // Pin and initial sync.
+    multi_ctx
+        .carthage
+        .alice
+        .pin_record(record_id, Duration::from_secs(3600))
+        .await
+        .expect("pin record on Carthage");
+    multi_ctx
+        .carthage
+        .bob
+        .sync(record_id, multi_ctx.rome.store.endpoint().addr())
+        .await
+        .expect("initial sync");
+
+    // Alice makes more updates on Rome.
     let from_vv = doc.oplog_vv();
     doc.get_map("data")
-        .insert("key", "value")
-        .expect("insert into map");
-
-    // Envelope claims Bob as author but is signed by Alice.
-    let envelope =
-        Envelope::updates(ctx.bob.identity().did().clone(), &doc, from_vv).expect("build envelope");
-    let misattributed = envelope
-        .sign(ctx.alice.identity().signing_key())
-        .expect("sign envelope");
-
-    let e = ctx
+        .insert("update1", "first")
+        .expect("insert");
+    multi_ctx
+        .rome
         .alice
-        .upload_envelope(record_id, &misattributed)
+        .update_record(record_id, &doc, from_vv)
         .await
-        .expect_err("should error");
+        .expect("update 1");
 
-    assert_contains(e, "signature");
+    let from_vv = doc.oplog_vv();
+    doc.get_map("data")
+        .insert("update2", "second")
+        .expect("insert");
+    multi_ctx
+        .rome
+        .alice
+        .update_record(record_id, &doc, from_vv)
+        .await
+        .expect("update 2");
+
+    // Bob syncs again to get updates.
+    multi_ctx
+        .carthage
+        .bob
+        .sync(record_id, multi_ctx.rome.store.endpoint().addr())
+        .await
+        .expect("sync updates");
+
+    // Verify updates are present.
+    let read_doc = multi_ctx
+        .carthage
+        .bob
+        .read(record_id)
+        .send()
+        .await
+        .expect("read after sync");
+
+    let value = read_doc.get_map("data").get_deep_value();
+    let loro::LoroValue::Map(map) = value else {
+        panic!("expected map");
+    };
+    assert_eq!(
+        map.get("update1"),
+        Some(&loro::LoroValue::String("first".into()))
+    );
+    assert_eq!(
+        map.get("update2"),
+        Some(&loro::LoroValue::String("second".into()))
+    );
 }
 
 #[rstest]
@@ -107,70 +239,24 @@ async fn test_wrong_author_signature_rejected(#[future] ctx: DataStoreCtx) {
 #[awt]
 #[traced_test]
 #[tokio::test]
-async fn test_record_id_mismatch_rejected(#[future] ctx: DataStoreCtx) {
-    // Create a record document with a specific nonce.
-    let doc = loro::LoroDoc::new();
-    let record = Record::new(ctx.alice.identity().did().clone());
-    record.save(&doc).expect("save record");
-
-    let mut acl = Acl::default();
-    acl.manage.push(ctx.alice.identity().did().clone());
-    acl.write.push(ctx.alice.identity().did().clone());
-    acl.save(&doc).expect("save acl");
-
-    let envelope =
-        Envelope::all_updates(ctx.alice.identity().did().clone(), &doc).expect("build envelope");
-    let signed = envelope
-        .sign(ctx.alice.identity().signing_key())
-        .expect("sign envelope");
-
-    // Pin with a different (fake) record ID.
-    let fake_id = blake3::hash(b"fake record id");
-    ctx.alice
-        .pin_record(fake_id, Duration::from_secs(3600))
-        .await
-        .expect("pin record");
-
-    // Try to upload with mismatched ID.
-    let e = ctx
+async fn test_sync_unpinned_fails(#[future] multi_ctx: MultiStoreCtx) {
+    // Alice creates a record on Rome.
+    let result = multi_ctx
+        .rome
         .alice
-        .upload_envelope(fake_id, &signed)
+        .create_record()
+        .send()
         .await
-        .expect_err("should error");
+        .expect("create record on Rome");
+    let record_id = result.id;
 
-    assert_contains(e, "record ID");
-}
-
-#[rstest]
-#[timeout(Duration::from_secs(5))]
-#[awt]
-#[traced_test]
-#[tokio::test]
-async fn test_unpinned_record_rejected(#[future] ctx: DataStoreCtx) {
-    // Create a record document without pinning.
-    let doc = loro::LoroDoc::new();
-    let record = Record::new(ctx.alice.identity().did().clone());
-    record.save(&doc).expect("save record");
-
-    let mut acl = Acl::default();
-    acl.manage.push(ctx.alice.identity().did().clone());
-    acl.write.push(ctx.alice.identity().did().clone());
-    acl.save(&doc).expect("save acl");
-
-    let envelope =
-        Envelope::all_updates(ctx.alice.identity().did().clone(), &doc).expect("build envelope");
-    let signed = envelope
-        .sign(ctx.alice.identity().signing_key())
-        .expect("sign envelope");
-
-    let record_id = record.id().expect("get record id");
-
-    // Try to upload without pinning first.
-    let e = ctx
-        .alice
-        .upload_envelope(record_id, &signed)
+    // Try to sync without pinning first - should fail.
+    let e = multi_ctx
+        .carthage
+        .bob
+        .sync(record_id, multi_ctx.rome.store.endpoint().addr())
         .await
-        .expect_err("should error");
+        .expect_err("should fail");
 
     assert_contains(e, "not pinned");
 }

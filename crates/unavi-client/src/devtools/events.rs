@@ -3,6 +3,7 @@
 use std::sync::LazyLock;
 
 /// Network monitoring event types.
+#[expect(dead_code)]
 pub enum NetworkEvent {
     Download {
         host: String,

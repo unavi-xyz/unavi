@@ -6,7 +6,7 @@ use std::{sync::Arc, time::Duration};
 
 use blake3::Hash;
 use bytes::Bytes;
-use iroh::EndpointId;
+use iroh::EndpointAddr;
 use irpc::{
     Client,
     channel::{mpsc, oneshot},
@@ -87,7 +87,7 @@ pub enum ApiService {
     SyncRecord {
         s: SessionToken,
         record_id: Hash,
-        remote: EndpointId,
+        remote: EndpointAddr,
     },
 }
 

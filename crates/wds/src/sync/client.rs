@@ -26,7 +26,7 @@ pub async fn sync_to_remote(
     let local_vv = super::shared::get_record_vv(db, &id_str).await?;
 
     let begin = SyncMsg::Begin {
-        session,
+        session: [0; 32],
         record_id,
         vv: local_vv.encode(),
     };

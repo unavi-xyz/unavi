@@ -8,12 +8,12 @@ use crate::{StoreContext, record::acl::Acl, sync::SyncMsg};
 pub async fn handle_sync<S>(
     ctx: &StoreContext,
     mut framed: Framed<S, LengthDelimitedCodec>,
-) -> anyhow::Result<()>
+) -> anyhow::Result<&'static str>
 where
     S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
 {
     let Some(bytes) = framed.next().await else {
-        return Ok(());
+        return Ok("no bytes");
     };
     let request: SyncMsg = postcard::from_bytes(&bytes?)?;
 
@@ -28,7 +28,7 @@ where
 
     // Authenticate and get requester DID.
     let Some(conn_state) = ctx.connections.get_async(&session).await else {
-        return Ok(());
+        return Ok("unauthenticated");
     };
     let requester_did = conn_state.get().did.clone();
     drop(conn_state);
@@ -49,7 +49,7 @@ where
             .await?;
 
         if pinned.is_none() {
-            return Ok(());
+            return Ok("not found");
         }
 
         VersionVector::new()
@@ -60,7 +60,7 @@ where
     let acl = Acl::load(&doc)?;
     if !acl.can_read(&requester_did) {
         // Silently deny - record "doesn't exist" for this user.
-        return Ok(());
+        return Ok("not found");
     }
 
     let remote_vv = VersionVector::decode(&remote_vv_bytes)?;
@@ -76,7 +76,7 @@ where
     // Receive envelopes we're missing.
     // Write permission is checked in store_envelope.
     let Some(bytes) = framed.next().await else {
-        return Ok(());
+        return Ok("done");
     };
     let incoming: SyncMsg = postcard::from_bytes(&bytes?)?;
 
@@ -86,10 +86,5 @@ where
         }
     }
 
-    let done_bytes = postcard::to_stdvec(&SyncMsg::Done)?;
-    framed
-        .send(BytesMut::from(done_bytes.as_slice()).freeze())
-        .await?;
-
-    Ok(())
+    Ok("done")
 }

@@ -35,12 +35,7 @@ async fn test_read_own_record(#[future] ctx: DataStoreCtx) {
         .expect("update record");
 
     // Read the record back.
-    let read_doc = ctx
-        .alice
-        .read(record_id)
-        .send()
-        .await
-        .expect("read record");
+    let read_doc = ctx.alice.read(record_id).send().await.expect("read record");
 
     // Verify data is present.
     let value = read_doc.get_map("data").get_deep_value();
@@ -182,21 +177,13 @@ async fn test_read_multiple_updates(#[future] ctx: DataStoreCtx) {
     }
 
     // Read and verify all updates are present.
-    let read_doc = ctx
-        .alice
-        .read(record_id)
-        .send()
-        .await
-        .expect("read record");
+    let read_doc = ctx.alice.read(record_id).send().await.expect("read record");
 
     let value = read_doc.get_map("data").get_deep_value();
     let LoroValue::Map(map) = value else {
         panic!("expected map");
     };
     for i in 0..5 {
-        assert_eq!(
-            map.get(&format!("key_{i}")),
-            Some(&LoroValue::I64(i))
-        );
+        assert_eq!(map.get(&format!("key_{i}")), Some(&LoroValue::I64(i)));
     }
 }

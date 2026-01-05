@@ -1,7 +1,7 @@
 use std::{path::Path, sync::Arc};
 
 use derive_more::Debug;
-use iroh::{Endpoint, EndpointId, endpoint::RelayMode, protocol::Router};
+use iroh::{Endpoint, EndpointId, protocol::Router};
 use iroh_blobs::{
     BlobsProtocol,
     store::fs::{FsStore, options::Options},
@@ -55,25 +55,8 @@ struct ConnectionState {
 impl DataStore {
     /// # Errors
     ///
-    /// Errors if the iroh endpoint could not be constructed, or the file system
-    /// store could not be initialized.
-    pub async fn new(path: &Path) -> anyhow::Result<Self> {
-        let endpoint = Endpoint::builder().bind().await?;
-        Self::with_endpoint(path, endpoint).await
-    }
-
-    /// Empty endpoint constructor with minimal networking (no relay/STUN/pkarr).
-    ///
-    /// # Errors
-    ///
-    /// Errors if the iroh endpoint could not be constructed, or the file system
-    /// store could not be initialized.
-    pub async fn new_empty(path: &Path) -> anyhow::Result<Self> {
-        let endpoint = Endpoint::empty_builder(RelayMode::Disabled).bind().await?;
-        Self::with_endpoint(path, endpoint).await
-    }
-
-    async fn with_endpoint(path: &Path, endpoint: Endpoint) -> anyhow::Result<Self> {
+    /// Errors if the file system store could not be initialized.
+    pub async fn new(path: &Path, endpoint: Endpoint) -> anyhow::Result<Self> {
         let blob_path = path.join("blob");
         let record_path = path.join("record");
         tokio::fs::create_dir_all(&blob_path).await?;
@@ -152,5 +135,11 @@ impl DataStore {
     #[must_use]
     pub fn blobs(&self) -> &iroh_blobs::store::fs::FsStore {
         &self.ctx.blobs
+    }
+
+    /// Returns the iroh endpoint. Primarily for testing.
+    #[must_use]
+    pub fn endpoint(&self) -> &Endpoint {
+        &self.ctx.endpoint
     }
 }

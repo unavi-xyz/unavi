@@ -2,6 +2,7 @@
 
 use std::{fmt::Debug, sync::Arc};
 
+use iroh::{Endpoint, RelayMode};
 use rstest::fixture;
 use tempfile::{TempDir, tempdir};
 use wds::{
@@ -9,7 +10,7 @@ use wds::{
     actor::Actor,
     record::{
         acl::Acl,
-        schema::{SCHEMA_ACL, SCHEMA_BEACON, SCHEMA_HOME, SCHEMA_RECORD},
+        schema::{SCHEMA_ACL, SCHEMA_RECORD},
     },
 };
 use xdid::{
@@ -46,12 +47,18 @@ async fn generate_actor(store: &DataStore) -> Actor {
 #[fixture]
 pub async fn ctx() -> DataStoreCtx {
     let dir = tempdir().expect("tempdir");
-    let store = DataStore::new_empty(dir.path())
+
+    let endpoint = Endpoint::empty_builder(RelayMode::Disabled)
+        .bind()
+        .await
+        .expect("bind endpoint");
+
+    let store = DataStore::new(dir.path(), endpoint)
         .await
         .expect("construct data store");
 
     // Upload schemas to the blob store.
-    for schema in [&SCHEMA_ACL, &SCHEMA_BEACON, &SCHEMA_HOME, &SCHEMA_RECORD] {
+    for schema in [&SCHEMA_ACL, &SCHEMA_RECORD] {
         store
             .blobs()
             .blobs()
@@ -69,6 +76,24 @@ pub async fn ctx() -> DataStoreCtx {
         bob,
         _dir: dir,
     }
+}
+
+pub struct MultiStoreCtx {
+    pub rome: DataStoreCtx,
+    pub carthage: DataStoreCtx,
+}
+
+#[fixture]
+pub async fn multi_ctx() -> MultiStoreCtx {
+    let rome = ctx().await;
+    let mut carthage = ctx().await;
+
+    carthage.alice = carthage
+        .store
+        .local_actor(Arc::clone(rome.alice.identity()));
+    carthage.bob = carthage.store.local_actor(Arc::clone(rome.bob.identity()));
+
+    MultiStoreCtx { rome, carthage }
 }
 
 pub fn assert_contains(e: impl Debug, contains: &str) {

@@ -287,7 +287,7 @@ where
 }
 
 /// Reconstructs a Loro document from stored envelopes (current state).
-pub(crate) async fn reconstruct_current_doc(
+pub async fn reconstruct_current_doc(
     db: &Pool<Sqlite>,
     record_id: &str,
 ) -> anyhow::Result<LoroDoc> {

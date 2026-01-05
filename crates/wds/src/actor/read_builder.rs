@@ -2,6 +2,7 @@ use anyhow::Context;
 use blake3::Hash;
 use iroh::EndpointAddr;
 use loro::LoroDoc;
+use tracing::{debug, warn};
 
 use crate::api::ReadRecord;
 
@@ -34,6 +35,8 @@ impl ReadBuilder {
     pub async fn send(self) -> anyhow::Result<LoroDoc> {
         let s = self.actor.authenticate().await.context("auth")?;
 
+        debug!(record=?self.record_id, "reading");
+
         // Try to read from local first.
         let result = self
             .actor
@@ -58,7 +61,11 @@ impl ReadBuilder {
 
         // Try each sync source.
         for remote in self.sync_sources {
-            if self.actor.sync(self.record_id, remote).await.is_err() {
+            let remote_id = remote.id;
+            debug!(remote=?remote_id, "attempting sync");
+
+            if let Err(e) = self.actor.sync(self.record_id, remote).await {
+                warn!(remote=?remote_id, "sync failed: {e:?}");
                 continue;
             }
 

@@ -2,26 +2,24 @@
 //!
 //! Challenge-response DID authentication.
 
-use std::{fmt::Debug, str::FromStr, sync::Arc, time::Duration};
+use std::{fmt::Debug, sync::Arc};
 
-use anyhow::bail;
-use iroh::{EndpointId, Signature};
-use irpc::{Client, WithChannels, channel::oneshot, rpc_requests};
+use iroh::EndpointId;
+use irpc::{Client, channel::oneshot, rpc_requests};
 use irpc_iroh::IrohProtocol;
-use rand::RngCore;
 use scc::HashCache;
 use serde::{Deserialize, Serialize};
 use tracing::error;
-use xdid::{core::did::Did, resolver::DidResolver};
+use xdid::core::did::Did;
 
 use crate::{
-    ConnectionState, SessionToken, StoreContext,
-    auth::jwk::verify_jwk_signature,
+    SessionToken, StoreContext,
     signed_bytes::{Signable, SignedBytes},
 };
 
 pub mod client;
 pub mod jwk;
+mod server;
 
 pub const ALPN: &[u8] = b"wds/auth";
 
@@ -65,6 +63,7 @@ pub struct Challenge {
     pub host: EndpointId,
     /// Key must sign our given nonce.
     pub nonce: Nonce,
+    // TODO: add timestamp + expiration
 }
 
 impl Signable for Challenge {}
@@ -86,146 +85,10 @@ async fn handle_requests(
         let state = Arc::clone(&state);
 
         tokio::spawn(async move {
-            if let Err(e) = handle_message(ctx, state, msg).await {
+            if let Err(e) = server::handle_message(ctx, state, msg).await {
                 error!("Error handling message: {e:?}");
             }
         });
-    }
-
-    Ok(())
-}
-
-const NONCE_TTL: Duration = Duration::from_mins(3);
-
-async fn handle_message(
-    ctx: Arc<StoreContext>,
-    state: Arc<HandlerState>,
-    msg: AuthMessage,
-) -> anyhow::Result<()> {
-    match msg {
-        AuthMessage::RequestChallenge(WithChannels { inner, tx, .. }) => {
-            let mut nonce = Nonce::default();
-            rand::rng().fill_bytes(&mut nonce);
-
-            if let Err((_, did)) = state.nonces.put_async(nonce, inner.0).await {
-                bail!("Failed to generate nonce for {did}")
-            }
-
-            // Remove nonce after time limit.
-            tokio::spawn(async move {
-                tokio::time::sleep(NONCE_TTL).await;
-                state.nonces.remove_async(&nonce).await;
-            });
-
-            tx.send(nonce).await?;
-        }
-        AuthMessage::AnswerChallenge(WithChannels { inner, tx, .. }) => {
-            let challenge = inner.0.payload()?;
-
-            if challenge.host != ctx.endpoint.id() {
-                // Invalid host.
-                tx.send(None).await?;
-                return Ok(());
-            }
-
-            let Some(did) = state
-                .nonces
-                .read_async(&challenge.nonce, |_, d| d.clone())
-                .await
-            else {
-                // Invalid nonce.
-                tx.send(None).await?;
-                return Ok(());
-            };
-
-            if did != challenge.did {
-                // Invalid DID.
-                tx.send(None).await?;
-                return Ok(());
-            }
-
-            let resolver = DidResolver::new()?;
-            let doc = resolver.resolve(&did).await?;
-
-            // Validate signature.
-            let mut found_valid = false;
-
-            // Check auth methods.
-            let Some(auth_methods) = &doc.authentication else {
-                tx.send(None).await?;
-                return Ok(());
-            };
-
-            for method in auth_methods {
-                let Some(map) = doc.resolve_verification_method(method) else {
-                    continue;
-                };
-
-                let Some(jwk) = &map.public_key_jwk else {
-                    continue;
-                };
-
-                let is_valid =
-                    verify_jwk_signature(jwk, inner.0.signature(), inner.0.payload_bytes());
-
-                if is_valid {
-                    found_valid = true;
-                    break;
-                }
-            }
-
-            // Check WDS services.
-            // We allow defined WDSes to authenticate on behalf of the DID.
-            // This enables cross-WDS operations like reading or syncing.
-            // Any written data still must be signed and verified by an attestation method.
-            if !found_valid {
-                for service in doc.service.unwrap_or_default() {
-                    if service.id != "wds" {
-                        continue;
-                    }
-
-                    for t in service.typ {
-                        let Ok(endpoint) = EndpointId::from_str(&t) else {
-                            continue;
-                        };
-
-                        let Ok(sig_bytes) = inner.0.signature().try_into() else {
-                            continue;
-                        };
-                        let sig = Signature::from_bytes(sig_bytes);
-
-                        if endpoint.verify(inner.0.payload_bytes(), &sig).is_err() {
-                            continue;
-                        }
-
-                        found_valid = true;
-                        break;
-                    }
-                }
-            }
-
-            if !found_valid {
-                // Invalid signature.
-                tx.send(None).await?;
-                return Ok(());
-            }
-
-            // Generate and save session token.
-            let mut token = SessionToken::default();
-            rand::rng().fill_bytes(&mut token);
-
-            if ctx
-                .connections
-                .insert_async(token, ConnectionState { did })
-                .await
-                .is_err()
-            {
-                tx.send(None).await?;
-                return Ok(());
-            }
-
-            tx.send(Some(token)).await?;
-        }
     }
 
     Ok(())

@@ -24,12 +24,12 @@ pub async fn query_records(
     );
     let mut binds: Vec<String> = vec![requester_str];
 
-    if let Some(creator) = &inner.creator {
+    if let Some(creator) = &inner.filter.creator {
         sql.push_str(" AND r.creator = ?");
         binds.push(creator.clone());
     }
 
-    for (i, schema) in inner.schemas.iter().enumerate() {
+    for (i, schema) in inner.filter.schemas.iter().enumerate() {
         write!(
             sql,
             " AND EXISTS (SELECT 1 FROM record_schemas s{i}

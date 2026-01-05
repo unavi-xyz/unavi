@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::{fmt::Debug, sync::Arc};
 
 use rstest::fixture;

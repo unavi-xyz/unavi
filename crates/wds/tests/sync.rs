@@ -32,10 +32,10 @@ async fn test_invalid_signature_rejected(#[future] ctx: DataStoreCtx) {
         .insert("key", "value")
         .expect("insert into map");
 
-    let envelope =
-        Envelope::updates(ctx.alice.did().clone(), &doc, from_vv).expect("build envelope");
+    let envelope = Envelope::updates(ctx.alice.identity().did().clone(), &doc, from_vv)
+        .expect("build envelope");
     let signed = envelope
-        .sign(ctx.alice.signing_key())
+        .sign(ctx.alice.identity().signing_key())
         .expect("sign envelope");
 
     // Tamper with the signature.
@@ -73,7 +73,7 @@ async fn test_wrong_author_signature_rejected(#[future] ctx: DataStoreCtx) {
     // Add Bob to write ACL.
     let from_vv = doc.oplog_vv();
     let mut acl = Acl::load(&doc).expect("load acl");
-    acl.write.push(ctx.bob.did().clone());
+    acl.write.push(ctx.bob.identity().did().clone());
     acl.save(&doc).expect("save acl");
     ctx.alice
         .update_record(record_id, &doc, from_vv)
@@ -87,9 +87,10 @@ async fn test_wrong_author_signature_rejected(#[future] ctx: DataStoreCtx) {
         .expect("insert into map");
 
     // Envelope claims Bob as author but is signed by Alice.
-    let envelope = Envelope::updates(ctx.bob.did().clone(), &doc, from_vv).expect("build envelope");
+    let envelope =
+        Envelope::updates(ctx.bob.identity().did().clone(), &doc, from_vv).expect("build envelope");
     let misattributed = envelope
-        .sign(ctx.alice.signing_key())
+        .sign(ctx.alice.identity().signing_key())
         .expect("sign envelope");
 
     let e = ctx
@@ -109,23 +110,24 @@ async fn test_wrong_author_signature_rejected(#[future] ctx: DataStoreCtx) {
 async fn test_record_id_mismatch_rejected(#[future] ctx: DataStoreCtx) {
     // Create a record document with a specific nonce.
     let doc = loro::LoroDoc::new();
-    let record = Record::new(ctx.alice.did().clone());
+    let record = Record::new(ctx.alice.identity().did().clone());
     record.save(&doc).expect("save record");
 
     let mut acl = Acl::default();
-    acl.manage.push(ctx.alice.did().clone());
-    acl.write.push(ctx.alice.did().clone());
+    acl.manage.push(ctx.alice.identity().did().clone());
+    acl.write.push(ctx.alice.identity().did().clone());
     acl.save(&doc).expect("save acl");
 
-    let envelope = Envelope::all_updates(ctx.alice.did().clone(), &doc).expect("build envelope");
+    let envelope =
+        Envelope::all_updates(ctx.alice.identity().did().clone(), &doc).expect("build envelope");
     let signed = envelope
-        .sign(ctx.alice.signing_key())
+        .sign(ctx.alice.identity().signing_key())
         .expect("sign envelope");
 
     // Pin with a DIFFERENT (fake) record ID.
     let fake_id = blake3::hash(b"fake record id");
     let fake_id_str = fake_id.to_string();
-    let did_str = ctx.alice.did().to_string();
+    let did_str = ctx.alice.identity().did().to_string();
     let expires = (time::OffsetDateTime::now_utc() + time::Duration::hours(1)).unix_timestamp();
 
     sqlx::query!(
@@ -156,17 +158,18 @@ async fn test_record_id_mismatch_rejected(#[future] ctx: DataStoreCtx) {
 async fn test_unpinned_record_rejected(#[future] ctx: DataStoreCtx) {
     // Create a record document without pinning.
     let doc = loro::LoroDoc::new();
-    let record = Record::new(ctx.alice.did().clone());
+    let record = Record::new(ctx.alice.identity().did().clone());
     record.save(&doc).expect("save record");
 
     let mut acl = Acl::default();
-    acl.manage.push(ctx.alice.did().clone());
-    acl.write.push(ctx.alice.did().clone());
+    acl.manage.push(ctx.alice.identity().did().clone());
+    acl.write.push(ctx.alice.identity().did().clone());
     acl.save(&doc).expect("save acl");
 
-    let envelope = Envelope::all_updates(ctx.alice.did().clone(), &doc).expect("build envelope");
+    let envelope =
+        Envelope::all_updates(ctx.alice.identity().did().clone(), &doc).expect("build envelope");
     let signed = envelope
-        .sign(ctx.alice.signing_key())
+        .sign(ctx.alice.identity().signing_key())
         .expect("sign envelope");
 
     let record_id = record.id().expect("get record id");

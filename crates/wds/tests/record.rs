@@ -117,7 +117,7 @@ async fn test_multiple_updates(#[future] ctx: DataStoreCtx) {
 #[tokio::test]
 async fn test_create_record_quota_exceeded(#[future] ctx: DataStoreCtx) {
     // Set alice's quota to 0.
-    let did_str = ctx.alice.did().to_string();
+    let did_str = ctx.alice.identity().did().to_string();
     sqlx::query!(
         "UPDATE user_quotas SET quota_bytes = 0 WHERE owner = ?",
         did_str

@@ -2,7 +2,10 @@ use std::time::Duration;
 
 use rstest::rstest;
 use tracing_test::traced_test;
-use wds::record::{acl::Acl, schema::{SCHEMA_BEACON, SCHEMA_HOME}};
+use wds::record::{
+    acl::Acl,
+    schema::{SCHEMA_BEACON, SCHEMA_HOME},
+};
 
 use crate::common::{DataStoreCtx, ctx};
 
@@ -31,14 +34,19 @@ async fn test_query_own_records(#[future] ctx: DataStoreCtx) {
 #[tokio::test]
 async fn test_query_by_creator(#[future] ctx: DataStoreCtx) {
     // Alice and Bob each create a record.
-    let alice_result = ctx.alice.create_record().send().await.expect("alice create");
+    let alice_result = ctx
+        .alice
+        .create_record()
+        .send()
+        .await
+        .expect("alice create");
     let bob_result = ctx.bob.create_record().send().await.expect("bob create");
 
     // Alice queries for her own records.
     let results = ctx
         .alice
         .query()
-        .creator(ctx.alice.did())
+        .creator(ctx.alice.identity().did())
         .send()
         .await
         .expect("query");
@@ -114,7 +122,7 @@ async fn test_query_with_read_permission(#[future] ctx: DataStoreCtx) {
     // Alice adds Bob to read ACL.
     let from_vv = doc.oplog_vv();
     let mut acl = Acl::load(&doc).expect("load acl");
-    acl.read.push(ctx.bob.did().clone());
+    acl.read.push(ctx.bob.identity().did().clone());
     acl.save(&doc).expect("save acl");
 
     ctx.alice

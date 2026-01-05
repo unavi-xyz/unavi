@@ -13,7 +13,7 @@ pub async fn sync_record(
 ) -> anyhow::Result<()> {
     let _did = authenticate!(ctx, inner, tx);
 
-    let result = sync_to_remote(&ctx, inner.remote,  inner.record_id).await;
+    let result = sync_to_remote(&ctx, inner.remote, inner.record_id).await;
 
     tx.send(result.map_err(|e| e.to_smolstr())).await?;
 

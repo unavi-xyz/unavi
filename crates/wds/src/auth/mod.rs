@@ -2,10 +2,10 @@
 //!
 //! Challenge-response DID authentication.
 
-use std::{fmt::Debug, sync::Arc, time::Duration};
+use std::{fmt::Debug, str::FromStr, sync::Arc, time::Duration};
 
 use anyhow::bail;
-use iroh::EndpointId;
+use iroh::{EndpointId, Signature};
 use irpc::{Client, WithChannels, channel::oneshot, rpc_requests};
 use irpc_iroh::IrohProtocol;
 use rand::RngCore;
@@ -47,6 +47,9 @@ pub enum AuthService {
     #[rpc(tx=oneshot::Sender<Nonce>)]
     #[wrap(RequestChallenge)]
     RequestChallenge(Did),
+    /// Answer a challenge, signing the nonce with either an:
+    /// - Authentiaction VC
+    /// - WDS service endpoint key
     #[rpc(tx=oneshot::Sender<Option<SessionToken>>)]
     #[wrap(AnswerChallenge)]
     AnswerChallenge(SignedBytes<Challenge>),
@@ -140,17 +143,17 @@ async fn handle_message(
                 return Ok(());
             }
 
-            // Resolve DID authentication keys.
             let resolver = DidResolver::new()?;
             let doc = resolver.resolve(&did).await?;
 
+            // Validate signature.
+            let mut found_valid = false;
+
+            // Check auth methods.
             let Some(auth_methods) = &doc.authentication else {
                 tx.send(None).await?;
                 return Ok(());
             };
-
-            // Validate signature.
-            let mut found_valid = false;
 
             for method in auth_methods {
                 let Some(map) = doc.resolve_verification_method(method) else {
@@ -170,12 +173,43 @@ async fn handle_message(
                 }
             }
 
+            // Check WDS services.
+            // We allow defined WDSes to authenticate on behalf of the DID.
+            // This enables cross-WDS operations like reading or syncing.
+            // Any written data still must be signed and verified by an attestation method.
+            if !found_valid {
+                for service in doc.service.unwrap_or_default() {
+                    if service.id != "wds" {
+                        continue;
+                    }
+
+                    for t in service.typ {
+                        let Ok(endpoint) = EndpointId::from_str(&t) else {
+                            continue;
+                        };
+
+                        let Ok(sig_bytes) = inner.0.signature().try_into() else {
+                            continue;
+                        };
+                        let sig = Signature::from_bytes(sig_bytes);
+
+                        if endpoint.verify(inner.0.payload_bytes(), &sig).is_err() {
+                            continue;
+                        }
+
+                        found_valid = true;
+                        break;
+                    }
+                }
+            }
+
             if !found_valid {
                 // Invalid signature.
                 tx.send(None).await?;
                 return Ok(());
             }
 
+            // Generate and save session token.
             let mut token = SessionToken::default();
             rand::rng().fill_bytes(&mut token);
 

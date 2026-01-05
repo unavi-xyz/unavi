@@ -25,15 +25,9 @@ impl QueryBuilder {
         self
     }
 
-    /// Add a schema filter (AND logic with other schemas).
+    /// Add a schema filter.
     pub fn schema(mut self, hash: Hash) -> Self {
         self.schemas.push(hash);
-        self
-    }
-
-    /// Add multiple schema filters at once.
-    pub fn schemas(mut self, hashes: &[Hash]) -> Self {
-        self.schemas.extend_from_slice(hashes);
         self
     }
 

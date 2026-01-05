@@ -8,11 +8,12 @@ use irpc::Client;
 use loro::{LoroDoc, VersionVector};
 use time::OffsetDateTime;
 use tokio::sync::{Mutex, OnceCell};
-use xdid::core::did::Did;
 
 use crate::{
     Identity, SessionToken,
-    api::{ApiService, BlobExists, PinBlob, PinRecord, RegisterBlobDeps, UploadBlob, UploadEnvelope},
+    api::{
+        ApiService, BlobExists, PinBlob, PinRecord, RegisterBlobDeps, UploadBlob, UploadEnvelope,
+    },
     auth::AuthService,
     record::envelope::Envelope,
     signed_bytes::{Signable, SignedBytes},
@@ -56,11 +57,6 @@ impl Actor {
     }
 
     #[must_use]
-    pub fn did(&self) -> &Did {
-        self.identity.did()
-    }
-
-    #[must_use]
     pub const fn identity(&self) -> &Arc<Identity> {
         &self.identity
     }
@@ -68,11 +64,6 @@ impl Actor {
     #[must_use]
     pub const fn host(&self) -> &EndpointId {
         &self.host
-    }
-
-    #[must_use]
-    pub fn signing_key(&self) -> &xdid::methods::key::p256::P256KeyPair {
-        self.identity.signing_key()
     }
 
     /// Creates a new record, returning the record ID.

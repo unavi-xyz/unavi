@@ -11,7 +11,7 @@ pub struct QueryBuilder {
 }
 
 impl QueryBuilder {
-    pub fn new(actor: Actor) -> Self {
+    pub const fn new(actor: Actor) -> Self {
         Self {
             actor,
             creator: None,

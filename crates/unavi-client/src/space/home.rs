@@ -29,7 +29,7 @@ async fn join_home_space_inner(
     actors: WdsActors,
     command_tx: flume::Sender<NetworkCommand>,
 ) -> anyhow::Result<()> {
-    let did = actors.local.did();
+    let did = actors.local.identity().did();
 
     let res = actors
         .local

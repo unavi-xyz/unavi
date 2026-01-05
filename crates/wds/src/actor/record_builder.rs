@@ -18,7 +18,7 @@ use crate::{
     signed_bytes::Signable,
 };
 
-const DEFAULT_PIN_TTL: Duration = Duration::from_hours(1);
+pub(super) const DEFAULT_PIN_TTL: Duration = Duration::from_hours(1);
 
 /// Result of creating a record.
 #[derive(Debug)]

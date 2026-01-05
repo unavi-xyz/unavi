@@ -8,18 +8,12 @@ use crate::{SessionToken, StoreContext, sync::combined_stream::CombinedStream};
 
 use super::{ALPN, SyncMsg};
 
-#[derive(Debug)]
-pub struct SyncResult {
-    pub received: usize,
-    pub sent: usize,
-}
-
 pub async fn sync_to_remote(
     ctx: &StoreContext,
     remote: EndpointId,
     session: SessionToken,
     record_id: Hash,
-) -> anyhow::Result<SyncResult> {
+) -> anyhow::Result<()> {
     let db = ctx.db.pool();
     let id_str = record_id.to_string();
 
@@ -44,19 +38,14 @@ pub async fn sync_to_remote(
     };
     let incoming: SyncMsg = postcard::from_bytes(&bytes?)?;
 
-    let received = if let SyncMsg::Envelopes(envelopes) = incoming {
-        let count = envelopes.len();
+    if let SyncMsg::Envelopes(envelopes) = incoming {
         for env_bytes in &envelopes {
             super::shared::store_envelope(db, &ctx.blobs, &id_str, env_bytes).await?;
         }
-        count
-    } else {
-        0
-    };
+    }
 
     // Send our envelopes.
     let to_send = super::shared::fetch_all_envelopes(db, &id_str).await?;
-    let sent = to_send.len();
     framed
         .send(
             BytesMut::from(postcard::to_stdvec(&SyncMsg::Envelopes(to_send))?.as_slice()).freeze(),
@@ -72,5 +61,5 @@ pub async fn sync_to_remote(
         anyhow::bail!("expected Done message");
     }
 
-    Ok(SyncResult { received, sent })
+    Ok(())
 }

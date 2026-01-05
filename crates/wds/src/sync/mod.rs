@@ -15,7 +15,7 @@ use tracing::warn;
 
 use crate::{SessionToken, StoreContext, sync::combined_stream::CombinedStream};
 
-mod client;
+pub mod client;
 mod combined_stream;
 mod server;
 pub mod shared;

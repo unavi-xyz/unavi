@@ -11,7 +11,7 @@ use tokio::sync::{Mutex, OnceCell};
 
 use crate::{
     Identity, SessionToken,
-    api::{ApiService, BlobExists, PinBlob, PinRecord, UploadBlob, UploadEnvelope},
+    api::{ApiService, BlobExists, PinBlob, PinRecord, SyncRecord, UploadBlob, UploadEnvelope},
     auth::AuthService,
     record::envelope::Envelope,
     signed_bytes::{Signable, SignedBytes},
@@ -20,6 +20,7 @@ use crate::{
 mod auth;
 mod into_actor;
 mod query_builder;
+mod read_builder;
 mod record_builder;
 
 pub use record_builder::RecordResult;
@@ -79,6 +80,32 @@ impl Actor {
     #[must_use]
     pub fn query(&self) -> query_builder::QueryBuilder {
         query_builder::QueryBuilder::new(self.clone())
+    }
+
+    /// Creates a read builder for fetching a record.
+    #[must_use]
+    pub fn read(&self, record_id: Hash) -> read_builder::ReadBuilder {
+        read_builder::ReadBuilder::new(self.clone(), record_id)
+    }
+
+    /// Tells the WDS to sync a record from a remote endpoint.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the sync request fails.
+    pub async fn sync(&self, record_id: Hash, remote: EndpointId) -> anyhow::Result<()> {
+        let s = self.authenticate().await.context("auth")?;
+
+        self.api_client
+            .rpc(SyncRecord {
+                s,
+                record_id,
+                remote,
+            })
+            .await?
+            .map_err(|e| anyhow::anyhow!("sync failed: {e}"))?;
+
+        Ok(())
     }
 
     /// Uploads a signed envelope to a record.

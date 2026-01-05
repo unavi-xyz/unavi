@@ -6,6 +6,7 @@ use std::{sync::Arc, time::Duration};
 
 use blake3::Hash;
 use bytes::Bytes;
+use iroh::EndpointId;
 use irpc::{
     Client,
     channel::{mpsc, oneshot},
@@ -22,6 +23,8 @@ mod blob_exists;
 mod pin_blob;
 mod pin_record;
 mod query_records;
+mod read_record;
+mod sync_record;
 mod upload_blob;
 mod upload_envelope;
 
@@ -75,6 +78,16 @@ pub enum ApiService {
     QueryRecords {
         s: SessionToken,
         filter: QueryFilter,
+    },
+    #[rpc(tx=oneshot::Sender<Result<Vec<u8>, SmolStr>>)]
+    #[wrap(ReadRecord)]
+    ReadRecord { s: SessionToken, record_id: Hash },
+    #[rpc(tx=oneshot::Sender<Result<(), SmolStr>>)]
+    #[wrap(SyncRecord)]
+    SyncRecord {
+        s: SessionToken,
+        record_id: Hash,
+        remote: EndpointId,
     },
 }
 
@@ -134,6 +147,12 @@ async fn handle_message(ctx: Arc<StoreContext>, msg: ApiMessage) -> anyhow::Resu
         }
         ApiMessage::QueryRecords(channels) => {
             query_records::query_records(ctx, channels).await?;
+        }
+        ApiMessage::ReadRecord(channels) => {
+            read_record::read_record(ctx, channels).await?;
+        }
+        ApiMessage::SyncRecord(channels) => {
+            sync_record::sync_record(ctx, channels).await?;
         }
     }
 

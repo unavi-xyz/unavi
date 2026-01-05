@@ -124,21 +124,12 @@ async fn test_record_id_mismatch_rejected(#[future] ctx: DataStoreCtx) {
         .sign(ctx.alice.identity().signing_key())
         .expect("sign envelope");
 
-    // Pin with a DIFFERENT (fake) record ID.
+    // Pin with a different (fake) record ID.
     let fake_id = blake3::hash(b"fake record id");
-    let fake_id_str = fake_id.to_string();
-    let did_str = ctx.alice.identity().did().to_string();
-    let expires = (time::OffsetDateTime::now_utc() + time::Duration::hours(1)).unix_timestamp();
-
-    sqlx::query!(
-        "INSERT INTO record_pins (record_id, owner, expires) VALUES (?, ?, ?)",
-        fake_id_str,
-        did_str,
-        expires
-    )
-    .execute(ctx.store.db())
-    .await
-    .expect("insert pin");
+    ctx.alice
+        .pin_record(fake_id, Duration::from_secs(3600))
+        .await
+        .expect("pin record");
 
     // Try to upload with mismatched ID.
     let e = ctx

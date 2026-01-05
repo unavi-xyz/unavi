@@ -4,6 +4,7 @@ use bytes::BytesMut;
 use futures::{SinkExt, StreamExt};
 use iroh::{EndpointAddr, endpoint::VarInt};
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
+use tracing::debug;
 use xdid::core::did::Did;
 
 use crate::{
@@ -40,6 +41,8 @@ pub async fn sync_to_remote(
     let mut framed = Framed::new(CombinedStream(tx, rx), LengthDelimitedCodec::new());
 
     let local_vv = super::shared::get_record_vv(db, &id_str).await?;
+
+    debug!(?record_id, "beginning sync");
 
     let begin = SyncMsg::Begin {
         session,

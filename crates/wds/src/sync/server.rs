@@ -2,6 +2,7 @@ use bytes::BytesMut;
 use futures::{SinkExt, StreamExt};
 use loro::VersionVector;
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
+use tracing::debug;
 
 use crate::{StoreContext, record::acl::Acl, sync::SyncMsg};
 
@@ -25,6 +26,8 @@ where
     else {
         anyhow::bail!("expected Begin message");
     };
+
+    debug!(?record_id, "handling sync");
 
     // Authenticate and get requester DID.
     let Some(conn_state) = ctx.connections.get_async(&session).await else {

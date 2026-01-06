@@ -7,6 +7,7 @@ use iroh_blobs::{
     store::fs::{FsStore, options::Options},
 };
 use irpc::Client;
+use parking_lot::RwLock;
 use tokio::task::JoinError;
 use xdid::core::did::Did;
 
@@ -44,6 +45,8 @@ struct StoreContext {
     db: db::Database,
     #[debug("Endpoint")]
     endpoint: Endpoint,
+    #[debug("Option<Identity>")]
+    user_identity: RwLock<Option<Arc<Identity>>>,
 }
 
 struct ConnectionState {
@@ -74,6 +77,7 @@ impl DataStore {
             connections: scc::HashMap::default(),
             db,
             endpoint: endpoint.clone(),
+            user_identity: RwLock::new(None),
         });
 
         let (api_client, api_protocol) = api::protocol(Arc::clone(&ctx));
@@ -141,5 +145,14 @@ impl DataStore {
     #[must_use]
     pub fn endpoint(&self) -> &Endpoint {
         &self.ctx.endpoint
+    }
+
+    /// Sets the user identity for WDS-to-WDS authentication.
+    ///
+    /// For embedded/local WDS instances, this allows sync operations to
+    /// authenticate to remote stores using the user's signing key instead of
+    /// requiring the endpoint to be listed in the DID document.
+    pub fn set_user_identity(&self, identity: Arc<Identity>) {
+        *self.ctx.user_identity.write() = Some(identity);
     }
 }

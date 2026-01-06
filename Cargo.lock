@@ -14752,6 +14752,7 @@ dependencies = [
  "loro",
  "n0-error",
  "p256",
+ "parking_lot",
  "paste",
  "postcard",
  "rand 0.9.2",

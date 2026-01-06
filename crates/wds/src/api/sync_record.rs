@@ -3,7 +3,7 @@ use std::sync::Arc;
 use irpc::WithChannels;
 use smol_str::ToSmolStr;
 
-use crate::{StoreContext, sync::client::sync_to_remote};
+use crate::{Identity, StoreContext, signed_bytes::IrohSigner, sync::client::sync_to_remote};
 
 use super::{ApiService, SyncRecord, authenticate};
 
@@ -13,7 +13,30 @@ pub async fn sync_record(
 ) -> anyhow::Result<()> {
     let did = authenticate!(ctx, inner, tx);
 
-    let result = sync_to_remote(did, &ctx, inner.remote, inner.record_id).await;
+    // Clone user identity out of lock to avoid holding it across await.
+    let user_identity: Option<Arc<Identity>> = ctx.user_identity.read().clone();
+
+    // Use user identity's signing key if available (embedded WDS),
+    // otherwise fall back to endpoint key (requires DID doc service entry).
+    let result = if let Some(identity) = &user_identity {
+        sync_to_remote(
+            did,
+            identity.signing_key(),
+            &ctx,
+            inner.remote,
+            inner.record_id,
+        )
+        .await
+    } else {
+        sync_to_remote(
+            did,
+            &IrohSigner(ctx.endpoint.secret_key()),
+            &ctx,
+            inner.remote,
+            inner.record_id,
+        )
+        .await
+    };
 
     tx.send(result.map_err(|e| e.to_smolstr())).await?;
 

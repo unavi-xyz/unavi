@@ -1,47 +1,31 @@
 #![allow(dead_code)]
 
+mod did_key;
+mod did_web;
+
 use std::{fmt::Debug, sync::Arc};
 
 use iroh::{Endpoint, RelayMode};
 use rstest::fixture;
 use tempfile::{TempDir, tempdir};
 use wds::{
-    DataStore, Identity,
+    DataStore,
     actor::Actor,
     record::{
         acl::Acl,
         schema::{SCHEMA_ACL, SCHEMA_RECORD},
     },
 };
-use xdid::{
-    core::did::Did,
-    methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair},
-};
+use xdid::core::did::Did;
+
+use did_key::generate_actor;
+use did_web::{DidWebServer, generate_actor_web};
 
 pub struct DataStoreCtx {
     pub store: DataStore,
     pub alice: Actor,
     pub bob: Actor,
     _dir: TempDir,
-}
-
-async fn generate_actor(store: &DataStore) -> Actor {
-    let key = P256KeyPair::generate();
-    let did = key.public().to_did();
-    let identity = Arc::new(Identity::new(did.clone(), key));
-    let actor = store.local_actor(identity);
-
-    // Set up default quota for the actor.
-    let did_str = did.to_string();
-    sqlx::query!(
-        "INSERT INTO user_quotas (owner, bytes_used, quota_bytes) VALUES (?, 0, 10000000)",
-        did_str
-    )
-    .execute(store.db())
-    .await
-    .expect("create quota");
-
-    actor
 }
 
 #[fixture]
@@ -81,19 +65,57 @@ pub async fn ctx() -> DataStoreCtx {
 pub struct MultiStoreCtx {
     pub rome: DataStoreCtx,
     pub carthage: DataStoreCtx,
+    alice_server: DidWebServer,
+    bob_server: DidWebServer,
 }
 
 #[fixture]
 pub async fn multi_ctx() -> MultiStoreCtx {
-    let rome = ctx().await;
+    let mut rome = ctx().await;
     let mut carthage = ctx().await;
 
+    // Both WDS endpoints can authenticate on behalf of these actors.
+    let wds_endpoints = vec![rome.store.endpoint().id(), carthage.store.endpoint().id()];
+
+    // Generate did:web actors shared across both stores.
+    let alice_with_server = generate_actor_web(&rome.store, wds_endpoints.clone()).await;
+    let bob_with_server = generate_actor_web(&rome.store, wds_endpoints).await;
+
+    // Set up quotas on carthage for these actors.
+    for did in [
+        alice_with_server.actor.identity().did(),
+        bob_with_server.actor.identity().did(),
+    ] {
+        let did_str = did.to_string();
+        sqlx::query!(
+            "INSERT INTO user_quotas (owner, bytes_used, quota_bytes) VALUES (?, 0, 10000000)",
+            did_str
+        )
+        .execute(carthage.store.db())
+        .await
+        .expect("create quota on carthage");
+    }
+
+    // Replace actors with did:web versions.
+    rome.alice = rome
+        .store
+        .local_actor(Arc::clone(alice_with_server.actor.identity()));
+    rome.bob = rome
+        .store
+        .local_actor(Arc::clone(bob_with_server.actor.identity()));
     carthage.alice = carthage
         .store
-        .local_actor(Arc::clone(rome.alice.identity()));
-    carthage.bob = carthage.store.local_actor(Arc::clone(rome.bob.identity()));
+        .local_actor(Arc::clone(alice_with_server.actor.identity()));
+    carthage.bob = carthage
+        .store
+        .local_actor(Arc::clone(bob_with_server.actor.identity()));
 
-    MultiStoreCtx { rome, carthage }
+    MultiStoreCtx {
+        rome,
+        carthage,
+        alice_server: alice_with_server.server,
+        bob_server: bob_with_server.server,
+    }
 }
 
 pub fn assert_contains(e: impl Debug, contains: &str) {

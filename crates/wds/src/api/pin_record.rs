@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use irpc::WithChannels;
 use sqlx::Sqlite;
@@ -7,6 +7,7 @@ use time::OffsetDateTime;
 use crate::{
     StoreContext,
     api::{ApiService, MAX_PIN_DURATION, PinRecord, authenticate},
+    gc::FAST_GC_THRESHOLD,
     quota::{QuotaExceeded, ensure_quota_exists, reserve_bytes},
 };
 
@@ -96,6 +97,24 @@ pub async fn pin_record(
     }
 
     db_tx.commit().await?;
+
+    // Schedule fast GC for short-lived pins.
+    let now = OffsetDateTime::now_utc().unix_timestamp();
+    let ttl_secs = expires.saturating_sub(now);
+    if ttl_secs >= 0 {
+        let ttl = Duration::from_secs(ttl_secs.cast_unsigned());
+        if ttl < FAST_GC_THRESHOLD {
+            let ctx = Arc::clone(&ctx);
+            let owner = did_str.clone();
+            let record_id = record_id.clone();
+            tokio::spawn(async move {
+                tokio::time::sleep(ttl).await;
+                if let Err(e) = ctx.gc_record_pin(&owner, &record_id).await {
+                    tracing::warn!(%record_id, "fast gc record pin failed: {e}");
+                }
+            });
+        }
+    }
 
     tx.send(Ok(())).await?;
     Ok(())

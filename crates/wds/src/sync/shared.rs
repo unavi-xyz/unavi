@@ -311,7 +311,7 @@ async fn update_acl_read_index(
     acl: &Acl,
 ) -> anyhow::Result<()> {
     // Update is_public flag.
-    let is_public: i32 = if acl.public { 1 } else { 0 };
+    let is_public = i32::from(acl.is_public());
     sqlx::query("UPDATE records SET is_public = ? WHERE id = ?")
         .bind(is_public)
         .bind(record_id)

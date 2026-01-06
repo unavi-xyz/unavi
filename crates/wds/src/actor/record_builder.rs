@@ -113,8 +113,10 @@ impl RecordBuilder {
         }
         record.save(&self.doc)?;
 
-        let mut acl = Acl::default();
-        acl.public = self.is_public;
+        let mut acl = Acl {
+            public: self.is_public,
+            ..Default::default()
+        };
         acl.manage.push(did.clone());
         acl.write.push(did.clone());
         if !self.is_public {

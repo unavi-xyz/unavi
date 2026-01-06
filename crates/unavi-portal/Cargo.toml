@@ -16,4 +16,4 @@ bevy_vrm.workspace   = true
 unavi-constants.path = "../unavi-constants"
 
 [dev-dependencies]
-bevy_panorbit_camera = "0.33.0"
+bevy_panorbit_camera = "0.33.1"

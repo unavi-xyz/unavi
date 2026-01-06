@@ -3,8 +3,6 @@ use bevy::prelude::*;
 /// Player configuration parameters.
 #[derive(Component, Clone, Debug)]
 pub struct PlayerConfig {
-    /// Jump strength multiplier.
-    pub jump_strength: f32,
     /// User's real height, headset to ground.
     pub real_height: f32,
     /// Sprint speed in meters per second.
@@ -20,7 +18,6 @@ pub struct PlayerConfig {
 impl Default for PlayerConfig {
     fn default() -> Self {
         Self {
-            jump_strength: DEFAULT_JUMP_STRENGTH,
             real_height: DEFAULT_HEIGHT,
             sprint_speed: DEFAULT_SPRINT_SPEED,
             walk_speed: DEFAULT_WALK_SPEED,

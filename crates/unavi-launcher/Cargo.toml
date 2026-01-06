@@ -20,7 +20,7 @@ directories.workspace = true
 futures.workspace     = true
 image                 = { features = ["png"], workspace = true }
 parking_lot.workspace = true
-reqwest.workspace     = true
+reqwest               = { features = ["json", "stream"], workspace = true }
 runas                 = "1.2.0"
 self-replace          = "1.5.0"
 semver                = "1.0.27"

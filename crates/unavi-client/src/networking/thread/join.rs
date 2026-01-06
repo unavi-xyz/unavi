@@ -73,6 +73,7 @@ pub async fn handle_join(state: NetworkThreadState, id: Hash) -> anyhow::Result<
         .await?;
 
     // Join gossip topic.
+    // state.
 
     Ok(())
 }

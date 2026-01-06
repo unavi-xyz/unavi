@@ -2,7 +2,7 @@ use bevy::{animation::ActiveAnimation, platform::collections::HashMap, prelude::
 use bevy_tnua::prelude::TnuaController;
 
 use crate::{
-    PlayerAvatar, PlayerRig,
+    ControlScheme, PlayerAvatar, PlayerRig,
     animation::velocity::AverageVelocity,
     config::{DEFAULT_SPRINT_SPEED, DEFAULT_WALK_SPEED},
 };
@@ -208,7 +208,7 @@ fn apply_locomotion_animations(
 
 pub fn play_avatar_animations(
     time: Res<Time>,
-    rigs: Query<(&Transform, &TnuaController), With<PlayerRig>>,
+    rigs: Query<(&Transform, &TnuaController<ControlScheme>), With<PlayerRig>>,
     avatars: Query<(&AvatarAnimationNodes, &AverageVelocity), With<PlayerAvatar>>,
     mut animation_players: Query<(
         &mut AnimationWeights,

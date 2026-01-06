@@ -36,7 +36,7 @@ sqlx                  = { features = ["runtime-tokio", "sqlite"], version = "0.8
 thiserror             = "2.0.17"
 time.workspace        = true
 tokio.workspace       = true
-tokio-util            = { features = ["codec"], version = "0.7.17" }
+tokio-util            = { features = ["codec"], version = "0.7.18" }
 tracing.workspace     = true
 xdid.workspace        = true
 

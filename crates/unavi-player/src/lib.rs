@@ -25,7 +25,7 @@
 //! - VRM eyes align with the player's camera/head position
 
 use bevy::{post_process::auto_exposure::AutoExposurePlugin, prelude::*};
-use bevy_tnua::prelude::TnuaControllerPlugin;
+use bevy_tnua::prelude::*;
 use bevy_tnua_avian3d::TnuaAvian3dPlugin;
 use bevy_vrm::VrmPlugins;
 use unavi_input::CursorGrabState;
@@ -52,7 +52,7 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             AutoExposurePlugin,
-            TnuaControllerPlugin::new(FixedUpdate),
+            TnuaControllerPlugin::<ControlScheme>::new(FixedUpdate),
             TnuaAvian3dPlugin::new(FixedUpdate),
             VrmPlugins,
         ))
@@ -82,6 +82,12 @@ impl Plugin for PlayerPlugin {
             ),
         );
     }
+}
+
+#[derive(TnuaScheme)]
+#[scheme(basis = TnuaBuiltinWalk)]
+pub enum ControlScheme {
+    Jump(TnuaBuiltinJump),
 }
 
 /// References to player entity children for efficient lookups.

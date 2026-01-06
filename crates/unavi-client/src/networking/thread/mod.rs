@@ -85,6 +85,8 @@ async fn thread_loop(
     info!("Local identity: {did}");
 
     let identity = Arc::new(Identity::new(did, signing_key));
+    store.set_user_identity(Arc::clone(&identity));
+
     let local_actor = store.local_actor(Arc::clone(&identity));
 
     let remote_host = remote_wds::fetch_remote_host().await?;

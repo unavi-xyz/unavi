@@ -10,7 +10,7 @@ use crate::{networking::thread::NetworkThreadState, space::beacon::Beacon};
 const BEACON_TTL: Duration = Duration::from_secs(30);
 
 pub async fn handle_join(state: NetworkThreadState, id: Hash) -> anyhow::Result<()> {
-    // Query WDS for beacons.
+    // Query beacons to find players.
     let mut players = HashSet::new();
 
     if let Some(actor) = &state.remote_actor {
@@ -71,6 +71,8 @@ pub async fn handle_join(state: NetworkThreadState, id: Hash) -> anyhow::Result<
         .sync_to(state.remote_actor)
         .send()
         .await?;
+
+    // Join gossip topic.
 
     Ok(())
 }

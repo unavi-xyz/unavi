@@ -4,7 +4,7 @@ use rstest::rstest;
 use tracing_test::traced_test;
 use wds::record::acl::Acl;
 
-use crate::common::{MultiStoreCtx, multi_ctx};
+use crate::common::{LocalStoreCtx, MultiStoreCtx, multi_ctx, multi_ctx_local};
 
 mod common;
 
@@ -258,4 +258,77 @@ async fn test_sync_unpinned_fails(#[future] multi_ctx: MultiStoreCtx) {
         .sync(record_id, multi_ctx.rome.store.endpoint().addr())
         .await
         .expect_err("should fail without pinning");
+}
+
+/// Tests sync using did:key with `set_user_identity` (embedded WDS auth pattern).
+#[rstest]
+#[timeout(Duration::from_secs(10))]
+#[awt]
+#[traced_test]
+#[tokio::test]
+async fn test_sync_with_user_identity(#[future] multi_ctx_local: LocalStoreCtx) {
+    // Alice creates a record on her store.
+    let result = multi_ctx_local
+        .alice_ctx
+        .alice
+        .create_record()
+        .send()
+        .await
+        .expect("create record on alice's store");
+    let (record_id, doc) = (result.id, result.doc);
+
+    // Add some data.
+    let from_vv = doc.oplog_vv();
+
+    doc.get_map("data")
+        .insert("key", "synced_via_user_identity")
+        .expect("insert into map");
+
+    // Grant Bob read access so he can sync and read.
+    let mut acl = Acl::load(&doc).expect("load acl");
+    acl.read
+        .push(multi_ctx_local.bob_ctx.bob.identity().did().clone());
+    acl.save(&doc).expect("save acl");
+
+    multi_ctx_local
+        .alice_ctx
+        .alice
+        .update_record(record_id, &doc, from_vv)
+        .await
+        .expect("update record");
+
+    // Pin the record on Bob's store (required before sync).
+    multi_ctx_local
+        .bob_ctx
+        .bob
+        .pin_record(record_id, Duration::from_secs(3600))
+        .await
+        .expect("pin record on bob's store");
+
+    // Bob syncs from Alice's store using his store's user identity for auth.
+    multi_ctx_local
+        .bob_ctx
+        .bob
+        .sync(record_id, multi_ctx_local.alice_ctx.store.endpoint().addr())
+        .await
+        .expect("sync from alice's store to bob's store");
+
+    // Bob can now read the record on his store.
+    let read_doc = multi_ctx_local
+        .bob_ctx
+        .bob
+        .read(record_id)
+        .send()
+        .await
+        .expect("read record on bob's store");
+
+    // Verify data is present.
+    let value = read_doc.get_map("data").get_deep_value();
+    let loro::LoroValue::Map(map) = value else {
+        panic!("expected map");
+    };
+    assert_eq!(
+        map.get("key"),
+        Some(&loro::LoroValue::String("synced_via_user_identity".into()))
+    );
 }

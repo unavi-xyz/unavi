@@ -7,7 +7,7 @@ use crate::{
     space::Space,
 };
 
-const BEACON_TTL: Duration = Duration::from_secs(30);
+const BEACON_TTL: Duration = Duration::from_mins(1);
 
 pub fn publish_beacons(
     nt: Res<NetworkingThread>,

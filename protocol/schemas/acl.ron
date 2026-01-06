@@ -13,6 +13,7 @@
         ],
         value: Map({
             "manage": List(String),
+            "public": Bool,
             "read": List(String),
             "write": List(String),
         }),

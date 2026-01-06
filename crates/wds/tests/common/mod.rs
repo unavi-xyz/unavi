@@ -179,6 +179,7 @@ pub fn assert_contains(e: impl Debug, contains: &str) {
 /// Creates a default ACL with only the given DID having full access.
 pub fn acl_only(did: &Did) -> Acl {
     Acl {
+        public: false,
         manage: vec![did.clone()],
         write: vec![did.clone()],
         read: vec![],
@@ -188,6 +189,7 @@ pub fn acl_only(did: &Did) -> Acl {
 /// Creates an ACL with manage for owner and write for writer.
 pub fn acl_with_writer(owner: &Did, writer: &Did) -> Acl {
     Acl {
+        public: false,
         manage: vec![owner.clone()],
         write: vec![owner.clone(), writer.clone()],
         read: vec![],
@@ -197,6 +199,7 @@ pub fn acl_with_writer(owner: &Did, writer: &Did) -> Acl {
 /// Creates an ACL with manage for owner and read for reader.
 pub fn acl_with_reader(owner: &Did, reader: &Did) -> Acl {
     Acl {
+        public: false,
         manage: vec![owner.clone()],
         write: vec![owner.clone()],
         read: vec![reader.clone()],

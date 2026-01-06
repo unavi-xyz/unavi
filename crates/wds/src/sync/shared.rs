@@ -310,6 +310,14 @@ async fn update_acl_read_index(
     record_id: &str,
     acl: &Acl,
 ) -> anyhow::Result<()> {
+    // Update is_public flag.
+    let is_public: i32 = if acl.public { 1 } else { 0 };
+    sqlx::query("UPDATE records SET is_public = ? WHERE id = ?")
+        .bind(is_public)
+        .bind(record_id)
+        .execute(&mut **tx)
+        .await?;
+
     // Clear existing entries.
     sqlx::query("DELETE FROM record_acl_read WHERE record_id = ?")
         .bind(record_id)

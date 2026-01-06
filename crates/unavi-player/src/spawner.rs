@@ -7,17 +7,22 @@ use bevy::{
     render::view::Hdr,
 };
 use bevy_seedling::spatial::SpatialListener3D;
-use bevy_tnua::prelude::TnuaController;
+use bevy_tnua::{
+    builtins::{TnuaBuiltinJumpConfig, TnuaBuiltinWalkConfig},
+    prelude::*,
+};
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
 use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
 use unavi_constants::PORTAL_RENDER_LAYER;
 use unavi_portal::PortalTraveler;
 
 use crate::{
-    LocalPlayer, PlayerCamera, PlayerEntities, PlayerRig,
+    ControlScheme, ControlSchemeConfig, LocalPlayer, PlayerCamera, PlayerEntities, PlayerRig,
     animation::{defaults::default_character_animations, velocity::AverageVelocity},
     avatar_spawner::AvatarSpawner,
-    config::{PLAYER_RADIUS, PlayerConfig},
+    config::{
+        DEFAULT_HEIGHT, DEFAULT_JUMP_STRENGTH, FLOAT_HEIGHT_OFFSET, PLAYER_RADIUS, PlayerConfig,
+    },
     tracking::{TrackedHead, TrackedPose, TrackingSource},
 };
 
@@ -93,7 +98,19 @@ impl LocalPlayerSpawner {
                 PlayerRig,
                 RigidBody::Dynamic,
                 Collider::capsule(PLAYER_RADIUS, config.real_height),
-                TnuaController::default(),
+                TnuaController::<ControlScheme>::default(),
+                TnuaConfig::<ControlScheme>(asset_server.add(ControlSchemeConfig {
+                    basis: TnuaBuiltinWalkConfig {
+                        // TODO adjust dynamically based on avatar
+                        float_height: DEFAULT_HEIGHT / 2.0 + PLAYER_RADIUS + FLOAT_HEIGHT_OFFSET,
+                        max_slope: 55f32.to_radians(),
+                        ..Default::default()
+                    },
+                    jump: TnuaBuiltinJumpConfig {
+                        height: DEFAULT_JUMP_STRENGTH,
+                        ..Default::default()
+                    },
+                })),
                 TnuaAvian3dSensorShape(Collider::cylinder(PLAYER_RADIUS - 0.01, 0.0)),
                 LockedAxes::ROTATION_LOCKED,
                 Transform::from_xyz(0.0, config.real_height / 2.0 + 1.0, 0.0),

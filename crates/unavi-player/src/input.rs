@@ -7,8 +7,8 @@ use unavi_input::{JumpAction, LookAction, MoveAction, SprintAction, schminput::p
 use unavi_portal::teleport::PortalTeleport;
 
 use crate::{
-    PlayerEntities, PlayerRig,
-    config::{FLOAT_HEIGHT_OFFSET, PLAYER_RADIUS, PlayerConfig},
+    ControlScheme, PlayerEntities, PlayerRig,
+    config::PlayerConfig,
     tracking::{TrackedHead, TrackedPose},
 };
 
@@ -87,7 +87,7 @@ pub fn apply_body_input(
     move_action: Query<&Vec2ActionValue, With<MoveAction>>,
     sprint_action: Query<&BoolActionValue, With<SprintAction>>,
     rigs: Query<&Transform, With<PlayerRig>>,
-    mut controllers: Query<&mut TnuaController, With<PlayerRig>>,
+    mut controllers: Query<&mut TnuaController<ControlScheme>, With<PlayerRig>>,
     mut target: ResMut<TargetBodyInput>,
 ) {
     for (entities, config) in players.iter() {
@@ -125,22 +125,15 @@ pub fn apply_body_input(
             config.walk_speed
         };
 
-        let radius = config.vrm_radius.unwrap_or(PLAYER_RADIUS);
-        let height = config.vrm_height.unwrap_or(config.real_height);
-        controller.basis(TnuaBuiltinWalk {
-            desired_velocity: target.0 * speed,
-            float_height: height / 2.0 + radius + FLOAT_HEIGHT_OFFSET,
-            max_slope: 55f32.to_radians(),
+        controller.basis = TnuaBuiltinWalk {
+            desired_motion: target.0 * speed,
             ..Default::default()
-        });
+        };
 
         if let Ok(action) = jump_action.single()
             && action.any
         {
-            controller.action(TnuaBuiltinJump {
-                height: config.jump_strength * height,
-                ..Default::default()
-            });
+            controller.action(ControlScheme::Jump(TnuaBuiltinJump::default()));
         }
     }
 }

@@ -1,15 +1,17 @@
-use std::{collections::HashSet, time::Duration};
+use std::collections::HashSet;
 
-use bevy::tasks::futures_lite::StreamExt;
+use bevy::{ecs::world::CommandQueue, tasks::futures_lite::StreamExt};
 use blake3::Hash;
 use iroh_gossip::TopicId;
 use log::{debug, warn};
 use time::OffsetDateTime;
 use wds::record::schema::SCHEMA_BEACON;
 
-use crate::{networking::thread::NetworkThreadState, space::beacon::Beacon};
-
-const BEACON_TTL: Duration = Duration::from_secs(30);
+use crate::{
+    async_commands::ASYNC_COMMAND_QUEUE,
+    networking::thread::NetworkThreadState,
+    space::{Space, beacon::Beacon},
+};
 
 pub async fn handle_join(state: NetworkThreadState, id: Hash) -> anyhow::Result<()> {
     // Query beacons to find players.
@@ -62,26 +64,12 @@ pub async fn handle_join(state: NetworkThreadState, id: Hash) -> anyhow::Result<
         .await?;
     let (_tx, mut rx) = topic.split();
 
-    // Create our own beacon.
-    // TODO: Loop while we are in the space
-    let _res = state
-        .local_actor
-        .create_record()
-        .ttl(BEACON_TTL)
-        .add_schema(&*SCHEMA_BEACON, |doc| {
-            let beacon = Beacon {
-                did: state.local_actor.identity().did().clone(),
-                expires: (OffsetDateTime::now_utc() + BEACON_TTL).unix_timestamp(),
-                endpoint: state.endpoint_id,
-                space: id,
-            };
-            beacon.save(doc)?;
-            Ok(())
-        })?
-        .sync_to(state.remote_actor)
-        .send()
-        .await?;
+    // Create space in ECS.
+    let mut commands = CommandQueue::default();
+    commands.push(bevy::ecs::system::command::spawn_batch([(Space(id))]));
+    ASYNC_COMMAND_QUEUE.0.send_async(commands).await?;
 
+    // Recieve gossip.
     while let Some(e) = rx.next().await {
         let _e = e?;
     }

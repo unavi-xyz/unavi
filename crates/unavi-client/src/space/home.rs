@@ -45,6 +45,7 @@ async fn discover_or_home(
             .schema(SCHEMA_BEACON.hash)
             .send()
             .await?;
+        info!("Queried {} beacons", found.len());
 
         let remote_host = *remote_actor.host();
         let now = OffsetDateTime::now_utc().unix_timestamp();

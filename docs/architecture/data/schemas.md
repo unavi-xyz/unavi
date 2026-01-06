@@ -20,21 +20,21 @@ in their genesis metadata. A record can implement multiple schemas.
 
 ```ron
 (
-    id: "wired/beacon",
+    id: "wired/example",
     version: 0,
-    container: "beacon",
+    container: "example",
     layout: Map({
         "did": String,
         "endpoint": Binary,
-        "expires": I64,
-        "space": Binary,
+        "timestamp": I64,
+        "extra": Any,
     }),
 )
 ```
 
 ## Fields
 
-- **id**: Human-readable identifier (e.g., `wired/beacon`)
+- **id**: Human-readable identifier (e.g., `wired/example`)
 - **version**: Schema version number
 - **container**: Target Loro container name in the record
 - **layout**: Field structure definition
@@ -48,7 +48,7 @@ in their genesis metadata. A record can implement multiple schemas.
 - `I64` - 64-bit integer
 - `String` - UTF-8 string
 - `List(Field)` - Homogeneous list
-- `Map({ "key": Field, ... })` - Named fields
+- `Map({ "key": Field, .. })` - Named fields
 
 ## Restrictions
 
@@ -56,7 +56,7 @@ Fields can have access restrictions:
 
 ```ron
 Restricted(
-    actions: [(who: Anyone, can: [Create])],
+    actions: [(who: Anyone, can: [Update])],
     value: String,
 )
 ```

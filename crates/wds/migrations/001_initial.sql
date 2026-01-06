@@ -1,13 +1,15 @@
 CREATE TABLE records (
     id TEXT PRIMARY KEY,
     creator TEXT NOT NULL,
+    is_public INTEGER NOT NULL DEFAULT 0,
     nonce BLOB NOT NULL,
+    size INTEGER NOT NULL,
     timestamp INTEGER NOT NULL,
-    vv BLOB NOT NULL,
-    size INTEGER NOT NULL
+    vv BLOB NOT NULL
 );
 
 CREATE INDEX idx_records_creator ON records (creator);
+CREATE INDEX idx_records_public ON records (is_public);
 
 CREATE TABLE record_blob_deps (
     record_id TEXT NOT NULL,

@@ -61,5 +61,5 @@ Restricted(
 )
 ```
 
-- **who**: `Anyone` or `Path("acl/manage")` (reference to ACL field)
+- **who**: `Anyone` or `Path("acl.manage")` (reference to ACL field)
 - **can**: `Create`, `Delete`, `Update`

@@ -7,6 +7,7 @@ use xdid::core::did::Did;
 /// Access control list for a record.
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Acl {
+    pub public: bool,
     pub manage: Vec<Did>,
     pub write: Vec<Did>,
     pub read: Vec<Did>,
@@ -34,11 +35,20 @@ impl Acl {
             anyhow::bail!("acl is not a map");
         };
 
+        let public = map
+            .get("public")
+            .and_then(|v| match v {
+                LoroValue::Bool(b) => Some(*b),
+                _ => None,
+            })
+            .unwrap_or(false);
+
         let manage = extract_did_list(map, "manage")?;
         let write = extract_did_list(map, "write")?;
         let read = extract_did_list(map, "read")?;
 
         Ok(Self {
+            public,
             manage,
             write,
             read,
@@ -53,6 +63,8 @@ impl Acl {
     pub fn save(&self, doc: &LoroDoc) -> anyhow::Result<()> {
         let map = doc.get_map("acl");
 
+        map.insert("public", self.public)?;
+
         let manage = self.manage.iter().map(Did::to_string).collect::<Vec<_>>();
         map.insert("manage", manage)?;
 
@@ -65,10 +77,21 @@ impl Acl {
         Ok(())
     }
 
-    /// Check if a DID has read permission (read, write, or manage).
+    /// Check if a DID has read permission.
+    ///
+    /// Returns `true` if:
+    /// - The record is public
+    /// - The DID is in the `read` list
+    /// - The DID has write or manage permission
     #[must_use]
     pub fn can_read(&self, did: &Did) -> bool {
-        self.read.contains(did) || self.can_write(did)
+        self.public || self.read.contains(did) || self.can_write(did)
+    }
+
+    /// Check if this record is public.
+    #[must_use]
+    pub const fn is_public(&self) -> bool {
+        self.public
     }
 
     /// Check if a DID has write permission (write or manage).

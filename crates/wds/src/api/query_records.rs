@@ -17,10 +17,11 @@ pub async fn query_records(
     let db = ctx.db.pool();
 
     // Build dynamic query based on filters.
+    // Use LEFT JOIN to include public records or records the requester has access to.
     let mut sql = String::from(
         "SELECT DISTINCT r.id FROM records r
-         JOIN record_acl_read acl ON r.id = acl.record_id
-         WHERE acl.did = ?",
+         LEFT JOIN record_acl_read acl ON r.id = acl.record_id
+         WHERE (r.is_public = 1 OR acl.did = ?)",
     );
     let mut binds: Vec<String> = vec![requester_str];
 

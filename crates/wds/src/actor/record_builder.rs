@@ -50,6 +50,7 @@ pub struct RecordBuilder {
     schemas: Vec<SchemaData>,
     ttl: Duration,
     sync_targets: Vec<Actor>,
+    is_public: bool,
 }
 
 impl RecordBuilder {
@@ -61,7 +62,16 @@ impl RecordBuilder {
             schemas: Vec::new(),
             ttl: DEFAULT_PIN_TTL,
             sync_targets: Vec::new(),
+            is_public: false,
         }
+    }
+
+    /// Mark the record as public (anyone can read).
+    ///
+    /// By default, records are private (only the creator can read).
+    pub const fn public(mut self) -> Self {
+        self.is_public = true;
+        self
     }
 
     /// Add a schema to the record.
@@ -104,8 +114,12 @@ impl RecordBuilder {
         record.save(&self.doc)?;
 
         let mut acl = Acl::default();
+        acl.public = self.is_public;
         acl.manage.push(did.clone());
         acl.write.push(did.clone());
+        if !self.is_public {
+            acl.read.push(did.clone());
+        }
         acl.save(&self.doc)?;
 
         let envelope = Envelope::all_updates(did.clone(), &self.doc)?;

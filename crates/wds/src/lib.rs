@@ -1,7 +1,6 @@
 use std::{path::Path, path::PathBuf, sync::Arc};
 
 use derive_more::Debug;
-use identity::Identity;
 use iroh::{Endpoint, EndpointId, protocol::DynProtocolHandler, protocol::Router};
 use iroh_blobs::{
     BlobsProtocol,
@@ -11,6 +10,8 @@ use irpc::Client;
 use parking_lot::RwLock;
 use tokio::task::JoinError;
 use xdid::core::did::Did;
+
+pub use identity::Identity;
 
 pub mod actor;
 pub mod api;

@@ -92,6 +92,7 @@ async fn test_query_by_schema(#[future] ctx: DataStoreCtx) {
 
     assert!(results.contains(&home_result.id));
     assert!(!results.contains(&beacon_result.id));
+    assert_eq!(results.len(), 1);
 }
 
 #[rstest]
@@ -153,4 +154,84 @@ async fn test_query_empty_results(#[future] ctx: DataStoreCtx) {
         .expect("query");
 
     assert!(results.is_empty());
+}
+
+#[rstest]
+#[timeout(Duration::from_secs(5))]
+#[awt]
+#[traced_test]
+#[tokio::test]
+async fn test_query_public_record(#[future] ctx: DataStoreCtx) {
+    // Alice creates a public record.
+    let result = ctx
+        .alice
+        .create_record()
+        .public()
+        .send()
+        .await
+        .expect("create public record");
+
+    // Bob queries - should see Alice's public record.
+    let results = ctx.bob.query().send().await.expect("query");
+
+    assert!(results.contains(&result.id));
+}
+
+#[rstest]
+#[timeout(Duration::from_secs(5))]
+#[awt]
+#[traced_test]
+#[tokio::test]
+async fn test_read_public_record(#[future] ctx: DataStoreCtx) {
+    // Alice creates a public record with some data.
+    let result = ctx
+        .alice
+        .create_record()
+        .public()
+        .send()
+        .await
+        .expect("create public record");
+    let (record_id, doc) = (result.id, result.doc);
+
+    // Add some data.
+    let from_vv = doc.oplog_vv();
+    doc.get_map("data")
+        .insert("key", "public_value")
+        .expect("insert");
+    ctx.alice
+        .update_record(record_id, &doc, from_vv)
+        .await
+        .expect("update");
+
+    // Bob reads the public record.
+    let read_doc = ctx.bob.read(record_id).send().await.expect("read");
+
+    // Verify data is present.
+    let value = read_doc.get_map("data").get_deep_value();
+    let loro::LoroValue::Map(map) = value else {
+        panic!("expected map");
+    };
+    assert_eq!(
+        map.get("key"),
+        Some(&loro::LoroValue::String("public_value".into()))
+    );
+}
+
+#[rstest]
+#[timeout(Duration::from_secs(5))]
+#[awt]
+#[traced_test]
+#[tokio::test]
+async fn test_private_record_not_queryable_by_others(#[future] ctx: DataStoreCtx) {
+    // Alice creates a private record (default).
+    let result = ctx.alice.create_record().send().await.expect("create");
+
+    // Bob queries - should NOT see Alice's private record.
+    let results = ctx.bob.query().send().await.expect("query");
+
+    assert!(!results.contains(&result.id));
+
+    // Alice can still see her own record.
+    let alice_results = ctx.alice.query().send().await.expect("alice query");
+    assert!(alice_results.contains(&result.id));
 }

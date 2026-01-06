@@ -26,6 +26,7 @@ pub async fn publish_beacon(
             beacon.save(doc)?;
             Ok(())
         })?
+        .public()
         .sync_to(state.remote_actor)
         .send()
         .await?;

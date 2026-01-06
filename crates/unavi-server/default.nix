@@ -8,8 +8,9 @@ _: {
         root = ../..;
         fileset = lib.fileset.unions [
           (pkgs.crane.fileset.commonCargoSources root)
-          (lib.fileset.fileFilter (file: lib.any file.hasExt [ "json" ]) root)
+          (lib.fileset.fileFilter (file: lib.any file.hasExt [ "ron" ]) root)
           ../../LICENSE
+          ../wds/migrations
         ];
       };
 
@@ -37,8 +38,18 @@ _: {
 
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;
 
+      sqlxArgs = cargoArgs // {
+        nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [ pkgs.sqlx-cli ];
+
+        preBuild = ''
+          export DATABASE_URL=sqlite:./db.sqlite3
+          sqlx database create
+          sqlx migrate run --source crates/wds/migrations/
+        '';
+      };
+
       packageDrv = pkgs.crane.buildPackage (
-        cargoArgs
+        sqlxArgs
         // {
           inherit cargoArtifacts;
           doCheck = false;
@@ -53,9 +64,9 @@ _: {
     in
     {
       checks = {
-        "${pname}-doc" = pkgs.crane.cargoDoc (cargoArgs // { inherit cargoArtifacts; });
+        "${pname}-doc" = pkgs.crane.cargoDoc (sqlxArgs // { inherit cargoArtifacts; });
         "${pname}-nextest" = pkgs.crane.cargoNextest (
-          cargoArgs
+          sqlxArgs
           // {
             inherit cargoArtifacts;
             cargoExtraArgs = cargoArgs.cargoExtraArgs + " --no-tests pass";

@@ -28,7 +28,6 @@
           (lib.fileset.fileFilter (
             file:
             lib.any file.hasExt [
-              "json"
               "ron"
               "wgsl"
               "wit"

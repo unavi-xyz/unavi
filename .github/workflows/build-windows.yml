@@ -29,7 +29,7 @@ jobs:
       - name: Build WASM assets
         run: nix develop .#minimal -c nu scripts/build-wasm.nu
       - name: Upload artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: wasm-assets
           path: crates/unavi-client/assets/wasm
@@ -176,7 +176,7 @@ jobs:
         run: |
           cd result
           tar -cJf ../${{ matrix.package }}-x86_64-windows.tar.xz .
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         if: ${{ matrix.package != 'unavi-launcher' }}
         with:
           name: build-${{ matrix.package }}-x86_64-windows
@@ -208,7 +208,7 @@ jobs:
           Write-Host "Using certificate: $certPath"
           Write-Host "Using signtool: $signtool"
           & $signtool sign /f $certPath /p "$env:CERTIFICATE_PASSWORD" /tr http://timestamp.digicert.com /td sha256 /fd sha256 ${{ matrix.package }}-x86_64-windows.msi
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         if: ${{ matrix.package == 'unavi-launcher' }}
         with:
           name: build-${{ matrix.package }}-x86_64-windows-installer

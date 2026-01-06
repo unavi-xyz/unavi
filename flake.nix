@@ -49,7 +49,6 @@
           ./crates/unavi-client
           ./crates/unavi-launcher
           ./crates/unavi-server
-          ./crates/wds
         ];
 
         flake =

@@ -2,54 +2,64 @@
 
 ## What
 
-Immutable definitions specifying [record](./records.md) relations and permission
-rules. Enforce type safety and access control.
+Immutable definitions specifying [record](./records.md) structure and validation
+rules. Stored as [blobs](./blobs.md) and referenced by blake3 hash.
 
 ## Why
 
-- **Type Safety**: Define valid record relations
-- **Access Control**: Declarative permission rules
-- **Interoperability**: Shared definitions enable compatibility
+- **Type Safety**: Define valid record structure
 - **Validation**: [WDS](./wds.md) enforces automatically
+- **Interoperability**: Shared definitions enable compatibility
 
-## Definition
+## Storage
+
+Schemas are serialized and stored as blobs. Records reference schemas by hash
+in their genesis metadata. A record can implement multiple schemas.
+
+## Example
 
 ```ron
-Schema(
-    id: "wired-protocol.org/schemas/chatroom",
-    version: 1,
-
-    relations: {
-        "message": (
-            schema: "wired-protocol.org/schemas/chatmessage",
-            create: Writer,
-            delete: [Author, Owner],
-        ),
-    },
-
-    data: {
-        "name": (set: Owner),
-    },
+(
+    id: "wired/beacon",
+    version: 0,
+    container: "beacon",
+    layout: Map({
+        "did": String,
+        "endpoint": Binary,
+        "expires": I64,
+        "space": Binary,
+    }),
 )
 ```
 
-## Relations
+## Fields
 
-Define what records can link via `context`:
+- **id**: Human-readable identifier (e.g., `wired/beacon`)
+- **version**: Schema version number
+- **container**: Target Loro container name in the record
+- **layout**: Field structure definition
 
-- **schema**: Required schema for related records
-- **create**: Who can create (Writer, Owner, etc.)
-- **delete**: Who can remove ([Author, Owner], etc.)
+## Field Types
 
-## Data Rules
+- `Any` - Any Loro value
+- `Bool` - Boolean
+- `Binary` - Raw bytes
+- `F64` - 64-bit float
+- `I64` - 64-bit integer
+- `String` - UTF-8 string
+- `List(Field)` - Homogeneous list
+- `Map({ "key": Field, ... })` - Named fields
 
-Define who can modify data fields:
+## Restrictions
 
-- **set**: Owner, Writer, Author, or None (immutable)
+Fields can have access restrictions:
 
-## Permission Values
+```ron
+Restricted(
+    actions: [(who: Anyone, can: [Create])],
+    value: String,
+)
+```
 
-- **Author**: Record creator (from genesis)
-- **Owner**: Record owner
-- **Writer**: Any writer or owner
-- **None**: Immutable after creation
+- **who**: `Anyone` or `Path("acl/manage")` (reference to ACL field)
+- **can**: `Create`, `Delete`, `Update`

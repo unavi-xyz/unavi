@@ -3,35 +3,25 @@
 ## What
 
 Immutable, content-addressed binary data stored in [WDS](./wds.md). Identified
-by CID (Content Identifier) - hash of contents.
+by blake3 hash of contents.
 
 ## Why
 
-- **Content Addressing**: CID guarantees integrity
+- **Content Addressing**: Hash guarantees integrity
 - **Immutability**: Content never changes
 - **Deduplication**: Same content stored once
 - **Decentralization**: Fetch from any WDS
 
-## CID Format
-
-IPFS-style Content Identifiers: base32, CIDv1, SHA-256
-
-Example: `bafyreiabc123...`
-
 ## Usage
 
-Binary assets referenced by [HSD](../spatial/hsd.md):
+Binary assets referenced by [records](./records.md):
 
 - 3D models (glTF/GLB)
 - Textures (PNG, JPEG, KTX2)
 - Audio (MP3, OGG, WAV)
 - Scripts (WASM components)
 - Avatars (VRM)
-
-## Caching
-
-Local WDS caches blobs from pinned [records](./records.md). Garbage collected
-when no pinned record references them.
+- [Schemas](./schemas.md)
 
 ## Cross-WDS References
 
@@ -39,13 +29,13 @@ Default: fetch from same WDS as referencing record.
 
 For cross-WDS, include origin hint:
 
-```json
-{
-  "mesh": {
-    "cid": "bafyrei-...",
-    "origin": "did:web:bob.com"
-  }
-}
+```ron
+(
+    mesh: (
+        hash: "a1b2c3d4e5f6...",
+        origin: "did:web:bob.example",
+    ),
+)
 ```
 
 Client resolves [DID](../social/did.md) to find WDS endpoint.

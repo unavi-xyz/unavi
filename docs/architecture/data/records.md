@@ -2,48 +2,50 @@
 
 ## What
 
-Fundamental data unit in The Wired. Loro CRDT document with structured schema.
+Fundamental data unit in The Wired. A Loro CRDT document with structured
+[schemas](./schemas.md) and access control.
 
 ## Why
 
-- **Structured**: Consistent schema across all records
+- **Structured**: Schema-enforced data consistency
 - **Conflict-Free**: Loro CRDT automatic merging
-- **Addressable**: Globally unique CID-based IDs
-- **Relational**: Context and relations link records
+- **Addressable**: Globally unique blake3 hash IDs
 - **Secure**: Fine-grained permissions
 
 ## Structure
 
 ```
 Record (Loro document)
-├── genesis (immutable)
+├── record (immutable genesis)
 │   ├── creator: DID
-│   ├── created: timestamp
-│   ├── nonce: bytes
-│   └── schema: string
-├── permissions
-│   ├── owner: [DID, ...]
-│   ├── writer: [DID, ...] | "public"
-│   └── reader: [DID, ...] | "public"
-├── context: { record: RecordRef, relation: string } | null
-├── relations: { relation-name: [RecordRef, ...] }
-└── data: schema-specific content
+│   ├── nonce: [u8; 16]
+│   ├── timestamp: i64
+│   └── schemas: [Hash, ...]
+└── acl (mutable permissions)
+    ├── manage: [DID, ...]
+    ├── write: [DID, ...]
+    └── read: [DID, ...]
 ```
 
 ## Permissions
 
-- **owner**: Modify permissions and data
-- **writer**: Modify data only
-- **reader**: Read only
+Hierarchical access control:
+
+- **manage**: Modify permissions and data
+- **write**: Modify data only
+- **read**: Read only
 
 ## Record ID
 
-CID of the `genesis` map. Stable, globally unique identifier.
+blake3 hash of the record's genesis metadata. Stable, globally unique.
 
-## Record References
+## Envelopes
 
-Format: `wired://{did}/{record-id}`
+Signed incremental updates to a record:
 
-Example: `wired://did:web:alice.com/bafyreiabc123`
+- Author [DID](../social/did.md) who made the change
+- Version vectors (from/to) for CRDT sync
+- Serialized Loro operations
 
-[DID](../social/did.md) indicates which [WDS](./wds.md) to query.
+Envelopes enable sync between [WDS](./wds.md) instances. Each envelope is
+cryptographically signed by its author and validated against the ACL.

@@ -27,7 +27,7 @@ spaces, agents, and data interoperate across servers and clients.
 The Wired is also a **philosophy**: information systems should reflect the
 natural order of the human experience. Traditional digital interfaces flatten
 information into screens and feeds, but humans evolved as
-[spatial beings](https://en.wikipedia.org/wiki/Spatial_cognition). And as
+[spatial beings](https://en.wikipedia.org/wiki/Spatial_cognition). As
 [feng shui](https://en.wikipedia.org/wiki/Feng_shui) teaches, form and life are
 inseparable.
 

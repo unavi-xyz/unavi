@@ -20,7 +20,7 @@ iroh-blobs         = "0.97.0"
 irpc               = "0.11.0"
 irpc-iroh          = "0.11.0"
 jose-jwk           = "0.1.2"
-loro               = "1.10.3"
+loro.workspace     = true
 n0-error           = { features = ["anyhow"], version = "0.1.2" }
 p256               = { features = ["ecdsa"], version = "0.13.2" }
 paste              = "1.0.15"

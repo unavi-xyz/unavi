@@ -1,17 +1,55 @@
-use std::time::Duration;
+use std::{collections::HashSet, time::Duration};
 
 use blake3::Hash;
+use log::{debug, warn};
 use time::OffsetDateTime;
 use wds::record::schema::SCHEMA_BEACON;
 
-use crate::networking::thread::NetworkThreadState;
+use crate::{networking::thread::NetworkThreadState, space::beacon::Beacon};
 
 const BEACON_TTL: Duration = Duration::from_secs(30);
 
 pub async fn handle_join(state: NetworkThreadState, id: Hash) -> anyhow::Result<()> {
     // Query WDS for beacons.
+    let mut players = HashSet::new();
 
-    // Connect to beacons.
+    if let Some(actor) = &state.remote_actor {
+        let found = actor.query().schema(SCHEMA_BEACON.hash).send().await?;
+
+        let remote_host = *actor.host();
+        let now = OffsetDateTime::now_utc().unix_timestamp();
+
+        for id in found {
+            match state
+                .local_actor
+                .read(id)
+                .sync_from(remote_host.into())
+                .send()
+                .await
+            {
+                Ok(doc) => {
+                    let Ok(beacon) = Beacon::load(&doc) else {
+                        debug!("invalid beacon documnt");
+                        continue;
+                    };
+
+                    if now >= beacon.expires {
+                        continue;
+                    }
+
+                    players.insert(beacon.endpoint);
+                }
+                Err(e) => {
+                    warn!("failed to sync beacon: {e:?}");
+                }
+            }
+        }
+    }
+
+    // Connect to players.
+    for _endpoint in players {
+        // TODO
+    }
 
     // Create our own beacon.
     // TODO: Loop while we are in the space
@@ -20,14 +58,13 @@ pub async fn handle_join(state: NetworkThreadState, id: Hash) -> anyhow::Result<
         .create_record()
         .ttl(BEACON_TTL)
         .add_schema(&*SCHEMA_BEACON, |doc| {
-            let map = doc.get_map("beacon");
-            map.insert("did", state.local_actor.identity().did().to_string())?;
-            // map.insert("endpoint", state.endpoint_id)?;
-            map.insert(
-                "expires",
-                (OffsetDateTime::now_utc() + BEACON_TTL).unix_timestamp(),
-            )?;
-            map.insert("space", id.as_bytes().to_vec())?;
+            let beacon = Beacon {
+                did: state.local_actor.identity().did().clone(),
+                expires: (OffsetDateTime::now_utc() + BEACON_TTL).unix_timestamp(),
+                endpoint: state.endpoint_id,
+                space: id,
+            };
+            beacon.save(doc)?;
             Ok(())
         })?
         .sync_to(state.remote_actor)

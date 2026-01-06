@@ -73,6 +73,7 @@ async fn validate_schemas(
 }
 
 /// Stores an envelope with quota tracking and schema validation.
+#[allow(clippy::too_many_lines)]
 pub async fn store_envelope(
     db: &Pool<Sqlite>,
     blobs: &FsStore,

@@ -2,7 +2,7 @@ use std::{sync::Arc, time::Duration};
 
 use bevy::prelude::*;
 use blake3::Hash;
-use iroh::Endpoint;
+use iroh::{Endpoint, EndpointId};
 use wds::{DataStore, Identity, actor::Actor};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
@@ -62,6 +62,7 @@ impl NetworkingThread {
 
 #[derive(Clone)]
 struct NetworkThreadState {
+    endpoint_id: EndpointId,
     local_actor: Actor,
     remote_actor: Option<Actor>,
 }
@@ -71,6 +72,7 @@ async fn thread_loop(
     event_tx: &flume::Sender<NetworkEvent>,
 ) -> anyhow::Result<()> {
     let endpoint = Endpoint::builder().bind().await?;
+    let endpoint_id = endpoint.id();
 
     let store = {
         let path = DIRS.data_local_dir().join("wds");
@@ -96,6 +98,7 @@ async fn thread_loop(
         .await?;
 
     let state = NetworkThreadState {
+        endpoint_id,
         local_actor,
         remote_actor,
     };

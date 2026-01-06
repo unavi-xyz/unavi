@@ -3,6 +3,7 @@ use blake3::Hash;
 
 use crate::networking::thread::{NetworkCommand, NetworkingThread};
 
+pub mod beacon;
 mod home;
 
 pub struct SpacePlugin {

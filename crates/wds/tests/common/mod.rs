@@ -18,7 +18,7 @@ use wds::{
 };
 use xdid::core::did::Did;
 
-use did_key::generate_actor;
+use did_key::{generate_actor, generate_actor_with_identity};
 use did_web::{DidWebServer, generate_actor_web};
 
 pub struct DataStoreCtx {
@@ -65,10 +65,11 @@ pub async fn ctx() -> DataStoreCtx {
 pub struct MultiStoreCtx {
     pub rome: DataStoreCtx,
     pub carthage: DataStoreCtx,
-    alice_server: DidWebServer,
-    bob_server: DidWebServer,
+    _alice_server: DidWebServer,
+    _bob_server: DidWebServer,
 }
 
+/// Multi-store context using did:web with DID document service auth.
 #[fixture]
 pub async fn multi_ctx() -> MultiStoreCtx {
     let mut rome = ctx().await;
@@ -113,9 +114,60 @@ pub async fn multi_ctx() -> MultiStoreCtx {
     MultiStoreCtx {
         rome,
         carthage,
-        alice_server: alice_with_server.server,
-        bob_server: bob_with_server.server,
+        _alice_server: alice_with_server.server,
+        _bob_server: bob_with_server.server,
     }
+}
+
+/// Two stores with user identities set for embedded WDS sync auth pattern.
+pub struct LocalStoreCtx {
+    /// Alice's store with her identity set.
+    pub alice_ctx: DataStoreCtx,
+    /// Bob's store with his identity set.
+    pub bob_ctx: DataStoreCtx,
+}
+
+/// Multi-store context using did:key with `set_user_identity` for sync auth.
+/// Tests the embedded WDS authentication pattern.
+#[fixture]
+pub async fn multi_ctx_local() -> LocalStoreCtx {
+    let mut alice_ctx = ctx().await;
+    let mut bob_ctx = ctx().await;
+
+    // Generate did:key identities for each user.
+    let (_, alice_identity) = generate_actor_with_identity(&alice_ctx.store).await;
+    let (_, bob_identity) = generate_actor_with_identity(&bob_ctx.store).await;
+
+    // Set user identities on respective stores for sync authentication.
+    alice_ctx
+        .store
+        .set_user_identity(Arc::clone(&alice_identity));
+    bob_ctx.store.set_user_identity(Arc::clone(&bob_identity));
+
+    // Set up quotas on both stores for both users.
+    for (store, did) in [
+        (&alice_ctx.store, alice_identity.did()),
+        (&alice_ctx.store, bob_identity.did()),
+        (&bob_ctx.store, alice_identity.did()),
+        (&bob_ctx.store, bob_identity.did()),
+    ] {
+        let did_str = did.to_string();
+        sqlx::query!(
+            "INSERT OR IGNORE INTO user_quotas (owner, bytes_used, quota_bytes) VALUES (?, 0, 10000000)",
+            did_str
+        )
+        .execute(store.db())
+        .await
+        .expect("create quota");
+    }
+
+    // Replace actors with their respective identities.
+    alice_ctx.alice = alice_ctx.store.local_actor(Arc::clone(&alice_identity));
+    alice_ctx.bob = alice_ctx.store.local_actor(Arc::clone(&bob_identity));
+    bob_ctx.alice = bob_ctx.store.local_actor(Arc::clone(&alice_identity));
+    bob_ctx.bob = bob_ctx.store.local_actor(Arc::clone(&bob_identity));
+
+    LocalStoreCtx { alice_ctx, bob_ctx }
 }
 
 pub fn assert_contains(e: impl Debug, contains: &str) {

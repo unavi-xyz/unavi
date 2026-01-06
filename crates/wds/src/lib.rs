@@ -1,7 +1,8 @@
-use std::{path::Path, sync::Arc};
+use std::{path::Path, path::PathBuf, sync::Arc};
 
 use derive_more::Debug;
-use iroh::{Endpoint, EndpointId, protocol::Router};
+use identity::Identity;
+use iroh::{Endpoint, EndpointId, protocol::DynProtocolHandler, protocol::Router};
 use iroh_blobs::{
     BlobsProtocol,
     store::fs::{FsStore, options::Options},
@@ -10,8 +11,6 @@ use irpc::Client;
 use parking_lot::RwLock;
 use tokio::task::JoinError;
 use xdid::core::did::Did;
-
-pub use identity::Identity;
 
 pub mod actor;
 pub mod api;
@@ -25,12 +24,91 @@ pub mod signed_bytes;
 mod sync;
 mod tag;
 
-/// Wired data store.
 pub struct DataStore {
     api_client: Client<api::ApiService>,
     auth_client: Client<auth::AuthService>,
     router: Router,
     ctx: Arc<StoreContext>,
+}
+
+/// Builder for [`DataStore`] that allows adding custom protocols to the router.
+pub struct DataStoreBuilder {
+    path: PathBuf,
+    endpoint: Endpoint,
+    protocols: Vec<(Vec<u8>, Box<dyn DynProtocolHandler>)>,
+}
+
+impl DataStoreBuilder {
+    /// Create a new builder.
+    pub fn new(path: impl AsRef<Path>, endpoint: Endpoint) -> Self {
+        Self {
+            path: path.as_ref().to_path_buf(),
+            endpoint,
+            protocols: Vec::new(),
+        }
+    }
+
+    /// Add a custom protocol handler.
+    #[must_use]
+    pub fn accept(
+        mut self,
+        alpn: impl AsRef<[u8]>,
+        handler: impl Into<Box<dyn DynProtocolHandler>>,
+    ) -> Self {
+        self.protocols
+            .push((alpn.as_ref().to_vec(), handler.into()));
+        self
+    }
+
+    /// Build the [`DataStore`].
+    ///
+    /// # Errors
+    ///
+    /// Errors if the file system store could not be initialized.
+    pub async fn build(self) -> anyhow::Result<DataStore> {
+        let blob_path = self.path.join("blob");
+        let record_path = self.path.join("record");
+        tokio::fs::create_dir_all(&blob_path).await?;
+        tokio::fs::create_dir_all(&record_path).await?;
+
+        let blob_db_path = blob_path.join("blobs.db");
+        let blobs = FsStore::load_with_opts(blob_db_path, Options::new(&blob_path)).await?;
+        let blob_protocol = BlobsProtocol::new(&blobs, None);
+
+        let db_path = self.path.join("index.db");
+        let db = db::Database::new(&db_path).await?;
+
+        let ctx = Arc::new(StoreContext {
+            blobs,
+            connections: scc::HashMap::default(),
+            db,
+            endpoint: self.endpoint.clone(),
+            user_identity: RwLock::new(None),
+        });
+
+        let (api_client, api_protocol) = api::protocol(Arc::clone(&ctx));
+        let (auth_client, auth_protocol) = auth::protocol(Arc::clone(&ctx));
+
+        let mut router_builder = Router::builder(self.endpoint)
+            .accept(iroh_blobs::ALPN, blob_protocol)
+            .accept(api::ALPN, api_protocol)
+            .accept(auth::ALPN, auth_protocol)
+            .accept(sync::ALPN, sync::SyncProtocol::new(Arc::clone(&ctx)));
+
+        // Add custom protocols.
+        for (alpn, handler) in self.protocols {
+            router_builder = router_builder.accept(alpn, handler);
+        }
+
+        let router = router_builder.spawn();
+
+        Ok(DataStore {
+            api_client,
+            auth_client,
+            router,
+            ctx,
+        })
+    }
 }
 
 // TODO: Replace session token auth with iroh hooks
@@ -56,46 +134,9 @@ struct ConnectionState {
 }
 
 impl DataStore {
-    /// # Errors
-    ///
-    /// Errors if the file system store could not be initialized.
-    pub async fn new(path: &Path, endpoint: Endpoint) -> anyhow::Result<Self> {
-        let blob_path = path.join("blob");
-        let record_path = path.join("record");
-        tokio::fs::create_dir_all(&blob_path).await?;
-        tokio::fs::create_dir_all(&record_path).await?;
-
-        let blob_db_path = blob_path.join("blobs.db");
-        let blobs = FsStore::load_with_opts(blob_db_path, Options::new(&blob_path)).await?;
-        let blob_protocol = BlobsProtocol::new(&blobs, None);
-
-        let db_path = path.join("index.db");
-        let db = db::Database::new(&db_path).await?;
-
-        let ctx = Arc::new(StoreContext {
-            blobs,
-            connections: scc::HashMap::default(),
-            db,
-            endpoint: endpoint.clone(),
-            user_identity: RwLock::new(None),
-        });
-
-        let (api_client, api_protocol) = api::protocol(Arc::clone(&ctx));
-        let (auth_client, auth_protocol) = auth::protocol(Arc::clone(&ctx));
-
-        let router = Router::builder(endpoint)
-            .accept(iroh_blobs::ALPN, blob_protocol)
-            .accept(api::ALPN, api_protocol)
-            .accept(auth::ALPN, auth_protocol)
-            .accept(sync::ALPN, sync::SyncProtocol::new(Arc::clone(&ctx)))
-            .spawn();
-
-        Ok(Self {
-            api_client,
-            auth_client,
-            router,
-            ctx,
-        })
+    /// Create a new [`DataStoreBuilder`].
+    pub fn builder(path: impl AsRef<Path>, endpoint: Endpoint) -> DataStoreBuilder {
+        DataStoreBuilder::new(path, endpoint)
     }
 
     #[must_use]

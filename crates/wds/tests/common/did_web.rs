@@ -3,7 +3,7 @@ use std::sync::Arc;
 use axum::{Json, Router};
 use iroh::EndpointId;
 use tokio::{net::TcpListener, task::JoinHandle};
-use wds::{DataStore, Identity, actor::Actor};
+use wds::{DataStore, actor::Actor, identity::Identity};
 use xdid::{
     core::{
         did::{Did, MethodId, MethodName},

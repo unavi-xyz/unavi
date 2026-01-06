@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use wds::{DataStore, Identity, actor::Actor};
+use wds::{DataStore, actor::Actor, identity::Identity};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
 pub async fn generate_actor(store: &DataStore) -> Actor {

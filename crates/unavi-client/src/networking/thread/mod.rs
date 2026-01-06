@@ -3,7 +3,8 @@ use std::{sync::Arc, time::Duration};
 use bevy::prelude::*;
 use blake3::Hash;
 use iroh::{Endpoint, EndpointId};
-use wds::{DataStore, Identity, actor::Actor};
+use iroh_gossip::Gossip;
+use wds::{DataStore, actor::Actor, identity::Identity};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
 use crate::{DIRS, networking::WdsActors};
@@ -63,6 +64,7 @@ impl NetworkingThread {
 #[derive(Clone)]
 struct NetworkThreadState {
     endpoint_id: EndpointId,
+    gossip: Gossip,
     local_actor: Actor,
     remote_actor: Option<Actor>,
 }
@@ -74,9 +76,14 @@ async fn thread_loop(
     let endpoint = Endpoint::builder().bind().await?;
     let endpoint_id = endpoint.id();
 
+    let gossip = Gossip::builder().spawn(endpoint.clone());
+
     let store = {
         let path = DIRS.data_local_dir().join("wds");
-        DataStore::new(&path, endpoint).await?
+        DataStore::builder(&path, endpoint)
+            .accept(iroh_gossip::ALPN, gossip.clone())
+            .build()
+            .await?
     };
 
     // TODO: save / load keypair from disk
@@ -101,6 +108,7 @@ async fn thread_loop(
 
     let state = NetworkThreadState {
         endpoint_id,
+        gossip,
         local_actor,
         remote_actor,
     };

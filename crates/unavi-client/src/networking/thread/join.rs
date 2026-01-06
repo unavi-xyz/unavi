@@ -1,7 +1,7 @@
 use std::{collections::HashSet, time::Duration};
 
 use blake3::Hash;
-use log::{debug, warn};
+use log::{debug, info, warn};
 use time::OffsetDateTime;
 use wds::record::schema::SCHEMA_BEACON;
 
@@ -47,7 +47,8 @@ pub async fn handle_join(state: NetworkThreadState, id: Hash) -> anyhow::Result<
     }
 
     // Connect to players.
-    for _endpoint in players {
+    for endpoint in players {
+        info!("Found player: {endpoint}");
         // TODO
     }
 

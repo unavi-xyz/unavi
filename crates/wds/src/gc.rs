@@ -1,51 +1,98 @@
-use std::str::FromStr;
+use std::{str::FromStr, time::Duration};
 
 use blake3::Hash;
 use futures::StreamExt;
 use time::OffsetDateTime;
 use xdid::core::did::Did;
 
-use crate::{DataStore, quota::release_bytes, tag::BlobTag};
+use crate::{DataStore, StoreContext, quota::release_bytes, tag::BlobTag};
 
-impl DataStore {
-    /// Runs garbage collection on the data store.
-    ///
-    /// # Errors
-    ///
-    /// Errors if the initial database query fails or if listing blob tags fails.
-    /// Individual pin and tag cleanup failures are logged and do not stop GC.
-    pub async fn run_gc(&self) -> anyhow::Result<()> {
-        self.gc_blob_pins().await?;
-        self.gc_blob_store().await?;
-        Ok(())
-    }
+/// Pins with TTL shorter than this threshold get fast GC via spawned tasks.
+pub const FAST_GC_THRESHOLD: Duration = Duration::from_mins(5);
 
-    /// Cleans up expired pin records from the database.
-    async fn gc_blob_pins(&self) -> anyhow::Result<()> {
-        let db = self.ctx.db.pool();
+impl StoreContext {
+    /// Garbage collect a single record pin if expired.
+    /// Silently succeeds if pin was extended or already removed.
+    pub(crate) async fn gc_record_pin(&self, owner: &str, record_id: &str) -> anyhow::Result<()> {
+        let db = self.db.pool();
         let now = OffsetDateTime::now_utc().unix_timestamp();
 
-        let expired = sqlx::query!(
-            "SELECT hash, owner, size FROM blob_pins
-             WHERE expires IS NOT NULL AND expires < ?",
-            now
+        // Check if pin exists and is expired.
+        let pin = sqlx::query!(
+            "SELECT expires FROM record_pins WHERE owner = ? AND record_id = ?",
+            owner,
+            record_id
         )
-        .fetch_all(db)
+        .fetch_optional(db)
         .await?;
 
-        for pin in expired {
-            if let Err(e) = self
-                .gc_single_pin(db, &pin.owner, &pin.hash, pin.size)
-                .await
-            {
-                tracing::warn!(owner = %pin.owner, hash = %pin.hash, "failed to gc pin: {e}");
-            }
+        let Some(pin) = pin else {
+            // Pin already removed.
+            return Ok(());
+        };
+
+        if pin.expires.is_none_or(|e| e >= now) {
+            // Pin was extended or has no expiration.
+            return Ok(());
         }
+
+        // Pin is expired - delete it and release quota for envelopes.
+        let mut tx = db.begin().await?;
+
+        let total_size: i64 = sqlx::query_scalar!(
+            "SELECT COALESCE(SUM(size), 0) as total FROM envelopes WHERE record_id = ?",
+            record_id
+        )
+        .fetch_one(&mut *tx)
+        .await?;
+
+        sqlx::query!(
+            "DELETE FROM record_pins WHERE owner = ? AND record_id = ?",
+            owner,
+            record_id
+        )
+        .execute(&mut *tx)
+        .await?;
+
+        if total_size > 0 {
+            release_bytes(&mut *tx, owner, total_size).await?;
+        }
+
+        tx.commit().await?;
 
         Ok(())
     }
 
-    async fn gc_single_pin(
+    /// Garbage collect a single blob pin if expired.
+    /// Silently succeeds if pin was extended or already removed.
+    pub(crate) async fn gc_blob_pin(&self, owner: &str, hash: &str) -> anyhow::Result<()> {
+        let db = self.db.pool();
+        let now = OffsetDateTime::now_utc().unix_timestamp();
+
+        // Check if pin exists and is expired.
+        let pin = sqlx::query!(
+            "SELECT size, expires FROM blob_pins WHERE owner = ? AND hash = ?",
+            owner,
+            hash
+        )
+        .fetch_optional(db)
+        .await?;
+
+        let Some(pin) = pin else {
+            // Pin already removed.
+            return Ok(());
+        };
+
+        if pin.expires.is_none_or(|e| e >= now) {
+            // Pin was extended or has no expiration.
+            return Ok(());
+        }
+
+        // Pin is expired - delegate to gc_single_blob_pin.
+        self.gc_single_blob_pin(db, owner, hash, pin.size).await
+    }
+
+    async fn gc_single_blob_pin(
         &self,
         db: &sqlx::SqlitePool,
         owner: &str,
@@ -104,7 +151,67 @@ impl DataStore {
         let owner_did = Did::from_str(owner)?;
         let hash_parsed = Hash::from_str(hash)?;
         let tag = BlobTag::new(owner_did, hash_parsed);
-        self.ctx.blobs.tags().delete(tag.to_string()).await?;
+        self.blobs.tags().delete(tag.to_string()).await?;
+
+        Ok(())
+    }
+}
+
+impl DataStore {
+    /// Runs garbage collection on the data store.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the initial database query fails or if listing blob tags fails.
+    /// Individual pin and tag cleanup failures are logged and do not stop GC.
+    pub async fn run_gc(&self) -> anyhow::Result<()> {
+        self.gc_record_pins().await?;
+        self.gc_blob_pins().await?;
+        self.gc_blob_store().await?;
+        Ok(())
+    }
+
+    /// Cleans up expired record pins from the database.
+    async fn gc_record_pins(&self) -> anyhow::Result<()> {
+        let db = self.ctx.db.pool();
+        let now = OffsetDateTime::now_utc().unix_timestamp();
+
+        let expired = sqlx::query!(
+            "SELECT record_id, owner FROM record_pins
+             WHERE expires IS NOT NULL AND expires < ?",
+            now
+        )
+        .fetch_all(db)
+        .await?;
+
+        for pin in expired {
+            if let Err(e) = self.ctx.gc_record_pin(&pin.owner, &pin.record_id).await {
+                tracing::warn!(owner = %pin.owner, record_id = %pin.record_id,
+                    "failed to gc record pin: {e}");
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Cleans up expired blob pins from the database.
+    async fn gc_blob_pins(&self) -> anyhow::Result<()> {
+        let db = self.ctx.db.pool();
+        let now = OffsetDateTime::now_utc().unix_timestamp();
+
+        let expired = sqlx::query!(
+            "SELECT hash, owner FROM blob_pins
+             WHERE expires IS NOT NULL AND expires < ?",
+            now
+        )
+        .fetch_all(db)
+        .await?;
+
+        for pin in expired {
+            if let Err(e) = self.ctx.gc_blob_pin(&pin.owner, &pin.hash).await {
+                tracing::warn!(owner = %pin.owner, hash = %pin.hash, "failed to gc blob pin: {e}");
+            }
+        }
 
         Ok(())
     }

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use irpc::WithChannels;
 use time::OffsetDateTime;
@@ -6,6 +6,7 @@ use time::OffsetDateTime;
 use crate::{
     StoreContext,
     api::{ApiService, MAX_PIN_DURATION, PinBlob, authenticate},
+    gc::FAST_GC_THRESHOLD,
     quota::ensure_quota_exists,
 };
 
@@ -47,5 +48,24 @@ pub async fn pin_blob(
 
     db_tx.commit().await?;
 
+    // Schedule fast GC for short-lived pins.
+    let now = OffsetDateTime::now_utc().unix_timestamp();
+    let ttl_secs = expires.saturating_sub(now);
+    if ttl_secs >= 0 {
+        let ttl = Duration::from_secs(ttl_secs.cast_unsigned());
+        if ttl < FAST_GC_THRESHOLD {
+            let ctx = Arc::clone(&ctx);
+            let owner = did_str.clone();
+            let hash = hash_str.clone();
+            tokio::spawn(async move {
+                tokio::time::sleep(ttl).await;
+                if let Err(e) = ctx.gc_blob_pin(&owner, &hash).await {
+                    tracing::warn!(%hash, "fast gc blob pin failed: {e}");
+                }
+            });
+        }
+    }
+
+    tx.send(Ok(())).await?;
     Ok(())
 }

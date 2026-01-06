@@ -14738,6 +14738,7 @@ name = "wds"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "axum",
  "blake3",
  "bytes 1.11.0",
  "derive_more 2.1.1",

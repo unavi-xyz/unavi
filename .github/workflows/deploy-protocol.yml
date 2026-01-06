@@ -16,10 +16,6 @@ jobs:
           cp protocol/README.md out/
           cp protocol/CNAME out/
           cp protocol/_config.yml out/
-
-          mkdir out/v0
-          cp -r protocol/dwn/protocols out/v0/protocols
-          cp -r protocol/dwn/schemas out/v0/schemas
       - uses: s0/git-publish-subdir-action@develop
         env:
           BRANCH: protocol

@@ -5,21 +5,22 @@ use futures::{SinkExt, StreamExt};
 use iroh::{EndpointAddr, endpoint::VarInt};
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
 use tracing::debug;
-use xdid::core::did::Did;
+use xdid::{core::did::Did, methods::key::Signer};
 
-use crate::{
-    StoreContext, auth::AuthService, signed_bytes::IrohSigner,
-    sync::combined_stream::CombinedStream,
-};
+use crate::{StoreContext, auth::AuthService, sync::combined_stream::CombinedStream};
 
 use super::SyncMsg;
 
-pub async fn sync_to_remote(
+pub async fn sync_to_remote<S>(
     did: Did,
+    signer: &S,
     ctx: &StoreContext,
     remote: EndpointAddr,
     record_id: Hash,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<()>
+where
+    S: Signer + Sync,
+{
     let db = ctx.db.pool();
     let id_str = record_id.to_string();
 
@@ -27,13 +28,7 @@ pub async fn sync_to_remote(
     let auth_client =
         irpc_iroh::client::<AuthService>(ctx.endpoint.clone(), remote.clone(), crate::auth::ALPN);
 
-    let session = crate::auth::client::authenticate(
-        did,
-        &IrohSigner(ctx.endpoint.secret_key()),
-        remote.id,
-        &auth_client,
-    )
-    .await?;
+    let session = crate::auth::client::authenticate(did, signer, remote.id, &auth_client).await?;
 
     // Sync.
     let connection = ctx.endpoint.connect(remote, crate::sync::ALPN).await?;

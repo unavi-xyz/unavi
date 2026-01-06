@@ -19,7 +19,7 @@ dioxus                = { features = ["desktop", "router"], version = "0.7.2" }
 directories.workspace = true
 futures.workspace     = true
 image                 = { features = ["png"], workspace = true }
-parking_lot           = "0.12.5"
+parking_lot.workspace = true
 reqwest.workspace     = true
 runas                 = "1.2.0"
 self-replace          = "1.5.0"

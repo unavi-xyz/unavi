@@ -5,6 +5,7 @@ use crate::networking::thread::{NetworkCommand, NetworkingThread};
 
 pub mod beacon;
 mod home;
+mod publish_beacons;
 
 pub struct SpacePlugin {
     pub initial_space: Option<Hash>,
@@ -22,5 +23,10 @@ impl Plugin for SpacePlugin {
         } else {
             app.add_systems(Startup, home::join_home_space);
         }
+
+        app.add_systems(FixedUpdate, publish_beacons::publish_beacons);
     }
 }
+
+#[derive(Component)]
+pub struct Space(pub Hash);

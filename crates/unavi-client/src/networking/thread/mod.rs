@@ -10,12 +10,14 @@ use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 use crate::{DIRS, networking::WdsActors};
 
 mod join;
+mod publish_beacon;
 mod remote_wds;
 
 #[expect(unused)]
 pub enum NetworkCommand {
     Join(Hash),
     Leave(Hash),
+    PublishBeacon { id: Hash, ttl: Duration },
     Shutdown,
 }
 
@@ -120,16 +122,25 @@ async fn thread_loop(
 
                 tokio::spawn(async move {
                     if let Err(e) = join::handle_join(state, id).await {
-                        error!("Error joining {id}: {e:?}");
+                        error!(?id, "Error joining: {e:?}");
                     }
                 });
             }
             NetworkCommand::Leave(_id) => {
                 todo!()
             }
+            NetworkCommand::PublishBeacon { id, ttl } => {
+                let state = state.clone();
+
+                tokio::spawn(async move {
+                    if let Err(e) = publish_beacon::publish_beacon(state, id, ttl).await {
+                        error!(?id, "Error publishing beacon: {e:?}");
+                    }
+                });
+            }
             NetworkCommand::Shutdown => {
                 if let Err(e) = store.shutdown().await {
-                    error!("Error shutting down data store: {e}");
+                    error!("Error shutting down data store: {e:?}");
                 }
 
                 break;

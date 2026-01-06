@@ -37,7 +37,8 @@ pub async fn ctx() -> DataStoreCtx {
         .await
         .expect("bind endpoint");
 
-    let store = DataStore::new(dir.path(), endpoint)
+    let store = DataStore::builder(dir.path(), endpoint)
+        .build()
         .await
         .expect("construct data store");
 

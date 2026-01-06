@@ -1,7 +1,9 @@
 use std::{collections::HashSet, time::Duration};
 
+use bevy::tasks::futures_lite::StreamExt;
 use blake3::Hash;
-use log::{debug, info, warn};
+use iroh_gossip::TopicId;
+use log::{debug, warn};
 use time::OffsetDateTime;
 use wds::record::schema::SCHEMA_BEACON;
 
@@ -11,7 +13,7 @@ const BEACON_TTL: Duration = Duration::from_secs(30);
 
 pub async fn handle_join(state: NetworkThreadState, id: Hash) -> anyhow::Result<()> {
     // Query beacons to find players.
-    let mut players = HashSet::new();
+    let mut bootstrap = HashSet::new();
 
     if let Some(actor) = &state.remote_actor {
         let found = actor.query().schema(SCHEMA_BEACON.hash).send().await?;
@@ -33,11 +35,17 @@ pub async fn handle_join(state: NetworkThreadState, id: Hash) -> anyhow::Result<
                         continue;
                     };
 
+                    // Ignore old beacons.
                     if now >= beacon.expires {
                         continue;
                     }
 
-                    players.insert(beacon.endpoint);
+                    // Ignore our own beacon.
+                    if beacon.endpoint == state.endpoint_id {
+                        continue;
+                    }
+
+                    bootstrap.insert(beacon.endpoint);
                 }
                 Err(e) => {
                     warn!("failed to sync beacon: {e:?}");
@@ -46,11 +54,13 @@ pub async fn handle_join(state: NetworkThreadState, id: Hash) -> anyhow::Result<
         }
     }
 
-    // Connect to players.
-    for endpoint in players {
-        info!("Found player: {endpoint}");
-        // TODO
-    }
+    // Join gossip topic.
+    let topic_id = TopicId::from_bytes(*id.as_bytes());
+    let topic = state
+        .gossip
+        .subscribe(topic_id, bootstrap.into_iter().collect())
+        .await?;
+    let (_tx, mut rx) = topic.split();
 
     // Create our own beacon.
     // TODO: Loop while we are in the space
@@ -72,8 +82,9 @@ pub async fn handle_join(state: NetworkThreadState, id: Hash) -> anyhow::Result<
         .send()
         .await?;
 
-    // Join gossip topic.
-    // state.
+    while let Some(e) = rx.next().await {
+        let _e = e?;
+    }
 
     Ok(())
 }

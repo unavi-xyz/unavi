@@ -10,6 +10,7 @@ use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 use crate::{DIRS, networking::WdsActors};
 
 mod join;
+mod space;
 mod publish_beacon;
 mod remote_wds;
 
@@ -77,6 +78,7 @@ async fn thread_loop(
 ) -> anyhow::Result<()> {
     let endpoint = Endpoint::builder().bind().await?;
     let endpoint_id = endpoint.id();
+    info!("Local endpoint: {endpoint_id}");
 
     let gossip = Gossip::builder().spawn(endpoint.clone());
 
@@ -84,6 +86,7 @@ async fn thread_loop(
         let path = DIRS.data_local_dir().join("wds");
         DataStore::builder(&path, endpoint)
             .accept(iroh_gossip::ALPN, gossip.clone())
+            .accept(space::ALPN, space::SpaceProtocol)
             .build()
             .await?
     };

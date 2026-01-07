@@ -10,7 +10,6 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace     = true
 bevy.workspace       = true
 bevy_vrm.workspace   = true
 unavi-constants.path = "../unavi-constants"

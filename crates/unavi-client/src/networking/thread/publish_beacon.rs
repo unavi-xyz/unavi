@@ -1,7 +1,7 @@
 use std::time::Duration;
 
+use bevy::log::info;
 use blake3::Hash;
-use log::info;
 use time::OffsetDateTime;
 use wds::record::schema::SCHEMA_BEACON;
 
@@ -31,7 +31,7 @@ pub async fn publish_beacon(
         .send()
         .await?;
 
-    info!("published beacon: space={} id={}", id, res.id);
+    info!(space = %res.id, beacon = %id, "published beacon");
 
     Ok(())
 }

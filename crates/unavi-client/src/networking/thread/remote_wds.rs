@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
 use anyhow::Context;
+use bevy::log::{info, warn};
 use iroh::EndpointId;
-use log::{info, warn};
 use xdid::{core::did::Did, resolver::DidResolver};
 
 pub async fn fetch_remote_host() -> anyhow::Result<Option<EndpointId>> {
@@ -13,7 +13,7 @@ pub async fn fetch_remote_host() -> anyhow::Result<Option<EndpointId>> {
     )
     .context("parse remote wds did")?;
 
-    info!("Resolving remote WDS: {remote_wds_did}");
+    info!(did = %remote_wds_did, "Resolving remote WDS");
     let values = fetch_wds_service(&remote_wds_did).await?;
 
     for v in values {
@@ -23,7 +23,7 @@ pub async fn fetch_remote_host() -> anyhow::Result<Option<EndpointId>> {
                 return Ok(Some(id));
             }
             Err(e) => {
-                warn!("invalid wds service value {v}: {e:?}");
+                warn!(value = %v, err = ?e, "invalid wds service value");
             }
         }
     }

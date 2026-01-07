@@ -13890,10 +13890,10 @@ dependencies = [
  "image",
  "iroh",
  "iroh-gossip",
- "log",
  "loro",
  "postcard",
  "reqwest 0.13.1",
+ "serde",
  "time",
  "tokio",
  "unavi-constants",
@@ -13967,7 +13967,6 @@ dependencies = [
 name = "unavi-portal"
 version = "0.0.16"
 dependencies = [
- "anyhow",
  "bevy",
  "bevy_panorbit_camera",
  "bevy_vrm",

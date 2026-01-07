@@ -1,9 +1,14 @@
 use std::collections::HashSet;
 
-use bevy::{ecs::world::CommandQueue, tasks::futures_lite::StreamExt};
+use bevy::{
+    ecs::world::CommandQueue,
+    log::{debug, info, warn},
+    tasks::futures_lite::StreamExt,
+};
 use blake3::Hash;
-use iroh_gossip::TopicId;
-use log::{debug, warn};
+use iroh::EndpointId;
+use iroh_gossip::{TopicId, api::Event};
+use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use wds::record::schema::SCHEMA_BEACON;
 
@@ -12,6 +17,11 @@ use crate::{
     networking::thread::NetworkThreadState,
     space::{Space, beacon::Beacon},
 };
+
+#[derive(Serialize, Deserialize)]
+struct JoinBroadcast {
+    endpoint: EndpointId,
+}
 
 pub async fn handle_join(state: NetworkThreadState, id: Hash) -> anyhow::Result<()> {
     // Query beacons to find players.
@@ -56,22 +66,47 @@ pub async fn handle_join(state: NetworkThreadState, id: Hash) -> anyhow::Result<
         }
     }
 
+    info!("Bootstrapping space: peers={bootstrap:?}");
+
     // Join gossip topic.
     let topic_id = TopicId::from_bytes(*id.as_bytes());
     let topic = state
         .gossip
         .subscribe(topic_id, bootstrap.into_iter().collect())
         .await?;
-    let (_tx, mut rx) = topic.split();
+    let (tx, mut rx) = topic.split();
 
     // Create space in ECS.
     let mut commands = CommandQueue::default();
     commands.push(bevy::ecs::system::command::spawn_batch([(Space(id))]));
     ASYNC_COMMAND_QUEUE.0.send_async(commands).await?;
 
+    // Broadcast join.
+    let join = postcard::to_stdvec(&JoinBroadcast {
+        endpoint: state.endpoint_id,
+    })?;
+    tx.broadcast(join.into()).await?;
+
     // Recieve gossip.
     while let Some(e) = rx.next().await {
-        let _e = e?;
+        match e? {
+            Event::NeighborUp(n) => {
+                info!(?id, "+neighbor: {n}");
+            }
+            Event::NeighborDown(n) => {
+                info!(?id, "-neighbor: {n}");
+            }
+            Event::Lagged => {}
+            Event::Received(m) => match postcard::from_bytes::<JoinBroadcast>(&m.content) {
+                Ok(m) => {
+                    info!(?id, "Player joined: {}", m.endpoint);
+                    // TODO: connect to player
+                }
+                Err(e) => {
+                    warn!(?id, "Got invalid gossip message: {e:?}");
+                }
+            },
+        }
     }
 
     Ok(())

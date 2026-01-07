@@ -7,7 +7,6 @@ use std::{fmt::Debug, sync::Arc};
 
 use iroh::{Endpoint, RelayMode};
 use rstest::fixture;
-use tempfile::{TempDir, tempdir};
 use wds::{
     DataStore,
     actor::Actor,
@@ -25,19 +24,16 @@ pub struct DataStoreCtx {
     pub store: DataStore,
     pub alice: Actor,
     pub bob: Actor,
-    _dir: TempDir,
 }
 
 #[fixture]
 pub async fn ctx() -> DataStoreCtx {
-    let dir = tempdir().expect("tempdir");
-
     let endpoint = Endpoint::empty_builder(RelayMode::Disabled)
         .bind()
         .await
         .expect("bind endpoint");
 
-    let store = DataStore::builder(dir.path(), endpoint)
+    let store = DataStore::builder(endpoint)
         .build()
         .await
         .expect("construct data store");
@@ -55,12 +51,7 @@ pub async fn ctx() -> DataStoreCtx {
     let alice = generate_actor(&store).await;
     let bob = generate_actor(&store).await;
 
-    DataStoreCtx {
-        store,
-        alice,
-        bob,
-        _dir: dir,
-    }
+    DataStoreCtx { store, alice, bob }
 }
 
 pub struct MultiStoreCtx {

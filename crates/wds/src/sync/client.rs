@@ -56,7 +56,8 @@ where
 
     if let SyncMsg::Envelopes(envelopes) = incoming {
         for env_bytes in &envelopes {
-            super::shared::store_envelope(db, &ctx.blobs, &id_str, env_bytes).await?;
+            super::shared::store_envelope(db, ctx.blobs.as_ref().as_ref(), &id_str, env_bytes)
+                .await?;
         }
     } else {
         bail!("unexpected message")

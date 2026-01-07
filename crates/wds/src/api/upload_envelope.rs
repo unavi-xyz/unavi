@@ -27,7 +27,14 @@ pub async fn upload_envelope(
 
     let record_id = inner.record_id.to_string();
 
-    if let Err(e) = store_envelope(ctx.db.pool(), &ctx.blobs, &record_id, &env_bytes).await {
+    if let Err(e) = store_envelope(
+        ctx.db.pool(),
+        ctx.blobs.as_ref().as_ref(),
+        &record_id,
+        &env_bytes,
+    )
+    .await
+    {
         tx.send(Err(e.to_string().into())).await?;
         return Ok(());
     }

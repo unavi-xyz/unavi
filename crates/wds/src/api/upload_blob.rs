@@ -65,7 +65,14 @@ pub async fn upload_blob(
             .map_err(|_| std::io::ErrorKind::Other.into())
     };
 
-    let temp_tag = ctx.blobs.add_stream(stream).await.temp_tag().await?;
+    let temp_tag = ctx
+        .blobs
+        .as_ref()
+        .as_ref()
+        .add_stream(stream)
+        .await
+        .temp_tag()
+        .await?;
     let blob_len = total_bytes.load(Ordering::Acquire);
 
     debug!(?blob_len, "wrote blob to store");
@@ -101,7 +108,12 @@ pub async fn upload_blob(
     let blob_tag = BlobTag::new(did.clone(), hash);
     let tag_name = blob_tag.to_string();
 
-    ctx.blobs.tags().set(tag_name, temp_tag).await?;
+    ctx.blobs
+        .as_ref()
+        .as_ref()
+        .tags()
+        .set(tag_name, temp_tag)
+        .await?;
 
     tx.send(Ok(hash)).await?;
 

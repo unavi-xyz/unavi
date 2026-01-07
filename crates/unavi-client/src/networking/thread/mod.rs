@@ -10,9 +10,9 @@ use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 use crate::{DIRS, networking::WdsActors};
 
 mod join;
-mod space;
 mod publish_beacon;
 mod remote_wds;
+mod space;
 
 #[expect(unused)]
 pub enum NetworkCommand {
@@ -37,8 +37,12 @@ pub struct NetworkingThread {
 
 const CHANNEL_LEN: usize = 32;
 
+pub struct NetworkingThreadOpts {
+    pub wds_in_memory: bool,
+}
+
 impl NetworkingThread {
-    pub fn spawn() -> Self {
+    pub fn spawn(opts: NetworkingThreadOpts) -> Self {
         let (command_tx, command_rx) = flume::bounded(CHANNEL_LEN);
         let (event_tx, event_rx) = flume::bounded(CHANNEL_LEN);
 
@@ -50,7 +54,7 @@ impl NetworkingThread {
                 .expect("build tokio runtime");
 
             rt.block_on(async move {
-                while let Err(e) = thread_loop(&command_rx, &event_tx).await {
+                while let Err(e) = thread_loop(&opts, &command_rx, &event_tx).await {
                     error!("Networking thread error: {e:?}");
                     tokio::time::sleep(Duration::from_secs(5)).await;
                 }
@@ -73,6 +77,7 @@ struct NetworkThreadState {
 }
 
 async fn thread_loop(
+    opts: &NetworkingThreadOpts,
     command_rx: &flume::Receiver<NetworkCommand>,
     event_tx: &flume::Sender<NetworkEvent>,
 ) -> anyhow::Result<()> {
@@ -83,8 +88,14 @@ async fn thread_loop(
     let gossip = Gossip::builder().spawn(endpoint.clone());
 
     let store = {
-        let path = DIRS.data_local_dir().join("wds");
-        DataStore::builder(&path, endpoint)
+        let mut builder = DataStore::builder(endpoint);
+
+        if !opts.wds_in_memory {
+            let path = DIRS.data_local_dir().join("wds");
+            builder = builder.storage_path(path);
+        }
+
+        builder
             .accept(iroh_gossip::ALPN, gossip.clone())
             .accept(space::ALPN, space::SpaceProtocol)
             .build()

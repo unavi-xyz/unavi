@@ -151,7 +151,12 @@ impl StoreContext {
         let owner_did = Did::from_str(owner)?;
         let hash_parsed = Hash::from_str(hash)?;
         let tag = BlobTag::new(owner_did, hash_parsed);
-        self.blobs.tags().delete(tag.to_string()).await?;
+        self.blobs
+            .as_ref()
+            .as_ref()
+            .tags()
+            .delete(tag.to_string())
+            .await?;
 
         Ok(())
     }
@@ -219,7 +224,7 @@ impl DataStore {
     /// Cleans up orphaned blob tags that have no corresponding pin entry.
     async fn gc_blob_store(&self) -> anyhow::Result<()> {
         let db = self.ctx.db.pool();
-        let mut tags = self.ctx.blobs.tags().list().await?;
+        let mut tags = self.ctx.blobs.as_ref().as_ref().tags().list().await?;
 
         while let Some(tag_result) = tags.next().await {
             let tag_info = match tag_result {
@@ -255,7 +260,16 @@ impl DataStore {
                 }
             };
 
-            if !exists && let Err(e) = self.ctx.blobs.tags().delete(tag_info.name).await {
+            if !exists
+                && let Err(e) = self
+                    .ctx
+                    .blobs
+                    .as_ref()
+                    .as_ref()
+                    .tags()
+                    .delete(tag_info.name)
+                    .await
+            {
                 tracing::warn!(tag = %tag_name, "failed to delete orphaned tag: {e}");
             }
         }

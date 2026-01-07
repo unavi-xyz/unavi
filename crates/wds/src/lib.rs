@@ -1,10 +1,14 @@
-use std::{path::Path, path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 
 use derive_more::Debug;
 use iroh::{Endpoint, EndpointId, protocol::DynProtocolHandler, protocol::Router};
 use iroh_blobs::{
     BlobsProtocol,
-    store::fs::{FsStore, options::Options},
+    api::Store as BlobStore,
+    store::{
+        fs::{FsStore, options::Options},
+        mem::MemStore,
+    },
 };
 use irpc::Client;
 use parking_lot::RwLock;
@@ -34,19 +38,33 @@ pub struct DataStore {
 
 /// Builder for [`DataStore`] that allows adding custom protocols to the router.
 pub struct DataStoreBuilder {
-    path: PathBuf,
     endpoint: Endpoint,
+    storage: Storage,
     protocols: Vec<(Vec<u8>, Box<dyn DynProtocolHandler>)>,
+}
+
+pub enum Storage {
+    InMemory,
+    Path(PathBuf),
 }
 
 impl DataStoreBuilder {
     /// Create a new builder.
-    pub fn new(path: impl AsRef<Path>, endpoint: Endpoint) -> Self {
+    #[must_use]
+    pub fn new(endpoint: Endpoint) -> Self {
         Self {
-            path: path.as_ref().to_path_buf(),
             endpoint,
+            storage: Storage::InMemory,
             protocols: Vec::new(),
         }
+    }
+
+    /// Specify a directory path for file storage.
+    /// If not provided, defaults to in-memory storage.
+    #[must_use]
+    pub fn storage_path(mut self, path: PathBuf) -> Self {
+        self.storage = Storage::Path(path);
+        self
     }
 
     /// Add a custom protocol handler.
@@ -67,17 +85,9 @@ impl DataStoreBuilder {
     ///
     /// Errors if the file system store could not be initialized.
     pub async fn build(self) -> anyhow::Result<DataStore> {
-        let blob_path = self.path.join("blob");
-        let record_path = self.path.join("record");
-        tokio::fs::create_dir_all(&blob_path).await?;
-        tokio::fs::create_dir_all(&record_path).await?;
+        let (blobs, db) = init_storage(&self.storage).await?;
 
-        let blob_db_path = blob_path.join("blobs.db");
-        let blobs = FsStore::load_with_opts(blob_db_path, Options::new(&blob_path)).await?;
-        let blob_protocol = BlobsProtocol::new(&blobs, None);
-
-        let db_path = self.path.join("index.db");
-        let db = db::Database::new(&db_path).await?;
+        let blob_protocol = BlobsProtocol::new(blobs.as_ref().as_ref(), None);
 
         let ctx = Arc::new(StoreContext {
             blobs,
@@ -112,12 +122,40 @@ impl DataStoreBuilder {
     }
 }
 
+type BoxedBlobs = Box<dyn AsRef<BlobStore> + Send + Sync>;
+
+async fn init_storage(storage: &Storage) -> anyhow::Result<(BoxedBlobs, db::Database)> {
+    if let Storage::Path(path) = storage {
+        let blob_path = path.join("blob");
+        let record_path = path.join("record");
+        tokio::fs::create_dir_all(&blob_path).await?;
+        tokio::fs::create_dir_all(&record_path).await?;
+
+        let blob_db_path = blob_path.join("blobs.db");
+        let blobs = FsStore::load_with_opts(blob_db_path, Options::new(&blob_path)).await?;
+        let blobs: BoxedBlobs = Box::new(blobs);
+
+        let db_path = path.join("index.db");
+        let db = db::Database::new(&db_path).await?;
+
+        Ok((blobs, db))
+    } else {
+        let blobs = MemStore::new();
+        let blobs: BoxedBlobs = Box::new(blobs);
+
+        let db = db::Database::new_in_memory().await?;
+
+        Ok((blobs, db))
+    }
+}
+
 // TODO: Replace session token auth with iroh hooks
 type SessionToken = [u8; 32];
 
 #[derive(Debug)]
 struct StoreContext {
-    blobs: FsStore,
+    #[debug("BlobStore")]
+    blobs: BoxedBlobs,
     #[debug("HashMap({})", connections.len())]
     connections: scc::HashMap<SessionToken, ConnectionState>,
     #[debug("Database")]
@@ -136,8 +174,9 @@ struct ConnectionState {
 
 impl DataStore {
     /// Create a new [`DataStoreBuilder`].
-    pub fn builder(path: impl AsRef<Path>, endpoint: Endpoint) -> DataStoreBuilder {
-        DataStoreBuilder::new(path, endpoint)
+    #[must_use]
+    pub fn builder(endpoint: Endpoint) -> DataStoreBuilder {
+        DataStoreBuilder::new(endpoint)
     }
 
     #[must_use]
@@ -179,8 +218,8 @@ impl DataStore {
 
     /// Returns the blob store. Primarily for testing.
     #[must_use]
-    pub fn blobs(&self) -> &iroh_blobs::store::fs::FsStore {
-        &self.ctx.blobs
+    pub fn blobs(&self) -> &BlobStore {
+        self.ctx.blobs.as_ref().as_ref()
     }
 
     /// Returns the iroh endpoint. Primarily for testing.

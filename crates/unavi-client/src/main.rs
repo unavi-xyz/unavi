@@ -11,9 +11,14 @@ use unavi_client::DebugFlags;
 #[command(version)]
 #[allow(clippy::struct_excessive_bools)]
 struct Args {
-    /// Space to join.
+    /// ID of a space to join.
     #[arg(long)]
     join: Option<String>,
+
+    /// Runs certain functions, like the local WDS, in-memory.
+    /// Useful for running multiple clients on the same machine.
+    #[arg(long, default_value_t = false)]
+    in_memory: bool,
 
     /// Enable FPS counter.
     #[cfg(feature = "devtools-bevy")]
@@ -65,6 +70,7 @@ fn main() {
     App::new()
         .add_plugins(unavi_client::UnaviPlugin {
             debug,
+            in_memory: args.in_memory,
             initial_space: join,
         })
         .run();

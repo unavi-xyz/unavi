@@ -11,7 +11,7 @@ impl ProtocolHandler for SpaceProtocol {
         &self,
         connection: iroh::endpoint::Connection,
     ) -> Result<(), iroh::protocol::AcceptError> {
-        let (tx, rx) = connection.accept_bi().await?;
+        let (_tx, rx) = connection.accept_bi().await?;
 
         if let Err(e) = handle_incoming(rx).await {
             error!(err = ?e, "error handling space protocol");
@@ -21,6 +21,6 @@ impl ProtocolHandler for SpaceProtocol {
     }
 }
 
-async fn handle_incoming(rx: RecvStream) -> anyhow::Result<()> {
+async fn handle_incoming(_rx: RecvStream) -> anyhow::Result<()> {
     Ok(())
 }

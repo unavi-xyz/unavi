@@ -13,7 +13,7 @@ pub async fn blob_exists(
     let _did = authenticate!(ctx, inner, tx);
 
     let iroh_hash: iroh_blobs::Hash = inner.hash.into();
-    let exists = ctx.blobs.blobs().has(iroh_hash).await?;
+    let exists = ctx.blobs.as_ref().as_ref().blobs().has(iroh_hash).await?;
 
     tx.send(Ok(exists)).await?;
 

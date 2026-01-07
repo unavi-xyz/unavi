@@ -27,7 +27,7 @@
 //! to set initial values including the ACL itself.
 
 use blake3::Hash;
-use iroh_blobs::store::fs::FsStore;
+use iroh_blobs::api::Store;
 use loro::{
     Frontiers, LoroDoc, LoroValue, ValueOrContainer,
     event::{Diff, DiffBatch, ListDiffItem, MapDelta},
@@ -79,7 +79,7 @@ pub enum ValidationError {
 }
 
 /// Fetch a schema from the blob store by its hash.
-pub async fn fetch_schema(blobs: &FsStore, hash: &Hash) -> Result<Schema, ValidationError> {
+pub async fn fetch_schema(blobs: &Store, hash: &Hash) -> Result<Schema, ValidationError> {
     let iroh_hash: iroh_blobs::Hash = (*hash).into();
     let bytes = blobs
         .get_bytes(iroh_hash)

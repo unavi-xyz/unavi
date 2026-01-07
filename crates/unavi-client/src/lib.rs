@@ -54,6 +54,7 @@ bitflags! {
 
 pub struct UnaviPlugin {
     pub debug: DebugFlags,
+    pub in_memory: bool,
     pub initial_space: Option<Hash>,
 }
 
@@ -94,7 +95,9 @@ impl Plugin for UnaviPlugin {
             unavi_player::PlayerPlugin,
             unavi_portal::PortalPlugin,
             unavi_script::ScriptPlugin,
-            networking::NetworkingPlugin,
+            networking::NetworkingPlugin {
+                wds_in_memory: self.in_memory,
+            },
             space::SpacePlugin {
                 initial_space: self.initial_space,
             },

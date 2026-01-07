@@ -1,6 +1,9 @@
 //! ## Auth Protocol
 //!
 //! Challenge-response DID authentication.
+//!
+//! Explicitly for WDS operations. Should not be used as general purpose
+//! connection-level auth.
 
 use std::{fmt::Debug, sync::Arc};
 

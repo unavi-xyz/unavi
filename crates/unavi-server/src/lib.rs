@@ -46,7 +46,10 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
 
     let store = {
         let path = DIRS.data_local_dir().join("wds");
-        DataStore::builder(&path, endpoint).build().await?
+        DataStore::builder(endpoint)
+            .storage_path(path)
+            .build()
+            .await?
     };
 
     let app = create_did_document_route(did, &vc, store.endpoint_id());

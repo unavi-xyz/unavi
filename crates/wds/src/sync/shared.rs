@@ -1,5 +1,5 @@
 use anyhow::{Context, ensure};
-use iroh_blobs::store::fs::FsStore;
+use iroh_blobs::api::Store;
 use loro::{LoroDoc, VersionVector};
 use sqlx::{Executor, Pool, Sqlite};
 use xdid::{core::did::Did, resolver::DidResolver};
@@ -39,7 +39,7 @@ async fn validate_signature(author: &Did, signature: &[u8], payload: &[u8]) -> a
 
 /// Validates document changes against all applicable schemas.
 async fn validate_schemas(
-    blobs: &FsStore,
+    blobs: &Store,
     old_doc: &LoroDoc,
     new_doc: &LoroDoc,
     record: &Record,
@@ -76,7 +76,7 @@ async fn validate_schemas(
 #[allow(clippy::too_many_lines)]
 pub async fn store_envelope(
     db: &Pool<Sqlite>,
-    blobs: &FsStore,
+    blobs: &Store,
     record_id: &str,
     env_bytes: &[u8],
 ) -> anyhow::Result<()> {

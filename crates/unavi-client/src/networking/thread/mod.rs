@@ -99,11 +99,10 @@ async fn thread_loop(
         builder
             .accept(iroh_gossip::ALPN, gossip.clone())
             .accept(space::ALPN, space::SpaceProtocol)
+            .gc_timer(Duration::from_mins(15))
             .build()
             .await?
     };
-
-    store.run_gc().await?;
 
     // TODO: save / load keypair from disk
     let signing_key = P256KeyPair::generate();

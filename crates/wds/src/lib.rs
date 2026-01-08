@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc, time::Duration};
 
 use derive_more::Debug;
 use iroh::{Endpoint, EndpointId, protocol::DynProtocolHandler, protocol::Router};
@@ -13,6 +13,8 @@ use iroh_blobs::{
 use irpc::Client;
 use parking_lot::RwLock;
 use tokio::task::JoinError;
+use tokio_util::task::AbortOnDropHandle;
+use tracing::error;
 use xdid::core::did::Did;
 
 pub use identity::Identity;
@@ -29,19 +31,20 @@ pub mod signed_bytes;
 mod sync;
 mod tag;
 
-#[derive(Clone)]
 pub struct DataStore {
     api_client: Client<api::ApiService>,
     auth_client: Client<auth::AuthService>,
     router: Router,
     ctx: Arc<StoreContext>,
+    _gc_handle: Option<AbortOnDropHandle<()>>,
 }
 
 /// Builder for [`DataStore`] that allows adding custom protocols to the router.
 pub struct DataStoreBuilder {
     endpoint: Endpoint,
-    storage: Storage,
+    gc_timer: Option<Duration>,
     protocols: Vec<(Vec<u8>, Box<dyn DynProtocolHandler>)>,
+    storage: Storage,
 }
 
 pub enum Storage {
@@ -55,9 +58,18 @@ impl DataStoreBuilder {
     pub fn new(endpoint: Endpoint) -> Self {
         Self {
             endpoint,
-            storage: Storage::InMemory,
+            gc_timer: None,
             protocols: Vec::new(),
+            storage: Storage::InMemory,
         }
+    }
+
+    /// Spawns a task to run garbage collection at a set frequency.
+    /// Disabled by default.
+    #[must_use]
+    pub const fn gc_timer(mut self, frequency: Duration) -> Self {
+        self.gc_timer = Some(frequency);
+        self
     }
 
     /// Specify a directory path for file storage.
@@ -114,11 +126,26 @@ impl DataStoreBuilder {
 
         let router = router_builder.spawn();
 
+        // Spawn gc task if enabled.
+        let gc_handle = self.gc_timer.map(|duration| {
+            let ctx = Arc::clone(&ctx);
+            let handle = tokio::spawn(async move {
+                loop {
+                    if let Err(err) = ctx.run_gc().await {
+                        error!(?err, "error during garbage collection");
+                    }
+                    tokio::time::sleep(duration).await;
+                }
+            });
+            AbortOnDropHandle::new(handle)
+        });
+
         Ok(DataStore {
             api_client,
             auth_client,
             router,
             ctx,
+            _gc_handle: gc_handle,
         })
     }
 }

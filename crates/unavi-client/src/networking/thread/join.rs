@@ -2,15 +2,21 @@ use std::collections::HashSet;
 
 use bevy::{
     ecs::world::CommandQueue,
-    log::{debug, info, warn},
+    log::{debug, error, info, warn},
     tasks::futures_lite::StreamExt,
 };
 use blake3::Hash;
-use iroh::EndpointId;
-use iroh_gossip::{TopicId, api::Event};
+use iroh::{EndpointId, Signature};
+use iroh_gossip::{
+    TopicId,
+    api::{Event, GossipReceiver},
+};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
-use wds::record::schema::SCHEMA_BEACON;
+use wds::{
+    record::schema::SCHEMA_BEACON,
+    signed_bytes::{Signable, SignedBytes},
+};
 
 use crate::{
     async_commands::ASYNC_COMMAND_QUEUE,
@@ -18,12 +24,16 @@ use crate::{
     space::{Space, beacon::Beacon},
 };
 
+/// Broadcast to a space gossip topic that you are joining as `endpoint`.
+/// Message is signed and verified with the given endpoint ID.
 #[derive(Serialize, Deserialize)]
 struct JoinBroadcast {
     endpoint: EndpointId,
 }
 
-pub async fn handle_join(state: NetworkThreadState, id: Hash) -> anyhow::Result<()> {
+impl Signable for JoinBroadcast {}
+
+pub async fn handle_join(state: NetworkThreadState, space_id: Hash) -> anyhow::Result<()> {
     // Query beacons to find players.
     let mut bootstrap = HashSet::new();
 
@@ -53,59 +63,116 @@ pub async fn handle_join(state: NetworkThreadState, id: Hash) -> anyhow::Result<
                     }
 
                     // Ignore our own beacon.
-                    if beacon.endpoint == state.endpoint_id {
+                    if beacon.endpoint == state.endpoint.id() {
                         continue;
                     }
 
                     bootstrap.insert(beacon.endpoint);
                 }
-                Err(e) => {
-                    warn!("failed to sync beacon: {e:?}");
+                Err(err) => {
+                    warn!(?err, "failed to sync beacon");
                 }
             }
         }
     }
 
-    info!("Bootstrapping space: peers={bootstrap:?}");
+    info!(?bootstrap, "joining gossip topic");
 
     // Join gossip topic.
-    let topic_id = TopicId::from_bytes(*id.as_bytes());
+    let topic_id = TopicId::from_bytes(*space_id.as_bytes());
     let topic = state
         .gossip
         .subscribe(topic_id, bootstrap.into_iter().collect())
         .await?;
-    let (tx, mut rx) = topic.split();
+    let (tx, rx) = topic.split();
 
     // Create space in ECS.
     let mut commands = CommandQueue::default();
-    commands.push(bevy::ecs::system::command::spawn_batch([(Space(id))]));
+    commands.push(bevy::ecs::system::command::spawn_batch([(Space(space_id))]));
     ASYNC_COMMAND_QUEUE.0.send_async(commands).await?;
 
     // Broadcast join.
-    let join = postcard::to_stdvec(&JoinBroadcast {
-        endpoint: state.endpoint_id,
-    })?;
-    tx.broadcast(join.into()).await?;
+    {
+        let join = JoinBroadcast {
+            endpoint: state.endpoint.id(),
+        };
+        let signed_join = join.sign(state.local_actor.identity().signing_key())?;
+        let bytes = postcard::to_stdvec(&signed_join)?;
+        tx.broadcast(bytes.into()).await?;
+    }
 
-    // Recieve gossip.
-    while let Some(e) = rx.next().await {
-        match e? {
+    handle_gossip_inbound(state, rx).await?;
+
+    Ok(())
+}
+
+async fn handle_gossip_inbound(
+    state: NetworkThreadState,
+    mut rx: GossipReceiver,
+) -> anyhow::Result<()> {
+    while let Some(event) = rx.next().await {
+        match event? {
             Event::NeighborUp(n) => {
-                info!(?id, "+neighbor: {n}");
+                info!("+neighbor: {n}");
             }
             Event::NeighborDown(n) => {
-                info!(?id, "-neighbor: {n}");
+                info!("-neighbor: {n}");
             }
             Event::Lagged => {}
-            Event::Received(m) => match postcard::from_bytes::<JoinBroadcast>(&m.content) {
-                Ok(m) => {
-                    info!(?id, "Player joined: {}", m.endpoint);
-                    // TODO: connect to player
+            Event::Received(msg) => {
+                match postcard::from_bytes::<SignedBytes<JoinBroadcast>>(&msg.content) {
+                    Ok(signed_join) => {
+                        let join = signed_join.payload()?;
+
+                        // Verify signature.
+                        let Ok(sig_bytes) = signed_join.signature().try_into() else {
+                            warn!(
+                                "got invalid join signature length: {}",
+                                signed_join.signature().len()
+                            );
+                            continue;
+                        };
+                        let sig = Signature::from_bytes(sig_bytes);
+
+                        if let Err(err) = join.endpoint.verify(signed_join.payload_bytes(), &sig) {
+                            warn!(?err, "got invalid join signature");
+                            continue;
+                        }
+
+                        // Spawn connection to player.
+                        info!("Player joined: {}", join.endpoint);
+
+                        if state.players.get_async(&join.endpoint).await.is_some() {
+                            // Already connected to player.
+                            continue;
+                        }
+
+                        let handle = tokio::spawn({
+                            let state = state.clone();
+                            async move {
+                                if let Err(err) =
+                                    super::space::outbound::handle_outbound(state, join.endpoint)
+                                        .await
+                                {
+                                    error!(?err, "error handling space outbound");
+                                }
+                            }
+                        });
+
+                        state
+                            .players
+                            .insert_async(join.endpoint, handle)
+                            .await
+                            .map_err(|(_, h)| {
+                                h.abort();
+                                anyhow::anyhow!("endpoint insert failed")
+                            })?;
+                    }
+                    Err(err) => {
+                        warn!(?err, "got invalid gossip message");
+                    }
                 }
-                Err(e) => {
-                    warn!(?id, "Got invalid gossip message: {e:?}");
-                }
-            },
+            }
         }
     }
 

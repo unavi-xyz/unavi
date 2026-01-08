@@ -62,10 +62,10 @@ impl ReadBuilder {
         // Try each sync source.
         for remote in self.sync_sources {
             let remote_id = remote.id;
-            debug!(remote=?remote_id, "attempting sync");
+            debug!(remote = %remote_id, "attempting sync");
 
             if let Err(e) = self.actor.sync(self.record_id, remote).await {
-                warn!(remote=?remote_id, "sync failed: {e:?}");
+                warn!(remote = %remote_id, err = ?e, "sync failed");
                 continue;
             }
 

@@ -1,5 +1,8 @@
 use bevy::log::error;
-use iroh::{endpoint::RecvStream, protocol::ProtocolHandler};
+use iroh::protocol::ProtocolHandler;
+
+mod inbound;
+pub mod outbound;
 
 pub const ALPN: &[u8] = b"wired/space";
 
@@ -13,14 +16,10 @@ impl ProtocolHandler for SpaceProtocol {
     ) -> Result<(), iroh::protocol::AcceptError> {
         let (_tx, rx) = connection.accept_bi().await?;
 
-        if let Err(e) = handle_incoming(rx).await {
-            error!(err = ?e, "error handling space protocol");
+        if let Err(err) = inbound::handle_inbound(rx).await {
+            error!(?err, "error handling space protocol");
         }
 
         Ok(())
     }
-}
-
-async fn handle_incoming(_rx: RecvStream) -> anyhow::Result<()> {
-    Ok(())
 }

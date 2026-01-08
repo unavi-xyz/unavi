@@ -29,6 +29,7 @@ pub mod signed_bytes;
 mod sync;
 mod tag;
 
+#[derive(Clone)]
 pub struct DataStore {
     api_client: Client<api::ApiService>,
     auth_client: Client<auth::AuthService>,

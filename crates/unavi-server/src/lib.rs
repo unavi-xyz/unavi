@@ -1,12 +1,13 @@
 use std::{
     net::{Ipv4Addr, SocketAddr, SocketAddrV4},
     sync::LazyLock,
+    time::Duration,
 };
 
 use axum::{Json, Router};
 use directories::ProjectDirs;
 use iroh::{Endpoint, EndpointId};
-use tracing::info;
+use tracing::{error, info};
 use wds::DataStore;
 use xdid::{
     core::{
@@ -52,10 +53,23 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
             .await?
     };
 
+    store.run_gc().await?;
+
     let app = create_did_document_route(did, &vc, store.endpoint_id());
 
     let addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, port));
     info!("HTTP listening on port {port}");
+
+    {
+        let store = store.clone();
+        tokio::spawn(async move {
+            loop {
+                if let Err(e) = gc_loop(&store).await {
+                    error!(err = ?e, "error running gc loop");
+                }
+            }
+        });
+    }
 
     axum_server::bind(addr)
         .serve(app.into_make_service())
@@ -64,6 +78,13 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     store.shutdown().await?;
 
     Ok(())
+}
+
+async fn gc_loop(store: &DataStore) -> anyhow::Result<()> {
+    loop {
+        tokio::time::sleep(Duration::from_mins(15)).await;
+        store.run_gc().await?;
+    }
 }
 
 fn create_did(port: u16) -> (Did, String) {

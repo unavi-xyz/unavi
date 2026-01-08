@@ -29,7 +29,7 @@ postcard.workspace    = true
 rand.workspace        = true
 ring                  = "0.17.14"
 ron                   = "0.12.0"
-scc                   = "3.4.8"
+scc.workspace         = true
 serde.workspace       = true
 smol_str              = "0.3.4"
 sqlx                  = { features = ["runtime-tokio", "sqlite"], version = "0.8.6" }

@@ -55,7 +55,7 @@ async fn validate_schemas(
     for schema_id in schema_ids {
         let schema = fetch_schema(blobs, &schema_id)
             .await
-            .map_err(|e| anyhow::anyhow!("failed to fetch schema {schema_id}: {e}"))?;
+            .map_err(|e| anyhow::anyhow!("failed to fetch schema: {e}"))?;
 
         validate_diff(
             old_doc,

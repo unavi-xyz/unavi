@@ -20,7 +20,7 @@ pub async fn publish_beacon(
             let beacon = Beacon {
                 did: state.local_actor.identity().did().clone(),
                 expires: (OffsetDateTime::now_utc() + ttl).unix_timestamp(),
-                endpoint: state.endpoint_id,
+                endpoint: state.endpoint.id(),
                 space: id,
             };
             beacon.save(doc)?;

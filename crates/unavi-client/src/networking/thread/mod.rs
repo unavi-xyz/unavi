@@ -1,9 +1,10 @@
 use std::{sync::Arc, time::Duration};
 
-use bevy::prelude::*;
+use bevy::{log::tracing::Instrument, prelude::*};
 use blake3::Hash;
 use iroh::{Endpoint, EndpointId};
 use iroh_gossip::Gossip;
+use tokio::task::JoinHandle;
 use wds::{DataStore, actor::Actor, identity::Identity};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
@@ -70,10 +71,11 @@ impl NetworkingThread {
 
 #[derive(Clone)]
 struct NetworkThreadState {
-    endpoint_id: EndpointId,
+    endpoint: Endpoint,
     gossip: Gossip,
     local_actor: Actor,
     remote_actor: Option<Actor>,
+    players: Arc<scc::HashMap<EndpointId, JoinHandle<()>>>,
 }
 
 async fn thread_loop(
@@ -82,13 +84,12 @@ async fn thread_loop(
     event_tx: &flume::Sender<NetworkEvent>,
 ) -> anyhow::Result<()> {
     let endpoint = Endpoint::builder().bind().await?;
-    let endpoint_id = endpoint.id();
-    info!("Local endpoint: {endpoint_id}");
+    info!("Local endpoint: {}", endpoint.id());
 
     let gossip = Gossip::builder().spawn(endpoint.clone());
 
     let store = {
-        let mut builder = DataStore::builder(endpoint);
+        let mut builder = DataStore::builder(endpoint.clone());
 
         if !opts.wds_in_memory {
             let path = DIRS.data_local_dir().join("wds");
@@ -101,6 +102,8 @@ async fn thread_loop(
             .build()
             .await?
     };
+
+    store.run_gc().await?;
 
     // TODO: save / load keypair from disk
     let signing_key = P256KeyPair::generate();
@@ -123,22 +126,27 @@ async fn thread_loop(
         .await?;
 
     let state = NetworkThreadState {
-        endpoint_id,
+        endpoint,
         gossip,
         local_actor,
         remote_actor,
+        players: Arc::new(scc::HashMap::default()),
     };
 
     loop {
         match command_rx.recv_async().await? {
             NetworkCommand::Join(id) => {
                 let state = state.clone();
+                let span = info_span!("", space = %id);
 
-                tokio::spawn(async move {
-                    if let Err(e) = join::handle_join(state, id).await {
-                        error!(?id, "Error joining: {e:?}");
+                tokio::spawn(
+                    async move {
+                        if let Err(e) = join::handle_join(state, id).await {
+                            error!(err = ?e, "Error joining");
+                        }
                     }
-                });
+                    .instrument(span),
+                );
             }
             NetworkCommand::Leave(_id) => {
                 todo!()

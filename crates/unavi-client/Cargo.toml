@@ -39,6 +39,7 @@ iroh-gossip                = "0.95.0"
 loro.workspace             = true
 postcard.workspace         = true
 reqwest                    = { features = ["blocking"], workspace = true }
+scc.workspace              = true
 serde.workspace            = true
 time.workspace             = true
 tokio                      = { features = ["rt", "rt-multi-thread"], workspace = true }

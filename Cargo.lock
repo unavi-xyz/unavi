@@ -13893,6 +13893,7 @@ dependencies = [
  "loro",
  "postcard",
  "reqwest 0.13.1",
+ "scc",
  "serde",
  "time",
  "tokio",

@@ -5,12 +5,125 @@ use futures::StreamExt;
 use time::OffsetDateTime;
 use xdid::core::did::Did;
 
-use crate::{DataStore, StoreContext, quota::release_bytes, tag::BlobTag};
+use crate::{StoreContext, quota::release_bytes, tag::BlobTag};
 
 /// Pins with TTL shorter than this threshold get fast GC via spawned tasks.
 pub const FAST_GC_THRESHOLD: Duration = Duration::from_mins(5);
 
 impl StoreContext {
+    /// Runs garbage collection on the data store.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the initial database query fails or if listing blob tags fails.
+    /// Individual pin and tag cleanup failures are logged and do not stop GC.
+    pub async fn run_gc(&self) -> anyhow::Result<()> {
+        self.gc_record_pins().await?;
+        self.gc_blob_pins().await?;
+        self.gc_blob_store().await?;
+        Ok(())
+    }
+
+    /// Cleans up expired record pins from the database.
+    async fn gc_record_pins(&self) -> anyhow::Result<()> {
+        let db = self.db.pool();
+        let now = OffsetDateTime::now_utc().unix_timestamp();
+
+        let expired = sqlx::query!(
+            "SELECT record_id, owner FROM record_pins
+             WHERE expires IS NOT NULL AND expires < ?",
+            now
+        )
+        .fetch_all(db)
+        .await?;
+
+        for pin in expired {
+            if let Err(e) = self.gc_record_pin(&pin.owner, &pin.record_id).await {
+                tracing::warn!(owner = %pin.owner, record_id = %pin.record_id,
+                    "failed to gc record pin: {e}");
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Cleans up expired blob pins from the database.
+    async fn gc_blob_pins(&self) -> anyhow::Result<()> {
+        let db = self.db.pool();
+        let now = OffsetDateTime::now_utc().unix_timestamp();
+
+        let expired = sqlx::query!(
+            "SELECT hash, owner FROM blob_pins
+             WHERE expires IS NOT NULL AND expires < ?",
+            now
+        )
+        .fetch_all(db)
+        .await?;
+
+        for pin in expired {
+            if let Err(e) = self.gc_blob_pin(&pin.owner, &pin.hash).await {
+                tracing::warn!(owner = %pin.owner, hash = %pin.hash, "failed to gc blob pin: {e}");
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Cleans up orphaned blob tags that have no corresponding pin entry.
+    async fn gc_blob_store(&self) -> anyhow::Result<()> {
+        let db = self.db.pool();
+        let mut tags = self.blobs.as_ref().as_ref().tags().list().await?;
+
+        while let Some(tag_result) = tags.next().await {
+            let tag_info = match tag_result {
+                Ok(t) => t,
+                Err(e) => {
+                    tracing::warn!("failed to read tag: {e}");
+                    continue;
+                }
+            };
+
+            let tag_name = tag_info.name.to_string();
+
+            let Ok(blob_tag) = BlobTag::from_str(&tag_name) else {
+                // Skip malformed tags.
+                continue;
+            };
+
+            let owner = blob_tag.owner().to_string();
+            let hash = blob_tag.hash().to_string();
+
+            let exists = match sqlx::query!(
+                "SELECT size FROM blob_pins WHERE owner = ? AND hash = ?",
+                owner,
+                hash
+            )
+            .fetch_optional(db)
+            .await
+            {
+                Ok(row) => row.is_some(),
+                Err(e) => {
+                    tracing::warn!(tag = %tag_name, "failed to check pin existence: {e}");
+                    continue;
+                }
+            };
+
+            if !exists
+                && let Err(e) = self
+                    .blobs
+                    .as_ref()
+                    .as_ref()
+                    .tags()
+                    .delete(tag_info.name)
+                    .await
+            {
+                tracing::warn!(tag = %tag_name, "failed to delete orphaned tag: {e}");
+            }
+        }
+
+        Ok(())
+    }
+
     /// Garbage collect a single record pin if expired.
     /// Silently succeeds if pin was extended or already removed.
     pub(crate) async fn gc_record_pin(&self, owner: &str, record_id: &str) -> anyhow::Result<()> {
@@ -157,122 +270,6 @@ impl StoreContext {
             .tags()
             .delete(tag.to_string())
             .await?;
-
-        Ok(())
-    }
-}
-
-impl DataStore {
-    /// Runs garbage collection on the data store.
-    ///
-    /// # Errors
-    ///
-    /// Errors if the initial database query fails or if listing blob tags fails.
-    /// Individual pin and tag cleanup failures are logged and do not stop GC.
-    pub async fn run_gc(&self) -> anyhow::Result<()> {
-        self.gc_record_pins().await?;
-        self.gc_blob_pins().await?;
-        self.gc_blob_store().await?;
-        Ok(())
-    }
-
-    /// Cleans up expired record pins from the database.
-    async fn gc_record_pins(&self) -> anyhow::Result<()> {
-        let db = self.ctx.db.pool();
-        let now = OffsetDateTime::now_utc().unix_timestamp();
-
-        let expired = sqlx::query!(
-            "SELECT record_id, owner FROM record_pins
-             WHERE expires IS NOT NULL AND expires < ?",
-            now
-        )
-        .fetch_all(db)
-        .await?;
-
-        for pin in expired {
-            if let Err(e) = self.ctx.gc_record_pin(&pin.owner, &pin.record_id).await {
-                tracing::warn!(owner = %pin.owner, record_id = %pin.record_id,
-                    "failed to gc record pin: {e}");
-            }
-        }
-
-        Ok(())
-    }
-
-    /// Cleans up expired blob pins from the database.
-    async fn gc_blob_pins(&self) -> anyhow::Result<()> {
-        let db = self.ctx.db.pool();
-        let now = OffsetDateTime::now_utc().unix_timestamp();
-
-        let expired = sqlx::query!(
-            "SELECT hash, owner FROM blob_pins
-             WHERE expires IS NOT NULL AND expires < ?",
-            now
-        )
-        .fetch_all(db)
-        .await?;
-
-        for pin in expired {
-            if let Err(e) = self.ctx.gc_blob_pin(&pin.owner, &pin.hash).await {
-                tracing::warn!(owner = %pin.owner, hash = %pin.hash, "failed to gc blob pin: {e}");
-            }
-        }
-
-        Ok(())
-    }
-
-    /// Cleans up orphaned blob tags that have no corresponding pin entry.
-    async fn gc_blob_store(&self) -> anyhow::Result<()> {
-        let db = self.ctx.db.pool();
-        let mut tags = self.ctx.blobs.as_ref().as_ref().tags().list().await?;
-
-        while let Some(tag_result) = tags.next().await {
-            let tag_info = match tag_result {
-                Ok(t) => t,
-                Err(e) => {
-                    tracing::warn!("failed to read tag: {e}");
-                    continue;
-                }
-            };
-
-            let tag_name = tag_info.name.to_string();
-
-            let Ok(blob_tag) = BlobTag::from_str(&tag_name) else {
-                // Skip malformed tags.
-                continue;
-            };
-
-            let owner = blob_tag.owner().to_string();
-            let hash = blob_tag.hash().to_string();
-
-            let exists = match sqlx::query!(
-                "SELECT size FROM blob_pins WHERE owner = ? AND hash = ?",
-                owner,
-                hash
-            )
-            .fetch_optional(db)
-            .await
-            {
-                Ok(row) => row.is_some(),
-                Err(e) => {
-                    tracing::warn!(tag = %tag_name, "failed to check pin existence: {e}");
-                    continue;
-                }
-            };
-
-            if !exists
-                && let Err(e) = self
-                    .ctx
-                    .blobs
-                    .as_ref()
-                    .as_ref()
-                    .tags()
-                    .delete(tag_info.name)
-                    .await
-            {
-                tracing::warn!(tag = %tag_name, "failed to delete orphaned tag: {e}");
-            }
-        }
 
         Ok(())
     }

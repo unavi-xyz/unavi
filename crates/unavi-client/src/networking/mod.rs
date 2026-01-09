@@ -3,7 +3,10 @@ use wds::actor::Actor;
 
 mod event;
 mod lifecycle;
+mod player_publish;
 pub mod thread;
+
+pub use player_publish::TrackedBones;
 
 pub struct NetworkingPlugin {
     pub wds_in_memory: bool,
@@ -23,8 +26,15 @@ impl Plugin for NetworkingPlugin {
 
         app.insert_resource(nt)
             .insert_resource(actors)
-            .add_systems(FixedUpdate, event::recv_network_event)
-            .add_systems(Last, lifecycle::cleanup_connections_on_exit);
+            .init_resource::<TrackedBones>()
+            .add_systems(
+                FixedUpdate,
+                (
+                    event::recv_network_event,
+                    player_publish::publish_player_transforms,
+                ),
+            )
+            .add_systems(Last, lifecycle::shutdown_networking_thread);
     }
 }
 

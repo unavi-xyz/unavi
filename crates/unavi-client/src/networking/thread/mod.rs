@@ -8,18 +8,26 @@ use tokio::task::JoinHandle;
 use wds::{DataStore, actor::Actor, identity::Identity};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
-use crate::{DIRS, networking::WdsActors};
+use crate::{
+    DIRS,
+    networking::{
+        WdsActors,
+        thread::space::{PlayerIFrame, PlayerPFrame},
+    },
+};
 
 mod join;
 mod publish_beacon;
 mod remote_wds;
-mod space;
+pub mod space;
 
 #[expect(unused)]
 pub enum NetworkCommand {
     Join(Hash),
     Leave(Hash),
     PublishBeacon { id: Hash, ttl: Duration },
+    PublishIFrame(PlayerIFrame),
+    PublishPFrame(PlayerPFrame),
     Shutdown,
 }
 
@@ -141,7 +149,7 @@ async fn thread_loop(
                 tokio::spawn(
                     async move {
                         if let Err(e) = join::handle_join(state, id).await {
-                            error!(err = ?e, "Error joining");
+                            error!(err = ?e, "error joining space");
                         }
                     }
                     .instrument(span),
@@ -154,14 +162,16 @@ async fn thread_loop(
                 let state = state.clone();
 
                 tokio::spawn(async move {
-                    if let Err(e) = publish_beacon::publish_beacon(state, id, ttl).await {
-                        error!(?id, "Error publishing beacon: {e:?}");
+                    if let Err(err) = publish_beacon::publish_beacon(state, id, ttl).await {
+                        error!(?err, "error publishing beacon");
                     }
                 });
             }
+            NetworkCommand::PublishIFrame(_frame) => {}
+            NetworkCommand::PublishPFrame(_frame) => {}
             NetworkCommand::Shutdown => {
-                if let Err(e) = store.shutdown().await {
-                    error!("Error shutting down data store: {e:?}");
+                if let Err(err) = store.shutdown().await {
+                    error!(?err, "error shutting down data store");
                 }
 
                 break;

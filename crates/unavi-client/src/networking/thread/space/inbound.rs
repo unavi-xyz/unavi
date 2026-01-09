@@ -1,5 +1,5 @@
-use iroh::endpoint::RecvStream;
+use iroh::endpoint::{RecvStream, SendStream};
 
-pub async fn handle_inbound(_rx: RecvStream) -> anyhow::Result<()> {
+pub async fn handle_inbound(_tx: SendStream, _rx: RecvStream) -> anyhow::Result<()> {
     Ok(())
 }

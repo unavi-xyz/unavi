@@ -11,7 +11,10 @@ use tokio::sync::{Mutex, OnceCell};
 
 use crate::{
     Identity, SessionToken,
-    api::{ApiService, BlobExists, PinBlob, PinRecord, SyncRecord, UploadBlob, UploadEnvelope},
+    api::{
+        ApiService, BlobExists, GetRecordPin, PinBlob, PinRecord, SyncRecord, UploadBlob,
+        UploadEnvelope,
+    },
     auth::AuthService,
     record::envelope::Envelope,
     signed_bytes::{Signable, SignedBytes},
@@ -92,7 +95,7 @@ impl Actor {
     ///
     /// # Errors
     ///
-    /// Errors if the sync request fails.
+    /// Errors if the request fails.
     pub async fn sync(&self, record_id: Hash, remote: EndpointAddr) -> anyhow::Result<()> {
         let s = self.authenticate().await.context("auth")?;
 
@@ -103,9 +106,26 @@ impl Actor {
                 remote,
             })
             .await?
-            .map_err(|e| anyhow::anyhow!("sync failed: {e}"))?;
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
 
         Ok(())
+    }
+
+    /// Gets the current pin duration of a record, if one exists.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the request fails.
+    pub async fn get_record_pin(&self, id: Hash) -> anyhow::Result<Option<i64>> {
+        let s = self.authenticate().await.context("auth")?;
+
+        let res = self
+            .api_client
+            .rpc(GetRecordPin { s, id })
+            .await?
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
+
+        Ok(res)
     }
 
     /// Uploads a signed envelope to a record.

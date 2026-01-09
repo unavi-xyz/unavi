@@ -1,4 +1,4 @@
-use anyhow::bail;
+use anyhow::{Context, bail};
 use blake3::Hash;
 use bytes::BytesMut;
 use futures::{SinkExt, StreamExt};
@@ -28,7 +28,9 @@ where
     let auth_client =
         irpc_iroh::client::<AuthService>(ctx.endpoint.clone(), remote.clone(), crate::auth::ALPN);
 
-    let session = crate::auth::client::authenticate(did, signer, remote.id, &auth_client).await?;
+    let session = crate::auth::client::authenticate(did, signer, remote.id, &auth_client)
+        .await
+        .context("auth")?;
 
     // Sync.
     let connection = ctx.endpoint.connect(remote, crate::sync::ALPN).await?;
@@ -37,7 +39,7 @@ where
 
     let local_vv = super::shared::get_record_vv(db, &id_str).await?;
 
-    debug!(?record_id, "beginning sync");
+    debug!(%record_id, "beginning sync");
 
     let begin = SyncMsg::Begin {
         session,
@@ -57,7 +59,8 @@ where
     if let SyncMsg::Envelopes(envelopes) = incoming {
         for env_bytes in &envelopes {
             super::shared::store_envelope(db, ctx.blobs.as_ref().as_ref(), &id_str, env_bytes)
-                .await?;
+                .await
+                .context("store envelope")?;
         }
     } else {
         bail!("unexpected message")

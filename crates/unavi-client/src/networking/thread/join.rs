@@ -44,6 +44,8 @@ pub async fn handle_join(state: NetworkThreadState, space_id: Hash) -> anyhow::R
         let now = OffsetDateTime::now_utc().unix_timestamp();
 
         for id in found {
+            info!(%id, "Reading beacon");
+
             match state
                 .local_actor
                 .read(id)

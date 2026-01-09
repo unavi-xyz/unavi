@@ -20,6 +20,7 @@ use tracing::error;
 use crate::{SessionToken, StoreContext};
 
 mod blob_exists;
+mod get_record_pin;
 mod pin_blob;
 mod pin_record;
 mod query_records;
@@ -70,6 +71,9 @@ pub enum ApiService {
         id: Hash,
         expires: i64,
     },
+    #[rpc(tx=oneshot::Sender<Result<Option<i64>, SmolStr>>)]
+    #[wrap(GetRecordPin)]
+    GetRecordPin { s: SessionToken, id: Hash },
     #[rpc(tx=oneshot::Sender<Result<bool, SmolStr>>)]
     #[wrap(BlobExists)]
     BlobExists { s: SessionToken, hash: Hash },
@@ -141,6 +145,9 @@ async fn handle_message(ctx: Arc<StoreContext>, msg: ApiMessage) -> anyhow::Resu
         }
         ApiMessage::PinRecord(channels) => {
             pin_record::pin_record(ctx, channels).await?;
+        }
+        ApiMessage::GetRecordPin(channels) => {
+            get_record_pin::get_record_pin(ctx, channels).await?;
         }
         ApiMessage::BlobExists(channels) => {
             blob_exists::blob_exists(ctx, channels).await?;

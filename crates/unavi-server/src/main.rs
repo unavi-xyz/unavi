@@ -34,12 +34,12 @@ async fn main() {
 
     registry.init();
 
-    if let Err(e) = unavi_server::run_server(ServerOptions {
+    if let Err(err) = unavi_server::run_server(ServerOptions {
         in_memory: false,
         port: args.port,
     })
     .await
     {
-        error!("{e:?}");
+        error!(?err, "error during run");
     }
 }

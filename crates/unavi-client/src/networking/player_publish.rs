@@ -12,9 +12,9 @@ use crate::networking::thread::{
     space::{BonePose, IFrameTransform, PFrameTransform, PlayerIFrame, PlayerPFrame},
 };
 
-pub const MAX_PUBLISH_HZ: u64 = 20;
-const IFRAME_FREQ: u64 = MAX_PUBLISH_HZ * 3;
-const PUBLISH_TICKRATE: Duration = Duration::from_millis(1000 / MAX_PUBLISH_HZ);
+const PUBLISH_HZ: u64 = 20;
+const IFRAME_FREQ: u64 = PUBLISH_HZ * 3;
+const PUBLISH_TICKRATE: Duration = Duration::from_millis(1000 / PUBLISH_HZ);
 
 /// Set of bones to include in pose updates.
 /// Empty = just root (desktop mode, no VR tracking).
@@ -81,6 +81,7 @@ pub(super) fn publish_player_transforms(
         }
 
         baseline.root = root_pos;
+        info!(?root_pos, "-> i-frame");
 
         let frame = PlayerIFrame {
             root: IFrameTransform::new(root_pos, root_rot),

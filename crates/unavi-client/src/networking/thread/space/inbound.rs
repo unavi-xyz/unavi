@@ -3,30 +3,38 @@
 use std::sync::Arc;
 
 use anyhow::bail;
-use bevy::log::{debug, info, warn};
+use bevy::log::{info, warn};
 use iroh::{EndpointId, endpoint::Connection};
 
 use super::{ControlMsg, IFrameMsg, PFrameDatagram};
-use crate::networking::thread::InboundState;
+use crate::networking::thread::{InboundState, NetworkEvent};
 
 const DEFAULT_TICKRATE: u8 = 20;
 
 pub async fn handle_inbound(
+    event_tx: flume::Sender<NetworkEvent>,
     inbound_map: Arc<scc::HashMap<EndpointId, Arc<InboundState>>>,
     connection: Connection,
 ) -> anyhow::Result<()> {
     let remote = connection.remote_id();
     info!("inbound connection from {remote}");
 
-    // Accept control bistream (opened by outbound side).
     let (ctrl_tx, ctrl_rx) = connection.accept_bi().await?;
-
-    // Accept I-frame stream (opened by outbound side).
     let iframe_stream = connection.accept_uni().await?;
 
     // Create and register inbound state.
     let state = Arc::new(InboundState::default());
-    let _ = inbound_map.insert_async(remote, Arc::clone(&state)).await;
+    inbound_map
+        .insert_async(remote, Arc::clone(&state))
+        .await
+        .map_err(|_| anyhow::anyhow!("failed to insert inbound state"))?;
+
+    event_tx
+        .send_async(NetworkEvent::PlayerJoin {
+            id: remote,
+            state: Arc::clone(&state),
+        })
+        .await?;
 
     // Run receive tasks.
     let result = tokio::select! {
@@ -65,7 +73,7 @@ async fn recv_iframes(
         stream.read_exact(&mut buf).await?;
 
         let msg: IFrameMsg = postcard::from_bytes(&buf)?;
-        debug!(id = msg.id, "received I-frame");
+        info!(id = msg.id, "received I-frame");
 
         *state.latest_iframe.lock() = Some(msg);
     }
@@ -90,14 +98,14 @@ async fn recv_pframes(conn: &Connection, state: &InboundState) -> anyhow::Result
 
         if msg.iframe_id != current_iframe_id {
             // Stale P-frame, drop it.
-            debug!(
+            info!(
                 pframe_id = msg.iframe_id,
                 current_iframe_id, "dropping stale P-frame"
             );
             continue;
         }
 
-        *state.latest_pframe.lock() = Some(msg.pose);
+        *state.latest_pframe.lock() = Some(msg);
     }
 }
 

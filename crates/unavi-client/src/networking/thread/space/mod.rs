@@ -11,6 +11,8 @@ use std::sync::Arc;
 use bevy::log::error;
 use iroh::{EndpointId, protocol::ProtocolHandler};
 
+use crate::networking::thread::NetworkEvent;
+
 use super::InboundState;
 
 mod inbound;
@@ -28,6 +30,7 @@ pub const ALPN: &[u8] = b"wired/space";
 /// Protocol handler for accepting inbound pose connections.
 #[derive(Debug, Clone)]
 pub struct SpaceProtocol {
+    pub event_tx: flume::Sender<NetworkEvent>,
     pub inbound: Arc<scc::HashMap<EndpointId, Arc<InboundState>>>,
 }
 
@@ -36,7 +39,10 @@ impl ProtocolHandler for SpaceProtocol {
         &self,
         connection: iroh::endpoint::Connection,
     ) -> Result<(), iroh::protocol::AcceptError> {
-        if let Err(err) = inbound::handle_inbound(Arc::clone(&self.inbound), connection).await {
+        if let Err(err) =
+            inbound::handle_inbound(self.event_tx.clone(), Arc::clone(&self.inbound), connection)
+                .await
+        {
             error!(?err, "error handling space protocol inbound");
         }
 

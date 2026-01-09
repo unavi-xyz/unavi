@@ -2,7 +2,7 @@ use anyhow::{Context, bail};
 use blake3::Hash;
 use bytes::BytesMut;
 use futures::{SinkExt, StreamExt};
-use iroh::{EndpointAddr, endpoint::VarInt};
+use iroh::EndpointAddr;
 use iroh_blobs::{BlobFormat, HashAndFormat};
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
 use tracing::{debug, warn};
@@ -129,7 +129,8 @@ where
     let to_send = postcard::to_stdvec(&SyncMsg::Envelopes(to_send))?;
     framed.send(to_send.into()).await?;
 
-    connection.close(VarInt::default(), b"done");
+    let reason = connection.closed().await;
+    debug!(%reason,"sync closed");
 
     Ok(())
 }

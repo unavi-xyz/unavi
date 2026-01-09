@@ -264,4 +264,14 @@ impl DataStore {
     pub fn set_user_identity(&self, identity: Arc<Identity>) {
         *self.ctx.user_identity.write() = Some(identity);
     }
+
+    /// Runs garbage collection on the data store.
+    /// Cleans up expired pins, orphaned records, and blob tags.
+    ///
+    /// # Errors
+    ///
+    /// Errors if database queries fail.
+    pub async fn run_gc(&self) -> anyhow::Result<()> {
+        self.ctx.run_gc().await
+    }
 }

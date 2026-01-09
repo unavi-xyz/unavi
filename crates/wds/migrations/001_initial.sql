@@ -54,7 +54,7 @@ CREATE TABLE envelopes (
 CREATE TABLE blob_pins (
     hash TEXT NOT NULL,
     owner TEXT NOT NULL,
-    expires INTEGER,
+    expires INTEGER NOT NULL,
     size INTEGER NOT NULL,
     PRIMARY KEY (owner, hash)
 );
@@ -62,7 +62,7 @@ CREATE TABLE blob_pins (
 CREATE TABLE record_pins (
     record_id TEXT NOT NULL,
     owner TEXT NOT NULL,
-    expires INTEGER,
+    expires INTEGER NOT NULL,
     PRIMARY KEY (owner, record_id)
 );
 

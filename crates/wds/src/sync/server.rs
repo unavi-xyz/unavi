@@ -43,18 +43,18 @@ where
         .fetch_optional(db)
         .await?;
 
+    let pinned = sqlx::query!("SELECT owner FROM record_pins WHERE record_id = ?", id_str)
+        .fetch_optional(db)
+        .await?;
+
+    // Only sync if record is pinned.
+    if pinned.is_none() {
+        return Ok("not found");
+    }
+
     let local_vv = if let Some(row) = found {
         VersionVector::decode(&row.vv)?
     } else {
-        // Allow sync if record is pinned (for initialization).
-        let pinned = sqlx::query!("SELECT owner FROM record_pins WHERE record_id = ?", id_str)
-            .fetch_optional(db)
-            .await?;
-
-        if pinned.is_none() {
-            return Ok("not found");
-        }
-
         VersionVector::new()
     };
 

@@ -26,7 +26,7 @@ pub async fn get_record_pin(
     .await?
     {
         Some(found) => {
-            tx.send(Ok(found.expires)).await?;
+            tx.send(Ok(Some(found.expires))).await?;
         }
         None => {
             tx.send(Ok(None)).await?;

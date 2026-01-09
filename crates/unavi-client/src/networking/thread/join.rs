@@ -9,13 +9,13 @@ use blake3::Hash;
 use iroh::{EndpointId, Signature};
 use iroh_gossip::{
     TopicId,
-    api::{Event, GossipReceiver},
+    api::{Event, GossipReceiver, GossipSender},
 };
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use wds::{
     record::schema::SCHEMA_BEACON,
-    signed_bytes::{Signable, SignedBytes},
+    signed_bytes::{IrohSigner, Signable, SignedBytes},
 };
 
 use crate::{
@@ -93,29 +93,28 @@ pub async fn handle_join(state: NetworkThreadState, space_id: Hash) -> anyhow::R
     commands.push(bevy::ecs::system::command::spawn_batch([(Space(space_id))]));
     ASYNC_COMMAND_QUEUE.0.send_async(commands).await?;
 
-    // Broadcast join.
-    {
-        let join = JoinBroadcast {
-            endpoint: state.endpoint.id(),
-        };
-        let signed_join = join.sign(state.local_actor.identity().signing_key())?;
-        let bytes = postcard::to_stdvec(&signed_join)?;
-        tx.broadcast(bytes.into()).await?;
-    }
-
-    handle_gossip_inbound(state, rx).await?;
+    handle_gossip_inbound(state, tx, rx).await?;
 
     Ok(())
 }
 
 async fn handle_gossip_inbound(
     state: NetworkThreadState,
+    tx: GossipSender,
     mut rx: GossipReceiver,
 ) -> anyhow::Result<()> {
     while let Some(event) = rx.next().await {
         match event? {
             Event::NeighborUp(n) => {
                 info!("+neighbor: {n}");
+                // Broadcast join whenever we gain a new neighbor.
+                // New neighbors may mean new enclaves of peers to discover.
+                let join = JoinBroadcast {
+                    endpoint: state.endpoint.id(),
+                };
+                let signed_join = join.sign(&IrohSigner(state.endpoint.secret_key()))?;
+                let bytes = postcard::to_stdvec(&signed_join)?;
+                tx.broadcast(bytes.into()).await?;
             }
             Event::NeighborDown(n) => {
                 info!("-neighbor: {n}");
@@ -125,6 +124,7 @@ async fn handle_gossip_inbound(
                 match postcard::from_bytes::<SignedBytes<JoinBroadcast>>(&msg.content) {
                     Ok(signed_join) => {
                         let join = signed_join.payload()?;
+                        info!(player = %join.endpoint, "Got join broadcast");
 
                         // Verify signature.
                         let Ok(sig_bytes) = signed_join.signature().try_into() else {
@@ -142,12 +142,12 @@ async fn handle_gossip_inbound(
                         }
 
                         // Spawn connection to player.
-                        info!("Player joined: {}", join.endpoint);
-
                         if state.outbound.get_async(&join.endpoint).await.is_some() {
                             // Already connected to player.
                             continue;
                         }
+
+                        info!("Player joined: {}", join.endpoint);
 
                         // Outbound handler will register itself in state.outbound.
                         let state = state.clone();

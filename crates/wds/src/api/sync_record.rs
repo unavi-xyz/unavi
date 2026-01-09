@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use irpc::WithChannels;
-use smol_str::ToSmolStr;
+use smol_str::SmolStr;
+use tracing::warn;
 
 use crate::{Identity, StoreContext, signed_bytes::IrohSigner, sync::client::sync_to_remote};
 
@@ -38,7 +39,11 @@ pub async fn sync_record(
         .await
     };
 
-    tx.send(result.map_err(|e| e.to_smolstr())).await?;
+    tx.send(result.map_err(|err| {
+        warn!(?err, "SyncRecord failed");
+        SmolStr::new("unable to sync")
+    }))
+    .await?;
 
     Ok(())
 }

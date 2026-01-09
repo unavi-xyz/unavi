@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use anyhow::Context;
 use blake3::Hash;
 use iroh::EndpointAddr;
@@ -35,7 +37,14 @@ impl ReadBuilder {
     pub async fn send(self) -> anyhow::Result<LoroDoc> {
         let s = self.actor.authenticate().await.context("auth")?;
 
-        debug!(record=?self.record_id, "reading");
+        debug!(record = ?self.record_id, "reading");
+
+        // Pin record if not already pinned.
+        if self.actor.get_record_pin(self.record_id).await?.is_none() {
+            self.actor
+                .pin_record(self.record_id, Duration::from_mins(30))
+                .await?;
+        }
 
         // Try to read from local first.
         let result = self

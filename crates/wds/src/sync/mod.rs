@@ -53,8 +53,8 @@ impl ProtocolHandler for SyncProtocol {
 
         let reason = match server::handle_sync(&self.ctx, framed).await {
             Ok(r) => r,
-            Err(e) => {
-                warn!("Error handling sync: {e:?}");
+            Err(err) => {
+                warn!(?err, "error handling sync");
                 "internal error"
             }
         };

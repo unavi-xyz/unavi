@@ -1,9 +1,16 @@
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::{
+        Arc,
+        atomic::{AtomicU8, AtomicU32, Ordering},
+    },
+    time::Duration,
+};
 
 use bevy::{log::tracing::Instrument, prelude::*};
 use blake3::Hash;
 use iroh::{Endpoint, EndpointId};
 use iroh_gossip::Gossip;
+use parking_lot::Mutex;
 use tokio::task::JoinHandle;
 use wds::{DataStore, actor::Actor, identity::Identity};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
@@ -12,7 +19,7 @@ use crate::{
     DIRS,
     networking::{
         WdsActors,
-        thread::space::{PlayerIFrame, PlayerPFrame},
+        thread::space::{IFrameMsg, PFrameDatagram, PlayerIFrame, PlayerPFrame},
     },
 };
 
@@ -77,13 +84,30 @@ impl NetworkingThread {
     }
 }
 
+pub struct OutboundConn {
+    pub iframe_tx: flume::Sender<IFrameMsg>,
+    pub pframe_tx: flume::Sender<PFrameDatagram>,
+    pub tickrate: Arc<AtomicU8>,
+    task: JoinHandle<()>,
+}
+
+#[derive(Debug, Default)]
+pub struct InboundState {
+    pub latest_iframe: Mutex<Option<IFrameMsg>>,
+    pub latest_pframe: Mutex<Option<PlayerPFrame>>,
+}
+
 #[derive(Clone)]
-struct NetworkThreadState {
-    endpoint: Endpoint,
-    gossip: Gossip,
-    local_actor: Actor,
-    remote_actor: Option<Actor>,
-    players: Arc<scc::HashMap<EndpointId, JoinHandle<()>>>,
+pub struct NetworkThreadState {
+    pub endpoint: Endpoint,
+    pub gossip: Gossip,
+    pub local_actor: Actor,
+    pub remote_actor: Option<Actor>,
+
+    pub outbound: Arc<scc::HashMap<EndpointId, OutboundConn>>,
+    pub inbound: Arc<scc::HashMap<EndpointId, Arc<InboundState>>>,
+
+    pub iframe_id: Arc<AtomicU32>,
 }
 
 async fn thread_loop(
@@ -95,6 +119,7 @@ async fn thread_loop(
     info!("Local endpoint: {}", endpoint.id());
 
     let gossip = Gossip::builder().spawn(endpoint.clone());
+    let inbound = Arc::new(scc::HashMap::default());
 
     let store = {
         let mut builder = DataStore::builder(endpoint.clone());
@@ -104,9 +129,13 @@ async fn thread_loop(
             builder = builder.storage_path(path);
         }
 
+        let space_protocol = space::SpaceProtocol {
+            inbound: Arc::clone(&inbound),
+        };
+
         builder
             .accept(iroh_gossip::ALPN, gossip.clone())
-            .accept(space::ALPN, space::SpaceProtocol)
+            .accept(space::ALPN, space_protocol)
             .gc_timer(Duration::from_mins(15))
             .build()
             .await?
@@ -137,7 +166,9 @@ async fn thread_loop(
         gossip,
         local_actor,
         remote_actor,
-        players: Arc::new(scc::HashMap::default()),
+        outbound: Arc::new(scc::HashMap::default()),
+        inbound,
+        iframe_id: Arc::new(AtomicU32::new(0)),
     };
 
     loop {
@@ -167,8 +198,30 @@ async fn thread_loop(
                     }
                 });
             }
-            NetworkCommand::PublishIFrame(_frame) => {}
-            NetworkCommand::PublishPFrame(_frame) => {}
+            NetworkCommand::PublishIFrame(pose) => {
+                let id = state.iframe_id.fetch_add(1, Ordering::Relaxed);
+                let msg = IFrameMsg { id, pose };
+
+                state
+                    .outbound
+                    .iter_async(|_, conn| {
+                        let _ = conn.iframe_tx.try_send(msg.clone());
+                        true
+                    })
+                    .await;
+            }
+            NetworkCommand::PublishPFrame(pose) => {
+                let iframe_id = state.iframe_id.load(Ordering::Relaxed);
+                let msg = PFrameDatagram { iframe_id, pose };
+
+                state
+                    .outbound
+                    .iter_async(|_, conn| {
+                        let _ = conn.pframe_tx.try_send(msg.clone());
+                        true
+                    })
+                    .await;
+            }
             NetworkCommand::Shutdown => {
                 if let Err(err) = store.shutdown().await {
                     error!(?err, "error shutting down data store");

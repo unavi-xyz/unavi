@@ -142,31 +142,21 @@ async fn handle_gossip_inbound(
                         // Spawn connection to player.
                         info!("Player joined: {}", join.endpoint);
 
-                        if state.players.get_async(&join.endpoint).await.is_some() {
+                        if state.outbound.get_async(&join.endpoint).await.is_some() {
                             // Already connected to player.
                             continue;
                         }
 
-                        let handle = tokio::spawn({
-                            let state = state.clone();
-                            async move {
-                                if let Err(err) =
-                                    super::space::outbound::handle_outbound(state, join.endpoint)
-                                        .await
-                                {
-                                    error!(?err, "error handling space outbound");
-                                }
+                        // Outbound handler will register itself in state.outbound.
+                        let state = state.clone();
+                        let remote = join.endpoint;
+                        tokio::spawn(async move {
+                            if let Err(err) =
+                                super::space::outbound::handle_outbound(state, remote).await
+                            {
+                                error!(?err, "error handling space outbound");
                             }
                         });
-
-                        state
-                            .players
-                            .insert_async(join.endpoint, handle)
-                            .await
-                            .map_err(|(_, h)| {
-                                h.abort();
-                                anyhow::anyhow!("endpoint insert failed")
-                            })?;
                     }
                     Err(err) => {
                         warn!(?err, "got invalid gossip message");

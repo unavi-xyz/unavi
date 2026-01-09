@@ -12,9 +12,9 @@ use crate::networking::thread::{
     space::{BonePose, IFrameTransform, PFrameTransform, PlayerIFrame, PlayerPFrame},
 };
 
-const PUBLISH_HZ: u64 = 20;
-const IFRAME_FREQ: u64 = PUBLISH_HZ * 3;
-pub const PUBLISH_TICKRATE: Duration = Duration::from_millis(1000 / PUBLISH_HZ);
+pub const MAX_PUBLISH_HZ: u64 = 20;
+const IFRAME_FREQ: u64 = MAX_PUBLISH_HZ * 3;
+const PUBLISH_TICKRATE: Duration = Duration::from_millis(1000 / MAX_PUBLISH_HZ);
 
 /// Set of bones to include in pose updates.
 /// Empty = just root (desktop mode, no VR tracking).
@@ -28,7 +28,6 @@ pub(super) struct IFrameBaseline {
     bones: HashMap<BoneName, Vec3>,
 }
 
-#[allow(clippy::too_many_arguments)]
 pub(super) fn publish_player_transforms(
     nt: Res<NetworkingThread>,
     players: Query<(&GlobalTransform, &PlayerEntities), With<LocalPlayer>>,
@@ -100,8 +99,7 @@ pub(super) fn publish_player_transforms(
                 if let Some(&bone_entity) = avatar_bones.get(bone_name)
                     && let Ok(bone_tr) = bone_transforms.get(bone_entity)
                 {
-                    let pos = bone_tr.translation();
-                    let rot = bone_tr.to_scale_rotation_translation().1;
+                    let (_, rot, pos) = bone_tr.to_scale_rotation_translation();
                     let baseline_pos = baseline.bones.get(bone_name).copied().unwrap_or(pos);
 
                     bones.push(BonePose {

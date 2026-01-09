@@ -37,6 +37,7 @@ image                      = { features = ["png"], workspace = true }
 iroh.workspace             = true
 iroh-gossip                = "0.95.0"
 loro.workspace             = true
+parking_lot.workspace      = true
 postcard.workspace         = true
 reqwest                    = { features = ["blocking"], workspace = true }
 scc.workspace              = true

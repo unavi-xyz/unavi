@@ -9,6 +9,7 @@ use bevy_rich_text3d::Text3dPlugin;
 use bitflags::bitflags;
 use blake3::Hash;
 use directories::ProjectDirs;
+use tracing::Level;
 
 pub mod assets;
 mod async_commands;
@@ -57,6 +58,7 @@ pub struct UnaviPlugin {
     pub debug: DebugFlags,
     pub in_memory: bool,
     pub initial_space: Option<Hash>,
+    pub log_level: Level,
 }
 
 impl Plugin for UnaviPlugin {
@@ -67,7 +69,11 @@ impl Plugin for UnaviPlugin {
         app.add_plugins((
             DefaultPlugins
                 .set(LogPlugin {
-                    filter: format!("{},loro_internal=off", bevy::log::DEFAULT_FILTER),
+                    filter: format!(
+                        "{},loro_internal=off,offset_allocator=off",
+                        bevy::log::DEFAULT_FILTER
+                    ),
+                    level: self.log_level,
                     ..default()
                 })
                 .set(WebAssetPlugin {

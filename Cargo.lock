@@ -13891,6 +13891,7 @@ dependencies = [
  "iroh",
  "iroh-gossip",
  "loro",
+ "parking_lot",
  "postcard",
  "reqwest 0.13.1",
  "scc",

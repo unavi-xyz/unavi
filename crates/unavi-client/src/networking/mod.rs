@@ -4,6 +4,7 @@ use wds::actor::Actor;
 mod event;
 mod lifecycle;
 mod player_publish;
+mod player_receive;
 pub mod thread;
 
 pub use player_publish::TrackedBones;
@@ -32,6 +33,7 @@ impl Plugin for NetworkingPlugin {
                 (
                     event::recv_network_event,
                     player_publish::publish_player_transforms,
+                    player_receive::receive_player_transforms,
                 ),
             )
             .add_systems(Last, lifecycle::shutdown_networking_thread);

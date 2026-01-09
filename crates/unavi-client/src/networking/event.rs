@@ -1,15 +1,28 @@
+use std::sync::Arc;
+
 use bevy::prelude::*;
 
-use crate::networking::thread::{NetworkEvent, NetworkingThread};
+use crate::networking::{
+    player_receive::OtherPlayer,
+    thread::{InboundState, NetworkEvent, NetworkingThread},
+};
 
-pub fn recv_network_event(nt: Res<NetworkingThread>) {
+#[derive(Component, Deref)]
+pub struct PlayerInboundState(Arc<InboundState>);
+
+pub fn recv_network_event(mut commands: Commands, nt: Res<NetworkingThread>) {
     while let Ok(event) = nt.event_rx.try_recv() {
         match event {
-            NetworkEvent::Connected { id, .. } => {
-                info!("connected to {id}");
+            NetworkEvent::PlayerJoin { id, state } => {
+                info!(%id, "spawning player");
+                commands.spawn((
+                    OtherPlayer(id),
+                    PlayerInboundState(state),
+                    Transform::default(),
+                ));
             }
-            NetworkEvent::ConnectionClosed { id, message } => {
-                info!("connection {id} closed: {message}");
+            NetworkEvent::PlayerLeave(_id) => {
+                todo!()
             }
             NetworkEvent::SetActors(_) => {
                 unreachable!("should only be called once on init")

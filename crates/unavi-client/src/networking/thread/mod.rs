@@ -41,8 +41,11 @@ pub enum NetworkCommand {
 #[expect(unused)]
 pub enum NetworkEvent {
     SetActors(WdsActors),
-    Connected { id: Hash, space: Entity },
-    ConnectionClosed { id: Hash, message: String },
+    PlayerJoin {
+        id: EndpointId,
+        state: Arc<InboundState>,
+    },
+    PlayerLeave(EndpointId),
 }
 
 #[derive(Resource)]
@@ -94,7 +97,7 @@ pub struct OutboundConn {
 #[derive(Debug, Default)]
 pub struct InboundState {
     pub latest_iframe: Mutex<Option<IFrameMsg>>,
-    pub latest_pframe: Mutex<Option<PlayerPFrame>>,
+    pub latest_pframe: Mutex<Option<PFrameDatagram>>,
 }
 
 #[derive(Clone)]
@@ -110,6 +113,7 @@ pub struct NetworkThreadState {
     pub iframe_id: Arc<AtomicU32>,
 }
 
+#[allow(clippy::too_many_lines)]
 async fn thread_loop(
     opts: &NetworkingThreadOpts,
     command_rx: &flume::Receiver<NetworkCommand>,
@@ -130,6 +134,7 @@ async fn thread_loop(
         }
 
         let space_protocol = space::SpaceProtocol {
+            event_tx: event_tx.clone(),
             inbound: Arc::clone(&inbound),
         };
 

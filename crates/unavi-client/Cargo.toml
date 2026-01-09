@@ -36,6 +36,7 @@ flume                      = "0.12.0"
 image                      = { features = ["png"], workspace = true }
 iroh.workspace             = true
 iroh-gossip                = "0.95.0"
+log                        = { features = ["max_level_debug", "release_max_level_warn"], version = "*" }
 loro.workspace             = true
 parking_lot.workspace      = true
 postcard.workspace         = true
@@ -44,6 +45,7 @@ scc.workspace              = true
 serde.workspace            = true
 time.workspace             = true
 tokio                      = { features = ["rt", "rt-multi-thread"], workspace = true }
+tracing                    = { features = ["max_level_debug", "release_max_level_warn"], workspace = true }
 unavi-constants.path       = "../unavi-constants"
 unavi-input.path           = "../unavi-input"
 unavi-player.path          = "../unavi-player"

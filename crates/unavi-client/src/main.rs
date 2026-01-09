@@ -5,6 +5,7 @@ use std::{str::FromStr, time::Duration};
 use bevy::prelude::*;
 use blake3::Hash;
 use clap::Parser;
+use tracing::Level;
 use unavi_client::DebugFlags;
 
 #[derive(Parser, Debug)]
@@ -19,6 +20,10 @@ struct Args {
     /// Useful for running multiple clients on the same machine.
     #[arg(long, default_value_t = false)]
     in_memory: bool,
+
+    /// Enable debug logging.
+    #[arg(long, default_value_t = false)]
+    debug_log: bool,
 
     /// Enable FPS counter.
     #[cfg(feature = "devtools-bevy")]
@@ -38,6 +43,12 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
+
+    let log_level = if args.debug_log {
+        Level::DEBUG
+    } else {
+        Level::INFO
+    };
 
     #[allow(unused_mut)]
     let mut debug = DebugFlags::empty();
@@ -72,6 +83,7 @@ fn main() {
             debug,
             in_memory: args.in_memory,
             initial_space: join,
+            log_level,
         })
         .run();
 

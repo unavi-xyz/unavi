@@ -30,8 +30,7 @@ impl StoreContext {
         let now = OffsetDateTime::now_utc().unix_timestamp();
 
         let expired = sqlx::query!(
-            "SELECT record_id, owner FROM record_pins
-             WHERE expires IS NOT NULL AND expires < ?",
+            "SELECT record_id, owner FROM record_pins WHERE expires < ?",
             now
         )
         .fetch_all(db)
@@ -52,13 +51,9 @@ impl StoreContext {
         let db = self.db.pool();
         let now = OffsetDateTime::now_utc().unix_timestamp();
 
-        let expired = sqlx::query!(
-            "SELECT hash, owner FROM blob_pins
-             WHERE expires IS NOT NULL AND expires < ?",
-            now
-        )
-        .fetch_all(db)
-        .await?;
+        let expired = sqlx::query!("SELECT hash, owner FROM blob_pins WHERE expires < ?", now)
+            .fetch_all(db)
+            .await?;
 
         for pin in expired {
             if let Err(e) = self.gc_blob_pin(&pin.owner, &pin.hash).await {
@@ -144,8 +139,8 @@ impl StoreContext {
             return Ok(());
         };
 
-        if pin.expires.is_none_or(|e| e >= now) {
-            // Pin was extended or has no expiration.
+        if pin.expires >= now {
+            // Pin was extended.
             return Ok(());
         }
 
@@ -169,6 +164,36 @@ impl StoreContext {
 
         if total_size > 0 {
             release_bytes(&mut *tx, owner, total_size).await?;
+        }
+
+        // Check if any pins remain for this record.
+        let remaining_pins: i64 = sqlx::query_scalar!(
+            "SELECT COUNT(*) FROM record_pins WHERE record_id = ?",
+            record_id
+        )
+        .fetch_one(&mut *tx)
+        .await?;
+
+        if remaining_pins == 0 {
+            // No pins remain - delete record and all related data.
+            sqlx::query!("DELETE FROM envelopes WHERE record_id = ?", record_id)
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query!(
+                "DELETE FROM record_blob_deps WHERE record_id = ?",
+                record_id
+            )
+            .execute(&mut *tx)
+            .await?;
+            sqlx::query!("DELETE FROM record_schemas WHERE record_id = ?", record_id)
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query!("DELETE FROM record_acl_read WHERE record_id = ?", record_id)
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query!("DELETE FROM records WHERE id = ?", record_id)
+                .execute(&mut *tx)
+                .await?;
         }
 
         tx.commit().await?;
@@ -196,8 +221,8 @@ impl StoreContext {
             return Ok(());
         };
 
-        if pin.expires.is_none_or(|e| e >= now) {
-            // Pin was extended or has no expiration.
+        if pin.expires >= now {
+            // Pin was extended.
             return Ok(());
         }
 
@@ -222,8 +247,7 @@ impl StoreContext {
         let max_record_expires: Option<i64> = sqlx::query_scalar(
             "SELECT MAX(p.expires) FROM record_blob_deps d
              JOIN record_pins p ON d.record_id = p.record_id
-             WHERE d.blob_hash = ? AND p.owner = ?
-               AND (p.expires IS NULL OR p.expires > ?)",
+             WHERE d.blob_hash = ? AND p.owner = ? AND p.expires > ?",
         )
         .bind(hash)
         .bind(owner)

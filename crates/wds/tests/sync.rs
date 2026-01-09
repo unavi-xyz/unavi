@@ -422,6 +422,22 @@ async fn test_sync_transfers_blob_dependencies(#[future] multi_ctx: MultiStoreCt
         "Carthage should have schema blob after sync"
     );
 
+    // Verify the blob dependency is registered for the record.
+    let record_id_str = record_id.to_string();
+    let hash_str = SCHEMA_HOME.hash.to_string();
+    let dep_exists: i64 = sqlx::query_scalar!(
+        "SELECT EXISTS(SELECT 1 FROM record_blob_deps WHERE record_id = ? AND blob_hash = ?)",
+        record_id_str,
+        hash_str
+    )
+    .fetch_one(multi_ctx.carthage.store.db())
+    .await
+    .expect("query blob deps");
+    assert!(
+        dep_exists != 0,
+        "blob dependency should be registered on Carthage"
+    );
+
     // Verify Bob can read the record on Carthage.
     let read_doc = multi_ctx
         .carthage

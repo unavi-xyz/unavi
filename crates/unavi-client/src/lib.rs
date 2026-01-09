@@ -1,7 +1,8 @@
 use std::{path::PathBuf, sync::LazyLock};
 
 use bevy::{
-    asset::io::web::WebAssetPlugin, light::light_consts::lux, prelude::*, window::WindowTheme,
+    asset::io::web::WebAssetPlugin, light::light_consts::lux, log::LogPlugin, prelude::*,
+    window::WindowTheme,
 };
 use bevy_av1::VideoTargetApp;
 use bevy_rich_text3d::Text3dPlugin;
@@ -65,6 +66,10 @@ impl Plugin for UnaviPlugin {
 
         app.add_plugins((
             DefaultPlugins
+                .set(LogPlugin {
+                    filter: format!("{},loro_internal=off", bevy::log::DEFAULT_FILTER),
+                    ..default()
+                })
                 .set(WebAssetPlugin {
                     silence_startup_warning: true,
                 })

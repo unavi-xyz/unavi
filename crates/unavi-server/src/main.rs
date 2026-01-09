@@ -1,7 +1,7 @@
 use clap::Parser;
 use tracing::{Level, error};
 use tracing_subscriber::{
-    fmt::writer::MakeWriterExt, layer::SubscriberExt, util::SubscriberInitExt,
+    EnvFilter, fmt::writer::MakeWriterExt, layer::SubscriberExt, util::SubscriberInitExt,
 };
 use unavi_server::ServerOptions;
 
@@ -31,6 +31,12 @@ async fn main() {
 
     #[cfg(feature = "devtools-console")]
     let registry = registry.with(console_subscriber::spawn());
+
+    let registry = registry.with(
+        EnvFilter::from_default_env()
+            .add_directive(level.to_string().parse().expect("valid directive"))
+            .add_directive("loro_internal=off".parse().expect("valid directive")),
+    );
 
     registry.init();
 

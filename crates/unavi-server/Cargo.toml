@@ -13,17 +13,17 @@ workspace = true
 devtools-console = ["dep:console-subscriber", "tokio/tracing"]
 
 [dependencies]
-anyhow.workspace             = true
-axum.workspace               = true
-axum-server                  = { features = ["tls-rustls-no-provider"], version = "0.8.0" }
-clap.workspace               = true
-console-subscriber           = { optional = true, version = "0.5.0" }
-directories.workspace        = true
-iroh.workspace               = true
-p256                         = "0.13.2"
-tokio                        = { features = ["full"], workspace = true }
-tracing.workspace            = true
-tracing-subscriber.workspace = true
-wds.path                     = "../wds"
-xdid.workspace               = true
-zeroize.workspace            = true
+anyhow.workspace      = true
+axum.workspace        = true
+axum-server           = { features = ["tls-rustls-no-provider"], version = "0.8.0" }
+clap.workspace        = true
+console-subscriber    = { optional = true, version = "0.5.0" }
+directories.workspace = true
+iroh.workspace        = true
+p256                  = "0.13.2"
+tokio                 = { features = ["full"], workspace = true }
+tracing.workspace     = true
+tracing-subscriber    = { features = ["env-filter"], workspace = true }
+wds.path              = "../wds"
+xdid.workspace        = true
+zeroize.workspace     = true

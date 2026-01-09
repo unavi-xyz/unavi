@@ -66,6 +66,22 @@ where
         return Ok("not found");
     }
 
+    // Send blob dependency hashes so client can fetch missing blobs.
+    let blob_hashes = super::shared::get_blob_dep_hashes(db, &id_str).await?;
+    let msg_bytes = postcard::to_stdvec(&SyncMsg::BlobHashes(blob_hashes))?;
+    framed
+        .send(BytesMut::from(msg_bytes.as_slice()).freeze())
+        .await?;
+
+    // Wait for client to signal it has fetched all needed blobs.
+    let Some(bytes) = framed.next().await else {
+        return Ok("no ready");
+    };
+    let ready_msg: SyncMsg = postcard::from_bytes(&bytes?)?;
+    if !matches!(ready_msg, SyncMsg::Ready) {
+        anyhow::bail!("expected Ready message");
+    }
+
     let remote_vv = VersionVector::decode(&remote_vv_bytes)?;
 
     // Send envelopes remote is missing.
@@ -84,9 +100,9 @@ where
     let incoming: SyncMsg = postcard::from_bytes(&bytes?)?;
 
     if let SyncMsg::Envelopes(envelopes) = incoming {
+        let blobs = ctx.blobs.as_ref().as_ref();
         for env_bytes in envelopes {
-            super::shared::store_envelope(db, ctx.blobs.as_ref().as_ref(), &id_str, &env_bytes)
-                .await?;
+            super::shared::store_envelope(db, blobs, &id_str, &env_bytes).await?;
         }
     }
 

@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use rstest::rstest;
 use tracing_test::traced_test;
-use wds::record::acl::Acl;
+use wds::record::{acl::Acl, schema::SCHEMA_HOME};
 
 use crate::common::{LocalStoreCtx, MultiStoreCtx, multi_ctx, multi_ctx_local};
 
@@ -330,5 +330,113 @@ async fn test_sync_with_user_identity(#[future] multi_ctx_local: LocalStoreCtx) 
     assert_eq!(
         map.get("key"),
         Some(&loro::LoroValue::String("synced_via_user_identity".into()))
+    );
+}
+
+/// Tests that blob dependencies (schemas) are synced when a record uses a custom schema.
+#[rstest]
+#[timeout(Duration::from_secs(10))]
+#[awt]
+#[traced_test]
+#[tokio::test]
+async fn test_sync_transfers_blob_dependencies(#[future] multi_ctx: MultiStoreCtx) {
+    // Upload SCHEMA_HOME to Rome only (not to Carthage).
+    multi_ctx
+        .rome
+        .store
+        .blobs()
+        .blobs()
+        .add_slice(&SCHEMA_HOME.bytes)
+        .await
+        .expect("add schema to Rome");
+
+    // Verify Carthage does NOT have the schema blob.
+    let iroh_hash: iroh_blobs::Hash = SCHEMA_HOME.hash.into();
+    assert!(
+        !multi_ctx
+            .carthage
+            .store
+            .blobs()
+            .blobs()
+            .has(iroh_hash)
+            .await
+            .expect("check blob exists"),
+        "Carthage should not have schema blob yet"
+    );
+
+    // Alice creates a record on Rome with SCHEMA_HOME.
+    let result = multi_ctx
+        .rome
+        .alice
+        .create_record()
+        .add_schema(&*SCHEMA_HOME, |doc| {
+            doc.get_map("home").insert("space", "test_space")?;
+            Ok(())
+        })
+        .expect("add schema")
+        .send()
+        .await
+        .expect("create record on Rome");
+    let (record_id, doc) = (result.id, result.doc);
+
+    // Grant Bob read access.
+    let from_vv = doc.oplog_vv();
+    let mut acl = Acl::load(&doc).expect("load acl");
+    acl.read
+        .push(multi_ctx.carthage.bob.identity().did().clone());
+    acl.save(&doc).expect("save acl");
+    multi_ctx
+        .rome
+        .alice
+        .update_record(record_id, &doc, from_vv)
+        .await
+        .expect("update acl");
+
+    // Pin the record on Carthage.
+    multi_ctx
+        .carthage
+        .alice
+        .pin_record(record_id, Duration::from_secs(3600))
+        .await
+        .expect("pin record on Carthage");
+
+    // Bob on Carthage syncs from Rome.
+    // This should transfer the SCHEMA_HOME blob as a dependency.
+    multi_ctx
+        .carthage
+        .bob
+        .sync(record_id, multi_ctx.rome.store.endpoint().addr())
+        .await
+        .expect("sync from Rome to Carthage");
+
+    // Verify Carthage now has the schema blob.
+    assert!(
+        multi_ctx
+            .carthage
+            .store
+            .blobs()
+            .blobs()
+            .has(iroh_hash)
+            .await
+            .expect("check blob exists"),
+        "Carthage should have schema blob after sync"
+    );
+
+    // Verify Bob can read the record on Carthage.
+    let read_doc = multi_ctx
+        .carthage
+        .bob
+        .read(record_id)
+        .send()
+        .await
+        .expect("read record on Carthage");
+
+    let value = read_doc.get_map("home").get_deep_value();
+    let loro::LoroValue::Map(map) = value else {
+        panic!("expected map");
+    };
+    assert_eq!(
+        map.get("space"),
+        Some(&loro::LoroValue::String("test_space".into()))
     );
 }

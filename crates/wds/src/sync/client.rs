@@ -3,8 +3,9 @@ use blake3::Hash;
 use bytes::BytesMut;
 use futures::{SinkExt, StreamExt};
 use iroh::{EndpointAddr, endpoint::VarInt};
+use iroh_blobs::{BlobFormat, HashAndFormat};
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
-use tracing::debug;
+use tracing::{debug, warn};
 use xdid::{core::did::Did, methods::key::Signer};
 
 use crate::{StoreContext, auth::AuthService, sync::combined_stream::CombinedStream};
@@ -33,7 +34,10 @@ where
         .context("auth")?;
 
     // Sync.
-    let connection = ctx.endpoint.connect(remote, crate::sync::ALPN).await?;
+    let connection = ctx
+        .endpoint
+        .connect(remote.clone(), crate::sync::ALPN)
+        .await?;
     let (tx, rx) = connection.open_bi().await?;
     let mut framed = Framed::new(CombinedStream(tx, rx), LengthDelimitedCodec::new());
 
@@ -50,20 +54,74 @@ where
         .send(BytesMut::from(postcard::to_stdvec(&begin)?.as_slice()).freeze())
         .await?;
 
-    // Receive envelopes from remote.
+    // Receive blob dependency hashes from remote.
     let Some(bytes) = framed.next().await else {
         anyhow::bail!("no next frame");
     };
     let incoming: SyncMsg = postcard::from_bytes(&bytes?)?;
 
-    if let SyncMsg::Envelopes(envelopes) = incoming {
-        for env_bytes in &envelopes {
-            super::shared::store_envelope(db, ctx.blobs.as_ref().as_ref(), &id_str, env_bytes)
-                .await
-                .context("store envelope")?;
+    let SyncMsg::BlobHashes(blob_hashes) = incoming else {
+        bail!("expected BlobHashes message");
+    };
+
+    // Fetch missing blobs via iroh_blobs protocol.
+    let blobs = ctx.blobs.as_ref().as_ref();
+    let missing_hashes: Vec<_> = {
+        let mut missing = Vec::new();
+        for hash in blob_hashes {
+            let iroh_hash: iroh_blobs::Hash = hash.into();
+            if !blobs.has(iroh_hash).await? {
+                missing.push(hash);
+            }
         }
-    } else {
-        bail!("unexpected message")
+        missing
+    };
+
+    if !missing_hashes.is_empty() {
+        // Connect via iroh_blobs ALPN to fetch blobs.
+        let blob_conn = ctx
+            .endpoint
+            .connect(remote.clone(), iroh_blobs::ALPN)
+            .await
+            .context("connect for blobs")?;
+
+        for hash in missing_hashes {
+            let iroh_hash: iroh_blobs::Hash = hash.into();
+            debug!(%hash, "fetching missing blob");
+            if let Err(e) = blobs
+                .remote()
+                .fetch(
+                    blob_conn.clone(),
+                    HashAndFormat {
+                        hash: iroh_hash,
+                        format: BlobFormat::Raw,
+                    },
+                )
+                .await
+            {
+                warn!(%hash, error = %e, "failed to fetch blob");
+            }
+        }
+    }
+
+    // Signal we're ready for envelopes.
+    let ready = postcard::to_stdvec(&SyncMsg::Ready)?;
+    framed.send(ready.into()).await?;
+
+    // Receive envelopes from remote.
+    let Some(bytes) = framed.next().await else {
+        anyhow::bail!("no envelopes frame");
+    };
+    let incoming: SyncMsg = postcard::from_bytes(&bytes?)?;
+
+    let SyncMsg::Envelopes(envelopes) = incoming else {
+        bail!("expected Envelopes message");
+    };
+
+    for env_bytes in &envelopes {
+        super::shared::store_envelope(db, blobs, &id_str, env_bytes)
+            .await
+            .context("store envelope")?;
     }
 
     // Send our envelopes.

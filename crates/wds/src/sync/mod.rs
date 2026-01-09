@@ -22,8 +22,6 @@ pub mod shared;
 
 pub const ALPN: &[u8] = b"wds/sync";
 
-// TODO: stream envelopes
-
 #[derive(Debug, Serialize, Deserialize)]
 pub enum SyncMsg {
     Begin {
@@ -31,6 +29,11 @@ pub enum SyncMsg {
         record_id: Hash,
         vv: Vec<u8>,
     },
+    /// Server sends blob dependency hashes for the record.
+    BlobHashes(Vec<Hash>),
+    /// Client signals it has fetched all needed blobs.
+    Ready,
+    // TODO: stream envelopes, not batched in one message
     Envelopes(Vec<Vec<u8>>),
 }
 

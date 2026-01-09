@@ -1,4 +1,5 @@
 use anyhow::{Context, ensure};
+use blake3::Hash;
 use iroh_blobs::api::Store;
 use loro::{LoroDoc, VersionVector};
 use sqlx::{Executor, Pool, Sqlite};
@@ -285,6 +286,27 @@ where
         Some(row) => Ok(VersionVector::decode(&row.vv)?),
         None => Ok(VersionVector::new()),
     }
+}
+
+/// Gets blob dependency hashes for a record.
+pub(super) async fn get_blob_dep_hashes<'e, E>(db: E, record_id: &str) -> anyhow::Result<Vec<Hash>>
+where
+    E: Executor<'e, Database = Sqlite>,
+{
+    let rows = sqlx::query_scalar!(
+        "SELECT blob_hash FROM record_blob_deps WHERE record_id = ?",
+        record_id
+    )
+    .fetch_all(db)
+    .await?;
+
+    rows.into_iter()
+        .map(|hash_str| {
+            hash_str
+                .parse()
+                .map_err(|_| anyhow::anyhow!("invalid blob hash: {hash_str}"))
+        })
+        .collect()
 }
 
 /// Reconstructs a Loro document from stored envelopes (current state).

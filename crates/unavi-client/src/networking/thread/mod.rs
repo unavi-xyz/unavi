@@ -204,7 +204,7 @@ async fn thread_loop(
                 });
             }
             NetworkCommand::PublishIFrame(pose) => {
-                let id = state.iframe_id.fetch_add(1, Ordering::Relaxed);
+                let id = state.iframe_id.fetch_add(1, Ordering::Relaxed) + 1;
                 let msg = IFrameMsg { id, pose };
 
                 state

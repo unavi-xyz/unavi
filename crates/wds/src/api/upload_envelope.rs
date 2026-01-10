@@ -2,10 +2,11 @@ use std::sync::Arc;
 
 use futures::TryStreamExt;
 use irpc::WithChannels;
+use tracing::warn;
 
 use crate::{
     StoreContext,
-    api::{ApiService, UploadEnvelope, authenticate},
+    api::{ApiError, ApiService, UploadEnvelope, authenticate},
     sync::shared::store_envelope,
 };
 
@@ -35,7 +36,18 @@ pub async fn upload_envelope(
     )
     .await
     {
-        tx.send(Err(e.to_string().into())).await?;
+        warn!(record_id = %record_id, ?e, "failed to store envelope");
+        // Map specific errors to ApiError variants.
+        let api_err = if e.to_string().contains("not pinned") {
+            ApiError::NotPinned
+        } else if e.to_string().contains("access denied") {
+            ApiError::AccessDenied
+        } else if e.to_string().contains("quota") {
+            ApiError::QuotaExceeded
+        } else {
+            ApiError::Internal
+        };
+        tx.send(Err(api_err)).await?;
         return Ok(());
     }
 

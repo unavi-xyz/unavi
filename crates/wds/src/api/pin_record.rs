@@ -6,7 +6,7 @@ use time::OffsetDateTime;
 
 use crate::{
     StoreContext,
-    api::{ApiService, MAX_PIN_DURATION, PinRecord, authenticate},
+    api::{ApiError, ApiService, MAX_PIN_DURATION, PinRecord, authenticate},
     gc::FAST_GC_THRESHOLD,
     quota::{QuotaExceeded, ensure_quota_exists, reserve_bytes},
 };
@@ -64,7 +64,7 @@ pub async fn pin_record(
                 Err(QuotaExceeded)
             )
         {
-            tx.send(Err("quota exceeded".into())).await?;
+            tx.send(Err(ApiError::QuotaExceeded)).await?;
             return Ok(());
         }
 

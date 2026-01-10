@@ -2,10 +2,11 @@ use std::sync::Arc;
 
 use irpc::WithChannels;
 use loro::ExportMode;
+use tracing::warn;
 
 use crate::{StoreContext, record::acl::Acl, sync::shared::reconstruct_current_doc};
 
-use super::{ApiService, ReadRecord, authenticate};
+use super::{ApiError, ApiService, ReadRecord, authenticate};
 
 pub async fn read_record(
     ctx: Arc<StoreContext>,
@@ -19,14 +20,15 @@ pub async fn read_record(
     let doc = match reconstruct_current_doc(db, &id_str).await {
         Ok(doc) => doc,
         Err(e) => {
-            tx.send(Err(e.to_string().into())).await?;
+            warn!(record_id = %id_str, ?e, "failed to reconstruct doc");
+            tx.send(Err(ApiError::Internal)).await?;
             return Ok(());
         }
     };
 
     // Check if record exists.
     if doc.state_frontiers().is_empty() {
-        tx.send(Err("record not found".into())).await?;
+        tx.send(Err(ApiError::RecordNotFound)).await?;
         return Ok(());
     }
 
@@ -34,13 +36,14 @@ pub async fn read_record(
     let acl = match Acl::load(&doc) {
         Ok(acl) => acl,
         Err(e) => {
-            tx.send(Err(e.to_string().into())).await?;
+            warn!(record_id = %id_str, ?e, "failed to load acl");
+            tx.send(Err(ApiError::Internal)).await?;
             return Ok(());
         }
     };
 
     if !acl.can_read(&requester) {
-        tx.send(Err("access denied".into())).await?;
+        tx.send(Err(ApiError::AccessDenied)).await?;
         return Ok(());
     }
 
@@ -48,7 +51,8 @@ pub async fn read_record(
     let bytes = match doc.export(ExportMode::Snapshot) {
         Ok(bytes) => bytes,
         Err(e) => {
-            tx.send(Err(e.to_string().into())).await?;
+            warn!(record_id = %id_str, ?e, "failed to export doc");
+            tx.send(Err(ApiError::Internal)).await?;
             return Ok(());
         }
     };

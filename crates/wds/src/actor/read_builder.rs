@@ -6,7 +6,7 @@ use iroh::EndpointAddr;
 use loro::LoroDoc;
 use tracing::{debug, warn};
 
-use crate::api::ReadRecord;
+use crate::api::{ApiError, ReadRecord};
 
 use super::Actor;
 
@@ -62,7 +62,7 @@ impl ReadBuilder {
                 doc.import(&bytes)?;
                 return Ok(doc);
             }
-            Err(e) if e.as_str() == "record not found" => {
+            Err(ApiError::RecordNotFound) => {
                 // Try sync below.
             }
             Err(e) => return Err(anyhow::anyhow!("read failed: {e}")),

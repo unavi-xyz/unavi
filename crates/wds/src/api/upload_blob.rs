@@ -15,7 +15,7 @@ use tracing::debug;
 
 use crate::{
     StoreContext,
-    api::{ApiService, UploadBlob, authenticate},
+    api::{ApiError, ApiService, UploadBlob, authenticate},
     quota::{QuotaExceeded, ensure_quota_exists, reserve_bytes},
     tag::BlobTag,
 };
@@ -83,7 +83,7 @@ pub async fn upload_blob(
         reserve_bytes(&mut *db_tx, &did_str, blob_len).await,
         Err(QuotaExceeded)
     ) {
-        tx.send(Err("quota exceeded".into())).await?;
+        tx.send(Err(ApiError::QuotaExceeded)).await?;
         return Ok(());
     }
 

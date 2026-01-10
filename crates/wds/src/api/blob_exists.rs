@@ -4,7 +4,7 @@ use irpc::WithChannels;
 
 use crate::StoreContext;
 
-use super::{ApiService, BlobExists, authenticate};
+use super::{ApiError, ApiService, BlobExists, authenticate};
 
 pub async fn blob_exists(
     ctx: Arc<StoreContext>,

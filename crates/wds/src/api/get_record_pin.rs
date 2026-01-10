@@ -4,7 +4,7 @@ use irpc::WithChannels;
 
 use crate::{
     StoreContext,
-    api::{ApiService, GetRecordPin, authenticate},
+    api::{ApiError, ApiService, GetRecordPin, authenticate},
 };
 
 pub async fn get_record_pin(

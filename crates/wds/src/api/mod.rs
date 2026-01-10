@@ -14,12 +14,12 @@ use irpc::{
 };
 use irpc_iroh::IrohProtocol;
 use serde::{Deserialize, Serialize};
-use smol_str::SmolStr;
 use tracing::error;
 
 use crate::{SessionToken, StoreContext};
 
 mod blob_exists;
+mod error;
 mod get_record_pin;
 mod pin_blob;
 mod pin_record;
@@ -28,6 +28,8 @@ mod read_record;
 mod sync_record;
 mod upload_blob;
 mod upload_envelope;
+
+pub use error::ApiError;
 
 const MAX_PIN_DURATION: Duration = Duration::from_hours(24 * 90);
 
@@ -51,42 +53,42 @@ pub(crate) fn protocol(ctx: Arc<StoreContext>) -> (Client<ApiService>, IrohProto
 #[rpc_requests(message = ApiMessage)]
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ApiService {
-    #[rpc(rx=mpsc::Receiver<Bytes>,tx=oneshot::Sender<Result<Hash, SmolStr>>)]
+    #[rpc(rx=mpsc::Receiver<Bytes>,tx=oneshot::Sender<Result<Hash, ApiError>>)]
     #[wrap(UploadBlob)]
     UploadBlob { s: SessionToken },
-    #[rpc(rx=mpsc::Receiver<Bytes>,tx=oneshot::Sender<Result<(), SmolStr>>)]
+    #[rpc(rx=mpsc::Receiver<Bytes>,tx=oneshot::Sender<Result<(), ApiError>>)]
     #[wrap(UploadEnvelope)]
     UploadEnvelope { s: SessionToken, record_id: Hash },
-    #[rpc(tx=oneshot::Sender<Result<(), SmolStr>>)]
+    #[rpc(tx=oneshot::Sender<Result<(), ApiError>>)]
     #[wrap(PinBlob)]
     PinBlob {
         s: SessionToken,
         hash: Hash,
         expires: i64,
     },
-    #[rpc(tx=oneshot::Sender<Result<(), SmolStr>>)]
+    #[rpc(tx=oneshot::Sender<Result<(), ApiError>>)]
     #[wrap(PinRecord)]
     PinRecord {
         s: SessionToken,
         id: Hash,
         expires: i64,
     },
-    #[rpc(tx=oneshot::Sender<Result<Option<i64>, SmolStr>>)]
+    #[rpc(tx=oneshot::Sender<Result<Option<i64>, ApiError>>)]
     #[wrap(GetRecordPin)]
     GetRecordPin { s: SessionToken, id: Hash },
-    #[rpc(tx=oneshot::Sender<Result<bool, SmolStr>>)]
+    #[rpc(tx=oneshot::Sender<Result<bool, ApiError>>)]
     #[wrap(BlobExists)]
     BlobExists { s: SessionToken, hash: Hash },
-    #[rpc(tx=oneshot::Sender<Result<Vec<Hash>, SmolStr>>)]
+    #[rpc(tx=oneshot::Sender<Result<Vec<Hash>, ApiError>>)]
     #[wrap(QueryRecords)]
     QueryRecords {
         s: SessionToken,
         filter: QueryFilter,
     },
-    #[rpc(tx=oneshot::Sender<Result<Vec<u8>, SmolStr>>)]
+    #[rpc(tx=oneshot::Sender<Result<Vec<u8>, ApiError>>)]
     #[wrap(ReadRecord)]
     ReadRecord { s: SessionToken, record_id: Hash },
-    #[rpc(tx=oneshot::Sender<Result<(), SmolStr>>)]
+    #[rpc(tx=oneshot::Sender<Result<(), ApiError>>)]
     #[wrap(SyncRecord)]
     SyncRecord {
         s: SessionToken,
@@ -123,7 +125,7 @@ macro_rules! authenticate {
         match $ctx.connections.get_async(&$inner.s).await {
             Some(c) => c.did.clone(),
             None => {
-                $tx.send(Err("unauthenticated".into())).await?;
+                $tx.send(Err(ApiError::Unauthenticated)).await?;
                 return Ok(());
             }
         }

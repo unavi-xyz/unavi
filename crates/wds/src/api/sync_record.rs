@@ -1,12 +1,11 @@
 use std::sync::Arc;
 
 use irpc::WithChannels;
-use smol_str::SmolStr;
 use tracing::warn;
 
 use crate::{Identity, StoreContext, signed_bytes::IrohSigner, sync::client::sync_to_remote};
 
-use super::{ApiService, SyncRecord, authenticate};
+use super::{ApiError, ApiService, SyncRecord, authenticate};
 
 pub async fn sync_record(
     ctx: Arc<StoreContext>,
@@ -41,7 +40,7 @@ pub async fn sync_record(
 
     tx.send(result.map_err(|err| {
         warn!(?err, "SyncRecord failed");
-        SmolStr::new("unable to sync")
+        ApiError::SyncFailed
     }))
     .await?;
 

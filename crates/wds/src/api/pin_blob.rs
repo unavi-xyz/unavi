@@ -5,7 +5,7 @@ use time::OffsetDateTime;
 
 use crate::{
     StoreContext,
-    api::{ApiService, MAX_PIN_DURATION, PinBlob, authenticate},
+    api::{ApiError, ApiService, MAX_PIN_DURATION, PinBlob, authenticate},
     gc::FAST_GC_THRESHOLD,
     quota::ensure_quota_exists,
 };
@@ -42,7 +42,7 @@ pub async fn pin_blob(
 
     if res.rows_affected() == 0 {
         // Pin didn't already exist, user must upload the blob first.
-        tx.send(Err("blob not found".into())).await?;
+        tx.send(Err(ApiError::BlobNotFound)).await?;
         return Ok(());
     }
 

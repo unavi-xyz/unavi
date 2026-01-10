@@ -5,7 +5,7 @@ use irpc::WithChannels;
 
 use crate::StoreContext;
 
-use super::{ApiService, QueryRecords, authenticate};
+use super::{ApiError, ApiService, QueryRecords, authenticate};
 
 pub async fn query_records(
     ctx: Arc<StoreContext>,

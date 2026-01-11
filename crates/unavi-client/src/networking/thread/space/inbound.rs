@@ -5,6 +5,7 @@ use std::sync::Arc;
 use anyhow::bail;
 use bevy::log::{info, warn};
 use iroh::{EndpointId, endpoint::Connection};
+use tracing::debug;
 
 use super::{ControlMsg, IFrameMsg, PFrameDatagram};
 use crate::networking::thread::{InboundState, NetworkEvent};
@@ -73,7 +74,6 @@ async fn recv_iframes(
         stream.read_exact(&mut buf).await?;
 
         let msg: IFrameMsg = postcard::from_bytes(&buf)?;
-        info!(id = msg.id, "received I-frame");
 
         *state.latest_iframe.lock() = Some(msg);
     }
@@ -98,7 +98,7 @@ async fn recv_pframes(conn: &Connection, state: &InboundState) -> anyhow::Result
 
         if msg.iframe_id != current_iframe_id {
             // Stale P-frame, drop it.
-            info!(
+            debug!(
                 pframe_id = msg.iframe_id,
                 current_iframe_id, "dropping stale P-frame"
             );

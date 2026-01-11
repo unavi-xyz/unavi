@@ -34,8 +34,8 @@ impl Default for PlayerConfig {
 pub const DEFAULT_HEIGHT: f32 = 1.7;
 
 pub const DEFAULT_JUMP_STRENGTH: f32 = 1.0;
-pub const DEFAULT_SPRINT_SPEED: f32 = 7.0;
-pub const DEFAULT_WALK_SPEED: f32 = 4.0;
+pub const DEFAULT_SPRINT_SPEED: f32 = 1.0;
+pub const DEFAULT_WALK_SPEED: f32 = 0.5;
 
 pub const PLAYER_RADIUS: f32 = 0.5;
 pub const FLOAT_HEIGHT_OFFSET: f32 = 0.01;

@@ -88,7 +88,7 @@ async fn recv_iframes(
                 .send(NetworkEvent::ValidTick { peer: remote });
         }
 
-        *state.latest_iframe.lock() = Some(msg);
+        *state.pose.iframe.lock() = Some(msg);
     }
 
     Ok(())
@@ -111,7 +111,7 @@ async fn recv_pframes(
         };
 
         // Check P-frame ID matches latest I-frame.
-        let current_iframe_id = state.latest_iframe.lock().as_ref().map_or(0, |f| f.id);
+        let current_iframe_id = state.pose.iframe.lock().as_ref().map_or(0, |f| f.id);
 
         if msg.iframe_id != current_iframe_id {
             #[cfg(feature = "devtools-network")]
@@ -141,7 +141,7 @@ async fn recv_pframes(
                 .send(NetworkEvent::ValidTick { peer: remote });
         }
 
-        *state.latest_pframe.lock() = Some(msg);
+        *state.pose.pframe.lock() = Some(msg);
     }
 }
 

@@ -1,7 +1,7 @@
 use std::{
     sync::{
         Arc,
-        atomic::{AtomicU8, AtomicU32, Ordering},
+        atomic::{AtomicU32, Ordering},
     },
     time::Duration,
 };
@@ -88,16 +88,18 @@ impl NetworkingThread {
 }
 
 pub struct OutboundConn {
-    pub iframe_tx: flume::Sender<IFrameMsg>,
-    pub pframe_tx: flume::Sender<PFrameDatagram>,
-    pub tickrate: Arc<AtomicU8>,
     task: JoinHandle<()>,
 }
 
 #[derive(Debug, Default)]
 pub struct InboundState {
-    pub latest_iframe: Mutex<Option<IFrameMsg>>,
-    pub latest_pframe: Mutex<Option<PFrameDatagram>>,
+    pub pose: PoseState,
+}
+
+#[derive(Debug, Default)]
+pub struct PoseState {
+    pub iframe: Mutex<Option<IFrameMsg>>,
+    pub pframe: Mutex<Option<PFrameDatagram>>,
 }
 
 #[derive(Clone)]
@@ -111,6 +113,7 @@ pub struct NetworkThreadState {
     pub inbound: Arc<scc::HashMap<EndpointId, Arc<InboundState>>>,
 
     pub iframe_id: Arc<AtomicU32>,
+    pub pose: Arc<PoseState>,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -171,10 +174,11 @@ async fn thread_loop(
         gossip,
         local_actor,
         remote_actor,
-        outbound: Arc::new(scc::HashMap::default()),
+        outbound: Arc::default(),
         inbound,
         // Initialize ID at a random value, to avoid leaking information about playtime.
         iframe_id: Arc::new(AtomicU32::new(rand::random())),
+        pose: Arc::default(),
     };
 
     loop {
@@ -185,8 +189,8 @@ async fn thread_loop(
 
                 tokio::spawn(
                     async move {
-                        if let Err(e) = join::handle_join(state, id).await {
-                            error!(err = ?e, "error joining space");
+                        if let Err(err) = join::handle_join(state, id).await {
+                            error!(?err, "error joining space");
                         }
                     }
                     .instrument(span),
@@ -207,26 +211,12 @@ async fn thread_loop(
             NetworkCommand::PublishIFrame(pose) => {
                 let id = state.iframe_id.fetch_add(1, Ordering::Relaxed) + 1;
                 let msg = IFrameMsg { id, pose };
-
-                state
-                    .outbound
-                    .iter_async(|_, conn| {
-                        let _ = conn.iframe_tx.try_send(msg.clone());
-                        true
-                    })
-                    .await;
+                *state.pose.iframe.lock() = Some(msg);
             }
             NetworkCommand::PublishPFrame(pose) => {
                 let iframe_id = state.iframe_id.load(Ordering::Relaxed);
                 let msg = PFrameDatagram { iframe_id, pose };
-
-                state
-                    .outbound
-                    .iter_async(|_, conn| {
-                        let _ = conn.pframe_tx.try_send(msg.clone());
-                        true
-                    })
-                    .await;
+                *state.pose.pframe.lock() = Some(msg);
             }
             NetworkCommand::Shutdown => {
                 if let Err(err) = store.shutdown().await {

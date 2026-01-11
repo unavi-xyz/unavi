@@ -21,6 +21,7 @@ use crate::{
         WdsActors,
         thread::space::{DEFAULT_TICKRATE, IFrameMsg, PFrameDatagram, PlayerIFrame, PlayerPFrame},
     },
+    util::new_tokio_runtime,
 };
 
 mod join;
@@ -66,11 +67,7 @@ impl NetworkingThread {
         let (event_tx, event_rx) = flume::bounded(CHANNEL_LEN);
 
         std::thread::spawn(move || {
-            let rt = tokio::runtime::Builder::new_multi_thread()
-                .enable_all()
-                .thread_name("networking")
-                .build()
-                .expect("build tokio runtime");
+            let rt = new_tokio_runtime("networking");
 
             rt.block_on(async move {
                 while let Err(e) = thread_loop(&opts, &command_rx, &event_tx).await {

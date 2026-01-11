@@ -60,8 +60,8 @@ const DEFAULT_HEIGHT: f32 = 1.7;
 const DEFAULT_RADIUS: f32 = 0.5;
 const DEFAULT_JUMP: f32 = 1.0;
 
-pub const DEFAULT_SPRINT_SPEED: f32 = 0.5;
-pub const DEFAULT_WALK_SPEED: f32 = 0.3;
+pub const DEFAULT_SPRINT_SPEED: f32 = 0.3;
+pub const DEFAULT_WALK_SPEED: f32 = 0.2;
 
 /// World scale factor resource.
 ///
@@ -104,6 +104,8 @@ pub fn apply_config_to_controller(
     let Some(tnua_config) = controller_configs.get_mut(tnua_handle.0.id()) else {
         return;
     };
+
+    info!("Applying player config");
 
     let shape = collider.shape_mut();
     shape.clone_from(

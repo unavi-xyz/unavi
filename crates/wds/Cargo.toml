@@ -22,6 +22,8 @@ irpc-iroh             = "0.11.0"
 jose-jwk              = "0.1.2"
 loro.workspace        = true
 n0-error              = { features = ["anyhow"], version = "0.1.2" }
+native_db             = "0.8.2"
+native_model          = { default-features = false, features = ["postcard_1_0", "serde"], version = "0.4.20" }
 p256                  = { features = ["ecdsa"], version = "0.13.2" }
 parking_lot.workspace = true
 paste                 = "1.0.15"

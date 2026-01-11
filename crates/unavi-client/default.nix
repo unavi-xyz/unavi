@@ -138,7 +138,7 @@
           sqlxArgs
           // {
             pname = "${pname}-web";
-            # wasm-bindgen-cli = pkgs.wasm-bindgen-cli_0_2_105;
+            wasm-bindgen-cli = pkgs.wasm-bindgen-cli_0_2_105;
 
             inherit cargoArtifacts;
             doCheck = false;

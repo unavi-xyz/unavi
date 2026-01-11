@@ -8,10 +8,10 @@ pub struct OtherPlayer(pub EndpointId);
 
 pub fn receive_player_transforms(mut players: Query<(&PlayerInboundState, &mut Transform)>) {
     for (state, mut root) in &mut players {
-        let Some(iframe) = state.latest_iframe.try_lock() else {
+        let Some(iframe) = state.pose.iframe.try_lock() else {
             continue;
         };
-        let Some(pframe) = state.latest_pframe.try_lock() else {
+        let Some(pframe) = state.pose.pframe.try_lock() else {
             continue;
         };
         let Some(iframe) = iframe.as_ref() else {

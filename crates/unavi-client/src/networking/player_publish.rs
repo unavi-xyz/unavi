@@ -14,6 +14,9 @@ use crate::networking::thread::{
 
 const PUBLISH_HZ: u64 = 20;
 const IFRAME_FREQ: u64 = PUBLISH_HZ * 3;
+
+/// How often we publish our pose to the network thread.
+/// From there it will be broadcasted to peers at variable rates.
 const PUBLISH_TICKRATE: Duration = Duration::from_millis(1000 / PUBLISH_HZ);
 
 /// Set of bones to include in pose updates.

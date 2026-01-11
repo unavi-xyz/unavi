@@ -7,8 +7,8 @@ use super::pose::{PlayerIFrame, PlayerPFrame};
 /// I-frame message sent over reliable stream.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct IFrameMsg {
-    /// Monotonic counter (wraps at `u32::MAX`).
-    pub id: u32,
+    /// Monotonic counter (wraps at `u16::MAX`).
+    pub id: u16,
     pub pose: PlayerIFrame,
 }
 
@@ -16,7 +16,7 @@ pub struct IFrameMsg {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PFrameDatagram {
     /// Must match the latest I-frame ID to be accepted.
-    pub iframe_id: u32,
+    pub iframe_id: u16,
     pub pose: PlayerPFrame,
 }
 

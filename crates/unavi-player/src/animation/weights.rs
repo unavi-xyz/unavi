@@ -1,8 +1,7 @@
 use bevy::{animation::ActiveAnimation, platform::collections::HashMap, prelude::*};
-use bevy_tnua::prelude::TnuaController;
 
 use crate::{
-    ControlScheme, PlayerAvatar, PlayerRig,
+    Grounded, PlayerAvatar,
     animation::velocity::AverageVelocity,
     config::{DEFAULT_SPRINT_SPEED, DEFAULT_WALK_SPEED},
 };
@@ -208,7 +207,7 @@ fn apply_locomotion_animations(
 
 pub fn play_avatar_animations(
     time: Res<Time>,
-    rigs: Query<(&Transform, &TnuaController<ControlScheme>), With<PlayerRig>>,
+    rigs: Query<(&Transform, &Grounded)>,
     avatars: Query<(&AvatarAnimationNodes, &AverageVelocity), With<PlayerAvatar>>,
     mut animation_players: Query<(
         &mut AnimationWeights,
@@ -228,13 +227,11 @@ pub fn play_avatar_animations(
             continue;
         };
 
-        let Ok((transform, controller)) = rigs.get(rig_entity) else {
+        let Ok((transform, grounded)) = rigs.get(rig_entity) else {
             continue;
         };
 
-        let Ok(airborn) = controller.is_airborne() else {
-            continue;
-        };
+        let airborn = !grounded.0;
 
         initialize_missing_animations(&mut player, &mut weights, nodes);
 

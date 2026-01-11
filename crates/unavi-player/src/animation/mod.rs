@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 pub mod defaults;
+pub mod grounded;
 pub mod load;
 mod mixamo;
 pub mod velocity;

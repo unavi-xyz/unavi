@@ -78,6 +78,7 @@ impl Plugin for PlayerPlugin {
             (
                 animation::load::load_animation_nodes,
                 animation::velocity::calc_average_velocity,
+                animation::grounded::sync_grounded_state,
                 animation::weights::play_avatar_animations.run_if(animation::is_desktop_mode),
                 config::apply_config_to_controller,
             ),
@@ -114,6 +115,10 @@ pub struct PlayerRig;
 #[derive(Component, Default)]
 #[require(Transform, GlobalTransform, Visibility)]
 pub struct PlayerAvatar;
+
+/// Whether the player is grounded (not airborne).
+#[derive(Component, Default)]
+pub struct Grounded(pub bool);
 
 /// Marker for the player's camera entity.
 #[derive(Component, Default)]

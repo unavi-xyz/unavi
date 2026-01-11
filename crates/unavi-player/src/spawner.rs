@@ -17,7 +17,8 @@ use unavi_constants::PORTAL_RENDER_LAYER;
 use unavi_portal::PortalTraveler;
 
 use crate::{
-    ControlScheme, ControlSchemeConfig, LocalPlayer, PlayerCamera, PlayerEntities, PlayerRig,
+    ControlScheme, ControlSchemeConfig, Grounded, LocalPlayer, PlayerCamera, PlayerEntities,
+    PlayerRig,
     animation::{defaults::default_character_animations, velocity::AverageVelocity},
     avatar_spawner::AvatarSpawner,
     config::PlayerConfig,
@@ -94,6 +95,7 @@ impl LocalPlayerSpawner {
         let body = commands
             .spawn((
                 PlayerRig,
+                Grounded(true),
                 RigidBody::Dynamic,
                 Collider::capsule(config.effective_vrm_radius(), config.effective_vrm_height()),
                 TnuaController::<ControlScheme>::default(),

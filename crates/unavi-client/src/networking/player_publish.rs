@@ -20,11 +20,6 @@ const IFRAME_FREQ: u64 = DEFAULT_TICKRATE as u64 * 3;
 /// From there it will be broadcasted to peers at variable rates.
 const PUBLISH_INTERVAL: Duration = Duration::from_millis(1000 / DEFAULT_TICKRATE as u64);
 
-/// Set of bones to include in pose updates.
-/// Empty = just root (desktop mode, no VR tracking).
-#[derive(Resource, Default, Clone)]
-pub struct TrackedBones(pub HashSet<BoneName>);
-
 /// Stores the last I-frame positions for P-frame delta encoding.
 #[derive(Default)]
 pub(super) struct IFrameBaseline {
@@ -37,7 +32,7 @@ pub(super) fn publish_player_transforms(
     local_player: Query<(&PlayerConfig, &PlayerEntities), With<LocalPlayer>>,
     avatar_bones: Query<&AvatarBones>,
     body_transforms: Query<&GlobalTransform, (With<PlayerRig>, Without<BoneName>)>,
-    bone_transforms: Query<&GlobalTransform, With<BoneName>>,
+    bone_transforms: Query<&Transform, With<BoneName>>,
     tracked_bones: Res<TrackedBones>,
     time: Res<Time>,
     mut last: Local<Duration>,
@@ -78,15 +73,12 @@ pub(super) fn publish_player_transforms(
                 if let Some(&bone_entity) = avatar_bones.get(bone_name)
                     && let Ok(bone_tr) = bone_transforms.get(bone_entity)
                 {
-                    let pos = bone_tr.translation();
-                    let rot = bone_tr.to_scale_rotation_translation().1;
-
                     bones.push(BonePose {
                         id: *bone_name,
-                        transform: IFrameTransform::new(pos, rot),
+                        transform: IFrameTransform::new(bone_tr.translation, bone_tr.rotation),
                     });
 
-                    baseline.bones.insert(*bone_name, pos);
+                    baseline.bones.insert(*bone_name, bone_tr.translation);
                 }
             }
         }
@@ -110,12 +102,19 @@ pub(super) fn publish_player_transforms(
                 if let Some(&bone_entity) = avatar_bones.get(bone_name)
                     && let Ok(bone_tr) = bone_transforms.get(bone_entity)
                 {
-                    let (_, rot, pos) = bone_tr.to_scale_rotation_translation();
-                    let baseline_pos = baseline.bones.get(bone_name).copied().unwrap_or(pos);
+                    let baseline_pos = baseline
+                        .bones
+                        .get(bone_name)
+                        .copied()
+                        .unwrap_or(bone_tr.translation);
 
                     bones.push(BonePose {
                         id: *bone_name,
-                        transform: PFrameTransform::new(pos, baseline_pos, rot),
+                        transform: PFrameTransform::new(
+                            bone_tr.translation,
+                            baseline_pos,
+                            bone_tr.rotation,
+                        ),
                     });
                 }
             }
@@ -129,5 +128,117 @@ pub(super) fn publish_player_transforms(
         if let Err(err) = nt.command_tx.send(NetworkCommand::PublishPFrame(frame)) {
             error!(?err, "send error");
         }
+    }
+}
+
+/// Set of bones to include in pose updates.
+#[derive(Resource, Default, Clone)]
+pub struct TrackedBones(pub HashSet<BoneName>);
+
+#[allow(unused)]
+impl TrackedBones {
+    /// Returns a set containing left hand and all left finger bones.
+    pub fn left_hand() -> HashSet<BoneName> {
+        HashSet::from([
+            BoneName::LeftHand,
+            BoneName::LeftThumbProximal,
+            BoneName::LeftThumbIntermediate,
+            BoneName::LeftThumbDistal,
+            BoneName::LeftIndexProximal,
+            BoneName::LeftIndexIntermediate,
+            BoneName::LeftIndexDistal,
+            BoneName::LeftMiddleProximal,
+            BoneName::LeftMiddleIntermediate,
+            BoneName::LeftMiddleDistal,
+            BoneName::LeftRingProximal,
+            BoneName::LeftRingIntermediate,
+            BoneName::LeftRingDistal,
+            BoneName::LeftLittleProximal,
+            BoneName::LeftLittleIntermediate,
+            BoneName::LeftLittleDistal,
+        ])
+    }
+
+    /// Returns a set containing right hand and all right finger bones.
+    pub fn right_hand() -> HashSet<BoneName> {
+        HashSet::from([
+            BoneName::RightHand,
+            BoneName::RightThumbProximal,
+            BoneName::RightThumbIntermediate,
+            BoneName::RightThumbDistal,
+            BoneName::RightIndexProximal,
+            BoneName::RightIndexIntermediate,
+            BoneName::RightIndexDistal,
+            BoneName::RightMiddleProximal,
+            BoneName::RightMiddleIntermediate,
+            BoneName::RightMiddleDistal,
+            BoneName::RightRingProximal,
+            BoneName::RightRingIntermediate,
+            BoneName::RightRingDistal,
+            BoneName::RightLittleProximal,
+            BoneName::RightLittleIntermediate,
+            BoneName::RightLittleDistal,
+        ])
+    }
+
+    /// Returns a set containing all VRM bones.
+    pub fn full() -> HashSet<BoneName> {
+        HashSet::from([
+            BoneName::Hips,
+            BoneName::LeftUpperLeg,
+            BoneName::RightUpperLeg,
+            BoneName::LeftLowerLeg,
+            BoneName::RightLowerLeg,
+            BoneName::LeftFoot,
+            BoneName::RightFoot,
+            BoneName::Spine,
+            BoneName::Chest,
+            BoneName::Neck,
+            BoneName::Head,
+            BoneName::LeftShoulder,
+            BoneName::RightShoulder,
+            BoneName::LeftUpperArm,
+            BoneName::RightUpperArm,
+            BoneName::LeftLowerArm,
+            BoneName::RightLowerArm,
+            BoneName::LeftHand,
+            BoneName::RightHand,
+            BoneName::LeftToes,
+            BoneName::RightToes,
+            BoneName::LeftEye,
+            BoneName::RightEye,
+            BoneName::Jaw,
+            BoneName::LeftThumbProximal,
+            BoneName::LeftThumbIntermediate,
+            BoneName::LeftThumbDistal,
+            BoneName::LeftIndexProximal,
+            BoneName::LeftIndexIntermediate,
+            BoneName::LeftIndexDistal,
+            BoneName::LeftMiddleProximal,
+            BoneName::LeftMiddleIntermediate,
+            BoneName::LeftMiddleDistal,
+            BoneName::LeftRingProximal,
+            BoneName::LeftRingIntermediate,
+            BoneName::LeftRingDistal,
+            BoneName::LeftLittleProximal,
+            BoneName::LeftLittleIntermediate,
+            BoneName::LeftLittleDistal,
+            BoneName::RightThumbProximal,
+            BoneName::RightThumbIntermediate,
+            BoneName::RightThumbDistal,
+            BoneName::RightIndexProximal,
+            BoneName::RightIndexIntermediate,
+            BoneName::RightIndexDistal,
+            BoneName::RightMiddleProximal,
+            BoneName::RightMiddleIntermediate,
+            BoneName::RightMiddleDistal,
+            BoneName::RightRingProximal,
+            BoneName::RightRingIntermediate,
+            BoneName::RightRingDistal,
+            BoneName::RightLittleProximal,
+            BoneName::RightLittleIntermediate,
+            BoneName::RightLittleDistal,
+            BoneName::UpperChest,
+        ])
     }
 }

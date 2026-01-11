@@ -16,7 +16,7 @@ pub struct AverageVelocity {
 impl Default for AverageVelocity {
     fn default() -> Self {
         Self {
-            alpha: 0.1,
+            alpha: 0.4, // Light smoothing, main smoothing in weight blending.
             initialized: false,
             prev_translation: Vec3::default(),
             target: None,

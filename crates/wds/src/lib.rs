@@ -23,6 +23,7 @@ pub mod actor;
 pub mod api;
 mod auth;
 mod db;
+mod db_new;
 mod gc;
 pub mod identity;
 mod quota;

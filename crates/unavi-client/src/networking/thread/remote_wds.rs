@@ -14,7 +14,13 @@ pub async fn fetch_remote_host() -> anyhow::Result<Option<EndpointId>> {
     .context("parse remote wds did")?;
 
     info!(did = %remote_wds_did, "Resolving remote WDS");
-    let values = fetch_wds_service(&remote_wds_did).await?;
+    let values = match fetch_wds_service(&remote_wds_did).await {
+        Ok(v) => v,
+        Err(err) => {
+            warn!(?err, "failed to resolve remote host");
+            return Ok(None);
+        }
+    };
 
     for v in values {
         match EndpointId::from_str(&v) {

@@ -16,10 +16,7 @@ pub struct EyeOffsetProcessed;
 pub fn setup_vrm_eye_offset(
     mut commands: Commands,
     scene_spawner: Res<SceneSpawner>,
-    avatars: Query<
-        (Entity, &VrmInstanceId, &ChildOf),
-        (With<Avatar>, Without<EyeOffsetProcessed>),
-    >,
+    avatars: Query<(Entity, &VrmInstanceId, &ChildOf), (With<Avatar>, Without<EyeOffsetProcessed>)>,
     rigs: Query<&ChildOf, With<PlayerRig>>,
     mut local_players: Query<(&mut PlayerConfig, &PlayerEntities)>,
     mut transforms: Query<&mut Transform>,

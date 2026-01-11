@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_vrm::VrmInstance;
 
-use crate::{PlayerAvatar, bones::AvatarBones};
+use crate::{Avatar, bones::AvatarBones};
 
 pub const DEFAULT_AVATAR: &str = "model/default.vrm";
 
@@ -35,7 +35,7 @@ impl AvatarSpawner {
 
         commands
             .spawn((
-                PlayerAvatar,
+                Avatar,
                 AvatarBones::default(),
                 VrmInstance(vrm_handle),
                 Transform::default(),

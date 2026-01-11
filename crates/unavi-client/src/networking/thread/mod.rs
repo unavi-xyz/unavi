@@ -173,7 +173,8 @@ async fn thread_loop(
         remote_actor,
         outbound: Arc::new(scc::HashMap::default()),
         inbound,
-        iframe_id: Arc::new(AtomicU32::new(0)),
+        // Initialize ID at a random value, to avoid leaking information about playtime.
+        iframe_id: Arc::new(AtomicU32::new(rand::random())),
     };
 
     loop {

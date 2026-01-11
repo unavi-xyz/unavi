@@ -1,7 +1,7 @@
 use bevy::{animation::ActiveAnimation, platform::collections::HashMap, prelude::*};
 
 use crate::{
-    Grounded, PlayerAvatar,
+    Grounded, Avatar,
     animation::velocity::AverageVelocity,
     config::{DEFAULT_SPRINT_SPEED, DEFAULT_WALK_SPEED},
 };
@@ -208,7 +208,7 @@ fn apply_locomotion_animations(
 pub fn play_avatar_animations(
     time: Res<Time>,
     rigs: Query<(&Transform, &Grounded)>,
-    avatars: Query<(&AvatarAnimationNodes, &AverageVelocity), With<PlayerAvatar>>,
+    avatars: Query<(&AvatarAnimationNodes, &AverageVelocity), With<Avatar>>,
     mut animation_players: Query<(
         &mut AnimationWeights,
         &TargetAnimationWeights,

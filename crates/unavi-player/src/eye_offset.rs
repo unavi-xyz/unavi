@@ -4,7 +4,7 @@ use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
 use bevy_vrm::{BoneName, VrmInstanceId, first_person::SetupFirstPerson};
 
 use crate::{
-    PlayerAvatar, PlayerEntities, PlayerRig, TrackedPose,
+    Avatar, PlayerEntities, PlayerRig, TrackedPose,
     config::{PlayerConfig, WorldScale},
 };
 
@@ -18,7 +18,7 @@ pub fn setup_vrm_eye_offset(
     scene_spawner: Res<SceneSpawner>,
     avatars: Query<
         (Entity, &VrmInstanceId, &ChildOf),
-        (With<PlayerAvatar>, Without<EyeOffsetProcessed>),
+        (With<Avatar>, Without<EyeOffsetProcessed>),
     >,
     rigs: Query<&ChildOf, With<PlayerRig>>,
     mut local_players: Query<(&mut PlayerConfig, &PlayerEntities)>,

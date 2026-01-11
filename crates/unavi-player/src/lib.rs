@@ -111,10 +111,10 @@ pub struct LocalPlayer;
 #[require(Transform, GlobalTransform, Visibility)]
 pub struct PlayerRig;
 
-/// Marker for the player's avatar entity.
+/// Marker for an avatar entity.
 #[derive(Component, Default)]
 #[require(Transform, GlobalTransform, Visibility)]
-pub struct PlayerAvatar;
+pub struct Avatar;
 
 /// Whether the player is grounded (not airborne).
 #[derive(Component, Default)]

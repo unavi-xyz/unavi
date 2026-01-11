@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
+use unavi_player::AvatarSpawner;
 
 use crate::networking::{
     player_receive::OtherPlayer,
@@ -10,16 +11,21 @@ use crate::networking::{
 #[derive(Component, Deref)]
 pub struct PlayerInboundState(Arc<InboundState>);
 
-pub fn recv_network_event(mut commands: Commands, nt: Res<NetworkingThread>) {
+pub fn recv_network_event(
+    mut commands: Commands,
+    nt: Res<NetworkingThread>,
+    asset_server: Res<AssetServer>,
+) {
     while let Ok(event) = nt.event_rx.try_recv() {
         match event {
             NetworkEvent::PlayerJoin { id, state } => {
                 info!(%id, "spawning player");
-                commands.spawn((
-                    OtherPlayer(id),
-                    PlayerInboundState(state),
-                    Transform::default(),
-                ));
+
+                let entity = AvatarSpawner::new().spawn(&mut commands, &asset_server);
+
+                commands
+                    .entity(entity)
+                    .insert((OtherPlayer(id), PlayerInboundState(state)));
             }
             NetworkEvent::PlayerLeave(_id) => {
                 todo!()

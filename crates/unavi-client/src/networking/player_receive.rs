@@ -29,7 +29,6 @@ pub fn receive_player_transforms(mut players: Query<(&PlayerInboundState, &mut T
 
         if pframe.iframe_id == iframe.id {
             // Apply p-frame.
-
             root.translation = pframe.pose.root.pos.apply_to(root.translation);
             root.rotation.clone_from(&pframe.pose.root.rot.into());
 
@@ -39,8 +38,6 @@ pub fn receive_player_transforms(mut players: Query<(&PlayerInboundState, &mut T
         } else {
             // Only apply i-frame.
             root.rotation.clone_from(&iframe.pose.root.rot.into());
-
-            info!(pos = ?root.translation, "<- i-frame");
         }
     }
 }

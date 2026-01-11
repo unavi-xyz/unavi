@@ -5,7 +5,7 @@ use std::{
 
 use bevy::prelude::*;
 use bevy_vrm::BoneName;
-use unavi_player::{AvatarBones, LocalPlayer, PlayerEntities};
+use unavi_player::{AvatarBones, LocalPlayer, PlayerConfig, PlayerEntities, PlayerRig};
 
 use crate::networking::thread::{
     NetworkCommand, NetworkingThread,
@@ -30,8 +30,9 @@ pub(super) struct IFrameBaseline {
 
 pub(super) fn publish_player_transforms(
     nt: Res<NetworkingThread>,
-    players: Query<(&GlobalTransform, &PlayerEntities), With<LocalPlayer>>,
+    local_player: Query<(&PlayerConfig, &PlayerEntities), With<LocalPlayer>>,
     avatar_bones: Query<&AvatarBones>,
+    body_transforms: Query<&GlobalTransform, (With<PlayerRig>, Without<BoneName>)>,
     bone_transforms: Query<&GlobalTransform, With<BoneName>>,
     tracked_bones: Res<TrackedBones>,
     time: Res<Time>,
@@ -46,11 +47,17 @@ pub(super) fn publish_player_transforms(
     *last = now;
     *count += 1;
 
-    let Ok((root_tr, entities)) = players.single() else {
+    let Ok((config, entities)) = local_player.single() else {
         return;
     };
 
-    let root_pos = root_tr.translation();
+    let Ok(root_tr) = body_transforms.get(entities.body) else {
+        return;
+    };
+
+    let mut root_pos = root_tr.translation();
+    root_pos.y -= config.vrm_height.unwrap_or_default();
+
     let root_rot = root_tr.to_scale_rotation_translation().1;
 
     // Collect bone transforms.

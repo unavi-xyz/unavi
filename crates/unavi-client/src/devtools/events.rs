@@ -2,23 +2,24 @@
 
 use std::sync::LazyLock;
 
+use iroh::EndpointId;
+
 /// Network monitoring event types.
-#[expect(dead_code)]
 pub enum NetworkEvent {
     Download {
-        host: String,
+        peer: EndpointId,
         bytes: usize,
     },
     Upload {
-        host: String,
+        peer: EndpointId,
         bytes: usize,
         is_iframe: bool,
     },
     ValidTick {
-        host: String,
+        peer: EndpointId,
     },
     DroppedFrame {
-        host: String,
+        peer: EndpointId,
     },
 }
 

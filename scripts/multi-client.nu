@@ -4,11 +4,14 @@
 def main [
   --debug-network
 ] {
+  let client_features = if $debug_network { ["--features", "devtools-network"] } else { [] }
+  let client_args = if $debug_network { ["--debug-network"] } else { [] }
+
   cargo build -p unavi-server
-  cargo build -p unavi-client
+  cargo build -p unavi-client ...$client_features
 
   let run_client = {||
-    cargo run -p unavi-client -- --in-memory ...(if $debug_network { ["--debug-network"] } else { [] })
+    cargo run -p unavi-client ...$client_features -- --in-memory ...$client_args
   }
 
   [

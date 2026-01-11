@@ -1,16 +1,14 @@
 //! Inbound connection handler - receives poses from a remote player.
 
-use std::sync::Arc;
+use std::sync::{Arc, atomic::Ordering};
 
 use anyhow::bail;
 use bevy::log::{info, warn};
 use iroh::{EndpointId, endpoint::Connection};
 use tracing::debug;
 
-use super::{ControlMsg, IFrameMsg, PFrameDatagram};
+use super::{ControlMsg, DEFAULT_TICKRATE, IFrameMsg, PFrameDatagram};
 use crate::networking::thread::{InboundState, NetworkEvent};
-
-const DEFAULT_TICKRATE: u8 = 20;
 
 pub async fn handle_inbound(
     event_tx: flume::Sender<NetworkEvent>,
@@ -41,7 +39,7 @@ pub async fn handle_inbound(
     let result = tokio::select! {
         r = recv_iframes(iframe_stream, &state, remote) => r,
         r = recv_pframes(&connection, &state, remote) => r,
-        r = respond_tickrate(ctrl_tx, ctrl_rx) => r,
+        r = respond_tickrate(ctrl_tx, ctrl_rx, &state) => r,
     };
 
     // Cleanup on disconnect.
@@ -149,6 +147,7 @@ async fn recv_pframes(
 async fn respond_tickrate(
     mut tx: iroh::endpoint::SendStream,
     mut rx: iroh::endpoint::RecvStream,
+    state: &InboundState,
 ) -> anyhow::Result<()> {
     // Read their tickrate request.
     let mut len_buf = [0u8; 4];
@@ -169,6 +168,8 @@ async fn respond_tickrate(
 
     // Respond with effective tickrate (minimum of theirs and ours).
     let effective = their_hz.min(DEFAULT_TICKRATE);
+    state.tickrate.store(effective, Ordering::Relaxed);
+
     let ack = ControlMsg::TickrateAck { hz: effective };
     let bytes = postcard::to_stdvec(&ack)?;
     let len = u32::try_from(bytes.len())?;

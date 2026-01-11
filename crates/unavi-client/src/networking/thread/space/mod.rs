@@ -26,6 +26,7 @@ pub use msg::{ControlMsg, IFrameMsg, PFrameDatagram};
 pub use pose::{BonePose, IFrameTransform, PFrameTransform, PlayerIFrame, PlayerPFrame};
 
 pub const ALPN: &[u8] = b"wired/space";
+pub const DEFAULT_TICKRATE: u8 = 20;
 
 /// Protocol handler for accepting inbound pose connections.
 #[derive(Debug, Clone)]

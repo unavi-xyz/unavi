@@ -9,15 +9,16 @@ use unavi_player::{AvatarBones, LocalPlayer, PlayerConfig, PlayerEntities, Playe
 
 use crate::networking::thread::{
     NetworkCommand, NetworkingThread,
-    space::{BonePose, IFrameTransform, PFrameTransform, PlayerIFrame, PlayerPFrame},
+    space::{
+        BonePose, DEFAULT_TICKRATE, IFrameTransform, PFrameTransform, PlayerIFrame, PlayerPFrame,
+    },
 };
 
-const PUBLISH_HZ: u64 = 20;
-const IFRAME_FREQ: u64 = PUBLISH_HZ * 3;
+const IFRAME_FREQ: u64 = DEFAULT_TICKRATE as u64 * 3;
 
 /// How often we publish our pose to the network thread.
 /// From there it will be broadcasted to peers at variable rates.
-const PUBLISH_TICKRATE: Duration = Duration::from_millis(1000 / PUBLISH_HZ);
+const PUBLISH_INTERVAL: Duration = Duration::from_millis(1000 / DEFAULT_TICKRATE as u64);
 
 /// Set of bones to include in pose updates.
 /// Empty = just root (desktop mode, no VR tracking).
@@ -44,7 +45,7 @@ pub(super) fn publish_player_transforms(
     mut baseline: Local<IFrameBaseline>,
 ) {
     let now = time.elapsed();
-    if now.saturating_sub(*last) < PUBLISH_TICKRATE {
+    if now.saturating_sub(*last) < PUBLISH_INTERVAL {
         return;
     }
     *last = now;

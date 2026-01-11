@@ -1,7 +1,7 @@
 use std::{
     sync::{
         Arc,
-        atomic::{AtomicU32, Ordering},
+        atomic::{AtomicU8, AtomicU32, Ordering},
     },
     time::Duration,
 };
@@ -19,7 +19,7 @@ use crate::{
     DIRS,
     networking::{
         WdsActors,
-        thread::space::{IFrameMsg, PFrameDatagram, PlayerIFrame, PlayerPFrame},
+        thread::space::{DEFAULT_TICKRATE, IFrameMsg, PFrameDatagram, PlayerIFrame, PlayerPFrame},
     },
 };
 
@@ -91,9 +91,19 @@ pub struct OutboundConn {
     task: JoinHandle<()>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct InboundState {
     pub pose: PoseState,
+    pub tickrate: AtomicU8,
+}
+
+impl Default for InboundState {
+    fn default() -> Self {
+        Self {
+            pose: PoseState::default(),
+            tickrate: AtomicU8::new(DEFAULT_TICKRATE),
+        }
+    }
 }
 
 #[derive(Debug, Default)]

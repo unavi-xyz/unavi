@@ -13,10 +13,8 @@ use bevy::log::{debug, error, info, warn};
 use iroh::{EndpointId, endpoint::SendStream};
 use tokio::task::JoinHandle;
 
-use super::{ControlMsg, IFrameMsg, PFrameDatagram};
+use super::{ControlMsg, DEFAULT_TICKRATE, IFrameMsg, PFrameDatagram};
 use crate::networking::thread::{NetworkThreadState, OutboundConn, PoseState};
-
-const MAX_TICKRATE: u8 = 20;
 
 pub async fn handle_outbound(state: NetworkThreadState, remote: EndpointId) -> anyhow::Result<()> {
     info!("connecting to {remote}");
@@ -30,7 +28,7 @@ pub async fn handle_outbound(state: NetworkThreadState, remote: EndpointId) -> a
     let iframe_stream = connection.open_uni().await?;
 
     // Create channels for receiving from command dispatch.
-    let tickrate = Arc::new(AtomicU8::new(MAX_TICKRATE));
+    let tickrate = Arc::new(AtomicU8::new(DEFAULT_TICKRATE));
 
     // Spawn the main task that handles all sending.
     let task: JoinHandle<()> = {
@@ -63,6 +61,7 @@ pub async fn handle_outbound(state: NetworkThreadState, remote: EndpointId) -> a
     Ok(())
 }
 
+#[expect(clippy::await_holding_lock, reason = "lint incorrect, we drop it")]
 async fn send_frames(
     tickrate: &AtomicU8,
     pose: Arc<PoseState>,
@@ -78,6 +77,7 @@ async fn send_frames(
         tokio::time::sleep(duration).await;
 
         let iframe_lock = pose.iframe.lock();
+
         let Some(iframe_msg) = iframe_lock.as_ref() else {
             continue;
         };
@@ -161,7 +161,9 @@ async fn handle_tickrate(
     tickrate: &AtomicU8,
 ) -> anyhow::Result<()> {
     // Send our desired tickrate.
-    let request = ControlMsg::TickrateRequest { hz: MAX_TICKRATE };
+    let request = ControlMsg::TickrateRequest {
+        hz: DEFAULT_TICKRATE,
+    };
     let bytes = postcard::to_stdvec(&request)?;
     let len = u32::try_from(bytes.len())?;
     tx.write_all(&len.to_le_bytes()).await?;
@@ -185,7 +187,7 @@ async fn handle_tickrate(
     };
 
     // Use the minimum of requested and acknowledged.
-    let effective = hz.min(MAX_TICKRATE);
+    let effective = hz.min(DEFAULT_TICKRATE);
     tickrate.store(effective, Ordering::Relaxed);
     info!(hz = effective, "tickrate negotiated");
 

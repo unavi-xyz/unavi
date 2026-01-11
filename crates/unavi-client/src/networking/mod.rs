@@ -36,6 +36,7 @@ impl Plugin for NetworkingPlugin {
                     player_receive::receive_player_transforms,
                 ),
             )
+            .add_systems(Update, player_receive::lerp_to_target)
             .add_systems(Last, lifecycle::shutdown_networking_thread);
     }
 }

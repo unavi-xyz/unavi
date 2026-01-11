@@ -7,7 +7,7 @@ use unavi_player::{
 };
 
 use crate::networking::{
-    player_receive::OtherPlayer,
+    player_receive::{OtherPlayer, TransformTarget},
     thread::{InboundState, NetworkEvent, NetworkingThread},
 };
 
@@ -30,6 +30,7 @@ pub fn recv_network_event(
                         PlayerInboundState(state),
                         Grounded(true),
                         Transform::default(),
+                        TransformTarget::default(),
                     ))
                     .id();
 

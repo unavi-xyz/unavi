@@ -20,9 +20,7 @@ use crate::{
     ControlScheme, ControlSchemeConfig, LocalPlayer, PlayerCamera, PlayerEntities, PlayerRig,
     animation::{defaults::default_character_animations, velocity::AverageVelocity},
     avatar_spawner::AvatarSpawner,
-    config::{
-        DEFAULT_HEIGHT, DEFAULT_JUMP_STRENGTH, FLOAT_HEIGHT_OFFSET, PLAYER_RADIUS, PlayerConfig,
-    },
+    config::PlayerConfig,
     tracking::{TrackedHead, TrackedPose, TrackingSource},
 };
 
@@ -97,28 +95,30 @@ impl LocalPlayerSpawner {
             .spawn((
                 PlayerRig,
                 RigidBody::Dynamic,
-                Collider::capsule(PLAYER_RADIUS, config.real_height),
+                Collider::capsule(config.effective_vrm_radius(), config.effective_vrm_height()),
                 TnuaController::<ControlScheme>::default(),
                 TnuaConfig::<ControlScheme>(asset_server.add(ControlSchemeConfig {
                     basis: TnuaBuiltinWalkConfig {
-                        // TODO adjust dynamically based on avatar
-                        float_height: DEFAULT_HEIGHT / 2.0 + PLAYER_RADIUS + FLOAT_HEIGHT_OFFSET,
-                        max_slope: 55f32.to_radians(),
+                        float_height: config.float_height(),
+                        max_slope: 55_f32.to_radians(),
                         ..Default::default()
                     },
                     jump: TnuaBuiltinJumpConfig {
-                        height: DEFAULT_JUMP_STRENGTH,
+                        height: config.jump_height,
                         ..Default::default()
                     },
                 })),
-                TnuaAvian3dSensorShape(Collider::cylinder(PLAYER_RADIUS - 0.01, 0.0)),
+                TnuaAvian3dSensorShape(Collider::cylinder(
+                    config.effective_vrm_radius() - 0.01,
+                    0.0,
+                )),
                 LockedAxes::ROTATION_LOCKED,
-                Transform::from_xyz(0.0, config.real_height / 2.0 + 1.0, 0.0),
+                Transform::from_xyz(0.0, config.effective_vrm_height() / 2.0, 0.0),
                 PortalTraveler,
             ))
             .id();
 
-        let initial_eye_y = config.real_height / 2.0 - 0.1;
+        let initial_eye_y = config.effective_vrm_height() / 2.0 - 0.1;
         let tracked_head = commands
             .spawn((
                 TrackedHead,
@@ -145,9 +145,11 @@ impl LocalPlayerSpawner {
         ));
 
         // Position avatar relative to rig.
-        commands
-            .entity(avatar)
-            .insert(Transform::from_xyz(0.0, -config.real_height / 2.0, 0.0));
+        commands.entity(avatar).insert(Transform::from_xyz(
+            0.0,
+            -config.effective_vrm_height() / 2.0,
+            0.0,
+        ));
 
         commands.entity(body).add_children(&[avatar, tracked_head]);
 

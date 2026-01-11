@@ -28,7 +28,7 @@ pub fn recv_network_event(
                     .insert((OtherPlayer(id), PlayerInboundState(state)));
             }
             NetworkEvent::PlayerLeave(_id) => {
-                todo!()
+                // TODO despawn player
             }
             NetworkEvent::SetActors(_) => {
                 unreachable!("should only be called once on init")

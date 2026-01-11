@@ -56,7 +56,7 @@ pub(super) fn publish_player_transforms(
     };
 
     let mut root_pos = root_tr.translation();
-    root_pos.y -= config.vrm_height.unwrap_or_default();
+    root_pos.y -= config.float_height();
 
     let root_rot = root_tr.to_scale_rotation_translation().1;
 
@@ -88,7 +88,6 @@ pub(super) fn publish_player_transforms(
         }
 
         baseline.root = root_pos;
-        info!(?root_pos, "-> i-frame");
 
         let frame = PlayerIFrame {
             root: IFrameTransform::new(root_pos, root_rot),

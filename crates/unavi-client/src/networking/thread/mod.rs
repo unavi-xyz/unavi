@@ -1,7 +1,7 @@
 use std::{
     sync::{
         Arc,
-        atomic::{AtomicU8, AtomicU32, Ordering},
+        atomic::{AtomicU16, AtomicU8, Ordering},
     },
     time::Duration,
 };
@@ -122,7 +122,7 @@ pub struct NetworkThreadState {
     pub outbound: Arc<scc::HashMap<EndpointId, OutboundConn>>,
     pub inbound: Arc<scc::HashMap<EndpointId, Arc<InboundState>>>,
 
-    pub iframe_id: Arc<AtomicU32>,
+    pub iframe_id: Arc<AtomicU16>,
     pub pose: Arc<PoseState>,
 }
 
@@ -187,7 +187,7 @@ async fn thread_loop(
         outbound: Arc::default(),
         inbound,
         // Initialize ID at a random value, to avoid leaking information about playtime.
-        iframe_id: Arc::new(AtomicU32::new(rand::random())),
+        iframe_id: Arc::new(AtomicU16::new(rand::random())),
         pose: Arc::default(),
     };
 

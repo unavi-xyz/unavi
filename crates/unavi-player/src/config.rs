@@ -50,7 +50,7 @@ impl PlayerConfig {
     }
 }
 
-const EXTRA_FLOAT_HEIGHT: f32 = 0.01;
+const EXTRA_FLOAT_HEIGHT: f32 = 0.02;
 
 /// | Group            | Height        |
 /// | ---------------- | ------------- |

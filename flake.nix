@@ -120,6 +120,7 @@
                       with self.fenix;
                       combine [
                         complete.toolchain
+                        targets.wasm32-unknown-unknown.latest.rust-std
                         targets.wasm32-wasip2.latest.rust-std
                       ]
                     );
@@ -205,6 +206,7 @@
                       sqlx-cli
                       terraform
                       tokio-console
+                      trunk
                     ])
                     ++ packages;
 

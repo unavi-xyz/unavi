@@ -20,6 +20,7 @@ mod icon;
 mod networking;
 mod scene;
 mod space;
+mod util;
 
 pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
     let dirs = ProjectDirs::from("", "UNAVI", "unavi-client").expect("project dirs");
@@ -105,6 +106,7 @@ impl Plugin for UnaviPlugin {
             unavi_input::InputPlugin,
             unavi_player::PlayerPlugin,
             unavi_portal::PortalPlugin,
+            #[cfg(not(target_family = "wasm"))]
             unavi_script::ScriptPlugin,
             networking::NetworkingPlugin {
                 wds_in_memory: self.in_memory,

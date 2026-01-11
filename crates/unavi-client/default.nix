@@ -95,25 +95,6 @@
 
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;
 
-      packageDrv = pkgs.crane.buildPackage (
-        sqlxArgs
-        // {
-          inherit cargoArtifacts;
-          doCheck = false;
-
-          preBuild = ''
-            ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
-          '';
-
-          postInstall = ''
-            mkdir -p $out/bin/assets
-            cp -r crates/${pname}/assets/* $out/bin/assets/
-            rm -rf $out/bin/assets/wasm/test $out/bin/assets/wasm/example
-
-            cp LICENSE $out
-          '';
-        }
-      );
     in
     {
       checks = {
@@ -134,7 +115,47 @@
       };
 
       packages = {
-        "${pname}" = packageDrv;
+        "${pname}" = pkgs.crane.buildPackage (
+          sqlxArgs
+          // {
+            inherit cargoArtifacts;
+            doCheck = false;
+
+            preBuild = ''
+              ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
+            '';
+
+            postInstall = ''
+              mkdir -p $out/bin/assets
+              cp -r crates/${pname}/assets/* $out/bin/assets/
+              rm -rf $out/bin/assets/wasm/test $out/bin/assets/wasm/example
+
+              cp LICENSE $out
+            '';
+          }
+        );
+        "${pname}-web" = pkgs.crane.buildTrunkPackage (
+          sqlxArgs
+          // {
+            pname = "${pname}-web";
+            # wasm-bindgen-cli = pkgs.wasm-bindgen-cli_0_2_105;
+
+            inherit cargoArtifacts;
+            doCheck = false;
+
+            preBuild = ''
+              ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
+            '';
+
+            postInstall = ''
+              mkdir -p $out/bin/assets
+              cp -r crates/${pname}/assets/* $out/bin/assets/
+              rm -rf $out/bin/assets/wasm/test $out/bin/assets/wasm/example
+
+              cp LICENSE $out
+            '';
+          }
+        );
       };
     };
 }

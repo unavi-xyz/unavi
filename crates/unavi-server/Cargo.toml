@@ -19,7 +19,7 @@ axum-server           = { features = ["tls-rustls-no-provider"], version = "0.8.
 clap.workspace        = true
 console-subscriber    = { optional = true, version = "0.5.0" }
 directories.workspace = true
-iroh.workspace        = true
+iroh                  = { default-features = true, workspace = true }
 p256                  = "0.13.2"
 tokio                 = { features = ["full"], workspace = true }
 tracing.workspace     = true

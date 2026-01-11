@@ -27,7 +27,7 @@ impl Plugin for NetworkingPlugin {
 
         app.insert_resource(nt)
             .insert_resource(actors)
-            .init_resource::<TrackedBones>()
+            .insert_resource(TrackedBones(TrackedBones::full()))
             .add_systems(
                 FixedUpdate,
                 (
@@ -37,6 +37,7 @@ impl Plugin for NetworkingPlugin {
                 ),
             )
             .add_systems(Update, player_receive::lerp_to_target)
+            .add_systems(PostUpdate, player_receive::apply_remote_bones)
             .add_systems(Last, lifecycle::shutdown_networking_thread);
     }
 }

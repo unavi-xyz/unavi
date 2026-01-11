@@ -5,7 +5,7 @@ use bevy_vrm::{BoneName, VrmInstanceId, first_person::SetupFirstPerson};
 
 use crate::{
     PlayerAvatar, PlayerEntities, PlayerRig, TrackedPose,
-    config::{PLAYER_RADIUS, PlayerConfig, WorldScale},
+    config::{PlayerConfig, WorldScale},
 };
 
 /// Marker to track which avatars have been processed for eye offset.
@@ -85,7 +85,7 @@ pub fn setup_vrm_eye_offset(
         {
             left_pos.distance(right_pos)
         } else {
-            PLAYER_RADIUS * 2.0
+            config.effective_vrm_radius() * 2.0
         };
 
         let vrm_height = eye_y;

@@ -79,6 +79,7 @@ impl Plugin for PlayerPlugin {
                 animation::load::load_animation_nodes,
                 animation::velocity::calc_average_velocity,
                 animation::weights::play_avatar_animations.run_if(animation::is_desktop_mode),
+                config::apply_config_to_controller,
             ),
         );
     }

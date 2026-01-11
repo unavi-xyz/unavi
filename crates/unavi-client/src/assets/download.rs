@@ -14,14 +14,7 @@ use crate::assets_dir;
 pub fn download_web_assets() -> anyhow::Result<()> {
     std::fs::create_dir_all(assets_dir()).context("create assets directory")?;
 
-    let assets = [
-        DEFAULT_AVATAR,
-        DEFAULT_ANIMATIONS,
-        "model/demo.glb",
-        "model/mc-room.glb",
-        "audio/piplup.wav",
-        "video/piplup.ivf",
-    ];
+    let assets = [DEFAULT_AVATAR, DEFAULT_ANIMATIONS];
 
     for asset_path in assets {
         let dest_path = assets_dir().join(asset_path);

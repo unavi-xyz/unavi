@@ -24,7 +24,7 @@ pub fn receive_player_transforms(mut players: Query<(&PlayerInboundState, &mut T
         root.translation.clone_from(&iframe.pose.root.pos.into());
 
         for _pose in &iframe.pose.bones {
-            // TODO
+            // TODO apply bones
         }
 
         if pframe.iframe_id == iframe.id {
@@ -33,7 +33,7 @@ pub fn receive_player_transforms(mut players: Query<(&PlayerInboundState, &mut T
             root.rotation.clone_from(&pframe.pose.root.rot.into());
 
             for _pose in &pframe.pose.bones {
-                // TODO
+                // TODO apply bones
             }
         } else {
             // Only apply i-frame.

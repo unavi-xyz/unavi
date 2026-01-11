@@ -119,20 +119,21 @@ pub fn apply_body_input(
             .map(|action| action.any)
             .unwrap_or(false);
 
-        let speed = if is_sprinting {
-            config.sprint_speed
+        let multi = if is_sprinting {
+            config.sprint_multi
         } else {
-            config.walk_speed
+            1.0
         };
 
         controller.basis = TnuaBuiltinWalk {
-            desired_motion: target.0 * speed,
+            desired_motion: target.0 * multi,
             ..Default::default()
         };
 
         if let Ok(action) = jump_action.single()
             && action.any
         {
+            controller.initiate_action_feeding();
             controller.action(ControlScheme::Jump(TnuaBuiltinJump::default()));
         }
     }

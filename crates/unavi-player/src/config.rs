@@ -9,8 +9,8 @@ use crate::{ControlScheme, ControlSchemeConfig, PlayerEntities};
 pub struct PlayerConfig {
     /// User's real height, headset to ground.
     pub real_height: f32,
-    /// Sprint speed in meters per second.
-    pub sprint_speed: f32,
+    /// Sprint multiplier.
+    pub sprint_multi: f32,
     /// Walking speed in meters per second.
     pub walk_speed: f32,
     pub jump_height: f32,
@@ -24,7 +24,7 @@ impl Default for PlayerConfig {
     fn default() -> Self {
         Self {
             real_height: DEFAULT_HEIGHT,
-            sprint_speed: DEFAULT_SPRINT_SPEED,
+            sprint_multi: DEFAULT_SPRINT_MULTI,
             walk_speed: DEFAULT_WALK_SPEED,
             jump_height: DEFAULT_JUMP,
             vrm_height: None,
@@ -60,8 +60,8 @@ const DEFAULT_HEIGHT: f32 = 1.7;
 const DEFAULT_RADIUS: f32 = 0.5;
 const DEFAULT_JUMP: f32 = 1.0;
 
-pub const DEFAULT_SPRINT_SPEED: f32 = 0.3;
-pub const DEFAULT_WALK_SPEED: f32 = 0.2;
+pub const DEFAULT_SPRINT_MULTI: f32 = 1.75;
+pub const DEFAULT_WALK_SPEED: f32 = 4.0;
 
 /// World scale factor resource.
 ///
@@ -113,7 +113,6 @@ pub fn apply_config_to_controller(
     );
 
     tnua_config.jump.height = config.jump_height;
-
-    tnua_config.basis.float_height =
-        config.effective_vrm_height() / 2.0 + config.effective_vrm_radius() + EXTRA_FLOAT_HEIGHT;
+    tnua_config.basis.speed = config.walk_speed;
+    tnua_config.basis.float_height = config.float_height();
 }

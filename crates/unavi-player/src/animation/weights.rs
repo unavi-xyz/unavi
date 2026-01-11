@@ -1,9 +1,9 @@
 use bevy::{animation::ActiveAnimation, platform::collections::HashMap, prelude::*};
 
 use crate::{
-    Grounded, Avatar,
+    Avatar, Grounded,
     animation::velocity::AverageVelocity,
-    config::{DEFAULT_SPRINT_SPEED, DEFAULT_WALK_SPEED},
+    config::{DEFAULT_SPRINT_MULTI, DEFAULT_WALK_SPEED},
 };
 
 use super::{AnimationName, AvatarAnimationNodes};
@@ -21,10 +21,10 @@ const VELOCITY_FACTOR: f32 = 2.0;
 const WEIGHT_THRESHOLD: f32 = 0.02;
 
 // Locomotion blend thresholds (in velocity units after VELOCITY_FACTOR).
-const WALK_START: f32 = 0.5;
-const WALK_END: f32 = DEFAULT_WALK_SPEED * 1.5;
-const SPRINT_START: f32 = DEFAULT_WALK_SPEED * 2.0;
-const SPRINT_END: f32 = DEFAULT_SPRINT_SPEED * 2.0;
+const WALK_START: f32 = 2.0 * DEFAULT_WALK_SPEED / 8.0;
+const WALK_END: f32 = 2.0 * DEFAULT_WALK_SPEED;
+const SPRINT_START: f32 = 2.0 * DEFAULT_WALK_SPEED * ((DEFAULT_SPRINT_MULTI - 1.0) * 0.5 + 1.0);
+const SPRINT_END: f32 = 2.0 * DEFAULT_WALK_SPEED * DEFAULT_SPRINT_MULTI;
 
 // Falling detection (stub for now).
 const FALLING_VELOCITY_THRESHOLD: f32 = 5.0;

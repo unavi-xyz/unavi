@@ -99,6 +99,8 @@ pub fn apply_body_input(
             continue;
         };
 
+        controller.initiate_action_feeding();
+
         if let Ok(action) = move_action.single() {
             const S: f32 = 0.2;
 
@@ -133,7 +135,6 @@ pub fn apply_body_input(
         if let Ok(action) = jump_action.single()
             && action.any
         {
-            controller.initiate_action_feeding();
             controller.action(ControlScheme::Jump(TnuaBuiltinJump::default()));
         }
     }

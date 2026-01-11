@@ -16,15 +16,19 @@ use bevy::{
 };
 use bevy_rich_text3d::{Text3d, Text3dPlugin, Text3dStyling, TextAtlas};
 use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
+use directories::ProjectDirs;
 use unavi_input::InputPlugin;
 use unavi_player::{LocalPlayerSpawner, PlayerPlugin};
 
 fn main() {
+    let dirs = ProjectDirs::from("", "UNAVI", "unavi-client").expect("project dirs");
+    let assets_dir = dirs.data_local_dir().join("assets");
+
     App::new()
         .add_plugins((
             DefaultPlugins
                 .set(AssetPlugin {
-                    file_path: "../unavi-client/assets".to_string(),
+                    file_path: assets_dir.to_string_lossy().to_string(),
                     ..Default::default()
                 })
                 .set(WindowPlugin {
@@ -326,7 +330,7 @@ fn setup_scene(
         Transform::from_xyz(1.2, 2.0, 0.5).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 
-    let dev_texture = asset_server.load("images/dev-white.png");
+    let dev_texture = asset_server.load("image/dev-white.png");
 
     let mut spawner = SceneSpawner {
         commands: &mut commands,

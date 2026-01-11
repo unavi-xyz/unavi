@@ -24,4 +24,5 @@ unavi-portal.path       = "../unavi-portal"
 
 [dev-dependencies]
 bevy_rich_text3d.workspace = true
+directories.workspace      = true
 rand.workspace             = true

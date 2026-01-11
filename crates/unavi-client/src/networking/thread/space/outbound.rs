@@ -40,8 +40,8 @@ pub async fn handle_outbound(state: NetworkThreadState, remote: EndpointId) -> a
 
         tokio::spawn(async move {
             let result = tokio::select! {
-                r = send_iframes(iframe_rx, iframe_stream) => r,
-                r = send_pframes(pframe_rx, &conn) => r,
+                r = send_iframes(iframe_rx, iframe_stream, remote) => r,
+                r = send_pframes(pframe_rx, &conn, remote) => r,
                 r = handle_tickrate(ctrl_tx, ctrl_rx, &tickrate) => r,
             };
 
@@ -73,6 +73,7 @@ pub async fn handle_outbound(state: NetworkThreadState, remote: EndpointId) -> a
 async fn send_iframes(
     rx: flume::Receiver<IFrameMsg>,
     mut stream: SendStream,
+    remote: EndpointId,
 ) -> anyhow::Result<()> {
     while let Ok(msg) = rx.recv_async().await {
         let bytes = postcard::to_stdvec(&msg)?;
@@ -81,6 +82,16 @@ async fn send_iframes(
         let len = u32::try_from(bytes.len())?;
         stream.write_all(&len.to_le_bytes()).await?;
         stream.write_all(&bytes).await?;
+
+        #[cfg(feature = "devtools-network")]
+        {
+            use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
+            let _ = NETWORK_EVENTS.0.send(NetworkEvent::Upload {
+                peer: remote,
+                bytes: bytes.len() + 4,
+                is_iframe: true,
+            });
+        }
 
         debug!(id = msg.id, "sent I-frame");
     }
@@ -92,6 +103,7 @@ async fn send_iframes(
 async fn send_pframes(
     rx: flume::Receiver<PFrameDatagram>,
     conn: &iroh::endpoint::Connection,
+    remote: EndpointId,
 ) -> anyhow::Result<()> {
     while let Ok(msg) = rx.recv_async().await {
         let bytes = postcard::to_stdvec(&msg)?;
@@ -102,7 +114,17 @@ async fn send_pframes(
             continue;
         }
 
-        conn.send_datagram(bytes.into())?;
+        conn.send_datagram(bytes.clone().into())?;
+
+        #[cfg(feature = "devtools-network")]
+        {
+            use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
+            let _ = NETWORK_EVENTS.0.send(NetworkEvent::Upload {
+                peer: remote,
+                bytes: bytes.len(),
+                is_iframe: false,
+            });
+        }
     }
 
     Ok(())

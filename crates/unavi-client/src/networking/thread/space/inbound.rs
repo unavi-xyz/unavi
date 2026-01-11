@@ -39,8 +39,8 @@ pub async fn handle_inbound(
 
     // Run receive tasks.
     let result = tokio::select! {
-        r = recv_iframes(iframe_stream, &state) => r,
-        r = recv_pframes(&connection, &state) => r,
+        r = recv_iframes(iframe_stream, &state, remote) => r,
+        r = recv_pframes(&connection, &state, remote) => r,
         r = respond_tickrate(ctrl_tx, ctrl_rx) => r,
     };
 
@@ -55,6 +55,7 @@ pub async fn handle_inbound(
 async fn recv_iframes(
     mut stream: iroh::endpoint::RecvStream,
     state: &InboundState,
+    remote: EndpointId,
 ) -> anyhow::Result<()> {
     loop {
         // Read length prefix.
@@ -75,6 +76,18 @@ async fn recv_iframes(
 
         let msg: IFrameMsg = postcard::from_bytes(&buf)?;
 
+        #[cfg(feature = "devtools-network")]
+        {
+            use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
+            let _ = NETWORK_EVENTS.0.send(NetworkEvent::Download {
+                peer: remote,
+                bytes: buf.len() + 4,
+            });
+            let _ = NETWORK_EVENTS
+                .0
+                .send(NetworkEvent::ValidTick { peer: remote });
+        }
+
         *state.latest_iframe.lock() = Some(msg);
     }
 
@@ -82,7 +95,11 @@ async fn recv_iframes(
 }
 
 /// Receives P-frames from datagrams (unreliable).
-async fn recv_pframes(conn: &Connection, state: &InboundState) -> anyhow::Result<()> {
+async fn recv_pframes(
+    conn: &Connection,
+    state: &InboundState,
+    remote: EndpointId,
+) -> anyhow::Result<()> {
     loop {
         let datagram = conn.read_datagram().await?;
         let msg: PFrameDatagram = match postcard::from_bytes(&datagram) {
@@ -97,12 +114,31 @@ async fn recv_pframes(conn: &Connection, state: &InboundState) -> anyhow::Result
         let current_iframe_id = state.latest_iframe.lock().as_ref().map_or(0, |f| f.id);
 
         if msg.iframe_id != current_iframe_id {
-            // Stale P-frame, drop it.
+            #[cfg(feature = "devtools-network")]
+            {
+                use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
+                let _ = NETWORK_EVENTS
+                    .0
+                    .send(NetworkEvent::DroppedFrame { peer: remote });
+            }
+
             debug!(
                 pframe_id = msg.iframe_id,
                 current_iframe_id, "dropping stale P-frame"
             );
             continue;
+        }
+
+        #[cfg(feature = "devtools-network")]
+        {
+            use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
+            let _ = NETWORK_EVENTS.0.send(NetworkEvent::Download {
+                peer: remote,
+                bytes: datagram.len(),
+            });
+            let _ = NETWORK_EVENTS
+                .0
+                .send(NetworkEvent::ValidTick { peer: remote });
         }
 
         *state.latest_pframe.lock() = Some(msg);

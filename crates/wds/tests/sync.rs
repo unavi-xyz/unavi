@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use rstest::rstest;
+use rusqlite::params;
 use tracing_test::traced_test;
 use wds::record::{acl::Acl, schema::SCHEMA_HOME};
 
@@ -425,14 +426,20 @@ async fn test_sync_transfers_blob_dependencies(#[future] multi_ctx: MultiStoreCt
     // Verify the blob dependency is registered for the record.
     let record_id_str = record_id.to_string();
     let hash_str = SCHEMA_HOME.hash.to_string();
-    let dep_exists: i64 = sqlx::query_scalar!(
-        "SELECT EXISTS(SELECT 1 FROM record_blob_deps WHERE record_id = ? AND blob_hash = ?)",
-        record_id_str,
-        hash_str
-    )
-    .fetch_one(multi_ctx.carthage.store.db())
-    .await
-    .expect("query blob deps");
+    let dep_exists: i64 = multi_ctx
+        .carthage
+        .store
+        .db()
+        .async_call(move |conn| {
+            conn.query_row(
+                "SELECT EXISTS(SELECT 1 FROM record_blob_deps WHERE record_id = ? AND blob_hash = ?)",
+                params![&record_id_str, &hash_str],
+                |row| row.get(0),
+            )
+            .map_err(Into::into)
+        })
+        .await
+        .expect("query blob deps");
     assert!(
         dep_exists != 0,
         "blob dependency should be registered on Carthage"

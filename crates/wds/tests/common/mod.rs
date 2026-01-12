@@ -7,6 +7,7 @@ use std::{fmt::Debug, sync::Arc};
 
 use iroh::{Endpoint, RelayMode};
 use rstest::fixture;
+use rusqlite::params;
 use wds::{
     DataStore,
     actor::Actor,
@@ -80,13 +81,18 @@ pub async fn multi_ctx() -> MultiStoreCtx {
         bob_with_server.actor.identity().did(),
     ] {
         let did_str = did.to_string();
-        sqlx::query!(
-            "INSERT INTO user_quotas (owner, bytes_used, quota_bytes) VALUES (?, 0, 10000000)",
-            did_str
-        )
-        .execute(carthage.store.db())
-        .await
-        .expect("create quota on carthage");
+        carthage
+            .store
+            .db()
+            .async_call(move |conn| {
+                conn.execute(
+                    "INSERT INTO user_quotas (owner, bytes_used, quota_bytes) VALUES (?, 0, 10000000)",
+                    params![&did_str],
+                )?;
+                Ok(())
+            })
+            .await
+            .expect("create quota on carthage");
     }
 
     // Replace actors with did:web versions.
@@ -144,13 +150,17 @@ pub async fn multi_ctx_local() -> LocalStoreCtx {
         (&bob_ctx.store, bob_identity.did()),
     ] {
         let did_str = did.to_string();
-        sqlx::query!(
-            "INSERT OR IGNORE INTO user_quotas (owner, bytes_used, quota_bytes) VALUES (?, 0, 10000000)",
-            did_str
-        )
-        .execute(store.db())
-        .await
-        .expect("create quota");
+        store
+            .db()
+            .async_call(move |conn| {
+                conn.execute(
+                    "INSERT OR IGNORE INTO user_quotas (owner, bytes_used, quota_bytes) VALUES (?, 0, 10000000)",
+                    params![&did_str],
+                )?;
+                Ok(())
+            })
+            .await
+            .expect("create quota");
     }
 
     // Replace actors with their respective identities.

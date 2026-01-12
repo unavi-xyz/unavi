@@ -22,7 +22,6 @@ pub async fn sync_to_remote<S>(
 where
     S: Signer + Sync,
 {
-    let db = ctx.db.pool();
     let id_str = record_id.to_string();
 
     // Authenticate.
@@ -41,7 +40,7 @@ where
     let (tx, rx) = connection.open_bi().await?;
     let mut framed = Framed::new(CombinedStream(tx, rx), LengthDelimitedCodec::new());
 
-    let local_vv = super::shared::get_record_vv(db, &id_str).await?;
+    let local_vv = super::shared::get_record_vv(&ctx.db, &id_str).await?;
 
     debug!(%record_id, "beginning sync");
 
@@ -119,13 +118,13 @@ where
     };
 
     for env_bytes in &envelopes {
-        super::shared::store_envelope(db, blobs, &id_str, env_bytes)
+        super::shared::store_envelope(&ctx.db, blobs, &id_str, env_bytes)
             .await
             .context("store envelope")?;
     }
 
     // Send our envelopes.
-    let to_send = super::shared::fetch_all_envelopes(db, &id_str).await?;
+    let to_send = super::shared::fetch_all_envelopes(&ctx.db, &id_str).await?;
     let to_send = postcard::to_stdvec(&SyncMsg::Envelopes(to_send))?;
     framed.send(to_send.into()).await?;
 

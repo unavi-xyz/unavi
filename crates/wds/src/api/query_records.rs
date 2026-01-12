@@ -14,8 +14,6 @@ pub async fn query_records(
     let requester = authenticate!(ctx, inner, tx);
     let requester_str = requester.to_string();
 
-    let db = ctx.db.pool();
-
     // Build dynamic query based on filters.
     // Use LEFT JOIN to include public records or records the requester has access to.
     let mut sql = String::from(
@@ -40,13 +38,20 @@ pub async fn query_records(
         binds.push(schema.to_string());
     }
 
-    // Execute with dynamic bindings.
-    let mut query = sqlx::query_scalar::<_, String>(&sql);
-    for bind in &binds {
-        query = query.bind(bind);
-    }
+    let ids = ctx
+        .db
+        .async_call(move |conn| {
+            let mut stmt = conn.prepare(&sql)?;
 
-    let ids: Vec<String> = query.fetch_all(db).await?;
+            let rows = stmt.query_map(rusqlite::params_from_iter(binds.iter()), |row| {
+                row.get::<_, String>(0)
+            })?;
+
+            let ids: Vec<String> = rows.filter_map(Result::ok).collect();
+            Ok(ids)
+        })
+        .await?;
+
     let hashes: Vec<Hash> = ids
         .into_iter()
         .filter_map(|s| Hash::from_hex(&s).ok())

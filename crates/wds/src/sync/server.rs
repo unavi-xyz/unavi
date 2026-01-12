@@ -1,6 +1,7 @@
 use bytes::BytesMut;
 use futures::{SinkExt, StreamExt};
 use loro::VersionVector;
+use rusqlite::params;
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
 use tracing::debug;
 
@@ -37,29 +38,46 @@ where
     drop(conn_state);
 
     let id_str = record_id.to_string();
-    let db = ctx.db.pool();
 
-    let found = sqlx::query!("SELECT vv FROM records WHERE id = ?", id_str)
-        .fetch_optional(db)
-        .await?;
+    let (found_vv, is_pinned) = ctx
+        .db
+        .async_call({
+            let id_str = id_str.clone();
+            move |conn| {
+                let found_vv: Option<Vec<u8>> = conn
+                    .query_row(
+                        "SELECT vv FROM records WHERE id = ?",
+                        params![&id_str],
+                        |row| row.get(0),
+                    )
+                    .ok();
 
-    let pinned = sqlx::query!("SELECT owner FROM record_pins WHERE record_id = ?", id_str)
-        .fetch_optional(db)
+                let is_pinned: bool = conn
+                    .query_row(
+                        "SELECT 1 FROM record_pins WHERE record_id = ? LIMIT 1",
+                        params![&id_str],
+                        |_| Ok(true),
+                    )
+                    .unwrap_or(false);
+
+                Ok((found_vv, is_pinned))
+            }
+        })
         .await?;
 
     // Only sync if record is pinned.
-    if pinned.is_none() {
+    if !is_pinned {
         return Ok("not found");
     }
 
-    let local_vv = if let Some(row) = found {
-        VersionVector::decode(&row.vv)?
+    let local_vv = if let Some(vv_bytes) = found_vv {
+        VersionVector::decode(&vv_bytes)?
     } else {
         VersionVector::new()
     };
 
     // Check read permission before sending data.
-    let doc = super::shared::reconstruct_current_doc(db, &id_str).await?;
+    let doc = super::shared::reconstruct_current_doc(&ctx.db, &id_str).await?;
     let acl = Acl::load(&doc)?;
     if !acl.can_read(&requester_did) {
         // Silently deny - record "doesn't exist" for this user.
@@ -67,7 +85,14 @@ where
     }
 
     // Send blob dependency hashes so client can fetch missing blobs.
-    let blob_hashes = super::shared::get_blob_dep_hashes(db, &id_str).await?;
+    let blob_hashes = ctx
+        .db
+        .async_call({
+            let id_str = id_str.clone();
+            move |conn| super::shared::get_blob_dep_hashes_sync(conn, &id_str)
+        })
+        .await?;
+
     let msg_bytes = postcard::to_stdvec(&SyncMsg::BlobHashes(blob_hashes))?;
     framed
         .send(BytesMut::from(msg_bytes.as_slice()).freeze())
@@ -85,8 +110,16 @@ where
     let remote_vv = VersionVector::decode(&remote_vv_bytes)?;
 
     // Send envelopes remote is missing.
-    let to_send =
-        super::shared::fetch_envelopes_for_diff(db, &id_str, &local_vv, &remote_vv).await?;
+    let to_send = ctx
+        .db
+        .async_call({
+            let id_str = id_str.clone();
+            move |conn| {
+                super::shared::fetch_envelopes_for_diff_sync(conn, &id_str, &local_vv, &remote_vv)
+            }
+        })
+        .await?;
+
     let msg_bytes = postcard::to_stdvec(&SyncMsg::Envelopes(to_send))?;
     framed
         .send(BytesMut::from(msg_bytes.as_slice()).freeze())
@@ -102,7 +135,7 @@ where
     if let SyncMsg::Envelopes(envelopes) = incoming {
         let blobs = ctx.blobs.as_ref().as_ref();
         for env_bytes in envelopes {
-            super::shared::store_envelope(db, blobs, &id_str, &env_bytes).await?;
+            super::shared::store_envelope(&ctx.db, blobs, &id_str, &env_bytes).await?;
         }
     }
 

@@ -14,7 +14,7 @@ pub(crate) mod validate;
 
 type RecordNonce = [u8; 16];
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Record {
     pub creator: Did,
     pub nonce: RecordNonce,

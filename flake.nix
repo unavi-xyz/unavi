@@ -203,7 +203,6 @@
                       doctl
                       rustup
                       sops
-                      sqlx-cli
                       terraform
                       tokio-console
                       trunk

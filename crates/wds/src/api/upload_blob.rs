@@ -10,13 +10,14 @@ use blake3::Hash;
 use futures::{StreamExt, TryStreamExt};
 use irpc::WithChannels;
 use n0_error::Meta;
+use rusqlite::params;
 use time::OffsetDateTime;
 use tracing::debug;
 
 use crate::{
     StoreContext,
     api::{ApiError, ApiService, UploadBlob, authenticate},
-    quota::{QuotaExceeded, ensure_quota_exists, reserve_bytes},
+    quota::{ensure_quota_exists, reserve_bytes},
     tag::BlobTag,
 };
 
@@ -29,21 +30,29 @@ pub async fn upload_blob(
     let did = authenticate!(ctx, inner, tx);
     let did_str = did.to_string();
 
-    let db = ctx.db.pool();
+    // Ensure quota exists and get current quota info.
+    let (bytes_used, quota_bytes) = ctx
+        .db
+        .async_call({
+            let did_str = did_str.clone();
+            move |conn| {
+                ensure_quota_exists(conn, &did_str)?;
 
-    ensure_quota_exists(db, &did_str).await?;
+                let (bytes_used, quota_bytes): (i64, i64) = conn.query_row(
+                    "SELECT bytes_used, quota_bytes FROM user_quotas WHERE owner = ?",
+                    params![&did_str],
+                    |row| Ok((row.get(0)?, row.get(1)?)),
+                )?;
 
-    let quota = sqlx::query!(
-        "SELECT bytes_used, quota_bytes FROM user_quotas WHERE owner = ?",
-        did_str
-    )
-    .fetch_one(db)
-    .await?;
+                Ok((bytes_used, quota_bytes))
+            }
+        })
+        .await?;
 
     // May become inaccurate by the time the upload completes.
     // Limit is properly enforced in the update transaction later.
     // This serves to prevent outrageous upload sizes.
-    let estimated_max_len = quota.quota_bytes - quota.bytes_used;
+    let estimated_max_len = quota_bytes - bytes_used;
 
     let total_bytes = Arc::new(AtomicI64::default());
 
@@ -77,32 +86,38 @@ pub async fn upload_blob(
 
     debug!(?blob_len, "wrote blob to store");
 
-    let mut db_tx = db.begin().await?;
-
-    if matches!(
-        reserve_bytes(&mut *db_tx, &did_str, blob_len).await,
-        Err(QuotaExceeded)
-    ) {
-        tx.send(Err(ApiError::QuotaExceeded)).await?;
-        return Ok(());
-    }
-
     let hash: Hash = temp_tag.hash().into();
     let hash_str = hash.to_string();
 
     let expires = (OffsetDateTime::now_utc() + DEFAULT_BLOB_TTL).unix_timestamp();
 
-    sqlx::query!(
-        "INSERT INTO blob_pins (hash, owner, expires, size) VALUES (?, ?, ?, ?)",
-        hash_str,
-        did_str,
-        expires,
-        blob_len
-    )
-    .execute(&mut *db_tx)
-    .await?;
+    let quota_ok = ctx
+        .db
+        .async_call_mut({
+            let did_str = did_str.clone();
+            let hash_str = hash_str.clone();
+            move |conn| {
+                let tx = conn.transaction()?;
 
-    db_tx.commit().await?;
+                if reserve_bytes(&tx, &did_str, blob_len).is_err() {
+                    return Ok(false);
+                }
+
+                tx.execute(
+                    "INSERT INTO blob_pins (hash, owner, expires, size) VALUES (?, ?, ?, ?)",
+                    params![&hash_str, &did_str, expires, blob_len],
+                )?;
+
+                tx.commit()?;
+                Ok(true)
+            }
+        })
+        .await?;
+
+    if !quota_ok {
+        tx.send(Err(ApiError::QuotaExceeded)).await?;
+        return Ok(());
+    }
 
     // Only persist blob tag after tracking blob in DB.
     let blob_tag = BlobTag::new(did.clone(), hash);

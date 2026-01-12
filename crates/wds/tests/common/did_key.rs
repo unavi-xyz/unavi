@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use rusqlite::params;
 use wds::{DataStore, actor::Actor, identity::Identity};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
@@ -16,13 +17,17 @@ pub async fn generate_actor_with_identity(store: &DataStore) -> (Actor, Arc<Iden
 
     // Set up default quota for the actor.
     let did_str = did.to_string();
-    sqlx::query!(
-        "INSERT INTO user_quotas (owner, bytes_used, quota_bytes) VALUES (?, 0, 10000000)",
-        did_str
-    )
-    .execute(store.db())
-    .await
-    .expect("create quota");
+    store
+        .db()
+        .async_call(move |conn| {
+            conn.execute(
+                "INSERT INTO user_quotas (owner, bytes_used, quota_bytes) VALUES (?, 0, 10000000)",
+                params![&did_str],
+            )?;
+            Ok(())
+        })
+        .await
+        .expect("create quota");
 
     (actor, identity)
 }

@@ -38,18 +38,8 @@ _: {
 
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;
 
-      sqlxArgs = cargoArgs // {
-        nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [ pkgs.sqlx-cli ];
-
-        preBuild = ''
-          export DATABASE_URL=sqlite:./db.sqlite3
-          sqlx database create
-          sqlx migrate run --source crates/wds/migrations/
-        '';
-      };
-
       packageDrv = pkgs.crane.buildPackage (
-        sqlxArgs
+        cargoArgs
         // {
           inherit cargoArtifacts;
           doCheck = false;
@@ -64,9 +54,9 @@ _: {
     in
     {
       checks = {
-        "${pname}-doc" = pkgs.crane.cargoDoc (sqlxArgs // { inherit cargoArtifacts; });
+        "${pname}-doc" = pkgs.crane.cargoDoc (cargoArgs // { inherit cargoArtifacts; });
         "${pname}-nextest" = pkgs.crane.cargoNextest (
-          sqlxArgs
+          cargoArgs
           // {
             inherit cargoArtifacts;
             cargoExtraArgs = cargoArgs.cargoExtraArgs + " --no-tests pass";

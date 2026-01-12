@@ -38,7 +38,7 @@ pub const ALPN: &[u8] = b"wds/api";
 pub(crate) fn protocol(ctx: Arc<StoreContext>) -> (Client<ApiService>, IrohProtocol<ApiService>) {
     let (tx, mut rx) = irpc::channel::mpsc::channel(32);
 
-    tokio::task::spawn(async move {
+    crate::spawn::spawn(async move {
         while let Err(e) = handle_requests(&ctx, &mut rx).await {
             error!("Error handling request: {e:?}");
         }
@@ -110,7 +110,7 @@ async fn handle_requests(
     while let Some(msg) = rx.recv().await? {
         let ctx = Arc::clone(ctx);
 
-        tokio::spawn(async move {
+        crate::spawn::spawn(async move {
             if let Err(e) = handle_message(ctx, msg).await {
                 error!("Error handling message: {e:?}");
             }

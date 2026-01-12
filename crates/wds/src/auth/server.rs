@@ -29,8 +29,8 @@ pub async fn handle_message(
             }
 
             // Remove nonce after time limit.
-            tokio::spawn(async move {
-                tokio::time::sleep(NONCE_TTL).await;
+            crate::spawn::spawn(async move {
+                crate::timer::sleep(NONCE_TTL).await;
                 state.nonces.remove_async(&nonce).await;
             });
 

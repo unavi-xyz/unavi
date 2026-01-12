@@ -52,7 +52,6 @@
             with pkgs;
             [
               binaryen
-              clang
               lld
               mold
               pkg-config

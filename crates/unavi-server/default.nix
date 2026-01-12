@@ -24,7 +24,6 @@ _: {
         nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (
           with pkgs;
           [
-            clang
             lld
             mold
             pkg-config

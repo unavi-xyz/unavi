@@ -8,5 +8,8 @@ rustflags = ["-Clink-arg=-fuse-ld=mold", "-Zshare-generics=y"]
 [target.wasm32-wasip2]
 linker = "lld"
 
+[target.wasm32-unknown-unknown]
+linker = "lld"
+
 [unstable]
 codegen-backend = true

@@ -13,11 +13,12 @@ use bevy::{
     window::{PrimaryWindow, WindowRef},
 };
 use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
-use unavi_constants::PORTAL_RENDER_LAYER;
 
 use crate::{
     Portal, PortalBounds, PortalCamera, PortalDestination, TrackedCamera, material::PortalMaterial,
 };
+
+pub const PORTAL_RENDER_LAYER: usize = 5;
 
 pub struct CreatePortal {
     pub destination: Option<Entity>,

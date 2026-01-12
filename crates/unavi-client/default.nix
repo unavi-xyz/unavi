@@ -68,7 +68,6 @@
           with pkgs;
           [
             alsa-lib
-            dav1d
             libxkbcommon
             udev
             vulkan-loader
@@ -83,29 +82,19 @@
         buildInputs = linkedInputs;
       };
 
-      sqlxArgs = cargoArgs // {
-        nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [ pkgs.sqlx-cli ];
-
-        preBuild = ''
-          export DATABASE_URL=sqlite:./db.sqlite3
-          sqlx database create
-          sqlx migrate run --source crates/wds/migrations/
-        '';
-      };
-
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;
 
     in
     {
       checks = {
-        "${pname}-doc" = pkgs.crane.cargoDoc (sqlxArgs // { inherit cargoArtifacts; });
+        "${pname}-doc" = pkgs.crane.cargoDoc (cargoArgs // { inherit cargoArtifacts; });
         "${pname}-nextest" = pkgs.crane.cargoNextest (
-          sqlxArgs
+          cargoArgs
           // {
             inherit cargoArtifacts;
             cargoExtraArgs = cargoArgs.cargoExtraArgs + " --no-tests pass";
             preBuild = lib.concatLines [
-              sqlxArgs.preBuild
+              cargoArgs.preBuild
               ''
                 ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
               ''
@@ -116,7 +105,7 @@
 
       packages = {
         "${pname}" = pkgs.crane.buildPackage (
-          sqlxArgs
+          cargoArgs
           // {
             inherit cargoArtifacts;
             doCheck = false;
@@ -135,7 +124,7 @@
           }
         );
         "${pname}-web" = pkgs.crane.buildTrunkPackage (
-          sqlxArgs
+          cargoArgs
           // {
             pname = "${pname}-web";
             wasm-bindgen-cli = pkgs.wasm-bindgen-cli_0_2_105;

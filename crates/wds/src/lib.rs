@@ -22,8 +22,7 @@ pub use identity::Identity;
 pub mod actor;
 pub mod api;
 mod auth;
-mod db;
-mod db_new;
+pub mod db;
 mod gc;
 pub mod identity;
 mod quota;
@@ -165,14 +164,14 @@ async fn init_storage(storage: &Storage) -> anyhow::Result<(BoxedBlobs, db::Data
         let blobs: BoxedBlobs = Box::new(blobs);
 
         let db_path = path.join("index.db");
-        let db = db::Database::new(&db_path).await?;
+        let db = db::Database::new(&db_path)?;
 
         Ok((blobs, db))
     } else {
         let blobs = MemStore::new();
         let blobs: BoxedBlobs = Box::new(blobs);
 
-        let db = db::Database::new_in_memory().await?;
+        let db = db::Database::new_in_memory()?;
 
         Ok((blobs, db))
     }
@@ -239,12 +238,6 @@ impl DataStore {
         self.router.shutdown().await
     }
 
-    /// Returns the database pool. Primarily for testing.
-    #[must_use]
-    pub fn db(&self) -> &sqlx::Pool<sqlx::Sqlite> {
-        self.ctx.db.pool()
-    }
-
     /// Returns the blob store. Primarily for testing.
     #[must_use]
     pub fn blobs(&self) -> &BlobStore {
@@ -274,5 +267,11 @@ impl DataStore {
     /// Errors if database queries fail.
     pub async fn run_gc(&self) -> anyhow::Result<()> {
         self.ctx.run_gc().await
+    }
+
+    /// Returns the database. Primarily for testing.
+    #[must_use]
+    pub fn db(&self) -> &db::Database {
+        &self.ctx.db
     }
 }

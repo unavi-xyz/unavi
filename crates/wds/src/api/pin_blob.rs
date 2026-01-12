@@ -1,6 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
 use irpc::WithChannels;
+use rusqlite::params;
 use time::OffsetDateTime;
 
 use crate::{
@@ -17,36 +18,39 @@ pub async fn pin_blob(
     let did = authenticate!(ctx, inner, tx);
     let did_str = did.to_string();
 
-    let db = ctx.db.pool();
-    let mut db_tx = db.begin().await?;
-    ensure_quota_exists(&mut *db_tx, &did_str).await?;
-    db_tx.commit().await?;
-
-    let mut db_tx = db.begin().await?;
-
     let hash_str = inner.hash.to_string();
 
     let expires = inner
         .expires
         .min((OffsetDateTime::now_utc() + MAX_PIN_DURATION).unix_timestamp());
 
-    // Update existing blob pin, if it exists.
-    let res = sqlx::query!(
-        "UPDATE blob_pins SET expires = ? WHERE owner = ? AND hash = ?",
-        expires,
-        did_str,
-        hash_str,
-    )
-    .execute(&mut *db_tx)
-    .await?;
+    let rows_affected = ctx
+        .db
+        .async_call_mut({
+            let did_str = did_str.clone();
+            let hash_str = hash_str.clone();
+            move |conn| {
+                let tx = conn.transaction()?;
 
-    if res.rows_affected() == 0 {
+                ensure_quota_exists(&tx, &did_str)?;
+
+                // Update existing blob pin, if it exists.
+                let rows = tx.execute(
+                    "UPDATE blob_pins SET expires = ? WHERE owner = ? AND hash = ?",
+                    params![expires, &did_str, &hash_str],
+                )?;
+
+                tx.commit()?;
+                Ok(rows)
+            }
+        })
+        .await?;
+
+    if rows_affected == 0 {
         // Pin didn't already exist, user must upload the blob first.
         tx.send(Err(ApiError::BlobNotFound)).await?;
         return Ok(());
     }
-
-    db_tx.commit().await?;
 
     // Schedule fast GC for short-lived pins.
     let now = OffsetDateTime::now_utc().unix_timestamp();

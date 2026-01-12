@@ -13,11 +13,10 @@ pub async fn read_record(
     WithChannels { inner, tx, .. }: WithChannels<ReadRecord, ApiService>,
 ) -> anyhow::Result<()> {
     let requester = authenticate!(ctx, inner, tx);
-    let db = ctx.db.pool();
     let id_str = inner.record_id.to_string();
 
     // Reconstruct the document from stored envelopes.
-    let doc = match reconstruct_current_doc(db, &id_str).await {
+    let doc = match reconstruct_current_doc(&ctx.db, &id_str).await {
         Ok(doc) => doc,
         Err(e) => {
             warn!(record_id = %id_str, ?e, "failed to reconstruct doc");

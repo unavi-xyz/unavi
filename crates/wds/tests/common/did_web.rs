@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use axum::{Json, Router};
 use iroh::EndpointId;
+use rusqlite::params;
 use tokio::{net::TcpListener, task::JoinHandle};
 use wds::{DataStore, actor::Actor, identity::Identity};
 use xdid::{
@@ -109,13 +110,17 @@ pub async fn generate_actor_web(
     let actor = store.local_actor(identity);
 
     let did_str = server.did.to_string();
-    sqlx::query!(
-        "INSERT INTO user_quotas (owner, bytes_used, quota_bytes) VALUES (?, 0, 10000000)",
-        did_str
-    )
-    .execute(store.db())
-    .await
-    .expect("create quota");
+    store
+        .db()
+        .async_call(move |conn| {
+            conn.execute(
+                "INSERT INTO user_quotas (owner, bytes_used, quota_bytes) VALUES (?, 0, 10000000)",
+                params![&did_str],
+            )?;
+            Ok(())
+        })
+        .await
+        .expect("create quota");
 
     ActorWithServer { actor, server }
 }

@@ -28,13 +28,8 @@ pub async fn upload_envelope(
 
     let record_id = inner.record_id.to_string();
 
-    if let Err(e) = store_envelope(
-        ctx.db.pool(),
-        ctx.blobs.as_ref().as_ref(),
-        &record_id,
-        &env_bytes,
-    )
-    .await
+    if let Err(e) =
+        store_envelope(&ctx.db, ctx.blobs.as_ref().as_ref(), &record_id, &env_bytes).await
     {
         warn!(record_id = %record_id, ?e, "failed to store envelope");
         // Map specific errors to ApiError variants.

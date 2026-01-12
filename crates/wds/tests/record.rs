@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use rstest::rstest;
+use rusqlite::{OptionalExtension, params};
 use tracing_test::traced_test;
 
 use crate::common::{DataStoreCtx, assert_contains, ctx};
@@ -23,12 +24,22 @@ async fn test_create_record(#[future] ctx: DataStoreCtx) {
 
     // Verify record exists in database.
     let record_id_str = record_id.to_string();
-    let record = sqlx::query!("SELECT id FROM records WHERE id = ?", record_id_str)
-        .fetch_one(ctx.store.db())
+    let record_id_result: Option<String> = ctx
+        .store
+        .db()
+        .async_call(move |conn| {
+            conn.query_row(
+                "SELECT id FROM records WHERE id = ?",
+                params![&record_id_str],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(Into::into)
+        })
         .await
         .expect("fetch record");
 
-    assert_eq!(record.id, Some(record_id_str));
+    assert_eq!(record_id_result, Some(record_id.to_string()));
 }
 
 #[rstest]
@@ -59,13 +70,19 @@ async fn test_update_record(#[future] ctx: DataStoreCtx) {
 
     // Verify we have 2 envelopes now.
     let record_id_str = record_id.to_string();
-    let count: i64 = sqlx::query_scalar!(
-        "SELECT COUNT(*) FROM envelopes WHERE record_id = ?",
-        record_id_str
-    )
-    .fetch_one(ctx.store.db())
-    .await
-    .expect("count envelopes");
+    let count: i64 = ctx
+        .store
+        .db()
+        .async_call(move |conn| {
+            conn.query_row(
+                "SELECT COUNT(*) FROM envelopes WHERE record_id = ?",
+                params![&record_id_str],
+                |row| row.get(0),
+            )
+            .map_err(Into::into)
+        })
+        .await
+        .expect("count envelopes");
 
     assert_eq!(count, 2);
 }
@@ -99,13 +116,19 @@ async fn test_multiple_updates(#[future] ctx: DataStoreCtx) {
 
     // Verify we have 6 envelopes (1 create + 5 updates).
     let record_id_str = record_id.to_string();
-    let count: i64 = sqlx::query_scalar!(
-        "SELECT COUNT(*) FROM envelopes WHERE record_id = ?",
-        record_id_str
-    )
-    .fetch_one(ctx.store.db())
-    .await
-    .expect("count envelopes");
+    let count: i64 = ctx
+        .store
+        .db()
+        .async_call(move |conn| {
+            conn.query_row(
+                "SELECT COUNT(*) FROM envelopes WHERE record_id = ?",
+                params![&record_id_str],
+                |row| row.get(0),
+            )
+            .map_err(Into::into)
+        })
+        .await
+        .expect("count envelopes");
 
     assert_eq!(count, 6);
 }
@@ -118,13 +141,17 @@ async fn test_multiple_updates(#[future] ctx: DataStoreCtx) {
 async fn test_create_record_quota_exceeded(#[future] ctx: DataStoreCtx) {
     // Set alice's quota to 0.
     let did_str = ctx.alice.identity().did().to_string();
-    sqlx::query!(
-        "UPDATE user_quotas SET quota_bytes = 0 WHERE owner = ?",
-        did_str
-    )
-    .execute(ctx.store.db())
-    .await
-    .expect("set quota");
+    ctx.store
+        .db()
+        .async_call(move |conn| {
+            conn.execute(
+                "UPDATE user_quotas SET quota_bytes = 0 WHERE owner = ?",
+                params![&did_str],
+            )?;
+            Ok(())
+        })
+        .await
+        .expect("set quota");
 
     let e = ctx
         .alice

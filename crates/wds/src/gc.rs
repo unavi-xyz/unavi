@@ -2,6 +2,7 @@ use std::{str::FromStr, time::Duration};
 
 use blake3::Hash;
 use futures::StreamExt;
+use rusqlite::params;
 use time::OffsetDateTime;
 use xdid::core::did::Did;
 
@@ -26,19 +27,24 @@ impl StoreContext {
 
     /// Cleans up expired record pins from the database.
     async fn gc_record_pins(&self) -> anyhow::Result<()> {
-        let db = self.db.pool();
         let now = OffsetDateTime::now_utc().unix_timestamp();
 
-        let expired = sqlx::query!(
-            "SELECT record_id, owner FROM record_pins WHERE expires < ?",
-            now
-        )
-        .fetch_all(db)
-        .await?;
+        let expired = self
+            .db
+            .async_call(move |conn| {
+                let mut stmt =
+                    conn.prepare("SELECT record_id, owner FROM record_pins WHERE expires < ?")?;
+                let rows = stmt.query_map(params![now], |row| {
+                    Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+                })?;
+                let result: Vec<(String, String)> = rows.filter_map(Result::ok).collect();
+                Ok(result)
+            })
+            .await?;
 
-        for pin in expired {
-            if let Err(e) = self.gc_record_pin(&pin.owner, &pin.record_id).await {
-                tracing::warn!(owner = %pin.owner, record_id = %pin.record_id,
+        for (record_id, owner) in expired {
+            if let Err(e) = self.gc_record_pin(&owner, &record_id).await {
+                tracing::warn!(owner = %owner, record_id = %record_id,
                     "failed to gc record pin: {e}");
             }
         }
@@ -48,16 +54,24 @@ impl StoreContext {
 
     /// Cleans up expired blob pins from the database.
     async fn gc_blob_pins(&self) -> anyhow::Result<()> {
-        let db = self.db.pool();
         let now = OffsetDateTime::now_utc().unix_timestamp();
 
-        let expired = sqlx::query!("SELECT hash, owner FROM blob_pins WHERE expires < ?", now)
-            .fetch_all(db)
+        let expired = self
+            .db
+            .async_call(move |conn| {
+                let mut stmt =
+                    conn.prepare("SELECT hash, owner FROM blob_pins WHERE expires < ?")?;
+                let rows = stmt.query_map(params![now], |row| {
+                    Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+                })?;
+                let result: Vec<(String, String)> = rows.filter_map(Result::ok).collect();
+                Ok(result)
+            })
             .await?;
 
-        for pin in expired {
-            if let Err(e) = self.gc_blob_pin(&pin.owner, &pin.hash).await {
-                tracing::warn!(owner = %pin.owner, hash = %pin.hash, "failed to gc blob pin: {e}");
+        for (hash, owner) in expired {
+            if let Err(e) = self.gc_blob_pin(&owner, &hash).await {
+                tracing::warn!(owner = %owner, hash = %hash, "failed to gc blob pin: {e}");
             }
         }
 
@@ -66,7 +80,6 @@ impl StoreContext {
 
     /// Cleans up orphaned blob tags that have no corresponding pin entry.
     async fn gc_blob_store(&self) -> anyhow::Result<()> {
-        let db = self.db.pool();
         let mut tags = self.blobs.as_ref().as_ref().tags().list().await?;
 
         while let Some(tag_result) = tags.next().await {
@@ -88,15 +101,25 @@ impl StoreContext {
             let owner = blob_tag.owner().to_string();
             let hash = blob_tag.hash().to_string();
 
-            let exists = match sqlx::query!(
-                "SELECT size FROM blob_pins WHERE owner = ? AND hash = ?",
-                owner,
-                hash
-            )
-            .fetch_optional(db)
-            .await
+            let exists = match self
+                .db
+                .async_call({
+                    let owner = owner.clone();
+                    let hash = hash.clone();
+                    move |conn| {
+                        let result: Option<i64> = conn
+                            .query_row(
+                                "SELECT size FROM blob_pins WHERE owner = ? AND hash = ?",
+                                params![&owner, &hash],
+                                |row| row.get(0),
+                            )
+                            .ok();
+                        Ok(result.is_some())
+                    }
+                })
+                .await
             {
-                Ok(row) => row.is_some(),
+                Ok(exists) => exists,
                 Err(e) => {
                     tracing::warn!(tag = %tag_name, "failed to check pin existence: {e}");
                     continue;
@@ -122,178 +145,194 @@ impl StoreContext {
     /// Garbage collect a single record pin if expired.
     /// Silently succeeds if pin was extended or already removed.
     pub(crate) async fn gc_record_pin(&self, owner: &str, record_id: &str) -> anyhow::Result<()> {
-        let db = self.db.pool();
         let now = OffsetDateTime::now_utc().unix_timestamp();
 
-        // Check if pin exists and is expired.
-        let pin = sqlx::query!(
-            "SELECT expires FROM record_pins WHERE owner = ? AND record_id = ?",
-            owner,
-            record_id
-        )
-        .fetch_optional(db)
-        .await?;
+        let owner = owner.to_string();
+        let record_id = record_id.to_string();
 
-        let Some(pin) = pin else {
-            // Pin already removed.
-            return Ok(());
-        };
+        self.db
+            .async_call_mut(move |conn| {
+                // Check if pin exists and is expired.
+                let pin_expires: Option<i64> = conn
+                    .query_row(
+                        "SELECT expires FROM record_pins WHERE owner = ? AND record_id = ?",
+                        params![&owner, &record_id],
+                        |row| row.get(0),
+                    )
+                    .ok();
 
-        if pin.expires >= now {
-            // Pin was extended.
-            return Ok(());
-        }
+                let Some(expires) = pin_expires else {
+                    // Pin already removed.
+                    return Ok(());
+                };
 
-        // Pin is expired - delete it and release quota for envelopes.
-        let mut tx = db.begin().await?;
+                if expires >= now {
+                    // Pin was extended.
+                    return Ok(());
+                }
 
-        let total_size: i64 = sqlx::query_scalar!(
-            "SELECT COALESCE(SUM(size), 0) as total FROM envelopes WHERE record_id = ?",
-            record_id
-        )
-        .fetch_one(&mut *tx)
-        .await?;
+                // Pin is expired - delete it and release quota for envelopes.
+                let tx = conn.transaction()?;
 
-        sqlx::query!(
-            "DELETE FROM record_pins WHERE owner = ? AND record_id = ?",
-            owner,
-            record_id
-        )
-        .execute(&mut *tx)
-        .await?;
+                let total_size: i64 = tx
+                    .query_row(
+                        "SELECT COALESCE(SUM(size), 0) FROM envelopes WHERE record_id = ?",
+                        params![&record_id],
+                        |row| row.get(0),
+                    )
+                    .unwrap_or(0);
 
-        if total_size > 0 {
-            release_bytes(&mut *tx, owner, total_size).await?;
-        }
+                tx.execute(
+                    "DELETE FROM record_pins WHERE owner = ? AND record_id = ?",
+                    params![&owner, &record_id],
+                )?;
 
-        // Check if any pins remain for this record.
-        let remaining_pins: i64 = sqlx::query_scalar!(
-            "SELECT COUNT(*) FROM record_pins WHERE record_id = ?",
-            record_id
-        )
-        .fetch_one(&mut *tx)
-        .await?;
+                if total_size > 0 {
+                    release_bytes(&tx, &owner, total_size)?;
+                }
 
-        if remaining_pins == 0 {
-            // No pins remain - delete record and all related data.
-            sqlx::query!("DELETE FROM envelopes WHERE record_id = ?", record_id)
-                .execute(&mut *tx)
-                .await?;
-            sqlx::query!(
-                "DELETE FROM record_blob_deps WHERE record_id = ?",
-                record_id
-            )
-            .execute(&mut *tx)
-            .await?;
-            sqlx::query!("DELETE FROM record_schemas WHERE record_id = ?", record_id)
-                .execute(&mut *tx)
-                .await?;
-            sqlx::query!("DELETE FROM record_acl_read WHERE record_id = ?", record_id)
-                .execute(&mut *tx)
-                .await?;
-            sqlx::query!("DELETE FROM records WHERE id = ?", record_id)
-                .execute(&mut *tx)
-                .await?;
-        }
+                // Check if any pins remain for this record.
+                let remaining_pins: i64 = tx
+                    .query_row(
+                        "SELECT COUNT(*) FROM record_pins WHERE record_id = ?",
+                        params![&record_id],
+                        |row| row.get(0),
+                    )
+                    .unwrap_or(0);
 
-        tx.commit().await?;
+                if remaining_pins == 0 {
+                    // No pins remain - delete record and all related data.
+                    tx.execute(
+                        "DELETE FROM envelopes WHERE record_id = ?",
+                        params![&record_id],
+                    )?;
+                    tx.execute(
+                        "DELETE FROM record_blob_deps WHERE record_id = ?",
+                        params![&record_id],
+                    )?;
+                    tx.execute(
+                        "DELETE FROM record_schemas WHERE record_id = ?",
+                        params![&record_id],
+                    )?;
+                    tx.execute(
+                        "DELETE FROM record_acl_read WHERE record_id = ?",
+                        params![&record_id],
+                    )?;
+                    tx.execute("DELETE FROM records WHERE id = ?", params![&record_id])?;
+                }
 
-        Ok(())
+                tx.commit()?;
+                Ok(())
+            })
+            .await
     }
 
     /// Garbage collect a single blob pin if expired.
     /// Silently succeeds if pin was extended or already removed.
     pub(crate) async fn gc_blob_pin(&self, owner: &str, hash: &str) -> anyhow::Result<()> {
-        let db = self.db.pool();
         let now = OffsetDateTime::now_utc().unix_timestamp();
 
-        // Check if pin exists and is expired.
-        let pin = sqlx::query!(
-            "SELECT size, expires FROM blob_pins WHERE owner = ? AND hash = ?",
-            owner,
-            hash
-        )
-        .fetch_optional(db)
-        .await?;
+        let owner_str = owner.to_string();
+        let hash_str = hash.to_string();
 
-        let Some(pin) = pin else {
+        // Check if pin exists and is expired, get size if so.
+        let pin_info = self
+            .db
+            .async_call({
+                let owner = owner_str.clone();
+                let hash = hash_str.clone();
+                move |conn| {
+                    let result: Option<(i64, i64)> = conn
+                        .query_row(
+                            "SELECT size, expires FROM blob_pins WHERE owner = ? AND hash = ?",
+                            params![&owner, &hash],
+                            |row| Ok((row.get(0)?, row.get(1)?)),
+                        )
+                        .ok();
+                    Ok(result)
+                }
+            })
+            .await?;
+
+        let Some((size, expires)) = pin_info else {
             // Pin already removed.
             return Ok(());
         };
 
-        if pin.expires >= now {
+        if expires >= now {
             // Pin was extended.
             return Ok(());
         }
 
         // Pin is expired - delegate to gc_single_blob_pin.
-        self.gc_single_blob_pin(db, owner, hash, pin.size).await
+        self.gc_single_blob_pin(&owner_str, &hash_str, size).await
     }
 
-    async fn gc_single_blob_pin(
-        &self,
-        db: &sqlx::SqlitePool,
-        owner: &str,
-        hash: &str,
-        size: i64,
-    ) -> anyhow::Result<()> {
+    async fn gc_single_blob_pin(&self, owner: &str, hash: &str, size: i64) -> anyhow::Result<()> {
         let now = OffsetDateTime::now_utc().unix_timestamp();
 
-        // Use transaction to ensure pin deletion and quota decrement are atomic.
-        let mut tx = db.begin().await?;
+        let owner_str = owner.to_string();
+        let hash_str = hash.to_string();
 
-        // Check if any pinned record still depends on this blob.
-        // If so, extend the blob pin to match the longest-living dependent record.
-        let max_record_expires: Option<i64> = sqlx::query_scalar(
-            "SELECT MAX(p.expires) FROM record_blob_deps d
-             JOIN record_pins p ON d.record_id = p.record_id
-             WHERE d.blob_hash = ? AND p.owner = ? AND p.expires > ?",
-        )
-        .bind(hash)
-        .bind(owner)
-        .bind(now)
-        .fetch_one(&mut *tx)
-        .await?;
+        let deleted = self
+            .db
+            .async_call_mut({
+                let owner = owner_str.clone();
+                let hash = hash_str.clone();
+                move |conn| {
+                    let tx = conn.transaction()?;
 
-        if let Some(new_expires) = max_record_expires {
-            // A pinned record still needs this blob - extend the pin.
-            sqlx::query!(
-                "UPDATE blob_pins SET expires = ? WHERE owner = ? AND hash = ?",
-                new_expires,
-                owner,
-                hash
-            )
-            .execute(&mut *tx)
+                    // Check if any pinned record still depends on this blob.
+                    // If so, extend the blob pin to match the longest-living dependent record.
+                    let max_record_expires: Option<i64> = tx
+                        .query_row(
+                            "SELECT MAX(p.expires) FROM record_blob_deps d
+                             JOIN record_pins p ON d.record_id = p.record_id
+                             WHERE d.blob_hash = ? AND p.owner = ? AND p.expires > ?",
+                            params![&hash, &owner, now],
+                            |row| row.get(0),
+                        )
+                        .ok()
+                        .flatten();
+
+                    if let Some(new_expires) = max_record_expires {
+                        // A pinned record still needs this blob - extend the pin.
+                        tx.execute(
+                            "UPDATE blob_pins SET expires = ? WHERE owner = ? AND hash = ?",
+                            params![new_expires, &owner, &hash],
+                        )?;
+
+                        tx.commit()?;
+                        return Ok(false); // Not deleted.
+                    }
+
+                    // No pinned record needs this blob - safe to delete.
+                    tx.execute(
+                        "DELETE FROM blob_pins WHERE owner = ? AND hash = ?",
+                        params![&owner, &hash],
+                    )?;
+
+                    release_bytes(&tx, &owner, size)?;
+
+                    tx.commit()?;
+                    Ok(true) // Deleted.
+                }
+            })
             .await?;
 
-            tx.commit().await?;
-            return Ok(());
+        if deleted {
+            // Delete blob tag after DB commit.
+            // If this fails, `gc_blob_store` will clean it up later.
+            let owner_did = Did::from_str(&owner_str)?;
+            let hash_parsed = Hash::from_str(&hash_str)?;
+            let tag = BlobTag::new(owner_did, hash_parsed);
+            self.blobs
+                .as_ref()
+                .as_ref()
+                .tags()
+                .delete(tag.to_string())
+                .await?;
         }
-
-        // No pinned record needs this blob - safe to delete.
-        sqlx::query!(
-            "DELETE FROM blob_pins WHERE owner = ? AND hash = ?",
-            owner,
-            hash
-        )
-        .execute(&mut *tx)
-        .await?;
-
-        release_bytes(&mut *tx, owner, size).await?;
-
-        tx.commit().await?;
-
-        // Delete blob tag after DB commit.
-        // If this fails, `gc_blob_store` will clean it up later.
-        let owner_did = Did::from_str(owner)?;
-        let hash_parsed = Hash::from_str(hash)?;
-        let tag = BlobTag::new(owner_did, hash_parsed);
-        self.blobs
-            .as_ref()
-            .as_ref()
-            .tags()
-            .delete(tag.to_string())
-            .await?;
 
         Ok(())
     }

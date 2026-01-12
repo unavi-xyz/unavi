@@ -22,8 +22,6 @@ irpc-iroh             = "0.11.0"
 jose-jwk              = "0.1.2"
 loro.workspace        = true
 n0-error              = { features = ["anyhow"], version = "0.1.2" }
-native_db             = "0.8.2"
-native_model          = { default-features = false, features = ["postcard_1_0", "serde"], version = "0.4.20" }
 p256                  = { features = ["ecdsa"], version = "0.13.2" }
 parking_lot.workspace = true
 paste                 = "1.0.15"
@@ -31,10 +29,10 @@ postcard.workspace    = true
 rand.workspace        = true
 ring                  = "0.17.14"
 ron                   = "0.12.0"
+rusqlite              = { features = ["bundled"], version = "0.38" }
 scc.workspace         = true
 serde.workspace       = true
 smol_str              = "0.3.4"
-sqlx                  = { features = ["runtime-tokio", "sqlite"], version = "0.8.6" }
 thiserror             = "2.0.17"
 time.workspace        = true
 tokio.workspace       = true

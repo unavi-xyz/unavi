@@ -1,14 +1,14 @@
 use std::{sync::Arc, time::Duration};
 
 use irpc::WithChannels;
-use sqlx::Sqlite;
+use rusqlite::params;
 use time::OffsetDateTime;
 
 use crate::{
     StoreContext,
     api::{ApiError, ApiService, MAX_PIN_DURATION, PinRecord, authenticate},
     gc::FAST_GC_THRESHOLD,
-    quota::{QuotaExceeded, ensure_quota_exists, reserve_bytes},
+    quota::{ensure_quota_exists, reserve_bytes},
 };
 
 pub async fn pin_record(
@@ -18,85 +18,91 @@ pub async fn pin_record(
     let did = authenticate!(ctx, inner, tx);
     let did_str = did.to_string();
 
-    let db = ctx.db.pool();
     let record_id = inner.id.to_string();
 
     let expires = inner
         .expires
         .min((OffsetDateTime::now_utc() + MAX_PIN_DURATION).unix_timestamp());
 
-    let mut db_tx = db.begin().await?;
+    let result = ctx
+        .db
+        .async_call_mut({
+            let did_str = did_str.clone();
+            let record_id = record_id.clone();
+            move |conn| {
+                let tx = conn.transaction()?;
 
-    // Ensure user has a quota entry.
-    ensure_quota_exists(&mut *db_tx, &did_str).await?;
+                // Ensure user has a quota entry.
+                ensure_quota_exists(&tx, &did_str)?;
 
-    // Check if user already has this record pinned.
-    let existing_pin = sqlx::query!(
-        "SELECT record_id FROM record_pins WHERE owner = ? AND record_id = ?",
-        did_str,
-        record_id
-    )
-    .fetch_optional(&mut *db_tx)
-    .await?;
+                // Check if user already has this record pinned.
+                let existing_pin: Option<String> = tx
+                    .query_row(
+                        "SELECT record_id FROM record_pins WHERE owner = ? AND record_id = ?",
+                        params![&did_str, &record_id],
+                        |row| row.get(0),
+                    )
+                    .ok();
 
-    if existing_pin.is_some() {
-        // Already pinned - just update expiration.
-        sqlx::query!(
-            "UPDATE record_pins SET expires = ? WHERE owner = ? AND record_id = ?",
-            expires,
-            did_str,
-            record_id
-        )
-        .execute(&mut *db_tx)
+                if existing_pin.is_some() {
+                    // Already pinned - just update expiration.
+                    tx.execute(
+                        "UPDATE record_pins SET expires = ? WHERE owner = ? AND record_id = ?",
+                        params![expires, &did_str, &record_id],
+                    )?;
+                } else {
+                    // New pin - reserve quota for existing envelopes.
+                    let total_size: i64 = tx
+                        .query_row(
+                            "SELECT COALESCE(SUM(size), 0) FROM envelopes WHERE record_id = ?",
+                            params![&record_id],
+                            |row| row.get(0),
+                        )
+                        .unwrap_or(0);
+
+                    if total_size > 0 && reserve_bytes(&tx, &did_str, total_size).is_err() {
+                        return Ok(Err(ApiError::QuotaExceeded));
+                    }
+
+                    tx.execute(
+                        "INSERT INTO record_pins (record_id, owner, expires) VALUES (?, ?, ?)",
+                        params![&record_id, &did_str, expires],
+                    )?;
+                }
+
+                // Auto-pin blob dependencies with the same expiration.
+                let blob_deps: Vec<String> = {
+                    let mut stmt =
+                        tx.prepare("SELECT blob_hash FROM record_blob_deps WHERE record_id = ?")?;
+                    stmt.query_map(params![&record_id], |row| row.get(0))?
+                        .filter_map(Result::ok)
+                        .collect()
+                };
+
+                for blob_hash in blob_deps {
+                    if let Err(e) = pin_or_extend_blob(&tx, &did_str, &blob_hash, expires) {
+                        // Log but don't fail - blob might have been deleted.
+                        tracing::warn!(
+                            blob = %blob_hash,
+                            error = %e,
+                            "failed to auto-pin blob dependency"
+                        );
+                    }
+                }
+
+                tx.commit()?;
+                Ok(Ok(()))
+            }
+        })
         .await?;
-    } else {
-        // New pin - reserve quota for existing envelopes.
-        let total_size = sqlx::query_scalar!(
-            "SELECT COALESCE(SUM(size), 0) as total FROM envelopes WHERE record_id = ?",
-            record_id
-        )
-        .fetch_one(&mut *db_tx)
-        .await?;
 
-        if total_size > 0
-            && matches!(
-                reserve_bytes(&mut *db_tx, &did_str, total_size).await,
-                Err(QuotaExceeded)
-            )
-        {
-            tx.send(Err(ApiError::QuotaExceeded)).await?;
+    match result {
+        Ok(()) => {}
+        Err(e) => {
+            tx.send(Err(e)).await?;
             return Ok(());
         }
-
-        sqlx::query!(
-            "INSERT INTO record_pins (record_id, owner, expires) VALUES (?, ?, ?)",
-            record_id,
-            did_str,
-            expires
-        )
-        .execute(&mut *db_tx)
-        .await?;
     }
-
-    // Auto-pin blob dependencies with the same expiration.
-    let blob_deps: Vec<String> =
-        sqlx::query_scalar("SELECT blob_hash FROM record_blob_deps WHERE record_id = ?")
-            .bind(&record_id)
-            .fetch_all(&mut *db_tx)
-            .await?;
-
-    for blob_hash in blob_deps {
-        if let Err(e) = pin_or_extend_blob(&mut db_tx, &did_str, &blob_hash, expires).await {
-            // Log but don't fail - blob might have been deleted.
-            tracing::warn!(
-                blob = %blob_hash,
-                error = %e,
-                "failed to auto-pin blob dependency"
-            );
-        }
-    }
-
-    db_tx.commit().await?;
 
     // Schedule fast GC for short-lived pins.
     let now = OffsetDateTime::now_utc().unix_timestamp();
@@ -122,45 +128,38 @@ pub async fn pin_record(
 
 /// Pins or extends a blob pin for the given owner.
 /// Creates a new pin if the user doesn't have one, extends if they do.
-async fn pin_or_extend_blob(
-    tx: &mut sqlx::Transaction<'_, Sqlite>,
+fn pin_or_extend_blob(
+    conn: &rusqlite::Connection,
     owner: &str,
     hash: &str,
     expires: i64,
 ) -> anyhow::Result<()> {
     // Try to extend existing pin using MAX to never shorten.
-    let updated = sqlx::query!(
+    let updated = conn.execute(
         "UPDATE blob_pins SET expires = MAX(expires, ?)
          WHERE owner = ? AND hash = ?",
-        expires,
-        owner,
-        hash
-    )
-    .execute(&mut **tx)
-    .await?
-    .rows_affected();
+        params![expires, owner, hash],
+    )?;
 
     if updated == 0 {
         // User doesn't have this blob pinned. Check if it exists in any pin.
-        let blob_info = sqlx::query!("SELECT size FROM blob_pins WHERE hash = ? LIMIT 1", hash)
-            .fetch_optional(&mut **tx)
-            .await?;
+        let blob_size: Option<i64> = conn
+            .query_row(
+                "SELECT size FROM blob_pins WHERE hash = ? LIMIT 1",
+                params![hash],
+                |row| row.get(0),
+            )
+            .ok();
 
-        if let Some(info) = blob_info {
+        if let Some(size) = blob_size {
             // Blob exists, create pin for this user and charge quota.
-            reserve_bytes(&mut **tx, owner, info.size)
-                .await
+            reserve_bytes(conn, owner, size)
                 .map_err(|_| anyhow::anyhow!("quota exceeded for blob dependency"))?;
 
-            sqlx::query!(
+            conn.execute(
                 "INSERT INTO blob_pins (hash, owner, expires, size) VALUES (?, ?, ?, ?)",
-                hash,
-                owner,
-                expires,
-                info.size
-            )
-            .execute(&mut **tx)
-            .await?;
+                params![hash, owner, expires, size],
+            )?;
         }
         // If blob doesn't exist at all, silently skip (it may have been GC'd).
     }

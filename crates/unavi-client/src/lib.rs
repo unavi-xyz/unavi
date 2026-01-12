@@ -4,7 +4,6 @@ use bevy::{
     asset::io::web::WebAssetPlugin, light::light_consts::lux, log::LogPlugin, prelude::*,
     window::WindowTheme,
 };
-use bevy_av1::VideoTargetApp;
 use bevy_rich_text3d::Text3dPlugin;
 use bitflags::bitflags;
 use blake3::Hash;
@@ -17,9 +16,9 @@ mod async_commands;
 mod devtools;
 mod fade;
 mod icon;
-mod networking;
+// mod networking;
 mod scene;
-mod space;
+// mod space;
 mod util;
 
 pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
@@ -94,8 +93,6 @@ impl Plugin for UnaviPlugin {
                     ..default()
                 }),
             avian3d::PhysicsPlugins::default(),
-            bevy_av1::VideoPlugin,
-            bevy_seedling::SeedlingPlugin::default(),
             Text3dPlugin {
                 asynchronous_load: true,
                 load_system_fonts: true,
@@ -106,16 +103,15 @@ impl Plugin for UnaviPlugin {
             unavi_input::InputPlugin,
             unavi_player::PlayerPlugin,
             unavi_portal::PortalPlugin,
-            #[cfg(not(target_family = "wasm"))]
-            unavi_script::ScriptPlugin,
-            networking::NetworkingPlugin {
-                wds_in_memory: self.in_memory,
-            },
-            space::SpacePlugin {
-                initial_space: self.initial_space,
-            },
+            // #[cfg(not(target_family = "wasm"))]
+            // unavi_script::ScriptPlugin,
+            // networking::NetworkingPlugin {
+            //     wds_in_memory: self.in_memory,
+            // },
+            // space::SpacePlugin {
+            //     initial_space: self.initial_space,
+            // },
         ))
-        .init_video_target_asset::<StandardMaterial>()
         .insert_resource(AmbientLight {
             brightness: lux::OVERCAST_DAY,
             ..default()

@@ -22,6 +22,7 @@ type_complexity        = "allow"
 
 # wit-bindgen generated code
 collection_is_never_read = "allow"
+same_length_and_capacity = "allow"
 
 # dioxus macro
 volatile_composites = "allow"

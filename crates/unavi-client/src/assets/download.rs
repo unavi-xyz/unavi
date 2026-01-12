@@ -1,10 +1,11 @@
 use std::path::Path;
 
 use anyhow::Context;
-use unavi_constants::CDN_ASSETS_URL;
 use unavi_player::{animation::defaults::DEFAULT_ANIMATIONS, avatar_spawner::DEFAULT_AVATAR};
 
 use crate::assets_dir;
+
+const CDN_ASSETS_URL: &str = "https://unavi.nyc3.cdn.digitaloceanspaces.com/assets";
 
 /// Download web assets to local storage if they don't already exist.
 ///

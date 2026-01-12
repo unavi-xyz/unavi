@@ -7,8 +7,10 @@ use bevy::{
     prelude::*,
 };
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use unavi_constants::PORTAL_RENDER_LAYER;
-use unavi_portal::{PortalPlugin, PortalTraveler, create::CreatePortal};
+use unavi_portal::{
+    PortalPlugin, PortalTraveler,
+    create::{CreatePortal, PORTAL_RENDER_LAYER},
+};
 
 #[derive(Component)]
 struct MovingSinusoid {

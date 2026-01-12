@@ -41,12 +41,11 @@ scc.workspace              = true
 serde.workspace            = true
 time.workspace             = true
 tracing                    = { features = ["max_level_debug", "release_max_level_warn"], workspace = true }
-unavi-constants.path       = "../unavi-constants"
 unavi-input.path           = "../unavi-input"
 unavi-player.path          = "../unavi-player"
 unavi-portal.path          = "../unavi-portal"
 # unavi-script.path          = "../unavi-script"
-# wds.path                   = "../wds"
+wds.path          = "../wds"
 winit             = { default-features = false, version = "0.30.12" }
 xdid.workspace    = true
 zeroize.workspace = true

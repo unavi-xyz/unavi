@@ -153,6 +153,17 @@ impl DataStoreBuilder {
 type BoxedBlobs = Box<dyn AsRef<BlobStore> + Send + Sync>;
 
 async fn init_storage(storage: &Storage) -> anyhow::Result<(BoxedBlobs, db::Database)> {
+    #[cfg(target_family = "wasm")]
+    {
+        let blobs = MemStore::new();
+        let blobs: BoxedBlobs = Box::new(blobs);
+
+        let db = db::Database::new_in_memory()?;
+
+        Ok((blobs, db))
+    }
+
+    #[cfg(not(target_family = "wasm"))]
     if let Storage::Path(path) = storage {
         let blob_path = path.join("blob");
         let record_path = path.join("record");

@@ -12,8 +12,7 @@ use bevy_tnua::{
 };
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
 use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
-use unavi_constants::PORTAL_RENDER_LAYER;
-use unavi_portal::PortalTraveler;
+use unavi_portal::{PortalTraveler, create::PORTAL_RENDER_LAYER};
 
 use crate::{
     ControlScheme, ControlSchemeConfig, Grounded, LocalPlayer, PlayerCamera, PlayerEntities,

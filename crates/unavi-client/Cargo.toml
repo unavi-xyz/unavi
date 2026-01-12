@@ -44,11 +44,10 @@ tracing                    = { features = ["max_level_debug", "release_max_level
 unavi-input.path           = "../unavi-input"
 unavi-player.path          = "../unavi-player"
 unavi-portal.path          = "../unavi-portal"
-# unavi-script.path          = "../unavi-script"
-wds.path          = "../wds"
-winit             = { default-features = false, version = "0.30.12" }
-xdid.workspace    = true
-zeroize.workspace = true
+wds.path                   = "../wds"
+winit                      = { default-features = false, version = "0.30.12" }
+xdid.workspace             = true
+zeroize.workspace          = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 iroh.workspace    = true
@@ -56,6 +55,7 @@ reqwest.workspace = true
 tokio             = { features = ["rt"], workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-iroh    = { default-features = true, workspace = true }
-reqwest = { features = ["blocking"], workspace = true }
-tokio   = { features = ["rt", "rt-multi-thread"], workspace = true }
+iroh              = { default-features = true, workspace = true }
+reqwest           = { features = ["blocking"], workspace = true }
+tokio             = { features = ["rt", "rt-multi-thread"], workspace = true }
+unavi-script.path = "../unavi-script"

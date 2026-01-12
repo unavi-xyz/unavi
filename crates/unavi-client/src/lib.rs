@@ -10,15 +10,16 @@ use blake3::Hash;
 use directories::ProjectDirs;
 use tracing::Level;
 
-pub mod assets;
+#[cfg(not(target_family = "wasm"))]
+mod assets;
 mod async_commands;
 #[cfg(feature = "devtools-network")]
 mod devtools;
 mod fade;
 mod icon;
-// mod networking;
+mod networking;
 mod scene;
-// mod space;
+mod space;
 mod util;
 
 pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
@@ -63,8 +64,11 @@ pub struct UnaviPlugin {
 
 impl Plugin for UnaviPlugin {
     fn build(&self, app: &mut App) {
-        assets::copy::copy_assets_to_dirs().expect("failed to copy assets");
-        assets::download::download_web_assets().expect("failed to download web assets");
+        #[cfg(not(target_family = "wasm"))]
+        {
+            assets::copy::copy_assets_to_dirs().expect("failed to copy assets");
+            assets::download::download_web_assets().expect("failed to download web assets");
+        }
 
         app.add_plugins((
             DefaultPlugins
@@ -103,14 +107,14 @@ impl Plugin for UnaviPlugin {
             unavi_input::InputPlugin,
             unavi_player::PlayerPlugin,
             unavi_portal::PortalPlugin,
-            // #[cfg(not(target_family = "wasm"))]
-            // unavi_script::ScriptPlugin,
-            // networking::NetworkingPlugin {
-            //     wds_in_memory: self.in_memory,
-            // },
-            // space::SpacePlugin {
-            //     initial_space: self.initial_space,
-            // },
+            #[cfg(not(target_family = "wasm"))]
+            unavi_script::ScriptPlugin,
+            networking::NetworkingPlugin {
+                wds_in_memory: self.in_memory,
+            },
+            space::SpacePlugin {
+                initial_space: self.initial_space,
+            },
         ))
         .insert_resource(AmbientLight {
             brightness: lux::OVERCAST_DAY,

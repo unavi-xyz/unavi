@@ -11,8 +11,11 @@ crates/unavi-client/assets/wasm
 result
 
 # Rust
-target
+target/
+
+# Trunk
+dist/
 
 # Other
 .direnv
-store.db*
+*.db

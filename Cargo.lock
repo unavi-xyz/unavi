@@ -13075,6 +13075,7 @@ dependencies = [
  "unavi-input",
  "unavi-player",
  "unavi-portal",
+ "unavi-script",
  "wds",
  "winit",
  "xdid",

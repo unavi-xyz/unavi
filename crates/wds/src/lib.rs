@@ -6,7 +6,6 @@ use iroh_blobs::{BlobsProtocol, api::Store as BlobStore, store::mem::MemStore};
 use irpc::Client;
 use parking_lot::RwLock;
 use tokio_util::task::AbortOnDropHandle;
-use tracing::error;
 use xdid::core::did::Did;
 
 pub use identity::Identity;
@@ -121,15 +120,13 @@ impl DataStoreBuilder {
         let router = router_builder.spawn();
 
         // Spawn gc task if enabled.
-        // Note: GC timer is not supported on WASM (no multi-threaded runtime).
-        // Use run_gc() manually if needed.
         #[cfg(not(target_family = "wasm"))]
         let gc_handle = self.gc_timer.map(|duration| {
             let ctx = Arc::clone(&ctx);
             let handle = tokio::spawn(async move {
                 loop {
                     if let Err(err) = ctx.run_gc().await {
-                        error!(?err, "error during garbage collection");
+                        tracing::error!(?err, "error during garbage collection");
                     }
                     tokio::time::sleep(duration).await;
                 }

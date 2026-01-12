@@ -9,7 +9,8 @@ rustflags = ["-Clink-arg=-fuse-ld=mold", "-Zshare-generics=y"]
 linker = "lld"
 
 [target.wasm32-unknown-unknown]
-linker = "lld"
+linker    = "lld"
+rustflags = ["-Zcodegen-backend=llvm"]
 
 [unstable]
 codegen-backend = true

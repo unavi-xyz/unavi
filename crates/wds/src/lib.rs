@@ -2,17 +2,9 @@ use std::{path::PathBuf, sync::Arc, time::Duration};
 
 use derive_more::Debug;
 use iroh::{Endpoint, EndpointId, protocol::DynProtocolHandler, protocol::Router};
-use iroh_blobs::{
-    BlobsProtocol,
-    api::Store as BlobStore,
-    store::{
-        fs::{FsStore, options::Options},
-        mem::MemStore,
-    },
-};
+use iroh_blobs::{BlobsProtocol, api::Store as BlobStore, store::mem::MemStore};
 use irpc::Client;
 use parking_lot::RwLock;
-use tokio::task::JoinError;
 use tokio_util::task::AbortOnDropHandle;
 use tracing::error;
 use xdid::core::did::Did;
@@ -28,8 +20,10 @@ pub mod identity;
 mod quota;
 pub mod record;
 pub mod signed_bytes;
+mod spawn;
 mod sync;
 mod tag;
+mod timer;
 
 pub struct DataStore {
     api_client: Client<api::ApiService>,
@@ -127,6 +121,9 @@ impl DataStoreBuilder {
         let router = router_builder.spawn();
 
         // Spawn gc task if enabled.
+        // Note: GC timer is not supported on WASM (no multi-threaded runtime).
+        // Use run_gc() manually if needed.
+        #[cfg(not(target_family = "wasm"))]
         let gc_handle = self.gc_timer.map(|duration| {
             let ctx = Arc::clone(&ctx);
             let handle = tokio::spawn(async move {
@@ -139,6 +136,9 @@ impl DataStoreBuilder {
             });
             AbortOnDropHandle::new(handle)
         });
+
+        #[cfg(target_family = "wasm")]
+        let gc_handle = None;
 
         Ok(DataStore {
             api_client,
@@ -171,7 +171,11 @@ async fn init_storage(storage: &Storage) -> anyhow::Result<(BoxedBlobs, db::Data
         tokio::fs::create_dir_all(&record_path).await?;
 
         let blob_db_path = blob_path.join("blobs.db");
-        let blobs = FsStore::load_with_opts(blob_db_path, Options::new(&blob_path)).await?;
+        let blobs = iroh_blobs::store::fs::FsStore::load_with_opts(
+            blob_db_path,
+            iroh_blobs::store::fs::options::Options::new(&blob_path),
+        )
+        .await?;
         let blobs: BoxedBlobs = Box::new(blobs);
 
         let db_path = path.join("index.db");
@@ -245,8 +249,9 @@ impl DataStore {
     /// # Errors
     ///
     /// Errors if protocol tasks could not be joined.
-    pub async fn shutdown(self) -> Result<(), JoinError> {
-        self.router.shutdown().await
+    pub async fn shutdown(self) -> anyhow::Result<()> {
+        self.router.shutdown().await?;
+        Ok(())
     }
 
     /// Returns the blob store. Primarily for testing.

@@ -61,8 +61,8 @@ pub async fn pin_blob(
             let ctx = Arc::clone(&ctx);
             let owner = did_str.clone();
             let hash = hash_str.clone();
-            tokio::spawn(async move {
-                tokio::time::sleep(ttl).await;
+            crate::spawn::spawn(async move {
+                crate::timer::sleep(ttl).await;
                 if let Err(e) = ctx.gc_blob_pin(&owner, &hash).await {
                     tracing::warn!(%hash, "fast gc blob pin failed: {e}");
                 }

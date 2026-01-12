@@ -210,10 +210,10 @@
                       clang
 
                       # WASM toolchain
-                      llvmPackages_18.clang-unwrapped
-                      llvmPackages_18.libclang.lib
-                      llvmPackages_18.lld
-                      llvmPackages_18.llvm
+                      llvmPackages_21.clang-unwrapped
+                      llvmPackages_21.libclang.lib
+                      llvmPackages_21.lld
+                      llvmPackages_21.llvm
                     ])
                     ++ packages;
 
@@ -223,13 +223,12 @@
 
                   NIX_LD = "${pkgs.glibc.out}/lib/ld-linux-x86-64.so.2";
                   LIBRARY_PATH = "${pkgs.gcc.cc.lib}/lib:${pkgs.glibc.out}/lib";
-                  C_INCLUDE_PATH = "${pkgs.glibc.dev}/include";
 
                   # WASM toolchain - clang-unwrapped avoids hardening flags,
                   # libclang headers provide stddef.h etc. for SQLite.
-                  WASM_CC = "${pkgs.llvmPackages_18.clang-unwrapped}/bin/clang";
-                  WASM_AR = "${pkgs.llvmPackages_18.llvm}/bin/llvm-ar";
-                  WASM_CFLAGS = "--target=wasm32 -O3 -isystem ${pkgs.llvmPackages_18.libclang.lib}/lib/clang/18/include";
+                  CC_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.clang-unwrapped}/bin/clang";
+                  AR_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.llvm}/bin/llvm-ar";
+                  CFLAGS_wasm32_unknown_unknown = "--target=wasm32 -O3 -isystem ${pkgs.llvmPackages_21.libclang.lib}/lib/clang/21/include";
                 };
               };
           };

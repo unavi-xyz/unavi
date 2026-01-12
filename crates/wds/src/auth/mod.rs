@@ -29,7 +29,7 @@ pub const ALPN: &[u8] = b"wds/auth";
 pub fn protocol(ctx: Arc<StoreContext>) -> (Client<AuthService>, IrohProtocol<AuthService>) {
     let (tx, mut rx) = irpc::channel::mpsc::channel(16);
 
-    tokio::task::spawn(async move {
+    crate::spawn::spawn(async move {
         while let Err(e) = handle_requests(&ctx, &mut rx).await {
             error!("Error handling request: {e:?}");
         }
@@ -87,7 +87,7 @@ async fn handle_requests(
         let ctx = Arc::clone(ctx);
         let state = Arc::clone(&state);
 
-        tokio::spawn(async move {
+        crate::spawn::spawn(async move {
             if let Err(e) = server::handle_message(ctx, state, msg).await {
                 error!("Error handling message: {e:?}");
             }

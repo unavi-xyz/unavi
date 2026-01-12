@@ -41,7 +41,9 @@ tracing.workspace     = true
 xdid.workspace        = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-iroh-blobs = { default-features = false, features = ["hide-proto-docs"], version = "0.97.0" }
+gloo-timers          = { features = ["futures"], version = "0.3" }
+iroh-blobs           = { default-features = false, features = ["hide-proto-docs"], version = "0.97.0" }
+wasm-bindgen-futures = "0.4"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 iroh-blobs = "0.97.0"

@@ -1,4 +1,7 @@
-use std::{path::PathBuf, sync::LazyLock};
+#[cfg(not(target_family = "wasm"))]
+use std::path::PathBuf;
+#[cfg(not(target_family = "wasm"))]
+use std::sync::LazyLock;
 
 use bevy::{
     asset::io::web::WebAssetPlugin, light::light_consts::lux, log::LogPlugin, prelude::*,
@@ -7,6 +10,7 @@ use bevy::{
 use bevy_rich_text3d::Text3dPlugin;
 use bitflags::bitflags;
 use blake3::Hash;
+#[cfg(not(target_family = "wasm"))]
 use directories::ProjectDirs;
 use tracing::Level;
 
@@ -22,26 +26,31 @@ mod scene;
 mod space;
 mod util;
 
+#[cfg(not(target_family = "wasm"))]
 pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
     let dirs = ProjectDirs::from("", "UNAVI", "unavi-client").expect("project dirs");
     std::fs::create_dir_all(dirs.data_local_dir()).expect("data local dir");
     dirs
 });
 
+#[cfg(not(target_family = "wasm"))]
 pub fn assets_dir() -> PathBuf {
     DIRS.data_local_dir().join("assets")
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[must_use]
 pub fn models_dir() -> PathBuf {
     assets_dir().join("model")
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[must_use]
 pub fn images_dir() -> PathBuf {
     assets_dir().join("image")
 }
 
+#[cfg(not(target_family = "wasm"))]
 pub fn db_path() -> PathBuf {
     DIRS.data_local_dir().join("data.db")
 }
@@ -70,6 +79,14 @@ impl Plugin for UnaviPlugin {
             assets::download::download_web_assets().expect("failed to download web assets");
         }
 
+        #[cfg(not(target_family = "wasm"))]
+        let asset_plugin = AssetPlugin {
+            file_path: assets_dir().to_string_lossy().to_string(),
+            ..default()
+        };
+        #[cfg(target_family = "wasm")]
+        let asset_plugin = AssetPlugin::default();
+
         app.add_plugins((
             DefaultPlugins
                 .set(LogPlugin {
@@ -83,10 +100,7 @@ impl Plugin for UnaviPlugin {
                 .set(WebAssetPlugin {
                     silence_startup_warning: true,
                 })
-                .set(AssetPlugin {
-                    file_path: assets_dir().to_string_lossy().to_string(),
-                    ..default()
-                })
+                .set(asset_plugin)
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         name: Some("unavi".to_string()),

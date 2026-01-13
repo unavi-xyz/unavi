@@ -16,7 +16,6 @@ use wds::{DataStore, actor::Actor, identity::Identity};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
 use crate::{
-    DIRS,
     networking::{
         WdsActors,
         thread::space::{DEFAULT_TICKRATE, IFrameMsg, PFrameDatagram, PlayerIFrame, PlayerPFrame},
@@ -138,8 +137,9 @@ async fn thread_loop(
     let store = {
         let mut builder = DataStore::builder(endpoint.clone());
 
+        #[cfg(not(target_family = "wasm"))]
         if !opts.wds_in_memory {
-            let path = DIRS.data_local_dir().join("wds");
+            let path = crate::DIRS.data_local_dir().join("wds");
             builder = builder.storage_path(path);
         }
 

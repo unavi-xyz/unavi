@@ -1,0 +1,10 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-assets"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true

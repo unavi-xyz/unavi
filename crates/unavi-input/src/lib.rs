@@ -3,10 +3,10 @@ use bevy::{
     window::{CursorGrabMode, CursorOptions, PrimaryWindow},
 };
 use schminput::prelude::*;
-use schminput_rebinding::{
-    DefaultSchminputRebindingPlugins,
-    config::{ConfigFilePath, LoadSchminputConfig, SaveSchminputConfig},
-};
+use schminput_rebinding::{DefaultSchminputRebindingPlugins, config::ConfigFilePath};
+
+#[cfg(not(target_family = "wasm"))]
+mod config;
 
 pub use schminput;
 
@@ -14,36 +14,32 @@ pub struct InputPlugin;
 
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
-        let config_path = ConfigFilePath::Config {
-            app_name: "unavi",
-            file_name: "input.toml",
-        };
-
-        if config_path
-            .path_buf()
-            .expect("failed to get config path")
-            .exists()
+        #[cfg(not(target_family = "wasm"))]
         {
-            info!("Loading input config on startup");
-            app.add_systems(Startup, load_config);
-        } else {
-            info!("Saving input config on startup");
-            app.add_systems(Startup, save_config);
+            let config_path = ConfigFilePath::Config {
+                app_name: "unavi",
+                file_name: "input.toml",
+            };
+
+            if config_path
+                .path_buf()
+                .expect("failed to get config path")
+                .exists()
+            {
+                info!("Loading input config on startup");
+                app.add_systems(Startup, config::load_config);
+            } else {
+                info!("Saving input config on startup");
+                app.add_systems(Startup, config::save_config);
+            }
+
+            app.insert_resource(config_path);
         }
 
         app.add_plugins((DefaultSchminputPlugins, DefaultSchminputRebindingPlugins))
             .add_systems(Startup, setup_actions)
-            .add_systems(Update, cursor_grab)
-            .insert_resource(config_path);
+            .add_systems(Update, cursor_grab);
     }
-}
-
-fn load_config(mut load: MessageWriter<LoadSchminputConfig>) {
-    load.write_default();
-}
-
-fn save_config(mut save: MessageWriter<SaveSchminputConfig>) {
-    save.write_default();
 }
 
 #[derive(Component, Clone, Copy)]

@@ -1,21 +1,21 @@
 use bevy::{platform::collections::HashMap, prelude::*};
 use bevy_gltf_kun::import::gltf::{animation::RawGltfAnimation, loader::GltfLoaderSettings};
+use unavi_assets::default_animations_path;
 
 use crate::animation::AnimationName;
 
 use super::load::{AvatarAnimation, AvatarAnimationClips};
 
-pub const DEFAULT_ANIMATIONS: &str = "model/animations.glb";
-
 #[must_use]
 pub fn default_character_animations(asset_server: &AssetServer) -> AvatarAnimationClips {
     let mut map = HashMap::default();
 
-    let gltf = asset_server.load(DEFAULT_ANIMATIONS);
+    let animations_path = default_animations_path();
+    let gltf = asset_server.load(&animations_path);
 
     let load_animation = |i: usize| -> AvatarAnimation {
         let animation = asset_server.load_with_settings::<RawGltfAnimation, GltfLoaderSettings>(
-            format!("{DEFAULT_ANIMATIONS}#RawAnimation{i}"),
+            format!("{animations_path}#RawAnimation{i}"),
             |settings| {
                 settings.expose_raw_animation_curves = true;
             },

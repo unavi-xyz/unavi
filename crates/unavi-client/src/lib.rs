@@ -24,7 +24,6 @@ mod icon;
 mod networking;
 mod scene;
 mod space;
-mod util;
 
 #[cfg(not(target_family = "wasm"))]
 pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {

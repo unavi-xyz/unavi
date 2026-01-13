@@ -113,8 +113,8 @@ pub async fn pin_record(
             let ctx = Arc::clone(&ctx);
             let owner = did_str.clone();
             let record_id = record_id.clone();
-            crate::spawn::spawn(async move {
-                crate::timer::sleep(ttl).await;
+            unavi_wasm_compat::spawn(async move {
+                unavi_wasm_compat::sleep(ttl).await;
                 if let Err(e) = ctx.gc_record_pin(&owner, &record_id).await {
                     tracing::warn!(%record_id, "fast gc record pin failed: {e}");
                 }

@@ -29,8 +29,8 @@ pub async fn handle_message(
             }
 
             // Remove nonce after time limit.
-            crate::spawn::spawn(async move {
-                crate::timer::sleep(NONCE_TTL).await;
+            unavi_wasm_compat::spawn(async move {
+                unavi_wasm_compat::sleep(NONCE_TTL).await;
                 state.nonces.remove_async(&nonce).await;
             });
 

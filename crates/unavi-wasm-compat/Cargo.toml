@@ -1,0 +1,17 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-wasm-compat"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+gloo-timers          = { features = ["futures"], version = "0.3.0" }
+wasm-bindgen-futures = "0.4.56"
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+tokio = { features = ["rt", "time"], workspace = true }

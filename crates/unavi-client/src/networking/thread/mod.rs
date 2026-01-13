@@ -15,12 +15,9 @@ use tokio::task::JoinHandle;
 use wds::{DataStore, actor::Actor, identity::Identity};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
-use crate::{
-    networking::{
-        WdsActors,
-        thread::space::{DEFAULT_TICKRATE, IFrameMsg, PFrameDatagram, PlayerIFrame, PlayerPFrame},
-    },
-    util::new_tokio_runtime,
+use crate::networking::{
+    WdsActors,
+    thread::space::{DEFAULT_TICKRATE, IFrameMsg, PFrameDatagram, PlayerIFrame, PlayerPFrame},
 };
 
 mod join;
@@ -65,15 +62,11 @@ impl NetworkingThread {
         let (command_tx, command_rx) = flume::bounded(CHANNEL_LEN);
         let (event_tx, event_rx) = flume::bounded(CHANNEL_LEN);
 
-        std::thread::spawn(move || {
-            let rt = new_tokio_runtime("networking");
-
-            rt.block_on(async move {
-                while let Err(e) = thread_loop(&opts, &command_rx, &event_tx).await {
-                    error!("Networking thread error: {e:?}");
-                    tokio::time::sleep(Duration::from_secs(5)).await;
-                }
-            });
+        unavi_wasm_compat::spawn_thread(async move {
+            while let Err(err) = thread_loop(&opts, &command_rx, &event_tx).await {
+                error!(?err, "Networking thread error");
+                unavi_wasm_compat::sleep(Duration::from_secs(5)).await;
+            }
         });
 
         Self {
@@ -194,7 +187,7 @@ async fn thread_loop(
                 let state = state.clone();
                 let span = info_span!("", space = %id);
 
-                tokio::spawn(
+                unavi_wasm_compat::spawn(
                     async move {
                         if let Err(err) = join::handle_join(state, id).await {
                             error!(?err, "error joining space");
@@ -209,7 +202,7 @@ async fn thread_loop(
             NetworkCommand::PublishBeacon { id, ttl } => {
                 let state = state.clone();
 
-                tokio::spawn(async move {
+                unavi_wasm_compat::spawn(async move {
                     if let Err(err) = publish_beacon::publish_beacon(state, id, ttl).await {
                         error!(?err, "error publishing beacon");
                     }

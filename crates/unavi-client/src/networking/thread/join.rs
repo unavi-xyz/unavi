@@ -152,7 +152,7 @@ async fn handle_gossip_inbound(
                         // Outbound handler will register itself in state.outbound.
                         let state = state.clone();
                         let remote = join.endpoint;
-                        tokio::spawn(async move {
+                        unavi_wasm_compat::spawn(async move {
                             if let Err(err) =
                                 super::space::outbound::handle_outbound(state, remote).await
                             {

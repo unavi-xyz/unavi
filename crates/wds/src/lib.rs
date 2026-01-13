@@ -19,10 +19,8 @@ pub mod identity;
 mod quota;
 pub mod record;
 pub mod signed_bytes;
-mod spawn;
 mod sync;
 mod tag;
-mod timer;
 
 pub struct DataStore {
     api_client: Client<api::ApiService>,
@@ -120,6 +118,7 @@ impl DataStoreBuilder {
         let router = router_builder.spawn();
 
         // Spawn gc task if enabled.
+        // TODO: enable for wasm, no handle
         #[cfg(not(target_family = "wasm"))]
         let gc_handle = self.gc_timer.map(|duration| {
             let ctx = Arc::clone(&ctx);

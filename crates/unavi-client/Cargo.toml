@@ -44,15 +44,17 @@ unavi-assets.path          = "../unavi-assets"
 unavi-input.path           = "../unavi-input"
 unavi-player.path          = "../unavi-player"
 unavi-portal.path          = "../unavi-portal"
+unavi-wasm-compat.path     = "../unavi-wasm-compat"
 wds.path                   = "../wds"
 winit                      = { default-features = false, version = "0.30.12" }
 xdid.workspace             = true
 zeroize.workspace          = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-iroh.workspace    = true
-reqwest.workspace = true
-tokio             = { features = ["rt"], workspace = true }
+iroh.workspace       = true
+reqwest.workspace    = true
+tokio                = { features = ["rt"], workspace = true }
+wasm-bindgen-futures = "0.4"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 directories.workspace = true

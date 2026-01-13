@@ -8,21 +8,16 @@ use crate::{
         thread::{NetworkCommand, NetworkingThread},
     },
     space::beacon::Beacon,
-    util::new_tokio_runtime,
 };
 
 pub fn join_home_space(actors: Res<WdsActors>, nt: Res<NetworkingThread>) {
     let actors = actors.clone();
     let command_tx = nt.command_tx.clone();
 
-    std::thread::spawn(|| {
-        let rt = new_tokio_runtime("join_home_space");
-
-        rt.block_on(async move {
-            if let Err(e) = discover_or_home(actors, command_tx).await {
-                error!("Failed to join home space: {e:?}");
-            }
-        });
+    unavi_wasm_compat::spawn_thread(async move {
+        if let Err(e) = discover_or_home(actors, command_tx).await {
+            error!("Failed to join home space: {e:?}");
+        }
     });
 }
 

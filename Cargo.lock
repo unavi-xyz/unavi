@@ -13081,6 +13081,8 @@ dependencies = [
  "unavi-player",
  "unavi-portal",
  "unavi-script",
+ "unavi-wasm-compat",
+ "wasm-bindgen-futures",
  "wds",
  "winit",
  "xdid",
@@ -13191,6 +13193,15 @@ dependencies = [
  "serde",
  "wired-ecs",
  "wit-bindgen 0.50.0",
+]
+
+[[package]]
+name = "unavi-wasm-compat"
+version = "0.0.16"
+dependencies = [
+ "gloo-timers 0.3.0",
+ "tokio",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]
@@ -14075,7 +14086,6 @@ dependencies = [
  "bytes 1.11.0",
  "derive_more 2.1.1",
  "futures 0.3.31",
- "gloo-timers 0.3.0",
  "iroh",
  "iroh-blobs",
  "irpc",
@@ -14102,7 +14112,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-test",
- "wasm-bindgen-futures",
+ "unavi-wasm-compat",
  "xdid",
 ]
 

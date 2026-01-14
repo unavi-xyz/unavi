@@ -129,7 +129,7 @@ async fn thread_loop(
 
         #[cfg(not(target_family = "wasm"))]
         if !opts.wds_in_memory {
-            let path = crate::DIRS.data_local_dir().join("wds");
+            let path = crate::assets::DIRS.data_local_dir().join("wds");
             builder = builder.storage_path(path);
         }
 

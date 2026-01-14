@@ -10,8 +10,21 @@ use crate::{
     space::beacon::Beacon,
 };
 
-pub fn join_home_space(actors: Res<WdsActors>, nt: Res<NetworkingThread>) {
-    let actors = actors.clone();
+pub fn join_home_space(
+    actors: Query<&WdsActors>,
+    nt: Res<NetworkingThread>,
+    mut did_join: Local<bool>,
+) {
+    // TODO: Use proper state to track space status, join home if not in any spaces
+    if *did_join {
+        return;
+    }
+
+    let Ok(actors) = actors.single().cloned() else {
+        warn!("WDS actors not found");
+        return;
+    };
+
     let command_tx = nt.command_tx.clone();
 
     unavi_wasm_compat::spawn_thread(async move {
@@ -19,6 +32,8 @@ pub fn join_home_space(actors: Res<WdsActors>, nt: Res<NetworkingThread>) {
             error!("Failed to join home space: {e:?}");
         }
     });
+
+    *did_join = true;
 }
 
 /// Attempt to discover a populated space to join.

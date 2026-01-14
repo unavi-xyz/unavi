@@ -1,16 +1,8 @@
-#[cfg(not(target_family = "wasm"))]
-use std::path::PathBuf;
-#[cfg(not(target_family = "wasm"))]
-use std::sync::LazyLock;
-
 use bevy::{
     asset::io::web::WebAssetPlugin, light::light_consts::lux, log::LogPlugin, prelude::*,
     window::WindowTheme,
 };
 use bitflags::bitflags;
-use blake3::Hash;
-#[cfg(not(target_family = "wasm"))]
-use directories::ProjectDirs;
 use tracing::Level;
 
 #[cfg(not(target_family = "wasm"))]
@@ -24,35 +16,6 @@ mod networking;
 mod scene;
 mod space;
 
-#[cfg(not(target_family = "wasm"))]
-pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
-    let dirs = ProjectDirs::from("", "UNAVI", "unavi-client").expect("project dirs");
-    std::fs::create_dir_all(dirs.data_local_dir()).expect("data local dir");
-    dirs
-});
-
-#[cfg(not(target_family = "wasm"))]
-pub fn assets_dir() -> PathBuf {
-    DIRS.data_local_dir().join("assets")
-}
-
-#[cfg(not(target_family = "wasm"))]
-#[must_use]
-pub fn models_dir() -> PathBuf {
-    assets_dir().join("model")
-}
-
-#[cfg(not(target_family = "wasm"))]
-#[must_use]
-pub fn images_dir() -> PathBuf {
-    assets_dir().join("image")
-}
-
-#[cfg(not(target_family = "wasm"))]
-pub fn db_path() -> PathBuf {
-    DIRS.data_local_dir().join("data.db")
-}
-
 bitflags! {
     #[derive(Clone, Copy, Debug, Default)]
     pub struct DebugFlags: u8 {
@@ -65,7 +28,6 @@ bitflags! {
 pub struct UnaviPlugin {
     pub debug: DebugFlags,
     pub in_memory: bool,
-    pub initial_space: Option<Hash>,
     pub log_level: Level,
 }
 
@@ -79,7 +41,7 @@ impl Plugin for UnaviPlugin {
 
         #[cfg(not(target_family = "wasm"))]
         let asset_plugin = AssetPlugin {
-            file_path: assets_dir().to_string_lossy().to_string(),
+            file_path: assets::assets_dir().to_string_lossy().to_string(),
             ..default()
         };
         #[cfg(target_family = "wasm")]
@@ -121,9 +83,7 @@ impl Plugin for UnaviPlugin {
             networking::NetworkingPlugin {
                 wds_in_memory: self.in_memory,
             },
-            space::SpacePlugin {
-                initial_space: self.initial_space,
-            },
+            space::SpacePlugin,
         ))
         .insert_resource(AmbientLight {
             brightness: lux::OVERCAST_DAY,

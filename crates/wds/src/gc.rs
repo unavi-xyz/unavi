@@ -31,7 +31,7 @@ impl StoreContext {
 
         let expired = self
             .db
-            .async_call(move |conn| {
+            .call(move |conn| {
                 let mut stmt =
                     conn.prepare("SELECT record_id, owner FROM record_pins WHERE expires < ?")?;
                 let rows = stmt.query_map(params![now], |row| {
@@ -58,7 +58,7 @@ impl StoreContext {
 
         let expired = self
             .db
-            .async_call(move |conn| {
+            .call(move |conn| {
                 let mut stmt =
                     conn.prepare("SELECT hash, owner FROM blob_pins WHERE expires < ?")?;
                 let rows = stmt.query_map(params![now], |row| {
@@ -103,7 +103,7 @@ impl StoreContext {
 
             let exists = match self
                 .db
-                .async_call({
+                .call({
                     let owner = owner.clone();
                     let hash = hash.clone();
                     move |conn| {
@@ -151,7 +151,7 @@ impl StoreContext {
         let record_id = record_id.to_string();
 
         self.db
-            .async_call_mut(move |conn| {
+            .call_mut(move |conn| {
                 // Check if pin exists and is expired.
                 let pin_expires: Option<i64> = conn
                     .query_row(
@@ -238,7 +238,7 @@ impl StoreContext {
         // Check if pin exists and is expired, get size if so.
         let pin_info = self
             .db
-            .async_call({
+            .call({
                 let owner = owner_str.clone();
                 let hash = hash_str.clone();
                 move |conn| {
@@ -276,7 +276,7 @@ impl StoreContext {
 
         let deleted = self
             .db
-            .async_call_mut({
+            .call_mut({
                 let owner = owner_str.clone();
                 let hash = hash_str.clone();
                 move |conn| {

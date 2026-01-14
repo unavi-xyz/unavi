@@ -41,7 +41,7 @@ where
 
     let (found_vv, is_pinned) = ctx
         .db
-        .async_call({
+        .call({
             let id_str = id_str.clone();
             move |conn| {
                 let found_vv: Option<Vec<u8>> = conn
@@ -87,7 +87,7 @@ where
     // Send blob dependency hashes so client can fetch missing blobs.
     let blob_hashes = ctx
         .db
-        .async_call({
+        .call({
             let id_str = id_str.clone();
             move |conn| super::shared::get_blob_dep_hashes_sync(conn, &id_str)
         })
@@ -112,7 +112,7 @@ where
     // Send envelopes remote is missing.
     let to_send = ctx
         .db
-        .async_call({
+        .call({
             let id_str = id_str.clone();
             move |conn| {
                 super::shared::fetch_envelopes_for_diff_sync(conn, &id_str, &local_vv, &remote_vv)

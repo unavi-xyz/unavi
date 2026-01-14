@@ -430,7 +430,7 @@ async fn test_sync_transfers_blob_dependencies(#[future] multi_ctx: MultiStoreCt
         .carthage
         .store
         .db()
-        .async_call(move |conn| {
+        .call(move |conn| {
             conn.query_row(
                 "SELECT EXISTS(SELECT 1 FROM record_blob_deps WHERE record_id = ? AND blob_hash = ?)",
                 params![&record_id_str, &hash_str],

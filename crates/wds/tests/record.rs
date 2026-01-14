@@ -27,7 +27,7 @@ async fn test_create_record(#[future] ctx: DataStoreCtx) {
     let record_id_result: Option<String> = ctx
         .store
         .db()
-        .async_call(move |conn| {
+        .call(move |conn| {
             conn.query_row(
                 "SELECT id FROM records WHERE id = ?",
                 params![&record_id_str],
@@ -73,7 +73,7 @@ async fn test_update_record(#[future] ctx: DataStoreCtx) {
     let count: i64 = ctx
         .store
         .db()
-        .async_call(move |conn| {
+        .call(move |conn| {
             conn.query_row(
                 "SELECT COUNT(*) FROM envelopes WHERE record_id = ?",
                 params![&record_id_str],
@@ -119,7 +119,7 @@ async fn test_multiple_updates(#[future] ctx: DataStoreCtx) {
     let count: i64 = ctx
         .store
         .db()
-        .async_call(move |conn| {
+        .call(move |conn| {
             conn.query_row(
                 "SELECT COUNT(*) FROM envelopes WHERE record_id = ?",
                 params![&record_id_str],
@@ -143,7 +143,7 @@ async fn test_create_record_quota_exceeded(#[future] ctx: DataStoreCtx) {
     let did_str = ctx.alice.identity().did().to_string();
     ctx.store
         .db()
-        .async_call(move |conn| {
+        .call(move |conn| {
             conn.execute(
                 "UPDATE user_quotas SET quota_bytes = 0 WHERE owner = ?",
                 params![&did_str],

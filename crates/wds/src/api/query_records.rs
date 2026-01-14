@@ -40,7 +40,7 @@ pub async fn query_records(
 
     let ids = ctx
         .db
-        .async_call(move |conn| {
+        .call(move |conn| {
             let mut stmt = conn.prepare(&sql)?;
 
             let rows = stmt.query_map(rusqlite::params_from_iter(binds.iter()), |row| {

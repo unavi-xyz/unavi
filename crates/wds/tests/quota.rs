@@ -21,7 +21,7 @@ async fn test_quota_tracks_envelope_size(#[future] ctx: DataStoreCtx) {
     let initial_used: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let did_str = did_str.clone();
             move |conn| {
                 conn.query_row(
@@ -48,7 +48,7 @@ async fn test_quota_tracks_envelope_size(#[future] ctx: DataStoreCtx) {
     let after_create: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let did_str = did_str.clone();
             move |conn| {
                 conn.query_row(
@@ -80,7 +80,7 @@ async fn test_quota_tracks_envelope_size(#[future] ctx: DataStoreCtx) {
     let after_update: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let did_str = did_str.clone();
             move |conn| {
                 conn.query_row(
@@ -110,7 +110,7 @@ async fn test_quota_exceeded_rejects_upload(#[future] ctx: DataStoreCtx) {
     // Set a tiny quota.
     ctx.store
         .db()
-        .async_call(move |conn| {
+        .call(move |conn| {
             conn.execute(
                 "UPDATE user_quotas SET quota_bytes = 1 WHERE owner = ?",
                 params![&did_str],
@@ -145,7 +145,7 @@ async fn test_quota_released_on_gc(#[future] ctx: DataStoreCtx) {
     let initial_used: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let did_str = did_str.clone();
             move |conn| {
                 conn.query_row(
@@ -173,7 +173,7 @@ async fn test_quota_released_on_gc(#[future] ctx: DataStoreCtx) {
     let after_create: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let did_str = did_str.clone();
             move |conn| {
                 conn.query_row(
@@ -192,7 +192,7 @@ async fn test_quota_released_on_gc(#[future] ctx: DataStoreCtx) {
     let past = OffsetDateTime::now_utc().unix_timestamp() - 1;
     ctx.store
         .db()
-        .async_call(move |conn| {
+        .call(move |conn| {
             conn.execute(
                 "UPDATE record_pins SET expires = ? WHERE record_id = ?",
                 params![past, &id_str],
@@ -209,7 +209,7 @@ async fn test_quota_released_on_gc(#[future] ctx: DataStoreCtx) {
     let after_gc: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let did_str = did_str.clone();
             move |conn| {
                 conn.query_row(
@@ -238,7 +238,7 @@ async fn test_quota_shared_by_multiple_pinners(#[future] ctx: DataStoreCtx) {
     let alice_initial: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let alice_did = alice_did.clone();
             move |conn| {
                 conn.query_row(
@@ -255,7 +255,7 @@ async fn test_quota_shared_by_multiple_pinners(#[future] ctx: DataStoreCtx) {
     let bob_initial: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let bob_did = bob_did.clone();
             move |conn| {
                 conn.query_row(
@@ -282,7 +282,7 @@ async fn test_quota_shared_by_multiple_pinners(#[future] ctx: DataStoreCtx) {
     let alice_after: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let alice_did = alice_did.clone();
             move |conn| {
                 conn.query_row(
@@ -307,7 +307,7 @@ async fn test_quota_shared_by_multiple_pinners(#[future] ctx: DataStoreCtx) {
     let bob_after: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let bob_did = bob_did.clone();
             move |conn| {
                 conn.query_row(
@@ -330,7 +330,7 @@ async fn test_quota_shared_by_multiple_pinners(#[future] ctx: DataStoreCtx) {
     let id_str = record_id.to_string();
     ctx.store
         .db()
-        .async_call({
+        .call({
             let alice_did = alice_did.clone();
             move |conn| {
                 conn.execute(
@@ -350,7 +350,7 @@ async fn test_quota_shared_by_multiple_pinners(#[future] ctx: DataStoreCtx) {
     let alice_gc: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let alice_did = alice_did.clone();
             move |conn| {
                 conn.query_row(
@@ -370,7 +370,7 @@ async fn test_quota_shared_by_multiple_pinners(#[future] ctx: DataStoreCtx) {
     let record_exists: i64 = ctx
         .store
         .db()
-        .async_call(move |conn| {
+        .call(move |conn| {
             conn.query_row(
                 "SELECT COUNT(*) FROM records WHERE id = ?",
                 params![&id_str],

@@ -132,7 +132,7 @@ pub async fn store_envelope(
     let record_clone = record.clone();
     let new_acl = Acl::load(&new_doc)?;
 
-    db.async_call_mut(move |conn| {
+    db.call_mut(move |conn| {
         let tx = conn.transaction()?;
 
         let pinners = {
@@ -304,14 +304,14 @@ pub(super) async fn fetch_all_envelopes(
     record_id: &str,
 ) -> anyhow::Result<Vec<Vec<u8>>> {
     let record_id = record_id.to_string();
-    db.async_call(move |conn| fetch_all_envelopes_sync(conn, &record_id))
+    db.call(move |conn| fetch_all_envelopes_sync(conn, &record_id))
         .await
 }
 
 /// Async wrapper for getting record version vector.
 pub(super) async fn get_record_vv(db: &Database, record_id: &str) -> anyhow::Result<VersionVector> {
     let record_id = record_id.to_string();
-    db.async_call(move |conn| get_record_vv_sync(conn, &record_id))
+    db.call(move |conn| get_record_vv_sync(conn, &record_id))
         .await
 }
 
@@ -319,7 +319,7 @@ pub(super) async fn get_record_vv(db: &Database, record_id: &str) -> anyhow::Res
 pub async fn reconstruct_current_doc(db: &Database, record_id: &str) -> anyhow::Result<LoroDoc> {
     let record_id = record_id.to_string();
     let existing = db
-        .async_call(move |conn| fetch_all_envelopes_sync(conn, &record_id))
+        .call(move |conn| fetch_all_envelopes_sync(conn, &record_id))
         .await?;
 
     let doc = LoroDoc::new();

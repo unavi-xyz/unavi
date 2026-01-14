@@ -1,7 +1,7 @@
 use xdid::methods::key::{DidKeyPair, p256::P256KeyPair};
 use zeroize::Zeroizing;
 
-use crate::DIRS;
+use crate::assets::DIRS;
 
 const KEY_FILE: &str = "key.pem";
 

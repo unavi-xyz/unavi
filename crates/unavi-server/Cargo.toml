@@ -22,6 +22,7 @@ directories.workspace = true
 iroh                  = { default-features = true, workspace = true }
 p256                  = "0.13.2"
 tokio                 = { features = ["full"], workspace = true }
+tower-http            = { features = ["cors"], version = "0.6.8" }
 tracing.workspace     = true
 tracing-subscriber    = { features = ["env-filter"], workspace = true }
 wds.path              = "../wds"

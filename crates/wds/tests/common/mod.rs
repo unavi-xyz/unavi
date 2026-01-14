@@ -84,7 +84,7 @@ pub async fn multi_ctx() -> MultiStoreCtx {
         carthage
             .store
             .db()
-            .async_call(move |conn| {
+            .call(move |conn| {
                 conn.execute(
                     "INSERT INTO user_quotas (owner, bytes_used, quota_bytes) VALUES (?, 0, 10000000)",
                     params![&did_str],
@@ -152,7 +152,7 @@ pub async fn multi_ctx_local() -> LocalStoreCtx {
         let did_str = did.to_string();
         store
             .db()
-            .async_call(move |conn| {
+            .call(move |conn| {
                 conn.execute(
                     "INSERT OR IGNORE INTO user_quotas (owner, bytes_used, quota_bytes) VALUES (?, 0, 10000000)",
                     params![&did_str],

@@ -7,6 +7,7 @@ use std::{
 use axum::{Json, Router};
 use directories::ProjectDirs;
 use iroh::{Endpoint, EndpointId};
+use tower_http::cors::CorsLayer;
 use tracing::info;
 use wds::DataStore;
 use xdid::{
@@ -83,45 +84,51 @@ const KEY_FRAGMENT: &str = "key";
 fn create_did_document_route(did: Did, vc: &impl DidKeyPair, endpoint_id: EndpointId) -> Router {
     let vc_public = vc.public().to_jwk();
 
-    Router::new().route(
-        "/.well-known/did.json",
-        axum::routing::get(move || async move {
-            let doc = Document {
-                id: did.clone(),
-                also_known_as: None,
-                assertion_method: Some(vec![VerificationMethod::RelativeUrl(RelativeDidUrl {
-                    path: RelativeDidUrlPath::Empty,
-                    query: None,
-                    fragment: Some(KEY_FRAGMENT.into()),
-                })]),
-                authentication: Some(vec![VerificationMethod::RelativeUrl(RelativeDidUrl {
-                    path: RelativeDidUrlPath::Empty,
-                    query: None,
-                    fragment: Some(KEY_FRAGMENT.into()),
-                })]),
-                capability_delegation: None,
-                capability_invocation: None,
-                controller: None,
-                key_agreement: None,
-                service: Some(vec![ServiceEndpoint {
-                    id: "wds".into(),
-                    typ: vec![endpoint_id.to_string()],
-                }]),
-                verification_method: Some(vec![VerificationMethodMap {
-                    id: DidUrl {
-                        did: did.clone(),
-                        fragment: Some(KEY_FRAGMENT.into()),
+    Router::new()
+        .route(
+            "/.well-known/did.json",
+            axum::routing::get(move || async move {
+                let doc = Document {
+                    id: did.clone(),
+                    also_known_as: None,
+                    assertion_method: Some(vec![VerificationMethod::RelativeUrl(RelativeDidUrl {
+                        path: RelativeDidUrlPath::Empty,
                         query: None,
-                        path_abempty: None,
-                    },
-                    controller: did.clone(),
-                    typ: "JsonWebKey2020".into(),
-                    public_key_multibase: None,
-                    public_key_jwk: Some(vc_public.clone()),
-                }]),
-            };
+                        fragment: Some(KEY_FRAGMENT.into()),
+                    })]),
+                    authentication: Some(vec![VerificationMethod::RelativeUrl(RelativeDidUrl {
+                        path: RelativeDidUrlPath::Empty,
+                        query: None,
+                        fragment: Some(KEY_FRAGMENT.into()),
+                    })]),
+                    capability_delegation: None,
+                    capability_invocation: None,
+                    controller: None,
+                    key_agreement: None,
+                    service: Some(vec![ServiceEndpoint {
+                        id: "wds".into(),
+                        typ: vec![endpoint_id.to_string()],
+                    }]),
+                    verification_method: Some(vec![VerificationMethodMap {
+                        id: DidUrl {
+                            did: did.clone(),
+                            fragment: Some(KEY_FRAGMENT.into()),
+                            query: None,
+                            path_abempty: None,
+                        },
+                        controller: did.clone(),
+                        typ: "JsonWebKey2020".into(),
+                        public_key_multibase: None,
+                        public_key_jwk: Some(vc_public.clone()),
+                    }]),
+                };
 
-            Json(doc)
-        }),
-    )
+                Json(doc)
+            }),
+        )
+        .layer(
+            CorsLayer::new()
+                .allow_origin(tower_http::cors::Any)
+                .allow_methods([axum::http::Method::GET]),
+        )
 }

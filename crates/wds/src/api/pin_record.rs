@@ -26,7 +26,7 @@ pub async fn pin_record(
 
     let result = ctx
         .db
-        .async_call_mut({
+        .call_mut({
             let did_str = did_str.clone();
             let record_id = record_id.clone();
             move |conn| {

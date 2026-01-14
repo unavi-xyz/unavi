@@ -36,6 +36,7 @@ pub async fn handle_outbound(state: NetworkThreadState, remote: EndpointId) -> a
         let pose = Arc::clone(&state.pose);
         let conn = connection.clone();
 
+        // TODO: work on wasm, need handle
         tokio::spawn(async move {
             let result = tokio::select! {
                 r = send_frames(&tickrate, pose, iframe_stream, &conn, remote) => r,

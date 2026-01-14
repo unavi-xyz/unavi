@@ -7,7 +7,6 @@ use bevy::{
     asset::io::web::WebAssetPlugin, light::light_consts::lux, log::LogPlugin, prelude::*,
     window::WindowTheme,
 };
-use bevy_rich_text3d::Text3dPlugin;
 use bitflags::bitflags;
 use blake3::Hash;
 #[cfg(not(target_family = "wasm"))]
@@ -84,7 +83,10 @@ impl Plugin for UnaviPlugin {
             ..default()
         };
         #[cfg(target_family = "wasm")]
-        let asset_plugin = AssetPlugin::default();
+        let asset_plugin = AssetPlugin {
+            meta_check: bevy::asset::AssetMetaCheck::Never,
+            ..default()
+        };
 
         app.add_plugins((
             DefaultPlugins
@@ -110,12 +112,6 @@ impl Plugin for UnaviPlugin {
                     ..default()
                 }),
             avian3d::PhysicsPlugins::default(),
-            Text3dPlugin {
-                asynchronous_load: true,
-                load_system_fonts: true,
-                sync_scale_factor_with_main_window: true,
-                ..default()
-            },
             fade::FadePlugin,
             unavi_input::InputPlugin,
             unavi_player::PlayerPlugin,

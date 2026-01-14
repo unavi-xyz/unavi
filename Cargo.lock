@@ -13054,7 +13054,6 @@ dependencies = [
  "anyhow",
  "avian3d",
  "bevy",
- "bevy_rich_text3d",
  "bevy_vrm",
  "bitflags 2.10.0",
  "blake3",

@@ -22,6 +22,6 @@ unavi-input.path   = "../unavi-input"
 unavi-portal.path  = "../unavi-portal"
 
 [dev-dependencies]
-bevy_rich_text3d.workspace = true
-directories.workspace      = true
-rand.workspace             = true
+bevy_rich_text3d      = "0.5.1"
+directories.workspace = true
+rand.workspace        = true

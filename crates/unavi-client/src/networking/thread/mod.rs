@@ -62,6 +62,7 @@ impl NetworkingThread {
         let (command_tx, command_rx) = flume::bounded(CHANNEL_LEN);
         let (event_tx, event_rx) = flume::bounded(CHANNEL_LEN);
 
+        #[cfg(not(target_family = "wasm"))]
         unavi_wasm_compat::spawn_thread(async move {
             while let Err(err) = thread_loop(&opts, &command_rx, &event_tx).await {
                 error!(?err, "Networking thread error");

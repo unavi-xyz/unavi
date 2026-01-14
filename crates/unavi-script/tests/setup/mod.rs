@@ -59,5 +59,5 @@ pub fn construct_script(app: &mut App) {
 
 pub fn tick_app(app: &mut App) {
     app.update();
-    std::thread::sleep(2 * TICK);
+    unavi_wasm_compat::sleep_thread(2 * TICK);
 }

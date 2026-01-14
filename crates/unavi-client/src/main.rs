@@ -88,7 +88,7 @@ fn main() {
         .run();
 
     // Give time for other threads to finish.
-    std::thread::sleep(Duration::from_millis(200));
+    unavi_wasm_compat::sleep_thread(Duration::from_millis(200));
 
     info!("Graceful exit");
 }

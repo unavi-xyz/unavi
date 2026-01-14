@@ -20,35 +20,34 @@ workspace = true
 embed-resource.workspace = true
 
 [dependencies]
-anyhow.workspace           = true
-avian3d.workspace          = true
-bevy                       = { default-features = true, features = ["https", "jpeg"], workspace = true }
-bevy_rich_text3d.workspace = true
-bevy_vrm.workspace         = true
-bitflags                   = "2.10.0"
-blake3.workspace           = true
-clap.workspace             = true
-flume                      = "0.12.0"
-image                      = { features = ["png"], workspace = true }
-iroh-gossip                = "0.95.0"
-log                        = { features = ["max_level_debug", "release_max_level_warn"], version = "*" }
-loro.workspace             = true
-parking_lot.workspace      = true
-postcard.workspace         = true
-rand.workspace             = true
-scc.workspace              = true
-serde.workspace            = true
-time.workspace             = true
-tracing                    = { features = ["max_level_debug", "release_max_level_warn"], workspace = true }
-unavi-assets.path          = "../unavi-assets"
-unavi-input.path           = "../unavi-input"
-unavi-player.path          = "../unavi-player"
-unavi-portal.path          = "../unavi-portal"
-unavi-wasm-compat.path     = "../unavi-wasm-compat"
-wds.path                   = "../wds"
-winit                      = { default-features = false, version = "0.30.12" }
-xdid.workspace             = true
-zeroize.workspace          = true
+anyhow.workspace       = true
+avian3d.workspace      = true
+bevy                   = { default-features = true, features = ["https", "jpeg"], workspace = true }
+bevy_vrm.workspace     = true
+bitflags               = "2.10.0"
+blake3.workspace       = true
+clap.workspace         = true
+flume                  = "0.12.0"
+image                  = { features = ["png"], workspace = true }
+iroh-gossip            = "0.95.0"
+log                    = { features = ["max_level_debug", "release_max_level_warn"], version = "*" }
+loro.workspace         = true
+parking_lot.workspace  = true
+postcard.workspace     = true
+rand.workspace         = true
+scc.workspace          = true
+serde.workspace        = true
+time.workspace         = true
+tracing                = { features = ["max_level_debug", "release_max_level_warn"], workspace = true }
+unavi-assets.path      = "../unavi-assets"
+unavi-input.path       = "../unavi-input"
+unavi-player.path      = "../unavi-player"
+unavi-portal.path      = "../unavi-portal"
+unavi-wasm-compat.path = "../unavi-wasm-compat"
+wds.path               = "../wds"
+winit                  = { default-features = false, version = "0.30.12" }
+xdid.workspace         = true
+zeroize.workspace      = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 iroh.workspace       = true

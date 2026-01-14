@@ -76,16 +76,18 @@ impl LocalPlayerSpawner {
                 Hdr,
                 Atmosphere::EARTH,
                 AtmosphereSettings::default(),
-                AutoExposure {
-                    range: -4.0..=4.0,
-                    ..Default::default()
-                },
                 Exposure::SUNLIGHT,
                 Bloom::OLD_SCHOOL,
                 Msaa::Sample4,
                 Transform::default().looking_at(Vec3::NEG_Z, Vec3::Y),
                 RenderLayers::from_layers(&[0, PORTAL_RENDER_LAYER])
                     .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::FirstPersonOnly]),
+                // https://github.com/bevyengine/bevy/issues/14340
+                #[cfg(not(target_family = "wasm"))]
+                AutoExposure {
+                    range: -4.0..=4.0,
+                    ..Default::default()
+                },
             ))
             .id();
 

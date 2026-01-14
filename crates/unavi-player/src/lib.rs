@@ -51,6 +51,7 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
+            #[cfg(not(target_family = "wasm"))]
             AutoExposurePlugin,
             TnuaControllerPlugin::<ControlScheme>::new(FixedUpdate),
             TnuaAvian3dPlugin::new(FixedUpdate),

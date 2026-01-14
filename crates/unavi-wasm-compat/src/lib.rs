@@ -62,3 +62,16 @@ pub async fn sleep(duration: Duration) {
 pub async fn sleep(duration: Duration) {
     gloo_timers::future::TimeoutFuture::new(duration.as_millis() as u32).await;
 }
+
+/// Sleep a thread for a duration.
+///
+/// On native: uses [`std::thread::sleep`].
+/// On WASM:
+#[cfg(not(target_family = "wasm"))]
+pub fn sleep_thread(duration: Duration) {
+    std::thread::sleep(duration);
+}
+#[cfg(target_family = "wasm")]
+pub fn sleep_thread(duration: Duration) {
+    // TODO
+}

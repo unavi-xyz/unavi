@@ -33,7 +33,7 @@ pub async fn upload_blob(
     // Ensure quota exists and get current quota info.
     let (bytes_used, quota_bytes) = ctx
         .db
-        .async_call({
+        .call({
             let did_str = did_str.clone();
             move |conn| {
                 ensure_quota_exists(conn, &did_str)?;
@@ -93,7 +93,7 @@ pub async fn upload_blob(
 
     let quota_ok = ctx
         .db
-        .async_call_mut({
+        .call_mut({
             let did_str = did_str.clone();
             let hash_str = hash_str.clone();
             move |conn| {

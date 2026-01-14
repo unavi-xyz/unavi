@@ -34,12 +34,10 @@ where
 /// Sleep a thread for a duration.
 ///
 /// On native: uses [`std::thread::sleep`].
-/// On WASM:
+/// On WASM: does nothing.
 #[cfg(not(target_family = "wasm"))]
 pub fn sleep_thread(duration: Duration) {
     std::thread::sleep(duration);
 }
 #[cfg(target_family = "wasm")]
-pub fn sleep_thread(duration: Duration) {
-    // n0_future::time::sleep(duration);
-}
+pub fn sleep_thread(_duration: Duration) {}

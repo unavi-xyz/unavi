@@ -2,4 +2,5 @@
 target = "crates/unavi-client/index.html"
 
 [watch]
-watch = ["crates"]
+ignore = ["crates/unavi-server"]
+watch  = ["crates"]

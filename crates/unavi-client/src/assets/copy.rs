@@ -2,8 +2,6 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Context;
 
-use crate::assets_dir;
-
 /// Copy bundled assets from the relative asset directory to state location.
 ///
 /// In dev: copies from `CARGO_MANIFEST_DIR/assets`
@@ -20,7 +18,7 @@ pub fn copy_assets_to_dirs() -> anyhow::Result<()> {
         return Ok(());
     }
 
-    let dest_dir = assets_dir();
+    let dest_dir = super::assets_dir();
     std::fs::create_dir_all(&dest_dir).context("create assets directory")?;
 
     copy_dir_recursive(&source_dir, &dest_dir)?;

@@ -1,8 +1,9 @@
 use std::{path::Path, sync::Arc};
 
 use anyhow::{Context, Result};
-use parking_lot::Mutex;
 use rusqlite::Connection;
+use time::OffsetDateTime;
+use tokio::sync::Mutex;
 
 const MIGRATIONS: &[&str] = &[include_str!("../migrations/001_initial.sql")];
 
@@ -19,10 +20,10 @@ impl Database {
     /// Errors if the connection could not be opened or if migration fails.
     pub fn new(db_path: &Path) -> Result<Self> {
         let conn = Connection::open(db_path).context("open sqlite database")?;
+        run_migrations(&conn)?;
         let db = Self {
             conn: Arc::new(Mutex::new(conn)),
         };
-        db.run_migrations()?;
         Ok(db)
     }
 
@@ -33,10 +34,10 @@ impl Database {
     /// Errors if the connection could not be opened or if migration fails.
     pub fn new_in_memory() -> Result<Self> {
         let conn = Connection::open_in_memory().context("open in-memory sqlite")?;
+        run_migrations(&conn)?;
         let db = Self {
             conn: Arc::new(Mutex::new(conn)),
         };
-        db.run_migrations()?;
         Ok(db)
     }
 
@@ -45,18 +46,17 @@ impl Database {
     /// # Errors
     ///
     /// Errors if the task could not be joined.
-    pub async fn async_call<F, T>(&self, f: F) -> Result<T>
+    pub async fn call<F, T>(&self, f: F) -> Result<T>
     where
         F: FnOnce(&Connection) -> Result<T> + Send + 'static,
         T: Send + 'static,
     {
         let conn = Arc::clone(&self.conn);
-        tokio::task::spawn_blocking(move || {
-            let conn = conn.lock();
+        let handle = n0_future::task::spawn(async move {
+            let conn = conn.lock().await;
             f(&conn)
-        })
-        .await
-        .context("spawn_blocking join")?
+        });
+        handle.await?
     }
 
     /// Async wrapper for mutable connection access (transactions).
@@ -64,67 +64,56 @@ impl Database {
     /// # Errors
     ///
     /// Errors if the task could not be joined.
-    pub async fn async_call_mut<F, T>(&self, f: F) -> Result<T>
+    pub async fn call_mut<F, T>(&self, f: F) -> Result<T>
     where
         F: FnOnce(&mut Connection) -> Result<T> + Send + 'static,
         T: Send + 'static,
     {
         let conn = Arc::clone(&self.conn);
-        tokio::task::spawn_blocking(move || {
-            let mut conn = conn.lock();
+        let handle = n0_future::task::spawn(async move {
+            let mut conn = conn.lock().await;
             f(&mut conn)
-        })
-        .await
-        .context("spawn_blocking join")?
+        });
+        handle.await?
     }
+}
 
-    fn run_migrations(&self) -> Result<()> {
-        let conn = self.conn.lock();
-
-        // Create migrations table if needed.
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS _migrations (
+fn run_migrations(conn: &Connection) -> Result<()> {
+    // Create migrations table if needed.
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS _migrations (
                 id INTEGER PRIMARY KEY,
                 applied INTEGER NOT NULL
             )",
-            [],
-        )
-        .context("create migrations table")?;
+        [],
+    )
+    .context("create migrations table")?;
 
-        // Get current migration version.
-        let current: i64 = conn
-            .query_row("SELECT COALESCE(MAX(id), 0) FROM _migrations", [], |row| {
-                row.get(0)
-            })
-            .context("get migration version")?;
+    // Get current migration version.
+    let current: i64 = conn
+        .query_row("SELECT COALESCE(MAX(id), 0) FROM _migrations", [], |row| {
+            row.get(0)
+        })
+        .context("get migration version")?;
 
-        // Apply pending migrations.
-        for (i, migration) in MIGRATIONS.iter().enumerate() {
-            let version = i64::try_from(i + 1).expect("migration count exceeds i64::MAX");
-            if version <= current {
-                continue;
-            }
-
-            conn.execute_batch(migration)
-                .with_context(|| format!("apply migration {version}"))?;
-
-            let now = i64::try_from(
-                std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .expect("system time")
-                    .as_secs(),
-            )
-            .expect("timestamp overflow");
-
-            conn.execute(
-                "INSERT INTO _migrations (id, applied) VALUES (?, ?)",
-                rusqlite::params![version, now],
-            )
-            .context("record migration")?;
+    // Apply pending migrations.
+    for (i, migration) in MIGRATIONS.iter().enumerate() {
+        let version = i64::try_from(i + 1).expect("migration count exceeds i64::MAX");
+        if version <= current {
+            continue;
         }
 
-        drop(conn);
+        conn.execute_batch(migration)
+            .with_context(|| format!("apply migration {version}"))?;
 
-        Ok(())
+        let now = OffsetDateTime::now_utc().unix_timestamp();
+
+        conn.execute(
+            "INSERT INTO _migrations (id, applied) VALUES (?, ?)",
+            rusqlite::params![version, now],
+        )
+        .context("record migration")?;
     }
+
+    Ok(())
 }

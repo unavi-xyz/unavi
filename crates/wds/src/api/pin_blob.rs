@@ -26,7 +26,7 @@ pub async fn pin_blob(
 
     let rows_affected = ctx
         .db
-        .async_call_mut({
+        .call_mut({
             let did_str = did_str.clone();
             let hash_str = hash_str.clone();
             move |conn| {

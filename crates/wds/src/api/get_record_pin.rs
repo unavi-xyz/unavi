@@ -19,7 +19,7 @@ pub async fn get_record_pin(
 
     let expires = ctx
         .db
-        .async_call(move |conn| {
+        .call(move |conn| {
             let result: Option<i64> = conn
                 .query_row(
                     "SELECT expires FROM record_pins WHERE owner = ? AND record_id = ?",

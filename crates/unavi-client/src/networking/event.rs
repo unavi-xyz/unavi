@@ -7,6 +7,7 @@ use unavi_player::{
 };
 
 use crate::networking::{
+    WdsActors,
     player_receive::{RemotePlayer, TransformTarget},
     thread::{InboundState, NetworkEvent, NetworkingThread},
 };
@@ -18,6 +19,7 @@ pub fn recv_network_event(
     mut commands: Commands,
     mut nt: ResMut<NetworkingThread>,
     asset_server: Res<AssetServer>,
+    prev_actors: Query<Entity, With<WdsActors>>,
 ) {
     while let Ok(event) = nt.event_rx.try_recv() {
         match event {
@@ -52,8 +54,12 @@ pub fn recv_network_event(
             NetworkEvent::PlayerLeave(_id) => {
                 // TODO despawn player
             }
-            NetworkEvent::SetActors(_) => {
-                unreachable!("should only be called once on init")
+            NetworkEvent::SetActors(actors) => {
+                for ent in prev_actors {
+                    commands.entity(ent).despawn();
+                }
+
+                commands.spawn(actors);
             }
         }
     }

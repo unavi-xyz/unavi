@@ -15,20 +15,11 @@ pub struct NetworkingPlugin {
 
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
-        let mut nt = thread::NetworkingThread::spawn(thread::NetworkingThreadOpts {
+        let nt = thread::NetworkingThread::spawn(thread::NetworkingThreadOpts {
             wds_in_memory: self.wds_in_memory,
         });
 
-        let thread::NetworkEvent::SetActors(actors) = nt
-            .event_rx
-            .blocking_recv()
-            .expect("recv first network event")
-        else {
-            panic!("invalid first network event")
-        };
-
         app.insert_resource(nt)
-            .insert_resource(actors)
             .insert_resource(TrackedBones(TrackedBones::full()))
             .add_systems(
                 FixedUpdate,
@@ -44,7 +35,7 @@ impl Plugin for NetworkingPlugin {
     }
 }
 
-#[derive(Resource, Clone)]
+#[derive(Component, Clone)]
 pub struct WdsActors {
     pub local: Actor,
     pub remote: Option<Actor>,

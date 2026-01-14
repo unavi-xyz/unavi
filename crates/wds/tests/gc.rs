@@ -30,7 +30,7 @@ async fn test_gc_expired_record_pin(#[future] ctx: DataStoreCtx) {
     let exists: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let id_str = id_str.clone();
             move |conn| {
                 conn.query_row(
@@ -49,7 +49,7 @@ async fn test_gc_expired_record_pin(#[future] ctx: DataStoreCtx) {
     let past = OffsetDateTime::now_utc().unix_timestamp() - 1;
     ctx.store
         .db()
-        .async_call(move |conn| {
+        .call(move |conn| {
             conn.execute("UPDATE record_pins SET expires = ?", params![past])?;
             Ok(())
         })
@@ -63,7 +63,7 @@ async fn test_gc_expired_record_pin(#[future] ctx: DataStoreCtx) {
     let pin_count: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let id_str = id_str.clone();
             move |conn| {
                 conn.query_row(
@@ -99,7 +99,7 @@ async fn test_gc_deletes_unpinned_records(#[future] ctx: DataStoreCtx) {
     let record_exists: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let id_str = id_str.clone();
             move |conn| {
                 conn.query_row(
@@ -117,7 +117,7 @@ async fn test_gc_deletes_unpinned_records(#[future] ctx: DataStoreCtx) {
     let envelope_count: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let id_str = id_str.clone();
             move |conn| {
                 conn.query_row(
@@ -136,7 +136,7 @@ async fn test_gc_deletes_unpinned_records(#[future] ctx: DataStoreCtx) {
     let past = OffsetDateTime::now_utc().unix_timestamp() - 1;
     ctx.store
         .db()
-        .async_call(move |conn| {
+        .call(move |conn| {
             conn.execute("UPDATE record_pins SET expires = ?", params![past])?;
             Ok(())
         })
@@ -150,7 +150,7 @@ async fn test_gc_deletes_unpinned_records(#[future] ctx: DataStoreCtx) {
     let record_exists: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let id_str = id_str.clone();
             move |conn| {
                 conn.query_row(
@@ -168,7 +168,7 @@ async fn test_gc_deletes_unpinned_records(#[future] ctx: DataStoreCtx) {
     let envelope_count: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let id_str = id_str.clone();
             move |conn| {
                 conn.query_row(
@@ -195,7 +195,7 @@ async fn test_gc_releases_quota(#[future] ctx: DataStoreCtx) {
     let initial_used: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let did_str = did_str.clone();
             move |conn| {
                 conn.query_row(
@@ -222,7 +222,7 @@ async fn test_gc_releases_quota(#[future] ctx: DataStoreCtx) {
     let after_create: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let did_str = did_str.clone();
             move |conn| {
                 conn.query_row(
@@ -245,7 +245,7 @@ async fn test_gc_releases_quota(#[future] ctx: DataStoreCtx) {
     let id_str = record_id.to_string();
     ctx.store
         .db()
-        .async_call(move |conn| {
+        .call(move |conn| {
             conn.execute(
                 "UPDATE record_pins SET expires = ? WHERE record_id = ?",
                 params![past, &id_str],
@@ -262,7 +262,7 @@ async fn test_gc_releases_quota(#[future] ctx: DataStoreCtx) {
     let after_gc: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let did_str = did_str.clone();
             move |conn| {
                 conn.query_row(
@@ -305,7 +305,7 @@ async fn test_gc_blob_pin_extended_by_record(#[future] ctx: DataStoreCtx) {
     let record_expires: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let id_str = id_str.clone();
             move |conn| {
                 conn.query_row(
@@ -324,7 +324,7 @@ async fn test_gc_blob_pin_extended_by_record(#[future] ctx: DataStoreCtx) {
     let did_str = ctx.alice.identity().did().to_string();
     ctx.store
         .db()
-        .async_call({
+        .call({
             let did_str = did_str.clone();
             let hash_str = hash_str.clone();
             move |conn| {
@@ -345,7 +345,7 @@ async fn test_gc_blob_pin_extended_by_record(#[future] ctx: DataStoreCtx) {
     let blob_pin: Option<i64> = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let did_str = did_str.clone();
             let hash_str = hash_str.clone();
             move |conn| {
@@ -404,7 +404,7 @@ async fn test_gc_blob_pin_deleted_when_orphaned(#[future] ctx: DataStoreCtx) {
     let past = OffsetDateTime::now_utc().unix_timestamp() - 1;
     ctx.store
         .db()
-        .async_call({
+        .call({
             let id_str = id_str.clone();
             move |conn| {
                 conn.execute(
@@ -418,7 +418,7 @@ async fn test_gc_blob_pin_deleted_when_orphaned(#[future] ctx: DataStoreCtx) {
         .expect("update expires");
     ctx.store
         .db()
-        .async_call({
+        .call({
             let did_str = did_str.clone();
             let hash_str = hash_str.clone();
             move |conn| {
@@ -439,7 +439,7 @@ async fn test_gc_blob_pin_deleted_when_orphaned(#[future] ctx: DataStoreCtx) {
     let record_exists: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let id_str = id_str.clone();
             move |conn| {
                 conn.query_row(
@@ -457,7 +457,7 @@ async fn test_gc_blob_pin_deleted_when_orphaned(#[future] ctx: DataStoreCtx) {
     let blob_pin_exists: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let did_str = did_str.clone();
             let hash_str = hash_str.clone();
             move |conn| {
@@ -507,7 +507,7 @@ async fn test_gc_deletes_related_indices(#[future] ctx: DataStoreCtx) {
     let schema_count: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let id_str = id_str.clone();
             move |conn| {
                 conn.query_row(
@@ -525,7 +525,7 @@ async fn test_gc_deletes_related_indices(#[future] ctx: DataStoreCtx) {
     let acl_count: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let id_str = id_str.clone();
             move |conn| {
                 conn.query_row(
@@ -543,7 +543,7 @@ async fn test_gc_deletes_related_indices(#[future] ctx: DataStoreCtx) {
     let dep_count: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let id_str = id_str.clone();
             move |conn| {
                 conn.query_row(
@@ -562,7 +562,7 @@ async fn test_gc_deletes_related_indices(#[future] ctx: DataStoreCtx) {
     let past = OffsetDateTime::now_utc().unix_timestamp() - 1;
     ctx.store
         .db()
-        .async_call(move |conn| {
+        .call(move |conn| {
             conn.execute("UPDATE record_pins SET expires = ?", params![past])?;
             Ok(())
         })
@@ -576,7 +576,7 @@ async fn test_gc_deletes_related_indices(#[future] ctx: DataStoreCtx) {
     let schema_count: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let id_str = id_str.clone();
             move |conn| {
                 conn.query_row(
@@ -594,7 +594,7 @@ async fn test_gc_deletes_related_indices(#[future] ctx: DataStoreCtx) {
     let acl_count: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let id_str = id_str.clone();
             move |conn| {
                 conn.query_row(
@@ -612,7 +612,7 @@ async fn test_gc_deletes_related_indices(#[future] ctx: DataStoreCtx) {
     let dep_count: i64 = ctx
         .store
         .db()
-        .async_call({
+        .call({
             let id_str = id_str.clone();
             move |conn| {
                 conn.query_row(

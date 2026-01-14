@@ -16,7 +16,7 @@ pub struct PlayerInboundState(Arc<InboundState>);
 
 pub fn recv_network_event(
     mut commands: Commands,
-    nt: Res<NetworkingThread>,
+    mut nt: ResMut<NetworkingThread>,
     asset_server: Res<AssetServer>,
 ) {
     while let Ok(event) = nt.event_rx.try_recv() {

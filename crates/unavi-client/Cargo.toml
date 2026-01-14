@@ -27,11 +27,11 @@ bevy_vrm.workspace     = true
 bitflags               = "2.10.0"
 blake3.workspace       = true
 clap.workspace         = true
-flume                  = "0.12.0"
 image                  = { features = ["png"], workspace = true }
 iroh-gossip            = "0.95.0"
 log                    = { features = ["max_level_debug", "release_max_level_warn"], version = "*" }
 loro.workspace         = true
+n0-future.workspace    = true
 parking_lot.workspace  = true
 postcard.workspace     = true
 rand.workspace         = true

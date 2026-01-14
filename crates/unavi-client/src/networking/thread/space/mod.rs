@@ -31,7 +31,7 @@ pub const DEFAULT_TICKRATE: u8 = 20;
 /// Protocol handler for accepting inbound pose connections.
 #[derive(Debug, Clone)]
 pub struct SpaceProtocol {
-    pub event_tx: flume::Sender<NetworkEvent>,
+    pub event_tx: tokio::sync::mpsc::Sender<NetworkEvent>,
     pub inbound: Arc<scc::HashMap<EndpointId, Arc<InboundState>>>,
 }
 

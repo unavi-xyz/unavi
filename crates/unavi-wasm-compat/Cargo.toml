@@ -9,9 +9,8 @@ version.workspace    = true
 [lints]
 workspace = true
 
-[target.'cfg(target_family = "wasm")'.dependencies]
-gloo-timers          = { features = ["futures"], version = "0.3.0" }
-wasm-bindgen-futures = "0.4.56"
+[dependencies]
+n0-future.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 tokio = { features = ["rt", "time"], workspace = true }

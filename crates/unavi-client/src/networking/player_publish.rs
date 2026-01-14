@@ -90,7 +90,7 @@ pub(super) fn publish_player_transforms(
             bones,
         };
 
-        if let Err(err) = nt.command_tx.send(NetworkCommand::PublishIFrame(frame)) {
+        if let Err(err) = nt.command_tx.try_send(NetworkCommand::PublishIFrame(frame)) {
             error!(?err, "send error");
         }
     } else {
@@ -125,7 +125,7 @@ pub(super) fn publish_player_transforms(
             bones,
         };
 
-        if let Err(err) = nt.command_tx.send(NetworkCommand::PublishPFrame(frame)) {
+        if let Err(err) = nt.command_tx.try_send(NetworkCommand::PublishPFrame(frame)) {
             error!(?err, "send error");
         }
     }

@@ -16,7 +16,7 @@ impl Plugin for SpacePlugin {
         if let Some(id) = self.initial_space {
             app.add_systems(Startup, move |nt: Res<NetworkingThread>| {
                 info!("Joining space: {id}");
-                if let Err(e) = nt.command_tx.send(NetworkCommand::Join(id)) {
+                if let Err(e) = nt.command_tx.try_send(NetworkCommand::Join(id)) {
                     error!("Error sending space join: {e:?}");
                 }
             });

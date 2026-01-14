@@ -26,7 +26,7 @@ pub fn join_home_space(actors: Res<WdsActors>, nt: Res<NetworkingThread>) {
 /// Temporary measure until proper space traversal exists.
 async fn discover_or_home(
     actors: WdsActors,
-    command_tx: flume::Sender<NetworkCommand>,
+    command_tx: tokio::sync::mpsc::Sender<NetworkCommand>,
 ) -> anyhow::Result<()> {
     // Query for beacons.
     let mut beacons = Vec::new();
@@ -74,9 +74,7 @@ async fn discover_or_home(
     if let Some(beacon) = beacons.first() {
         // Join most recent beacon.
         info!("Found populated space: {}", beacon.space);
-        command_tx
-            .send_async(NetworkCommand::Join(beacon.space))
-            .await?;
+        command_tx.send(NetworkCommand::Join(beacon.space)).await?;
     } else {
         // Join home.
         join_home_space_inner(actors, command_tx).await?;
@@ -87,7 +85,7 @@ async fn discover_or_home(
 
 async fn join_home_space_inner(
     actors: WdsActors,
-    command_tx: flume::Sender<NetworkCommand>,
+    command_tx: tokio::sync::mpsc::Sender<NetworkCommand>,
 ) -> anyhow::Result<()> {
     let did = actors.local.identity().did();
 
@@ -105,7 +103,7 @@ async fn join_home_space_inner(
         .await?;
 
     info!("Created home space: {}", res.id);
-    command_tx.send_async(NetworkCommand::Join(res.id)).await?;
+    command_tx.send(NetworkCommand::Join(res.id)).await?;
 
     Ok(())
 }

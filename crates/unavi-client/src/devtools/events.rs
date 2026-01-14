@@ -1,6 +1,6 @@
 //! Network monitoring events.
 
-use std::sync::LazyLock;
+use std::sync::{LazyLock, Mutex};
 
 use iroh::EndpointId;
 
@@ -24,5 +24,10 @@ pub enum NetworkEvent {
 }
 
 /// Global channel for network monitoring events.
-pub static NETWORK_EVENTS: LazyLock<(flume::Sender<NetworkEvent>, flume::Receiver<NetworkEvent>)> =
-    LazyLock::new(flume::unbounded);
+pub static NETWORK_EVENTS: LazyLock<(
+    tokio::sync::mpsc::Sender<NetworkEvent>,
+    Mutex<tokio::sync::mpsc::Receiver<NetworkEvent>>,
+)> = LazyLock::new(|| {
+    let (tx, rx) = tokio::sync::mpsc::channel(64);
+    (tx, Mutex::new(rx))
+});

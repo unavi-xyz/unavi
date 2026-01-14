@@ -11,7 +11,7 @@ use std::{
 use anyhow::bail;
 use bevy::log::{debug, error, info, warn};
 use iroh::{EndpointId, endpoint::SendStream};
-use tokio::task::JoinHandle;
+use n0_future::task::AbortOnDropHandle;
 
 use super::{ControlMsg, DEFAULT_TICKRATE, IFrameMsg, PFrameDatagram};
 use crate::networking::thread::{NetworkThreadState, OutboundConn, PoseState};
@@ -21,23 +21,18 @@ pub async fn handle_outbound(state: NetworkThreadState, remote: EndpointId) -> a
 
     let connection = state.endpoint.connect(remote, super::ALPN).await?;
 
-    // Open control bistream for tickrate negotiation.
     let (ctrl_tx, ctrl_rx) = connection.open_bi().await?;
-
-    // Open I-frame stream (unidirectional).
     let iframe_stream = connection.open_uni().await?;
 
-    // Create channels for receiving from command dispatch.
     let tickrate = Arc::new(AtomicU8::new(DEFAULT_TICKRATE));
 
     // Spawn the main task that handles all sending.
-    let task: JoinHandle<()> = {
+    let task = {
         let tickrate = Arc::clone(&tickrate);
         let pose = Arc::clone(&state.pose);
         let conn = connection.clone();
 
-        // TODO: work on wasm, need handle
-        tokio::spawn(async move {
+        n0_future::task::spawn(async move {
             let result = tokio::select! {
                 r = send_frames(&tickrate, pose, iframe_stream, &conn, remote) => r,
                 r = handle_tickrate(ctrl_tx, ctrl_rx, &tickrate) => r,
@@ -52,7 +47,9 @@ pub async fn handle_outbound(state: NetworkThreadState, remote: EndpointId) -> a
     };
 
     // Register in outbound map.
-    let conn = OutboundConn { task };
+    let conn = OutboundConn {
+        task: AbortOnDropHandle::new(task),
+    };
 
     if let Err((_, existing)) = state.outbound.insert_async(remote, conn).await {
         warn!("duplicate outbound connection to {remote}");
@@ -75,7 +72,7 @@ async fn send_frames(
     loop {
         let hz = tickrate.load(Ordering::Relaxed).max(1);
         let duration = Duration::from_secs_f32(1.0 / f32::from(hz));
-        tokio::time::sleep(duration).await;
+        n0_future::time::sleep(duration).await;
 
         let iframe_lock = pose.iframe.lock();
 
@@ -115,7 +112,7 @@ async fn send_iframe(
     #[cfg(feature = "devtools-network")]
     {
         use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
-        let _ = NETWORK_EVENTS.0.send(NetworkEvent::Upload {
+        let _ = NETWORK_EVENTS.0.try_send(NetworkEvent::Upload {
             peer: remote,
             bytes: bytes.len() + 4,
             is_iframe: true,
@@ -145,7 +142,7 @@ fn send_pframe(
     #[cfg(feature = "devtools-network")]
     {
         use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
-        let _ = NETWORK_EVENTS.0.send(NetworkEvent::Upload {
+        let _ = NETWORK_EVENTS.0.try_send(NetworkEvent::Upload {
             peer: remote,
             bytes: bytes.len(),
             is_iframe: false,

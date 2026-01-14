@@ -26,11 +26,11 @@ pub fn publish_beacons(
     *last = now;
 
     for space in spaces {
-        if let Err(e) = nt.command_tx.send(NetworkCommand::PublishBeacon {
+        if let Err(err) = nt.command_tx.try_send(NetworkCommand::PublishBeacon {
             id: space.0,
             ttl: BEACON_TTL,
         }) {
-            error!("error sending network command: {e:?}");
+            error!(?err, "failed to send network command");
         }
     }
 }

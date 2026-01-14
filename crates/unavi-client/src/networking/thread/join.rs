@@ -91,7 +91,7 @@ pub async fn handle_join(state: NetworkThreadState, space_id: Hash) -> anyhow::R
     // Create space in ECS.
     let mut commands = CommandQueue::default();
     commands.push(bevy::ecs::system::command::spawn_batch([(Space(space_id))]));
-    ASYNC_COMMAND_QUEUE.0.send_async(commands).await?;
+    ASYNC_COMMAND_QUEUE.0.send(commands).await?;
 
     handle_gossip_inbound(state, tx, rx).await?;
 
@@ -152,7 +152,7 @@ async fn handle_gossip_inbound(
                         // Outbound handler will register itself in state.outbound.
                         let state = state.clone();
                         let remote = join.endpoint;
-                        unavi_wasm_compat::spawn(async move {
+                        n0_future::task::spawn(async move {
                             if let Err(err) =
                                 super::space::outbound::handle_outbound(state, remote).await
                             {

@@ -10,14 +10,15 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace  = true
-bevy              = { default-features = true, workspace = true }
-bevy_async_task   = "0.11.1"
-futures.workspace = true
-tokio.workspace   = true
-tracing.workspace = true
-wasmtime          = "40.0.0"
-wasmtime-wasi     = { default-features = false, version = "40.0.0" }
+anyhow.workspace    = true
+bevy                = { default-features = true, workspace = true }
+bevy_async_task     = "0.11.1"
+futures.workspace   = true
+n0-future.workspace = true
+tokio.workspace     = true
+tracing.workspace   = true
+wasmtime            = "40.0.0"
+wasmtime-wasi       = { default-features = false, version = "40.0.0" }
 
 [dev-dependencies]
 tracing-subscriber.workspace = true

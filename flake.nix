@@ -189,7 +189,8 @@
 
                 default = pkgs.crane.devShell {
                   packages =
-                    (with pkgs; [
+                    packages
+                    ++ (with pkgs; [
                       age
                       bacon
                       cargo-deny
@@ -212,8 +213,7 @@
                       llvmPackages_21.libclang.lib
                       llvmPackages_21.lld
                       llvmPackages_21.llvm
-                    ])
-                    ++ packages;
+                    ]);
 
                   inherit LD_LIBRARY_PATH;
 

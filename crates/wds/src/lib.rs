@@ -127,7 +127,7 @@ impl DataStoreBuilder {
                     if let Err(err) = ctx.run_gc().await {
                         tracing::error!(?err, "error during garbage collection");
                     }
-                    unavi_wasm_compat::sleep(duration).await;
+                    n0_future::time::sleep(duration).await;
                 }
             });
             AbortOnDropHandle::new(handle)

@@ -124,7 +124,9 @@ impl NetworkStats {
 }
 
 pub fn collect_network_events(mut stats: ResMut<NetworkStats>) {
-    while let Ok(event) = NETWORK_EVENTS.1.try_recv() {
+    let mut guard = NETWORK_EVENTS.1.lock().expect("never poisons");
+
+    while let Ok(event) = guard.try_recv() {
         match event {
             NetworkEvent::Download { peer, bytes } => {
                 stats.get_or_create_peer(peer).record_download(bytes);

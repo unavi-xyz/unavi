@@ -10,8 +10,8 @@ use bevy::{log::tracing::Instrument, prelude::*};
 use blake3::Hash;
 use iroh::{Endpoint, EndpointId};
 use iroh_gossip::Gossip;
+use n0_future::task::AbortOnDropHandle;
 use parking_lot::Mutex;
-use tokio::task::JoinHandle;
 use wds::{DataStore, actor::Actor, identity::Identity};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
@@ -47,11 +47,9 @@ pub enum NetworkEvent {
 
 #[derive(Resource)]
 pub struct NetworkingThread {
-    pub command_tx: flume::Sender<NetworkCommand>,
-    pub event_rx: flume::Receiver<NetworkEvent>,
+    pub command_tx: tokio::sync::mpsc::Sender<NetworkCommand>,
+    pub event_rx: tokio::sync::mpsc::Receiver<NetworkEvent>,
 }
-
-const CHANNEL_LEN: usize = 32;
 
 pub struct NetworkingThreadOpts {
     pub wds_in_memory: bool,
@@ -59,14 +57,13 @@ pub struct NetworkingThreadOpts {
 
 impl NetworkingThread {
     pub fn spawn(opts: NetworkingThreadOpts) -> Self {
-        let (command_tx, command_rx) = flume::bounded(CHANNEL_LEN);
-        let (event_tx, event_rx) = flume::bounded(CHANNEL_LEN);
+        let (command_tx, mut command_rx) = tokio::sync::mpsc::channel(16);
+        let (event_tx, event_rx) = tokio::sync::mpsc::channel(32);
 
-        #[cfg(not(target_family = "wasm"))]
         unavi_wasm_compat::spawn_thread(async move {
-            while let Err(err) = thread_loop(&opts, &command_rx, &event_tx).await {
+            while let Err(err) = thread_loop(&opts, &mut command_rx, &event_tx).await {
                 error!(?err, "Networking thread error");
-                unavi_wasm_compat::sleep(Duration::from_secs(5)).await;
+                n0_future::time::sleep(Duration::from_secs(5)).await;
             }
         });
 
@@ -78,7 +75,7 @@ impl NetworkingThread {
 }
 
 pub struct OutboundConn {
-    task: JoinHandle<()>,
+    task: AbortOnDropHandle<()>,
 }
 
 #[derive(Debug)]
@@ -116,11 +113,10 @@ pub struct NetworkThreadState {
     pub pose: Arc<PoseState>,
 }
 
-#[allow(clippy::too_many_lines)]
 async fn thread_loop(
     opts: &NetworkingThreadOpts,
-    command_rx: &flume::Receiver<NetworkCommand>,
-    event_tx: &flume::Sender<NetworkEvent>,
+    command_rx: &mut tokio::sync::mpsc::Receiver<NetworkCommand>,
+    event_tx: &tokio::sync::mpsc::Sender<NetworkEvent>,
 ) -> anyhow::Result<()> {
     let endpoint = Endpoint::builder().bind().await?;
     info!("Local endpoint: {}", endpoint.id());
@@ -164,7 +160,7 @@ async fn thread_loop(
     let remote_actor = remote_host.map(|h| store.remote_actor(identity, h));
 
     event_tx
-        .send_async(NetworkEvent::SetActors(WdsActors {
+        .send(NetworkEvent::SetActors(WdsActors {
             local: local_actor.clone(),
             remote: remote_actor.clone(),
         }))
@@ -182,13 +178,13 @@ async fn thread_loop(
         pose: Arc::default(),
     };
 
-    loop {
-        match command_rx.recv_async().await? {
+    while let Some(cmd) = command_rx.recv().await {
+        match cmd {
             NetworkCommand::Join(id) => {
                 let state = state.clone();
                 let span = info_span!("", space = %id);
 
-                unavi_wasm_compat::spawn(
+                n0_future::task::spawn(
                     async move {
                         if let Err(err) = join::handle_join(state, id).await {
                             error!(?err, "error joining space");
@@ -203,7 +199,7 @@ async fn thread_loop(
             NetworkCommand::PublishBeacon { id, ttl } => {
                 let state = state.clone();
 
-                unavi_wasm_compat::spawn(async move {
+                n0_future::task::spawn(async move {
                     if let Err(err) = publish_beacon::publish_beacon(state, id, ttl).await {
                         error!(?err, "error publishing beacon");
                     }

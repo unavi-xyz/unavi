@@ -11,7 +11,7 @@ use super::{ControlMsg, DEFAULT_TICKRATE, IFrameMsg, PFrameDatagram};
 use crate::networking::thread::{InboundState, NetworkEvent};
 
 pub async fn handle_inbound(
-    event_tx: flume::Sender<NetworkEvent>,
+    event_tx: tokio::sync::mpsc::Sender<NetworkEvent>,
     inbound_map: Arc<scc::HashMap<EndpointId, Arc<InboundState>>>,
     connection: Connection,
 ) -> anyhow::Result<()> {
@@ -29,7 +29,7 @@ pub async fn handle_inbound(
         .map_err(|_| anyhow::anyhow!("failed to insert inbound state"))?;
 
     event_tx
-        .send_async(NetworkEvent::PlayerJoin {
+        .send(NetworkEvent::PlayerJoin {
             id: remote,
             state: Arc::clone(&state),
         })
@@ -77,13 +77,13 @@ async fn recv_iframes(
         #[cfg(feature = "devtools-network")]
         {
             use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
-            let _ = NETWORK_EVENTS.0.send(NetworkEvent::Download {
+            let _ = NETWORK_EVENTS.0.try_send(NetworkEvent::Download {
                 peer: remote,
                 bytes: buf.len() + 4,
             });
             let _ = NETWORK_EVENTS
                 .0
-                .send(NetworkEvent::ValidTick { peer: remote });
+                .try_send(NetworkEvent::ValidTick { peer: remote });
         }
 
         *state.pose.iframe.lock() = Some(msg);
@@ -117,7 +117,7 @@ async fn recv_pframes(
                 use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
                 let _ = NETWORK_EVENTS
                     .0
-                    .send(NetworkEvent::DroppedFrame { peer: remote });
+                    .try_send(NetworkEvent::DroppedFrame { peer: remote });
             }
 
             debug!(
@@ -130,13 +130,13 @@ async fn recv_pframes(
         #[cfg(feature = "devtools-network")]
         {
             use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
-            let _ = NETWORK_EVENTS.0.send(NetworkEvent::Download {
+            let _ = NETWORK_EVENTS.0.try_send(NetworkEvent::Download {
                 peer: remote,
                 bytes: datagram.len(),
             });
             let _ = NETWORK_EVENTS
                 .0
-                .send(NetworkEvent::ValidTick { peer: remote });
+                .try_send(NetworkEvent::ValidTick { peer: remote });
         }
 
         *state.pose.pframe.lock() = Some(msg);

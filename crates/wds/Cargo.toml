@@ -10,36 +10,36 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace       = true
-blake3.workspace       = true
-bytes                  = "1.11.0"
-derive_more            = { features = ["debug"], version = "2.1.1" }
-futures.workspace      = true
-iroh.workspace         = true
-irpc                   = "0.11.0"
-irpc-iroh              = "0.11.0"
-jose-jwk               = "0.1.2"
-loro.workspace         = true
-n0-error               = { features = ["anyhow"], version = "0.1.2" }
-p256                   = { default-features = false, features = ["ecdsa"], version = "0.13.2" }
-p384                   = { default-features = false, features = ["ecdsa"], version = "0.13.1" }
-parking_lot.workspace  = true
-paste                  = "1.0.15"
-postcard.workspace     = true
-rand.workspace         = true
-ron                    = "0.12.0"
-rusqlite               = { features = ["bundled"], version = "0.38" }
-scc.workspace          = true
-serde.workspace        = true
-signature              = "2.2.0"
-smol_str               = "0.3.4"
-thiserror              = "2.0.17"
-time.workspace         = true
-tokio.workspace        = true
-tokio-util             = { features = ["codec"], version = "0.7.18" }
-tracing.workspace      = true
-unavi-wasm-compat.path = "../unavi-wasm-compat"
-xdid.workspace         = true
+anyhow.workspace      = true
+blake3.workspace      = true
+bytes                 = "1.11.0"
+derive_more           = { features = ["debug"], version = "2.1.1" }
+futures.workspace     = true
+iroh.workspace        = true
+irpc                  = "0.11.0"
+irpc-iroh             = "0.11.0"
+jose-jwk              = "0.1.2"
+loro.workspace        = true
+n0-error              = { features = ["anyhow"], version = "0.1.2" }
+n0-future.workspace   = true
+p256                  = { default-features = false, features = ["ecdsa"], version = "0.13.2" }
+p384                  = { default-features = false, features = ["ecdsa"], version = "0.13.1" }
+parking_lot.workspace = true
+paste                 = "1.0.15"
+postcard.workspace    = true
+rand.workspace        = true
+ron                   = "0.12.0"
+rusqlite              = { features = ["bundled"], version = "0.38" }
+scc.workspace         = true
+serde.workspace       = true
+signature             = "2.2.0"
+smol_str              = "0.3.4"
+thiserror             = "2.0.17"
+time.workspace        = true
+tokio.workspace       = true
+tokio-util            = { features = ["codec"], version = "0.7.18" }
+tracing.workspace     = true
+xdid.workspace        = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 iroh-blobs = { default-features = false, features = ["hide-proto-docs"], version = "0.97.0" }

@@ -7,8 +7,8 @@ pub fn shutdown_networking_thread(
     nt: Res<NetworkingThread>,
 ) {
     for _ in exit_events.read() {
-        if let Err(e) = nt.command_tx.send(NetworkCommand::Shutdown) {
-            warn!("Failed to shutdown networking thread: {e:?}");
+        if let Err(err) = nt.command_tx.try_send(NetworkCommand::Shutdown) {
+            warn!(?err, "failed to shutdown networking thread");
         }
     }
 }

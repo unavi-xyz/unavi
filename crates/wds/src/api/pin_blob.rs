@@ -61,8 +61,10 @@ pub async fn pin_blob(
             let ctx = Arc::clone(&ctx);
             let owner = did_str.clone();
             let hash = hash_str.clone();
-            unavi_wasm_compat::spawn(async move {
-                unavi_wasm_compat::sleep(ttl).await;
+
+            n0_future::task::spawn(async move {
+                n0_future::time::sleep(ttl).await;
+
                 if let Err(e) = ctx.gc_blob_pin(&owner, &hash).await {
                     tracing::warn!(%hash, "fast gc blob pin failed: {e}");
                 }

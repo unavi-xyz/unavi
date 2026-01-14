@@ -49,11 +49,12 @@ multiple-versions = "warn"
 
 [sources]
 allow-git = [
-  "https://github.com/kayhhh/dwn",
+  "https://github.com/kayhhh/iroh-blobs",
   "https://github.com/komadori/bevy_mod_outline?branch=bevy-0.17",
   "https://github.com/oelison/Schminput",
   "https://github.com/unavi-xyz/bevy_vrm",
   "https://github.com/unavi-xyz/gltf_kun",
+  "https://github.com/unavi-xyz/xdid",
 ]
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
 unknown-git = "deny"

@@ -207,8 +207,6 @@
                       tokio-console
                       trunk
 
-                      clang
-
                       # WASM toolchain
                       llvmPackages_21.clang-unwrapped
                       llvmPackages_21.libclang.lib

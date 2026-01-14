@@ -131,10 +131,6 @@
             '';
 
             postInstall = ''
-              mkdir -p $out/bin/assets
-              cp -r crates/${pname}/assets/* $out/bin/assets/
-              rm -rf $out/bin/assets/wasm/test $out/bin/assets/wasm/example
-
               cp LICENSE $out
             '';
           }

@@ -20,7 +20,8 @@ impl Plugin for NetworkingPlugin {
         });
 
         app.insert_resource(nt)
-            .insert_resource(TrackedBones(TrackedBones::full()))
+            // .insert_resource(TrackedBones(TrackedBones::full()))
+            .insert_resource(TrackedBones::default())
             .add_systems(
                 FixedUpdate,
                 (

@@ -107,7 +107,7 @@ pub struct NetworkThreadState {
     pub remote_actor: Option<Actor>,
 
     pub outbound: Arc<scc::HashMap<EndpointId, OutboundConn>>,
-    pub inbound: Arc<scc::HashMap<EndpointId, Arc<InboundState>>>,
+    pub _inbound: Arc<scc::HashMap<EndpointId, Arc<InboundState>>>,
 
     pub iframe_id: Arc<AtomicU16>,
     pub pose: Arc<PoseState>,
@@ -172,7 +172,7 @@ async fn thread_loop(
         local_actor,
         remote_actor,
         outbound: Arc::default(),
-        inbound,
+        _inbound: inbound,
         // Initialize ID at a random value, to avoid leaking information about playtime.
         iframe_id: Arc::new(AtomicU16::new(rand::random())),
         pose: Arc::default(),

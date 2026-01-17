@@ -191,6 +191,7 @@ fn validate_value_inner(
                 expected: "binary",
             }),
         },
+        Field::Optional(_) => todo!(),
         Field::List(inner) | Field::MovableList(inner) => match value {
             LoroValue::List(items) => {
                 for (i, item) in items.iter().enumerate() {
@@ -225,6 +226,7 @@ fn validate_value_inner(
                 expected: "map",
             }),
         },
+        Field::Import(_) => todo!(),
         Field::Struct(fields) => match value {
             LoroValue::Map(map) => {
                 for (key, inner_field) in fields {
@@ -332,7 +334,7 @@ pub fn validate_diff_batch(
         if !container_id.is_root() {
             continue;
         }
-        if container_id.name().as_str() != container_name {
+        if Some(container_id.name().as_str()) != container_name {
             continue;
         }
 
@@ -350,7 +352,7 @@ fn validate_container_diff(
     author: &Did,
     is_first_envelope: bool,
 ) -> Result<(), ValidationError> {
-    let container_name = schema.container();
+    let container_name = schema.container().ok_or(ValidationError::ParseError)?;
 
     match diff {
         Diff::Map(map_delta) => validate_map_diff(

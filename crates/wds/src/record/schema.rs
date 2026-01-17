@@ -32,7 +32,6 @@ macro_rules! static_schema {
 static_schema!(acl);
 static_schema!(beacon);
 static_schema!(home);
-static_schema!(hsd);
 static_schema!(record);
 static_schema!(space);
 
@@ -41,8 +40,9 @@ static_schema!(space);
 pub struct Schema {
     id: SmolStr,
     version: u32,
-    /// The targeted Loro container.
-    container: SmolStr,
+    /// Target Loro container, if the schema is on the root document.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    container: Option<SmolStr>,
     /// Allowed layout of the data.
     layout: Field,
 }
@@ -73,8 +73,8 @@ impl Schema {
     }
 
     #[must_use]
-    pub fn container(&self) -> &str {
-        &self.container
+    pub fn container(&self) -> Option<&str> {
+        self.container.as_deref()
     }
 
     #[must_use]
@@ -90,11 +90,13 @@ pub enum Field {
     Bool,
     F64,
     I64,
+    Import(SmolStr),
     List(Box<Self>),
     /// Homogeneous map: any string keys, all values must match inner type.
     Map(Box<Self>),
     /// List with reorder/move support.
     MovableList(Box<Self>),
+    Optional(Box<Self>),
     Restricted {
         actions: Vec<Action>,
         value: Box<Self>,
@@ -127,21 +129,23 @@ pub enum Can {
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+
     use ron::ser::PrettyConfig;
 
     use super::*;
 
-    #[test]
-    fn test_parse_schemas() {
-        let schemas_path =
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../protocol/schemas");
-        println!("Reading {}", schemas_path.display());
+    fn parse_schemas_in_path(path: &Path) {
+        if path.is_dir() {
+            for item in path.read_dir().expect("read dir") {
+                let item = item.expect("read entry").path();
 
-        for entry in std::fs::read_dir(schemas_path).expect("read schemas dir") {
-            let path = entry.expect("read entry").path();
+                parse_schemas_in_path(&item);
+            }
+        } else {
             println!("Reading {}", path.display());
 
-            let schema_str = std::fs::read_to_string(&path).expect("read entry file");
+            let schema_str = std::fs::read_to_string(path).expect("read entry file");
 
             let schema: Schema = ron::from_str(&schema_str).expect("from_str");
 
@@ -150,5 +154,14 @@ mod tests {
 
             std::fs::write(path, out).expect("write pretty formatted");
         }
+    }
+
+    #[test]
+    fn test_parse_schemas() {
+        let schemas_path =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../protocol/schemas");
+        println!("Reading {}", schemas_path.display());
+
+        parse_schemas_in_path(&schemas_path);
     }
 }

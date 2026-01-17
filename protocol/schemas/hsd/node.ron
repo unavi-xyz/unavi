@@ -1,0 +1,8 @@
+(
+    id: "wired/hsd/node",
+    version: 0,
+    layout: Struct({
+        "attributes": Map(Any),
+        "id": String,
+    }),
+)

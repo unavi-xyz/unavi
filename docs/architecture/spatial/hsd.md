@@ -11,7 +11,6 @@ hierarchical nodes and non-destructive layers. Stored in a
 - **Collaborative**: Multi-writer editing via CRDTs
 - **Non-Destructive**: Layer system for reversible edits
 - **Extensible**: Open attribute system on nodes
-- **Performant**: Heavy assets stored as [blobs](../data/blobs.md)
 
 ## Inspiration
 

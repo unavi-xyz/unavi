@@ -1,0 +1,18 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "loro-surgeon"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+loro.workspace           = true
+loro-surgeon-derive.path = "../loro-surgeon-derive"
+thiserror.workspace      = true
+
+[dev-dependencies]
+rstest = "0.25.0"

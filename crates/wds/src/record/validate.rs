@@ -29,8 +29,8 @@
 use blake3::Hash;
 use iroh_blobs::api::Store;
 use loro::{
-    Frontiers, LoroDoc, LoroValue, ValueOrContainer,
-    event::{Diff, DiffBatch, ListDiffItem, MapDelta},
+    Frontiers, LoroDoc, LoroValue, TreeExternalDiff, ValueOrContainer,
+    event::{Diff, DiffBatch, ListDiffItem, MapDelta, TreeDiff},
 };
 use smol_str::SmolStr;
 use thiserror::Error;
@@ -191,7 +191,7 @@ fn validate_value_inner(
                 expected: "binary",
             }),
         },
-        Field::List(inner) => match value {
+        Field::List(inner) | Field::MovableList(inner) => match value {
             LoroValue::List(items) => {
                 for (i, item) in items.iter().enumerate() {
                     validate_value_inner(item, inner, &format!("{path}[{i}]"), doc, author)
@@ -208,7 +208,24 @@ fn validate_value_inner(
                 expected: "list",
             }),
         },
-        Field::Map(fields) => match value {
+        Field::Map(inner) => match value {
+            LoroValue::Map(map) => {
+                for (key, val) in map.iter() {
+                    validate_value_inner(val, inner, &format!("{path}.{key}"), doc, author)
+                        .map_err(|e| ValidationError::InvalidField {
+                            path: path.to_string(),
+                            key: key.into(),
+                            source: Box::new(e),
+                        })?;
+                }
+                Ok(())
+            }
+            _ => Err(ValidationError::TypeMismatch {
+                path: path.to_string(),
+                expected: "map",
+            }),
+        },
+        Field::Struct(fields) => match value {
             LoroValue::Map(map) => {
                 for (key, inner_field) in fields {
                     let val = map
@@ -225,7 +242,37 @@ fn validate_value_inner(
             }
             _ => Err(ValidationError::TypeMismatch {
                 path: path.to_string(),
-                expected: "map",
+                expected: "struct",
+            }),
+        },
+        Field::Tree(inner) => match value {
+            // Tree's deep value is a list of node objects.
+            // Each node has: id, parent, fractional_index, index, meta.
+            // We validate the "meta" field which contains user data.
+            LoroValue::List(nodes) => {
+                for (i, node) in nodes.iter().enumerate() {
+                    if let LoroValue::Map(node_map) = node
+                        && let Some(meta) = node_map.get("meta")
+                    {
+                        validate_value_inner(
+                            meta,
+                            inner,
+                            &format!("{path}[{i}].meta"),
+                            doc,
+                            author,
+                        )
+                        .map_err(|e| ValidationError::InvalidElement {
+                            path: path.to_string(),
+                            index: i,
+                            source: Box::new(e),
+                        })?;
+                    }
+                }
+                Ok(())
+            }
+            _ => Err(ValidationError::TypeMismatch {
+                path: path.to_string(),
+                expected: "tree",
             }),
         },
         Field::Restricted {
@@ -322,11 +369,21 @@ fn validate_container_diff(
             author,
             is_first_envelope,
         ),
+        Diff::Tree(tree_diff) => validate_tree_diff(
+            doc,
+            tree_diff,
+            schema.layout(),
+            container_name,
+            author,
+            is_first_envelope,
+        ),
         _ => Ok(()),
     }
 }
 
 /// Validate map field changes.
+///
+/// Handles both [`Field::Struct`] (fixed keys) and [`Field::Map`] (homogeneous).
 fn validate_map_diff(
     doc: &LoroDoc,
     map_delta: &MapDelta<'_>,
@@ -335,11 +392,14 @@ fn validate_map_diff(
     author: &Did,
     is_first_envelope: bool,
 ) -> Result<(), ValidationError> {
-    // Get the inner map fields, unwrapping any Restricted wrappers.
+    // Get the inner type, unwrapping any Restricted wrappers.
     let inner = unwrap_restricted(field);
-    let map_fields = match inner {
-        Field::Map(fields) => Some(fields),
-        _ => None,
+
+    // Determine field type: Struct (fixed keys) or Map (homogeneous).
+    let (struct_fields, map_inner) = match inner {
+        Field::Struct(fields) => (Some(fields), None),
+        Field::Map(inner) => (None, Some(inner.as_ref())),
+        _ => (None, None),
     };
 
     for (key, new_value) in &map_delta.updated {
@@ -361,11 +421,17 @@ fn validate_map_diff(
             is_first_envelope,
         )?;
 
-        // Validate value type if there's a new value and we know the expected type.
-        if let (Some(value), Some(fields)) = (new_value, map_fields) {
-            let key_smol: SmolStr = key.to_string().into();
-            if let Some(expected_field) = fields.get(&key_smol) {
-                validate_value_or_container(value, expected_field, &field_path)?;
+        // Validate value type if there's a new value.
+        if let Some(value) = new_value {
+            if let Some(fields) = struct_fields {
+                // Struct: look up expected type by key.
+                let key_smol: SmolStr = key.to_string().into();
+                if let Some(expected_field) = fields.get(&key_smol) {
+                    validate_value_or_container(value, expected_field, &field_path)?;
+                }
+            } else if let Some(expected) = map_inner {
+                // Map: all values must match the inner type.
+                validate_value_or_container(value, expected, &field_path)?;
             }
         }
     }
@@ -373,6 +439,9 @@ fn validate_map_diff(
 }
 
 /// Validate list changes.
+///
+/// Handles both [`Field::List`] and [`Field::MovableList`].
+/// For [`Field::MovableList`], moves are treated as updates (not create+delete).
 fn validate_list_diff(
     doc: &LoroDoc,
     items: &[ListDiffItem],
@@ -383,23 +452,25 @@ fn validate_list_diff(
 ) -> Result<(), ValidationError> {
     // Get the inner list element type, unwrapping any Restricted wrappers.
     let inner = unwrap_restricted(field);
-    let item_field = match inner {
-        Field::List(inner) => Some(inner.as_ref()),
-        _ => None,
+    let (item_field, is_movable) = match inner {
+        Field::List(inner) => (Some(inner.as_ref()), false),
+        Field::MovableList(inner) => (Some(inner.as_ref()), true),
+        _ => (None, false),
     };
 
     for item in items {
         match item {
-            ListDiffItem::Insert { insert, .. } => {
+            ListDiffItem::Insert { insert, is_move } => {
+                // For MovableList, moves are updates (reordering).
+                // For regular List, moves are treated as creates.
+                let change_type = if *is_move && is_movable {
+                    ChangeType::Update
+                } else {
+                    ChangeType::Create
+                };
+
                 // Check ACL restrictions.
-                validate_field_change(
-                    doc,
-                    field,
-                    path,
-                    ChangeType::Create,
-                    author,
-                    is_first_envelope,
-                )?;
+                validate_field_change(doc, field, path, change_type, author, is_first_envelope)?;
 
                 // Validate each inserted value.
                 if let Some(expected) = item_field {
@@ -421,6 +492,34 @@ fn validate_list_diff(
             }
             ListDiffItem::Retain { .. } => {}
         }
+    }
+    Ok(())
+}
+
+/// Validate tree changes.
+///
+/// Tree diffs contain structural changes (create/move/delete nodes).
+/// Node metadata changes appear as separate Map diffs on nested containers.
+fn validate_tree_diff(
+    doc: &LoroDoc,
+    tree_diff: &TreeDiff,
+    field: &Field,
+    path: &str,
+    author: &Did,
+    is_first_envelope: bool,
+) -> Result<(), ValidationError> {
+    for item in &tree_diff.diff {
+        let change_type = match &item.action {
+            TreeExternalDiff::Create { .. } => ChangeType::Create,
+            TreeExternalDiff::Move { .. } => ChangeType::Update,
+            TreeExternalDiff::Delete { .. } => ChangeType::Delete,
+        };
+
+        // Check ACL restrictions for the structural change.
+        validate_field_change(doc, field, path, change_type, author, is_first_envelope)?;
+
+        // Note: Node metadata validation happens when the nested container's
+        // Map diff is processed separately. Tree diff only validates structure.
     }
     Ok(())
 }
@@ -490,7 +589,7 @@ fn find_restrictions_recursive<'a>(
             out.push((actions, value));
             find_restrictions_recursive(value, remaining_path, out);
         }
-        Field::Map(fields) => {
+        Field::Struct(fields) => {
             // Parse next path segment (e.g., "container.key.subkey" → "key", "subkey").
             if let Some(rest) = remaining_path.strip_prefix('.') {
                 if let Some((key, after)) = rest.split_once('.') {
@@ -502,8 +601,8 @@ fn find_restrictions_recursive<'a>(
                 }
             }
         }
-        Field::List(inner) => {
-            // For lists, recurse into inner field.
+        Field::Map(inner) | Field::List(inner) | Field::MovableList(inner) | Field::Tree(inner) => {
+            // For container types, recurse into inner field.
             find_restrictions_recursive(inner, remaining_path, out);
         }
         _ => {}
@@ -539,6 +638,8 @@ fn validate_value_or_container(
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
     use super::*;
 
     #[test]
@@ -561,5 +662,76 @@ mod tests {
 
         assert!(validate_value(&value, &Field::List(Box::new(Field::String)), "test").is_ok());
         assert!(validate_value(&value, &Field::List(Box::new(Field::I64)), "test").is_err());
+    }
+
+    #[test]
+    fn test_validate_movable_list() {
+        let items = vec![LoroValue::I64(1), LoroValue::I64(2), LoroValue::I64(3)];
+        let value = LoroValue::List(items.into());
+
+        // MovableList validates the same as List for value checking.
+        assert!(validate_value(&value, &Field::MovableList(Box::new(Field::I64)), "test").is_ok());
+        assert!(
+            validate_value(&value, &Field::MovableList(Box::new(Field::String)), "test").is_err()
+        );
+    }
+
+    #[test]
+    fn test_validate_struct() {
+        let mut map = std::collections::HashMap::new();
+        map.insert("name".to_string(), LoroValue::String("test".into()));
+        map.insert("age".to_string(), LoroValue::I64(42));
+        let value = LoroValue::Map(map.into());
+
+        let mut fields = BTreeMap::new();
+        fields.insert("name".into(), Box::new(Field::String));
+        fields.insert("age".into(), Box::new(Field::I64));
+
+        assert!(validate_value(&value, &Field::Struct(fields.clone()), "test").is_ok());
+
+        // Wrong type for age field.
+        let mut bad_fields = BTreeMap::new();
+        bad_fields.insert("name".into(), Box::new(Field::String));
+        bad_fields.insert("age".into(), Box::new(Field::String));
+        assert!(validate_value(&value, &Field::Struct(bad_fields), "test").is_err());
+    }
+
+    #[test]
+    fn test_validate_map_homogeneous() {
+        let mut map = std::collections::HashMap::new();
+        map.insert("key1".to_string(), LoroValue::String("value1".into()));
+        map.insert("key2".to_string(), LoroValue::String("value2".into()));
+        let value = LoroValue::Map(map.into());
+
+        // All values are strings - should pass.
+        assert!(validate_value(&value, &Field::Map(Box::new(Field::String)), "test").is_ok());
+
+        // Expecting I64 - should fail.
+        assert!(validate_value(&value, &Field::Map(Box::new(Field::I64)), "test").is_err());
+    }
+
+    #[test]
+    fn test_validate_tree() {
+        // Tree's deep value is a list of node objects with meta field.
+        let mut node_map = std::collections::HashMap::new();
+        let mut meta_map = std::collections::HashMap::new();
+        meta_map.insert("name".to_string(), LoroValue::String("node1".into()));
+        node_map.insert("meta".to_string(), LoroValue::Map(meta_map.into()));
+        node_map.insert("id".to_string(), LoroValue::String("123".into()));
+
+        let nodes = vec![LoroValue::Map(node_map.into())];
+        let value = LoroValue::List(nodes.into());
+
+        let mut fields = BTreeMap::new();
+        fields.insert("name".into(), Box::new(Field::String));
+
+        assert!(
+            validate_value(
+                &value,
+                &Field::Tree(Box::new(Field::Struct(fields))),
+                "test"
+            )
+            .is_ok()
+        );
     }
 }

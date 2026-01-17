@@ -1,0 +1,9 @@
+(
+    id: "wired/hsd",
+    version: 0,
+    container: "hsd",
+    layout: Tree(Struct({
+        "name": String,
+        "transform": List(F64),
+    })),
+)

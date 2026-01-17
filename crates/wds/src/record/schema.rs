@@ -32,6 +32,7 @@ macro_rules! static_schema {
 static_schema!(acl);
 static_schema!(beacon);
 static_schema!(home);
+static_schema!(hsd);
 static_schema!(record);
 static_schema!(space);
 
@@ -84,18 +85,25 @@ impl Schema {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Field {
+    Any,
+    Binary,
+    Bool,
+    F64,
+    I64,
+    List(Box<Self>),
+    /// Homogeneous map: any string keys, all values must match inner type.
+    Map(Box<Self>),
+    /// List with reorder/move support.
+    MovableList(Box<Self>),
     Restricted {
         actions: Vec<Action>,
         value: Box<Self>,
     },
-    List(Box<Self>),
-    Map(BTreeMap<SmolStr, Box<Self>>),
-    Any,
-    Bool,
-    F64,
-    I64,
     String,
-    Binary,
+    /// Fixed keys with heterogeneous types per field.
+    Struct(BTreeMap<SmolStr, Box<Self>>),
+    /// `LoroTree`: each node's metadata must match inner type.
+    Tree(Box<Self>),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

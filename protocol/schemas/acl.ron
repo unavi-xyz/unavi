@@ -11,7 +11,7 @@
                 ],
             ),
         ],
-        value: Map({
+        value: Struct({
             "manage": List(String),
             "public": Bool,
             "read": List(String),

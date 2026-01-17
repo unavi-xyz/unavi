@@ -1,0 +1,8 @@
+(
+    id: "wired/hsd",
+    version: 0,
+    layout: Struct({
+        "layers": MovableList(Import("./layer.ron")),
+        "nodes": Tree(Import("./node.ron")),
+    }),
+)

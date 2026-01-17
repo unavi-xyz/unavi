@@ -1,7 +1,7 @@
 (
     id: "wired/record",
     version: 0,
-    container: "record",
+    container: Some("record"),
     layout: Struct({
         "creator": String,
         "nonce": Binary,

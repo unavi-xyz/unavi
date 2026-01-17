@@ -2,7 +2,7 @@
     id: "wired/beacon",
     version: 0,
     container: "beacon",
-    layout: Map({
+    layout: Struct({
         "did": String,
         "endpoint": Binary,
         "expires": I64,

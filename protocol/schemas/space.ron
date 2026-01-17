@@ -2,7 +2,7 @@
     id: "wired/space",
     version: 0,
     container: "space",
-    layout: Map({
+    layout: Struct({
         "name": String,
     }),
 )

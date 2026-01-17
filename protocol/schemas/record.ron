@@ -2,7 +2,7 @@
     id: "wired/record",
     version: 0,
     container: "record",
-    layout: Map({
+    layout: Struct({
         "creator": String,
         "nonce": Binary,
         "schemas": List(String),

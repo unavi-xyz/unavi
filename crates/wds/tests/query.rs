@@ -65,7 +65,7 @@ async fn test_query_by_schema(#[future] ctx: DataStoreCtx) {
     let home_result = ctx
         .alice
         .create_record()
-        .add_schema(&*SCHEMA_HOME, |_| Ok(()))
+        .add_schema("home", &*SCHEMA_HOME, |_| Ok(()))
         .expect("add schema")
         .send()
         .await
@@ -75,7 +75,7 @@ async fn test_query_by_schema(#[future] ctx: DataStoreCtx) {
     let beacon_result = ctx
         .alice
         .create_record()
-        .add_schema(&*SCHEMA_BEACON, |_| Ok(()))
+        .add_schema("beacon", &*SCHEMA_BEACON, |_| Ok(()))
         .expect("add schema")
         .send()
         .await

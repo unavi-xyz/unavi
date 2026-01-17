@@ -1,6 +1,5 @@
 (
     id: "wired/home",
     version: 0,
-    container: Some("home"),
     layout: Any,
 )

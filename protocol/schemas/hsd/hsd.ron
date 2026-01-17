@@ -2,7 +2,16 @@
     id: "wired/hsd",
     version: 0,
     layout: Struct({
-        "layers": MovableList(Import("./layer.ron")),
-        "nodes": Tree(Import("./node.ron")),
+        "layers": MovableList(Struct({
+            "id": String,
+            "opinions": Map(Struct({
+                "delete": Optional(List(String)),
+                "update": Optional(Map(Any)),
+            })),
+        })),
+        "nodes": Tree(Struct({
+            "attributes": Map(Any),
+            "id": String,
+        })),
     }),
 )

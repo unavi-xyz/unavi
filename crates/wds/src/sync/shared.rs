@@ -48,28 +48,48 @@ async fn validate_schemas(
     author: &Did,
     is_first_envelope: bool,
 ) -> anyhow::Result<()> {
+    use std::collections::BTreeMap;
+
+    use smol_str::SmolStr;
+
+    use crate::record::schema::Schema;
+
     let old_frontiers = old_doc.state_frontiers();
     let new_frontiers = new_doc.state_frontiers();
 
-    let mut schema_ids = vec![SCHEMA_ACL.hash, SCHEMA_RECORD.hash];
-    schema_ids.extend(record.schemas.iter().copied());
+    // Build schema map: container name -> schema.
+    let mut schemas: BTreeMap<SmolStr, Schema> = BTreeMap::new();
 
-    for schema_id in schema_ids {
-        let schema = fetch_schema(blobs, &schema_id)
+    // Add built-in schemas.
+    schemas.insert(
+        "acl".into(),
+        Schema::from_bytes(&SCHEMA_ACL.bytes)
+            .map_err(|e| anyhow::anyhow!("failed to parse ACL schema: {e}"))?,
+    );
+    schemas.insert(
+        "record".into(),
+        Schema::from_bytes(&SCHEMA_RECORD.bytes)
+            .map_err(|e| anyhow::anyhow!("failed to parse record schema: {e}"))?,
+    );
+
+    // Add record's schemas.
+    for (container, schema_id) in &record.schemas {
+        let schema = fetch_schema(blobs, schema_id)
             .await
             .map_err(|e| anyhow::anyhow!("failed to fetch schema: {e}"))?;
-
-        validate_diff(
-            old_doc,
-            new_doc,
-            &old_frontiers,
-            &new_frontiers,
-            &schema,
-            author,
-            is_first_envelope,
-        )
-        .map_err(|e| anyhow::anyhow!("schema validation failed: {e}"))?;
+        schemas.insert(container.clone(), schema);
     }
+
+    validate_diff(
+        old_doc,
+        new_doc,
+        &old_frontiers,
+        &new_frontiers,
+        &schemas,
+        author,
+        is_first_envelope,
+    )
+    .map_err(|e| anyhow::anyhow!("schema validation failed: {e}"))?;
 
     Ok(())
 }
@@ -182,7 +202,7 @@ pub async fn store_envelope(
             )?;
 
             // Index schemas (immutable after creation).
-            for schema_hash in &record_clone.schemas {
+            for  schema_hash in record_clone.schemas.values() {
                 let hash_str: String = schema_hash.to_string();
 
                 tx.execute(

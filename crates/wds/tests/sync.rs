@@ -370,7 +370,7 @@ async fn test_sync_transfers_blob_dependencies(#[future] multi_ctx: MultiStoreCt
         .rome
         .alice
         .create_record()
-        .add_schema(&*SCHEMA_HOME, |doc| {
+        .add_schema("home", &*SCHEMA_HOME, |doc| {
             doc.get_map("home").insert("space", "test_space")?;
             Ok(())
         })

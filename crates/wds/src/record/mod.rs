@@ -1,9 +1,10 @@
-use std::str::FromStr;
+use std::{collections::BTreeMap, str::FromStr};
 
 use blake3::Hash;
 use loro::{LoroDoc, LoroValue};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
+use smol_str::SmolStr;
 use time::OffsetDateTime;
 use xdid::core::did::Did;
 
@@ -18,7 +19,7 @@ type RecordNonce = [u8; 16];
 pub struct Record {
     pub creator: Did,
     pub nonce: RecordNonce,
-    pub schemas: Vec<Hash>,
+    pub schemas: BTreeMap<SmolStr, Hash>,
     pub timestamp: i64,
 }
 
@@ -28,7 +29,9 @@ impl Record {
         let mut nonce = RecordNonce::default();
         rand::rng().fill(&mut nonce);
 
-        let schemas = vec![schema::SCHEMA_ACL.hash, schema::SCHEMA_RECORD.hash];
+        let mut schemas = BTreeMap::new();
+        schemas.insert("acl".into(), schema::SCHEMA_ACL.hash);
+        schemas.insert("record".into(), schema::SCHEMA_RECORD.hash);
 
         Self {
             creator,
@@ -38,8 +41,8 @@ impl Record {
         }
     }
 
-    pub fn add_schema(&mut self, schema: Hash) {
-        self.schemas.push(schema);
+    pub fn add_schema(&mut self, container: SmolStr, schema: Hash) {
+        self.schemas.insert(container, schema);
     }
 
     /// # Errors
@@ -59,8 +62,13 @@ impl Record {
         map.insert("creator", self.creator.to_string())?;
         map.insert("nonce", &self.nonce)?;
 
-        let schemas = self.schemas.iter().map(Hash::to_string).collect::<Vec<_>>();
-        map.insert("schemas", schemas)?;
+        // Save schemas as map: {"container_name": "schema_hash_hex"}.
+        let schemas_map = doc.get_map("record_schemas_temp");
+        for (container, hash) in &self.schemas {
+            schemas_map.insert(container.as_str(), hash.to_string())?;
+        }
+        let schemas_value = schemas_map.get_deep_value();
+        map.insert("schemas", schemas_value)?;
 
         map.insert("timestamp", self.timestamp)?;
 
@@ -97,7 +105,7 @@ impl Record {
             .map_err(|_| anyhow::anyhow!("invalid nonce length"))?;
 
         let timestamp = extract_i64(map, "timestamp")?;
-        let schemas = extract_hash_list(map, "schemas")?;
+        let schemas = extract_schema_map(map, "schemas")?;
 
         Ok(Self {
             creator,
@@ -141,21 +149,27 @@ fn extract_i64(map: &loro::LoroMapValue, key: &str) -> anyhow::Result<i64> {
     Ok(*n)
 }
 
-/// Extract a list of blake3 hashes from a map field.
-fn extract_hash_list(map: &loro::LoroMapValue, key: &str) -> anyhow::Result<Vec<Hash>> {
+/// Extract a map of container names to schema hashes.
+fn extract_schema_map(
+    map: &loro::LoroMapValue,
+    key: &str,
+) -> anyhow::Result<BTreeMap<SmolStr, Hash>> {
     let Some(value) = map.get(key) else {
-        return Ok(Vec::new());
+        return Ok(BTreeMap::new());
     };
-    let LoroValue::List(list) = value else {
-        anyhow::bail!("{key} is not a list");
+    let LoroValue::Map(schema_map) = value else {
+        anyhow::bail!("{key} is not a map");
     };
 
-    list.iter()
-        .map(|v| {
-            let LoroValue::String(s) = v else {
-                anyhow::bail!("{key} contains non-string value");
+    schema_map
+        .iter()
+        .map(|(container, v)| {
+            let LoroValue::String(hash_str) = v else {
+                anyhow::bail!("{key}.{container} is not a string");
             };
-            Hash::from_hex(s.as_ref()).map_err(|e| anyhow::anyhow!("invalid hash in {key}: {e}"))
+            let hash = Hash::from_hex(hash_str.as_ref())
+                .map_err(|e| anyhow::anyhow!("invalid hash in {key}.{container}: {e}"))?;
+            Ok((container.into(), hash))
         })
         .collect()
 }

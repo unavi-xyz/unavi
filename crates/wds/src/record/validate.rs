@@ -147,6 +147,7 @@ pub fn validate_value(value: &LoroValue, field: &Field, path: &str) -> Result<()
 }
 
 /// Internal validation with optional ACL context.
+#[expect(clippy::too_many_lines)]
 fn validate_value_inner(
     value: &LoroValue,
     field: &Field,
@@ -191,7 +192,10 @@ fn validate_value_inner(
                 expected: "binary",
             }),
         },
-        Field::Optional(_) => todo!(),
+        Field::Optional(inner) => match value {
+            LoroValue::Null => Ok(()),
+            _ => validate_value_inner(value, inner, path, doc, author),
+        },
         Field::List(inner) | Field::MovableList(inner) => match value {
             LoroValue::List(items) => {
                 for (i, item) in items.iter().enumerate() {
@@ -226,7 +230,6 @@ fn validate_value_inner(
                 expected: "map",
             }),
         },
-        Field::Import(_) => todo!(),
         Field::Struct(fields) => match value {
             LoroValue::Map(map) => {
                 for (key, inner_field) in fields {
@@ -308,7 +311,7 @@ pub fn validate_diff(
     new_doc: &LoroDoc,
     old_frontiers: &Frontiers,
     new_frontiers: &Frontiers,
-    schema: &Schema,
+    schemas: &std::collections::BTreeMap<SmolStr, Schema>,
     author: &Did,
     is_first_envelope: bool,
 ) -> Result<(), ValidationError> {
@@ -316,29 +319,36 @@ pub fn validate_diff(
         .diff(old_frontiers, new_frontiers)
         .map_err(|_| ValidationError::ParseError)?;
 
-    validate_diff_batch(old_doc, &diff_batch, schema, author, is_first_envelope)
+    validate_diff_batch(old_doc, &diff_batch, schemas, author, is_first_envelope)
 }
 
 /// Validate a [`DiffBatch`] against schema restrictions.
 pub fn validate_diff_batch(
     doc: &LoroDoc,
     diff: &DiffBatch,
-    schema: &Schema,
+    schemas: &std::collections::BTreeMap<SmolStr, Schema>,
     author: &Did,
     is_first_envelope: bool,
 ) -> Result<(), ValidationError> {
-    let container_name = schema.container();
-
     for (container_id, container_diff) in diff.iter() {
-        // Only validate diffs for this schema's container.
+        // Only validate root containers.
         if !container_id.is_root() {
             continue;
         }
-        if Some(container_id.name().as_str()) != container_name {
-            continue;
-        }
 
-        validate_container_diff(doc, container_diff, schema, author, is_first_envelope)?;
+        let container_name = container_id.name();
+
+        // Check if this container has a schema.
+        if let Some(schema) = schemas.get(container_name.as_str()) {
+            validate_container_diff(
+                doc,
+                container_diff,
+                schema,
+                container_name.as_str(),
+                author,
+                is_first_envelope,
+            )?;
+        }
     }
 
     Ok(())
@@ -349,11 +359,10 @@ fn validate_container_diff(
     doc: &LoroDoc,
     diff: &Diff<'_>,
     schema: &Schema,
+    container_name: &str,
     author: &Did,
     is_first_envelope: bool,
 ) -> Result<(), ValidationError> {
-    let container_name = schema.container().ok_or(ValidationError::ParseError)?;
-
     match diff {
         Diff::Map(map_delta) => validate_map_diff(
             doc,
@@ -623,6 +632,7 @@ const fn change_type_name(ct: ChangeType) -> &'static str {
 fn unwrap_restricted(field: &Field) -> &Field {
     match field {
         Field::Restricted { value, .. } => unwrap_restricted(value),
+        Field::Optional(inner) => unwrap_restricted(inner),
         other => other,
     }
 }
@@ -735,5 +745,26 @@ mod tests {
             )
             .is_ok()
         );
+    }
+
+    #[test]
+    fn test_validate_optional_present() {
+        let field = Field::Optional(Box::new(Field::String));
+        let value = LoroValue::String("hello".into());
+        assert!(validate_value(&value, &field, "test").is_ok());
+    }
+
+    #[test]
+    fn test_validate_optional_null() {
+        let field = Field::Optional(Box::new(Field::String));
+        let value = LoroValue::Null;
+        assert!(validate_value(&value, &field, "test").is_ok());
+    }
+
+    #[test]
+    fn test_validate_optional_wrong_type() {
+        let field = Field::Optional(Box::new(Field::String));
+        let value = LoroValue::I64(42);
+        assert!(validate_value(&value, &field, "test").is_err());
     }
 }

@@ -1,7 +1,6 @@
 (
     id: "wired/beacon",
     version: 0,
-    container: Some("beacon"),
     layout: Struct({
         "did": String,
         "endpoint": Binary,

@@ -1,11 +1,10 @@
 (
     id: "wired/record",
     version: 0,
-    container: Some("record"),
     layout: Struct({
         "creator": String,
         "nonce": Binary,
-        "schemas": List(String),
+        "schemas": Map(String),
         "timestamp": I64,
     }),
 )

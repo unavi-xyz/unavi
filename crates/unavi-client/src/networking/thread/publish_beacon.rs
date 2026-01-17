@@ -16,7 +16,7 @@ pub async fn publish_beacon(
         .local_actor
         .create_record()
         .ttl(ttl)
-        .add_schema(&*SCHEMA_BEACON, |doc| {
+        .add_schema("beacon", &*SCHEMA_BEACON, |doc| {
             let beacon = Beacon {
                 did: state.local_actor.identity().did().clone(),
                 expires: (OffsetDateTime::now_utc() + ttl).unix_timestamp(),

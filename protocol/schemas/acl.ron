@@ -1,7 +1,6 @@
 (
     id: "wired/acl",
     version: 0,
-    container: Some("acl"),
     layout: Restricted(
         actions: [
             (

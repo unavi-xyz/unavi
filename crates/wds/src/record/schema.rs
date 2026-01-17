@@ -40,9 +40,6 @@ static_schema!(space);
 pub struct Schema {
     id: SmolStr,
     version: u32,
-    /// Target Loro container, if the schema is on the root document.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    container: Option<SmolStr>,
     /// Allowed layout of the data.
     layout: Field,
 }
@@ -73,11 +70,6 @@ impl Schema {
     }
 
     #[must_use]
-    pub fn container(&self) -> Option<&str> {
-        self.container.as_deref()
-    }
-
-    #[must_use]
     pub const fn layout(&self) -> &Field {
         &self.layout
     }
@@ -90,7 +82,6 @@ pub enum Field {
     Bool,
     F64,
     I64,
-    Import(SmolStr),
     List(Box<Self>),
     /// Homogeneous map: any string keys, all values must match inner type.
     Map(Box<Self>),

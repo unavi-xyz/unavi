@@ -289,7 +289,7 @@ async fn test_gc_blob_pin_extended_by_record(#[future] ctx: DataStoreCtx) {
     let result = ctx
         .alice
         .create_record()
-        .add_schema(&*SCHEMA_HOME, |doc| {
+        .add_schema("home", &*SCHEMA_HOME, |doc| {
             doc.get_map("home").insert("space", "test")?;
             Ok(())
         })
@@ -387,7 +387,7 @@ async fn test_gc_blob_pin_deleted_when_orphaned(#[future] ctx: DataStoreCtx) {
     let result = ctx
         .alice
         .create_record()
-        .add_schema(&*SCHEMA_HOME, |doc| {
+        .add_schema("home", &*SCHEMA_HOME, |doc| {
             doc.get_map("home").insert("space", "test")?;
             Ok(())
         })
@@ -492,7 +492,7 @@ async fn test_gc_deletes_related_indices(#[future] ctx: DataStoreCtx) {
     let result = ctx
         .alice
         .create_record()
-        .add_schema(&*SCHEMA_HOME, |doc| {
+        .add_schema("home", &*SCHEMA_HOME, |doc| {
             doc.get_map("home").insert("space", "test")?;
             Ok(())
         })

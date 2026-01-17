@@ -31,6 +31,7 @@ pub struct RecordResult {
 /// Schema data for dependency tracking.
 #[derive(Clone)]
 pub struct SchemaData {
+    pub container: smol_str::SmolStr,
     pub hash: Hash,
     pub bytes: Bytes,
 }
@@ -38,6 +39,7 @@ pub struct SchemaData {
 impl From<&StaticSchema> for SchemaData {
     fn from(s: &StaticSchema) -> Self {
         Self {
+            container: "unknown".into(), // Will be set by add_schema
             hash: s.hash,
             bytes: s.bytes.clone(),
         }
@@ -78,10 +80,13 @@ impl RecordBuilder {
     /// Accepts `&StaticSchema` for builtins or [`SchemaData`] for custom schemas.
     pub fn add_schema(
         mut self,
+        container: impl Into<smol_str::SmolStr>,
         schema: impl Into<SchemaData>,
         f: impl Fn(&mut LoroDoc) -> anyhow::Result<()>,
     ) -> anyhow::Result<Self> {
-        self.schemas.push(schema.into());
+        let mut schema_data = schema.into();
+        schema_data.container = container.into();
+        self.schemas.push(schema_data);
         f(&mut self.doc)?;
         Ok(self)
     }
@@ -103,13 +108,17 @@ impl RecordBuilder {
 
         // Collect all schemas (user + mandatory ACL/RECORD).
         let mut all_schemas = self.schemas.clone();
-        all_schemas.push(SchemaData::from(&*SCHEMA_ACL));
-        all_schemas.push(SchemaData::from(&*SCHEMA_RECORD));
+        let mut acl_schema = SchemaData::from(&*SCHEMA_ACL);
+        acl_schema.container = "acl".into();
+        all_schemas.push(acl_schema);
+        let mut record_schema = SchemaData::from(&*SCHEMA_RECORD);
+        record_schema.container = "record".into();
+        all_schemas.push(record_schema);
 
         // Build record with schema hashes.
         let mut record = Record::new(did.clone());
         for schema in &all_schemas {
-            record.add_schema(schema.hash);
+            record.add_schema(schema.container.clone(), schema.hash);
         }
         record.save(&self.doc)?;
 

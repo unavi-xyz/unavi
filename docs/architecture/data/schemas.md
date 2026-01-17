@@ -14,7 +14,8 @@ rules. Stored as [blobs](./blobs.md) and referenced by blake3 hash.
 ## Storage
 
 Schemas are serialized and stored as blobs. Records reference schemas by hash
-in their genesis metadata. A record can implement multiple schemas.
+in their genesis metadata, mapping container names to schema hashes. A record
+can implement multiple schemas, one per container.
 
 ## Example
 
@@ -22,24 +23,27 @@ in their genesis metadata. A record can implement multiple schemas.
 (
     id: "wired/example",
     version: 0,
-    container: "example",
-    layout: Map({
+    layout: Struct({
         "did": String,
         "endpoint": Binary,
         "timestamp": I64,
-        "extra": Any,
+        "extra": Optional(Any),
     }),
 )
 ```
 
-## Fields
+## Schema Structure
 
 - **id**: Human-readable identifier (e.g., `wired/example`)
 - **version**: Schema version number
-- **container**: Target Loro container name in the record
 - **layout**: Field structure definition
 
+Schemas are general-purpose validators that can be applied to any Loro value.
+Container names are specified in the record's schema map, not in the schema itself.
+
 ## Field Types
+
+### Primitives
 
 - `Any` - Any Loro value
 - `Bool` - Boolean
@@ -47,8 +51,19 @@ in their genesis metadata. A record can implement multiple schemas.
 - `F64` - 64-bit float
 - `I64` - 64-bit integer
 - `String` - UTF-8 string
+
+### Containers
+
 - `List(Field)` - Homogeneous list
-- `Map({ "key": Field, .. })` - Named fields
+- `MovableList(Field)` - List with reorder/move support
+- `Map(Field)` - Homogeneous map (any string keys, all values same type)
+- `Struct({ "key": Field, .. })` - Fixed keys with heterogeneous types
+- `Tree(Field)` - Hierarchical tree structure
+
+### Modifiers
+
+- `Optional(Field)` - Field may be null or missing
+- `Restricted { actions, value }` - Access control wrapper
 
 ## Restrictions
 

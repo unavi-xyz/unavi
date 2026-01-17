@@ -20,12 +20,15 @@ Record (Loro document)
 │   ├── creator: DID
 │   ├── nonce: [u8; 16]
 │   ├── timestamp: i64
-│   └── schemas: [Hash, ...]
+│   └── schemas: { name: Hash, ... }
 └── acl (mutable permissions)
     ├── manage: [DID, ...]
     ├── write: [DID, ...]
     └── read: [DID, ...]
 ```
+
+The `schemas` field maps Loro container names to schema hashes. Each container
+in the record can have its own schema for validation.
 
 ## Permissions
 

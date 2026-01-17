@@ -2,37 +2,33 @@
 
 ## What
 
-Bounded 3D region containing geometry, entities, and interactive elements.
-Hyperdocuments in The Wired's spatial hypermedia system — addressable,
-linkable, and composable.
+Bounded 3D environments in The Wired. Addressable, linkable, and composable
+spatial hypermedia documents.
+
+## Why
+
+- **Addressable**: Referenced by [DID](../social/did.md) URLs
+- **Composable**: Nest spaces within spaces via slots
+- **Linkable**: Connect spaces via portals
+- **Collaborative**: Multi-user editing via [WDS](../data/wds.md)
 
 ## Storage
 
-[Records](../data/records.md) in [WDS](../data/wds.md), referenced by DID URLs.
-Follows Space [schema](../data/schemas.md) (`wired-protocol.org/schemas/space`).
+Spaces are [records](../data/records.md) combining the `wired/space` schema
+with [HSD](./hsd.md) for scene content.
+
+```
+Space Record
+├── record (genesis metadata)
+├── acl (permissions)
+├── space (name, metadata)
+└── hsd (scene graph)
+```
 
 ## Hypermedia Controls
 
-**Slots (Composition)**: AABB regions for child space insertion. Static or
-dynamic. Parent can query child entities marked public.
+**Portals**: Windows into other spaces. Walk through to navigate. Function as
+hyperlinks in 3D, addressed by DID URL.
 
-**Portals (Linking)**: Seamless windows into other spaces. Agents walk through,
-carry objects. Function as hyperlinks in hyperspace, address by DID URL.
-
-## HSD Integration
-
-Uses [HSD](./hsd.md) as content format:
-
-```
-Record
-├── genesis: { creator: "did:web:alice.com", schema: "wired-protocol.org/schemas/space" }
-├── permissions: { owner: ["did:web:alice.com"], ... }
-├── context: null
-├── relations: { "object": [...] }
-└── data: <HSD>
-    ├── name: "Alice's Gallery"
-    ├── geometry: "bafyrei-geometry-blob..."
-    ├── spawn: { position: [0, 1.6, 0], rotation: [0, 0, 0, 1] }
-    ├── environment: { sky: "bafyrei-skybox...", ambient: [0.2, 0.2, 0.3] }
-    └── scripts: ["bafyrei-script-wasm..."]
-```
+**Slots**: Regions for embedding child spaces. Enables composition without
+full navigation.

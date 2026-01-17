@@ -1,51 +1,52 @@
-# HyperSpace Documents
+# HyperSpace Document (HSD)
 
 ## What
 
-CRDT-based content format for spatial hypermedia, analogous to HTML for 2D web. Defines
-3D geometry, entity composition, and asset references. Can live as a file, or
-in a [record's](../data/records.md) `data` field.
+CRDT-based scene format for spatial hypermedia. Defines 3D scenes with
+hierarchical nodes and non-destructive layers. Stored in a
+[record's](../data/records.md) Loro document.
 
 ## Why
 
-- **Syncable**: Designed to be easily networked with multiple writers
-- **Addressable**: Reference via CIDs and [DID](../social/did.md) URLs
-- **Composable**: Nest and link documents fractally
+- **Collaborative**: Multi-writer editing via CRDTs
+- **Non-Destructive**: Layer system for reversible edits
+- **Extensible**: Open attribute system on nodes
+- **Performant**: Heavy assets stored as [blobs](../data/blobs.md)
 
-## Analogy
+## Inspiration
 
-```
-HTML → 2D web documents → URLs
-HSD  → 3D web documents → DID URLs
-```
+Draws from [USD](https://en.wikipedia.org/wiki/Universal_Scene_Description)'s
+composition model: layers contain opinions that override base scene data.
 
 ## Structure
 
-HSD content stored in record `data` field per spatial
-[schema](../data/schemas.md):
-
-```json
-{
-  "name": "My Space",
-  "geometry": "bafyrei-geometry-cid...",
-  "spawn": {
-    "position": [0, 1.6, 0],
-    "rotation": [0, 0, 0, 1]
-  },
-  "environment": {
-    "sky": "bafyrei-skybox-cid...",
-    "ambient": [0.2, 0.2, 0.3]
-  }
-}
+```
+HSD Root
+├── layers (MovableList)
+│   └── Layer { id, opinions }
+└── nodes (Tree)
+    └── Node { id, attributes }
 ```
 
-## Blob References
+## Nodes
 
-Reference binary data via [CID](../data/blobs.md):
+Hierarchical tree of scene entities. Each node has an `id` and an `attributes`
+map for extensible data (transforms, meshes, materials, etc).
 
-```json
-{
-  "mesh": "bafyrei-mesh-cid...",
-  "texture": "bafyrei-texture-cid..."
-}
-```
+Stored as a Loro Tree for parent-child relationships and efficient subtree
+operations.
+
+## Layers
+
+Ordered list of non-destructive edits. Each layer contains opinions that can
+delete or update node attributes. Later layers override earlier ones.
+
+Use cases: animation, user overrides, temporary edits, variants.
+
+## Attributes
+
+Node attributes are schema-free (`Map(Any)`), allowing arbitrary data. Standard
+attribute conventions (transforms, meshes, materials) can be defined separately.
+
+Heavy data like geometry and textures should reference [blobs](../data/blobs.md)
+by hash rather than inline data.

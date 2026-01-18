@@ -1,7 +1,7 @@
-use loro::LoroValue;
+use loro_surgeon::Hydrate;
 
 mod xform;
 
-trait Attribute {
-    fn parse(value: LoroValue) -> Self;
+trait Attribute: Hydrate {
+    fn merge(self, next: Self) -> Self;
 }

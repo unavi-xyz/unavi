@@ -914,6 +914,8 @@ version = "0.0.16"
 dependencies = [
  "bevy",
  "loro",
+ "loro-surgeon",
+ "wired-schemas",
 ]
 
 [[package]]

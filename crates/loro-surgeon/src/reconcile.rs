@@ -1,5 +1,3 @@
-//! The `Reconcile` trait and implementations for primitive types.
-
 use std::collections::BTreeMap;
 
 use loro::LoroMap;

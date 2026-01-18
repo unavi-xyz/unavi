@@ -45,7 +45,6 @@ async fn validate_schemas(
     new_doc: &LoroDoc,
     record: &Record,
     author: &Did,
-    is_first_envelope: bool,
 ) -> anyhow::Result<()> {
     use std::collections::BTreeMap;
 
@@ -86,7 +85,6 @@ async fn validate_schemas(
         &new_frontiers,
         &schemas,
         author,
-        is_first_envelope,
     )
     .map_err(|e| anyhow::anyhow!("schema validation failed: {e}"))?;
 
@@ -127,15 +125,7 @@ pub async fn store_envelope(
     let record = Record::load(&new_doc)?;
 
     // Validate diff against schema restrictions.
-    validate_schemas(
-        blobs,
-        &old_doc,
-        &new_doc,
-        &record,
-        author,
-        is_first_envelope,
-    )
-    .await?;
+    validate_schemas(blobs, &old_doc, &new_doc, &record, author).await?;
 
     let size = i64::try_from(env_bytes.len()).context("envelope too large")?;
     let author_str = envelope.author().to_string();

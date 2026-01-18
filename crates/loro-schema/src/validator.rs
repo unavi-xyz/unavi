@@ -9,8 +9,8 @@ use loro::{
 use smol_str::SmolStr;
 
 use crate::{
-    Can, ChangeType, Field, Schema, Who, change_type_name, find_restrictions_for_path,
-    unwrap_restricted, validate_container_diff, ValidationError,
+    Can, ChangeType, Field, Schema, ValidationError, Who, change_type_name,
+    find_restrictions_for_path, unwrap_restricted, validate_container_diff,
 };
 
 /// Document-level schema validator.

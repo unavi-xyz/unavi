@@ -6,7 +6,7 @@
             "id": String,
             "opinions": Map(Struct({
                 "delete": Optional(List(String)),
-                "update": Optional(Map(Any)),
+                "set": Optional(Map(Any)),
             })),
         })),
         "nodes": Tree(Struct({

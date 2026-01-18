@@ -913,6 +913,7 @@ name = "bevy-hsd"
 version = "0.0.16"
 dependencies = [
  "bevy",
+ "loro",
 ]
 
 [[package]]

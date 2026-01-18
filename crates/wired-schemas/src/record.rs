@@ -1,10 +1,8 @@
-//! Record type for WDS documents.
-
 use std::collections::BTreeMap;
 
 use blake3::Hash;
 use loro::LoroDoc;
-use loro_surgeon::{Hydrate, HydrateError, Reconcile, ReconcileError, loro::LoroMap};
+use loro_surgeon::{Hydrate, Reconcile};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
@@ -17,15 +15,14 @@ use crate::{conv, schemas};
 pub type RecordNonce = [u8; 16];
 
 /// A WDS record containing metadata about the document.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hydrate, Reconcile)]
 pub struct Record {
-    /// The DID of the record creator.
+    #[loro(with = "conv::did")]
     pub creator: Did,
-    /// Random nonce for unique record identification.
+    #[loro(with = "conv::nonce")]
     pub nonce: RecordNonce,
-    /// Map of container names to their schema hashes.
+    #[loro(with = "conv::hash::map")]
     pub schemas: BTreeMap<SmolStr, Hash>,
-    /// Unix timestamp of record creation.
     pub timestamp: i64,
 }
 
@@ -48,13 +45,10 @@ impl Record {
         }
     }
 
-    /// Add a schema for a container.
     pub fn add_schema(&mut self, container: SmolStr, schema: Hash) {
         self.schemas.insert(container, schema);
     }
 
-    /// Compute the content-addressed ID of this record.
-    ///
     /// # Errors
     ///
     /// Returns an error if the record could not be serialized.
@@ -63,8 +57,6 @@ impl Record {
         Ok(blake3::hash(&bytes))
     }
 
-    /// Save record to a [`LoroDoc`]'s "record" container.
-    ///
     /// # Errors
     ///
     /// Returns an error if the record could not be saved.
@@ -74,8 +66,6 @@ impl Record {
         Ok(())
     }
 
-    /// Load record from a [`LoroDoc`]'s "record" container.
-    ///
     /// # Errors
     ///
     /// Returns an error if the record container is malformed.
@@ -83,76 +73,6 @@ impl Record {
         let map = doc.get_map("record");
         let value = map.get_deep_value();
         Self::hydrate(&value).map_err(|e| anyhow::anyhow!("{e}"))
-    }
-}
-
-impl Hydrate for Record {
-    fn hydrate(value: &loro::LoroValue) -> Result<Self, HydrateError> {
-        let loro::LoroValue::Map(map) = value else {
-            return Err(HydrateError::TypeMismatch {
-                path: String::new(),
-                expected: "map".into(),
-                actual: format!("{value:?}"),
-            });
-        };
-
-        let creator = map
-            .get("creator")
-            .ok_or_else(|| HydrateError::MissingField("creator".into()))?;
-        let creator = conv::did::hydrate(creator)?;
-
-        let nonce = map
-            .get("nonce")
-            .ok_or_else(|| HydrateError::MissingField("nonce".into()))?;
-        let loro::LoroValue::Binary(nonce_bytes) = nonce else {
-            return Err(HydrateError::TypeMismatch {
-                path: "nonce".into(),
-                expected: "binary".into(),
-                actual: format!("{nonce:?}"),
-            });
-        };
-        let nonce: RecordNonce = nonce_bytes
-            .to_vec()
-            .try_into()
-            .map_err(|_| HydrateError::Custom("invalid nonce length".into()))?;
-
-        let schemas = map
-            .get("schemas")
-            .ok_or_else(|| HydrateError::MissingField("schemas".into()))?;
-        let schemas = conv::hash::map::hydrate(schemas)?;
-
-        let timestamp = map
-            .get("timestamp")
-            .ok_or_else(|| HydrateError::MissingField("timestamp".into()))?;
-        let loro::LoroValue::I64(timestamp) = timestamp else {
-            return Err(HydrateError::TypeMismatch {
-                path: "timestamp".into(),
-                expected: "i64".into(),
-                actual: format!("{timestamp:?}"),
-            });
-        };
-
-        Ok(Self {
-            creator,
-            nonce,
-            schemas,
-            timestamp: *timestamp,
-        })
-    }
-}
-
-impl Reconcile for Record {
-    fn reconcile(&self, map: &LoroMap) -> Result<(), ReconcileError> {
-        conv::did::reconcile_field(&self.creator, map, "creator")?;
-        map.insert("nonce", self.nonce.as_slice())?;
-        conv::hash::map::reconcile_field(&self.schemas, map, "schemas")?;
-        map.insert("timestamp", self.timestamp)?;
-        Ok(())
-    }
-
-    fn reconcile_field(&self, map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
-        let nested = map.get_or_create_container(key, loro::LoroMap::new())?;
-        self.reconcile(&nested)
     }
 }
 

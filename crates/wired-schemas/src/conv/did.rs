@@ -1,5 +1,3 @@
-//! Converter for [`Did`] types.
-
 use std::str::FromStr;
 
 use loro::LoroValue;
@@ -22,12 +20,10 @@ pub fn hydrate(value: &LoroValue) -> Result<Did, HydrateError> {
     Did::from_str(s).map_err(|e| HydrateError::Custom(e.to_string()))
 }
 
-/// Reconcile a [`Did`] as a Loro string value.
-///
 /// # Errors
 ///
 /// Returns an error if the Loro operation fails.
-pub fn reconcile_field(did: &Did, map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
+pub fn reconcile(did: &Did, map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
     map.insert(key, did.to_string())?;
     Ok(())
 }
@@ -53,12 +49,10 @@ pub mod list {
         list.iter().map(super::hydrate).collect()
     }
 
-    /// Reconcile a `Vec<Did>` as a Loro list value.
-    ///
     /// # Errors
     ///
     /// Returns an error if the Loro operation fails.
-    pub fn reconcile_field(dids: &[Did], map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
+    pub fn reconcile(dids: &[Did], map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
         let strings: Vec<String> = dids.iter().map(Did::to_string).collect();
         map.insert(key, strings)?;
         Ok(())

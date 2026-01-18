@@ -14,6 +14,7 @@ use super::Actor;
 pub struct ReadBuilder {
     actor: Actor,
     record_id: Hash,
+    ttl: Duration,
     sync_sources: Vec<EndpointAddr>,
 }
 
@@ -22,8 +23,16 @@ impl ReadBuilder {
         Self {
             actor,
             record_id,
+            ttl: Duration::from_mins(30),
             sync_sources: Vec::new(),
         }
+    }
+
+    /// Pin TTL for the read record.
+    #[must_use]
+    pub const fn ttl(mut self, ttl: Duration) -> Self {
+        self.ttl = ttl;
+        self
     }
 
     /// Add a remote endpoint to sync from if record not found locally.
@@ -41,9 +50,7 @@ impl ReadBuilder {
 
         // Pin record if not already pinned.
         if self.actor.get_record_pin(self.record_id).await?.is_none() {
-            self.actor
-                .pin_record(self.record_id, Duration::from_mins(30))
-                .await?;
+            self.actor.pin_record(self.record_id, self.ttl).await?;
         }
 
         // Try to read from local first.
@@ -58,6 +65,8 @@ impl ReadBuilder {
 
         match result {
             Ok(bytes) => {
+                // TODO: Still sync local record with remote sources
+
                 let doc = LoroDoc::new();
                 doc.import(&bytes)?;
                 return Ok(doc);
@@ -68,7 +77,7 @@ impl ReadBuilder {
             Err(e) => return Err(anyhow::anyhow!("read failed: {e}")),
         }
 
-        // Try each sync source.
+        // Check each sync source.
         for remote in self.sync_sources {
             let remote_id = remote.id;
             debug!(remote = %remote_id, "attempting sync");

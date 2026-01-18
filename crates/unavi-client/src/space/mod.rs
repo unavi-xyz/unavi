@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use blake3::Hash;
+use loro::LoroDoc;
 
 pub mod beacon;
 mod home;
@@ -18,3 +19,6 @@ impl Plugin for SpacePlugin {
 
 #[derive(Component)]
 pub struct Space(pub Hash);
+
+#[derive(Component)]
+pub struct SpaceDoc(pub LoroDoc);

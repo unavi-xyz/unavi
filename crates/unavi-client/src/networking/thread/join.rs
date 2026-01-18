@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, time::Duration};
 
 use bevy::{
     ecs::world::CommandQueue,
@@ -21,7 +21,7 @@ use wds::{
 use crate::{
     async_commands::ASYNC_COMMAND_QUEUE,
     networking::thread::NetworkThreadState,
-    space::{Space, beacon::Beacon},
+    space::{Space, SpaceDoc, beacon::Beacon},
 };
 
 /// Broadcast to a space gossip topic that you are joining as `endpoint`.
@@ -34,6 +34,20 @@ struct JoinBroadcast {
 impl Signable for JoinBroadcast {}
 
 pub async fn handle_join(state: NetworkThreadState, space_id: Hash) -> anyhow::Result<()> {
+    // Download space.
+    let space_doc = {
+        let mut builder = state
+            .local_actor
+            .read(space_id)
+            .ttl(Duration::from_hours(24 * 3));
+
+        if let Some(actor) = &state.remote_actor {
+            builder = builder.sync_from((*actor.host()).into());
+        }
+
+        builder.send().await?
+    };
+
     // Query beacons to find players.
     let mut bootstrap = HashSet::new();
 
@@ -90,7 +104,10 @@ pub async fn handle_join(state: NetworkThreadState, space_id: Hash) -> anyhow::R
 
     // Create space in ECS.
     let mut commands = CommandQueue::default();
-    commands.push(bevy::ecs::system::command::spawn_batch([(Space(space_id))]));
+    commands.push(bevy::ecs::system::command::spawn_batch([(
+        Space(space_id),
+        SpaceDoc(space_doc),
+    )]));
     ASYNC_COMMAND_QUEUE.0.send(commands).await?;
 
     handle_gossip_inbound(state, tx, rx).await?;

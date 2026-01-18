@@ -1,0 +1,24 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "loro-schema"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+blake3.workspace    = true
+bytes.workspace     = true
+loro.workspace      = true
+paste               = "1.0.15"
+postcard.workspace  = true
+ron.workspace       = true
+serde               = { features = ["derive"], workspace = true }
+smol_str.workspace  = true
+thiserror.workspace = true
+
+[dev-dependencies]
+rstest = "0.25.0"

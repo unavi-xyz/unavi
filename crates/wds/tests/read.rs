@@ -3,7 +3,7 @@ use std::time::Duration;
 use loro::LoroValue;
 use rstest::rstest;
 use tracing_test::traced_test;
-use wds::record::acl::Acl;
+use wired_schemas::Acl;
 
 use crate::common::{DataStoreCtx, assert_contains, ctx};
 

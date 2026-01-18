@@ -1,0 +1,28 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "wired-schemas"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace   = true
+blake3.workspace   = true
+bytes.workspace    = true
+loro.workspace     = true
+loro-schema.path   = "../loro-schema"
+loro-surgeon.path  = "../loro-surgeon"
+postcard.workspace = true
+rand.workspace     = true
+ron.workspace      = true
+serde              = { features = ["derive"], workspace = true }
+smol_str.workspace = true
+time.workspace     = true
+xdid.workspace     = true
+
+[dev-dependencies]
+rstest = "0.25.0"

@@ -1,122 +1,14 @@
-use std::{collections::BTreeMap, sync::LazyLock};
+//! Schema types for WDS documents.
+//!
+//! This module re-exports types from [`loro_schema`] and [`wired_schemas`].
 
-use blake3::Hash;
-use bytes::Bytes;
-use serde::{Deserialize, Serialize};
-use smol_str::SmolStr;
+// Re-export schema types from loro-schema.
+pub use loro_schema::{Action, Can, Field, Schema, Who, validate_value};
 
-/// A statically-defined schema with precomputed hash and bytes.
-pub struct StaticSchema {
-    pub hash: Hash,
-    pub bytes: Bytes,
-}
-
-macro_rules! static_schema {
-    ($name:ident) => {
-        paste::paste! {
-            pub static [<SCHEMA_$name:upper>]: LazyLock<StaticSchema> = LazyLock::new(|| {
-                const RON_STR: &str = include_str!(
-                    concat!("../../../../protocol/schemas/", stringify!($name), ".ron")
-                );
-                let schema: Schema = ron::from_str(RON_STR).expect("valid schema");
-                let bytes = schema.to_bytes().expect("serialize schema");
-                StaticSchema {
-                    hash: blake3::hash(&bytes),
-                    bytes: Bytes::from(bytes),
-                }
-            });
-        }
-    };
-}
-
-static_schema!(acl);
-static_schema!(beacon);
-static_schema!(home);
-static_schema!(record);
-static_schema!(space);
-
-/// Schema defining how to process a Loro document.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Schema {
-    id: SmolStr,
-    version: u32,
-    /// Allowed layout of the data.
-    layout: Field,
-}
-
-impl Schema {
-    /// # Errors
-    ///
-    /// Errors if postcard could not serialize the struct.
-    pub fn to_bytes(&self) -> postcard::Result<Vec<u8>> {
-        postcard::to_stdvec(self)
-    }
-
-    /// # Errors
-    ///
-    /// Errors if postcard could not deserialize the struct.
-    pub fn from_bytes(bytes: &[u8]) -> postcard::Result<Self> {
-        postcard::from_bytes(bytes)
-    }
-
-    /// Compute content-addressed ID.
-    ///
-    /// # Errors
-    ///
-    /// Errors if postcard could not serialize the struct.
-    pub fn id(&self) -> postcard::Result<Hash> {
-        let bytes = self.to_bytes()?;
-        Ok(blake3::hash(&bytes))
-    }
-
-    #[must_use]
-    pub const fn layout(&self) -> &Field {
-        &self.layout
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum Field {
-    Any,
-    Binary,
-    Bool,
-    F64,
-    I64,
-    List(Box<Self>),
-    /// Homogeneous map: any string keys, all values must match inner type.
-    Map(Box<Self>),
-    /// List with reorder/move support.
-    MovableList(Box<Self>),
-    Optional(Box<Self>),
-    Restricted {
-        actions: Vec<Action>,
-        value: Box<Self>,
-    },
-    String,
-    /// Fixed keys with heterogeneous types per field.
-    Struct(BTreeMap<SmolStr, Box<Self>>),
-    /// `LoroTree`: each node's metadata must match inner type.
-    Tree(Box<Self>),
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Action {
-    pub who: Who,
-    pub can: Vec<Can>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum Who {
-    Anyone,
-    Path(SmolStr),
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum Can {
-    Create,
-    Delete,
-    Update,
-}
+// Re-export static schemas from wired-schemas.
+pub use wired_schemas::{
+    SCHEMA_ACL, SCHEMA_BEACON, SCHEMA_HOME, SCHEMA_RECORD, SCHEMA_SPACE, StaticSchema,
+};
 
 #[cfg(test)]
 mod tests {

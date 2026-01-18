@@ -8,14 +8,8 @@ use std::{fmt::Debug, sync::Arc};
 use iroh::{Endpoint, RelayMode};
 use rstest::fixture;
 use rusqlite::params;
-use wds::{
-    DataStore,
-    actor::Actor,
-    record::{
-        acl::Acl,
-        schema::{SCHEMA_ACL, SCHEMA_RECORD},
-    },
-};
+use wds::{DataStore, actor::Actor};
+use wired_schemas::{Acl, SCHEMA_ACL, SCHEMA_RECORD};
 use xdid::core::did::Did;
 
 use did_key::{generate_actor, generate_actor_with_identity};

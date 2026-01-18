@@ -1,22 +1,22 @@
-//! Schema validation for Loro documents.
+//! Document-level schema validation for WDS.
 //!
 //! # Validation Methodology
 //!
 //! Validation happens during envelope ingestion via [`validate_diff`], which
-//! performs a single pass over the document diff to check both:
+//! performs two passes over the document diff:
 //!
-//! 1. **ACL restrictions**: Each changed field is checked against `Restricted`
-//!    wrappers in the schema. The `who` field specifies authorized DIDs via
-//!    path resolution (e.g., `acl.manage` resolves to the list of manager DIDs).
+//! 1. **Type validation**: Delegated to [`loro_schema::validate_container_diff`]
+//!    which validates new values against schema field types.
 //!
-//! 2. **Type validation**: New values are validated against the expected field
-//!    type from the schema (Bool, String, List, Map, etc.).
+//! 2. **ACL restrictions**: Each changed field is checked against `Restricted`
+//!    wrappers in the schema based on the change type (create/update/delete).
+//!    The `who` field specifies authorized DIDs via path resolution.
 //!
 //! ## Path Resolution
 //!
 //! `Who::Path` references use dot notation to navigate the document:
 //! - `acl.manage` → resolves to the `manage` field in the `acl` container
-//! - `container.field.subfied` → nested field access
+//! - `container.field.subfield` → nested field access
 //!
 //! The resolved value should be a DID string or list of DID strings.
 //!
@@ -29,53 +29,26 @@
 use blake3::Hash;
 use iroh_blobs::api::Store;
 use loro::{
-    Frontiers, LoroDoc, LoroValue, TreeExternalDiff, ValueOrContainer,
-    event::{Diff, DiffBatch, ListDiffItem, MapDelta, TreeDiff},
+    Frontiers, LoroDoc, LoroValue, TreeExternalDiff,
+    event::{Diff, DiffBatch, ListDiffItem, TreeDiff},
+};
+use loro_schema::{
+    Can, ChangeType, Field, Schema, ValidateContext, Who, change_type_name,
+    find_restrictions_for_path,
 };
 use smol_str::SmolStr;
 use thiserror::Error;
 use xdid::core::did::Did;
 
-use super::schema::{Action, Can, Field, Schema, Who};
-
-/// Type of change detected in a diff.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ChangeType {
-    Create,
-    Update,
-    Delete,
-}
-
-/// Validation errors.
+/// Validation errors for WDS documents.
 #[derive(Debug, Error)]
 pub enum ValidationError {
-    #[error("missing field: {0}")]
-    MissingField(SmolStr),
-    #[error("type mismatch at {path}: expected {expected}")]
-    TypeMismatch {
-        path: String,
-        expected: &'static str,
-    },
-    #[error("invalid element at {path}[{index}]")]
-    InvalidElement {
-        path: String,
-        index: usize,
-        #[source]
-        source: Box<Self>,
-    },
-    #[error("invalid field {path}.{key}")]
-    InvalidField {
-        path: String,
-        key: SmolStr,
-        #[source]
-        source: Box<Self>,
-    },
     #[error("schema not found: {0}")]
     SchemaNotFound(Hash),
     #[error("failed to parse schema")]
     ParseError,
-    #[error("access denied at {path}: {action} requires authorization")]
-    AccessDenied { path: String, action: &'static str },
+    #[error(transparent)]
+    Schema(#[from] loro_schema::ValidationError),
 }
 
 /// Fetch a schema from the blob store by its hash.
@@ -132,176 +105,6 @@ fn is_authorized(doc: &LoroDoc, who: &Who, author: &Did) -> bool {
     }
 }
 
-/// Get the action name for error reporting.
-const fn action_name(can: &Can) -> &'static str {
-    match can {
-        Can::Create => "create",
-        Can::Delete => "delete",
-        Can::Update => "update",
-    }
-}
-
-/// Validate a [`LoroValue`] against a [`Field`] layout.
-pub fn validate_value(value: &LoroValue, field: &Field, path: &str) -> Result<(), ValidationError> {
-    validate_value_inner(value, field, path, None, None)
-}
-
-/// Internal validation with optional ACL context.
-#[expect(clippy::too_many_lines)]
-fn validate_value_inner(
-    value: &LoroValue,
-    field: &Field,
-    path: &str,
-    doc: Option<&LoroDoc>,
-    author: Option<&Did>,
-) -> Result<(), ValidationError> {
-    match field {
-        Field::Any => Ok(()),
-        Field::Bool => match value {
-            LoroValue::Bool(_) => Ok(()),
-            _ => Err(ValidationError::TypeMismatch {
-                path: path.to_string(),
-                expected: "bool",
-            }),
-        },
-        Field::F64 => match value {
-            LoroValue::Double(_) => Ok(()),
-            _ => Err(ValidationError::TypeMismatch {
-                path: path.to_string(),
-                expected: "f64",
-            }),
-        },
-        Field::I64 => match value {
-            LoroValue::I64(_) => Ok(()),
-            _ => Err(ValidationError::TypeMismatch {
-                path: path.to_string(),
-                expected: "i64",
-            }),
-        },
-        Field::String => match value {
-            LoroValue::String(_) => Ok(()),
-            _ => Err(ValidationError::TypeMismatch {
-                path: path.to_string(),
-                expected: "string",
-            }),
-        },
-        Field::Binary => match value {
-            LoroValue::Binary(_) => Ok(()),
-            _ => Err(ValidationError::TypeMismatch {
-                path: path.to_string(),
-                expected: "binary",
-            }),
-        },
-        Field::Optional(inner) => match value {
-            LoroValue::Null => Ok(()),
-            _ => validate_value_inner(value, inner, path, doc, author),
-        },
-        Field::List(inner) | Field::MovableList(inner) => match value {
-            LoroValue::List(items) => {
-                for (i, item) in items.iter().enumerate() {
-                    validate_value_inner(item, inner, &format!("{path}[{i}]"), doc, author)
-                        .map_err(|e| ValidationError::InvalidElement {
-                            path: path.to_string(),
-                            index: i,
-                            source: Box::new(e),
-                        })?;
-                }
-                Ok(())
-            }
-            _ => Err(ValidationError::TypeMismatch {
-                path: path.to_string(),
-                expected: "list",
-            }),
-        },
-        Field::Map(inner) => match value {
-            LoroValue::Map(map) => {
-                for (key, val) in map.iter() {
-                    validate_value_inner(val, inner, &format!("{path}.{key}"), doc, author)
-                        .map_err(|e| ValidationError::InvalidField {
-                            path: path.to_string(),
-                            key: key.into(),
-                            source: Box::new(e),
-                        })?;
-                }
-                Ok(())
-            }
-            _ => Err(ValidationError::TypeMismatch {
-                path: path.to_string(),
-                expected: "map",
-            }),
-        },
-        Field::Struct(fields) => match value {
-            LoroValue::Map(map) => {
-                for (key, inner_field) in fields {
-                    let val = map
-                        .get(key.as_str())
-                        .ok_or_else(|| ValidationError::MissingField(key.clone()))?;
-                    validate_value_inner(val, inner_field, &format!("{path}.{key}"), doc, author)
-                        .map_err(|e| ValidationError::InvalidField {
-                        path: path.to_string(),
-                        key: key.clone(),
-                        source: Box::new(e),
-                    })?;
-                }
-                Ok(())
-            }
-            _ => Err(ValidationError::TypeMismatch {
-                path: path.to_string(),
-                expected: "struct",
-            }),
-        },
-        Field::Tree(inner) => match value {
-            // Tree's deep value is a list of node objects.
-            // Each node has: id, parent, fractional_index, index, meta.
-            // We validate the "meta" field which contains user data.
-            LoroValue::List(nodes) => {
-                for (i, node) in nodes.iter().enumerate() {
-                    if let LoroValue::Map(node_map) = node
-                        && let Some(meta) = node_map.get("meta")
-                    {
-                        validate_value_inner(
-                            meta,
-                            inner,
-                            &format!("{path}[{i}].meta"),
-                            doc,
-                            author,
-                        )
-                        .map_err(|e| ValidationError::InvalidElement {
-                            path: path.to_string(),
-                            index: i,
-                            source: Box::new(e),
-                        })?;
-                    }
-                }
-                Ok(())
-            }
-            _ => Err(ValidationError::TypeMismatch {
-                path: path.to_string(),
-                expected: "tree",
-            }),
-        },
-        Field::Restricted {
-            value: inner,
-            actions,
-        } => {
-            // Check ACL if doc and author are provided.
-            if let (Some(doc), Some(author)) = (doc, author) {
-                for action in actions {
-                    for can in &action.can {
-                        if !is_authorized(doc, &action.who, author) {
-                            return Err(ValidationError::AccessDenied {
-                                path: path.to_string(),
-                                action: action_name(can),
-                            });
-                        }
-                    }
-                }
-            }
-            validate_value_inner(value, inner, path, doc, author)
-        }
-    }
-}
-
 /// Validate changes between two document states against schema restrictions.
 ///
 /// `auth_doc` is used for authorization checks (should be the OLD state).
@@ -330,6 +133,13 @@ pub fn validate_diff_batch(
     author: &Did,
     is_first_envelope: bool,
 ) -> Result<(), ValidationError> {
+    // Build path resolver for ACL checks.
+    let resolve_path = |path: &str| resolve_acl_path(doc, path);
+    let ctx = ValidateContext {
+        author: Some(&author.to_string()),
+        resolve_path: Some(&resolve_path),
+    };
+
     for (container_id, container_diff) in diff.iter() {
         // Only validate root containers.
         if !container_id.is_root() {
@@ -340,10 +150,19 @@ pub fn validate_diff_batch(
 
         // Check if this container has a schema.
         if let Some(schema) = schemas.get(container_name.as_str()) {
-            validate_container_diff(
-                doc,
+            // Type validation via loro_schema.
+            loro_schema::validate_container_diff(
                 container_diff,
                 schema,
+                container_name.as_str(),
+                &ctx,
+            )?;
+
+            // ACL validation based on change types.
+            validate_acl_for_diff(
+                doc,
+                container_diff,
+                schema.layout(),
                 container_name.as_str(),
                 author,
                 is_first_envelope,
@@ -354,106 +173,48 @@ pub fn validate_diff_batch(
     Ok(())
 }
 
-/// Validate a single container's diff.
-fn validate_container_diff(
+/// Validate ACL permissions for changes in a container diff.
+///
+/// This checks that the author has permission to perform each change type
+/// (create/update/delete) according to the Restricted fields in the schema.
+fn validate_acl_for_diff(
     doc: &LoroDoc,
     diff: &Diff<'_>,
-    schema: &Schema,
-    container_name: &str,
-    author: &Did,
-    is_first_envelope: bool,
-) -> Result<(), ValidationError> {
-    match diff {
-        Diff::Map(map_delta) => validate_map_diff(
-            doc,
-            map_delta,
-            schema.layout(),
-            container_name,
-            author,
-            is_first_envelope,
-        ),
-        Diff::List(items) => validate_list_diff(
-            doc,
-            items,
-            schema.layout(),
-            container_name,
-            author,
-            is_first_envelope,
-        ),
-        Diff::Tree(tree_diff) => validate_tree_diff(
-            doc,
-            tree_diff,
-            schema.layout(),
-            container_name,
-            author,
-            is_first_envelope,
-        ),
-        _ => Ok(()),
-    }
-}
-
-/// Validate map field changes.
-///
-/// Handles both [`Field::Struct`] (fixed keys) and [`Field::Map`] (homogeneous).
-fn validate_map_diff(
-    doc: &LoroDoc,
-    map_delta: &MapDelta<'_>,
     field: &Field,
     path: &str,
     author: &Did,
     is_first_envelope: bool,
 ) -> Result<(), ValidationError> {
-    // Get the inner type, unwrapping any Restricted wrappers.
-    let inner = unwrap_restricted(field);
-
-    // Determine field type: Struct (fixed keys) or Map (homogeneous).
-    let (struct_fields, map_inner) = match inner {
-        Field::Struct(fields) => (Some(fields), None),
-        Field::Map(inner) => (None, Some(inner.as_ref())),
-        _ => (None, None),
-    };
-
-    for (key, new_value) in &map_delta.updated {
-        let change_type = if new_value.is_some() {
-            ChangeType::Update
-        } else {
-            ChangeType::Delete
-        };
-
-        let field_path = format!("{path}.{key}");
-
-        // Check ACL restrictions.
-        validate_field_change(
-            doc,
-            field,
-            &field_path,
-            change_type,
-            author,
-            is_first_envelope,
-        )?;
-
-        // Validate value type if there's a new value.
-        if let Some(value) = new_value {
-            if let Some(fields) = struct_fields {
-                // Struct: look up expected type by key.
-                let key_smol: SmolStr = key.to_string().into();
-                if let Some(expected_field) = fields.get(&key_smol) {
-                    validate_value_or_container(value, expected_field, &field_path)?;
-                }
-            } else if let Some(expected) = map_inner {
-                // Map: all values must match the inner type.
-                validate_value_or_container(value, expected, &field_path)?;
+    match diff {
+        Diff::Map(map_delta) => {
+            for (key, new_value) in &map_delta.updated {
+                let change_type = if new_value.is_some() {
+                    ChangeType::Update
+                } else {
+                    ChangeType::Delete
+                };
+                let field_path = format!("{path}.{key}");
+                validate_field_change(
+                    doc,
+                    field,
+                    &field_path,
+                    change_type,
+                    author,
+                    is_first_envelope,
+                )?;
             }
+            Ok(())
         }
+        Diff::List(items) => validate_list_acl(doc, items, field, path, author, is_first_envelope),
+        Diff::Tree(tree_diff) => {
+            validate_tree_acl(doc, tree_diff, field, path, author, is_first_envelope)
+        }
+        _ => Ok(()),
     }
-    Ok(())
 }
 
-/// Validate list changes.
-///
-/// Handles both [`Field::List`] and [`Field::MovableList`].
-/// For [`Field::MovableList`], moves are treated as updates (not create+delete).
-fn validate_list_diff(
+/// Validate ACL permissions for list changes.
+fn validate_list_acl(
     doc: &LoroDoc,
     items: &[ListDiffItem],
     field: &Field,
@@ -461,17 +222,11 @@ fn validate_list_diff(
     author: &Did,
     is_first_envelope: bool,
 ) -> Result<(), ValidationError> {
-    // Get the inner list element type, unwrapping any Restricted wrappers.
-    let inner = unwrap_restricted(field);
-    let (item_field, is_movable) = match inner {
-        Field::List(inner) => (Some(inner.as_ref()), false),
-        Field::MovableList(inner) => (Some(inner.as_ref()), true),
-        _ => (None, false),
-    };
+    let is_movable = matches!(loro_schema::unwrap_restricted(field), Field::MovableList(_));
 
     for item in items {
         match item {
-            ListDiffItem::Insert { insert, is_move } => {
+            ListDiffItem::Insert { is_move, .. } => {
                 // For MovableList, moves are updates (reordering).
                 // For regular List, moves are treated as creates.
                 let change_type = if *is_move && is_movable {
@@ -479,17 +234,7 @@ fn validate_list_diff(
                 } else {
                     ChangeType::Create
                 };
-
-                // Check ACL restrictions.
                 validate_field_change(doc, field, path, change_type, author, is_first_envelope)?;
-
-                // Validate each inserted value.
-                if let Some(expected) = item_field {
-                    for (i, value) in insert.iter().enumerate() {
-                        let elem_path = format!("{path}[{i}]");
-                        validate_value_or_container(value, expected, &elem_path)?;
-                    }
-                }
             }
             ListDiffItem::Delete { .. } => {
                 validate_field_change(
@@ -507,11 +252,8 @@ fn validate_list_diff(
     Ok(())
 }
 
-/// Validate tree changes.
-///
-/// Tree diffs contain structural changes (create/move/delete nodes).
-/// Node metadata changes appear as separate Map diffs on nested containers.
-fn validate_tree_diff(
+/// Validate ACL permissions for tree changes.
+fn validate_tree_acl(
     doc: &LoroDoc,
     tree_diff: &TreeDiff,
     field: &Field,
@@ -525,12 +267,7 @@ fn validate_tree_diff(
             TreeExternalDiff::Move { .. } => ChangeType::Update,
             TreeExternalDiff::Delete { .. } => ChangeType::Delete,
         };
-
-        // Check ACL restrictions for the structural change.
         validate_field_change(doc, field, path, change_type, author, is_first_envelope)?;
-
-        // Note: Node metadata validation happens when the nested container's
-        // Map diff is processed separately. Tree diff only validates structure.
     }
     Ok(())
 }
@@ -567,10 +304,11 @@ fn validate_field_change(
 
                 // Check if author is authorized.
                 if !is_authorized(doc, &action.who, author) {
-                    return Err(ValidationError::AccessDenied {
+                    return Err(loro_schema::ValidationError::AccessDenied {
                         path: path.to_string(),
                         action: change_type_name(change_type),
-                    });
+                    }
+                    .into());
                 }
             }
         }
@@ -579,78 +317,12 @@ fn validate_field_change(
     Ok(())
 }
 
-/// Find all Restricted wrappers along a path in the schema.
-fn find_restrictions_for_path<'a>(
-    field: &'a Field,
-    path: &str,
-) -> Vec<(&'a Vec<Action>, &'a Field)> {
-    let mut restrictions = Vec::new();
-    find_restrictions_recursive(field, path, &mut restrictions);
-    restrictions
-}
-
-/// Recursively find restrictions along a path.
-fn find_restrictions_recursive<'a>(
-    field: &'a Field,
-    remaining_path: &str,
-    out: &mut Vec<(&'a Vec<Action>, &'a Field)>,
-) {
-    match field {
-        Field::Restricted { actions, value } => {
-            out.push((actions, value));
-            find_restrictions_recursive(value, remaining_path, out);
-        }
-        Field::Struct(fields) => {
-            // Parse next path segment (e.g., "container.key.subkey" → "key", "subkey").
-            if let Some(rest) = remaining_path.strip_prefix('.') {
-                if let Some((key, after)) = rest.split_once('.') {
-                    if let Some(inner) = fields.get(key) {
-                        find_restrictions_recursive(inner, after, out);
-                    }
-                } else if let Some(inner) = fields.get(rest) {
-                    find_restrictions_recursive(inner, "", out);
-                }
-            }
-        }
-        Field::Map(inner) | Field::List(inner) | Field::MovableList(inner) | Field::Tree(inner) => {
-            // For container types, recurse into inner field.
-            find_restrictions_recursive(inner, remaining_path, out);
-        }
-        _ => {}
-    }
-}
-
-const fn change_type_name(ct: ChangeType) -> &'static str {
-    match ct {
-        ChangeType::Create => "create",
-        ChangeType::Update => "update",
-        ChangeType::Delete => "delete",
-    }
-}
-
-/// Unwrap Restricted wrappers to get the inner field type.
-fn unwrap_restricted(field: &Field) -> &Field {
-    match field {
-        Field::Restricted { value, .. } => unwrap_restricted(value),
-        Field::Optional(inner) => unwrap_restricted(inner),
-        other => other,
-    }
-}
-
-/// Validate a [`ValueOrContainer`] against a [`Field`] layout.
-fn validate_value_or_container(
-    value: &ValueOrContainer,
-    field: &Field,
-    path: &str,
-) -> Result<(), ValidationError> {
-    // Get the deep value, which converts containers to their full LoroValue.
-    let loro_value = value.get_deep_value();
-    validate_value(&loro_value, field, path)
-}
-
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
+
+    use loro::LoroValue;
+    use loro_schema::validate_value;
 
     use super::*;
 

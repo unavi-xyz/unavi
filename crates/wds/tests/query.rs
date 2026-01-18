@@ -2,10 +2,7 @@ use std::time::Duration;
 
 use rstest::rstest;
 use tracing_test::traced_test;
-use wds::record::{
-    acl::Acl,
-    schema::{SCHEMA_BEACON, SCHEMA_HOME},
-};
+use wired_schemas::{Acl, SCHEMA_BEACON, SCHEMA_HOME};
 
 use crate::common::{DataStoreCtx, ctx};
 

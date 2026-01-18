@@ -7,14 +7,11 @@ use iroh::EndpointId;
 use loro::LoroDoc;
 use tracing::warn;
 
+use wired_schemas::{Acl, Record, SCHEMA_ACL, SCHEMA_RECORD, StaticSchema};
+
 use crate::{
     actor::{Actor, into_actor::IntoActor},
-    record::{
-        Record,
-        acl::Acl,
-        envelope::Envelope,
-        schema::{SCHEMA_ACL, SCHEMA_RECORD, StaticSchema},
-    },
+    record::envelope::Envelope,
     signed_bytes::Signable,
 };
 

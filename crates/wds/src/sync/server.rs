@@ -5,7 +5,9 @@ use rusqlite::params;
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
 use tracing::debug;
 
-use crate::{StoreContext, record::acl::Acl, sync::SyncMsg};
+use wired_schemas::Acl;
+
+use crate::{StoreContext, sync::SyncMsg};
 
 pub async fn handle_sync<S>(
     ctx: &StoreContext,

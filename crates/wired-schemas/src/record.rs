@@ -19,7 +19,7 @@ pub type RecordNonce = [u8; 16];
 pub struct Record {
     #[loro(with = "conv::did")]
     pub creator: Did,
-    #[loro(with = "conv::nonce")]
+    #[loro(with = "conv::byte_slice")]
     pub nonce: RecordNonce,
     #[loro(with = "conv::hash::map")]
     pub schemas: BTreeMap<SmolStr, Hash>,

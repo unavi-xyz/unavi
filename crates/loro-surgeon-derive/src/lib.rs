@@ -17,11 +17,12 @@ fn crate_ident() -> proc_macro2::TokenStream {
 /// Field-level attributes parsed from `#[loro(...)]`.
 #[derive(Default)]
 struct FieldAttrs {
-    with: Option<syn::Path>,
+    default: bool,
     hydrate_with: Option<syn::Path>,
     reconcile_with: Option<syn::Path>,
     rename: Option<String>,
     skip: bool,
+    with: Option<syn::Path>,
 }
 
 fn parse_field_attrs(attrs: &[Attribute]) -> FieldAttrs {
@@ -33,15 +34,8 @@ fn parse_field_attrs(attrs: &[Attribute]) -> FieldAttrs {
         }
 
         let _ = attr.parse_nested_meta(|meta| {
-            if meta.path.is_ident("skip") {
-                result.skip = true;
-                return Ok(());
-            }
-
-            if meta.path.is_ident("with") {
-                let value = meta.value()?;
-                let lit: syn::LitStr = value.parse()?;
-                result.with = Some(lit.parse()?);
+            if meta.path.is_ident("default") {
+                result.default = true;
                 return Ok(());
             }
 
@@ -63,6 +57,18 @@ fn parse_field_attrs(attrs: &[Attribute]) -> FieldAttrs {
                 let value = meta.value()?;
                 let lit: syn::LitStr = value.parse()?;
                 result.rename = Some(lit.value());
+                return Ok(());
+            }
+
+            if meta.path.is_ident("skip") {
+                result.skip = true;
+                return Ok(());
+            }
+
+            if meta.path.is_ident("with") {
+                let value = meta.value()?;
+                let lit: syn::LitStr = value.parse()?;
+                result.with = Some(lit.parse()?);
                 return Ok(());
             }
 
@@ -122,13 +128,24 @@ pub fn derive_hydrate(input: TokenStream) -> TokenStream {
                 quote! { <#field_type as #crate_ident::Hydrate>::hydrate(field_value)? }
             };
 
-            quote! {
-                #field_name: {
-                    let field_value = map.get(#key).ok_or_else(|| {
-                        #crate_ident::HydrateError::MissingField(#key.to_string())
-                    })?;
-                    #hydrate_expr
-                },
+            if attrs.default {
+                quote! {
+                    #field_name: {
+                        match map.get(#key) {
+                            Some(field_value) => #hydrate_expr,
+                            None => Default::default(),
+                        }
+                    },
+                }
+            } else {
+                quote! {
+                    #field_name: {
+                        let field_value = map.get(#key).ok_or_else(|| {
+                            #crate_ident::HydrateError::MissingField(#key.to_string())
+                        })?;
+                        #hydrate_expr
+                    },
+                }
             }
         })
         .collect();

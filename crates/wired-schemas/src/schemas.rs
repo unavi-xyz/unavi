@@ -1,5 +1,3 @@
-//! Static schemas for The Wired protocol.
-
 use std::sync::LazyLock;
 
 use blake3::Hash;

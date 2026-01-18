@@ -1,57 +1,45 @@
-//! Access control list type for WDS documents.
-
 use loro::LoroDoc;
-use loro_surgeon::{Hydrate, HydrateError, Reconcile, ReconcileError, loro::LoroMap};
+use loro_surgeon::{Hydrate, Reconcile};
 use serde::{Deserialize, Serialize};
 use xdid::core::did::Did;
 
 use crate::conv;
 
 /// Access control list for a record.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Hydrate, Reconcile)]
 pub struct Acl {
-    /// Whether the record is publicly readable.
+    #[loro(default)]
     pub public: bool,
-    /// DIDs with manage permission (can modify ACL).
+    #[loro(with = "conv::did::list", default)]
     pub manage: Vec<Did>,
-    /// DIDs with write permission.
-    pub write: Vec<Did>,
-    /// DIDs with read permission.
+    #[loro(with = "conv::did::list", default)]
     pub read: Vec<Did>,
+    #[loro(with = "conv::did::list", default)]
+    pub write: Vec<Did>,
 }
 
 impl Acl {
-    /// Check if this record is public.
     #[must_use]
     pub const fn is_public(&self) -> bool {
         self.public
     }
 
-    /// Check if a DID has read permission.
-    ///
-    /// Returns `true` if:
-    /// - The record is public
-    /// - The DID is in the `read` list
-    /// - The DID has write or manage permission
+    /// Returns `true` if public, in `read` list, or has write/manage permission.
     #[must_use]
     pub fn can_read(&self, did: &Did) -> bool {
         self.public || self.read.contains(did) || self.can_write(did)
     }
 
-    /// Check if a DID has write permission (write or manage).
     #[must_use]
     pub fn can_write(&self, did: &Did) -> bool {
         self.write.contains(did) || self.can_manage(did)
     }
 
-    /// Check if a DID has manage permission.
     #[must_use]
     pub fn can_manage(&self, did: &Did) -> bool {
         self.manage.contains(did)
     }
 
-    /// Save ACL to a [`LoroDoc`]'s "acl" container.
-    ///
     /// # Errors
     ///
     /// Returns an error if the ACL could not be saved.
@@ -61,8 +49,6 @@ impl Acl {
         Ok(())
     }
 
-    /// Load ACL from a [`LoroDoc`]'s "acl" container.
-    ///
     /// # Errors
     ///
     /// Returns an error if the ACL container is malformed.
@@ -70,71 +56,6 @@ impl Acl {
         let map = doc.get_map("acl");
         let value = map.get_deep_value();
         Self::hydrate(&value).map_err(|e| anyhow::anyhow!("{e}"))
-    }
-}
-
-impl Hydrate for Acl {
-    fn hydrate(value: &loro::LoroValue) -> Result<Self, HydrateError> {
-        let loro::LoroValue::Map(map) = value else {
-            return Err(HydrateError::TypeMismatch {
-                path: String::new(),
-                expected: "map".into(),
-                actual: format!("{value:?}"),
-            });
-        };
-
-        let public = map
-            .get("public")
-            .map(|v| match v {
-                loro::LoroValue::Bool(b) => Ok(*b),
-                _ => Err(HydrateError::TypeMismatch {
-                    path: "public".into(),
-                    expected: "bool".into(),
-                    actual: format!("{v:?}"),
-                }),
-            })
-            .transpose()?
-            .unwrap_or(false);
-
-        let manage = map
-            .get("manage")
-            .map(conv::did::list::hydrate)
-            .transpose()?
-            .unwrap_or_default();
-
-        let write = map
-            .get("write")
-            .map(conv::did::list::hydrate)
-            .transpose()?
-            .unwrap_or_default();
-
-        let read = map
-            .get("read")
-            .map(conv::did::list::hydrate)
-            .transpose()?
-            .unwrap_or_default();
-
-        Ok(Self {
-            public,
-            manage,
-            write,
-            read,
-        })
-    }
-}
-
-impl Reconcile for Acl {
-    fn reconcile(&self, map: &LoroMap) -> Result<(), ReconcileError> {
-        map.insert("public", self.public)?;
-        conv::did::list::reconcile_field(&self.manage, map, "manage")?;
-        conv::did::list::reconcile_field(&self.write, map, "write")?;
-        conv::did::list::reconcile_field(&self.read, map, "read")?;
-        Ok(())
-    }
-
-    fn reconcile_field(&self, map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
-        let nested = map.get_or_create_container(key, loro::LoroMap::new())?;
-        self.reconcile(&nested)
     }
 }
 

@@ -1,5 +1,3 @@
-//! Converter for [`blake3::Hash`] types.
-
 use std::collections::BTreeMap;
 
 use blake3::Hash;
@@ -23,12 +21,10 @@ pub fn hydrate(value: &LoroValue) -> Result<Hash, HydrateError> {
     Hash::from_hex(s.as_ref()).map_err(|e| HydrateError::Custom(e.to_string()))
 }
 
-/// Reconcile a [`Hash`] as a Loro string value (hex encoded).
-///
 /// # Errors
 ///
 /// Returns an error if the Loro operation fails.
-pub fn reconcile_field(hash: &Hash, map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
+pub fn reconcile(hash: &Hash, map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
     map.insert(key, hash.to_string())?;
     Ok(())
 }
@@ -59,12 +55,10 @@ pub mod map {
             .collect()
     }
 
-    /// Reconcile a `BTreeMap<SmolStr, Hash>` as a Loro map value.
-    ///
     /// # Errors
     ///
     /// Returns an error if the Loro operation fails.
-    pub fn reconcile_field(
+    pub fn reconcile(
         schemas: &BTreeMap<SmolStr, Hash>,
         map: &LoroMap,
         key: &str,

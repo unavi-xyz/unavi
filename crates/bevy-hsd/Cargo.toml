@@ -11,3 +11,4 @@ workspace = true
 
 [dependencies]
 bevy.workspace = true
+loro.workspace = true

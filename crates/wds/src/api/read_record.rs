@@ -4,7 +4,9 @@ use irpc::WithChannels;
 use loro::ExportMode;
 use tracing::warn;
 
-use crate::{StoreContext, record::acl::Acl, sync::shared::reconstruct_current_doc};
+use wired_schemas::Acl;
+
+use crate::{StoreContext, sync::shared::reconstruct_current_doc};
 
 use super::{ApiError, ApiService, ReadRecord, authenticate};
 

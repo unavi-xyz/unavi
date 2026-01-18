@@ -3,9 +3,10 @@ use std::time::Duration;
 use rstest::rstest;
 use tracing_test::traced_test;
 use wds::{
-    record::{Record, acl::Acl, envelope::Envelope},
+    record::envelope::Envelope,
     signed_bytes::{Signable, SignedBytes},
 };
+use wired_schemas::{Acl, Record};
 
 use crate::common::{DataStoreCtx, assert_contains, ctx};
 

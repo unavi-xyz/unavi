@@ -7713,6 +7713,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "loro-schema"
+version = "0.0.16"
+dependencies = [
+ "blake3",
+ "bytes 1.11.0",
+ "loro",
+ "paste",
+ "postcard",
+ "ron 0.9.0",
+ "rstest 0.25.0",
+ "serde",
+ "smol_str 0.3.5",
+ "thiserror 2.0.17",
+]
+
+[[package]]
 name = "loro-surgeon"
 version = "0.0.16"
 dependencies = [
@@ -10733,6 +10749,19 @@ checksum = "e7ceb6607dd738c99bc8cb28eff249b7cd5c8ec88b9db96c0608c1480d140fb1"
 dependencies = [
  "cpal",
  "lewton",
+]
+
+[[package]]
+name = "ron"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63f3aa105dea217ef30d89581b65a4d527a19afc95ef5750be3890e8d3c5b837"
+dependencies = [
+ "base64 0.22.1",
+ "bitflags 2.10.0",
+ "serde",
+ "serde_derive",
+ "unicode-ident",
 ]
 
 [[package]]
@@ -14110,6 +14139,7 @@ dependencies = [
  "irpc-iroh",
  "jose-jwk",
  "loro",
+ "loro-schema",
  "n0-error",
  "n0-future",
  "p256",
@@ -14131,6 +14161,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-test",
+ "wired-schemas",
  "xdid",
 ]
 
@@ -15238,6 +15269,26 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.113",
+]
+
+[[package]]
+name = "wired-schemas"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "blake3",
+ "bytes 1.11.0",
+ "loro",
+ "loro-schema",
+ "loro-surgeon",
+ "postcard",
+ "rand 0.9.2",
+ "ron 0.9.0",
+ "rstest 0.25.0",
+ "serde",
+ "smol_str 0.3.5",
+ "time",
+ "xdid",
 ]
 
 [[package]]

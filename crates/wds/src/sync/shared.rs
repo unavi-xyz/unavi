@@ -5,15 +5,14 @@ use loro::{LoroDoc, VersionVector};
 use rusqlite::{Connection, params};
 use xdid::{core::did::Did, resolver::DidResolver};
 
+use wired_schemas::{Acl, Record, SCHEMA_ACL, SCHEMA_RECORD};
+
 use crate::{
     auth::jwk::verify_jwk_signature,
     db::Database,
     quota,
     record::{
-        Record,
-        acl::Acl,
         envelope::Envelope,
-        schema::{SCHEMA_ACL, SCHEMA_RECORD},
         validate::{fetch_schema, validate_diff},
     },
     signed_bytes::SignedBytes,

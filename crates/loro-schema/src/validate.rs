@@ -1,8 +1,7 @@
 //! Container-level schema validation for Loro documents.
 //!
-//! This module provides type validation for individual containers. Document-level
-//! validation (which schemas apply to which containers, ACL enforcement across
-//! containers) is handled by the consumer (e.g., WDS).
+//! This module provides type validation for individual containers. For document-level
+//! validation with Restricted field authorization, use [`crate::Validator`].
 
 use loro::{
     LoroValue, ValueOrContainer,
@@ -11,9 +10,8 @@ use loro::{
 use smol_str::SmolStr;
 use thiserror::Error;
 
-use crate::schema::{Action, Can, Field, Schema, Who};
+use crate::schema::{Field, Schema};
 
-/// Type of change detected in a diff.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChangeType {
     Create,
@@ -21,7 +19,6 @@ pub enum ChangeType {
     Delete,
 }
 
-/// Validation errors.
 #[derive(Debug, Error)]
 pub enum ValidationError {
     #[error("missing field: {0}")]
@@ -49,45 +46,16 @@ pub enum ValidationError {
     AccessDenied { path: String, action: &'static str },
 }
 
-/// Context for ACL-aware validation.
-///
-/// Provides author information and a path resolver for checking Restricted fields.
-#[derive(Default)]
-pub struct ValidateContext<'a> {
-    /// Author identifier as a string (for Restricted field checks).
-    pub author: Option<&'a str>,
-    /// Path resolver for `Who::Path` references.
-    /// Returns a list of authorized identifiers for a given path.
-    pub resolve_path: Option<&'a dyn Fn(&str) -> Option<Vec<String>>>,
-}
-
 /// Validate a [`LoroValue`] against a [`Field`] layout.
 ///
-/// This performs type-only validation without ACL checks.
+/// This performs type-only validation. For Restricted field authorization,
+/// use [`crate::Validator`].
 ///
 /// # Errors
 ///
 /// Returns [`ValidationError`] if the value doesn't match the field type.
-pub fn validate_value(value: &LoroValue, field: &Field, path: &str) -> Result<(), ValidationError> {
-    validate_value_with_context(value, field, path, &ValidateContext::default())
-}
-
-/// Validate a [`LoroValue`] against a [`Field`] layout with ACL context.
-///
-/// When `ctx.author` and `ctx.resolve_path` are provided, Restricted fields
-/// will be checked for authorization.
-///
-/// # Errors
-///
-/// Returns [`ValidationError`] if the value doesn't match the field type
-/// or if access is denied for restricted fields.
 #[expect(clippy::too_many_lines)]
-pub fn validate_value_with_context(
-    value: &LoroValue,
-    field: &Field,
-    path: &str,
-    ctx: &ValidateContext<'_>,
-) -> Result<(), ValidationError> {
+pub fn validate_value(value: &LoroValue, field: &Field, path: &str) -> Result<(), ValidationError> {
     match field {
         Field::Any => Ok(()),
         Field::Bool => match value {
@@ -127,17 +95,18 @@ pub fn validate_value_with_context(
         },
         Field::Optional(inner) => match value {
             LoroValue::Null => Ok(()),
-            _ => validate_value_with_context(value, inner, path, ctx),
+            _ => validate_value(value, inner, path),
         },
         Field::List(inner) | Field::MovableList(inner) => match value {
             LoroValue::List(items) => {
                 for (i, item) in items.iter().enumerate() {
-                    validate_value_with_context(item, inner, &format!("{path}[{i}]"), ctx)
-                        .map_err(|e| ValidationError::InvalidElement {
+                    validate_value(item, inner, &format!("{path}[{i}]")).map_err(|e| {
+                        ValidationError::InvalidElement {
                             path: path.to_string(),
                             index: i,
                             source: Box::new(e),
-                        })?;
+                        }
+                    })?;
                 }
                 Ok(())
             }
@@ -149,12 +118,13 @@ pub fn validate_value_with_context(
         Field::Map(inner) => match value {
             LoroValue::Map(map) => {
                 for (key, val) in map.iter() {
-                    validate_value_with_context(val, inner, &format!("{path}.{key}"), ctx)
-                        .map_err(|e| ValidationError::InvalidField {
+                    validate_value(val, inner, &format!("{path}.{key}")).map_err(|e| {
+                        ValidationError::InvalidField {
                             path: path.to_string(),
                             key: key.into(),
                             source: Box::new(e),
-                        })?;
+                        }
+                    })?;
                 }
                 Ok(())
             }
@@ -169,12 +139,13 @@ pub fn validate_value_with_context(
                     let val = map
                         .get(key.as_str())
                         .ok_or_else(|| ValidationError::MissingField(key.clone()))?;
-                    validate_value_with_context(val, inner_field, &format!("{path}.{key}"), ctx)
-                        .map_err(|e| ValidationError::InvalidField {
+                    validate_value(val, inner_field, &format!("{path}.{key}")).map_err(|e| {
+                        ValidationError::InvalidField {
                             path: path.to_string(),
                             key: key.clone(),
                             source: Box::new(e),
-                        })?;
+                        }
+                    })?;
                 }
                 Ok(())
             }
@@ -192,12 +163,13 @@ pub fn validate_value_with_context(
                     if let LoroValue::Map(node_map) = node
                         && let Some(meta) = node_map.get("meta")
                     {
-                        validate_value_with_context(meta, inner, &format!("{path}[{i}].meta"), ctx)
-                            .map_err(|e| ValidationError::InvalidElement {
+                        validate_value(meta, inner, &format!("{path}[{i}].meta")).map_err(|e| {
+                            ValidationError::InvalidElement {
                                 path: path.to_string(),
                                 index: i,
                                 source: Box::new(e),
-                            })?;
+                            }
+                        })?;
                     }
                 }
                 Ok(())
@@ -207,47 +179,12 @@ pub fn validate_value_with_context(
                 expected: "tree",
             }),
         },
-        Field::Restricted {
-            value: inner,
-            actions,
-        } => {
-            // Check ACL if author and resolver are provided.
-            if let (Some(author), Some(resolve)) = (ctx.author, ctx.resolve_path) {
-                for action in actions {
-                    for can in &action.can {
-                        if !is_authorized(&action.who, author, resolve) {
-                            return Err(ValidationError::AccessDenied {
-                                path: path.to_string(),
-                                action: action_name(can),
-                            });
-                        }
-                    }
-                }
-            }
-            validate_value_with_context(value, inner, path, ctx)
-        }
+        // For type validation, Restricted just validates the inner type.
+        // Authorization is handled by Validator.
+        Field::Restricted { value: inner, .. } => validate_value(value, inner, path),
     }
 }
 
-/// Check if an author is authorized according to a [`Who`] rule.
-fn is_authorized(who: &Who, author: &str, resolve: &dyn Fn(&str) -> Option<Vec<String>>) -> bool {
-    match who {
-        Who::Anyone => true,
-        Who::Path(path) => resolve(path).is_some_and(|dids| dids.contains(&author.to_string())),
-    }
-}
-
-/// Get the action name for error reporting.
-const fn action_name(can: &Can) -> &'static str {
-    match can {
-        Can::Create => "create",
-        Can::Delete => "delete",
-        Can::Update => "update",
-    }
-}
-
-/// Validate a single container's diff against a schema.
-///
 /// # Errors
 ///
 /// Returns [`ValidationError`] if any value in the diff doesn't match the schema.
@@ -255,22 +192,18 @@ pub fn validate_container_diff(
     diff: &Diff<'_>,
     schema: &Schema,
     container_name: &str,
-    ctx: &ValidateContext<'_>,
 ) -> Result<(), ValidationError> {
     match diff {
-        Diff::Map(map_delta) => validate_map_diff(map_delta, schema.layout(), container_name, ctx),
-        Diff::List(items) => validate_list_diff(items, schema.layout(), container_name, ctx),
-        // Tree metadata is validated via separate Map diffs for each node.
+        Diff::Map(map_delta) => validate_map_diff(map_delta, schema.layout(), container_name),
+        Diff::List(items) => validate_list_diff(items, schema.layout(), container_name),
         _ => Ok(()),
     }
 }
 
-/// Validate map field changes.
 fn validate_map_diff(
     map_delta: &MapDelta<'_>,
     field: &Field,
     path: &str,
-    ctx: &ValidateContext<'_>,
 ) -> Result<(), ValidationError> {
     let inner = unwrap_restricted(field);
 
@@ -287,22 +220,20 @@ fn validate_map_diff(
             if let Some(fields) = struct_fields {
                 let key_smol: SmolStr = key.to_string().into();
                 if let Some(expected_field) = fields.get(&key_smol) {
-                    validate_value_or_container(value, expected_field, &field_path, ctx)?;
+                    validate_value_or_container(value, expected_field, &field_path)?;
                 }
             } else if let Some(expected) = map_inner {
-                validate_value_or_container(value, expected, &field_path, ctx)?;
+                validate_value_or_container(value, expected, &field_path)?;
             }
         }
     }
     Ok(())
 }
 
-/// Validate list changes.
 fn validate_list_diff(
     items: &[ListDiffItem],
     field: &Field,
     path: &str,
-    ctx: &ValidateContext<'_>,
 ) -> Result<(), ValidationError> {
     let inner = unwrap_restricted(field);
     let item_field = match inner {
@@ -316,14 +247,13 @@ fn validate_list_diff(
         {
             for (i, value) in insert.iter().enumerate() {
                 let elem_path = format!("{path}[{i}]");
-                validate_value_or_container(value, expected, &elem_path, ctx)?;
+                validate_value_or_container(value, expected, &elem_path)?;
             }
         }
     }
     Ok(())
 }
 
-/// Unwrap Restricted wrappers to get the inner field type.
 #[must_use]
 pub fn unwrap_restricted(field: &Field) -> &Field {
     match field {
@@ -333,18 +263,15 @@ pub fn unwrap_restricted(field: &Field) -> &Field {
     }
 }
 
-/// Validate a [`ValueOrContainer`] against a [`Field`] layout.
 fn validate_value_or_container(
     value: &ValueOrContainer,
     field: &Field,
     path: &str,
-    ctx: &ValidateContext<'_>,
 ) -> Result<(), ValidationError> {
     let loro_value = value.get_deep_value();
-    validate_value_with_context(&loro_value, field, path, ctx)
+    validate_value(&loro_value, field, path)
 }
 
-/// Get the change type name for error reporting.
 #[must_use]
 pub const fn change_type_name(ct: ChangeType) -> &'static str {
     match ct {
@@ -354,22 +281,20 @@ pub const fn change_type_name(ct: ChangeType) -> &'static str {
     }
 }
 
-/// Find all Restricted wrappers along a path in the schema.
 #[must_use]
 pub fn find_restrictions_for_path<'a>(
     field: &'a Field,
     path: &str,
-) -> Vec<(&'a Vec<Action>, &'a Field)> {
+) -> Vec<(&'a Vec<crate::Action>, &'a Field)> {
     let mut restrictions = Vec::new();
     find_restrictions_recursive(field, path, &mut restrictions);
     restrictions
 }
 
-/// Recursively find restrictions along a path.
 fn find_restrictions_recursive<'a>(
     field: &'a Field,
     remaining_path: &str,
-    out: &mut Vec<(&'a Vec<Action>, &'a Field)>,
+    out: &mut Vec<(&'a Vec<crate::Action>, &'a Field)>,
 ) {
     match field {
         Field::Restricted { actions, value } => {

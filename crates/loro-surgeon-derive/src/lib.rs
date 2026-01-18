@@ -17,15 +17,10 @@ fn crate_ident() -> proc_macro2::TokenStream {
 /// Field-level attributes parsed from `#[loro(...)]`.
 #[derive(Default)]
 struct FieldAttrs {
-    /// Use custom module for both hydrate and reconcile.
     with: Option<syn::Path>,
-    /// Use custom function for hydrate only.
     hydrate_with: Option<syn::Path>,
-    /// Use custom function for reconcile only.
     reconcile_with: Option<syn::Path>,
-    /// Rename the field in Loro.
     rename: Option<String>,
-    /// Skip this field.
     skip: bool,
 }
 

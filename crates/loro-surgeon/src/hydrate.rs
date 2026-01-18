@@ -1,5 +1,3 @@
-//! The `Hydrate` trait and implementations for primitive types.
-
 use std::collections::BTreeMap;
 
 use loro::LoroValue;

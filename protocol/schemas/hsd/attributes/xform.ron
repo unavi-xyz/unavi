@@ -2,8 +2,8 @@
     id: "wired/hsd/attr/xform",
     version: 0,
     layout: Struct({
-        "rotate": List(F64),
-        "scale": List(F64),
-        "translate": List(F64),
+        "rotate": Optional(List(F64)),
+        "scale": Optional(List(F64)),
+        "translate": Optional(List(F64)),
     }),
 )

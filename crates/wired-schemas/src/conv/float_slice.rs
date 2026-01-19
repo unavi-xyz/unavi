@@ -8,7 +8,7 @@ pub fn hydrate<T: TryFrom<Vec<f64>>>(value: &LoroValue) -> Result<T, HydrateErro
     let LoroValue::List(list) = value else {
         return Err(HydrateError::TypeMismatch {
             path: String::new(),
-            expected: "binary".into(),
+            expected: "list".into(),
             actual: format!("{value:?}"),
         });
     };
@@ -37,4 +37,20 @@ pub fn reconcile(slice: &[f64], map: &LoroMap, key: &str) -> Result<(), Reconcil
     }
     map.insert_container(key, list)?;
     Ok(())
+}
+
+pub mod optional {
+    use loro::LoroValue;
+    use loro_surgeon::HydrateError;
+
+    /// # Errors
+    ///
+    /// Returns an error if the value is not null or a float list or has invalid length.
+    pub fn hydrate<T: TryFrom<Vec<f64>>>(value: &LoroValue) -> Result<Option<T>, HydrateError> {
+        if value.is_null() {
+            return Ok(None);
+        }
+
+        super::hydrate(value).map(|v| Some(v))
+    }
 }

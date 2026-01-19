@@ -20,7 +20,7 @@ composition model: layers contain opinions that override base scene data.
 ## Structure
 
 ```
-HSD Root
+Stage
 ├── layers (MovableList)
 │   └── Layer { id, opinions }
 └── nodes (Tree)

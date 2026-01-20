@@ -3,7 +3,7 @@ use std::time::Duration;
 use rstest::rstest;
 use rusqlite::params;
 use tracing_test::traced_test;
-use wired_schemas::{Acl, SCHEMA_HOME};
+use wired_schemas::{SCHEMA_HOME, surg::Acl};
 
 use crate::common::{LocalStoreCtx, MultiStoreCtx, multi_ctx, multi_ctx_local};
 

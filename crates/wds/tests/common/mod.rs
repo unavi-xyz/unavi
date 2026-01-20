@@ -9,7 +9,7 @@ use iroh::{Endpoint, RelayMode};
 use rstest::fixture;
 use rusqlite::params;
 use wds::{DataStore, actor::Actor};
-use wired_schemas::{Acl, SCHEMA_ACL, SCHEMA_RECORD};
+use wired_schemas::{SCHEMA_ACL, SCHEMA_RECORD, surg::Acl};
 use xdid::core::did::Did;
 
 use did_key::{generate_actor, generate_actor_with_identity};

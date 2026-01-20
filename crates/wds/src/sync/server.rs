@@ -5,7 +5,7 @@ use rusqlite::params;
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
 use tracing::debug;
 
-use wired_schemas::Acl;
+use wired_schemas::surg::Acl;
 
 use crate::{StoreContext, sync::SyncMsg};
 

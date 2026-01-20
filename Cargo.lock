@@ -913,6 +913,7 @@ name = "bevy-hsd"
 version = "0.0.16"
 dependencies = [
  "bevy",
+ "bevy_panorbit_camera",
  "loro",
  "loro-surgeon",
  "wired-schemas",
@@ -13137,6 +13138,7 @@ dependencies = [
  "wasm-bindgen-futures",
  "wds",
  "winit",
+ "wired-schemas",
  "xdid",
  "zeroize",
 ]

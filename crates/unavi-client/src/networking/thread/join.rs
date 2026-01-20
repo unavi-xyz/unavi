@@ -13,10 +13,8 @@ use iroh_gossip::{
 };
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
-use wds::{
-    record::schema::SCHEMA_BEACON,
-    signed_bytes::{IrohSigner, Signable, SignedBytes},
-};
+use wds::signed_bytes::{IrohSigner, Signable, SignedBytes};
+use wired_schemas::SCHEMA_BEACON;
 
 use crate::{
     async_commands::ASYNC_COMMAND_QUEUE,

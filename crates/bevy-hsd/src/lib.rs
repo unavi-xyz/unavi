@@ -14,7 +14,7 @@ impl Plugin for HsdPulgin {
 }
 
 /// A stage is an ordered collection of layers and nodes.
-/// Lazily resolves layers into a single composed state.
+/// Lazily compiles layers into a single composed state.
 #[derive(Component)]
 #[require(StageLayers, Compiled)]
 struct Stage;

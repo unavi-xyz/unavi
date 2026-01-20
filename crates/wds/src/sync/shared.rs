@@ -5,7 +5,10 @@ use loro::{LoroDoc, VersionVector};
 use rusqlite::{Connection, params};
 use xdid::{core::did::Did, resolver::DidResolver};
 
-use wired_schemas::{Acl, Record, SCHEMA_ACL, SCHEMA_RECORD};
+use wired_schemas::{
+    SCHEMA_ACL, SCHEMA_RECORD,
+    surg::{Acl, Record},
+};
 
 use crate::{
     auth::jwk::verify_jwk_signature,

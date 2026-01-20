@@ -6,7 +6,7 @@ use wds::{
     record::envelope::Envelope,
     signed_bytes::{Signable, SignedBytes},
 };
-use wired_schemas::{Acl, Record};
+use wired_schemas::surg::{Acl, Record};
 
 use crate::common::{DataStoreCtx, assert_contains, ctx};
 

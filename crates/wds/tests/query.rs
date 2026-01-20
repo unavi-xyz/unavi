@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use rstest::rstest;
 use tracing_test::traced_test;
-use wired_schemas::{Acl, SCHEMA_BEACON, SCHEMA_HOME};
+use wired_schemas::{SCHEMA_BEACON, SCHEMA_HOME, surg::Acl};
 
 use crate::common::{DataStoreCtx, ctx};
 

@@ -1,13 +1,33 @@
-use bevy::math::{Quat, Vec3};
+use bevy::{
+    math::{Quat, Vec3},
+    transform::components::Transform,
+};
 use loro::LoroValue;
 use loro_surgeon::Hydrate;
 
 use crate::attributes::Attribute;
 
+#[derive(Clone)]
 pub struct Xform {
     pub rotate: Option<Quat>,
     pub scale: Option<Vec3>,
     pub translate: Option<Vec3>,
+}
+
+impl Xform {
+    pub fn into_transform(self) -> Transform {
+        let mut tr = Transform::default();
+        if let Some(v) = self.rotate {
+            tr.rotation = v;
+        }
+        if let Some(v) = self.scale {
+            tr.scale = v;
+        }
+        if let Some(v) = self.translate {
+            tr.translation = v;
+        }
+        tr
+    }
 }
 
 #[derive(Debug, Clone, Default, Hydrate)]
@@ -40,7 +60,7 @@ impl Hydrate for Xform {
 }
 
 impl Attribute for Xform {
-    fn merge(mut self, next: Self) -> Self {
+    fn merge(mut self, next: &Self) -> Self {
         if let Some(v) = next.rotate {
             self.rotate = Some(v);
         }
@@ -50,6 +70,6 @@ impl Attribute for Xform {
         if let Some(v) = next.translate {
             self.translate = Some(v);
         }
-        next
+        self
     }
 }

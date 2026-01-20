@@ -7,7 +7,10 @@ use iroh::EndpointId;
 use loro::LoroDoc;
 use tracing::warn;
 
-use wired_schemas::{Acl, Record, SCHEMA_ACL, SCHEMA_RECORD, StaticSchema};
+use wired_schemas::{
+    SCHEMA_ACL, SCHEMA_RECORD, StaticSchema,
+    surg::{Acl, Record},
+};
 
 use crate::{
     actor::{Actor, into_actor::IntoActor},

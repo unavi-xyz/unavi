@@ -85,3 +85,42 @@ pub enum Can {
     Delete,
     Update,
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use ron::ser::PrettyConfig;
+
+    use super::Schema;
+
+    fn parse_schemas_in_path(path: &Path) {
+        if path.is_dir() {
+            for item in path.read_dir().expect("read dir") {
+                let item = item.expect("read entry").path();
+
+                parse_schemas_in_path(&item);
+            }
+        } else {
+            println!("Reading {}", path.display());
+
+            let schema_str = std::fs::read_to_string(path).expect("read entry file");
+
+            let schema: Schema = ron::from_str(&schema_str).expect("from_str");
+
+            let out =
+                ron::ser::to_string_pretty(&schema, PrettyConfig::default()).expect("to_string");
+
+            std::fs::write(path, out).expect("write pretty formatted");
+        }
+    }
+
+    #[test]
+    fn test_parse_schemas() {
+        let schemas_path =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../protocol/schemas");
+        println!("Reading {}", schemas_path.display());
+
+        parse_schemas_in_path(&schemas_path);
+    }
+}

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use time::OffsetDateTime;
-use wds::record::schema::{SCHEMA_BEACON, SCHEMA_HOME, SCHEMA_SPACE};
+use wired_schemas::{SCHEMA_BEACON, SCHEMA_HOME, SCHEMA_SPACE};
 
 use crate::{
     networking::{

@@ -1,14 +1,17 @@
+use std::collections::BTreeMap;
+
 use anyhow::{Context, ensure};
 use blake3::Hash;
 use iroh_blobs::api::Store;
 use loro::{LoroDoc, VersionVector};
+use loro_schema::Schema;
 use rusqlite::{Connection, params};
-use xdid::{core::did::Did, resolver::DidResolver};
-
+use smol_str::SmolStr;
 use wired_schemas::{
     SCHEMA_ACL, SCHEMA_RECORD,
     surg::{Acl, Record},
 };
+use xdid::{core::did::Did, resolver::DidResolver};
 
 use crate::{
     auth::jwk::verify_jwk_signature,
@@ -49,12 +52,6 @@ async fn validate_schemas(
     record: &Record,
     author: &Did,
 ) -> anyhow::Result<()> {
-    use std::collections::BTreeMap;
-
-    use smol_str::SmolStr;
-
-    use crate::record::schema::Schema;
-
     let old_frontiers = old_doc.state_frontiers();
     let new_frontiers = new_doc.state_frontiers();
 

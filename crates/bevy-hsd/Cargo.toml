@@ -14,3 +14,6 @@ bevy.workspace     = true
 loro.workspace     = true
 loro-surgeon.path  = "../loro-surgeon"
 wired-schemas.path = "../wired-schemas"
+
+[dev-dependencies]
+bevy_panorbit_camera = "0.33.1"

@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::log::info;
 use blake3::Hash;
 use time::OffsetDateTime;
-use wds::record::schema::SCHEMA_BEACON;
+use wired_schemas::SCHEMA_BEACON;
 
 use crate::{networking::thread::NetworkThreadState, space::beacon::Beacon};
 

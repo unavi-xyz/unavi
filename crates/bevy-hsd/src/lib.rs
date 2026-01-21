@@ -55,17 +55,6 @@ struct Opinion {
 #[derive(Component)]
 struct OpinionTarget(Entity);
 
-#[derive(Component, Clone)]
-enum OpinionOp<T: Clone> {
-    Set(T),
-    Delete,
-}
-
-impl<T: Attribute + Clone> OpinionOp<T> {
-    fn merge(self, next: &Self) -> Self {
-        match (self, next) {
-            (Self::Delete, _) | (_, Self::Delete) => Self::Delete,
-            (Self::Set(s), Self::Set(n)) => Self::Set(s.merge(n)),
-        }
-    }
-}
+/// Operation over an attribute.
+#[derive(Component)]
+struct OpinionOp<T: Attribute>(T);

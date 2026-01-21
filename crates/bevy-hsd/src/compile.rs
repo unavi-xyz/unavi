@@ -4,12 +4,12 @@ use bevy::prelude::*;
 
 use crate::{
     Compiled, LayerOpinions, LayerStrength, OpinionOp, OpinionTarget, Stage, StageLayers,
-    attributes::xform::Xform,
+    attributes::{Attribute, xform::Xform},
 };
 
 #[derive(Default)]
 struct NodeAttrs {
-    xform: Option<OpinionOp<Xform>>,
+    xform: Option<Xform>,
 }
 
 pub fn compile_stages(
@@ -35,7 +35,11 @@ pub fn compile_stages(
         }
 
         resolved_layers.sort_by(|a, b| a.0.cmp(&b.0));
-        info!(?resolved_layers);
+        debug_assert!(
+            resolved_layers.first().map(|(i, _)| *i).unwrap_or_default()
+                <= resolved_layers.last().map(|(i, _)| *i).unwrap_or_default(),
+            "layers not sorted in correct order"
+        );
 
         // Merge layer opinions.
         let mut node_attrs = HashMap::<Entity, NodeAttrs>::new();
@@ -52,7 +56,7 @@ pub fn compile_stages(
                     node.xform = Some(
                         node.xform
                             .take()
-                            .map_or_else(|| next.clone(), |v| v.merge(next)),
+                            .map_or_else(|| next.0.clone(), |v| v.merge(&next.0)),
                     );
                 }
             }
@@ -62,7 +66,7 @@ pub fn compile_stages(
         for (node_ent, attrs) in node_attrs {
             let mut node = commands.entity(node_ent);
 
-            if let Some(OpinionOp::Set(xform)) = attrs.xform {
+            if let Some(xform) = attrs.xform {
                 node.insert(xform.into_transform());
             } else {
                 node.remove::<Transform>();

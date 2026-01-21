@@ -7,7 +7,7 @@ use loro_surgeon::Hydrate;
 
 use crate::attributes::Attribute;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Xform {
     pub rotate: Option<Quat>,
     pub scale: Option<Vec3>,

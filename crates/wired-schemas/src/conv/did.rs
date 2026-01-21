@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use loro::LoroValue;
 use loro_surgeon::{HydrateError, ReconcileError, loro::LoroMap};
+use smol_str::SmolStr;
 use xdid::core::did::Did;
 
 /// Hydrate a [`Did`] from a Loro string value.
@@ -12,12 +13,12 @@ use xdid::core::did::Did;
 pub fn hydrate(value: &LoroValue) -> Result<Did, HydrateError> {
     let LoroValue::String(s) = value else {
         return Err(HydrateError::TypeMismatch {
-            path: String::new(),
+            path: SmolStr::default(),
             expected: "string".into(),
-            actual: format!("{value:?}"),
+            actual: format!("{value:?}").into(),
         });
     };
-    Did::from_str(s).map_err(|e| HydrateError::Custom(e.to_string()))
+    Did::from_str(s).map_err(|e| HydrateError::Custom(e.to_string().into()))
 }
 
 /// # Errors
@@ -30,7 +31,7 @@ pub fn reconcile(did: &Did, map: &LoroMap, key: &str) -> Result<(), ReconcileErr
 
 /// Module for handling `Vec<Did>` fields.
 pub mod list {
-    use super::{Did, HydrateError, LoroMap, LoroValue, ReconcileError};
+    use super::{Did, HydrateError, LoroMap, LoroValue, ReconcileError, SmolStr};
 
     /// Hydrate a `Vec<Did>` from a Loro list value.
     ///
@@ -40,9 +41,9 @@ pub mod list {
     pub fn hydrate(value: &LoroValue) -> Result<Vec<Did>, HydrateError> {
         let LoroValue::List(list) = value else {
             return Err(HydrateError::TypeMismatch {
-                path: String::new(),
+                path: SmolStr::default(),
                 expected: "list".into(),
-                actual: format!("{value:?}"),
+                actual: format!("{value:?}").into(),
             });
         };
 

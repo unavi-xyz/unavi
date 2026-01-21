@@ -1,5 +1,6 @@
 use loro::{LoroList, LoroValue};
 use loro_surgeon::{HydrateError, ReconcileError, loro::LoroMap};
+use smol_str::SmolStr;
 
 /// # Errors
 ///
@@ -7,9 +8,9 @@ use loro_surgeon::{HydrateError, ReconcileError, loro::LoroMap};
 pub fn hydrate<T: TryFrom<Vec<f64>>>(value: &LoroValue) -> Result<T, HydrateError> {
     let LoroValue::List(list) = value else {
         return Err(HydrateError::TypeMismatch {
-            path: String::new(),
+            path: SmolStr::default(),
             expected: "list".into(),
-            actual: format!("{value:?}"),
+            actual: format!("{value:?}").into(),
         });
     };
     list.iter()
@@ -17,9 +18,9 @@ pub fn hydrate<T: TryFrom<Vec<f64>>>(value: &LoroValue) -> Result<T, HydrateErro
             v.as_double()
                 .copied()
                 .ok_or_else(|| HydrateError::TypeMismatch {
-                    path: "[list item]".to_string(),
-                    expected: "f64".to_string(),
-                    actual: format!("{v:?}"),
+                    path: "[list item]".into(),
+                    expected: "f64".into(),
+                    actual: format!("{v:?}").into(),
                 })
         })
         .collect::<Result<Vec<_>, _>>()?

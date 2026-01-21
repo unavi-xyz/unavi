@@ -1,19 +1,20 @@
+use smol_str::SmolStr;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum HydrateError {
     #[error("missing field: {0}")]
-    MissingField(String),
+    MissingField(SmolStr),
 
     #[error("type mismatch at {path}: expected {expected}, got {actual}")]
     TypeMismatch {
-        path: String,
-        expected: String,
-        actual: String,
+        path: SmolStr,
+        expected: SmolStr,
+        actual: SmolStr,
     },
 
     #[error("{0}")]
-    Custom(String),
+    Custom(SmolStr),
 }
 
 #[derive(Debug, Error)]
@@ -22,5 +23,5 @@ pub enum ReconcileError {
     Loro(#[from] loro::LoroError),
 
     #[error("{0}")]
-    Custom(String),
+    Custom(SmolStr),
 }

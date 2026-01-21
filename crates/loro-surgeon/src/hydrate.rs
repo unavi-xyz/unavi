@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use loro::LoroValue;
+use smol_str::SmolStr;
 
 use crate::HydrateError;
 
@@ -20,9 +21,9 @@ impl Hydrate for bool {
         match value {
             LoroValue::Bool(b) => Ok(*b),
             _ => Err(HydrateError::TypeMismatch {
-                path: String::new(),
-                expected: "Bool".to_string(),
-                actual: format!("{value:?}"),
+                path: SmolStr::default(),
+                expected: "Bool".into(),
+                actual: format!("{value:?}").into(),
             }),
         }
     }
@@ -33,9 +34,9 @@ impl Hydrate for i64 {
         match value {
             LoroValue::I64(n) => Ok(*n),
             _ => Err(HydrateError::TypeMismatch {
-                path: String::new(),
-                expected: "I64".to_string(),
-                actual: format!("{value:?}"),
+                path: SmolStr::default(),
+                expected: "I64".into(),
+                actual: format!("{value:?}").into(),
             }),
         }
     }
@@ -46,9 +47,9 @@ impl Hydrate for f64 {
         match value {
             LoroValue::Double(n) => Ok(*n),
             _ => Err(HydrateError::TypeMismatch {
-                path: String::new(),
-                expected: "Double".to_string(),
-                actual: format!("{value:?}"),
+                path: SmolStr::default(),
+                expected: "Double".into(),
+                actual: format!("{value:?}").into(),
             }),
         }
     }
@@ -59,9 +60,22 @@ impl Hydrate for String {
         match value {
             LoroValue::String(s) => Ok(s.to_string()),
             _ => Err(HydrateError::TypeMismatch {
-                path: Self::new(),
-                expected: "String".to_string(),
-                actual: format!("{value:?}"),
+                path: SmolStr::default(),
+                expected: "String".into(),
+                actual: format!("{value:?}").into(),
+            }),
+        }
+    }
+}
+
+impl Hydrate for SmolStr {
+    fn hydrate(value: &LoroValue) -> Result<Self, HydrateError> {
+        match value {
+            LoroValue::String(s) => Ok(s.as_str().into()),
+            _ => Err(HydrateError::TypeMismatch {
+                path: SmolStr::default(),
+                expected: "String".into(),
+                actual: format!("{value:?}").into(),
             }),
         }
     }
@@ -72,9 +86,9 @@ impl Hydrate for Vec<u8> {
         match value {
             LoroValue::Binary(b) => Ok(b.to_vec()),
             _ => Err(HydrateError::TypeMismatch {
-                path: String::new(),
-                expected: "Binary".to_string(),
-                actual: format!("{value:?}"),
+                path: SmolStr::default(),
+                expected: "Binary".into(),
+                actual: format!("{value:?}").into(),
             }),
         }
     }
@@ -94,9 +108,9 @@ impl<T: Hydrate> Hydrate for Vec<T> {
         match value {
             LoroValue::List(list) => list.iter().map(T::hydrate).collect(),
             _ => Err(HydrateError::TypeMismatch {
-                path: String::new(),
-                expected: "List".to_string(),
-                actual: format!("{value:?}"),
+                path: SmolStr::default(),
+                expected: "List".into(),
+                actual: format!("{value:?}").into(),
             }),
         }
     }
@@ -110,9 +124,9 @@ impl<V: Hydrate> Hydrate for BTreeMap<String, V> {
                 .map(|(k, v)| Ok((k.clone(), V::hydrate(v)?)))
                 .collect(),
             _ => Err(HydrateError::TypeMismatch {
-                path: String::new(),
-                expected: "Map".to_string(),
-                actual: format!("{value:?}"),
+                path: SmolStr::default(),
+                expected: "Map".into(),
+                actual: format!("{value:?}").into(),
             }),
         }
     }

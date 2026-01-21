@@ -2,8 +2,8 @@ use bevy::{
     pbr::{Atmosphere, AtmosphereSettings},
     prelude::*,
 };
+use bevy_hsd::stage::{LayerData, NodeData, StageData};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use loro::LoroDoc;
 
 fn main() {
     App::new()
@@ -24,7 +24,12 @@ fn setup_scene(mut commands: Commands) {
 
 fn load_hsd(mut commands: Commands) {
     // Create HSD.
-    let doc = LoroDoc::default();
+    let stage = StageData {
+        layers: vec![LayerData {
+            nodes: vec![NodeData { id: "a".into() }],
+            opinions: vec![],
+        }],
+    };
 
     // Load into Bevy.
 }

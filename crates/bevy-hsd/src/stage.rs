@@ -2,6 +2,7 @@
 
 use loro::LoroValue;
 use loro_surgeon::{Hydrate, HydrateError};
+use smol_str::SmolStr;
 
 use crate::attributes::xform::Xform;
 
@@ -22,13 +23,13 @@ pub struct LayerData {
 /// Node within a tree.
 #[derive(Debug, Clone, Hydrate)]
 pub struct NodeData {
-    pub id: String,
+    pub id: SmolStr,
 }
 
 /// Opinion with parsed attributes.
 #[derive(Debug, Clone, Hydrate)]
 pub struct OpinionData {
-    pub id: String,
+    pub id: SmolStr,
     #[loro(hydrate_with = "hydrate_attrs")]
     pub attrs: Attrs,
 }
@@ -42,9 +43,9 @@ pub struct Attrs {
 fn hydrate_attrs(value: &LoroValue) -> Result<Attrs, HydrateError> {
     let LoroValue::Map(map) = value else {
         return Err(HydrateError::TypeMismatch {
-            path: String::new(),
+            path: SmolStr::default(),
             expected: "map".into(),
-            actual: format!("{value:?}"),
+            actual: format!("{value:?}").into(),
         });
     };
 

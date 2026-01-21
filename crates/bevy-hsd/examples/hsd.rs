@@ -3,6 +3,7 @@ use bevy::{
     prelude::*,
 };
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
+use loro::LoroDoc;
 
 fn main() {
     App::new()
@@ -21,9 +22,9 @@ fn setup_scene(mut commands: Commands) {
     ));
 }
 
-fn load_hsd() {
+fn load_hsd(mut commands: Commands) {
     // Create HSD.
-    
+    let doc = LoroDoc::default();
 
     // Load into Bevy.
 }

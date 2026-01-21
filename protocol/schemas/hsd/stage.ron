@@ -3,17 +3,13 @@
     version: 0,
     layout: Struct({
         "layers": MovableList(Struct({
-            "id": String,
             "nodes": Tree(Struct({
                 "id": String,
             })),
-            "opinions": Struct({
-                "delete": Optional(List(String)),
-                "set": Optional(List(Struct({
-                    "attrs": Map(Any),
-                    "id": String,
-                }))),
-            }),
+            "opinions": List(Struct({
+                "attrs": Map(Any),
+                "id": String,
+            })),
         })),
     }),
 )

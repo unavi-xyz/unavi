@@ -29,7 +29,7 @@ pub trait Reconcile {
 impl Reconcile for bool {
     fn reconcile(&self, _map: &LoroMap) -> Result<(), ReconcileError> {
         Err(ReconcileError::Custom(
-            "bool cannot be reconciled as a root container".to_string(),
+            "bool cannot be reconciled as a root container".into(),
         ))
     }
 
@@ -42,7 +42,7 @@ impl Reconcile for bool {
 impl Reconcile for i64 {
     fn reconcile(&self, _map: &LoroMap) -> Result<(), ReconcileError> {
         Err(ReconcileError::Custom(
-            "i64 cannot be reconciled as a root container".to_string(),
+            "i64 cannot be reconciled as a root container".into(),
         ))
     }
 
@@ -55,7 +55,7 @@ impl Reconcile for i64 {
 impl Reconcile for f64 {
     fn reconcile(&self, _map: &LoroMap) -> Result<(), ReconcileError> {
         Err(ReconcileError::Custom(
-            "f64 cannot be reconciled as a root container".to_string(),
+            "f64 cannot be reconciled as a root container".into(),
         ))
     }
 
@@ -68,7 +68,7 @@ impl Reconcile for f64 {
 impl Reconcile for String {
     fn reconcile(&self, _map: &LoroMap) -> Result<(), ReconcileError> {
         Err(ReconcileError::Custom(
-            "String cannot be reconciled as a root container".to_string(),
+            "String cannot be reconciled as a root container".into(),
         ))
     }
 
@@ -81,7 +81,7 @@ impl Reconcile for String {
 impl Reconcile for Vec<u8> {
     fn reconcile(&self, _map: &LoroMap) -> Result<(), ReconcileError> {
         Err(ReconcileError::Custom(
-            "Vec<u8> cannot be reconciled as a root container".to_string(),
+            "Vec<u8> cannot be reconciled as a root container".into(),
         ))
     }
 
@@ -110,7 +110,7 @@ impl<T: Reconcile> Reconcile for Option<T> {
 impl<T: Reconcile> Reconcile for Vec<T> {
     fn reconcile(&self, _map: &LoroMap) -> Result<(), ReconcileError> {
         Err(ReconcileError::Custom(
-            "Vec<T> cannot be reconciled as a root container".to_string(),
+            "Vec<T> cannot be reconciled as a root container".into(),
         ))
     }
 

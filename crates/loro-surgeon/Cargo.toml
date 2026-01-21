@@ -12,6 +12,7 @@ workspace = true
 [dependencies]
 loro.workspace           = true
 loro-surgeon-derive.path = "../loro-surgeon-derive"
+smol_str.workspace       = true
 thiserror.workspace      = true
 
 [dev-dependencies]

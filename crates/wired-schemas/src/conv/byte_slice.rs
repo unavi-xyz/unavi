@@ -1,5 +1,6 @@
 use loro::LoroValue;
 use loro_surgeon::{HydrateError, ReconcileError, loro::LoroMap};
+use smol_str::SmolStr;
 
 /// # Errors
 ///
@@ -7,9 +8,9 @@ use loro_surgeon::{HydrateError, ReconcileError, loro::LoroMap};
 pub fn hydrate<T: TryFrom<Vec<u8>>>(value: &LoroValue) -> Result<T, HydrateError> {
     let LoroValue::Binary(bytes) = value else {
         return Err(HydrateError::TypeMismatch {
-            path: String::new(),
+            path: SmolStr::default(),
             expected: "binary".into(),
-            actual: format!("{value:?}"),
+            actual: format!("{value:?}").into(),
         });
     };
     bytes

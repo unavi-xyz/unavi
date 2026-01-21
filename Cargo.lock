@@ -916,6 +916,7 @@ dependencies = [
  "bevy_panorbit_camera",
  "loro",
  "loro-surgeon",
+ "smol_str 0.3.5",
  "wired-schemas",
 ]
 
@@ -7742,6 +7743,7 @@ dependencies = [
  "loro",
  "loro-surgeon-derive",
  "rstest 0.25.0",
+ "smol_str 0.3.5",
  "thiserror 2.0.17",
 ]
 

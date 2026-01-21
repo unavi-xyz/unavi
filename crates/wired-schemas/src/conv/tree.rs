@@ -1,5 +1,6 @@
 use loro::LoroValue;
 use loro_surgeon::{Hydrate, HydrateError};
+use smol_str::SmolStr;
 
 /// Hydrate a tree by extracting `meta` from each node.
 ///
@@ -9,9 +10,9 @@ use loro_surgeon::{Hydrate, HydrateError};
 pub fn hydrate<T: Hydrate>(value: &LoroValue) -> Result<Vec<T>, HydrateError> {
     let LoroValue::List(nodes) = value else {
         return Err(HydrateError::TypeMismatch {
-            path: String::new(),
+            path: SmolStr::default(),
             expected: "list".into(),
-            actual: format!("{value:?}"),
+            actual: format!("{value:?}").into(),
         });
     };
 
@@ -20,9 +21,9 @@ pub fn hydrate<T: Hydrate>(value: &LoroValue) -> Result<Vec<T>, HydrateError> {
         .filter_map(|node| {
             let LoroValue::Map(node_map) = node else {
                 return Some(Err(HydrateError::TypeMismatch {
-                    path: String::new(),
+                    path: SmolStr::default(),
                     expected: "map".into(),
-                    actual: format!("{node:?}"),
+                    actual: format!("{node:?}").into(),
                 }));
             };
 

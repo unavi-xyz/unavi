@@ -141,7 +141,7 @@ pub fn derive_hydrate(input: TokenStream) -> TokenStream {
                 quote! {
                     #field_name: {
                         let field_value = map.get(#key).ok_or_else(|| {
-                            #crate_ident::HydrateError::MissingField(#key.to_string())
+                            #crate_ident::HydrateError::MissingField(#key.into())
                         })?;
                         #hydrate_expr
                     },
@@ -157,9 +157,9 @@ pub fn derive_hydrate(input: TokenStream) -> TokenStream {
             fn hydrate(value: &#crate_ident::loro::LoroValue) -> Result<Self, #crate_ident::HydrateError> {
                 let #crate_ident::loro::LoroValue::Map(map) = value else {
                     return Err(#crate_ident::HydrateError::TypeMismatch {
-                        path: stringify!(#name).to_string(),
-                        expected: "Map".to_string(),
-                        actual: format!("{:?}", value),
+                        path: stringify!(#name).into(),
+                        expected: "Map".into(),
+                        actual: format!("{:?}", value).into(),
                     });
                 };
 

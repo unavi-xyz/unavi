@@ -13,12 +13,12 @@ use smol_str::SmolStr;
 pub fn hydrate(value: &LoroValue) -> Result<Hash, HydrateError> {
     let LoroValue::String(s) = value else {
         return Err(HydrateError::TypeMismatch {
-            path: String::new(),
+            path: SmolStr::default(),
             expected: "string".into(),
-            actual: format!("{value:?}"),
+            actual: format!("{value:?}").into(),
         });
     };
-    Hash::from_hex(s.as_ref()).map_err(|e| HydrateError::Custom(e.to_string()))
+    Hash::from_hex(s.as_ref()).map_err(|e| HydrateError::Custom(e.to_string().into()))
 }
 
 /// # Errors
@@ -41,9 +41,9 @@ pub mod map {
     pub fn hydrate(value: &LoroValue) -> Result<BTreeMap<SmolStr, Hash>, HydrateError> {
         let LoroValue::Map(map) = value else {
             return Err(HydrateError::TypeMismatch {
-                path: String::new(),
+                path: SmolStr::default(),
                 expected: "map".into(),
-                actual: format!("{value:?}"),
+                actual: format!("{value:?}").into(),
             });
         };
 

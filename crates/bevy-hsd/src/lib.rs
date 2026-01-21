@@ -4,6 +4,7 @@ use crate::attributes::Attribute;
 
 mod attributes;
 mod compile;
+mod stage;
 
 pub struct HsdPulgin;
 

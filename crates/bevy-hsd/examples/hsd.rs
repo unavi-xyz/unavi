@@ -2,8 +2,14 @@ use bevy::{
     pbr::{Atmosphere, AtmosphereSettings},
     prelude::*,
 };
-use bevy_hsd::stage::{LayerData, NodeData, StageData};
+use bevy_hsd::{
+    Stage,
+    attributes::xform::Xform,
+    stage::{Attrs, LayerData, NodeData, OpinionData, StageData},
+};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
+use loro::TreeID;
+use wired_schemas::conv::tree::TreeNode;
 
 fn main() {
     App::new()
@@ -23,13 +29,28 @@ fn setup_scene(mut commands: Commands) {
 }
 
 fn load_hsd(mut commands: Commands) {
-    // Create HSD.
     let stage = StageData {
         layers: vec![LayerData {
-            nodes: vec![NodeData { id: "a".into() }],
-            opinions: vec![],
+            nodes: vec![TreeNode {
+                id: TreeID {
+                    peer: 1,
+                    counter: 2,
+                },
+                parent: None,
+                meta: NodeData { id: "a".into() },
+            }],
+            opinions: vec![OpinionData {
+                id: "a".into(),
+                attrs: Attrs {
+                    xform: Some(Xform {
+                        rotate: None,
+                        scale: None,
+                        translate: None,
+                    }),
+                },
+            }],
         }],
     };
 
-    // Load into Bevy.
+    commands.spawn(Stage(stage));
 }

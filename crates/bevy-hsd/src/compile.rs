@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use bevy::prelude::*;
 
 use crate::{
-    Compiled, LayerOpinions, LayerStrength, OpinionOp, OpinionTarget, Stage, StageLayers,
+    LayerOpinions, LayerStrength, OpinionOp, OpinionTarget, Stage, StageCompiled, StageLayers,
     attributes::{Attribute, xform::Xform},
 };
 
@@ -13,7 +13,7 @@ struct NodeAttrs {
 }
 
 pub fn compile_stages(
-    stages: Query<(&mut Compiled, &StageLayers), With<Stage>>,
+    stages: Query<(&mut StageCompiled, &StageLayers), With<Stage>>,
     layers: Query<(&LayerStrength, &LayerOpinions)>,
     opinions: Query<(&OpinionTarget, Option<&OpinionOp<Xform>>)>,
     mut commands: Commands,

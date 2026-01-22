@@ -3,6 +3,7 @@
 use loro::LoroValue;
 use loro_surgeon::{Hydrate, HydrateError};
 use smol_str::SmolStr;
+use wired_schemas::conv::tree::TreeNode;
 
 use crate::attributes::xform::Xform;
 
@@ -16,11 +17,11 @@ pub struct StageData {
 #[derive(Debug, Clone, Hydrate)]
 pub struct LayerData {
     #[loro(with = "wired_schemas::conv::tree")]
-    pub nodes: Vec<NodeData>,
+    pub nodes: Vec<TreeNode<NodeData>>,
     pub opinions: Vec<OpinionData>,
 }
 
-/// Node within a tree.
+/// Node metadata within a tree.
 #[derive(Debug, Clone, Hydrate)]
 pub struct NodeData {
     pub id: SmolStr,

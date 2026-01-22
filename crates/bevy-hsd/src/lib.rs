@@ -38,7 +38,7 @@ struct StageLoaded(bool);
 struct StageCompiled(bool);
 
 #[derive(Component, Default)]
-#[relationship_target(relationship = Layer)]
+#[relationship_target(relationship = Layer, linked_spawn)]
 struct StageLayers(Vec<Entity>);
 
 /// A layer is a collection of opinions.
@@ -54,7 +54,7 @@ struct Layer {
 struct LayerStrength(usize);
 
 #[derive(Component, Default)]
-#[relationship_target(relationship = Opinion)]
+#[relationship_target(relationship = Opinion, linked_spawn)]
 struct LayerOpinions(Vec<Entity>);
 
 /// An opinion is an operation over some entity's attribute.

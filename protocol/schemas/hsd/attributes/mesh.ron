@@ -1,0 +1,12 @@
+(
+    id: "wired/hsd/attr/mesh",
+    version: 0,
+    layout: Struct({
+      "points": List(F64),
+      "indices": List(U64),
+      "normals": Optional(List(U64)),
+      "uvs": Optional(List(U64)),
+      "colors": Optional(List(U64)),
+      "tangents": Optional(List(U64)),
+    }),
+)

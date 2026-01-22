@@ -49,7 +49,7 @@ pub enum WasmCommand {
 /// "Virtual" objects owned by a script.
 /// These will be automatically cleaned up on script removal.
 #[derive(Component, Default)]
-#[relationship_target(relationship = VOwner)]
+#[relationship_target(relationship = VOwner, linked_spawn)]
 pub struct VObjects(Vec<Entity>);
 
 #[derive(Component)]

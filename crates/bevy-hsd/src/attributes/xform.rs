@@ -15,6 +15,7 @@ pub struct Xform {
 }
 
 impl Xform {
+    #[must_use]
     pub fn into_transform(self) -> Transform {
         let mut tr = Transform::default();
         if let Some(v) = self.rotate {

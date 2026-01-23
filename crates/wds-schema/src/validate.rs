@@ -93,6 +93,13 @@ pub fn validate_value(value: &LoroValue, field: &Field, path: &str) -> Result<()
                 expected: "binary",
             }),
         },
+        Field::BlobRef => match value {
+            LoroValue::Binary(bytes) if bytes.len() == 32 => Ok(()),
+            _ => Err(ValidationError::TypeMismatch {
+                path: path.to_string(),
+                expected: "blob_ref (32-byte binary)",
+            }),
+        },
         Field::Optional(inner) => match value {
             LoroValue::Null => Ok(()),
             _ => validate_value(value, inner, path),
@@ -431,5 +438,31 @@ mod tests {
         let field = Field::Optional(Box::new(Field::String));
         let value = LoroValue::I64(42);
         assert!(validate_value(&value, &field, "test").is_err());
+    }
+
+    #[test]
+    fn test_validate_blob_ref_valid() {
+        // 32 bytes = valid blake3 hash.
+        let hash_bytes = vec![0xaf; 32];
+        let value = LoroValue::Binary(hash_bytes.into());
+        assert!(validate_value(&value, &Field::BlobRef, "test").is_ok());
+    }
+
+    #[test]
+    fn test_validate_blob_ref_invalid_length_short() {
+        let value = LoroValue::Binary(vec![1, 2, 3].into());
+        assert!(validate_value(&value, &Field::BlobRef, "test").is_err());
+    }
+
+    #[test]
+    fn test_validate_blob_ref_invalid_length_long() {
+        let value = LoroValue::Binary(vec![0; 33].into());
+        assert!(validate_value(&value, &Field::BlobRef, "test").is_err());
+    }
+
+    #[test]
+    fn test_validate_blob_ref_wrong_type_string() {
+        let value = LoroValue::String("not a binary".into());
+        assert!(validate_value(&value, &Field::BlobRef, "test").is_err());
     }
 }

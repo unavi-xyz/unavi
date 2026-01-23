@@ -20,7 +20,6 @@ irpc                  = "0.11.0"
 irpc-iroh             = "0.11.0"
 jose-jwk              = "0.1.2"
 loro.workspace        = true
-loro-schema.path      = "../loro-schema"
 n0-error              = { features = ["anyhow"], version = "0.1.2" }
 n0-future.workspace   = true
 p256                  = { default-features = false, features = ["ecdsa"], version = "0.13.2" }
@@ -40,6 +39,7 @@ time.workspace        = true
 tokio.workspace       = true
 tokio-util            = { features = ["codec"], version = "0.7.18" }
 tracing.workspace     = true
+wds-schema.path       = "../wds-schema"
 wired-schemas.path    = "../wired-schemas"
 xdid.workspace        = true
 

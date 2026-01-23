@@ -1,12 +1,12 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 
 use anyhow::{Context, ensure};
 use blake3::Hash;
 use iroh_blobs::api::Store;
-use loro::{LoroDoc, VersionVector};
-use loro_schema::Schema;
+use loro::{LoroDoc, LoroValue, VersionVector};
 use rusqlite::{Connection, params};
 use smol_str::SmolStr;
+use wds_schema::{Field, Schema};
 use wired_schemas::{
     SCHEMA_ACL, SCHEMA_RECORD,
     surg::{Acl, Record},
@@ -45,13 +45,14 @@ async fn validate_signature(author: &Did, signature: &[u8], payload: &[u8]) -> a
 }
 
 /// Validates document changes against all applicable schemas.
+/// Returns the schema map for reuse in blob ref extraction.
 async fn validate_schemas(
     blobs: &Store,
     old_doc: &LoroDoc,
     new_doc: &LoroDoc,
     record: &Record,
     author: &Did,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<BTreeMap<SmolStr, Schema>> {
     let old_frontiers = old_doc.state_frontiers();
     let new_frontiers = new_doc.state_frontiers();
 
@@ -88,7 +89,72 @@ async fn validate_schemas(
     )
     .map_err(|e| anyhow::anyhow!("schema validation failed: {e}"))?;
 
-    Ok(())
+    Ok(schemas)
+}
+
+/// Extracts all [`Field::BlobRef`] values from a Loro document by walking the schemas.
+/// Returns hashes as hex strings (for database storage).
+fn extract_blob_refs(doc: &LoroDoc, schemas: &BTreeMap<SmolStr, Schema>) -> HashSet<String> {
+    let mut refs = HashSet::new();
+    for (container_name, schema) in schemas {
+        let value = doc.get_map(container_name.as_str()).get_deep_value();
+        collect_blob_refs(&value, schema.layout(), &mut refs);
+    }
+    refs
+}
+
+fn collect_blob_refs(value: &LoroValue, field: &Field, refs: &mut HashSet<String>) {
+    match field {
+        Field::BlobRef => {
+            if let LoroValue::Binary(bytes) = value {
+                let slice: &[u8] = bytes.as_ref();
+                if let Ok(arr) = <&[u8; 32]>::try_from(slice) {
+                    refs.insert(Hash::from_bytes(*arr).to_string());
+                }
+            }
+        }
+        Field::Optional(inner) => {
+            if !matches!(value, LoroValue::Null) {
+                collect_blob_refs(value, inner, refs);
+            }
+        }
+        Field::List(inner) | Field::MovableList(inner) => {
+            if let LoroValue::List(items) = value {
+                for item in items.iter() {
+                    collect_blob_refs(item, inner, refs);
+                }
+            }
+        }
+        Field::Map(inner) => {
+            if let LoroValue::Map(map) = value {
+                for val in map.values() {
+                    collect_blob_refs(val, inner, refs);
+                }
+            }
+        }
+        Field::Struct(fields) => {
+            if let LoroValue::Map(map) = value {
+                for (key, inner_field) in fields {
+                    if let Some(val) = map.get(key.as_str()) {
+                        collect_blob_refs(val, inner_field, refs);
+                    }
+                }
+            }
+        }
+        Field::Tree(inner) => {
+            if let LoroValue::List(nodes) = value {
+                for node in nodes.iter() {
+                    if let LoroValue::Map(m) = node
+                        && let Some(meta) = m.get("meta")
+                    {
+                        collect_blob_refs(meta, inner, refs);
+                    }
+                }
+            }
+        }
+        Field::Restricted { value: inner, .. } => collect_blob_refs(value, inner, refs),
+        Field::Any | Field::Binary | Field::Bool | Field::F64 | Field::I64 | Field::String => {}
+    }
 }
 
 /// Stores an envelope with quota tracking and schema validation.
@@ -125,7 +191,10 @@ pub async fn store_envelope(
     let record = Record::load(&new_doc)?;
 
     // Validate diff against schema restrictions.
-    validate_schemas(blobs, &old_doc, &new_doc, &record, author).await?;
+    let schemas = validate_schemas(blobs, &old_doc, &new_doc, &record, author).await?;
+
+    // Extract blob refs from new document state for dependency tracking.
+    let blob_refs = extract_blob_refs(&new_doc, &schemas);
 
     let size = i64::try_from(env_bytes.len()).context("envelope too large")?;
     let author_str = envelope.author().to_string();
@@ -210,6 +279,20 @@ pub async fn store_envelope(
 
         // Update ACL read index from new doc state.
         update_acl_read_index(&tx, &record_id_owned, &new_acl)?;
+
+        // Update blob ref dependencies (dynamic on every update).
+        tx.execute(
+            "DELETE FROM record_blob_deps WHERE record_id = ? AND dep_type = 'ref'",
+            params![&record_id_owned],
+        )?;
+
+        for ref_hash in &blob_refs {
+            tx.execute(
+                "INSERT OR IGNORE INTO record_blob_deps (record_id, blob_hash, dep_type)
+                 VALUES (?, ?, 'ref')",
+                params![&record_id_owned, ref_hash],
+            )?;
+        }
 
         tx.commit()?;
         Ok(())

@@ -73,7 +73,7 @@ impl Hydrate for SmolStr {
         match value {
             LoroValue::String(s) => Ok(s.as_str().into()),
             _ => Err(HydrateError::TypeMismatch {
-                path: SmolStr::default(),
+                path: Self::default(),
                 expected: "String".into(),
                 actual: format!("{value:?}").into(),
             }),

@@ -915,6 +915,7 @@ dependencies = [
  "base64 0.22.1",
  "bevy",
  "bevy_panorbit_camera",
+ "blake3",
  "loro",
  "loro-surgeon",
  "rand 0.9.2",

@@ -3,9 +3,9 @@
     version: 0,
     layout: Struct({
         "colors": Optional(BlobRef),
-        "indices": BlobRef,
+        "indices": Optional(BlobRef),
         "normals": Optional(BlobRef),
-        "points": BlobRef,
+        "points": Optional(BlobRef),
         "tangents": Optional(BlobRef),
         "uvs": Optional(BlobRef),
     }),

@@ -55,6 +55,12 @@ pub fn load_stages(
                 let mut opinion_ent =
                     commands.spawn((Opinion { layer: layer_ent }, OpinionTarget(*node_ent)));
 
+                if let Some(material) = &opinion.attrs.material {
+                    opinion_ent.insert(OpinionOp(material.clone()));
+                }
+                if let Some(mesh) = &opinion.attrs.mesh {
+                    opinion_ent.insert(OpinionOp(mesh.clone()));
+                }
                 if let Some(xform) = &opinion.attrs.xform {
                     opinion_ent.insert(OpinionOp(xform.clone()));
                 }

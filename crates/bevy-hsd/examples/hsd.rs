@@ -47,6 +47,7 @@ fn load_hsd(mut commands: Commands) {
                         scale: None,
                         translate: None,
                     }),
+                    ..Default::default()
                 },
             }],
         }],

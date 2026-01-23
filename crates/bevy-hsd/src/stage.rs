@@ -5,7 +5,7 @@ use loro_surgeon::{Hydrate, HydrateError};
 use smol_str::SmolStr;
 use wired_schemas::conv::tree::TreeNode;
 
-use crate::attributes::xform::Xform;
+use crate::attributes::{material::Material, mesh::Mesh, xform::Xform};
 
 /// Top-level stage data.
 #[derive(Debug, Clone, Hydrate)]
@@ -38,6 +38,8 @@ pub struct OpinionData {
 /// Known attributes parsed from the attrs map.
 #[derive(Debug, Clone, Default)]
 pub struct Attrs {
+    pub material: Option<Material>,
+    pub mesh: Option<Mesh>,
     pub xform: Option<Xform>,
 }
 
@@ -50,7 +52,13 @@ fn hydrate_attrs(value: &LoroValue) -> Result<Attrs, HydrateError> {
         });
     };
 
+    let material = map.get("material").map(Material::hydrate).transpose()?;
+    let mesh = map.get("mesh").map(Mesh::hydrate).transpose()?;
     let xform = map.get("xform").map(Xform::hydrate).transpose()?;
 
-    Ok(Attrs { xform })
+    Ok(Attrs {
+        material,
+        mesh,
+        xform,
+    })
 }

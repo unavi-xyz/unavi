@@ -74,3 +74,20 @@ pub mod map {
         Ok(())
     }
 }
+
+pub mod optional {
+    use blake3::Hash;
+    use loro::LoroValue;
+    use loro_surgeon::HydrateError;
+
+    /// # Errors
+    ///
+    /// Returns an error if the value is the wrong type.
+    pub fn hydrate(value: &LoroValue) -> Result<Option<Hash>, HydrateError> {
+        if value.is_null() {
+            return Ok(None);
+        }
+
+        super::hydrate(value).map(Some)
+    }
+}

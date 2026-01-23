@@ -46,12 +46,12 @@ pub mod optional {
 
     /// # Errors
     ///
-    /// Returns an error if the value is not null or a float list or has invalid length.
+    /// Returns an error if the value is the wrong type.
     pub fn hydrate<T: TryFrom<Vec<f64>>>(value: &LoroValue) -> Result<Option<T>, HydrateError> {
         if value.is_null() {
             return Ok(None);
         }
 
-        super::hydrate(value).map(|v| Some(v))
+        super::hydrate(value).map(Some)
     }
 }

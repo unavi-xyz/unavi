@@ -1,0 +1,10 @@
+(
+    id: "wired/beacon",
+    version: 0,
+    layout: Struct({
+        "did": String,
+        "endpoint": Binary,
+        "expires": I64,
+        "space": Binary,
+    }),
+)

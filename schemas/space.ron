@@ -1,0 +1,7 @@
+(
+    id: "wired/space",
+    version: 0,
+    layout: Struct({
+        "name": String,
+    }),
+)

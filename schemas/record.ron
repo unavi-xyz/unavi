@@ -1,0 +1,10 @@
+(
+    id: "wired/record",
+    version: 0,
+    layout: Struct({
+        "creator": String,
+        "nonce": Binary,
+        "schemas": Map(BlobRef),
+        "timestamp": I64,
+    }),
+)

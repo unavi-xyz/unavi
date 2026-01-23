@@ -1,0 +1,32 @@
+package wired:scene;
+
+world prelude {
+  import types;
+  import codegen-fix;
+}
+
+interface types {
+  use wired:ecs/types.{entity-id};
+  use wired:math/types.{vec3};
+
+  record name {
+    value: string
+  }
+
+  record parent {
+    id: entity-id
+  }
+
+  record children {
+    ids: list<entity-id>
+  }
+}
+
+// wit-bindgen may not include types if they are not used by functions.
+interface codegen-fix {
+  use types.{name, parent, children};
+
+  a: func() -> name;
+  b: func() -> parent;
+  c: func() -> children;
+}

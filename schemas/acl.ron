@@ -1,0 +1,20 @@
+(
+    id: "wired/acl",
+    version: 0,
+    layout: Restricted(
+        actions: [
+            (
+                who: Path("acl.manage"),
+                can: [
+                    Update,
+                ],
+            ),
+        ],
+        value: Struct({
+            "manage": List(String),
+            "public": Bool,
+            "read": List(String),
+            "write": List(String),
+        }),
+    ),
+)

@@ -1,0 +1,8 @@
+(
+    id: "wired/hsd/attr/collider",
+    version: 0,
+    layout: Struct({
+        "params": Optional(List(F64)),
+        "shape": String,
+    }),
+)

@@ -1,0 +1,9 @@
+(
+    id: "wired/hsd/attr/material",
+    version: 0,
+    layout: Struct({
+        "color": List(F64),
+        "metallic": F64,
+        "roughness": F64,
+    }),
+)

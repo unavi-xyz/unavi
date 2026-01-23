@@ -1,0 +1,15 @@
+(
+    id: "wired/hsd/stage",
+    version: 0,
+    layout: Struct({
+        "layers": MovableList(Struct({
+            "nodes": Tree(Struct({
+                "id": String,
+            })),
+            "opinions": List(Struct({
+                "attrs": Map(Any),
+                "id": String,
+            })),
+        })),
+    }),
+)

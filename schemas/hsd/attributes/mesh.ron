@@ -1,0 +1,12 @@
+(
+    id: "wired/hsd/attr/mesh",
+    version: 0,
+    layout: Struct({
+        "colors": Optional(BlobRef),
+        "indices": BlobRef,
+        "normals": Optional(BlobRef),
+        "points": BlobRef,
+        "tangents": Optional(BlobRef),
+        "uvs": Optional(BlobRef),
+    }),
+)

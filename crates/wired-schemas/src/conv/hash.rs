@@ -5,27 +5,31 @@ use loro::LoroValue;
 use loro_surgeon::{HydrateError, ReconcileError, loro::LoroMap};
 use smol_str::SmolStr;
 
-/// Hydrate a [`Hash`] from a Loro string value (hex encoded).
+/// Hydrate a [`Hash`] from a Loro binary value (32 bytes).
 ///
 /// # Errors
 ///
-/// Returns an error if the value is not a string or cannot be parsed as a hash.
+/// Returns an error if the value is not binary or is not 32 bytes.
 pub fn hydrate(value: &LoroValue) -> Result<Hash, HydrateError> {
-    let LoroValue::String(s) = value else {
+    let LoroValue::Binary(bytes) = value else {
         return Err(HydrateError::TypeMismatch {
             path: SmolStr::default(),
-            expected: "string".into(),
+            expected: "binary".into(),
             actual: format!("{value:?}").into(),
         });
     };
-    Hash::from_hex(s.as_ref()).map_err(|e| HydrateError::Custom(e.to_string().into()))
+    let slice: &[u8] = bytes.as_ref();
+    let arr: [u8; 32] = slice
+        .try_into()
+        .map_err(|_| HydrateError::Custom("expected 32 bytes for hash".into()))?;
+    Ok(Hash::from_bytes(arr))
 }
 
 /// # Errors
 ///
 /// Returns an error if the Loro operation fails.
 pub fn reconcile(hash: &Hash, map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
-    map.insert(key, hash.to_string())?;
+    map.insert(key, hash.as_bytes().to_vec())?;
     Ok(())
 }
 
@@ -65,7 +69,7 @@ pub mod map {
     ) -> Result<(), ReconcileError> {
         let nested = map.get_or_create_container(key, loro::LoroMap::new())?;
         for (k, v) in schemas {
-            nested.insert(k.as_str(), v.to_string())?;
+            nested.insert(k.as_str(), v.as_bytes().to_vec())?;
         }
         Ok(())
     }

@@ -47,6 +47,8 @@ impl Schema {
 pub enum Field {
     Any,
     Binary,
+    /// 32-byte binary blake3 hash referencing a blob.
+    BlobRef,
     Bool,
     F64,
     I64,

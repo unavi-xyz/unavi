@@ -2,8 +2,8 @@ use std::{path::PathBuf, sync::Arc, time::Duration};
 
 use iroh::{Endpoint, protocol::DynProtocolHandler, protocol::Router};
 use iroh_blobs::{BlobsProtocol, api::Store as BlobStore, store::mem::MemStore};
+use n0_future::task::AbortOnDropHandle;
 use parking_lot::RwLock;
-use tokio_util::task::AbortOnDropHandle;
 
 use crate::{DataStore, StoreContext, db::Database};
 
@@ -98,11 +98,10 @@ impl DataStoreBuilder {
         let router = router_builder.spawn();
 
         // Spawn gc task if enabled.
-        // TODO: enable for wasm, no handle
-        #[cfg(not(target_family = "wasm"))]
         let gc_handle = self.gc_timer.map(|duration| {
             let ctx = Arc::clone(&ctx);
-            let handle = tokio::spawn(async move {
+
+            let handle = n0_future::task::spawn(async move {
                 loop {
                     if let Err(err) = ctx.run_gc().await {
                         tracing::error!(?err, "error during garbage collection");
@@ -110,11 +109,9 @@ impl DataStoreBuilder {
                     n0_future::time::sleep(duration).await;
                 }
             });
+
             AbortOnDropHandle::new(handle)
         });
-
-        #[cfg(target_family = "wasm")]
-        let gc_handle = None;
 
         Ok(DataStore {
             api_client,

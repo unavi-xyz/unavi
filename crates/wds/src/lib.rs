@@ -4,8 +4,8 @@ use derive_more::Debug;
 use iroh::{Endpoint, EndpointId, protocol::Router};
 use iroh_blobs::api::Store as BlobStore;
 use irpc::Client;
+use n0_future::task::AbortOnDropHandle;
 use parking_lot::RwLock;
-use tokio_util::task::AbortOnDropHandle;
 use xdid::core::did::Did;
 
 pub use identity::Identity;

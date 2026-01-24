@@ -1,5 +1,5 @@
 (
-    id: "wired/hsd/attr/rigid_body",
+    id: "hsd/rigid_body",
     version: 0,
     layout: Struct({
         "friction": F64,

@@ -96,9 +96,6 @@ pub fn compile_stages(
             if let Some(mesh) = attrs.mesh {
                 // TODO node as asset, use by ref
 
-                // let actor = actor.0.clone();
-                // let handle = asset_server.add_async(async move {
-                // });
                 // node.insert(Mesh3d(handle));
             } else {
                 node.remove::<Mesh3d>();

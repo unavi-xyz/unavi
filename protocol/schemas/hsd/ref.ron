@@ -1,0 +1,5 @@
+(
+    id: "hsd/ref",
+    version: 0,
+    layout: String,
+)

@@ -1,5 +1,5 @@
 (
-    id: "wired/hsd/attr/material",
+    id: "hsd/material",
     version: 0,
     layout: Struct({
         "color": List(F64),

@@ -22,8 +22,9 @@ macro_rules! static_schema {
     };
 }
 
-static_schema!(SCHEMA_ACL, "acl.ron");
-static_schema!(SCHEMA_BEACON, "beacon.ron");
-static_schema!(SCHEMA_HOME, "home.ron");
-static_schema!(SCHEMA_RECORD, "record.ron");
-static_schema!(SCHEMA_SPACE, "space.ron");
+static_schema!(SCHEMA_ACL, "wds/acl.ron");
+static_schema!(SCHEMA_RECORD, "wds/record.ron");
+
+static_schema!(SCHEMA_BEACON, "wired/beacon.ron");
+static_schema!(SCHEMA_HOME, "wired/home.ron");
+static_schema!(SCHEMA_SPACE, "wired/space.ron");

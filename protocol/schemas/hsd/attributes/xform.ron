@@ -1,5 +1,5 @@
 (
-    id: "wired/hsd/attr/xform",
+    id: "hsd/xform",
     version: 0,
     layout: Struct({
         "rotate": Optional(List(F64)),

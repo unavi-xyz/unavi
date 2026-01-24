@@ -17,7 +17,7 @@ pub fn compile_stages(
     asset_server: ResMut<AssetServer>,
     mut commands: Commands,
 ) {
-    let Ok(actor) = actor.single() else {
+    let Ok(_actor) = actor.single() else {
         return;
     };
 
@@ -93,7 +93,7 @@ pub fn compile_stages(
                 node.remove::<MeshMaterial3d<StandardMaterial>>();
             }
 
-            if let Some(mesh) = attrs.mesh {
+            if let Some(_mesh) = attrs.mesh {
                 // TODO node as asset, use by ref
 
                 // node.insert(Mesh3d(handle));

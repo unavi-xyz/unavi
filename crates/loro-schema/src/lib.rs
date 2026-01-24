@@ -7,7 +7,6 @@
 //!
 //! - [`Schema`] - Defines the structure and validation rules for a container.
 //! - [`Field`] - Type definitions (Bool, String, List, Map, Struct, etc.).
-//! - [`validate_value`] - Validate a `LoroValue` against a Field (type-only).
 //! - [`Validator`] - Document-level validation with Restricted field checking.
 
 mod schema;

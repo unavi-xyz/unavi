@@ -4,9 +4,9 @@ use anyhow::{Context, ensure};
 use blake3::Hash;
 use iroh_blobs::api::Store;
 use loro::{LoroDoc, LoroValue, VersionVector};
+use loro_schema::{Field, Schema};
 use rusqlite::{Connection, params};
 use smol_str::SmolStr;
-use wds_schema::{Field, Schema};
 use wired_schemas::{
     SCHEMA_ACL, SCHEMA_RECORD,
     surg::{Acl, Record},

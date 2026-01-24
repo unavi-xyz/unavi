@@ -8,7 +8,7 @@ use unavi_player::{
 
 use crate::networking::{
     WdsActors,
-    player_receive::{RemotePlayer, TransformTarget},
+    player_receive::{BoneRotationTargets, RemotePlayer, TransformTarget},
     thread::{InboundState, NetworkEvent, NetworkingThread},
 };
 
@@ -44,6 +44,7 @@ pub fn recv_network_event(
                         target: Some(entity),
                         ..Default::default()
                     },
+                    BoneRotationTargets::default(),
                     // TODO fix animation application to avoid tracked bones
                     // animations,
                     Transform::default(),

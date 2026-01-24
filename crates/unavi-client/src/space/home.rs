@@ -107,6 +107,7 @@ async fn join_home_space_inner(
     let res = actors
         .local
         .create_record()
+        .public()
         .add_schema("home", &*SCHEMA_HOME, |_| Ok(()))?
         .add_schema("space", &*SCHEMA_SPACE, |doc| {
             let map = doc.get_map("space");

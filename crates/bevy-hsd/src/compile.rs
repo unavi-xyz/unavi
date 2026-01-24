@@ -5,17 +5,14 @@ use bevy::prelude::*;
 use crate::{
     LayerOpinions, LayerStrength, OpinionOp, OpinionTarget, Stage, StageCompiled, StageLayers,
     attributes::{Attribute, xform::Xform},
+    stage::Attrs,
 };
-
-#[derive(Default)]
-struct NodeAttrs {
-    xform: Option<Xform>,
-}
 
 pub fn compile_stages(
     stages: Query<(&mut StageCompiled, &StageLayers), With<Stage>>,
     layers: Query<(&LayerStrength, &LayerOpinions)>,
     opinions: Query<(&OpinionTarget, Option<&OpinionOp<Xform>>)>,
+    asset_server: ResMut<AssetServer>,
     mut commands: Commands,
 ) {
     for (mut compiled, stage_layers) in stages {
@@ -42,7 +39,7 @@ pub fn compile_stages(
         );
 
         // Merge layer opinions.
-        let mut node_attrs = HashMap::<Entity, NodeAttrs>::new();
+        let mut node_attrs = HashMap::<Entity, Attrs>::new();
 
         for (_, layer_opinions) in resolved_layers {
             for opinion_ent in layer_opinions {
@@ -63,8 +60,38 @@ pub fn compile_stages(
         }
 
         // Apply node attributes.
+        #[expect(clippy::cast_possible_truncation)]
         for (node_ent, attrs) in node_attrs {
             let mut node = commands.entity(node_ent);
+
+            if let Some(mat) = attrs.material {
+                // TODO node as asset
+
+                let mut out_mat = StandardMaterial::default();
+
+                if let Some(color) = mat.color {
+                    out_mat.base_color = Color::Srgba(Srgba {
+                        red: color[0] as f32,
+                        green: color[1] as f32,
+                        blue: color[2] as f32,
+                        alpha: color[3] as f32,
+                    });
+                }
+
+                out_mat.metallic = mat.metallic as f32;
+                out_mat.perceptual_roughness = mat.roughness as f32;
+
+                let handle = asset_server.add(out_mat);
+                node.insert(MeshMaterial3d(handle));
+            } else {
+                node.remove::<MeshMaterial3d<StandardMaterial>>();
+            }
+
+            if let Some(_mesh) = attrs.mesh {
+                // TODO lazy load node asset
+            } else {
+                node.remove::<Mesh3d>();
+            }
 
             if let Some(xform) = attrs.xform {
                 node.insert(xform.into_transform());

@@ -28,24 +28,12 @@ pub async fn upload_envelope(
 
     let record_id = inner.record_id.to_string();
 
-    if let Err(e) =
-        store_envelope(&ctx.db, ctx.blobs.as_ref().as_ref(), &record_id, &env_bytes).await
-    {
+    let result = store_envelope(&ctx.db, ctx.blobs.as_ref().as_ref(), &record_id, &env_bytes).await;
+
+    if let Err(ref e) = result {
         warn!(record_id = %record_id, ?e, "failed to store envelope");
-        // Map specific errors to ApiError variants.
-        let api_err = if e.to_string().contains("not pinned") {
-            ApiError::NotPinned
-        } else if e.to_string().contains("access denied") {
-            ApiError::AccessDenied
-        } else if e.to_string().contains("quota") {
-            ApiError::QuotaExceeded
-        } else {
-            ApiError::Internal
-        };
-        tx.send(Err(api_err)).await?;
-        return Ok(());
     }
 
-    tx.send(Ok(())).await?;
+    tx.send(result.map_err(ApiError::from)).await?;
     Ok(())
 }

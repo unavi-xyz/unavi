@@ -6,7 +6,7 @@ use iroh::EndpointAddr;
 use loro::LoroDoc;
 use tracing::{debug, warn};
 
-use crate::api::{ApiError, ReadRecord};
+use crate::{api::ReadRecord, error::ApiError};
 
 use super::Actor;
 

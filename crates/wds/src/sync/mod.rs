@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
 use tracing::warn;
 
-use crate::{SessionToken, StoreContext, sync::combined_stream::CombinedStream};
+use crate::{SessionToken, StoreContext, error::ApiError, sync::combined_stream::CombinedStream};
 
 pub mod client;
 mod combined_stream;
@@ -54,8 +54,11 @@ impl ProtocolHandler for SyncProtocol {
         let combined = CombinedStream(stream.0, stream.1);
         let framed = Framed::new(combined, LengthDelimitedCodec::new());
 
-        let reason = match server::handle_sync(&self.ctx, framed).await {
-            Ok(r) => r,
+        let reason: &'static str = match server::handle_sync(&self.ctx, framed).await {
+            Ok(()) => "done",
+            Err(ApiError::Unauthenticated) => "unauthenticated",
+            Err(ApiError::RecordNotFound) => "not found",
+            Err(ApiError::SyncFailed) => "sync failed",
             Err(err) => {
                 warn!(?err, "error handling sync");
                 "internal error"

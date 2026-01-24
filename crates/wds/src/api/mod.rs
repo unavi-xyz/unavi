@@ -16,10 +16,9 @@ use irpc_iroh::IrohProtocol;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::{SessionToken, StoreContext};
+use crate::{SessionToken, StoreContext, error::ApiError};
 
 mod blob_exists;
-mod error;
 mod get_record_pin;
 mod pin_blob;
 mod pin_record;
@@ -28,8 +27,6 @@ mod read_record;
 mod sync_record;
 mod upload_blob;
 mod upload_envelope;
-
-pub use error::ApiError;
 
 const MAX_PIN_DURATION: Duration = Duration::from_hours(24 * 90);
 

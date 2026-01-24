@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, HashSet};
 
-use anyhow::{Context, ensure};
+use anyhow::ensure;
 use blake3::Hash;
 use iroh_blobs::api::Store;
 use loro::{LoroDoc, LoroValue, VersionVector};
@@ -16,6 +16,7 @@ use xdid::{core::did::Did, resolver::DidResolver};
 use crate::{
     auth::jwk::verify_jwk_signature,
     db::Database,
+    error::WdsError,
     quota,
     record::{
         envelope::Envelope,
@@ -25,9 +26,16 @@ use crate::{
 };
 
 /// Validates the signature of a signed envelope against the author's DID document.
-async fn validate_signature(author: &Did, signature: &[u8], payload: &[u8]) -> anyhow::Result<()> {
-    let resolver = DidResolver::new()?;
-    let author_doc = resolver.resolve(author).await?;
+async fn validate_signature(
+    author: &Did,
+    signature: &[u8],
+    payload: &[u8],
+) -> Result<(), WdsError> {
+    let resolver = DidResolver::new().map_err(|e| WdsError::DidResolution(e.to_string()))?;
+    let author_doc = resolver
+        .resolve(author)
+        .await
+        .map_err(|e| WdsError::DidResolution(e.to_string()))?;
 
     for method in author_doc.assertion_method.as_deref().unwrap_or_default() {
         let Some(map) = author_doc.resolve_verification_method(method) else {
@@ -41,7 +49,7 @@ async fn validate_signature(author: &Did, signature: &[u8], payload: &[u8]) -> a
         }
     }
 
-    anyhow::bail!("invalid envelope signature")
+    Err(WdsError::InvalidSignature)
 }
 
 /// Validates document changes against all applicable schemas.
@@ -52,7 +60,7 @@ async fn validate_schemas(
     new_doc: &LoroDoc,
     record: &Record,
     author: &Did,
-) -> anyhow::Result<BTreeMap<SmolStr, Schema>> {
+) -> Result<BTreeMap<SmolStr, Schema>, WdsError> {
     let old_frontiers = old_doc.state_frontiers();
     let new_frontiers = new_doc.state_frontiers();
 
@@ -63,19 +71,20 @@ async fn validate_schemas(
     schemas.insert(
         "acl".into(),
         Schema::from_bytes(&SCHEMA_ACL.bytes)
-            .map_err(|e| anyhow::anyhow!("failed to parse ACL schema: {e}"))?,
+            .map_err(|e| WdsError::SchemaValidation(format!("failed to parse ACL schema: {e}")))?,
     );
     schemas.insert(
         "record".into(),
-        Schema::from_bytes(&SCHEMA_RECORD.bytes)
-            .map_err(|e| anyhow::anyhow!("failed to parse record schema: {e}"))?,
+        Schema::from_bytes(&SCHEMA_RECORD.bytes).map_err(|e| {
+            WdsError::SchemaValidation(format!("failed to parse record schema: {e}"))
+        })?,
     );
 
     // Add record's schemas.
     for (container, schema_id) in &record.schemas {
         let schema = fetch_schema(blobs, schema_id)
             .await
-            .map_err(|e| anyhow::anyhow!("failed to fetch schema: {e}"))?;
+            .map_err(|e| WdsError::SchemaValidation(format!("failed to fetch schema: {e}")))?;
         schemas.insert(container.clone(), schema);
     }
 
@@ -87,7 +96,7 @@ async fn validate_schemas(
         &schemas,
         author,
     )
-    .map_err(|e| anyhow::anyhow!("schema validation failed: {e}"))?;
+    .map_err(|e| WdsError::SchemaValidation(e.to_string()))?;
 
     Ok(schemas)
 }
@@ -157,147 +166,185 @@ fn collect_blob_refs(value: &LoroValue, field: &Field, refs: &mut HashSet<String
     }
 }
 
+/// Parameters for storing an envelope in the database.
+struct StoreEnvelopeParams {
+    record_id: String,
+    author: String,
+    from_vv: Vec<u8>,
+    to_vv: Vec<u8>,
+    ops: Vec<u8>,
+    payload_bytes: Vec<u8>,
+    signature: Vec<u8>,
+    new_vv: Vec<u8>,
+    size: i64,
+    record: Record,
+    acl: Acl,
+    blob_refs: HashSet<String>,
+}
+
+/// Executes the database transaction to store an envelope.
+fn store_envelope_tx(conn: &mut Connection, params: StoreEnvelopeParams) -> anyhow::Result<()> {
+    let tx = conn.transaction()?;
+
+    let pinners = {
+        let mut stmt = tx.prepare("SELECT owner FROM record_pins WHERE record_id = ?")?;
+        let rows = stmt.query_map(params![&params.record_id], |row| row.get::<_, String>(0))?;
+        rows.filter_map(Result::ok).collect::<Vec<String>>()
+    };
+
+    if pinners.is_empty() {
+        return Err(WdsError::NotPinned.into());
+    }
+
+    if !pinners
+        .iter()
+        .any(|p| quota::reserve_bytes(&tx, p, params.size).is_ok())
+    {
+        return Err(WdsError::QuotaExceeded.into());
+    }
+
+    tx.execute(
+        "INSERT INTO envelopes (record_id, author, from_vv, to_vv, ops, payload_bytes, signature, size)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        params![
+            &params.record_id, &params.author, &params.from_vv, &params.to_vv,
+            &params.ops, &params.payload_bytes, &params.signature, params.size
+        ],
+    )?;
+
+    let updated = tx.execute(
+        "UPDATE records SET vv = ? WHERE id = ?",
+        params![&params.new_vv, &params.record_id],
+    )?;
+
+    if updated == 0 {
+        initialize_new_record(&tx, &params)?;
+    }
+
+    update_acl_read_index(&tx, &params.record_id, &params.acl)?;
+    update_blob_ref_deps(&tx, &params.record_id, &params.blob_refs)?;
+
+    tx.commit()?;
+    Ok(())
+}
+
+/// Initializes a new record in the database.
+fn initialize_new_record(
+    tx: &rusqlite::Transaction<'_>,
+    params: &StoreEnvelopeParams,
+) -> anyhow::Result<()> {
+    ensure!(
+        params.record.id()?.to_string() == params.record_id,
+        "record ID does not match"
+    );
+
+    let nonce: &[u8] = &params.record.nonce;
+    tx.execute(
+        "INSERT INTO records (id, creator, nonce, timestamp, vv, size)
+         VALUES (?, ?, ?, ?, ?, ?)",
+        params![
+            &params.record_id,
+            &params.author,
+            nonce,
+            params.record.timestamp,
+            &params.new_vv,
+            params.size
+        ],
+    )?;
+
+    for schema_hash in params.record.schemas.values() {
+        let hash_str = schema_hash.to_string();
+        tx.execute(
+            "INSERT OR IGNORE INTO record_schemas (record_id, schema_hash) VALUES (?, ?)",
+            params![&params.record_id, &hash_str],
+        )?;
+        tx.execute(
+            "INSERT OR IGNORE INTO record_blob_deps (record_id, blob_hash, dep_type)
+             VALUES (?, ?, 'schema')",
+            params![&params.record_id, &hash_str],
+        )?;
+    }
+    Ok(())
+}
+
+/// Updates blob ref dependencies for a record.
+fn update_blob_ref_deps(
+    tx: &rusqlite::Transaction<'_>,
+    record_id: &str,
+    blob_refs: &HashSet<String>,
+) -> anyhow::Result<()> {
+    tx.execute(
+        "DELETE FROM record_blob_deps WHERE record_id = ? AND dep_type = 'ref'",
+        params![record_id],
+    )?;
+    for ref_hash in blob_refs {
+        tx.execute(
+            "INSERT OR IGNORE INTO record_blob_deps (record_id, blob_hash, dep_type)
+             VALUES (?, ?, 'ref')",
+            params![record_id, ref_hash],
+        )?;
+    }
+    Ok(())
+}
+
 /// Stores an envelope with quota tracking and schema validation.
 pub async fn store_envelope(
     db: &Database,
     blobs: &Store,
     record_id: &str,
     env_bytes: &[u8],
-) -> anyhow::Result<()> {
+) -> Result<(), WdsError> {
     let signed: SignedBytes<Envelope> = postcard::from_bytes(env_bytes)?;
-    let envelope = signed.payload()?;
+    let envelope = signed.payload().map_err(|e| WdsError::Other(e.into()))?;
     let author = envelope.author();
 
     validate_signature(author, signed.signature(), signed.payload_bytes()).await?;
 
     // Get current document state (BEFORE applying envelope).
-    let old_doc = reconstruct_current_doc(db, record_id).await?;
-    let old_frontiers = old_doc.state_frontiers();
-    let is_first_envelope = old_frontiers.is_empty();
+    let old_doc = reconstruct_current_doc(db, record_id)
+        .await
+        .map_err(WdsError::Other)?;
+    let is_first_envelope = old_doc.state_frontiers().is_empty();
 
     // Check record-level write ACL against OLD state (prevent privilege escalation).
     if !is_first_envelope {
-        let acl = Acl::load(&old_doc)?;
+        let acl = Acl::load(&old_doc).map_err(WdsError::Other)?;
         if !acl.can_write(author) {
-            anyhow::bail!("access denied: write permission required");
+            return Err(WdsError::AccessDenied);
         }
     }
 
     // Apply new envelope to get new state for diff computation.
     let new_doc = old_doc.fork();
-    new_doc.import(envelope.ops())?;
+    new_doc
+        .import(envelope.ops())
+        .map_err(|e| WdsError::Other(e.into()))?;
 
-    // Load record metadata from the new doc state.
-    let record = Record::load(&new_doc)?;
-
-    // Validate diff against schema restrictions.
+    let record = Record::load(&new_doc).map_err(WdsError::Other)?;
     let schemas = validate_schemas(blobs, &old_doc, &new_doc, &record, author).await?;
-
-    // Extract blob refs from new document state for dependency tracking.
     let blob_refs = extract_blob_refs(&new_doc, &schemas);
 
-    let size = i64::try_from(env_bytes.len()).context("envelope too large")?;
-    let author_str = envelope.author().to_string();
-    let from_vv = envelope.start_vv().encode();
-    let to_vv = envelope.end_vv().encode();
-    let ops = envelope.ops().to_vec();
-    let payload_bytes = signed.payload_bytes().to_vec();
-    let sig = signed.signature().to_vec();
-    let new_vv = envelope.end_vv().encode();
+    let params = StoreEnvelopeParams {
+        record_id: record_id.to_string(),
+        author: author.to_string(),
+        from_vv: envelope.start_vv().encode(),
+        to_vv: envelope.end_vv().encode(),
+        ops: envelope.ops().to_vec(),
+        payload_bytes: signed.payload_bytes().to_vec(),
+        signature: signed.signature().to_vec(),
+        new_vv: envelope.end_vv().encode(),
+        size: i64::try_from(env_bytes.len())
+            .map_err(|_| WdsError::Other(anyhow::anyhow!("envelope too large")))?,
+        record,
+        acl: Acl::load(&new_doc).map_err(WdsError::Other)?,
+        blob_refs,
+    };
 
-    // Clone for use in closure.
-    let record_id_owned = record_id.to_string();
-    let record_clone = record.clone();
-    let new_acl = Acl::load(&new_doc)?;
+    db.call_mut(move |conn| store_envelope_tx(conn, params))
+        .await
+        .map_err(WdsError::Other)?;
 
-    db.call_mut(move |conn| {
-        let tx = conn.transaction()?;
-
-        let pinners = {
-            let mut stmt = tx.prepare("SELECT owner FROM record_pins WHERE record_id = ?")?;
-            let rows = stmt.query_map(params![&record_id_owned], |row| row.get::<_, String>(0))?;
-            rows.filter_map(Result::ok).collect::<Vec<String>>()
-        };
-
-        if pinners.is_empty() {
-            anyhow::bail!("record not pinned");
-        }
-
-        let mut any_reserved = false;
-        for pinner in &pinners {
-            if quota::reserve_bytes(&tx, pinner, size).is_ok() {
-                any_reserved = true;
-            }
-        }
-        if !any_reserved {
-            anyhow::bail!("all pinners exceeded quota");
-        }
-
-        tx.execute(
-            "INSERT INTO envelopes (record_id, author, from_vv, to_vv, ops, payload_bytes, signature, size)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            params![&record_id_owned, &author_str, &from_vv, &to_vv, &ops, &payload_bytes, &sig, size],
-        )?;
-
-        let updated = tx.execute(
-            "UPDATE records SET vv = ? WHERE id = ?",
-            params![&new_vv, &record_id_owned],
-        )?;
-
-        if updated == 0 {
-            // Initialize a new record using metadata from the Loro doc.
-            ensure!(
-                record_clone.id()?.to_string() == record_id_owned,
-                "record ID does not match"
-            );
-
-            let nonce: &[u8] = &record_clone.nonce;
-
-            tx.execute(
-                "INSERT INTO records (id, creator, nonce, timestamp, vv, size)
-                 VALUES (?, ?, ?, ?, ?, ?)",
-                params![&record_id_owned, &author_str, nonce, record_clone.timestamp, &new_vv, size],
-            )?;
-
-            // Index schemas (immutable after creation).
-            for  schema_hash in record_clone.schemas.values() {
-                let hash_str: String = schema_hash.to_string();
-
-                tx.execute(
-                    "INSERT OR IGNORE INTO record_schemas (record_id, schema_hash) VALUES (?, ?)",
-                    params![&record_id_owned, &hash_str],
-                )?;
-
-                // Register as blob dependency for auto-pinning.
-                tx.execute(
-                    "INSERT OR IGNORE INTO record_blob_deps (record_id, blob_hash, dep_type)
-                     VALUES (?, ?, 'schema')",
-                    params![&record_id_owned, &hash_str],
-                )?;
-            }
-        }
-
-        // Update ACL read index from new doc state.
-        update_acl_read_index(&tx, &record_id_owned, &new_acl)?;
-
-        // Update blob ref dependencies (dynamic on every update).
-        tx.execute(
-            "DELETE FROM record_blob_deps WHERE record_id = ? AND dep_type = 'ref'",
-            params![&record_id_owned],
-        )?;
-
-        for ref_hash in &blob_refs {
-            tx.execute(
-                "INSERT OR IGNORE INTO record_blob_deps (record_id, blob_hash, dep_type)
-                 VALUES (?, ?, 'ref')",
-                params![&record_id_owned, ref_hash],
-            )?;
-        }
-
-        tx.commit()?;
-        Ok(())
-    })
-    .await
+    Ok(())
 }
 
 /// Fetches all envelopes for a record.

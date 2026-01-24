@@ -17,6 +17,7 @@ pub mod api;
 mod auth;
 pub mod builder;
 pub mod db;
+pub mod error;
 mod gc;
 pub mod identity;
 mod quota;

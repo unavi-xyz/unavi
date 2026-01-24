@@ -15,9 +15,8 @@ use parking_lot::Mutex;
 use wds::{DataStore, actor::Actor, identity::Identity};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
-use crate::networking::{
-    WdsActors,
-    thread::space::{DEFAULT_TICKRATE, IFrameMsg, PFrameDatagram, PlayerIFrame, PlayerPFrame},
+use crate::networking::thread::space::{
+    DEFAULT_TICKRATE, IFrameMsg, PFrameDatagram, PlayerIFrame, PlayerPFrame,
 };
 
 mod join;
@@ -37,7 +36,8 @@ pub enum NetworkCommand {
 
 #[expect(unused)]
 pub enum NetworkEvent {
-    SetActors(WdsActors),
+    AddRemoteActor(Actor),
+    SetLocalActor(Actor),
     PlayerJoin {
         id: EndpointId,
         state: Arc<InboundState>,
@@ -160,11 +160,14 @@ async fn thread_loop(
     let remote_actor = remote_host.map(|h| store.remote_actor(identity, h));
 
     event_tx
-        .send(NetworkEvent::SetActors(WdsActors {
-            local: local_actor.clone(),
-            remote: remote_actor.clone(),
-        }))
+        .send(NetworkEvent::SetLocalActor(local_actor.clone()))
         .await?;
+
+    if let Some(ref remote_actor) = remote_actor {
+        event_tx
+            .send(NetworkEvent::AddRemoteActor(remote_actor.clone()))
+            .await?;
+    }
 
     let state = NetworkThreadState {
         endpoint,

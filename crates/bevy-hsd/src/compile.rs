@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use bevy::prelude::*;
+use bevy_wds::LocalActor;
 
 use crate::{
     LayerOpinions, LayerStrength, OpinionOp, OpinionTarget, Stage, StageCompiled, StageLayers,
@@ -12,9 +13,14 @@ pub fn compile_stages(
     stages: Query<(&mut StageCompiled, &StageLayers), With<Stage>>,
     layers: Query<(&LayerStrength, &LayerOpinions)>,
     opinions: Query<(&OpinionTarget, Option<&OpinionOp<Xform>>)>,
+    actor: Query<&LocalActor>,
     asset_server: ResMut<AssetServer>,
     mut commands: Commands,
 ) {
+    let Ok(actor) = actor.single() else {
+        return;
+    };
+
     for (mut compiled, stage_layers) in stages {
         if compiled.0 {
             continue;
@@ -65,7 +71,7 @@ pub fn compile_stages(
             let mut node = commands.entity(node_ent);
 
             if let Some(mat) = attrs.material {
-                // TODO node as asset
+                // TODO node as asset, use by ref
 
                 let mut out_mat = StandardMaterial::default();
 
@@ -87,8 +93,13 @@ pub fn compile_stages(
                 node.remove::<MeshMaterial3d<StandardMaterial>>();
             }
 
-            if let Some(_mesh) = attrs.mesh {
-                // TODO lazy load node asset
+            if let Some(mesh) = attrs.mesh {
+                // TODO node as asset, use by ref
+
+                // let actor = actor.0.clone();
+                // let handle = asset_server.add_async(async move {
+                // });
+                // node.insert(Mesh3d(handle));
             } else {
                 node.remove::<Mesh3d>();
             }

@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
+use bevy_wds::{LocalActor, RemoteActor};
 use unavi_player::{
     AvatarSpawner, Grounded,
     animation::{defaults::default_character_animations, velocity::AverageVelocity},
 };
 
 use crate::networking::{
-    WdsActors,
     player_receive::{BoneRotationTargets, RemotePlayer, TransformTarget},
     thread::{InboundState, NetworkEvent, NetworkingThread},
 };
@@ -19,7 +19,7 @@ pub fn recv_network_event(
     mut commands: Commands,
     mut nt: ResMut<NetworkingThread>,
     asset_server: Res<AssetServer>,
-    prev_actors: Query<Entity, With<WdsActors>>,
+    local_actors: Query<Entity, With<LocalActor>>,
 ) {
     while let Ok(event) = nt.event_rx.try_recv() {
         match event {
@@ -55,12 +55,17 @@ pub fn recv_network_event(
             NetworkEvent::PlayerLeave(_id) => {
                 // TODO despawn player
             }
-            NetworkEvent::SetActors(actors) => {
-                for ent in prev_actors {
+            NetworkEvent::SetLocalActor(actor) => {
+                for ent in local_actors {
                     commands.entity(ent).despawn();
                 }
 
-                commands.spawn(actors);
+                commands.spawn(LocalActor(actor));
+            }
+            NetworkEvent::AddRemoteActor(actor) => {
+                // TODO handle disconnects / multiple adds
+
+                commands.spawn(RemoteActor(actor));
             }
         }
     }

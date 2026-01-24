@@ -1,17 +1,17 @@
 use bevy::prelude::*;
+use bevy_wds::{LocalActor, RemoteActor};
 use time::OffsetDateTime;
+use wds::actor::Actor;
 use wired_schemas::{SCHEMA_BEACON, SCHEMA_HOME, SCHEMA_SPACE};
 
 use crate::{
-    networking::{
-        WdsActors,
-        thread::{NetworkCommand, NetworkingThread},
-    },
+    networking::thread::{NetworkCommand, NetworkingThread},
     space::beacon::Beacon,
 };
 
 pub fn join_home_space(
-    actors: Query<&WdsActors>,
+    local_actor: Query<&LocalActor>,
+    remote_actors: Query<&RemoteActor>,
     nt: Res<NetworkingThread>,
     mut did_join: Local<bool>,
 ) {
@@ -20,15 +20,17 @@ pub fn join_home_space(
         return;
     }
 
-    let Ok(actors) = actors.single().cloned() else {
-        warn!("WDS actors not found");
+    let Ok(local_actor) = local_actor.single().map(|x| x.0.clone()) else {
+        warn!("local actor not found");
         return;
     };
+
+    let remote_actor = remote_actors.iter().next().map(|x| x.0.clone());
 
     let command_tx = nt.command_tx.clone();
 
     unavi_wasm_compat::spawn_thread(async move {
-        if let Err(e) = discover_or_home(actors, command_tx).await {
+        if let Err(e) = discover_or_home(local_actor, remote_actor, command_tx).await {
             error!("Failed to join home space: {e:?}");
         }
     });
@@ -40,13 +42,14 @@ pub fn join_home_space(
 /// Else, join the user's home.
 /// Temporary measure until proper space traversal exists.
 async fn discover_or_home(
-    actors: WdsActors,
+    local_actor: Actor,
+    remote_actor: Option<Actor>,
     command_tx: tokio::sync::mpsc::Sender<NetworkCommand>,
 ) -> anyhow::Result<()> {
     // Query for beacons.
     let mut beacons = Vec::new();
 
-    if let Some(remote_actor) = &actors.remote {
+    if let Some(remote_actor) = &remote_actor {
         let found = remote_actor
             .query()
             .schema(SCHEMA_BEACON.hash)
@@ -58,8 +61,7 @@ async fn discover_or_home(
         let now = OffsetDateTime::now_utc().unix_timestamp();
 
         for id in found {
-            match actors
-                .local
+            match local_actor
                 .read(id)
                 .sync_from(remote_host.into())
                 .send()
@@ -92,20 +94,20 @@ async fn discover_or_home(
         command_tx.send(NetworkCommand::Join(beacon.space)).await?;
     } else {
         // Join home.
-        join_home_space_inner(actors, command_tx).await?;
+        join_home_space_inner(local_actor, remote_actor, command_tx).await?;
     }
 
     Ok(())
 }
 
 async fn join_home_space_inner(
-    actors: WdsActors,
+    local_actor: Actor,
+    remote_actor: Option<Actor>,
     command_tx: tokio::sync::mpsc::Sender<NetworkCommand>,
 ) -> anyhow::Result<()> {
-    let did = actors.local.identity().did();
+    let did = local_actor.identity().did();
 
-    let res = actors
-        .local
+    let res = local_actor
         .create_record()
         .public()
         .add_schema("home", &*SCHEMA_HOME, |_| Ok(()))?
@@ -114,7 +116,7 @@ async fn join_home_space_inner(
             map.insert("name", format!("{did}'s Home"))?;
             Ok(())
         })?
-        .sync_to(actors.remote)
+        .sync_to(remote_actor)
         .send()
         .await?;
 

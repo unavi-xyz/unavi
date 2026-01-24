@@ -12,6 +12,7 @@ workspace = true
 [dependencies]
 base64             = "0.22.1"
 bevy.workspace     = true
+bevy-wds.path      = "../bevy-wds"
 blake3.workspace   = true
 loro.workspace     = true
 loro-surgeon.path  = "../loro-surgeon"

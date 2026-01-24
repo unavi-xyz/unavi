@@ -914,6 +914,7 @@ version = "0.0.16"
 dependencies = [
  "base64 0.22.1",
  "bevy",
+ "bevy-wds",
  "bevy_panorbit_camera",
  "blake3",
  "loro",
@@ -966,6 +967,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc71ba69d5343b67d9421bb51cb6b021b3c137450fb49277b9550df7793c14f6"
 dependencies = [
  "bevy",
+]
+
+[[package]]
+name = "bevy-wds"
+version = "0.0.16"
+dependencies = [
+ "bevy",
+ "wds",
 ]
 
 [[package]]
@@ -13097,6 +13106,8 @@ dependencies = [
  "anyhow",
  "avian3d",
  "bevy",
+ "bevy-hsd",
+ "bevy-wds",
  "bevy_vrm",
  "bitflags 2.10.0",
  "blake3",

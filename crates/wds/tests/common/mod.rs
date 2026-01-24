@@ -3,7 +3,7 @@
 mod did_key;
 mod did_web;
 
-use std::{fmt::Debug, sync::Arc};
+use std::{fmt::Display, sync::Arc};
 
 use iroh::{Endpoint, RelayMode};
 use rstest::fixture;
@@ -166,8 +166,8 @@ pub async fn multi_ctx_local() -> LocalStoreCtx {
     LocalStoreCtx { alice_ctx, bob_ctx }
 }
 
-pub fn assert_contains(e: impl Debug, contains: &str) {
-    let e = format!("{e:?}");
+pub fn assert_contains(e: impl Display, contains: &str) {
+    let e = e.to_string();
     assert!(e.contains(contains), "'{e}' does not contain '{contains}'");
 }
 

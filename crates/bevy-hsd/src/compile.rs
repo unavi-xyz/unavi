@@ -2,7 +2,6 @@ use std::{borrow::Cow, collections::HashMap};
 
 use bevy::prelude::*;
 use bevy_wds::LocalActor;
-use blake3::Hash;
 use loro::LoroValue;
 use loro_surgeon::Hydrate;
 

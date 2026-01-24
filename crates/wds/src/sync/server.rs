@@ -3,7 +3,7 @@ use futures::{SinkExt, StreamExt};
 use loro::VersionVector;
 use rusqlite::params;
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
-use tracing::debug;
+use tracing::info;
 
 use wired_schemas::surg::Acl;
 
@@ -30,7 +30,7 @@ where
         anyhow::bail!("expected Begin message");
     };
 
-    debug!(?record_id, "handling sync");
+    info!(?record_id, "handling sync");
 
     // Authenticate and get requester DID.
     let Some(conn_state) = ctx.connections.get_async(&session).await else {
@@ -69,6 +69,7 @@ where
 
     // Only sync if record is pinned.
     if !is_pinned {
+        info!("sync denied: record not pinned");
         return Ok("not found");
     }
 
@@ -83,6 +84,7 @@ where
     let acl = Acl::load(&doc)?;
     if !acl.can_read(&requester_did) {
         // Silently deny - record "doesn't exist" for this user.
+        info!(?acl, %requester_did, "sync denied: user not permitted");
         return Ok("not found");
     }
 

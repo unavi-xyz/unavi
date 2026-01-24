@@ -20,8 +20,8 @@ impl Plugin for NetworkingPlugin {
         });
 
         app.insert_resource(nt)
-            // .insert_resource(TrackedBones(TrackedBones::full()))
-            .insert_resource(TrackedBones::default())
+            .insert_resource(TrackedBones(TrackedBones::full()))
+            // .insert_resource(TrackedBones::default())
             .add_systems(
                 FixedUpdate,
                 (
@@ -31,7 +31,14 @@ impl Plugin for NetworkingPlugin {
                 ),
             )
             .add_systems(Update, player_receive::lerp_to_target)
-            .add_systems(PostUpdate, player_receive::apply_remote_bones)
+            .add_systems(
+                PostUpdate,
+                (
+                    player_receive::receive_remote_bones,
+                    player_receive::slerp_bone_rotations,
+                )
+                    .chain(),
+            )
             .add_systems(Last, lifecycle::shutdown_networking_thread);
     }
 }

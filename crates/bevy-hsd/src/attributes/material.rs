@@ -5,7 +5,7 @@ use crate::attributes::Attribute;
 #[derive(Debug, Clone, Hydrate)]
 pub struct Material {
     #[loro(with = "wired_schemas::conv::float_slice::optional")]
-    pub color: Option<[f64; 3]>,
+    pub color: Option<[f64; 4]>,
     pub metallic: f64,
     pub roughness: f64,
 }

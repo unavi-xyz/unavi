@@ -1,4 +1,4 @@
-use std::sync::atomic::Ordering;
+use std::{collections::HashMap, sync::atomic::Ordering};
 
 use bevy::prelude::*;
 use bevy_vrm::BoneName;
@@ -6,6 +6,13 @@ use iroh::EndpointId;
 use unavi_player::AvatarBones;
 
 use crate::networking::{event::PlayerInboundState, thread::space::DEFAULT_TICKRATE};
+
+/// Target bone rotations for interpolation.
+#[derive(Component, Default)]
+pub struct BoneRotationTargets {
+    pub targets: HashMap<BoneName, Quat>,
+    pub speed: f32,
+}
 
 #[derive(Component, Deref)]
 pub struct RemotePlayer(pub EndpointId);
@@ -70,20 +77,26 @@ pub fn lerp_to_target(time: Res<Time>, mut query: Query<(&mut Transform, &Transf
     }
 }
 
-/// Applies received bone poses after animations, overwriting animated values.
-pub fn apply_remote_bones(
+/// Receives bone poses and updates [`BoneRotationTargets`].
+pub fn receive_remote_bones(
     players: Query<(&PlayerInboundState, &Children), With<RemotePlayer>>,
-    avatar_bones: Query<&AvatarBones>,
-    mut bone_transforms: Query<&mut Transform, With<BoneName>>,
+    mut avatar_targets: Query<&mut BoneRotationTargets>,
 ) {
     for (state, children) in &players {
-        // Find the avatar child with AvatarBones.
-        let Some(bones) = children
+        let Some(avatar_entity) = children
             .iter()
-            .find_map(|child| avatar_bones.get(child).ok())
+            .find(|child| avatar_targets.contains(*child))
         else {
             continue;
         };
+
+        let Ok(mut targets) = avatar_targets.get_mut(avatar_entity) else {
+            continue;
+        };
+
+        // Update speed from tickrate.
+        let hz = state.tickrate.load(Ordering::Relaxed);
+        targets.speed = f32::from(hz);
 
         let Some(iframe) = state.pose.iframe.try_lock() else {
             continue;
@@ -92,32 +105,45 @@ pub fn apply_remote_bones(
             continue;
         };
 
-        // Apply I-frame bone rotations.
-        for bone_pose in &iframe.pose.bones {
-            let Some(&bone_entity) = bones.get(&bone_pose.id) else {
-                continue;
-            };
-            let Ok(mut bone_transform) = bone_transforms.get_mut(bone_entity) else {
-                continue;
-            };
-            bone_transform.rotation = bone_pose.transform.rot.into();
-        }
-
-        // Apply P-frame bone rotations if valid.
         let pframe = state.pose.pframe.try_lock();
         if let Some(ref pframe) = pframe
             && let Some(pframe) = pframe.as_ref()
             && pframe.iframe_id == iframe.id
         {
-            for bone_pose in &pframe.pose.bones {
-                let Some(&bone_entity) = bones.get(&bone_pose.id) else {
-                    continue;
-                };
-                let Ok(mut bone_transform) = bone_transforms.get_mut(bone_entity) else {
-                    continue;
-                };
-                bone_transform.rotation = bone_pose.transform.rot.into();
+            for bone in &pframe.pose.bones {
+                targets.targets.insert(bone.id, bone.transform.rot.into());
             }
+        } else {
+            for bone in &iframe.pose.bones {
+                targets.targets.insert(bone.id, bone.transform.rot.into());
+            }
+        }
+    }
+}
+
+/// Interpolates bone rotations towards [`BoneRotationTargets`].
+pub fn slerp_bone_rotations(
+    time: Res<Time>,
+    players: Query<&Children, With<RemotePlayer>>,
+    avatars: Query<(&AvatarBones, &BoneRotationTargets)>,
+    mut bone_transforms: Query<&mut Transform, With<BoneName>>,
+) {
+    for children in &players {
+        let Some((bones, targets)) = children.iter().find_map(|child| avatars.get(child).ok())
+        else {
+            continue;
+        };
+
+        let t = (targets.speed * time.delta_secs()).min(1.0);
+
+        for (bone_name, &target_rot) in &targets.targets {
+            let Some(&bone_entity) = bones.get(bone_name) else {
+                continue;
+            };
+            let Ok(mut bone_transform) = bone_transforms.get_mut(bone_entity) else {
+                continue;
+            };
+            bone_transform.rotation = bone_transform.rotation.slerp(target_rot, t);
         }
     }
 }

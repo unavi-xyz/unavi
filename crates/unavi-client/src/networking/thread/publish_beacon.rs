@@ -15,6 +15,7 @@ pub async fn publish_beacon(
     let res = state
         .local_actor
         .create_record()
+        .public()
         .ttl(ttl)
         .add_schema("beacon", &*SCHEMA_BEACON, |doc| {
             let beacon = Beacon {
@@ -26,7 +27,6 @@ pub async fn publish_beacon(
             beacon.save(doc)?;
             Ok(())
         })?
-        .public()
         .sync_to(state.remote_actor)
         .send()
         .await?;

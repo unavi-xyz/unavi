@@ -1,7 +1,7 @@
 [package]
 edition.workspace    = true
 license.workspace    = true
-name                 = "wds-schema"
+name                 = "loro-schema"
 publish              = false
 repository.workspace = true
 version.workspace    = true

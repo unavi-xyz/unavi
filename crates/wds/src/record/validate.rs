@@ -1,15 +1,15 @@
 //! Document-level schema validation for WDS.
 //!
-//! Delegates to [`wds_schema::Validator`] for type and Restricted field checking.
+//! Delegates to [`loro_schema::Validator`] for type and Restricted field checking.
 
 use std::collections::BTreeMap;
 
 use blake3::Hash;
 use iroh_blobs::api::Store;
 use loro::{Frontiers, LoroDoc};
+use loro_schema::{Schema, Validator};
 use smol_str::SmolStr;
 use thiserror::Error;
-use wds_schema::{Schema, Validator};
 use xdid::core::did::Did;
 
 /// Validation errors for WDS documents.
@@ -20,7 +20,7 @@ pub enum ValidationError {
     #[error("failed to parse schema")]
     ParseError,
     #[error(transparent)]
-    Schema(#[from] wds_schema::ValidationError),
+    Schema(#[from] loro_schema::ValidationError),
 }
 
 /// Fetch a schema from the blob store by its hash.
@@ -67,7 +67,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use loro::LoroValue;
-    use wds_schema::{Field, validate_value};
+    use loro_schema::{Field, validate_value};
 
     #[test]
     fn test_validate_bool() {

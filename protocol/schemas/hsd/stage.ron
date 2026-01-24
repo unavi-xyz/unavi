@@ -1,5 +1,5 @@
 (
-    id: "wired/hsd/stage",
+    id: "hsd/stage",
     version: 0,
     layout: Struct({
         "layers": MovableList(Struct({

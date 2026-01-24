@@ -1,5 +1,5 @@
 (
-    id: "wired/acl",
+    id: "wds/acl",
     version: 0,
     layout: Restricted(
         actions: [

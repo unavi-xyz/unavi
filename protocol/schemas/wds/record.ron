@@ -1,5 +1,5 @@
 (
-    id: "wired/record",
+    id: "wds/record",
     version: 0,
     layout: Struct({
         "creator": String,

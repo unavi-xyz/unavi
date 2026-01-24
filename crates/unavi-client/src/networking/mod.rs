@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use wds::actor::Actor;
 
 mod event;
 mod lifecycle;
@@ -41,10 +40,4 @@ impl Plugin for NetworkingPlugin {
             )
             .add_systems(Last, lifecycle::shutdown_networking_thread);
     }
-}
-
-#[derive(Component, Clone)]
-pub struct WdsActors {
-    pub local: Actor,
-    pub remote: Option<Actor>,
 }

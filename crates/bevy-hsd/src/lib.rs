@@ -10,9 +10,9 @@ mod compile;
 mod load;
 pub mod stage;
 
-pub struct HsdPulgin;
+pub struct HsdPlugin;
 
-impl Plugin for HsdPulgin {
+impl Plugin for HsdPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,

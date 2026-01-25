@@ -71,7 +71,7 @@ async fn test_wrong_author_signature_rejected(#[future] ctx: DataStoreCtx) {
     // Add Bob to write ACL.
     let from_vv = doc.oplog_vv();
     let mut acl = Acl::load(&doc).expect("load acl");
-    acl.write.push(ctx.bob.identity().did().clone());
+    acl.add_writer(ctx.bob.identity().did().clone());
     acl.save(&doc).expect("save acl");
     ctx.alice
         .update_record(record_id, &doc, from_vv)
@@ -109,8 +109,8 @@ async fn test_record_id_mismatch_rejected(#[future] ctx: DataStoreCtx) {
     record.save(&doc).expect("save record");
 
     let mut acl = Acl::default();
-    acl.manage.push(ctx.alice.identity().did().clone());
-    acl.write.push(ctx.alice.identity().did().clone());
+    acl.add_manager(ctx.alice.identity().did().clone());
+    acl.add_writer(ctx.alice.identity().did().clone());
     acl.save(&doc).expect("save acl");
 
     let envelope =
@@ -145,8 +145,8 @@ async fn test_unpinned_record_rejected(#[future] ctx: DataStoreCtx) {
     record.save(&doc).expect("save record");
 
     let mut acl = Acl::default();
-    acl.manage.push(ctx.alice.identity().did().clone());
-    acl.write.push(ctx.alice.identity().did().clone());
+    acl.add_manager(ctx.alice.identity().did().clone());
+    acl.add_writer(ctx.alice.identity().did().clone());
     acl.save(&doc).expect("save acl");
 
     let envelope =

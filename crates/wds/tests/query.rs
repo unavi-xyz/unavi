@@ -120,7 +120,7 @@ async fn test_query_with_read_permission(#[future] ctx: DataStoreCtx) {
     // Alice adds Bob to read ACL.
     let from_vv = doc.oplog_vv();
     let mut acl = Acl::load(&doc).expect("load acl");
-    acl.read.push(ctx.bob.identity().did().clone());
+    acl.add_reader(ctx.bob.identity().did().clone());
     acl.save(&doc).expect("save acl");
 
     ctx.alice

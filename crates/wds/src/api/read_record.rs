@@ -20,8 +20,8 @@ pub async fn read_record(
     // Reconstruct the document from stored envelopes.
     let doc = match reconstruct_current_doc(&ctx.db, &id_str).await {
         Ok(doc) => doc,
-        Err(e) => {
-            warn!(record_id = %id_str, ?e, "failed to reconstruct doc");
+        Err(err) => {
+            warn!(record_id = %id_str, ?err, "failed to reconstruct doc");
             tx.send(Err(ApiError::Internal)).await?;
             return Ok(());
         }
@@ -36,8 +36,8 @@ pub async fn read_record(
     // Check ACL read permission.
     let acl = match Acl::load(&doc) {
         Ok(acl) => acl,
-        Err(e) => {
-            warn!(record_id = %id_str, ?e, "failed to load acl");
+        Err(err) => {
+            warn!(record_id = %id_str, ?err, "failed to load acl");
             tx.send(Err(ApiError::Internal)).await?;
             return Ok(());
         }
@@ -51,8 +51,8 @@ pub async fn read_record(
     // Export document bytes.
     let bytes = match doc.export(ExportMode::Snapshot) {
         Ok(bytes) => bytes,
-        Err(e) => {
-            warn!(record_id = %id_str, ?e, "failed to export doc");
+        Err(err) => {
+            warn!(record_id = %id_str, ?err, "failed to export doc");
             tx.send(Err(ApiError::Internal)).await?;
             return Ok(());
         }

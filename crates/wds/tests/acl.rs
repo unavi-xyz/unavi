@@ -18,6 +18,7 @@ async fn test_write_acl_allows_authorized(#[future] ctx: DataStoreCtx) {
     let result = ctx
         .alice
         .create_record()
+        .public()
         .send()
         .await
         .expect("create record");
@@ -26,7 +27,7 @@ async fn test_write_acl_allows_authorized(#[future] ctx: DataStoreCtx) {
     // Alice adds Bob to write ACL.
     let from_vv = doc.oplog_vv();
     let mut acl = Acl::load(&doc).expect("load acl");
-    acl.write.push(ctx.bob.identity().did().clone());
+    acl.add_writer(ctx.bob.identity().did().clone());
     acl.save(&doc).expect("save acl");
 
     ctx.alice
@@ -56,6 +57,7 @@ async fn test_read_only_cannot_write(#[future] ctx: DataStoreCtx) {
     let result = ctx
         .alice
         .create_record()
+        .public()
         .send()
         .await
         .expect("create record");
@@ -64,7 +66,7 @@ async fn test_read_only_cannot_write(#[future] ctx: DataStoreCtx) {
     // Alice adds Bob only to read ACL.
     let from_vv = doc.oplog_vv();
     let mut acl = Acl::load(&doc).expect("load acl");
-    acl.read.push(ctx.bob.identity().did().clone());
+    acl.add_reader(ctx.bob.identity().did().clone());
     acl.save(&doc).expect("save acl");
 
     ctx.alice
@@ -78,13 +80,13 @@ async fn test_read_only_cannot_write(#[future] ctx: DataStoreCtx) {
     data.insert("key", "value").expect("insert");
 
     // Bob should fail - read permission doesn't grant write.
-    let e = ctx
+    let err = ctx
         .bob
         .update_record(record_id, &doc, from_vv)
         .await
         .expect_err("should error");
 
-    assert_contains(e, "denied");
+    assert_contains(err, "denied");
 }
 
 #[rstest]
@@ -97,6 +99,7 @@ async fn test_acl_modification_requires_manage(#[future] ctx: DataStoreCtx) {
     let result = ctx
         .alice
         .create_record()
+        .public()
         .send()
         .await
         .expect("create record");
@@ -105,7 +108,7 @@ async fn test_acl_modification_requires_manage(#[future] ctx: DataStoreCtx) {
     // Alice adds Bob to write (but not manage) ACL.
     let from_vv = doc.oplog_vv();
     let mut acl = Acl::load(&doc).expect("load acl");
-    acl.write.push(ctx.bob.identity().did().clone());
+    acl.add_writer(ctx.bob.identity().did().clone());
     acl.save(&doc).expect("save acl");
 
     ctx.alice
@@ -116,17 +119,17 @@ async fn test_acl_modification_requires_manage(#[future] ctx: DataStoreCtx) {
     // Bob tries to add himself to manage.
     let from_vv = doc.oplog_vv();
     let mut acl = Acl::load(&doc).expect("load acl");
-    acl.manage.push(ctx.bob.identity().did().clone());
+    acl.add_manager(ctx.bob.identity().did().clone());
     acl.save(&doc).expect("save acl");
 
     // Should fail - write permission doesn't grant ACL modification.
-    let e = ctx
+    let err = ctx
         .bob
         .update_record(record_id, &doc, from_vv)
         .await
         .expect_err("should error");
 
-    assert_contains(e, "denied");
+    assert_contains(err, "denied");
 }
 
 #[rstest]
@@ -139,6 +142,7 @@ async fn test_manager_can_modify_acl(#[future] ctx: DataStoreCtx) {
     let result = ctx
         .alice
         .create_record()
+        .public()
         .send()
         .await
         .expect("create record");
@@ -147,7 +151,7 @@ async fn test_manager_can_modify_acl(#[future] ctx: DataStoreCtx) {
     // Alice adds Bob to write ACL.
     let from_vv = doc.oplog_vv();
     let mut acl = Acl::load(&doc).expect("load acl");
-    acl.write.push(ctx.bob.identity().did().clone());
+    acl.add_writer(ctx.bob.identity().did().clone());
     acl.save(&doc).expect("save acl");
 
     // Should succeed - manager can modify ACL.

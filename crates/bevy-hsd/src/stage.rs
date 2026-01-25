@@ -1,5 +1,6 @@
-use blake3::Hash;
+use loro::LoroMapValue;
 use loro_surgeon::Hydrate;
+use wired_schemas::HydratedHash;
 
 #[derive(Debug, Clone, Hydrate)]
 pub struct StageData {
@@ -14,29 +15,21 @@ pub struct LayerData {
 
 #[derive(Debug, Clone, Hydrate)]
 pub struct OpinionData {
-    pub attrs: Attrs,
+    pub attrs: LoroMapValue,
     pub node: i64,
 }
 
-#[derive(Debug, Clone, Hydrate)]
+/// Typed attributes, hydrated from merged [`LoroMapValue`] during compilation.
+#[derive(Debug, Clone, Default, Hydrate)]
 pub struct Attrs {
-    #[loro(rename = "mesh/colors", with = "wired_schemas::conv::hash::optional")]
-    mesh_colors: Option<Hash>,
+    #[loro(rename = "mesh/colors")]
+    pub mesh_colors: Option<HydratedHash>,
     #[loro(rename = "xform/parent")]
-    xform_parent: Option<i64>,
-    #[loro(
-        rename = "xform/pos",
-        with = "wired_schemas::conv::float_slice::optional"
-    )]
-    xform_pos: Option<[f64; 3]>,
-    #[loro(
-        rename = "xform/rot",
-        with = "wired_schemas::conv::float_slice::optional"
-    )]
-    xform_rot: Option<[f64; 4]>,
-    #[loro(
-        rename = "xform/scale",
-        with = "wired_schemas::conv::float_slice::optional"
-    )]
-    xform_scale: Option<[f64; 3]>,
+    pub xform_parent: Option<i64>,
+    #[loro(rename = "xform/pos")]
+    pub xform_pos: Option<[f64; 3]>,
+    #[loro(rename = "xform/rot")]
+    pub xform_rot: Option<[f64; 4]>,
+    #[loro(rename = "xform/scale")]
+    pub xform_scale: Option<[f64; 3]>,
 }

@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
-use loro::LoroMap;
+use loro::{LoroMap, LoroValue};
+use smol_str::SmolStr;
 
 use crate::ReconcileError;
 
@@ -24,6 +25,14 @@ pub trait Reconcile {
     ///
     /// Returns [`ReconcileError`] if the Loro operation fails.
     fn reconcile_field(&self, map: &LoroMap, key: &str) -> Result<(), ReconcileError>;
+
+    /// Convert to a [`LoroValue`] for use in lists.
+    ///
+    /// Returns `Some` for primitive-like types that can be pushed directly to lists.
+    /// Returns `None` for struct types that need nested maps.
+    fn to_loro_value(&self) -> Option<LoroValue> {
+        None
+    }
 }
 
 impl Reconcile for bool {
@@ -36,6 +45,10 @@ impl Reconcile for bool {
     fn reconcile_field(&self, map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
         map.insert(key, *self)?;
         Ok(())
+    }
+
+    fn to_loro_value(&self) -> Option<LoroValue> {
+        Some(LoroValue::Bool(*self))
     }
 }
 
@@ -50,6 +63,10 @@ impl Reconcile for i64 {
         map.insert(key, *self)?;
         Ok(())
     }
+
+    fn to_loro_value(&self) -> Option<LoroValue> {
+        Some(LoroValue::I64(*self))
+    }
 }
 
 impl Reconcile for f64 {
@@ -62,6 +79,10 @@ impl Reconcile for f64 {
     fn reconcile_field(&self, map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
         map.insert(key, *self)?;
         Ok(())
+    }
+
+    fn to_loro_value(&self) -> Option<LoroValue> {
+        Some(LoroValue::Double(*self))
     }
 }
 
@@ -76,6 +97,10 @@ impl Reconcile for String {
         map.insert(key, self.as_str())?;
         Ok(())
     }
+
+    fn to_loro_value(&self) -> Option<LoroValue> {
+        Some(LoroValue::String(self.as_str().into()))
+    }
 }
 
 impl Reconcile for Vec<u8> {
@@ -88,6 +113,10 @@ impl Reconcile for Vec<u8> {
     fn reconcile_field(&self, map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
         map.insert(key, self.as_slice())?;
         Ok(())
+    }
+
+    fn to_loro_value(&self) -> Option<LoroValue> {
+        Some(LoroValue::Binary(self.clone().into()))
     }
 }
 
@@ -118,10 +147,12 @@ impl<T: Reconcile> Reconcile for Vec<T> {
         let list = map.get_or_create_container(key, loro::LoroList::new())?;
 
         for item in self {
-            // For primitives, we need to push directly. For structs, create nested map.
-            // This is a simplification - in practice we'd need type-specific handling.
-            let nested_map = list.push_container(loro::LoroMap::new())?;
-            item.reconcile(&nested_map)?;
+            if let Some(value) = item.to_loro_value() {
+                list.push(value)?;
+            } else {
+                let nested_map = list.push_container(loro::LoroMap::new())?;
+                item.reconcile(&nested_map)?;
+            }
         }
 
         Ok(())
@@ -139,6 +170,88 @@ impl<V: Reconcile> Reconcile for BTreeMap<String, V> {
     fn reconcile_field(&self, map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
         let nested_map = map.get_or_create_container(key, loro::LoroMap::new())?;
         self.reconcile(&nested_map)
+    }
+}
+
+impl<V: Reconcile> Reconcile for BTreeMap<SmolStr, V> {
+    fn reconcile(&self, map: &LoroMap) -> Result<(), ReconcileError> {
+        for (k, v) in self {
+            v.reconcile_field(map, k.as_str())?;
+        }
+        Ok(())
+    }
+
+    fn reconcile_field(&self, map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
+        let nested_map = map.get_or_create_container(key, loro::LoroMap::new())?;
+        self.reconcile(&nested_map)
+    }
+}
+
+impl Reconcile for SmolStr {
+    fn reconcile(&self, _map: &LoroMap) -> Result<(), ReconcileError> {
+        Err(ReconcileError::Custom(
+            "SmolStr cannot be reconciled as a root container".into(),
+        ))
+    }
+
+    fn reconcile_field(&self, map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
+        map.insert(key, self.as_str())?;
+        Ok(())
+    }
+
+    fn to_loro_value(&self) -> Option<LoroValue> {
+        Some(LoroValue::String(self.as_str().into()))
+    }
+}
+
+impl Reconcile for f32 {
+    fn reconcile(&self, _map: &LoroMap) -> Result<(), ReconcileError> {
+        Err(ReconcileError::Custom(
+            "f32 cannot be reconciled as a root container".into(),
+        ))
+    }
+
+    fn reconcile_field(&self, map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
+        map.insert(key, f64::from(*self))?;
+        Ok(())
+    }
+
+    fn to_loro_value(&self) -> Option<LoroValue> {
+        Some(LoroValue::Double(f64::from(*self)))
+    }
+}
+
+impl<const N: usize> Reconcile for [u8; N] {
+    fn reconcile(&self, _map: &LoroMap) -> Result<(), ReconcileError> {
+        Err(ReconcileError::Custom(
+            "[u8; N] cannot be reconciled as a root container".into(),
+        ))
+    }
+
+    fn reconcile_field(&self, map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
+        map.insert(key, self.as_slice())?;
+        Ok(())
+    }
+
+    fn to_loro_value(&self) -> Option<LoroValue> {
+        Some(LoroValue::Binary(self.to_vec().into()))
+    }
+}
+
+impl<const N: usize> Reconcile for [f64; N] {
+    fn reconcile(&self, _map: &LoroMap) -> Result<(), ReconcileError> {
+        Err(ReconcileError::Custom(
+            "[f64; N] cannot be reconciled as a root container".into(),
+        ))
+    }
+
+    fn reconcile_field(&self, map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
+        let list = loro::LoroList::new();
+        for x in self {
+            list.push(*x)?;
+        }
+        map.insert_container(key, list)?;
+        Ok(())
     }
 }
 

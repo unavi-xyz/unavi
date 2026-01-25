@@ -40,8 +40,7 @@ async fn test_sync_record_between_stores(#[future] multi_ctx: MultiStoreCtx) {
     // Grant Bob read access so he can read on Carthage.
     let from_vv = doc.oplog_vv();
     let mut acl = Acl::load(&doc).expect("load acl");
-    acl.read
-        .push(multi_ctx.carthage.bob.identity().did().clone());
+    acl.add_reader(multi_ctx.carthage.bob.identity().did().clone());
     acl.save(&doc).expect("save acl");
     multi_ctx
         .rome
@@ -105,8 +104,7 @@ async fn test_read_with_sync_from(#[future] multi_ctx: MultiStoreCtx) {
     // Grant Bob read access.
     let from_vv = doc.oplog_vv();
     let mut acl = Acl::load(&doc).expect("load acl");
-    acl.read
-        .push(multi_ctx.carthage.bob.identity().did().clone());
+    acl.add_reader(multi_ctx.carthage.bob.identity().did().clone());
     acl.save(&doc).expect("save acl");
     multi_ctx
         .rome
@@ -135,7 +133,7 @@ async fn test_read_with_sync_from(#[future] multi_ctx: MultiStoreCtx) {
 
     // Verify ACL is correct.
     let acl = Acl::load(&read_doc).expect("load acl");
-    assert!(acl.read.contains(multi_ctx.carthage.bob.identity().did()));
+    assert!(acl.can_read(&multi_ctx.carthage.bob.identity().did()));
 }
 
 #[rstest]
@@ -157,8 +155,7 @@ async fn test_sync_updates_after_initial_sync(#[future] multi_ctx: MultiStoreCtx
     // Grant Bob read access.
     let from_vv = doc.oplog_vv();
     let mut acl = Acl::load(&doc).expect("load acl");
-    acl.read
-        .push(multi_ctx.carthage.bob.identity().did().clone());
+    acl.add_reader(multi_ctx.carthage.bob.identity().did().clone());
     acl.save(&doc).expect("save acl");
     multi_ctx
         .rome
@@ -287,8 +284,7 @@ async fn test_sync_with_user_identity(#[future] multi_ctx_local: LocalStoreCtx) 
 
     // Grant Bob read access so he can sync and read.
     let mut acl = Acl::load(&doc).expect("load acl");
-    acl.read
-        .push(multi_ctx_local.bob_ctx.bob.identity().did().clone());
+    acl.add_reader(multi_ctx_local.bob_ctx.bob.identity().did().clone());
     acl.save(&doc).expect("save acl");
 
     multi_ctx_local
@@ -383,8 +379,7 @@ async fn test_sync_transfers_blob_dependencies(#[future] multi_ctx: MultiStoreCt
     // Grant Bob read access.
     let from_vv = doc.oplog_vv();
     let mut acl = Acl::load(&doc).expect("load acl");
-    acl.read
-        .push(multi_ctx.carthage.bob.identity().did().clone());
+    acl.add_reader(multi_ctx.carthage.bob.identity().did().clone());
     acl.save(&doc).expect("save acl");
     multi_ctx
         .rome

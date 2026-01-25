@@ -3,41 +3,68 @@ use loro_surgeon::{Hydrate, Reconcile};
 use serde::{Deserialize, Serialize};
 use xdid::core::did::Did;
 
-use crate::conv;
+use crate::HydratedDid;
 
 /// Access control list for a record.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Hydrate, Reconcile)]
 pub struct Acl {
     #[loro(default)]
     pub public: bool,
-    #[loro(with = "conv::did::list", default)]
-    pub manage: Vec<Did>,
-    #[loro(with = "conv::did::list", default)]
-    pub read: Vec<Did>,
-    #[loro(with = "conv::did::list", default)]
-    pub write: Vec<Did>,
+    #[loro(default)]
+    manage: Vec<HydratedDid>,
+    #[loro(default)]
+    read: Vec<HydratedDid>,
+    #[loro(default)]
+    write: Vec<HydratedDid>,
 }
 
 impl Acl {
     #[must_use]
-    pub const fn is_public(&self) -> bool {
-        self.public
+    pub fn managers(&self) -> &[HydratedDid] {
+        &self.manage
+    }
+    pub fn add_manager(&mut self, did: Did) {
+        self.manage.push(HydratedDid(did));
+    }
+    pub fn remove_manager(&mut self, did: &Did) {
+        self.manage.retain(|d| &d.0 != did);
     }
 
-    /// Returns `true` if public, in `read` list, or has write/manage permission.
+    #[must_use]
+    pub fn readers(&self) -> &[HydratedDid] {
+        &self.read
+    }
+    pub fn add_reader(&mut self, did: Did) {
+        self.read.push(HydratedDid(did));
+    }
+    pub fn remove_reader(&mut self, did: &Did) {
+        self.read.retain(|d| &d.0 != did);
+    }
+
+    #[must_use]
+    pub fn writers(&self) -> &[HydratedDid] {
+        &self.write
+    }
+    pub fn add_writer(&mut self, did: Did) {
+        self.write.push(HydratedDid(did));
+    }
+    pub fn remove_writer(&mut self, did: &Did) {
+        self.write.retain(|d| &d.0 != did);
+    }
+
     #[must_use]
     pub fn can_read(&self, did: &Did) -> bool {
-        self.public || self.read.contains(did) || self.can_write(did)
+        self.public || self.read.iter().any(|d| &d.0 == did)
     }
 
     #[must_use]
     pub fn can_write(&self, did: &Did) -> bool {
-        self.write.contains(did) || self.can_manage(did)
+        self.write.iter().any(|d| &d.0 == did)
     }
 
     #[must_use]
     pub fn can_manage(&self, did: &Did) -> bool {
-        self.manage.contains(did)
+        self.manage.iter().any(|d| &d.0 == did)
     }
 
     /// # Errors
@@ -63,14 +90,15 @@ impl Acl {
 mod tests {
     use loro::LoroDoc;
     use rstest::rstest;
-    use xdid::core::did::Did;
 
     use super::*;
 
-    fn test_did() -> Did {
-        "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK"
-            .parse()
-            .expect("valid did")
+    fn test_did() -> HydratedDid {
+        HydratedDid(
+            "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK"
+                .parse()
+                .expect("valid did"),
+        )
     }
 
     #[rstest]
@@ -90,12 +118,13 @@ mod tests {
     #[rstest]
     fn roundtrip_acl_with_permissions() {
         let doc = LoroDoc::new();
-        let did = test_did();
+        let wdid = test_did();
+        let did = &wdid.0;
         let acl = Acl {
             public: true,
-            manage: vec![did.clone()],
-            write: vec![did.clone()],
-            read: vec![did.clone()],
+            manage: vec![wdid.clone()],
+            write: vec![wdid.clone()],
+            read: vec![wdid.clone()],
         };
 
         acl.save(&doc).expect("save failed");
@@ -105,8 +134,8 @@ mod tests {
         assert_eq!(loaded.manage.len(), 1);
         assert_eq!(loaded.write.len(), 1);
         assert_eq!(loaded.read.len(), 1);
-        assert!(loaded.can_manage(&did));
-        assert!(loaded.can_write(&did));
-        assert!(loaded.can_read(&did));
+        assert!(loaded.can_manage(did));
+        assert!(loaded.can_write(did));
+        assert!(loaded.can_read(did));
     }
 }

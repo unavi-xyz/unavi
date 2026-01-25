@@ -107,7 +107,7 @@ async fn test_read_with_read_permission(#[future] ctx: DataStoreCtx) {
     // Grant Bob read access.
     let from_vv = doc.oplog_vv();
     let mut acl = Acl::load(&doc).expect("load acl");
-    acl.read.push(ctx.bob.identity().did().clone());
+    acl.add_reader(ctx.bob.identity().did().clone());
     acl.save(&doc).expect("save acl");
     ctx.alice
         .update_record(record_id, &doc, from_vv)
@@ -119,7 +119,7 @@ async fn test_read_with_read_permission(#[future] ctx: DataStoreCtx) {
 
     // Verify doc was read correctly.
     let read_acl = Acl::load(&read_doc).expect("load acl");
-    assert!(read_acl.read.contains(ctx.bob.identity().did()));
+    assert!(read_acl.can_read(&ctx.bob.identity().did()));
 }
 
 #[rstest]
@@ -139,7 +139,7 @@ async fn test_read_with_write_permission(#[future] ctx: DataStoreCtx) {
 
     let from_vv = doc.oplog_vv();
     let mut acl = Acl::load(&doc).expect("load acl");
-    acl.write.push(ctx.bob.identity().did().clone());
+    acl.add_writer(ctx.bob.identity().did().clone());
     acl.save(&doc).expect("save acl");
     ctx.alice
         .update_record(record_id, &doc, from_vv)

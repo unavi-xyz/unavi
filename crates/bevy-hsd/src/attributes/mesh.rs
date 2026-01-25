@@ -1,23 +1,17 @@
 use bevy::mesh::PrimitiveTopology;
-use blake3::Hash;
 use loro_surgeon::Hydrate;
+use wired_schemas::HydratedHash;
 
 #[derive(Debug, Clone, Hydrate)]
 pub struct MeshAttr {
     #[loro(with = "topology")]
     pub topology: PrimitiveTopology,
-    #[loro(with = "wired_schemas::conv::hash::optional")]
-    pub colors: Option<Hash>,
-    #[loro(with = "wired_schemas::conv::hash")]
-    pub indices: Hash,
-    #[loro(with = "wired_schemas::conv::hash::optional")]
-    pub normals: Option<Hash>,
-    #[loro(with = "wired_schemas::conv::hash")]
-    pub points: Hash,
-    #[loro(with = "wired_schemas::conv::hash::optional")]
-    pub tangents: Option<Hash>,
-    #[loro(with = "wired_schemas::conv::hash::optional")]
-    pub uvs: Option<Hash>,
+    pub colors: Option<HydratedHash>,
+    pub indices: HydratedHash,
+    pub normals: Option<HydratedHash>,
+    pub points: HydratedHash,
+    pub tangents: Option<HydratedHash>,
+    pub uvs: Option<HydratedHash>,
 }
 
 mod topology {

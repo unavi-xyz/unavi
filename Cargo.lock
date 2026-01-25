@@ -7750,6 +7750,7 @@ dependencies = [
  "serde",
  "smol_str 0.3.5",
  "thiserror 2.0.17",
+ "tracing",
 ]
 
 [[package]]

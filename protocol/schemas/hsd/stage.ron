@@ -3,12 +3,10 @@
     version: 0,
     layout: Struct({
         "layers": MovableList(Struct({
-            "nodes": Tree(Struct({
-                "id": String,
-            })),
+            "enabled": Bool,
             "opinions": List(Struct({
                 "attrs": Map(Any),
-                "id": String,
+                "node": I64,
             })),
         })),
     }),

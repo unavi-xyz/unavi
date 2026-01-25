@@ -1,13 +1,10 @@
-use base64::Engine;
 use bevy::prelude::*;
-use rand::RngCore;
-use smol_str::SmolStr;
-
-use crate::attributes::Attribute;
+use loro::LoroMapValue;
 
 pub mod attributes;
 mod compile;
 mod load;
+mod merge;
 pub mod stage;
 
 pub struct HsdPlugin;
@@ -24,7 +21,7 @@ impl Plugin for HsdPlugin {
 /// A stage is an ordered collection of layers and nodes.
 /// Lazily compiles layers into a single composed state.
 #[derive(Component)]
-#[require(StageLayers, StageLoaded, StageCompiled)]
+#[require(StageLoaded, StageCompiled, StageLayers, StageNodes)]
 pub struct Stage(pub stage::StageData);
 
 /// Lazy loading flag.
@@ -36,6 +33,17 @@ struct StageLoaded(bool);
 /// Set to false to re-compile the stage scene from ECS data.
 #[derive(Component, Default)]
 struct StageCompiled(bool);
+
+#[derive(Component, Default)]
+#[relationship_target(relationship = StageNode, linked_spawn)]
+struct StageNodes(Vec<Entity>);
+
+#[derive(Component)]
+#[relationship(relationship_target = StageNodes)]
+struct StageNode {
+    #[relationship]
+    stage: Entity,
+}
 
 #[derive(Component, Default)]
 #[relationship_target(relationship = Layer, linked_spawn)]
@@ -57,7 +65,6 @@ struct LayerStrength(usize);
 #[relationship_target(relationship = Opinion, linked_spawn)]
 struct LayerOpinions(Vec<Entity>);
 
-/// An opinion is an operation over some entity's attribute.
 #[derive(Component)]
 #[relationship(relationship_target = LayerOpinions)]
 struct Opinion {
@@ -68,14 +75,5 @@ struct Opinion {
 #[derive(Component)]
 struct OpinionTarget(Entity);
 
-/// Operation over an attribute.
 #[derive(Component)]
-struct OpinionOp<T: Attribute>(T);
-
-/// Generates a random [`SmolStr`] value that is small enough to inline.
-#[must_use]
-pub fn random_id() -> SmolStr {
-    let mut bytes = [0u8; 16];
-    rand::rng().fill_bytes(&mut bytes);
-    SmolStr::new(base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(bytes))
-}
+struct OpinionAttrs(LoroMapValue);

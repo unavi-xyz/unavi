@@ -5,16 +5,14 @@ use bevy::{
 use loro::LoroValue;
 use loro_surgeon::Hydrate;
 
-use crate::attributes::Attribute;
-
 #[derive(Debug, Clone)]
-pub struct Xform {
+pub struct XformAttr {
     pub rotate: Option<Quat>,
     pub scale: Option<Vec3>,
     pub translate: Option<Vec3>,
 }
 
-impl Xform {
+impl XformAttr {
     #[must_use]
     pub fn into_transform(self) -> Transform {
         let mut tr = Transform::default();
@@ -41,7 +39,7 @@ struct XformRaw {
     translate: Option<[f64; 3]>,
 }
 
-impl Hydrate for Xform {
+impl Hydrate for XformAttr {
     #[expect(clippy::cast_possible_truncation)]
     fn hydrate(value: &LoroValue) -> Result<Self, loro_surgeon::HydrateError> {
         let raw = XformRaw::hydrate(value)?;
@@ -57,20 +55,5 @@ impl Hydrate for Xform {
                 .translate
                 .map(|v| Vec3::new(v[0] as f32, v[1] as f32, v[2] as f32)),
         })
-    }
-}
-
-impl Attribute for Xform {
-    fn merge(mut self, next: &Self) -> Self {
-        if let Some(v) = next.rotate {
-            self.rotate = Some(v);
-        }
-        if let Some(v) = next.scale {
-            self.scale = Some(v);
-        }
-        if let Some(v) = next.translate {
-            self.translate = Some(v);
-        }
-        self
     }
 }

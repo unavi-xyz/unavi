@@ -1,20 +1,9 @@
 use loro_surgeon::Hydrate;
 
-use crate::attributes::Attribute;
-
 #[derive(Debug, Clone, Hydrate)]
-pub struct Material {
+pub struct MaterialAttr {
     #[loro(with = "wired_schemas::conv::float_slice::optional")]
-    pub color: Option<[f64; 4]>,
-    pub metallic: f64,
-    pub roughness: f64,
-}
-
-impl Attribute for Material {
-    fn merge(mut self, next: &Self) -> Self {
-        if let Some(color) = &next.color {
-            self.color = Some(*color);
-        }
-        self
-    }
+    pub base_color: Option<[f64; 4]>,
+    pub metallic: Option<f64>,
+    pub roughness: Option<f64>,
 }

@@ -2,7 +2,7 @@
     id: "hsd/collider",
     version: 0,
     layout: Struct({
-        "params": Optional(List(F64)),
+        "params": List(F64),
         "shape": String,
     }),
 )

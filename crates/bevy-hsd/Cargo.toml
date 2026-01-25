@@ -10,7 +10,6 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-base64             = "0.22.1"
 bevy.workspace     = true
 bevy-wds.path      = "../bevy-wds"
 blake3.workspace   = true

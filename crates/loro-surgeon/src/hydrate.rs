@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use loro::LoroValue;
+use loro::{LoroMapValue, LoroValue};
 use smol_str::SmolStr;
 
 use crate::HydrateError;
@@ -14,6 +14,25 @@ pub trait Hydrate: Sized {
     /// Returns [`HydrateError`] if the value type doesn't match or required
     /// fields are missing.
     fn hydrate(value: &LoroValue) -> Result<Self, HydrateError>;
+}
+
+impl Hydrate for LoroValue {
+    fn hydrate(value: &LoroValue) -> Result<Self, HydrateError> {
+        Ok(value.clone())
+    }
+}
+
+impl Hydrate for LoroMapValue {
+    fn hydrate(value: &LoroValue) -> Result<Self, HydrateError> {
+        match value {
+            LoroValue::Map(map) => Ok(map.clone()),
+            _ => Err(HydrateError::TypeMismatch {
+                path: SmolStr::default(),
+                expected: "Map".into(),
+                actual: format!("{value:?}").into(),
+            }),
+        }
+    }
 }
 
 impl Hydrate for bool {

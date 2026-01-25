@@ -3,10 +3,11 @@
     version: 0,
     layout: Struct({
         "colors": Optional(BlobRef),
-        "indices": Optional(BlobRef),
+        "indices": BlobRef,
         "normals": Optional(BlobRef),
-        "points": Optional(BlobRef),
+        "points": BlobRef,
         "tangents": Optional(BlobRef),
+        "topology": I64,
         "uvs": Optional(BlobRef),
     }),
 )

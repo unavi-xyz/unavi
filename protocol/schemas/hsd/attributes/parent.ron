@@ -1,0 +1,7 @@
+(
+    id: "hsd/parent",
+    version: 0,
+    layout: Struct({
+        "parent": I64,
+    }),
+)

@@ -4,12 +4,10 @@ use bevy::{
 };
 use bevy_hsd::{
     Stage,
-    attributes::xform::Xform,
-    stage::{Attrs, LayerData, NodeData, OpinionData, StageData},
+    stage::{LayerData, OpinionData, StageData},
 };
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use loro::TreeID;
-use wired_schemas::conv::tree::TreeNode;
+use loro::{LoroListValue, LoroMapValue, LoroValue};
 
 fn main() {
     App::new()
@@ -29,26 +27,30 @@ fn setup_scene(mut commands: Commands) {
 }
 
 fn load_hsd(mut commands: Commands) {
+    let mut attrs_0 = LoroMapValue::default();
+
+    let mut xform_pos = LoroListValue::default();
+    *xform_pos.make_mut() = vec![
+        LoroValue::Double(1.0),
+        LoroValue::Double(2.0),
+        LoroValue::Double(3.0),
+    ];
+
+    let mut attrs_0_xform = LoroMapValue::default();
+    attrs_0_xform
+        .make_mut()
+        .insert("position".to_string(), LoroValue::List(xform_pos));
+
+    attrs_0
+        .make_mut()
+        .insert("xform".to_string(), LoroValue::Map(attrs_0_xform));
+
     let stage = StageData {
+        enabled: true,
         layers: vec![LayerData {
-            nodes: vec![TreeNode {
-                id: TreeID {
-                    peer: 1,
-                    counter: 2,
-                },
-                parent: None,
-                meta: NodeData { id: "a".into() },
-            }],
             opinions: vec![OpinionData {
-                id: "a".into(),
-                attrs: Attrs {
-                    xform: Some(Xform {
-                        rotate: None,
-                        scale: None,
-                        translate: None,
-                    }),
-                    ..Default::default()
-                },
+                node: 0,
+                attrs: attrs_0,
             }],
         }],
     };

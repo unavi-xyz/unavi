@@ -52,10 +52,19 @@ struct StageLayers(Vec<Entity>);
 /// A layer is a collection of opinions.
 #[derive(Component)]
 #[relationship(relationship_target = StageLayers)]
-#[require(LayerStrength, LayerOpinions)]
+#[require(LayerEnabled, LayerStrength, LayerOpinions)]
 struct Layer {
     #[relationship]
     stage: Entity,
+}
+
+#[derive(Component)]
+struct LayerEnabled(bool);
+
+impl Default for LayerEnabled {
+    fn default() -> Self {
+        Self(true)
+    }
 }
 
 #[derive(Component, Default)]

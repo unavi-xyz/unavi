@@ -164,3 +164,76 @@ async fn test_manager_can_modify_acl(#[future] ctx: DataStoreCtx) {
     let acl = Acl::load(&doc).expect("load acl");
     assert!(acl.can_write(ctx.bob.identity().did()));
 }
+
+#[rstest]
+#[timeout(Duration::from_secs(5))]
+#[awt]
+#[traced_test]
+#[tokio::test]
+async fn test_unauthorized_cannot_modify_acl(#[future] ctx: DataStoreCtx) {
+    // Alice creates record.
+    let result = ctx
+        .alice
+        .create_record()
+        .public()
+        .send()
+        .await
+        .expect("create record");
+    let (record_id, doc) = (result.id, result.doc);
+
+    // Bob (not in any ACL) tries to add himself to read.
+    let from_vv = doc.oplog_vv();
+    let mut acl = Acl::load(&doc).expect("load acl");
+    acl.add_reader(ctx.bob.identity().did().clone());
+    acl.save(&doc).expect("save acl");
+
+    // Should fail - Bob not authorized to modify ACL.
+    let err = ctx
+        .bob
+        .update_record(record_id, &doc, from_vv)
+        .await
+        .expect_err("should deny");
+
+    assert_contains(err, "denied");
+}
+
+#[rstest]
+#[timeout(Duration::from_secs(5))]
+#[awt]
+#[traced_test]
+#[tokio::test]
+async fn test_writer_cannot_remove_manager(#[future] ctx: DataStoreCtx) {
+    // Alice creates record, adds Bob as writer.
+    let result = ctx
+        .alice
+        .create_record()
+        .public()
+        .send()
+        .await
+        .expect("create record");
+    let (record_id, doc) = (result.id, result.doc);
+
+    let from_vv = doc.oplog_vv();
+    let mut acl = Acl::load(&doc).expect("load acl");
+    acl.add_writer(ctx.bob.identity().did().clone());
+    acl.save(&doc).expect("save acl");
+    ctx.alice
+        .update_record(record_id, &doc, from_vv)
+        .await
+        .expect("alice update acl");
+
+    // Bob tries to remove Alice from manage.
+    let from_vv = doc.oplog_vv();
+    let mut acl = Acl::load(&doc).expect("load acl");
+    acl.remove_manager(ctx.alice.identity().did());
+    acl.save(&doc).expect("save acl");
+
+    // Should fail - write doesn't grant ACL modification.
+    let err = ctx
+        .bob
+        .update_record(record_id, &doc, from_vv)
+        .await
+        .expect_err("should deny");
+
+    assert_contains(err, "denied");
+}

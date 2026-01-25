@@ -25,6 +25,18 @@ use crate::{
     signed_bytes::SignedBytes,
 };
 
+/// Checks if the ACL was modified between old and new states.
+fn acl_modified(old: &Acl, new: &Acl) -> bool {
+    old.public != new.public
+        || !slices_eq(old.managers(), new.managers())
+        || !slices_eq(old.writers(), new.writers())
+        || !slices_eq(old.readers(), new.readers())
+}
+
+fn slices_eq(a: &[wired_schemas::HydratedDid], b: &[wired_schemas::HydratedDid]) -> bool {
+    a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.0 == y.0)
+}
+
 /// Validates the signature of a signed envelope against the author's DID document.
 async fn validate_signature(
     author: &Did,
@@ -60,6 +72,7 @@ async fn validate_schemas(
     new_doc: &LoroDoc,
     record: &Record,
     author: &Did,
+    is_first_envelope: bool,
 ) -> Result<BTreeMap<SmolStr, Schema>, WdsError> {
     let old_frontiers = old_doc.state_frontiers();
     let new_frontiers = new_doc.state_frontiers();
@@ -95,6 +108,7 @@ async fn validate_schemas(
         &new_frontiers,
         &schemas,
         author,
+        is_first_envelope,
     )
     .map_err(|e| WdsError::SchemaValidation(e.to_string()))?;
 
@@ -306,22 +320,36 @@ pub async fn store_envelope(
         .map_err(WdsError::Other)?;
     let is_first_envelope = old_doc.state_frontiers().is_empty();
 
-    // Check record-level write ACL against OLD state (prevent privilege escalation).
-    if !is_first_envelope {
-        let acl = Acl::load(&old_doc).map_err(WdsError::Other)?;
-        if !acl.can_write(author) {
-            return Err(WdsError::AccessDenied);
-        }
-    }
-
     // Apply new envelope to get new state for diff computation.
     let new_doc = old_doc.fork();
     new_doc
         .import(envelope.ops())
         .map_err(|e| WdsError::Other(e.into()))?;
 
+    // Check record-level write ACL against OLD state (prevent privilege escalation).
+    if !is_first_envelope {
+        let old_acl = Acl::load(&old_doc).map_err(WdsError::Other)?;
+        if !old_acl.can_write(author) {
+            return Err(WdsError::AccessDenied);
+        }
+
+        // Check if ACL was modified - requires manage permission.
+        let new_acl = Acl::load(&new_doc).map_err(WdsError::Other)?;
+        if acl_modified(&old_acl, &new_acl) && !old_acl.can_manage(author) {
+            return Err(WdsError::AccessDenied);
+        }
+    }
+
     let record = Record::load(&new_doc).map_err(WdsError::Other)?;
-    let schemas = validate_schemas(blobs, &old_doc, &new_doc, &record, author).await?;
+    let schemas = validate_schemas(
+        blobs,
+        &old_doc,
+        &new_doc,
+        &record,
+        author,
+        is_first_envelope,
+    )
+    .await?;
     let blob_refs = extract_blob_refs(&new_doc, &schemas);
 
     let params = StoreEnvelopeParams {
@@ -486,8 +514,22 @@ fn update_acl_read_index(conn: &Connection, record_id: &str, acl: &Acl) -> anyho
         params![record_id],
     )?;
 
-    // Insert all DIDs with read access.
+    // Insert all DIDs with read access (readers + writers + managers).
     for did in acl.readers() {
+        let did_str = did.0.to_string();
+        conn.execute(
+            "INSERT OR IGNORE INTO record_acl_read (record_id, did) VALUES (?, ?)",
+            params![record_id, &did_str],
+        )?;
+    }
+    for did in acl.writers() {
+        let did_str = did.0.to_string();
+        conn.execute(
+            "INSERT OR IGNORE INTO record_acl_read (record_id, did) VALUES (?, ?)",
+            params![record_id, &did_str],
+        )?;
+    }
+    for did in acl.managers() {
         let did_str = did.0.to_string();
         conn.execute(
             "INSERT OR IGNORE INTO record_acl_read (record_id, did) VALUES (?, ?)",

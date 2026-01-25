@@ -41,6 +41,7 @@ pub async fn fetch_schema(blobs: &Store, hash: &Hash) -> Result<Schema, Validati
 ///
 /// `old_doc` is used for authorization checks (the state before the change).
 /// `new_doc` is used for computing the diff (should have the new envelope applied).
+/// `is_first_envelope` skips restriction checks (allows ACL bootstrap).
 ///
 /// # Errors
 ///
@@ -52,12 +53,18 @@ pub fn validate_diff(
     new_frontiers: &Frontiers,
     schemas: &BTreeMap<SmolStr, Schema>,
     author: &Did,
+    is_first_envelope: bool,
 ) -> Result<(), ValidationError> {
     let diff_batch = new_doc
         .diff(old_frontiers, new_frontiers)
         .map_err(|_| ValidationError::ParseError)?;
 
-    Validator::new(schemas, &author.to_string()).validate_diff_batch(old_doc, &diff_batch)?;
+    let author_str = author.to_string();
+    let mut validator = Validator::new(schemas, &author_str);
+    if is_first_envelope {
+        validator = validator.skip_restrictions();
+    }
+    validator.validate_diff_batch(old_doc, &diff_batch)?;
 
     Ok(())
 }

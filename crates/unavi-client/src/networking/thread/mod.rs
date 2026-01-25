@@ -12,7 +12,7 @@ use iroh::{Endpoint, EndpointId};
 use iroh_gossip::Gossip;
 use n0_future::task::AbortOnDropHandle;
 use parking_lot::Mutex;
-use wds::{DataStore, actor::Actor, identity::Identity};
+use wds::{Blobs, DataStore, actor::Actor, identity::Identity};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
 use crate::networking::thread::space::{
@@ -38,6 +38,7 @@ pub enum NetworkCommand {
 pub enum NetworkEvent {
     AddRemoteActor(Actor),
     SetLocalActor(Actor),
+    SetLocalBlobs(Blobs),
     PlayerJoin {
         id: EndpointId,
         state: Arc<InboundState>,
@@ -145,6 +146,11 @@ async fn thread_loop(
             .build()
             .await?
     };
+
+    let blobs = store.blobs().blobs();
+    event_tx
+        .send(NetworkEvent::SetLocalBlobs(blobs.clone()))
+        .await?;
 
     // TODO: save / load keypair from disk
     let signing_key = P256KeyPair::generate();

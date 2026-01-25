@@ -44,10 +44,10 @@ wired-schemas.path    = "../wired-schemas"
 xdid.workspace        = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-iroh-blobs = { default-features = false, features = ["hide-proto-docs"], version = "0.97.0" }
+iroh-blobs = { features = ["hide-proto-docs"], workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-iroh-blobs = "0.97.0"
+iroh-blobs = { default-features = true, workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 axum.workspace = true

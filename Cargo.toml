@@ -46,6 +46,7 @@ embed-resource     = "3.0.6"
 futures            = "0.3.31"
 image              = { default-features = false, version = "0.25.9" }
 iroh               = { default-features = false, version = "0.95.1" }
+iroh-blobs         = { default-features = false, version = "0.97.0" }
 loro               = "1.10.3"
 n0-future          = "0.3.2"
 parking_lot        = "0.12.5"

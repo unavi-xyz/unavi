@@ -7,7 +7,9 @@ use loro_surgeon::Hydrate;
 
 use crate::{
     LayerEnabled, LayerOpinions, LayerStrength, OpinionAttrs, OpinionTarget, Stage, StageCompiled,
-    StageLayers, attributes::material::MaterialAttr, merge::merge_values,
+    StageLayers,
+    attributes::{material::MaterialAttr, mesh::MeshAttr},
+    merge::merge_values,
 };
 
 pub fn compile_stages(
@@ -113,14 +115,20 @@ pub fn compile_stages(
 
             if let Ok(Some(_mesh)) = attrs
                 .get("mesh")
-                .map(|v| MaterialAttr::hydrate(v))
+                .map(|v| MeshAttr::hydrate(v))
                 .transpose()
                 .inspect_err(|err| {
                     warn!(?err, "failed to hydrate mesh");
                 })
-            {}
+            {
+            } else {
+                node.remove::<Mesh3d>();
+            }
         }
 
         compiled.0 = true;
     }
 }
+
+#[derive(Component)]
+pub struct MeshBlobs {}

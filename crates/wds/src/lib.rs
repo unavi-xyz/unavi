@@ -9,6 +9,7 @@ use parking_lot::RwLock;
 use xdid::core::did::Did;
 
 pub use identity::Identity;
+pub use iroh_blobs::api::blobs::Blobs;
 
 use crate::builder::{BoxedBlobs, DataStoreBuilder};
 

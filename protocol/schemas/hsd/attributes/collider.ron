@@ -1,8 +1,0 @@
-(
-    id: "hsd/collider",
-    version: 0,
-    layout: Struct({
-        "params": List(F64),
-        "shape": String,
-    }),
-)

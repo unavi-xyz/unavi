@@ -1,9 +1,0 @@
-(
-    id: "hsd/xform",
-    version: 0,
-    layout: Struct({
-        "rotate": Optional(List(F64)),
-        "scale": Optional(List(F64)),
-        "translate": Optional(List(F64)),
-    }),
-)

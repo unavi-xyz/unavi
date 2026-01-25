@@ -168,9 +168,10 @@ impl<V: Hydrate> Hydrate for BTreeMap<SmolStr, V> {
 }
 
 impl Hydrate for f32 {
+    #[expect(clippy::cast_possible_truncation)]
     fn hydrate(value: &LoroValue) -> Result<Self, HydrateError> {
         match value {
-            LoroValue::Double(n) => Ok(*n as f32),
+            LoroValue::Double(n) => Ok(*n as Self),
             _ => Err(HydrateError::TypeMismatch {
                 path: SmolStr::default(),
                 expected: "Double".into(),

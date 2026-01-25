@@ -17,12 +17,24 @@ use crate::{
 pub struct Validator<'a> {
     schemas: &'a BTreeMap<SmolStr, Schema>,
     author: &'a str,
+    skip_restrictions: bool,
 }
 
 impl<'a> Validator<'a> {
     #[must_use]
     pub const fn new(schemas: &'a BTreeMap<SmolStr, Schema>, author: &'a str) -> Self {
-        Self { schemas, author }
+        Self {
+            schemas,
+            author,
+            skip_restrictions: false,
+        }
+    }
+
+    /// Skip restriction checks (for first envelope bootstrap).
+    #[must_use]
+    pub const fn skip_restrictions(mut self) -> Self {
+        self.skip_restrictions = true;
+        self
     }
 
     /// # Errors
@@ -135,11 +147,39 @@ impl<'a> Validator<'a> {
         path: &str,
         change_type: ChangeType,
     ) -> Result<(), ValidationError> {
+        // First envelope can do anything (bootstrap ACL).
+        if self.skip_restrictions {
+            return Ok(());
+        }
+
         let restrictions = find_restrictions_for_path(field, path);
 
-        for (actions, _) in restrictions {
-            for action in actions {
-                let covers_change = action.can.iter().any(|c| {
+        // Check if this change type is governed by any restriction.
+        let dominated = restrictions.iter().any(|(actions, _)| {
+            actions.iter().any(|a| {
+                a.can.iter().any(|c| {
+                    matches!(
+                        (c, change_type),
+                        (Can::Create, ChangeType::Create)
+                            | (Can::Update, ChangeType::Update)
+                            | (Can::Delete, ChangeType::Delete)
+                    )
+                })
+            })
+        });
+
+        if !dominated {
+            // No restriction covers this change type → deny.
+            return Err(ValidationError::AccessDenied {
+                path: path.to_string(),
+                action: change_type_name(change_type),
+            });
+        }
+
+        // Check if user is authorized by any matching restriction.
+        let authorized = restrictions.iter().any(|(actions, _)| {
+            actions.iter().any(|action| {
+                let covers = action.can.iter().any(|c| {
                     matches!(
                         (c, change_type),
                         (Can::Create, ChangeType::Create)
@@ -147,20 +187,21 @@ impl<'a> Validator<'a> {
                             | (Can::Delete, ChangeType::Delete)
                     )
                 });
+                covers && self.is_authorized(doc, &action.who)
+            })
+        });
 
-                if covers_change && !self.is_authorized(doc, &action.who) {
-                    return Err(ValidationError::AccessDenied {
-                        path: path.to_string(),
-                        action: change_type_name(change_type),
-                    });
-                }
-            }
+        if !authorized {
+            return Err(ValidationError::AccessDenied {
+                path: path.to_string(),
+                action: change_type_name(change_type),
+            });
         }
 
         Ok(())
     }
 
-    /// If path doesn't exist, no restriction applies (allowed).
+    /// Authorization check. Path must exist and contain the author.
     fn is_authorized(&self, doc: &LoroDoc, who: &Who) -> bool {
         match who {
             Who::Anyone => true,

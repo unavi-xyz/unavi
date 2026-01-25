@@ -54,12 +54,15 @@ impl Acl {
 
     #[must_use]
     pub fn can_read(&self, did: &Did) -> bool {
-        self.public || self.read.iter().any(|d| &d.0 == did)
+        self.public
+            || self.manage.iter().any(|d| &d.0 == did)
+            || self.write.iter().any(|d| &d.0 == did)
+            || self.read.iter().any(|d| &d.0 == did)
     }
 
     #[must_use]
     pub fn can_write(&self, did: &Did) -> bool {
-        self.write.iter().any(|d| &d.0 == did)
+        self.manage.iter().any(|d| &d.0 == did) || self.write.iter().any(|d| &d.0 == did)
     }
 
     #[must_use]

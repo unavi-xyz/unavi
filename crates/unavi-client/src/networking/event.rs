@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
-use bevy_wds::{LocalActor, RemoteActor};
+use bevy_wds::{LocalActor, LocalBlobs, RemoteActor};
 use unavi_player::{
     AvatarSpawner, Grounded,
     animation::{defaults::default_character_animations, velocity::AverageVelocity},
@@ -20,6 +20,7 @@ pub fn recv_network_event(
     mut nt: ResMut<NetworkingThread>,
     asset_server: Res<AssetServer>,
     local_actors: Query<Entity, With<LocalActor>>,
+    local_blobs: Query<Entity, With<LocalBlobs>>,
 ) {
     while let Ok(event) = nt.event_rx.try_recv() {
         match event {
@@ -55,11 +56,16 @@ pub fn recv_network_event(
             NetworkEvent::PlayerLeave(_id) => {
                 // TODO despawn player
             }
+            NetworkEvent::SetLocalBlobs(blobs) => {
+                for ent in local_blobs {
+                    commands.entity(ent).despawn();
+                }
+                commands.spawn(LocalBlobs(blobs));
+            }
             NetworkEvent::SetLocalActor(actor) => {
                 for ent in local_actors {
                     commands.entity(ent).despawn();
                 }
-
                 commands.spawn(LocalActor(actor));
             }
             NetworkEvent::AddRemoteActor(actor) => {

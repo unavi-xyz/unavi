@@ -972,7 +972,12 @@ dependencies = [
 name = "bevy-wds"
 version = "0.0.16"
 dependencies = [
+ "anyhow",
  "bevy",
+ "blake3",
+ "bytes 1.11.0",
+ "iroh",
+ "unavi-wasm-compat",
  "wds",
 ]
 

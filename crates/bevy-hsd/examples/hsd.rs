@@ -46,8 +46,8 @@ fn load_hsd(mut commands: Commands) {
         .insert("xform".to_string(), LoroValue::Map(attrs_0_xform));
 
     let stage = StageData {
-        enabled: true,
         layers: vec![LayerData {
+            enabled: true,
             opinions: vec![OpinionData {
                 node: 0,
                 attrs: attrs_0,

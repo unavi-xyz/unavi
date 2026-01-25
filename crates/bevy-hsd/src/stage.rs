@@ -3,12 +3,12 @@ use loro_surgeon::Hydrate;
 
 #[derive(Debug, Clone, Hydrate)]
 pub struct StageData {
-    pub enabled: bool,
     pub layers: Vec<LayerData>,
 }
 
 #[derive(Debug, Clone, Hydrate)]
 pub struct LayerData {
+    pub enabled: bool,
     pub opinions: Vec<OpinionData>,
 }
 

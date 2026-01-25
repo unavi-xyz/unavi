@@ -6,13 +6,13 @@ use loro::LoroValue;
 use loro_surgeon::Hydrate;
 
 use crate::{
-    LayerOpinions, LayerStrength, OpinionAttrs, OpinionTarget, Stage, StageCompiled, StageLayers,
-    attributes::material::MaterialAttr, merge::merge_values,
+    LayerEnabled, LayerOpinions, LayerStrength, OpinionAttrs, OpinionTarget, Stage, StageCompiled,
+    StageLayers, attributes::material::MaterialAttr, merge::merge_values,
 };
 
 pub fn compile_stages(
     stages: Query<(&mut StageCompiled, &StageLayers), With<Stage>>,
-    layers: Query<(&LayerStrength, &LayerOpinions)>,
+    layers: Query<(&LayerEnabled, &LayerStrength, &LayerOpinions)>,
     opinions: Query<(&OpinionTarget, &OpinionAttrs)>,
     actor: Query<&LocalActor>,
     asset_server: ResMut<AssetServer>,
@@ -31,9 +31,13 @@ pub fn compile_stages(
         let mut resolved_layers = Vec::with_capacity(stage_layers.len());
 
         for layer_ent in stage_layers.iter() {
-            let Ok((strength, layer_opinions)) = layers.get(layer_ent) else {
+            let Ok((enabled, strength, layer_opinions)) = layers.get(layer_ent) else {
                 continue;
             };
+
+            if !enabled.0 {
+                continue;
+            }
 
             resolved_layers.push((strength.0, layer_opinions.0.clone()));
         }

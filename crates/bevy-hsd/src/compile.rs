@@ -122,7 +122,7 @@ pub fn compile_stages(
                 })
             {
             } else {
-                node.remove::<Mesh3d>();
+                node.remove::<Mesh3d>();hsdload
             }
         }
 

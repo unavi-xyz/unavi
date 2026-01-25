@@ -31,11 +31,8 @@ impl XformAttr {
 
 #[derive(Debug, Clone, Default, Hydrate)]
 struct XformRaw {
-    #[loro(with = "wired_schemas::conv::float_slice::optional")]
     rotate: Option<[f64; 4]>,
-    #[loro(with = "wired_schemas::conv::float_slice::optional")]
     scale: Option<[f64; 3]>,
-    #[loro(with = "wired_schemas::conv::float_slice::optional")]
     translate: Option<[f64; 3]>,
 }
 

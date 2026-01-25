@@ -165,7 +165,7 @@ impl<'a> Validator<'a> {
         match who {
             Who::Anyone => true,
             Who::Path(path) => {
-                resolve_path(doc, path).is_none_or(|ids| ids.contains(&self.author.to_string()))
+                resolve_path(doc, path).is_some_and(|ids| ids.contains(&self.author.to_string()))
             }
         }
     }

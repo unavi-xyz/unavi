@@ -151,6 +151,84 @@ impl<V: Hydrate> Hydrate for BTreeMap<String, V> {
     }
 }
 
+impl<V: Hydrate> Hydrate for BTreeMap<SmolStr, V> {
+    fn hydrate(value: &LoroValue) -> Result<Self, HydrateError> {
+        match value {
+            LoroValue::Map(map) => map
+                .iter()
+                .map(|(k, v)| Ok((SmolStr::from(k.as_str()), V::hydrate(v)?)))
+                .collect(),
+            _ => Err(HydrateError::TypeMismatch {
+                path: SmolStr::default(),
+                expected: "Map".into(),
+                actual: format!("{value:?}").into(),
+            }),
+        }
+    }
+}
+
+impl Hydrate for f32 {
+    fn hydrate(value: &LoroValue) -> Result<Self, HydrateError> {
+        match value {
+            LoroValue::Double(n) => Ok(*n as f32),
+            _ => Err(HydrateError::TypeMismatch {
+                path: SmolStr::default(),
+                expected: "Double".into(),
+                actual: format!("{value:?}").into(),
+            }),
+        }
+    }
+}
+
+impl<const N: usize> Hydrate for [u8; N] {
+    fn hydrate(value: &LoroValue) -> Result<Self, HydrateError> {
+        match value {
+            LoroValue::Binary(b) => {
+                let slice: &[u8] = b.as_ref();
+                slice.try_into().map_err(|_| {
+                    HydrateError::Custom(format!("expected {} bytes, got {}", N, b.len()).into())
+                })
+            }
+            _ => Err(HydrateError::TypeMismatch {
+                path: SmolStr::default(),
+                expected: "Binary".into(),
+                actual: format!("{value:?}").into(),
+            }),
+        }
+    }
+}
+
+impl<const N: usize> Hydrate for [f64; N] {
+    fn hydrate(value: &LoroValue) -> Result<Self, HydrateError> {
+        match value {
+            LoroValue::List(list) => {
+                let vec: Vec<f64> = list
+                    .iter()
+                    .map(|v| {
+                        v.as_double()
+                            .copied()
+                            .ok_or_else(|| HydrateError::TypeMismatch {
+                                path: "[list item]".into(),
+                                expected: "f64".into(),
+                                actual: format!("{v:?}").into(),
+                            })
+                    })
+                    .collect::<Result<_, _>>()?;
+                vec.try_into().map_err(|_| {
+                    HydrateError::Custom(
+                        format!("expected {} elements, got {}", N, list.len()).into(),
+                    )
+                })
+            }
+            _ => Err(HydrateError::TypeMismatch {
+                path: SmolStr::default(),
+                expected: "List".into(),
+                actual: format!("{value:?}").into(),
+            }),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use loro::LoroDoc;

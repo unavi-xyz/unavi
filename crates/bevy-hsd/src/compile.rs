@@ -7,9 +7,7 @@ use loro_surgeon::Hydrate;
 
 use crate::{
     LayerEnabled, LayerOpinions, LayerStrength, OpinionAttrs, OpinionTarget, Stage, StageCompiled,
-    StageLayers,
-    attributes::{material::MaterialAttr, mesh::MeshAttr},
-    merge::merge_values,
+    StageLayers, merge::merge_values, stage::Attrs,
 };
 
 pub fn compile_stages(
@@ -51,7 +49,7 @@ pub fn compile_stages(
             "layers not sorted in correct order"
         );
 
-        // Merge layer opinions.
+        // Merge layer opinions into raw LoroValues.
         let mut node_attrs = HashMap::<Entity, HashMap<&str, Cow<LoroValue>>>::new();
 
         for (_, layer_opinions) in resolved_layers {
@@ -74,61 +72,62 @@ pub fn compile_stages(
             }
         }
 
-        // Apply node attributes.
+        // Apply node attributes by hydrating merged values to typed Attrs.
         #[expect(clippy::cast_possible_truncation)]
-        for (node_ent, attrs) in node_attrs {
+        for (node_ent, raw_attrs) in node_attrs {
             let mut node = commands.entity(node_ent);
 
-            if let Ok(Some(material)) = attrs
-                .get("material")
-                .map(|v| MaterialAttr::hydrate(v))
-                .transpose()
-                .inspect_err(|err| {
-                    warn!(?err, "failed to hydrate material");
-                })
-            {
-                let mut out_mat = StandardMaterial::default();
+            // Convert merged HashMap to LoroMapValue for hydration.
+            let merged_map: loro::LoroMapValue = raw_attrs
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), v.into_owned()))
+                .collect::<std::collections::HashMap<_, _>>()
+                .into();
 
-                if let Some(color) = material.base_color {
-                    out_mat.base_color = Color::Srgba(Srgba {
-                        red: color[0] as f32,
-                        green: color[1] as f32,
-                        blue: color[2] as f32,
-                        alpha: color[3] as f32,
-                    });
+            // Hydrate to typed Attrs.
+            let attrs = match Attrs::hydrate(&LoroValue::Map(merged_map)) {
+                Ok(a) => a,
+                Err(err) => {
+                    warn!(?err, "failed to hydrate attrs");
+                    continue;
                 }
+            };
 
-                if let Some(metallic) = material.metallic {
-                    out_mat.metallic = metallic as f32;
-                }
-                if let Some(roughness) = material.roughness {
-                    out_mat.perceptual_roughness = roughness as f32;
-                }
-
-                // TODO async load texture blobs
-
+            // Apply material attributes.
+            let has_material = attrs.mesh_colors.is_some();
+            if has_material {
+                let out_mat = StandardMaterial::default();
+                // TODO: Load mesh colors from blob.
                 let handle = asset_server.add(out_mat);
                 node.insert(MeshMaterial3d(handle));
             } else {
                 node.remove::<MeshMaterial3d<StandardMaterial>>();
             }
 
-            if let Ok(Some(_mesh)) = attrs
-                .get("mesh")
-                .map(|v| MeshAttr::hydrate(v))
-                .transpose()
-                .inspect_err(|err| {
-                    warn!(?err, "failed to hydrate mesh");
-                })
+            // Apply transform attributes.
+            if attrs.xform_pos.is_some() || attrs.xform_rot.is_some() || attrs.xform_scale.is_some()
             {
+                let mut transform = Transform::default();
+
+                if let Some(pos) = attrs.xform_pos {
+                    transform.translation = Vec3::new(pos[0] as f32, pos[1] as f32, pos[2] as f32);
+                }
+                if let Some(rot) = attrs.xform_rot {
+                    transform.rotation =
+                        Quat::from_xyzw(rot[0] as f32, rot[1] as f32, rot[2] as f32, rot[3] as f32);
+                }
+                if let Some(scale) = attrs.xform_scale {
+                    transform.scale = Vec3::new(scale[0] as f32, scale[1] as f32, scale[2] as f32);
+                }
+
+                node.insert(transform);
             } else {
-                node.remove::<Mesh3d>();hsdload
+                node.remove::<Transform>();
             }
+
+            // TODO: Handle mesh attributes, xform_parent, etc.
         }
 
         compiled.0 = true;
     }
 }
-
-#[derive(Component)]
-pub struct MeshBlobs {}

@@ -9,8 +9,7 @@ use iroh::{Endpoint, RelayMode};
 use rstest::fixture;
 use rusqlite::params;
 use wds::{DataStore, actor::Actor};
-use wired_schemas::{SCHEMA_ACL, SCHEMA_RECORD, surg::Acl};
-use xdid::core::did::Did;
+use wired_schemas::{SCHEMA_ACL, SCHEMA_RECORD};
 
 use did_key::{generate_actor, generate_actor_with_identity};
 use did_web::{DidWebServer, generate_actor_web};
@@ -166,37 +165,10 @@ pub async fn multi_ctx_local() -> LocalStoreCtx {
     LocalStoreCtx { alice_ctx, bob_ctx }
 }
 
-pub fn assert_contains(e: impl Display, contains: &str) {
-    let e = e.to_string();
-    assert!(e.contains(contains), "'{e}' does not contain '{contains}'");
-}
-
-/// Creates a default ACL with only the given DID having full access.
-pub fn acl_only(did: &Did) -> Acl {
-    Acl {
-        public: false,
-        manage: vec![did.clone()],
-        write: vec![did.clone()],
-        read: vec![],
-    }
-}
-
-/// Creates an ACL with manage for owner and write for writer.
-pub fn acl_with_writer(owner: &Did, writer: &Did) -> Acl {
-    Acl {
-        public: false,
-        manage: vec![owner.clone()],
-        write: vec![owner.clone(), writer.clone()],
-        read: vec![],
-    }
-}
-
-/// Creates an ACL with manage for owner and read for reader.
-pub fn acl_with_reader(owner: &Did, reader: &Did) -> Acl {
-    Acl {
-        public: false,
-        manage: vec![owner.clone()],
-        write: vec![owner.clone()],
-        read: vec![reader.clone()],
-    }
+pub fn assert_contains(err: impl Display, contains: &str) {
+    let err = err.to_string();
+    assert!(
+        err.contains(contains),
+        "'{err}' does not contain '{contains}'"
+    );
 }

@@ -474,7 +474,7 @@ pub async fn reconstruct_current_doc(db: &Database, record_id: &str) -> anyhow::
 /// Updates the ACL read index for a record.
 fn update_acl_read_index(conn: &Connection, record_id: &str, acl: &Acl) -> anyhow::Result<()> {
     // Update is_public flag.
-    let is_public = i32::from(acl.is_public());
+    let is_public = i32::from(acl.public);
     conn.execute(
         "UPDATE records SET is_public = ? WHERE id = ?",
         params![is_public, record_id],
@@ -486,14 +486,9 @@ fn update_acl_read_index(conn: &Connection, record_id: &str, acl: &Acl) -> anyho
         params![record_id],
     )?;
 
-    // Insert all DIDs with read access (manage, write, and read).
-    for did in acl
-        .manage
-        .iter()
-        .chain(acl.write.iter())
-        .chain(acl.read.iter())
-    {
-        let did_str = did.to_string();
+    // Insert all DIDs with read access.
+    for did in acl.readers() {
+        let did_str = did.0.to_string();
         conn.execute(
             "INSERT OR IGNORE INTO record_acl_read (record_id, did) VALUES (?, ?)",
             params![record_id, &did_str],

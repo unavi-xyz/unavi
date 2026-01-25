@@ -8,7 +8,7 @@ use loro::LoroDoc;
 use tracing::warn;
 
 use wired_schemas::{
-    SCHEMA_ACL, SCHEMA_RECORD, StaticSchema,
+    HydratedHash, SCHEMA_ACL, SCHEMA_RECORD, StaticSchema,
     surg::{Acl, Record},
 };
 
@@ -118,19 +118,15 @@ impl RecordBuilder {
         // Build record with schema hashes.
         let mut record = Record::new(did.clone());
         for schema in &all_schemas {
-            record.add_schema(schema.container.clone(), schema.hash);
+            record.add_schema(schema.container.clone(), HydratedHash(schema.hash));
         }
         record.save(&self.doc)?;
 
-        let mut acl = Acl {
-            public: self.is_public,
-            ..Default::default()
-        };
-        acl.manage.push(did.clone());
-        acl.write.push(did.clone());
-        if !self.is_public {
-            acl.read.push(did.clone());
-        }
+        let mut acl = Acl::default();
+        acl.public = self.is_public;
+        acl.add_manager(did.clone());
+        acl.add_reader(did.clone());
+        acl.add_writer(did.clone());
         acl.save(&self.doc)?;
 
         let envelope = Envelope::all_updates(did.clone(), &self.doc)?;
@@ -158,16 +154,15 @@ impl RecordBuilder {
 
             // Ensure schema blobs exist at remote.
             for schema in &all_schemas {
-                if let Err(e) = ensure_schema_uploaded(target, schema).await {
-                    warn!(host = %host, schema = %schema.hash, error = %e,
-                        "failed to ensure schema at remote");
+                if let Err(err) = ensure_schema_uploaded(target, schema).await {
+                    warn!(%host, schema = %schema.hash, ?err, "failed to ensure schema at remote");
                 }
             }
 
             let mut result = target.pin_record(id, self.ttl).await;
 
-            if let Err(e) = &result {
-                warn!(host = %host, error = %e, "failed to pin record at remote");
+            if let Err(err) = &result {
+                warn!(%host, ?err, "failed to pin record at remote");
             } else {
                 result = target.upload_envelope(id, &signed).await;
             }

@@ -2,8 +2,15 @@
     id: "hsd/material",
     version: 0,
     layout: Struct({
-        "color": List(F64),
-        "metallic": F64,
-        "roughness": F64,
+        "alpha_cutoff": Optional(F64),
+        "alpha_mode": Optional(String),
+        "base_color": Optional(List(F64)),
+        "base_color_texture": Optional(BlobRef),
+        "double_sided": Optional(Bool),
+        "metallic": Optional(F64),
+        "metallic_roughness_texture": Optional(BlobRef),
+        "normal_texture": Optional(BlobRef),
+        "occlusion_texture": Optional(BlobRef),
+        "roughness": Optional(F64),
     }),
 )

@@ -1,18 +1,20 @@
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap};
 
 use bevy::prelude::*;
 use bevy_wds::LocalActor;
+use blake3::Hash;
+use loro::LoroValue;
+use loro_surgeon::Hydrate;
 
 use crate::{
-    LayerOpinions, LayerStrength, OpinionOp, OpinionTarget, Stage, StageCompiled, StageLayers,
-    attributes::{Attribute, xform::Xform},
-    stage::Attrs,
+    LayerOpinions, LayerStrength, OpinionAttrs, OpinionTarget, Stage, StageCompiled, StageLayers,
+    attributes::material::MaterialAttr, merge::merge_values,
 };
 
 pub fn compile_stages(
     stages: Query<(&mut StageCompiled, &StageLayers), With<Stage>>,
     layers: Query<(&LayerStrength, &LayerOpinions)>,
-    opinions: Query<(&OpinionTarget, Option<&OpinionOp<Xform>>)>,
+    opinions: Query<(&OpinionTarget, &OpinionAttrs)>,
     actor: Query<&LocalActor>,
     asset_server: ResMut<AssetServer>,
     mut commands: Commands,
@@ -45,22 +47,24 @@ pub fn compile_stages(
         );
 
         // Merge layer opinions.
-        let mut node_attrs = HashMap::<Entity, Attrs>::new();
+        let mut node_attrs = HashMap::<Entity, HashMap<&str, Cow<LoroValue>>>::new();
 
         for (_, layer_opinions) in resolved_layers {
             for opinion_ent in layer_opinions {
-                let Ok((target, xform)) = opinions.get(opinion_ent) else {
+                let Ok((target, attrs)) = opinions.get(opinion_ent) else {
                     continue;
                 };
 
-                let node = node_attrs.entry(target.0).or_default();
+                let target_attrs = node_attrs.entry(target.0).or_default();
 
-                if let Some(next) = xform {
-                    node.xform = Some(
-                        node.xform
-                            .take()
-                            .map_or_else(|| next.0.clone(), |v| v.merge(&next.0)),
-                    );
+                for (key, next) in attrs.0.iter() {
+                    let Some(prev) = target_attrs.remove(key.as_str()) else {
+                        target_attrs.insert(key, Cow::Borrowed(next));
+                        continue;
+                    };
+
+                    let out = merge_values(prev, next);
+                    target_attrs.insert(key, out);
                 }
             }
         }
@@ -70,12 +74,17 @@ pub fn compile_stages(
         for (node_ent, attrs) in node_attrs {
             let mut node = commands.entity(node_ent);
 
-            if let Some(mat) = attrs.material {
-                // TODO node as asset, use by ref
-
+            if let Ok(Some(material)) = attrs
+                .get("material")
+                .map(|v| MaterialAttr::hydrate(v))
+                .transpose()
+                .inspect_err(|err| {
+                    warn!(?err, "failed to hydrate material");
+                })
+            {
                 let mut out_mat = StandardMaterial::default();
 
-                if let Some(color) = mat.color {
+                if let Some(color) = material.base_color {
                     out_mat.base_color = Color::Srgba(Srgba {
                         red: color[0] as f32,
                         green: color[1] as f32,
@@ -84,8 +93,14 @@ pub fn compile_stages(
                     });
                 }
 
-                out_mat.metallic = mat.metallic as f32;
-                out_mat.perceptual_roughness = mat.roughness as f32;
+                if let Some(metallic) = material.metallic {
+                    out_mat.metallic = metallic as f32;
+                }
+                if let Some(roughness) = material.roughness {
+                    out_mat.perceptual_roughness = roughness as f32;
+                }
+
+                // TODO async load texture blobs
 
                 let handle = asset_server.add(out_mat);
                 node.insert(MeshMaterial3d(handle));
@@ -93,19 +108,14 @@ pub fn compile_stages(
                 node.remove::<MeshMaterial3d<StandardMaterial>>();
             }
 
-            if let Some(_mesh) = attrs.mesh {
-                // TODO node as asset, use by ref
-
-                // node.insert(Mesh3d(handle));
-            } else {
-                node.remove::<Mesh3d>();
-            }
-
-            if let Some(xform) = attrs.xform {
-                node.insert(xform.into_transform());
-            } else {
-                node.remove::<Transform>();
-            }
+            if let Ok(Some(_mesh)) = attrs
+                .get("mesh")
+                .map(|v| MaterialAttr::hydrate(v))
+                .transpose()
+                .inspect_err(|err| {
+                    warn!(?err, "failed to hydrate mesh");
+                })
+            {}
         }
 
         compiled.0 = true;

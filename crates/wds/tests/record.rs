@@ -1,8 +1,11 @@
 use std::time::Duration;
 
+use loro::LoroDoc;
 use rstest::rstest;
 use rusqlite::{OptionalExtension, params};
 use tracing_test::traced_test;
+use wds::{record::envelope::Envelope, signed_bytes::Signable};
+use wired_schemas::surg::{Acl, Record};
 
 use crate::common::{DataStoreCtx, assert_contains, ctx};
 
@@ -188,6 +191,55 @@ async fn test_update_record_unauthorized(#[future] ctx: DataStoreCtx) {
     let e = ctx
         .bob
         .update_record(record_id, &doc, from_vv)
+        .await
+        .expect_err("should error");
+
+    assert_contains(e, "denied");
+}
+
+#[rstest]
+#[timeout(Duration::from_secs(5))]
+#[awt]
+#[traced_test]
+#[tokio::test]
+async fn test_create_record_mismatched_author(#[future] ctx: DataStoreCtx) {
+    // Alice is the record creator, but Bob signs the envelope.
+    // This should be rejected - first envelope author must match creator.
+    let alice_did = ctx.alice.identity().did().clone();
+    let bob_did = ctx.bob.identity().did().clone();
+
+    let doc = LoroDoc::new();
+
+    // Create record with Alice as creator.
+    let record = Record::new(alice_did);
+    record.save(&doc).expect("save record");
+
+    // Set up ACL with Bob having all permissions (this doesn't matter since
+    // the first envelope author validation happens before ACL checks).
+    let mut acl = Acl::default();
+    acl.add_manager(bob_did.clone());
+    acl.add_writer(bob_did.clone());
+    acl.add_reader(bob_did.clone());
+    acl.save(&doc).expect("save acl");
+
+    let record_id = record.id().expect("record id");
+
+    // Create envelope with Bob as author (mismatched from record creator).
+    let envelope = Envelope::all_updates(bob_did, &doc).expect("envelope");
+    let signed = envelope
+        .sign(ctx.bob.identity().signing_key())
+        .expect("sign");
+
+    // Pin record as Bob (pinning doesn't check creator).
+    ctx.bob
+        .pin_record(record_id, Duration::from_secs(60))
+        .await
+        .expect("pin record");
+
+    // Upload should fail - envelope author (Bob) != record creator (Alice).
+    let e = ctx
+        .bob
+        .upload_envelope(record_id, &signed)
         .await
         .expect_err("should error");
 

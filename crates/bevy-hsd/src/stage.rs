@@ -2,6 +2,8 @@ use loro::LoroMapValue;
 use loro_surgeon::Hydrate;
 use wired_schemas::HydratedHash;
 
+use crate::hydration::topology::HydratedTopology;
+
 #[derive(Debug, Clone, Hydrate)]
 pub struct StageData {
     pub layers: Vec<LayerData>,
@@ -22,14 +24,44 @@ pub struct OpinionData {
 /// Typed attributes, hydrated from merged [`LoroMapValue`] during compilation.
 #[derive(Debug, Clone, Default, Hydrate)]
 pub struct Attrs {
+    #[loro(rename = "material/base_color")]
+    pub material_base_color: Option<[f32; 3]>,
+    #[loro(rename = "material/base_color_texture")]
+    pub material_base_color_texture: Option<HydratedHash>,
+    #[loro(rename = "material/double_sided")]
+    pub material_double_sided: Option<bool>,
+    #[loro(rename = "material/metallic")]
+    pub material_metallic: Option<f32>,
+    #[loro(rename = "material/metallic_roughness_texture")]
+    pub material_metallic_roughness_texture: Option<HydratedHash>,
+    #[loro(rename = "material/normal_texture")]
+    pub material_normal_texture: Option<HydratedHash>,
+    #[loro(rename = "material/occlusion_texture")]
+    pub material_occlusion_texture: Option<HydratedHash>,
+    #[loro(rename = "material/roughness")]
+    pub material_roughness: Option<f32>,
+
     #[loro(rename = "mesh/colors")]
     pub mesh_colors: Option<HydratedHash>,
+    #[loro(rename = "mesh/indices")]
+    pub mesh_indices: Option<HydratedHash>,
+    #[loro(rename = "mesh/normals")]
+    pub mesh_normals: Option<HydratedHash>,
+    #[loro(rename = "mesh/points")]
+    pub mesh_points: Option<HydratedHash>,
+    #[loro(rename = "mesh/tangents")]
+    pub mesh_tangents: Option<HydratedHash>,
+    #[loro(rename = "mesh/topology")]
+    pub mesh_topology: Option<HydratedTopology>,
+    #[loro(rename = "mesh/uv")]
+    pub mesh_uv: Option<HydratedHash>,
+
     #[loro(rename = "xform/parent")]
     pub xform_parent: Option<i64>,
     #[loro(rename = "xform/pos")]
-    pub xform_pos: Option<[f64; 3]>,
+    pub xform_pos: Option<[f32; 3]>,
     #[loro(rename = "xform/rot")]
-    pub xform_rot: Option<[f64; 4]>,
+    pub xform_rot: Option<[f32; 4]>,
     #[loro(rename = "xform/scale")]
-    pub xform_scale: Option<[f64; 3]>,
+    pub xform_scale: Option<[f32; 3]>,
 }

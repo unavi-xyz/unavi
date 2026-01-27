@@ -295,11 +295,7 @@ pub fn find_restrictions_for_path<'a>(
 ) -> Vec<(&'a Vec<crate::Action>, &'a Field)> {
     let mut restrictions = Vec::new();
     // Strip container name prefix (e.g., "acl.manage" -> ".manage").
-    let relative_path = if let Some(dot_pos) = path.find('.') {
-        &path[dot_pos..]
-    } else {
-        ""
-    };
+    let relative_path = path.find('.').map_or("", |dot_pos| &path[dot_pos..]);
     find_restrictions_recursive(field, relative_path, &mut restrictions);
     restrictions
 }

@@ -15,5 +15,6 @@ bevy.workspace         = true
 blake3.workspace       = true
 bytes.workspace        = true
 iroh.workspace         = true
+tokio.workspace        = true
 unavi-wasm-compat.path = "../unavi-wasm-compat"
 wds.path               = "../wds"

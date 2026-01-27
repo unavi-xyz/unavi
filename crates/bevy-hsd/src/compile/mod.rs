@@ -1,7 +1,6 @@
 use std::{borrow::Cow, collections::HashMap};
 
 use bevy::prelude::*;
-use bevy_wds::LocalActor;
 use loro::LoroValue;
 use loro_surgeon::Hydrate;
 
@@ -10,18 +9,16 @@ use crate::{
     StageLayers, merge::merge_values, stage::Attrs,
 };
 
+pub mod material;
+pub mod mesh;
+mod xform;
+
 pub fn compile_stages(
-    stages: Query<(&mut StageCompiled, &StageLayers), With<Stage>>,
     layers: Query<(&LayerEnabled, &LayerStrength, &LayerOpinions)>,
     opinions: Query<(&OpinionTarget, &OpinionAttrs)>,
-    actor: Query<&LocalActor>,
-    asset_server: ResMut<AssetServer>,
+    stages: Query<(&mut StageCompiled, &StageLayers), With<Stage>>,
     mut commands: Commands,
 ) {
-    let Ok(_actor) = actor.single() else {
-        return;
-    };
-
     for (mut compiled, stage_layers) in stages {
         if compiled.0 {
             continue;
@@ -73,9 +70,8 @@ pub fn compile_stages(
         }
 
         // Apply node attributes by hydrating merged values to typed Attrs.
-        #[expect(clippy::cast_possible_truncation)]
         for (node_ent, raw_attrs) in node_attrs {
-            let mut node = commands.entity(node_ent);
+            let node = commands.entity(node_ent).id();
 
             // Convert merged HashMap to LoroMapValue for hydration.
             let merged_map: loro::LoroMapValue = raw_attrs
@@ -93,39 +89,9 @@ pub fn compile_stages(
                 }
             };
 
-            // Apply material attributes.
-            let has_material = attrs.mesh_colors.is_some();
-            if has_material {
-                let out_mat = StandardMaterial::default();
-                // TODO: Load mesh colors from blob.
-                let handle = asset_server.add(out_mat);
-                node.insert(MeshMaterial3d(handle));
-            } else {
-                node.remove::<MeshMaterial3d<StandardMaterial>>();
-            }
-
-            // Apply transform attributes.
-            if attrs.xform_pos.is_some() || attrs.xform_rot.is_some() || attrs.xform_scale.is_some()
-            {
-                let mut transform = Transform::default();
-
-                if let Some(pos) = attrs.xform_pos {
-                    transform.translation = Vec3::new(pos[0] as f32, pos[1] as f32, pos[2] as f32);
-                }
-                if let Some(rot) = attrs.xform_rot {
-                    transform.rotation =
-                        Quat::from_xyzw(rot[0] as f32, rot[1] as f32, rot[2] as f32, rot[3] as f32);
-                }
-                if let Some(scale) = attrs.xform_scale {
-                    transform.scale = Vec3::new(scale[0] as f32, scale[1] as f32, scale[2] as f32);
-                }
-
-                node.insert(transform);
-            } else {
-                node.remove::<Transform>();
-            }
-
-            // TODO: Handle mesh attributes, xform_parent, etc.
+            material::parse_material_attrs(&attrs, node, &mut commands);
+            mesh::parse_mesh_attrs(&attrs, node, &mut commands);
+            xform::parse_xform_attrs(&attrs, node, &mut commands);
         }
 
         compiled.0 = true;

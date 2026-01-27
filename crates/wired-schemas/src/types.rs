@@ -4,7 +4,6 @@ use blake3::Hash;
 use loro::LoroValue;
 use loro_surgeon::{Hydrate, HydrateError, Reconcile, ReconcileError, loro::LoroMap};
 use serde::{Deserialize, Serialize};
-use smol_str::SmolStr;
 use xdid::core::did::Did;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -41,7 +40,6 @@ impl Hydrate for HydratedHash {
     fn hydrate(value: &LoroValue) -> Result<Self, HydrateError> {
         let LoroValue::Binary(bytes) = value else {
             return Err(HydrateError::TypeMismatch {
-                path: SmolStr::default(),
                 expected: "binary".into(),
                 actual: format!("{value:?}").into(),
             });
@@ -114,7 +112,6 @@ impl Hydrate for HydratedDid {
     fn hydrate(value: &LoroValue) -> Result<Self, HydrateError> {
         let LoroValue::String(s) = value else {
             return Err(HydrateError::TypeMismatch {
-                path: SmolStr::default(),
                 expected: "string".into(),
                 actual: format!("{value:?}").into(),
             });

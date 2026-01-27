@@ -27,7 +27,6 @@ impl Hydrate for LoroMapValue {
         match value {
             LoroValue::Map(map) => Ok(map.clone()),
             _ => Err(HydrateError::TypeMismatch {
-                path: SmolStr::default(),
                 expected: "Map".into(),
                 actual: format!("{value:?}").into(),
             }),
@@ -40,7 +39,6 @@ impl Hydrate for bool {
         match value {
             LoroValue::Bool(b) => Ok(*b),
             _ => Err(HydrateError::TypeMismatch {
-                path: SmolStr::default(),
                 expected: "Bool".into(),
                 actual: format!("{value:?}").into(),
             }),
@@ -53,7 +51,6 @@ impl Hydrate for i64 {
         match value {
             LoroValue::I64(n) => Ok(*n),
             _ => Err(HydrateError::TypeMismatch {
-                path: SmolStr::default(),
                 expected: "I64".into(),
                 actual: format!("{value:?}").into(),
             }),
@@ -66,7 +63,19 @@ impl Hydrate for f64 {
         match value {
             LoroValue::Double(n) => Ok(*n),
             _ => Err(HydrateError::TypeMismatch {
-                path: SmolStr::default(),
+                expected: "Double".into(),
+                actual: format!("{value:?}").into(),
+            }),
+        }
+    }
+}
+
+impl Hydrate for f32 {
+    #[expect(clippy::cast_possible_truncation)]
+    fn hydrate(value: &LoroValue) -> Result<Self, HydrateError> {
+        match value {
+            LoroValue::Double(n) => Ok(*n as Self),
+            _ => Err(HydrateError::TypeMismatch {
                 expected: "Double".into(),
                 actual: format!("{value:?}").into(),
             }),
@@ -79,7 +88,6 @@ impl Hydrate for String {
         match value {
             LoroValue::String(s) => Ok(s.to_string()),
             _ => Err(HydrateError::TypeMismatch {
-                path: SmolStr::default(),
                 expected: "String".into(),
                 actual: format!("{value:?}").into(),
             }),
@@ -92,7 +100,6 @@ impl Hydrate for SmolStr {
         match value {
             LoroValue::String(s) => Ok(s.as_str().into()),
             _ => Err(HydrateError::TypeMismatch {
-                path: Self::default(),
                 expected: "String".into(),
                 actual: format!("{value:?}").into(),
             }),
@@ -105,7 +112,6 @@ impl Hydrate for Vec<u8> {
         match value {
             LoroValue::Binary(b) => Ok(b.to_vec()),
             _ => Err(HydrateError::TypeMismatch {
-                path: SmolStr::default(),
                 expected: "Binary".into(),
                 actual: format!("{value:?}").into(),
             }),
@@ -127,7 +133,6 @@ impl<T: Hydrate> Hydrate for Vec<T> {
         match value {
             LoroValue::List(list) => list.iter().map(T::hydrate).collect(),
             _ => Err(HydrateError::TypeMismatch {
-                path: SmolStr::default(),
                 expected: "List".into(),
                 actual: format!("{value:?}").into(),
             }),
@@ -143,7 +148,6 @@ impl<V: Hydrate> Hydrate for BTreeMap<String, V> {
                 .map(|(k, v)| Ok((k.clone(), V::hydrate(v)?)))
                 .collect(),
             _ => Err(HydrateError::TypeMismatch {
-                path: SmolStr::default(),
                 expected: "Map".into(),
                 actual: format!("{value:?}").into(),
             }),
@@ -159,22 +163,7 @@ impl<V: Hydrate> Hydrate for BTreeMap<SmolStr, V> {
                 .map(|(k, v)| Ok((SmolStr::from(k.as_str()), V::hydrate(v)?)))
                 .collect(),
             _ => Err(HydrateError::TypeMismatch {
-                path: SmolStr::default(),
                 expected: "Map".into(),
-                actual: format!("{value:?}").into(),
-            }),
-        }
-    }
-}
-
-impl Hydrate for f32 {
-    #[expect(clippy::cast_possible_truncation)]
-    fn hydrate(value: &LoroValue) -> Result<Self, HydrateError> {
-        match value {
-            LoroValue::Double(n) => Ok(*n as Self),
-            _ => Err(HydrateError::TypeMismatch {
-                path: SmolStr::default(),
-                expected: "Double".into(),
                 actual: format!("{value:?}").into(),
             }),
         }
@@ -191,7 +180,6 @@ impl<const N: usize> Hydrate for [u8; N] {
                 })
             }
             _ => Err(HydrateError::TypeMismatch {
-                path: SmolStr::default(),
                 expected: "Binary".into(),
                 actual: format!("{value:?}").into(),
             }),
@@ -199,21 +187,13 @@ impl<const N: usize> Hydrate for [u8; N] {
     }
 }
 
-impl<const N: usize> Hydrate for [f64; N] {
+impl<T: Hydrate, const N: usize> Hydrate for [T; N] {
     fn hydrate(value: &LoroValue) -> Result<Self, HydrateError> {
         match value {
             LoroValue::List(list) => {
-                let vec: Vec<f64> = list
+                let vec: Vec<T> = list
                     .iter()
-                    .map(|v| {
-                        v.as_double()
-                            .copied()
-                            .ok_or_else(|| HydrateError::TypeMismatch {
-                                path: "[list item]".into(),
-                                expected: "f64".into(),
-                                actual: format!("{v:?}").into(),
-                            })
-                    })
+                    .map(|v| T::hydrate(v))
                     .collect::<Result<_, _>>()?;
                 vec.try_into().map_err(|_| {
                     HydrateError::Custom(
@@ -222,7 +202,6 @@ impl<const N: usize> Hydrate for [f64; N] {
                 })
             }
             _ => Err(HydrateError::TypeMismatch {
-                path: SmolStr::default(),
                 expected: "List".into(),
                 actual: format!("{value:?}").into(),
             }),

@@ -21,8 +21,13 @@ pub fn handle_await_blob(req: On<AwaitBlob>, blobs: Query<&LocalBlobs>) {
 }
 
 async fn inner(event: AwaitBlob, blobs: Blobs) -> anyhow::Result<()> {
-    let res = get_or_await_bytes(&event, blobs).await?;
-    event.tx.send(res)?;
+    tokio::select! {
+        () = event.cancel.notified() => {},
+        res = get_or_await_bytes(&event, blobs) => {
+            event.tx.send(res?).await?;
+        }
+    }
+
     Ok(())
 }
 

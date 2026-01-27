@@ -157,7 +157,6 @@ pub fn derive_hydrate(input: TokenStream) -> TokenStream {
             fn hydrate(value: &#crate_ident::loro::LoroValue) -> Result<Self, #crate_ident::HydrateError> {
                 let #crate_ident::loro::LoroValue::Map(map) = value else {
                     return Err(#crate_ident::HydrateError::TypeMismatch {
-                        path: stringify!(#name).into(),
                         expected: "Map".into(),
                         actual: format!("{:?}", value).into(),
                     });

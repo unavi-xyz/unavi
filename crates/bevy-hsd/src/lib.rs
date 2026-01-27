@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use loro::LoroMapValue;
 
-pub mod attributes;
 mod compile;
+mod hydration;
 mod load;
 mod merge;
 pub mod stage;
@@ -13,7 +13,10 @@ impl Plugin for HsdPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
-            (load::load_stages, compile::compile_stages).chain(),
+            (
+                (load::load_stages, compile::compile_stages).chain(),
+                compile::mesh::compile_meshes,
+            ),
         );
     }
 }

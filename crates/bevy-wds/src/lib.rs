@@ -22,6 +22,7 @@ impl Plugin for WdsPlugin {
             .add_systems(
                 FixedUpdate,
                 (
+                    blob_deps::load_blob_deps,
                     blob_request::load_blob_requests,
                     blob_request::recv_blob_responses,
                 ),

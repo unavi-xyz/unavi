@@ -39,7 +39,12 @@ pub fn parse_mesh_attrs(attrs: &Attrs, node: Entity, commands: &mut Commands) {
                 .id()
         });
 
-        let uv = attrs.mesh_uv.map(|hash| {
+        let uv_0 = attrs.mesh_uv_0.map(|hash| {
+            commands
+                .spawn((BlobDep { target: node }, BlobRequest(hash.0)))
+                .id()
+        });
+        let uv_1 = attrs.mesh_uv_1.map(|hash| {
             commands
                 .spawn((BlobDep { target: node }, BlobRequest(hash.0)))
                 .id()
@@ -52,7 +57,8 @@ pub fn parse_mesh_attrs(attrs: &Attrs, node: Entity, commands: &mut Commands) {
             colors,
             normals,
             tangents,
-            uv,
+            uv_0,
+            uv_1,
         });
     } else {
         commands.entity(node).remove::<Mesh3d>();
@@ -88,7 +94,8 @@ pub struct MeshParams {
     colors: Option<Entity>,
     normals: Option<Entity>,
     tangents: Option<Entity>,
-    uv: Option<Entity>,
+    uv_0: Option<Entity>,
+    uv_1: Option<Entity>,
 }
 
 pub fn compile_meshes(
@@ -155,8 +162,16 @@ pub fn compile_meshes(
             blobs,
             mesh,
             params,
-            uv,
+            uv_0,
             Mesh::ATTRIBUTE_UV_0,
+            VertexAttributeValues::Float32x2,
+        );
+        insert_mesh_attr!(
+            blobs,
+            mesh,
+            params,
+            uv_1,
+            Mesh::ATTRIBUTE_UV_1,
             VertexAttributeValues::Float32x2,
         );
 

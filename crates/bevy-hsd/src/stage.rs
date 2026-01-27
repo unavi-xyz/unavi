@@ -53,8 +53,10 @@ pub struct Attrs {
     pub mesh_tangents: Option<HydratedHash>,
     #[loro(rename = "mesh/topology", default)]
     pub mesh_topology: Option<HydratedTopology>,
-    #[loro(rename = "mesh/uv", default)]
-    pub mesh_uv: Option<HydratedHash>,
+    #[loro(rename = "mesh/uv0", default)]
+    pub mesh_uv_0: Option<HydratedHash>,
+    #[loro(rename = "mesh/uv1", default)]
+    pub mesh_uv_1: Option<HydratedHash>,
 
     #[loro(rename = "xform/parent", default)]
     pub xform_parent: Option<i64>,

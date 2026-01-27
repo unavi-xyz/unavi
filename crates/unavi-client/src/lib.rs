@@ -1,7 +1,4 @@
-use bevy::{
-    asset::io::web::WebAssetPlugin, light::light_consts::lux, log::LogPlugin, prelude::*,
-    window::WindowTheme,
-};
+use bevy::{light::light_consts::lux, log::LogPlugin, prelude::*, window::WindowTheme};
 use bitflags::bitflags;
 use tracing::Level;
 
@@ -39,40 +36,42 @@ impl Plugin for UnaviPlugin {
             assets::download::download_web_assets().expect("failed to download web assets");
         }
 
-        #[cfg(not(target_family = "wasm"))]
-        let asset_plugin = AssetPlugin {
-            file_path: assets::assets_dir().to_string_lossy().to_string(),
-            ..default()
-        };
-        #[cfg(target_family = "wasm")]
-        let asset_plugin = AssetPlugin {
-            meta_check: bevy::asset::AssetMetaCheck::Never,
-            ..default()
-        };
-
-        app.add_plugins((
-            DefaultPlugins
-                .set(LogPlugin {
-                    filter: format!(
-                        "{},loro_internal=off,offset_allocator=off",
-                        bevy::log::DEFAULT_FILTER
-                    ),
-                    level: self.log_level,
-                    ..default()
-                })
-                .set(WebAssetPlugin {
-                    silence_startup_warning: true,
-                })
-                .set(asset_plugin)
-                .set(WindowPlugin {
-                    primary_window: Some(Window {
-                        name: Some("unavi".to_string()),
-                        title: "UNAVI".to_string(),
-                        window_theme: Some(WindowTheme::Dark),
-                        ..default()
-                    }),
+        let default_plugins = DefaultPlugins
+            .set(LogPlugin {
+                filter: format!(
+                    "{},loro_internal=off,offset_allocator=off",
+                    bevy::log::DEFAULT_FILTER
+                ),
+                level: self.log_level,
+                ..default()
+            })
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    name: Some("unavi".to_string()),
+                    title: "UNAVI".to_string(),
+                    window_theme: Some(WindowTheme::Dark),
                     ..default()
                 }),
+                ..default()
+            });
+
+        #[cfg(not(target_family = "wasm"))]
+        let default_plugins = default_plugins.set(AssetPlugin {
+            file_path: assets::assets_dir().to_string_lossy().to_string(),
+            ..default()
+        });
+        #[cfg(target_family = "wasm")]
+        let default_plugins = default_plugins
+            .set(AssetPlugin {
+                meta_check: bevy::asset::AssetMetaCheck::Never,
+                ..default()
+            })
+            .set(WebAssetPlugin {
+                silence_startup_warning: true,
+            });
+
+        app.add_plugins((
+            default_plugins,
             avian3d::PhysicsPlugins::default(),
             fade::FadePlugin,
             bevy_wds::WdsPlugin,

@@ -22,4 +22,7 @@ smol_str.workspace = true
 wired-schemas.path = "../wired-schemas"
 
 [dev-dependencies]
-bevy_panorbit_camera = "0.33.1"
+bevy_panorbit_camera   = "0.33.1"
+iroh-blobs             = { default-features = true, workspace = true }
+tokio.workspace        = true
+unavi-wasm-compat.path = "../unavi-wasm-compat"

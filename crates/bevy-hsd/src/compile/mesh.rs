@@ -161,7 +161,13 @@ pub fn compile_meshes(
         );
 
         let handle = asset_server.add(mesh);
-        commands.entity(ent).insert(Mesh3d(handle));
+
+        commands
+            .entity(ent)
+            .insert(Mesh3d(handle))
+            .insert(MeshMaterial3d(
+                asset_server.add(StandardMaterial::default()),
+            ));
     }
 }
 

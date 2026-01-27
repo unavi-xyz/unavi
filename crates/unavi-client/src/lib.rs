@@ -1,4 +1,8 @@
-use bevy::{light::light_consts::lux, log::LogPlugin, prelude::*, window::WindowTheme};
+use bevy::{
+    asset::io::web::WebAssetPlugin, light::light_consts::lux, log::LogPlugin, prelude::*,
+    window::WindowTheme,
+};
+
 use bitflags::bitflags;
 use tracing::Level;
 
@@ -56,10 +60,12 @@ impl Plugin for UnaviPlugin {
             });
 
         #[cfg(not(target_family = "wasm"))]
-        let default_plugins = default_plugins.set(AssetPlugin {
-            file_path: assets::assets_dir().to_string_lossy().to_string(),
-            ..default()
-        });
+        let default_plugins = default_plugins
+            .set(AssetPlugin {
+                file_path: assets::assets_dir().to_string_lossy().to_string(),
+                ..default()
+            })
+            .disable::<WebAssetPlugin>();
         #[cfg(target_family = "wasm")]
         let default_plugins = default_plugins
             .set(AssetPlugin {

@@ -1,5 +1,6 @@
 use loro::LoroMapValue;
 use loro_surgeon::Hydrate;
+use smol_str::SmolStr;
 use wired_schemas::HydratedHash;
 
 use crate::hydration::topology::HydratedTopology;
@@ -24,6 +25,11 @@ pub struct OpinionData {
 /// Typed attributes, hydrated from merged [`LoroMapValue`] during compilation.
 #[derive(Debug, Clone, Default, Hydrate)]
 pub struct Attrs {
+    #[loro(rename = "collider/params", default)]
+    pub collider_params: Option<Vec<f32>>,
+    #[loro(rename = "collider/shape", default)]
+    pub collider_shape: Option<SmolStr>,
+
     #[loro(rename = "material/base_color", default)]
     pub material_base_color: Option<[f32; 3]>,
     #[loro(rename = "material/base_color_texture", default)]
@@ -57,6 +63,13 @@ pub struct Attrs {
     pub mesh_uv_0: Option<HydratedHash>,
     #[loro(rename = "mesh/uv1", default)]
     pub mesh_uv_1: Option<HydratedHash>,
+
+    #[loro(rename = "rigid_body/friction", default)]
+    pub rigid_body_friction: Option<f32>,
+    #[loro(rename = "rigid_body/kind", default)]
+    pub rigid_body_kind: Option<SmolStr>,
+    #[loro(rename = "rigid_body/mass", default)]
+    pub rigid_body_mass: Option<f32>,
 
     #[loro(rename = "xform/parent", default)]
     pub xform_parent: Option<i64>,

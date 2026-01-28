@@ -9,8 +9,10 @@ use crate::{
     StageLayers, merge::merge_values, stage::Attrs,
 };
 
+mod collider;
 pub mod material;
 pub mod mesh;
+mod rigid_body;
 mod xform;
 
 pub fn compile_stages(
@@ -89,13 +91,11 @@ pub fn compile_stages(
                 }
             };
 
-            let has_xform = xform::parse_xform_attrs(&attrs, node, &mut commands);
-
-            // Only instance certain attributes if the node is a part of the xform scene graph.
-            if has_xform {
-                material::parse_material_attrs(&attrs, node, &mut commands);
-                mesh::parse_mesh_attrs(&attrs, node, &mut commands);
-            }
+            collider::parse_collider_attrs(&attrs, node, &mut commands);
+            material::parse_material_attrs(&attrs, node, &mut commands);
+            mesh::parse_mesh_attrs(&attrs, node, &mut commands);
+            rigid_body::parse_rigid_body_attrs(&attrs, node, &mut commands);
+            xform::parse_xform_attrs(&attrs, node, &mut commands);
         }
 
         compiled.0 = true;

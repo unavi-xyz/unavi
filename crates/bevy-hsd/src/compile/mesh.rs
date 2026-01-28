@@ -7,7 +7,7 @@ use bevy_wds::{BlobDep, BlobDeps, BlobDepsLoaded, BlobRequest, BlobResponse};
 use bytemuck::{Pod, PodCastError, try_cast_slice};
 use bytes::Bytes;
 
-use crate::stage::Attrs;
+use crate::{compile::material::MaterialParams, stage::Attrs};
 
 pub fn parse_mesh_attrs(attrs: &Attrs, node: Entity, commands: &mut Commands) {
     if let Some(points) = attrs.mesh_points
@@ -101,10 +101,11 @@ pub struct MeshParams {
 pub fn compile_meshes(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
-    loaded: Query<(Entity, &MeshParams), Added<BlobDepsLoaded>>,
+    loaded: Query<(Entity, &MeshParams, Option<&MaterialParams>), Added<BlobDepsLoaded>>,
     mut blobs: Query<&mut BlobResponse>,
+    mut default_material: Local<Option<Handle<StandardMaterial>>>,
 ) {
-    for (ent, params) in loaded {
+    for (ent, params, mat_params) in loaded {
         let mut mesh = Mesh::new(params.topology, RenderAssetUsages::all());
 
         let Ok(Some(indices)) = blobs.get_mut(params.indices).map(|mut b| b.0.take()) else {
@@ -177,12 +178,15 @@ pub fn compile_meshes(
 
         let handle = asset_server.add(mesh);
 
-        commands
-            .entity(ent)
-            .insert(Mesh3d(handle))
-            .insert(MeshMaterial3d(
-                asset_server.add(StandardMaterial::default()),
-            ));
+        let mut ent = commands.entity(ent);
+        ent.insert(Mesh3d(handle));
+
+        if mat_params.is_none() {
+            let mat = default_material
+                .get_or_insert_with(|| asset_server.add(StandardMaterial::default()))
+                .clone();
+            ent.insert(MeshMaterial3d(mat));
+        }
     }
 }
 

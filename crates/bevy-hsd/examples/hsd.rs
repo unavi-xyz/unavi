@@ -63,6 +63,24 @@ fn load_hsd(mut commands: Commands) {
         .make_mut()
         .insert("xform/pos".to_string(), LoroValue::List(xform_pos));
 
+    let mut mat_color = LoroListValue::default();
+    *mat_color.make_mut() = vec![
+        LoroValue::Double(0.4),
+        LoroValue::Double(0.3),
+        LoroValue::Double(0.7),
+    ];
+    attrs.make_mut().insert(
+        "material/base_color".to_string(),
+        LoroValue::List(mat_color),
+    );
+
+    attrs
+        .make_mut()
+        .insert("material/metallic".to_string(), LoroValue::Double(0.8));
+    attrs
+        .make_mut()
+        .insert("material/roughness".to_string(), LoroValue::Double(0.4));
+
     attrs.make_mut().insert(
         "mesh/topology".to_string(),
         LoroValue::I64(

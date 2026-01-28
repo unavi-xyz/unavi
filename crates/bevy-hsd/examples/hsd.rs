@@ -1,3 +1,4 @@
+use avian3d::{PhysicsPlugins, prelude::PhysicsDebugPlugin};
 use bevy::{
     mesh::Indices,
     pbr::{Atmosphere, AtmosphereSettings},
@@ -11,11 +12,18 @@ use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_wds::{LocalBlobs, WdsPlugin};
 use bytemuck::cast_slice;
 use iroh_blobs::store::mem::MemStore;
-use loro::{LoroBinaryValue, LoroListValue, LoroMapValue, LoroValue};
+use loro::{LoroBinaryValue, LoroMapValue, LoroValue};
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins, PanOrbitCameraPlugin, HsdPlugin, WdsPlugin))
+        .add_plugins((
+            DefaultPlugins,
+            PanOrbitCameraPlugin,
+            PhysicsPlugins::default(),
+            PhysicsDebugPlugin,
+            HsdPlugin,
+            WdsPlugin,
+        ))
         .add_systems(Startup, (setup_scene, load_hsd))
         .run();
 }
@@ -53,25 +61,28 @@ fn load_hsd(mut commands: Commands) {
 
     let mut attrs = LoroMapValue::default();
 
-    let mut xform_pos = LoroListValue::default();
-    *xform_pos.make_mut() = vec![
-        LoroValue::Double(0.0),
-        LoroValue::Double(-0.5),
-        LoroValue::Double(0.0),
-    ];
-    attrs
-        .make_mut()
-        .insert("xform/pos".to_string(), LoroValue::List(xform_pos));
+    attrs.make_mut().insert(
+        "xform/pos".to_string(),
+        LoroValue::List(
+            vec![
+                LoroValue::Double(0.0),
+                LoroValue::Double(-0.5),
+                LoroValue::Double(0.0),
+            ]
+            .into(),
+        ),
+    );
 
-    let mut mat_color = LoroListValue::default();
-    *mat_color.make_mut() = vec![
-        LoroValue::Double(0.4),
-        LoroValue::Double(0.3),
-        LoroValue::Double(0.7),
-    ];
     attrs.make_mut().insert(
         "material/base_color".to_string(),
-        LoroValue::List(mat_color),
+        LoroValue::List(
+            vec![
+                LoroValue::Double(0.4),
+                LoroValue::Double(0.3),
+                LoroValue::Double(0.7),
+            ]
+            .into(),
+        ),
     );
 
     attrs
@@ -88,7 +99,10 @@ fn load_hsd(mut commands: Commands) {
         ),
     );
 
-    let cube = Cuboid::new(2.0, 0.5, 1.0).mesh().build();
+    let x_length = 2.0;
+    let y_length = 0.5;
+    let z_length = 1.0;
+    let cube = Cuboid::new(x_length, y_length, z_length).mesh().build();
 
     let Some(Indices::U32(indices)) = cube.indices() else {
         unreachable!()
@@ -105,6 +119,22 @@ fn load_hsd(mut commands: Commands) {
         unreachable!()
     };
     add_blob_ref(&store, &mut attrs, "mesh/normals", normals.get_bytes());
+
+    attrs.make_mut().insert(
+        "collider/shape".to_string(),
+        LoroValue::String("cuboid".into()),
+    );
+    attrs.make_mut().insert(
+        "collider/params".to_string(),
+        LoroValue::List(
+            vec![
+                LoroValue::Double(x_length.into()),
+                LoroValue::Double(y_length.into()),
+                LoroValue::Double(z_length.into()),
+            ]
+            .into(),
+        ),
+    );
 
     let stage = StageData {
         layers: vec![LayerData {

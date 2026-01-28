@@ -912,6 +912,7 @@ dependencies = [
 name = "bevy-hsd"
 version = "0.0.16"
 dependencies = [
+ "avian3d",
  "bevy",
  "bevy-wds",
  "bevy_panorbit_camera",

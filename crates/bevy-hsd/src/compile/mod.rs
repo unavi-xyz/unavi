@@ -89,9 +89,13 @@ pub fn compile_stages(
                 }
             };
 
-            material::parse_material_attrs(&attrs, node, &mut commands);
-            mesh::parse_mesh_attrs(&attrs, node, &mut commands);
-            xform::parse_xform_attrs(&attrs, node, &mut commands);
+            let has_xform = xform::parse_xform_attrs(&attrs, node, &mut commands);
+
+            // Only instance certain attributes if the node is a part of the xform scene graph.
+            if has_xform {
+                material::parse_material_attrs(&attrs, node, &mut commands);
+                mesh::parse_mesh_attrs(&attrs, node, &mut commands);
+            }
         }
 
         compiled.0 = true;

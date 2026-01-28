@@ -2,8 +2,12 @@ use bevy::prelude::*;
 
 use crate::stage::Attrs;
 
-pub fn parse_xform_attrs(attrs: &Attrs, node: Entity, commands: &mut Commands) {
+pub fn parse_xform_attrs(attrs: &Attrs, node: Entity, commands: &mut Commands) -> bool {
+    let mut has_xform = false;
+
     if attrs.xform_pos.is_some() || attrs.xform_rot.is_some() || attrs.xform_scale.is_some() {
+        has_xform = true;
+
         let mut transform = Transform::default();
 
         if let Some(pos) = attrs.xform_pos {
@@ -22,8 +26,11 @@ pub fn parse_xform_attrs(attrs: &Attrs, node: Entity, commands: &mut Commands) {
     }
 
     if let Some(_parent) = attrs.xform_parent {
+        has_xform = true;
         // TODO
     } else {
         commands.entity(node).remove::<ChildOf>();
     }
+
+    has_xform
 }

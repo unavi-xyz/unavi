@@ -15,6 +15,7 @@ impl Plugin for HsdPlugin {
             FixedUpdate,
             (
                 (load::load_stages, compile::compile_stages).chain(),
+                compile::material::compile_materials,
                 compile::mesh::compile_meshes,
             ),
         );

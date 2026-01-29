@@ -13148,6 +13148,7 @@ dependencies = [
  "iroh-gossip",
  "log",
  "loro",
+ "loro-surgeon",
  "n0-future",
  "parking_lot",
  "postcard",

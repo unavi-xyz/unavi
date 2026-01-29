@@ -1,7 +1,11 @@
 use bevy::{mesh::Indices, prelude::*};
-use bevy_hsd::stage::{LayerData, OpinionData, StageData};
+use bevy_hsd::{
+    hydration::topology::HydratedTopology,
+    stage::{LayerData, OpinionData, StageData},
+};
 use bytemuck::cast_slice;
 use loro::{LoroMapValue, LoroValue};
+use loro_surgeon::Reconcile;
 
 pub fn default_stage() -> StageData {
     let mut attrs = LoroMapValue::default();
@@ -23,14 +27,14 @@ pub fn default_stage() -> StageData {
         ),
     );
 
+    let cube = Cuboid::new(x_length, y_length, z_length).mesh().build();
+
     attrs.make_mut().insert(
         "mesh/topology".to_string(),
-        LoroValue::I64(
-            3, // TriangleList
-        ),
+        HydratedTopology(cube.primitive_topology())
+            .to_loro_value()
+            .expect("always exists"),
     );
-
-    let cube = Cuboid::new(x_length, y_length, z_length).mesh().build();
 
     let Some(Indices::U32(indices)) = cube.indices() else {
         unreachable!()

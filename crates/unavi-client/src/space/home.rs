@@ -1,10 +1,6 @@
 use bevy::prelude::*;
-use bevy_hsd::{
-    Stage,
-    stage::{LayerData, OpinionData, StageData},
-};
 use bevy_wds::{LocalActor, RemoteActor};
-use loro::{LoroMapValue, LoroValue};
+use loro_surgeon::Reconcile;
 use time::OffsetDateTime;
 use wds::actor::Actor;
 use wired_schemas::{SCHEMA_BEACON, SCHEMA_HOME, SCHEMA_SPACE, SCHEMA_STAGE};
@@ -120,7 +116,9 @@ async fn create_and_join_home(
             Ok(())
         })?
         .add_schema("hsd", &*SCHEMA_STAGE, |doc| {
-            // let stage = default_stage();
+            let map = doc.get_map("hsd");
+            let stage = default_stage();
+            stage.reconcile(&map)?;
             Ok(())
         })?
         .sync_to(remote_actor)

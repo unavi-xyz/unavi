@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use loro::{LoroMap, LoroValue};
+use loro::{LoroMap, LoroMapValue, LoroValue};
 use smol_str::SmolStr;
 
 use crate::ReconcileError;
@@ -32,6 +32,24 @@ pub trait Reconcile {
     /// Returns `None` for struct types that need nested maps.
     fn to_loro_value(&self) -> Option<LoroValue> {
         None
+    }
+}
+
+impl Reconcile for LoroMapValue {
+    fn reconcile(&self, map: &LoroMap) -> Result<(), ReconcileError> {
+        for (k, v) in self.iter() {
+            map.insert(k, v.clone())?;
+        }
+        Ok(())
+    }
+
+    fn reconcile_field(&self, map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
+        let nested = map.get_or_create_container(key, loro::LoroMap::new())?;
+        self.reconcile(&nested)
+    }
+
+    fn to_loro_value(&self) -> Option<LoroValue> {
+        Some(LoroValue::Map(self.clone()))
     }
 }
 
@@ -238,17 +256,22 @@ impl<const N: usize> Reconcile for [u8; N] {
     }
 }
 
-impl<const N: usize> Reconcile for [f64; N] {
+impl<T: Reconcile, const N: usize> Reconcile for [T; N] {
     fn reconcile(&self, _map: &LoroMap) -> Result<(), ReconcileError> {
         Err(ReconcileError::Custom(
-            "[f64; N] cannot be reconciled as a root container".into(),
+            "[T; N] cannot be reconciled as a root container".into(),
         ))
     }
 
     fn reconcile_field(&self, map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
         let list = loro::LoroList::new();
-        for x in self {
-            list.push(*x)?;
+        for item in self {
+            if let Some(value) = item.to_loro_value() {
+                list.push(value)?;
+            } else {
+                let nested_map = list.push_container(loro::LoroMap::new())?;
+                item.reconcile(&nested_map)?;
+            }
         }
         map.insert_container(key, list)?;
         Ok(())

@@ -1,29 +1,29 @@
 use loro::LoroMapValue;
-use loro_surgeon::Hydrate;
+use loro_surgeon::{Hydrate, Reconcile};
 use smol_str::SmolStr;
 use wired_schemas::HydratedHash;
 
 use crate::hydration::topology::HydratedTopology;
 
-#[derive(Debug, Clone, Hydrate)]
+#[derive(Debug, Clone, Hydrate, Reconcile)]
 pub struct StageData {
     pub layers: Vec<LayerData>,
 }
 
-#[derive(Debug, Clone, Hydrate)]
+#[derive(Debug, Clone, Hydrate, Reconcile)]
 pub struct LayerData {
     pub enabled: bool,
     pub opinions: Vec<OpinionData>,
 }
 
-#[derive(Debug, Clone, Hydrate)]
+#[derive(Debug, Clone, Hydrate, Reconcile)]
 pub struct OpinionData {
     pub attrs: LoroMapValue,
     pub node: i64,
 }
 
 /// Typed attributes, hydrated from merged [`LoroMapValue`] during compilation.
-#[derive(Debug, Clone, Default, Hydrate)]
+#[derive(Debug, Clone, Default, Hydrate, Reconcile)]
 pub struct Attrs {
     #[loro(rename = "collider/params", default)]
     pub collider_params: Option<Vec<f32>>,

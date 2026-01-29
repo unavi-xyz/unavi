@@ -143,16 +143,23 @@ pub fn validate_value(value: &LoroValue, field: &Field, path: &str) -> Result<()
         Field::Struct(fields) => match value {
             LoroValue::Map(map) => {
                 for (key, inner_field) in fields {
-                    let val = map
-                        .get(key.as_str())
-                        .ok_or_else(|| ValidationError::MissingField(key.clone()))?;
-                    validate_value(val, inner_field, &format!("{path}.{key}")).map_err(|e| {
-                        ValidationError::InvalidField {
-                            path: path.to_string(),
-                            key: key.clone(),
-                            source: Box::new(e),
+                    match map.get(key.as_str()) {
+                        Some(val) => {
+                            validate_value(val, inner_field, &format!("{path}.{key}")).map_err(
+                                |e| ValidationError::InvalidField {
+                                    path: path.to_string(),
+                                    key: key.clone(),
+                                    source: Box::new(e),
+                                },
+                            )?;
                         }
-                    })?;
+                        None => {
+                            // Optional fields can be absent; non-optional fields cannot.
+                            if !matches!(inner_field.as_ref(), Field::Optional(_)) {
+                                return Err(ValidationError::MissingField(key.clone()));
+                            }
+                        }
+                    }
                 }
                 Ok(())
             }
@@ -466,5 +473,33 @@ mod tests {
     fn test_validate_blob_ref_wrong_type_string() {
         let value = LoroValue::String("not a binary".into());
         assert!(validate_value(&value, &Field::BlobRef, "test").is_err());
+    }
+
+    #[test]
+    fn test_validate_optional_absent() {
+        let map = std::collections::HashMap::new();
+        let value = LoroValue::Map(map.into());
+
+        let mut fields = BTreeMap::new();
+        fields.insert(
+            "opt".into(),
+            Box::new(Field::Optional(Box::new(Field::String))),
+        );
+
+        assert!(validate_value(&value, &Field::Struct(fields), "test").is_ok());
+    }
+
+    #[test]
+    fn test_validate_required_absent() {
+        let map = std::collections::HashMap::new();
+        let value = LoroValue::Map(map.into());
+
+        let mut fields = BTreeMap::new();
+        fields.insert("required".into(), Box::new(Field::String));
+
+        assert!(matches!(
+            validate_value(&value, &Field::Struct(fields), "test"),
+            Err(ValidationError::MissingField(_))
+        ));
     }
 }

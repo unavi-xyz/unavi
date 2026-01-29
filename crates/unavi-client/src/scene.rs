@@ -33,6 +33,6 @@ pub fn spawn_scene(asset_server: Res<AssetServer>, mut commands: Commands) {
     commands.spawn((
         Collider::half_space(Vec3::Y),
         RigidBody::Static,
-        Transform::from_xyz(0.0, 0.0, 0.0),
+        Transform::from_xyz(0.0, -50.0, 0.0),
     ));
 }

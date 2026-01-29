@@ -79,13 +79,13 @@ async fn try_fetch_beacons(
         .await?;
     info!("Queried {} beacons", found.len());
 
-    let remote_host = *remote_actor.host();
+    let remote_host = remote_actor.host();
     let now = OffsetDateTime::now_utc().unix_timestamp();
 
     for id in found {
         match local_actor
             .read(id)
-            .sync_from(remote_host.into())
+            .sync_from(remote_host.clone())
             .send()
             .await
         {
@@ -149,7 +149,7 @@ async fn create_and_join_home(
         local_actor.upload_blob(bytes).await?;
     }
 
-    info!("Created home space: {}", res.id);
+    info!(id = %res.id, "Created home space");
     command_tx.send(NetworkCommand::Join(res.id)).await?;
 
     Ok(())

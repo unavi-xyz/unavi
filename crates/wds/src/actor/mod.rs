@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration};
 use anyhow::Context;
 use blake3::Hash;
 use bytes::Bytes;
-use iroh::{EndpointAddr, EndpointId};
+use iroh::EndpointAddr;
 use irpc::Client;
 use loro::{LoroDoc, VersionVector};
 use time::OffsetDateTime;
@@ -36,7 +36,7 @@ pub use record_builder::RecordResult;
 #[derive(Clone)]
 pub struct Actor {
     identity: Arc<Identity>,
-    host: EndpointId,
+    host: EndpointAddr,
     api_client: Client<ApiService>,
     auth_client: Client<AuthService>,
     session: Arc<Mutex<OnceCell<SessionToken>>>,
@@ -45,7 +45,7 @@ pub struct Actor {
 impl Actor {
     pub(crate) fn new(
         identity: Arc<Identity>,
-        host: EndpointId,
+        host: EndpointAddr,
         api_client: Client<ApiService>,
         auth_client: Client<AuthService>,
     ) -> Self {
@@ -64,7 +64,7 @@ impl Actor {
     }
 
     #[must_use]
-    pub const fn host(&self) -> &EndpointId {
+    pub const fn host(&self) -> &EndpointAddr {
         &self.host
     }
 

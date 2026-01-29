@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use derive_more::Debug;
-use iroh::{Endpoint, EndpointId, protocol::Router};
+use iroh::{Endpoint, EndpointAddr, EndpointId, protocol::Router};
 use iroh_blobs::api::Store as BlobStore;
 use irpc::Client;
 use n0_future::task::AbortOnDropHandle;
@@ -74,7 +74,7 @@ impl DataStore {
     pub fn local_actor(&self, identity: Arc<Identity>) -> actor::Actor {
         actor::Actor::new(
             identity,
-            self.router.endpoint().id(),
+            self.router.endpoint().addr(),
             self.api_client.clone(),
             self.auth_client.clone(),
         )
@@ -82,9 +82,10 @@ impl DataStore {
 
     /// Create an actor targeting a remote WDS.
     #[must_use]
-    pub fn remote_actor(&self, identity: Arc<Identity>, host: EndpointId) -> actor::Actor {
-        let api_client = irpc_iroh::client(self.router.endpoint().clone(), host, api::ALPN);
-        let auth_client = irpc_iroh::client(self.router.endpoint().clone(), host, auth::ALPN);
+    pub fn remote_actor(&self, identity: Arc<Identity>, host: EndpointAddr) -> actor::Actor {
+        let api_client = irpc_iroh::client(self.router.endpoint().clone(), host.clone(), api::ALPN);
+        let auth_client =
+            irpc_iroh::client(self.router.endpoint().clone(), host.clone(), auth::ALPN);
         actor::Actor::new(identity, host, api_client, auth_client)
     }
 

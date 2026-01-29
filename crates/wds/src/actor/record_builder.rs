@@ -150,23 +150,23 @@ impl RecordBuilder {
         // Sync to additional actors (best-effort).
         let mut sync_results = Vec::with_capacity(self.sync_targets.len());
         for target in &self.sync_targets {
-            let host = *target.host();
+            let host = target.host();
 
             // Ensure schema blobs exist at remote.
             for schema in &all_schemas {
                 if let Err(err) = ensure_schema_uploaded(target, schema).await {
-                    warn!(%host, schema = %schema.hash, ?err, "failed to ensure schema at remote");
+                    warn!(host = %host.id, schema = %schema.hash, ?err, "failed to ensure schema at remote");
                 }
             }
 
             let mut result = target.pin_record(id, self.ttl).await;
 
             if let Err(err) = &result {
-                warn!(%host, ?err, "failed to pin record at remote");
+                warn!(host = %host.id, ?err, "failed to pin record at remote");
             } else {
                 result = target.upload_envelope(id, &signed).await;
             }
-            sync_results.push((host, result));
+            sync_results.push((host.id, result));
         }
 
         Ok(RecordResult {

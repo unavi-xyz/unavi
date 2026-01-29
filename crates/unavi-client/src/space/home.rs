@@ -119,6 +119,8 @@ async fn create_and_join_home(
 ) -> anyhow::Result<()> {
     let did = local_actor.identity().did();
 
+    let (blobs, stage) = default_stage();
+
     let res = local_actor
         .create_record()
         .public()
@@ -130,13 +132,22 @@ async fn create_and_join_home(
         })?
         .add_schema("hsd", &*SCHEMA_STAGE, |doc| {
             let map = doc.get_map("hsd");
-            let stage = default_stage();
             stage.reconcile(&map)?;
             Ok(())
         })?
-        .sync_to(remote_actor)
+        .sync_to(remote_actor.clone())
         .send()
         .await?;
+
+    for bytes in blobs.0 {
+        if let Some(remote_actor) = &remote_actor
+            && let Err(err) = remote_actor.upload_blob(bytes.clone()).await
+        {
+            warn!(?err, "failed to upload blob dep to remote");
+        }
+
+        local_actor.upload_blob(bytes).await?;
+    }
 
     info!("Created home space: {}", res.id);
     command_tx.send(NetworkCommand::Join(res.id)).await?;

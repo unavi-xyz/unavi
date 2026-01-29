@@ -13140,6 +13140,7 @@ dependencies = [
  "bitflags 2.10.0",
  "blake3",
  "bytemuck",
+ "bytes 1.11.0",
  "clap",
  "directories",
  "embed-resource",

@@ -34,6 +34,7 @@ image                  = { features = ["png"], workspace = true }
 iroh-gossip            = "0.95.0"
 log                    = { features = ["max_level_debug", "release_max_level_warn"], version = "*" }
 loro.workspace         = true
+loro-surgeon.path      = "../loro-surgeon"
 n0-future.workspace    = true
 parking_lot.workspace  = true
 postcard.workspace     = true

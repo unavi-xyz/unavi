@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use loro::LoroMapValue;
 
 mod compile;
-mod hydration;
+pub mod hydration;
 mod load;
 mod merge;
 pub mod stage;

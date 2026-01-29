@@ -3,12 +3,27 @@ use bevy_hsd::{
     hydration::topology::HydratedTopology,
     stage::{LayerData, OpinionData, StageData},
 };
+use blake3::Hash;
 use bytemuck::cast_slice;
+use bytes::Bytes;
 use loro::{LoroMapValue, LoroValue};
 use loro_surgeon::Reconcile;
 
-pub fn default_stage() -> StageData {
+#[derive(Default)]
+pub struct Blobs(pub Vec<Bytes>);
+
+impl Blobs {
+    fn add_blob(&mut self, bytes: impl Into<Bytes>) -> Hash {
+        let bytes = bytes.into();
+        let hash = blake3::hash(&bytes);
+        self.0.push(bytes);
+        hash
+    }
+}
+
+pub fn default_stage() -> (Blobs, StageData) {
     let mut attrs = LoroMapValue::default();
+    let mut blobs = Blobs::default();
 
     // Ground.
     let x_length = 10.0;
@@ -41,7 +56,13 @@ pub fn default_stage() -> StageData {
     };
     attrs.make_mut().insert(
         "mesh/indices".to_string(),
-        LoroValue::Binary(cast_slice(indices).to_vec().into()),
+        LoroValue::Binary(
+            blobs
+                .add_blob(cast_slice(indices).to_vec())
+                .as_bytes()
+                .to_vec()
+                .into(),
+        ),
     );
 
     let Some(points) = cube.attribute(Mesh::ATTRIBUTE_POSITION) else {
@@ -49,7 +70,13 @@ pub fn default_stage() -> StageData {
     };
     attrs.make_mut().insert(
         "mesh/points".to_string(),
-        LoroValue::Binary(points.get_bytes().to_vec().into()),
+        LoroValue::Binary(
+            blobs
+                .add_blob(points.get_bytes().to_vec())
+                .as_bytes()
+                .to_vec()
+                .into(),
+        ),
     );
 
     let Some(normals) = cube.attribute(Mesh::ATTRIBUTE_NORMAL) else {
@@ -57,7 +84,13 @@ pub fn default_stage() -> StageData {
     };
     attrs.make_mut().insert(
         "mesh/normals".to_string(),
-        LoroValue::Binary(normals.get_bytes().to_vec().into()),
+        LoroValue::Binary(
+            blobs
+                .add_blob(normals.get_bytes().to_vec())
+                .as_bytes()
+                .to_vec()
+                .into(),
+        ),
     );
 
     attrs.make_mut().insert(
@@ -76,10 +109,12 @@ pub fn default_stage() -> StageData {
         ),
     );
 
-    StageData {
+    let stage = StageData {
         layers: vec![LayerData {
             enabled: true,
             opinions: vec![OpinionData { node: 0, attrs }],
         }],
-    }
+    };
+
+    (blobs, stage)
 }

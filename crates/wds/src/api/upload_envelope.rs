@@ -31,7 +31,7 @@ pub async fn upload_envelope(
     let result = store_envelope(&ctx.db, ctx.blobs.as_ref().as_ref(), &record_id, &env_bytes).await;
 
     if let Err(ref err) = result {
-        warn!(%record_id, ?err, "failed to store envelope");
+        warn!(%record_id, %err, "failed to store envelope");
     }
 
     tx.send(result.map_err(ApiError::from)).await?;

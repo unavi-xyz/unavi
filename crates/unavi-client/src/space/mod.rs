@@ -6,6 +6,7 @@ pub mod beacon;
 mod default_stage;
 mod home;
 mod publish_beacons;
+mod spawn;
 
 pub struct SpacePlugin;
 
@@ -13,7 +14,11 @@ impl Plugin for SpacePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
-            (home::join_home_space, publish_beacons::publish_beacons),
+            (
+                home::join_home_space,
+                publish_beacons::publish_beacons,
+                spawn::spawn_space_stage,
+            ),
         );
     }
 }

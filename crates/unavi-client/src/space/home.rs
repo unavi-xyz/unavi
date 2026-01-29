@@ -1,12 +1,17 @@
 use bevy::prelude::*;
+use bevy_hsd::{
+    Stage,
+    stage::{LayerData, OpinionData, StageData},
+};
 use bevy_wds::{LocalActor, RemoteActor};
+use loro::{LoroMapValue, LoroValue};
 use time::OffsetDateTime;
 use wds::actor::Actor;
-use wired_schemas::{SCHEMA_BEACON, SCHEMA_HOME, SCHEMA_SPACE};
+use wired_schemas::{SCHEMA_BEACON, SCHEMA_HOME, SCHEMA_SPACE, SCHEMA_STAGE};
 
 use crate::{
     networking::thread::{NetworkCommand, NetworkingThread},
-    space::beacon::Beacon,
+    space::{beacon::Beacon, default_stage::default_stage},
 };
 
 pub fn join_home_space(
@@ -89,18 +94,16 @@ async fn discover_or_home(
     beacons.sort_by(|a, b| a.expires.cmp(&b.expires));
 
     if let Some(beacon) = beacons.first() {
-        // Join most recent beacon.
         info!("Found populated space: {}", beacon.space);
         command_tx.send(NetworkCommand::Join(beacon.space)).await?;
     } else {
-        // Join home.
-        join_home_space_inner(local_actor, remote_actor, command_tx).await?;
+        create_and_join_home(local_actor, remote_actor, command_tx).await?;
     }
 
     Ok(())
 }
 
-async fn join_home_space_inner(
+async fn create_and_join_home(
     local_actor: Actor,
     remote_actor: Option<Actor>,
     command_tx: tokio::sync::mpsc::Sender<NetworkCommand>,
@@ -114,6 +117,10 @@ async fn join_home_space_inner(
         .add_schema("space", &*SCHEMA_SPACE, |doc| {
             let map = doc.get_map("space");
             map.insert("name", format!("{did}'s Home"))?;
+            Ok(())
+        })?
+        .add_schema("hsd", &*SCHEMA_STAGE, |doc| {
+            // let stage = default_stage();
             Ok(())
         })?
         .sync_to(remote_actor)

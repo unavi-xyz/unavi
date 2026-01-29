@@ -22,6 +22,8 @@ macro_rules! static_schema {
     };
 }
 
+static_schema!(SCHEMA_STAGE, "hsd/stage.ron");
+
 static_schema!(SCHEMA_ACL, "wds/acl.ron");
 static_schema!(SCHEMA_RECORD, "wds/record.ron");
 

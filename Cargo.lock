@@ -13139,6 +13139,7 @@ dependencies = [
  "bevy_vrm",
  "bitflags 2.10.0",
  "blake3",
+ "bytemuck",
  "clap",
  "directories",
  "embed-resource",

@@ -3,6 +3,7 @@ use blake3::Hash;
 use loro::LoroDoc;
 
 pub mod beacon;
+mod default_stage;
 mod home;
 mod publish_beacons;
 

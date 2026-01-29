@@ -93,13 +93,13 @@ pub fn setup_vrm_eye_offset(
 
         // Create WorldScale resource to scale world objects.
         // If VRM is taller than real_height, world shrinks so player feels taller.
-        let world_scale = WorldScale::new(config.real_height, vrm_height);
-        info!(
-            "Setting world scale: ({:.4}m real) ({:.4}m vrm) = {:.4}",
-            config.real_height, vrm_height, world_scale.0
-        );
-        commands.insert_resource(world_scale);
-        // TODO: Apply world scale
+        let _world_scale = WorldScale::new(config.real_height, vrm_height);
+        // TODO: Properly calculate and apply world scale
+        // info!(
+        //     "Setting world scale: ({:.4}m real) ({:.4}m vrm) = {:.4}",
+        //     config.real_height, vrm_height, world_scale.0
+        // );
+        // commands.insert_resource(world_scale);
 
         let avatar_y_in_rig = -vrm_height / 2.0 - lowest_y / 2.0;
 

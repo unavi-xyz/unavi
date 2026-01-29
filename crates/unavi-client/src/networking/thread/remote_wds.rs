@@ -2,10 +2,10 @@ use std::str::FromStr;
 
 use anyhow::Context;
 use bevy::log::{info, warn};
-use iroh::EndpointId;
+use iroh::{EndpointAddr, EndpointId};
 use xdid::{core::did::Did, resolver::DidResolver};
 
-pub async fn fetch_remote_host() -> anyhow::Result<Option<EndpointId>> {
+pub async fn fetch_remote_host() -> anyhow::Result<Option<EndpointAddr>> {
     let remote_wds_did = Did::from_str(
         std::env::var("REMOTE_WDS")
             .as_deref()
@@ -25,8 +25,10 @@ pub async fn fetch_remote_host() -> anyhow::Result<Option<EndpointId>> {
     for v in values {
         match EndpointId::from_str(&v) {
             Ok(id) => {
-                info!("Got remote WDS: {id}");
-                return Ok(Some(id));
+                info!(%id, "Got remote WDS");
+                return Ok(Some(EndpointAddr::new(id).with_relay_url(
+                    iroh::defaults::prod::default_na_east_relay().url,
+                )));
             }
             Err(e) => {
                 warn!(value = %v, err = ?e, "invalid wds service value");

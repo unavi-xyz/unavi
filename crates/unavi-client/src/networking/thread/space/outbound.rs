@@ -10,16 +10,16 @@ use std::{
 
 use anyhow::bail;
 use bevy::log::{debug, error, info, warn};
-use iroh::{EndpointId, endpoint::SendStream};
+use iroh::{EndpointAddr, EndpointId, endpoint::SendStream};
 use n0_future::task::AbortOnDropHandle;
 
 use super::{ControlMsg, DEFAULT_TICKRATE, IFrameMsg, PFrameDatagram};
 use crate::networking::thread::{NetworkThreadState, OutboundConn, PoseState};
 
-pub async fn handle_outbound(state: NetworkThreadState, remote: EndpointId) -> anyhow::Result<()> {
-    info!("connecting to {remote}");
+pub async fn handle_outbound(state: NetworkThreadState, peer: EndpointAddr) -> anyhow::Result<()> {
+    info!(id = %peer.id, "connecting to peer");
 
-    let connection = state.endpoint.connect(remote, super::ALPN).await?;
+    let connection = state.endpoint.connect(peer.clone(), super::ALPN).await?;
 
     let (ctrl_tx, ctrl_rx) = connection.open_bi().await?;
     let iframe_stream = connection.open_uni().await?;
@@ -34,7 +34,7 @@ pub async fn handle_outbound(state: NetworkThreadState, remote: EndpointId) -> a
 
         n0_future::task::spawn(async move {
             let result = tokio::select! {
-                r = send_frames(&tickrate, pose, iframe_stream, &conn, remote) => r,
+                r = send_frames(&tickrate, pose, iframe_stream, &conn, peer.id) => r,
                 r = handle_tickrate(ctrl_tx, ctrl_rx, &tickrate) => r,
             };
 
@@ -42,7 +42,7 @@ pub async fn handle_outbound(state: NetworkThreadState, remote: EndpointId) -> a
                 error!(?err, "outbound connection error");
             }
 
-            info!("outbound connection closed: {remote}");
+            info!(id = %peer.id, "outbound connection closed");
         })
     };
 
@@ -51,8 +51,8 @@ pub async fn handle_outbound(state: NetworkThreadState, remote: EndpointId) -> a
         task: AbortOnDropHandle::new(task),
     };
 
-    if let Err((_, existing)) = state.outbound.insert_async(remote, conn).await {
-        warn!("duplicate outbound connection to {remote}");
+    if let Err((_, existing)) = state.outbound.insert_async(peer.id, conn).await {
+        warn!(id = %peer.id, "duplicate outbound connection");
         existing.task.abort();
     }
 
@@ -65,7 +65,7 @@ async fn send_frames(
     pose: Arc<PoseState>,
     mut iframe_stream: SendStream,
     conn: &iroh::endpoint::Connection,
-    remote: EndpointId,
+    peer: EndpointId,
 ) -> anyhow::Result<()> {
     let mut last_iframe = 0;
 
@@ -85,14 +85,14 @@ async fn send_frames(
 
             let pframe_lock = pose.pframe.lock();
             if let Some(pframe_msg) = pframe_lock.as_ref() {
-                send_pframe(pframe_msg, conn, remote)?;
+                send_pframe(pframe_msg, conn, peer)?;
             }
         } else {
             let iframe_msg = iframe_msg.clone();
             drop(iframe_lock);
 
             last_iframe = iframe_msg.id;
-            send_iframe(&iframe_msg, &mut iframe_stream, remote).await?;
+            send_iframe(&iframe_msg, &mut iframe_stream, peer).await?;
         }
     }
 }
@@ -100,7 +100,7 @@ async fn send_frames(
 async fn send_iframe(
     msg: &IFrameMsg,
     stream: &mut SendStream,
-    remote: EndpointId,
+    peer: EndpointId,
 ) -> anyhow::Result<()> {
     let bytes = postcard::to_stdvec(msg)?;
 
@@ -113,7 +113,7 @@ async fn send_iframe(
     {
         use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
         let _ = NETWORK_EVENTS.0.try_send(NetworkEvent::Upload {
-            peer: remote,
+            peer,
             bytes: bytes.len() + 4,
             is_iframe: true,
         });
@@ -127,7 +127,7 @@ async fn send_iframe(
 fn send_pframe(
     msg: &PFrameDatagram,
     conn: &iroh::endpoint::Connection,
-    remote: EndpointId,
+    peer: EndpointId,
 ) -> anyhow::Result<()> {
     let bytes = postcard::to_stdvec(msg)?;
 
@@ -143,7 +143,7 @@ fn send_pframe(
     {
         use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
         let _ = NETWORK_EVENTS.0.try_send(NetworkEvent::Upload {
-            peer: remote,
+            peer,
             bytes: bytes.len(),
             is_iframe: false,
         });

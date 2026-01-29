@@ -12,7 +12,7 @@ impl Actor {
         let s = crate::auth::client::authenticate(
             self.identity().did().clone(),
             self.identity().signing_key(),
-            self.host,
+            self.host.id,
             &self.auth_client,
         )
         .await?;

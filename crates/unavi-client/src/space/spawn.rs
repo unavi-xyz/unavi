@@ -11,10 +11,14 @@ pub fn spawn_space_stage(
     for (ent, doc) in to_spawn {
         let map = doc.0.get_map("hsd");
 
-        let Ok(stage) = StageData::hydrate(&map.get_value()) else {
-            continue;
-        };
-
-        commands.entity(ent).insert(Stage(stage));
+        match StageData::hydrate(&map.get_deep_value()) {
+            Ok(stage) => {
+                info!(%ent, "Spawning space stage");
+                commands.entity(ent).insert(Stage(stage));
+            }
+            Err(err) => {
+                warn!(?err, "failed to hydrate space stage");
+            }
+        }
     }
 }

@@ -22,7 +22,6 @@ pub fn join_home_space(
     }
 
     let Ok(local_actor) = local_actor.single().map(|x| x.0.clone()) else {
-        warn!("local actor not found");
         return;
     };
 
@@ -31,8 +30,8 @@ pub fn join_home_space(
     let command_tx = nt.command_tx.clone();
 
     unavi_wasm_compat::spawn_thread(async move {
-        if let Err(e) = discover_or_home(local_actor, remote_actor, command_tx).await {
-            error!("Failed to join home space: {e:?}");
+        if let Err(err) = discover_or_home(local_actor, remote_actor, command_tx).await {
+            error!(?err, "Failed to join home space");
         }
     });
 
@@ -47,56 +46,70 @@ async fn discover_or_home(
     remote_actor: Option<Actor>,
     command_tx: tokio::sync::mpsc::Sender<NetworkCommand>,
 ) -> anyhow::Result<()> {
-    // Query for beacons.
+    if let Some(remote_actor) = &remote_actor {
+        match try_fetch_beacons(&local_actor, remote_actor).await {
+            Ok(beacons) => {
+                if let Some(beacon) = beacons.first() {
+                    info!("Found populated space: {}", beacon.space);
+                    command_tx.send(NetworkCommand::Join(beacon.space)).await?;
+                    return Ok(());
+                }
+            }
+            Err(err) => {
+                warn!(?err, "failed to fetch beacons");
+            }
+        }
+    }
+
+    create_and_join_home(local_actor, remote_actor, command_tx).await?;
+
+    Ok(())
+}
+
+async fn try_fetch_beacons(
+    local_actor: &Actor,
+    remote_actor: &Actor,
+) -> anyhow::Result<Vec<Beacon>> {
     let mut beacons = Vec::new();
 
-    if let Some(remote_actor) = &remote_actor {
-        let found = remote_actor
-            .query()
-            .schema(SCHEMA_BEACON.hash)
+    let found = remote_actor
+        .query()
+        .schema(SCHEMA_BEACON.hash)
+        .send()
+        .await?;
+    info!("Queried {} beacons", found.len());
+
+    let remote_host = *remote_actor.host();
+    let now = OffsetDateTime::now_utc().unix_timestamp();
+
+    for id in found {
+        match local_actor
+            .read(id)
+            .sync_from(remote_host.into())
             .send()
-            .await?;
-        info!("Queried {} beacons", found.len());
+            .await
+        {
+            Ok(doc) => {
+                let Ok(beacon) = Beacon::load(&doc) else {
+                    debug!("invalid beacon documnt");
+                    continue;
+                };
 
-        let remote_host = *remote_actor.host();
-        let now = OffsetDateTime::now_utc().unix_timestamp();
-
-        for id in found {
-            match local_actor
-                .read(id)
-                .sync_from(remote_host.into())
-                .send()
-                .await
-            {
-                Ok(doc) => {
-                    let Ok(beacon) = Beacon::load(&doc) else {
-                        debug!("invalid beacon documnt");
-                        continue;
-                    };
-
-                    if now >= beacon.expires {
-                        continue;
-                    }
-
-                    beacons.push(beacon);
+                if now >= beacon.expires {
+                    continue;
                 }
-                Err(e) => {
-                    warn!("failed to sync beacon: {e:?}");
-                }
+
+                beacons.push(beacon);
+            }
+            Err(err) => {
+                warn!(?err, "failed to sync beacon");
             }
         }
     }
 
     beacons.sort_by(|a, b| a.expires.cmp(&b.expires));
 
-    if let Some(beacon) = beacons.first() {
-        info!("Found populated space: {}", beacon.space);
-        command_tx.send(NetworkCommand::Join(beacon.space)).await?;
-    } else {
-        create_and_join_home(local_actor, remote_actor, command_tx).await?;
-    }
-
-    Ok(())
+    Ok(beacons)
 }
 
 async fn create_and_join_home(

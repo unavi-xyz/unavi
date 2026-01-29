@@ -27,23 +27,12 @@ pub fn spawn_lights(mut commands: Commands, mut ambient: ResMut<AmbientLight>) {
     ));
 }
 
-pub fn spawn_scene(
-    asset_server: Res<AssetServer>,
-    mut commands: Commands,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut meshes: ResMut<Assets<Mesh>>,
-) {
+pub fn spawn_scene(asset_server: Res<AssetServer>, mut commands: Commands) {
     LocalPlayerSpawner::default().spawn(&mut commands, &asset_server);
 
     commands.spawn((
         Collider::half_space(Vec3::Y),
         RigidBody::Static,
         Transform::from_xyz(0.0, 0.0, 0.0),
-    ));
-
-    commands.spawn((
-        MeshMaterial3d(materials.add(StandardMaterial::default())),
-        Mesh3d(meshes.add(Cuboid::new(30., 1., 30.))),
-        Transform::from_xyz(0., -0.5, 0.),
     ));
 }

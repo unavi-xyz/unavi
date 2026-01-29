@@ -110,7 +110,7 @@ async fn validate_schemas(
         author,
         is_first_envelope,
     )
-    .map_err(|e| WdsError::SchemaValidation(e.to_string()))?;
+    .map_err(|e| WdsError::SchemaValidation(format!("{e:?}")))?;
 
     Ok(schemas)
 }

@@ -37,6 +37,8 @@
           ../../scripts
           ../wds/migrations
           ./assets
+          ./index.html
+          ./public
         ];
       };
 
@@ -123,6 +125,7 @@
           // {
             pname = "${pname}-web";
             wasm-bindgen-cli = pkgs.wasm-bindgen-cli_0_2_105;
+            trunkIndexPath = "./crates/unavi-client/index.html";
 
             inherit cargoArtifacts;
             doCheck = false;
@@ -134,6 +137,10 @@
             postInstall = ''
               cp LICENSE $out
             '';
+
+            CC_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.clang-unwrapped}/bin/clang";
+            AR_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.llvm}/bin/llvm-ar";
+            CFLAGS_wasm32_unknown_unknown = "--target=wasm32 -O3 -isystem ${pkgs.llvmPackages_21.libclang.lib}/lib/clang/21/include";
           }
         );
       };

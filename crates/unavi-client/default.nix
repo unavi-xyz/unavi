@@ -1,9 +1,11 @@
-{ inputs, ... }:
+{ inputs, deployInfo, ... }:
 {
   perSystem =
     { pkgs, lib, ... }:
     let
       pname = "unavi-client";
+
+      remoteWds = channel: "did:web:${deployInfo.${channel}.services.unavi_server.domain}";
 
       wac-cli = pkgs.rustPlatform.buildRustPackage rec {
         pname = "wac-cli";
@@ -100,30 +102,9 @@
         );
       };
 
-      packages = {
-        "${pname}" = pkgs.crane.buildPackage (
-          cargoArgs
-          // {
-            inherit cargoArtifacts;
-            doCheck = false;
-
-            preBuild = ''
-              ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
-            '';
-
-            postInstall = ''
-              mkdir -p $out/bin/assets
-              cp -r crates/${pname}/assets/* $out/bin/assets/
-              rm -rf $out/bin/assets/wasm/test $out/bin/assets/wasm/example
-
-              cp LICENSE $out
-            '';
-          }
-        );
-        "${pname}-web" = pkgs.crane.buildTrunkPackage (
-          cargoArgs
-          // {
-            pname = "${pname}-web";
+      packages =
+        let
+          webArgs = {
             wasm-bindgen-cli = pkgs.wasm-bindgen-cli_0_2_105;
             trunkIndexPath = "./crates/unavi-client/index.html";
 
@@ -141,8 +122,46 @@
             CC_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.clang-unwrapped}/bin/clang";
             AR_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.llvm}/bin/llvm-ar";
             CFLAGS_wasm32_unknown_unknown = "--target=wasm32 -O3 -isystem ${pkgs.llvmPackages_21.libclang.lib}/lib/clang/21/include";
-          }
-        );
-      };
+          };
+        in
+        {
+          "${pname}" = pkgs.crane.buildPackage (
+            cargoArgs
+            // {
+              inherit cargoArtifacts;
+              doCheck = false;
+
+              preBuild = ''
+                ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
+              '';
+
+              postInstall = ''
+                mkdir -p $out/bin/assets
+                cp -r crates/${pname}/assets/* $out/bin/assets/
+                rm -rf $out/bin/assets/wasm/test $out/bin/assets/wasm/example
+
+                cp LICENSE $out
+              '';
+            }
+          );
+
+          "${pname}-web" = pkgs.crane.buildTrunkPackage (cargoArgs // webArgs // { pname = "${pname}-web"; });
+          "${pname}-web-beta" = pkgs.crane.buildTrunkPackage (
+            cargoArgs
+            // webArgs
+            // {
+              pname = "${pname}-web-beta";
+              REMOTE_WDS = remoteWds "beta";
+            }
+          );
+          "${pname}-web-stable" = pkgs.crane.buildTrunkPackage (
+            cargoArgs
+            // webArgs
+            // {
+              pname = "${pname}-web-stable";
+              REMOTE_WDS = remoteWds "stable";
+            }
+          );
+        };
     };
 }

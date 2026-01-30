@@ -2,13 +2,13 @@
   "beta": {
     "server_ipv4": "143.198.20.136",
     "services": {
-      "dwn_server": {
-        "domain": "beta.dwn.unavi.xyz",
-        "port": 8080
-      },
       "unavi_server": {
-        "domain": "beta.space.unavi.xyz",
+        "domain": "beta.wds.unavi.xyz",
         "port": 5000
+      },
+      "web_client": {
+        "domain": "beta.app.unavi.xyz",
+        "static": true
       }
     }
   },
@@ -19,13 +19,13 @@
   "stable": {
     "server_ipv4": "167.71.181.219",
     "services": {
-      "dwn_server": {
-        "domain": "dwn.unavi.xyz",
-        "port": 8080
-      },
       "unavi_server": {
-        "domain": "space.unavi.xyz",
+        "domain": "wds.unavi.xyz",
         "port": 5000
+      },
+      "web_client": {
+        "domain": "app.unavi.xyz",
+        "static": true
       }
     }
   }

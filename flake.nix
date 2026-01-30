@@ -41,8 +41,13 @@
     }:
     flake-parts.lib.mkFlake { inherit inputs; } (
       { ... }:
+      let
+        deployInfo = builtins.fromJSON (builtins.readFile ./infra/terraform/deploy.json);
+      in
       {
         systems = import systems;
+
+        _module.args = { inherit deployInfo; };
 
         imports = [
           inputs.treefmt-nix.flakeModule
@@ -51,53 +56,49 @@
           ./crates/unavi-server
         ];
 
-        flake =
-          let
-            deployInfo = builtins.fromJSON (builtins.readFile ./infra/terraform/deploy.json);
-          in
-          {
-            nixosConfigurations = {
-              beta = nixpkgs.lib.nixosSystem {
-                system = "x86_64-linux";
-                specialArgs = { inherit inputs self deployInfo; };
-                modules = [
-                  ./infra/nixos/beta.nix
-                  sops-nix.nixosModules.sops
-                ];
-              };
-
-              stable = nixpkgs.lib.nixosSystem {
-                system = "x86_64-linux";
-                specialArgs = { inherit inputs self deployInfo; };
-                modules = [
-                  ./infra/nixos/stable.nix
-                  sops-nix.nixosModules.sops
-                ];
-              };
+        flake = {
+          nixosConfigurations = {
+            beta = nixpkgs.lib.nixosSystem {
+              system = "x86_64-linux";
+              specialArgs = { inherit inputs self deployInfo; };
+              modules = [
+                ./infra/nixos/beta.nix
+                sops-nix.nixosModules.sops
+              ];
             };
 
-            deploy.nodes = {
-              unavi-beta = {
-                hostname = deployInfo.beta.server_ipv4;
-                sshUser = "root";
-                profiles.system = {
-                  user = "root";
-                  path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.beta;
-                };
-              };
-
-              unavi-stable = {
-                hostname = deployInfo.stable.server_ipv4;
-                sshUser = "root";
-                profiles.system = {
-                  user = "root";
-                  path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.stable;
-                };
-              };
+            stable = nixpkgs.lib.nixosSystem {
+              system = "x86_64-linux";
+              specialArgs = { inherit inputs self deployInfo; };
+              modules = [
+                ./infra/nixos/stable.nix
+                sops-nix.nixosModules.sops
+              ];
             };
-
-            checks = builtins.mapAttrs (_system: deployLib: deployLib.deployChecks self.deploy) deploy-rs.lib;
           };
+
+          deploy.nodes = {
+            unavi-beta = {
+              hostname = deployInfo.beta.server_ipv4;
+              sshUser = "root";
+              profiles.system = {
+                user = "root";
+                path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.beta;
+              };
+            };
+
+            unavi-stable = {
+              hostname = deployInfo.stable.server_ipv4;
+              sshUser = "root";
+              profiles.system = {
+                user = "root";
+                path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.stable;
+              };
+            };
+          };
+
+          checks = builtins.mapAttrs (_system: deployLib: deployLib.deployChecks self.deploy) deploy-rs.lib;
+        };
 
         perSystem =
           {

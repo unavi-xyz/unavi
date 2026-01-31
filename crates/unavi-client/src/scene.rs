@@ -10,8 +10,12 @@ pub fn spawn_lights(mut commands: Commands, mut ambient: ResMut<AmbientLight>) {
     ambient.brightness = lux::OVERCAST_DAY;
     commands.spawn((
         CascadeShadowConfigBuilder {
-            first_cascade_far_bound: 5.0,
+            #[cfg(not(target_family = "wasm"))]
+            first_cascade_far_bound: 8.0,
+            #[cfg(not(target_family = "wasm"))]
             maximum_distance: 50.0,
+            #[cfg(target_family = "wasm")]
+            maximum_distance: 20.0,
             minimum_distance: 0.1,
             num_cascades: 3,
             ..Default::default()
@@ -33,6 +37,6 @@ pub fn spawn_scene(asset_server: Res<AssetServer>, mut commands: Commands) {
     commands.spawn((
         Collider::half_space(Vec3::Y),
         RigidBody::Static,
-        Transform::from_xyz(0.0, -50.0, 0.0),
+        Transform::default(),
     ));
 }

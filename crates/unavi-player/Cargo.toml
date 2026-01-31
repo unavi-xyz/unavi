@@ -9,6 +9,9 @@ version.workspace    = true
 [lints]
 workspace = true
 
+[features]
+webgpu = ["bevy/webgpu"]
+
 [dependencies]
 avian3d.workspace  = true
 bevy               = { default-features = true, workspace = true }

@@ -114,6 +114,7 @@ pub struct NetworkThreadState {
     pub pose: Arc<PoseState>,
 }
 
+#[expect(clippy::too_many_lines)]
 async fn thread_loop(
     opts: &NetworkingThreadOpts,
     command_rx: &mut tokio::sync::mpsc::Receiver<NetworkCommand>,
@@ -182,7 +183,7 @@ async fn thread_loop(
         remote_actor,
         outbound: Arc::default(),
         _inbound: inbound,
-        // Initialize ID at a random value, to avoid leaking information about playtime.
+        // Initialize ID at a random value, to avoid leaking playtime information.
         iframe_id: Arc::new(AtomicU16::new(rand::random())),
         pose: Arc::default(),
     };
@@ -221,7 +222,11 @@ async fn thread_loop(
             }
             NetworkCommand::PublishPFrame(pose) => {
                 let iframe_id = state.iframe_id.load(Ordering::Relaxed);
-                let msg = PFrameDatagram { iframe_id, pose };
+                let msg = PFrameDatagram {
+                    iframe_id,
+                    seq: 0,
+                    pose,
+                };
                 *state.pose.pframe.lock() = Some(msg);
             }
             NetworkCommand::Shutdown => {

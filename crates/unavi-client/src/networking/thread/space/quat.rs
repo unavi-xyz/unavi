@@ -5,11 +5,12 @@
 
 use avian3d::math::FRAC_1_SQRT_2;
 use bevy::math::Quat;
+use postcard::experimental::max_size::MaxSize;
 use serde::{Deserialize, Serialize};
 
 /// Smallest-three encoded quaternion packed into 32 bits.
 /// Format: 2-bit index (largest component) + 3×10-bit components.
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, MaxSize, Serialize, Deserialize)]
 pub struct PackedQuat(pub u32);
 
 impl From<Quat> for PackedQuat {

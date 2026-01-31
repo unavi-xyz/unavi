@@ -1,10 +1,11 @@
 //! Position quantization types.
 
 use bevy::math::Vec3;
+use postcard::experimental::max_size::MaxSize;
 use serde::{Deserialize, Serialize};
 
 /// I-frame position: full precision f32.
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, MaxSize, Serialize, Deserialize)]
 pub struct IFramePos {
     pub x: f32,
     pub y: f32,
@@ -29,7 +30,7 @@ impl From<IFramePos> for Vec3 {
 
 /// P-frame position: logarithmic-encoded delta from I-frame baseline.
 /// Uses ln(1 + |delta| * K) encoding for sub-mm precision near zero.
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, MaxSize, Serialize, Deserialize)]
 pub struct PFramePos {
     pub x: i16,
     pub y: i16,

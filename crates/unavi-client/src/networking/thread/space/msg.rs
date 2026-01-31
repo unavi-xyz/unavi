@@ -17,6 +17,9 @@ pub struct IFrameMsg {
 pub struct PFrameDatagram {
     /// Must match the latest I-frame ID to be accepted.
     pub iframe_id: u16,
+    /// Monotonic sequence number within the current I-frame window.
+    /// Resets to 1 when a new I-frame is sent.
+    pub seq: u16,
     pub pose: PlayerPFrame,
 }
 

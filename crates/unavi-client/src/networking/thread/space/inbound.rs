@@ -7,7 +7,10 @@ use bevy::log::{info, warn};
 use iroh::{EndpointId, endpoint::Connection};
 use tracing::debug;
 
-use super::{ControlMsg, DEFAULT_TICKRATE, IFrameMsg, PFrameDatagram};
+use super::{
+    ControlMsg, DEFAULT_TICKRATE, IFrameMsg, PFrameDatagram, buffer::CONTROL_MSG_MAX_SIZE,
+    reorder::PFrameReorderBuffer,
+};
 use crate::networking::thread::{InboundState, NetworkEvent};
 
 pub async fn handle_inbound(
@@ -53,7 +56,7 @@ pub async fn handle_inbound(
 async fn recv_iframes(
     mut stream: iroh::endpoint::RecvStream,
     state: &InboundState,
-    remote: EndpointId,
+    #[cfg_attr(not(feature = "devtools-network"), expect(unused))] remote: EndpointId,
 ) -> anyhow::Result<()> {
     loop {
         // Read length prefix.
@@ -96,8 +99,10 @@ async fn recv_iframes(
 async fn recv_pframes(
     conn: &Connection,
     state: &InboundState,
-    remote: EndpointId,
+    #[cfg_attr(not(feature = "devtools-network"), expect(unused))] remote: EndpointId,
 ) -> anyhow::Result<()> {
+    let mut reorder = PFrameReorderBuffer::default();
+
     loop {
         let datagram = conn.read_datagram().await?;
         let msg: PFrameDatagram = match postcard::from_bytes(&datagram) {
@@ -108,7 +113,6 @@ async fn recv_pframes(
             }
         };
 
-        // Check P-frame ID matches latest I-frame.
         let current_iframe_id = state.pose.iframe.lock().as_ref().map_or(0, |f| f.id);
 
         if msg.iframe_id != current_iframe_id {
@@ -127,19 +131,25 @@ async fn recv_pframes(
             continue;
         }
 
-        #[cfg(feature = "devtools-network")]
-        {
-            use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
-            let _ = NETWORK_EVENTS.0.try_send(NetworkEvent::Download {
-                peer: remote,
-                bytes: datagram.len(),
-            });
-            let _ = NETWORK_EVENTS
-                .0
-                .try_send(NetworkEvent::ValidTick { peer: remote });
+        if msg.iframe_id != reorder.iframe_id() {
+            reorder.reset(msg.iframe_id);
         }
 
-        *state.pose.pframe.lock() = Some(msg);
+        for ready_frame in reorder.insert(msg) {
+            #[cfg(feature = "devtools-network")]
+            {
+                use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
+                let _ = NETWORK_EVENTS.0.try_send(NetworkEvent::Download {
+                    peer: remote,
+                    bytes: datagram.len(),
+                });
+                let _ = NETWORK_EVENTS
+                    .0
+                    .try_send(NetworkEvent::ValidTick { peer: remote });
+            }
+
+            *state.pose.pframe.lock() = Some(ready_frame);
+        }
     }
 }
 
@@ -149,36 +159,34 @@ async fn respond_tickrate(
     mut rx: iroh::endpoint::RecvStream,
     state: &InboundState,
 ) -> anyhow::Result<()> {
-    // Read their tickrate request.
     let mut len_buf = [0u8; 4];
     rx.read_exact(&mut len_buf).await?;
     let len = u32::from_le_bytes(len_buf) as usize;
 
-    if len > 1024 {
+    if len > CONTROL_MSG_MAX_SIZE {
         bail!("control message too large: {len}");
     }
 
-    let mut buf = vec![0u8; len];
-    rx.read_exact(&mut buf).await?;
+    let mut recv_buf = [0u8; CONTROL_MSG_MAX_SIZE];
+    rx.read_exact(&mut recv_buf[..len]).await?;
 
-    let request: ControlMsg = postcard::from_bytes(&buf)?;
+    let request: ControlMsg = postcard::from_bytes(&recv_buf[..len])?;
     let ControlMsg::TickrateRequest { hz: their_hz } = request else {
         bail!("expected TickrateRequest, got {request:?}");
     };
 
-    // Respond with effective tickrate (minimum of theirs and ours).
     let effective = their_hz.min(DEFAULT_TICKRATE);
     state.tickrate.store(effective, Ordering::Relaxed);
 
     let ack = ControlMsg::TickrateAck { hz: effective };
-    let bytes = postcard::to_stdvec(&ack)?;
+    let mut send_buf = [0u8; CONTROL_MSG_MAX_SIZE];
+    let bytes = postcard::to_slice(&ack, &mut send_buf)?;
     let len = u32::try_from(bytes.len())?;
     tx.write_all(&len.to_le_bytes()).await?;
-    tx.write_all(&bytes).await?;
+    tx.write_all(bytes).await?;
 
     info!(hz = effective, "tickrate negotiated (inbound)");
 
-    // Keep alive, wait for remote to close.
     loop {
         let mut len_buf = [0u8; 4];
         if rx.read_exact(&mut len_buf).await.is_err() {

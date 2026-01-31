@@ -2,6 +2,7 @@
 
 use bevy::math::{Quat, Vec3};
 use bevy_vrm::BoneName;
+use postcard::experimental::max_size::MaxSize;
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -10,7 +11,7 @@ use super::{
 };
 
 /// I-frame transform: full precision position and rotation.
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, MaxSize, Serialize, Deserialize)]
 pub struct IFrameTransform {
     pub pos: IFramePos,
     pub rot: PackedQuat,
@@ -26,7 +27,7 @@ impl IFrameTransform {
 }
 
 /// P-frame transform: delta position and full rotation.
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, MaxSize, Serialize, Deserialize)]
 pub struct PFrameTransform {
     pub pos: PFramePos,
     pub rot: PackedQuat,

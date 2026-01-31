@@ -6,6 +6,33 @@ use bevy_tnua::prelude::{TnuaBuiltinJump, TnuaBuiltinWalk, TnuaController};
 use unavi_input::{JumpAction, LookAction, MoveAction, SprintAction, schminput::prelude::*};
 use unavi_portal::teleport::PortalTeleport;
 
+const SENSITIVITY: f32 = 0.08;
+
+#[cfg(target_family = "wasm")]
+fn sensitivity() -> f32 {
+    use std::sync::OnceLock;
+    static IS_FIREFOX: OnceLock<bool> = OnceLock::new();
+
+    let is_firefox = *IS_FIREFOX.get_or_init(|| {
+        web_sys::window()
+            .and_then(|w| w.navigator().user_agent().ok())
+            .is_some_and(|ua| ua.contains("Firefox"))
+    });
+
+    if is_firefox {
+        // Firefox reports different pointer lock deltas, requiring higher sensitivity.
+        SENSITIVITY * 12.0
+    } else {
+        // Other browsers need a lower sensitivity than native.
+        SENSITIVITY * 0.7
+    }
+}
+
+#[cfg(not(target_family = "wasm"))]
+const fn sensitivity() -> f32 {
+    SENSITIVITY
+}
+
 use crate::{
     ControlScheme, PlayerEntities, PlayerRig,
     config::PlayerConfig,
@@ -63,8 +90,7 @@ pub fn apply_head_input(
     };
 
     let delta = time.delta_secs();
-    let sensitivity = 0.1;
-    target.0 += action.any * delta * sensitivity;
+    target.0 += action.any * delta * sensitivity();
     target.y = target.y.clamp(-PITCH_BOUND, PITCH_BOUND);
 
     for entities in players.iter() {
@@ -126,8 +152,6 @@ pub fn apply_body_input(
         } else {
             1.0
         };
-
-        // info!("Desired motion: {:?}", target.0);
 
         controller.basis = TnuaBuiltinWalk {
             desired_motion: target.0 * multi,

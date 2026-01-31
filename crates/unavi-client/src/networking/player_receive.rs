@@ -55,11 +55,12 @@ pub fn receive_player_transforms(mut players: Query<(&PlayerInboundState, &mut T
             continue;
         };
 
-        target.translation = iframe.pose.root.pos.into();
+        let iframe_root: Vec3 = iframe.pose.root.pos.into();
+        target.translation = iframe_root;
 
         if pframe.iframe_id == iframe.id {
-            // Apply p-frame delta.
-            target.translation = pframe.pose.root.pos.apply_to(target.translation);
+            // Apply p-frame delta position relative to i-frame baseline.
+            target.translation = pframe.pose.root.pos.apply_to(iframe_root);
             target.rotation = pframe.pose.root.rot.into();
         } else {
             // Only apply i-frame rotation.

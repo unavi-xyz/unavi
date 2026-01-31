@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::pose::{PlayerIFrame, PlayerPFrame};
+use super::types::{PlayerIFrame, PlayerPFrame};
 
 /// I-frame message sent over reliable stream.
 #[derive(Clone, Debug, Serialize, Deserialize)]

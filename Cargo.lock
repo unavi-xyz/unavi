@@ -6038,6 +6038,7 @@ dependencies = [
  "cfg-if",
  "crunchy",
  "num-traits",
+ "serde",
  "zerocopy",
 ]
 
@@ -13144,6 +13145,7 @@ dependencies = [
  "clap",
  "directories",
  "embed-resource",
+ "half",
  "image",
  "iroh",
  "iroh-gossip",

@@ -136,11 +136,11 @@ impl Iterator for ReadyFrames {
 
 #[cfg(test)]
 mod tests {
+    use half::f16;
+
     use super::*;
-    use crate::networking::thread::space::{
-        pos::PFramePos,
-        pose::{PFrameTransform, PlayerPFrame},
-        quat::PackedQuat,
+    use crate::networking::thread::space::types::{
+        F16Pos, PFrameRootTransform, PackedQuat, PlayerPFrame,
     };
 
     fn make_frame(iframe_id: u16, seq: u16) -> PFrameDatagram {
@@ -148,8 +148,12 @@ mod tests {
             iframe_id,
             seq,
             pose: PlayerPFrame {
-                root: PFrameTransform {
-                    pos: PFramePos { x: 0, y: 0, z: 0 },
+                root: PFrameRootTransform {
+                    pos: F16Pos {
+                        x: f16::ZERO,
+                        y: f16::ZERO,
+                        z: f16::ZERO,
+                    },
                     rot: PackedQuat(0),
                 },
                 bones: Vec::new(),

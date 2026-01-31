@@ -32,6 +32,7 @@ blake3.workspace       = true
 bytemuck.workspace     = true
 bytes.workspace        = true
 clap.workspace         = true
+half.workspace         = true
 image                  = { features = ["png"], workspace = true }
 iroh-gossip            = "0.95.0"
 log                    = { features = ["max_level_debug", "release_max_level_warn"], version = "*" }

@@ -45,6 +45,7 @@ clap               = { features = ["derive"], version = "4.5.54" }
 directories        = "6.0.0"
 embed-resource     = "3.0.6"
 futures            = "0.3.31"
+half               = { features = ["serde"], version = "2.7.1" }
 image              = { default-features = false, version = "0.25.9" }
 iroh               = { default-features = false, version = "0.95.1" }
 iroh-blobs         = { default-features = false, version = "0.97.0" }

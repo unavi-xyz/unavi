@@ -19,13 +19,13 @@ mod buffer;
 mod inbound;
 pub mod msg;
 pub(super) mod outbound;
-mod pos;
-mod pose;
-mod quat;
 mod reorder;
+pub mod types;
 
 pub use msg::{ControlMsg, IFrameMsg, PFrameDatagram};
-pub use pose::{BonePose, IFrameTransform, PFrameTransform, PlayerIFrame, PlayerPFrame};
+pub use types::{
+    BonePose, IFrameTransform, PFrameRootTransform, PFrameTransform, PlayerIFrame, PlayerPFrame,
+};
 
 pub const ALPN: &[u8] = b"wired/space";
 pub const DEFAULT_TICKRATE: u8 = 20;

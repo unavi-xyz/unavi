@@ -65,6 +65,9 @@ impl LocalPlayerSpawner {
         let config = self.config.clone().unwrap_or_default();
         let tracking_source = self.tracking_source.unwrap_or_default();
 
+        let fog_color = Color::Srgba(Srgba::from_u8_array([0, 192, 240, 255]));
+        let fog_end = 1000.0;
+
         let camera = commands
             .spawn((
                 PlayerCamera,
@@ -74,22 +77,45 @@ impl LocalPlayerSpawner {
                     ..default()
                 }),
                 Hdr,
-                Atmosphere::EARTH,
-                AtmosphereSettings::default(),
                 Exposure::SUNLIGHT,
                 Bloom::OLD_SCHOOL,
                 Msaa::Sample4,
                 Transform::default().looking_at(Vec3::NEG_Z, Vec3::Y),
                 RenderLayers::from_layers(&[0, PORTAL_RENDER_LAYER])
                     .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::FirstPersonOnly]),
-                // https://github.com/bevyengine/bevy/issues/14340
-                #[cfg(not(target_family = "wasm"))]
-                AutoExposure {
-                    range: -4.0..=4.0,
-                    ..Default::default()
+                DistanceFog {
+                    color: fog_color,
+                    falloff: FogFalloff::Linear {
+                        start: fog_end * 0.8,
+                        end: fog_end,
+                    },
+                    ..default()
                 },
             ))
             .id();
+
+        #[cfg(not(target_family = "wasm"))]
+        commands.entity(camera).insert((
+            Atmosphere::EARTH,
+            AtmosphereSettings::default(),
+            // https://github.com/bevyengine/bevy/issues/14340
+            AutoExposure {
+                range: -4.0..=4.0,
+                ..default()
+            },
+        ));
+
+        // Add skybox to WASM, as the atmospheric shader is not supported on WebGL.
+        #[cfg(target_family = "wasm")]
+        commands.entity(camera).insert((
+            Mesh3d(asset_server.add(Cuboid::from_size(Vec3::splat(fog_end)).mesh().build())),
+            MeshMaterial3d(asset_server.add(StandardMaterial {
+                base_color: fog_color,
+                unlit: true,
+                cull_mode: None,
+                ..default()
+            })),
+        ));
 
         let body = commands
             .spawn((

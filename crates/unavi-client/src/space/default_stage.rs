@@ -26,9 +26,9 @@ pub fn default_stage() -> (Blobs, StageData) {
     let mut blobs = Blobs::default();
 
     // Ground.
-    let x_length = 10.0;
-    let y_length = 0.5;
-    let z_length = 10.0;
+    let x_length = 100.0;
+    let y_length = 1.0;
+    let z_length = 100.0;
 
     attrs.make_mut().insert(
         "xform/pos".to_string(),

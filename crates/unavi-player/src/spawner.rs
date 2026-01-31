@@ -2,7 +2,7 @@ use avian3d::prelude::{Collider, LockedAxes, RigidBody};
 use bevy::{
     camera::{Exposure, visibility::RenderLayers},
     pbr::{Atmosphere, AtmosphereSettings},
-    post_process::{auto_exposure::AutoExposure, bloom::Bloom},
+    post_process::bloom::Bloom,
     prelude::*,
     render::view::Hdr,
 };
@@ -180,18 +180,17 @@ fn spawn_camera(commands: &mut Commands, #[allow(unused)] asset_server: &AssetSe
                 },
                 ..default()
             },
-            // https://github.com/bevyengine/bevy/issues/14340
-            #[cfg(not(target_family = "wasm"))]
-            AutoExposure {
-                range: -4.0..=4.0,
-                ..default()
-            },
         ))
         .id();
 
-    // Atmospheric shader does not support WebGL, so add a skybox.
     #[cfg(all(target_family = "wasm", not(feature = "webgpu")))]
     commands.entity(camera).insert((
+        // https://github.com/bevyengine/bevy/issues/14340
+        bevy::post_process::auto_exposure::AutoExposure {
+            range: -4.0..=4.0,
+            ..default()
+        },
+        // Atmospheric shader does not support WebGL, so add a skybox.
         Mesh3d(asset_server.add(Cuboid::from_size(Vec3::splat(fog_end)).mesh().build())),
         MeshMaterial3d(asset_server.add(StandardMaterial {
             base_color: fog_color,

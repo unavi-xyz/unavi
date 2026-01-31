@@ -26,16 +26,16 @@ pub fn default_stage() -> (Blobs, StageData) {
     let mut blobs = Blobs::default();
 
     // Ground.
-    let x_length = 100.0;
+    let x_length = 20.0;
     let y_length = 1.0;
-    let z_length = 100.0;
+    let z_length = 20.0;
 
     attrs.make_mut().insert(
         "xform/pos".to_string(),
         LoroValue::List(
             vec![
                 LoroValue::Double(0.0),
-                LoroValue::Double(f64::from(y_length) / -2.0),
+                LoroValue::Double(f64::from(y_length) / -2.0 - 1.0),
                 LoroValue::Double(0.0),
             ]
             .into(),

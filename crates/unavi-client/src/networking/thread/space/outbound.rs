@@ -10,10 +10,14 @@ use std::{
 
 use anyhow::bail;
 use bevy::log::{debug, error, info, warn};
+use bytes::Bytes;
 use iroh::{EndpointAddr, EndpointId, endpoint::SendStream};
 use n0_future::task::AbortOnDropHandle;
 
-use super::{ControlMsg, DEFAULT_TICKRATE, IFrameMsg, PFrameDatagram};
+use super::{
+    ControlMsg, DEFAULT_TICKRATE, IFrameMsg, PFrameDatagram,
+    buffer::{CONTROL_MSG_MAX_SIZE, SendBuffer},
+};
 use crate::networking::thread::{NetworkThreadState, OutboundConn, PoseState};
 
 pub async fn handle_outbound(state: NetworkThreadState, peer: EndpointAddr) -> anyhow::Result<()> {
@@ -67,7 +71,9 @@ async fn send_frames(
     conn: &iroh::endpoint::Connection,
     peer: EndpointId,
 ) -> anyhow::Result<()> {
-    let mut last_iframe = 0;
+    let mut last_iframe = 0u16;
+    let mut pframe_seq = 0u16;
+    let mut send_buf = SendBuffer::new();
 
     loop {
         let hz = tickrate.load(Ordering::Relaxed).max(1);
@@ -85,14 +91,21 @@ async fn send_frames(
 
             let pframe_lock = pose.pframe.lock();
             if let Some(pframe_msg) = pframe_lock.as_ref() {
-                send_pframe(pframe_msg, conn, peer)?;
+                pframe_seq = pframe_seq.wrapping_add(1);
+                let msg = PFrameDatagram {
+                    iframe_id: last_iframe,
+                    seq: pframe_seq,
+                    pose: pframe_msg.pose.clone(),
+                };
+                send_pframe(&msg, conn, peer, &mut send_buf.pframe)?;
             }
         } else {
             let iframe_msg = iframe_msg.clone();
             drop(iframe_lock);
 
             last_iframe = iframe_msg.id;
-            send_iframe(&iframe_msg, &mut iframe_stream, peer).await?;
+            pframe_seq = 0;
+            send_iframe(&iframe_msg, &mut iframe_stream, peer, &mut send_buf.iframe).await?;
         }
     }
 }
@@ -100,14 +113,15 @@ async fn send_frames(
 async fn send_iframe(
     msg: &IFrameMsg,
     stream: &mut SendStream,
-    peer: EndpointId,
+    #[cfg_attr(not(feature = "devtools-network"), expect(unused))] peer: EndpointId,
+    buf: &mut [u8],
 ) -> anyhow::Result<()> {
-    let bytes = postcard::to_stdvec(msg)?;
+    let bytes = postcard::to_slice(msg, buf)?;
 
     // Write length-prefixed message.
     let len = u32::try_from(bytes.len())?;
     stream.write_all(&len.to_le_bytes()).await?;
-    stream.write_all(&bytes).await?;
+    stream.write_all(bytes).await?;
 
     #[cfg(feature = "devtools-network")]
     {
@@ -127,9 +141,10 @@ async fn send_iframe(
 fn send_pframe(
     msg: &PFrameDatagram,
     conn: &iroh::endpoint::Connection,
-    peer: EndpointId,
+    #[cfg_attr(not(feature = "devtools-network"), expect(unused))] peer: EndpointId,
+    buf: &mut [u8],
 ) -> anyhow::Result<()> {
-    let bytes = postcard::to_stdvec(msg)?;
+    let bytes = postcard::to_slice(msg, buf)?;
 
     // Check buffer space, drop if full.
     if conn.datagram_send_buffer_space() < bytes.len() {
@@ -137,7 +152,7 @@ fn send_pframe(
         return Ok(());
     }
 
-    conn.send_datagram(bytes.clone().into())?;
+    conn.send_datagram(Bytes::copy_from_slice(bytes))?;
 
     #[cfg(feature = "devtools-network")]
     {
@@ -162,24 +177,25 @@ async fn handle_tickrate(
     let request = ControlMsg::TickrateRequest {
         hz: DEFAULT_TICKRATE,
     };
-    let bytes = postcard::to_stdvec(&request)?;
+    let mut ctrl_buf = [0u8; CONTROL_MSG_MAX_SIZE];
+    let bytes = postcard::to_slice(&request, &mut ctrl_buf)?;
     let len = u32::try_from(bytes.len())?;
     tx.write_all(&len.to_le_bytes()).await?;
-    tx.write_all(&bytes).await?;
+    tx.write_all(bytes).await?;
 
     // Read their acknowledgement.
     let mut len_buf = [0u8; 4];
     rx.read_exact(&mut len_buf).await?;
     let len = u32::from_le_bytes(len_buf) as usize;
 
-    if len > 1024 {
+    if len > CONTROL_MSG_MAX_SIZE {
         bail!("control message too large: {len}");
     }
 
-    let mut buf = vec![0u8; len];
-    rx.read_exact(&mut buf).await?;
+    let mut recv_buf = [0u8; CONTROL_MSG_MAX_SIZE];
+    rx.read_exact(&mut recv_buf[..len]).await?;
 
-    let ack: ControlMsg = postcard::from_bytes(&buf)?;
+    let ack: ControlMsg = postcard::from_bytes(&recv_buf[..len])?;
     let ControlMsg::TickrateAck { hz } = ack else {
         bail!("expected TickrateAck, got {ack:?}");
     };

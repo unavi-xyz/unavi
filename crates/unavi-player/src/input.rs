@@ -127,6 +127,8 @@ pub fn apply_body_input(
             1.0
         };
 
+        // info!("Desired motion: {:?}", target.0);
+
         controller.basis = TnuaBuiltinWalk {
             desired_motion: target.0 * multi,
             ..Default::default()

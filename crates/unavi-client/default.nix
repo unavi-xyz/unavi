@@ -105,7 +105,7 @@
       packages =
         let
           webArgs = {
-            wasm-bindgen-cli = pkgs.wasm-bindgen-cli_0_2_105;
+            wasm-bindgen-cli = pkgs.wasm-bindgen-cli_0_2_106;
             trunkIndexPath = "./crates/unavi-client/index.html";
 
             inherit cargoArtifacts;
@@ -117,6 +117,10 @@
 
             postInstall = ''
               cp LICENSE $out
+            '';
+
+            installPhaseCommand = ''
+              cp -r dist $out
             '';
 
             CC_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.clang-unwrapped}/bin/clang";

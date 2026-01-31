@@ -61,7 +61,7 @@ iroh.workspace       = true
 reqwest.workspace    = true
 tokio                = { features = ["rt"], workspace = true }
 wasm-bindgen-futures = "0.4"
-web-sys              = { features = ["Location", "UrlSearchParams"], version = "0.3.85" }
+web-sys              = { features = ["Location", "UrlSearchParams"], workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 directories.workspace = true

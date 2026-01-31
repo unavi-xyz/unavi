@@ -24,6 +24,9 @@ unavi-assets.path  = "../unavi-assets"
 unavi-input.path   = "../unavi-input"
 unavi-portal.path  = "../unavi-portal"
 
+[target.'cfg(target_family = "wasm")'.dependencies]
+web-sys = { features = ["Navigator", "Window"], workspace = true }
+
 [dev-dependencies]
 bevy_rich_text3d      = "0.5.1"
 directories.workspace = true

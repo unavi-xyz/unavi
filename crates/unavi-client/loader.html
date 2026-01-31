@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="UNAVI" />
+  <meta property="og:site_name" content="unavi.xyz" />
+  <meta property="og:title" content="UNAVI" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://app.unavi.xyz/" />
+  <meta property="twitter:domain" content="unavi.xyz" />
+  <meta property="twitter:url" content="https://app.unavi.xyz/" />
+  <title>UNAVI</title>
+  <style>
+    html,
+    body {
+      background-color: #111;
+      margin: 0;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #333;
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="spinner" id="spinner"></div>
+  <script>
+    (async function () {
+      let variant = 'webgl';
+      try {
+        if (navigator.gpu && await navigator.gpu.requestAdapter()) {
+          variant = 'webgpu';
+        }
+      } catch (e) {
+        console.log('WebGPU detection failed, using WebGL:', e);
+      }
+      console.log('Loading variant:', variant);
+
+      // Fetch variant's index.html (paths already absolute from --public-url).
+      const res = await fetch('/' + variant + '/index.html');
+      const html = await res.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+
+      // Inject link tags (paths already correct).
+      doc.querySelectorAll('link[rel="stylesheet"], link[rel="icon"]').forEach(el => {
+        document.head.appendChild(el.cloneNode(true));
+      });
+
+      // Remove spinner.
+      document.getElementById('spinner').remove();
+
+      // Inject and execute scripts (paths already correct).
+      doc.querySelectorAll('script').forEach(el => {
+        const script = document.createElement('script');
+        if (el.src) script.src = el.src;
+        else script.textContent = el.textContent;
+        if (el.type) script.type = el.type;
+        document.body.appendChild(script);
+      });
+    })();
+  </script>
+</body>
+
+</html>

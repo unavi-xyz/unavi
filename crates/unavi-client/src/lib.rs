@@ -66,6 +66,7 @@ impl Plugin for UnaviPlugin {
                 ..default()
             })
             .disable::<WebAssetPlugin>();
+
         #[cfg(target_family = "wasm")]
         let default_plugins = default_plugins
             .set(AssetPlugin {

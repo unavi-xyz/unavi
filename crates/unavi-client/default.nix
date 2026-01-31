@@ -40,6 +40,7 @@
           ../wds/migrations
           ./assets
           ./index.html
+          ./loader.html
           ./public
         ];
       };
@@ -88,6 +89,35 @@
 
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;
 
+      webArgs = {
+        wasm-bindgen-cli = pkgs.wasm-bindgen-cli_0_2_106;
+        trunkIndexPath = "./crates/unavi-client/index.html";
+
+        inherit cargoArtifacts;
+        doCheck = false;
+
+        nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [ pkgs.trunk ];
+
+        preBuild = ''
+          ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
+        '';
+
+        buildPhaseCommand = ''
+          ${pkgs.nushell}/bin/nu scripts/build-web.nu --release
+        '';
+
+        postInstall = ''
+          cp LICENSE $out
+        '';
+
+        installPhaseCommand = ''
+          cp -r dist $out
+        '';
+
+        CC_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.clang-unwrapped}/bin/clang";
+        AR_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.llvm}/bin/llvm-ar";
+        CFLAGS_wasm32_unknown_unknown = "--target=wasm32 -O3 -isystem ${pkgs.llvmPackages_21.libclang.lib}/lib/clang/21/include";
+      };
     in
     {
       checks = {
@@ -102,12 +132,10 @@
         );
       };
 
-      packages =
-        let
-          webArgs = {
-            wasm-bindgen-cli = pkgs.wasm-bindgen-cli_0_2_106;
-            trunkIndexPath = "./crates/unavi-client/index.html";
-
+      packages = {
+        "${pname}" = pkgs.crane.buildPackage (
+          cargoArgs
+          // {
             inherit cargoArtifacts;
             doCheck = false;
 
@@ -116,56 +144,32 @@
             '';
 
             postInstall = ''
+              mkdir -p $out/bin/assets
+              cp -r crates/${pname}/assets/* $out/bin/assets/
+              rm -rf $out/bin/assets/wasm/test $out/bin/assets/wasm/example
+
               cp LICENSE $out
             '';
+          }
+        );
 
-            installPhaseCommand = ''
-              cp -r dist $out
-            '';
-
-            CC_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.clang-unwrapped}/bin/clang";
-            AR_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.llvm}/bin/llvm-ar";
-            CFLAGS_wasm32_unknown_unknown = "--target=wasm32 -O3 -isystem ${pkgs.llvmPackages_21.libclang.lib}/lib/clang/21/include";
-          };
-        in
-        {
-          "${pname}" = pkgs.crane.buildPackage (
-            cargoArgs
-            // {
-              inherit cargoArtifacts;
-              doCheck = false;
-
-              preBuild = ''
-                ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
-              '';
-
-              postInstall = ''
-                mkdir -p $out/bin/assets
-                cp -r crates/${pname}/assets/* $out/bin/assets/
-                rm -rf $out/bin/assets/wasm/test $out/bin/assets/wasm/example
-
-                cp LICENSE $out
-              '';
-            }
-          );
-
-          "${pname}-web" = pkgs.crane.buildTrunkPackage (cargoArgs // webArgs // { pname = "${pname}-web"; });
-          "${pname}-web-beta" = pkgs.crane.buildTrunkPackage (
-            cargoArgs
-            // webArgs
-            // {
-              pname = "${pname}-web-beta";
-              REMOTE_WDS = remoteWds "beta";
-            }
-          );
-          "${pname}-web-stable" = pkgs.crane.buildTrunkPackage (
-            cargoArgs
-            // webArgs
-            // {
-              pname = "${pname}-web-stable";
-              REMOTE_WDS = remoteWds "stable";
-            }
-          );
-        };
+        "${pname}-web" = pkgs.crane.buildTrunkPackage (cargoArgs // webArgs // { pname = "${pname}-web"; });
+        "${pname}-web-beta" = pkgs.crane.buildTrunkPackage (
+          cargoArgs
+          // webArgs
+          // {
+            pname = "${pname}-web-beta";
+            REMOTE_WDS = remoteWds "beta";
+          }
+        );
+        "${pname}-web-stable" = pkgs.crane.buildTrunkPackage (
+          cargoArgs
+          // webArgs
+          // {
+            pname = "${pname}-web-stable";
+            REMOTE_WDS = remoteWds "stable";
+          }
+        );
+      };
     };
 }

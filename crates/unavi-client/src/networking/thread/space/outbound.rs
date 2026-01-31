@@ -105,6 +105,9 @@ async fn send_frames(
 
             last_iframe = iframe_msg.id;
             pframe_seq = 0;
+
+            *pose.pframe.lock() = None;
+
             send_iframe(&iframe_msg, &mut iframe_stream, peer, &mut send_buf.iframe).await?;
         }
     }

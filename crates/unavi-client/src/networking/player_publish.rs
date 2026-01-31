@@ -10,7 +10,8 @@ use unavi_player::{AvatarBones, LocalPlayer, PlayerConfig, PlayerEntities, Playe
 use crate::networking::thread::{
     NetworkCommand, NetworkingThread,
     space::{
-        BonePose, DEFAULT_TICKRATE, IFrameTransform, PFrameTransform, PlayerIFrame, PlayerPFrame,
+        BonePose, DEFAULT_TICKRATE, IFrameTransform, PFrameRootTransform, PFrameTransform,
+        PlayerIFrame, PlayerPFrame,
     },
 };
 
@@ -121,7 +122,7 @@ pub(super) fn publish_player_transforms(
         }
 
         let frame = PlayerPFrame {
-            root: PFrameTransform::new(root_pos, baseline.root, root_rot),
+            root: PFrameRootTransform::new(root_pos, baseline.root, root_rot),
             bones,
         };
 

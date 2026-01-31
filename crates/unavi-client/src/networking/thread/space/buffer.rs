@@ -4,10 +4,11 @@ use std::mem::size_of;
 
 use postcard::experimental::max_size::MaxSize;
 
-use super::pose::{IFrameTransform, PFrameTransform};
+use super::types::{IFrameTransform, PFrameRootTransform, PFrameTransform};
 
 /// Primitive sizes from [`MaxSize`] derives on transform types.
 const IFRAME_TRANSFORM_SIZE: usize = IFrameTransform::POSTCARD_MAX_SIZE;
+const PFRAME_ROOT_SIZE: usize = PFrameRootTransform::POSTCARD_MAX_SIZE;
 const PFRAME_TRANSFORM_SIZE: usize = PFrameTransform::POSTCARD_MAX_SIZE;
 
 /// Enum discriminant for [`bevy_vrm::BoneName`] (55 variants < 128).
@@ -34,7 +35,7 @@ pub const IFRAME_MSG_MAX_SIZE: usize = size_of::<u16>()  // id
 /// Maximum serialized size of a [`PFrameDatagram`].
 pub const PFRAME_MSG_MAX_SIZE: usize = size_of::<u16>()  // iframe_id
     + size_of::<u16>()                                   // seq
-    + PFRAME_TRANSFORM_SIZE                              // root
+    + PFRAME_ROOT_SIZE                                   // root (absolute position)
     + VEC_LEN_VARINT_MAX                                 // bones vec length
     + (PFRAME_BONE_SIZE * MAX_BONES)                     // bones
     ;

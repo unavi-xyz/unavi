@@ -35,7 +35,7 @@ pub fn default_stage() -> (Blobs, StageData) {
         LoroValue::List(
             vec![
                 LoroValue::Double(0.0),
-                LoroValue::Double(f64::from(y_length) / -2.0 - 1.0),
+                LoroValue::Double(f64::from(y_length) / -2.0),
                 LoroValue::Double(0.0),
             ]
             .into(),

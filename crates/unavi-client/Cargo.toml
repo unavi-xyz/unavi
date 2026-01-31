@@ -12,6 +12,7 @@ devtools                = ["devtools-bevy", "devtools-network"]
 devtools-bevy           = ["bevy/bevy_dev_tools"]
 devtools-network        = []
 discovery-local-network = ["iroh/discovery-local-network"]
+webgpu                  = ["bevy/webgpu", "unavi-player/webgpu"]
 
 [lints]
 workspace = true
